@@ -87,7 +87,7 @@
           as="a"
           :href="createDeploymentUrl"
           target="_blank"
-          rel="noopener noreferrer"
+          rel="noopener"
           @click="emit('done')"
         >
           {{ $t('deploymentSwitcher.customDeployment.createOnPlatform') }}
@@ -160,7 +160,7 @@ const [DefineOption, ReuseOption] = createReusableTemplate<{
 }>()
 
 const selectId = useId()
-const createDeploymentUrl = customDeploymentCreateUrl()
+const createDeploymentUrl = customDeploymentCreateUrl('switch-deployment-card')
 
 function runs(choice: DeploymentChoice): boolean {
   return choice.mark?.kind === 'runs'

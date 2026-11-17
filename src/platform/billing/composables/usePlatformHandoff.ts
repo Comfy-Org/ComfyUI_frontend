@@ -8,17 +8,24 @@ import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHando
 import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { createJourneyId } from '@/platform/billing/utils/checkoutJourney'
 import { platformLink } from '@/platform/workspace/utils/platformLink'
+import type { PlatformLinkSurface } from '@/platform/workspace/utils/platformLink'
 
 /**
- * A platform link that carries one journey id and reports the click with it.
+ * A platform link on `surface` that carries one journey id and reports the click with it.
  * Unavailable where billing opens through a local handoff; only `usePlatformBillingLink` opens through one.
  */
 export function usePlatformHandoff(
   path: MaybeRefOrGetter<`/${string}`>,
-  destination: MaybeRefOrGetter<PlatformHandoffDestination>
+  destination: MaybeRefOrGetter<PlatformHandoffDestination>,
+  surface: PlatformLinkSurface
 ) {
   const correlationId = ref(createJourneyId())
-  const href = computed(() => platformLink(toValue(path), correlationId.value))
+  const href = computed(() =>
+    platformLink(toValue(path), {
+      surface,
+      correlationId: correlationId.value
+    })
+  )
   const available = computed(() => !opensLocalBillingHandoff())
 
   function track() {
@@ -53,9 +60,14 @@ export function openPlatformBilling(
 export function usePlatformBillingLink(
   path: MaybeRefOrGetter<`/${string}`>,
   destination: MaybeRefOrGetter<PlatformHandoffDestination>,
+  surface: PlatformLinkSurface,
   view?: PlatformHandoffView
 ) {
-  const { href: platformHref, track } = usePlatformHandoff(path, destination)
+  const { href: platformHref, track } = usePlatformHandoff(
+    path,
+    destination,
+    surface
+  )
   const href = computed(() =>
     opensLocalBillingHandoff() ? undefined : platformHref.value
   )
@@ -68,10 +80,11 @@ export function usePlatformBillingLink(
 }
 
 /** A link to Platform's Plans page, shaped as `usePlatformBillingLink`'s; through a local handoff it opens Plans signed in as the local account. */
-export function usePlatformPlansLink() {
+export function usePlatformPlansLink(surface: PlatformLinkSurface) {
   return usePlatformBillingLink(
     '/profile/billing/plans',
     { target: 'plans' },
+    surface,
     'plans'
   )
 }

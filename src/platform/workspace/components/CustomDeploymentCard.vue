@@ -108,7 +108,7 @@
           as="a"
           :href="createDeploymentUrl"
           target="_blank"
-          rel="noopener noreferrer"
+          rel="noopener"
           data-testid="custom-deployment-platform"
           @click="emit('done')"
         >
@@ -157,5 +157,5 @@ defineOptions({ inheritAttrs: false })
 
 const { isCopying, copied, copy } = useBriefCopy()
 
-const createDeploymentUrl = customDeploymentCreateUrl()
+const createDeploymentUrl = customDeploymentCreateUrl('custom-deployment-card')
 </script>

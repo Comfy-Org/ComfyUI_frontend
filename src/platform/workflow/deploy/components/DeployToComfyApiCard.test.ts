@@ -149,13 +149,16 @@ describe('DeployToComfyApiCard', () => {
     expect(button).toHaveTextContent('Build with your agent')
   })
 
-  it('links to the developer platform in a new tab without a referrer, and reports done', async () => {
+  it('links to the Deploy page on the developer platform in a new tab that sends its origin, and reports done', async () => {
     const { onDone, user } = renderCard()
     const link = screen.getByRole('link', { name: 'Deploy on Platform' })
 
-    expect(link).toHaveAttribute('href', 'https://platform.comfy.org')
+    expect(link).toHaveAttribute(
+      'href',
+      'https://platform.comfy.org/profile/deploy?onboarding=comfy_api&utm_source=comfyui&utm_medium=app&utm_content=deploy-to-comfy-api-card'
+    )
     expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    expect(link).toHaveAttribute('rel', 'noopener')
     await user.click(link)
     expect(onDone).toHaveBeenCalledOnce()
   })

@@ -20,7 +20,7 @@
         size="lg"
         :href="link.href"
         target="_blank"
-        rel="noopener noreferrer"
+        rel="noopener"
         @click="follow"
       >
         {{ linkLabel }}
@@ -43,7 +43,7 @@ const { title, body, linkLabel, onClose } = defineProps<{
   onClose: () => void
 }>()
 
-const link = platformPlansLink()
+const link = platformPlansLink('plans-link-dialog')
 
 function follow() {
   link.onFollow()

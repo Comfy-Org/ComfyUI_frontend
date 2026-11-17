@@ -444,7 +444,10 @@ function useSubscriptionInternal() {
     Boolean(isCloud && window.__CONFIG__?.subscription_required)
 
   const handleViewUsageHistory = () => {
-    window.open(platformLink('/profile/usage'), '_blank')
+    window.open(
+      platformLink('/profile/usage', { surface: 'subscription-usage-history' }),
+      '_blank'
+    )
   }
 
   const handleLearnMore = () => {

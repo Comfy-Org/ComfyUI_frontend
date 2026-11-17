@@ -65,7 +65,11 @@ describe('usePlatformHandoff', () => {
       Object.assign(distribution, { isCloud: cloud, isDesktop: desktop })
       setLocalBillingWebEnabled(flag)
 
-      const link = usePlatformHandoff('/profile/billing', { target: 'plans' })
+      const link = usePlatformHandoff(
+        '/profile/billing',
+        { target: 'plans' },
+        'billing-tab'
+      )
 
       expect(link.available.value).toBe(available)
     }
@@ -88,10 +92,11 @@ describe('usePlatformBillingLink', () => {
   }
 
   function manageLink() {
-    return usePlatformBillingLink('/profile/billing', {
-      target: 'auto_top_up',
-      action: 'manage'
-    })
+    return usePlatformBillingLink(
+      '/profile/billing',
+      { target: 'auto_top_up', action: 'manage' },
+      'auto-top-up-card'
+    )
   }
 
   it.for([
@@ -104,7 +109,9 @@ describe('usePlatformBillingLink', () => {
 
     link.open()
 
-    expect(new URL(link.href.value ?? '').pathname).toBe('/profile/billing')
+    const href = new URL(link.href.value ?? '')
+    expect(href.pathname).toBe('/profile/billing')
+    expect(href.searchParams.get('utm_content')).toBe('auto-top-up-card')
     expect(openPlatformBillingHandoff).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(
       opened
@@ -146,20 +153,20 @@ describe('usePlatformPlansLink', () => {
   ])('is a plain link to the Plans page on $where', ({ cloud, flag }) => {
     distribution.isCloud = cloud
     setLocalBillingWebEnabled(flag)
-    const link = usePlatformPlansLink()
+    const link = usePlatformPlansLink('billing-plan-row')
 
     link.open()
 
-    expect(new URL(link.href.value ?? '').pathname).toBe(
-      '/profile/billing/plans'
-    )
+    const href = new URL(link.href.value ?? '')
+    expect(href.pathname).toBe('/profile/billing/plans')
+    expect(href.searchParams.get('utm_content')).toBe('billing-plan-row')
     expect(link.button.value).toMatchObject({ as: 'a', target: '_blank' })
     expect(openPlatformBillingHandoff).not.toHaveBeenCalled()
   })
 
   it('has no URL and opens the Plans page through a handoff on local web with the flag on', () => {
     setLocalBillingWebEnabled(true)
-    const link = usePlatformPlansLink()
+    const link = usePlatformPlansLink('billing-plan-row')
 
     link.open()
 

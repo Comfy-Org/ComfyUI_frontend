@@ -20,7 +20,7 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/localBillingHandoff'))
 vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string, correlationId?: string) =>
+  platformLink: (path: string, { correlationId }: { correlationId?: string }) =>
     `https://platform.test${path}&correlation_id=${correlationId}`
 }))
 

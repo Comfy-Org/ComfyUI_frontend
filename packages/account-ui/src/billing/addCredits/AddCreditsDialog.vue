@@ -88,11 +88,7 @@
           data-testid="add-credits-auto-top-up-is-on"
         >
           {{ translate('autoTopUp.isOn') }}
-          <AddCreditsBillingLink
-            :to="billingLink"
-            rel="noopener noreferrer"
-            inline
-            @click="openBilling"
+          <AddCreditsBillingLink :to="billingLink" inline @click="openBilling"
             >{{ translate('autoTopUp.manage')
             }}<i
               class="ml-0.5 icon-[lucide--arrow-up-right] size-3"

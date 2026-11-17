@@ -97,7 +97,8 @@ export function useAutoTopUpCardSection(shown: MaybeRefOrGetter<boolean>) {
 
   const { href, open } = usePlatformBillingLink(
     () => platformAutoTopUpPath(action.value),
-    () => ({ target: 'auto_top_up', action: action.value })
+    () => ({ target: 'auto_top_up', action: action.value }),
+    'auto-top-up-card'
   )
 
   return {

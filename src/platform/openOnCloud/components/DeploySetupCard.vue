@@ -64,7 +64,7 @@
           as="a"
           :href="platformUrl"
           target="_blank"
-          rel="noopener noreferrer"
+          rel="noopener"
           @click="emit('done')"
         >
           {{ $t('deployToComfyApi.deployOnPlatform') }}
@@ -86,10 +86,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
+import { platformLink } from '@/platform/workspace/utils/platformLink'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
   videoSources?: ComponentProps<typeof Video>['sources']
@@ -102,7 +102,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const platformUrl = getComfyPlatformBaseUrl()
+const platformUrl = platformLink(
+  '/profile/deploy?onboarding=custom_comfy_cloud',
+  { surface: 'deploy-setup-card' }
+)
 const points = [
   t('openOnCloud.deploySetupDialog.pointNodes'),
   t('openOnCloud.deploySetupDialog.pointGpu'),

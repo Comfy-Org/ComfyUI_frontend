@@ -13,10 +13,11 @@ import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 export function useAutoTopUpSetupOffer() {
   const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
     useBillingCapabilities()
-  const { href, track } = usePlatformHandoff(platformAutoTopUpPath('turn_on'), {
-    target: 'auto_top_up',
-    action: 'turn_on'
-  })
+  const { href, track } = usePlatformHandoff(
+    platformAutoTopUpPath('turn_on'),
+    { target: 'auto_top_up', action: 'turn_on' },
+    'auto-top-up-setup-offer'
+  )
 
   function trackOffer(stage: 'viewed' | 'declined') {
     useTelemetry()?.trackBillingEvent({

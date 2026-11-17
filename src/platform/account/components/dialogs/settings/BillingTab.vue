@@ -346,7 +346,8 @@ const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
-const { button: plansButton, open: openPlans } = usePlatformPlansLink()
+const { button: plansButton, open: openPlans } =
+  usePlatformPlansLink('billing-tab')
 
 const CONTACT_SALES_BUTTON = {
   as: 'a',

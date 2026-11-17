@@ -54,7 +54,8 @@ const { button, open } = usePlatformBillingLink(
   {
     target: 'auto_top_up',
     action: 'turn_on'
-  }
+  },
+  'top-up-auto-top-up-card'
 )
 
 const visible = computed(() => {

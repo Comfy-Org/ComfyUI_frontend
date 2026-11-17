@@ -734,10 +734,11 @@ describe('useCreditBanner', () => {
     await userEvent.click(link)
 
     expect(link).toHaveAttribute('href', PLATFORM_URL)
-    expect(usePlatformBillingLink).toHaveBeenCalledWith('/profile/billing', {
-      target: 'auto_top_up',
-      action: 'update_payment'
-    })
+    expect(usePlatformBillingLink).toHaveBeenCalledWith(
+      '/profile/billing',
+      { target: 'auto_top_up', action: 'update_payment' },
+      'credit-banner'
+    )
     expect(open).toHaveBeenCalledOnce()
   })
 

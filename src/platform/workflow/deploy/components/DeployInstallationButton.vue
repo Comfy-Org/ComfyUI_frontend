@@ -7,7 +7,7 @@
     as="a"
     :href="state.url"
     target="_blank"
-    rel="noopener noreferrer"
+    rel="noopener"
     data-testid="deploy-to-comfy-api-open-builder"
     @click="openBuilder"
     @auxclick.middle="openBuilder"

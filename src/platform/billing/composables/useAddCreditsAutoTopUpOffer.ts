@@ -48,10 +48,11 @@ export function useAddCreditsAutoTopUpOffer() {
   const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
     useBillingCapabilities()
   const { state, ensureRead } = useBillingAutoTopUpCard()
-  const { href, track } = usePlatformHandoff('/profile/billing', {
-    target: 'auto_top_up',
-    action: 'manage'
-  })
+  const { href, track } = usePlatformHandoff(
+    '/profile/billing',
+    { target: 'auto_top_up', action: 'manage' },
+    'add-credits-dialog'
+  )
 
   watch(
     autoTopUpEnabled,
