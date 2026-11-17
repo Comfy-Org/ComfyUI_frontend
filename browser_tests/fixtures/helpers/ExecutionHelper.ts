@@ -288,6 +288,18 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send a binary `progress_text` WS message (type 3) without a job id. */
+  progressText(nodeId: string, text: string): void {
+    const id = Buffer.from(nodeId, 'utf8')
+    const body = Buffer.from(text, 'utf8')
+    const frame = Buffer.alloc(8 + id.length + body.length)
+    frame.writeUInt32BE(3, 0)
+    frame.writeUInt32BE(id.length, 4)
+    id.copy(frame, 8)
+    body.copy(frame, 8 + id.length)
+    this.requireWs().send(frame)
+  }
+
   /** Send `progress` WS event. */
   progress(jobId: string, nodeId: string, value: number, max: number): void {
     this.requireWs().send(
