@@ -256,6 +256,14 @@ describe('AddCreditsDialog amount step', () => {
     )
   })
 
+  it('tells an ended sales-managed workspace to contact sales', () => {
+    renderDialog({ planLine: 'ended_sales_managed' })
+
+    expect(screen.getByTestId('add-credits-plan-line')).toHaveTextContent(
+      "Buying credits doesn't restart your plan. Contact sales to renew it."
+    )
+  })
+
   it('shows a skeleton while the quote is pending', async () => {
     const { ports, user } = renderDialog()
     ports.quoteHeld = true
