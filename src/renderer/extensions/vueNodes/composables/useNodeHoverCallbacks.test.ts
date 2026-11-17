@@ -69,6 +69,8 @@ function recordHover(node: LGraphNode, calls: [string, number[]?][]) {
 }
 
 describe('useNodeHoverCallbacks', () => {
+  let throwingNodeTypes = 0
+
   it('calls the node hover callbacks with node-relative positions, even when a widget stops propagation', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('Comparer')
@@ -114,7 +116,7 @@ describe('useNodeHoverCallbacks', () => {
   it('reports a throwing hover callback once and keeps delivering the others', async () => {
     const graph = new LGraph()
     const node = new LGraphNode('ThrowingHover')
-    node.type = 'ThrowingHover'
+    node.type = `ThrowingHover-${++throwingNodeTypes}`
     graph.add(node)
     const calls: [string, number[]?][] = []
     recordHover(node, calls)
