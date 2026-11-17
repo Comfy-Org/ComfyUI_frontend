@@ -384,94 +384,98 @@ class ManageTemplates extends ComfyDialog {
   }
 }
 
-let manager: ManageTemplates | undefined
+export function createNodeTemplatesExtension(): ComfyExtension {
+  let manager: ManageTemplates | undefined
 
-function getManager(): ManageTemplates {
-  manager ??= new ManageTemplates()
-  return manager
-}
+  function getManager(): ManageTemplates {
+    manager ??= new ManageTemplates()
+    return manager
+  }
 
-export const nodeTemplatesExtension: ComfyExtension = {
-  name: id,
+  return {
+    name: id,
 
-  setup() {
-    getManager()
-  },
+    setup() {
+      getManager()
+    },
 
-  getCanvasMenuItems(canvas: LGraphCanvas): (IContextMenuValue | null)[] {
-    const manage = getManager()
-    const items: (IContextMenuValue | null)[] = []
+    getCanvasMenuItems(canvas: LGraphCanvas): (IContextMenuValue | null)[] {
+      const manage = getManager()
+      const items: (IContextMenuValue | null)[] = []
 
-    items.push(null)
-    items.push({
-      content: `Save Selected as Template`,
-      disabled: !selectedCanvasNodes(canvas).length,
-      callback: async () => {
-        const name = await useDialogService().prompt({
-          title: t('nodeTemplates.saveAsTemplate'),
-          message: t('nodeTemplates.enterName'),
-          defaultValue: ''
-        })
-        if (!name?.trim()) return
+      items.push(null)
+      items.push({
+        content: `Save Selected as Template`,
+        disabled: !selectedCanvasNodes(canvas).length,
+        callback: async () => {
+          const name = await useDialogService().prompt({
+            title: t('nodeTemplates.saveAsTemplate'),
+            message: t('nodeTemplates.enterName'),
+            defaultValue: ''
+          })
+          if (!name?.trim()) return
 
-        const data = JSON.stringify(serializeItems(canvas))
-        await manage.store((templates) => [...templates, { name, data }])
-      }
-    })
+          const data = JSON.stringify(serializeItems(canvas))
+          await manage.store((templates) => [...templates, { name, data }])
+        }
+      })
 
-    const subItems: (IContextMenuValue | null)[] = manage.templates.map(
-      (template) => {
-        return {
-          content: template.name,
-          callback: () => {
-            let data: unknown
-            try {
-              data = JSON.parse(template.data)
-            } catch (error) {
-              reportError(error, {
-                errorType: 'failure_parsing_node_template',
-                surface: 'graph'
-              })
-              useToast().warning(t('toastMessages.invalidTemplateData'))
-              return
-            }
-
-            if (
-              typeof data === 'object' &&
-              data !== null &&
-              'reroutes' in data &&
-              data.reroutes
-            ) {
-              const parsed = zClipboardItems.safeParse(data)
-              if (!parsed.success) {
-                reportError(parsed.error, {
+      const subItems: (IContextMenuValue | null)[] = manage.templates.map(
+        (template) => {
+          return {
+            content: template.name,
+            callback: () => {
+              let data: unknown
+              try {
+                data = JSON.parse(template.data)
+              } catch (error) {
+                reportError(error, {
                   errorType: 'failure_parsing_node_template',
                   surface: 'graph'
                 })
                 useToast().warning(t('toastMessages.invalidTemplateData'))
                 return
               }
-              insertItems(canvas, parsed.data)
-            } else {
-              deserialiseAndCreate(template.data, canvas)
+
+              if (
+                typeof data === 'object' &&
+                data !== null &&
+                'reroutes' in data &&
+                data.reroutes
+              ) {
+                const parsed = zClipboardItems.safeParse(data)
+                if (!parsed.success) {
+                  reportError(parsed.error, {
+                    errorType: 'failure_parsing_node_template',
+                    surface: 'graph'
+                  })
+                  useToast().warning(t('toastMessages.invalidTemplateData'))
+                  return
+                }
+                insertItems(canvas, parsed.data)
+              } else {
+                deserialiseAndCreate(template.data, canvas)
+              }
             }
           }
         }
-      }
-    )
+      )
 
-    subItems.push(null, {
-      content: 'Manage',
-      callback: () => manage.show()
-    })
+      subItems.push(null, {
+        content: 'Manage',
+        callback: () => manage.show()
+      })
 
-    items.push({
-      content: 'Node Templates',
-      submenu: {
-        options: subItems
-      }
-    })
+      items.push({
+        content: 'Node Templates',
+        submenu: {
+          options: subItems
+        }
+      })
 
-    return items
+      return items
+    }
   }
 }
+
+export const nodeTemplatesExtension = createNodeTemplatesExtension()

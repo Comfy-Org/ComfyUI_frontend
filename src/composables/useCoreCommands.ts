@@ -997,7 +997,11 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Copy',
       function: () => {
         if (useApp().canvas.selectedItems.size) {
-          copyToCanvasClipboard(useApp().canvas)
+          if (!copyToCanvasClipboard(useApp().canvas).stored) {
+            toast.error(t('g.error'), {
+              description: t('clipboard.errorMessage')
+            })
+          }
         }
       }
     },

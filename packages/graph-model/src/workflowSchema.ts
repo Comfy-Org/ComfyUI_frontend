@@ -587,6 +587,7 @@ const zSubgraphDefinition = zComfyWorkflow1
   .passthrough()
 
 const zClipboardNode = zComfyNode
+  .extend({ properties: zProperties.default({}) })
   .refine(
     (node) => hasSupportedClipboardWidgetValuesLength(node.widgets_values),
     {

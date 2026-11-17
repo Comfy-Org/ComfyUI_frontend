@@ -9,6 +9,8 @@ import {
 } from 'vitest'
 import { effectScope } from 'vue'
 import { useCopy } from './useCopy'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { forgetCanvasCopy } from '@/core/graph/clipboard/canvasClipboard'
 import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
@@ -96,6 +98,46 @@ describe('useCopy', () => {
   beforeEach(() => {
     useCanvasStore().canvas = fromPartial<LGraphCanvas>(copyMocks.canvas)
     mountCopy()
+    onTestFinished(forgetCanvasCopy)
+  })
+
+  it.for([
+    { name: 'missing', data: () => null },
+    {
+      name: 'refused',
+      data: () => {
+        const data = new DataTransfer()
+        vi.spyOn(data, 'setData').mockImplementation(() => {
+          throw new Error('Clipboard refused')
+        })
+        return data
+      }
+    }
+  ])(
+    'reports complete copy refusal when system clipboard data is $name',
+    ({ data }) => {
+      vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+        throw new DOMException('Storage unavailable', 'QuotaExceededError')
+      })
+
+      document.dispatchEvent(
+        new ClipboardEvent('copy', { clipboardData: data() })
+      )
+
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          description: 'Failed to copy to clipboard'
+        })
+      )
+    }
+  )
+
+  it('keeps a cache-only copy successful when system clipboard data is missing', () => {
+    document.dispatchEvent(new ClipboardEvent('copy'))
+
+    expect(useToast().toasts).toEqual([])
+    expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).not.toBeNull()
   })
 
   it('should write large serialized node data to clipboard metadata', () => {
@@ -143,7 +185,7 @@ describe('useCopy', () => {
       canvas.selectItems([node])
       useCanvasStore().canvas = canvas
       const spies = methods.map((method) =>
-        vi.spyOn(Storage.prototype, method).mockImplementation(() => {
+        vi.spyOn(localStorage, method).mockImplementation(() => {
           throw new DOMException('Storage unavailable', fault)
         })
       )

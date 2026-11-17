@@ -8,13 +8,30 @@ import { CANVAS_CLIPBOARD_KEY, writeClipboardStorage } from './clipboardStorage'
 import { insertItems, serializeItems } from './graphTransfer'
 import type { InsertOptions, InsertResult } from './graphTransfer'
 
+let currentCopy: { serialized: string; stored: boolean } | undefined
+
+export function forgetCanvasCopy(): void {
+  currentCopy = undefined
+}
+
+export function isCurrentCanvasCopy(serialized: string): boolean {
+  if (currentCopy && !currentCopy.stored)
+    return serialized === currentCopy.serialized
+  try {
+    return serialized === localStorage.getItem(CANVAS_CLIPBOARD_KEY)
+  } catch {
+    return serialized === currentCopy?.serialized
+  }
+}
+
 export function copyToCanvasClipboard(
   canvas: LGraphCanvas,
   items?: Iterable<Positionable>
 ): { serialized: string; stored: boolean } {
   const serialized = JSON.stringify(serializeItems(canvas, items))
   const stored = writeClipboardStorage(serialized)
-  return { serialized, stored }
+  currentCopy = { serialized, stored }
+  return currentCopy
 }
 
 export function pasteFromCanvasClipboard(

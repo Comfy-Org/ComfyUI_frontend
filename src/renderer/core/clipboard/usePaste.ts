@@ -2,8 +2,10 @@ import { useEventListener } from '@vueuse/core'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { pasteFromCanvasClipboard } from '@/core/graph/clipboard/canvasClipboard'
-import { CANVAS_CLIPBOARD_KEY } from '@/core/graph/clipboard/clipboardStorage'
+import {
+  isCurrentCanvasCopy,
+  pasteFromCanvasClipboard
+} from '@/core/graph/clipboard/canvasClipboard'
 import { insertItems } from '@/core/graph/clipboard/graphTransfer'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -76,12 +78,7 @@ function pasteClipboardItems(data: DataTransfer): boolean {
 
 function holdsLatestCanvasCopy(html: string): boolean {
   const parsed = parseClipboardHtml(html)
-  if (parsed.status !== 'read') return false
-  try {
-    return parsed.text === localStorage.getItem(CANVAS_CLIPBOARD_KEY)
-  } catch {
-    return false
-  }
+  return parsed.status === 'read' && isCurrentCanvasCopy(parsed.text)
 }
 
 function isWorkflow(
@@ -156,8 +153,12 @@ export const usePaste = () => {
 
     const isMediaNodeSelected =
       isImageNodeSelected || isVideoNodeSelected || isAudioNodeSelected
-    if (!isMediaNodeSelected && pasteClipboardItems(data)) return
     const html = data.getData('text/html')
+    if (
+      (!isMediaNodeSelected || holdsLatestCanvasCopy(html)) &&
+      pasteClipboardItems(data)
+    )
+      return
 
     data = data.getData('text/plain')
     let workflow: unknown
@@ -185,7 +186,7 @@ export const usePaste = () => {
         return
       }
 
-      if (!isMediaNodeSelected || holdsLatestCanvasCopy(html)) {
+      if (!isMediaNodeSelected) {
         pasteFromCanvasClipboard(canvas)
       } else {
         useToast().info(t('toastMessages.nothingToPasteIntoNode'), {

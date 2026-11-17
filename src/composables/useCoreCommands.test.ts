@@ -513,6 +513,26 @@ describe('useCoreCommands', () => {
       ])
     })
 
+    it('reports when the selected nodes cannot be copied to storage', async () => {
+      const { graph, canvas } = useClipboardCanvas()
+      canvas.selectItems([createTestNode(graph, [], [], 'Refused copy')])
+      const storage = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation(() => {
+          throw new DOMException('Storage unavailable', 'QuotaExceededError')
+        })
+      onTestFinished(() => storage.mockRestore())
+
+      await findCommand('Comfy.Canvas.CopySelected').function()
+
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({
+          kind: 'error',
+          description: 'Failed to copy to clipboard'
+        })
+      )
+    })
+
     it('preserves the cached clipboard when no items are selected', async () => {
       useClipboardCanvas()
       localStorage.setItem(CANVAS_CLIPBOARD_KEY, 'previous clipboard')

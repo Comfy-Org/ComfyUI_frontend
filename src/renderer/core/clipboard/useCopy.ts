@@ -1,7 +1,12 @@
 import { useEventListener } from '@vueuse/core'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { copyToCanvasClipboard } from '@/core/graph/clipboard/canvasClipboard'
+import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  copyToCanvasClipboard,
+  forgetCanvasCopy
+} from '@/core/graph/clipboard/canvasClipboard'
+import { t } from '@/i18n'
 import {
   discardClipboardStorage,
   readClipboardId
@@ -18,6 +23,7 @@ export const useCopy = () => {
 
   useEventListener(document, 'copy', (e) => {
     if (shouldIgnoreCopyPaste(e.target)) {
+      if (hasTextSelection(e.target)) forgetCanvasCopy()
       if (
         keyboardCopyId !== null &&
         hasTextSelection(e.target) &&
@@ -32,12 +38,22 @@ export const useCopy = () => {
     if (canvas?.selectedItems) {
       const { serialized, stored } = copyToCanvasClipboard(canvas)
       keyboardCopyId = stored ? readClipboardId() : null
+      let metadataWritten = false
       try {
-        e.clipboardData?.setData('text/html', clipboardHtml(serialized))
+        if (e.clipboardData) {
+          e.clipboardData.setData('text/html', clipboardHtml(serialized))
+          metadataWritten = true
+        }
       } catch (error) {
         reportError(error, {
           errorType: 'error_writing_clipboard_metadata',
           surface: 'graph'
+        })
+      }
+      if (!stored && !metadataWritten) {
+        forgetCanvasCopy()
+        useToast().error(t('g.error'), {
+          description: t('clipboard.errorMessage')
         })
       }
       e.preventDefault()

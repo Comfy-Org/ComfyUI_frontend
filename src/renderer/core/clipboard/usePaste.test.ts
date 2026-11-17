@@ -24,7 +24,10 @@ import {
   serializeItems,
   insertItems
 } from '@/core/graph/clipboard/graphTransfer'
-import { pasteFromCanvasClipboard } from '@/core/graph/clipboard/canvasClipboard'
+import {
+  forgetCanvasCopy,
+  pasteFromCanvasClipboard
+} from '@/core/graph/clipboard/canvasClipboard'
 import { app } from '@/scripts/app'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -139,6 +142,7 @@ beforeEach(() => {
   mockWorkspaceStore = useWorkspaceStore()
   mockCanvasStore = useCanvasStore()
   mockCanvasStore.canvas = mockCanvas
+  onTestFinished(forgetCanvasCopy)
 })
 
 vi.mock(import('@/scripts/app'))
@@ -919,16 +923,38 @@ describe('usePaste', () => {
       ])
     })
 
-    it('runs the default paste only for the latest copy', () => {
-      setupMediaNodeSelected()
-      const earlier = copyNodes({ nodes: [], groups: [] })
-      const latest = copyNodes({ nodes: [] })
+    it.for([
+      { fault: 'available storage', methods: [] },
+      { fault: 'QuotaExceededError', methods: ['setItem'] },
+      { fault: 'SecurityError on read', methods: ['getItem'] },
+      { fault: 'SecurityError', methods: ['getItem', 'setItem', 'removeItem'] }
+    ] satisfies {
+      fault: string
+      methods: ('getItem' | 'setItem' | 'removeItem')[]
+    }[])(
+      'inserts only current graph metadata with media selected and $fault',
+      ({ fault, methods }) => {
+        setupMediaNodeSelected()
+        const spies = methods.map((method) =>
+          vi.spyOn(localStorage, method).mockImplementation(() => {
+            throw new DOMException('Storage unavailable', fault)
+          })
+        )
+        onTestFinished(() => spies.forEach((spy) => spy.mockRestore()))
+        const earlier = copyNodes({ nodes: [], groups: [] })
+        const latest = copyNodes({ nodes: [] })
 
-      paste(earlier)
-      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
-      paste(latest)
-      expect(pasteFromCanvasClipboard).toHaveBeenCalledOnce()
-    })
+        paste(earlier)
+        expect(insertItems).not.toHaveBeenCalled()
+        paste(latest)
+        expect(insertItems).toHaveBeenCalledExactlyOnceWith(
+          mockCanvas,
+          { nodes: [] },
+          {}
+        )
+        expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
+      }
+    )
 
     it('skips the default paste after a menu copy replaced the canvas clipboard', () => {
       setupMediaNodeSelected()
@@ -960,7 +986,11 @@ describe('usePaste', () => {
 
         paste(clipboardData)
 
-        expect(pasteFromCanvasClipboard).toHaveBeenCalledOnce()
+        expect(insertItems).toHaveBeenCalledExactlyOnceWith(
+          mockCanvas,
+          { nodes: [] },
+          {}
+        )
         expect(useToast().toasts).toEqual([])
       }
     )

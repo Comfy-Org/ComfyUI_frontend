@@ -18,10 +18,7 @@ export function workflowToClipboardItems(
   const graph = structuredClone(workflow)
 
   return zClipboardItems.parse({
-    nodes: (graph.nodes ?? []).map((node) => ({
-      ...node,
-      properties: node.properties ?? {}
-    })),
+    nodes: graph.nodes ?? [],
     groups: graph.groups ?? [],
     reroutes:
       graph.version === 0.4
