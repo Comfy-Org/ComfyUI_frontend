@@ -742,7 +742,7 @@
       "auth/account-exists-with-different-credential": "이 방법으로 로그인할 수 없습니다. 다른 로그인 옵션을 시도하거나 계속하려면 비밀번호를 재설정하세요.",
       "auth/cancelled-popup-request": "다른 로그인 창이 이미 열려 있어 이 창은 취소되었습니다. 다시 시도하세요.",
       "auth/email-already-in-use": "이 이메일로 계정을 만들 수 없습니다. 대신 로그인하거나 비밀번호를 재설정해 보세요.",
-      "auth/invalid-credential": "로그인 정보가 올바르지 않습니다. 이메일과 비밀번호를 확인해 주세요.",
+      "auth/invalid-credential": "로그인 자격 증명이 올바르지 않습니다. 이메일과 비밀번호를 확인하세요. 이전에 Google 또는 GitHub로 로그인한 적이 있다면 해당 방법을 사용하세요.",
       "auth/invalid-email": "유효한 이메일 주소를 입력해 주세요.",
       "auth/network-request-failed": "네트워크 오류입니다. 연결을 확인하고 다시 시도해 주세요.",
       "auth/operation-not-allowed": "현재 이 로그인 방법은 지원되지 않습니다.",
@@ -803,6 +803,7 @@
       "userAvatar": "사용자 아바타"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "파트너 노드를 사용하려면 로그인",
       "tooltipHelp": "\"API 노드\"를 사용하려면 로그인하세요",
       "tooltipLearnMore": "자세히 알아보기..."
     },
@@ -1588,9 +1589,7 @@
     "LOAD_3D": "3D 로드",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
-    "LUMA_CONCEPTS": "Luma 컨셉",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "Luma 참조",
     "MASK": "마스크",
     "MESH": "메시",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -2766,6 +2765,7 @@
     "versionMismatchWarning": "버전 호환성 경고",
     "videoFailedToLoad": "비디오를 로드하지 못했습니다.",
     "videoFilenameExtensionRequired": "동영상 파일 이름은 .mp4와 같은 확장자로 끝나야 합니다. 파일 이름을 변경한 후 다시 시도하세요.",
+    "videoFormatNotSupported": "이 브라우저에서는 이 동영상을 재생할 수 없습니다.",
     "videoPreview": "비디오 미리보기 - 화살표 키를 사용하여 비디오 간 이동",
     "viewGrid": "그리드 보기",
     "viewImageOfTotal": "이미지 {index}/{total} 보기",
@@ -4146,6 +4146,7 @@
       "errorUnavailable": "이 기능은 현재 사용할 수 없습니다. 문제가 계속되면 지원팀에 문의해 주세요.",
       "genericError": "OAuth 요청에 실패했습니다. 클라이언트 앱에서 다시 시작해 주세요.",
       "loading": "인증 요청을 불러오는 중…",
+      "loginRequired": "계속하려면 로그인하세요.",
       "missingRequest": "이 인증 요청이 누락되었습니다. 클라이언트 앱에서 다시 시작해 주세요.",
       "noWorkspaces": "이 요청에 사용할 수 있는 워크스페이스가 없습니다.",
       "notYou": "본인이 아니신가요?",
@@ -4154,6 +4155,7 @@
       "resourceFallback": "이 앱",
       "sessionError": "세션을 설정하지 못했습니다. 다시 시도해 주세요.",
       "sessionErrorToastSummary": "OAuth 로그인 진행을 계속할 수 없습니다",
+      "signInAgain": "다시 로그인",
       "signedInAs": "로그인 계정",
       "subtitle": "계속하려면 {resource}에 로그인하세요",
       "switchAccount": "계정 전환",
@@ -4161,6 +4163,7 @@
       "unverifiedBadge": "이름이 확인되지 않음",
       "unverifiedNotice": "이 이름은 이 앱을 등록한 사람이 제공한 것입니다. 계속하면 브라우저가 {host}(으)로 이동하므로, 알고 있는 곳인지 확인하세요.",
       "unverifiedNoticeNoHost": "이 이름은 이 앱을 등록한 사람이 제공했으며 Comfy에서 확인하지 않았습니다.",
+      "verifiedNotice": "이름이 확인되지 않음 · 확인된 대상: {platform} · {host}(으)로 돌아갑니다",
       "workspaceLabel": "워크스페이스"
     },
     "scopes": {
@@ -4381,13 +4384,16 @@
     "balanceUnavailable": "잔액을 불러올 수 없습니다.",
     "billingSettings": "결제 설정",
     "credits": "크레딧",
+    "paymentProcessing": "결제 처리 중…",
+    "planCredits": "플랜 크레딧",
     "planStatus": {
       "ended": "요금제 종료됨",
       "noPlan": "요금제 없음",
       "paused": "일시 중지됨",
       "paymentDue": "결제 예정"
     },
-    "switchWorkspace": "워크스페이스 전환"
+    "switchWorkspace": "워크스페이스 전환",
+    "topUpCredits": "크레딧 충전"
   },
   "progressToast": {
     "allDownloadsCompleted": "모든 다운로드가 완료되었습니다",
@@ -6660,16 +6666,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "현재 이 계정에서는 워크스페이스를 만들 수 없습니다.",
     "createWorkspace": "새 워크스페이스 만들기",
+    "createWorkspaceAction": "워크스페이스 만들기",
     "failedToSwitch": "워크스페이스 전환에 실패했습니다",
+    "loadFailed": "워크스페이스를 불러올 수 없습니다.",
     "managedByOrganization": "조직에서 워크스페이스를 관리하므로 새로 만들 수 없습니다.",
     "maxWorkspacesReached": "소유할 수 있는 워크스페이스는 {max}개뿐입니다. 새 워크스페이스를 만들려면 이를 삭제하세요. | 소유할 수 있는 워크스페이스는 {max}개뿐입니다. 새 워크스페이스를 만들려면 하나를 삭제하세요.",
+    "noResults": "“{query}”와 일치하는 워크스페이스가 없습니다.",
+    "ownedLimit": "최대 {max}개까지 소유할 수 있습니다.",
     "personal": "개인",
     "roleMember": "멤버",
     "roleOwner": "소유자",
     "scopeCaption": "워크스페이스는 사용할 크레딧에만 영향을 줍니다.",
     "scopeTooltip": "파트너 노드를 사용하는 실행은 이 워크스페이스의 크레딧을 사용합니다. Cloud와 달리 모든 워크스페이스는 일반 출력 폴더에 저장됩니다.",
+    "searchPlaceholder": "워크스페이스 검색...",
     "subscribe": "구독하기",
-    "switchWorkspace": "워크스페이스 전환"
+    "switchWorkspace": "워크스페이스 전환",
+    "tryAgain": "다시 시도"
   },
   "zoomControls": {
     "hideMinimap": "미니맵 숨기기",

@@ -721,6 +721,8 @@
     "Paste Image": "Paste Image",
     "Save Image": "Save Image",
     "Download Images": "Download Images",
+    "Show Full Resolution": "Show Full Resolution",
+    "Show Downscaled Preview": "Show Downscaled Preview",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
     "FavoriteWidget": "Favorite Widget",
@@ -2159,9 +2161,7 @@
     "LOAD3D_MODEL_INFO": "LOAD3D_MODEL_INFO",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
-    "LUMA_CONCEPTS": "LUMA_CONCEPTS",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -3762,6 +3762,7 @@
         }
       },
       "loadError": "We couldn't load your plan.",
+      "localLoadError": "We couldn't load your billing details. Check your connection, then try again.",
       "plan": {
         "actions": {
           "choosePlan": "Choose a plan",
@@ -3785,6 +3786,7 @@
           "freeRunsLeft": "You have {remaining} of {total} free runs left. Subscribe to keep running workflows after that.",
           "freeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows.",
           "line": "Subscribe to run workflows on Cloud.",
+          "localLine": "Subscribe for monthly credits. You can also add credits any time.",
           "title": "This workspace has no active plan"
         },
         "paused": "Paused. The renewal payment didn't go through.",
@@ -4318,10 +4320,11 @@
     "deploySetup": "Deploy your setup to Comfy Cloud",
     "deployWithAgent": "Deploy with your agent",
     "deploySetupDialog": {
-      "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
-      "pointGpu": "Work in ComfyUI on the GPU you choose",
-      "pointApi": "Call it from your product as an autoscaling API",
-      "pointNodes": "Bring your custom nodes and models"
+      "title": "Run your workflows on Comfy Cloud",
+      "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
+      "pointNodes": "Bring your custom nodes and models",
+      "pointGpu": "Run on powerful cloud GPUs",
+      "pointPricing": "Pay only while your GPU workers are up, plus storage"
     },
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
@@ -4347,13 +4350,16 @@
     "agentMenu": {
       "openInClaude": "Open in Claude desktop",
       "openInCodex": "Open in Codex",
-      "copyPrompt": "Copy prompt"
+      "copyPrompt": "Copy prompt",
+      "useLocalAgent": "Use local agent",
+      "saveFirst": "Save this workflow before sending it to an agent."
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
       "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
     },
-    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
+    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -6691,6 +6697,7 @@
     "superseded": "Your account or workspace changed while billing was opening. Try again.",
     "signInAgain": "Sign in again to open billing.",
     "opening": "Opening checkout…",
-    "openingDetail": "This takes a few seconds."
+    "openingDetail": "This takes a few seconds.",
+    "openingTabTitle": "Opening checkout · Comfy"
   }
 }

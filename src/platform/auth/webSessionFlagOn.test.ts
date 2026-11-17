@@ -688,6 +688,8 @@ function capabilitiesResponse({
       can_manage_subscription: false,
       can_open_plans: false,
       can_run_workflows: false,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: false,
       can_downgrade_to_personal: false
     },
@@ -1993,9 +1995,7 @@ describe('comfy-api calls on the shared web session', () => {
 
 describe('billing SDK rails on a tab that arrived by session', () => {
   const BILLING_SDK_RAILS = {
-    unified_cloud_auth: true,
-    billing_sdk_topup_enabled: true,
-    billing_sdk_subscription_enabled: true
+    unified_cloud_auth: true
   }
 
   const bootSessionOnly = async (workspace = 'ws-personal') => {
@@ -3999,22 +3999,12 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
   }
 
   it.for([
-    {
-      sso: true,
-      login: 'session',
-      signIn: signInWithSessionOnly,
-      keyKept: false
-    },
-    {
-      sso: true,
-      login: 'firebase',
-      signIn: signInWithFirebase,
-      keyKept: false
-    },
-    { sso: false, login: 'firebase', signIn: signInWithFirebase, keyKept: true }
+    { sso: true, login: 'session', signIn: signInWithSessionOnly },
+    { sso: true, login: 'firebase', signIn: signInWithFirebase },
+    { sso: false, login: 'firebase', signIn: signInWithFirebase }
   ])(
-    'a stored API key outlives a $login sign-out only with SSO off (sso_enabled $sso)',
-    async ({ sso, signIn, keyKept }) => {
+    'a stored API key does not outlive a $login sign-out on Cloud (sso_enabled $sso)',
+    async ({ sso, signIn }) => {
       installServer({ userId: 'user-a' }, { sso_enabled: sso })
       await refreshRemoteConfig({ useAuth: false })
       localStorage.setItem('comfy_api_key', STORED_API_KEY)
@@ -4026,9 +4016,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
       await authStore.logout()
 
       expect(authStore.isAuthenticated).toBe(false)
-      expect(useApiKeyAuthStore().getApiKey()).toBe(
-        keyKept ? STORED_API_KEY : null
-      )
+      expect(useApiKeyAuthStore().getApiKey()).toBeNull()
     }
   )
 })

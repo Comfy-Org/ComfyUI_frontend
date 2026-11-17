@@ -128,11 +128,22 @@ function handoffAmount(amount: LocationQuery[string] | undefined): string {
   return typeof amount === 'string' ? amount : ''
 }
 
-function handoffLanding({
-  intent,
-  amount_cents: amount
-}: LocationQuery): string {
+function handoffPlanChoice(
+  plan: LocationQuery[string] | undefined,
+  stop: LocationQuery[string] | undefined
+): Record<string, string> | undefined {
+  if (typeof plan !== 'string' || plan === '') return undefined
+  if (stop === undefined) return { plan }
+  return { plan, team_credit_stop_id: typeof stop === 'string' ? stop : '' }
+}
+
+function handoffLanding(query: LocationQuery): string {
+  const { intent, amount_cents: amount } = query
   if (intent === 'subscription') return handoffEntryPath('subscription')
+  if (intent === 'checkout') {
+    const choice = handoffPlanChoice(query.plan, query.team_credit_stop_id)
+    return choice ? handoffEntryPath('checkout', choice) : APP_ENTRY_PATH
+  }
   if (intent !== 'top-up') return APP_ENTRY_PATH
   return handoffEntryPath('top-up', { amount_cents: handoffAmount(amount) })
 }

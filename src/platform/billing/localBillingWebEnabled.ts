@@ -1,5 +1,6 @@
 import { readonly, ref } from 'vue'
 
+import { canDesktopHostIssueBillingHandoff } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 
 const enabled = ref(false)
@@ -18,5 +19,6 @@ export function setLocalBillingWebEnabled(value: boolean): void {
 }
 
 export function opensLocalBillingHandoff(): boolean {
-  return !isCloud && enabled.value && localSurface() === 'local_web'
+  if (isCloud || !enabled.value) return false
+  return localSurface() === 'local_web' || canDesktopHostIssueBillingHandoff()
 }
