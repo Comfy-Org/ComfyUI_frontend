@@ -332,7 +332,7 @@ export const useSubscriptionDialog = () => {
       return
     }
 
-    const operation = flags.billingSdkSubscriptionRailEnabled
+    const operation = flags.billingSdkRailEnabled
       ? await useBillingSdkStore().recoverPendingOperation(pending.operationId)
       : await useBillingOperationStore().startOperation(
           pending.operationId,
