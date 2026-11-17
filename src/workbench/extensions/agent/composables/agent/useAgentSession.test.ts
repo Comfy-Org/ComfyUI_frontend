@@ -6679,6 +6679,65 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('sends a plain canvas selection as canvas_selection, not as the tagged selection', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        canvasSelection: () => ['7']
+      }
+    })
+    session.start()
+
+    await session.sendMessage(
+      'what node is selected',
+      undefined,
+      undefined,
+      undefined,
+      () => 'wf-selected'
+    )
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.selection).toBeUndefined()
+    expect(body.canvasSelection).toEqual({
+      node_ids: ['7'],
+      workflow_id: 'wf-selected'
+    })
+  })
+
+  it.for([
+    { tags: ['5'], expected: { node_ids: ['9'] } },
+    { tags: ['5', '9'], expected: undefined }
+  ])(
+    'leaves tagged nodes $tags out of the canvas selection',
+    async ({ tags, expected }) => {
+      const rest = fakeRest()
+      const session = useAgentSession({
+        rest,
+        events: fakeEvents().source,
+        workflow: {
+          current: () => undefined,
+          adopted: () => {},
+          canvasSelection: () => ['5', '9']
+        }
+      })
+      session.start()
+
+      await session.sendMessage(
+        'compare',
+        undefined,
+        tags.map((id) => ({ id, title: `Node ${id}` }))
+      )
+
+      const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+      expect(body.selection).toEqual({ node_ids: tags })
+      expect(body.canvasSelection).toEqual(expected)
+    }
+  )
+
   it('sends a skill invocation unchanged as ordinary message content', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
