@@ -6,7 +6,11 @@ import type {
   GesturePolicy,
   GestureState
 } from './canvas/reduceGesture'
-import { idleGesture, reduceGesture } from './canvas/reduceGesture'
+import {
+  doubleClickedClick,
+  idleGesture,
+  reduceGesture
+} from './canvas/reduceGesture'
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 
@@ -65,6 +69,11 @@ export class CanvasPointer {
   /** `true` once the pointer has moved far enough after a down event to be a drag, until the corresponding up event. */
   get dragStarted(): boolean {
     return this.state.phase === 'dragging'
+  }
+
+  /** The `timeStamp` of the press that the current press double-clicks, if any. */
+  get doubleClickedTimeStamp(): number | undefined {
+    return doubleClickedClick(this.state)?.timeStamp
   }
 
   private state: GestureState = idleGesture

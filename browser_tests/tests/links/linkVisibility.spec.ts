@@ -293,6 +293,56 @@ test.describe(
         )
       })
     })
+
+    test('double-clicking a stack renames every link in it', async ({
+      comfyPage,
+      linkVisibility
+    }) => {
+      const undoSizeBeforeRename =
+        (await comfyPage.workflow.getUndoQueueSize()) ?? 0
+      const exportedLinkPresentations = async () =>
+        Object.values(
+          (await comfyPage.workflow.getExportedWorkflow()).extra
+            ?.linkPresentation ?? {}
+        )
+
+      await test.step('Name the unlabelled stack', async () => {
+        await linkVisibility.openRenamePromptAtOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          0
+        )
+        await expect(linkVisibility.promptInput).toHaveValue('')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
+        await expect(linkVisibility.promptInput).toBeHidden()
+        await expect.poll(exportedLinkPresentations).toEqual([
+          { hidden: true, label: 'enc' },
+          { hidden: true, label: 'enc' }
+        ])
+      })
+
+      await test.step('The links stay one collapsed stack with the new name', async () => {
+        await linkVisibility.parkPointer()
+        await expectRegionScreenshot(
+          comfyPage.page,
+          [
+            await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+            ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+          ],
+          'link-stack-same-name-collapsed.png'
+        )
+      })
+
+      await test.step('One undo removes the name from every link', async () => {
+        await expect
+          .poll(() => comfyPage.workflow.getUndoQueueSize())
+          .toBe(undoSizeBeforeRename + 1)
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(exportedLinkPresentations)
+          .toEqual([{ hidden: true }, { hidden: true }])
+      })
+    })
   }
 )
 

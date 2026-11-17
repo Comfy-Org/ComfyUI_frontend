@@ -1,4 +1,4 @@
-import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/auth/partnerNode/usePartnerNodesRunGate'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import {

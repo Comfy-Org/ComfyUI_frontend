@@ -11,6 +11,7 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
@@ -99,10 +100,6 @@ function idempotencyKey(request: Request): string | undefined {
   return request.headers()['idempotency-key']
 }
 
-function transport(request: Request): string {
-  return request.resourceType()
-}
-
 async function openTopUpAndContinue(page: Page) {
   const dialog = new TopUpCreditsDialog(page)
   await page.goto(`${APP_URL}/?topup=1`)
@@ -140,7 +137,7 @@ test.describe('Top-up checkout rail (FE-2475)', { tag: '@cloud' }, () => {
     await expect.poll(() => routes.checkoutRequests.length).toBe(1)
     const [issued] = routes.checkoutRequests
     expect(issued.method()).toBe('POST')
-    expect(transport(issued)).toBe('fetch')
+    expect(billingClient(issued)).toBe('sdk')
     expect(idempotencyKey(issued)).toBeTruthy()
     expect(issued.postDataJSON()).toMatchObject({
       amount_cents: 5_000,
@@ -162,7 +159,7 @@ test.describe('Top-up checkout rail (FE-2475)', { tag: '@cloud' }, () => {
       'data-notice',
       'checkout_failed'
     )
-    expect(routes.checkoutRequests.map(transport)).toEqual(['fetch'])
+    expect(routes.checkoutRequests.map(billingClient)).toEqual(['sdk'])
     expect(routes.purchaseRequests).toHaveLength(0)
   })
 })

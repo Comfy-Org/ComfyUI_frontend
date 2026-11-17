@@ -6,7 +6,8 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import {
   layoutHiddenLinkBadges,
   queryLinkBadgeAtPoint,
-  queryLinkBadgeHitAtPoint
+  queryLinkBadgeHitAtPoint,
+  queryLinkBadgeStackToggledAt
 } from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
 import { slotTypeKey } from '@/lib/litegraph/src/utils/type'
@@ -29,14 +30,12 @@ export function queryHiddenLinkBadgeAtPoint(
   }
 }
 
-/** The stack of hidden links whose pill is under a canvas point. */
-export function queryHiddenLinkStackAtPoint(
-  host: object,
+type LinkBadgeHit = ReturnType<typeof queryLinkBadgeHitAtPoint>
+
+function hiddenLinkStackOf(
   graph: LGraph,
-  x: number,
-  y: number
+  hit: LinkBadgeHit
 ): { stackKey: string; links: LLink[] } | undefined {
-  const hit = queryLinkBadgeHitAtPoint(host, x, y)
   if (!hit?.stackKey) return
   const scope = graphScopeOf(graph)
   const presentationStore = useLinkPresentationStore()
@@ -47,6 +46,25 @@ export function queryHiddenLinkStackAtPoint(
         !!link && !!presentationStore.getPresentation(scope, link.id)?.hidden
     )
   if (links.length) return { stackKey: hit.stackKey, links }
+}
+
+/** The stack of hidden links whose pill is under a canvas point. */
+export function queryHiddenLinkStackAtPoint(
+  host: object,
+  graph: LGraph,
+  x: number,
+  y: number
+): { stackKey: string; links: LLink[] } | undefined {
+  return hiddenLinkStackOf(graph, queryLinkBadgeHitAtPoint(host, x, y))
+}
+
+/** The stack of hidden links that the press at `timeStamp` expanded or collapsed. */
+export function queryHiddenLinkStackToggledAt(
+  host: object,
+  graph: LGraph,
+  timeStamp: number | undefined
+): { stackKey: string; links: LLink[] } | undefined {
+  return hiddenLinkStackOf(graph, queryLinkBadgeStackToggledAt(host, timeStamp))
 }
 
 export function layoutGraphLinkBadges(
