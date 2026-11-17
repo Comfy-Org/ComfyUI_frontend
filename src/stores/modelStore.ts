@@ -6,6 +6,10 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ModelFile } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { isCloud } from '@/platform/distribution/types'
+import {
+  deploymentDownloads,
+  useDeploymentLibraryModelsStore
+} from '@/platform/workspace/stores/deploymentLibraryModelsStore'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { api } from '@/scripts/api'
 
@@ -292,8 +296,56 @@ export const useModelStore = defineStore('models', () => {
     )
   )
   const models = computed<ComfyModelDef[]>(() =>
-    modelFolders.value.flatMap((folder) => Object.values(folder.models))
+    modelFolders.value.flatMap((folder) => [
+      ...Object.values(folder.models),
+      ...libraryModelsIn(folder)
+    ])
   )
+
+  function showsLibrary(folder: string): boolean {
+    return isCloud && deploymentDownloads(folder)
+  }
+
+  /** The workspace library's uploads a picked deployment can load, after its Release's models. */
+  function libraryModelsIn(folder: ModelFolder): ComfyModelDef[] {
+    if (
+      folder.state !== ResourceState.Loaded ||
+      !showsLibrary(folder.directory)
+    ) {
+      return []
+    }
+    const listed = new Set(
+      Object.values(folder.models).map((model) => model.file_name)
+    )
+    return useDeploymentLibraryModelsStore()
+      .namesIn(folder.directory)
+      .filter((name) => !listed.has(name))
+      .map((name) => new ComfyModelDef(name, folder.directory, 0))
+  }
+
+  const watchedLibraryFolders = new Set<string>()
+
+  function loadLibraryFolder(folder: string): Promise<void> {
+    const library = useDeploymentLibraryModelsStore()
+    if (watchedLibraryFolders.has(folder)) {
+      library.refresh(folder)
+    } else {
+      watchedLibraryFolders.add(folder)
+      library.watchFolder(folder, () => {})
+    }
+    return library.waitForSettled(folder)
+  }
+
+  /** The server's folder listing; on a picked deployment, also loads the workspace library's names for the folder. */
+  async function getListedModels(folder: string): Promise<ModelFile[]> {
+    if (!showsLibrary(folder)) return api.getModels(folder)
+    const [release] = await Promise.all([
+      api.getModels(folder),
+      loadLibraryFolder(folder)
+    ])
+    return release
+  }
+
   /**
    * Folders worth showing in the sidebar. Asset mode hides folders that
    * loaded empty — the registry lists every registered folder type, most of
@@ -314,7 +366,7 @@ export const useModelStore = defineStore('models', () => {
   function createGetModelsFunc(): (folder: string) => Promise<ModelFile[]> {
     return useAssetModels.value
       ? (folder) => assetService.getAssetModels(folder)
-      : (folder) => api.getModels(folder)
+      : getListedModels
   }
 
   const modelSource = computed(() =>

@@ -7,6 +7,7 @@ import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   ResourceState,
   effectiveModelExtensions,
@@ -42,7 +43,9 @@ beforeEach(() => {
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetModels: vi.fn(),
+    getWorkspaceLibraryModels: vi.fn(),
     invalidateModelBuckets: vi.fn(),
+    onAssetsChanged: vi.fn(),
     onModelsScanned: vi.fn(),
     seedModelAssets: vi.fn()
   }
@@ -72,6 +75,8 @@ function enableMocks(assetsEnabled = false) {
   ])
   vi.mocked(assetService.seedModelAssets).mockResolvedValue(undefined)
   vi.mocked(assetService.onModelsScanned).mockReturnValue(() => {})
+  vi.mocked(assetService.onAssetsChanged).mockReturnValue(() => {})
+  vi.mocked(assetService.getWorkspaceLibraryModels).mockResolvedValue([])
 
   vi.mocked(api.viewMetadata).mockImplementation((_, model) => {
     if (model === 'noinfo.safetensors') {
@@ -151,6 +156,65 @@ describe('useModelStore', () => {
       'release.safetensors',
       'release.safetensors'
     ])
+  })
+
+  describe('workspace library on a picked deployment', () => {
+    const library = new Map<string, string[]>()
+    let notifyAssetsChanged = () => {}
+
+    beforeEach(() => {
+      enableMocks(true)
+      mockDistribution.isCloud = true
+      featureState.serverFeatures.runtime_library_models_enabled = true
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
+      useDeploymentPickStore().bootDeployment = {
+        deployment_id: 'dep-release',
+        release_id: 'release-1',
+        status: 'ready',
+        can_start: false,
+        created_at: '2026-10-01T00:00:00Z'
+      }
+      vi.mocked(api.getModels).mockImplementation(async (folder) =>
+        folder === 'checkpoints'
+          ? [{ name: 'release.safetensors', pathIndex: 0 }]
+          : []
+      )
+      library.clear()
+      library.set('checkpoints', ['release.safetensors', 'upload.safetensors'])
+      library.set('vae', ['upload_vae.safetensors'])
+      vi.mocked(assetService.getWorkspaceLibraryModels).mockImplementation(
+        async (folder) => library.get(folder) ?? []
+      )
+      vi.mocked(assetService.onAssetsChanged).mockImplementation((listener) => {
+        notifyAssetsChanged = listener
+        return () => {}
+      })
+    })
+
+    it('lists the uploads beside the Release models in their folders', async () => {
+      store = useModelStore()
+      await store.loadModels()
+
+      expect(store.models.map((model) => model.key)).toEqual([
+        'checkpoints/release.safetensors',
+        'checkpoints/upload.safetensors',
+        'vae/upload_vae.safetensors'
+      ])
+    })
+
+    it('drops an upload once the library no longer has it', async () => {
+      store = useModelStore()
+      await store.loadModels()
+      library.set('checkpoints', [])
+
+      notifyAssetsChanged()
+      await vi.waitFor(() =>
+        expect(store.models.map((model) => model.key)).toEqual([
+          'checkpoints/release.safetensors',
+          'vae/upload_vae.safetensors'
+        ])
+      )
+    })
   })
 
   it('should load models', async () => {
