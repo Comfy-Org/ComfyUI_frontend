@@ -23,6 +23,7 @@
         v-else-if="hasMedia && media?.type === 'image'"
         :items="media.items"
         :node-id
+        :full-resolution="nodeData?.flags.fullResolutionPreview"
         class="flex-auto"
         :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"
       />
