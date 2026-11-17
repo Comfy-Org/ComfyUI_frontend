@@ -164,63 +164,64 @@ export function useImageMenuOptions() {
     const canPaste = canPasteImage(node)
     const canExportOutputs = availability.preview && hasMultipleOutputs(node)
 
-    const options: MenuOption[] = []
+    const options: [boolean, MenuOption][] = [
+      [
+        hasPreview,
+        {
+          id: 'openImage',
+          label: t('contextMenu.Open Image'),
+          icon: 'icon-[lucide--external-link]',
+          action: () => openImage(node)
+        }
+      ],
+      [
+        canEdit,
+        {
+          id: 'maskEditor',
+          label: t('contextMenu.Open in Mask Editor'),
+          icon: 'icon-[comfy--mask]',
+          action: () => openMaskEditor()
+        }
+      ],
+      [
+        hasPreview,
+        {
+          id: 'copyImage',
+          label: t('contextMenu.Copy Image'),
+          icon: 'icon-[lucide--copy]',
+          action: () => copyImage(node)
+        }
+      ],
+      [
+        canPaste && availability.input,
+        {
+          id: 'pasteImage',
+          label: t('contextMenu.Paste Image'),
+          icon: 'icon-[lucide--clipboard-paste]',
+          action: () => pasteClipboardImageToNode(node)
+        }
+      ],
+      [
+        hasPreview,
+        {
+          id: 'saveImage',
+          label: t('contextMenu.Save Image'),
+          icon: 'icon-[lucide--download]',
+          action: () => saveImage(node)
+        }
+      ],
+      [
+        canExportOutputs,
+        {
+          id: 'downloadImages',
+          label: t('contextMenu.Download Images'),
+          icon: 'icon-[lucide--folder-down]',
+          action: () => showOutputsExportDialog(node)
+        }
+      ]
+    ]
 
-    if (hasPreview) {
-      options.push({
-        id: 'openImage',
-        label: t('contextMenu.Open Image'),
-        icon: 'icon-[lucide--external-link]',
-        action: () => openImage(node)
-      })
-    }
-
-    if (canEdit) {
-      options.push({
-        id: 'maskEditor',
-        label: t('contextMenu.Open in Mask Editor'),
-        icon: 'icon-[comfy--mask]',
-        action: () => openMaskEditor()
-      })
-    }
-
-    if (hasPreview) {
-      options.push({
-        id: 'copyImage',
-        label: t('contextMenu.Copy Image'),
-        icon: 'icon-[lucide--copy]',
-        action: () => copyImage(node)
-      })
-    }
-
-    if (canPaste && availability.input) {
-      options.push({
-        id: 'pasteImage',
-        label: t('contextMenu.Paste Image'),
-        icon: 'icon-[lucide--clipboard-paste]',
-        action: () => pasteClipboardImageToNode(node)
-      })
-    }
-
-    if (hasPreview) {
-      options.push({
-        id: 'saveImage',
-        label: t('contextMenu.Save Image'),
-        icon: 'icon-[lucide--download]',
-        action: () => saveImage(node)
-      })
-    }
-
-    if (canExportOutputs) {
-      options.push({
-        id: 'downloadImages',
-        label: t('contextMenu.Download Images'),
-        icon: 'icon-[lucide--folder-down]',
-        action: () => showOutputsExportDialog(node)
-      })
-    }
-
-    return options
+    return options.flatMap(([available, option]) => (available ? [option] : []))
   }
 
   const getPreviewResolutionOption = (

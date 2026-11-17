@@ -76,16 +76,14 @@ function projectItems(items: LegacyItems): MenuItem[] | undefined {
 function projectItem(item: LegacyItems[number]): MenuItem | undefined {
   if (item === null) return { separator: true }
   if (typeof item === 'string') return { label: item }
-  if (item.callback && !isClosureOnly(item.callback)) return
+  if (!canProjectCallback(item)) return
   if (usesNativePresentation(item)) return
   const metadata = presentation.get(item)
   const base = { ...metadata, label: item.content, disabled: item.disabled }
   if (item.submenu) {
-    if (item.callback) return
     const submenu = projectSubmenu(item.submenu, metadata?.shape)
     return submenu && { ...base, ...submenu }
   }
-  if (item.has_submenu) return
   const callback = item.callback
   return {
     ...base,
@@ -93,9 +91,16 @@ function projectItem(item: LegacyItems[number]): MenuItem | undefined {
   }
 }
 
+function canProjectCallback(item: IContextMenuValue): boolean {
+  return !item.callback || (isClosureOnly(item.callback) && !item.submenu)
+}
+
 function usesNativePresentation(item: IContextMenuValue): boolean {
   return Boolean(
-    item.title || item.className || /<[a-z][\s\S]*>/i.test(item.content ?? '')
+    item.title ||
+    item.className ||
+    /<[a-z][\s\S]*>/i.test(item.content ?? '') ||
+    (item.has_submenu && !item.submenu)
   )
 }
 
