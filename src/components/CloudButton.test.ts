@@ -248,7 +248,7 @@ describe('Cloud button compatibility checks', () => {
 
     await waitFor(() =>
       expect(useToast().toasts.map((toast) => toast.title)).toContain(
-        'ComfyUI couldn’t read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
+        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
       )
     )
   })
