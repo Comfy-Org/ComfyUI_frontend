@@ -211,6 +211,18 @@ export const networkIsolationFixture = base.extend<{
         liveCloudBillingConfig
       )
     } else {
+      await context.route(
+        'https://{cloud,stagingcloud,testcloud}.comfy.org/api/features',
+        (route) =>
+          route.request().method() === 'GET'
+            ? route.fulfill({
+                headers: { 'access-control-allow-origin': '*' },
+                json: route.request().headers().authorization
+                  ? { open_on_cloud_enabled: false }
+                  : {}
+              })
+            : route.fallback()
+      )
       await mockDeploymentRolloutRefusal(context)
     }
     await use(context)

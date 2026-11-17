@@ -35,6 +35,7 @@ import { api } from '@/scripts/api'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { attachLegacyUI } from '@/core/legacyUI/attachLegacyUI'
 import { handleDesktopWorkflowHandoff } from '@/platform/openOnCloud/desktopWorkflowRelay'
+import { startLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 
 import App from './App.vue'
 // Intentionally relative import to ensure the CSS is loaded in the right order (after litegraph.css)
@@ -103,6 +104,19 @@ async function startLocalAuthSession(): Promise<boolean> {
 
 function showLocalSignInFailure(pinia: Pinia, failed: boolean): void {
   if (failed) useToast(pinia).error(t('auth.desktopHost.signInFailed'))
+}
+
+async function startLocalOpenOnCloud(pinia: Pinia): Promise<void> {
+  if (isCloud) return
+  const { useAuthStore } = await import('@/stores/authStore')
+  const authStore = useAuthStore(pinia)
+  const stop = startLocalOpenOnCloudRollout(
+    () => authStore.userId,
+    async () =>
+      (await authStore.getIdToken()) ??
+      (await authStore.getWorkspaceAuthToken())
+  )
+  import.meta.hot?.dispose(stop)
 }
 
 function initFirebaseIdentity(): void {
@@ -186,6 +200,7 @@ async function bootstrap(): Promise<void> {
   markStoresReady()
 
   showLocalSignInFailure(pinia, localSignInFailed)
+  void startLocalOpenOnCloud(pinia)
 
   if (isCloud && hasHostTelemetryBridge) {
     syncHostUserIdWithFirebaseAuth()
