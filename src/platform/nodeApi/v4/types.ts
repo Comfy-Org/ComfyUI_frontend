@@ -205,6 +205,11 @@ export interface Edits {
     to: OutputSlotHandle
   ): readonly LinkInfo[] | undefined
   /**
+   * Changes the fields `patch` names; an unusable one throws first. The nodes inside stay where they are, and a
+   * size below the editor's minimum group size is raised to it. False if the group is gone (nothing changed).
+   */
+  updateGroup(group: GroupHandle, patch: GroupPatch): boolean
+  /**
    * Runs `edits` now as one undo step, which re-reads the whole graph once, and returns its result.
    * Edits made before a throw stay; edits after it returns are not in the step. Loop inside one batch.
    */
@@ -354,6 +359,8 @@ export interface GroupHandle {
   getBounds(): Bounds | undefined
   /** The nodes whose center is inside the group now, in the graph's order. */
   nodes(): readonly NodeHandle[] | undefined
+  /** `comfy.edit.updateGroup(this, { bounds })`. The nodes inside do not move. */
+  setBounds(bounds: Bounds): boolean
 }
 
 export type SlotSide = 'input' | 'output'
@@ -729,4 +736,10 @@ export interface NodePresentation {
   readonly resizable?: boolean
   /** `false` stops the user collapsing the nodes. `comfy.edit` can still collapse one. */
   readonly collapsible?: boolean
+}
+
+/** What `updateGroup` changes. A field left out stays as it is. */
+export interface GroupPatch {
+  /** The group's rectangle in graph space, title bar included; width and height zero or more. */
+  readonly bounds?: Bounds
 }

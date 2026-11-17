@@ -7,6 +7,7 @@ import { createAppLifecycle } from './appLifecycle'
 import type { EditHistory } from './edit/editRunner'
 import { createEdits } from './edit/edits'
 import { graphHandleMembers } from './edit/graphHandleMembers'
+import { groupHandleMembers } from './edit/groupHandleMembers'
 import { createGroupHandles } from './edit/groupHandles'
 import { nodeHandleMembers } from './edit/nodeHandleMembers'
 import { createSlotHandles } from './edit/slotHandles'
@@ -52,14 +53,19 @@ export function createComfyApi(services: ComfyApiServices): {
     nodeHandleMembers(handle, edit, nodes, slots)
   )
   const slots = createSlotHandles(handles, nodes, () => edit)
-  const groupsOf = createGroupHandles(handles, nodes)
+  const groups = createGroupHandles(handles, nodes, (handle) =>
+    groupHandleMembers(handle, edit)
+  )
+  const { groupsOf } = groups
   const scopes = createGraphScopes(handles, nodes, (resolveGraph) => ({
     groups: () => {
       const graph = resolveGraph()
       return graph && groupsOf(graph)
     }
   }))
-  const edit = createEdits(nodes, scopes, slots, () => services.history?.())
+  const edit = createEdits(nodes, scopes, slots, groups, () =>
+    services.history?.()
+  )
   const definitions = createDefRegistry(nodes)
 
   const comfy: Comfy = Object.freeze({

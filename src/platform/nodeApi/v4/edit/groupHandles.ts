@@ -14,45 +14,87 @@ import type { GroupHandle } from '@/platform/nodeApi/v4/types'
 /** The one handle for each group of a graph, in draw order. */
 export type GroupsOf = (graph: LGraph) => readonly GroupHandle[]
 
+export interface GroupHandles {
+  readonly groupsOf: GroupsOf
+  /**
+   * For a group handle made here, what finds its group in the handle's own
+   * graph and document while the group is there; `undefined` for anything else.
+   */
+  locator(value: unknown): (() => LiveGroup | undefined) | undefined
+}
+
+interface LiveGroup {
+  readonly graph: LGraph
+  readonly group: LGraphGroup
+}
+
+/** The group handle members other modules own: its edit methods. */
+export type GroupHandleMembers = Pick<GroupHandle, 'setBounds'>
+
 export function createGroupHandles(
   handles: DocumentHandles,
-  nodes: NodeHandles
-): GroupsOf {
+  nodes: NodeHandles,
+  membersFor: (handle: object) => GroupHandleMembers
+): GroupHandles {
   const cache = handles.createCache<GroupHandle>(
     (graph, id) => groupIn(graph, id) !== undefined,
     (graph, id) => isReissuable(id, graph.state.lastGroupId)
   )
-  return (graph) =>
-    Object.freeze(
-      graph.groups.map((group) =>
-        cache.handleFor(graph, String(group.id), (resolveGraph) =>
-          groupHandle(String(group.id), resolveGraph, nodes)
-        )
-      )
-    )
+  const liveGroups = new WeakMap<object, () => LiveGroup | undefined>()
+
+  function handleFor(graph: LGraph, id: string): GroupHandle {
+    return cache.handleFor(graph, id, (resolveGraph) => {
+      const locate = locator(resolveGraph, id)
+      const reads = groupReads(id, locate, nodes)
+      const handle = Object.freeze(Object.assign(reads, membersFor(reads)))
+      liveGroups.set(handle, locate)
+      return handle
+    })
+  }
+
+  return {
+    groupsOf: (graph) =>
+      Object.freeze(
+        graph.groups.map((group) => handleFor(graph, String(group.id)))
+      ),
+    locator: (value) =>
+      typeof value === 'object' && value !== null
+        ? liveGroups.get(value)
+        : undefined
+  }
 }
 
 function groupIn(graph: LGraph, id: string): LGraphGroup | undefined {
   return graph.groups.find((group) => String(group.id) === id)
 }
 
-function groupHandle(
-  id: string,
+function locator(
   resolveGraph: GraphResolver,
+  id: string
+): () => LiveGroup | undefined {
+  return () => {
+    const graph = resolveGraph()
+    const group = graph && groupIn(graph, id)
+    return graph && group ? { graph, group } : undefined
+  }
+}
+
+function groupReads(
+  id: string,
+  locate: () => LiveGroup | undefined,
   nodes: NodeHandles
-): GroupHandle {
+) {
   function readLive<T>(
     read: (group: LGraphGroup, graph: LGraph) => T
   ): T | undefined {
-    const graph = resolveGraph()
-    const group = graph && groupIn(graph, id)
-    return graph && group ? read(group, graph) : undefined
+    const live = locate()
+    return live ? read(live.group, live.graph) : undefined
   }
 
-  return Object.freeze({
+  return {
     id,
     get isDeleted() {
-      return !readLive(() => true)
+      return !locate()
     },
     getTitle: () => readLive((group) => group.title),
     getColor: () => readLive((group) => group.color),
@@ -69,5 +111,5 @@ function groupHandle(
           return containsCentre(area, [x, y, width, height])
         })
       })
-  })
+  }
 }

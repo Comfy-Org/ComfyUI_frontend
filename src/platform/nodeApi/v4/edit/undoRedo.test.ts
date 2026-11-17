@@ -2,7 +2,11 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw, reactive } from 'vue'
 
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -152,6 +156,58 @@ describe('edits through the real change tracker', () => {
 
     await tracker.redo()
     expect(app.rootGraph.nodes).toHaveLength(before + 1)
+  })
+
+  function trackedGroup() {
+    const group = new LGraphGroup('Tracked')
+    group.pos = [0, 0]
+    group.size = [400, 300]
+    app.rootGraph.add(group)
+    tracker.reset(fromAny(app.rootGraph.serialize()))
+    const [handle] = comfy.graph.groups() ?? []
+    assert(handle)
+    return handle
+  }
+
+  function groupBoundsNow() {
+    return app.rootGraph.groups.map((group) => Array.from(group.boundingRect))
+  }
+
+  it('makes moving and resizing a group one undo step that undo reverses and redo repeats, keeping its handle', async () => {
+    const handle = trackedGroup()
+
+    expect(handle.setBounds({ x: 30, y: 40, width: 500, height: 350 })).toBe(
+      true
+    )
+    expect(tracker.undoQueue).toHaveLength(1)
+    expect(workflow.isModified).toBe(true)
+
+    await tracker.undo()
+    expect(groupBoundsNow()).toEqual([[0, 0, 400, 300]])
+    expect(handle.getBounds()).toEqual({ x: 0, y: 0, width: 400, height: 300 })
+    expect(comfy.graph.groups()?.[0]).toBe(handle)
+    expect(workflow.isModified).toBe(false)
+
+    await tracker.redo()
+    expect(groupBoundsNow()).toEqual([[30, 40, 500, 350]])
+    expect(handle.isDeleted).toBe(false)
+  })
+
+  it('makes a group resize and the node moves around it one step inside a batch', async () => {
+    const handle = trackedGroup()
+    const sourceBefore = handleOf(source).getPosition()
+
+    comfy.edit.batch(() => {
+      handleOf(source).setPosition({ x: 600, y: 700 })
+      handle.setBounds({ x: 550, y: 600, width: 400, height: 300 })
+    })
+
+    expect(tracker.undoQueue).toHaveLength(1)
+
+    await tracker.undo()
+    expect(groupBoundsNow()).toEqual([[0, 0, 400, 300]])
+    expect(handleOf(source).getPosition()).toEqual(sourceBefore)
+    expect(sourceBefore).not.toEqual({ x: 600, y: 700 })
   })
 
   it('adds no step for an edit that changes nothing the workflow saves', () => {
