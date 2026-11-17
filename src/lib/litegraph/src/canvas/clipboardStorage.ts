@@ -5,8 +5,7 @@ import { createUuidv4 } from '@/utils/uuid'
 export const CANVAS_CLIPBOARD_KEY = 'litegrapheditor_clipboard'
 export const CANVAS_CLIPBOARD_ID_KEY = 'litegrapheditor_clipboard_id'
 
-/** True for storage failures nobody can act on: the store is full, or blocked. */
-export function isExpectedStorageError(error: unknown): boolean {
+function isExpectedStorageError(error: unknown): boolean {
   return (
     error instanceof DOMException &&
     (error.name === 'QuotaExceededError' || error.name === 'SecurityError')
@@ -21,8 +20,7 @@ function removeQuietly(key: string): void {
   }
 }
 
-/** Drops the copy stamp, leaving any cached payload in place. Never throws. */
-export function discardClipboardId(): void {
+function discardClipboardId(): void {
   removeQuietly(CANVAS_CLIPBOARD_ID_KEY)
 }
 

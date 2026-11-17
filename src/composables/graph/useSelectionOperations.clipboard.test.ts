@@ -53,10 +53,13 @@ describe('selection clipboard commands', () => {
   })
 
   it('confirms a stored copy', () => {
-    createSelection()
+    const { node } = createSelection()
 
     useSelectionOperations().copySelection()
 
+    expect(
+      JSON.parse(localStorage.getItem(CANVAS_CLIPBOARD_KEY) ?? 'null')
+    ).toMatchObject({ nodes: [{ id: Number(node.id), type: node.type }] })
     expect(useToast().toasts).toMatchObject([{ kind: 'success' }])
   })
 
@@ -80,7 +83,8 @@ describe('selection clipboard commands', () => {
   })
 
   it('leaves the previous clipboard copy intact when duplicating', () => {
-    createSelection()
+    const { graph, node, canvas } = createSelection()
+    node.title = 'Current selection'
     localStorage.setItem(CANVAS_CLIPBOARD_KEY, '{"nodes":[]}')
     localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, 'previous-copy')
 
@@ -88,5 +92,12 @@ describe('selection clipboard commands', () => {
 
     expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe('{"nodes":[]}')
     expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBe('previous-copy')
+    expect(
+      graph.nodes.map((item) => ({ id: item.id, title: item.title }))
+    ).toEqual([
+      { id: '1', title: 'Current selection' },
+      { id: '2', title: 'Current selection' }
+    ])
+    expect([...canvas.selectedItems]).toEqual([graph.nodes[1]])
   })
 })

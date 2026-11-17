@@ -21,17 +21,6 @@ export function useSelectionOperations() {
   const titleEditorStore = useTitleEditorStore()
   const workflowStore = useWorkflowStore()
 
-  function copySelectionToStorage(): boolean {
-    const stored = writeClipboardStorage(
-      JSON.stringify(useApp().canvas._serializeItems())
-    )
-    if (!stored)
-      toast.error(t('g.error'), {
-        description: t('clipboard.errorMessage')
-      })
-    return stored
-  }
-
   const copySelection = () => {
     const canvas = useApp().canvas
     if (canvas.selectedItems.size === 0) {
@@ -42,7 +31,12 @@ export function useSelectionOperations() {
       return
     }
 
-    if (!copySelectionToStorage()) return
+    if (!writeClipboardStorage(JSON.stringify(canvas._serializeItems()))) {
+      toast.error(t('g.error'), {
+        description: t('clipboard.errorMessage')
+      })
+      return
+    }
     toast.success(t('g.copied'), {
       description: t('g.itemsCopiedToClipboard'),
       duration: 2000

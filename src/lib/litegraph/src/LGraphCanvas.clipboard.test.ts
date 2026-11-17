@@ -832,26 +832,6 @@ describe('copyToClipboard', () => {
     )
   })
 
-  it('does not report quota exhaustion from best-effort clipboard storage', () => {
-    const rootGraph = createTestRootGraph()
-    const node = createTestNode(rootGraph)
-    const canvas = createCanvas(rootGraph)
-    const storageError = new DOMException(
-      'The quota has been exceeded.',
-      'QuotaExceededError'
-    )
-    const setItem = vi
-      .spyOn(window.localStorage, 'setItem')
-      .mockImplementation(() => {
-        throw storageError
-      })
-    const copied = canvas.copyToClipboard([node])
-    setItem.mockRestore()
-
-    expect(copied).toContain('"nodes"')
-    expect(telemetryMocks.reportError).not.toHaveBeenCalled()
-  })
-
   it('reports unexpected failures from clipboard storage', () => {
     const rootGraph = createTestRootGraph()
     const node = createTestNode(rootGraph)
@@ -905,9 +885,10 @@ describe('copyToClipboard when storage is full', () => {
 
   it('keeps the payload when only the copy stamp cannot be written', () => {
     const rootGraph = createTestRootGraph()
-    const node = createTestNode(rootGraph)
+    const previous = createTestNode(rootGraph)
+    const current = createTestNode(rootGraph)
     const canvas = createCanvas(rootGraph)
-    canvas.copyToClipboard([node])
+    canvas.copyToClipboard([previous])
     const setItem = vi
       .spyOn(window.localStorage, 'setItem')
       .mockImplementation((key, value) => {
@@ -921,8 +902,11 @@ describe('copyToClipboard when storage is full', () => {
       })
 
     try {
-      const copied = canvas.copyToClipboard([node])
+      const copied = canvas.copyToClipboard([current])
 
+      expect(JSON.parse(copied)).toMatchObject({
+        nodes: [{ id: Number(current.id), type: current.type }]
+      })
       expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(copied)
       expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBeNull()
       expect(canvas._pasteFromClipboard()).toBeDefined()
