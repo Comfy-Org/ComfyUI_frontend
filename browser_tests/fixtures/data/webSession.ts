@@ -71,6 +71,11 @@ export const WORKSPACE_ACCESS_DENIED: ErrorResponse = {
   message: 'You no longer have access to this workspace'
 }
 
+export const NO_WEB_SESSION: ErrorResponse = {
+  code: 'no_session',
+  message: 'No session'
+}
+
 export const SESSION_REVOKED: ErrorResponse = {
   code: 'session_revoked',
   message: 'This session was revoked'
