@@ -1949,7 +1949,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 以及 mp4/mov 輸出；Seedance 2.5 Draft 可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪為 1080p 或 4k 成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 用於速度最佳化；Mini 提供最快且成本最低的生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -1994,7 +1994,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 以及 mp4/mov 輸出；Seedance 2.5 Draft 可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪為 1080p 或 4k 成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 用於速度最佳化；Mini 提供最快且成本最低的生成。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -2047,7 +2047,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 以及 mp4/mov 輸出；Seedance 2.5 Draft 可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪為 1080p 或 4k 成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 用於速度最佳化；Mini 提供最快且成本最低的生成。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -2104,7 +2104,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 以及 mp4/mov 輸出；Seedance 2.5 Draft 可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪為 1080p 或 4k 成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 用於速度最佳化；Mini 提供最快且成本最低的生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -4568,7 +4568,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "建立 camera_info。模式「orbit」會以環繞目標的偏航／俯仰／距離進行瞄準；「look_at」會將相機放置於世界座標位置。座標為檢視器的世界空間（右手座標系，Y 軸向上）。",
+    "description": "建立 camera_info。'orbit' 模式會以目標為中心，使用 yaw/pitch/distance 定位；'look_at' 則將相機置於世界座標位置。座標使用檢視者的世界空間（右手座標系、Y 軸向上）；若已連接 mesh，則使用該 mesh 的座標框架，因此相同設定可框取任何 mesh。",
     "display_name": "建立相機資訊",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4581,10 @@
       "fov": {
         "name": "視野",
         "tooltip": "垂直視野角度（度）。"
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "框取此 mesh：位置、目標與距離皆以其邊界框中心為基準，並以其包圍球直徑為單位，因此相同設定可框取任何 mesh。"
       },
       "mode": {
         "name": "模式",
@@ -19341,7 +19345,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "透過OpenRouter產生文字回應。路由至xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar等熱門模型。",
+    "description": "透過 OpenRouter 產生文字回應。可路由至精選的熱門模型，包括 Anthropic（Claude）、OpenAI（GPT）、Google（Gemini）、xAI（Grok）、Meta（Muse）、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）與 Perplexity Sonar。",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30309,40 @@
       },
       "video": {
         "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "採用 Bonneel et al. 2015 的時間一致性處理，並加入防止漂移的保真項：每個影格會保留自身細節，同時沿著引導影片的光流跟隨相鄰影格。",
+    "display_name": "影片去閃爍",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "bidirectional 會平均正向與反向處理，可避免效果落後於動作，但耗時加倍。"
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "用於跟隨動作的穩定來源影格，可使用任何解析度。預設為 images，此設定去除的閃爍較少。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "有閃爍的影格，例如逐格放大或處理過的影片。"
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "各影格跟隨相鄰影格的強度。數值越高，去除的閃爍越多，也會更柔化細節。"
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "影格與其經運動補償的相鄰影格之間，超過此值的變化會視為真實變化，因此較少被平滑化。0 會對所有變化採用相同的平滑處理。"
       }
     },
     "outputs": {

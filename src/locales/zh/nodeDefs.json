@@ -1949,7 +1949,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频、4k 以及 mp4/mov 输出；Seedance 2.5 Draft：用于快速生成 480p 预览，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 节点中渲染 1080p 或 4k 最终视频；Seedance 2.0：提供最高质量和 4k；Fast：针对速度优化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频、4k 以及 mp4/mov 输出；Seedance 2.5 Draft：用于快速 480p 预览，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 节点中渲染为 1080p 或 4k 成片；Seedance 2.5 Flash：支持最长 30 秒的 480p 和 720p 视频；Seedance 2.0：提供最高质量和 4k；Fast：针对速度优化；Mini：生成速度最快、成本最低。"
       },
       "model_duration": {
         "name": "时长"
@@ -1994,7 +1994,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频、4k 以及 mp4/mov 输出；Seedance 2.5 Draft：用于快速生成 480p 预览，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 节点中渲染 1080p 或 4k 最终视频；Seedance 2.0：提供最高质量和 4k；Fast：针对速度优化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频、4k 以及 mp4/mov 输出；Seedance 2.5 Draft：用于快速 480p 预览，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 节点中渲染为 1080p 或 4k 成片；Seedance 2.5 Flash：支持最长 30 秒的 480p 和 720p 视频；Seedance 2.0：提供最高质量和 4k；Fast：针对速度优化；Mini：生成速度最快、成本最低。"
       },
       "model_auto_downscale": {
         "name": "自动降采样"
@@ -2047,7 +2047,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频、4k 以及 mp4/mov 输出；Seedance 2.5 Draft：用于快速生成 480p 预览，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 节点中渲染 1080p 或 4k 最终视频；Seedance 2.0：提供最高质量和 4k；Fast：针对速度优化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频、4k 以及 mp4/mov 输出；Seedance 2.5 Draft：用于快速 480p 预览，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 节点中渲染为 1080p 或 4k 成片；Seedance 2.5 Flash：支持最长 30 秒的 480p 和 720p 视频；Seedance 2.0：提供最高质量和 4k；Fast：针对速度优化；Mini：生成速度最快、成本最低。"
       },
       "model_auto_downscale": {
         "name": "自动降采样"
@@ -2104,7 +2104,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频、4k 以及 mp4/mov 输出；Seedance 2.5 Draft：用于快速生成 480p 预览，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 节点中渲染 1080p 或 4k 最终视频；Seedance 2.0：提供最高质量和 4k；Fast：针对速度优化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5：最新模型，支持最长 30 秒的视频、4k 以及 mp4/mov 输出；Seedance 2.5 Draft：用于快速 480p 预览，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 节点中渲染为 1080p 或 4k 成片；Seedance 2.5 Flash：支持最长 30 秒的 480p 和 720p 视频；Seedance 2.0：提供最高质量和 4k；Fast：针对速度优化；Mini：生成速度最快、成本最低。"
       },
       "model_duration": {
         "name": "时长"
@@ -4568,7 +4568,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "构建 camera_info。模式“orbit”使用围绕目标的 yaw/pitch/distance 进行对准；“look_at”将相机放置在世界坐标位置。坐标采用查看器的世界空间（右手系，Y 轴向上）。",
+    "description": "构建 camera_info。'orbit' 模式会以目标为中心，按偏航角、俯仰角和距离定位；'look_at' 模式会将相机放置在世界坐标位置。坐标采用查看者的世界空间（右手坐标系、Y 轴向上）；若连接了网格，则采用该网格的坐标系，因此相同设置可框选任意网格。",
     "display_name": "创建相机信息",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4581,10 @@
       "fov": {
         "name": "视场角",
         "tooltip": "垂直视场角，单位为度。"
+      },
+      "mesh": {
+        "name": "网格",
+        "tooltip": "框选此网格：位置、目标和距离均以其包围盒中心为基准，并以其包围球直径为单位，因此相同设置可框选任意网格。"
       },
       "mode": {
         "name": "模式",
@@ -19341,7 +19345,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "通过OpenRouter生成文本回复。路由到xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar等精选热门模型。",
+    "description": "通过 OpenRouter 生成文本回复。可路由至精选的热门模型，包括 Anthropic（Claude）、OpenAI（GPT）、Google（Gemini）、xAI（Grok）、Meta（Muse）、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）和 Perplexity Sonar。",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30309,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "采用 Bonneel 等人于 2015 年提出的时间一致性方法，并加入防漂移保真项：每帧在沿引导视频光流跟随相邻帧的同时，保留自身细节。",
+    "display_name": "视频去闪烁",
+    "inputs": {
+      "direction": {
+        "name": "方向",
+        "tooltip": "bidirectional 会对正向和反向处理结果取平均，可避免运动后方出现拖影，但耗时会增加一倍。"
+      },
+      "guide": {
+        "name": "引导",
+        "tooltip": "用于跟随运动的稳定源帧，可使用任意分辨率。默认为 images，此时去除的闪烁较少。"
+      },
+      "images": {
+        "name": "图像",
+        "tooltip": "存在闪烁的帧，例如逐帧放大或处理的视频。"
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "强度",
+        "tooltip": "每帧跟随相邻帧的强度。值越高，去除的闪烁越多，同时会弱化更多精细细节。"
+      },
+      "threshold": {
+        "name": "阈值",
+        "tooltip": "一帧与其经运动补偿后的相邻帧之间大于此值的变化会被视为真实变化，平滑程度较低。设为 0 时，所有变化都会以相同方式平滑。"
       }
     },
     "outputs": {

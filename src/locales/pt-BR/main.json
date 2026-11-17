@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "Abrindo o checkout…",
     "openingDetail": "Isso leva alguns segundos.",
+    "openingTabTitle": "Abrindo checkout · Comfy",
     "signInAgain": "Faça login novamente para abrir o faturamento.",
     "superseded": "Sua conta ou espaço de trabalho mudou enquanto o faturamento estava sendo aberto. Tente novamente."
   },
@@ -4299,10 +4300,11 @@
     },
     "deploySetup": "Implante sua configuração no Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Isso cria uma implantação da sua configuração no Comfy Cloud. Você a gerencia pela Comfy Platform.",
-      "pointApi": "Chame-o a partir do seu produto como uma API com escalonamento automático",
-      "pointGpu": "Trabalhe no ComfyUI usando a GPU que você escolher",
-      "pointNodes": "Traga seus nós personalizados e modelos"
+      "body": "Implante sua configuração local no Comfy Cloud e use-a no ComfyUI ou chame-a como uma API com escalonamento automático.",
+      "pointGpu": "Execute em GPUs poderosas na nuvem",
+      "pointNodes": "Traga seus nós personalizados e modelos",
+      "pointPricing": "Pague apenas pelos segundos de GPU usados pelos seus trabalhos e pelo armazenamento da sua compilação",
+      "title": "Execute seus fluxos de trabalho no Comfy Cloud"
     },
     "deployWithAgent": "Implantar com seu agente",
     "desktopTransferFailed": "Não foi possível transferir seu fluxo de trabalho. Clique novamente em Abrir no Comfy Cloud no Desktop.",
@@ -4392,6 +4394,7 @@
       "paused": "Pausado",
       "paymentDue": "Pagamento pendente"
     },
+    "purchasesStopped": "A compra de créditos não está disponível no momento",
     "switchWorkspace": "Alternar espaço de trabalho",
     "topUpCredits": "Adicionar créditos"
   },
@@ -6359,6 +6362,7 @@
         }
       },
       "loadError": "Não foi possível carregar seu plano.",
+      "localLoadError": "Não foi possível carregar seus detalhes de cobrança. Verifique sua conexão e tente novamente.",
       "plan": {
         "actions": {
           "choosePlan": "Escolher um plano",
@@ -6382,6 +6386,7 @@
           "freeRunsLeft": "Você tem {remaining} de {total} execuções gratuitas restantes. Assine para continuar executando workflows depois disso.",
           "freeRunsUsed": "Você usou todas as {total} execuções gratuitas. Assine para continuar executando workflows.",
           "line": "Assine para executar workflows na Nuvem.",
+          "localLine": "Assine para receber créditos mensais. Você também pode adicionar créditos a qualquer momento.",
           "title": "Este espaço de trabalho não tem um plano ativo"
         },
         "paused": "Pausado. O pagamento da renovação não foi confirmado.",

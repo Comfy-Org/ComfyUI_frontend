@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "Abriendo el pago…",
     "openingDetail": "Esto tarda unos segundos.",
+    "openingTabTitle": "Abriendo el pago · Comfy",
     "signInAgain": "Inicia sesión de nuevo para abrir la facturación.",
     "superseded": "Tu cuenta o espacio de trabajo cambió mientras se abría la facturación. Inténtalo de nuevo."
   },
@@ -4299,10 +4300,11 @@
     },
     "deploySetup": "Implementa tu configuración en Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Esto crea un despliegue de tu configuración en Comfy Cloud. Lo administras desde Comfy Platform.",
-      "pointApi": "Llámalo desde tu producto como una API con escalado automático",
-      "pointGpu": "Trabaja en ComfyUI con la GPU que elijas",
-      "pointNodes": "Trae tus nodos y modelos personalizados"
+      "body": "Implementa tu configuración local en Comfy Cloud y úsala en ComfyUI o llámala como una API con escalado automático.",
+      "pointGpu": "Ejecuta en potentes GPU en la nube",
+      "pointNodes": "Trae tus nodos y modelos personalizados",
+      "pointPricing": "Paga solo por los segundos de GPU que usen tus trabajos y por el almacenamiento de tu compilación",
+      "title": "Ejecuta tus flujos de trabajo en Comfy Cloud"
     },
     "deployWithAgent": "Implementar con tu agente",
     "desktopTransferFailed": "No se pudo transferir tu flujo de trabajo. Haz clic en Abrir en Comfy Cloud en Desktop de nuevo.",
@@ -4392,6 +4394,7 @@
       "paused": "En pausa",
       "paymentDue": "Pago pendiente"
     },
+    "purchasesStopped": "La compra de créditos no está disponible en este momento",
     "switchWorkspace": "Cambiar de espacio de trabajo",
     "topUpCredits": "Recargar créditos"
   },
@@ -6359,6 +6362,7 @@
         }
       },
       "loadError": "No pudimos cargar tu plan.",
+      "localLoadError": "No pudimos cargar tus datos de facturación. Comprueba tu conexión e inténtalo de nuevo.",
       "plan": {
         "actions": {
           "choosePlan": "Elegir un plan",
@@ -6382,6 +6386,7 @@
           "freeRunsLeft": "Te quedan {remaining} de {total} ejecuciones gratuitas. Suscríbete para seguir ejecutando flujos de trabajo después.",
           "freeRunsUsed": "Has usado las {total} ejecuciones gratuitas. Suscríbete para seguir ejecutando flujos de trabajo.",
           "line": "Suscríbete para ejecutar flujos de trabajo en Cloud.",
+          "localLine": "Suscríbete para obtener créditos mensuales. También puedes añadir créditos en cualquier momento.",
           "title": "Este espacio de trabajo no tiene un plan activo"
         },
         "paused": "En pausa. El pago de renovación no se procesó.",

@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "Ödeme işlemi açılıyor…",
     "openingDetail": "Bu işlem birkaç saniye sürer.",
+    "openingTabTitle": "Ödeme sayfası açılıyor · Comfy",
     "signInAgain": "Faturalandırmayı açmak için yeniden oturum açın.",
     "superseded": "Faturalandırma açılırken hesabınız veya çalışma alanınız değişti. Yeniden deneyin."
   },
@@ -4299,10 +4300,11 @@
     },
     "deploySetup": "Kurulumunuzu Comfy Cloud'a dağıtın",
     "deploySetupDialog": {
-      "body": "Bu, kurulumunuzu Comfy Cloud'a dağıtır. Bunu Comfy Platform'dan yönetirsiniz.",
-      "pointApi": "Ürününüzden otomatik ölçeklenen bir API olarak çağırın",
-      "pointGpu": "Seçtiğiniz GPU'da ComfyUI ile çalışın",
-      "pointNodes": "Özel düğümlerinizi ve modellerinizi getirin"
+      "body": "Yerel kurulumunuzu Comfy Cloud'a dağıtın, ardından ComfyUI içinde kullanın veya otomatik ölçeklenen bir API olarak çağırın.",
+      "pointGpu": "Güçlü bulut GPU'larında çalıştırın",
+      "pointNodes": "Özel düğümlerinizi ve modellerinizi getirin",
+      "pointPricing": "Yalnızca işlerinizin kullandığı GPU saniyeleri ve derlemenizin depolama alanı için ödeme yapın",
+      "title": "İş akışlarınızı Comfy Cloud'da çalıştırın"
     },
     "deployWithAgent": "Aracınızla dağıtın",
     "desktopTransferFailed": "İş akışınız aktarılamadı. Desktop'ta Comfy Cloud'da Aç'a tekrar tıklayın.",
@@ -4392,6 +4394,7 @@
       "paused": "Duraklatıldı",
       "paymentDue": "Ödeme bekliyor"
     },
+    "purchasesStopped": "Şu anda kredi satın alma kullanılamıyor",
     "switchWorkspace": "Çalışma alanını değiştir",
     "topUpCredits": "Kredi yükle"
   },
@@ -6359,6 +6362,7 @@
         }
       },
       "loadError": "Planınız yüklenemedi.",
+      "localLoadError": "Fatura bilgilerinizi yükleyemedik. Bağlantınızı kontrol edip tekrar deneyin.",
       "plan": {
         "actions": {
           "choosePlan": "Plan seçin",
@@ -6382,6 +6386,7 @@
           "freeRunsLeft": "{total} ücretsiz çalıştırmadan {remaining} hakkınız kaldı. Sonrasında iş akışlarını çalıştırmaya devam etmek için abone olun.",
           "freeRunsUsed": "{total} ücretsiz çalıştırmanın tamamını kullandınız. İş akışlarını çalıştırmaya devam etmek için abone olun.",
           "line": "Cloud'da iş akışlarını çalıştırmak için abone olun.",
+          "localLine": "Aylık krediler için abone olun. İstediğiniz zaman kredi de ekleyebilirsiniz.",
           "title": "Bu çalışma alanının etkin bir planı yok"
         },
         "paused": "Duraklatıldı. Yenileme ödemesi gerçekleşmedi.",

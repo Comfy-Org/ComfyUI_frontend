@@ -1949,7 +1949,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos, saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -1994,7 +1994,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos, saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2047,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos, saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2104,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos, saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -4568,7 +4568,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Crie um camera_info. O modo 'orbit' mira com guinada/inclinação/distância ao redor do alvo; 'look_at' posiciona a câmera na posição do mundo. As coordenadas pertencem ao espaço do mundo do visualizador (destro, Y para cima).",
+    "description": "Cria um camera_info. O modo 'orbit' aponta usando guinada/inclinação/distância ao redor do alvo; 'look_at' posiciona a câmera na posição global. As coordenadas correspondem ao espaço global do visualizador (destro, eixo Y para cima) ou, com uma malha conectada, ao referencial dessa malha, para que as mesmas configurações enquadrem qualquer malha.",
     "display_name": "Criar Informações da Câmera",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4581,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "Campo de visão vertical em graus."
+      },
+      "mesh": {
+        "name": "malha",
+        "tooltip": "Enquadra esta malha: as posições, o alvo e a distância são contados a partir do centro da caixa delimitadora, em unidades do diâmetro da esfera delimitadora, para que as mesmas configurações enquadrem qualquer malha."
       },
       "mode": {
         "name": "modo",
@@ -19341,7 +19345,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "Gere respostas de texto através do OpenRouter. Direciona para um conjunto selecionado de modelos populares da xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
+    "description": "Gera respostas de texto por meio do OpenRouter. Encaminha para um conjunto selecionado de modelos populares da Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30309,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Consistência temporal segundo Bonneel et al. 2015, com um termo de fidelidade contra deriva: cada quadro mantém seus próprios detalhes enquanto acompanha os quadros vizinhos ao longo do fluxo óptico do vídeo-guia.",
+    "display_name": "Redução de cintilação de vídeo",
+    "inputs": {
+      "direction": {
+        "name": "direção",
+        "tooltip": "bidirectional calcula a média de uma passagem para frente e outra para trás, o que evita o atraso em relação ao movimento, ao custo de dobrar o tempo."
+      },
+      "guide": {
+        "name": "guia",
+        "tooltip": "Quadros-fonte estáveis cujo movimento deve ser seguido, em qualquer resolução. Por padrão, usa images, o que remove menos cintilação."
+      },
+      "images": {
+        "name": "imagens",
+        "tooltip": "Quadros com cintilação, por exemplo, um vídeo ampliado ou processado quadro a quadro."
+      },
+      "optical_flow": {
+        "name": "fluxo_óptico"
+      },
+      "strength": {
+        "name": "intensidade",
+        "tooltip": "O quanto cada quadro acompanha os vizinhos. Valores mais altos removem mais cintilação e suavizam mais os detalhes finos."
+      },
+      "threshold": {
+        "name": "limiar",
+        "tooltip": "Alterações entre um quadro e seu vizinho compensado por movimento que sejam maiores que este valor são consideradas reais e são suavizadas menos. 0 suaviza todas as alterações da mesma forma."
       }
     },
     "outputs": {

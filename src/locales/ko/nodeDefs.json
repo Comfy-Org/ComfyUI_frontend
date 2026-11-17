@@ -1949,7 +1949,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델에는 Seedance 2.5를 사용하며, 최대 30초 영상, 4k 및 mp4/mov 출력을 지원합니다. Seedance 2.5 Draft는 빠른 480p 미리보기용이며, 해당 draft_task_id는 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. Seedance 2.5 Flash는 최대 30초의 480p 및 720p 영상용입니다. Seedance 2.0은 최고 품질과 4k용입니다. Fast는 속도 최적화용이며, Mini는 가장 빠르고 비용이 가장 낮은 생성용입니다."
       },
       "model_duration": {
         "name": "duration"
@@ -1994,7 +1994,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델에는 Seedance 2.5를 사용하며, 최대 30초 영상, 4k 및 mp4/mov 출력을 지원합니다. Seedance 2.5 Draft는 빠른 480p 미리보기용이며, 해당 draft_task_id는 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. Seedance 2.5 Flash는 최대 30초의 480p 및 720p 영상용입니다. Seedance 2.0은 최고 품질과 4k용입니다. Fast는 속도 최적화용이며, Mini는 가장 빠르고 비용이 가장 낮은 생성용입니다."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2047,7 @@
       },
       "model": {
         "name": "모델",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델에는 Seedance 2.5를 사용하며, 최대 30초 영상, 4k 및 mp4/mov 출력을 지원합니다. Seedance 2.5 Draft는 빠른 480p 미리보기용이며, 해당 draft_task_id는 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. Seedance 2.5 Flash는 최대 30초의 480p 및 720p 영상용입니다. Seedance 2.0은 최고 품질과 4k용입니다. Fast는 속도 최적화용이며, Mini는 가장 빠르고 비용이 가장 낮은 생성용입니다."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2104,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델에는 Seedance 2.5를 사용하며, 최대 30초 영상, 4k 및 mp4/mov 출력을 지원합니다. Seedance 2.5 Draft는 빠른 480p 미리보기용이며, 해당 draft_task_id는 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. Seedance 2.5 Flash는 최대 30초의 480p 및 720p 영상용입니다. Seedance 2.0은 최고 품질과 4k용입니다. Fast는 속도 최적화용이며, Mini는 가장 빠르고 비용이 가장 낮은 생성용입니다."
       },
       "model_duration": {
         "name": "duration"
@@ -4568,7 +4568,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "camera_info를 생성합니다. 'orbit' 모드는 대상 주위에서 yaw/pitch/distance로 조준하며, 'look_at' 모드는 월드 위치에 카메라를 배치합니다. 좌표는 뷰어의 월드 공간입니다(right-handed,Y-up).",
+    "description": "camera_info를 생성합니다. 'orbit' 모드는 대상을 중심으로 yaw/pitch/distance를 사용해 조준하며, 'look_at'는 카메라를 월드 위치에 배치합니다. 좌표는 뷰어의 월드 공간(오른손 좌표계, Y-up)을 기준으로 하며, mesh가 연결된 경우에는 해당 메시의 프레임을 기준으로 하므로 같은 설정으로 어떤 메시든 프레이밍할 수 있습니다.",
     "display_name": "카메라 정보 생성",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4581,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "수직 시야각(도 단위)."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "이 메시를 프레이밍합니다. 위치, 대상 및 거리는 바운딩 박스 중심을 기준으로 바운딩 구 지름 단위로 계산되므로, 같은 설정으로 어떤 메시든 프레이밍할 수 있습니다."
       },
       "mode": {
         "name": "mode",
@@ -19341,7 +19345,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. xAI, DeepSeek, Qwen, Mistral, Z.AI(GLM), Moonshot(Kimi), Perplexity Sonar 등에서 엄선된 인기 모델로 라우팅됩니다.",
+    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), Perplexity Sonar의 인기 모델 중 엄선된 세트로 라우팅합니다.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30309,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Bonneel et al. 2015에 따른 시간적 일관성을 적용하며, 드리프트를 억제하는 충실도 항을 포함합니다. 각 프레임은 가이드 비디오의 광학 흐름을 따라 이웃 프레임을 따르면서도 자체 세부 정보를 유지합니다.",
+    "display_name": "비디오 플리커 제거",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "bidirectional은 정방향과 역방향 패스를 평균내므로, 처리 시간은 두 배가 되지만 움직임 뒤로 끌리는 현상을 방지합니다."
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "움직임을 따를 안정적인 소스 프레임이며, 해상도는 관계없습니다. 기본값은 images이며, 이 경우 플리커가 덜 제거됩니다."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "플리커링이 있는 프레임입니다. 예: 프레임별로 업스케일하거나 처리한 비디오."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "각 프레임이 이웃 프레임을 따르는 정도입니다. 값이 높을수록 플리커가 더 많이 제거되고 미세한 세부 정보가 더 부드러워집니다."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "프레임과 모션 보정된 이웃 프레임 간의 변화가 이 값보다 크면 실제 변화로 간주되어 덜 부드럽게 처리됩니다. 0이면 모든 변화를 동일하게 부드럽게 처리합니다."
       }
     },
     "outputs": {
