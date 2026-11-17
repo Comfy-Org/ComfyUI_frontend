@@ -119,6 +119,13 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     finding A-10 for importers, applied to commands). A registration lasts for
     the page: neither store can remove one, and `extension.commands` cannot
     either.
+    A label is a string, or a function the command store calls each time it
+    shows the label (`ComfyCommandImpl.label` and `menubarLabel`), as for a
+    core command whose label follows state (3 stored sites: a toggle that
+    reads "Follow" or "Stop following"). The API hands the store a function
+    that calls the pack's through `callListener`, so a label that throws is
+    reported and shows the command's id, as does one that gives no string;
+    the store would otherwise throw into whatever rendered it.
 12. A key another command already holds by default stays with it. The
     keybinding store throws for that; the API catches that one call, adds the
     command without the key, and returns `false`, where a legacy extension
@@ -275,7 +282,6 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
 - Refuse a command whose key is taken. Whether a key is free depends on
   core and on the other packs installed, not on the pack's code, so the same
   pack would load on one install and throw on another.
-- Read a function label (`label: () => string`). No stored pack passes one.
 - Copy a backend payload with `structuredClone`. It copies a Blob in a
   browser but not in the test environment, which would leave the delivery of
   previews untested, and it turns a class instance into a plain object

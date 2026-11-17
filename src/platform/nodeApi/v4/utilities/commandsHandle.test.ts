@@ -1,5 +1,6 @@
 import { KeybindingImpl } from '@comfyorg/keybindings/keybinding'
 import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -53,6 +54,51 @@ describe('registering a command', () => {
     expect(useCommandStore().getCommand('MyPack.go').label).toBe('Go')
     expect(await commands.run('MyPack.go')).toBe(true)
     expect(run).toHaveBeenCalledOnce()
+  })
+
+  it('shows the text a function label gives each time the host reads it', () => {
+    let following = false
+    commandsApi().register(
+      command({ label: () => (following ? 'Stop following' : 'Follow') })
+    )
+    const registered = useCommandStore().getCommand('MyPack.go')
+
+    expect([registered.label, registered.menubarLabel]).toEqual([
+      'Follow',
+      'Follow'
+    ])
+    following = true
+    expect([registered.label, registered.menubarLabel]).toEqual([
+      'Stop following',
+      'Stop following'
+    ])
+  })
+
+  it('reports a function label that throws, and shows the id instead', () => {
+    const broken = new Error('pack label failed')
+    commandsApi().register(
+      command({
+        label: () => {
+          throw broken
+        }
+      })
+    )
+
+    expect(useCommandStore().getCommand('MyPack.go').label).toBe('MyPack.go')
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      broken,
+      expect.objectContaining({ tags: { event: 'commands.register' } })
+    )
+  })
+
+  it('shows the id for a function label that gives no string', () => {
+    const label = vi.fn(() => 7)
+    const commands = commandsApi()
+    Reflect.apply(commands.register, commands, [{ ...command(), label }])
+
+    expect(useCommandStore().getCommand('MyPack.go').label).toBe('MyPack.go')
+    expect(label).toHaveBeenCalledOnce()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('binds its key as a default, Cmd matching as Ctrl', () => {
@@ -168,9 +214,9 @@ describe('registering a command', () => {
       needs: 'id as a non-empty string no object inherits'
     },
     {
-      name: 'a label that is not text',
-      definition: { ...command(), label: () => 'Go' },
-      needs: 'label as a string'
+      name: 'a label that is neither text nor a function',
+      definition: { ...command(), label: 5 },
+      needs: 'label as a string or a function that returns one'
     },
     {
       name: 'no run function',
