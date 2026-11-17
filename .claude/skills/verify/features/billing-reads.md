@@ -26,7 +26,6 @@ Six billing reads populate every credits and plan surface in the app: status, ba
 Preconditions:
 
 - Doctor passes; signed in as an email-verified `@comfy.org` user.
-- `flags.unifiedCloudAuthEnabled` resolves `true`. Check it, do not assume it. Every rail is ANDed with it, and the anonymous remote config reports it `false` in all three environments.
 - A fresh tab per scenario.
 
 - **Baseline capture.** Load signed in. Open `Settings` → `Plan & Credits`. Record credits total, plan name, renewal date. Open `Activity` and record the first three rows. Save to `temp/verify-evidence/reads/reads.md`. This is the control for every comparison below.

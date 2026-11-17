@@ -50,7 +50,7 @@ Must be `true`. `false` means the dev server was started without a `.comfy.org` 
 **3. What is the backend actually serving?** The features proxy answers without auth:
 
 ```bash
-curl -s http://localhost:5173/api/features | python3 -m json.tool | grep -E 'unified_cloud_auth|billing_sdk|embedded_checked'
+curl -s http://localhost:5173/api/features | python3 -m json.tool | grep -E 'embedded_checked'
 ```
 
 Read the values, do not assume them.
@@ -99,8 +99,6 @@ flags.billingSdkRailEnabled
 ```js
 localStorage.setItem('ff:<flag>', 'true')
 ```
-
-Never set `ff:unified_cloud_auth`. It already resolves `true` for a signed-in user, and forcing it put the app into a reload loop.
 
 Precedence (`src/composables/useFeatureFlags.ts`): session override → dev override → `/api/features` remote config → websocket server feature.
 

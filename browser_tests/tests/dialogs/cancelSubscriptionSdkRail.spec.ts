@@ -52,9 +52,7 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
   const requests: Request[] = []
   let notFound = false
 
-  await page.route('**/api/features', (r) =>
-    r.fulfill(jsonRoute({ unified_cloud_auth: true }))
-  )
+  await page.route('**/api/features', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
