@@ -73,13 +73,17 @@ function createChromeSlot<TItem extends { readonly id: string }, THost>(
       }
       entries.value = [...entries.value, { item, host: toHost(item) }]
       let current: TItem | undefined = item
+      const updateMember = `${member}(...).update`
       return Object.freeze({
         update(changes: unknown) {
           if (!isObject(changes)) {
-            throw invalidArgument('update', 'the fields to change', changes)
+            throw invalidArgument(updateMember, 'the fields to change', changes)
           }
           if (!current) return false
-          current = readItem({ ...current, ...changes, id: item.id }, member)
+          current = readItem(
+            { ...current, ...changes, id: item.id },
+            updateMember
+          )
           replace(item.id, current)
           return true
         },

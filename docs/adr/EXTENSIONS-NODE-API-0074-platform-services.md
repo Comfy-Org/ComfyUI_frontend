@@ -75,9 +75,16 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    have no use and are left out. The default must suit the type: a boolean, a
    finite number, a string or a number for a `combo`, a string. An option is a
    string or `{ value, label }`, mapped to the store's `{ value, text }`;
-   `attrs` passes only the bounds given.
+   `attrs` passes only the bounds given. Beyond types and finite numbers the
+   API checks no more than the store and `extension.settings` do: a `min`
+   above `max`, a `step` that is not positive, or a `combo` whose default is
+   not among its options are passed on as given, for the settings panel to
+   show as it does for an extension. A stored pack declares a `combo` with
+   no options and the default `'unavailable'` when the machine has no disk to
+   list (`Crystools-MonitorOnly`); refusing it would stop that pack loading.
 7. `get(id)` (22 / 104) reads the store's value or default, for any id, core's
-   included. `set(id, value)` (7 / 11) takes a value JSON can hold, applies it
+   included. `set(id, value)` (7 / 11) takes a value JSON can hold for any
+   id, declared or not (the store saves an undeclared id too), applies it
    at once through the store and returns the store's promise: it rejects
    when the server cannot be reached and resolves when the server answers,
    even with a refusal, with the value applied but not saved. The store's
@@ -98,7 +105,12 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    `storeUserData` (as text, overwriting, without throwing), `deleteUserData`
    and `listUserDataFullInfo`. A name is a relative path in the user's data,
    refused if it is absolute or has an empty, `.` or `..` segment, a backslash
-   or a NUL, before any request.
+   or a NUL, before any request. The client percent-encodes the name and the
+   server decodes the path once more, so a `%` sequence in a name is decoded
+   on the server: `x%41.txt` is stored as `xA.txt`, and `%2e%2e/x` reaches
+   the server as `../x`, which the server refuses. The API takes such a name
+   as the client does and leaves that decoding to the server, which owns
+   the user's data.
 10. `get` (17 / 26) resolves `{ ok: true, text }`, with `text` `undefined` when
     nothing is stored, or `{ ok: false }` when the server refused or could not
     be reached. `set` (17 / 23) and `remove` (4 / 7) resolve `true` or
@@ -157,7 +169,8 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
 16. `fetch(route, init)` (14 / 22) is the client's `fetchApi`, with the
     credentials, user header, timeout and retries the host adds to its own
     calls. The pack's headers are copied into a new `Headers` first, so the
-    credentials the client adds are not written into the pack's object. It
+    credentials the client adds are not written into the pack's object;
+    headers `Headers` cannot take are refused, naming `backend.fetch`. It
     keeps `fetch`'s contract: it resolves with the response whatever its
     status, and rejects when the server cannot be reached, as `fetchApi`
     does. This is the one call here whose failure is not a value: a pack
@@ -208,8 +221,9 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     extension declares once; a badge that changes needed a reactive source.
     The handle's `update(changes)` re-checks the whole item with the changes
     applied, keeps its id and place, and returns `false` once the item is
-    removed; `remove()` takes away only that item, so a stale handle cannot
-    remove a later item under the same id. An id already shown is refused. A
+    removed; a refused update names `ui.addTopBarBadge(...).update` or
+    `ui.addActionBarButton(...).update`. `remove()` takes away only that
+    item, so a stale handle cannot remove a later item under the same id. An id already shown is refused. A
     button's `run` is called with the click's `MouseEvent`, which a pack reads
     to place a menu at the pointer.
 22. `showDialog(dialog)` (22 / 36) opens a dialog through the dialog store's
@@ -445,10 +459,15 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
 - **Checking a JSON value.** `isJsonValue` walks the value once. A JSON round
   trip would drop `undefined` and functions and turn `NaN` into `null`
   without saying so, which is the silent change the check exists to refuse.
+  LiteGraph's `extensionPersistence.ts` has a private `isJsonValue` with the
+  same finite-number, plain-object and loop rules. It is not exported, it
+  has no hook for a leaf such as a Blob, which the backend payload check
+  needs, and LiteGraph is not changed for the API; so the walk is written
+  here.
 - **Checking a message tree.** `localizationHandle.ts` walks a catalog as
   `isJsonValue` does, but takes only strings, `null` and plain objects,
-  the values a vue-i18n message can be; `isJsonValue` would pass a number or
-  a list, which vue-i18n takes and then fails on when the message is shown.
+  the values a vue-i18n message tree holds; `isJsonValue` would pass a
+  number, a boolean or a list, which are not messages.
 - **Reading the system stats.** `systemHandle.ts` reads the reply of
   `getSystemStats` field by field. The generated `zSystemStatsResponse`
   schema in `@comfyorg/ingest-types` describes the route, but no frontend

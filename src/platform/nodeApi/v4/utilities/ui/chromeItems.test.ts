@@ -154,10 +154,14 @@ describe('top-bar badges', () => {
     const gpu = comfy.ui.addTopBarBadge({ id: 'MyPack.gpu', text: '40%' })
 
     expect(() => Reflect.apply(gpu.update, gpu, [{ text: 5 }])).toThrow(
-      TypeError
+      new TypeError(
+        'ui.addTopBarBadge(...).update needs text as a string, not 5.'
+      )
     )
     expect(() => Reflect.apply(gpu.update, gpu, ['55%'])).toThrow(
-      new TypeError("update needs the fields to change, not '55%'.")
+      new TypeError(
+        "ui.addTopBarBadge(...).update needs the fields to change, not '55%'."
+      )
     )
     expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['40%'])
   })

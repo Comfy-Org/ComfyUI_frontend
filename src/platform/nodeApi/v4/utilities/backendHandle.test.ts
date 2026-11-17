@@ -100,6 +100,18 @@ describe('calling the backend', () => {
     await expect(backendApi().fetch('/my-pack/items')).rejects.toBe(unreachable)
   })
 
+  it.for([[['X-Pack']], [['X-Pack', 'yes', 'no']]])(
+    'refuses %j as headers, naming the member',
+    (headers) => {
+      const backend = backendApi()
+
+      expect(() =>
+        Reflect.apply(backend.fetch, backend, ['/my-pack/items', { headers }])
+      ).toThrow('backend.fetch needs headers that Headers takes, not ')
+      expect(fetch).not.toHaveBeenCalled()
+    }
+  )
+
   it.for(['POST', null, 3])('refuses %j as request options', (init) => {
     const backend = backendApi()
 

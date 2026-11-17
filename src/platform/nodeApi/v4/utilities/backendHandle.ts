@@ -37,10 +37,7 @@ export function createBackendHandle(): BackendHandle {
       if (init !== undefined && !isObject(init)) {
         throw invalidArgument('backend.fetch', 'request options', init)
       }
-      return api.fetchApi(path, {
-        ...init,
-        headers: new Headers(init?.headers)
-      })
+      return api.fetchApi(path, { ...init, headers: headersOf(init?.headers) })
     },
 
     on(event, listener) {
@@ -88,4 +85,16 @@ function payloadCopier(): (event: string, detail: unknown) => unknown {
 
 function isBlob(value: object): boolean {
   return value instanceof Blob
+}
+
+function headersOf(headers: HeadersInit | undefined): Headers {
+  try {
+    return new Headers(headers)
+  } catch {
+    throw invalidArgument(
+      'backend.fetch',
+      'headers that Headers takes',
+      headers
+    )
+  }
 }
