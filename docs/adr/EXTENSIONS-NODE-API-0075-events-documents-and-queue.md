@@ -302,6 +302,15 @@ review finding requires it. The counts below are packs, then call sites.
     value the API did not make is refused with a `TypeError`, and if a node
     is gone or not in the graph on screen `select` returns `false` and
     nothing changes. The old `{ add }` option is left out.
+    `graph.groupSelection()` (1 pack, 1 site) is the same read for groups:
+    `selectedGroups` in `events/selection.ts` takes the group ids from the
+    same selection store keys as `selectedNodes` (each picks one selectable
+    kind, so nodes and groups never mix) and returns the graph on screen's
+    group handles in draw order, frozen. A group removed from the graph is
+    no longer listed, and the list is empty with no graph on screen. It is
+    on the graph handle beside `selection()`, as in the old contract; the
+    pack that calls it reads both on every update to find the one selected
+    node or group it resizes. Selecting groups is not built: no pack asks.
 24. `graph.centerOn(node)` (6, 10) resolves the node the same way and
     returns `false` when it is gone or not on screen; otherwise it calls the
     canvas's `centerOnNode`. `GroupHandle.centerOn()` (3 packs) centres the
