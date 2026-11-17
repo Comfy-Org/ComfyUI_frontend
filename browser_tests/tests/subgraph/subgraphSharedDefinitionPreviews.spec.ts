@@ -13,29 +13,27 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/shared-definition-two-hosts-save-image'
       )
-      const exposedPreviewSrcs = (hostId: string) =>
-        comfyPage.vueNodes
-          .getNodeLocator(hostId)
-          .getByTestId(`node-body-${hostId}`)
-          .locator('.image-preview img')
-          .evaluateAll((images) =>
-            images.map((image) => image.getAttribute('src'))
+      const exposedPreviewSrcsByHost = () =>
+        comfyPage.page
+          .getByTestId(/^node-body-[56]$/)
+          .evaluateAll((bodies) =>
+            Object.fromEntries(
+              bodies.map((body) => [
+                body.dataset.testid,
+                Array.from(
+                  body.querySelectorAll('.image-preview img'),
+                  (image) => image.getAttribute('src')
+                )
+              ])
+            )
           )
 
       await comfyPage.runButton.click()
 
-      await expect
-        .poll(
-          async () => [
-            await exposedPreviewSrcs('5'),
-            await exposedPreviewSrcs('6')
-          ],
-          { timeout: 30_000 }
-        )
-        .toEqual([
-          [expect.stringMatching(/hostA_\d+_/)],
-          [expect.stringMatching(/hostB_\d+_/)]
-        ])
+      await expect.poll(exposedPreviewSrcsByHost, { timeout: 30_000 }).toEqual({
+        'node-body-5': [expect.stringMatching(/hostA_\d+_/)],
+        'node-body-6': [expect.stringMatching(/hostB_\d+_/)]
+      })
     })
   }
 )
