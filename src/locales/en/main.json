@@ -6191,6 +6191,7 @@
     "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "openVideo": "Open video: {name}",
+    "assetLoadFailed": "Couldn't load {name}",
     "diagnosticReport": {
       "retry": "Retry copy report",
       "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",

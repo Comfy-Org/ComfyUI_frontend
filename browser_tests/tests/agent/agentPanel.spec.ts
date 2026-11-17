@@ -7,6 +7,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -374,6 +375,41 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         )
         .toBeGreaterThan(0)
     })
+  })
+
+  test('says a generated video could not be loaded when its file is missing', async ({
+    agentPanel,
+    comfyPage,
+    getAgentSocket,
+    postedMessages
+  }) => {
+    // PM-2224: the reply pointed at an output file that was never written,
+    // and the panel showed an empty 0:00 player instead of saying so.
+    await comfyPage.page.route(/\/api\/view\?.*missing_clip/, (route) =>
+      route.fulfill({ status: 404, body: '' })
+    )
+    await comfyPage.page.mouse.move(0, 0)
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+
+    await agentPanel.sendMessage('Generate a short video')
+    await expect.poll(() => postedMessages.length).toBe(1)
+    pushEvent(
+      await getAgentSocket(),
+      agentMessageDeltaEvent(
+        '![your video](/api/view?filename=missing_clip_00001_.mp4&type=output)'
+      )
+    )
+    pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
+
+    const tile = agentPanel.root.getByRole('button', {
+      name: enMessages.agent.assetLoadFailed.replace('{name}', 'your video'),
+      exact: true
+    })
+    await expect(tile).toBeDisabled()
+    await expect(tile.getByTestId('reply-video-preview')).toHaveCount(0)
+    await expect(tile.getByTestId('reply-video-affordance')).toHaveCount(0)
+    await expectElementScreenshot(tile, 'agent-reply-missing-video.png')
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({
