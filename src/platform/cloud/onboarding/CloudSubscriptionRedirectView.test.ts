@@ -325,6 +325,29 @@ describe('CloudSubscriptionRedirectView', () => {
       expect(mockRouterReplace).toHaveBeenCalledWith('/')
       expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledTimes(1)
     })
+
+    test('takes a person who can manage an active plan to Plans in the same tab', async () => {
+      useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
+
+      await mountView({ tier: 'standard' })
+
+      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: 'deep_link', sameTab: true })
+      )
+      expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
+      expect(mockRouterReplace).not.toHaveBeenCalled()
+    })
+
+    test('moves a member of an active workspace to the app without the inactive notice', async () => {
+      useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
+      serveCanManageSubscription(false)
+
+      await mountView({ tier: 'standard' })
+
+      expect(mockRouterReplace).toHaveBeenCalledWith('/')
+      expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+      expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
+    })
   })
 
   test('reads no capabilities and stays on the redirect screen with the new billing UI off', async () => {
