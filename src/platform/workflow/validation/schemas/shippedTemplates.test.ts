@@ -1,27 +1,14 @@
 /**
  * Every workflow template we ship has to be strictly loadable.
  *
- * `useTemplateWorkflows` validates a template against `validateComfyWorkflow`
- * and, when that fails, falls back to `zLegacyLoadableWorkflow` and loads the
- * template anyway with `strict: false`, reporting
- * `error_validating_workflow_template_schema` at warning level. So a template
- * this schema rejects does not look broken: it opens, it reports a warning
- * nobody reads, and it skips whatever the strict path guarantees downstream.
+ * A rejected template does not look broken, which is why this is worth a test:
+ * `useTemplateWorkflows` falls back to `zLegacyLoadableWorkflow`, loads it
+ * anyway with `strict: false`, and reports
+ * `error_validating_workflow_template_schema` at warning level.
  *
- * Nothing checked that before this. The templates repo validates its own
- * `index.json` and the JSON syntax of each file, and ComfyUI checks the node
- * graph against its node registry, but neither of them knows what this
- * schema considers a loadable workflow. A hand-edited template with a slug
- * where a GUID belongs passes both and fails here.
- *
- * The corpus is the real thing: the `comfyui-workflow-templates` release that
- * ships alongside ComfyUI, which is ~650 workflows saved by about thirty
- * different frontend releases (1.27 through 1.58 at the time of writing), so
- * it doubles as the format-migration coverage we otherwise have none of.
- *
- * Point `COMFYUI_TEMPLATES_DIR` at the installed package's `templates`
- * directory to run it. `.github/workflows/ci-shipped-templates.yaml` installs
- * the version ComfyUI pins and sets it.
+ * Set `COMFYUI_TEMPLATES_DIR` to the installed package's `templates` directory
+ * to run it; `.github/workflows/ci-shipped-templates.yaml` does that with the
+ * release ComfyUI pins, and explains the trigger choices.
  */
 import fs from 'node:fs'
 import path from 'node:path'

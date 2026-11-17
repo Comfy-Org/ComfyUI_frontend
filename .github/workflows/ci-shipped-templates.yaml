@@ -25,15 +25,25 @@ name: 'CI: Shipped Templates'
 on:
   pull_request:
     paths:
-      - 'packages/graph-model/src/workflowSchema.ts'
+      # The whole package, not just workflowSchema.ts: validation behaviour also
+      # comes from the modules it imports (widgets, linkId, serialisation,
+      # linkPresentation, nodeProperty, rerouteId), and naming them one by one
+      # would go stale the first time that import list changes.
+      - 'packages/graph-model/src/**'
       - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+      - 'scripts/cicd/resolve-shipped-templates.py'
       - '.github/workflows/ci-shipped-templates.yaml'
   push:
     branches:
       - main
     paths:
-      - 'packages/graph-model/src/workflowSchema.ts'
+      # The whole package, not just workflowSchema.ts: validation behaviour also
+      # comes from the modules it imports (widgets, linkId, serialisation,
+      # linkPresentation, nodeProperty, rerouteId), and naming them one by one
+      # would go stale the first time that import list changes.
+      - 'packages/graph-model/src/**'
       - 'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+      - 'scripts/cicd/resolve-shipped-templates.py'
       - '.github/workflows/ci-shipped-templates.yaml'
   schedule:
     - cron: '45 7 * * *'
