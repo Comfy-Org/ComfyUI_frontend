@@ -97,6 +97,35 @@ test.describe('Node preview display', { tag: ['@vue-nodes', '@node'] }, () => {
 
     await choose(comfyPage, node, 'Show Preview Automatically')
     await expect(gallery).toBeVisible()
+    await node.waitForImageLoaded('example.png')
+  })
+
+  test('A video output fills a preview zone the user made shorter, without the zone growing back', async ({
+    comfyPage,
+    getWebSocket
+  }) => {
+    const video = 'video-preview-wide.webm'
+    await mockViewFiles(comfyPage.page, {
+      [video]: { path: assetPath(`video/${video}`), contentType: 'video/webm' }
+    })
+    const node = await addPreviewImage(comfyPage)
+    const zone = node.root.getByTestId('node-preview-region')
+    const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+    await choose(comfyPage, node, 'Show Preview Zone')
+    const defaultHeight = await heightOf(zone)
+    await node.dragHandle(node.growableRegionHandle(zone), 0, -100)
+    await expect.poll(() => heightOf(zone)).toBeCloseTo(defaultHeight - 100, 0)
+    const shortHeight = await heightOf(zone)
+
+    execution.executed('video-run', '1', {
+      images: [{ filename: video, subfolder: '', type: 'output' }]
+    })
+    await expect(
+      zone.getByRole('region', { name: /Video preview/ })
+    ).toBeVisible()
+    await comfyPage.nextFrame()
+    expect(await heightOf(zone)).toBeCloseTo(shortHeight, 0)
   })
 
   test('A resized preview zone survives saving and reopening the workflow, and undo and redo', async ({
@@ -238,7 +267,7 @@ test.describe('Canvas node preview display', { tag: ['@node'] }, () => {
       .toBe(true)
   })
 
-  test('Show Preview Automatically gives back the room an empty preview zone reserved on a canvas node', async ({
+  test('Show Preview Automatically drops the empty preview zone a canvas node reserved', async ({
     comfyPage
   }) => {
     const node = await addCanvasPreviewImage(comfyPage)
