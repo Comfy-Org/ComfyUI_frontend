@@ -106,7 +106,7 @@ const dismissable = ref(true)
 const filterVisible = ref(false)
 const hoveredNodeDef = ref<ComfyNodeDefImpl | null>(null)
 const { width: windowWidth } = useWindowSize()
-const { x: mouseX, y: mouseY } = useMouse({ type: 'client' })
+const { x: mouseX, y: mouseY, sourceType } = useMouse({ type: 'client' })
 // Minimum viewport width for the preview panel to fit beside the dialog
 const MIN_WIDTH_FOR_PREVIEW = 1320
 const enableNodePreview = computed(
@@ -145,10 +145,11 @@ const canvasStore = useCanvasStore()
 
 function addNode(
   nodeDef: ComfyNodeDefImpl,
-  dragEvent = new MouseEvent('click', {
-    clientX: mouseX.value,
-    clientY: mouseY.value
-  })
+  dragEvent = (sourceType.value === null ? triggerEvent : null) ??
+    new MouseEvent('click', {
+      clientX: mouseX.value,
+      clientY: mouseY.value
+    })
 ) {
   const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
   const node = withNodeAddSource('search_modal', () =>
