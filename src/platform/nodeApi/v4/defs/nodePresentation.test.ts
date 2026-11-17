@@ -142,6 +142,7 @@ describe('a defined type’s presentation', () => {
   describe('refusals', () => {
     it.for([
       { name: 'a presentation that is not an object', presentation: 'none' },
+      { name: 'a presentation that is null', presentation: null },
       { name: 'chrome, which no renderer can leave out', field: 'chrome' },
       { name: 'sizing, which no renderer holds fixed', field: 'sizing' },
       {
@@ -170,7 +171,7 @@ describe('a defined type’s presentation', () => {
       expect(defs.has('Pack/Refused')).toBe(false)
     })
 
-    it('names the fields a presentation may have when it refuses another', () => {
+    it('says what a presentation needs when it refuses one', () => {
       expect(() =>
         Reflect.apply(defs.define, defs, [
           { type: 'Pack/Refused', presentation: { chrome: 'none' } }
@@ -183,6 +184,16 @@ describe('a defined type’s presentation', () => {
           { type: 'Pack/Refused', presentation: { title: 'none' } }
         ])
       ).toThrow(/^define needs presentation.title of default, hidden/)
+      expect(() =>
+        Reflect.apply(defs.define, defs, [
+          { type: 'Pack/Refused', presentation: 'none' }
+        ])
+      ).toThrow(/^define needs a presentation object, not 'none'/)
+      expect(() =>
+        Reflect.apply(defs.define, defs, [
+          { type: 'Pack/Refused', presentation: { collapsible: 'no' } }
+        ])
+      ).toThrow(/^define needs presentation.collapsible as true or false/)
     })
   })
 })
