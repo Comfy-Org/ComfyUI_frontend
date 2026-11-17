@@ -1,5 +1,8 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useWorkflowStore,ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  useWorkflowStore,
+  ComfyWorkflow
+} from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
