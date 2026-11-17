@@ -158,14 +158,25 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
       for (const name of ['Add credits', 'Billing settings']) {
         const row = flyout.getByRole('button', { name })
-        const [rowBox, labelBox] = await Promise.all([
-          boxOf(row),
-          boxOf(row.getByText(name, { exact: true }))
-        ])
-        expect(Math.round(rowBox.height), name).toBe(FLYOUT_ROW_HEIGHT_PX)
-        expect(Math.round(labelBox.x - rowBox.x), name).toBe(
-          FLYOUT_ROW_LABEL_INSET_PX
-        )
+        const label = row.getByText(name, { exact: true })
+        await expect
+          .poll(
+            async () => {
+              const [rowBox, labelBox] = await Promise.all([
+                boxOf(row),
+                boxOf(label)
+              ])
+              return {
+                height: Math.round(rowBox.height),
+                labelInset: Math.round(labelBox.x - rowBox.x)
+              }
+            },
+            { message: `${name} row height and label inset` }
+          )
+          .toEqual({
+            height: FLYOUT_ROW_HEIGHT_PX,
+            labelInset: FLYOUT_ROW_LABEL_INSET_PX
+          })
       }
     })
 
