@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import { useTelemetry as sharedUseTelemetry } from '@comfyorg/telemetry'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
 
 import { BootstrapTracer } from './bootstrapTracer'
 
@@ -253,9 +254,6 @@ describe('bootstrapTracer', () => {
 
   it('names the innermost phase whose work rejected when startup fails', async () => {
     const tracer = new BootstrapTracer()
-    class UnauthorizedError extends Error {
-      override name = 'UnauthorizedError'
-    }
 
     await expect(
       tracer.settle('bootstrap/extensions-load', () =>
@@ -270,7 +268,7 @@ describe('bootstrapTracer', () => {
     expect(metadata).toMatchObject({
       outcome: 'failed',
       failure_phase: 'bootstrap/extensions-load-custom',
-      failure_error: 'UnauthorizedError'
+      failure_error: 'Error'
     })
     expect(
       JSON.stringify(metadata),
