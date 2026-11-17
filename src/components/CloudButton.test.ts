@@ -237,6 +237,22 @@ describe('Cloud button compatibility checks', () => {
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
   })
 
+  it('names the missing model loader and explains how to continue', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'unreadableModelLoader',
+      nodeType: 'ImpactCheckpointLoader'
+    })
+    render(CloudButton, { global: { plugins: [testI18n] } })
+
+    await userEvent.setup().click(screen.getByTestId('cloud-button'))
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'ComfyUI couldn’t read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
+      )
+    )
+  })
+
   it('opens the dialog when Cloud is missing nodes or models', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({
       kind: 'missing',
