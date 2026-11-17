@@ -161,6 +161,17 @@ describe('ReplyAssetGroup', () => {
     expect(lightbox.dataset.count).toBe('2')
   })
 
+  it('PM-2224 leaves a media file that failed to load out of the lightbox gallery', async () => {
+    renderGroup([image(1), video, image(2)])
+
+    await fireEvent.error(screen.getByTestId('reply-video-preview'))
+    await userEvent.click(screen.getByRole('button', { name: 'i2.png' }))
+
+    const lightbox = screen.getByTestId('lightbox')
+    expect(lightbox.dataset.count).toBe('2')
+    expect(lightbox.dataset.active).toBe('1')
+  })
+
   it('PM-1895 clears the play badge while the hover preview is playing', async () => {
     renderGroup([video, image(1)])
     const element = screen.getByTestId('reply-video-preview')

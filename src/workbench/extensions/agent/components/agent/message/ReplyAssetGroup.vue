@@ -74,8 +74,17 @@ const gridColsClass = computed(() => {
   return 'grid-cols-4'
 })
 
+/* URLs whose preview failed to load: the file is missing, so the gallery skips them. */
+const unavailableUrls = ref(new Set<string>())
+
+function markUnavailable(asset: ReplyVisualAssetData): void {
+  unavailableUrls.value = new Set(unavailableUrls.value).add(asset.url)
+}
+
 const galleryAssets = computed(() =>
-  visual.value.filter((asset) => asset.kind !== '3D')
+  visual.value.filter(
+    (asset) => asset.kind !== '3D' && !unavailableUrls.value.has(asset.url)
+  )
 )
 const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
@@ -399,6 +408,7 @@ function inspect(asset: ReplyVisualAssetData): void {
         :multi
         :model-thumbnail-src="modelThumbnailSrc(asset.url)"
         @inspect="inspect(asset)"
+        @unavailable="markUnavailable(asset)"
       />
     </div>
 

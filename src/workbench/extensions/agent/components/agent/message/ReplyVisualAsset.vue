@@ -12,7 +12,7 @@ const { asset, multi, modelThumbnailSrc } = defineProps<{
   modelThumbnailSrc: string
 }>()
 
-defineEmits<{ inspect: [] }>()
+const emit = defineEmits<{ inspect: []; unavailable: [] }>()
 
 const { t } = useI18n()
 
@@ -24,6 +24,11 @@ const previewing = ref(false)
  * video, which reads as a broken file rather than a missing one (PM-2224).
  */
 const loadFailed = ref(false)
+
+function markUnavailable(): void {
+  loadFailed.value = true
+  emit('unavailable')
+}
 
 const unavailableLabel = computed(() =>
   t('agent.assetLoadFailed', { name: name.value }, { escapeParameter: false })
@@ -71,7 +76,7 @@ function clearPreviewingUnlessLooping(event: Event): void {
         !multi && asset.kind === '3D' && 'justify-self-end'
       )
     "
-    @click="$emit('inspect')"
+    @click="emit('inspect')"
   >
     <span
       v-if="loadFailed"
@@ -97,7 +102,7 @@ function clearPreviewingUnlessLooping(event: Event): void {
       data-testid="reply-image-preview"
       loading="lazy"
       :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
-      @error="loadFailed = true"
+      @error="markUnavailable"
     />
     <video
       v-else-if="asset.kind === 'video'"
@@ -113,7 +118,7 @@ function clearPreviewingUnlessLooping(event: Event): void {
       @playing="previewing = true"
       @pause="previewing = false"
       @waiting="clearPreviewingUnlessLooping"
-      @error="loadFailed = true"
+      @error="markUnavailable"
     />
     <img
       v-else-if="modelThumbnailSrc"
