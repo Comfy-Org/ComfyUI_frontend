@@ -275,6 +275,10 @@ onScopeDispose(() => {
   if (loadTimeout !== undefined) clearTimeout(loadTimeout)
 })
 
+watch(videoError, (hasError, hadError) => {
+  if (hadError && !hasError) stallReportedUrl = undefined
+})
+
 const handleDownload = () => {
   try {
     downloadFile(currentVideoUrl.value)

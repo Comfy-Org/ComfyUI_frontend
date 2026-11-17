@@ -216,6 +216,31 @@ describe('VideoPreview', () => {
       expect(screen.getByTestId('error-loading-video')).toBeInTheDocument()
       expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledOnce()
     })
+    it('reports an error from a recreated element for the same URL after a stall', async () => {
+      resetImageFailureProbesForTest()
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 200 })
+      )
+      const sameUrl = '/api/view?filename=twice.mp4&type=output'
+      renderVideoPreview({ imageUrls: [sameUrl, sameUrl] })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+
+      await vi.advanceTimersByTimeAsync(8192)
+      await nextTick()
+      await fireEvent.error(screen.getByTestId('main-video'))
+      await vi.waitFor(() =>
+        expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledOnce()
+      )
+
+      await user.click(
+        screen.getByRole('button', { name: 'View video 2 of 2' })
+      )
+      await fireEvent.error(screen.getByTestId('main-video'))
+
+      await vi.waitFor(() =>
+        expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledTimes(2)
+      )
+    })
   })
 
   describe('batch cycling with identical URLs', () => {
