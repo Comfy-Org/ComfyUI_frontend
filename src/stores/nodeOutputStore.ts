@@ -151,9 +151,11 @@ function mergeOutput(
   outputs: ExecutedWsMessage['output'] | ResultItem,
   { merge }: SetOutputOptions
 ): ExecutedWsMessage['output'] {
-  return merge && existingOutput
-    ? concatOutputArrays(existingOutput, outputs)
-    : preserveInputPreviewImages(existingOutput, outputs)
+  const merged =
+    merge && existingOutput
+      ? concatOutputArrays(existingOutput, outputs)
+      : outputs
+  return preserveInputPreviewImages(existingOutput, merged)
 }
 
 function forEachDetachedInstance<T>(

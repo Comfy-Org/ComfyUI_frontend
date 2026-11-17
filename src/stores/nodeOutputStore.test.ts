@@ -937,25 +937,22 @@ describe('nodeOutputStore merge mode interactions', () => {
     expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('result.png')
   })
 
-  it('should not duplicate when merge is called with empty images array', () => {
+  it.for([
+    { name: 'an empty images array', output: createMockOutputs([]) },
+    { name: 'undefined images', output: createMockOutputs() }
+  ])('keeps the input preview once when merging $name', ({ output }) => {
     const store = useNodeOutputStore()
-
-    // Set initial input preview
-    const inputOutput = createMockOutputs([
-      { filename: 'uploaded.png', subfolder: '', type: 'input' }
-    ])
     store.setNodeOutputsByExecutionId(
       createNodeExecutionId([toNodeId(3)]),
-      inputOutput
+      createMockOutputs([
+        { filename: 'uploaded.png', subfolder: '', type: 'input' }
+      ])
     )
 
-    const emptyOutput = createMockOutputs([])
     store.setNodeOutputsByExecutionId(
       createNodeExecutionId([toNodeId(3)]),
-      emptyOutput,
-      {
-        merge: true
-      }
+      output,
+      { merge: true }
     )
 
     expect(store.nodeOutputs['3']?.images).toHaveLength(1)
