@@ -1,8 +1,14 @@
-import { assert, beforeEach, describe, expect, it } from 'vitest'
+import { reportError } from '@comfyorg/telemetry/reportError'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  isComboWidget
+} from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { resolveComboValues } from '@/utils/litegraphUtil'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
@@ -292,7 +298,11 @@ describe('a node’s widgets', () => {
       ['not an object', 'number'],
       ['an unknown field', { type: 'number', name: 'x', label: 'X' }],
       ['no type', { name: 'x' }],
-      ['an empty name', { type: 'number', name: '' }],
+      ['a name that is not text', { type: 'number', name: 1 }],
+      [
+        'a function among the options of a widget that is not a combo',
+        { type: 'number', name: 'x', options: { values: () => [1] } }
+      ],
       [
         'a value it cannot save',
         { type: 'number', name: 'x', value: Infinity }
@@ -313,6 +323,14 @@ describe('a node’s widgets', () => {
         'a combo whose values are not a list',
         { type: 'combo', name: 'x', options: { values: 'a,b' } }
       ],
+      [
+        'a combo with a function among its other options',
+        {
+          type: 'combo',
+          name: 'x',
+          options: { values: () => ['a'], label: () => 'A' }
+        }
+      ],
       ['a combo without values', { type: 'combo', name: 'x', options: {} }]
     ] as const)('refuses a definition with %s, and adds nothing', ([, def]) => {
       const { node, widgets } = nodeWith('seed')
@@ -321,6 +339,63 @@ describe('a node’s widgets', () => {
         TypeError
       )
       expect(node.widgets?.map(({ name }) => name)).toEqual(['seed'])
+    })
+
+    it('adds a widget with an empty name, which the host keeps and saves', () => {
+      const { node, widgets } = nodeWith('seed')
+
+      const handle = widgets.add({ type: 'number', name: '', value: 4 })
+
+      expect(handle).toBe(widgets.get(''))
+      expect(handle?.getValue()).toBe(4)
+      expect(node.widgets?.map(({ name }) => name)).toEqual(['seed', ''])
+      expect(node.serialize().widgets_values).toEqual([1, 4])
+      expect(() => widgets.add({ type: 'number', name: '' })).toThrow(
+        "add needs a name no widget of the node has, not ''."
+      )
+    })
+
+    describe('a combo whose values come from a function', () => {
+      function comboWith(values: () => unknown) {
+        const { node, widgets } = nodeWith()
+        const handle = widgets.add({
+          type: 'combo',
+          name: 'choice',
+          value: 'a',
+          options: { values, max: 2 }
+        })
+        const widget = node.widgets?.[0]
+        assert(handle && widget && isComboWidget(widget))
+        return { handle, widget }
+      }
+
+      it('lists what the function returns, calling it with nothing of the host', () => {
+        const values = vi.fn(() => ['a', 2])
+        const { handle, widget } = comboWith(values)
+
+        expect(resolveComboValues(widget)).toEqual(['a', 2])
+        expect(values).toHaveBeenCalledExactlyOnceWith()
+        expect(widget.options.max).toBe(2)
+        expect(handle.getOptions()).toEqual({ max: 2 })
+      })
+
+      const throwing = (): unknown => {
+        throw new Error('no list')
+      }
+
+      it.for([
+        ['throws', throwing],
+        ['returns no list', (): unknown => 'a'],
+        ['returns a list of other things', (): unknown => ['a', { b: 1 }]]
+      ] as const)(
+        'reports a function that %s, and lists nothing',
+        ([, values]) => {
+          const { widget } = comboWith(values)
+
+          expect(resolveComboValues(widget)).toEqual([])
+          expect(reportError).toHaveBeenCalledOnce()
+        }
+      )
     })
 
     it.for([
