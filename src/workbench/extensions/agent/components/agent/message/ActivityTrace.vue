@@ -133,9 +133,11 @@ function rowSignature(row: ActivityRow): string {
           >
         </div>
         <template v-else>
-          <span :class="cn(labelClass(row.state), 'truncate')">{{
-            labelOf(row)
-          }}</span>
+          <span
+            :class="cn(labelClass(row.state), 'truncate')"
+            :title="row.download ? labelOf(row) : undefined"
+            >{{ labelOf(row) }}</span
+          >
           <span
             v-if="row.count > 1"
             class="mt-0.5 shrink-0 text-xs text-muted-foreground"

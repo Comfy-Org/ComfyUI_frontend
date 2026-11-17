@@ -208,7 +208,8 @@ describe('agentApiSchema contract subtleties', () => {
   it.for([
     { label: 'non-string', download: 42 },
     { label: 'empty', download: '' },
-    { label: 'control character', download: 'a\nb.safetensors' }
+    { label: 'newline', download: 'a\nb.safetensors' },
+    { label: 'escape character', download: 'a\u001bb.safetensors' }
   ])(
     'drops a $label download instead of the whole tool-call frame',
     ({ download }) => {

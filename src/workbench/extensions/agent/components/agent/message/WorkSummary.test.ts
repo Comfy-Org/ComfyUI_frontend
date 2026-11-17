@@ -203,7 +203,7 @@ describe('ActivityTrace', () => {
 
     expect(
       screen.getByText('Downloading flux1-dev.safetensors')
-    ).toBeInTheDocument()
+    ).toHaveAttribute('title', 'Downloading flux1-dev.safetensors')
     expect(screen.queryByText('Bash')).not.toBeInTheDocument()
 
     await rerender({

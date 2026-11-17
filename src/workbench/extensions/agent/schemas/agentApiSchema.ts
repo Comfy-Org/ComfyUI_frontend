@@ -112,15 +112,10 @@ const zSkillName = z
 
 const DOWNLOAD_NAME_MAX = 255
 
-/**
- * The model file a bash `comfy model download` fetches (PM-2280). A label
- * only: a value the server contract forbids drops this field, never the
- * frame, and an over-long one is clamped on a code point boundary.
- */
 const zDownloadName = z
   .string()
   .min(1)
-  .refine((name) => !['\u0000', '\n', '\r', '\t'].some((c) => name.includes(c)))
+  .refine((name) => !/\p{Cc}/u.test(name))
   .transform((name) => Array.from(name).slice(0, DOWNLOAD_NAME_MAX).join(''))
   .optional()
   .catch(undefined)
