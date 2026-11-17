@@ -36,7 +36,9 @@
           @click="toggleModal"
         >
           <span class="inline-flex items-center gap-1 px-2 text-xs">
-            <span>{{ canvasStore.appScalePercentage }}<span>%</span></span>
+            <span class="inline-block min-w-[5ch] text-center tabular-nums"
+              >{{ canvasStore.appScalePercentage }}<span>%</span></span
+            >
             <i class="icon-[lucide--chevron-down]" aria-hidden="true" />
           </span>
         </Button>

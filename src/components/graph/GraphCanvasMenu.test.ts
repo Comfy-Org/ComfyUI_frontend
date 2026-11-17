@@ -76,4 +76,11 @@ describe('GraphCanvasMenu', () => {
     expect(digits.nodeValue).toBe('250')
     expect(digits.isConnected).toBe(true)
   })
+
+  it('keeps the zoom percentage at a fixed width', () => {
+    useCanvasStore().appScalePercentage = 100
+    renderMenu()
+
+    expect(screen.getByText('100')).toHaveClass('tabular-nums', 'min-w-[5ch]')
+  })
 })
