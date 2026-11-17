@@ -1239,8 +1239,7 @@ describe('useSubscriptionDialog', () => {
         const recoverPendingOperationSpy = vi.mocked(
           useBillingSdkStore().recoverPendingOperation
         )
-        vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled =
-          railEnabled
+        vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = railEnabled
         useBillingRouting().type = computed(() => 'workspace')
         useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
         useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
@@ -1290,8 +1289,7 @@ describe('useSubscriptionDialog', () => {
       const recoverPendingOperationSpy = vi.mocked(
         useBillingSdkStore().recoverPendingOperation
       )
-      vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled =
-        true
+      vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
       recoverPendingOperationSpy.mockResolvedValueOnce(undefined)
       savePendingSubscriptionCheckout({
         operationId: 'op-stale',

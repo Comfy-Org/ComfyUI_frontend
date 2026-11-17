@@ -1,4 +1,3 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -53,6 +52,7 @@ describe('auth token priority chain', () => {
         return vi.fn()
       }
     )
+    vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
     store = useAuthStore()
     useWorkspaceAuthStore().destroy()
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
@@ -69,7 +69,6 @@ describe('auth token priority chain', () => {
     vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken).mockResolvedValue(
       null
     )
-    vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
     vi.mocked(useWorkspaceAuthStore().clearWorkspaceContext).mockImplementation(
       () => {}
     )
@@ -86,20 +85,6 @@ describe('auth token priority chain', () => {
   })
 
   describe('getAuthHeader priority', () => {
-    it('returns workspace auth header when workspace is active', async () => {
-      vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
-        {
-          Authorization: 'Bearer workspace-token'
-        }
-      )
-
-      const header = await store.getAuthHeader()
-
-      expect(header).toEqual({
-        Authorization: 'Bearer workspace-token'
-      })
-    })
-
     it('returns Firebase token when workspace is not active but user is authenticated', async () => {
       vi.mocked(useWorkspaceAuthStore().getWorkspaceAuthHeader).mockReturnValue(
         null
@@ -146,7 +131,8 @@ describe('auth token priority chain', () => {
       expect(header).toEqual({ Authorization: 'Bearer firebase-token' })
     })
 
-    it('returns API key when neither workspace nor Firebase are available', async () => {
+    it('returns API key outside Cloud when Firebase is unavailable', async () => {
+      mockDistributionTypes.isCloud = false
       authStateCallback(null)
       vi.mocked(useApiKeyAuthStore().getAuthHeader).mockReturnValue({
         'X-API-KEY': 'test-key'
@@ -167,20 +153,8 @@ describe('auth token priority chain', () => {
   })
 
   describe('getAuthToken priority', () => {
-    it('returns workspace token when workspace is active', async () => {
-      vi.mocked(useWorkspaceAuthStore().getWorkspaceToken).mockReturnValue(
-        'workspace-raw-token'
-      )
-
-      const token = await store.getAuthToken()
-
-      expect(token).toBe('workspace-raw-token')
-    })
-
-    it('returns Firebase token when workspace token is not available', async () => {
-      vi.mocked(useWorkspaceAuthStore().getWorkspaceToken).mockReturnValue(
-        undefined
-      )
+    it('returns Firebase token outside Cloud', async () => {
+      mockDistributionTypes.isCloud = false
 
       const token = await store.getAuthToken()
 
@@ -421,11 +395,7 @@ describe('auth token priority chain', () => {
     })
   })
 
-  describe('unified cloud auth (flag ON)', () => {
-    beforeEach(() => {
-      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
-    })
-
+  describe('unified cloud auth on Cloud', () => {
     it('getAuthHeader returns only the unified Cloud JWT, never Firebase or API key', async () => {
       useWorkspaceAuthStore().unifiedToken = 'unified-jwt'
       // Even with the legacy sources available, the unified branch wins.

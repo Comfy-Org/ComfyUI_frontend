@@ -224,39 +224,15 @@ async function sendApiCalls() {
   })
 }
 
-const API_KEY_SESSION_ROWS = [
-  {
-    name: 'unified_cloud_auth off, unified_web_session true',
-    uca: false,
-    uws: true
-  },
-  {
-    name: 'unified_cloud_auth on, unified_web_session true',
-    uca: true,
-    uws: true
-  }
-]
+const API_KEY_SESSION_ROWS = [{ name: 'unified_web_session true', uws: true }]
 
 const FEATURE_ROWS = [
-  { name: 'unified_cloud_auth off, unified_web_session absent', uca: false },
-  {
-    name: 'unified_cloud_auth off, unified_web_session false',
-    uca: false,
-    uws: false
-  },
-  { name: 'unified_cloud_auth on, unified_web_session absent', uca: true },
-  {
-    name: 'unified_cloud_auth on, unified_web_session false',
-    uca: true,
-    uws: false
-  }
+  { name: 'unified_web_session absent' },
+  { name: 'unified_web_session false', uws: false }
 ]
 
-function featuresFor(row: { uca: boolean; uws?: boolean }) {
-  return {
-    unified_cloud_auth: row.uca,
-    ...(row.uws === undefined ? {} : { unified_web_session: row.uws })
-  }
+function featuresFor(row: { uws?: boolean }) {
+  return row.uws === undefined ? {} : { unified_web_session: row.uws }
 }
 
 const FEATURES_BOOTSTRAP: RecordedRequest = {
