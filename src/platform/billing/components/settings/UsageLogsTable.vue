@@ -63,7 +63,7 @@
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
-                :tooltip="additionalInfoTooltip(event)"
+                :tooltip="customerEventService.getTooltipContent(event)"
                 variant="textonly"
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
@@ -101,11 +101,6 @@ import TableCell from '@/components/ui/table/TableCell.vue'
 import TableHead from '@/components/ui/table/TableHead.vue'
 import TableHeader from '@/components/ui/table/TableHeader.vue'
 import TableRow from '@/components/ui/table/TableRow.vue'
-import {
-  formatCredits,
-  isSubCreditCharge,
-  microUsdToCredits
-} from '@/base/credits/comfyCredits'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useTelemetry } from '@/platform/telemetry'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
@@ -113,13 +108,14 @@ import { readOnRail } from '@/platform/billing/composables/readOnRail'
 import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
+import { toFiniteNumber } from '@/services/customerEventParams'
 import type { AuditLog } from '@/services/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
 } from '@/services/customerEventsService'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 
 const events = ref<AuditLog[]>([])
 const loading = ref(true)
@@ -135,41 +131,8 @@ const pagination = ref({
   total: 0
 })
 
-function toFiniteNumber(raw: unknown) {
-  const value = typeof raw === 'string' && raw.trim() ? Number(raw) : raw
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
-}
-
 function eventAmount(event: AuditLog) {
   return toFiniteNumber(event.params?.amount)
-}
-
-function formatChargeCredits(microUsd: number) {
-  const credits = microUsdToCredits(microUsd)
-  if (isSubCreditCharge(credits)) {
-    return `${t('credits.lessThanOne')} ${t('credits.creditUnit', 2)}`
-  }
-  const amount = formatCredits({
-    value: credits,
-    locale: locale.value,
-    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-  })
-  return `${amount} ${t('credits.creditUnit', Math.round(credits))}`
-}
-
-function formatParam(key: string, value: unknown) {
-  const microUsd =
-    key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
-  if (microUsd !== undefined) {
-    return `${t('credits.charge')}: ${formatChargeCredits(microUsd)}`
-  }
-  return `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
-}
-
-function additionalInfoTooltip(event: AuditLog) {
-  return Object.entries(event.params ?? {})
-    .map(([key, value]) => formatParam(key, value))
-    .join('\n')
 }
 
 // A billing-route flip can overlap two loads against different backends; only
