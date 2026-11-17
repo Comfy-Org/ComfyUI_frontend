@@ -130,13 +130,39 @@ registered, so `extend` cannot depend on the order.
     it, as a server definition has none. rgthree declares its relay's output
     `shape: 'directional'` through two helpers, which the census did not
     follow (acceptance finding B7); inputs take no shape, as in V2.
+    `presentation` sets how the host draws the type's nodes, with the three
+    fields the host already has an owner for in both renderers, set on the
+    class the API makes, so a node a load, a paste or an undo rebuilds gets
+    them again: `title: 'hidden'` is the class's `title_mode`
+    `TitleMode.NO_TITLE`, which the canvas renderer draws without a title bar
+    and which the node's state gives Vue nodes (`titleMode`, read when the
+    node is constructed); `collapsible: false` is the class's `collapsable`,
+    which `LGraphNode.collapsible` reads, so the node's `collapse()` without
+    `force`, which every user path calls (the canvas menu and the title's
+    collapse toggle, the Vue header button, the selection toolbox and the
+    collapse command),
+    does nothing, and the canvas menu leaves out Collapse; `resizable: false`
+    is recorded for each node as it is constructed through the edit core's
+    `chooseResizable` (ADR-EXTENSIONS-NODE-API-0073 decision 8), which sets
+    `LGraphNode.resizable` and puts it back after every pin change, so
+    neither renderer offers a resize handle and the canvas menu leaves out
+    Resize. `'default'` and `true` are the host's own defaults. As in the
+    host, Vue nodes still show the header's collapse button on a node that
+    cannot collapse, and the button does nothing; `comfy.edit.updateNode`'s
+    `collapsed` collapses such a node, as the host's own `collapse(true)`
+    does. `get` does not report the presentation, as a server definition has
+    none. rgthree declares it on its Label and Reroute (2 definitions; it is
+    in the later V2 contract stored with rgthree, not in the V2 contract
+    document). The V2 fields with no host owner are refused (decision 39).
 11. A definition is checked whole before anything is registered: a plain
     object of the documented fields only, a type name that is non-empty, is
     not a property of `Object.prototype`, and is not registered yet, text for
     the title, category and description, slots of exactly a text `name` and a
     text `type`, and for an output an optional `shape` of `'default'`,
-    `'optional'`, `'list'` or `'directional'`, and `'backend'` or
-    `'frontend'`. An empty slot name is allowed because a stored pack
+    `'optional'`, `'list'` or `'directional'`, `'backend'` or
+    `'frontend'`, and a presentation that is a plain object of `title`
+    (`'default'` or `'hidden'`), `resizable` and `collapsible` (each `true`
+    or `false`) only. An empty slot name is allowed because a stored pack
     declares one.
 12. The disposer unregisters the type and removes it from the index, only if
     the type is still the one this call registered. A type the host has
@@ -408,13 +434,19 @@ registered, so `extend` cannot depend on the order.
     widget definitions and handles; `NodeDefinition.resolve` (6),
     `NodeDefBuilder.setSupply` (1), `onPromptSerialize` (1) and `onPreview`
     (1) need frontend execution and previews. `NodeDefinition.presentation`
-    (rgthree, 2 definitions; it is in the later V2 contract stored with
-    rgthree, not in the V2 contract document) is how a node is drawn, so it is left for the
-    part that draws pack-owned nodes (`canvas`): of its fields, a hidden
-    title, `resizable` and `collapsible` have host owners
-    (`title_mode`, `resizable`, `collapsable`), and `chrome: 'none'`,
-    `sizing: 'fixed'` and `pinnedInteraction: 'pass-through'` have none in
-    either renderer.
+    is how a node is drawn, so it belongs with the part of the API that
+    draws pack-owned nodes (`canvas`). Its three fields with host owners need
+    nothing from that part, so `define` takes them now (decision 10); the
+    drawing part may add to the same type later. Its other V2 fields are
+    refused as unknown presentation fields, because neither renderer has an
+    owner for them and adding one is a renderer (core) change:
+    `chrome: 'none'` (rgthree's Label) asks for a node with no box, and both
+    renderers always draw the node's box and body; `sizing: 'fixed'`
+    (rgthree's Reroute) asks Vue nodes to keep the declared rectangle, and
+    they size a node from its content; `pinnedInteraction: 'pass-through'`
+    (rgthree's Label) asks that a pinned node let primary clicks through to
+    what is under it, and a pinned node still takes them in both renderers.
+    The converter drops them and tells a person.
 40. `NodeDefBuilder.onUnplacedLink` (1 pack) and its event are not built. The
     host announces a link dropped on a node (`dropped-on-node`) before it
     tries to place it, and nothing after it fails to, so a hook for "the host
@@ -554,6 +586,10 @@ registered, so `extend` cannot depend on the order.
   `getLinkTypeColor` in `litegraphUtil.ts` reads the same table but gives the
   default link colour for a type with none, which would hide that the type
   is uncoloured.
+- **A defined type's presentation** uses the host's own class fields
+  (`title_mode`, `collapsable`) and the edit core's `chooseResizable` for
+  `resizable`, which already keeps the choice through pin changes; nothing
+  new holds it.
 - **Calling a pack callback** goes through `callListener`, the error isolation
   the listener primitive already had, now exported so every callback the API
   calls is reported the same way.

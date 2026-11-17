@@ -5,6 +5,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { checkedChoice } from '@/platform/nodeApi/v4/edit/checkedArguments'
+import { chooseResizable } from '@/platform/nodeApi/v4/edit/nodeSizing'
 import { SLOT_SHAPES } from '@/platform/nodeApi/v4/edit/slotVocabulary'
 import type {
   NodeDef,
@@ -12,6 +13,8 @@ import type {
   NodeDefinition
 } from '@/platform/nodeApi/v4/types'
 import type { HookCallbacks } from './nodeHooks'
+import { checkedPresentation } from './nodePresentation'
+import type { CheckedPresentation } from './nodePresentation'
 
 type DefinitionHooks = Partial<
   Pick<
@@ -40,6 +43,7 @@ export interface CheckedDefinition {
   readonly inputs: readonly CheckedSlot[]
   readonly outputs: readonly CheckedSlot[]
   readonly execution: 'backend' | 'frontend'
+  readonly presentation: CheckedPresentation
   readonly hooks: DefinitionHooks
 }
 
@@ -51,6 +55,7 @@ const DEFINITION_FIELDS = {
   inputs: true,
   outputs: true,
   execution: true,
+  presentation: true,
   onCreated: true,
   onConfigured: true,
   onRemoved: true,
@@ -85,6 +90,7 @@ export function checkedDefinition(definition: unknown): CheckedDefinition {
     inputs: checkedSlots('inputs', definition.inputs),
     outputs: checkedSlots('outputs', definition.outputs),
     execution: checkedExecution(definition.execution),
+    presentation: checkedPresentation(definition.presentation),
     hooks: {
       onCreated: optionalHook('onCreated', definition.onCreated),
       onConfigured: optionalHook('onConfigured', definition.onConfigured),
@@ -122,12 +128,15 @@ export function addDefinitionHooks(
 export function registerDefinedType(
   definition: CheckedDefinition
 ): typeof LGraphNode {
-  const { title, inputs, outputs, execution } = definition
+  const { title, inputs, outputs, execution, presentation } = definition
   class DefinedNode extends LGraphNode {
     static override title = title
+    static title_mode = presentation.titleMode
+    static collapsable = presentation.collapsible
 
     constructor(nodeTitle: string) {
       super(nodeTitle)
+      if (!presentation.resizable) chooseResizable(this, { resizable: false })
       for (const input of inputs) this.addInput(input.name, input.type)
       for (const { name, type, shape } of outputs) {
         this.addOutput(name, type, shape === undefined ? {} : { shape })
