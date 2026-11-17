@@ -58,7 +58,7 @@
 </template>
 
 <script setup lang="ts">
-import { useEventListener, useMouse, useWindowSize } from '@vueuse/core'
+import { useEventListener, usePointer, useWindowSize } from '@vueuse/core'
 import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
@@ -106,7 +106,7 @@ const dismissable = ref(true)
 const filterVisible = ref(false)
 const hoveredNodeDef = ref<ComfyNodeDefImpl | null>(null)
 const { width: windowWidth } = useWindowSize()
-const { x: mouseX, y: mouseY, sourceType } = useMouse({ type: 'client' })
+const { x: pointerX, y: pointerY, pointerType } = usePointer()
 // Minimum viewport width for the preview panel to fit beside the dialog
 const MIN_WIDTH_FOR_PREVIEW = 1320
 const enableNodePreview = computed(
@@ -145,10 +145,10 @@ const canvasStore = useCanvasStore()
 
 function addNode(
   nodeDef: ComfyNodeDefImpl,
-  dragEvent = (sourceType.value === null ? triggerEvent : null) ??
+  dragEvent = (pointerType.value === null ? triggerEvent : null) ??
     new MouseEvent('click', {
-      clientX: mouseX.value,
-      clientY: mouseY.value
+      clientX: pointerX.value,
+      clientY: pointerY.value
     })
 ) {
   const followCursor = settingStore.get('Comfy.NodeSearchBoxImpl.FollowCursor')
