@@ -103,6 +103,10 @@ export interface Comfy {
   readonly models: ModelsHandle
   /** What a pack adds to the app around the graph. */
   readonly ui: UiHandle
+  /** Translations a pack adds to the app's messages. */
+  readonly localization: LocalizationHandle
+  /** The machine the backend runs on. */
+  readonly system: SystemHandle
 }
 
 /** The graph on screen at each call: the root graph, or the subgraph the user opened. An argument a member cannot use throws a `TypeError`. */
@@ -1631,4 +1635,68 @@ export interface ViewportPanelDef {
 export interface ViewportPanelHandle {
   /** Removes the panel. Safe to call more than once. */
   remove(): void
+}
+
+export interface LocalizationHandle {
+  /**
+   * Merges `catalog.messages` into the app's messages for `locale`, for the life of the page.
+   * A later catalog wins. A locale the app does not ship throws.
+   */
+  registerCatalog(locale: string, catalog: LocalizationCatalog): void
+}
+
+/** A message, or a group of them by key. `null` leaves the key to the fallback locale. */
+export type LocalizationMessage =
+  | string
+  | null
+  | { readonly [key: string]: LocalizationMessage }
+
+export interface LocalizationCatalog {
+  /** Keyed as the app's own messages: `nodeDefs`, `commands`, `settings` and the rest. */
+  readonly messages: { readonly [key: string]: LocalizationMessage }
+}
+
+export interface SystemHandle {
+  /** One reading of the backend's memory and devices; `undefined` if the server could not be read. */
+  monitor(): Promise<SystemMonitorSnapshot | undefined>
+}
+
+export interface SystemMonitorSnapshot {
+  readonly cpu: SystemMonitorCpu
+  /** The backend's RAM. */
+  readonly memory: SystemMonitorMemory
+  /** Empty: the backend reports no disks. */
+  readonly volumes: readonly SystemMonitorVolume[]
+  /** The backend's devices other than the CPU. */
+  readonly accelerators: readonly SystemMonitorAccelerator[]
+}
+
+export interface SystemMonitorCpu {
+  /** `null`: the backend reports no CPU load. */
+  readonly utilization_percent: number | null
+}
+
+/** Bytes. */
+export interface SystemMonitorMemory {
+  readonly total: number
+  readonly available: number
+}
+
+export interface SystemMonitorVolume extends SystemMonitorMemory {
+  readonly id: string
+  readonly label: string
+}
+
+export interface SystemMonitorAccelerator {
+  /** The device's name, which the backend gives each device. */
+  readonly id: string
+  readonly name: string
+  /** Bytes. */
+  readonly memory_total: number
+  /** Bytes. */
+  readonly memory_available: number
+  /** `null`: the backend reports no device load. */
+  readonly utilization_percent: number | null
+  /** `null`: the backend reports no temperature. */
+  readonly temperature_c: number | null
 }

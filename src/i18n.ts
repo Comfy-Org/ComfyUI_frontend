@@ -42,6 +42,8 @@ const loadingLocales = new Map<string, Promise<void>>()
 // Store custom nodes i18n data for merging when locales are lazily loaded
 const customNodesI18nData: Record<string, unknown> = {}
 
+const extensionMessages = new Map<string, Record<string, unknown>[]>()
+
 /**
  * Dynamically load a shipped locale's bundles (nodeDefs, commands, settings).
  * Callers must pre-resolve untrusted input via `resolveSupportedLocale` or
@@ -84,6 +86,9 @@ export async function loadLocale(locale: SupportedLocale): Promise<void> {
 
       if (customNodesI18nData[locale]) {
         i18n.global.mergeLocaleMessage(locale, customNodesI18nData[locale])
+      }
+      for (const messages of extensionMessages.get(locale) ?? []) {
+        i18n.global.mergeLocaleMessage(locale, messages)
       }
     } catch (error) {
       console.error(`Failed to load locale "${locale}":`, error)
@@ -133,6 +138,23 @@ export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
     if (loadedLocales.has(locale)) {
       i18n.global.mergeLocaleMessage(locale, message)
     }
+  }
+}
+
+/**
+ * Merges an extension's messages into a locale now if it is loaded, and again
+ * when it loads, after the custom nodes' data. Later messages win.
+ */
+export function mergeExtensionI18n(
+  locale: SupportedLocale,
+  messages: Record<string, unknown>
+): void {
+  extensionMessages.set(locale, [
+    ...(extensionMessages.get(locale) ?? []),
+    messages
+  ])
+  if (loadedLocales.has(locale)) {
+    i18n.global.mergeLocaleMessage(locale, messages)
   }
 }
 

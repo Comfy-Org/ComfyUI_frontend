@@ -41,9 +41,11 @@ import { createPacks } from './packs'
 import type { Comfy } from './types'
 import { createBackendHandle } from './utilities/backendHandle'
 import { createCommandsHandle } from './utilities/commandsHandle'
+import { createLocalizationHandle } from './utilities/localizationHandle'
 import { createModelsHandle } from './utilities/modelsHandle'
 import { createSettingsHandle } from './utilities/settingsHandle'
 import { createStorageHandle } from './utilities/storageHandle'
+import { createSystemHandle } from './utilities/systemHandle'
 import { createUi } from './utilities/ui/uiHandle'
 import { createWidgetCollections } from './widgets/widgetCollection'
 
@@ -182,6 +184,8 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     backend: createBackendHandle(),
     models: createModelsHandle(),
     ui: chrome.ui,
+    localization: createLocalizationHandle(),
+    system: createSystemHandle(),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
   } satisfies Comfy)
 
