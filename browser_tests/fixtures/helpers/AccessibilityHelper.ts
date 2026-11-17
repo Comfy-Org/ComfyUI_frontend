@@ -3,6 +3,7 @@ import type { Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { compareViolationCounts } from '@e2e/fixtures/utils/accessibilityViolationCounts'
+import { finishFiniteAnimations } from '@e2e/fixtures/utils/finiteAnimations'
 
 type AxeViolation = Awaited<
   ReturnType<AxeBuilder['analyze']>
@@ -32,19 +33,6 @@ function describeViolation({ id, impact, help, helpUrl, nodes }: AxeViolation) {
   }
 }
 
-async function finishFiniteAnimations(page: Page): Promise<void> {
-  await page.evaluate(() =>
-    Promise.allSettled(
-      document
-        .getAnimations()
-        .filter(
-          ({ effect }) => effect?.getComputedTiming().endTime !== Infinity
-        )
-        .map(({ finished }) => finished)
-    )
-  )
-}
-
 export class AccessibilityHelper {
   constructor(
     private readonly page: Page,
@@ -61,7 +49,8 @@ export class AccessibilityHelper {
     knownViolations: KnownElementCounts,
     axeBuilder: AxeBuilder = this.makeAxeBuilder()
   ): Promise<void> {
-    await finishFiniteAnimations(this.page)
+    const documentHandle = await this.page.evaluateHandle(() => document)
+    await documentHandle.evaluate(finishFiniteAnimations)
     const results = await axeBuilder.analyze()
     await this.testInfo.attach('axe-violations', {
       body: JSON.stringify(results.violations, null, 2),
