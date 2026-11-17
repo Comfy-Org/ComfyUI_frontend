@@ -146,6 +146,14 @@ describe('declared widget types', () => {
     expect(rendered.context?.getOptions()).toEqual({})
   })
 
+  it('draws a placeholder at low zoom, as a mount does by default', () => {
+    defineRendering()
+
+    const { widget } = buildInput('PACK_COLOR')
+
+    expect(widget.options).toMatchObject({ hideOnZoom: true })
+  })
+
   it('commits a value the widget sets, as one change', () => {
     const { rendered } = defineRendering()
     const { widget } = buildInput('PACK_COLOR')
