@@ -1,0 +1,395 @@
+<script setup lang="ts">
+import { storeToRefs } from 'pinia'
+import { computed, provide, ref, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import EditableText from '@comfyorg/design-system/common/EditableText'
+import Tab from '@comfyorg/design-system/tab/Tab'
+import TabList from '@comfyorg/design-system/tab/TabList'
+import Button from '@comfyorg/design-system/button/Button'
+import { useFocusNode } from '@/composables/canvas/useFocusNode'
+import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import type { PropertiesPanelTab } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import TabInfo from './info/TabInfo.vue'
+import TabGlobalParameters from './parameters/TabGlobalParameters.vue'
+import TabNodes from './parameters/TabNodes.vue'
+import TabNormalInputs from './parameters/TabNormalInputs.vue'
+import TabSubgraphInputs from './parameters/TabSubgraphInputs.vue'
+import { trackPropertiesPanelTabOpened } from './propertiesPanelTabTelemetry'
+import TabGlobalSettings from './settings/TabGlobalSettings.vue'
+import TabSettings from './settings/TabSettings.vue'
+import { findParentGroup, GetNodeParentGroupKey } from './parentGroup'
+import { useFlatAndCategorizeSelectedItems } from './selectedItems'
+import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
+import SubgraphEditor from './subgraph/SubgraphEditor.vue'
+import TabErrors from '@/platform/workflowErrors/panel/TabErrors.vue'
+import { useErrorsTabIndicator } from '@/platform/workflowErrors/panel/useErrorsTabIndicator'
+import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
+import { WorkflowErrorManagerKey } from '@/platform/workflowErrors/workflowErrorManager'
+import { createWorkflowErrorManager } from '@/platform/customNodes/manager/composables/workflowErrorManager'
+
+provide(WorkflowErrorManagerKey, createWorkflowErrorManager())
+provide(AskAgentPortKey, useAskAgentAboutIssues())
+const canvasStore = useCanvasStore()
+const workflowStore = useWorkflowStore()
+const propertiesPanelStore = usePropertiesPanelStore()
+const settingStore = useSettingStore()
+const { t } = useI18n()
+
+const { focusNode } = useFocusNode()
+
+const { selectedItems: directlySelectedItems } = storeToRefs(canvasStore)
+const { activeTab, isEditingSubgraph } = storeToRefs(propertiesPanelStore)
+
+const sidebarLocation = computed<'left' | 'right'>(() =>
+  settingStore.get('Comfy.Sidebar.Location')
+)
+
+// Panel is on the left when sidebar is on the right, and vice versa
+const panelIcon = computed(() =>
+  sidebarLocation.value === 'right'
+    ? 'icon-[lucide--panel-left]'
+    : 'icon-[lucide--panel-right]'
+)
+
+const { flattedItems, selectedNodes, selectedGroups, nodeToParentGroup } =
+  useFlatAndCategorizeSelectedItems(directlySelectedItems)
+
+const shouldShowGroupNames = computed(() => {
+  return !(
+    directlySelectedItems.value.length === 1 &&
+    (selectedGroups.value.length === 1 || selectedNodes.value.length === 1)
+  )
+})
+
+provide(GetNodeParentGroupKey, (node: LGraphNode) => {
+  if (!shouldShowGroupNames.value) return null
+  return (
+    nodeToParentGroup.value.get(node) ??
+    findParentGroup(canvasStore.canvas?.graph?.groups ?? [], node)
+  )
+})
+
+const hasSelection = computed(() => flattedItems.value.length > 0)
+
+const selectedSingleNode = computed(() => {
+  return selectedNodes.value.length === 1 && flattedItems.value.length === 1
+    ? selectedNodes.value[0]
+    : null
+})
+
+const isSingleSubgraphNode = computed(() => {
+  return selectedSingleNode.value instanceof SubgraphNode
+})
+
+const workflowKey = computed(() => workflowStore.activeWorkflow?.path ?? '')
+
+const selectedNodesKey = computed(() => {
+  const nodeIds = selectedNodes.value.map((n) => n.id).join(',')
+  const groupIds = selectedGroups.value.map((g) => g.id).join(',')
+  return `${workflowKey.value}|${nodeIds}|${groupIds}`
+})
+
+const singleSubgraphKey = computed(() =>
+  selectedSingleNode.value
+    ? `${workflowKey.value}:${selectedSingleNode.value.id}`
+    : ''
+)
+
+function closePanel() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'right_side_panel_closed',
+    element_group: 'right_side_panel'
+  })
+  propertiesPanelStore.closePanel()
+}
+
+function handleTabChange(newTab: PropertiesPanelTab) {
+  trackPropertiesPanelTabOpened(newTab)
+  propertiesPanelStore.openPanel(newTab)
+}
+
+type PropertiesPanelTabList = Array<{
+  label: () => string
+  value: PropertiesPanelTab
+  icon?: {
+    className: string
+    label: () => string
+  }
+}>
+
+const { hasRelevantErrors, hasPendingErrorScanSelected, hasBlockingError } =
+  useErrorsTabIndicator({
+    hasSelection,
+    selectedNodes,
+    currentGraph: () => canvasStore.currentGraph
+  })
+
+const tabs = computed<PropertiesPanelTabList>(() => {
+  const list: PropertiesPanelTabList = []
+
+  if (
+    settingStore.get('Comfy.RightSidePanel.ShowErrorsTab') &&
+    (hasRelevantErrors.value ||
+      (activeTab.value === 'errors' && hasPendingErrorScanSelected.value))
+  ) {
+    list.push({
+      label: () => t('rightSidePanel.errors'),
+      value: 'errors',
+      icon: hasRelevantErrors.value
+        ? {
+            className: cn(
+              'ml-1',
+              hasBlockingError.value
+                ? 'icon-[lucide--octagon-alert] bg-destructive'
+                : 'icon-[lucide--triangle-alert] bg-warning'
+            ),
+            label: () =>
+              t(
+                hasBlockingError.value
+                  ? 'rightSidePanel.severityErrorLabel'
+                  : 'rightSidePanel.severitySetupLabel'
+              )
+          }
+        : undefined
+    })
+  }
+
+  list.push({
+    label: () =>
+      flattedItems.value.length > 1
+        ? t('rightSidePanel.nodes')
+        : t('rightSidePanel.parameters'),
+    value: 'parameters'
+  })
+
+  if (!hasSelection.value) {
+    list.push({
+      label: () => t('rightSidePanel.nodes'),
+      value: 'nodes'
+    })
+  }
+
+  if (hasSelection.value) {
+    if (selectedSingleNode.value && !isSingleSubgraphNode.value) {
+      list.push({
+        label: () => t('rightSidePanel.info'),
+        value: 'info'
+      })
+    }
+  }
+
+  list.push({
+    label: () =>
+      hasSelection.value
+        ? t('g.settings')
+        : t('rightSidePanel.globalSettings.title'),
+    value: 'settings'
+  })
+
+  return list
+})
+
+function isActiveTabAvailable() {
+  return (
+    tabs.value.some((tab) => tab.value === activeTab.value) ||
+    (activeTab.value === 'subgraph' && isSingleSubgraphNode.value)
+  )
+}
+
+watchEffect(() => {
+  if (!isActiveTabAvailable()) {
+    propertiesPanelStore.openPanel(tabs.value[0].value)
+  }
+})
+
+function resolveTitle() {
+  const items = flattedItems.value
+  const nodes = selectedNodes.value
+  const groups = selectedGroups.value
+
+  if (items.length === 0) {
+    return t('rightSidePanel.workflowOverview')
+  }
+  if (directlySelectedItems.value.length === 1) {
+    if (groups.length === 1) {
+      return groups[0].title || t('rightSidePanel.fallbackGroupTitle')
+    }
+    if (nodes.length === 1) {
+      const fallbackNodeTitle = t('rightSidePanel.fallbackNodeTitle')
+      return resolveNodeDisplayName(nodes[0], {
+        emptyLabel: fallbackNodeTitle,
+        untitledLabel: fallbackNodeTitle
+      })
+    }
+  }
+  return t('rightSidePanel.title', { count: items.length })
+}
+
+const panelTitle = ref(resolveTitle())
+watchEffect(() => (panelTitle.value = resolveTitle()))
+
+const isEditing = ref(false)
+
+const allowTitleEdit = computed(() => {
+  return (
+    directlySelectedItems.value.length === 1 &&
+    (selectedGroups.value.length === 1 || selectedNodes.value.length === 1)
+  )
+})
+
+function handleTitleEdit(newTitle: string) {
+  isEditing.value = false
+
+  const trimmedTitle = newTitle.trim()
+  if (!trimmedTitle) return
+
+  const node = selectedGroups.value[0] || selectedNodes.value[0]
+  if (!node) return
+
+  if (trimmedTitle === node.title) return
+
+  node.title = trimmedTitle
+  panelTitle.value = trimmedTitle
+  canvasStore.canvas?.setDirty(true, true)
+}
+
+function handleTitleCancel() {
+  isEditing.value = false
+}
+</script>
+
+<template>
+  <div
+    data-testid="properties-panel"
+    class="flex size-full flex-col bg-background"
+  >
+    <!-- Panel Header -->
+    <section class="pt-1">
+      <div class="flex items-center justify-between pr-3 pl-4">
+        <h3 class="my-3.5 line-clamp-2 cursor-default text-sm font-semibold">
+          <template v-if="allowTitleEdit">
+            <EditableText
+              :model-value="panelTitle"
+              :is-editing="isEditing"
+              :input-attrs="{ 'data-testid': 'node-title-input' }"
+              class="cursor-text"
+              @edit="handleTitleEdit"
+              @cancel="handleTitleCancel"
+              @click="isEditing = true"
+            />
+            <Button
+              v-if="!isEditing"
+              variant="link"
+              size="unset"
+              :aria-label="t('rightSidePanel.editTitle')"
+              class="top-[2px] ml-2 shrink-0"
+              @click="isEditing = true"
+            >
+              <i aria-hidden="true" class="icon-[lucide--pencil]" />
+            </Button>
+          </template>
+          <template v-else>
+            {{ panelTitle }}
+          </template>
+        </h3>
+
+        <div class="flex gap-2">
+          <Button
+            v-if="isSingleSubgraphNode"
+            variant="secondary"
+            size="icon"
+            data-testid="subgraph-editor-toggle"
+            :aria-label="t('rightSidePanel.editSubgraph')"
+            :class="cn(isEditingSubgraph && 'bg-muted')"
+            @click="
+              propertiesPanelStore.openPanel(
+                isEditingSubgraph ? 'parameters' : 'subgraph'
+              )
+            "
+          >
+            <i class="icon-[lucide--settings-2]" />
+          </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            :aria-pressed="propertiesPanelStore.isOpen"
+            :aria-label="t('rightSidePanel.togglePanel')"
+            @click="closePanel"
+          >
+            <i :class="panelIcon" />
+          </Button>
+        </div>
+      </div>
+      <nav class="overflow-x-auto px-4 pt-1 pb-2">
+        <TabList :model-value="activeTab" @update:model-value="handleTabChange">
+          <Tab
+            v-for="tab in tabs"
+            :key="tab.value"
+            class="px-2 py-1 font-inter active:scale-95"
+            :value="tab.value"
+            :data-testid="`panel-tab-${tab.value}`"
+          >
+            {{ tab.label() }}
+            <i
+              v-if="tab.icon"
+              role="img"
+              :aria-label="tab.icon.label()"
+              data-testid="panel-tab-icon"
+              :class="tab.icon.className"
+            />
+          </Tab>
+        </TabList>
+      </nav>
+    </section>
+
+    <!-- Panel Content -->
+    <div class="flex-1 scrollbar-thin overflow-y-auto">
+      <TabErrors
+        v-if="activeTab === 'errors'"
+        :selected-items="directlySelectedItems"
+        @locate-node="focusNode"
+      />
+      <template v-else-if="!hasSelection">
+        <TabGlobalParameters
+          v-if="activeTab === 'parameters'"
+          :key="workflowKey"
+        />
+        <TabNodes v-else-if="activeTab === 'nodes'" :key="workflowKey" />
+        <TabGlobalSettings v-else-if="activeTab === 'settings'" />
+      </template>
+      <SubgraphEditor
+        v-else-if="isSingleSubgraphNode && isEditingSubgraph"
+        :key="singleSubgraphKey"
+        :node="selectedSingleNode"
+      />
+      <template v-else>
+        <TabSubgraphInputs
+          v-if="activeTab === 'parameters' && isSingleSubgraphNode"
+          :key="singleSubgraphKey"
+          :node="selectedSingleNode as SubgraphNode"
+        />
+        <TabNormalInputs
+          v-else-if="activeTab === 'parameters'"
+          :key="selectedNodesKey"
+          :nodes="selectedNodes"
+          :must-show-node-title="selectedGroups.length > 0"
+        />
+        <TabInfo v-else-if="activeTab === 'info'" :nodes="selectedNodes" />
+        <TabSettings
+          v-else-if="activeTab === 'settings'"
+          :nodes="flattedItems"
+        />
+      </template>
+    </div>
+  </div>
+</template>

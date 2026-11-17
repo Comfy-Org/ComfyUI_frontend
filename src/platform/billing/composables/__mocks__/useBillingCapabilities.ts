@@ -2,6 +2,8 @@ import { onTestFinished, vi } from 'vitest'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
+
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import type { ServedNoticePlan } from '@/platform/billing/composables/__mocks__/servedBillingNotices'
 import {
@@ -58,6 +60,7 @@ const defaults: ReturnType<typeof realUseBillingCapabilities> = {
     receiveServerFact('auto_top_up_enabled', false)
   ),
   autoTopUpSetup: computed(() => null),
+  autoTopUpMemberView: autoTopUpMemberViewFact(null),
   canRunWorkflows: computed(() => false),
   planKind: computed(() => receiveServerFact('plan_kind', null)),
   paymentRecoveryAvailable: computed(() =>
@@ -89,6 +92,16 @@ export function canManageAutoTopUpFact(granted: boolean) {
 
 export function autoTopUpEnabledFact(enabled: boolean) {
   return computed(() => receiveServerFact('auto_top_up_enabled', enabled))
+}
+
+export function autoTopUpMemberViewFact(
+  view: MaybeRefOrGetter<
+    BillingCapabilitiesRead['auto_top_up_member_view'] | null
+  >
+) {
+  return computed(() =>
+    receiveServerFact('auto_top_up_member_view', toValue(view) ?? null)
+  )
 }
 
 export function paymentRecoveryAvailableFact(

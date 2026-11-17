@@ -101,13 +101,30 @@ describe('loadArchitectureConfiguration', () => {
       name: 'a public entry point outside the domain',
       overrides: { publicEntryPoints: ['src/other.ts'] },
       error: 'public entry point is outside its modules'
+    },
+    {
+      name: 'a stylesheet entry point outside the domain',
+      overrides: { publicEntryPoints: ['src/other.css'] },
+      error: 'public entry point is outside its modules'
     }
   ])('rejects $name', ({ overrides, error }) => {
-    const root = createRepository(overrides, { 'src/other.ts': '' })
+    const root = createRepository(overrides, {
+      'src/other.ts': '',
+      'src/other.css': ''
+    })
     expect(loadArchitectureConfiguration(root)).toEqual({
       ok: false,
       errors: [expect.stringContaining(error)]
     })
+  })
+
+  it('accepts a public stylesheet within the domain modules', () => {
+    const root = createRepository(
+      { publicEntryPoints: ['src/images/style.css'] },
+      { 'src/images/style.css': '' }
+    )
+
+    expect(loadArchitectureConfiguration(root).ok).toBe(true)
   })
 
   it('gives each unlisted test the domain of its sibling source file, or else of the longest file path its name extends', () => {

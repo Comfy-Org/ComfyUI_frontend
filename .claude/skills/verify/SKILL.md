@@ -33,10 +33,10 @@ Run all four before driving. Each is read-only and takes seconds.
 **1. Is the code under test actually being served?** Vite serves transformed source over HTTP, so you can grep the running build with no auth and no browser:
 
 ```bash
-curl -s http://localhost:5173/src/composables/useFeatureFlags.ts | grep -o 'billing_sdk_[a-z_]*' | sort -u
+curl -s http://localhost:5173/src/composables/useFeatureFlags.ts | grep -c billingSdkRailEnabled
 ```
 
-Expect `billing_sdk_subscription_enabled` and `billing_sdk_topup_enabled`. Empty output means the checkout does not contain the migration. Stop, because nothing below is meaningful. (The same grep against a deployed bundle is how you prove what an _environment_ is running.)
+Expect a non-zero count. Zero means the checkout predates the billing SDK rail. Stop, because nothing below is meaningful. (The same grep against a deployed bundle is how you prove what an _environment_ is running.)
 
 **2. Is the cloud distribution live?** In the page console:
 
@@ -50,10 +50,10 @@ Must be `true`. `false` means the dev server was started without a `.comfy.org` 
 **3. What is the backend actually serving?** The features proxy answers without auth:
 
 ```bash
-curl -s http://localhost:5173/api/features | python3 -m json.tool | grep -E 'unified_cloud_auth|billing_sdk|embedded_checked'
+curl -s http://localhost:5173/api/features | python3 -m json.tool | grep -E 'embedded_checked'
 ```
 
-Read the values, do not assume them. On testcloud as of 2026-09-21: `unified_cloud_auth: false`, both `billing_sdk_*: false`, `embedded_checked_enabled: false`.
+Read the values, do not assume them. On testcloud as of 2026-09-21: `embedded_checked_enabled: false`.
 
 **4. Does the tab render frames?** Browser automation often drives a hidden tab. The Claude-in-Chrome tab reports `document.visibilityState === 'hidden'` and runs `requestAnimationFrame` at 0 frames per second. In the page console:
 
@@ -91,16 +91,14 @@ if (!isComfyEmployee()) return undefined // emailVerified AND @comfy.org
 const { flags } = (
   await import('/src/composables/useFeatureFlags.ts')
 ).useFeatureFlags()
-flags.billingSdkTopupRailEnabled
+flags.billingSdkRailEnabled
 ```
 
 `ff:<name>` in `localStorage` (`src/utils/devFeatureFlagOverride.ts`) has **no employee gate** but is tree-shaken out of production builds, so it works on this local dev server and nowhere else. Use it when you cannot sign in as an employee:
 
 ```js
-localStorage.setItem('ff:billing_sdk_topup_enabled', 'true')
+localStorage.setItem('ff:<flag>', 'true')
 ```
-
-Never set `ff:unified_cloud_auth`. It already resolves `true` for a signed-in user, and forcing it put the app into a reload loop.
 
 Precedence (`useFeatureFlags.ts:64-74`): session override → dev override → `/api/features` remote config → websocket server feature.
 

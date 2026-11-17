@@ -49,14 +49,11 @@
         </Button>
         <Button
           v-else-if="banner.action === 'choosePlan'"
-          as="a"
-          :href="plansHref"
-          target="_blank"
-          rel="noopener"
+          v-bind="plansButton"
           variant="inverted"
           size="lg"
           class="no-underline"
-          @click="trackPlans"
+          @click="openPlans"
         >
           {{ $t('workspacePanel.billingTab.plan.actions.choosePlan') }}
           <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -94,9 +91,9 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
 import type {
-  BillingBannerAudience,
-  BillingBannerKind
-} from '@/platform/billing/composables/useBillingBanner'
+  BillingStatusBannerAudience,
+  BillingStatusBannerKind
+} from '@comfyorg/account-core/billing'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
@@ -110,7 +107,7 @@ import { useScheduledPlanChange } from '@/platform/billing/composables/useSchedu
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformPlansLink } from '@/platform/billing/composables/usePlatformHandoff'
 
 type BannerAction =
   | 'addCredits'
@@ -154,10 +151,7 @@ const {
 } = useScheduledPlanChange()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
-const { href: plansHref, track: trackPlans } = usePlatformHandoff(
-  '/profile/billing/plans',
-  { target: 'plans' }
-)
+const { button: plansButton, open: openPlans } = usePlatformPlansLink()
 const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
 
@@ -206,11 +200,11 @@ const audienceCopy = {
     endingTitle: `${bs}.ending.personalTitle`,
     endingBody: `${bs}.ending.personalBody`
   }
-} satisfies Record<BillingBannerAudience, Record<string, string>>
+} satisfies Record<BillingStatusBannerAudience, Record<string, string>>
 
 const copy = computed(() => audienceCopy[audience.value ?? 'team'])
 
-const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingBannerKind> = new Set([
+const PLAN_LIFECYCLE_KINDS: ReadonlySet<BillingStatusBannerKind> = new Set([
   'planEnded',
   'ending',
   'planChange'
@@ -403,7 +397,7 @@ const planChangeView = (): BannerView | null =>
       }
     : null
 
-const bannerViews: Record<BillingBannerKind, () => BannerView | null> = {
+const bannerViews: Record<BillingStatusBannerKind, () => BannerView | null> = {
   paused: pausedView,
   planEnded: planEndedView,
   outOfCredits: outOfCreditsView,
