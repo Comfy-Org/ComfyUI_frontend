@@ -132,7 +132,7 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import {
-  MEDIA_ERR_SRC_NOT_SUPPORTED,
+  noPictureError,
   videoFailureMessageKey
 } from '@/composables/node/useNodeImage'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
@@ -199,11 +199,9 @@ const handleVideoLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLVideoElement)) return
   const video = event.target
   showLoader.value = false
-  // An undecodable video track with a playable audio track loads without error, but with no picture
-  videoError.value = !video.videoWidth || !video.videoHeight
-  if (videoError.value) {
-    errorCode.value = MEDIA_ERR_SRC_NOT_SUPPORTED
-  } else {
+  errorCode.value = noPictureError(video)
+  videoError.value = errorCode.value !== undefined
+  if (video.videoWidth && video.videoHeight) {
     actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
   }
 }
