@@ -36,7 +36,9 @@ export function resolvePromptErrorMessage(
   error: Extract<RunErrorMessageSource, { kind: 'prompt' }>['error'],
   context: ErrorResolveContext
 ): ResolvedErrorMessage {
-  const refusalMessageKey = promptRefusalMessageKey(error)
+  const refusalMessageKey = context.isCloud
+    ? promptRefusalMessageKey(error)
+    : undefined
   if (refusalMessageKey) {
     return {
       displayTitle: st('subscription.plansLink.runRefusedTitle', error.message),

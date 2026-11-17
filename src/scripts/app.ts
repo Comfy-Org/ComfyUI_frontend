@@ -89,7 +89,7 @@ import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput
 } from '@comfyorg/api-client/executionTypes'
-import type { NodeError } from '@comfyorg/api-client/types'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import {
   isComboInputSpecV1,
   isComboInputSpecV2
@@ -237,6 +237,12 @@ function servedRefusal(error: unknown): unknown {
   return error instanceof PromptExecutionError
     ? error.response.error
     : undefined
+}
+
+function withCloudRefusalReason(promptError: PromptError, error: unknown) {
+  return isCloud
+    ? withRefusalReason(promptError, servedRefusal(error))
+    : promptError
 }
 
 function isMeshModelFile(file: File): boolean {
@@ -2075,7 +2081,7 @@ export class ComfyApp implements IComfyApp {
                 promptError
               ) {
                 executionErrorStore.recordPromptError(
-                  withRefusalReason(promptError, servedRefusal(error)),
+                  withCloudRefusalReason(promptError, error),
                   queuedRunErrorKey
                 )
               }

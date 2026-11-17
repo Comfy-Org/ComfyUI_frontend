@@ -64,9 +64,10 @@ function getPromptErrorSources(response: unknown): RunErrorMessageSource[] {
       ? [
           {
             kind: 'prompt' as const,
-            error: useFeatureFlags().flags.billingNewUxEnabled
-              ? withRefusalReason(promptError, parsed.data.error)
-              : promptError,
+            error:
+              isCloud && useFeatureFlags().flags.billingNewUxEnabled
+                ? withRefusalReason(promptError, parsed.data.error)
+                : promptError,
             isCloud
           }
         ]
