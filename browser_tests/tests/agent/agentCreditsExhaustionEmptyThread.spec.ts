@@ -59,12 +59,6 @@ test.describe(
         release: () => void
       }
 
-      test.use({
-        initialFeatureFlags: {
-          'agent-free-use-message-placement': 'near-composer'
-        }
-      })
-
       test.beforeEach(async ({ agentBilling, comfyPage }) => {
         const { page } = comfyPage
         agentBilling.setFundingState('exhausted')
@@ -104,7 +98,7 @@ test.describe(
         await admittedRefresh.completed
         await expect(
           agentPanel.root.getByRole('note', { name: 'Free use notice' })
-        ).toBeVisible()
+        ).toBeHidden()
         await expect(paywall).toHaveCount(0)
       })
     })
