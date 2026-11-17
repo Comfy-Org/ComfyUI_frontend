@@ -58,6 +58,23 @@ describe('setupAutoQueueHandler', () => {
     })
   })
 
+  it('defers changes when setup starts with jobs already queued', async () => {
+    const queueCountStore = useQueuePendingTaskCountStore()
+    queueCountStore.count = 2
+    const listener = setupAndGetAutoQueueGraphChangedListener()
+
+    listener(new Event('autoQueueGraphChanged'))
+    listener(new Event('autoQueueGraphChanged'))
+
+    expect(app.queuePrompt).not.toHaveBeenCalled()
+    queueCountStore.count = 0
+    await nextTick()
+
+    expect(app.queuePrompt).toHaveBeenCalledExactlyOnceWith(0, 2, {
+      intent: { trigger_source: 'auto_queue' }
+    })
+  })
+
   it('coalesces changes while busy and queues once after the queue drains', async () => {
     const listener = setupAndGetAutoQueueGraphChangedListener()
     const queueCountStore = useQueuePendingTaskCountStore()

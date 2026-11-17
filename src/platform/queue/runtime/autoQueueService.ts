@@ -12,7 +12,7 @@ export function setupAutoQueueHandler() {
   const queueSettingsStore = useQueueSettingsStore()
 
   let graphHasChanged = false
-  let internalCount = 0
+  let internalCount = queueCountStore.count
   const onGraphChanged = () => {
     if (partnerRunGateBlocksAutoQueue()) return
     if (queueSettingsStore.mode === 'change') {
