@@ -1,11 +1,12 @@
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@comfyorg/graph-model/widgets'
-import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
+import type { ResultItem } from '@comfyorg/api-client/executionTypes'
+import type { ResultItemType } from '@comfyorg/api-client/resultItemTypeSchema'
+import type { InputSpec } from '@comfyorg/object-info-parser'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { ComfyWidgetConstructor } from '@/types/comfy'
@@ -57,6 +58,9 @@ export const useImageUploadWidget = () => {
     const isVideo = !!inputOptions.video_upload
     const accept = isVideo ? ACCEPTED_VIDEO_TYPES : ACCEPTED_IMAGE_TYPES
     const { showPreview } = isVideo ? useNodeVideo(node) : useNodeImage(node)
+    function showCanvasPreview() {
+      if (isVideo || !LiteGraph.vueNodesMode) showPreview({ block: false })
+    }
 
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
     function alertExtensionlessVideo(files: File[]) {
@@ -136,7 +140,7 @@ export const useImageUploadWidget = () => {
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
-      showPreview({ block: false })
+      showCanvasPreview()
       node.graph?.setDirtyCanvas(true)
     }
 
@@ -154,7 +158,7 @@ export const useImageUploadWidget = () => {
           isAnimated
         })
       }
-      showPreview({ block: false })
+      showCanvasPreview()
     })
 
     return { widget: uploadWidget }

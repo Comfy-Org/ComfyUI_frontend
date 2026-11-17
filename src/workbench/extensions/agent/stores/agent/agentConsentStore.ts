@@ -5,7 +5,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   webSessionRequests,
   webSessionSend
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import {
   getGlobalSetting,
@@ -24,6 +24,8 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   const loadedIdentity = ref<string | null>(null)
   const acceptedIdentity = ref<string | null>(null)
   const checkSettled = ref(false)
+  const checkFailed = ref(false)
+  const confirmedAcceptances = ref(0)
   const isChecking = computed(
     () => Boolean(currentUserId()) && !checkSettled.value
   )
@@ -58,11 +60,26 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
       loadedIdentity.value = null
       acceptedIdentity.value = null
       checkSettled.value = false
+      checkFailed.value = false
     },
     { flush: 'sync' }
   )
 
   async function ensureScope(): Promise<string | null> {
+    const initialSession = session
+    const initialUserId = currentUserId()
+    try {
+      return await resolveScope()
+    } catch (error) {
+      if (session === initialSession && currentUserId() === initialUserId) {
+        checkSettled.value = true
+        checkFailed.value = true
+      }
+      throw error
+    }
+  }
+
+  async function resolveScope(): Promise<string | null> {
     const userId = currentUserId()
     if (!userId) {
       throw new AgentConsentAuthenticationError(
@@ -117,9 +134,11 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
 
       loadedIdentity.value = identity
       acceptedIdentity.value = stored?.value === true ? identity : null
+      checkFailed.value = false
       return accepted.value
     } catch (error) {
       if (!stillOwns(sessionId, identity)) return false
+      checkFailed.value = true
       throw error
     } finally {
       if (stillOwns(sessionId, identity)) checkSettled.value = true
@@ -127,14 +146,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
   }
 
   async function load(): Promise<boolean> {
-    const initialSession = session
-    let identity: string | null
-    try {
-      identity = await ensureScope()
-    } catch (error) {
-      if (session === initialSession) checkSettled.value = true
-      throw error
-    }
+    const identity = await ensureScope()
     if (!identity) return false
     if (loadedIdentity.value === identity) return accepted.value
     if (pendingLoad?.identity === identity) return pendingLoad.result
@@ -167,6 +179,7 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
       loadedIdentity.value = identity
       acceptedIdentity.value = identity
       checkSettled.value = true
+      confirmedAcceptances.value += 1
       return true
     } catch (error) {
       if (!stillOwns(sessionId, identity)) return false
@@ -174,5 +187,14 @@ export const useAgentConsentStore = defineStore('agentConsent', () => {
     }
   }
 
-  return { accepted, identity, isChecking, ensureScope, load, accept }
+  return {
+    accepted,
+    checkFailed,
+    confirmedAcceptances,
+    identity,
+    isChecking,
+    ensureScope,
+    load,
+    accept
+  }
 })

@@ -1,5 +1,6 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
@@ -34,7 +35,9 @@ const createTestI18n = () =>
         queue: {
           jobList: {
             undated: 'Undated'
-          }
+          },
+          downloadingModel: 'Downloading {name}',
+          downloadedOfTotal: '{downloaded} of {total}'
         },
         g: {
           emDash: '--',
@@ -64,21 +67,27 @@ vi.mock<unknown>(import('@/composables/queue/useQueueProgress'), () => ({
   }
 }))
 
-vi.mock(import('@/utils/queueDisplay'), () => ({
-  buildJobDisplay: vi.fn(
-    (task: TaskItemImpl, state: JobState, options: BuildJobDisplayCtx) => ({
-      primary: `Job ${task.jobId}`,
-      secondary: `${state} meta`,
-      iconName: `${state}-icon`,
-      iconImageUrl: undefined,
-      showClear: state === 'failed',
-      options
-    })
-  )
-}))
+vi.mock(import('@/utils/queueDisplay'), { spy: true })
+
+function placeholderJobDisplay(
+  task: TaskItemImpl,
+  state: JobState,
+  options: BuildJobDisplayCtx
+) {
+  return {
+    primary: `Job ${task.jobId}`,
+    secondary: `${state} meta`,
+    iconName: `${state}-icon`,
+    iconImageUrl: undefined,
+    showClear: state === 'failed',
+    options
+  }
+}
 
 vi.mock<unknown>(import('@/utils/queueUtil'), () => ({
-  jobStateFromTask: vi.fn((task: TestTask): JobState => task.mockState)
+  jobStateFromTask: vi.fn((task: TestTask): JobState => task.mockState),
+  isActiveJobState: (state: JobState) =>
+    state === 'pending' || state === 'initialization' || state === 'running'
 }))
 
 let isJobInitializingMock: ReturnType<
@@ -118,6 +127,7 @@ const mountUseJobList = () => {
 }
 
 const resetStores = () => {
+  vi.mocked(buildJobDisplay).mockImplementation(placeholderJobDisplay)
   isJobInitializingMock = useExecutionStore().isJobInitializing
   const queueStore = useQueueStore()
   queueStore.pendingTasks = []
@@ -416,6 +426,85 @@ describe('useJobList', () => {
     expect(otherJob.progressCurrentPercent).toBeUndefined()
     expect(otherJob.runningNodeName).toBeUndefined()
     expect(otherJob.computeHours).toBeCloseTo(1)
+  })
+
+  function downloadingStyleLora(jobId: string) {
+    vi.spyOn(useJobModelDownloadStore(), 'downloadFor').mockImplementation(
+      (id) =>
+        id === jobId
+          ? {
+              name: 'my_style_v2.safetensors',
+              index: 1,
+              count: 1,
+              bytesDownloaded: 52428800,
+              bytesTotal: 152043520,
+              progress: 0.3448
+            }
+          : undefined
+    )
+  }
+
+  it.for(['pending', 'initialization', 'running'] as const)(
+    'shows the model download and its progress on a job in state %s',
+    async (state) => {
+      vi.mocked(buildJobDisplay).mockReset()
+      useQueueStore().pendingTasks = [
+        createTask({ jobId: 'downloading', mockState: state, createTime: 1 }),
+        createTask({ jobId: 'other', mockState: state, createTime: 1 })
+      ]
+
+      downloadingStyleLora('downloading')
+      const { jobItems } = initComposable()
+      await flush()
+
+      const items = new Map(jobItems.value.map((item) => [item.id, item]))
+      expect(items.get('downloading')).toMatchObject({
+        title: 'Downloading my_style_v2.safetensors',
+        meta: '50 MB of 145 MB',
+        progressTotalPercent: undefined
+      })
+      expect(items.get('downloading')?.progressCurrentPercent).toBeCloseTo(
+        34.48
+      )
+      expect(items.get('other')?.title).not.toContain('Downloading')
+      expect(items.get('other')?.progressCurrentPercent).toBeUndefined()
+    }
+  )
+
+  it('shows the download, not node progress, on the active job', async () => {
+    vi.mocked(buildJobDisplay).mockReset()
+    useQueueStore().runningTasks = [
+      createTask({ jobId: 'downloading', mockState: 'running' })
+    ]
+    useExecutionStore().activeJobId = 'downloading'
+    const progress = ensureProgressRefs()
+    progress.totalPercent.value = 80
+    progress.currentNodePercent.value = 50
+
+    downloadingStyleLora('downloading')
+    const { jobItems } = initComposable()
+    await flush()
+
+    expect(jobItems.value[0]).toMatchObject({
+      title: 'Downloading my_style_v2.safetensors',
+      meta: '50 MB of 145 MB',
+      progressTotalPercent: undefined
+    })
+    expect(jobItems.value[0].progressCurrentPercent).toBeCloseTo(34.48)
+  })
+
+  it('shows no download for a job that already finished', async () => {
+    vi.mocked(buildJobDisplay).mockReset()
+    useQueueStore().historyTasks = [
+      createTask({ jobId: 'finished', mockState: 'completed' })
+    ]
+
+    downloadingStyleLora('finished')
+    const { jobItems } = initComposable()
+    await flush()
+
+    expect(jobItems.value[0].title).not.toContain('Downloading')
+    expect(jobItems.value[0].progressCurrentPercent).toBeUndefined()
   })
 
   it('assigns preview urls for running jobs when previews enabled', async () => {

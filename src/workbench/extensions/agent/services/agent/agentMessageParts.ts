@@ -1,10 +1,15 @@
-import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
+import type {
+  AgentAskConflict,
+  AgentAskOption,
+  AgentExtensionChangedData
+} from '@comfyorg/ingest-types'
 import {
   zAgentDeleteApprovalContext,
   zAgentPausedContext,
   zAgentRunApprovalContext
 } from '@comfyorg/ingest-types/zod'
 import { isEqual, uniqBy } from 'es-toolkit'
+import { microUsdToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import type {
   AgentMessages,
@@ -29,6 +34,8 @@ export interface ToolPart {
   state: PartState
   ok?: boolean
   durationMs?: number
+  /** Client clock (Date.now()) when this call was first seen running; absent on parts rebuilt from history or first seen finished. */
+  startedAtMs?: number
   /** Whether a successful canvas write was observed on the bound canvas. */
   canvasConfirmed?: boolean
 }
@@ -70,6 +77,14 @@ export interface TabLinkPart {
   workflowId: string
   locatorId?: string
   name?: string
+}
+
+export interface ExtensionChangePart {
+  type: 'extensionChange'
+  action: AgentExtensionChangedData['action']
+  pack: string
+  agentCreated: boolean
+  restartRequired: boolean
 }
 
 export interface RunApprovalPart {
@@ -385,6 +400,7 @@ export type MessagePart =
   | NoticePart
   | AskUnavailablePart
   | TabLinkPart
+  | ExtensionChangePart
   | RunApprovalPart
   | AskUserPart
   | DeleteApprovalPart
@@ -398,6 +414,19 @@ export interface AssistantMessage {
   streaming: boolean
   thinking: boolean
   thinkingText?: string
+  creditsUsed?: number
+}
+
+export function creditsFromChargeMicroUsd(
+  chargeMicroUsd: unknown
+): number | undefined {
+  if (
+    typeof chargeMicroUsd !== 'number' ||
+    !Number.isFinite(chargeMicroUsd) ||
+    chargeMicroUsd <= 0
+  )
+    return undefined
+  return microUsdToCredits(chargeMicroUsd)
 }
 
 export function createAssistantMessage(id: TurnId): AssistantMessage {

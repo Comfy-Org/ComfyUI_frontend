@@ -6,7 +6,7 @@ import type { useBillingContext as realUseBillingContext } from '@/platform/bill
 
 function createBillingContextMock(): BillingContext {
   return {
-    type: computed(() => 'legacy'),
+    type: computed(() => 'workspace'),
     isInitialized: ref(false),
     isLoading: ref(false),
     error: ref(null),
@@ -15,6 +15,7 @@ function createBillingContextMock(): BillingContext {
     plans: computed(() => []),
     currentPlanSlug: computed(() => null),
     teamCreditStops: computed(() => null),
+    subscriptionPaymentRecovery: computed(() => null),
     currentTeamCreditStop: computed(() => null),
     maxSeats: computed(() => null),
     occupiedSeats: computed(() => null),
@@ -26,6 +27,8 @@ function createBillingContextMock(): BillingContext {
     tier: computed(() => null),
     renewalDate: computed(() => null),
     renewalInvoice: computed(() => null),
+    periodCreditGrant: computed(() => null),
+    nextCreditRefillAt: computed(() => null),
     isLegacyTeamPlan: computed(() => false),
     isTeamPlan: computed(() => false),
     canRunWorkflows: computed(() => false),
@@ -37,7 +40,7 @@ function createBillingContextMock(): BillingContext {
     subscribe: vi.fn(async () => {}),
     previewSubscribe: vi.fn(async () => null),
     manageSubscription: vi.fn(async () => ({ ok: true }) as const),
-    cancelSubscription: vi.fn(async () => 'legacy' as const),
+    cancelSubscription: vi.fn(async () => undefined),
     resubscribe: vi.fn(async () => {}),
     topup: vi.fn(async () => {}),
     fetchPlans: vi.fn(async () => {}),

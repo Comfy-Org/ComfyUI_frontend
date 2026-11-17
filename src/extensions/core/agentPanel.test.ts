@@ -29,7 +29,7 @@ import {
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
-import type { useExtensionService } from '@/services/extensionService'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -133,7 +133,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (ext: ComfyExtension) => {

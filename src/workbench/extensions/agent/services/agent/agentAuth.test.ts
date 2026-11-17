@@ -12,7 +12,11 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
-import type { AuthCredential, AuthHeader, AuthScheme } from '@/types/authTypes'
+import type {
+  AuthCredential,
+  AuthHeader,
+  AuthScheme
+} from '@comfyorg/api-client/authTypes'
 
 import {
   agentSocketAuthParams,

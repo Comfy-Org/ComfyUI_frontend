@@ -5,11 +5,31 @@ import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agen
 
 const MAX_DERIVED_TITLE_LENGTH = 60
 
-const graphemeSegmenter = once(
-  () => new Intl.Segmenter(undefined, { granularity: 'grapheme' })
-)
+const graphemeSegmenter = once(() => {
+  // oxlint-disable-next-line no-restricted-properties
+  const Segmenter = Intl.Segmenter
+  return typeof Segmenter === 'function'
+    ? new Segmenter(undefined, { granularity: 'grapheme' })
+    : undefined
+})
 
-/** First user message, trimmed and capped at 60 graphemes. */
+function truncatedTitle(text: string): string {
+  const segmenter = graphemeSegmenter()
+  const title: string[] = []
+
+  for (const item of segmenter ? segmenter.segment(text) : text) {
+    const segment = typeof item === 'string' ? item : item.segment
+    title.push(segment)
+    if (title.length === MAX_DERIVED_TITLE_LENGTH) break
+  }
+
+  return title.join('').trimEnd()
+}
+
+/**
+ * First user message, trimmed and capped at 60 graphemes, or 60 Unicode code
+ * points when the browser does not provide `Intl.Segmenter`.
+ */
 export function deriveSessionTitle(
   entries: ConversationEntry[]
 ): string | undefined {
@@ -18,12 +38,7 @@ export function deriveSessionTitle(
       entry.role === 'user'
   )
   const text = firstUser?.text.trim() ?? ''
-  return (
-    Array.from(graphemeSegmenter().segment(text), ({ segment }) => segment)
-      .slice(0, MAX_DERIVED_TITLE_LENGTH)
-      .join('')
-      .trimEnd() || undefined
-  )
+  return truncatedTitle(text) || undefined
 }
 
 export function withCurrentSessionTitle(

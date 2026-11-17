@@ -18,6 +18,7 @@
         :position="position + 1"
         :active="clip.name === activeName"
         :dragging="!!ghost && clip.name === draggedClip?.name"
+        :mismatched-size="mismatchedNames.includes(clip.name)"
         @pointerdown="handlePointerDown($event, position)"
         @keydown="handleTileKeydown($event, position, clip.name)"
         @metadata="clip.url && emit('metadata', clip.url, $event)"
@@ -70,10 +71,16 @@ import type {
 } from '@/composables/videoConcat/useVideoConcatClips'
 import { moveItem } from '@/composables/videoConcat/videoConcatOrder'
 
-const { clips, activeName, metadata } = defineProps<{
+const {
+  clips,
+  activeName,
+  metadata,
+  mismatchedNames = []
+} = defineProps<{
   clips: ConcatClip[]
   activeName?: string
   metadata: Record<string, ClipMetadata>
+  mismatchedNames?: string[]
 }>()
 
 const emit = defineEmits<{

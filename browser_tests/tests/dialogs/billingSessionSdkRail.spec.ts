@@ -25,20 +25,8 @@ import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * What a page load, a sign-out, and a backgrounded tab do to the billing
- * reads and the operation poller once both SDK rails are on.
- *
- * Both rails GET the same routes, so the URL cannot separate them. The
- * transport can: the SDK runs on `fetch`, the legacy workspace client on
- * axios' XHR adapter. The SDK sends `Idempotency-Key` only on writes, so these
- * reads carry none on either rail and the transport is the whole signal.
- */
 const RAILS_ON = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true,
-  billing_sdk_topup_enabled: true,
-  billing_sdk_subscription_enabled: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const PENDING_OPERATION_ID = 'op-e2e-idle-tab'
@@ -55,6 +43,7 @@ const ACTIVE_STATUS = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 } satisfies BillingStatusResponse
@@ -90,9 +79,6 @@ const PENDING_TOPUP = {
   status: 'pending',
   started_at: '2026-09-20T00:00:00Z'
 } satisfies BillingOpStatusResponse
-
-/** The legacy personal balance read, which a rail-on load must not issue. */
-const LEGACY_BALANCE_ROUTE = '/customers/balance'
 
 interface BillingServer {
   status: BillingStatusResponse
@@ -145,7 +131,6 @@ async function bootWithRailsOn(
     return route.fulfill(jsonRoute(server.balance))
   }
   await page.route('**/api/billing/balance', answerBalance)
-  await page.route(`**${LEGACY_BALANCE_ROUTE}`, answerBalance)
   await page.route(
     `**/api/billing/ops/${PENDING_OPERATION_ID}`,
     async (route) => {
@@ -330,7 +315,6 @@ test.describe('Billing SDK rails across a session', { tag: '@cloud' }, () => {
       ])
     ).toEqual(['fetch', 'fetch'])
     expect(transports(wire.reads)).not.toContain('xhr')
-    expect(readsOf(wire.reads, LEGACY_BALANCE_ROUTE)).toEqual([])
   })
 
   test('never shows the balance as 0 or blank across five reloads', async ({

@@ -167,8 +167,9 @@
         "src/schemas/**",
         "src/scripts/app.ts",
         "src/scripts/api.ts",
+        "packages/api-client/src/ComfyApi.ts",
         "src/scripts/domWidget.ts",
-        "src/services/extensionService.ts",
+        "src/platform/extensions/services/extensionService.ts",
         "src/stores/workspaceStore.ts",
         "src/types/index.ts",
         "src/types/comfy.ts",
@@ -203,7 +204,7 @@
       "tier": "R2",
       "why": "the flag config and flag plumbing are the rollout lever \u2014 flipping a default changes behavior for every user at once",
       "paths": [
-        "src/config/clientFeatureFlags.json",
+        "packages/api-client/src/clientFeatureFlags.json",
         "**/useFeatureFlags*",
         "**/useVueFeatureFlags*",
         "**/devFeatureFlagOverride*"

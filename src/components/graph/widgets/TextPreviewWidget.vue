@@ -4,7 +4,11 @@
   >
     <div class="flex items-center gap-2">
       <div class="flex flex-1 items-center gap-2 break-all">
-        <SanitizedHtml as="span" :html="formattedText" />
+        <SanitizedHtml
+          as="span"
+          class="[&_a]:text-primary [&_a]:underline"
+          :html="formattedText"
+        />
         <Skeleton
           v-if="isParentNodeExecuting"
           data-testid="skeleton"

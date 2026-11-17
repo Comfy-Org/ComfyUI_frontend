@@ -5,7 +5,7 @@ import type {
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { markErrorReported, reportError } from '@comfyorg/telemetry/reportError'
-import type { AuthCredential, AuthScheme } from '@/types/authTypes'
+import type { AuthCredential, AuthScheme } from '@comfyorg/api-client/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
@@ -22,7 +22,8 @@ vi.mock(import('./agentAuth'))
 import {
   AgentApiError,
   AgentResponseUnreadableError,
-  createAgentRestClient
+  createAgentRestClient,
+  isLoopbackOnlyRefusal
 } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
@@ -1440,6 +1441,70 @@ describe('error mapping', () => {
     expect(markErrorReported).toHaveBeenCalledExactlyOnceWith(error)
   })
 
+  describe("the local host's loopback-fence refusal (cloud#14874)", () => {
+    const refusal = {
+      error:
+        'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.',
+      code: 'agent_loopback_only'
+    }
+
+    it('does not report it as an auth rejection', async () => {
+      respondWithAuthScheme(jsonResponse(403, refusal), 'web-session')
+
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(markErrorReported).not.toHaveBeenCalled()
+      expect(error).toBeInstanceOf(AgentApiError)
+    })
+
+    it("carries the host's own sentence to the caller for display", async () => {
+      respondWithAuthScheme(jsonResponse(403, refusal), 'web-session')
+
+      const error = await makeClient()
+        .listThreads()
+        .then((listing) => (listing.status === 'failed' ? listing.cause : null))
+
+      expect(error).toMatchObject({ status: 403, message: refusal.error })
+      expect(isLoopbackOnlyRefusal(error)).toBe(true)
+    })
+
+    it.for([
+      ['a 403 with no code at all', 403, { error: 'access denied' }],
+      ['another 403 code', 403, { error: 'nope', code: 'origin_not_allowed' }],
+      ['the same code on a 401', 401, refusal],
+      [
+        'the code with no message',
+        403,
+        { error: '', code: 'agent_loopback_only' }
+      ]
+    ] as const)(
+      'still reports %s as an auth rejection',
+      async ([, status, body]) => {
+        respondWithAuthScheme(jsonResponse(status, body), 'web-session')
+
+        const error = await makeClient()
+          .getRunMode()
+          .catch((e: unknown) => e)
+
+        expect(reportedTags()).toMatchObject({
+          operation: 'get_run_mode',
+          status
+        })
+        expect(isLoopbackOnlyRefusal(error)).toBe(false)
+      }
+    )
+
+    it.for([undefined, null, 'agent_loopback_only', 42, {}] as const)(
+      'is false for %s rather than throwing',
+      (value) => {
+        expect(isLoopbackOnlyRefusal(value)).toBe(false)
+      }
+    )
+  })
+
   it('does not report auth telemetry for a non-auth error status', async () => {
     respond(jsonResponse(503, { error: 'unavailable' }))
 
@@ -1662,37 +1727,47 @@ describe('user auth on agent requests', () => {
     })
   })
 
-  const calls: [
-    string,
-    (client: AgentRestClient) => Promise<unknown>,
-    unknown
-  ][] = [
-    [
-      'POST messages',
-      (c) => c.postMessage('new', { content: 'hi' }),
-      turnAccepted
-    ],
-    ['GET messages', (c) => c.getMessages('t1'), []],
-    [
-      'POST answer',
-      (c) => c.answerAsk('t1', 'ask-1', { selected: ['allow'] }),
-      { status: 'answered' }
-    ],
-    ['the credential refresh', (c) => c.refreshCredential(), emptyThreadPage]
-  ]
+  it('hands the request its own method, headers and body to be authorized', async () => {
+    respond(jsonResponse(202, turnAccepted))
 
-  it.for(calls)(
-    'sends the user auth header with %s',
-    async ([, call, body]) => {
-      respond(jsonResponse(200, body))
+    await makeClient().postMessage('new', { content: 'hi' })
 
-      await call(makeClient())
+    expect(withAgentAuth).toHaveBeenCalledOnce()
+    const [authorizing] = vi.mocked(withAgentAuth).mock.calls[0]
+    expect(authorizing.method).toBe('POST')
+    expect(new Headers(authorizing.headers).get('Content-Type')).toBe(
+      'application/json'
+    )
+    expect(JSON.parse(String(authorizing.body))).toMatchObject({
+      content: 'hi'
+    })
+  })
 
-      expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
-        'Bearer id-token'
-      )
-    }
-  )
+  it('fetches with the authorized init rather than rebuilding one', async () => {
+    respond(jsonResponse(200, []))
+
+    await makeClient().getMessages('t1')
+
+    expect(lastCall().init).toBe(
+      await vi.mocked(withAgentAuth).mock.results[0].value
+    )
+    expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
+      'Bearer id-token'
+    )
+  })
+
+  it('refreshes the credential with the cheapest authorized request', async () => {
+    respond(jsonResponse(200, emptyThreadPage))
+
+    await makeClient().refreshCredential()
+
+    const { route, init } = lastCall()
+    expect(route).toBe('/agent/threads?limit=1')
+    expect(init.method).toBe('GET')
+    expect(new Headers(init.headers).get('Authorization')).toBe(
+      'Bearer id-token'
+    )
+  })
 
   it('sends no auth header for a signed-out user', async () => {
     vi.mocked(withAgentAuth).mockImplementation(async (init) => init)

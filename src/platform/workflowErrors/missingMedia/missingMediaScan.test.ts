@@ -763,7 +763,7 @@ describe('verifyMediaCandidates', () => {
     await verifyMediaCandidates(candidates, { signal })
 
     expect(hashLookups()).toEqual([
-      ['/assets?hash=photo.png&limit=1', { signal }]
+      ['/assets?hash=photo.png&include_public=true&limit=1', { signal }]
     ])
     expect(candidates.map((c) => c.isMissing)).toEqual([true, true])
   })
@@ -778,7 +778,7 @@ describe('verifyMediaCandidates', () => {
     await verifyMediaCandidates(candidates, { signal })
 
     expect(hashLookups()).toEqual([
-      ['/assets?hash=bb22.png&limit=1', { signal }]
+      ['/assets?hash=bb22.png&include_public=true&limit=1', { signal }]
     ])
   })
 

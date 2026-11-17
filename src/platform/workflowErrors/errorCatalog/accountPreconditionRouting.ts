@@ -42,3 +42,30 @@ export function resolveAccountPrecondition(
   const match = resolveRuntimeCatalogMatch(info)
   return preconditionForCatalogId(match?.catalogId)
 }
+
+/** Cloud's run refusal says the account holds credits a plan would unlock. */
+export function promptErrorHasLockedCredits(error: unknown): boolean {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    'credits_locked' in error &&
+    error.credits_locked === true
+  )
+}
+
+const REFUSAL_REASON_TO_PRECONDITION = new Map<string, AccountPrecondition>([
+  ['subscription_inactive', 'subscription'],
+  ['no_funds', 'credits']
+])
+
+/** The account precondition named by the `reason` Cloud serves on a run refusal. */
+export function promptRefusalPrecondition(
+  error: unknown
+): AccountPrecondition | undefined {
+  if (error === null || typeof error !== 'object' || !('reason' in error)) {
+    return undefined
+  }
+  return typeof error.reason === 'string'
+    ? REFUSAL_REASON_TO_PRECONDITION.get(error.reason)
+    : undefined
+}

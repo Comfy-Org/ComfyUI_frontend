@@ -10,6 +10,8 @@
       />
       <CollapseToggleButton
         v-model="isAllCollapsed"
+        :expand-label="$t('g.expandAll')"
+        :collapse-label="$t('g.collapseAll')"
         :show="!isSearching && allErrorGroups.length > 1"
       />
     </div>
@@ -58,7 +60,24 @@
                 {{ hero.description }}
               </span>
             </div>
+            <Button
+              v-if="canAskAgent"
+              variant="outline"
+              size="sm"
+              class="shrink-0"
+              data-testid="error-card-ask-agent"
+              :aria-label="askAgentLabel"
+              @click="handleAskAgent"
+            >
+              {{ t('rightSidePanel.askAgent') }}
+            </Button>
           </div>
+          <DeploymentBuildActions
+            v-if="buildDeployment"
+            :deployment="buildDeployment"
+            :missing-pack-groups="missingPackGroups"
+            :missing-model-groups="missingModelGroups"
+          />
           <div
             v-if="hasMixedSeverityTotals"
             data-testid="errors-summary-filters"
@@ -131,6 +150,7 @@
             v-for="group in visibleGroups"
             :key="group.groupKey"
             :data-testid="'error-group-' + group.type.replaceAll('_', '-')"
+            :data-group-key="group.groupKey"
             :title="group.displayTitle"
             :count="group.count"
             :severity="group.severity"
@@ -236,6 +256,7 @@
               >
                 {{ group.displayMessage }}
               </p>
+              <CloudErrorAction :catalog-id="group.catalogId" />
             </div>
 
             <!-- Missing Node Packs -->
@@ -347,6 +368,11 @@
                 v-for="card in group.cards"
                 :key="card.id"
                 :card="card"
+                :expand-details-token="
+                  detailGroupKeys.includes(group.groupKey)
+                    ? expandDetailsToken
+                    : 0
+                "
                 :aria-current="isCardInSelection(card.id) ? 'true' : undefined"
                 :class="
                   cn(
@@ -364,6 +390,7 @@
               v-if="group.type === 'missing_model'"
               :missing-model-groups="missingModelGroups"
               :highlighted-node-ids="selectionMatchedAssetNodeIds"
+              :on-deployment="runsOnDeployment"
               @locate-model="handleLocateAssetNode"
             />
 
@@ -387,6 +414,7 @@ import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 
+import { storeToRefs } from 'pinia'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -395,10 +423,10 @@ import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useErrorsTabRequestStore } from './errorsTabRequestStore'
 import { useWorkflowErrorManager } from '@/platform/workflowErrors/workflowErrorManager'
 
-import CollapseToggleButton from '@/components/rightSidePanel/layout/CollapseToggleButton.vue'
+import CollapseToggleButton from '@comfyorg/design-system/accordion/CollapseToggleButton'
 import TransitionCollapse from '@comfyorg/design-system/transition/TransitionCollapse'
 import AsyncSearchInput from '@comfyorg/design-system/search-input/AsyncSearchInput'
 import ErrorCardSection from './ErrorCardSection.vue'
@@ -410,14 +438,23 @@ import MissingModelCard from '@/platform/workflowErrors/missingModel/components/
 import MissingMediaCard from '@/platform/workflowErrors/missingMedia/components/MissingMediaCard.vue'
 import { isCloud } from '@/platform/distribution/types'
 import Button from '@comfyorg/design-system/button/Button'
+import CloudErrorAction from '@/platform/openOnCloud/components/CloudErrorAction.vue'
 import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import DeploymentBuildActions from './DeploymentBuildActions.vue'
+import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
+import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import {
+  buildAllErrorContext,
+  buildGroupErrorContext
+} from './buildAgentErrorContext'
 import { useErrorGroups } from './useErrorGroups'
 import type { SwapNodeGroup } from './useErrorGroups'
 import type { ErrorGroup, ErrorGroupSeverity } from './types'
 import { isExecutionItemListGroup } from './executionItemList'
 import { selectionEmphasisClass } from './selectionEmphasis'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
+import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
 
 interface ExecutionItemListEntry {
   key: string
@@ -439,6 +476,7 @@ const { selectedItems = [] } = defineProps<{
 
 const emit = defineEmits<{
   locateNode: [nodeId: string, executionIdMap?: Map<string, LGraphNode>]
+  issueCount: [count: number]
 }>()
 
 /** Count-only `none` keys keep node-less errors from reading as "0 nodes". */
@@ -470,7 +508,7 @@ const SEVERITY_CHIP_CLASS = {
 
 const { t } = useI18n()
 const { copyToClipboard } = useCopyToClipboard()
-const rightSidePanelStore = useRightSidePanelStore()
+const errorsTabRequestStore = useErrorsTabRequestStore()
 const missingModelStore = useMissingModelStore()
 const manager = useWorkflowErrorManager()
 const { shouldShowManagerButtons, shouldShowInstallButton } =
@@ -480,8 +518,11 @@ const { missingNodePacks } = manager.useMissingNodes()
 const { isInstalling: isInstallingAll, installAllPacks: installAll } =
   manager.usePackInstall(() => missingNodePacks.value)
 const { replaceGroup, replaceAllGroups } = useNodeReplacement()
+const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 
 const searchQuery = ref('')
+const expandDetailsToken = ref(0)
+const detailGroupKeys = ref<string[]>([])
 const expandedExecutionItemDetailKeys = ref(new Set<string>())
 const isSearching = computed(() => searchQuery.value.trim() !== '')
 
@@ -571,6 +612,32 @@ const missingCount = computed(() =>
 )
 const hasMixedSeverity = computed(
   () => errorCount.value > 0 && missingCount.value > 0
+)
+
+const BUILD_FIXABLE_TYPES: ReadonlySet<ErrorGroup['type']> = new Set([
+  'missing_node',
+  'missing_model'
+])
+const { bootDeployment, changeSinceBoot } = storeToRefs(
+  useDeploymentPickStore()
+)
+const bootDeploymentLabel = useBootDeploymentLabel()
+const runsOnDeployment = computed(() => isCloud && !!bootDeployment.value)
+const buildDeployment = computed(() => {
+  if (!runsOnDeployment.value || !bootDeployment.value) return undefined
+  const buildFixes = filteredGroups.value.some((group) =>
+    BUILD_FIXABLE_TYPES.has(group.type)
+  )
+  return buildFixes ? bootDeployment.value : undefined
+})
+const buildFixesAllSetup = computed(
+  () =>
+    buildDeployment.value !== undefined &&
+    changeSinceBoot.value === null &&
+    filteredGroups.value.every(
+      (group) =>
+        group.severity !== 'missing' || BUILD_FIXABLE_TYPES.has(group.type)
+    )
 )
 
 const severityTotals = computed(() => {
@@ -705,7 +772,13 @@ const hero = computed(() => {
       count: missingCount.value,
       countClass: 'text-warning',
       title: t('rightSidePanel.setupRequired'),
-      description: t('rightSidePanel.finishSetupBeforeRun')
+      description: buildFixesAllSetup.value
+        ? t(
+            'rightSidePanel.addToDeploymentBuild',
+            { deployment: bootDeploymentLabel.value },
+            { escapeParameter: false }
+          )
+        : t('rightSidePanel.finishSetupBeforeRun')
     }
   }
   return {
@@ -847,14 +920,8 @@ function setSectionCollapsed(groupKey: string, collapsed: boolean) {
   collapseState[groupKey] = collapsed
 }
 
-/**
- * When an external trigger (e.g. "See Error" button in SectionWidgets)
- * sets focusedErrorNodeId, expand only the group containing the target
- * node and collapse all others so the user sees the relevant errors
- * immediately.
- */
 watch(
-  () => rightSidePanelStore.focusedErrorNodeId,
+  () => errorsTabRequestStore.focusedNodeId,
   (graphNodeId) => {
     if (!graphNodeId) return
     const prefix = `${graphNodeId}:`
@@ -868,7 +935,36 @@ watch(
       )
       setSectionCollapsed(group.groupKey, !hasMatch)
     }
-    rightSidePanelStore.focusedErrorNodeId = null
+    errorsTabRequestStore.clearFocusedNode()
+  },
+  { immediate: true }
+)
+
+function openClosedErrorDetails(groupKeys: readonly string[]) {
+  searchQuery.value = ''
+  severityFilter.value = null
+  const keys = new Set(groupKeys)
+  const nextKeys = new Set(expandedExecutionItemDetailKeys.value)
+  for (const group of allErrorGroups.value) {
+    if (!keys.has(group.groupKey)) continue
+    if (isSectionCollapsed(group.groupKey)) {
+      setSectionCollapsed(group.groupKey, false)
+    }
+    for (const item of getExecutionItemList(group)) {
+      if (item.displayDetails) nextKeys.add(item.key)
+    }
+  }
+  expandedExecutionItemDetailKeys.value = nextKeys
+  detailGroupKeys.value = [...keys]
+  expandDetailsToken.value += 1
+}
+
+watch(
+  () => errorsTabRequestStore.detailsRequest,
+  (request) => {
+    if (!request) return
+    openClosedErrorDetails(request)
+    errorsTabRequestStore.clearDetailsRequest()
   },
   { immediate: true }
 )
@@ -901,4 +997,53 @@ function handleReplaceGroup(group: SwapNodeGroup) {
 function handleReplaceAll() {
   replaceAllGroups(swapNodeGroups.value)
 }
+
+const missingGroupContext = computed(() => ({
+  missingPackGroups: missingPackGroups.value,
+  swapNodeGroups: swapNodeGroups.value,
+  missingModelGroups: missingModelGroups.value,
+  missingMediaGroups: missingMediaGroups.value
+}))
+
+const askAgentLabel = computed(() => {
+  const groups = filteredGroups.value
+  const title = groups.length === 1 ? groups[0].displayTitle : hero.value.title
+  return t('rightSidePanel.askAgentAbout', { title })
+})
+
+const allIssuesContext = computed(() =>
+  buildAllErrorContext(allErrorGroups.value, missingGroupContext.value, {
+    label: t('agent.errorContext.allLabel')
+  })
+)
+
+watch(
+  () => allIssuesContext.value.count,
+  (count) => emit('issueCount', count),
+  { immediate: true }
+)
+
+function handleAskAgent() {
+  const groups = filteredGroups.value
+  if (groups.length === 0) return
+  if (groups.length === 1) {
+    askAgentAboutIssues(
+      buildGroupErrorContext(groups[0], missingGroupContext.value)
+    )
+    return
+  }
+  askAgentAboutIssues(
+    buildAllErrorContext(groups, missingGroupContext.value, {
+      label: hero.value.title,
+      scope: 'card'
+    })
+  )
+}
+
+function askAboutAllIssues() {
+  if (allIssuesContext.value.count === 0) return
+  askAgentAboutIssues(allIssuesContext.value)
+}
+
+defineExpose({ askAboutAllIssues })
 </script>

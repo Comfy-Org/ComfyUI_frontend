@@ -45,7 +45,7 @@ import { toSelectableKey } from '@/core/selection/selectionState'
 import type {
   NodeExecutionOutput,
   ResultItem
-} from '@/platform/remote/comfyui/execution/types'
+} from '@comfyorg/api-client/executionTypes'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { DOMWidget, DOMWidgetOptions } from '@/types/domWidget'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
@@ -54,7 +54,13 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
-import { linkIdReservations, mintLinkId } from './idAllocation'
+import {
+  connect,
+  connectFloatingReroute,
+  connectSlots,
+  disconnectInput,
+  disconnectOutput
+} from './connectivitySystem'
 import {
   UNASSIGNED_NODE_ID,
   toNodeId,
@@ -70,17 +76,9 @@ import {
 } from '@/types/widgetVisibility'
 import { adjustColor } from '@comfyorg/shared-frontend-utils/colorUtil'
 import type { ColorAdjustOptions } from '@comfyorg/shared-frontend-utils/colorUtil'
-import { zeroUuid } from '@/utils/uuid'
-import {
-  commonType,
-  isNodeBindable,
-  toClass
-} from '@/lib/litegraph/src/utils/type'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { isNodeBindable, toClass } from '@/lib/litegraph/src/utils/type'
 
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
 import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
 import type { DragAndScale } from './DragAndScale'
 
@@ -92,13 +90,11 @@ import type { LGraphButtonOptions } from './LGraphButton'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { realignGroupWidgetChildLinks } from './linkDeduplication'
-import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
+import type { LLink } from './LLink'
 import {
   inputHasLink,
   inputLink,
-  inputLinkId,
   captureInputLayout,
-  finalizeInputLinkRemoval,
   replaceNodeInputs,
   outputHasLinks,
   outputLinks
@@ -121,7 +117,6 @@ import {
   NODE_CANONICAL_FIELDS,
   runExtensionSerializeHook
 } from './extensionPersistence'
-import { anchorRerouteChain } from './Reroute'
 import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
@@ -150,7 +145,6 @@ import type {
 } from '@comfyorg/graph-model/slots'
 import type { Panel } from './types/panel'
 import { LiteGraph } from './litegraphInstance'
-import { isSubgraph } from './subgraph/subgraphTypeGuards'
 
 import {
   createBounds,
@@ -184,7 +178,11 @@ import type {
   TWidgetType,
   TWidgetValue
 } from '@comfyorg/graph-model/widgets'
-import { findFreeSlotOfType, provideGraphNodeGuard } from './utils/collections'
+import {
+  findFreeSlotOfType,
+  legacyArrayItem,
+  provideGraphNodeGuard
+} from './utils/collections'
 import { warnDeprecated } from './utils/feedback'
 import {
   computeLegacyWidgetShadow,
@@ -218,10 +216,6 @@ interface IMouseOverData {
   inputId?: number
   outputId?: number
   overWidget?: IBaseWidget
-}
-
-function legacyArrayItem<T>(items: readonly T[], index: number): T | undefined {
-  return items[index]
 }
 
 function legacyValue<T>(value: T): T | undefined {
@@ -2261,7 +2255,7 @@ export class LGraphNode
         } else {
           widget_height += LiteGraph.NODE_WIDGET_HEIGHT
         }
-        widgets_height += widget_height + 4
+        widgets_height += widget_height + LiteGraph.NODE_WIDGET_GAP
       }
       widgets_height += 8
     }
@@ -3200,96 +3194,14 @@ export class LGraphNode
     afterRerouteId?: RerouteId,
     options?: { requestedId: LinkId }
   ): LLink | null {
-    let targetIndex: number | null
-
-    const { graph, outputs } = this
-    if (!graph) {
-      console.error(
-        "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."
-      )
-      return null
-    }
-
-    if (typeof slot === 'string') {
-      slot = this.findOutputSlot(slot)
-      if (slot == -1) {
-        if (LiteGraph.debug)
-          console.error(`Connect: Error, no slot of name ${slot}`)
-        return null
-      }
-    } else if (slot >= outputs.length) {
-      if (LiteGraph.debug)
-        console.error('Connect: Error, slot number not found')
-      return null
-    }
-
-    if (typeof target_node === 'number') {
-      const nodeById = graph.getNodeById(toNodeId(target_node))
-      if (!nodeById) throw 'target node is null'
-
-      target_node = nodeById
-    }
-    if (!target_node) throw 'target node is null'
-
-    if (target_node == this) return null
-
-    if (typeof target_slot === 'string') {
-      targetIndex = target_node.findInputSlot(target_slot)
-      if (targetIndex == -1) {
-        if (LiteGraph.debug)
-          console.error(`Connect: Error, no slot of name ${targetIndex}`)
-        return null
-      }
-    } else if (target_slot === LiteGraph.EVENT) {
-      if (LiteGraph.do_add_triggers_slots) {
-        target_node.changeMode(LGraphEventMode.ON_TRIGGER)
-        targetIndex = target_node.findInputSlot('onTrigger')
-      } else {
-        return null
-      }
-    } else if (typeof target_slot === 'number') {
-      targetIndex = target_slot
-    } else {
-      targetIndex = 0
-    }
-
-    if (target_node.onBeforeConnectInput) {
-      const requestedIndex = target_node.onBeforeConnectInput(
-        targetIndex,
-        target_slot
-      )
-      targetIndex = typeof requestedIndex === 'number' ? requestedIndex : null
-    }
-
-    if (targetIndex === null || targetIndex >= target_node.inputs.length) {
-      if (LiteGraph.debug)
-        console.error('Connect: Error, slot number not found')
-      return null
-    }
-
-    const input = target_node.inputs[targetIndex]
-    const output = legacyArrayItem(outputs, slot)
-
-    if (!output) return null
-
-    if (outputHasLinks(graph, this.id, slot)) {
-      if (
-        output.type === LiteGraph.EVENT &&
-        !LiteGraph.allow_multi_output_for_events
-      ) {
-        graph.beforeChange()
-        this.disconnectOutput(slot)
-      }
-    }
-
-    const link = this.connectSlots(
-      output,
+    return connect(
+      this,
+      slot,
       target_node,
-      input,
+      target_slot,
       afterRerouteId,
       options
     )
-    return link ?? null
   }
 
   connectSlots(
@@ -3302,120 +3214,15 @@ export class LGraphNode
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    const outputIndex = this.outputs.indexOf(output)
-    if (outputIndex === -1) {
-      console.warn('connectSlots: output not found')
-      return
-    }
-    const inputIndex = inputNode.inputs.indexOf(input)
-    if (inputIndex === -1) {
-      console.warn('connectSlots: input not found')
-      return
-    }
-
-    if (!LiteGraph.isValidConnection(output.type, input.type)) {
-      this.setDirtyCanvas(false, true)
-      return null
-    }
-
-    if (
-      inputNode.onConnectInput?.(
-        inputIndex,
-        output.type,
-        output,
-        this,
-        outputIndex
-      ) === false
+    return connectSlots(
+      graph,
+      this,
+      output,
+      inputNode,
+      input,
+      afterRerouteId,
+      options
     )
-      return null
-    if (
-      this.onConnectOutput?.(
-        outputIndex,
-        input.type,
-        input,
-        inputNode,
-        inputIndex
-      ) === false
-    )
-      return null
-
-    const replacingLink = inputLink(graph, inputNode.id, inputIndex)
-    if (replacingLink) {
-      graph.beforeChange()
-    }
-
-    const maybeCommonType =
-      input.type && output.type && commonType(input.type, output.type)
-
-    const reservedIds = linkIdReservations(graph.rootGraph)
-    const requestedId = options?.requestedId
-    const linkId =
-      requestedId !== undefined && !reservedIds.has(requestedId)
-        ? requestedId
-        : mintLinkId(graph.state, reservedIds)
-
-    const link = new LLink(
-      linkId,
-      maybeCommonType || input.type || output.type,
-      this.id,
-      outputIndex,
-      inputNode.id,
-      inputIndex,
-      afterRerouteId
-    )
-
-    if (!replaceLinkTopology(graph, replacingLink, link)) {
-      if (replacingLink) graph.afterChange()
-      return
-    }
-    graph._addLink(link)
-
-    if (replacingLink) {
-      finalizeInputLinkRemoval(
-        inputNode,
-        input,
-        inputIndex,
-        replacingLink,
-        true,
-        afterRerouteId
-      )
-      if (graph.getLink(link.id) !== link) {
-        graph.afterChange()
-        return
-      }
-    }
-
-    anchorRerouteChain(graph, link)
-    graph.incrementVersion()
-
-    this.onConnectionsChange?.(
-      NodeSlotType.OUTPUT,
-      outputIndex,
-      true,
-      link,
-      output
-    )
-    if (graph.getLink(link.id) !== link) {
-      graph.afterChange()
-      return
-    }
-
-    inputNode.onConnectionsChange?.(
-      NodeSlotType.INPUT,
-      inputIndex,
-      true,
-      link,
-      input
-    )
-    if (graph.getLink(link.id) !== link) {
-      graph.afterChange()
-      return
-    }
-
-    this.setDirtyCanvas(false, true)
-    graph.afterChange()
-
-    return link
   }
 
   connectFloatingReroute(
@@ -3423,255 +3230,19 @@ export class LGraphNode
     slot: INodeInputSlot | INodeOutputSlot,
     afterRerouteId?: RerouteId
   ): Reroute | undefined {
-    const { graph, id } = this
-    if (!graph) throw new NullGraphError()
-
-    // Assertion: It's either there or it isn't.
-    const inputIndex = this.inputs.indexOf(slot)
-    const outputIndex = this.outputs.indexOf(slot)
-    if (inputIndex === -1 && outputIndex === -1) {
-      console.error('Invalid slot')
-      return
-    }
-
-    const slotType = outputIndex === -1 ? 'input' : 'output'
-
-    const reroute = graph.setReroute({
-      pos,
-      parentId: afterRerouteId,
-      linkIds: [],
-      floating: { slotType }
-    })
-    if (!reroute) return
-
-    const parentReroute = graph.getReroute(afterRerouteId)
-    const fromLastFloatingReroute =
-      parentReroute?.floating?.slotType === 'output'
-
-    // Adding from an output, or a floating reroute that is NOT the tip of an existing floating chain
-    if (afterRerouteId == null || !fromLastFloatingReroute) {
-      const link = new LLink(
-        toLinkId(-1),
-        slot.type,
-        outputIndex === -1 ? -1 : id,
-        outputIndex,
-        inputIndex === -1 ? -1 : id,
-        inputIndex
-      )
-      link.parentId = reroute.id
-      graph.addFloatingLink(link)
-      return reroute
-    }
-
-    // Adding a new floating reroute from the tip of a floating chain.
-    const link = parentReroute.getFloatingLinks('output')?.[0]
-    if (!link)
-      throw new Error('[connectFloatingReroute] Floating link not found')
-
-    link.parentId = reroute.id
-    parentReroute.floating = undefined
-    return reroute
+    return connectFloatingReroute(this, pos, slot, afterRerouteId)
   }
 
-  /**
-   * disconnect one output to an specific node
-   * @param slot (could be the number of the slot or the string with the name of the slot)
-   * @param target_node the target node to which this slot is connected [Optional,
-   * if not target_node is specified all nodes will be disconnected]
-   * @returns if it was disconnected successfully
-   */
   disconnectOutput(slot: string | number, target_node?: LGraphNode): boolean {
-    if (typeof slot === 'string') {
-      slot = this.findOutputSlot(slot)
-      if (slot == -1) {
-        if (LiteGraph.debug)
-          console.error(`Connect: Error, no slot of name ${slot}`)
-        return false
-      }
-    } else if (slot >= this.outputs.length) {
-      if (LiteGraph.debug)
-        console.error('Connect: Error, slot number not found')
-      return false
-    }
-
-    // get output slot
-    const output = legacyArrayItem(this.outputs, slot)
-    if (!output) return false
-
-    let removedFloating = false
-    if (!target_node && this.graph) {
-      for (const link of slotFloatingLinks(
-        this.graph,
-        'output',
-        this.id,
-        slot
-      )) {
-        this.graph.removeFloatingLink(link)
-        removedFloating = true
-      }
-    }
-
-    const graph = this.graph
-    if (!graph) return false
-    if (!outputHasLinks(graph, this.id, slot) && !removedFloating) return false
-
-    const onlyTarget =
-      typeof target_node === 'number'
-        ? graph.getNodeById(target_node)
-        : target_node
-    if (target_node && !onlyTarget) throw 'Target Node not found'
-    let disconnected = false
-    for (const link_info of outputLinks(graph, this.id, slot)) {
-      if (onlyTarget && link_info.target_id != onlyTarget.id) continue
-
-      if (!disconnected && output instanceof NodeOutputSlot) {
-        output._setLegacyLinksPresent(Boolean(onlyTarget))
-      }
-      disconnected = true
-
-      if (link_info.target_id === SUBGRAPH_OUTPUT_ID && isSubgraph(graph)) {
-        const targetSlot = legacyArrayItem(
-          graph.outputNode.slots,
-          link_info.target_slot
-        )
-        if (targetSlot) {
-          targetSlot.linkIds.length = 0
-        } else {
-          console.error('Missing subgraphOutput slot when disconnecting link')
-        }
-      }
-
-      const target = graph.getNodeById(link_info.target_id)
-      const input = target?.inputs[link_info.target_slot]
-
-      link_info.disconnect(graph, 'input')
-      graph.incrementVersion()
-
-      if (target && input) {
-        target.onConnectionsChange?.(
-          NodeSlotType.INPUT,
-          link_info.target_slot,
-          false,
-          link_info,
-          input
-        )
-      }
-      this.onConnectionsChange?.(
-        NodeSlotType.OUTPUT,
-        slot,
-        false,
-        link_info,
-        output
-      )
-
-      if (onlyTarget) break
-    }
-
-    if (!disconnected && !removedFloating) return false
-
-    this.setDirtyCanvas(false, true)
-    return true
+    return disconnectOutput(this, slot, target_node)
   }
 
-  /**
-   * Disconnect one input
-   * @param slot Input slot index, or the name of the slot
-   * @param keepReroutes If `true`, reroutes will not be garbage collected.
-   * @param keepFloatingReroute Floating link(s) parented to this reroute are left
-   * intact, so a chain being reconnected is not pruned before its new link exists.
-   * @returns true if disconnected successfully or already disconnected, otherwise false
-   */
   disconnectInput(
     slot: number | string,
     keepReroutes?: boolean,
     keepFloatingReroute?: RerouteId
   ): boolean {
-    // Allow search by string
-    if (typeof slot === 'string') {
-      slot = this.findInputSlot(slot)
-      if (slot == -1) {
-        if (LiteGraph.debug)
-          console.error(`Connect: Error, no slot of name ${slot}`)
-        return false
-      }
-    } else if (slot >= this.inputs.length) {
-      if (LiteGraph.debug) {
-        console.error('Connect: Error, slot number not found')
-      }
-      return false
-    }
-
-    const input = legacyArrayItem(this.inputs, slot)
-    if (!input) {
-      console.error('disconnectInput: input not found', slot, this.inputs)
-      return false
-    }
-
-    const { graph } = this
-    if (!graph) throw new NullGraphError()
-
-    // Break floating links, except the one whose reroute chain is being
-    // reconnected (its reroute would be pruned before the new link is added).
-    for (const link of slotFloatingLinks(graph, 'input', this.id, slot)) {
-      if (
-        keepFloatingReroute !== undefined &&
-        link.parentId === keepFloatingReroute
-      )
-        continue
-      graph.removeFloatingLink(link)
-    }
-
-    const link_id = inputLinkId(graph, this.id, slot) ?? null
-    if (link_id !== null) {
-      // remove other side
-      const link_info = graph.links.get(link_id)
-      if (link_info) {
-        // Let SubgraphInput do the disconnect.
-        if (link_info.origin_id === SUBGRAPH_INPUT_ID && 'inputNode' in graph) {
-          graph.inputNode._disconnectNodeInput(this, input, link_info)
-          return true
-        }
-
-        const target_node = graph.getNodeById(link_info.origin_id)
-        if (!target_node) {
-          console.error(
-            'disconnectInput: output not found',
-            link_info.origin_slot
-          )
-          return false
-        }
-
-        const output = legacyArrayItem(
-          target_node.outputs,
-          link_info.origin_slot
-        )
-        if (!output) {
-          // Output not found - may have been removed
-          return false
-        }
-
-        link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
-        graph.incrementVersion()
-
-        this.onConnectionsChange?.(
-          NodeSlotType.INPUT,
-          slot,
-          false,
-          link_info,
-          input
-        )
-        target_node.onConnectionsChange?.(
-          NodeSlotType.OUTPUT,
-          link_info.origin_slot,
-          false,
-          link_info,
-          output
-        )
-      }
-    }
-
-    this.setDirtyCanvas(false, true)
-    return true
+    return disconnectInput(this, slot, { keepReroutes, keepFloatingReroute })
   }
 
   /**
@@ -4567,7 +4138,7 @@ export class LGraphNode
 
     for (const w of visibleWidgets) {
       if (w.computeSize) {
-        const height = w.computeSize()[1] + 4
+        const height = w.computeSize()[1] + LiteGraph.NODE_WIDGET_GAP
         w.computedHeight = height
         fixedWidgetHeight += height
       } else if (w.computeLayoutSize) {
@@ -4578,7 +4149,7 @@ export class LGraphNode
           w
         })
       } else {
-        const height = LiteGraph.NODE_WIDGET_HEIGHT + 4
+        const height = LiteGraph.NODE_WIDGET_HEIGHT + LiteGraph.NODE_WIDGET_GAP
         w.computedHeight = height
         fixedWidgetHeight += height
       }

@@ -7,6 +7,66 @@ import {
 } from './agentPaywallPresentation'
 
 describe('resolveAgentPaywallPresentation', () => {
+  it('carries the plan-required line for a Cloud owner who can top up but has no plan', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'cloud',
+        role: 'owner',
+        tier: 'FREE',
+        canTopUp: true,
+        canSubscribeSelfServe: true,
+        planCreditLine: 'planRequiredFreeRuns'
+      })
+    ).toEqual({
+      kind: 'subscribed',
+      showUpgrade: false,
+      planCreditLine: 'planRequiredFreeRuns'
+    })
+  })
+
+  it('drops the plan-required line when the owner cannot subscribe self-serve', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'cloud',
+        role: 'owner',
+        tier: 'FREE',
+        canTopUp: true,
+        canSubscribeSelfServe: false,
+        planCreditLine: 'planRequiredSubscribe'
+      })
+    ).toStrictEqual({ kind: 'subscribed', showUpgrade: false })
+  })
+
+  it('suppresses Upgrade for an ended plan whose tier still reads CREATOR', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'cloud',
+        role: 'owner',
+        tier: 'CREATOR',
+        canTopUp: true,
+        canSubscribeSelfServe: true,
+        planCreditLine: 'planRequiredResubscribe'
+      })
+    ).toStrictEqual({
+      kind: 'subscribed',
+      showUpgrade: false,
+      planCreditLine: 'planRequiredResubscribe'
+    })
+  })
+
+  it('omits the plan-required line on Local', () => {
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'local',
+        role: 'owner',
+        tier: null,
+        canTopUp: true,
+        canSubscribeSelfServe: true,
+        planCreditLine: 'planRequiredSubscribe'
+      })
+    ).toStrictEqual({ kind: 'local' })
+  })
+
   it.for([
     {
       name: 'both self-serve actions',

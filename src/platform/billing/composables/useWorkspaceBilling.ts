@@ -1,4 +1,3 @@
-import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import {
   computed,
   getCurrentScope,
@@ -238,6 +237,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       scheduledChange: status.scheduled_change ?? null,
       renewalDate: status.renewal_date ?? null,
       endDate: status.cancel_at ?? null,
+      endedAt: status.ended_at,
       isCancelled: status.subscription_status === 'canceled',
       hasFunds: status.has_funds,
       agentHasFunds:
@@ -260,7 +260,12 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       effectiveBalanceAuthoritative: data.effective_balance_authoritative,
       prepaidBalanceMicros: data.prepaid_balance_micros ?? 0,
       cloudCreditBalanceMicros: data.cloud_credit_balance_micros ?? 0,
+      cloudCreditDisplayBalanceCents: data.cloud_credit_display_balance_cents,
       suggestedTopupAmountCents: data.suggested_topup_amount_cents,
+      minTopupCents: data.min_topup_cents,
+      minTopupCredits: data.min_topup_credits,
+      maxTopupCents: data.max_topup_cents,
+      maxTopupCredits: data.max_topup_credits,
       lowBalance: data.low_balance
     }
   })
@@ -277,12 +282,21 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const renewalInvoice = computed(
     () => statusData.value?.renewal_invoice ?? null
   )
+  const periodCreditGrant = computed(
+    () => statusData.value?.period_credit_grant ?? null
+  )
+  const nextCreditRefillAt = computed(
+    () => statusData.value?.next_credit_refill_at ?? null
+  )
 
   const plans = computed(() => billingPlans.plans.value)
   const currentPlanSlug = computed(
     () => statusData.value?.plan_slug ?? billingPlans.currentPlanSlug.value
   )
   const teamCreditStops = computed(() => billingPlans.teamCreditStops.value)
+  const subscriptionPaymentRecovery = computed(
+    () => billingPlans.subscriptionPaymentRecovery.value
+  )
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )
@@ -319,24 +333,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  /**
-   * Whether the rail that issues this kind of operation is the one that owns a
-   * pending one at load. Adopting on the other rail is what makes a mid-session
-   * flag flip ambiguous: the operation's writes went one way and its poller the
-   * other.
-   *
-   * A server predating `pending_billing_op_type` only ever had subscriptions to
-   * hand back, so it follows the subscription rail — the same reading
-   * `resumeModeFor` takes of an absent field.
-   */
-  function railOwnsResume(
-    type: BillingStatusResponse['pending_billing_op_type']
-  ): boolean {
-    return type === 'topup'
-      ? flags.billingSdkTopupRailEnabled
-      : flags.billingSdkSubscriptionRailEnabled
-  }
-
   async function resumePendingOperation(
     status: BillingStatusResponse
   ): Promise<boolean> {
@@ -344,7 +340,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     if (billingOperationStore.getOperation(status.pending_billing_op_id)) {
       return true
     }
-    if (railOwnsResume(status.pending_billing_op_type)) {
+    if (flags.billingSdkRailEnabled) {
       return useBillingSdkStore()
         .recover()
         .catch(() => false)
@@ -394,12 +390,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
       seatCapacity.value = seatCapacityFrom(status)
       statusData.value = status
       statusReadAuthoritative.value = true
-      if (workspaceId && status.billing_rail) {
-        useWorkspaceBillingStateStore().setWorkspaceBillingRail(
-          workspaceId,
-          status.billing_rail
-        )
-      }
       adoption = resumePendingOperation(status)
     } catch (err) {
       if (requestId === latestBillingReadIds.status) {
@@ -867,6 +857,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,
@@ -880,6 +871,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     tier,
     renewalDate,
     renewalInvoice,
+    periodCreditGrant,
+    nextCreditRefillAt,
     readAndAdoptPendingOperation,
 
     // Actions

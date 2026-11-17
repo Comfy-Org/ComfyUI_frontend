@@ -28,7 +28,7 @@ test.describe(
         await tab.getFolder('User').click()
       })
 
-      const steps = comfyPage.vueNodes.getWidgetByName('KSampler', 'steps')
+      const steps = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'steps')
 
       await test.step('Edit the published subgraph', async () => {
         const blueprintNode = tab.getNode(blueprintName)

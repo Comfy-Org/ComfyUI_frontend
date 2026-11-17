@@ -13,6 +13,7 @@ function createIdentity() {
     workspaces: [],
     activeWorkspace: null as WorkspaceIdentityAccess['activeWorkspace'],
     activeWorkspaceId: null as string | null,
+    initSettled: true,
     isInPersonalWorkspace: false,
     workspaceTransitionGeneration: 0,
     identityGeneration: 0
@@ -62,7 +63,6 @@ describe('workspace billing presentation', () => {
     identity.activeWorkspace = personal
     identity.activeWorkspaceId = personal.id
     const billing = useWorkspaceBillingStateStore()
-    billing.setWorkspaceBillingRail('a', 'legacy_stripe')
     billing.updateSummary('a', {
       isSubscribed: false,
       subscriptionPlan: 'monthly',
@@ -72,8 +72,6 @@ describe('workspace billing presentation', () => {
     identity.workspaceTransitionGeneration++
     identity.activeWorkspace = team
     identity.activeWorkspaceId = team.id
-    billing.setWorkspaceBillingRail('b', 'metronome')
-    expect(billing.activeWorkspaceBillingRail).toBe('metronome')
     expect(billing.activeSummary).toEqual({
       isSubscribed: true,
       subscriptionTier: 'TEAM',
@@ -83,12 +81,10 @@ describe('workspace billing presentation', () => {
     identity.workspaceTransitionGeneration++
     identity.activeWorkspace = personal
     identity.activeWorkspaceId = personal.id
-    expect(billing.activeWorkspaceBillingRail).toBe('legacy_stripe')
     expect(billing.isWorkspaceSubscribed).toBe(false)
     expect(billing.activeSummary?.subscriptionPlan).toBe('monthly')
 
     identity.identityGeneration++
-    expect(billing.activeWorkspaceBillingRail).toBeNull()
     expect(billing.activeSummary).toEqual({
       isSubscribed: true,
       subscriptionTier: null,

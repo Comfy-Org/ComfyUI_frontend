@@ -370,7 +370,8 @@ vi.mock<unknown>(
 
 provideBillingDialogs(() => ({
   showSubscriptionRequiredDialog: vi.fn(),
-  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog
+  showDowngradeToPersonalDialog: mockShowDowngradeToPersonalDialog,
+  showTopUpCreditsDialog: vi.fn()
 }))
 
 vi.mock<unknown>(import('@/platform/billing/api/billingApi'), () => ({
@@ -422,8 +423,8 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 
 function latestPaymentRecoveryAction() {
   const toast = useToast().toasts.at(-1)
-  assert(toast?.kind === 'warning' && toast.action)
-  return toast.action.onClick
+  assert(toast?.kind === 'warning' && toast.actions[0])
+  return toast.actions[0].onClick
 }
 
 const i18n = createI18n({
@@ -634,6 +635,8 @@ describe('useSubscriptionCheckout', () => {
         credits_today_cents: 3150,
         credits_next_period_cents: 4200,
         requires_reactivation_confirmation: true,
+        requires_reactivation_charge_confirmation: false,
+        cancel_at: '2026-11-20T00:00:00Z',
         current_plan: {
           ...makeCreatorMonthly(),
           period_end: '2026-11-27T00:00:00Z'
@@ -1227,7 +1230,7 @@ describe('useSubscriptionCheckout', () => {
       )
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          action: { label: 'Try again', onClick: expect.any(Function) },
+          actions: [{ label: 'Try again', onClick: expect.any(Function) }],
           description: 'Payment popup blocked',
           kind: 'warning',
           title: 'Warning'
@@ -1376,7 +1379,10 @@ describe('useSubscriptionCheckout', () => {
         'SUBSCRIPTION_PAYMENT_REQUIRED'
       )
       expect(useToast().toasts).toEqual([
-        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+        expect.objectContaining({
+          actions: [expect.any(Object)],
+          kind: 'warning'
+        })
       ])
 
       checkout.handleBackToPricing()
@@ -1404,7 +1410,10 @@ describe('useSubscriptionCheckout', () => {
         billingCycle: 'yearly'
       })
       expect(useToast().toasts).toEqual([
-        expect.objectContaining({ action: expect.any(Object), kind: 'warning' })
+        expect.objectContaining({
+          actions: [expect.any(Object)],
+          kind: 'warning'
+        })
       ])
 
       unmount()
@@ -4443,7 +4452,7 @@ describe('useSubscriptionCheckout', () => {
 
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          action: { label: 'Try again', onClick: expect.any(Function) },
+          actions: [{ label: 'Try again', onClick: expect.any(Function) }],
           description: 'Payment popup blocked',
           kind: 'warning',
           title: 'Warning'
@@ -4452,8 +4461,7 @@ describe('useSubscriptionCheckout', () => {
       expect(useBillingOperationStore().startOperation).toHaveBeenCalledWith(
         'op-blocked',
         'subscription',
-        expect.any(Object),
-        'https://stripe.com/pay'
+        expect.objectContaining({ paymentMethodUrl: 'https://stripe.com/pay' })
       )
 
       const onAction = latestPaymentRecoveryAction()
@@ -4632,6 +4640,10 @@ describe('useSubscriptionCheckout', () => {
 
       async function setupOnRail(parked?: RailOperation) {
         const rail = reactive(railStub({ subscriptionActionOperation: parked }))
+        rail.getOperation = (opId) =>
+          rail.subscriptionActionOperation?.opId === opId
+            ? rail.subscriptionActionOperation
+            : undefined
         mockSubscriptionRail.value = rail
         return { rail, checkout: await setupWithApprovedPreview() }
       }
@@ -4720,6 +4732,41 @@ describe('useSubscriptionCheckout', () => {
 
         settleSecond()
         await second
+      })
+
+      it('keeps Back from leaving while the subscribe is verified, until verification times out', async () => {
+        const { rail, checkout } = await setupOnRail()
+        selectPersonal(checkout)
+        checkout.checkoutStep.value = 'preview'
+        let failSubscribe!: (error: Error) => void
+        mockSubscribe.mockImplementationOnce(
+          () =>
+            new Promise((_, reject) => {
+              failSubscribe = reject
+            })
+        )
+        const verifying: RailOperation = {
+          ...PARKED_ON_CARD,
+          actionUrl: null,
+          phase: null
+        }
+        const payment = checkout.handleAddCreditCard()
+        await vi.waitFor(() => expect(mockSubscribe).toHaveBeenCalledOnce())
+        rail.subscriptionActionOperation = { ...PARKED_ON_CARD, phase: null }
+        await nextTick()
+        rail.subscriptionActionOperation = undefined
+        rail.getOperation = () => verifying
+        await nextTick()
+
+        checkout.handleBackToPricing()
+        expect(checkout.checkoutStep.value).toBe('preview')
+
+        rail.getOperation = () => ({ ...verifying, status: 'timeout' })
+        failSubscribe(new Error('Subscription verification timed out'))
+        await payment
+        checkout.handleBackToPricing()
+
+        expect(checkout.checkoutStep.value).toBe('pricing')
       })
     })
 
@@ -4863,9 +4910,9 @@ describe('useSubscriptionCheckout', () => {
           cycle: 'yearly',
           checkoutType: 'new',
           paymentIntentSource: undefined,
-          attemptStartedAt: expect.any(Number)
-        },
-        'https://stripe.com/pay'
+          attemptStartedAt: expect.any(Number),
+          paymentMethodUrl: 'https://stripe.com/pay'
+        }
       )
       expect(checkout.checkoutStep.value).toBe('success')
       openSpy.mockRestore()

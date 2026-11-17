@@ -2,6 +2,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { buttonVariants } from '@comfyorg/design-system/button.variants'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { PromoEntry } from '@/checkout/promoEntry'
 import type { PromoChip } from '@/checkout/summaryLedger'
 import PromoCodeField from '@/components/fullPage/summary/PromoCodeField.vue'
@@ -61,7 +64,12 @@ const canRemove = computed(() => live && entry.kind !== 'removing')
           type="button"
           :disabled="!canRemove"
           :aria-label="t(`${P}.remove`, { code: chip.code })"
-          class="flex size-4 cursor-pointer items-center justify-center rounded-sm hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:size-8"
+          :class="
+            cn(
+              buttonVariants({ variant: 'textonly', size: 'unset' }),
+              'size-4 rounded-sm max-lg:size-8'
+            )
+          "
           @click="emit('remove')"
         >
           <i class="icon-[lucide--x] size-3.5" aria-hidden="true" />
@@ -72,7 +80,7 @@ const canRemove = computed(() => live && entry.kind !== 'removing')
       <button
         type="button"
         :disabled="!live"
-        class="flex h-8 cursor-pointer items-center rounded-md bg-secondary px-2 text-xs text-foreground hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40 max-lg:h-10 max-lg:px-3"
+        :class="cn(buttonVariants(), 'max-lg:h-10 max-lg:px-3')"
         @click="emit('open')"
       >
         {{ t(`${P}.add`) }}

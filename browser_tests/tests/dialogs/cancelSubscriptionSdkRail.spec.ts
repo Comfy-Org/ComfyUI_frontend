@@ -8,7 +8,6 @@ import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscri
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
   mockWorkspaceTokenMint,
@@ -37,6 +36,7 @@ const SUBSCRIPTION_STATUS: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }
@@ -52,9 +52,7 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
   const requests: Request[] = []
   let notFound = false
 
-  await page.route('**/api/features', (r) =>
-    r.fulfill(jsonRoute({ unified_cloud_auth: true }))
-  )
+  await page.route('**/api/features', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
@@ -99,9 +97,6 @@ async function mockCloudBoot(page: Page): Promise<CancelRoute> {
     r.fulfill(
       jsonRoute(createBillingCapabilities('ws-personal', { can_cancel: true }))
     )
-  )
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(jsonRoute({ amount_micros: 0, currency: 'usd' }))
   )
 
   await page.route('**/api/billing/subscription/cancel', async (r) => {
@@ -152,28 +147,12 @@ function idempotencyKey(request: Request): string | undefined {
 }
 
 test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
-  test('keeps the legacy call while the SDK rail is off', async ({ page }) => {
-    test.setTimeout(60_000)
-    const cancelRoute = await mockCloudBoot(page)
-    await bootApp(page)
-
-    const dialog = new CancelSubscriptionDialog(page)
-    await dialog.open('2099-12-31T12:00:00Z')
-    await dialog.confirmCancel()
-    expect(cancelRoute.requests).toHaveLength(1)
-    expect(cancelRoute.requests[0].method()).toBe('POST')
-    expect(idempotencyKey(cancelRoute.requests[0])).toBeUndefined()
-  })
-
   test('issues through the SDK transport while the rail is on', async ({
     page
   }) => {
     test.setTimeout(60_000)
     const cancelRoute = await mockCloudBoot(page)
     await bootApp(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      billing_sdk_subscription_enabled: true
-    })
 
     const dialog = new CancelSubscriptionDialog(page)
     await dialog.open('2099-12-31T12:00:00Z')
@@ -193,9 +172,6 @@ test.describe('Cancel subscription rail (FE-2216)', { tag: '@cloud' }, () => {
     test.setTimeout(60_000)
     const cancelRoute = await mockCloudBoot(page)
     await bootApp(page)
-    await new FeatureFlagHelper(page).setServerFlagsPersistent({
-      billing_sdk_subscription_enabled: true
-    })
     cancelRoute.respondNotFound()
 
     const dialog = new CancelSubscriptionDialog(page)

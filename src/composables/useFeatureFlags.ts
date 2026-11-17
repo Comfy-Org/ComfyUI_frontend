@@ -3,6 +3,10 @@ import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
+import {
+  opensLocalBillingHandoff,
+  showsCloudBillingNewUxOnLocal
+} from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   isAuthenticatedConfigLoaded,
@@ -171,6 +175,13 @@ export function useFeatureFlags() {
         false
       )
     },
+    get signedOutRerouteEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED,
+        remoteConfig.value.signed_out_reroute_enabled,
+        false
+      )
+    },
     get partnerNodeGovernanceEnabled() {
       return resolveFlag(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
@@ -183,6 +194,12 @@ export function useFeatureFlags() {
         ServerFeatureFlag.PARTNER_RUN_GATE_ENABLED,
         remoteConfig.value.partner_run_gate_enabled,
         true
+      )
+    },
+    get deploymentStartEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.DEPLOYMENT_START_ENABLED,
+        remoteConfig.value.deployment_start_enabled
       )
     },
     get partnerNodeTokenEnabled() {
@@ -200,6 +217,22 @@ export function useFeatureFlags() {
     },
     get nodeReplacementsEnabled() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
+    },
+    get openOnCloudEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+        remoteConfig.value.open_on_cloud_enabled,
+        import.meta.env.DEV
+      )
+    },
+    get openOnCloudUseLocalAgentEnabled() {
+      return (
+        resolveFlag<unknown>(
+          ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
+          remoteConfig.value.open_on_cloud_use_local_agent_enabled,
+          false
+        ) === true
+      )
     },
     get deployToCloud() {
       return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
@@ -232,6 +265,21 @@ export function useFeatureFlags() {
         false
       )
     },
+    get runtimeLibraryModelsEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.RUNTIME_LIBRARY_MODELS_ENABLED,
+        remoteConfig.value.runtime_library_models_enabled,
+        false
+      )
+    },
+    /** The model folders an uploaded model file may go into; empty when uploads are off. */
+    get modelUploadFolders(): readonly string[] {
+      return resolveFlag<readonly string[]>(
+        ServerFeatureFlag.MODEL_UPLOAD_FOLDERS,
+        remoteConfig.value.model_upload_folders,
+        []
+      )
+    },
     get lateCustomNodesEnabled() {
       return resolveFlag(
         ServerFeatureFlag.LATE_CUSTOM_NODES_ENABLED,
@@ -251,15 +299,6 @@ export function useFeatureFlags() {
         undefined
       )
     },
-    get unifiedCloudAuthEnabled() {
-      if (!isCloud) return false
-
-      return resolveFlag(
-        ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
-        remoteConfig.value.unified_cloud_auth,
-        false
-      )
-    },
     get unifiedWebSessionEnabled() {
       if (!isCloud) return false
 
@@ -271,6 +310,13 @@ export function useFeatureFlags() {
         getDevOverride<unknown>(key) ??
         remoteConfig.value.unified_web_session
       return value === true
+    },
+    get webSessionLapseRecoveryEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED,
+        remoteConfig.value.web_session_lapse_recovery_enabled,
+        false
+      )
     },
     get ssoEnabled() {
       if (!isCloud) return false
@@ -302,37 +348,42 @@ export function useFeatureFlags() {
         remoteConfig.value.member_credit_limits_enabled
       )
     },
-    get billingSdkTopupEnabled() {
+    get billingNewUxEnabled() {
       return resolveStrictBooleanFlag(
-        ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
-        remoteConfig.value.billing_sdk_topup_enabled
+        ServerFeatureFlag.BILLING_NEW_UX_ENABLED,
+        showsCloudBillingNewUxOnLocal()
+          ? true
+          : remoteConfig.value.billing_new_ux_enabled
       )
     },
-    /** The SDK rail runs on the unified session, so it needs both flags. */
-    get billingSdkTopupRailEnabled() {
-      return this.billingSdkTopupEnabled && this.unifiedCloudAuthEnabled
-    },
-    get billingSdkSubscriptionEnabled() {
+    get billingAutoTopUpAtCheckoutEnabled() {
       return resolveStrictBooleanFlag(
-        ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED,
-        remoteConfig.value.billing_sdk_subscription_enabled
+        ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED,
+        remoteConfig.value.billing_auto_top_up_at_checkout_enabled
       )
     },
-    get billingSdkSubscriptionRailEnabled() {
-      return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
+    /** Top-up, subscription and billing reads run on the billing SDK on Cloud. */
+    get billingSdkRailEnabled() {
+      return isCloud
     },
     get unifiedBillingSettingsEnabled() {
+      if (!isCloud) return opensLocalBillingHandoff()
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_BILLING_SETTINGS,
         remoteConfig.value.unified_billing_settings
       )
     },
-    get autoTopUpEnabled() {
-      if (!isCloud) return false
-
+    get pricingTableFallback() {
       return resolveStrictBooleanFlag(
-        ServerFeatureFlag.AUTO_TOP_UP_ENABLED,
-        remoteConfig.value.auto_top_up_enabled
+        ServerFeatureFlag.PRICING_TABLE_FALLBACK,
+        remoteConfig.value.pricing_table_fallback
+      )
+    },
+    get oauthConsentSwitchAccountEnabled() {
+      return resolveFlag(
+        ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED,
+        remoteConfig.value.oauth_consent_switch_account_enabled,
+        false
       )
     },
     get v1PaymentRecovery() {
@@ -393,10 +444,15 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.PRIVATE_MODELS_ENABLED]: flags.privateModelsEnabled,
       [ServerFeatureFlag.ONBOARDING_SURVEY_ENABLED]:
         flags.onboardingSurveyEnabled,
+      [ServerFeatureFlag.SIGNED_OUT_REROUTE_ENABLED]:
+        flags.signedOutRerouteEnabled,
       [ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED]:
         flags.partnerNodeGovernanceEnabled,
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED]: flags.openOnCloudEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED]:
+        flags.openOnCloudUseLocalAgentEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
@@ -405,19 +461,21 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
-      [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
       [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
+      [ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED]:
+        flags.webSessionLapseRecoveryEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
       [ServerFeatureFlag.MEMBER_CREDIT_LIMITS_ENABLED]:
         flags.memberCreditLimitsEnabled,
-      [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
-        flags.billingSdkTopupEnabled,
-      [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
-        flags.billingSdkSubscriptionEnabled,
+      [ServerFeatureFlag.BILLING_NEW_UX_ENABLED]: flags.billingNewUxEnabled,
+      [ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED]:
+        flags.billingAutoTopUpAtCheckoutEnabled,
       [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
         flags.unifiedBillingSettingsEnabled,
-      [ServerFeatureFlag.AUTO_TOP_UP_ENABLED]: flags.autoTopUpEnabled,
+      [ServerFeatureFlag.PRICING_TABLE_FALLBACK]: flags.pricingTableFallback,
+      [ServerFeatureFlag.OAUTH_CONSENT_SWITCH_ACCOUNT_ENABLED]:
+        flags.oauthConsentSwitchAccountEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.SIGNUP_TURNSTILE]: flags.signupTurnstileMode,
       [ServerFeatureFlag.SUPPORTS_MODEL_TYPE_TAGS]: flags.supportsModelTypeTags,

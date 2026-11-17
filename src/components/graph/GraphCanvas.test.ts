@@ -34,7 +34,7 @@ import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
-import { loadExtensions } from '@/services/extensionLoader'
+import { loadExtensions } from '@/platform/extensions/services/extensionLoader'
 import { app } from '@/scripts/app'
 import { useBootstrapStore } from '@/stores/bootstrapStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -92,6 +92,7 @@ const mocks = vi.hoisted(() => ({
   loadTemplateFromUrlIfPresent: vi.fn(),
   loadSharedWorkflowFromUrlIfPresent: vi.fn(),
   runUrlActionLoaders: vi.fn(),
+  loadCustomThemePresets: vi.fn(async () => {}),
   setDirty: vi.fn()
 }))
 
@@ -148,8 +149,11 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
       set rootGraph(graph: LGraph | undefined) {
         rootGraphInternal = graph
       },
+      nodeOutputs: {},
+      nodePreviewImages: {},
       ui: { settings: { dispatchChange: vi.fn() } },
-      setup: vi.fn()
+      setup: vi.fn(),
+      loadGraphData: vi.fn()
     }
   }
 })
@@ -158,7 +162,7 @@ vi.mock<unknown>(import('@/scripts/changeTracker'), () => ({
   ChangeTracker: { init: vi.fn() }
 }))
 
-vi.mock(import('@/services/extensionLoader'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionLoader'), () => ({
   loadExtensions: vi.fn(async () => {})
 }))
 
@@ -179,8 +183,12 @@ vi.mock(import('@/composables/graph/useErrorClearingHooks'), () => ({
   installErrorClearingHooks: () => vi.fn()
 }))
 
-vi.mock<unknown>(import('@/services/colorPaletteService'), () => ({
-  useColorPaletteService: () => ({ loadColorPalette: vi.fn() })
+vi.mock<unknown>(import('@/platform/theme/themeService'), () => ({
+  useThemeService: () => ({
+    setActiveTheme: vi.fn(),
+    loadCustomThemePresets: mocks.loadCustomThemePresets
+  }),
+  useLegacyColorPaletteService: () => ({ loadColorPalette: vi.fn() })
 }))
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
@@ -210,6 +218,11 @@ vi.mock(
   import('@/platform/workflow/persistence/composables/useWorkflowAutoSave'),
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
+
+beforeEach(() => {
+  vi.spyOn(api, 'listUserDataFullInfo').mockResolvedValue([])
+  vi.spyOn(api, 'getGlobalSubgraphs').mockResolvedValue({})
+})
 
 /**
  * Installs (or clears) the mock app's root graph, standing in for the
@@ -256,6 +269,37 @@ async function mountGraphCanvas(
     await Promise.resolve()
   }
 }
+
+it('keeps the canvas unavailable until saved custom themes are ready', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomThemePresets.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+
+  await mountGraphCanvas()
+
+  expect(useCanvasStore().canvas).toBeNull()
+  finishLoading()
+  await vi.waitFor(() => expect(useCanvasStore().canvas).toBe(app.canvas))
+})
+
+it('does not expose a disposed canvas after custom themes finish loading', async () => {
+  let finishLoading = () => {}
+  mocks.loadCustomThemePresets.mockReturnValue(
+    new Promise<void>((resolve) => {
+      finishLoading = resolve
+    })
+  )
+  await mountGraphCanvas()
+
+  cleanup()
+  finishLoading()
+  await vi.advanceTimersByTimeAsync(0)
+
+  expect(useCanvasStore().canvas).toBeNull()
+})
 
 describe('GraphCanvas first-run tour wiring', () => {
   beforeEach(() => {
@@ -785,6 +829,7 @@ describe('deployment model options at startup', () => {
       deployment_id: 'dep-1',
       release_id: 'r-1',
       status: 'ready',
+      can_start: false,
       created_at: ''
     } as const
 
@@ -981,9 +1026,11 @@ describe('deployment model options at startup', () => {
       kind: 'error',
       description: 'deploymentSwitcher.lookupUnavailableDetail',
       duration: Number.POSITIVE_INFINITY,
-      action: { label: 'deploymentSwitcher.reload' }
+      actions: [
+        { label: 'deploymentSwitcher.reload', onClick: expect.any(Function) }
+      ]
     })
-    toast?.action?.onClick()
+    toast?.actions[0]?.onClick()
     expect(reload).toHaveBeenCalledOnce()
     store.bootDeployment = {
       deployment_id: 'dep-1',
@@ -992,6 +1039,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     }
     await nextTick()
@@ -1048,6 +1096,7 @@ describe('deployment model options at startup', () => {
       build_name: 'Build',
       release_version: 1,
       status: 'ready',
+      can_start: false,
       created_at: ''
     } as const
     vi.spyOn(store, 'loadOnce').mockReturnValue(

@@ -1,7 +1,7 @@
 import type { SubscriptionDialogOptions } from '@/platform/billing/composables/types'
 
 interface SubscriptionDialogAccess {
-  show(options?: SubscriptionDialogOptions): void
+  show(options?: SubscriptionDialogOptions): Promise<boolean>
 }
 
 /** `useSubscriptionDialog` for the dialogs it opens, which cannot import it back. */

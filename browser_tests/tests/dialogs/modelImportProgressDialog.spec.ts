@@ -1,6 +1,6 @@
 import { mergeTests } from '@playwright/test'
 
-import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
+import type { TaskResponse } from '@comfyorg/api-client/taskSchema'
 import {
   comfyPageFixture,
   comfyExpect as expect

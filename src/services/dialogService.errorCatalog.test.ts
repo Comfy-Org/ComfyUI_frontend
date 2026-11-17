@@ -12,9 +12,9 @@ import {
 
 import { i18n, loadLocale } from '@/i18n'
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
+import type { PromptFailureResponse } from '@comfyorg/api-client/types'
 import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { api, PromptExecutionError } from '@/scripts/api'
+import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
@@ -30,8 +30,8 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 beforeEach(() => {
-  vi.spyOn(api, 'getLogs').mockResolvedValue('server logs')
-  vi.spyOn(api, 'getSystemStats').mockResolvedValue({
+  vi.spyOn(app.api, 'getLogs').mockResolvedValue('server logs')
+  vi.spyOn(app.api, 'getSystemStats').mockResolvedValue({
     system: {
       os: 'linux',
       comfyui_version: '1.0.0',
@@ -83,10 +83,10 @@ function sam3ValidationResponse(): PromptFailureResponse {
 }
 
 async function openHttpPromptError(payload: unknown) {
-  vi.spyOn(api, 'fetchApi').mockResolvedValue(
+  vi.spyOn(app.api, 'fetchApi').mockResolvedValue(
     new Response(JSON.stringify(payload), { status: 400 })
   )
-  const error: unknown = await api
+  const error: unknown = await app.api
     .queuePrompt(0, {
       output: {},
       workflow: zComfyWorkflow.parse(new LGraph().serialize())

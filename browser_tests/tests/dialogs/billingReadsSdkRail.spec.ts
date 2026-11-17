@@ -13,7 +13,6 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
   mockWorkspaceTokenMint,
@@ -65,6 +64,7 @@ const ACTIVE_STATUS: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }
@@ -142,18 +142,11 @@ interface ReadRoutes {
 interface BootOptions {
   /** Answers the balance with a value outside the safe-integer range. */
   unsafeBalance?: boolean
-  /**
-   * Serves `billing_sdk_topup_enabled: true` on `/api/features`, the channel
-   * the staged rollout publishes on. Boot awaits that response
-   * (`main.ts:56`), so unlike the websocket handshake it is readable before
-   * the billing gate issues its first reads.
-   */
-  readRailOnFeatures?: boolean
 }
 
 async function mockCloudBoot(
   page: Page,
-  { unsafeBalance = false, readRailOnFeatures = false }: BootOptions = {}
+  { unsafeBalance = false }: BootOptions = {}
 ): Promise<ReadRoutes> {
   const reads: Request[] = []
   const eventPages: (string | null)[] = []
@@ -164,14 +157,7 @@ async function mockCloudBoot(
     }
   }
 
-  await page.route('**/api/features', (r) =>
-    r.fulfill(
-      jsonRoute({
-        unified_cloud_auth: true,
-        ...(readRailOnFeatures ? { billing_sdk_topup_enabled: true } : {})
-      })
-    )
-  )
+  await page.route('**/api/features', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
@@ -239,7 +225,6 @@ async function mockCloudBoot(
     eventPages.push(requested)
     return r.fulfill(jsonRoute(eventsPage(Number(requested ?? 1))))
   })
-  await page.route('**/customers/balance', (r) => r.fulfill(jsonRoute(BALANCE)))
 
   return { reads, eventPages }
 }
@@ -294,41 +279,7 @@ function routesRead(reads: Request[]): Set<string> {
   )
 }
 
-/**
- * The websocket half of the flag, paired with `readRailOnFeatures` so the two
- * channels agree. Answered on the handshake rather than set after boot: the
- * billing gate issues its first reads while resolving auth and workspace,
- * before `GraphCanvas`'s `onMounted` assigns `window.app`, so a flag set any
- * later would miss them.
- */
-async function enableReadRail(page: Page) {
-  await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
-    billing_sdk_topup_enabled: true
-  })
-}
-
 test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
-  test('serves every read on the legacy client while the rail is off', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    const routes = await mockCloudBoot(page)
-    await bootApp(page)
-
-    const content = await openPlanAndCredits(page)
-
-    await expect(content.getByText('Total credits')).toBeVisible()
-    await expect(content.getByText('12,660')).toBeVisible()
-
-    await openActivity(content)
-
-    await expect(content.getByText('node-on-page-1')).toBeVisible()
-    await expect
-      .poll(() => routesRead(routes.reads).size)
-      .toBe(READ_ROUTES.length)
-    expect(routes.reads.map(transport)).not.toContain('fetch')
-  })
-
   /**
    * `not.toContain('xhr')`: with the flag on `/api/features` there is no race
    * left to tolerate.
@@ -356,8 +307,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     page
   }) => {
     test.setTimeout(60_000)
-    const routes = await mockCloudBoot(page, { readRailOnFeatures: true })
-    await enableReadRail(page)
+    const routes = await mockCloudBoot(page)
     await bootApp(page)
 
     const content = await openPlanAndCredits(page)
@@ -386,10 +336,8 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
     const routes = await mockCloudBoot(page, {
-      unsafeBalance: true,
-      readRailOnFeatures: true
+      unsafeBalance: true
     })
-    await enableReadRail(page)
     await bootApp(page)
 
     const content = await openPlanAndCredits(page)
@@ -416,8 +364,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     page
   }) => {
     test.setTimeout(60_000)
-    const routes = await mockCloudBoot(page, { readRailOnFeatures: true })
-    await enableReadRail(page)
+    const routes = await mockCloudBoot(page)
     await bootApp(page)
 
     const content = await openActivity(await openPlanAndCredits(page))

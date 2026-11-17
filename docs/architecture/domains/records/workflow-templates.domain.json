@@ -4,49 +4,28 @@
   "description": "Template discovery, ranking, metadata, education, and thumbnail presentation.",
   "modules": [
     {
-      "path": "src/components/actionbar/PartnerNodesEducationCard.test.ts",
-      "role": "presentation"
+      "path": "src/components/actionbar/PartnerNodesEducationCard.vue"
     },
     {
-      "path": "src/components/actionbar/PartnerNodesEducationCard.vue",
-      "role": "presentation"
+      "path": "src/components/sidebar/SidebarTemplatesButton.vue"
     },
     {
-      "path": "src/components/sidebar/SidebarTemplatesButton.test.ts",
-      "role": "presentation"
+      "path": "src/platform/workflow/templates/**"
     },
     {
-      "path": "src/components/sidebar/SidebarTemplatesButton.vue",
-      "role": "presentation"
+      "path": "packages/shared-frontend-utils/src/templateRanking.ts"
     },
     {
-      "path": "src/platform/workflow/templates/**",
-      "role": "application"
+      "path": "packages/shared-frontend-utils/src/templateSearch.ts"
     },
     {
-      "path": "src/platform/workflow/templates/components/**",
-      "role": "presentation"
+      "path": "packages/api-client/src/templateSchema.ts"
     },
     {
-      "path": "src/platform/workflow/templates/repositories/workflowTemplatesStore.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/workflow/templates/schemas/templateSchema.ts",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/templates/types/**",
-      "role": "domain"
-    },
-    {
-      "path": "src/platform/workflow/templates/utils/**",
-      "role": "domain"
+      "path": "packages/api-client/src/templateTypes.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["telemetry"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Template ranking and display metadata remain deterministic",

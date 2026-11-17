@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "重启"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "为所选节点打开 3D 查看器（测试版）"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "实验性：浏览模型资源"
   },
@@ -103,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "折叠/展开选中节点"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "隐藏/显示所选节点上的连接线"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "静音/取消静音选中节点"

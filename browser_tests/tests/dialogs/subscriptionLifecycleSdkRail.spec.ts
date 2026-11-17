@@ -15,7 +15,6 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import {
   mockWorkspaceTokenMint,
@@ -72,6 +71,7 @@ const CANCELLED_STATUS: BillingStatusResponse = {
   ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }
@@ -87,39 +87,13 @@ interface LifecycleRoutes {
   refusePortal: () => void
 }
 
-interface CloudBootOptions {
-  /**
-   * The value served for `billing_sdk_subscription_enabled` on `/api/features`,
-   * the channel the staged rollout publishes on. Always sent, so a row that
-   * leaves the rail off pins it off rather than inheriting the live default.
-   *
-   * #18141 made `/api/features` the primary channel and demoted the websocket
-   * handshake to fallback (`resolveFlag`: `remoteConfigValue ??
-   * api.getServerFeature(...)`). Seeding only the handshake leaves
-   * `remoteConfigValue` undefined, so the rows below would still pass — but on
-   * the fallback channel rather than the one production prefers. Both are
-   * served here so neither alone is what the assertions rest on.
-   */
-  railOnFeatures?: boolean
-}
-
-async function mockCloudBoot(
-  page: Page,
-  { railOnFeatures = false }: CloudBootOptions = {}
-): Promise<LifecycleRoutes> {
+async function mockCloudBoot(page: Page): Promise<LifecycleRoutes> {
   const resubscribeRequests: Request[] = []
   const portalRequests: Request[] = []
   let resubscribeNotFound = false
   let portalNotFound = false
 
-  await page.route('**/api/features', (r) =>
-    r.fulfill(
-      jsonRoute({
-        unified_cloud_auth: true,
-        billing_sdk_subscription_enabled: railOnFeatures
-      })
-    )
-  )
+  await page.route('**/api/features', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
@@ -173,14 +147,6 @@ async function mockCloudBoot(
       )
     )
   })
-  await page.route('**/customers/balance', (r) =>
-    r.fulfill(
-      jsonRoute({
-        amount_micros: 0,
-        currency: 'usd'
-      } satisfies BillingBalanceResponse)
-    )
-  )
 
   // Both lifecycle routes answer POST only. A regression to GET would
   // otherwise be served the success fixture and pass every assertion below,
@@ -319,44 +285,17 @@ function transport(request: Request): string {
   return request.resourceType()
 }
 
-/**
- * Seeds the websocket handshake, the fallback channel since #18141. Paired with
- * `railOnFeatures` so both channels agree; these rows act on a click rather
- * than at boot, so the flag lands before the request either way.
- */
-async function enableSdkRail(page: Page) {
-  await new FeatureFlagHelper(page).setServerFlagsPersistent({
-    billing_sdk_subscription_enabled: true
-  })
-}
-
 test.describe(
   'Resubscribe and payment portal rail (FE-2477)',
   { tag: '@cloud' },
   () => {
     test.describe('resubscribe', () => {
-      test('keeps the legacy call while the rail is off', async ({ page }) => {
-        test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page)
-        await bootApp(page)
-
-        const panel = await openPlanAndCredits(page)
-        await panel.getByRole('button', { name: 'Resume subscription' }).click()
-
-        await expect.poll(() => routes.resubscribeRequests.length).toBe(1)
-        const [issued] = routes.resubscribeRequests
-        expect(issued.method()).toBe('POST')
-        expect(transport(issued)).toBe('xhr')
-        expect(idempotencyKey(issued)).toBeUndefined()
-      })
-
       test('issues through the SDK transport while the rail is on', async ({
         page
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page, { railOnFeatures: true })
+        const routes = await mockCloudBoot(page)
         await bootApp(page)
-        await enableSdkRail(page)
 
         const panel = await openPlanAndCredits(page)
         await panel.getByRole('button', { name: 'Resume subscription' }).click()
@@ -374,9 +313,8 @@ test.describe(
         page
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page, { railOnFeatures: true })
+        const routes = await mockCloudBoot(page)
         await bootApp(page)
-        await enableSdkRail(page)
         routes.refuseResubscribe()
 
         const panel = await openPlanAndCredits(page)
@@ -392,27 +330,12 @@ test.describe(
     })
 
     test.describe('payment portal', () => {
-      test('keeps the legacy call while the rail is off', async ({ page }) => {
-        test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page)
-        await bootApp(page)
-
-        const panel = await openPlanAndCredits(page)
-        await panel.getByRole('button', { name: 'Billing & invoices' }).click()
-
-        await expect.poll(() => routes.portalRequests.length).toBe(1)
-        expect(transport(routes.portalRequests[0])).toBe('xhr')
-        expect(idempotencyKey(routes.portalRequests[0])).toBeUndefined()
-        await expect.poll(() => openedUrls(page)).toContain(PROVIDER_PORTAL_URL)
-      })
-
       test('issues through the SDK transport, and carries no idempotency key by design', async ({
         page
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page, { railOnFeatures: true })
+        const routes = await mockCloudBoot(page)
         await bootApp(page)
-        await enableSdkRail(page)
 
         const panel = await openPlanAndCredits(page)
         await panel.getByRole('button', { name: 'Billing & invoices' }).click()
@@ -430,9 +353,8 @@ test.describe(
         page
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page, { railOnFeatures: true })
+        const routes = await mockCloudBoot(page)
         await bootApp(page)
-        await enableSdkRail(page)
         routes.refusePortal()
 
         const panel = await openPlanAndCredits(page)
@@ -455,9 +377,8 @@ test.describe(
         toast
       }) => {
         test.setTimeout(60_000)
-        const routes = await mockCloudBoot(page, { railOnFeatures: true })
+        const routes = await mockCloudBoot(page)
         await bootApp(page, { blockPopups: true })
-        await enableSdkRail(page)
 
         const panel = await openPlanAndCredits(page)
         await panel.getByRole('button', { name: 'Billing & invoices' }).click()

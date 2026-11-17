@@ -10,7 +10,7 @@ import type { RequestTarget } from '@comfyorg/account-core/requestAuth'
 import { createRequestAuthorizer } from '@comfyorg/account-core/requestAuth'
 import { createSessionTokenMint } from '@comfyorg/account-core/sessionTokenMint'
 
-import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { bootCloudIdentity } from '@/platform/auth/session/cloudIdentityBoot'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -27,7 +27,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { useDialogService } from '@/services/dialogService'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import type { ComfyExtension } from '@/types/comfy'
 
 type IdentityObserver = (user: User | null) => void
@@ -83,7 +83,7 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
   })
 }))
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (extension: ComfyExtension) => {
@@ -224,39 +224,15 @@ async function sendApiCalls() {
   })
 }
 
-const API_KEY_SESSION_ROWS = [
-  {
-    name: 'unified_cloud_auth off, unified_web_session true',
-    uca: false,
-    uws: true
-  },
-  {
-    name: 'unified_cloud_auth on, unified_web_session true',
-    uca: true,
-    uws: true
-  }
-]
+const API_KEY_SESSION_ROWS = [{ name: 'unified_web_session true', uws: true }]
 
 const FEATURE_ROWS = [
-  { name: 'unified_cloud_auth off, unified_web_session absent', uca: false },
-  {
-    name: 'unified_cloud_auth off, unified_web_session false',
-    uca: false,
-    uws: false
-  },
-  { name: 'unified_cloud_auth on, unified_web_session absent', uca: true },
-  {
-    name: 'unified_cloud_auth on, unified_web_session false',
-    uca: true,
-    uws: false
-  }
+  { name: 'unified_web_session absent' },
+  { name: 'unified_web_session false', uws: false }
 ]
 
-function featuresFor(row: { uca: boolean; uws?: boolean }) {
-  return {
-    unified_cloud_auth: row.uca,
-    ...(row.uws === undefined ? {} : { unified_web_session: row.uws })
-  }
+function featuresFor(row: { uws?: boolean }) {
+  return row.uws === undefined ? {} : { unified_web_session: row.uws }
 }
 
 const FEATURES_BOOTSTRAP: RecordedRequest = {
@@ -283,7 +259,7 @@ const apiCalls = (auth: Record<string, string>): RecordedRequest[] => [
   }
 ]
 
-const apiKeyGolden = (uca: boolean): RecordedRequest[] => [
+const API_KEY_GOLDEN: RecordedRequest[] = [
   FEATURES_BOOTSTRAP,
   {
     method: 'POST',
@@ -291,7 +267,7 @@ const apiKeyGolden = (uca: boolean): RecordedRequest[] => [
     headers: { ...API_KEY_HEADER, 'content-type': 'application/json' },
     credentials: null
   },
-  ...apiCalls(uca ? {} : API_KEY_HEADER)
+  ...apiCalls(API_KEY_HEADER)
 ]
 
 const LOCALHOST_GOLDEN: RecordedRequest[] = [
@@ -355,7 +331,7 @@ describe('clients the web session leaves on tokens', () => {
       await sendApiCalls()
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(recorder.all).toEqual(apiKeyGolden(row.uca))
+      expect(recorder.all).toEqual(API_KEY_GOLDEN)
       expectNoSessionTraffic(recorder.all)
     }
   )
