@@ -27,6 +27,7 @@ import {
   reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
+import '@/scripts/app'
 import { useApp } from '@/scripts/appInstance'
 import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
