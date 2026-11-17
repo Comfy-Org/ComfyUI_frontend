@@ -5,7 +5,6 @@ import type { Ref } from 'vue'
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { hasLocalAgentEmployeeAccess } from '@/platform/openOnCloud/localAgentEmployeeAccess'
-import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import {
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -218,14 +217,11 @@ export function useFeatureFlags() {
     },
     get openOnCloudUseLocalAgentEnabled() {
       return (
-        pendingServerFact(
-          'BE-26582',
-          hasLocalAgentEmployeeAccess() &&
-            resolveFlag<unknown>(
-              ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
-              remoteConfig.value.open_on_cloud_use_local_agent_enabled,
-              true
-            ) === true
+        hasLocalAgentEmployeeAccess() &&
+        resolveFlag<unknown>(
+          ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
+          remoteConfig.value.open_on_cloud_use_local_agent_enabled,
+          true
         ) === true
       )
     },
