@@ -59,7 +59,7 @@ const mockNodeEventHandlers = vi.hoisted(
 vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
   fromAny<LiteGraphNode, unknown>(
-    mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+    mockData.mockLgraphNode ?? { isSubgraphNode: () => false, inputs: [] }
   )
 )
 
@@ -248,7 +248,7 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.mocked(getNodeByLocatorId).mockImplementation(() =>
       fromAny<LiteGraphNode, unknown>(
-        mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+        mockData.mockLgraphNode ?? { isSubgraphNode: () => false, inputs: [] }
       )
     )
     mockData.mockExecuting = false
@@ -394,7 +394,7 @@ describe('LGraphNode', () => {
       subgraphs: new Map()
     }
     fakeRootGraph.rootGraph = fakeRootGraph
-    mockData.mockLgraphNode = { isSubgraphNode: () => false }
+    mockData.mockLgraphNode = { isSubgraphNode: () => false, inputs: [] }
     useCanvasStore().currentGraph = fromAny(fakeRootGraph)
     useWidgetValueStore().registerWidget(
       widgetId('graph-test', mockNodeData.id, 'prompt'),
@@ -560,6 +560,7 @@ describe('LGraphNode', () => {
       mockData.mockLgraphNode = {
         id: nodeId,
         graph: fakeRootGraph,
+        inputs: [],
         isSubgraphNode: () => false
       }
       useNodeOutputStore().nodeOutputs[createNodeLocatorId(null, nodeId)] = {
