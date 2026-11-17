@@ -2,6 +2,7 @@ import { assert, describe, expect, it } from 'vitest'
 
 import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 
@@ -53,6 +54,48 @@ describe.for(
 
     expect(store.get(id)).toBeUndefined()
     expect(node.serialize().properties).not.toHaveProperty(sample.wireKey)
+  })
+
+  it('does not restore cleared components from a missing-node serialization cache', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode(
+      'missing component owner',
+      'MissingComponentOwner'
+    )
+    graph.add(node)
+    const cached = {
+      ...node.serialize(),
+      properties: {
+        extensionData: 'keep',
+        [sample.wireKey]: { model: sample.wire }
+      }
+    }
+    node.last_serialization = cached
+    node.configure(cached)
+    node.configure({
+      ...node.serialize(),
+      properties: { extensionData: 'keep' }
+    })
+    node.pos = [31, 79]
+    node.mode = LGraphEventMode.BYPASS
+
+    const saved = graph.serialize()
+    const serialized = saved.nodes[0]
+    assert(serialized)
+
+    expect(serialized.properties).toEqual({ extensionData: 'keep' })
+    expect(serialized.pos).toEqual([31, 79])
+    expect(serialized.mode).toBe(LGraphEventMode.BYPASS)
+    expect(cached.properties[sample.wireKey]).toEqual({ model: sample.wire })
+
+    const restored = new LGraph()
+    restored.configure(saved)
+    const reloaded = restored.getNodeById(node.id)
+    assert(reloaded)
+    expect(reloaded.serialize().properties).toEqual({ extensionData: 'keep' })
+    expect(
+      useStore().get(widgetId(restored.id, reloaded.id, 'model'))
+    ).toBeUndefined()
   })
 
   it('preserves components when configure omits properties', () => {
