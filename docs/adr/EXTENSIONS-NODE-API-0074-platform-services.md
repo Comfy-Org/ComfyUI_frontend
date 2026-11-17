@@ -240,6 +240,58 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     supplied a canvas there is no view, and the call mounts nothing and
     returns `undefined`.
 
+### Graph overlays (`ui.mountGraphOverlay`, 3 / 94)
+
+29. `mountGraphOverlay(overlay)` gives a pack a `<canvas>` over the graph and
+    its nodes, for drawing that follows the graph as it pans and zooms
+    (notes drawn on the workflow, resize handles on the selection, a floating
+    preview). It returns its handle at once, even before the renderer has
+    supplied a canvas: the three stored packs mount at import, before the
+    app creates the graph view, and use the handle straight away. The
+    element joins the graph view (the parent of the canvas the renderer
+    supplies, as for a viewport panel) when there is one, and moves to the
+    next graph view when the app shows another. `ariaLabel` is required, as
+    for a viewport panel, because the overlay takes focus. An id already
+    mounted is refused.
+30. The overlay draws after each frame in which the graph draws its
+    foreground, by chaining `LGraphCanvas.onDrawForeground`, the hook the
+    host's DOM widgets and selection border chain. One chain serves every
+    overlay, through `createHostEvent`; it starts with the first overlay and
+    is undone with the last, giving the canvas back the handler it had.
+    `redraw()` draws once at the next frame through the canvas's own frame
+    hook (`onCanvasFrame(..., 'present')`), however often it is called, and
+    holds no frame subscription between requests, so an overlay that is not
+    redrawn costs nothing per frame. Each draw clears the element, sizes it
+    to the graph canvas in device pixels, scales the context by the canvas's
+    `dpr`, and passes the size in viewport pixels and a frozen viewport with
+    the view's `scale` and `graphToViewport`, which converts with the
+    canvas's `ds`. A hidden overlay is not drawn. `draw` runs through
+    `callListener`.
+31. Input. The element never takes the pointer itself (`pointer-events:
+    none`), so a press the overlay does not want reaches the graph unchanged.
+    While the overlay is visible and interactive, a capture listener on the
+    graph view takes a press inside its hit regions (anywhere, if the pack
+    set none; nowhere for `[]`), stops it from reaching the graph, focuses
+    the element and calls `onPointerDown`; that pointer's moves and its
+    release or cancel are then followed on `window` in the capture phase,
+    kept from the graph, and passed on, until it is released, even if the
+    overlay stops being interactive meanwhile. The window listeners exist
+    only while the overlay holds a pointer. A press on an element after the
+    overlay in the graph view, which is drawn above it (a viewport panel), is
+    left to that element. While the interactive overlay has focus, its keys
+    go to `onKeyDown` and stop there, so the app's shortcuts on `window` do
+    not also run. Each event a pack gets is a frozen copy, with the point in
+    viewport pixels and in graph space (`convertEventToCanvasOffset`). Every
+    callback runs through `callListener`.
+32. Members are those the three stored packs use. The pointer event carries
+    `pointerId`, `pointerType`, `button`, `viewport` and `graph`; the key
+    event `key`, `repeat`, `ctrlKey`, `metaKey` and `shiftKey`; the viewport
+    `scale` and `graphToViewport`. The handle has `redraw`,
+    `setInteractive`, `setVisible`, `setHitRegions` and `remove`. A hit region
+    is a circle or a rectangle with finite coordinates and positive sizes.
+    `remove()` takes the element away, drops a pointer it holds, frees the id
+    and is safe to call twice.
+
 ### Localization (`comfy.localization`, 1 / 1)
 
 26. `registerCatalog(locale, catalog)` merges `catalog.messages` into the
@@ -304,6 +356,21 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   has no such lookup; every translated string in the app goes through a
   key. An extra field is ignored (decision 1), so a catalog that holds
   `phrases` still registers its `messages`.
+- Of the overlay's earlier members, these have no use in a stored pack:
+  the events' `type`, `buttons`, `altKey`, `code`, `preventDefault` and
+  `stopPropagation` (the overlay already keeps a taken pointer and key from
+  the app), and the viewport's `width`, `height`, `offset` and
+  `viewportToGraph` (the event carries the graph point, and `draw` the
+  size).
+- `MountedDialog.onKeyDown` and `DialogKeyEvent` (9 / 49). The host's
+  dialog has no key handler: `showExtensionDialog` takes a component, its
+  props and the frame's options (`DialogComponentProps`), none of which is a
+  key listener, and a listener on the dialog's own element would reach into
+  the dialog component's markup. A pack adds a `keydown` listener to the
+  container in `render`, gives the container `tabIndex = -1` and focuses it
+  so keys arrive before a child takes focus, and reads `event.key` and the
+  modifiers from the event; the earlier `editableTarget` is
+  `event.target.closest('input, textarea, select, [contenteditable]') !== null`.
 - `VueSidebarTab` and `VueDialog` (0 / 0): the host would have rendered a
   pack's Vue component with its own Vue, which only the sandbox needed.
 - `BadgeContribution.icon` (0 / 0) has no use. `ViewportPanelDef.destroy`
@@ -333,6 +400,13 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   without saying so. `cloneDeep` from `es-toolkit` returns what it cannot
   clone, such as a function or a DOM node, by reference, so freezing its
   result could freeze a host object.
+- Give an overlay an element that takes the pointer itself
+  (`pointer-events: auto`) in its regions. An element cannot let a press
+  outside a region through to the graph below it, and the earlier contract
+  promised that a miss reaches the graph.
+- Draw overlays on every animation frame (`onCanvasFrame` alone). The graph
+  draws only when something changed, and an overlay drawn with it follows
+  every pan, zoom and move without work on the frames in between.
 - Render a pack's viewport panels in a host component in the canvas's
   overlay slot, as badges are rendered. That is new host UI for two packs;
   the panel element is what a pack appends without the API, now owned and
