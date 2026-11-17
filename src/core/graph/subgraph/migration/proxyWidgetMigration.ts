@@ -166,7 +166,7 @@ interface PendingEntry {
   plan: Plan
 }
 
-const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
+export const PRIMITIVE_NODE_TYPE = 'PrimitiveNode'
 const QUARANTINE_PROPERTY = 'proxyWidgetErrorQuarantine'
 const QUARANTINE_VERSION = 1
 const PROXY_BYPASS_MARKER_PROPERTY = 'proxyBypassedToSubgraphInput'

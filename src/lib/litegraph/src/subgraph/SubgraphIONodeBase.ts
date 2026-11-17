@@ -29,6 +29,7 @@ import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@comfyorg/graph-model/slots'
+import { isBreakLinkClick } from '@/lib/litegraph/src/canvas/breakLinkClick'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 import {
@@ -188,12 +189,7 @@ export abstract class SubgraphIONodeBase<
     }
     if (e.button !== 0) return
 
-    if (
-      LiteGraph.ctrl_alt_click_do_break_link &&
-      (e.ctrlKey || e.metaKey) &&
-      e.altKey &&
-      !e.shiftKey
-    ) {
+    if (isBreakLinkClick(e)) {
       pointer.onClick = () => {
         this.subgraph.beforeChange()
         slot.disconnect()

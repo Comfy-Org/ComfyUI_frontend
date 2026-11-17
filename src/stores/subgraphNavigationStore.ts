@@ -189,12 +189,11 @@ export const useSubgraphNavigationStore = defineStore(
       () => canvasStore.canvas?.canvas,
       'subgraph-opened',
       (event: CustomEvent<LGraphCanvasEventMap['subgraph-opened']>) => {
-        const { subgraph, closingGraph, fromNode } = event.detail
+        const { subgraph, fromNode } = event.detail
+        const stack = entries.value
+        if (stack.at(-1)?.subgraphId !== subgraph.id) return
         entries.value = [
-          ...withSharedPrefixHosts(pathThrough(closingGraph, subgraph)).slice(
-            0,
-            -1
-          ),
+          ...stack.slice(0, -1),
           { subgraphId: subgraph.id, hostId: fromNode.id }
         ]
       }
