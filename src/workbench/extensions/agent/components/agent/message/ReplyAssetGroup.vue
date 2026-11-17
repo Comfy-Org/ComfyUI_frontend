@@ -88,7 +88,16 @@ const galleryAssets = computed(() =>
 const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
-const galleryIndex = ref(-1)
+const galleryUrl = ref<string | null>(null)
+const galleryIndex = computed(() =>
+  galleryUrl.value === null
+    ? -1
+    : galleryAssets.value.findIndex((asset) => asset.url === galleryUrl.value)
+)
+
+function setGalleryIndex(index: number): void {
+  galleryUrl.value = galleryAssets.value[index]?.url ?? null
+}
 const autoplayGalleryVideo = ref(false)
 
 // Preserve controller identity inside Vue's deeply reactive state record.
@@ -393,7 +402,7 @@ function inspect(asset: ReplyVisualAssetData): void {
     return
   }
   autoplayGalleryVideo.value = asset.kind === 'video'
-  galleryIndex.value = galleryAssets.value.indexOf(asset)
+  galleryUrl.value = asset.url
 }
 </script>
 
@@ -406,6 +415,7 @@ function inspect(asset: ReplyVisualAssetData): void {
         :asset
         :multi
         :model-thumbnail-src="modelThumbnailSrc(asset.url)"
+        :unavailable="unavailableUrls.has(asset.url)"
         @inspect="inspect(asset)"
         @unavailable="markUnavailable(asset)"
       />
@@ -442,7 +452,7 @@ function inspect(asset: ReplyVisualAssetData): void {
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
       :autoplay-video="autoplayGalleryVideo"
-      @update:active-index="galleryIndex = $event"
+      @update:active-index="setGalleryIndex"
     />
   </div>
 </template>

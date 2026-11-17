@@ -6,10 +6,16 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ReplyVisualAsset } from '@/workbench/extensions/agent/utils/replyAssets'
 
-const { asset, multi, modelThumbnailSrc } = defineProps<{
+const {
+  asset,
+  multi,
+  modelThumbnailSrc,
+  unavailable = false
+} = defineProps<{
   asset: ReplyVisualAsset
   multi: boolean
   modelThumbnailSrc: string
+  unavailable?: boolean
 }>()
 
 const emit = defineEmits<{ inspect: []; unavailable: [] }>()
@@ -20,10 +26,11 @@ const previewing = ref(false)
 
 const name = computed(() => asset.label ?? asset.filename)
 
-const loadFailed = ref(false)
+const loadErrored = ref(false)
+const loadFailed = computed(() => unavailable || loadErrored.value)
 
 function markUnavailable(): void {
-  loadFailed.value = true
+  loadErrored.value = true
   emit('unavailable')
 }
 
