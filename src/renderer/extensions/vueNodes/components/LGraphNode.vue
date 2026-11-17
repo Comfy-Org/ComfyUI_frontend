@@ -172,43 +172,69 @@
             />
 
             <div
-              v-for="(region, index) in mediaRegions"
-              :key="region.name"
               :class="
                 cn(
-                  'relative flex min-h-0 flex-col',
-                  region.height !== undefined
-                    ? 'grid shrink-0'
-                    : region.fills
-                      ? 'flex-1'
-                      : 'shrink-0',
-                  region.growsIntoLeftover && 'grow'
+                  'flex flex-col',
+                  activityParts.length ? 'relative min-h-0 flex-1' : 'contents'
                 )
               "
-              :style="
-                region.height === undefined
-                  ? undefined
-                  : { gridTemplateRows: userHeightTrack(region.height) }
-              "
             >
-              <div class="flex min-h-0 flex-1 flex-col">
-                <LivePreview
-                  v-if="region.media.type === 'preview'"
-                  :image-url="region.media.url"
-                />
-                <NodeContent v-else :node-data :media="region.media" />
-              </div>
-              <GrowableRegionHandle
-                :name="region.name"
-                :label="
-                  mediaRegions.length > 1
-                    ? t('g.resizeNumberedPreviewHeight', { index: index + 1 })
-                    : t('g.resizePreviewHeight')
+              <div
+                :class="
+                  cn(
+                    'flex flex-col',
+                    activityParts.length ? 'absolute inset-0' : 'contents'
+                  )
                 "
-              />
+                :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
+              >
+                <div
+                  v-for="(region, index) in mediaRegions"
+                  :key="region.name"
+                  :class="
+                    cn(
+                      'relative flex min-h-0 flex-col',
+                      region.height !== undefined
+                        ? 'grid shrink-0'
+                        : region.fills
+                          ? 'flex-1'
+                          : 'shrink-0',
+                      region.growsIntoLeftover && 'grow'
+                    )
+                  "
+                  :style="
+                    region.height === undefined
+                      ? undefined
+                      : { gridTemplateRows: userHeightTrack(region.height) }
+                  "
+                >
+                  <NodePreviewParts
+                    :parts="region.parts"
+                    :node-data
+                    :fits-container="activityParts.length > 0"
+                  />
+                  <GrowableRegionHandle
+                    :name="region.name"
+                    :label="
+                      mediaRegions.length > 1
+                        ? t('g.resizeNumberedPreviewHeight', {
+                            index: index + 1
+                          })
+                        : t('g.resizePreviewHeight')
+                    "
+                  />
+                </div>
+                <div
+                  v-if="activityParts.length"
+                  class="flex min-h-0 flex-1 flex-col"
+                  data-testid="subgraph-activity-preview"
+                >
+                  <NodePreviewParts :parts="activityParts" fits-container />
+                </div>
+              </div>
             </div>
             <LivePreview
-              v-if="shouldShowPreviewImg && !promotedLivePreviewShown"
+              v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
               :image-url="latestPreviewUrl"
             />
           </div>
@@ -339,7 +365,8 @@ import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
-import { nodePreview } from '@/systems/nodePreviewSystem'
+import { activityInside, nodePreview } from '@/systems/nodePreviewSystem'
+import type { NodeMediaPart } from '@/systems/nodePreviewSystem'
 import {
   getNodeByLocatorId,
   locatorIdFromState
@@ -354,7 +381,7 @@ import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resi
 import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import LivePreview from './LivePreview.vue'
 import GrowableRegionHandle from './GrowableRegionHandle.vue'
-import NodeContent from './NodeContent.vue'
+import NodePreviewParts from './NodePreviewParts.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
 import NodeSlots from './NodeSlots.vue'
@@ -459,7 +486,9 @@ const mediaUserHeight = computed(() =>
 )
 
 const imageSharesNodeWithWidgets = computed(
-  () => nodeMedia.value?.type === 'image' && hasExpandingWidget.value
+  () =>
+    nodeMediaParts.value.some((part) => part.type === 'image') &&
+    hasExpandingWidget.value
 )
 
 const imagePreviewGrowth = computed(() => {
@@ -553,21 +582,21 @@ const handleResizePointerDown = (
 }
 
 const mediaRegions = computed(() => [
-  ...(nodeMedia.value?.items.length
+  ...(nodeMediaParts.value.length
     ? [
         {
           name: CANVAS_IMAGE_PREVIEW_WIDGET,
-          media: nodeMedia.value,
+          parts: nodeMediaParts.value,
           height: mediaUserHeight.value,
           fills: !imageSharesNodeWithWidgets.value,
           growsIntoLeftover: !widgetTakesSpareHeight.value
         }
       ]
     : []),
-  ...promotedPreviews.value.map((media) => ({
-    name: media.name,
-    media,
-    height: growable.heightOf(media.name),
+  ...promotedPreviews.value.map((preview) => ({
+    name: preview.name,
+    parts: preview.parts,
+    height: growable.heightOf(preview.name),
     fills: true,
     growsIntoLeftover: false
   }))
@@ -718,9 +747,16 @@ const lgraphNode = computed(resolveLGraphNode)
 // TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
-const promotedLivePreviewShown = computed(() =>
-  promotedPreviews.value.some((preview) => preview.type === 'preview')
-)
+const activityParts = computed(() => {
+  const node = lgraphNode.value
+  if (!node?.isSubgraphNode()) return []
+  const exposedSources = new Set(
+    promotedPreviews.value.flatMap(({ parts }) =>
+      parts.flatMap((part) => (part.kind === 'live' ? [part.source] : []))
+    )
+  )
+  return activityInside(node, exposedSources)
+})
 
 const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
@@ -762,7 +798,7 @@ const hasExpandingWidget = computed(() =>
 )
 
 const soleGrowableWidget = computed(() => {
-  if (nodeMedia.value?.items.length || promotedPreviews.value.length) return
+  if (nodeMediaParts.value.length || promotedPreviews.value.length) return
   const visible = processedWidgets.value.filter(({ visible }) => visible)
   const [widget] = visible
   return visible.length === 1 &&
@@ -808,20 +844,21 @@ const hasVideoPreviewWidget = computed(() =>
   )
 )
 
-const nodeMedia = computed(() => {
+const nodeMediaParts = computed((): NodeMediaPart[] => {
   const node = lgraphNode.value
-  if (!node || node.hideOutputImages || hideExecutedOutput.value)
-    return undefined
-  if (node instanceof SubgraphNode) return undefined
+  if (!node || node.hideOutputImages || hideExecutedOutput.value) return []
+  if (node instanceof SubgraphNode) return []
 
   const outputs = nodeOutputs.getNodeOutputs(node)
-  if (!outputs?.images?.length) return undefined
+  if (!outputs?.images?.length) return []
 
-  if (shouldHideLinkedCoreMediaInputPreview(node, outputs)) return undefined
+  if (shouldHideLinkedCoreMediaInputPreview(node, outputs)) return []
 
-  const { media } = nodePreview(node)
-  if (media?.type === 'video' && hasVideoPreviewWidget.value) return undefined
-  return media
+  return nodePreview(node).filter(
+    (part): part is NodeMediaPart =>
+      part.kind === 'media' &&
+      !(part.type === 'video' && hasVideoPreviewWidget.value)
+  )
 })
 
 // Drag and drop support

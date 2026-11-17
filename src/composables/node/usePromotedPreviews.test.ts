@@ -147,8 +147,7 @@ describe(usePromotedPreviews, () => {
         name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'image',
-        items
+        parts: [{ kind: 'media', type: 'image', items }]
       }
     ])
   })
@@ -160,7 +159,9 @@ describe(usePromotedPreviews, () => {
     })
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
-    expect(promotedPreviews.value[0].type).toBe('video')
+    expect(promotedPreviews.value[0].parts).toEqual([
+      expect.objectContaining({ kind: 'media', type: 'video' })
+    ])
   })
 
   it.for([
@@ -182,8 +183,9 @@ describe(usePromotedPreviews, () => {
 
       expect(promotedPreviews.value).toEqual([
         expect.objectContaining({
-          type: expected,
-          items: outputItems(filename)
+          parts: [
+            { kind: 'media', type: expected, items: outputItems(filename) }
+          ]
         })
       ])
     }
@@ -194,7 +196,9 @@ describe(usePromotedPreviews, () => {
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
-      expect.objectContaining({ type: 'image', items })
+      expect.objectContaining({
+        parts: [{ kind: 'media', type: 'image', items }]
+      })
     ])
   })
 
@@ -213,12 +217,12 @@ describe(usePromotedPreviews, () => {
       expect.objectContaining({
         name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        items: outputItems('a.png')
+        parts: [{ kind: 'media', type: 'image', items: outputItems('a.png') }]
       }),
       expect.objectContaining({
         name: `${CANVAS_IMAGE_PREVIEW_WIDGET}_1`,
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        items: outputItems('b.png')
+        parts: [{ kind: 'media', type: 'image', items: outputItems('b.png') }]
       })
     ])
   })
@@ -239,8 +243,7 @@ describe(usePromotedPreviews, () => {
         name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'preview',
-        url: blobUrl
+        parts: [{ kind: 'live', source: expect.any(String), url: blobUrl }]
       }
     ])
   })
@@ -254,7 +257,9 @@ describe(usePromotedPreviews, () => {
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
-      expect.objectContaining({ type: 'preview', url: blobUrl })
+      expect.objectContaining({
+        parts: [{ kind: 'live', source: expect.any(String), url: blobUrl }]
+      })
     ])
   })
 
@@ -276,8 +281,7 @@ describe(usePromotedPreviews, () => {
         name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'preview',
-        url: blobUrl
+        parts: [{ kind: 'live', source: expect.any(String), url: blobUrl }]
       }
     ])
   })
@@ -337,8 +341,9 @@ describe(usePromotedPreviews, () => {
         name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-        type: 'image',
-        items: outputItems('leaf.png')
+        parts: [
+          { kind: 'media', type: 'image', items: outputItems('leaf.png') }
+        ]
       }
     ])
   })
@@ -411,8 +416,9 @@ describe(usePromotedPreviews, () => {
           name: CANVAS_IMAGE_PREVIEW_WIDGET,
           sourceNodeId: '10',
           sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-          type: 'preview',
-          url: 'blob:first'
+          parts: [
+            { kind: 'live', source: expect.any(String), url: 'blob:first' }
+          ]
         }
       ])
       expect(
@@ -422,8 +428,9 @@ describe(usePromotedPreviews, () => {
           name: CANVAS_IMAGE_PREVIEW_WIDGET,
           sourceNodeId: '10',
           sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
-          type: 'preview',
-          url: 'blob:second'
+          parts: [
+            { kind: 'live', source: expect.any(String), url: 'blob:second' }
+          ]
         }
       ])
     })
@@ -438,8 +445,9 @@ describe(usePromotedPreviews, () => {
         usePromotedPreviews(() => firstHost).promotedPreviews.value
       ).toEqual([
         expect.objectContaining({
-          type: 'image',
-          items: outputItems('first.png')
+          parts: [
+            { kind: 'media', type: 'image', items: outputItems('first.png') }
+          ]
         })
       ])
       expect(

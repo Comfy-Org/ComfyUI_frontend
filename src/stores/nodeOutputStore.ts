@@ -349,6 +349,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return instances[executionId]
   }
 
+  /** Live previews of the nodes inside the instance at `executionId`, ordered by execution ID. */
+  function getPreviewImagesInside(
+    executionId: NodeExecutionId
+  ): Array<{ executionId: string; urls: string[] }> {
+    const prefix = `${executionId}:`
+    return Object.values(instancePreviewImages.value)
+      .flatMap((instances) => Object.entries(instances ?? {}))
+      .flatMap(([id, urls]) =>
+        id.startsWith(prefix) && urls?.length ? [{ executionId: id, urls }] : []
+      )
+      .sort((a, b) => a.executionId.localeCompare(b.executionId))
+  }
+
   function getNodeImageUrlsByExecutionId(
     executionId: NodeExecutionId,
     node: LGraphNode
@@ -909,6 +922,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     getNodeOutputByExecutionId,
     getNodePreviewImagesByExecutionId,
     getNodePreviews,
+    getPreviewImagesInside,
     getPreviewParam,
 
     setNodeOutputs,

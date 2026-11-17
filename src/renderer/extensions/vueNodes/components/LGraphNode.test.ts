@@ -38,6 +38,7 @@ import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import type { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
+import type { NodePreviewPart } from '@/systems/nodePreviewSystem'
 
 type ResizeCallback = (
   result: ResizeCallbackPayload,
@@ -502,7 +503,7 @@ describe('LGraphNode', () => {
     expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
   })
 
-  it('limits a generic image preview to the images output bucket', () => {
+  it('shows images and a video from one run as separate previews', () => {
     const outputs = seedNodeOutputs([
       { filename: 'output.png', type: 'output' }
     ])
@@ -513,9 +514,9 @@ describe('LGraphNode', () => {
 
     renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(screen.getByTestId('node-content')).toHaveTextContent(
-      /^output\.png$/
-    )
+    expect(
+      screen.getAllByTestId('node-content').map((el) => el.textContent)
+    ).toEqual(['output.png', 'output.webm'])
   })
 
   it('keeps legacy video files without adding text outputs to the preview', () => {
@@ -596,6 +597,18 @@ describe('LGraphNode', () => {
       sourceNodeId: toNodeId(10),
       sourceWidgetName: '$$canvas-image-preview'
     }
+    const exposedImage: NodePreviewPart = {
+      kind: 'media',
+      type: 'image',
+      items: [
+        {
+          filename: 'exposed.png',
+          mediaType: 'images',
+          nodeId: '10',
+          subfolder: ''
+        }
+      ]
+    }
 
     it.for<{
       shows: string
@@ -603,39 +616,39 @@ describe('LGraphNode', () => {
       urls: string[]
     }>([
       {
-        shows: 'its own live preview when it exposes no preview',
+        shows: 'one live preview per interior source running in parallel',
         promotedPreviews: [],
-        urls: ['blob:inside']
+        urls: ['blob:ten', 'blob:eleven']
       },
       {
-        shows: 'its own live preview below an exposed final output',
+        shows: 'the live previews inside below an exposed final output',
+        promotedPreviews: [{ ...exposure, parts: [exposedImage] }],
+        urls: ['blob:ten', 'blob:eleven']
+      },
+      {
+        shows: 'an exposed source once, in its exposure',
         promotedPreviews: [
           {
             ...exposure,
-            type: 'image',
-            items: [
-              {
-                filename: 'exposed.png',
-                mediaType: 'images',
-                nodeId: '10',
-                subfolder: ''
-              }
-            ]
+            parts: [{ kind: 'live', source: '5:10', url: 'blob:ten' }]
           }
         ],
-        urls: ['blob:inside']
-      },
-      {
-        shows: 'only the exposed live preview when an exposure shows one',
-        promotedPreviews: [
-          { ...exposure, type: 'preview', url: 'blob:exposed' }
-        ],
-        urls: ['blob:exposed']
+        urls: ['blob:ten', 'blob:eleven']
       }
     ])('shows $shows', ({ promotedPreviews, urls }) => {
-      mockData.mockLgraphNode = { isSubgraphNode: () => true, inputs: [] }
-      mockData.livePreviewUrl = 'blob:inside'
+      const rootGraph: Record<string, unknown> = { id: 'graph-test' }
+      rootGraph.rootGraph = rootGraph
+      mockData.mockLgraphNode = {
+        id: toNodeId(5),
+        graph: rootGraph,
+        inputs: [],
+        isSubgraphNode: () => true
+      }
       mockData.promotedPreviews = promotedPreviews
+      vi.mocked(useNodeOutputStore().getPreviewImagesInside).mockReturnValue([
+        { executionId: '5:10', urls: ['blob:ten'] },
+        { executionId: '5:11', urls: ['blob:eleven'] }
+      ])
 
       renderLGraphNode({ nodeData: mockNodeData })
 
