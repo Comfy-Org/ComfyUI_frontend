@@ -11,8 +11,8 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { isAudioResult, isVideoResult } from '@/utils/resultItem'
+import { nodePreviewOf } from '@/systems/nodePreviewSystem'
+import type { NodePreviewMedia } from '@/systems/nodePreviewSystem'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   appendNodeExecutionId,
@@ -20,28 +20,13 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
-type PromotedOutput = {
-  type: 'image' | 'video' | 'audio'
-  items: AugmentedResultItem[]
-}
 type PromotedLivePreview = { type: 'preview'; url: string }
-type PromotedContent = PromotedOutput | PromotedLivePreview
+type PromotedContent = NodePreviewMedia | PromotedLivePreview
 
 type PromotedPreview = PromotedContent & {
   name: string
   sourceNodeId: NodeId
   sourceWidgetName: string
-}
-
-function getPreviewMediaType(
-  node: LGraphNode,
-  items: AugmentedResultItem[]
-): PromotedOutput['type'] {
-  const media = node.previewMediaType
-  if (media === 'image' || media === 'video' || media === 'audio') return media
-  if (items.some(isVideoResult)) return 'video'
-  if (items.some(isAudioResult)) return 'audio'
-  return 'image'
 }
 
 export function usePromotedPreviews(
@@ -52,15 +37,11 @@ export function usePromotedPreviews(
 
   function toPromotedContent(
     node: LGraphNode,
-    previews: string[] | undefined,
+    liveUrls: string[] | undefined,
     outputs: NodeExecutionOutput | undefined
   ): PromotedContent | undefined {
-    const url = previews?.at(-1)
-    if (url) return { type: 'preview', url }
-    if (!outputs) return undefined
-    const items = nodeOutputStore.getNodeOutputItems(node, outputs)
-    if (items.length) return { type: getPreviewMediaType(node, items), items }
-    return undefined
+    const { liveUrl, media } = nodePreviewOf(node, { outputs, liveUrls })
+    return liveUrl ? { type: 'preview', url: liveUrl } : media
   }
 
   function readPromotedContent(

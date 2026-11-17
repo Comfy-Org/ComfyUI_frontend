@@ -330,7 +330,6 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { isVideoResult } from '@/utils/resultItem'
 import {
   stripGraphPrefix,
   useWidgetValueStore
@@ -340,7 +339,7 @@ import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
-import { isVideoOutput } from '@/utils/litegraphUtil'
+import { nodePreview } from '@/systems/nodePreviewSystem'
 import {
   getNodeByLocatorId,
   locatorIdFromState
@@ -798,10 +797,6 @@ const showAdvancedInputsButton = computed(() => {
   return hasAdvancedWidgets && !alwaysShowAdvanced
 })
 
-const hasVideoInput = computed(() =>
-  nodeData.inputs.some((input) => input.type === 'VIDEO')
-)
-
 const VIDEO_PREVIEW_WIDGET_TYPES = new Set(['videoedit', 'videoconcat'])
 
 const hasVideoPreviewWidget = computed(() =>
@@ -821,23 +816,9 @@ const nodeMedia = computed(() => {
 
   if (shouldHideLinkedCoreMediaInputPreview(node, outputs)) return undefined
 
-  const type =
-    isVideoOutput(outputs) ||
-    node.previewMediaType === 'video' ||
-    (!node.previewMediaType && hasVideoInput.value)
-      ? 'video'
-      : 'image'
-
-  if (type === 'video' && hasVideoPreviewWidget.value) return undefined
-
-  const items = nodeOutputs
-    .getNodeOutputItems(node, outputs)
-    .filter((item) =>
-      type === 'video' ? isVideoResult(item) : item.mediaType === 'images'
-    )
-  if (!items.length) return undefined
-
-  return { type, items } as const
+  const { media } = nodePreview(node)
+  if (media?.type === 'video' && hasVideoPreviewWidget.value) return undefined
+  return media
 })
 
 // Drag and drop support
