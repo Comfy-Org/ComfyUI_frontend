@@ -115,7 +115,9 @@ describe('WidgetLegacy canvas sizing', () => {
     widget.computeLayoutSize = () => ({ minWidth: 0, minHeight: 20 })
     widget.computedHeight = 500
     const drawnHeights: number[] = []
-    widget.draw = () => drawnHeights.push(widget.computedHeight ?? -1)
+    widget.draw = (_ctx, _node, _width, _y, height) => {
+      drawnHeights.push(height)
+    }
     useCanvasStore().canvas = fromPartial({ graph })
     await nextTick()
 
@@ -131,6 +133,7 @@ describe('WidgetLegacy canvas sizing', () => {
     const canvas = screen.getByTestId<HTMLCanvasElement>('legacy-widget-canvas')
     expect(canvas.height).toBe(604)
     expect(drawnHeights.at(-1)).toBe(300)
+    expect(widget.computedHeight).toBe(300)
   })
 })
 
