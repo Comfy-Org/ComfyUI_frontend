@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
@@ -265,28 +266,38 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
   })
 
   it('cancelGhostPlacement is a no-op with no ghost in flight', () => {
-    const fakeAutoPan = { stop: vi.fn() }
+    const autoPan = new AutoPanController({
+      canvas,
+      maxPanSpeed: 15,
+      onPan: () => {}
+    })
+    const stop = vi.spyOn(autoPan, 'stop')
     canvas.isDragging = true
-    canvas['_autoPan'] = fakeAutoPan as unknown as (typeof canvas)['_autoPan']
+    canvas['_autoPan'] = autoPan
 
     canvas.cancelGhostPlacement()
 
     expect(graph.getNodeById(node.id)).toBe(node)
     expect(canvas.state.ghostNodeId).toBeNull()
     expect(canvas.isDragging).toBe(true)
-    expect(canvas['_autoPan']).toBe(fakeAutoPan)
-    expect(fakeAutoPan.stop).not.toHaveBeenCalled()
+    expect(canvas['_autoPan']).toBe(autoPan)
+    expect(stop).not.toHaveBeenCalled()
   })
 
   it('does not clobber unrelated drag state when called with no ghost in flight', () => {
-    const fakeAutoPan = { stop: vi.fn() }
+    const autoPan = new AutoPanController({
+      canvas,
+      maxPanSpeed: 15,
+      onPan: () => {}
+    })
+    const stop = vi.spyOn(autoPan, 'stop')
     canvas.isDragging = true
-    canvas['_autoPan'] = fakeAutoPan as unknown as (typeof canvas)['_autoPan']
+    canvas['_autoPan'] = autoPan
 
     canvas.finalizeGhostPlacement(true)
 
     expect(canvas.isDragging).toBe(true)
-    expect(canvas['_autoPan']).toBe(fakeAutoPan)
-    expect(fakeAutoPan.stop).not.toHaveBeenCalled()
+    expect(canvas['_autoPan']).toBe(autoPan)
+    expect(stop).not.toHaveBeenCalled()
   })
 })
