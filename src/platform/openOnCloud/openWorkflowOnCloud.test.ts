@@ -1,8 +1,9 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import type {
   CloudTab,
@@ -25,6 +26,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: vi.fn()
 }))
+
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/openOnCloud/serializeRootGraph'), () => ({
   serializeRootGraph: vi.fn(() => structuredClone(defaultGraph))
@@ -175,6 +178,10 @@ describe('openWorkflowOnCloud in a browser', () => {
 })
 
 describe('openWorkflowOnCloud on Desktop', () => {
+  beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
+  })
+
   it('uses the native host relay when Desktop hosts a localhost distribution', async () => {
     const previous = window.__comfyDesktop2
     window.__comfyDesktop2 = fromPartial<

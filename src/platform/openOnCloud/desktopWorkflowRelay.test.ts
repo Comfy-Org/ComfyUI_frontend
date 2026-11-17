@@ -9,6 +9,7 @@ import {
   vi
 } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
@@ -20,6 +21,7 @@ import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isDesktop: true,
@@ -62,9 +64,8 @@ describe(handleDesktopWorkflowHandoff, () => {
   beforeEach(() => {
     openAt('http://127.0.0.1:8000/')
     api.user = 'desktop-user'
-    vi.mocked(fetch).mockImplementation(async () =>
-      Response.json({ open_on_cloud_enabled: true })
-    )
+    vi.mocked(fetch).mockImplementation(async () => Response.json({}))
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
     const previousConfig = remoteConfig.value
     const previousWindowConfig = window.__CONFIG__
     remoteConfig.value = {}
@@ -147,6 +148,31 @@ describe(handleDesktopWorkflowHandoff, () => {
       expect.anything(),
       expect.objectContaining({ overwrite: false })
     )
+  })
+
+  it('forwards an already staged transfer from a signed-out browser', async () => {
+    const { relay, record } = await stagedRelay()
+    remoteConfig.value = {}
+    openAt(relay)
+    const replace = relayed()
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
+      '/api/features',
+      expect.objectContaining({ cache: 'no-store' })
+    )
+  })
+
+  it('does not stage a transfer when the toolbar is disabled', async () => {
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = false
+
+    await expect(
+      stageDesktopWorkflowHandoff('portrait', defaultGraph)
+    ).resolves.toBeUndefined()
+
+    expect(api.storeUserData).not.toHaveBeenCalled()
   })
 
   it('accepts the staged Cloud origin after reading the relay server features', async () => {

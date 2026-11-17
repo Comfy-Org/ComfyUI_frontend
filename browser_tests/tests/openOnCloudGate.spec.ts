@@ -5,13 +5,14 @@ import {
   DESKTOP_RELAY_NONCE,
   recordOpenOnCloudTraffic
 } from '@e2e/fixtures/helpers/openOnCloudTraffic'
+import { localAuthFixture } from '@e2e/fixtures/localAuthFixture'
 
 test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
-  test('boots, loads and hovers the top menu without any Open on Cloud surface or traffic while the gate is off', async ({
+  test('hides the Cloud button and skips handoff traffic while signed out even when local flags enable it', async ({
     comfyPage
   }) => {
-    await comfyPage.featureFlags.seedServerFlags({
-      open_on_cloud_enabled: false
+    await comfyPage.featureFlags.mergeServerFeatures({
+      open_on_cloud_enabled: true
     })
     const traffic = recordOpenOnCloudTraffic(comfyPage.page)
 
@@ -60,15 +61,25 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
       )
   })
 
-  test('shows the Cloud button while the gate is on, proving the gate-off check looks at the right control', async ({
-    comfyPage
-  }) => {
-    await comfyPage.featureFlags.seedServerFlags({
-      open_on_cloud_enabled: true
-    })
+  localAuthFixture(
+    'shows the Cloud button when Cloud enables it for the signed-in account',
+    async ({ comfyPage }) => {
+      await comfyPage.page.route(
+        'https://{cloud,stagingcloud,testcloud}.comfy.org/api/features',
+        (route) =>
+          route.fulfill({
+            headers: { 'access-control-allow-origin': '*' },
+            json: {
+              open_on_cloud_enabled: Boolean(
+                route.request().headers().authorization
+              )
+            }
+          })
+      )
 
-    await comfyPage.workflow.reloadAndWaitForApp()
+      await comfyPage.workflow.reloadAndWaitForApp()
 
-    await expect(comfyPage.page.getByTestId('cloud-button')).toBeVisible()
-  })
+      await expect(comfyPage.page.getByTestId('cloud-button')).toBeVisible()
+    }
+  )
 })
