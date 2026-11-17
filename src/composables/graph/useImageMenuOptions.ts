@@ -157,16 +157,25 @@ export function useImageMenuOptions() {
     node: LGraphNode,
     availability: ImageMenuAvailability = DEFAULT_IMAGE_MENU_AVAILABILITY
   ): MenuOption[] => {
-    const hasImages = !!node.imgs?.length
+    const hasPreview = availability.preview && !!node.imgs?.length
     const canEdit =
-      availability.preview &&
-      (hasImages || (isImageNode(node) && !clipspace.returnNode))
+      hasPreview ||
+      (availability.preview && isImageNode(node) && !clipspace.returnNode)
     const canPaste = canPasteImage(node)
     const canExportOutputs = availability.preview && hasMultipleOutputs(node)
 
     const options: MenuOption[] = []
 
-    if (canEdit && !hasImages) {
+    if (hasPreview) {
+      options.push({
+        id: 'openImage',
+        label: t('contextMenu.Open Image'),
+        icon: 'icon-[lucide--external-link]',
+        action: () => openImage(node)
+      })
+    }
+
+    if (canEdit) {
       options.push({
         id: 'maskEditor',
         label: t('contextMenu.Open in Mask Editor'),
@@ -175,27 +184,13 @@ export function useImageMenuOptions() {
       })
     }
 
-    if (hasImages && availability.preview) {
-      options.push(
-        {
-          id: 'openImage',
-          label: t('contextMenu.Open Image'),
-          icon: 'icon-[lucide--external-link]',
-          action: () => openImage(node)
-        },
-        {
-          id: 'maskEditor',
-          label: t('contextMenu.Open in Mask Editor'),
-          icon: 'icon-[comfy--mask]',
-          action: () => openMaskEditor()
-        },
-        {
-          id: 'copyImage',
-          label: t('contextMenu.Copy Image'),
-          icon: 'icon-[lucide--copy]',
-          action: () => copyImage(node)
-        }
-      )
+    if (hasPreview) {
+      options.push({
+        id: 'copyImage',
+        label: t('contextMenu.Copy Image'),
+        icon: 'icon-[lucide--copy]',
+        action: () => copyImage(node)
+      })
     }
 
     if (canPaste && availability.input) {
@@ -207,7 +202,7 @@ export function useImageMenuOptions() {
       })
     }
 
-    if (hasImages && availability.preview) {
+    if (hasPreview) {
       options.push({
         id: 'saveImage',
         label: t('contextMenu.Save Image'),

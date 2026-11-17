@@ -77,12 +77,7 @@ function projectItem(item: LegacyItems[number]): MenuItem | undefined {
   if (item === null) return { separator: true }
   if (typeof item === 'string') return { label: item }
   if (item.callback && !isClosureOnly(item.callback)) return
-  if (
-    item.title ||
-    item.className ||
-    /<[a-z][\s\S]*>/i.test(item.content ?? '')
-  )
-    return
+  if (usesNativePresentation(item)) return
   const metadata = presentation.get(item)
   const base = { ...metadata, label: item.content, disabled: item.disabled }
   if (item.submenu) {
@@ -96,6 +91,12 @@ function projectItem(item: LegacyItems[number]): MenuItem | undefined {
     ...base,
     command: callback ? () => Reflect.apply(callback, undefined, []) : undefined
   }
+}
+
+function usesNativePresentation(item: IContextMenuValue): boolean {
+  return Boolean(
+    item.title || item.className || /<[a-z][\s\S]*>/i.test(item.content ?? '')
+  )
 }
 
 function projectSubmenu(
