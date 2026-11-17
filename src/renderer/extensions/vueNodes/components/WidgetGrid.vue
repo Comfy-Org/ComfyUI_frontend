@@ -82,9 +82,14 @@
             v-if="row.growable"
             :name="row.widget.simplified.name"
             :label="
-              $t('g.resizeWidgetHeight', {
-                name: row.widget.simplified.label || row.widget.simplified.name
-              })
+              $t(
+                'g.resizeWidgetHeight',
+                {
+                  name:
+                    row.widget.simplified.label || row.widget.simplified.name
+                },
+                { escapeParameter: false }
+              )
             "
             :max-height="row.maxHeight"
           />
