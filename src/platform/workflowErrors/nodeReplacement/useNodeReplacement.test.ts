@@ -477,10 +477,10 @@ describe('useNodeReplacement', () => {
         graph,
         'ResizeImagesByLongerEdge',
         [],
-        ['IMAGE']
+        ['unmapped', 'IMAGE']
       )
       const target = addSlottedNode(graph, 'Target', ['image'])
-      const link = createTestLink(graph, placeholder, 0, target, 0)
+      const link = createTestLink(graph, placeholder, 1, target, 0)
       markPlaceholder(placeholder)
       const newNode = createSlottedNode(
         'ImageScaleToMaxDimension',
@@ -500,7 +500,7 @@ describe('useNodeReplacement', () => {
             { new_id: 'largest_size', old_id: 'longer_edge' },
             { new_id: 'upscale_method', set_value: 'lanczos' }
           ],
-          output_mapping: [{ new_idx: 0, old_idx: 0 }]
+          output_mapping: [{ new_idx: 0, old_idx: 1 }]
         })
       ])
 
