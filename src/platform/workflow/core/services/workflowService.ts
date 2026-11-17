@@ -1,9 +1,9 @@
+import { insertItems } from '@/core/graph/clipboard/graphTransfer'
 import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import type { SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createToastId } from '@/types/toastId'
@@ -12,7 +12,7 @@ import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
-import { workflowToClipboardItems } from '@/platform/workflow/core/utils/workflowToClipboardItems'
+import { workflowToClipboardItems } from '@/core/graph/clipboard/workflowToClipboardItems'
 import {
   areWorkflowIdsEquivalent,
   ensureWorkflowId,
@@ -1145,12 +1145,8 @@ export const useWorkflowService = () => {
       return
     }
     const workflowJSON = toRaw(loadedWorkflow.initialState)
-    // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
-    // serialisation schema.
-    const items = workflowToClipboardItems(
-      workflowJSON as unknown as SerialisableGraph
-    )
-    canvas._deserializeItems(items, options)
+    const items = workflowToClipboardItems(workflowJSON)
+    insertItems(canvas, items, options)
   }
 
   const closeWorkflows = async (

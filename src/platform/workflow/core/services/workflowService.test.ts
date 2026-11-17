@@ -47,6 +47,14 @@ import {
 } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useAppMode } from '@/composables/useAppMode'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
@@ -3024,61 +3032,93 @@ describe('useWorkflowService', () => {
   })
 
   describe('insertWorkflow', () => {
+    function insertionWorkflow(): LoadedComfyWorkflow {
+      const source = new LGraph()
+      const node = createTestNode(source, [], [], 'Inserted')
+      node.pos = [30, 50]
+      const workflow = createModeTestWorkflow()
+      workflow.changeTracker = createMockChangeTracker({
+        initialState: zComfyWorkflow.parse({
+          ...makeWorkflowData(),
+          nodes: [node.serialize()]
+        })
+      })
+      return workflow
+    }
+
     it('inserts into the canvas with its requested position when nothing changes while loading', async () => {
-      const canvas = app.canvas
-      const priorGraph = canvas.graph
-      const priorDeserialize = canvas._deserializeItems
-      const originalGraph = {}
-      const deserialize = vi.fn()
-      Reflect.set(canvas, 'graph', originalGraph)
-      Reflect.set(canvas, '_deserializeItems', deserialize)
-      const workflow = createModeTestWorkflow()
+      const graph = new LGraph()
+      const existing = createTestNode(graph, [], [], 'Existing')
+      existing.pos = [400, 500]
+      app.canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
 
-      try {
-        const options = { position: [120, 240] as [number, number] }
-        await useWorkflowService().insertWorkflow(workflow, options)
+      await useWorkflowService().insertWorkflow(insertionWorkflow(), {
+        position: [120, 240]
+      })
 
-        expect(deserialize).toHaveBeenCalledOnce()
-        expect(deserialize).toHaveBeenCalledWith(
-          expect.objectContaining({ nodes: [], links: [] }),
-          options
+      expect(
+        graph.nodes.map((node) => ({ title: node.title, pos: [...node.pos] }))
+      ).toEqual([
+        { title: 'Existing', pos: [400, 500] },
+        { title: 'Inserted', pos: [120, 240] }
+      ])
+    })
+
+    it.for([
+      {
+        kind: 'canvas',
+        replace: (
+          _canvas: LGraphCanvas,
+          original: LGraph,
+          _replacement: LGraph
+        ) => {
+          app.canvas = createTestCanvas(
+            original,
+            createMockCanvasRenderingContext2D()
+          )
+        }
+      },
+      {
+        kind: 'graph',
+        replace: (
+          canvas: LGraphCanvas,
+          _original: LGraph,
+          replacement: LGraph
+        ) => {
+          canvas.setGraph(replacement)
+        }
+      }
+    ])(
+      'does not change either graph after $kind replacement while loading',
+      async ({ kind, replace }) => {
+        const original = new LGraph()
+        createTestNode(original, [], [], 'Original')
+        const replacement = new LGraph()
+        createTestNode(replacement, [], [], 'Replacement')
+        const canvas = createTestCanvas(
+          original,
+          createMockCanvasRenderingContext2D()
         )
-      } finally {
-        Reflect.set(canvas, 'graph', priorGraph)
-        Reflect.set(canvas, '_deserializeItems', priorDeserialize)
-      }
-    })
+        app.canvas = canvas
+        const workflow = insertionWorkflow()
+        let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}
+        vi.spyOn(workflow, 'load').mockImplementation(
+          () =>
+            new Promise((resolve) => {
+              finishLoad = resolve
+            })
+        )
 
-    it('does not insert after the canvas itself is replaced while loading', async () => {
-      const originalCanvas = app.canvas
-      const priorGraph = originalCanvas.graph
-      const priorDeserialize = originalCanvas._deserializeItems
-      const originalGraph = {}
-      const deserialize = vi.fn()
-      Reflect.set(originalCanvas, 'graph', originalGraph)
-      Reflect.set(originalCanvas, '_deserializeItems', deserialize)
-      const workflow = createModeTestWorkflow()
-      let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}
-      vi.spyOn(workflow, 'load').mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            finishLoad = resolve
-          })
-      )
-
-      reportErrorMock.mockClear()
-
-      try {
+        reportErrorMock.mockClear()
         const pending = useWorkflowService().insertWorkflow(workflow)
-        Reflect.set(app, 'canvas', {
-          graph: originalGraph,
-          _deserializeItems: vi.fn()
-        })
+        replace(canvas, original, replacement)
+        const beforeOriginal = original.serialize()
+        const beforeReplacement = replacement.serialize()
         finishLoad(workflow)
         await pending
 
-        expect(deserialize).not.toHaveBeenCalled()
-        expect(app.canvas._deserializeItems).not.toHaveBeenCalled()
+        expect(original.serialize()).toEqual(beforeOriginal)
+        expect(replacement.serialize()).toEqual(beforeReplacement)
         expect(reportErrorMock).toHaveBeenCalledTimes(1)
         expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
           surface: 'graph',
@@ -3091,60 +3131,10 @@ describe('useWorkflowService', () => {
             outcome: 'degraded',
             assert_mode: 'soft'
           },
-          context: { replacement_kind: 'canvas' }
+          context: { replacement_kind: kind }
         })
-      } finally {
-        Reflect.set(app, 'canvas', originalCanvas)
-        Reflect.set(originalCanvas, 'graph', priorGraph)
-        Reflect.set(originalCanvas, '_deserializeItems', priorDeserialize)
       }
-    })
-
-    it('does not insert after the canvas graph changes while loading', async () => {
-      const canvas = app.canvas
-      const priorGraph = canvas.graph
-      const priorDeserialize = canvas._deserializeItems
-      const originalGraph = {}
-      const deserialize = vi.fn()
-      Reflect.set(canvas, 'graph', originalGraph)
-      Reflect.set(canvas, '_deserializeItems', deserialize)
-      const workflow = createModeTestWorkflow()
-      let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}
-      vi.spyOn(workflow, 'load').mockImplementation(
-        () =>
-          new Promise((resolve) => {
-            finishLoad = resolve
-          })
-      )
-
-      reportErrorMock.mockClear()
-
-      try {
-        const pending = useWorkflowService().insertWorkflow(workflow)
-        Reflect.set(canvas, 'graph', {})
-        finishLoad(workflow)
-        await pending
-
-        expect(deserialize).not.toHaveBeenCalled()
-        expect(reportErrorMock).toHaveBeenCalledTimes(1)
-        expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
-          surface: 'graph',
-          errorType: 'workflow_insert_aborted_canvas_changed',
-          level: 'warning',
-          tags: {
-            failure_kind: 'degraded',
-            feature_area: 'workflow',
-            operation: 'insert',
-            outcome: 'degraded',
-            assert_mode: 'soft'
-          },
-          context: { replacement_kind: 'graph' }
-        })
-      } finally {
-        Reflect.set(canvas, 'graph', priorGraph)
-        Reflect.set(canvas, '_deserializeItems', priorDeserialize)
-      }
-    })
+    )
   })
 
   describe('saveWorkflow', () => {

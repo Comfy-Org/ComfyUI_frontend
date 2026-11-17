@@ -11,30 +11,35 @@ import {
 } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
 import type {
   LGraphCanvas,
-  LGraph,
-  LGraphGroup,
   LGraphNode,
   Positionable
 } from '@/lib/litegraph/src/litegraph'
-import { useCopy } from '@/composables/useCopy'
-import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
+import { useCopy } from './useCopy'
+import { CANVAS_CLIPBOARD_KEY } from '@/core/graph/clipboard/clipboardStorage'
+import {
+  serializeItems,
+  insertItems
+} from '@/core/graph/clipboard/graphTransfer'
+import { pasteFromCanvasClipboard } from '@/core/graph/clipboard/canvasClipboard'
 import { app } from '@/scripts/app'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from '@/utils/createNode'
-import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+import { shouldIgnoreCopyPaste } from './clipboardTarget'
+import { cloneDataTransfer, usePaste as usePasteImpl } from './usePaste'
+import { useGraphClipboard } from './useGraphClipboard'
 import {
-  cloneDataTransfer,
   pasteAudioNode,
   pasteAudioNodes,
   pasteImageNode,
   pasteImageNodes,
   pasteVideoNode,
-  pasteVideoNodes,
-  usePaste as usePasteImpl
-} from './usePaste'
+  pasteVideoNodes
+} from './mediaClipboard'
 
 vi.mock(import('firebase/auth'))
 
@@ -100,25 +105,14 @@ function mountRichTextEditor() {
   return { editor, paragraph, chipLabel }
 }
 
-const mockCanvas = {
-  current_node: null as LGraphNode | null,
-  graph: {
-    add: vi.fn(),
-    change: vi.fn()
-  } as Partial<LGraph> as LGraph,
+const mockCanvas = fromPartial<LGraphCanvas>({
+  current_node: null,
   graph_mouse: [100, 200],
-  pasteFromClipboard: vi.fn(),
-  _deserializeItems: vi.fn(),
-  selectedItems: new Set<Positionable>(),
-  copyToClipboard: vi.fn()
-} as Partial<LGraphCanvas> as LGraphCanvas
+  selectedItems: new Set<Positionable>()
+})
 
-function copyToCanvasClipboard(data: unknown): () => string {
-  return () => {
-    const serialized = JSON.stringify(data)
-    localStorage.setItem(CANVAS_CLIPBOARD_KEY, serialized)
-    return serialized
-  }
+function copiedItems(data: unknown): ReturnType<typeof serializeItems> {
+  return zClipboardItems.parse(data)
 }
 
 let mockCanvasStore: ReturnType<typeof useCanvasStore>
@@ -134,6 +128,14 @@ afterEach(() => scope.stop())
 
 beforeEach(() => {
   scope = effectScope()
+  vi.mocked(insertItems).mockImplementation(() => ({
+    created: [],
+    nodes: new Map(),
+    links: new Map(),
+    reroutes: new Map(),
+    subgraphs: new Map()
+  }))
+  vi.mocked(pasteFromCanvasClipboard).mockImplementation(vi.fn())
   mockWorkspaceStore = useWorkspaceStore()
   mockCanvasStore = useCanvasStore()
   mockCanvasStore.canvas = mockCanvas
@@ -143,14 +145,13 @@ vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/createNode'), { spy: true })
 
-vi.mock(import('@/workbench/eventHelpers'), { spy: true })
+vi.mock(import('./clipboardTarget'), { spy: true })
+vi.mock(import('@/core/graph/clipboard/graphTransfer'), { spy: true })
+vi.mock(import('@/core/graph/clipboard/canvasClipboard'), { spy: true })
 
 describe('pasteImageNode', () => {
   beforeEach(() => {
     vi.mocked(createNode).mockImplementation(vi.fn())
-    vi.mocked(mockCanvas.graph!.add).mockImplementation(
-      (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
-    )
   })
 
   it('should create new LoadImage node when no image node provided', async () => {
@@ -421,9 +422,6 @@ describe('usePaste', () => {
   beforeEach(() => {
     mockCanvas.current_node = null
     Object.assign(mockWorkspaceStore, { shiftDown: false })
-    vi.mocked(mockCanvas.graph!.add).mockImplementation(
-      (node: LGraphNode | LGraphGroup | null) => node as LGraphNode
-    )
   })
 
   it('should handle image paste', async () => {
@@ -440,6 +438,28 @@ describe('usePaste', () => {
     await vi.waitFor(() => {
       expect(createNode).toHaveBeenCalledWith(mockCanvas, 'LoadImage')
       expect(mockNode.pasteFile).toHaveBeenCalledWith(file)
+    })
+  })
+
+  it('retains pasted files while node creation is pending', async () => {
+    let resolveCreation: (node: LGraphNode | null) => void = () => {
+      throw new Error('Node creation has not started')
+    }
+    const creation = new Promise<LGraphNode | null>((resolve) => {
+      resolveCreation = resolve
+    })
+    const node = createMockNode()
+    vi.mocked(createNode).mockReturnValue(creation)
+    usePaste()
+    const file = createImageFile()
+    const clipboardData = createDataTransfer([file])
+
+    document.dispatchEvent(new ClipboardEvent('paste', { clipboardData }))
+    clipboardData.items.clear()
+    resolveCreation(node)
+
+    await vi.waitFor(() => {
+      expect(node.pasteFile).toHaveBeenCalledWith(file)
     })
   })
 
@@ -539,13 +559,11 @@ describe('usePaste', () => {
       )
 
       expect(app.loadGraphData).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
       expect(createNode).not.toHaveBeenCalled()
     }
   )
 
-  // A caret can land inside an uneditable reference chip, which then becomes
-  // the paste target even though the editor still handles the paste.
   it.for(['workflow JSON', 'an image'] as const)(
     'leaves the graph alone when the editor claims %s pasted inside a chip',
     (clipboard) => {
@@ -562,7 +580,7 @@ describe('usePaste', () => {
       )
 
       expect(app.loadGraphData).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
       expect(createNode).not.toHaveBeenCalled()
     }
   )
@@ -598,7 +616,7 @@ describe('usePaste', () => {
 
     await vi.waitFor(() => {
       expect(app.loadGraphData).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).toHaveBeenCalled()
     })
   })
 
@@ -620,7 +638,7 @@ describe('usePaste', () => {
 
     await vi.waitFor(() => {
       expect(app.loadGraphData).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
     })
   })
 
@@ -635,7 +653,7 @@ describe('usePaste', () => {
         mockCanvas.selectOnly = false
       })
       const collaborators = {
-        pasteFromClipboard: mockCanvas.pasteFromClipboard,
+        pasteFromClipboard: pasteFromCanvasClipboard,
         createNode
       }
       usePaste()
@@ -694,10 +712,10 @@ describe('usePaste', () => {
     const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
     document.dispatchEvent(event)
 
-    expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    expect(pasteFromCanvasClipboard).toHaveBeenCalledWith(mockCanvas)
   })
 
-  it('should paste clipboard items that useCopy wrote', () => {
+  it('installs copy and paste together and removes both on disposal', () => {
     const data = {
       nodes: [],
       groups: [],
@@ -705,20 +723,27 @@ describe('usePaste', () => {
       links: [],
       subgraphs: []
     }
-    vi.mocked(mockCanvas.copyToClipboard).mockImplementation(
-      copyToCanvasClipboard(data)
-    )
-    scope.run(useCopy)
-    usePaste()
+    vi.mocked(serializeItems).mockReturnValue(copiedItems(data))
+    scope.run(useGraphClipboard)
     const clipboardData = new DataTransfer()
     document.dispatchEvent(new ClipboardEvent('copy', { clipboardData }))
 
     document.dispatchEvent(new ClipboardEvent('paste', { clipboardData }))
 
-    expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(
+    expect(insertItems).toHaveBeenCalledWith(
+      mockCanvas,
       data,
       expect.any(Object)
     )
+
+    scope.stop()
+    vi.mocked(insertItems).mockClear()
+    vi.mocked(serializeItems).mockClear()
+    document.dispatchEvent(new ClipboardEvent('copy', { clipboardData }))
+    document.dispatchEvent(new ClipboardEvent('paste', { clipboardData }))
+
+    expect(serializeItems).not.toHaveBeenCalled()
+    expect(insertItems).not.toHaveBeenCalled()
   })
 
   it('accepts validated legacy data-metadata clipboard items', async () => {
@@ -735,7 +760,8 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     await vi.waitFor(() => {
-      expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(
+      expect(insertItems).toHaveBeenCalledWith(
+        mockCanvas,
         data,
         expect.any(Object)
       )
@@ -753,8 +779,8 @@ describe('usePaste', () => {
     )
 
     await vi.waitFor(() => {
-      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+      expect(insertItems).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).toHaveBeenCalled()
     })
   })
 
@@ -782,8 +808,8 @@ describe('usePaste', () => {
       )
 
       await vi.waitFor(() => {
-        expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-        expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+        expect(insertItems).not.toHaveBeenCalled()
+        expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
         expect(useToast().toasts).toContainEqual(
           expect.objectContaining({ kind: 'error' })
         )
@@ -805,8 +831,8 @@ describe('usePaste', () => {
     )
 
     await vi.waitFor(() => {
-      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(insertItems).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({ kind: 'error' })
       )
@@ -815,7 +841,7 @@ describe('usePaste', () => {
 
   it('should toast a deserialization error without falling back', async () => {
     const deserializeError = new Error('Paste failed')
-    vi.mocked(mockCanvas._deserializeItems).mockImplementation(() => {
+    vi.mocked(insertItems).mockImplementation(() => {
       throw deserializeError
     })
     const data = {
@@ -840,7 +866,7 @@ describe('usePaste', () => {
       expect(useToast().toasts).toContainEqual(
         expect.objectContaining({ kind: 'error' })
       )
-      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
     })
   })
 
@@ -855,9 +881,7 @@ describe('usePaste', () => {
     }
 
     function copyNodes(data: unknown = { nodes: [] }): DataTransfer {
-      vi.mocked(mockCanvas.copyToClipboard).mockImplementation(
-        copyToCanvasClipboard(data)
-      )
+      vi.mocked(serializeItems).mockReturnValue(copiedItems(data))
       const clipboardData = new DataTransfer()
       document.dispatchEvent(new ClipboardEvent('copy', { clipboardData }))
       return clipboardData
@@ -874,8 +898,8 @@ describe('usePaste', () => {
 
       paste(clipboardData)
 
-      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
-      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(insertItems).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
     })
 
     it('skips the default paste when another app replaced the clipboard', () => {
@@ -886,7 +910,7 @@ describe('usePaste', () => {
 
       paste(otherApp)
 
-      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
           kind: 'info',
@@ -901,9 +925,9 @@ describe('usePaste', () => {
       const latest = copyNodes({ nodes: [] })
 
       paste(earlier)
-      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
       paste(latest)
-      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalledOnce()
+      expect(pasteFromCanvasClipboard).toHaveBeenCalledOnce()
     })
 
     it('skips the default paste after a menu copy replaced the canvas clipboard', () => {
@@ -913,7 +937,7 @@ describe('usePaste', () => {
 
       paste(keyboardCopy)
 
-      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
+      expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
     })
 
     it.for([
@@ -936,7 +960,7 @@ describe('usePaste', () => {
 
         paste(clipboardData)
 
-        expect(mockCanvas.pasteFromClipboard).toHaveBeenCalledOnce()
+        expect(pasteFromCanvasClipboard).toHaveBeenCalledOnce()
         expect(useToast().toasts).toEqual([])
       }
     )

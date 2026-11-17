@@ -9,11 +9,12 @@ import {
 } from 'vitest'
 import { effectScope } from 'vue'
 import { useCopy } from './useCopy'
+import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
-} from '@/lib/litegraph/src/canvas/clipboardStorage'
+} from '@/core/graph/clipboard/clipboardStorage'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
@@ -25,10 +26,11 @@ import { fromPartial } from '@total-typescript/shoehorn'
 
 const copyMocks = {
   canvas: {
-    selectedItems: new Set<object>([{}]),
-    copyToClipboard: vi.fn()
+    selectedItems: new Set<object>([{}])
   }
 }
+
+vi.mock(import('@/core/graph/clipboard/graphTransfer'), { spy: true })
 
 const multiChunkPayloadLength = 0x8000 * 6 + 123
 
@@ -48,7 +50,7 @@ function dispatchCopy(target: EventTarget = document): DataTransfer {
 }
 
 function copySerializedData(serializedData: string): DataTransfer {
-  copyMocks.canvas.copyToClipboard.mockReturnValue(serializedData)
+  vi.mocked(serializeItems).mockReturnValue(JSON.parse(serializedData))
   return dispatchCopy()
 }
 
@@ -169,10 +171,7 @@ describe('useCopy', () => {
     }
 
     function copyNodeWithKeyboard(): void {
-      copyMocks.canvas.copyToClipboard.mockImplementation(() => {
-        writeCanvasClipboard(keyboardNode)
-        return keyboardNode
-      })
+      vi.mocked(serializeItems).mockReturnValue(JSON.parse(keyboardNode))
       dispatchCopy()
     }
 
@@ -233,7 +232,7 @@ describe('useCopy', () => {
       'with $selection after $slot leaves the canvas clipboard slot as $slotAfter',
       ({ writeSlot, selectedCharacters, slotAfter }) => {
         for (const write of writeSlot) write()
-        copyMocks.canvas.copyToClipboard.mockClear()
+        vi.mocked(serializeItems).mockClear()
         selectDocumentText(selectedCharacters)
         const textarea = document.createElement('textarea')
         document.body.append(textarea)
@@ -243,7 +242,7 @@ describe('useCopy', () => {
 
         expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(slotAfter)
         expect(dataTransfer.getData('text/html')).toBe('')
-        expect(copyMocks.canvas.copyToClipboard).not.toHaveBeenCalled()
+        expect(serializeItems).not.toHaveBeenCalled()
       }
     )
 

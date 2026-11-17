@@ -1,17 +1,15 @@
 import { expect, it, onTestFinished, vi } from 'vitest'
 
-import { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useApp } from '@/scripts/appInstance'
 import {
-  createMockCanvasRenderingContext2D,
-  createTestCanvas
-} from '@/utils/__tests__/canvasTestUtils'
+  CANVAS_CLIPBOARD_ID_KEY,
+  CANVAS_CLIPBOARD_KEY
+} from '@/core/graph/clipboard/clipboardStorage'
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock(import('@/utils/vintageClipboard'), () => ({
+vi.mock(import('@/core/graph/clipboard/vintageClipboard'), () => ({
   deserialiseAndCreate: vi.fn()
 }))
 
@@ -38,16 +36,19 @@ async function importNodeTemplates(getUserData: () => Promise<Response>) {
   document.body.replaceChildren()
   const { api } = await import('@/scripts/api')
   const { app } = await import('@/scripts/app')
-  vi.mocked(useApp().canvas.copyToClipboard).mockReturnValue('{"nodes":[]}')
   const { reportError } = await import('@comfyorg/telemetry/reportError')
   vi.mocked(api.getUserData).mockImplementation(getUserData)
   const { nodeTemplatesExtension: extension } = await import('./nodeTemplates')
+  const { LGraph, LGraphNode, LiteGraph } =
+    await import('@/lib/litegraph/src/litegraph')
+  const { createMockCanvasRenderingContext2D, createTestCanvas } =
+    await import('@/utils/__tests__/canvasTestUtils')
   const canvas = createTestCanvas(
     new LGraph(),
     createMockCanvasRenderingContext2D()
   )
   onTestFinished(() => canvas.unbindEvents())
-  return { api, app, reportError, extension, canvas }
+  return { api, app, reportError, extension, canvas, LGraphNode, LiteGraph }
 }
 
 it('defers loading templates and creating the import input until setup', async () => {
@@ -144,8 +145,69 @@ it('keeps stored templates when saving before the initial load finishes', async 
   )
   expect(written).toEqual([
     { name: 'Stored', data: '{}' },
-    { name: 'New template', data: '{"nodes":[]}' }
+    {
+      name: 'New template',
+      data: '{"nodes":[],"groups":[],"reroutes":[],"links":[],"subgraphs":[]}'
+    }
   ])
+})
+
+it('saves and inserts selected nodes with blocked storage without changing the clipboard', async () => {
+  const { api, app, extension, canvas, LGraphNode, LiteGraph } =
+    await importNodeTemplates(async () => Response.json([]))
+  const { useDialogService } = await import('@/services/dialogService')
+  const nodeType = 'test/storage-independent-template'
+  LiteGraph.registerNodeType(nodeType, class extends LGraphNode {})
+  onTestFinished(() => {
+    delete LiteGraph.registered_node_types[nodeType]
+  })
+  const node = LiteGraph.createNode(nodeType)
+  if (!node || !canvas.graph) throw new Error('Template canvas is unavailable')
+  canvas.graph.add(node)
+  node.title = 'Current selection'
+  canvas.selectItems([node])
+  canvas.graph_mouse[0] = 317
+  canvas.graph_mouse[1] = 451
+  vi.mocked(useDialogService().prompt).mockResolvedValue('Selected template')
+  await extension.setup?.(app)
+
+  localStorage.setItem(CANVAS_CLIPBOARD_KEY, 'earlier graph copy')
+  localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, 'earlier stamp')
+  const blocked = () => {
+    throw new DOMException('Storage is blocked', 'SecurityError')
+  }
+  const get = vi.spyOn(Storage.prototype, 'getItem').mockImplementation(blocked)
+  const set = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(blocked)
+  const remove = vi
+    .spyOn(Storage.prototype, 'removeItem')
+    .mockImplementation(blocked)
+  try {
+    const save = extension.getCanvasMenuItems?.(canvas)[1]
+    await save?.callback?.call(document.createElement('div'))
+    expect(api.storeUserData).toHaveBeenCalledOnce()
+    const templates =
+      extension.getCanvasMenuItems?.(canvas)[2]?.submenu?.options
+    const insert = templates?.[0]
+    if (!insert || typeof insert === 'string')
+      throw new Error('Saved template is unavailable')
+    await insert.callback?.call(document.createElement('div'))
+
+    expect(canvas.graph.nodes.map(({ title }) => title)).toEqual([
+      'Current selection',
+      'Current selection'
+    ])
+    const [inserted] = [...canvas.selectedItems]
+    expect(inserted).not.toBe(node)
+    expect(Array.from(inserted.pos)).toEqual([317, 451])
+  } finally {
+    get.mockRestore()
+    set.mockRestore()
+    remove.mockRestore()
+  }
+  expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe('earlier graph copy')
+  expect(localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)).toBe('earlier stamp')
+  localStorage.removeItem(CANVAS_CLIPBOARD_KEY)
+  localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
 })
 
 it('keeps both templates when two saves overlap', async () => {
@@ -169,7 +231,13 @@ it('keeps both templates when two saves overlap', async () => {
     String(vi.mocked(api.storeUserData).mock.calls.at(-1)?.[1])
   )
   expect(written).toEqual([
-    { name: 'First', data: '{"nodes":[]}' },
-    { name: 'Second', data: '{"nodes":[]}' }
+    {
+      name: 'First',
+      data: '{"nodes":[],"groups":[],"reroutes":[],"links":[],"subgraphs":[]}'
+    },
+    {
+      name: 'Second',
+      data: '{"nodes":[],"groups":[],"reroutes":[],"links":[],"subgraphs":[]}'
+    }
   ])
 })

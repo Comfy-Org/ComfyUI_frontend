@@ -44,7 +44,7 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTest
 import {
   CANVAS_CLIPBOARD_ID_KEY,
   CANVAS_CLIPBOARD_KEY
-} from './canvas/clipboardStorage'
+} from '@/core/graph/clipboard/clipboardStorage'
 
 vi.mock(import('@/services/litegraphService'))
 const telemetryMocks = vi.hoisted(() => ({ reportError: vi.fn() }))

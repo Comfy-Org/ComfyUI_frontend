@@ -59,6 +59,8 @@ import type { useWorkflowValidation } from '@/platform/workflow/validation/compo
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
+  createTestCanvas,
+  createMockCanvasRenderingContext2D,
   createTestCanvasElement,
   createTestDragAndScale,
   setCanvasVisible
@@ -81,7 +83,7 @@ import {
   pasteImageNodes,
   pasteVideoNode,
   pasteVideoNodes
-} from '@/composables/usePaste'
+} from '@/renderer/core/clipboard/mediaClipboard'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
@@ -167,7 +169,7 @@ vi.mock(
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 vi.mock(import('@/utils/createNode'), { spy: true })
 
-vi.mock(import('@/composables/usePaste'), () => ({
+vi.mock(import('@/renderer/core/clipboard/mediaClipboard'), () => ({
   pasteAudioNode: vi.fn(),
   pasteAudioNodes: vi.fn(),
   pasteImageNode: vi.fn(),
@@ -291,6 +293,60 @@ function createWorkflowGraphData(): ComfyWorkflowJSON {
 describe('ComfyApp', () => {
   let app: ComfyApp
   let mockCanvas: LGraphCanvas
+  it('stacks imported templates vertically without browser storage', () => {
+    const canvas = createTestCanvas(
+      new LGraph(),
+      createMockCanvasRenderingContext2D()
+    )
+    onTestFinished(() => canvas.unbindEvents())
+    app.canvas = canvas
+    canvas.graph_mouse[0] = 317
+    canvas.graph_mouse[1] = 451
+    const nodeType = 'test/stacked-template-import'
+    LiteGraph.registerNodeType(nodeType, class extends LGraphNode {})
+    onTestFinished(() => {
+      delete LiteGraph.registered_node_types[nodeType]
+    })
+    const data = JSON.stringify({
+      nodes: [
+        {
+          id: 7,
+          type: nodeType,
+          pos: [17, 23],
+          size: [140, 80],
+          flags: {},
+          order: 0,
+          mode: 0,
+          properties: {}
+        }
+      ],
+      reroutes: []
+    })
+    const blocked = () => {
+      throw new DOMException('Storage is blocked', 'SecurityError')
+    }
+    const get = vi
+      .spyOn(Storage.prototype, 'getItem')
+      .mockImplementation(blocked)
+    const set = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(blocked)
+    const remove = vi
+      .spyOn(Storage.prototype, 'removeItem')
+      .mockImplementation(blocked)
+    try {
+      app.loadTemplateData({ templates: [{ data }, { data }] })
+      expect(canvas.graph?.nodes.map((node) => Array.from(node.pos))).toEqual([
+        [317, 451],
+        [317, 581]
+      ])
+    } finally {
+      get.mockRestore()
+      set.mockRestore()
+      remove.mockRestore()
+    }
+  })
+
   it('applies extension paste overrides when the clipspace editor saves', () => {
     const node = new LGraphNode('original')
     const previousReturnNode = ComfyApp.clipspace_return_node

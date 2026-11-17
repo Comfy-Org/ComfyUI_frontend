@@ -1,11 +1,12 @@
 import { useEventListener } from '@vueuse/core'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { parseClipboardHtml } from '@/composables/useCopy'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { pasteFromCanvasClipboard } from '@/core/graph/clipboard/canvasClipboard'
+import { CANVAS_CLIPBOARD_KEY } from '@/core/graph/clipboard/clipboardStorage'
+import { insertItems } from '@/core/graph/clipboard/graphTransfer'
 import { t } from '@/i18n'
-import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
-import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
@@ -17,13 +18,18 @@ import {
   isSelectOnly,
   isVideoNode
 } from '@/utils/litegraphUtil'
-import { createNode } from '@/utils/createNode'
-import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+
+import { parseClipboardHtml } from './clipboardHtml'
+import { shouldIgnoreCopyPaste } from './clipboardTarget'
+import {
+  pasteAudioNode,
+  pasteImageNode,
+  pasteVideoNode
+} from './mediaClipboard'
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {
   const persistent = new DataTransfer()
 
-  // Copy string data
   for (const type of original.types) {
     const data = original.getData(type)
     if (data) {
@@ -40,7 +46,6 @@ export function cloneDataTransfer(original: DataTransfer): DataTransfer {
     }
   }
 
-  // Preserve dropEffect and effectAllowed
   persistent.dropEffect = original.dropEffect
   persistent.effectAllowed = original.effectAllowed
 
@@ -62,7 +67,7 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   }
 
   try {
-    useCanvasStore().getCanvas()._deserializeItems(clipboardItems.data, {})
+    insertItems(useCanvasStore().getCanvas(), clipboardItems.data, {})
   } catch (err) {
     useErrorHandling().toastErrorHandler(err)
   }
@@ -96,141 +101,15 @@ function isWorkflow(
   )
 }
 
-function pasteItemsOnNode(
-  items: DataTransferItemList,
-  node: LGraphNode | null,
-  contentType: string
-): void {
-  if (!node) return
-
-  const filteredItems = Array.from(items).filter((item) =>
-    item.type.startsWith(contentType)
-  )
-
-  const blob = filteredItems[0]?.getAsFile()
-  if (!blob) return
-
-  node.pasteFile?.(blob)
-  node.pasteFiles?.(
-    Array.from(filteredItems)
-      .map((i) => i.getAsFile())
-      .filter((f) => f !== null)
-  )
-}
-
-export async function pasteImageNode(
-  canvas: LGraphCanvas,
-  items: DataTransferItemList,
-  imageNode: LGraphNode | null = null
-): Promise<LGraphNode | null> {
-  // No image node selected: add a new one
-  if (!imageNode) {
-    imageNode = await createNode(canvas, 'LoadImage')
-  }
-
-  pasteItemsOnNode(items, imageNode, 'image')
-  return imageNode
-}
-
-export async function pasteImageNodes(
-  canvas: LGraphCanvas,
-  fileList: File[]
-): Promise<LGraphNode[]> {
-  const nodes: LGraphNode[] = []
-
-  for (const file of fileList) {
-    const transfer = new DataTransfer()
-    transfer.items.add(file)
-    const imageNode = await pasteImageNode(canvas, transfer.items)
-
-    if (imageNode) {
-      nodes.push(imageNode)
-    }
-  }
-
-  return nodes
-}
-
-export async function pasteAudioNode(
-  canvas: LGraphCanvas,
-  items: DataTransferItemList,
-  audioNode: LGraphNode | null = null
-): Promise<LGraphNode | null> {
-  if (!audioNode) {
-    audioNode = await createNode(canvas, 'LoadAudio')
-  }
-  pasteItemsOnNode(items, audioNode, 'audio')
-  return audioNode
-}
-
-export async function pasteAudioNodes(
-  canvas: LGraphCanvas,
-  fileList: File[]
-): Promise<LGraphNode[]> {
-  const nodes: LGraphNode[] = []
-
-  for (const file of fileList) {
-    const transfer = new DataTransfer()
-    transfer.items.add(file)
-    const node = await pasteAudioNode(canvas, transfer.items)
-
-    if (node) {
-      nodes.push(node)
-    }
-  }
-
-  return nodes
-}
-
-export async function pasteVideoNode(
-  canvas: LGraphCanvas,
-  items: DataTransferItemList,
-  videoNode: LGraphNode | null = null
-): Promise<LGraphNode | null> {
-  if (!videoNode) {
-    videoNode = await createNode(canvas, 'LoadVideo')
-  }
-  pasteItemsOnNode(items, videoNode, 'video')
-  return videoNode
-}
-
-export async function pasteVideoNodes(
-  canvas: LGraphCanvas,
-  fileList: File[]
-): Promise<LGraphNode[]> {
-  const nodes: LGraphNode[] = []
-
-  for (const file of fileList) {
-    const transfer = new DataTransfer()
-    transfer.items.add(file)
-    const node = await pasteVideoNode(canvas, transfer.items)
-
-    if (node) {
-      nodes.push(node)
-    }
-  }
-
-  return nodes
-}
-
-/**
- * Adds a handler on paste that extracts and loads images or workflows from pasted JSON data
- */
 export const usePaste = () => {
   const workspaceStore = useWorkspaceStore()
   const canvasStore = useCanvasStore()
 
   useEventListener(document, 'paste', async (e) => {
-    // An editor claims the paste it handles by cancelling it. Its target is not
-    // always editable: a caret inside an uneditable chip makes the chip the
-    // target, which shouldIgnoreCopyPaste would hand to the canvas.
     if (e.defaultPrevented) return
     if (shouldIgnoreCopyPaste(e.target)) {
-      // Default system copy
       return
     }
-    // ctrl+shift+v is used to paste nodes with connections
-    // this is handled by litegraph
     if (workspaceStore.shiftDown) return
 
     const { canvas } = canvasStore
@@ -262,7 +141,6 @@ export const usePaste = () => {
       ? currentNode
       : null
 
-    // Look for image paste data
     for (const item of items) {
       if (item.type.startsWith('image/')) {
         await pasteImageNode(canvas, items, imageNode)
@@ -281,7 +159,6 @@ export const usePaste = () => {
     if (!isMediaNodeSelected && pasteClipboardItems(data)) return
     const html = data.getData('text/html')
 
-    // No image found. Look for node data
     data = data.getData('text/plain')
     let workflow: unknown
     try {
@@ -308,9 +185,8 @@ export const usePaste = () => {
         return
       }
 
-      // Litegraph default paste
       if (!isMediaNodeSelected || holdsLatestCanvasCopy(html)) {
-        canvas.pasteFromClipboard()
+        pasteFromCanvasClipboard(canvas)
       } else {
         useToast().info(t('toastMessages.nothingToPasteIntoNode'), {
           duration: 3000
