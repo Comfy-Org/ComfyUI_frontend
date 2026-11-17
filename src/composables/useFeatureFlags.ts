@@ -4,6 +4,7 @@ import type { Ref } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
+import { localOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -50,7 +51,7 @@ function resolveFlag<T>(
  */
 function resolveStrictBooleanFlag(
   flagKey: string,
-  remoteConfigValue: boolean | undefined
+  remoteConfigValue: unknown
 ): boolean {
   try {
     return resolveFlag<unknown>(flagKey, remoteConfigValue, false) === true
@@ -208,19 +209,24 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get openOnCloudEnabled() {
-      return resolveFlag(
+      const served = isCloud
+        ? remoteConfig.value.open_on_cloud_enabled
+        : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ??
+          remoteConfig.value.open_on_cloud_enabled)
+      return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
-        remoteConfig.value.open_on_cloud_enabled,
-        import.meta.env.DEV
+        served
       )
     },
     get openOnCloudUseLocalAgentEnabled() {
-      return (
-        resolveFlag<unknown>(
-          ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
-          remoteConfig.value.open_on_cloud_use_local_agent_enabled,
-          false
-        ) === true
+      const served = isCloud
+        ? remoteConfig.value.open_on_cloud_use_local_agent_enabled
+        : (localOpenOnCloudRollout.value
+            ?.open_on_cloud_use_local_agent_enabled ??
+          remoteConfig.value.open_on_cloud_use_local_agent_enabled)
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
+        served
       )
     },
     get deployToCloud() {
