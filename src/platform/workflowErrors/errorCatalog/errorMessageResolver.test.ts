@@ -717,6 +717,25 @@ describe('errorMessageResolver', () => {
       ).toEqual({})
     })
 
+    it('falls back to English when the active locale lacks the sentence', () => {
+      const locale = i18n.global.locale.value
+      i18n.global.locale.value = 'fr'
+      try {
+        expect(
+          resolveRunErrorMessage({
+            kind: 'prompt',
+            isCloud: true,
+            error: withRefusalReason(refusal, { reason: 'manual_block' })
+          })
+        ).toEqual({
+          displayTitle: "Your workflow didn't run",
+          displayMessage: 'This workspace has been blocked. Contact support.'
+        })
+      } finally {
+        i18n.global.locale.value = locale
+      }
+    })
+
     it('adds no copy off Cloud', () => {
       expect(
         resolveRunErrorMessage({
