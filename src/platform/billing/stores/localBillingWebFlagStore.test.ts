@@ -189,11 +189,9 @@ describe('useLocalBillingWebFlagStore', () => {
   it('turns the new billing UX off on sign-out', async () => {
     serveFlags({ local_billing_web: true, billing_new_ux_enabled: true })
     const { push } = await signInAndRead()
+    expect(showsCloudBillingNewUxOnLocal()).toBe(true)
 
     push({ status: 'signed_out' })
-    await settle()
-    serveFlags({ local_billing_web: true })
-    push(signedIn('user-2', 'ws-2'))
     await settle()
 
     expect(showsCloudBillingNewUxOnLocal()).toBe(false)
