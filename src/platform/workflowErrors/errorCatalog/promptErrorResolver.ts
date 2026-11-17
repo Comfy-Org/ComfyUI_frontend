@@ -5,7 +5,7 @@ import type { ErrorResolveContext } from './catalogI18n'
 import { translateCatalogMessage } from './catalogI18n'
 import { resolveRuntimeCatalogCopy } from './runtimeErrorCopy'
 import { resolveRuntimeCatalogMatch } from './runtimeErrorMatcher'
-import { st } from '@/i18n'
+import { st, t } from '@/i18n'
 
 // Resolves prompt-level errors and non-node-scoped failures before falling
 // back to prompt-specific catalog keys.
@@ -41,8 +41,8 @@ export function resolvePromptErrorMessage(
     : undefined
   if (refusalMessageKey) {
     return {
-      displayTitle: st('subscription.plansLink.runRefusedTitle', error.message),
-      displayMessage: st(refusalMessageKey, error.message)
+      displayTitle: t('subscription.plansLink.runRefusedTitle'),
+      displayMessage: t(refusalMessageKey)
     }
   }
 
