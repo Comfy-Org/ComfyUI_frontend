@@ -1,7 +1,11 @@
 import { LinkDirection, RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphNode,
+  NodeOutputSlot
+} from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
@@ -154,11 +158,39 @@ describe('slot edits', () => {
       expect(input('x').modify({ name: 'x' })).toBe(true)
     })
 
+    it('gives a slot an empty name and an empty translated name, which the host saves and draws as no text', () => {
+      expect(output('a').modify({ name: '', localizedName: '' })).toBe(true)
+
+      const [renamed] = source.outputs
+      assert(renamed instanceof NodeOutputSlot)
+      expect(renamed.name).toBe('')
+      expect(renamed.localized_name).toBe('')
+      expect(renamed.renderingLabel).toBe('')
+      expect(source.serialize().outputs?.[0]).toMatchObject({
+        name: '',
+        localized_name: ''
+      })
+    })
+
+    it('lets several slots on one side be named empty, and finds none of them by that name', () => {
+      const first = output('a')
+      const second = output('b')
+
+      expect(first.modify({ name: '' })).toBe(true)
+      expect(second.modify({ name: '' })).toBe(true)
+
+      expect(source.outputs.map(({ name }) => name)).toEqual(['', '', 'c'])
+      expect(sourceHandle.outputs.byName('')).toBeUndefined()
+      expect(sourceHandle.outputs.at(1)).toBe(second)
+      expect(() => second.modify({ name: 'c' })).toThrow(
+        /^modify needs a name no other slot on this side has/
+      )
+    })
+
     const unusable: [string, 'input' | 'output', unknown][] = [
       ['a patch that is not an object', 'input', 'x'],
       ['a field slots do not have', 'input', { tooltip: 'x' }],
       ['a widget on an output', 'output', { widget: 'steps' }],
-      ['an empty name', 'input', { name: '' }],
       ['a name that is not text', 'input', { name: 3 }],
       ['a label that is not text', 'input', { label: 3 }],
       ['an empty type', 'input', { type: '' }],
@@ -246,6 +278,21 @@ describe('slot edits', () => {
       expect(graph._version).toBeGreaterThan(version)
     })
 
+    it('add slots with an empty name, as many as asked', () => {
+      const first = sourceHandle.outputs.add('', 'INT')
+      const second = comfy.edit.addOutput(sourceHandle, '', 'INT')
+      const input = targetHandle.inputs.add('', '*')
+
+      expect([first?.name, second?.name, input?.name]).toEqual(['', '', ''])
+      expect(source.outputs.map(({ name }) => name)).toEqual([
+        'a',
+        'b',
+        'c',
+        '',
+        ''
+      ])
+    })
+
     it('add an input that is the socket form of a widget', () => {
       target.addWidget('number', 'steps', 1, () => {})
 
@@ -258,7 +305,6 @@ describe('slot edits', () => {
     })
 
     it.for([
-      ['an empty name', 'input', ['', 'INT']],
       ['a name the side already has', 'input', ['x', 'INT']],
       ['a type that is not text', 'output', ['d', 5]],
       ['options that are not an object', 'input', ['w', 'INT', 'optional']],

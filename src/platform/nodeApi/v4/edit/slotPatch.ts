@@ -62,20 +62,12 @@ export function checkedSlotPatch(
   return {
     fields: Object.keys(given),
     writes,
-    name: name === undefined ? undefined : checkedSlotName(member, name),
+    name: name === undefined ? undefined : checkedString(member, 'name', name),
     widget: !Object.hasOwn(given, 'widget')
       ? undefined
       : (clearable((given) => checkedString(member, 'widget', given))(widget) ??
         null)
   }
-}
-
-/** A slot's name: text that is not empty. */
-export function checkedSlotName(member: string, value: unknown): string {
-  const name = checkedString(member, 'name', value)
-  if (name === '')
-    throw invalidArgument(member, 'a name that is not empty', value)
-  return name
 }
 
 /** A slot type: a name, or several, which the host keeps joined by commas. */
@@ -126,7 +118,7 @@ export function checkedSlotOptions(
   }
 }
 
-/** Refuses a name another slot on its side has, and a widget the node lacks or another input is the socket of. */
+/** Refuses a non-empty name another slot on its side has, and a widget the node lacks or another input is the socket of. */
 export function assertFitsNode(
   member: string,
   node: LGraphNode,
@@ -141,6 +133,7 @@ export function assertFitsNode(
     side === 'input' ? node.inputs : node.outputs
   if (
     name !== undefined &&
+    name !== '' &&
     siblings.some((slot) => slot !== except && slot.name === name)
   ) {
     throw invalidArgument(member, 'a name no other slot on this side has', name)
@@ -174,7 +167,7 @@ function fieldChecks(
     clearable((value) => checkedString(member, field, value))
   return {
     name(value) {
-      const name = checkedSlotName(member, value)
+      const name = checkedString(member, 'name', value)
       return ({ slot }) => {
         slot.name = name
       }

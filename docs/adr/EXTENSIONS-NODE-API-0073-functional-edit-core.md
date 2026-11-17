@@ -201,13 +201,24 @@ follow-up for a command interface.
 16. `updateSlot(slot, patch)` changes a slot's name, label, translated name,
     type, colors, shape, position and direction, and an input's `widget`. A
     name another slot on the same side has is refused (A-03), so slots stay
-    addressable by name; so is a `widget` the node does not have, which would
-    save a socket for nothing, or one another input is already the socket of.
+    addressable by name. The empty name is a name no slot is addressed by,
+    and it is allowed, on any number of slots of a side, as V2 allowed it
+    (mxtoolkit: 5 `name` and 4 `localizedName` sites, two of them on the two
+    outputs of one node): the host accepts it, as its own `Reroute` adds an
+    input named `''` and renames its output to `''`, saves it, and draws no
+    label for it in either renderer (`NodeSlot.renderingLabel`; Vue nodes'
+    `InputSlot.vue` and `OutputSlot.vue` test for the empty name and key a
+    slot by name and index), and a load keeps it on a slot the type does not
+    make. `byName('')` finds such a slot only when it is the only one of its
+    side so named, as for any shared name. A `widget` the node does not have
+    is refused too, since it would save a socket for nothing, and so is one
+    another input is already the socket of.
     `widget: null` (or `undefined`, when the patch names it) makes the input a
     plain socket again. A `position` for an input that is, or the same patch
     makes, a widget's socket is refused: the host places such an input by its
     widget and does not save its position, so the edit would answer `true`
-    and change nothing. A type name that is an `Object.prototype` member
+    and change nothing; rgthree gives 25 such positions at run time, which
+    the host would place by the widget anyway. A type name that is an `Object.prototype` member
     (`__proto__`, `constructor`, `toString`, alone or in a list) is refused
     for every slot edit, as `defs.define` refuses it: the host's slot-type
     registry would add the slot and then fail. An output's new type is applied through
@@ -218,7 +229,8 @@ follow-up for a command interface.
     wrote it. Decision 24 says what a load
     gives back, and decision 26 refuses a subgraph node's slots.
 17. `addInput` and `addOutput` add a slot after the others through
-    `node.addInput` and `node.addOutput`, with the same name rule; `removeSlot`
+    `node.addInput` and `node.addOutput`, with the same name rule, the empty
+    name included; `removeSlot`
     removes one through `removeInput` and `removeOutput`, which drop its links
     and shift the later slots' links.
 18. `reorderSlots(node, side, names)` takes each slot's name once and moves the

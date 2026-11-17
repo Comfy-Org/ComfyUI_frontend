@@ -153,8 +153,8 @@ export interface Edits {
     init?: NodeInit
   ): NodeHandle | undefined
   /**
-   * Changes the fields `patch` names on a slot; not a subgraph node's. Throws first for a taken name or
-   * a missing widget. A load gives back some fields of a slot the node's type makes (see `SlotPatch`).
+   * Changes the fields `patch` names on a slot; not a subgraph node's. Throws first for a taken name (any slot may
+   * be `''`) or a missing widget. A load gives back some fields of a slot the node's type makes (see `SlotPatch`).
    */
   updateSlot(slot: InputSlotHandle, patch: InputSlotPatch): boolean
   updateSlot(slot: OutputSlotHandle, patch: SlotPatch): boolean
@@ -373,6 +373,7 @@ export type SlotType = string | readonly string[]
  * makes its name, type, shape, localizedName, widget and place back, and brings a removed one back.
  */
 export interface SlotPatch {
+  /** A name no other slot on the node's side has, or `''`, which several may have. */
   readonly name?: string
   readonly label?: string | null
   readonly localizedName?: string | null
