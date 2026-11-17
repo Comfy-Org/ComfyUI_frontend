@@ -69,6 +69,23 @@ useEventListener(
   slots.trigger
 )
 const isInputNode = computed(() => ioNode === ioNode.subgraph.inputNode)
+const side = computed(() =>
+  isInputNode.value
+    ? {
+        testId: 'subgraph-input-values',
+        direction: 'input',
+        panel: 'w-(--node-width)',
+        row: '',
+        edge: '-right-px rounded-r-(--node-radius) border-l-0'
+      }
+    : {
+        testId: 'subgraph-output-ports',
+        direction: 'output',
+        panel: 'w-fit max-w-(--node-width)',
+        row: 'flex-row-reverse',
+        edge: '-left-px rounded-l-(--node-radius) border-r-0'
+      }
+)
 const title = computed(() => {
   const host = navigationStore.currentHost
   return host
@@ -104,7 +121,7 @@ function sourceTitleOf(source: EditableInputValueSource | undefined) {
 }
 
 function portFieldsOf(port: TNode['allSlots'][number]) {
-  const direction = isInputNode.value ? 'input' : 'output'
+  const { direction } = side.value
   const isAddPort = port === ioNode.emptySlot
   return {
     port,
@@ -244,16 +261,14 @@ function forwardUnlessOnButton(event: PointerEvent) {
 <template>
   <div
     ref="panel"
-    :data-testid="
-      isInputNode ? 'subgraph-input-values' : 'subgraph-output-ports'
-    "
+    :data-testid="side.testId"
     :inert="canvasStore.isPickingNodes"
     role="group"
     :aria-label="title"
     :class="
       cn(
         'group/node lg-node pointer-events-auto absolute top-0 left-0 isolate z-panel flex min-h-(--node-height) origin-top-left cursor-grab touch-none flex-col text-xs text-node-foreground contain-layout contain-style',
-        isInputNode ? 'w-(--node-width)' : 'w-fit max-w-(--node-width)'
+        side.panel
       )
     "
     :style
@@ -279,7 +294,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
         :class="
           cn(
             'relative flex min-w-0 items-center has-data-expands:min-h-0 has-data-expands:flex-1',
-            !isInputNode && 'flex-row-reverse',
+            side.row,
             dragRowClass(index)
           )
         "
@@ -358,9 +373,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
       :class="
         cn(
           'pointer-events-none absolute inset-y-0 -z-1 border-2 border-foreground',
-          isInputNode
-            ? '-right-px rounded-r-(--node-radius) border-l-0'
-            : '-left-px rounded-l-(--node-radius) border-r-0'
+          side.edge
         )
       "
       :style="{ width: `${SubgraphIONodeBase.roundedRadius}px` }"
