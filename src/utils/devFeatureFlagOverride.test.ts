@@ -12,6 +12,12 @@ describe('getDevOverride', () => {
     expect(getDevOverride('some_flag')).toBeUndefined()
   })
 
+  it('ignores a stored override outside a development build', () => {
+    vi.stubEnv('DEV', false)
+    localStorage.setItem('ff:some_flag', 'true')
+    expect(getDevOverride<boolean>('some_flag')).toBeUndefined()
+  })
+
   it('returns parsed boolean true', () => {
     localStorage.setItem('ff:some_flag', 'true')
     expect(getDevOverride<boolean>('some_flag')).toBe(true)

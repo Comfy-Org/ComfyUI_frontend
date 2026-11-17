@@ -210,15 +210,13 @@ export const useSubscriptionDialog = () => {
       const trackEntry = () =>
         trackPaywallEntry(reason, paymentIntentSource, refusalType)
 
-      if (!options?.resumingCheckout) {
-        if (usesPlansLinkDialog()) {
-          await handOffToPlatformPlans(options, trackEntry)
-          return true
-        }
-        if (openPlatformPlans()) {
-          trackPaywallShown(paymentIntentSource)
-          return true
-        }
+      if (usesPlansLinkDialog()) {
+        await handOffToPlatformPlans(options, trackEntry)
+        return true
+      }
+      if (!options?.resumingCheckout && openPlatformPlans()) {
+        trackPaywallShown(paymentIntentSource)
+        return true
       }
 
       const nonDismissableDialogProps = {
@@ -334,7 +332,7 @@ export const useSubscriptionDialog = () => {
       return
     }
 
-    const operation = flags.billingSdkSubscriptionRailEnabled
+    const operation = flags.billingSdkRailEnabled
       ? await useBillingSdkStore().recoverPendingOperation(pending.operationId)
       : await useBillingOperationStore().startOperation(
           pending.operationId,

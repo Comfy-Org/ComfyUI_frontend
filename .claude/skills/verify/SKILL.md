@@ -33,10 +33,10 @@ Run all four before driving. Each is read-only and takes seconds.
 **1. Is the code under test actually being served?** Vite serves transformed source over HTTP, so you can grep the running build with no auth and no browser:
 
 ```bash
-curl -s http://localhost:5173/src/composables/useFeatureFlags.ts | grep -o 'billing_sdk_[a-z_]*' | sort -u
+curl -s http://localhost:5173/src/composables/useFeatureFlags.ts | grep -c billingSdkRailEnabled
 ```
 
-Expect `billing_sdk_subscription_enabled` and `billing_sdk_topup_enabled`. Empty output means the checkout does not contain the migration. Stop, because nothing below is meaningful. (The same grep against a deployed bundle is how you prove what an _environment_ is running.)
+Expect a non-zero count. Zero means the checkout predates the billing SDK rail. Stop, because nothing below is meaningful. (The same grep against a deployed bundle is how you prove what an _environment_ is running.)
 
 **2. Is the cloud distribution live?** In the page console:
 
@@ -91,13 +91,13 @@ if (!isComfyEmployee()) return undefined // emailVerified AND @comfy.org
 const { flags } = (
   await import('/src/composables/useFeatureFlags.ts')
 ).useFeatureFlags()
-flags.billingSdkTopupRailEnabled
+flags.billingSdkRailEnabled
 ```
 
 `ff:<name>` in `localStorage` (`src/utils/devFeatureFlagOverride.ts`) has **no employee gate** but is tree-shaken out of production builds, so it works on this local dev server and nowhere else. Use it when you cannot sign in as an employee:
 
 ```js
-localStorage.setItem('ff:billing_sdk_topup_enabled', 'true')
+localStorage.setItem('ff:<flag>', 'true')
 ```
 
 Never set `ff:unified_cloud_auth`. It already resolves `true` for a signed-in user, and forcing it put the app into a reload loop.

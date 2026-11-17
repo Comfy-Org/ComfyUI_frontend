@@ -26,7 +26,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 import { isCloud } from '@/platform/distribution/types'
 
 type CreditAction = 'addCredits' | 'updatePayment' | null
@@ -56,7 +56,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   const { subscription, balance, isTeamPlan } = billing
 
   const autoTopUp = useAutoTopUpBannerKind()
-  const { href, track } = usePlatformHandoff('/profile/billing', {
+  const { href, open } = usePlatformBillingLink('/profile/billing', {
     target: 'auto_top_up',
     action: 'update_payment'
   })
@@ -228,7 +228,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
         title: t(`${bs}.${shown}.title`),
         body: t(`${bs}.${shown}.body`),
         action: 'updatePayment',
-        href: href.value
+        href: href.value ?? null
       }
     }
     if (shown === 'outOfCredits') return outOfCreditsView()
@@ -260,7 +260,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   }
 
   function act(action: BillingBannerAction) {
-    if (view.value?.kind === 'autoTopUp') track()
+    if (view.value?.kind === 'autoTopUp') open()
     else if (action === 'addCredits') void showTopUpCreditsDialog()
     else if (action === 'updatePayment') void updatePayment()
   }

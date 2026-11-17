@@ -2,6 +2,7 @@ import { fromPartial, fromAny } from '@total-typescript/shoehorn'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { st, t } from '@/i18n'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
@@ -2043,6 +2044,38 @@ describe('useNodeReplacement', () => {
 
       expect(onNodeAdded).toHaveBeenCalledTimes(1)
       expect(onNodeAdded).toHaveBeenCalledWith(newNode)
+    })
+
+    it('reports a widget callback that throws and still replaces the node', () => {
+      const placeholder = createPlaceholderNode(1, 'OldLoader')
+      placeholder.last_serialization!.widgets_values = ['a.safetensors']
+      const graph = createMockGraph([placeholder])
+      placeholder.graph = graph
+      Object.assign(app, { rootGraph: graph })
+      vi.mocked(collectAllNodes).mockReturnValue([placeholder])
+      const newNode = createNewNode([], [], [{ name: 'model', value: '' }])
+      newNode.widgets![0].callback = () => {
+        throw new Error('callback failed')
+      }
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('OldLoader', {
+          new_node_id: 'NewLoader',
+          old_node_id: 'OldLoader',
+          old_widget_ids: ['model_name'],
+          input_mapping: [{ new_id: 'model', old_id: 'model_name' }],
+          output_mapping: null
+        })
+      ])
+
+      expect(graph.getNodeById(toNodeId(1))).toBe(newNode)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'callback failed' }),
+        expect.objectContaining({
+          errorType: 'failure_invoking_replacement_widget_callback'
+        })
+      )
     })
 
     it('dispatches node:added when onNodeAdded throws', () => {
