@@ -357,24 +357,9 @@ export function useFeatureFlags() {
         remoteConfig.value.billing_auto_top_up_at_checkout_enabled
       )
     },
-    get billingSdkTopupEnabled() {
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
-        remoteConfig.value.billing_sdk_topup_enabled
-      )
-    },
-    /** The SDK rail runs on the unified session, so it needs both flags. */
-    get billingSdkTopupRailEnabled() {
-      return this.billingSdkTopupEnabled && this.unifiedCloudAuthEnabled
-    },
-    get billingSdkSubscriptionEnabled() {
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED,
-        remoteConfig.value.billing_sdk_subscription_enabled
-      )
-    },
-    get billingSdkSubscriptionRailEnabled() {
-      return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
+    /** Top-up, subscription and billing reads run on the billing SDK, which needs the unified session. */
+    get billingSdkRailEnabled() {
+      return this.unifiedCloudAuthEnabled
     },
     get unifiedBillingSettingsEnabled() {
       if (!isCloud) return opensLocalBillingHandoff()
@@ -480,10 +465,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.BILLING_NEW_UX_ENABLED]: flags.billingNewUxEnabled,
       [ServerFeatureFlag.BILLING_AUTO_TOP_UP_AT_CHECKOUT_ENABLED]:
         flags.billingAutoTopUpAtCheckoutEnabled,
-      [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
-        flags.billingSdkTopupEnabled,
-      [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
-        flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.UNIFIED_BILLING_SETTINGS]:
         flags.unifiedBillingSettingsEnabled,
       [ServerFeatureFlag.PRICING_TABLE_FALLBACK]: flags.pricingTableFallback,

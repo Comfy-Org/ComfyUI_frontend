@@ -46,8 +46,8 @@ export class AccessibilityHelper {
     axeBuilder: AxeBuilder = this.makeAxeBuilder()
   ): Promise<void> {
     const results = await axeBuilder.analyze()
-    await this.testInfo.attach('axe-results', {
-      body: JSON.stringify(results, null, 2),
+    await this.testInfo.attach('axe-violations', {
+      body: JSON.stringify(results.violations, null, 2),
       contentType: 'application/json'
     })
 
@@ -57,7 +57,7 @@ export class AccessibilityHelper {
     expect
       .soft(
         newViolations.map(describeViolation),
-        'New accessibility violations. Fix them; the axe-results attachment has the full scan.'
+        'New accessibility violations. Fix them; the axe-violations attachment has the details.'
       )
       .toEqual([])
 

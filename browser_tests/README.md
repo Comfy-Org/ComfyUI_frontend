@@ -1190,8 +1190,8 @@ test(
   `exclude()` drops an element and all its descendants from every rule; prefer
   a known rule ID.
 - **Reading a failure.** The assertion lists each new rule with its help URL
-  and the failing elements. The `axe-results` attachment on the test holds the
-  full scan, including `incomplete` checks axe could not decide.
+  and the failing elements. The `axe-violations` attachment on the test holds
+  every violation axe reported, known ones included.
 - **Adding a surface.** Add a test to the spec in `tests/accessibility/` that
   matches the surface, or integrate a scan into an existing feature test with
   the same fixture.

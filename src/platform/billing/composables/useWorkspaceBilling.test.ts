@@ -434,8 +434,7 @@ describe('useWorkspaceBilling', () => {
           ...real,
           flags: new Proxy(real.flags, {
             get: (target, key) =>
-              key === 'billingSdkSubscriptionRailEnabled' ||
-              Reflect.get(target, key)
+              key === 'billingSdkRailEnabled' || Reflect.get(target, key)
           })
         })
         const sdk = useBillingSdkStore()

@@ -800,16 +800,16 @@ describe('TopMenuSection', () => {
         }
       }
     ])(
-      'renders no Cloud button on $host until its relay ships',
+      'renders the Cloud button on $host when Open on Cloud is enabled',
       ({ enter, leave }) => {
         enter()
         onTestFinished(leave)
-        servedFrom('http://127.0.0.1:8188')
+        servedFrom('http://localhost:8188')
         Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
 
-        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+        createWrapper({ stubs: { FreeTierQuota: true } })
 
-        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
+        expect(screen.getByTestId('cloud-button')).toBeInTheDocument()
       }
     )
 

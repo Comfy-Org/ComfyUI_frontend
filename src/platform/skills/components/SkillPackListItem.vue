@@ -31,7 +31,7 @@
           cn(
             'pointer-events-none flex items-center gap-2 opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 touch:pointer-events-auto touch:opacity-100',
             keyboardNavigation &&
-              'group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100'
+              '[.group:has(:focus-visible)_&]:pointer-events-auto [.group:has(:focus-visible)_&]:opacity-100'
           )
         "
       >

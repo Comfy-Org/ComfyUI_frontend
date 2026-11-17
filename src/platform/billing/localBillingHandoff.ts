@@ -4,6 +4,7 @@ import {
   zBillingHandoffCreateResponse,
   zErrorResponse
 } from '@comfyorg/ingest-types/zod'
+import { parseUrl } from '@comfyorg/shared-frontend-utils/urlSafety'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { watch } from 'vue'
 
@@ -316,8 +317,24 @@ export async function issueLocalBillingHandoff(
   }
 }
 
-/** Opens Platform billing through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
-export async function openPlatformBillingHandoff(): Promise<void> {
+/** A Platform page a handoff opens instead of its billing page; Platform reads it from the entry URL's query. */
+export type PlatformHandoffView = 'plans'
+
+function withPlatformView(
+  entryUrl: string,
+  view: PlatformHandoffView | undefined
+): string | undefined {
+  if (view === undefined) return entryUrl
+  const url = parseUrl(entryUrl)
+  if (!url) return undefined
+  url.searchParams.set('view', view)
+  return url.href
+}
+
+/** Opens Platform billing, or the page `view` names, through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
+export async function openPlatformBillingHandoff(
+  view?: PlatformHandoffView
+): Promise<void> {
   if (inFlight) return
   const tab = reserveBillingHandoffTab()
   if (!tab) {
@@ -328,7 +345,12 @@ export async function openPlatformBillingHandoff(): Promise<void> {
     { receiver: 'platform' },
     new AbortController().signal
   )
-  if (issued.status === 'ok') return tab.navigate(issued.url)
+  const target =
+    issued.status === 'ok' ? withPlatformView(issued.url, view) : undefined
+  if (target !== undefined) return tab.navigate(target)
   tab.close()
-  useToast().error(issued.message ?? t('subscription.billingPortalUnavailable'))
+  useToast().error(
+    (issued.status === 'error' && issued.message) ||
+      t('subscription.billingPortalUnavailable')
+  )
 }

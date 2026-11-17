@@ -92,13 +92,40 @@ test.describe('Local web billing handoff', () => {
       await expect(billingTab.getByTestId('billing-plan-row')).toBeVisible()
       await expect(billingTab.locator('a[href*="/profile/"]')).toHaveCount(0)
       await expect(
-        billingTab
-          .getByTestId('billing-plan-section')
-          .getByRole('button', { name: /plan/i })
-      ).toHaveCount(0)
-      await expect(
         settings.category('Plan & Credits', { exact: true })
       ).toHaveCount(0)
+    })
+
+    test('the plan action opens Platform Plans at the issued entry URL', async ({
+      comfyPage,
+      handoffRequests,
+      openSettings
+    }) => {
+      const page = comfyPage.page
+      const settings = await openSettings()
+      await settings.category('Billing', { exact: true }).click()
+      const planAction = page
+        .getByTestId('billing-plan-row')
+        .getByRole('button', { name: /^(Subscribe|Choose a plan|Manage)$/ })
+      await expect(planAction).toBeVisible()
+
+      const popupOpened = page.waitForEvent('popup')
+      await planAction.click()
+      const popup = await popupOpened
+
+      const plansEntry = new URL(ENTRY_URL)
+      plansEntry.searchParams.set('view', 'plans')
+      await expect(popup).toHaveURL(plansEntry.href)
+      expect(handoffRequests).toHaveLength(1)
+      const body = handoffRequests[0].postDataJSON()
+      expect(body).toEqual(
+        expect.objectContaining({
+          workspace_id: WORKSPACE_ID,
+          receiver: 'platform',
+          surface: 'local_web'
+        })
+      )
+      expect(body).not.toHaveProperty('intent')
     })
 
     test.describe('with auto top-up offered', () => {
