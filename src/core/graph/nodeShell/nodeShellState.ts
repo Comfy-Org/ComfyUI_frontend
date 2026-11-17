@@ -1,5 +1,4 @@
 import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
-import { shallowReactive } from 'vue'
 
 import { assert } from '@/base/assert'
 import {
@@ -7,15 +6,11 @@ import {
   transferLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { createSlotMembership, useSlotStore } from '@/stores/slotStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { UNASSIGNED_NODE_ID } from '@comfyorg/graph-model/nodeId'
 import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
-
-import type {
-  InputSlotRecord,
-  OutputSlotRecord
-} from '@comfyorg/graph-model/slots'
 
 import type { TitleMode } from '@comfyorg/graph-model/globalEnums'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -29,9 +24,8 @@ export function createNodeShellState(
     flags: {},
     graphId: zeroUuid,
     id: UNASSIGNED_NODE_ID,
-    inputs: shallowReactive<InputSlotRecord[]>([]),
+    slots: createSlotMembership(),
     mode: LGraphEventMode.ALWAYS,
-    outputs: shallowReactive<OutputSlotRecord[]>([]),
     properties: {},
     title: title || 'Unnamed',
     type: type ?? '',
@@ -96,7 +90,7 @@ export function registerNodeState(
     node._state.graphId = previousGraphId
     return {
       ok: false,
-      reason: store.canRegisterSlots(node._state)
+      reason: useSlotStore().canRegister(node._state.slots)
         ? 'node-id-collision'
         : 'slot-id-collision'
     }
@@ -131,7 +125,8 @@ function canTransferNodeState(
     node.id === replacement.id &&
     replacement._graphScope === undefined &&
     node._graphScope !== undefined &&
-    useNodeDataStore().ownsNode(node._graphScope, node._state)
+    useNodeDataStore().ownsNode(node._graphScope, node._state) &&
+    useSlotStore().canRegister(replacement._state.slots)
   )
 }
 
@@ -139,6 +134,9 @@ function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
   const registeredState = node._state
   const detachedState = { ...registeredState }
   const { graphId: _graphId, id: _id, ...replacementState } = replacement._state
+  const slotStore = useSlotStore()
+  slotStore.register(replacementState.slots)
+  slotStore.unregister(registeredState.slots)
   Object.assign(registeredState, {
     bgcolor: undefined,
     boxcolor: undefined,

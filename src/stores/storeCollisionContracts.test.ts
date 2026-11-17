@@ -1,4 +1,5 @@
 import { assert, describe, expect, it } from 'vitest'
+import { toRaw } from 'vue'
 
 import {
   toOwningGraphId,
@@ -20,6 +21,7 @@ import type { UUID } from '@/utils/uuid'
 import { useLinkStore } from './linkStore'
 import { useNodeDataStore } from './nodeDataStore'
 import { useRerouteStore } from './rerouteStore'
+import { createSlotMembership, useSlotStore } from './slotStore'
 import { useWidgetValueStore } from './widgetValueStore'
 
 /**
@@ -78,20 +80,23 @@ describe('store collision contracts (EX-002)', () => {
       boundingRect: new Float64Array(4)
     }
     const incumbent = nodeState(1)
-    incumbent.inputs.push(record)
+    incumbent.slots = createSlotMembership([record])
     store.registerNode(scopeA, incumbent)
     const challenger = nodeState(2, 'sub-1')
-    challenger.outputs.push({ ...record, name: 'Challenger' })
+    challenger.slots = createSlotMembership(
+      [],
+      [{ ...record, name: 'Challenger' }]
+    )
 
     expect(store.registerNode(scopeSibling, challenger)).toBeUndefined()
-    expect(store.getSlotRecord(record.id)?.name).toBe('Incumbent')
+    expect(useSlotStore().getSlotRecord(record.id)?.name).toBe('Incumbent')
     expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
     expect(store.deleteNode(scopeSibling, challenger)).toBe(false)
     expect(store.registerNode(scopeA, incumbent)).toBeDefined()
   })
 
-  it('rejects distinct records sharing an ID inside one incoming node', () => {
-    const store = useNodeDataStore()
+  it('rejects distinct records sharing an ID inside a detached membership', () => {
+    const store = useSlotStore()
     const record: SlotRecord = {
       id: toSlotRecordId('duplicate-slot'),
       name: 'Input',
@@ -99,12 +104,21 @@ describe('store collision contracts (EX-002)', () => {
       boundingRect: new Float64Array(4)
     }
     const challenger = nodeState(1)
-    challenger.inputs.push(record)
-    challenger.outputs.push({ ...record, name: 'Output' })
+    challenger.slots = createSlotMembership([record])
 
-    expect(store.registerNode(scopeA, challenger)).toBeUndefined()
+    expect(
+      store.editMembership(
+        challenger.slots,
+        () => {
+          challenger.slots.outputIds.push(record.id)
+          return true
+        },
+        { ...record, name: 'Output' }
+      )
+    ).toBe(false)
     expect(store.getSlotRecord(record.id)).toBeUndefined()
-    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([])
+    expect(challenger.slots.outputIds).toEqual([])
+    expect(toRaw(challenger.slots.records[record.id])).toBe(record)
   })
 
   it('allows the same raw slot record to have memberships in different roots', () => {
@@ -116,9 +130,9 @@ describe('store collision contracts (EX-002)', () => {
       boundingRect: new Float64Array(4)
     }
     const source = nodeState(1)
-    source.inputs.push(record)
+    source.slots = createSlotMembership([record])
     const alias = nodeState(2, 'other-root')
-    alias.inputs.push(record)
+    alias.slots = createSlotMembership([record])
     const otherScope: GraphScope = {
       rootGraphId: toRootGraphId('other-root'),
       owningGraphId: toOwningGraphId('other-root')
@@ -127,9 +141,9 @@ describe('store collision contracts (EX-002)', () => {
 
     expect(store.registerNode(otherScope, alias)).toBeDefined()
     store.clearOwner(scopeA)
-    expect(store.getSlotRecord(record.id)?.name).toBe('Shared')
+    expect(useSlotStore().getSlotRecord(record.id)?.name).toBe('Shared')
     store.clearGraph('other-root')
-    expect(store.getSlotRecord(record.id)).toBeUndefined()
+    expect(useSlotStore().getSlotRecord(record.id)).toBeUndefined()
   })
 
   it('nodeDataStore rejects a registration at an occupied identity key', () => {

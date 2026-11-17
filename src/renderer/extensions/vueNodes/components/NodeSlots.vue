@@ -30,11 +30,11 @@
     </div>
 
     <div
-      v-if="nodeData.outputs.length"
+      v-if="outputs.length"
       :class="cn('ml-auto flex min-w-0 flex-col', unifiedDotsClass)"
     >
       <OutputSlot
-        v-for="(output, index) in nodeData.outputs"
+        v-for="{ output, index } in outputSlots"
         :key="`output-${output.name}-${index}`"
         :slot-data="output"
         :node-type="nodeData?.type || ''"
@@ -67,6 +67,10 @@ import {
   toRootGraphId
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import {
+  getInputSlotRecords,
+  getOutputSlotRecords
+} from '@comfyorg/graph-model/slotMembership'
 import { locatorIdFromState } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -86,6 +90,11 @@ const canvasStore = useCanvasStore()
 const slots = useTemplateRef<HTMLElement>('slots')
 const executionErrorStore = useExecutionErrorStore()
 const linkStore = useLinkStore()
+const inputs = computed(() => getInputSlotRecords(nodeData.slots))
+const outputs = computed(() => getOutputSlotRecords(nodeData.slots))
+const outputSlots = computed(() =>
+  outputs.value.flatMap((output, index) => [{ output, index }])
+)
 const nodeLocatorId = computed(() =>
   locatorIdFromState(nodeData, canvasStore.rootGraphId)
 )
@@ -101,7 +110,7 @@ const nodeScope = computed<GraphScope | null>(() => {
 
 const linkedWidgetInputs = computed(() =>
   unified && nodeScope.value
-    ? linkedWidgetedInputs(nodeData.id, nodeData.inputs, nodeScope.value)
+    ? linkedWidgetedInputs(nodeData.id, inputs.value, nodeScope.value)
     : []
 )
 
@@ -118,7 +127,7 @@ function isOutputConnected(index: number): boolean {
 }
 
 const filteredInputs = computed(() => [
-  ...nonWidgetedInputs(nodeData.inputs),
+  ...nonWidgetedInputs(inputs.value),
   ...linkedWidgetInputs.value
 ])
 
@@ -128,7 +137,7 @@ const layoutKey = computed(() =>
       getActualInputIndex(input, index)
     ),
     '|',
-    ...nodeData.outputs.keys(),
+    ...outputs.value.keys(),
     unified
   ].join(':')
 )
@@ -163,10 +172,8 @@ const unifiedDotsClass = computed((): string =>
   )
 )
 
-// Get the actual index of an input slot in the node's inputs array
-// (accounting for filtered widget slots)
 function getActualInputIndex(input: INodeSlot, filteredIndex: number): number {
-  const actualIndex = nodeData.inputs.findIndex((i) => i === input)
+  const actualIndex = inputs.value.findIndex((i) => i === input)
   return actualIndex !== -1 ? actualIndex : filteredIndex
 }
 

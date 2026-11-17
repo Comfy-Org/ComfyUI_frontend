@@ -26,14 +26,16 @@ superseding decision.
 **Normal rule:** Stores own entity state. Classes and boundary objects expose
 views of that state.
 
-**Current exception:** `NodeState` owns plain slot descriptors. Metadata on
-`NodeInputSlot` and `NodeOutputSlot` forwards to those descriptors, while
+**Current exception:** Plain slot components own ordered IDs and keyed records.
+Metadata on `NodeInputSlot` and `NodeOutputSlot` forwards to those records, while
 `LGraphNode.inputs` and `LGraphNode.outputs` remain compatibility projections.
-Slot records have independent runtime identities, but ID-keyed membership and
-removal of the compatibility views are still pending.
+ID-keyed ownership and registration are implemented. Removal of the public
+compatibility views is still pending.
 See [the descriptor ownership decision](adr/ECS-SLOTS-0057-plain-descriptors-before-independent-slot-identity.md).
 The [runtime identity decision](adr/ECS-SLOTS-0058-independent-runtime-slot-identity.md)
 records the key and collision contract.
+The [membership decision](adr/ECS-SLOTS-0059-id-keyed-slot-membership.md)
+records detached lifetime and registered-index ownership.
 
 **Owner:** Christian Byrne
 

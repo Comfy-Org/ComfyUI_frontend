@@ -20,7 +20,7 @@ function inputHasWidget(input: INodeInputSlot) {
 }
 
 export function nonWidgetedInputs(
-  inputs: INodeInputSlot[] | undefined
+  inputs: readonly INodeInputSlot[] | undefined
 ): INodeSlot[] {
   if (!inputs) return []
 
@@ -29,7 +29,7 @@ export function nonWidgetedInputs(
 
 export function linkedWidgetedInputs(
   nodeId: NodeId,
-  inputs: INodeInputSlot[] | undefined,
+  inputs: readonly INodeInputSlot[] | undefined,
   scope: GraphScope
 ): INodeSlot[] {
   if (!inputs) return []

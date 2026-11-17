@@ -12,9 +12,8 @@ import type {
 } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { SlotRecordId } from '@comfyorg/graph-model/slotRecordId'
-import type { SlotRecord } from '@comfyorg/graph-model/slots'
 import type { UUID } from '@/utils/uuid'
+import { useSlotStore } from '@/stores/slotStore'
 
 /**
  * One {@link NodeState} per node in a root-flat, owner-indexed bucket.
@@ -27,33 +26,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   }
 
   const roots = reactive(new Map<RootGraphId, RootNodeBucket>())
-
-  function* registeredSlots(): Generator<SlotRecord> {
-    for (const bucket of roots.values()) {
-      for (const state of bucket.byId.values()) {
-        yield* [...state.inputs, ...state.outputs].filter(Boolean)
-      }
-    }
-  }
-
-  function getSlotRecord(id: SlotRecordId): SlotRecord | undefined {
-    for (const record of registeredSlots()) {
-      if (record.id === id) return record
-    }
-    return undefined
-  }
-
-  function canRegisterSlots(state: NodeState): boolean {
-    const records = new Map(
-      [...registeredSlots()].map((record) => [record.id, record])
-    )
-    for (const record of [...state.inputs, ...state.outputs].filter(Boolean)) {
-      const incumbent = records.get(record.id)
-      if (incumbent && toRaw(incumbent) !== toRaw(record)) return false
-      records.set(record.id, record)
-    }
-    return true
-  }
+  const slotStore = useSlotStore()
 
   function rootBucket(rootGraphId: RootGraphId): RootNodeBucket {
     const existing = roots.get(rootGraphId)
@@ -85,7 +58,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
       incumbent.graphId === graphScope.owningGraphId
     )
       return incumbent
-    if (incumbent || !canRegisterSlots(state)) return undefined
+    if (incumbent || !slotStore.register(state.slots)) return undefined
     const bucket = existingBucket ?? rootBucket(graphScope.rootGraphId)
     const registered: NodeState = reactive(
       Object.assign(state, { graphId: graphScope.owningGraphId })
@@ -133,6 +106,7 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     )
       return false
     bucket.byId.delete(state.id)
+    slotStore.unregister(registered.slots)
     const ownerIds = bucket.idsByOwner.get(graphScope.owningGraphId)
     ownerIds?.delete(state.id)
     if (ownerIds?.size === 0) bucket.idsByOwner.delete(graphScope.owningGraphId)
@@ -141,6 +115,9 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   }
 
   function clearGraph(rootGraphId: UUID): void {
+    const bucket = roots.get(toRootGraphId(rootGraphId))
+    for (const state of bucket?.byId.values() ?? [])
+      slotStore.unregister(state.slots)
     roots.delete(toRootGraphId(rootGraphId))
   }
 
@@ -148,7 +125,11 @@ export const useNodeDataStore = defineStore('nodeData', () => {
     const bucket = roots.get(graphScope.rootGraphId)
     const ids = bucket?.idsByOwner.get(graphScope.owningGraphId)
     if (!bucket || !ids) return
-    for (const id of ids) bucket.byId.delete(id)
+    for (const id of ids) {
+      const state = bucket.byId.get(id)
+      if (state) slotStore.unregister(state.slots)
+      bucket.byId.delete(id)
+    }
     bucket.idsByOwner.delete(graphScope.owningGraphId)
     if (bucket.byId.size === 0) roots.delete(graphScope.rootGraphId)
   }
@@ -156,10 +137,8 @@ export const useNodeDataStore = defineStore('nodeData', () => {
   return {
     clearOwner,
     clearGraph,
-    canRegisterSlots,
     deleteNode,
     getGraphNodesFor,
-    getSlotRecord,
     ownsNode,
     registerNode
   }

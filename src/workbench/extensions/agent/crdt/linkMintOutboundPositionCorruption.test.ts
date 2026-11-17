@@ -45,26 +45,32 @@ const ROOT_GRAPH_ID = toRootGraphId('root-uuid')
  * regrown, so autogrow appended it after the scalar widgets instead of at
  * its original ordinal position.
  */
-const liveNode2 = new LGraphNode('MultiAutogrowReferenceNode')
-liveNode2.id = toNodeId(2)
-for (const [name, type] of [
-  ['ref_images.ref_image_1', 'IMAGE'],
-  ['ref_images.ref_image_2', 'IMAGE'],
-  ['ref_images.ref_image_3', 'IMAGE'],
-  ['ref_videos.ref_video_2', 'VIDEO'],
-  ['ref_videos.ref_video_3', 'VIDEO'],
-  ['prompt', 'STRING'],
-  ['ref_videos.ref_video_1', 'VIDEO'],
-  ['ref_image_size', 'INT']
-]) {
-  liveNode2.addInput(name, type)
+function buildLiveRootGraph() {
+  const liveNode2 = new LGraphNode('MultiAutogrowReferenceNode')
+  liveNode2.id = toNodeId(2)
+  for (const [name, type] of [
+    ['ref_images.ref_image_1', 'IMAGE'],
+    ['ref_images.ref_image_2', 'IMAGE'],
+    ['ref_images.ref_image_3', 'IMAGE'],
+    ['ref_videos.ref_video_2', 'VIDEO'],
+    ['ref_videos.ref_video_3', 'VIDEO'],
+    ['prompt', 'STRING'],
+    ['ref_videos.ref_video_1', 'VIDEO'],
+    ['ref_image_size', 'INT']
+  ]) {
+    liveNode2.addInput(name, type)
+  }
+  const rootGraph: LGraph = fromPartial<LGraph>({
+    id: ROOT_GRAPH_ID,
+    isRootGraph: true,
+    getNodeById: (id: unknown) => (String(id) === '2' ? liveNode2 : null)
+  })
+  Object.assign(rootGraph, { rootGraph })
+  const refVideo1LiveIndex = liveNode2.inputs.findIndex(
+    ({ name }) => name === 'ref_videos.ref_video_1'
+  )
+  return { rootGraph, refVideo1LiveIndex }
 }
-const rootGraph: LGraph = fromPartial<LGraph>({
-  id: ROOT_GRAPH_ID,
-  isRootGraph: true,
-  getNodeById: (id: unknown) => (String(id) === '2' ? liveNode2 : null)
-})
-Object.assign(rootGraph, { rootGraph })
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -99,16 +105,6 @@ function buildDocOrderInputs(): { name: string; type: string; link: null }[] {
 
 const REF_VIDEO_1_DOC_INDEX = 5
 const PROMPT_DOC_INDEX = 6
-
-/**
- * The LIVE canvas slot index the connection was drawn to - a distinct
- * concept from either document-position constant above, even though it
- * collides with `PROMPT_DOC_INDEX` by construction. That collision is the
- * whole bug this test documents.
- */
-const REF_VIDEO_1_LIVE_INDEX = liveNode2.inputs.findIndex(
-  ({ name }) => name === 'ref_videos.ref_video_1'
-)
 
 function buildSeedWorkflow(): WorkflowJSON {
   return {
@@ -170,7 +166,8 @@ function requireInput(
 
 describe('agent CRDT outbound leg: link mint by live position vs. doc order', () => {
   it('lands the link on the named VIDEO input it was drawn to, not on whatever input the doc happens to hold at that live index', async () => {
-    expect(REF_VIDEO_1_LIVE_INDEX).toBe(PROMPT_DOC_INDEX)
+    const { rootGraph, refVideo1LiveIndex } = buildLiveRootGraph()
+    expect(refVideo1LiveIndex).toBe(PROMPT_DOC_INDEX)
 
     // Arrange: the doc host holds node 2 with its inputs in document
     // materialization order (see `buildDocOrderInputs` above).
@@ -210,7 +207,7 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
         origin_id: toNodeId(1),
         origin_slot: 0,
         target_id: toNodeId(2),
-        target_slot: REF_VIDEO_1_LIVE_INDEX,
+        target_slot: refVideo1LiveIndex,
         type: 'VIDEO'
       })
     })

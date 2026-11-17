@@ -1,9 +1,15 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it } from 'vitest'
 import { toRaw } from 'vue'
+import {
+  getInputSlotRecords,
+  getOutputSlotRecords
+} from '@comfyorg/graph-model/slotMembership'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 
 describe('slot identity', () => {
   it('preserves a transferred input and its owner', () => {
@@ -56,13 +62,13 @@ describe('slot identity', () => {
     node.inputs = [input]
 
     expect(node.inputs[0]).toBeInstanceOf(NodeInputSlot)
-    expect(Object.getPrototypeOf(toRaw(node._state.inputs[0]))).toBe(
-      Object.prototype
-    )
-    node._state.inputs[0].label = 'Stored input'
+    expect(
+      Object.getPrototypeOf(toRaw(getInputSlotRecords(node._state.slots)[0]))
+    ).toBe(Object.prototype)
+    getInputSlotRecords(node._state.slots)[0].label = 'Stored input'
     expect(node.inputs[0].label).toBe('Stored input')
     node.inputs[0].type = 'FLOAT'
-    expect(node._state.inputs[0].type).toBe('FLOAT')
+    expect(getInputSlotRecords(node._state.slots)[0].type).toBe('FLOAT')
   })
 
   it('upgrades extension-assigned outputs when they are written', () => {
@@ -77,13 +83,13 @@ describe('slot identity', () => {
     node.outputs = [output]
 
     expect(node.outputs[0]).toBeInstanceOf(NodeOutputSlot)
-    expect(Object.getPrototypeOf(toRaw(node._state.outputs[0]))).toBe(
-      Object.prototype
-    )
-    node._state.outputs[0].label = 'Stored output'
+    expect(
+      Object.getPrototypeOf(toRaw(getOutputSlotRecords(node._state.slots)[0]))
+    ).toBe(Object.prototype)
+    getOutputSlotRecords(node._state.slots)[0].label = 'Stored output'
     expect(node.outputs[0].label).toBe('Stored output')
     node.outputs[0].type = 'FLOAT'
-    expect(node._state.outputs[0].type).toBe('FLOAT')
+    expect(getOutputSlotRecords(node._state.slots)[0].type).toBe('FLOAT')
   })
 
   it('keeps deleted metadata bound to the stored descriptor', () => {
@@ -120,13 +126,14 @@ describe('slot identity', () => {
       const slots = node[direction]
       const retained = slots[0]
       graph.add(node)
-      const record = node._state[direction][0]
+      const ids = direction === 'inputs' ? 'inputIds' : 'outputIds'
+      const record = node._state.slots.records[node._state.slots[ids][0]]
 
       graph.remove(node)
       retained.label = 'While detached'
       graph.add(node)
 
-      expect(node._state[direction][0]).toBe(record)
+      expect(node._state.slots.records[node._state.slots[ids][0]]).toBe(record)
       expect(record.label).toBe('While detached')
       expect(node[direction][0]).toBe(retained)
       expect(Object.getPrototypeOf(toRaw(record))).toBe(Object.prototype)
@@ -151,7 +158,9 @@ describe('slot identity', () => {
     expect(target.inputs[0]).toBe(input)
     assert.instanceOf(input, NodeInputSlot)
     expect(input.node).toBe(source)
-    expect(target._state.inputs[0].label).toBe('After clear')
+    expect(getInputSlotRecords(target._state.slots)[0].label).toBe(
+      'After clear'
+    )
   })
 
   it('preserves surviving and removed references through native array edits', () => {
@@ -174,11 +183,9 @@ describe('slot identity', () => {
       undefined,
       'Removed'
     ])
-    expect(node._state.inputs.map((input) => input.name)).toEqual([
-      'first',
-      'last',
-      'second'
-    ])
+    expect(
+      getInputSlotRecords(node._state.slots).map((input) => input.name)
+    ).toEqual(['first', 'last', 'second'])
   })
 
   it('projects indexed reflection and rejects pinning a projected value', () => {
@@ -193,5 +200,75 @@ describe('slot identity', () => {
     expect(Reflect.preventExtensions(node.inputs)).toBe(false)
     expect(node.inputs[0]).toBe(input)
     expect(Object.isExtensible(node.inputs)).toBe(true)
+    const marker = Symbol('extension metadata')
+    expect(
+      Reflect.defineProperty(node.inputs, marker, { value: 'metadata' })
+    ).toBe(true)
+    expect(Reflect.get(node.inputs, marker)).toBe('metadata')
+    expect(Reflect.ownKeys(node.inputs)).toContain(marker)
+    expect(
+      Reflect.defineProperty(node.inputs, 'first', {
+        get(this: INodeInputSlot[]) {
+          return this[0]
+        },
+        set(this: INodeInputSlot[], value: INodeInputSlot) {
+          this[0] = value
+        }
+      })
+    ).toBe(true)
+    expect(Reflect.get(node.inputs, 'first')).toBe(input)
+    expect(Reflect.set(node.inputs, 'first', input)).toBe(true)
+    expect(node.inputs[0]).toBe(input)
+    expect(
+      Reflect.defineProperty(node.inputs, 'length', { writable: false })
+    ).toBe(true)
+    expect(
+      Object.getOwnPropertyDescriptor(node.inputs, 'length')
+    ).toMatchObject({
+      value: 1,
+      writable: false
+    })
+    expect(Reflect.set(node.inputs, 'length', 0)).toBe(false)
+    expect(node.inputs[0]).toBe(input)
+  })
+})
+
+describe('indexed slot descriptor assignment', () => {
+  it('keeps a string-array slot type', () => {
+    const node = new LGraphNode('Node')
+
+    expect(
+      Reflect.set(node.outputs, '0', { name: 'out', type: ['INT', 'FLOAT'] })
+    ).toBe(true)
+
+    expect(node.outputs[0].type).toEqual(['INT', 'FLOAT'])
+  })
+
+  it.for([
+    { invalid: 'a missing type', value: { name: 'out' } },
+    { invalid: 'a non-string name', value: { name: 7, type: 'INT' } },
+    {
+      invalid: 'a non-string array type member',
+      value: { name: 'out', type: ['INT', 1] }
+    }
+  ])('refuses a descriptor with $invalid', ({ value }) => {
+    const node = new LGraphNode('Node')
+
+    expect(Reflect.set(node.outputs, '0', value)).toBe(false)
+
+    expect(node.outputs).toHaveLength(0)
+  })
+
+  it('reserializes a nameless configured output with an empty name', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Node')
+    graph.add(node)
+    node.addOutput('out', 'FLOAT')
+
+    node.configure(fromPartial({ outputs: [{ type: 'INT' }] }))
+
+    expect(node.serialize().outputs).toEqual([
+      { name: '', type: 'INT', links: null }
+    ])
   })
 })

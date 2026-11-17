@@ -1,5 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { computed, toRaw } from 'vue'
+import {
+  getInputSlotRecords,
+  getOutputSlotRecords
+} from '@comfyorg/graph-model/slotMembership'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -101,10 +105,12 @@ describe('LGraphNode node-data adoption', () => {
     const output = node.addOutput('result', 'STRING')
     const [state] = statesIn(subgraph)
 
-    expect(Object.getPrototypeOf(toRaw(state.inputs[0]))).toBe(Object.prototype)
-    expect(Object.getPrototypeOf(toRaw(state.outputs[0]))).toBe(
-      Object.prototype
-    )
+    expect(
+      Object.getPrototypeOf(toRaw(getInputSlotRecords(state.slots)[0]))
+    ).toBe(Object.prototype)
+    expect(
+      Object.getPrototypeOf(toRaw(getOutputSlotRecords(state.slots)[0]))
+    ).toBe(Object.prototype)
     expect(node.inputs[0]).toBe(input)
     expect(node.outputs[0]).toBe(output)
     expect(input).toBeInstanceOf(NodeInputSlot)
@@ -118,8 +124,8 @@ describe('LGraphNode node-data adoption', () => {
 
     input.label = 'Prompt'
     output.label = 'Result'
-    expect(state.inputs[0].label).toBe('Prompt')
-    expect(state.outputs[0].label).toBe('Result')
+    expect(getInputSlotRecords(state.slots)[0].label).toBe('Prompt')
+    expect(getOutputSlotRecords(state.slots)[0].label).toBe('Result')
   })
 
   it('exposes enumerable own collection fields without replacing their views', () => {
