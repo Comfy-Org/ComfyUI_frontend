@@ -280,6 +280,7 @@ describe('CloudSubscriptionRedirectView', () => {
     beforeEach(() => {
       vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
       serveCanOpenPlans(true)
+      useBillingCapabilities().hasResolvedCapabilities = computed(() => true)
     })
 
     function serveCanOpenPlans(granted: boolean) {
@@ -356,6 +357,20 @@ describe('CloudSubscriptionRedirectView', () => {
       expect(mockRouterReplace).toHaveBeenCalledWith('/')
       expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
       expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()
+    })
+
+    test('reads capabilities once more when the first read brings none', async () => {
+      useBillingCapabilities().hasResolvedCapabilities = computed(() => false)
+
+      await mountView({ tier: 'standard' })
+
+      expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+    })
+
+    test('does not read capabilities again once they are served', async () => {
+      await mountView({ tier: 'standard' })
+
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
     })
 
     test.for([

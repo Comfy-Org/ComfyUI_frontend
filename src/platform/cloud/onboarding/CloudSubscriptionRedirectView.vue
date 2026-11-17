@@ -69,8 +69,12 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
 const { flags } = useFeatureFlags()
 const { permissions } = useBillingUI()
-const { canOpenPlans, initialize: initializeCapabilities } =
-  useBillingCapabilities()
+const {
+  canOpenPlans,
+  hasResolvedCapabilities,
+  initialize: initializeCapabilities,
+  refresh: refreshCapabilities
+} = useBillingCapabilities()
 
 const {
   canAccessSubscriptionFeatures,
@@ -143,6 +147,7 @@ async function leftWithoutPlans(): Promise<boolean> {
     return true
   }
   await initializeCapabilities()
+  if (!hasResolvedCapabilities.value) await refreshCapabilities()
   if (canOpenPlans.value) return false
   await router.replace('/')
   return (
