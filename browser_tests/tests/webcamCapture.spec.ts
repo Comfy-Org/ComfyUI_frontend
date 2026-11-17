@@ -294,7 +294,9 @@ test.describe(
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('nodes/webcam_capture', {
-        1: { widgets_values: [null, 123, 456, true] }
+        nodes: {
+          1: { widgets_values: [null, 123, 456, true] }
+        }
       })
       const webcam = new WebcamCaptureFixture(comfyPage)
       await webcam.waitForStreamReady()

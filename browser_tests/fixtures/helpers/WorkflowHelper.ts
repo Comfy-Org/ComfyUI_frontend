@@ -23,33 +23,38 @@ type FolderStructure = {
   [key: string]: FolderStructure | string
 }
 
-type NodeOverrides = Record<string, Partial<ComfyNode>>
+type WorkflowOverrides = {
+  nodes?: Record<string, Partial<ComfyNode>>
+  workflow?: Record<string, unknown>
+  fileName?: string
+}
 
 const zWorkflowNodes = z
   .object({ nodes: z.array(z.object({ id: zNodeId }).passthrough()) })
   .passthrough()
 
-function workflowWithNodeOverrides(
+function workflowWithOverrides(
   workflowName: string,
-  nodeOverrides: NodeOverrides
+  { nodes = {}, workflow = {}, fileName }: WorkflowOverrides
 ) {
-  const workflow = zWorkflowNodes.parse(
+  const asset = zWorkflowNodes.parse(
     JSON.parse(readFileSync(assetPath(`${workflowName}.json`), 'utf-8'))
   )
-  const unknownIds = Object.keys(nodeOverrides).filter(
-    (id) => !workflow.nodes.some((node) => String(node.id) === id)
+  const unknownIds = Object.keys(nodes).filter(
+    (id) => !asset.nodes.some((node) => String(node.id) === id)
   )
   if (unknownIds.length > 0)
     throw new Error(`${workflowName} has no node ${unknownIds.join(', ')}`)
   return {
-    name: `${workflowName.split('/').at(-1)}.json`,
+    name: `${fileName ?? workflowName.split('/').at(-1)}.json`,
     mimeType: 'application/json',
     buffer: Buffer.from(
       JSON.stringify({
+        ...asset,
         ...workflow,
-        nodes: workflow.nodes.map((node) => ({
+        nodes: asset.nodes.map((node) => ({
           ...node,
-          ...nodeOverrides[String(node.id)]
+          ...nodes[String(node.id)]
         }))
       })
     )
@@ -196,13 +201,13 @@ export class WorkflowHelper {
   }
 
   /**
-   * Opens an asset as an uploaded workflow file. `nodeOverrides` replaces
-   * top-level fields of the nodes with those IDs before the upload.
+   * Opens an asset as an uploaded workflow file. `overrides` replaces fields
+   * of the nodes with those IDs, top-level workflow fields, and the file name.
    */
-  async loadWorkflow(workflowName: string, nodeOverrides: NodeOverrides = {}) {
+  async loadWorkflow(workflowName: string, overrides: WorkflowOverrides = {}) {
     await this.comfyPage.workflowUploadInput.setInputFiles(
-      Object.keys(nodeOverrides).length > 0
-        ? workflowWithNodeOverrides(workflowName, nodeOverrides)
+      Object.keys(overrides).length > 0
+        ? workflowWithOverrides(workflowName, overrides)
         : assetPath(`${workflowName}.json`)
     )
     await expect(this.comfyPage.workflowUploadInput).toHaveValue('')

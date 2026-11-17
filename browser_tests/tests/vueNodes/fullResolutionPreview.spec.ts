@@ -49,7 +49,9 @@ test.describe(
       )
       expect(upload.ok()).toBe(true)
       await comfyPage.workflow.loadWorkflow('widgets/load_image_widget', {
-        10: { widgets_values: [FILENAME, 'image'] }
+        nodes: {
+          10: { widgets_values: [FILENAME, 'image'] }
+        }
       })
       const node = comfyPage.vueNodes.getNodeByTitle('Load Image')
       const image = node.getByTestId(TestIds.node.mainImage)

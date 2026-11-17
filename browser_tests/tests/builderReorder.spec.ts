@@ -11,6 +11,20 @@ import {
 
 const WIDGETS = ['seed', 'steps', 'cfg']
 
+function linearApp(fileName: string, widgets: string[]) {
+  return {
+    fileName,
+    workflow: {
+      extra: {
+        linearData: {
+          inputs: widgets.map((widget) => ['3', widget]),
+          outputs: ['9']
+        }
+      }
+    }
+  }
+}
+
 async function saveCloseAndReopenAsApp(
   comfyPage: ComfyPage,
   appMode: AppModeHelper,
@@ -146,16 +160,20 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
   test('Reordering inputs in one app does not corrupt another app', async ({
     comfyPage
   }, testInfo) => {
-    // This test creates 2 apps, switches tabs 3 times, and enters builder 3
-    // times — the default 15s timeout is insufficient in CI.
     testInfo.setTimeout(45_000)
     const { appMode } = comfyPage
     const app2Widgets = ['seed', 'steps']
     const app1Reordered = ['steps', 'cfg', 'seed']
 
     await test.step('Load both apps', async () => {
-      await comfyPage.workflow.loadWorkflow('linear-basic-app-1')
-      await comfyPage.workflow.loadWorkflow('linear-basic-app-2')
+      await comfyPage.workflow.loadWorkflow(
+        'default',
+        linearApp('linear-basic-app-1', WIDGETS)
+      )
+      await comfyPage.workflow.loadWorkflow(
+        'default',
+        linearApp('linear-basic-app-2', app2Widgets)
+      )
     })
 
     await test.step('Reorder app1 inputs', async () => {

@@ -123,7 +123,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_models', {
-        1: { mode: 4 }
+        nodes: {
+          1: { mode: 4 }
+        }
       })
 
       const errorOverlay = comfyPage.page.getByTestId(
@@ -329,7 +331,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       comfyPage
     }) => {
       await comfyPage.workflow.loadWorkflow('missing/missing_media_single', {
-        10: { mode: 4 }
+        nodes: {
+          10: { mode: 4 }
+        }
       })
 
       const errorOverlay = comfyPage.page.getByTestId(
@@ -843,7 +847,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await comfyPage.workflow.loadWorkflow(
         'missing/missing_models_in_subgraph',
         {
-          2: { mode: 4 }
+          nodes: {
+            2: { mode: 4 }
+          }
         }
       )
 
@@ -864,7 +870,9 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await comfyPage.workflow.loadWorkflow(
         'missing/missing_models_in_subgraph',
         {
-          2: { mode: 4 }
+          nodes: {
+            2: { mode: 4 }
+          }
         }
       )
 

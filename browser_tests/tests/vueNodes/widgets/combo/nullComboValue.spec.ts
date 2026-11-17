@@ -34,7 +34,9 @@ test.describe(
   () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.workflow.loadWorkflow('inputs/checkpoint_loader', {
-        4: { widgets_values: [null] }
+        nodes: {
+          4: { widgets_values: [null] }
+        }
       })
     })
 
