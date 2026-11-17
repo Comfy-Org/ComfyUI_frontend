@@ -271,7 +271,7 @@ follow-up for a command interface.
     measures a node, so the answer does not depend on the last frame drawn,
     and the group's own list of nodes, which `recomputeInsideNodes` rewrites,
     is neither read nor changed. No stored pack retitles or recolors a group
-    through the API, so there is no group edit.
+    through the API, so the one group edit is its bounds (decision 28).
 
 ### Node handle members that are not edits
 
@@ -369,8 +369,9 @@ leaves the graph feeding execution the wrong data.
 27. Each edit announces what the host method it calls announces:
     `title` and `mode` (their setters) and `collapsed` (`collapse`) a
     `set_node_field` intent, `addNode` an `add_node`, `removeNode` a
-    `remove_node`, `connect` and `disconnect` a `connect` or `disconnect`, and
-    `position` and `size` a layout operation. The other node fields, slot
+    `remove_node`, `connect` and `disconnect` a `connect` or `disconnect`,
+    `position` and `size` a layout operation, and a group's `bounds` two
+    `setGroupBounds` layout operations. The other node fields, slot
     fields, `addInput`, `addOutput` and the input reorder announce nothing, as
     the same edits made by the editor's own code do not. `moveLinks` and the
     output reorder re-point links in the link store, which raises no intent;
@@ -386,6 +387,49 @@ leaves the graph feeding execution the wrong data.
     to the API. For `comfy.edit` to
     be a command interface, slot handles would also need an id that a saved
     document carries, which the host does not have (decision 14).
+
+### Group bounds
+
+28. `updateGroup(group, patch)` changes the fields `patch` names. Its one
+    field is `bounds`: the group's rectangle in graph space, title bar
+    included, the rectangle `getBounds` reads. `group.setBounds(bounds)` is
+    `updateGroup(group, { bounds })`, and a refusal names `setBounds`. Two
+    stored packs call it, at 5 sites: comfyui-touch-resize on each pointer
+    move while the user drags a group's corner handle, and
+    comfyui-workflow-prettier after it lays out nodes, and inside `batch`
+    when it restores a layout it saved. `GroupHandle.setTitle` and `setColor`
+    stay cut, so `GroupPatch` has no other field.
+    - `bounds` is an object whose `x` and `y` are finite numbers and whose
+      `width` and `height` are finite and zero or more. Each field is read
+      once. A patch with any other field is refused.
+    - The edit assigns the group's own `pos` and then `size` setters. Each
+      writes the layout store (`setGroupBoundsLayout`, a `setGroupBounds`
+      operation), and the group's bounds are read back from the store. The
+      editor's own resize takes the same path: the group-resize drag in
+      `LGraphCanvas` calls `LGraphGroup.resize`, which assigns `size`. Nothing
+      on this path reads `LiteGraph.vueNodesMode`; groups are drawn by the
+      canvas under both renderers, so the edit is the same under Vue nodes.
+    - The nodes inside do not move. The editor moves a group's children only
+      when the user drags its title bar (`recomputeInsideNodes`, then `move`);
+      its resize moves none, and a resize is what both packs do.
+      comfyui-workflow-prettier moves the nodes itself before it sets the
+      group's bounds, so moving the children as well would move them twice.
+      The edit does not recompute the group's list of children either, as the
+      editor's resize does not; `nodes()` measures where nodes are on each
+      call (decision 21).
+    - A width below `LGraphGroup.minWidth` or a height below `minHeight` is
+      raised to it by the `size` setter, as the editor's resize is, and the
+      call still returns `true`. Zero is accepted, so a pack need not know the
+      minimum.
+    - A pinned group is moved and resized. The pin stops the pointer
+      (`resize` and `move` leave a pinned group as it is), but the setters do
+      not read it, and `updateNode`'s `position` and `size` move a pinned node
+      the same way. comfyui-touch-resize checks `isPinned()` for a node; the
+      group handle has no pin read, because no stored pack reads one.
+    - It returns `true` once applied, and `false` for a group that is gone or
+      whose document is no longer open, with nothing changed and no step. The
+      handle resolves in its own graph, so a group in a subgraph that is not
+      on screen is edited there.
 
 ## The mutation table
 
@@ -417,10 +461,10 @@ document is no longer open.
 | `disconnect`                             | `LGraphNode.disconnectInput`, `disconnectOutput`: `onConnectionsChange`, a `disconnect` graph intent                  | One step; `false` and no step for a slot with no link                  | `false`                                |
 | `moveLinks`                              | The link store's `updateEndpoints`, all links validated before any moves                                              | One step; `undefined` if the store refuses, links unchanged            | `undefined`                            |
 | `batch`                                  | The change tracker's transaction around the pack's function                                                           | One step for all edits inside                                          | Each edit inside answers for itself    |
+| `updateGroup` `bounds`                   | `LGraphGroup.pos`, then `size`: two `setGroupBounds` layout operations; the nodes inside stay (decision 28)           | One step                                                               | `false`                                |
 | `addBadge` (registration)                | `LGraphNode.badges`                                                                                                   | No step: not saved                                                     | No badge, a disposer that does nothing |
 
-Groups have no edits (decision 21), so no group row is here: every group
-member reads.
+Every other group member reads.
 
 A step is captured only if the serialized graph changed, so an edit that
 changes nothing a workflow saves (a title set to itself) adds no entry.
@@ -437,7 +481,7 @@ contract. A member no stored pack calls is cut.
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GraphHandle.remove(id)`                                                                                                                                    |                       0, 0 | `node.remove()` and `comfy.edit.removeNode` cover it                                                                                                                                                                    |
 | `NodeHandle.setPinned`, `getShape`, `getSizeConstraints`                                                                                                    |                       0, 0 | No use; `snapshot()` reads the shape                                                                                                                                                                                    |
-| `GroupHandle.setTitle`, `setColor`                                                                                                                          |                       0, 0 | No use, so there is no group edit                                                                                                                                                                                       |
+| `GroupHandle.setTitle`, `setColor`                                                                                                                          |                       0, 0 | No use, so `bounds` is the only field `updateGroup` takes                                                                                                                                                               |
 | `SlotCollection.get`, `ids`; `SlotOptions.localizedName`, `position`, `direction`                                                                           |                       0, 0 | No use; `byId`, `at` and `byName` remain                                                                                                                                                                                |
 | `SlotSnapshot.*` fields read on their own                                                                                                                   |                       0, 0 | `snapshot()` is used (3 packs) and returns them all                                                                                                                                                                     |
 | `GraphHandle.select`, `selection`, `centerOn`, `setZoom`, `panBy`, `pointerPosition`; `GroupHandle.centerOn`; `NodeHandle.getScreenRect`, `getSlotPosition` | 12, 9, 6, 2, 1, 4; 3; 4, 1 | View state, not document edits: no undo step, no command. They belong with the viewport and selection events (A-04, A-16, A-17 apply there)                                                                             |
@@ -510,6 +554,9 @@ ADR-EXTENSIONS-NODE-API-0070.
   (`replaceNodeInputs`) but has no counterpart for outputs; the API re-points
   the outputs' links in one `updateEndpoints` call, the store's own atomic
   update, and then reorders the list.
+- **A group's bounds.** `updateGroup` assigns the group's own setters, so the
+  minimum size is the host's, applied by the host; the API keeps no clamp
+  and no copy of the bounds.
 - **A group's nodes.** `LGraphGroup.recomputeInsideNodes` rewrites the
   group's node list and sorts the graph's groups, so reading through it would
   change the host. `nodes()` applies the same rule, `containsCentre` from
@@ -600,6 +647,13 @@ ADR-EXTENSIONS-NODE-API-0070.
   beside `scopeFor`, and `createGraphHandle` and `createGraphScopes` take the
   members another module adds to their handles. `nodeHandle.ts` exports
   `boundsOnCanvas`, so a group measures nodes the way `getBounds` does.
+  `createGroupHandles` likewise takes the members another module adds to a
+  group handle, and returns a `locator` beside `groupsOf`.
+- A pack that calls `setBounds` on every pointer move, as
+  comfyui-touch-resize does, makes one undo step per move, as its
+  `setPosition` and `setSize` calls on a node do; `batch` is synchronous, so
+  a drag across events cannot be one step. The editor's own drag is one
+  step, captured when the pointer is released.
 - The first `resizable` choice installs one graph-intent listener for the life
   of the page, shared by every API instance, so two instances do not apply a
   choice twice.
