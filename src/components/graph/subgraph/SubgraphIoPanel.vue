@@ -25,7 +25,7 @@ import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/processedWidgetRenderModel'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { getNodeByState } from '@/utils/graphTraversalUtil'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -108,8 +108,8 @@ function editorFor(source: EditableSource) {
     showAdvanced:
       !!source.node.showAdvanced ||
       settingStore.get('Comfy.Node.AlwaysShowAdvancedWidgets'),
-    isGraphReady: app.isGraphReady,
-    rootGraph: app.isGraphReady ? app.rootGraph : null,
+    isGraphReady: useApp().isGraphReady,
+    rootGraph: useApp().isGraphReady ? useApp().rootGraph : null,
     ui: { getTooltipText: getWidgetTooltip }
   }).at(0)
   return (

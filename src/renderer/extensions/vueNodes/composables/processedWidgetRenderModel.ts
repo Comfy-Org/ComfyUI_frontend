@@ -12,7 +12,7 @@ import type {
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -234,7 +234,7 @@ function createWidgetUpdateHandler({
     if (live) {
       const normalized = normalizeWidgetValue(newValue)
       live.widget.value = normalized
-      live.widget.callback?.(normalized, app.canvas, live.node)
+      live.widget.callback?.(normalized, useApp().canvas, live.node)
       live.node.widgets?.forEach((w) => w.triggerDraw?.())
     }
 

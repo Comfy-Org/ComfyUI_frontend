@@ -3,7 +3,7 @@ import type { ComputedRef } from 'vue'
 import { computed, shallowRef, watch } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 /** The node `resolve` returns, resolved again each time the root graph is configured. */
 export function useLiveGraphNode(
@@ -14,7 +14,7 @@ export function useLiveGraphNode(
     flush: 'sync'
   })
   useEventListener(
-    () => app.rootGraphOrUndefined?.events,
+    () => useApp().rootGraphOrUndefined?.events,
     'configured',
     () => (node.value = resolve() ?? undefined)
   )

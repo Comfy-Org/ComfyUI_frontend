@@ -1,7 +1,7 @@
 import { useSubgraphInputValuesStore } from '@/components/graph/subgraph/subgraphInputValuesStore'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
   getNodeByState,
@@ -12,7 +12,7 @@ function viewedSubgraphHost(
   node: LGraphNode,
   renderedNodeId: NodeId
 ): SubgraphNode | undefined {
-  const rendered = app.canvas.graph?.getNodeById(renderedNodeId)
+  const rendered = useApp().canvas.graph?.getNodeById(renderedNodeId)
   if (rendered?.isSubgraphNode() && rendered.subgraph === node.graph)
     return rendered
 

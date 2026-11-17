@@ -106,18 +106,15 @@ import { getNodeOrSlotOwnerOnPos, LinkConnector } from './canvas/LinkConnector'
 import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
+  cancelPendingLinkBadgeStackExpansion,
   clearLinkBadgeHitAreas,
   collapseLinkBadgeStacks,
+  collapseRenamedLinkBadgeStack,
   drawHiddenLinkBadges,
   queryLinkBadgeHitAtPoint,
-  queryLinkBadgeStackToggledAt,
-  relabelExpandedLinkBadgeStack,
-  toggleLinkBadgeStack
+  requestLinkBadgeStackToggle
 } from './canvas/linkBadges'
-import {
-  layoutGraphLinkBadges,
-  queryHiddenLinkStackToggledAt
-} from './canvas/linkBadgeRenderer'
+import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
 import {
   getLinkMenuOptions,
   getLinkStackMenuOptions,
@@ -409,6 +406,8 @@ const cursors = {
   NW: 'nwse-resize'
 } as const
 
+const linkBadgePresses = new WeakSet<CanvasPointerEvent>()
+
 // Optimised buffers used during rendering
 const temp = new Rectangle()
 const temp_vec2: Point = [0, 0]
@@ -559,29 +558,8 @@ function promptRenameLinkStack(
     graphScopeOf(graph),
     links.map(({ id }) => id),
     event,
-    (name) => relabelExpandedLinkBadgeStack(canvas, stackKey, name)
+    (label) => collapseRenamedLinkBadgeStack(canvas, stackKey, label)
   )
-}
-
-function renameToggledLinkStackOnDoubleClick(
-  canvas: LGraphCanvas,
-  graph: LGraph,
-  event: CanvasPointerEvent
-): void {
-  const { pointer } = canvas
-  const toggledAt = pointer.doubleClickedTimeStamp
-  const isLocked = () => canvas.read_only || canvas.selectOnly
-  const toggledStack = () =>
-    queryHiddenLinkStackToggledAt(canvas, graph, toggledAt)
-  if (isLocked() || !toggledStack()) return
-
-  pointer.onDoubleClick = () => {
-    const stack = toggledStack()
-    if (isLocked() || !stack) return
-    toggleLinkBadgeStack(canvas, stack.stackKey)
-    canvas.dirty_bgcanvas = true
-    promptRenameLinkStack(canvas, graph, stack, event)
-  }
 }
 
 interface SnappingLink {
@@ -2223,6 +2201,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   clear(): void {
+    collapseLinkBadgeStacks(this)
     releaseCanvasSelection(this)
     applyCanvasSelection(this, { type: 'selection.clear' })
     this.resetTransientState()
@@ -2457,6 +2436,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * unbinds mouse events from the canvas
    */
   unbindEvents(): void {
+    cancelPendingLinkBadgeStackExpansion(this)
     if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
     if (!this._events_binded) {
       console.warn('LGraphCanvas: no events bound')
@@ -2740,7 +2720,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const { graph, pointer } = this
     this.adjustMouseEvent(e)
-    if (e.isPrimary) pointer.down(e)
+    if (e.isPrimary) {
+      pointer.down(e)
+      if (queryLinkBadgeHitAtPoint(this, e.canvasX, e.canvasY))
+        linkBadgePresses.add(e)
+    }
 
     if (this.set_canvas_dirty_on_mouse_event) this.dirty_canvas = true
 
@@ -2778,10 +2762,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (this.onMouse?.(e) == true) return
 
-    // left button mouse / single finger
     if (e.button === 0 && !pointer.isDouble) {
       this._processPrimaryButton(e, node)
-      if (!node) renameToggledLinkStackOnDoubleClick(this, graph, e)
     } else if (isMiddleButtonEvent(e)) {
       this._processMiddleButton(e, node)
     } else if (
@@ -2790,16 +2772,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !this.read_only &&
       !this.selectOnly
     ) {
-      // Right / aux button
       const { linkConnector, subgraph } = this
 
-      // Sticky select - won't remove single nodes
       if (subgraph?.inputNode.containsPoint(this.graph_mouse)) {
-        // Subgraph input node
         this.processSelect(subgraph.inputNode, e, true)
         subgraph.inputNode.onPointerDown(e, pointer, linkConnector)
       } else if (subgraph?.outputNode.containsPoint(this.graph_mouse)) {
-        // Subgraph output node
         this.processSelect(subgraph.outputNode, e, true)
         subgraph.outputNode.onPointerDown(e, pointer, linkConnector)
       } else {
@@ -2827,7 +2805,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
 
-        // Show context menu for the node or group under the pointer
         pointer.onClick ??= () => this.processContextMenu(node, e)
       }
     }
@@ -2838,7 +2815,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     graph.change()
 
-    // this is to ensure to defocus(blur) if a text input element is on focus
     if (
       !ref_window.document.activeElement ||
       (ref_window.document.activeElement.nodeName.toLowerCase() != 'input' &&
@@ -2938,10 +2914,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
 
       case 'linkBadgeStack': {
-        pointer.onClick = () => {
-          toggleLinkBadgeStack(this, target.stackKey, e.timeStamp)
-          this.dirty_bgcanvas = true
-        }
+        cancelPendingLinkBadgeStackExpansion(this, target.stackKey)
+        pointer.onClick = () =>
+          requestLinkBadgeStackToggle(this, target.stackKey, {
+            delay: CanvasPointer.doubleClickTime,
+            onChange: () => (this.dirty_bgcanvas = true)
+          })
         pointer.onDoubleClick = () => {
           if (this.read_only || this.selectOnly) return
           promptRenameLinkStack(this, graph, target, e)
@@ -4242,10 +4220,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     e.click_time = now - this.last_mouseclick
 
     const { eDown } = pointer
-    const pressedBadge =
-      eDown &&
-      (queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY) ??
-        queryLinkBadgeStackToggledAt(this, pointer.doubleClickedTimeStamp))
+    const pressedBadge = eDown && linkBadgePresses.has(eDown)
     const wasConnecting = this.linkConnector.isConnecting
     const isClick = pointer.up(e)
     if (e.button === 0 && !wasConnecting) {
