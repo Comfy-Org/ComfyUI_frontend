@@ -10,6 +10,7 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { withGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import { inputLinkId, outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 
 import {
@@ -1032,44 +1033,47 @@ export class LinkConnector {
 
   /** @returns `true` if at least one link accepted {@link input}. */
   private _dropOnInput(node: LGraphNode, input: INodeInputSlot): boolean {
-    let connected = false
-    for (const link of this.renderLinks) {
-      if (!link.canConnectToInput(node, input)) continue
+    return withGraphEdit(node.graph, () => {
+      let connected = false
+      for (const link of this.renderLinks) {
+        if (!link.canConnectToInput(node, input)) continue
 
-      link.connectToInput(node, input, this.events)
-      connected = true
-    }
-    return connected
+        link.connectToInput(node, input, this.events)
+        connected = true
+      }
+      return connected
+    })
   }
 
   private _dropOnOutput(node: LGraphNode, output: INodeOutputSlot): void {
-    for (const link of this.renderLinks) {
-      if (!link.canConnectToOutput(node, output)) {
-        if (
-          link instanceof MovingOutputLink &&
-          link.link.parentId !== undefined
-        ) {
-          const graph = link.inputNode.graph
-          if (!graph) continue
-          const scope = graphScopeOf(graph)
-          const presentation = useLinkPresentationStore().getPresentation(
-            scope,
-            link.link.id
-          )
-          // Reconnect link without reroutes
-          const reconnected = link.outputNode.connectSlots(
-            link.outputSlot,
-            link.inputNode,
-            link.inputSlot,
-            undefined
-          )
-          transferLinkPresentation(scope, presentation, reconnected?.id)
+    withGraphEdit(node.graph, () => {
+      for (const link of this.renderLinks) {
+        if (!link.canConnectToOutput(node, output)) {
+          if (
+            link instanceof MovingOutputLink &&
+            link.link.parentId !== undefined
+          ) {
+            const graph = link.inputNode.graph
+            if (!graph) continue
+            const scope = graphScopeOf(graph)
+            const presentation = useLinkPresentationStore().getPresentation(
+              scope,
+              link.link.id
+            )
+            const reconnected = link.outputNode.connectSlots(
+              link.outputSlot,
+              link.inputNode,
+              link.inputSlot,
+              undefined
+            )
+            transferLinkPresentation(scope, presentation, reconnected?.id)
+          }
+          continue
         }
-        continue
-      }
 
-      link.connectToOutput(node, output, this.events)
-    }
+        link.connectToOutput(node, output, this.events)
+      }
+    })
   }
 
   isInputValidDrop(node: LGraphNode, input: INodeInputSlot): boolean {

@@ -8,6 +8,7 @@ import type { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
 
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { noteGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import {
   linkIdReservations,
   mintLinkId
@@ -191,7 +192,6 @@ export class SubgraphInputNode
   ): void {
     const { subgraph } = this
 
-    // Break floating links
     const inputIndex = node.inputs.indexOf(input)
     for (const floatingLink of slotFloatingLinks(
       subgraph,
@@ -200,6 +200,7 @@ export class SubgraphInputNode
       inputIndex
     )) {
       subgraph.removeFloatingLink(floatingLink)
+      noteGraphEdit(subgraph)
     }
 
     subgraph.setDirtyCanvas(false, true)
@@ -208,6 +209,7 @@ export class SubgraphInputNode
 
     const subgraphInputIndex = link.origin_slot
     link.disconnect(subgraph, 'output')
+    noteGraphEdit(subgraph)
     subgraph.incrementVersion()
 
     const subgraphInput = this.slots.at(subgraphInputIndex)
@@ -220,7 +222,6 @@ export class SubgraphInputNode
       return
     }
 
-    // search in the inputs list for this link
     const index = subgraphInput.linkIds.indexOf(link.id)
     if (index !== -1) {
       subgraphInput.linkIds.splice(index, 1)

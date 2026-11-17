@@ -60,6 +60,7 @@ import {
   disconnectInput,
   disconnectOutput
 } from './connectivitySystem'
+import { withGraphEdit } from './graphEdits'
 import {
   UNASSIGNED_NODE_ID,
   toNodeId,
@@ -3187,7 +3188,9 @@ export class LGraphNode
     target_slot: number | string,
     afterRerouteId?: RerouteId
   ): LLink | null {
-    return connect(this, slot, target_node, target_slot, afterRerouteId)
+    return withGraphEdit(this.graph, () =>
+      connect(this, slot, target_node, target_slot, afterRerouteId)
+    )
   }
 
   connectSlots(
@@ -3199,7 +3202,9 @@ export class LGraphNode
     const { graph } = this
     if (!graph) throw new NullGraphError()
 
-    return connectSlots(graph, this, output, inputNode, input, afterRerouteId)
+    return withGraphEdit(graph, () =>
+      connectSlots(graph, this, output, inputNode, input, afterRerouteId)
+    )
   }
 
   connectFloatingReroute(
@@ -3207,11 +3212,15 @@ export class LGraphNode
     slot: INodeInputSlot | INodeOutputSlot,
     afterRerouteId?: RerouteId
   ): Reroute | undefined {
-    return connectFloatingReroute(this, pos, slot, afterRerouteId)
+    return withGraphEdit(this.graph, () =>
+      connectFloatingReroute(this, pos, slot, afterRerouteId)
+    )
   }
 
   disconnectOutput(slot: string | number, target_node?: LGraphNode): boolean {
-    return disconnectOutput(this, slot, target_node)
+    return withGraphEdit(this.graph, () =>
+      disconnectOutput(this, slot, target_node)
+    )
   }
 
   disconnectInput(
@@ -3219,7 +3228,9 @@ export class LGraphNode
     keepReroutes?: boolean,
     keepFloatingReroute?: RerouteId
   ): boolean {
-    return disconnectInput(this, slot, { keepReroutes, keepFloatingReroute })
+    return withGraphEdit(this.graph, () =>
+      disconnectInput(this, slot, { keepReroutes, keepFloatingReroute })
+    )
   }
 
   /**

@@ -11,12 +11,32 @@ history by comparing serialized graph snapshots.
 2. Deep-compares the result against the last known `activeState`
 3. If different, pushes `activeState` onto `undoQueue` and replaces it
 
-**It is not reactive.** Changes to the graph (widget values, node positions,
-links, etc.) are only captured when `captureCanvasState()` is explicitly triggered.
+**It is not reactive.** Connectivity captures completed edits through its
+bound owner. Other graph edits require `captureCanvasState()` triggers.
 
 **INVARIANT:** `captureCanvasState()` asserts that it is called on the active
 workflow's tracker. Calling it on an inactive tracker logs a warning and
 returns early, preventing cross-workflow data corruption.
+
+## Explicit connectivity completion
+
+Connectivity captures its completed edit through a tracker bound to the root
+graph state, even without a canvas gesture. Same-root reentrant connections and
+multi-link drops group into one snapshot. A veto without applied mutations adds
+no history. If a callback interrupts an edit after mutation, history preserves
+the applied topology and the original exception propagates.
+
+Completion serializes the owner's graph rather than the active canvas. Graph
+replacement, owner rebinding, and workflow unload invalidate the old completion.
+Nonlocal provenance, graph loading, restoration, and capture suppression do not
+create local history. Snapshot undo remains whole-document undo, including when
+local callbacks also perform remote mutations.
+
+Legacy capture is suppressed inside an explicit edit. An outer legacy
+transaction still owns its grouped capture, and unmigrated operations retain
+gesture fallback. Text editors retain local undo during their sessions. See
+[the connectivity completion decision](../adr/WORKFLOW-HISTORY-0060-connectivity-edit-completion.md)
+for the ownership tradeoffs.
 
 ## Automatic Triggers
 
@@ -43,8 +63,8 @@ rendering. They **do not cover**:
 - **Vue-rendered widgets** — Vue handles events internally without triggering
   native DOM events that the tracker listens to (e.g., `mouseup` on a Vue
   dropdown doesn't bubble the same way as a native LiteGraph widget click)
-- **Programmatic graph mutations** — Any code that modifies the graph outside
-  of user interaction (e.g., applying a template, pasting nodes, aligning)
+- **Programmatic graph mutations outside connectivity** — Applying a template,
+  pasting nodes, and aligning still require their own capture boundaries
 - **Async operations** — File uploads, API calls that change widget values
   after the initial user gesture
 
