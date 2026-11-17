@@ -487,7 +487,7 @@ describe('demoting a preview', () => {
       host.id,
       CANVAS_IMAGE_PREVIEW_WIDGET
     )
-    useWidgetHeightStore().setHeight(heightId, 320)
+    useWidgetHeightStore().set(heightId, { height: 320 })
 
     demoteWidget(first, preview(first), [host])
     promoteWidget(second, preview(second), [host])
@@ -499,7 +499,7 @@ describe('demoting a preview', () => {
     ).toEqual([
       { name: CANVAS_IMAGE_PREVIEW_WIDGET, sourceNodeId: String(second.id) }
     ])
-    expect(useWidgetHeightStore().getHeight(heightId)).toBeUndefined()
+    expect(useWidgetHeightStore().get(heightId)).toBeUndefined()
   })
 })
 

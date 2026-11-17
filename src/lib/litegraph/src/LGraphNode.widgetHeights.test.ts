@@ -20,12 +20,12 @@ describe('LGraphNode widget heights', () => {
     node.configure(savedNode({ text: 120, image: 'tall' }))
     const store = useWidgetHeightStore()
 
-    expect(store.getHeight(widgetId(graph.id, node.id, 'text'))).toBe(120)
-    expect(store.getHeight(widgetId(graph.id, node.id, 'image'))).toBe(
-      undefined
-    )
+    expect(store.get(widgetId(graph.id, node.id, 'text'))).toEqual({
+      height: 120
+    })
+    expect(store.get(widgetId(graph.id, node.id, 'image'))).toBe(undefined)
 
-    store.setHeight(widgetId(graph.id, node.id, 'image'), 80.4)
+    store.set(widgetId(graph.id, node.id, 'image'), { height: 80.4 })
 
     expect(node.serialize().properties?.widgetHeights).toEqual({
       text: 120,
@@ -41,7 +41,7 @@ describe('LGraphNode widget heights', () => {
     node.configure(new LGraphNode('Prompt').serialize())
 
     expect(
-      useWidgetHeightStore().getHeight(widgetId(graph.id, node.id, 'text'))
+      useWidgetHeightStore().get(widgetId(graph.id, node.id, 'text'))
     ).toBe(undefined)
     expect(node.serialize().properties?.widgetHeights).toBe(undefined)
   })
@@ -53,8 +53,8 @@ describe('LGraphNode widget heights', () => {
     graph.add(node)
 
     expect(
-      useWidgetHeightStore().getHeight(widgetId(graph.id, node.id, 'text'))
-    ).toBe(120)
+      useWidgetHeightStore().get(widgetId(graph.id, node.id, 'text'))
+    ).toEqual({ height: 120 })
     expect(node.serialize().properties?.widgetHeights).toEqual({ text: 120 })
   })
 
@@ -70,8 +70,12 @@ describe('LGraphNode widget heights', () => {
     const store = useWidgetHeightStore()
 
     expect(pasted.id).not.toBe(original.id)
-    expect(store.getHeight(widgetId(graph.id, original.id, 'text'))).toBe(120)
-    expect(store.getHeight(widgetId(graph.id, pasted.id, 'text'))).toBe(240)
+    expect(store.get(widgetId(graph.id, original.id, 'text'))).toEqual({
+      height: 120
+    })
+    expect(store.get(widgetId(graph.id, pasted.id, 'text'))).toEqual({
+      height: 240
+    })
   })
 
   it('drops a reset height and forgets the rest when the node is removed', () => {
@@ -81,12 +85,10 @@ describe('LGraphNode widget heights', () => {
     node.configure(savedNode({ text: 120, image: 90 }))
     const store = useWidgetHeightStore()
 
-    store.setHeight(widgetId(graph.id, node.id, 'text'), undefined)
+    store.set(widgetId(graph.id, node.id, 'text'), undefined)
     expect(node.serialize().properties?.widgetHeights).toEqual({ image: 90 })
     graph.remove(node)
 
-    expect(store.getHeight(widgetId(graph.id, node.id, 'image'))).toBe(
-      undefined
-    )
+    expect(store.get(widgetId(graph.id, node.id, 'image'))).toBe(undefined)
   })
 })

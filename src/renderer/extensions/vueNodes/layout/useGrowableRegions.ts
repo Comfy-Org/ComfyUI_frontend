@@ -118,12 +118,16 @@ export function useGrowableRegions({
 
   function heightOf(name: string) {
     const id = regionId(name)
-    return id ? heightStore.getHeight(id) : undefined
+    return id ? heightStore.get(id)?.height : undefined
   }
 
   function setHeight(name: string, height: number | undefined) {
     const id = regionId(name)
-    if (id) heightStore.setHeight(id, height)
+    if (id)
+      heightStore.set(
+        id,
+        height === undefined ? undefined : { height: Math.round(height) }
+      )
   }
 
   function fitNodeHeight(nodeElement: HTMLElement) {

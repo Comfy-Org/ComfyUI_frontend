@@ -10,8 +10,8 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { getWidgetIds } from '@/lib/litegraph/src/utils/widget'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetComponents } from '@/stores/widgetComponents'
 import type { RefusedWidget } from '@comfyorg/graph-model/widgetId'
 
 import { registerNodeState, unregisterNodeState } from './nodeShellState'
@@ -103,11 +103,7 @@ export function attachNodeToStores(
     )
   }
 
-  useWidgetHeightStore().adoptNodeHeights(
-    graph.rootGraph.id,
-    node.id,
-    node.properties
-  )
+  useWidgetComponents().adoptNode(graph.rootGraph.id, node.id, node.properties)
   refuseAmbiguousNodeWidgets(node, (report) =>
     reportWidgetRefusal(node, report)
   )
@@ -151,6 +147,7 @@ export function detachNodeFromStores(
   mode: WidgetDetachMode = 'keep-values'
 ): void {
   const rootGraphId = graph.rootGraph.id
+  useWidgetComponents().detachNode(rootGraphId, node.id, node.properties)
   unregisterNodeState(node)
   useWidgetValueStore().releaseNodeWidgets(rootGraphId, node.id, {
     discardValues: mode === 'discard-values'

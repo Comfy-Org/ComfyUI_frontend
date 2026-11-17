@@ -2,20 +2,42 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
+import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
-import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
+import CloudButton from '@/components/CloudButton.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
 import { testI18n } from '@/utils/__tests__/testI18n'
+import type { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
+const withConsent = vi.hoisted(() =>
+  vi.fn<ReturnType<typeof useAgentConsent>['withConsent']>(
+    async (_trigger, onAccept) => onAccept()
+  )
+)
+
+vi.mock(
+  import('@/workbench/extensions/agent/composables/agent/useAgentConsent'),
+  () => ({
+    useAgentConsent: () => ({
+      accepted: computed(() => true),
+      isChecking: computed(() => false),
+      withConsent,
+      resumeAcceptAfterReload: vi.fn(async () => {})
+    })
+  })
+)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/openOnCloud/cloudCompatibilityApi'))
@@ -32,6 +54,59 @@ function deferredVerdict() {
 }
 
 describe('Cloud button compatibility checks', () => {
+  it.for([
+    {
+      flag: true,
+      enabled: false,
+      rows: ['Open in Claude desktop', 'Open in Codex', 'Copy prompt']
+    },
+    {
+      flag: false,
+      enabled: true,
+      rows: ['Open in Claude desktop', 'Open in Codex', 'Copy prompt']
+    },
+    {
+      flag: true,
+      enabled: true,
+      rows: [
+        'Use local agent',
+        'Open in Claude desktop',
+        'Open in Codex',
+        'Copy prompt'
+      ]
+    }
+  ])(
+    'preserves agent choice for missing nodes when flag=$flag and available=$enabled',
+    async ({ flag, enabled, rows }) => {
+      Object.assign(useFeatureFlags().flags, {
+        openOnCloudUseLocalAgentEnabled: flag
+      })
+      useAgentPanelStore().enabled = enabled
+      vi.mocked(checkCloudCompatibility).mockResolvedValue({
+        kind: 'missing',
+        gaps: { nodePacks: ['ImpactWildcard'], models: [] }
+      })
+      render(
+        {
+          components: { CloudButton, GlobalDialog },
+          template: '<CloudButton /><GlobalDialog />'
+        },
+        { global: { plugins: [testI18n] } }
+      )
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+      await user.click(screen.getByTestId('cloud-button'))
+      await user.click(await screen.findByTestId('deploy-setup-agent'))
+
+      expect(
+        (await screen.findAllByRole('menuitem')).map((row) =>
+          row.textContent.trim()
+        )
+      ).toEqual(rows)
+      expect(useAgentPanelStore().isVisible).toBe(false)
+    }
+  )
+
   it('opens the completed hover result without requesting it again', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
     render(CloudButton, { global: { plugins: [testI18n] } })
@@ -172,6 +247,22 @@ describe('Cloud button compatibility checks', () => {
       )
     )
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
+  })
+
+  it('names the missing model loader and explains how to continue', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'unreadableModelLoader',
+      nodeType: 'ImpactCheckpointLoader'
+    })
+    render(CloudButton, { global: { plugins: [testI18n] } })
+
+    await userEvent.setup().click(screen.getByTestId('cloud-button'))
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
+      )
+    )
   })
 
   it('opens the dialog when Cloud is missing nodes or models', async () => {

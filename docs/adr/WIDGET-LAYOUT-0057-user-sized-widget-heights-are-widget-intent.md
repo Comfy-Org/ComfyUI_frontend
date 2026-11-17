@@ -64,9 +64,10 @@ cleanup and graph clearing do this. Demoting a promoted preview clears its
 height, because the next preview exposed on that host can reuse the name.
 Heights of widgets that are absent when the workflow is saved are kept: a
 preview appears only after its node runs, and dynamic widgets are rebuilt
-after configure, so absence does not mean the widget is gone. A height
-follows its widget's name, so a dynamic widget that is renamed takes the
-height saved under its new name.
+after configure, so absence does not mean the widget is gone. Heights follow the widget entity
+through rename and are removed on explicit entity destruction. Shared component
+lifecycle and persistence follow
+[ADR-WIDGET-COMPONENTS-0058](WIDGET-COMPONENTS-0058-shared-component-lifecycle-and-persistence.md).
 
 Canvas and Vue renderings of the same workflow can differ in row heights
 when the user has sized a widget in Vue.

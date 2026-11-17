@@ -42,7 +42,6 @@ import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
-import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { parseLinkId, toLinkId } from '@comfyorg/graph-model/linkId'
 import { isFloatingTopology } from '@comfyorg/graph-model/linkTopology'
@@ -894,7 +893,6 @@ export class LGraph
       useExecutionOrderStore().clearRoot(toRootGraphId(graphId))
       usePreviewExposureStore().clearGraph(graphId)
       useWidgetValueStore().clearGraph(graphId)
-      useWidgetHeightStore().clearGraph(graphId)
       useLinkStore().clearGraph(toRootGraphId(graphId))
       useLinkPresentationStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))

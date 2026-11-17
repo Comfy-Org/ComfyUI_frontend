@@ -30,7 +30,6 @@ import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
@@ -469,15 +468,12 @@ function demotePromotedInput(
   return true
 }
 
-/** Removes the preview `name` exposed on `host` along with its saved height. */
+/** Removes the exposed preview entity and its components. */
 export function removePreviewExposure(host: SubgraphNode, name: string): void {
   const hostLocator = getPreviewExposureHostLocator(host)
   if (!hostLocator) return
   usePreviewExposureStore().removeExposure(host.rootGraph.id, hostLocator, name)
-  useWidgetHeightStore().setHeight(
-    widgetId(host.rootGraph.id, host.id, name),
-    undefined
-  )
+  useWidgetValueStore().deleteWidget(widgetId(host.rootGraph.id, host.id, name))
 }
 
 export function demoteWidget(

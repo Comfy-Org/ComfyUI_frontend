@@ -76,7 +76,7 @@ function renderNode({
   })
 
   for (const [name, height] of Object.entries(widgetHeights ?? {}))
-    useWidgetHeightStore().setHeight(regionId(name), height)
+    useWidgetHeightStore().set(regionId(name), { height })
   const resizeNode = vi.fn()
   const onCommit = vi.fn()
   const growable = useGrowableRegions({ regionId, resizeNode, onCommit })
