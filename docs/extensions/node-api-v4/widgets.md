@@ -90,7 +90,7 @@ const meter = node?.widgets.canvas({
 meter?.redraw()
 ```
 
-A mounted value is text or a plain object or list; wrap a number or a boolean.
+A mounted value is any value a workflow can save; `null` reads back as `''`.
 `serialize` decides whether it is saved, and `sendToPrompt` whether it is
 sent; both follow whether `defaultValue` is given.
 
