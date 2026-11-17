@@ -235,6 +235,8 @@ export interface PostMessageInput {
   content: string
   workflowId?: string
   selection?: Record<string, unknown>
+  /** Plain canvas selection, sent apart from the tagged `selection`. */
+  canvasSelection?: Record<string, unknown>
   attachments?: string[]
   workflowReferences?: AgentPostMessageRequest['workflow_references']
   tabs?: OpenTabsSnapshot
@@ -259,6 +261,10 @@ export interface PostMessageInput {
 }
 
 const CLIENT_VERSION = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
+
+type PostMessageBody = AgentPostMessageRequest & {
+  canvas_selection?: Record<string, unknown>
+}
 
 /**
  * Drops keys whose value is `undefined` so an absent optional is omitted from the
@@ -726,7 +732,7 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body = withoutUndefined<AgentPostMessageRequest>({
+    const body = withoutUndefined<PostMessageBody>({
       content: req.content,
       ask_kinds: [...RENDERED_ASK_KINDS],
       workflow_id: req.workflowId,
@@ -734,6 +740,7 @@ export function createAgentRestClient() {
       current_tab: req.tabs?.current_tab,
       workflow_references: req.workflowReferences,
       selection: req.selection,
+      canvas_selection: req.canvasSelection,
       attachments: req.attachments,
       draft: req.draft && { content: req.draft.content },
       current_tab_unbound: req.currentTabUnbound,

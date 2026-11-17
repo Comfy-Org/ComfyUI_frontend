@@ -1156,7 +1156,9 @@ const {
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
-    draft: targetWorkflowDraft
+    draft: targetWorkflowDraft,
+    canvasSelection: () =>
+      canReferenceNodes.value ? selectedNodes.value.map((node) => node.id) : []
   }
 })
 
