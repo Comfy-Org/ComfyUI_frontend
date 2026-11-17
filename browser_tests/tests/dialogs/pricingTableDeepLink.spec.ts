@@ -829,13 +829,16 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     const subscribeButton = page.getByRole('button', {
       name: 'Subscribe to Creator'
     })
+    const backButton = page.getByRole('button', { name: 'Back', exact: true })
     await cloudAppExpect(subscribeButton).toBeVisible()
     await subscribeButton.click()
     await expect.poll(() => subscribeRequests.length).toBe(1)
     await expect.poll(() => operationPollRequests.length).toBeGreaterThan(0)
+    await expect(backButton).toBeDisabled()
 
     await page.clock.fastForward(23 * 60 * 60_000 + 1)
 
+    await expect(backButton).toBeEnabled()
     await expect(
       toast.withText('Subscription verification timed out')
     ).toBeVisible()
@@ -844,6 +847,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
     await subscribeButton.click()
 
     await expect.poll(() => subscribeRequests.length).toBe(2)
+    await expect(backButton).toBeDisabled()
     await expect
       .poll(() => operationPollRequests.length)
       .toBeGreaterThan(pollCountAfterTimeout)
