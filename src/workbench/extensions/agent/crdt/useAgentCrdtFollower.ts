@@ -825,6 +825,8 @@ function startAgentCrdtFollower(
       workflowId: subscribedWorkflowId.value
     })
     transport.reconnect()
+    sender.abortIfUnbound('subscribe_refused')
+    releaseHeldOps()
     return true
   }
 
@@ -836,11 +838,6 @@ function startAgentCrdtFollower(
       message?: unknown
     } | null
   ): void {
-    if (reconnectForCredential(detail?.code)) {
-      sender.abortIfUnbound('subscribe_refused')
-      releaseHeldOps()
-      return
-    }
     const reseeding = tryReseed()
     const refusal = reseeding
       ? { shouldNotify: false }
@@ -856,6 +853,13 @@ function startAgentCrdtFollower(
     releaseHeldOps()
     if (refusal.shouldNotify)
       events.onSyncError?.(refusal.message, refusal.code)
+  }
+
+  function answerRefusedSubscription(
+    detail: Parameters<typeof handleRejectedSubscription>[0]
+  ): void {
+    if (!reconnectForCredential(detail?.code))
+      handleRejectedSubscription(detail)
   }
 
   function subscribeBaselineIsIntegrated(seq: number | undefined): boolean {
@@ -914,7 +918,7 @@ function startAgentCrdtFollower(
       resumeHeldOpsIfSubscribed()
       sender.retryTransport()
     } else {
-      handleRejectedSubscription(detail)
+      answerRefusedSubscription(detail)
     }
   }
   function settleCatchUpProjection(
