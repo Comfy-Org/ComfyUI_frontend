@@ -221,8 +221,8 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     extension declares once; a badge that changes needed a reactive source.
     The handle's `update(changes)` re-checks the whole item with the changes
     applied, keeps its id and place, and returns `false` once the item is
-    removed; a refused update names `ui.addTopBarBadge(...).update` or
-    `ui.addActionBarButton(...).update`. `remove()` takes away only that
+    removed; a refused update names `update`, as a refusal from any handle
+    in the API names the handle's method. `remove()` takes away only that
     item, so a stale handle cannot remove a later item under the same id. An id already shown is refused. A
     button's `run` is called with the click's `MouseEvent`, which a pack reads
     to place a menu at the pointer.

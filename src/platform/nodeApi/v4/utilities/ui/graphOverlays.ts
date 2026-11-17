@@ -98,7 +98,7 @@ function overlayHandle(
 ): GraphOverlayHandle {
   const flag = (method: string, value: unknown) => {
     if (isBoolean(value)) return value
-    throw invalidArgument(`${MEMBER}(...).${method}`, 'a boolean', value)
+    throw invalidArgument(method, 'a boolean', value)
   }
   let removed = false
   return Object.freeze({
@@ -111,7 +111,7 @@ function overlayHandle(
       surface.show(state.visible)
     },
     setHitRegions(regions: unknown) {
-      state.regions = readHitRegions(`${MEMBER}(...).setHitRegions`, regions)
+      state.regions = readHitRegions('setHitRegions', regions)
     },
     remove() {
       if (removed) return

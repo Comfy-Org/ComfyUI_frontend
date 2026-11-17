@@ -259,13 +259,14 @@ describe('i18n', () => {
     it('keeps messages for a locale not loaded, and merges them over the custom nodes when it loads', async () => {
       mergeCustomNodesI18n({ zh: { pack: { a: 'custom', c: 'C' } } })
       mergeExtensionI18n('zh', { pack: { a: 'extension' } })
+      mergeExtensionI18n('zh', { pack: { d: 'D' } })
 
       expect(messagesOf('zh').pack).toBeUndefined()
       await loadLocale('zh')
 
       expect(messagesOf('zh')).toMatchObject({
         welcome: '欢迎',
-        pack: { a: 'extension', c: 'C' }
+        pack: { a: 'extension', c: 'C', d: 'D' }
       })
     })
   })
