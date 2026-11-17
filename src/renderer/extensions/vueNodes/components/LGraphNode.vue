@@ -4,6 +4,7 @@
   </div>
   <div
     v-else
+    ref="nodeRef"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
@@ -28,7 +29,7 @@
     :style="{
       ...nodeSizeStyle,
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
-      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+      transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
     }"
@@ -278,7 +279,14 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, provide, ref } from 'vue'
+import {
+  computed,
+  onErrorCaptured,
+  provide,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -297,6 +305,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
@@ -442,6 +451,21 @@ onErrorCaptured((error) => {
 })
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
+
+const nodeRef = useTemplateRef<HTMLElement>('nodeRef')
+const nodeTransform = computed(
+  () =>
+    `translate(${position.value.x ?? 0}px, ${(position.value.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`
+)
+const { setTransform: setDraggedTransform, releaseTransform } =
+  useCompositedTransform(nodeRef)
+
+watch(nodeTransform, (transform) => {
+  if (layoutStore.isDraggingVueNodes.value) setDraggedTransform(transform)
+})
+watch(layoutStore.isDraggingVueNodes, (isDragging) => {
+  if (!isDragging) releaseTransform()
+})
 
 const growable = useGrowableRegions({
   regionId: (name) => {
