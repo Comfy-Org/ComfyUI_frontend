@@ -17,6 +17,7 @@ import { defineComponent, effectScope } from 'vue'
 import type { Router } from 'vue-router'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type { ComfyApi as ComfyApiClient } from '@comfyorg/api-client/ComfyApi'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
@@ -129,6 +130,29 @@ const identity = vi.hoisted(() => {
   }
 })
 
+vi.mock(import('@/scripts/api'), async () => {
+  const { TestRunner } = await import('vitest')
+  const { ComfyApi } = await import('@comfyorg/api-client/ComfyApi')
+  const { createApi } = await import('@/scripts/createApi')
+  const collectionApi = createApi()
+  const testApis = new WeakMap<object, ComfyApiClient>()
+  function currentApi() {
+    const test = TestRunner.getCurrentTest()
+    if (!test) return collectionApi
+    const existing = testApis.get(test)
+    if (existing) return existing
+    const created = createApi()
+    testApis.set(test, created)
+    return created
+  }
+  return {
+    ComfyApi,
+    get api() {
+      return currentApi()
+    }
+  }
+})
+
 const firebaseSignOut = vi.hoisted(() => vi.fn<() => Promise<void>>())
 const registeredExtensions = vi.hoisted((): ComfyExtension[] => [])
 
@@ -188,11 +212,9 @@ const it = baseIt.extend<{ router: Router }>({
 })
 
 beforeEach(() => {
-  api.socket = null
-  Reflect.set(api, 'socketGeneration', 0)
+  installCloudApiAuth()
 })
 
-installCloudApiAuth()
 installWorkspaceApiAuth()
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
@@ -1312,7 +1334,6 @@ describe('live updates and media on the shared web session', () => {
     FakeSocket.created = []
     vi.stubGlobal('WebSocket', FakeSocket)
     window.name = ''
-    api.socket = null
   })
 
   afterEach(() => {
