@@ -64,7 +64,7 @@
           as="a"
           :href="platformUrl"
           target="_blank"
-          rel="noopener"
+          :rel="platformLinkRel()"
           @click="emit('done')"
         >
           {{ $t('deployToComfyApi.deployOnPlatform') }}
@@ -90,7 +90,10 @@ import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import {
+  platformLink,
+  platformLinkRel
+} from '@/platform/workspace/utils/platformLink'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
   videoSources?: ComponentProps<typeof Video>['sources']

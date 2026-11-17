@@ -3,7 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Distribution } from '@/platform/distribution/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import { platformLink, tagPlatformUrl } from './platformLink'
+import {
+  platformLink,
+  platformLinkRel,
+  platformLinkWindowFeatures,
+  tagPlatformUrl
+} from './platformLink'
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -156,4 +161,28 @@ describe('tagPlatformUrl', () => {
   it('returns text that is not a URL unchanged', () => {
     expect(tagPlatformUrl('not a url', 'billing-tab')).toBe('not a url')
   })
+})
+
+describe('platformLinkRel', () => {
+  it.for([
+    {
+      distribution: 'localhost',
+      rel: 'noopener noreferrer',
+      features: 'noopener,noreferrer'
+    },
+    {
+      distribution: 'desktop',
+      rel: 'noopener noreferrer',
+      features: 'noopener,noreferrer'
+    },
+    { distribution: 'cloud', rel: 'noopener', features: 'noopener' }
+  ] as const)(
+    'sends the origin as the referrer only from Cloud: $distribution',
+    ({ distribution, rel, features }) => {
+      vi.stubGlobal('__DISTRIBUTION__', distribution)
+
+      expect(platformLinkRel()).toBe(rel)
+      expect(platformLinkWindowFeatures()).toBe(features)
+    }
+  )
 })

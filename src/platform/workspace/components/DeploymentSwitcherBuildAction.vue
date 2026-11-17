@@ -8,7 +8,7 @@
       <a
         :href="buildsUrl"
         target="_blank"
-        rel="noopener"
+        :rel="platformLinkRel()"
         class="text-foreground no-underline"
         data-testid="deployment-switcher-builds"
       >
@@ -39,7 +39,10 @@ import { computed } from 'vue'
 
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import {
+  platformLink,
+  platformLinkRel
+} from '@/platform/workspace/utils/platformLink'
 import { switcherItemClass } from './deploymentSwitcherStyles'
 
 const { hasDeployments } = defineProps<{ hasDeployments: boolean }>()

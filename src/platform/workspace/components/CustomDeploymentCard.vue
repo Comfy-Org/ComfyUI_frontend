@@ -108,7 +108,7 @@
           as="a"
           :href="createDeploymentUrl"
           target="_blank"
-          rel="noopener"
+          :rel="platformLinkRel()"
           data-testid="custom-deployment-platform"
           @click="emit('done')"
         >
@@ -138,6 +138,7 @@ import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
+import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const {
   pitch,

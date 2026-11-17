@@ -39,6 +39,16 @@ export type PlatformLinkSurface =
   | 'switch-deployment-card'
   | 'top-up-auto-top-up-card'
 
+/** `rel` for a link to Platform: only the Cloud build sends its origin as the referrer. */
+export function platformLinkRel(): 'noopener' | 'noopener noreferrer' {
+  return __DISTRIBUTION__ === 'cloud' ? 'noopener' : 'noopener noreferrer'
+}
+
+/** `window.open` features for a link to Platform, with the same referrer rule as `platformLinkRel`. */
+export function platformLinkWindowFeatures(): string {
+  return platformLinkRel().replace(' ', ',')
+}
+
 function tagged(url: URL, surface: PlatformLinkSurface): URL {
   url.searchParams.set('utm_source', PLATFORM_LINK_SOURCE[__DISTRIBUTION__])
   url.searchParams.set('utm_medium', 'app')

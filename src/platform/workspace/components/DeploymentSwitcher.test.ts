@@ -475,7 +475,7 @@ describe('DeploymentSwitcher', () => {
     expect(openPage).toHaveBeenCalledWith(
       `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}?utm_source=comfyui&utm_medium=app&utm_content=deployment-switcher`,
       '_blank',
-      'noopener'
+      'noopener,noreferrer'
     )
     expect(mockWorkspaceApi.pickDeployment).not.toHaveBeenCalled()
     expect(mockWorkspaceApi.startDeployment).not.toHaveBeenCalled()
@@ -2040,7 +2040,7 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
     expect(openPage).toHaveBeenCalledWith(
       `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}?utm_source=comfyui&utm_medium=app&utm_content=deployment-switcher`,
       '_blank',
-      'noopener'
+      'noopener,noreferrer'
     )
     expect(mockWorkspaceApi.startDeployment).toHaveBeenCalledTimes(1)
   })

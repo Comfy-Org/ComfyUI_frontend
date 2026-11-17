@@ -83,6 +83,7 @@
           <AddCreditsBillingLink
             v-if="part === BILLING_TOKEN"
             :to="billingUrl"
+            rel="noopener noreferrer"
             inline
             @click="emit('openBilling')"
             >{{ translate('autoTopUp.billing')

@@ -117,7 +117,10 @@ import { useKeepRowFocus } from '@/platform/workspace/composables/useKeepRowFocu
 import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import {
+  platformLink,
+  platformLinkWindowFeatures
+} from '@/platform/workspace/utils/platformLink'
 
 const STOPPED_PICK_ACTIONS = new Set<DeploymentRowAction>([
   'start',
@@ -216,7 +219,7 @@ function openDeploymentPage(deploymentId: string) {
       surface: 'deployment-switcher'
     }),
     '_blank',
-    'noopener'
+    platformLinkWindowFeatures()
   )
 }
 

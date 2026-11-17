@@ -30,7 +30,7 @@
         as="a"
         :href="buildUrl"
         target="_blank"
-        rel="noopener"
+        :rel="platformLinkRel()"
         class="w-full no-underline"
         data-testid="deployment-build-platform"
       >
@@ -84,7 +84,10 @@ import type { MissingBuildPack } from '@/platform/workspace/deploymentBuildBrief
 import { deploymentBuildBrief } from '@/platform/workspace/deploymentBuildBrief'
 import { missingNodeTypeName } from '@/platform/workspace/missingForDeployment'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import {
+  platformLink,
+  platformLinkRel
+} from '@/platform/workspace/utils/platformLink'
 
 const { deployment, missingPackGroups, missingModelGroups } = defineProps<{
   deployment: WorkspaceDeployment

@@ -20,7 +20,7 @@ vi.mock(import('@/composables/useExternalLink'), () => ({
 }))
 
 describe('DeploySetupCard', () => {
-  it('opens the Deploy page on the platform, set for custom nodes on Comfy Cloud, in a new tab that sends its origin', () => {
+  it('opens the Deploy page on the platform, set for custom nodes on Comfy Cloud, in a new tab that sends no referrer from a local build', () => {
     render(DeploySetupCard, {
       global: {
         plugins: [
@@ -41,6 +41,6 @@ describe('DeploySetupCard', () => {
       'https://platform.comfy.org/profile/deploy?onboarding=custom_comfy_cloud&utm_source=comfyui&utm_medium=app&utm_content=deploy-setup-card'
     )
     expect(link).toHaveAttribute('target', '_blank')
-    expect(link).toHaveAttribute('rel', 'noopener')
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer')
   })
 })

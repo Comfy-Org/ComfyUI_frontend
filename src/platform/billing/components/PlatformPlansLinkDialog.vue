@@ -20,7 +20,7 @@
         size="lg"
         :href="link.href"
         target="_blank"
-        rel="noopener"
+        :rel="platformLinkRel()"
         @click="follow"
       >
         {{ linkLabel }}
@@ -35,6 +35,7 @@ import AppDialogPanel from '@/components/dialog/AppDialogPanel.vue'
 import Button from '@comfyorg/design-system/button/Button'
 
 import { platformPlansLink } from '@/platform/billing/openPlatformPlans'
+import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const { title, body, linkLabel, onClose } = defineProps<{
   title: string

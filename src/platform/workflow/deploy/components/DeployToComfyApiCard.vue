@@ -107,7 +107,7 @@
             as="a"
             :href="platformUrl"
             target="_blank"
-            rel="noopener"
+            :rel="platformLinkRel()"
             data-testid="deploy-to-comfy-api-platform"
             @click="emit('done')"
           >
@@ -132,7 +132,10 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import DeployInstallationButton from '@/platform/workflow/deploy/components/DeployInstallationButton.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import {
+  platformLink,
+  platformLinkRel
+} from '@/platform/workspace/utils/platformLink'
 
 const {
   videoSources = [],
