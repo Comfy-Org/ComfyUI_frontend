@@ -4,7 +4,6 @@ import type { Ref } from 'vue'
 
 import { normalizeHostedBillingDestination } from '@/platform/billing/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
-import { hasLocalAgentEmployeeAccess } from '@/platform/openOnCloud/localAgentEmployeeAccess'
 import {
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -217,11 +216,10 @@ export function useFeatureFlags() {
     },
     get openOnCloudUseLocalAgentEnabled() {
       return (
-        hasLocalAgentEmployeeAccess() &&
         resolveFlag<unknown>(
           ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
           remoteConfig.value.open_on_cloud_use_local_agent_enabled,
-          true
+          false
         ) === true
       )
     },
