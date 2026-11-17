@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowStore,ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
@@ -27,7 +27,6 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { isBoundsObject } from '@/renderer/core/layout/utils/geometry'
@@ -92,10 +91,12 @@ function createState(nodeCount = 0): ComfyWorkflowJSON {
 
 function createTracker(initialState?: ComfyWorkflowJSON): ChangeTracker {
   const state = initialState ?? createState()
-  const workflow = {
+  const workflow = new ComfyWorkflow({
     path: `/test/workflow-${++workflowPathCounter}.json`,
-    graph: app.rootGraph
-  } as never
+    modified: 0,
+    size: 0
+  })
+  workflow.adoptGraph(app.rootGraph)
   const tracker = markRaw(new ChangeTracker(workflow, state))
   useWorkflowStore().activeWorkflow = fromPartial({
     changeTracker: tracker
@@ -574,7 +575,7 @@ describe('ChangeTracker', () => {
       it('is a no-op when the workflow owns no graph', () => {
         const tracker = createTracker()
         const original = tracker.activeState
-        tracker.workflow.graph = null
+        tracker.workflow.releaseGraph()
 
         tracker.captureCanvasState()
 
@@ -587,7 +588,7 @@ describe('ChangeTracker', () => {
         const ownState = createState(2)
         const ownGraph = new LGraph()
         vi.spyOn(ownGraph, 'serialize').mockReturnValue(ownState as never)
-        tracker.workflow.graph = markRaw(ownGraph)
+        tracker.workflow.adoptGraph(ownGraph)
         mockCanvasState(createState(3))
 
         tracker.captureCanvasState()
