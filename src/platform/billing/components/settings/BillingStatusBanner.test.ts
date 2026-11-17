@@ -158,6 +158,13 @@ function grantOpenPlans(granted: boolean) {
   )
 }
 
+function denyOpenPlans(reason: string | undefined) {
+  grantOpenPlans(false)
+  useBillingCapabilities().openPlansDenial = computed(() =>
+    receiveServerFact('denied_reasons.can_open_plans', reason)
+  )
+}
+
 function expectChoosePlanLink() {
   const link = within(screen.getByRole('status')).getByRole('link', {
     name: 'Choose a plan'
@@ -251,6 +258,8 @@ const i18n = createI18n({
             teamBody:
               'Resubscribe to run workflows and get shared credits again.',
             teamMemberBody: 'Ask your workspace owner to resubscribe.',
+            teamNotCreatorBody:
+              "This workspace's plan has ended. Ask the workspace's creator to resubscribe.",
             personalTitle: 'Your {plan} plan ended on {date}',
             personalTitleNoDate: 'Your {plan} plan has ended',
             personalBody: 'Resubscribe to run workflows and get credits again.',
@@ -1216,9 +1225,50 @@ describe('BillingStatusBanner', () => {
         expect(screen.getByRole('status')).toHaveTextContent(
           'Your Team plan ended on September 12, 2026'
         )
+        expect(screen.getByRole('status')).toHaveTextContent(
+          'Resubscribe to run workflows and get shared credits again.'
+        )
         expectChoosePlanLink()
       }
     )
+
+    it.for([
+      {
+        reason: 'not_original_owner',
+        body: "This workspace's plan has ended. Ask the workspace's creator to resubscribe."
+      },
+      {
+        reason: 'subscription_not_started',
+        body: 'Resubscribe to run workflows and get shared credits again.'
+      },
+      {
+        reason: undefined,
+        body: 'Resubscribe to run workflows and get shared credits again.'
+      }
+    ])(
+      'tells an owner refused Plans for $reason "$body" with no Choose a plan',
+      ({ reason, body }) => {
+        endedPlan()
+        denyOpenPlans(reason)
+        renderBanner('billing')
+
+        expect(screen.getByRole('status')).toHaveTextContent(body)
+        expect(
+          screen.queryByRole('link', { name: 'Choose a plan' })
+        ).not.toBeInTheDocument()
+      }
+    )
+
+    it('keeps pointing a member to the owner when the creator rule is served', () => {
+      endedPlan()
+      state.canManageSubscription = false
+      denyOpenPlans('not_original_owner')
+      renderBanner('billing')
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Ask your workspace owner to resubscribe.'
+      )
+    })
 
     it.for([
       {
