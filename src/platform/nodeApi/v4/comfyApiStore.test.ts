@@ -132,24 +132,25 @@ describe("the app's node API", () => {
     expect(comfy.graph.node(node.id)?.isDeleted).toBe(false)
   })
 
-  it('retires the handles to removed nodes when the host says it has restored history', () => {
+  it('retires the handles to nodes an undo removed when the host says it has restored history', () => {
     const comfy = publishedApi()
     const graph = new LGraph()
     const stays = new LGraphNode('Stays')
-    const removed = new LGraphNode('Removed')
     graph.add(stays)
+    const beforeAdding = graph.serialize()
+    const removed = new LGraphNode('Removed')
     graph.add(removed)
     showOnCanvas(graph)
     const staysHandle = comfy.graph.node(stays.id)
     const removedHandle = comfy.graph.node(removed.id)
     assert(staysHandle && removedHandle)
 
-    graph.remove(removed)
+    graph.configure(beforeAdding)
     useComfyApiStore().afterHistoryRestore()
     const sameId = new LGraphNode('Added under the removed id')
-    sameId.id = removed.id
     graph.add(sameId)
 
+    expect(sameId.id).toBe(removed.id)
     expect(staysHandle.isDeleted).toBe(false)
     expect(removedHandle.isDeleted).toBe(true)
     expect(comfy.graph.node(sameId.id)).not.toBe(removedHandle)

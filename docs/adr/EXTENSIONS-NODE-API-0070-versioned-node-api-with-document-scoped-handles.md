@@ -102,13 +102,23 @@ a reference that is the node object dies on every undo.
       that document loads belongs to it. Reloading the open workflow, as a
       language change or late custom nodes do, is such a load.
     - Undo and redo mark their load with `restoresHistory`. They rebuild the
-      graph, so a handle whose entity is still there keeps working. When the
-      load finishes, even if it fails part way, the host calls
-      `afterHistoryRestore()` and each handle whose entity is gone is retired
-      for good. Undo rewinds the id counter, so a node added afterwards takes
-      the id of a node the undo removed, and a handle that came back to life
-      would read that other node. If redo restores the node, a pack takes a
-      new handle to it.
+      graph, so a handle whose entity is still there keeps working, and a
+      handle whose entity is gone reports `isDeleted` and reads it again when
+      a later undo or redo brings it back. When the load finishes, even if it
+      fails part way, the host calls `afterHistoryRestore()`, which retires
+      for good each handle whose entity is gone and whose id the graph could
+      give to a new entity: its graph is gone, or its id is above the graph's
+      id counter for its kind (`state.lastNodeId`, `state.lastGroupId`), or
+      not a number that counter gives. A restore sets the counter from the
+      state it loads, so an undo to before a node was added rewinds it, and
+      the next node added takes that id; a handle that came back to life
+      would read that other node. Outside a restore the counter only grows,
+      so an id at or below it is not given again until a restore rewinds it,
+      and that restore retires the handle. Node ids are kept in a saved state
+      (`last_node_id`); the group counter is not, so a restore sets it from
+      the groups present, and a handle to the newest group a restore removes
+      is retired. Slot handles name slot objects, which a restore rebuilds,
+      so they are retired when a restore finds them gone.
     - The change tracker marks a load `restoresHistory` only when it comes from
       its own undo or redo queue. A state that comes from elsewhere, such as the
       saved workflow of an earlier run that Reuse Parameters restores in Linear
@@ -119,9 +129,11 @@ a reference that is the node object dies on every undo.
       first.
     - A node that moves to another graph, as Convert to Subgraph moves it, is
       a different entity. Its earlier handle reports `isDeleted`.
-    - A restore retires every handle whose entity is gone at that moment,
-      whoever removed it, so a node the user deleted comes back under its
-      handle on an undo only if no other undo or redo has finished first.
+    - A node that the user, a pack or a redo removed comes back under its
+      handle on any later undo or redo that restores it, however many restores
+      ran in between, unless one of them went back to before the node was
+      added (finding F5 of the combined pack run: remove, undo, redo, undo gave
+      a new handle under the first rule).
     - Three cases are not detected, because a node still has the handle's id:
       a node replaced in place under the same id, as node replacement and the
       agent do on purpose, whose handle then follows the new node; a node added
@@ -129,15 +141,19 @@ a reference that is the node object dies on every undo.
       redo, which ends when #23333 is fixed; and a load that an extension marks
       `restoresHistory`, an option meant for the change tracker. The API does
       not defend against an extension that sets it, as it does not defend
-      against one that redefines the window slot.
+      against one that redefines the window slot, nor against one that lowers
+      a graph's id counter (`last_node_id` is writable). The random ids the
+      agent's collaborative mode mints do not raise the counter, so a handle
+      to such a node is usually above it and is retired when a restore finds
+      the node gone.
 11. There is one handle per entity for as long as it stays valid, until a load
-    replaces the document or an undo or redo retires it, however a pack reaches
-    it. Two handles to one entity are the same object, `sameEntity` equals
+    replaces the document or an undo or redo retires it (decision 10), however
+    a pack reaches it. Two handles to one entity are the same object, `sameEntity` equals
     `===`, and a handle is a stable `Map` or `WeakMap` key.
 12. Once an entity is gone its handle still gives its identity and reports
     `isDeleted`. Every other read returns `undefined`, a list included, and
-    the types say so. A node that undo restores is the same handle again,
-    unless an undo or redo finished while it was gone.
+    the types say so. A node that an undo or redo restores is the same handle
+    again, unless a restore retired it while it was gone (decision 10).
 
 ### Refusals and listeners
 
@@ -213,6 +229,15 @@ listener after readiness and is called on the next microtask.
   of another type, and so hide the same-type case instead of removing it.
 - Retire only the handles a restore removed, by recording the entities before
   it. That needs a second host call, and the rule above gives the same safety.
+- Retire every handle whose entity a restore finds gone, whoever removed it,
+  which was the first rule. It is safe, but a node removed by the user or a
+  redo and then restored by undo came back under a new handle (F5), against
+  decision 12. Whether a restore could let the id be reused is known from the
+  graph's own counter, so only the handles whose id can be reused are
+  retired.
+- Keep every handle whose entity is gone and bring it back when an entity
+  with its id returns. A node added after an undo rewinds the counter takes
+  the id of the node the undo removed, and the old handle would read it.
 
 ## Workaround for a core issue
 
@@ -221,11 +246,11 @@ ticket, and the workaround is removed when the ticket is fixed.
 
 - [#23333](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23333): undo
   reissues the id of a node it removed to the next node added.
-  `afterHistoryRestore()` retires the handles whose entity is gone, so an
-  id-keyed handle never names a different node. Once ids are not reissued, a
-  handle can survive a node's removal by undo and its return by redo:
-  `afterHistoryRestore()`, its host call and the narrowing of decision 10
-  are removed. `restoresHistory` stays, because it is also how the host tells
+  `afterHistoryRestore()` retires the handles whose entity is gone and whose
+  id the counter could give again, so an id-keyed handle never names a
+  different node. Once ids are not reissued, a handle can also survive a
+  node's removal by undo and its return by redo: `afterHistoryRestore()`, its
+  host call and the narrowing of decision 10 are removed. `restoresHistory` stays, because it is also how the host tells
   a rebuild of the open document from a load of another.
 
 [#23332](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23332) is a
@@ -268,6 +293,10 @@ without a canvas context resets a collapsed node's drawn width to 0.
   as `pendingBounds` in `liveGraphApplier.ts` does. That function is in
   `workbench/`, which `platform/` may not import, and it works with the canvas's
   context and a node it is about to place.
+- **Whether an id can be given again.** Read from the graph's own id counters
+  (`LGraph.state`), which `idAllocation.ts` mints from, rather than a record
+  the API keeps of the ids it has seen: the counter is what decides the next
+  id, and it is set by the same restore the API is told of.
 - **The document counter.** `beginDocument()` counts loads because the session
   uid of ADR-GRAPH-DOCUMENT-0026 does not exist yet. See "Relation to other
   decisions".
@@ -308,9 +337,10 @@ document that stays on screen are retired, and a pack takes fresh ones.
 
 Handles are kept until their document is replaced, so memory grows with the
 number of entities packs have asked about in the open document, and is
-released on the next load. An undo or redo releases the handles of the entities
-it finds gone. API-JSON and A1111 imports clear the graph without a load, so
-handles taken before one stay held until a load, undo or redo.
+released on the next load. An undo or redo releases the handles it retires; a
+handle to a node that is gone but may come back is held until a load, or a
+restore that retires it. API-JSON and A1111 imports clear the graph without a
+load, so handles taken before one stay held until a load, undo or redo.
 
 Adding a version adds wiring beside this one: an import map entry in
 `index.html`, a `Window` entry in `src/types/index.ts`, an ignore entry in
@@ -328,5 +358,5 @@ belongs with the documentation and typing change that completes this API.
 A pack that keeps a handle across a tab switch must take a fresh one when its
 document is shown again.
 
-A pack that keeps a handle to a node an undo removes must take a new one if
-redo restores the node.
+A pack that keeps a handle to a node an undo removes, by going back to before
+the node was added, must take a new one if redo restores the node.

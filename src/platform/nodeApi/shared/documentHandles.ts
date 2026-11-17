@@ -25,11 +25,15 @@ interface Retirable {
 export interface DocumentHandles {
   /** Retires every handle made so far. */
   beginDocument(): void
-  /** Retires each handle whose entity is gone, and keeps the others. */
+  /** Retires each handle whose entity is gone and whose key the graph could give to a new entity. */
   afterHistoryRestore(): void
-  /** `exists` says whether the entity named `key` is still in a graph. */
+  /**
+   * `exists` says whether the entity named `key` is still in a graph; `reissuable`, whether the
+   * graph could give `key` to a new entity. Unless it says no, a restore retires a handle whose entity is gone.
+   */
   createCache<THandle extends object>(
-    exists: (graph: LGraph, key: string) => boolean
+    exists: (graph: LGraph, key: string) => boolean,
+    reissuable?: (graph: LGraph, key: string) => boolean
   ): HandleCache<THandle>
   /** True if `value` is a handle made here. */
   owns(value: unknown): boolean
@@ -66,7 +70,8 @@ export function createDocumentHandles(): DocumentHandles {
       for (const cache of caches) cache.retireGone()
     },
     createCache<THandle extends object>(
-      exists: (graph: LGraph, key: string) => boolean
+      exists: (graph: LGraph, key: string) => boolean,
+      reissuable: (graph: LGraph, key: string) => boolean = () => true
     ): HandleCache<THandle> {
       const entriesByGraph = new Map<string, Map<string, Entry<THandle>>>()
       caches.add({
@@ -75,7 +80,8 @@ export function createDocumentHandles(): DocumentHandles {
           for (const entries of entriesByGraph.values()) {
             for (const [key, entry] of entries) {
               const graph = entry.resolveGraph()
-              if (graph && exists(graph, key)) continue
+              if (graph && (exists(graph, key) || !reissuable(graph, key)))
+                continue
               entry.retire()
               entries.delete(key)
             }
@@ -103,4 +109,10 @@ export function createDocumentHandles(): DocumentHandles {
     owns: (value) =>
       typeof value === 'object' && value !== null && handlesMade.has(value)
   }
+}
+
+/** True unless `id` is a counted id at or below `lastIssued`, which the graph's counter will not give out again. */
+export function isReissuable(id: string, lastIssued: number): boolean {
+  const counted = Number(id)
+  return !(Number.isSafeInteger(counted) && counted <= lastIssued)
 }

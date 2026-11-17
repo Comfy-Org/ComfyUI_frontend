@@ -6,6 +6,7 @@ import type { Rect } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
+import { isReissuable } from '@/platform/nodeApi/shared/documentHandles'
 import type {
   DocumentHandles,
   GraphResolver
@@ -45,7 +46,8 @@ export function createNodeHandles(
 ): NodeHandles {
   const copyOfSaved = savedCopier()
   const cache = handles.createCache<NodeHandle>(
-    (graph, id) => graph.getNodeById(toNodeId(id)) !== null
+    (graph, id) => graph.getNodeById(toNodeId(id)) !== null,
+    (graph, id) => isReissuable(id, graph.state.lastNodeId)
   )
   const liveNodes = new WeakMap<object, () => LiveNode | undefined>()
 

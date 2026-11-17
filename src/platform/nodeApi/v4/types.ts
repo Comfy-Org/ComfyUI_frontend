@@ -87,8 +87,8 @@ export interface NodeHandle extends NodeHandleEdits {
   /** The id of the graph the node is in. With `id`, this names the node. */
   readonly graphId: string
   /**
-   * True while the entity is gone, and every other read is `undefined`. Undo
-   * restores it only if no undo or redo has finished since it went.
+   * True while the entity is gone, and every other read is `undefined`. An undo or redo that brings the
+   * node back restores it, unless an undo has gone back to before the node was added since it went.
    */
   readonly isDeleted: boolean
   /** The registered type, e.g. `KSampler`. A subgraph node's is its subgraph's id. */

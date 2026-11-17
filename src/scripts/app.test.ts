@@ -98,7 +98,11 @@ import {
   hostNodeDef,
   registerHostType
 } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
-import type { NodeCreatedEvent, NodeHandle } from '@/platform/nodeApi/v4/types'
+import type {
+  Comfy,
+  NodeCreatedEvent,
+  NodeHandle
+} from '@/platform/nodeApi/v4/types'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import * as missingMediaScan from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -3115,6 +3119,78 @@ describe('ComfyApp', () => {
       expect(kept.isDeleted).toBe(true)
       expect(comfy.graph.node(added.id)).not.toBe(kept)
       expect(comfy.graph.node(added.id)?.isDeleted).toBe(false)
+    })
+
+    describe('through the change tracker', () => {
+      function historyOfTheOpenWorkflow() {
+        onTestFinished(attachLegacyUI(app))
+        const workflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/history.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        const tracker = markRaw(
+          new ChangeTracker(
+            workflow,
+            structuredClone(app.rootGraph.serialize()) as ComfyWorkflowJSON
+          )
+        )
+        workflow.changeTracker = tracker
+        workflow.adoptGraph(app.rootGraph)
+        useWorkflowStore().activeWorkflow = workflow
+        mockWorkflowService.afterLoadNewGraph.mockImplementation(
+          async (_workflow: unknown, state: ComfyWorkflowJSON) =>
+            tracker.reset(state)
+        )
+        return tracker
+      }
+
+      async function addedProbe(comfy: Comfy): Promise<NodeHandle> {
+        const root = comfy.graph.root()
+        assert(root)
+        const added = comfy.edit.addNode(root, 'HandleProbe')
+        assert(added)
+        return added
+      }
+
+      it('gives back the same handle when undo restores a node that redo removed again', async () => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const tracker = historyOfTheOpenWorkflow()
+        const kept = await addedProbe(comfy)
+        expect(kept.remove()).toBe(true)
+        expect(tracker.undoQueue).toHaveLength(2)
+
+        await tracker.undo()
+        expect(comfy.graph.node(kept.id)).toBe(kept)
+        await tracker.redo()
+        expect(kept.isDeleted).toBe(true)
+        await tracker.undo()
+
+        expect(kept.isDeleted).toBe(false)
+        expect(comfy.graph.node(kept.id)).toBe(kept)
+        expect(kept.type).toBe('HandleProbe')
+      })
+
+      it('retires the handle when undo goes back to before the node was added, so the node that takes its id next gets another', async () => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const tracker = historyOfTheOpenWorkflow()
+        const kept = await addedProbe(comfy)
+        expect(kept.remove()).toBe(true)
+
+        await tracker.undo()
+        await tracker.undo()
+        expect(kept.isDeleted).toBe(true)
+        const next = await addedProbe(comfy)
+
+        expect(next.id).toBe(kept.id)
+        expect(next).not.toBe(kept)
+        expect(kept.isDeleted).toBe(true)
+        expect(tracker.redoQueue).toHaveLength(0)
+      })
     })
 
     it('retires the handle to a node undo removed before the load hands the graph to extensions', async () => {
