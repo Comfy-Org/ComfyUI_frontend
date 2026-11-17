@@ -14,7 +14,10 @@ import {
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
-import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
+import {
+  setLocalBillingNewUxEnabled,
+  setLocalBillingWebEnabled
+} from '@/platform/billing/localBillingWebEnabled'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -235,6 +238,37 @@ describe('useFeatureFlags', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
 
       expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(true)
+    })
+
+    describe('off cloud, from the flags local reads from Cloud', () => {
+      beforeEach(() => {
+        vi.mocked(api.getServerFeature).mockReturnValue(false)
+      })
+
+      afterEach(() => {
+        setLocalBillingWebEnabled(false)
+        setLocalBillingNewUxEnabled(false)
+      })
+
+      it('follows Cloud while the handoff is open', () => {
+        const { flags } = useFeatureFlags()
+        const shown = computed(() => flags.billingNewUxEnabled)
+        setLocalBillingWebEnabled(true)
+
+        expect(shown.value).toBe(false)
+        setLocalBillingNewUxEnabled(true)
+        expect(shown.value).toBe(true)
+        setLocalBillingWebEnabled(false)
+        expect(shown.value).toBe(false)
+      })
+
+      it('ignores those flags on Cloud', () => {
+        vi.mocked(distributionTypes).isCloud = true
+        setLocalBillingWebEnabled(true)
+        setLocalBillingNewUxEnabled(true)
+
+        expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(false)
+      })
     })
   })
 
