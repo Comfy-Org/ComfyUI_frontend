@@ -18,6 +18,8 @@ const { t } = useI18n()
 
 const previewing = ref(false)
 
+const name = computed(() => asset.label ?? asset.filename)
+
 /*
  * The URL in a reply can point at a file that was never written (a run that
  * failed or saved nothing). The browser then shows an empty image or a 0:00
@@ -33,8 +35,6 @@ function markUnavailable(): void {
 const unavailableLabel = computed(() =>
   t('agent.assetLoadFailed', { name: name.value }, { escapeParameter: false })
 )
-
-const name = computed(() => asset.label ?? asset.filename)
 
 const label = computed(() =>
   loadFailed.value
