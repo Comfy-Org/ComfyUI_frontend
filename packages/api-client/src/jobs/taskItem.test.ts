@@ -185,6 +185,15 @@ describe('TaskItemImpl', () => {
     const task = new TaskItemImpl(job)
     expect(task.flatOutputs).toHaveLength(0)
   })
+  it('rejects text previews without a filename or content', () => {
+    const task = new TaskItemImpl({
+      ...createHistoryJob(0, 'empty-text-job'),
+      preview_output: { nodeId: '5', mediaType: 'text' }
+    })
+
+    expect(task.previewableOutputs).toEqual([])
+    expect(task.previewOutput).toBeUndefined()
+  })
   describe('error extraction getters', () => {
     it('errorMessage returns undefined when no execution_error', () => {
       const job = createHistoryJob(0, 'job-id')

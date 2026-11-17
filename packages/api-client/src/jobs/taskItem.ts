@@ -10,15 +10,6 @@ enum TaskItemDisplayStatus {
   Failed = 'Failed',
   Cancelled = 'Cancelled'
 }
-function toAugmentedPreviewOutput(
-  previewOutput: NonNullable<JobListItem['preview_output']>
-): AugmentedResultItem {
-  return {
-    ...previewOutput,
-    filename: previewOutput.filename ?? '',
-    subfolder: previewOutput.subfolder ?? ''
-  }
-}
 export class TaskItemImpl {
   readonly job: JobListItem
   readonly outputs: TaskOutput
@@ -39,11 +30,7 @@ export class TaskItemImpl {
           }
         : {})
     this.outputs = effectiveOutputs
-    this.flatOutputs =
-      flatOutputs ??
-      (!outputs && job.preview_output?.mediaType === 'text'
-        ? [toAugmentedPreviewOutput(job.preview_output)]
-        : this.calculateFlatOutputs())
+    this.flatOutputs = flatOutputs ?? this.calculateFlatOutputs()
   }
   calculateFlatOutputs(): ReadonlyArray<AugmentedResultItem> {
     return parseTaskOutput(this.outputs)
