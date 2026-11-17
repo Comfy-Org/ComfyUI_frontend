@@ -17,6 +17,7 @@ import type {
 } from '@comfyorg/graph-model/slots'
 
 import { SUBGRAPH_INPUT_ID, SUBGRAPH_OUTPUT_ID } from './constants'
+import { noteGraphEdit } from './graphEdits'
 import { linkIdReservations, mintLinkId } from './idAllocation'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
@@ -150,6 +151,7 @@ export function connectFloatingReroute(
     floating: { slotType }
   })
   if (!reroute) return
+  noteGraphEdit(graph)
 
   const parentReroute = graph.getReroute(afterRerouteId)
   const fromLastFloatingReroute = parentReroute?.floating?.slotType === 'output'
@@ -246,6 +248,7 @@ export function connectSlots(
     return
   }
   graph._addLink(link)
+  noteGraphEdit(graph)
 
   if (replacingLink) {
     finalizeInputLinkRemoval(
@@ -319,6 +322,7 @@ export function disconnectOutput(
   if (!target_node && node.graph) {
     for (const link of slotFloatingLinks(node.graph, 'output', node.id, slot)) {
       node.graph.removeFloatingLink(link)
+      noteGraphEdit(node.graph)
       removedFloating = true
     }
   }
@@ -357,6 +361,7 @@ export function disconnectOutput(
     const input = target?.inputs[link_info.target_slot]
 
     link_info.disconnect(graph, 'input')
+    noteGraphEdit(graph)
     graph.incrementVersion()
 
     if (target && input) {
@@ -423,6 +428,7 @@ export function disconnectInput(
     )
       continue
     graph.removeFloatingLink(link)
+    noteGraphEdit(graph)
   }
 
   const link_id = inputLinkId(graph, node.id, slot) ?? null
@@ -449,6 +455,7 @@ export function disconnectInput(
       }
 
       link_info.disconnect(graph, keepReroutes ? 'output' : undefined)
+      noteGraphEdit(graph)
       graph.incrementVersion()
 
       node.onConnectionsChange?.(

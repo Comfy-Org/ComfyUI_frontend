@@ -1,6 +1,7 @@
 import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
+import type { LGraph } from '@comfyorg/graph-model/entityRegistry'
 import type { ExecutedWsMessage } from '@comfyorg/api-client/executionTypes'
 import { UserFile } from '@/stores/userFileStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -54,6 +55,7 @@ export interface WorkflowChangeTracker {
   prepareForSave(): void
   restore(): void
   updateModified(previousState?: ComfyWorkflowJSON): void
+  bindGraph(graph: LGraph): void
   captureCanvasState(): void
   markModified(): void
   checkState(): void

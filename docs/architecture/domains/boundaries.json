@@ -1867,6 +1867,7 @@
           "src/platform/workflow/management/stores/**",
           "src/platform/workflow/utils/**",
           "src/scripts/changeTracker.ts",
+          "src/scripts/changeTracker.connectivity.test.ts",
           "src/scripts/changeTracker.test.ts",
           "src/scripts/defaultGraph.ts",
           "src/stores/userFileStore.ts",

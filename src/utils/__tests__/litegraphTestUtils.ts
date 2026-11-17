@@ -251,6 +251,7 @@ export function createMockChangeTracker(
     changeCount: 0,
     beforeChange: vi.fn(),
     afterChange: vi.fn(),
+    bindGraph: vi.fn(),
     captureCanvasState: vi.fn(),
     checkState: vi.fn(),
     deactivate: vi.fn(),

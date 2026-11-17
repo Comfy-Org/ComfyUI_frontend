@@ -998,9 +998,13 @@ export const useWorkflowService = () => {
     }
 
     async function bindToCanvas(workflow: ComfyWorkflow) {
-      const loadedWorkflow = await workflowStore.openWorkflow(workflow)
+      const loadedWorkflow: ComfyWorkflow =
+        await workflowStore.openWorkflow(workflow)
       if (graphState !== useApp().rootGraphOrUndefined?.state) return null
-      bindCanvasTracker(loadedWorkflow.changeTracker)
+      if (loadedWorkflow.changeTracker) {
+        bindCanvasTracker(loadedWorkflow.changeTracker)
+        loadedWorkflow.changeTracker.bindGraph(useApp().rootGraph)
+      }
       return loadedWorkflow
     }
 
@@ -1052,7 +1056,7 @@ export const useWorkflowService = () => {
             // Prefer the file's linearMode over the draft's since the file
             // is the authoritative saved state.
             // `initialState` is null when the tracker never loaded.
-            const initialState = (loadedWorkflow as ComfyWorkflow).initialState
+            const initialState = loadedWorkflow.initialState
             if (!initialState) {
               reportWorkflowStateAnomaly(
                 'Activated workflow has no initial state',

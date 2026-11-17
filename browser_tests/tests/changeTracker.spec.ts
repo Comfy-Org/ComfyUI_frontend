@@ -107,6 +107,53 @@ test.describe('Change Tracker', { tag: '@workflow' }, () => {
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
+    test('programmatic connectivity is undoable without a canvas gesture', async ({
+      comfyPage
+    }) => {
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
+      const before = await comfyPage.page.evaluate(
+        () => window.app!.rootGraph.serialize().links
+      )
+
+      const after =
+        await test.step('Disconnect without pointer or keyboard input', async () => {
+          return await comfyPage.page.evaluate(() => {
+            const graph = window.app!.rootGraph
+            const sampler = graph.nodes.find((node) => node.type === 'KSampler')
+            if (!sampler) throw new Error('Default workflow has no KSampler')
+            sampler.disconnectInput('positive')
+            return graph.serialize().links
+          })
+        })
+
+      expect(after).toHaveLength(before.length - 1)
+      await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+
+      await test.step('Undo restores the disconnected link', async () => {
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              () => window.app!.rootGraph.serialize().links
+            )
+          )
+          .toEqual(before)
+        await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(1)
+      })
+
+      await test.step('Redo removes the same link', async () => {
+        await comfyPage.keyboard.redo()
+        await expect
+          .poll(() =>
+            comfyPage.page.evaluate(
+              () => window.app!.rootGraph.serialize().links
+            )
+          )
+          .toEqual(after)
+        await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(1)
+      })
+    })
+
     test('Can undo multiple operations', async ({ comfyPage }) => {
       await expect.poll(() => comfyPage.workflow.getUndoQueueSize()).toBe(0)
       await expect.poll(() => comfyPage.workflow.getRedoQueueSize()).toBe(0)
