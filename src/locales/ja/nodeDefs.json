@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Bria RMBG 2.0 を使用して画像の背景を除去します。",
+    "description": "Bria RMBG 2.0 または RMBG 3.0 を使用して、画像から背景を除去します。",
     "display_name": "Bria 画像背景除去",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "画像"
       },
+      "model": {
+        "name": "model"
+      },
       "moderation": {
         "name": "モデレーション",
         "tooltip": "モデレーション設定"
       },
       "seed": {
         "name": "シード",
-        "tooltip": "シードはノードを再実行するかどうかを制御します。シードに関わらず結果は非決定的です。"
+        "tooltip": "Seed はノードを再実行するかどうかを制御します。同じ画像では、seed に関係なく常に同じ結果になります。"
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、4kおよびmp4/mov出力にはSeedance 2.5、迅速な480pプレビューにはSeedance 2.5 Draft（そのdraft_task_idをSeedance 2.5 Draft to Final Videoノードで使用すると1080pまたは4kの最終版をレンダリング可能）、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5 は最新モデルで、最長30秒の動画、4k、および mp4/mov 出力に対応します。Seedance 2.5 Draft は高速な 480p プレビュー用で、その draft_task_id は Seedance 2.5 Draft to Final Video ノードで 1080p または 4k の最終版をレンダリングします。Seedance 2.5 Flash は最長30秒の 480p および 720p 動画用です。Seedance 2.0 は最高品質と 4k 用です。Fast は速度最適化用です。Mini は最速かつ最低コストの生成用です。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、4kおよびmp4/mov出力にはSeedance 2.5、迅速な480pプレビューにはSeedance 2.5 Draft（そのdraft_task_idをSeedance 2.5 Draft to Final Videoノードで使用すると1080pまたは4kの最終版をレンダリング可能）、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5 は最新モデルで、最長30秒の動画、4k、および mp4/mov 出力に対応します。Seedance 2.5 Draft は高速な 480p プレビュー用で、その draft_task_id は Seedance 2.5 Draft to Final Video ノードで 1080p または 4k の最終版をレンダリングします。Seedance 2.5 Flash は最長30秒の 480p および 720p 動画用です。Seedance 2.0 は最高品質と 4k 用です。Fast は速度最適化用です。Mini は最速かつ最低コストの生成用です。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、4kおよびmp4/mov出力にはSeedance 2.5、迅速な480pプレビューにはSeedance 2.5 Draft（そのdraft_task_idをSeedance 2.5 Draft to Final Videoノードで使用すると1080pまたは4kの最終版をレンダリング可能）、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5 は最新モデルで、最長30秒の動画、4k、および mp4/mov 出力に対応します。Seedance 2.5 Draft は高速な 480p プレビュー用で、その draft_task_id は Seedance 2.5 Draft to Final Video ノードで 1080p または 4k の最終版をレンダリングします。Seedance 2.5 Flash は最長30秒の 480p および 720p 動画用です。Seedance 2.0 は最高品質と 4k 用です。Fast は速度最適化用です。Mini は最速かつ最低コストの生成用です。"
       },
       "model_auto_downscale": {
         "name": "自動ダウンスケール"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "モデル",
-        "tooltip": "最新モデル、最大30秒の動画、4kおよびmp4/mov出力にはSeedance 2.5、迅速な480pプレビューにはSeedance 2.5 Draft（そのdraft_task_idをSeedance 2.5 Draft to Final Videoノードで使用すると1080pまたは4kの最終版をレンダリング可能）、最高品質と4kにはSeedance 2.0、速度最適化にはFast、最速かつ最低コストの生成にはMiniを使用します。"
+        "tooltip": "Seedance 2.5 は最新モデルで、最長30秒の動画、4k、および mp4/mov 出力に対応します。Seedance 2.5 Draft は高速な 480p プレビュー用で、その draft_task_id は Seedance 2.5 Draft to Final Video ノードで 1080p または 4k の最終版をレンダリングします。Seedance 2.5 Flash は最長30秒の 480p および 720p 動画用です。Seedance 2.0 は最高品質と 4k 用です。Fast は速度最適化用です。Mini は最速かつ最低コストの生成用です。"
       },
       "model_duration": {
         "name": "継続時間"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "camera_info を構築します。モード「orbit」は対象の周囲でyaw/pitch/distanceを使用してカメラを向けます。「look_at」はカメラをワールド座標に配置します。座標はビューアのワールド空間です（右手系、Y軸が上）。",
+    "description": "camera_info を構築します。モード 'orbit' はターゲットを中心とした yaw/pitch/distance で照準を合わせます。'look_at' はカメラをワールド位置に配置します。座標はビューアーのワールド空間（右手系、Y-up）です。mesh が接続されている場合はその mesh の座標フレームになるため、同じ設定であらゆる mesh をフレーミングできます。",
     "display_name": "カメラ情報の作成",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "視野角",
         "tooltip": "垂直方向の視野角（度数）。"
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "この mesh をフレーミングします。位置、ターゲット、距離は、そのバウンディングボックス中心からバウンディング球の直径を単位として算出されるため、同じ設定であらゆる mesh をフレーミングできます。"
       },
       "mode": {
         "name": "モード",
@@ -19341,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "OpenRouterを通じてテキスト応答を生成します。xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonarなどの人気モデルを厳選してルーティングします。",
+    "description": "OpenRouter を通じてテキスト応答を生成します。Anthropic（Claude）、OpenAI（GPT）、Google（Gemini）、xAI（Grok）、Meta（Muse）、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar の人気モデルから厳選されたセットへルーティングします。",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30312,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Bonneel et al. 2015 に基づく時間的一貫性に、ドリフトを抑える忠実度項を加えます。各フレームは、ガイド動画のオプティカルフローに沿って隣接フレームに追従しつつ、固有のディテールを維持します。",
+    "display_name": "動画のフリッカー除去",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "bidirectional は順方向と逆方向のパスを平均するため、処理時間は2倍になりますが、動きに対する後追いを回避します。"
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "任意の解像度で動きを追従するための、安定したソースフレームです。デフォルトは images で、この場合フリッカーの除去量は少なくなります。"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "フリッカーのあるフレーム。例: 動画をアップスケールしたもの、またはフレームごとに処理したもの。"
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "各フレームが隣接フレームにどの程度強く追従するかを指定します。値を上げるとフリッカーがより除去され、細部はより滑らかになります。"
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "フレームとモーション補償された隣接フレームとの間で、これを超える変化は実際の変化として扱われ、平滑化が弱くなります。0 の場合は、すべての変化を同じように平滑化します。"
       }
     },
     "outputs": {

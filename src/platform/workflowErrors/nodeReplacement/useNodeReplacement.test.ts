@@ -17,6 +17,8 @@ import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetFolderLockStore } from '@/stores/widgetFolderLockStore'
+import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 import {
   graphScopeOf,
   toOwningGraphId,
@@ -163,6 +165,7 @@ function createPlaceholderNode(
     mode: 0,
     flags: {},
     has_errors: true,
+    properties: {},
     last_serialization: {
       id,
       type,
@@ -207,6 +210,7 @@ function createNewNode(
     mode: 0,
     flags: {},
     has_errors: false,
+    properties: {},
     inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
     outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
     widgets: widgets.map((w) => ({ ...w, type: 'combo', options: {} })),
@@ -358,6 +362,49 @@ describe('useNodeReplacement', () => {
       })
     })
 
+    it('preserves live components instead of stale cached overrides during replacement', () => {
+      const graph = createReplacementGraph()
+      const placeholder = addSlottedNode(graph, 'MissingNode')
+      placeholder.configure({
+        ...placeholder.serialize(),
+        properties: {
+          widget_folder_locks: { model: ['old'] },
+          widgetHeights: { notes: 101, keep: 137 }
+        }
+      })
+      markPlaceholder(placeholder)
+      const modelId = widgetId(graph.id, placeholder.id, 'model')
+      const notesId = widgetId(graph.id, placeholder.id, 'notes')
+      useWidgetFolderLockStore().set(modelId, { directory: ['live'] })
+      useWidgetHeightStore().set(notesId, undefined)
+      const newNode = createSlottedNode('Replacement')
+      newNode.addWidget('combo', 'model', 'live/a.safetensors', () => {}, {
+        values: ['live/a.safetensors']
+      })
+      vi.mocked(LiteGraph.createNode).mockReturnValue(newNode)
+
+      const result = useNodeReplacement().replaceNodesInPlace([
+        makeMissingNodeType('MissingNode', {
+          old_node_id: 'MissingNode',
+          new_node_id: 'Replacement',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null
+        })
+      ])
+
+      expect(result).toEqual(['MissingNode'])
+      expect(graph.nodes).toContain(newNode)
+      expect(useWidgetFolderLockStore().get(modelId)).toEqual({
+        directory: ['live']
+      })
+      expect(useWidgetHeightStore().get(notesId)).toBeUndefined()
+      expect(newNode.serialize().properties).toEqual({
+        widget_folder_locks: { model: ['live'] },
+        widgetHeights: { keep: 137 }
+      })
+    })
+
     it('clears stale node-owned records before binding the replacement', () => {
       const placeholder = createPlaceholderNode(1, 'MissingNode')
       const graph = createMockGraph([placeholder])
@@ -430,10 +477,10 @@ describe('useNodeReplacement', () => {
         graph,
         'ResizeImagesByLongerEdge',
         [],
-        ['IMAGE']
+        ['unmapped', 'IMAGE']
       )
       const target = addSlottedNode(graph, 'Target', ['image'])
-      const link = createTestLink(graph, placeholder, 0, target, 0)
+      const link = createTestLink(graph, placeholder, 1, target, 0)
       markPlaceholder(placeholder)
       const newNode = createSlottedNode(
         'ImageScaleToMaxDimension',
@@ -453,7 +500,7 @@ describe('useNodeReplacement', () => {
             { new_id: 'largest_size', old_id: 'longer_edge' },
             { new_id: 'upscale_method', set_value: 'lanczos' }
           ],
-          output_mapping: [{ new_idx: 0, old_idx: 0 }]
+          output_mapping: [{ new_idx: 0, old_idx: 1 }]
         })
       ])
 

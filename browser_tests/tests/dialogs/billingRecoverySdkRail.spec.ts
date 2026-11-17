@@ -21,6 +21,7 @@ import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
@@ -184,10 +185,6 @@ async function returnToTab(page: Page) {
 
 const successToast = (toast: ToastHelper) =>
   toast.toastSuccesses.filter({ hasText: 'Credits added successfully' })
-
-function transports(requests: Request[]): string[] {
-  return requests.map((request) => request.resourceType())
-}
 
 function operationIdsPolled(requests: Request[]): Set<string> {
   return new Set(
@@ -474,7 +471,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
       await expect(teamContent.getByText('usage-in-team')).toBeVisible()
       await expect(teamContent.getByText('usage-in-personal')).toHaveCount(0)
       const teamRead = routes.eventRequests.at(-1)!
-      expect(teamRead.resourceType()).toBe('fetch')
+      expect(billingClient(teamRead)).toBe('sdk')
       expect(teamRead.headers()['authorization']).toBe(
         `Bearer mock-workspace-token-${TEAM.id}`
       )
@@ -524,7 +521,7 @@ test.describe('Billing recovery on the SDK rails', { tag: '@cloud' }, () => {
     await returnToTab(page)
 
     await expect(successToast(toast)).toBeVisible({ timeout: 45_000 })
-    expect(transports(routes.pollRequests)).not.toContain('xhr')
+    expect(routes.pollRequests.map(billingClient)).not.toContain('legacy')
     expect(await routes.hostedOpens()).toEqual([])
   })
 

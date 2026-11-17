@@ -14,6 +14,7 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
@@ -22,7 +23,7 @@ import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 /**
  * A subscription operation this tab reattached to after a reload has no
  * checkout left to report it. The SDK rail must still settle a subscribe:
- * re-read the billing status on `fetch` and toast.
+ * re-read the billing status on the SDK transport and toast.
  */
 const FEATURES = { billing_control_enabled: true } satisfies RemoteConfig
 
@@ -204,10 +205,6 @@ async function returnToTab(page: Page) {
   await page.evaluate(() => window.dispatchEvent(new Event('focus')))
 }
 
-function transports(requests: Request[]): string[] {
-  return requests.map((request) => request.resourceType())
-}
-
 async function reloadWhileProcessing(page: Page, routes: ResumeRoutes) {
   const pollsBeforeReload = routes.pollRequests.length
   await page.reload()
@@ -241,10 +238,12 @@ async function expectResumedSubscribeSettles(page: Page, toast: ToastHelper) {
     statusReadsBeforeSettle
   )
   expect(statusReadsAfterSettle.length).toBeGreaterThan(0)
-  expect(new Set(transports(statusReadsAfterSettle))).toEqual(
-    new Set(['fetch'])
+  expect(new Set(statusReadsAfterSettle.map(billingClient))).toEqual(
+    new Set(['sdk'])
   )
-  expect(new Set(transports(routes.pollRequests))).toEqual(new Set(['fetch']))
+  expect(new Set(routes.pollRequests.map(billingClient))).toEqual(
+    new Set(['sdk'])
+  )
   expect(routes.subscribeRequests).toHaveLength(1)
 }
 

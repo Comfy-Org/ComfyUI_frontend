@@ -3,7 +3,7 @@ import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/auth/partnerNode/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
@@ -238,7 +238,7 @@ import {
   pasteVideoNodes
 } from '@/composables/usePaste'
 
-export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
+export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 
 function servedRefusalPrecondition(error: unknown) {
   if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
@@ -1219,16 +1219,16 @@ export class ComfyApp implements IComfyApp {
       // Check for old clipboard format
       const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
-        deserialiseAndCreate(template.data, app.canvas)
+        deserialiseAndCreate(template.data, this.canvas)
       } else {
         localStorage.setItem('litegrapheditor_clipboard', template.data)
-        app.canvas.pasteFromClipboard()
+        this.canvas.pasteFromClipboard()
       }
 
       // Move mouse position down to paste the next template below
       let maxY: number | undefined
 
-      for (const node of selectedCanvasNodes(app.canvas)) {
+      for (const node of selectedCanvasNodes(this.canvas)) {
         const nodeBottom = node.pos[1] + node.size[1]
         if (maxY === undefined || nodeBottom > maxY) {
           maxY = nodeBottom
@@ -1236,7 +1236,7 @@ export class ComfyApp implements IComfyApp {
       }
 
       if (maxY !== undefined) {
-        app.canvas.graph_mouse[1] = maxY + 50
+        this.canvas.graph_mouse[1] = maxY + 50
       }
     }
 
@@ -2695,7 +2695,7 @@ export class ComfyApp implements IComfyApp {
           for (const input in inputs) {
             const value = inputs[input]
             if (value instanceof Array) {
-              function connectInput() {
+              const connectInput = () => {
                 const [fromId, fromSlot] = value
                 const fromNode = graph.getNodeById(
                   localNodeIdsByApiId.get(String(fromId)) ?? toNodeId(fromId)

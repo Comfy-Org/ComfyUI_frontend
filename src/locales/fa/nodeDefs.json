@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "حذف پس‌زمینه از یک تصویر با استفاده از Bria RMBG ۲.۰.",
+    "description": "پس‌زمینه را با استفاده از Bria RMBG 2.0 یا RMBG 3.0 از یک تصویر حذف می‌کند.",
     "display_name": "حذف پس‌زمینه تصویر Bria",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "تصویر"
       },
+      "model": {
+        "name": "مدل"
+      },
       "moderation": {
         "name": "مدیریت محتوا",
         "tooltip": "تنظیمات مدیریت محتوا"
       },
       "seed": {
         "name": "seed",
-        "tooltip": "seed تعیین می‌کند که node باید دوباره اجرا شود یا خیر؛ نتایج صرف‌نظر از seed غیرقطعی هستند."
+        "tooltip": "seed تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ یک تصویر یکسان، صرف‌نظر از seed، همیشه نتیجه‌ای یکسان می‌دهد."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node ‏Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای حداکثر کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5: جدیدترین مدل، ویدیوهای تا 30 ثانیه و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft: برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node «Seedance 2.5 Draft to Final Video» رندر می‌کند؛ Seedance 2.5 Flash: برای ویدیوهای 480p و 720p تا 30 ثانیه؛ Seedance 2.0: برای بیشترین کیفیت و 4k؛ Fast: برای بهینه‌سازی سرعت؛ Mini: برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node ‏Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای حداکثر کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5: جدیدترین مدل، ویدیوهای تا 30 ثانیه و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft: برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node «Seedance 2.5 Draft to Final Video» رندر می‌کند؛ Seedance 2.5 Flash: برای ویدیوهای 480p و 720p تا 30 ثانیه؛ Seedance 2.0: برای بیشترین کیفیت و 4k؛ Fast: برای بهینه‌سازی سرعت؛ Mini: برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node ‏Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای حداکثر کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5: جدیدترین مدل، ویدیوهای تا 30 ثانیه و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft: برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node «Seedance 2.5 Draft to Final Video» رندر می‌کند؛ Seedance 2.5 Flash: برای ویدیوهای 480p و 720p تا 30 ثانیه؛ Seedance 2.0: برای بیشترین کیفیت و 4k؛ Fast: برای بهینه‌سازی سرعت؛ Mini: برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "Seedance 2.5 برای جدیدترین مدل، ویدیوهای تا ۳۰ ثانیه، و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node ‏Seedance 2.5 Draft to Final Video رندر می‌کند؛ Seedance 2.0 برای حداکثر کیفیت و 4k؛ Fast برای بهینه‌سازی سرعت؛ Mini برای سریع‌ترین تولید با کمترین هزینه."
+        "tooltip": "Seedance 2.5: جدیدترین مدل، ویدیوهای تا 30 ثانیه و خروجی 4k و mp4/mov؛ Seedance 2.5 Draft: برای پیش‌نمایش سریع 480p که draft_task_id آن، نسخهٔ نهایی 1080p یا 4k را در node «Seedance 2.5 Draft to Final Video» رندر می‌کند؛ Seedance 2.5 Flash: برای ویدیوهای 480p و 720p تا 30 ثانیه؛ Seedance 2.0: برای بیشترین کیفیت و 4k؛ Fast: برای بهینه‌سازی سرعت؛ Mini: برای سریع‌ترین تولید با کمترین هزینه."
       },
       "model_duration": {
         "name": "مدت زمان"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "یک camera_info بسازید. حالت 'orbit' با yaw/pitch/distance پیرامون هدف نشانه‌روی می‌کند؛ 'look_at' دوربین را در موقعیت جهانی قرار می‌دهد. مختصات، فضای جهانی نمایشگر هستند (راست‌دست، محور Y رو به بالا).",
+    "description": "یک camera_info می‌سازد. حالت «orbit» با استفاده از yaw/pitch/distance پیرامون هدف نشانه‌روی می‌کند؛ «look_at» دوربین را در موقعیت جهانی قرار می‌دهد. مختصات در فضای جهانیِ بیننده هستند (راست‌دست، Y رو به بالا)، یا در صورت اتصال یک mesh، در چارچوب همان mesh؛ بنابراین تنظیمات یکسان هر mesh را قاب‌بندی می‌کنند.",
     "display_name": "ایجاد اطلاعات دوربین",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "زاویه دید عمودی بر حسب درجه."
+      },
+      "mesh": {
+        "name": "مش",
+        "tooltip": "این مش را قاب‌بندی می‌کند: موقعیت‌ها، هدف و فاصله از مرکز کادر محدودکنندهٔ آن و برحسب قطر کرهٔ محدودکننده‌اش محاسبه می‌شوند؛ بنابراین تنظیمات یکسان هر مش را قاب‌بندی می‌کنند."
       },
       "mode": {
         "name": "mode",
@@ -19341,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "تولید پاسخ متنی از طریق OpenRouter. مسیریابی به مجموعه‌ای منتخب از مدل‌های محبوب xAI، DeepSeek، Qwen، Mistral، Z.AI (GLM)، Moonshot (Kimi) و Perplexity Sonar.",
+    "description": "پاسخ‌های متنی را از طریق OpenRouter تولید می‌کند. به مجموعه‌ای گزینش‌شده از مدل‌های محبوب Anthropic (Claude)، OpenAI (GPT)، Google (Gemini)، xAI (Grok)، Meta (Muse)، DeepSeek، Qwen، Mistral، Z.AI (GLM)، Moonshot (Kimi) و Perplexity Sonar مسیردهی می‌کند.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30312,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "سازگاری زمانی بر اساس Bonneel و همکاران، ۲۰۱۵، با یک ترم وفاداری در برابر رانش: هر فریم ضمن حفظ جزئیات خود، در امتداد جریان نوری ویدیوی راهنما از فریم‌های مجاور پیروی می‌کند.",
+    "display_name": "رفع فلیکر ویدیو",
+    "inputs": {
+      "direction": {
+        "name": "جهت",
+        "tooltip": "bidirectional میانگینِ یک گذر رو به جلو و یک گذر رو به عقب است که با صرف دو برابر زمان، از عقب‌ماندن از حرکت جلوگیری می‌کند."
+      },
+      "guide": {
+        "name": "راهنما",
+        "tooltip": "فریم‌های منبع پایدار برای پیروی از حرکت آن‌ها، در هر وضوحی. به‌طور پیش‌فرض از تصاویر استفاده می‌شود که فلیکر کمتری را حذف می‌کند."
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "فریم‌های دارای فلیکر؛ برای نمونه، ویدیویی که فریم‌به‌فریم ارتقای مقیاس یافته یا پردازش شده است."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "شدت",
+        "tooltip": "میزان پیروی هر فریم از فریم‌های مجاورش. مقادیر بالاتر فلیکر بیشتری را حذف می‌کنند و جزئیات ظریف بیشتری را نرم می‌کنند."
+      },
+      "threshold": {
+        "name": "آستانه",
+        "tooltip": "تغییرات بزرگ‌تر از این مقدار بین یک فریم و همسایهٔ جبران‌شده با حرکت آن، واقعی تلقی می‌شوند و کمتر هموار می‌گردند. ۰ همهٔ تغییرات را به یک اندازه هموار می‌کند."
       }
     },
     "outputs": {

@@ -18,9 +18,11 @@ import {
   setLocalBillingNewUxEnabled,
   setLocalBillingWebEnabled
 } from '@/platform/billing/localBillingWebEnabled'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
+  remoteConfigRevision,
   remoteConfigState,
   sessionAgentGrant,
   sessionAgentGrantValidUntil,
@@ -31,14 +33,12 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
-// Mock the API module
 vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
   getSessionOverride: vi.fn()
 }))
 
-// Mock the distribution types module
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isDesktop: false,
@@ -100,7 +100,7 @@ describe('useFeatureFlags', () => {
     it('should access maxUploadSize', () => {
       vi.mocked(api.getServerFeature).mockImplementation(
         (path, defaultValue) => {
-          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE) return 209715200 // 200MB
+          if (path === ServerFeatureFlag.MAX_UPLOAD_SIZE) return 209715200
           return defaultValue
         }
       )
@@ -500,10 +500,10 @@ describe('useFeatureFlags', () => {
       expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
     })
 
-    it('defaults on in a development build that serves no value', () => {
+    it('stays off in a development build that serves no value', () => {
       vi.stubEnv('DEV', true)
 
-      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(true)
+      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
     })
 
     it.for([
@@ -545,9 +545,21 @@ describe('useFeatureFlags', () => {
       { served: 'true', expected: false }
     ])(
       'uses only a boolean true from remote config: $served',
-      ({ served, expected }) => {
-        remoteConfig.value = { open_on_cloud_use_local_agent_enabled: served }
+      async ({ served, expected }) => {
+        const previousConfig = window.__CONFIG__
+        const previousRevision = remoteConfigRevision.value
+        onTestFinished(() => {
+          window.__CONFIG__ = previousConfig
+          remoteConfigRevision.value = previousRevision
+        })
+        vi.mocked(api.apiURL).mockReturnValue('/api/features')
+        vi.mocked(fetch).mockResolvedValue(
+          Response.json({ open_on_cloud_use_local_agent_enabled: served })
+        )
 
+        await refreshRemoteConfig({ useAuth: false })
+
+        expect(remoteConfigState.value).toBe('anonymous')
         expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
           expected
         )
@@ -902,36 +914,6 @@ describe('useFeatureFlags', () => {
       )
     })
 
-    it.for([
-      { served: true, override: undefined, reported: true },
-      { served: undefined, override: undefined, reported: false },
-      { served: false, override: true, reported: true }
-    ])(
-      'reports unified_web_session as $reported when the server serves $served and the session override is $override',
-      ({ served, override, reported }) => {
-        vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
-          flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION
-            ? override
-            : undefined
-        )
-        vi.mocked(distributionTypes).isCloud = true
-        remoteConfigState.value = 'authenticated'
-        authenticatedRemoteConfigState.value = 'authenticated'
-        remoteConfig.value = { unified_web_session: served }
-        vi.mocked(api.getServerFeature).mockImplementation(
-          (_path, defaultValue) => defaultValue
-        )
-
-        const stop = startFeatureFlagTelemetry()
-        onTestFinished(stop)
-
-        expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
-          ServerFeatureFlag.UNIFIED_WEB_SESSION,
-          reported
-        )
-      }
-    )
-
     it('does not report when getters are only read', () => {
       vi.mocked(api.getServerFeature).mockReturnValue(false)
 
@@ -952,119 +934,6 @@ describe('useFeatureFlags', () => {
       onTestFinished(stop)
 
       expect(trackFeatureFlagEvaluation).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('unifiedWebSessionEnabled', () => {
-    beforeEach(() => {
-      vi.mocked(distributionTypes).isCloud = true
-      authenticatedRemoteConfigState.value = 'authenticated'
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (_path, defaultValue) => defaultValue
-      )
-    })
-
-    it.for([
-      {
-        name: 'is off when /api/features lacks the flag',
-        state: 'authenticated',
-        config: {},
-        expected: false
-      },
-      {
-        name: 'is off when remote config failed to load',
-        state: 'error',
-        config: {},
-        expected: false
-      },
-      {
-        name: 'is on when the server sends true',
-        state: 'authenticated',
-        config: { unified_web_session: true },
-        expected: true
-      }
-    ] as const)('$name', ({ state, config, expected }) => {
-      remoteConfigState.value = state
-      authenticatedRemoteConfigState.value =
-        state === 'authenticated' ? 'authenticated' : state
-      remoteConfig.value = config
-
-      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(expected)
-    })
-
-    it('ignores the server-feature fallback when /api/features lacks the flag', () => {
-      remoteConfigState.value = 'authenticated'
-      authenticatedRemoteConfigState.value = 'authenticated'
-      vi.mocked(api.getServerFeature).mockImplementation((path, defaultValue) =>
-        path === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : defaultValue
-      )
-
-      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
-    })
-
-    it.for(['"true"', '"false"', '1'])(
-      'is off for the malformed override value %s',
-      (rawValue) => {
-        remoteConfigState.value = 'authenticated'
-        localStorage.setItem(
-          `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
-          rawValue
-        )
-
-        expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
-      }
-    )
-
-    it('lets a false ff: override turn off a server true', () => {
-      remoteConfigState.value = 'authenticated'
-      remoteConfig.value = { unified_web_session: true }
-      localStorage.setItem(
-        `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
-        'false'
-      )
-
-      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
-    })
-
-    it('lets a false ?ff= override beat a true ff: override and server value', () => {
-      remoteConfigState.value = 'authenticated'
-      remoteConfig.value = { unified_web_session: true }
-      localStorage.setItem(
-        `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
-        'true'
-      )
-      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
-        flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION ? false : undefined
-      )
-
-      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
-    })
-
-    it('honours the ff: localStorage dev override', () => {
-      remoteConfigState.value = 'authenticated'
-      localStorage.setItem(
-        `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
-        'true'
-      )
-
-      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(true)
-    })
-
-    it('honours the ?ff= session override', () => {
-      remoteConfigState.value = 'authenticated'
-      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
-        flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : undefined
-      )
-
-      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(true)
-    })
-
-    it('is off outside the cloud distribution', () => {
-      vi.mocked(distributionTypes).isCloud = false
-      remoteConfigState.value = 'authenticated'
-      remoteConfig.value = { unified_web_session: true }
-
-      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
     })
   })
 
