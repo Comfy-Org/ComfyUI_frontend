@@ -35,6 +35,10 @@ from .models import (
     NODE_DISPLAY_NAME_MAPPINGS as models_display_name_mappings,
 )
 from .native_lora import NODE_CLASS_MAPPINGS as native_lora_class_mappings
+from .previews import (
+    NODE_CLASS_MAPPINGS as previews_class_mappings,
+    NODE_DISPLAY_NAME_MAPPINGS as previews_display_name_mappings,
+)
 from .remote import (
     MultiSelectNode,
     NodeWithOutputCombo,
@@ -53,6 +57,7 @@ NODE_CLASS_MAPPINGS = {
     **remote_class_mappings,
     **models_class_mappings,
     **native_lora_class_mappings,
+    **previews_class_mappings,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -60,6 +65,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     **inputs_display_name_mappings,
     **remote_display_name_mappings,
     **models_display_name_mappings,
+    **previews_display_name_mappings,
 }
 
 __all__ = [

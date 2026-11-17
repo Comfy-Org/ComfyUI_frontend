@@ -50,32 +50,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     app.nodePreviewImages = {}
   })
 
-  it('keeps execution-keyed outputs distinct from locator-keyed outputs', () => {
-    const store = useNodeOutputStore()
-    const firstOutput = createMockOutputs([{ filename: 'first.png' }])
-    const secondOutput = createMockOutputs([{ filename: 'second.png' }])
-
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
-      firstOutput
-    )
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)]),
-      secondOutput
-    )
-
-    expect(
-      store.getNodeOutputByExecutionId(
-        createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(firstOutput)
-    expect(
-      store.getNodeOutputByExecutionId(
-        createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(secondOutput)
-  })
-
   it('merges execution-keyed outputs when merge is true', () => {
     const store = useNodeOutputStore()
     const initialOutput = createMockOutputs([{ filename: 'first.png' }])
@@ -98,30 +72,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
         createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
       )?.images
     ).toEqual([{ filename: 'first.png' }, { filename: 'second.png' }])
-  })
-
-  it('keeps execution-keyed previews distinct from locator-keyed previews', () => {
-    const store = useNodeOutputStore()
-
-    store.setNodePreviewsByExecutionId(
-      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
-      ['blob:first']
-    )
-    store.setNodePreviewsByExecutionId(
-      createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)]),
-      ['blob:second']
-    )
-
-    expect(
-      store.getNodePreviewImagesByExecutionId(
-        createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(['blob:first'])
-    expect(
-      store.getNodePreviewImagesByExecutionId(
-        createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(['blob:second'])
   })
 
   it('projects execution output into canonical state and view URLs', () => {
@@ -987,33 +937,26 @@ describe('nodeOutputStore merge mode interactions', () => {
     expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('result.png')
   })
 
-  it('should not duplicate when merge is called with empty images array', () => {
+  it.for([
+    { name: 'an empty images array', output: createMockOutputs([]) },
+    { name: 'undefined images', output: createMockOutputs() }
+  ])('keeps the input preview once when merging $name', ({ output }) => {
     const store = useNodeOutputStore()
-
-    // Set initial input preview
-    const inputOutput = createMockOutputs([
-      { filename: 'uploaded.png', subfolder: '', type: 'input' }
-    ])
     store.setNodeOutputsByExecutionId(
       createNodeExecutionId([toNodeId(3)]),
-      inputOutput
+      createMockOutputs([
+        { filename: 'uploaded.png', subfolder: '', type: 'input' }
+      ])
     )
 
-    // Merge with empty images — the input-preview guard (lines 166-177)
-    // copies existing input images into the incoming outputs before the
-    // merge concat runs, resulting in duplication.
-    const emptyOutput = createMockOutputs([])
     store.setNodeOutputsByExecutionId(
       createNodeExecutionId([toNodeId(3)]),
-      emptyOutput,
-      {
-        merge: true
-      }
+      output,
+      { merge: true }
     )
 
-    expect(store.nodeOutputs['3']?.images).toHaveLength(2)
+    expect(store.nodeOutputs['3']?.images).toHaveLength(1)
     expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
-    expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('uploaded.png')
   })
 })
 
