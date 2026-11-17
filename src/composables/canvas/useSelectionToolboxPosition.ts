@@ -14,14 +14,10 @@ import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
-
-/**
- * Manages the position of the selection toolbox independently.
- * Uses CSS custom properties for performant transform updates.
- */
 
 // Shared signals for auxiliary UI (e.g., MoreOptions) to coordinate hide/restore
 const moreOptionsOpen = ref(false)
@@ -71,6 +67,8 @@ export function useSelectionToolboxPosition(
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
   const linkSelectionStore = useLinkSelectionStore()
+  const { setTransform: setToolboxTransform } =
+    useCompositedTransform(toolboxRef)
 
   useEventListener(
     lgCanvas.canvas,
@@ -143,10 +141,7 @@ export function useSelectionToolboxPosition(
     const screenY =
       (worldPosition.value.y + offset[1]) * scale + canvasTop.value
 
-    if (toolboxRef.value) {
-      toolboxRef.value.style.setProperty('--tb-x', `${screenX}px`)
-      toolboxRef.value.style.setProperty('--tb-y', `${screenY}px`)
-    }
+    setToolboxTransform(`translate(${screenX}px, ${screenY}px)`)
   }
 
   watchEffect((onCleanup) => {

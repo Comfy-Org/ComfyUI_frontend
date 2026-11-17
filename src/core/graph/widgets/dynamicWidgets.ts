@@ -107,7 +107,7 @@ function dynamicComboWidget(
   widgetName?: string
 ) {
   const { addNodeInput } = useLitegraphServiceAccess()
-  const { deleteWidget } = useWidgetValueStore()
+  const { releaseWidget } = useWidgetValueStore()
   const parseResult = zDynamicComboInputSpec.safeParse(untypedInputData)
   if (!parseResult.success) throw new Error('invalid DynamicCombo spec')
   const inputData = parseResult.data
@@ -183,7 +183,7 @@ function dynamicComboWidget(
       })
       removedWidgetValues.set(removedOption, optionValues)
       widget.onRemove?.()
-      if (widget.widgetId) deleteWidget(widget.widgetId)
+      if (widget.widgetId) releaseWidget(widget.widgetId)
     }
 
     if (!newSpec) {
@@ -226,7 +226,6 @@ function dynamicComboWidget(
         addedWidgets.length === 0 &&
         node.inputs.length !== startingInputLength
       )
-        //input is inputOnly, but lacks an insertion point
         throw new Error('Failed to find input socket for ' + widget.name)
       const result = commitMutatedInputs(node, previous, inputLinks)
       if (!result.ok) return
@@ -243,7 +242,6 @@ function dynamicComboWidget(
           ? addedInput
           : node.inputs.splice(existingInput, 1)[0]
       })
-    //assume existing inputs are in correct order
     node.inputs.splice(inputInsertionPoint, 0, ...addedInputs)
 
     for (const input of removedInputs) {
@@ -253,8 +251,6 @@ function dynamicComboWidget(
     }
     const result = commitMutatedInputs(node, previous, inputLinks)
     if (!result.ok) return
-    //A callback can grow the group it lands on, shifting every input after
-    //it, so the slot captured before the batch is stale for later entries.
     for (const { input, link } of result.replacements) {
       const slot = node.inputs.indexOf(input)
       if (slot === -1) continue
@@ -267,15 +263,10 @@ function dynamicComboWidget(
     node.arrange()
     node.graph.setDirtyCanvas(true, true)
   }
-  //Refit height on the callback channel: interaction fires it after the value
-  //setter, while configure (load, clone, paste) only fires the setter and must
-  //keep the serialised height.
   widget.callback = useChainCallback(widget.callback, () => {
     node.size = [node.size[0], node.computeSize([...node.size])[1]]
     node.graph?.setDirtyCanvas(true, true)
   })
-  //A little hacky, but onConfigure won't work.
-  //It fires too late and is overly disruptive
   let widgetValue = widget.value
   const getState = () => {
     const graphId = resolveNodeRootGraphId(node)

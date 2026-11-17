@@ -205,6 +205,7 @@ const appMock = vi.hoisted(() => {
     ui: { autoQueueEnabled: false },
     graph,
     rootGraph: graph,
+    rootGraphOrUndefined: graph,
     isGraphReady: false,
     canvas: undefined as
       | LGraphCanvas

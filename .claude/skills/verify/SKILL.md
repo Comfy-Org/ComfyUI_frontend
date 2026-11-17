@@ -50,10 +50,10 @@ Must be `true`. `false` means the dev server was started without a `.comfy.org` 
 **3. What is the backend actually serving?** The features proxy answers without auth:
 
 ```bash
-curl -s http://localhost:5173/api/features | python3 -m json.tool | grep -E 'unified_cloud_auth|billing_sdk|embedded_checked'
+curl -s http://localhost:5173/api/features | python3 -m json.tool | grep -E 'embedded_checked'
 ```
 
-Read the values, do not assume them. On testcloud as of 2026-09-21: `unified_cloud_auth: false`, both `billing_sdk_*: false`, `embedded_checked_enabled: false`.
+Read the values, do not assume them. On testcloud as of 2026-09-21: `embedded_checked_enabled: false`.
 
 **4. Does the tab render frames?** Browser automation often drives a hidden tab. The Claude-in-Chrome tab reports `document.visibilityState === 'hidden'` and runs `requestAnimationFrame` at 0 frames per second. In the page console:
 
@@ -99,8 +99,6 @@ flags.billingSdkRailEnabled
 ```js
 localStorage.setItem('ff:<flag>', 'true')
 ```
-
-Never set `ff:unified_cloud_auth`. It already resolves `true` for a signed-in user, and forcing it put the app into a reload loop.
 
 Precedence (`useFeatureFlags.ts:64-74`): session override → dev override → `/api/features` remote config → websocket server feature.
 

@@ -1396,6 +1396,47 @@ describe('SubgraphWidgetPromotion', () => {
         ).toEqual([{ name: 'preview', ...exposure12 }])
       })
 
+      it('addresses legacy video and animation previews by the canvas preview name once per source, keeping nested host exposure names', () => {
+        const subgraph = createTestSubgraph()
+        const nestedHost = createTestSubgraphNode(createTestSubgraph(), {
+          id: 13
+        })
+        subgraph.add(nestedHost)
+        const hostNode = createTestSubgraphNode(subgraph)
+        hostNode.properties.previewExposures = [
+          {
+            name: 'video-preview',
+            sourceNodeId: '12',
+            sourcePreviewName: 'video-preview'
+          },
+          { name: CANVAS, sourceNodeId: '12', sourcePreviewName: CANVAS },
+          {
+            name: 'animation',
+            sourceNodeId: '14',
+            sourcePreviewName: '$$comfy_animation_preview'
+          },
+          {
+            name: 'nested',
+            sourceNodeId: '13',
+            sourcePreviewName: 'video-preview'
+          }
+        ]
+        hostNode._internalConfigureAfterSlots()
+
+        expect(
+          usePreviewExposureStore()
+            .getExposures(hostNode.rootGraph.id, String(hostNode.id))
+            .map(({ sourceNodeId, sourcePreviewName }) => [
+              sourceNodeId,
+              sourcePreviewName
+            ])
+        ).toEqual([
+          ['12', CANVAS],
+          ['14', CANVAS],
+          ['13', 'video-preview']
+        ])
+      })
+
       it('moves a nested host raw-ID entry to its owner-scoped locator', () => {
         const outer = createTestSubgraph()
         const hostNode = createTestSubgraphNode(createTestSubgraph(), {

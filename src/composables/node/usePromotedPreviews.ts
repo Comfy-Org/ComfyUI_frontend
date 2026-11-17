@@ -27,6 +27,7 @@ type PromotedLivePreview = { type: 'preview'; url: string }
 type PromotedContent = PromotedOutput | PromotedLivePreview
 
 type PromotedPreview = PromotedContent & {
+  name: string
   sourceNodeId: NodeId
   sourceWidgetName: string
 }
@@ -160,6 +161,7 @@ export function usePromotedPreviews(
       return [
         {
           ...content,
+          name: exposure.name,
           sourceNodeId: leaf.sourceNodeId,
           sourceWidgetName: leaf.sourcePreviewName
         }
