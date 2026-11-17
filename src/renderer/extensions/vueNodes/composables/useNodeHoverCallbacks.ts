@@ -3,12 +3,15 @@ import { toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
-import type { PointTuple } from '@comfyorg/shared-frontend-utils/geometry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 type HoverCallback = 'onMouseEnter' | 'onMouseMove' | 'onMouseLeave'
+
+const reportedFailures = new Set<string>()
 
 function toCanvasPointerEvent(
   canvas: LGraphCanvas,
@@ -18,43 +21,69 @@ function toCanvasPointerEvent(
   return event
 }
 
+function reportHoverFailure(
+  error: unknown,
+  node: LGraphNode,
+  callback: HoverCallback
+) {
+  const key = `${node.type}:${callback}`
+  if (reportedFailures.has(key)) return
+  reportedFailures.add(key)
+  reportError(error, {
+    surface: 'graph',
+    errorType: 'failure_invoking_node_hover_callback',
+    tags: { node_type: node.type, callback }
+  })
+}
+
 /** Calls a node's classic `onMouseEnter`, `onMouseMove`, and `onMouseLeave` callbacks for pointer movement over its Vue node element. */
 export function useNodeHoverCallbacks(
   nodeId: MaybeRefOrGetter<NodeId>,
   target: MaybeRefOrGetter<HTMLElement | null>
 ) {
   const canvasStore = useCanvasStore()
+  let hoveredNode: LGraphNode | undefined
 
-  function resolve(event: PointerEvent, callback: HoverCallback) {
+  function deliver(
+    node: LGraphNode | undefined,
+    callback: HoverCallback,
+    pointerEvent: PointerEvent
+  ) {
     const canvas = canvasStore.canvas
-    const node = canvas?.graph?.getNodeById(toValue(nodeId))
-    if (!canvas || !node?.[callback]) return undefined
+    if (!canvas || !node?.[callback]) return
     canvas.setDirty(true)
-    const canvasEvent = toCanvasPointerEvent(canvas, event)
-    const pos: PointTuple = [
-      canvasEvent.canvasX - node.pos[0],
-      canvasEvent.canvasY - node.pos[1]
-    ]
-    return { node, canvas, event: canvasEvent, pos }
+    const event = toCanvasPointerEvent(canvas, pointerEvent)
+    try {
+      if (callback === 'onMouseMove') {
+        node.onMouseMove?.(
+          event,
+          [event.canvasX - node.pos[0], event.canvasY - node.pos[1]],
+          canvas
+        )
+      } else {
+        node[callback]?.(event)
+      }
+    } catch (error) {
+      reportHoverFailure(error, node, callback)
+    }
   }
 
   useEventListener(target, 'pointerenter', (event: PointerEvent) => {
-    const hit = resolve(event, 'onMouseEnter')
-    hit?.node.onMouseEnter?.(hit.event)
+    hoveredNode =
+      canvasStore.canvas?.graph?.getNodeById(toValue(nodeId)) ?? undefined
+    deliver(hoveredNode, 'onMouseEnter', event)
   })
 
   useEventListener(
     target,
     'pointermove',
-    (event: PointerEvent) => {
-      const hit = resolve(event, 'onMouseMove')
-      hit?.node.onMouseMove?.(hit.event, hit.pos, hit.canvas)
-    },
+    (event: PointerEvent) => deliver(hoveredNode, 'onMouseMove', event),
     { capture: true }
   )
 
   useEventListener(target, 'pointerleave', (event: PointerEvent) => {
-    const hit = resolve(event, 'onMouseLeave')
-    hit?.node.onMouseLeave?.(hit.event)
+    const node = hoveredNode
+    hoveredNode = undefined
+    deliver(node, 'onMouseLeave', event)
   })
 }
