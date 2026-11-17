@@ -3,6 +3,7 @@ import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
+import { noteGraphEdit } from './graphEdits'
 import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import {
@@ -1279,6 +1280,7 @@ export class LGraph
       observeGroupId(state, node.id)
 
       this._groups.push(node)
+      noteGraphEdit(this)
       this.setDirtyCanvas(true)
       this.change()
       node.graph = this
@@ -1343,6 +1345,7 @@ export class LGraph
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
+    noteGraphEdit(this)
     if (selected) node.selected = true
 
     node.onAdded?.(this)
@@ -1384,7 +1387,6 @@ export class LGraph
     node: LGraphNode | LGraphGroup,
     options: GraphRemoveOptions = {}
   ): void {
-    // LEGACY: This was changed from constructor === LiteGraph.LGraphGroup
     if (node instanceof LGraphGroup) {
       if (!this._groups.includes(node)) return
 
@@ -1397,6 +1399,7 @@ export class LGraph
       const remainingGroups = this._groups.filter((group) => group !== node)
       if (remainingGroups.length === this._groups.length) return
       this._groups = remainingGroups
+      noteGraphEdit(this)
       detachGroupLayout(node)
       node.graph = undefined
       this.incrementVersion()
@@ -1407,12 +1410,10 @@ export class LGraph
 
     if (nodesBeingRemoved.has(node)) return
 
-    // not found
     if (this._nodes_by_id[node.id] == null) {
       console.warn('LiteGraph: node not found', node)
       return
     }
-    // cannot be removed
     if (node.ignore_remove && !options.force) {
       console.warn('LiteGraph: node cannot be removed', node)
       return
@@ -1432,7 +1433,6 @@ export class LGraph
   }
 
   private removeNode(node: LGraphNode, options: GraphRemoveOptions): void {
-    // sure? - almost sure is wrong
     this.beforeChange()
 
     this.events.dispatch('node:before-removed', { node })
@@ -1441,18 +1441,15 @@ export class LGraph
     const { inputs, outputs } = node
 
     collectingSeveredLinks(removedLinkIds, () => {
-      // disconnect inputs
       for (const [i] of inputs.entries()) {
         if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
       }
 
-      // disconnect outputs
       for (const i of outputs.keys()) {
         if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
       }
     })
 
-    // Floating links
     for (const link of this.floatingLinks.values()) {
       if (link.origin_id === node.id || link.target_id === node.id) {
         this.removeFloatingLink(link)
@@ -1494,17 +1491,16 @@ export class LGraph
         if (this._nodes_by_id[node.id] === node) {
           delete this._nodes_by_id[node.id]
         }
+        noteGraphEdit(this)
       }
     }
     this.onNodeRemoved?.(node)
     this.events.dispatch('node:removed', { node })
     emitGraphIntent({ type: 'remove_node', graph: this, node, removedLinkIds })
 
-    // close panels
     this.canvasAction((c) => c.checkPanels())
 
     this.setDirtyCanvas(true, true)
-    // sure? - almost sure is wrong
     this.afterChange()
     this.change()
 
@@ -1855,6 +1851,7 @@ export class LGraph
     if (existing) return existing === reroute
     if (!registerRerouteChain(this, reroute)) return false
     this.reroutesInternal.set(reroute.id, reroute)
+    noteGraphEdit(this)
     materializeRerouteLayout(this, reroute)
     return true
   }
@@ -1868,6 +1865,7 @@ export class LGraph
     const reroute = this.reroutesInternal.get(id)
     if (!reroute) return
     this.reroutesInternal.delete(id)
+    noteGraphEdit(this)
     unregisterRerouteChain(reroute)
     detachRerouteLayout(reroute)
   }
@@ -1955,7 +1953,6 @@ export class LGraph
       key: toSelectableKey('reroute', reroute.id)
     })
 
-    // Extract reroute from the reroute chain
     const { parentId, linkIds, floatingLinkIds } = reroute
     for (const reroute of reroutes.values()) {
       if (reroute.parentId === id) reroute.parentId = parentId
@@ -1975,8 +1972,6 @@ export class LGraph
         continue
       }
 
-      // A floating link is a unique branch; if there is no parent reroute, or
-      // the parent reroute has any other links, remove this floating link.
       const floatingReroutes = LLink.getReroutes(this, link)
       const lastReroute = floatingReroutes.at(-1)
       const secondLastReroute = floatingReroutes.at(-2)
@@ -1993,8 +1988,6 @@ export class LGraph
 
     this._removeReroute(id)
 
-    // This does not belong here; it should be handled by the caller, or run by a remove-many API.
-    // https://github.com/Comfy-Org/litegraph.js/issues/898
     this.setDirtyCanvas(false, true)
   }
 

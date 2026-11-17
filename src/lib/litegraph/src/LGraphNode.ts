@@ -60,7 +60,7 @@ import {
   disconnectInput,
   disconnectOutput
 } from './connectivitySystem'
-import { withGraphEdit } from './graphEdits'
+import { noteGraphEdit, withGraphEdit } from './graphEdits'
 import {
   UNASSIGNED_NODE_ID,
   toNodeId,
@@ -930,7 +930,10 @@ export class LGraphNode
   public set size(value: Size | null | undefined) {
     if (!value) return
 
+    const [width, height] = this.size
     setNodeSize(this, value)
+    if (this.graph && (this.size[0] !== width || this.size[1] !== height))
+      noteGraphEdit(this.graph)
   }
 
   /**
@@ -3457,14 +3460,12 @@ export class LGraphNode
     return !this.pinned && this.constructor.collapsable !== false
   }
 
-  /**
-   * Toggle node collapse (makes it smaller on the canvas)
-   */
   collapse(force?: boolean): void {
     if (!this.collapsible && !force) return
     if (!this.graph) throw new NullGraphError()
     this.graph.incrementVersion()
     this.flags.collapsed = !this.flags.collapsed
+    noteGraphEdit(this.graph)
     emitNodeFieldWrite(this, {
       field: 'flags.collapsed',
       value: this.flags.collapsed
@@ -3488,17 +3489,15 @@ export class LGraphNode
     return !!this.flags.pinned
   }
 
-  /**
-   * Prevents the node being accidentally moved or resized by mouse interaction.
-   * Toggles pinned state if no value is provided.
-   */
   pin(v?: boolean): void {
     if (!this.graph) throw new NullGraphError()
 
+    const previous = this.flags.pinned
     this.graph.incrementVersion()
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined
+    if (previous !== this.flags.pinned) noteGraphEdit(this.graph)
     emitNodeFieldWrite(this, {
       field: 'flags.pinned',
       value: this.flags.pinned ?? null

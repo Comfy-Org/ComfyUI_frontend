@@ -1,5 +1,6 @@
 import { uniq } from 'es-toolkit'
 
+import { withGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import type { LGraphNode, Positionable } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode, Reroute } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -111,22 +112,16 @@ export function useSelectedLiteGraphItems() {
     )
   }
 
-  /**
-   * Toggle the execution mode of all selected nodes
-   *
-   * - If any nodes are not already the specified node mode → all are set to specified mode
-   * - Otherwise → set all nodes to ALWAYS
-   *
-   * @param mode - The LGraphEventMode to toggle to (e.g., NEVER for mute, BYPASS for bypass)
-   */
   const toggleSelectedNodesMode = (mode: LGraphEventMode): void => {
     const selectedNodeArray = getSelectedNodesShallow()
     const newModeForSelectedNode = areAllSelectedNodesInMode(mode)
       ? LGraphEventMode.ALWAYS
       : mode
 
-    for (const selectedNode of selectedNodeArray)
-      selectedNode.mode = newModeForSelectedNode
+    withGraphEdit(canvasStore.canvas?.graph, () => {
+      for (const selectedNode of selectedNodeArray)
+        selectedNode.mode = newModeForSelectedNode
+    })
   }
 
   return {

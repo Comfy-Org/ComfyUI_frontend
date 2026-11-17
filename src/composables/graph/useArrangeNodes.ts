@@ -1,13 +1,13 @@
 import { useSelectionState } from '@/composables/graph/useSelectionState'
+import { noteGraphEdit, withGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { app } from '@/scripts/app'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export type ArrangeLayout = 'vertical' | 'horizontal' | 'grid'
@@ -167,7 +167,6 @@ interface ArrangeOptions {
 export function useArrangeNodes() {
   const { selectedNodes, hasMultipleSelection } = useSelectionState()
   const mutations = useLayoutMutations(LayoutSource.Canvas)
-  const workflowStore = useWorkflowStore()
   const canvasStore = useCanvasStore()
 
   const arrangeNodes = (
@@ -176,16 +175,34 @@ export function useArrangeNodes() {
   ) => {
     if (!hasMultipleSelection.value) return
     const { rootGraphId } = canvasStore
-    if (!rootGraphId) return
+    const canvas = canvasStore.canvas
+    if (!rootGraphId || !canvas?.graph) return
+    const graph = canvas.graph
 
     const updates = computeArrangement(selectedNodes.value, layout, gap)
     if (updates.length === 0) return
 
-    mutations.batchMoveNodes(rootGraphId, updates)
-    app.canvas.setDirty(true, true)
-    if (captureUndo) {
-      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+    const positions = updates.flatMap(({ nodeId }) => {
+      const entry = layoutStore.getNodeLayout(rootGraphId, nodeId)
+      return entry ? [{ nodeId, x: entry.position.x, y: entry.position.y }] : []
+    })
+    const applyArrangement = () => {
+      try {
+        mutations.batchMoveNodes(rootGraphId, updates)
+        canvas.setDirty(true, true)
+      } finally {
+        if (
+          captureUndo &&
+          positions.some(({ nodeId, x, y }) => {
+            const entry = layoutStore.getNodeLayout(rootGraphId, nodeId)
+            return entry && (entry.position.x !== x || entry.position.y !== y)
+          })
+        )
+          noteGraphEdit(graph)
+      }
     }
+    if (captureUndo) withGraphEdit(graph, applyArrangement)
+    else applyArrangement()
   }
 
   return { arrangeNodes, canArrange: hasMultipleSelection }

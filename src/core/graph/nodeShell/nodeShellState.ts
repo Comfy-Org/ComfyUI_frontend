@@ -1,6 +1,7 @@
 import type { LGraph, LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 import { assert } from '@/base/assert'
+import { noteGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import {
   canTransferLayoutAttachment,
   transferLayoutAttachment
@@ -33,10 +34,6 @@ export function createNodeShellState(
   }
 }
 
-/**
- * Writes a shell-state field, emitting `node:property:changed` on change.
- * Returns whether the value changed.
- */
 export function setTrackedNodeState<K extends keyof NodeState>(
   node: LGraphNode,
   property: K,
@@ -46,6 +43,7 @@ export function setTrackedNodeState<K extends keyof NodeState>(
   if (oldValue === value) return false
 
   node._state[property] = value
+  if (node.graph) noteGraphEdit(node.graph)
   node.graph?.trigger('node:property:changed', {
     nodeId: node.id,
     property,
