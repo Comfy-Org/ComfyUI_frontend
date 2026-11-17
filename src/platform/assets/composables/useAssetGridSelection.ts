@@ -28,7 +28,12 @@ interface AssetGridSelectionOptions {
 }
 
 function shiftRectY(rect: RectEdges, dy: number): RectEdges {
-  return { ...rect, top: rect.top + dy, bottom: rect.bottom + dy }
+  return {
+    left: rect.left,
+    right: rect.right,
+    top: rect.top + dy,
+    bottom: rect.bottom + dy
+  }
 }
 
 function isTextEntryTarget(element: Element | null): boolean {
