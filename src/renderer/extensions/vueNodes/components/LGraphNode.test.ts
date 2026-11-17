@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen, within } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -12,6 +12,8 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useWidgetPreviewDisplayStore } from '@/stores/widgetPreviewDisplayStore'
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { computed, nextTick, ref } from 'vue'
@@ -657,6 +659,49 @@ describe('LGraphNode', () => {
           .getAllByRole('img', { name: 'g.liveSamplingPreview' })
           .map((img) => img.getAttribute('src'))
       ).toEqual(urls)
+    })
+
+    it('keeps exposed previews first when the preview zone is shown', () => {
+      const rootGraph: Record<string, unknown> = {
+        id: 'graph-test',
+        getNodeById: () => mockData.mockLgraphNode,
+        subgraphs: new Map()
+      }
+      rootGraph.rootGraph = rootGraph
+      useCanvasStore().currentGraph = fromAny(rootGraph)
+      mockData.mockLgraphNode = {
+        id: toNodeId(5),
+        graph: rootGraph,
+        inputs: [],
+        isSubgraphNode: () => true
+      }
+      mockData.promotedPreviews = [
+        { ...exposure, parts: [exposedImage] },
+        {
+          ...exposure,
+          name: 'second exposure',
+          parts: [{ kind: 'live', source: '5:11', url: 'blob:eleven' }]
+        }
+      ]
+      useWidgetPreviewDisplayStore().set(
+        widgetId('graph-test', mockNodeData.id, CANVAS_IMAGE_PREVIEW_WIDGET),
+        { mode: 'shown' }
+      )
+
+      renderLGraphNode({ nodeData: { ...mockNodeData, graphId: 'graph-test' } })
+
+      expect(
+        screen.getAllByTestId('node-preview-region').map((region) => ({
+          output: within(region).queryByText(/exposed\.png/) !== null,
+          live: within(region)
+            .queryByRole('img', { name: 'g.liveSamplingPreview' })
+            ?.getAttribute('src')
+        }))
+      ).toEqual([
+        { output: true, live: undefined },
+        { output: false, live: 'blob:eleven' },
+        { output: false, live: undefined }
+      ])
     })
   })
 

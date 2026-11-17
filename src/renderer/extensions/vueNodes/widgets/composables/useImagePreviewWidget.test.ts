@@ -67,6 +67,7 @@ function createMockCtx(): CanvasRenderingContext2D {
     fill: vi.fn(),
     fillText: vi.fn(),
     strokeRect: vi.fn(),
+    setLineDash: vi.fn(),
     roundRect: vi.fn(),
     drawImage: vi.fn(),
     getTransform: vi.fn(() => transform),
@@ -290,7 +291,7 @@ describe('useImagePreviewWidget', () => {
       expect(node.imageIndex).toBe(0)
     })
 
-    it('does not draw when imgs is empty', () => {
+    it('outlines the reserved zone instead of drawing an image when imgs is empty', () => {
       const constructor = useImagePreviewWidget()
       const node = createMockNode({ imgs: [], imageIndex: null })
       constructor(node, defaultInputSpec)
@@ -302,6 +303,7 @@ describe('useImagePreviewWidget', () => {
       widget.drawWidget(ctx, { width: 300 })
 
       expect(ctx.drawImage).not.toHaveBeenCalled()
+      expect(ctx.strokeRect).toHaveBeenCalledOnce()
     })
 
     it('does not draw when node.size is undefined', () => {

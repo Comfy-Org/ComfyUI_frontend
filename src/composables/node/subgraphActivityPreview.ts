@@ -1,6 +1,8 @@
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { activityInside } from '@/systems/nodePreviewSystem'
+import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
+import { PREVIEW_ZONE_DEFAULT_HEIGHT } from '@/renderer/extensions/vueNodes/components/imagePreviewLayout'
+import { activityInside, previewDisplay } from '@/systems/nodePreviewSystem'
 
 const FRAME_INSET = 4
 const NOTHING_SHOWN_ELSEWHERE: ReadonlySet<string> = new Set()
@@ -55,6 +57,32 @@ function drawFitted(
   )
 }
 
+function drawEmptyZone(
+  ctx: CanvasRenderingContext2D,
+  node: LGraphNode,
+  top: number
+) {
+  ctx.save()
+  ctx.setLineDash([4, 4])
+  ctx.strokeStyle = LiteGraph.NODE_DEFAULT_BOXCOLOR
+  ctx.strokeRect(
+    FRAME_INSET,
+    top,
+    node.size[0] - FRAME_INSET * 2,
+    node.size[1] - top - FRAME_INSET
+  )
+  ctx.restore()
+}
+
+/** Grows a canvas node so the space below its widgets fits an empty preview zone. */
+export function fitCanvasPreviewZone(node: LGraphNode): void {
+  useNodeCanvasImagePreview().reserveCanvasImagePreview(node)
+  const height = node.isSubgraphNode()
+    ? contentBottom(node) + FRAME_INSET * 2 + PREVIEW_ZONE_DEFAULT_HEIGHT
+    : node.computeSize()[1]
+  if (node.size[1] < height) node.setSize([node.size[0], height])
+}
+
 /**
  * Draws the live frames running inside a subgraph node, one row per interior
  * source, into the space below its widgets without resizing the node.
@@ -63,10 +91,15 @@ export function drawSubgraphActivityPreview(
   node: LGraphNode,
   ctx: CanvasRenderingContext2D
 ): void {
+  const display = previewDisplay(node)
+  if (display === 'hidden') return
   const parts = activityInside(node, NOTHING_SHOWN_ELSEWHERE)
-  if (!parts.length) return
-
   const top = contentBottom(node) + FRAME_INSET
+  if (!parts.length) {
+    if (display === 'shown') drawEmptyZone(ctx, node, top)
+    return
+  }
+
   const width = node.size[0] - FRAME_INSET * 2
   const rowHeight =
     (node.size[1] - top - FRAME_INSET * parts.length) / parts.length

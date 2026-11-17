@@ -12,7 +12,13 @@ import type { AugmentedResultItem } from '@/utils/resultItem'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
-import { activityInside, computeNodePreview } from './nodePreviewSystem'
+import {
+  activityInside,
+  computeNodePreview,
+  previewDisplay,
+  setPreviewDisplay
+} from './nodePreviewSystem'
+import type { PreviewDisplay } from './nodePreviewSystem'
 
 vi.mock(import('@/scripts/app'))
 
@@ -158,5 +164,51 @@ describe(activityInside, () => {
     expect(store.getNodePreviews(host)).toEqual(['blob:ten'])
     expect(activityInside(host, new Set())).toEqual([])
     vi.useRealTimers()
+  })
+})
+
+describe(previewDisplay, () => {
+  it.for<{
+    when: string
+    chosen: PreviewDisplay
+    extensionHides: boolean
+    display: PreviewDisplay
+  }>([
+    {
+      when: 'nobody chose',
+      chosen: 'auto',
+      extensionHides: false,
+      display: 'auto'
+    },
+    {
+      when: 'an extension hides output images',
+      chosen: 'auto',
+      extensionHides: true,
+      display: 'hidden'
+    },
+    {
+      when: 'the user reserves a zone on a node an extension hides',
+      chosen: 'shown',
+      extensionHides: true,
+      display: 'shown'
+    },
+    {
+      when: 'the user hides the preview',
+      chosen: 'hidden',
+      extensionHides: false,
+      display: 'hidden'
+    }
+  ])('is $display when $when', ({ chosen, extensionHides, display }) => {
+    const graph = createTestRootGraph()
+    const node = new LGraphNode('Preview')
+    graph.add(node)
+    node.hideOutputImages = extensionHides
+
+    setPreviewDisplay(node, chosen)
+
+    expect(previewDisplay(node)).toBe(display)
+    expect(previewDisplay(node, 'exposed preview')).toBe(
+      extensionHides ? 'hidden' : 'auto'
+    )
   })
 })

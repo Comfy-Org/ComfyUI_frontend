@@ -7,6 +7,7 @@ import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { previewDisplayChoices } from '@/composables/node/previewDisplayChoices'
 import { drawSubgraphActivityPreview } from '@/composables/node/subgraphActivityPreview'
 import { addWidgetPromotionOptions } from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
@@ -718,6 +719,12 @@ export const useLitegraphService = () => {
           })
         }
       }
+      options.push(
+        ...previewDisplayChoices(this).map(({ label, choose }) => ({
+          content: label,
+          callback: choose
+        }))
+      )
       if (this instanceof SubgraphNode) {
         options.unshift(
           {
@@ -755,8 +762,13 @@ export const useLitegraphService = () => {
     const nodeOutputStore = useNodeOutputStore()
     const { showAnimatedPreview, removeAnimatedPreview } =
       useNodeAnimatedImage()
-    const { showCanvasImagePreview, removeCanvasImagePreview } =
-      useNodeCanvasImagePreview()
+    const {
+      showCanvasImagePreview,
+      removeCanvasImagePreview,
+      applyPreviewDisplay
+    } = useNodeCanvasImagePreview()
+
+    if (!applyPreviewDisplay(this)) return
 
     const output = nodeOutputStore.getNodeOutputs(this)
     const preview = nodeOutputStore.getNodePreviews(this)

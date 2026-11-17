@@ -339,6 +339,27 @@ const renderPreview = (
   }
 }
 
+const EMPTY_ZONE_INSET = 4
+
+function drawEmptyPreviewZone(
+  ctx: CanvasRenderingContext2D,
+  top: number,
+  width: number,
+  height: number | undefined
+) {
+  if (!height) return
+  ctx.save()
+  ctx.setLineDash([4, 4])
+  ctx.strokeStyle = LiteGraph.NODE_DEFAULT_BOXCOLOR
+  ctx.strokeRect(
+    EMPTY_ZONE_INSET,
+    top + EMPTY_ZONE_INSET,
+    width - EMPTY_ZONE_INSET * 2,
+    height - EMPTY_ZONE_INSET * 2
+  )
+  ctx.restore()
+}
+
 class ImagePreviewWidget extends BaseWidget {
   constructor(
     node: LGraphNode,
@@ -364,6 +385,10 @@ class ImagePreviewWidget extends BaseWidget {
     options: DrawWidgetOptions
   ): void {
     const imgs = options.previewImages ?? this.node.imgs ?? []
+    if (!imgs.length && !this.node.isUploading) {
+      drawEmptyPreviewZone(ctx, this.y, options.width, this.computedHeight)
+      return
+    }
     renderPreview(
       ctx,
       this.node,
