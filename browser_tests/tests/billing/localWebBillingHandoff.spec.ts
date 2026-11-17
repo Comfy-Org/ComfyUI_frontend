@@ -9,6 +9,7 @@ import {
   WORKSPACE_ID,
   localWebBillingHandoffTest as test
 } from '@e2e/fixtures/localWebBillingHandoffFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Local web billing handoff', () => {
   test.describe.configure({ timeout: 60_000 })
@@ -92,13 +93,40 @@ test.describe('Local web billing handoff', () => {
       await expect(billingTab.getByTestId('billing-plan-row')).toBeVisible()
       await expect(billingTab.locator('a[href*="/profile/"]')).toHaveCount(0)
       await expect(
-        billingTab
-          .getByTestId('billing-plan-section')
-          .getByRole('button', { name: /plan/i })
-      ).toHaveCount(0)
-      await expect(
         settings.category('Plan & Credits', { exact: true })
       ).toHaveCount(0)
+    })
+
+    test('the plan action opens Platform Plans at the issued entry URL', async ({
+      comfyPage,
+      handoffRequests,
+      openSettings
+    }) => {
+      const page = comfyPage.page
+      const settings = await openSettings()
+      await settings.category('Billing', { exact: true }).click()
+      const planAction = page
+        .getByTestId('billing-plan-row')
+        .getByRole('button', { name: /^(Subscribe|Choose a plan|Manage)$/ })
+      await expect(planAction).toBeVisible()
+
+      const popupOpened = page.waitForEvent('popup')
+      await planAction.click()
+      const popup = await popupOpened
+
+      const plansEntry = new URL(ENTRY_URL)
+      plansEntry.searchParams.set('view', 'plans')
+      await expect(popup).toHaveURL(plansEntry.href)
+      expect(handoffRequests).toHaveLength(1)
+      const body = handoffRequests[0].postDataJSON()
+      expect(body).toEqual(
+        expect.objectContaining({
+          workspace_id: WORKSPACE_ID,
+          receiver: 'platform',
+          surface: 'local_web'
+        })
+      )
+      expect(body).not.toHaveProperty('intent')
     })
 
     test.describe('with auto top-up offered', () => {
@@ -184,6 +212,68 @@ test.describe('Local web billing handoff', () => {
         await expect.poll(() => popup.isClosed()).toBe(true)
         expect(handoffRequests).toHaveLength(1)
         await expect(dialog.continueButton).toBeEnabled()
+      })
+    })
+  })
+
+  test.describe('new billing UX read from Cloud', () => {
+    test.use({ billingNewUx: false, localBillingWeb: true })
+
+    test.describe('when Cloud serves billing_new_ux_enabled on', () => {
+      test.use({ cloudBillingNewUx: true })
+
+      test('shows the new Billing tab and the new profile menu', async ({
+        comfyPage,
+        openAddCredits,
+        openSettings
+      }) => {
+        const page = comfyPage.page
+
+        await test.step('Settings shows the Billing tab without the 1.60 release marker', async () => {
+          const settings = await openSettings()
+          await settings.category('Billing', { exact: true }).click()
+          const billingTab = page.getByTestId('billing-tab')
+          await expect(billingTab.getByTestId('billing-plan-row')).toBeVisible()
+          await expect(billingTab).not.toHaveAttribute('data-billing-release')
+          await settings.close()
+        })
+
+        await test.step('the profile menu Credits row opens a flyout that offers Add credits', async () => {
+          await openAddCredits()
+          await expect(new TopUpCreditsDialog(page).heading).toBeVisible()
+        })
+      })
+    })
+
+    test.describe('when Cloud serves billing_new_ux_enabled off', () => {
+      test.use({ cloudBillingNewUx: false })
+
+      test('keeps the 1.60 Billing tab and the earlier profile menu', async ({
+        comfyPage,
+        openSettings
+      }) => {
+        const page = comfyPage.page
+
+        await test.step('Settings shows the Billing tab with the 1.60 release marker', async () => {
+          const settings = await openSettings()
+          await settings.category('Billing', { exact: true }).click()
+          await expect(page.getByTestId('billing-tab')).toHaveAttribute(
+            'data-billing-release',
+            '1.60'
+          )
+          await settings.close()
+        })
+
+        await test.step('the profile menu offers Add credits directly and has no Credits row', async () => {
+          await page.getByRole('button', { name: 'Current user' }).click()
+          const menu = page.getByTestId(TestIds.user.currentUserPopover)
+          await expect(
+            menu.getByRole('button', { name: 'Add credits' })
+          ).toBeVisible()
+          await expect(
+            menu.getByRole('button', { name: /^Credits/ })
+          ).toHaveCount(0)
+        })
       })
     })
   })

@@ -14,7 +14,10 @@ import {
   useFeatureFlags
 } from '@/composables/useFeatureFlags'
 import * as distributionTypes from '@/platform/distribution/types'
-import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
+import {
+  setLocalBillingNewUxEnabled,
+  setLocalBillingWebEnabled
+} from '@/platform/billing/localBillingWebEnabled'
 import {
   authenticatedRemoteConfigState,
   remoteConfig,
@@ -236,139 +239,48 @@ describe('useFeatureFlags', () => {
 
       expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(true)
     })
-  })
 
-  describe('billingSdkTopupEnabled', () => {
-    it.for([
-      ['missing', undefined, false],
-      ['malformed', 'true', false],
-      ['true', true, true]
-    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
-      vi.mocked(api.getServerFeature).mockReturnValue(value)
-
-      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(expected)
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
-        false
-      )
-    })
-
-    it('is false when feature lookup throws', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(() => {
-        throw new Error('feature service unavailable')
+    describe('off cloud, from the flags local reads from Cloud', () => {
+      beforeEach(() => {
+        vi.mocked(api.getServerFeature).mockReturnValue(false)
       })
 
-      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(false)
-    })
-
-    // `/features` is the channel the cloud staged rollout actually publishes
-    // on, and boot awaits it; the WebSocket handshake lands after the billing
-    // gate has already chosen a rail.
-    it.for([
-      { source: 'topup', config: { billing_sdk_topup_enabled: true } },
-      {
-        source: 'subscription',
-        config: { billing_sdk_subscription_enabled: true }
-      }
-    ])('reads the $source flag off /features', ({ config }) => {
-      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
-      remoteConfig.value = config
-
-      const { flags } = useFeatureFlags()
-
-      expect(
-        'billing_sdk_topup_enabled' in config
-          ? flags.billingSdkTopupEnabled
-          : flags.billingSdkSubscriptionEnabled
-      ).toBe(true)
-    })
-
-    it('falls back to the handshake while /features omits the key', () => {
-      remoteConfig.value = {}
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-
-      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(true)
-    })
-
-    it('refuses a malformed /features value without asking the handshake', () => {
-      remoteConfig.value = {
-        billing_sdk_topup_enabled: 'true'
-      } as unknown as typeof remoteConfig.value
-      vi.mocked(api.getServerFeature).mockReturnValue(true)
-
-      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(false)
-    })
-  })
-
-  describe('billingSdkTopupRailEnabled', () => {
-    it.for([
-      { auth: 'off', unifiedCloudAuth: false, expected: false },
-      { auth: 'on', unifiedCloudAuth: true, expected: true }
-    ])(
-      'follows the SDK flag only while unified auth is $auth',
-      ({ unifiedCloudAuth, expected }) => {
-        vi.mocked(distributionTypes).isCloud = true
-        vi.mocked(api.getServerFeature).mockImplementation((path) => {
-          if (path === ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED) return true
-          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH)
-            return unifiedCloudAuth
-          return false
-        })
-
-        expect(useFeatureFlags().flags.billingSdkTopupRailEnabled).toBe(
-          expected
-        )
-      }
-    )
-  })
-
-  describe('billingSdkSubscriptionEnabled', () => {
-    it.for([
-      ['missing', undefined, false],
-      ['malformed', 'true', false],
-      ['true', true, true]
-    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
-      vi.mocked(api.getServerFeature).mockReturnValue(value)
-
-      expect(useFeatureFlags().flags.billingSdkSubscriptionEnabled).toBe(
-        expected
-      )
-      expect(api.getServerFeature).toHaveBeenCalledWith(
-        ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED,
-        false
-      )
-    })
-
-    it('is false when feature lookup throws', () => {
-      vi.mocked(api.getServerFeature).mockImplementation(() => {
-        throw new Error('feature service unavailable')
+      afterEach(() => {
+        setLocalBillingWebEnabled(false)
+        setLocalBillingNewUxEnabled(false)
       })
 
-      expect(useFeatureFlags().flags.billingSdkSubscriptionEnabled).toBe(false)
+      it('follows Cloud while the handoff is open', () => {
+        const { flags } = useFeatureFlags()
+        const shown = computed(() => flags.billingNewUxEnabled)
+        setLocalBillingWebEnabled(true)
+
+        expect(shown.value).toBe(false)
+        setLocalBillingNewUxEnabled(true)
+        expect(shown.value).toBe(true)
+        setLocalBillingWebEnabled(false)
+        expect(shown.value).toBe(false)
+      })
+
+      it('ignores those flags on Cloud', () => {
+        vi.mocked(distributionTypes).isCloud = true
+        setLocalBillingWebEnabled(true)
+        setLocalBillingNewUxEnabled(true)
+
+        expect(useFeatureFlags().flags.billingNewUxEnabled).toBe(false)
+      })
     })
   })
 
-  describe('billingSdkSubscriptionRailEnabled', () => {
+  describe('billingSdkRailEnabled', () => {
     it.for([
-      { auth: 'off', unifiedCloudAuth: false, expected: false },
-      { auth: 'on', unifiedCloudAuth: true, expected: true }
-    ])(
-      'follows the SDK flag only while unified auth is $auth',
-      ({ unifiedCloudAuth, expected }) => {
-        vi.mocked(distributionTypes).isCloud = true
-        vi.mocked(api.getServerFeature).mockImplementation((path) => {
-          if (path === ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED)
-            return true
-          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH)
-            return unifiedCloudAuth
-          return false
-        })
+      { build: 'the Cloud build', cloud: true, expected: true },
+      { build: 'any other build', cloud: false, expected: false }
+    ])('is $expected on $build', ({ cloud, expected }) => {
+      vi.mocked(distributionTypes).isCloud = cloud
 
-        expect(useFeatureFlags().flags.billingSdkSubscriptionRailEnabled).toBe(
-          expected
-        )
-      }
-    )
+      expect(useFeatureFlags().flags.billingSdkRailEnabled).toBe(expected)
+    })
   })
 
   describe('ssoEnabled', () => {
@@ -604,6 +516,41 @@ describe('useFeatureFlags', () => {
         remoteConfig.value = { open_on_cloud_enabled: served }
 
         expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(expected)
+      }
+    )
+  })
+
+  describe('openOnCloudUseLocalAgentEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it.for([false, true])('defaults off in dev=%s', (dev) => {
+      vi.stubEnv('DEV', dev)
+
+      expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
+        false
+      )
+    })
+
+    it.for([
+      { served: true, expected: true },
+      { served: false, expected: false },
+      { served: 'true', expected: false }
+    ])(
+      'uses only a boolean true from remote config: $served',
+      ({ served, expected }) => {
+        remoteConfig.value = { open_on_cloud_use_local_agent_enabled: served }
+
+        expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
+          expected
+        )
       }
     )
   })
@@ -927,10 +874,7 @@ describe('useFeatureFlags', () => {
       vi.mocked(distributionTypes).isCloud = true
       remoteConfigState.value = 'authenticated'
       authenticatedRemoteConfigState.value = 'authenticated'
-      remoteConfig.value = {
-        partner_node_governance_enabled: false,
-        unified_cloud_auth: false
-      }
+      remoteConfig.value = { partner_node_governance_enabled: false }
       vi.mocked(api.getServerFeature).mockImplementation(
         (_path, defaultValue) => defaultValue
       )
@@ -939,10 +883,6 @@ describe('useFeatureFlags', () => {
       onTestFinished(stop)
       expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
-        false
-      )
-      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
-        ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         false
       )
       expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
@@ -1012,37 +952,6 @@ describe('useFeatureFlags', () => {
       onTestFinished(stop)
 
       expect(trackFeatureFlagEvaluation).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('unifiedCloudAuthEnabled', () => {
-    it('reads the unified_cloud_auth server feature when set', () => {
-      vi.mocked(distributionTypes).isCloud = true
-      vi.mocked(api.getServerFeature).mockImplementation(
-        (path, defaultValue) => {
-          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH) return true
-          return defaultValue
-        }
-      )
-
-      const { flags } = useFeatureFlags()
-      expect(flags.unifiedCloudAuthEnabled).toBe(true)
-    })
-
-    it('lets a dev override beat the server value', () => {
-      vi.mocked(distributionTypes).isCloud = true
-      vi.mocked(api.getServerFeature).mockReturnValue(false)
-      localStorage.setItem('ff:unified_cloud_auth', 'true')
-
-      const { flags } = useFeatureFlags()
-      expect(flags.unifiedCloudAuthEnabled).toBe(true)
-    })
-
-    it('is disabled outside the cloud distribution', () => {
-      vi.mocked(distributionTypes).isCloud = false
-      remoteConfig.value = { unified_cloud_auth: true }
-
-      expect(useFeatureFlags().flags.unifiedCloudAuthEnabled).toBe(false)
     })
   })
 
@@ -1157,37 +1066,6 @@ describe('useFeatureFlags', () => {
 
       expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
     })
-
-    it.for([
-      {
-        name: 'unified_cloud_auth on does not turn it on',
-        config: { unified_cloud_auth: true },
-        expected: {
-          unifiedCloudAuthEnabled: true,
-          unifiedWebSessionEnabled: false
-        }
-      },
-      {
-        name: 'it turns on without unified_cloud_auth and leaves that flag off',
-        config: { unified_cloud_auth: false, unified_web_session: true },
-        expected: {
-          unifiedCloudAuthEnabled: false,
-          unifiedWebSessionEnabled: true
-        }
-      }
-    ])(
-      'is independent of unified_cloud_auth: $name',
-      ({ config, expected }) => {
-        remoteConfigState.value = 'authenticated'
-        remoteConfig.value = config
-
-        const { flags } = useFeatureFlags()
-        expect({
-          unifiedCloudAuthEnabled: flags.unifiedCloudAuthEnabled,
-          unifiedWebSessionEnabled: flags.unifiedWebSessionEnabled
-        }).toEqual(expected)
-      }
-    )
   })
 
   describe('session override precedence', () => {

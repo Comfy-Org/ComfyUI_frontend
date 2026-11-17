@@ -77,7 +77,7 @@
       <BillingPlanRow
         v-else
         :state="planRow"
-        :action="shownPlanAction"
+        :action="action"
         :copy="planRowCopy"
         :locale
         :sales-variant="salesVariant"
@@ -89,14 +89,11 @@
         </template>
         <template #action="{ action: shown, label, variant }">
           <Button
-            as="a"
-            :href="planActionHref(shown)"
-            target="_blank"
-            rel="noopener"
+            v-bind="planActionButton(shown)"
             :variant
             size="md"
             class="shrink-0 no-underline"
-            @click="trackPlanAction(shown)"
+            @click="followPlanAction(shown)"
           >
             {{ label }}
             <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -222,7 +219,7 @@ import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRef
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformPlansLink } from '@/platform/billing/composables/usePlatformHandoff'
 import BillingPlatformHandoffCard from '@/platform/billing/components/settings/BillingPlatformHandoffCard.vue'
 import { usePlanRowCopy } from '@/platform/billing/composables/usePlanRowCopy'
 import { useCreditsCardCopy } from '@/platform/billing/composables/useCreditsCardCopy'
@@ -300,10 +297,6 @@ const action = computed(() =>
   })
 )
 
-const shownPlanAction = computed(() =>
-  action.value === 'contactSales' || plansAvailable.value ? action.value : null
-)
-
 const { state: autoTopUp } = useBillingAutoTopUpCard()
 const autoTopUpSection = computed(() =>
   deriveAutoTopUpSection({
@@ -340,8 +333,7 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      shownPlanAction.value === 'subscribe' ||
-      (shownPlanAction.value === 'choosePlan' && isCloud)
+      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
   })
 )
 
@@ -353,18 +345,21 @@ const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
-const {
-  href: plansHref,
-  track: trackPlans,
-  available: plansAvailable
-} = usePlatformHandoff('/profile/billing/plans', { target: 'plans' })
+const { button: plansButton, open: openPlans } = usePlatformPlansLink()
 
-function planActionHref(shown: PlanRowAction) {
-  return shown === 'contactSales' ? CONTACT_SALES_URL : plansHref.value
+const CONTACT_SALES_BUTTON = {
+  as: 'a',
+  href: CONTACT_SALES_URL,
+  target: '_blank',
+  rel: 'noopener'
+} as const
+
+function planActionButton(shown: PlanRowAction) {
+  return shown === 'contactSales' ? CONTACT_SALES_BUTTON : plansButton.value
 }
 
-function trackPlanAction(shown: PlanRowAction) {
-  if (shown !== 'contactSales') trackPlans()
+function followPlanAction(shown: PlanRowAction) {
+  if (shown !== 'contactSales') openPlans()
 }
 
 async function retryBalance() {

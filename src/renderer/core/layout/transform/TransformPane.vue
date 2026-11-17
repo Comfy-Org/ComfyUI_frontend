@@ -20,6 +20,7 @@ import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
@@ -40,22 +41,17 @@ const { isTransforming: isInteracting } = useTransformSettling(canvasElement, {
 
 const transformPaneRef = useTemplateRef('transformPaneRef')
 
-/**
- * Apply transform style and will-change class via direct DOM mutation
- * instead of reactive template bindings (:style / :class).
- *
- * These values change every animation frame during zoom or pan.
- * If they were bound in the template, Vue would diff the entire
- * TransformPane vnode—including all child node slots—on every frame,
- * causing expensive vdom patch work across the full node list.
- * Mutating the DOM directly limits the update to a single element.
- */
+const { setTransform: setPaneTransform } =
+  useCompositedTransform(transformPaneRef)
 
-watch([transformStyle, transformPaneRef], ([newStyle, el]) => {
-  if (el) {
-    Object.assign(el.style, newStyle)
+watch(
+  [transformStyle, transformPaneRef],
+  ([{ transformOrigin, ...transform }, el]) => {
+    if (!el) return
+    el.style.transformOrigin = transformOrigin
+    setPaneTransform(transform)
   }
-})
+)
 watch([isInteracting, transformPaneRef], ([interacting, el]) => {
   if (el) {
     el.classList.toggle('will-change-transform', interacting)
