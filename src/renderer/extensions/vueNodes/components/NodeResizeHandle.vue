@@ -32,9 +32,6 @@ const { t } = useI18n()
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 12 12"
       :class="cn('absolute size-2/5', handle.svgPositionClasses)"
-      :style="
-        handle.svgTransform ? { transform: handle.svgTransform } : undefined
-      "
     >
       <path
         d="M11 1L1 11M11 6L6 11"

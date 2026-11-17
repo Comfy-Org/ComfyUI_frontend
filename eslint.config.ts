@@ -554,8 +554,7 @@ export default defineConfig([
         ignores: [
           ...tooltipProviderSurfaces,
           'src/renderer/extensions/linearMode/MobileDisplay.vue',
-          'src/renderer/extensions/vueNodes/components/LGraphNode.vue',
-          'src/renderer/extensions/vueNodes/components/NodeResizeHandle.vue'
+          'src/renderer/extensions/vueNodes/components/LGraphNode.vue'
         ],
         rules: {
           'vue/no-restricted-syntax': [
