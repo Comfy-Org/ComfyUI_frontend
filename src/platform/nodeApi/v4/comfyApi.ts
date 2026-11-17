@@ -27,7 +27,7 @@ import type { QueueHost } from './events/queue/queueHandle'
 import { isInteracting } from './events/interaction'
 import { createNodeChanges } from './events/nodeChanges'
 import { createNodeMoves } from './events/nodeMoves'
-import { createSelectionEvents } from './events/selection'
+import { createSelectionEvents, selectedGroups } from './events/selection'
 import { createViewportEvents } from './events/viewport'
 import { centerOnArea, createGraphView } from './events/view/graphView'
 import { nodeViewMembers } from './events/view/nodeView'
@@ -170,6 +170,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       (visible) => ({
         ...graphHandleMembers(visible, scopes.scopeFor, edit, groupsOf),
         ...createGraphView(nodes, visible, canvas),
+        groupSelection: () => selectedGroups(groupsOf, visible()),
         resolvedSupplies: () => suppliesIn(visible)
       })
     ),

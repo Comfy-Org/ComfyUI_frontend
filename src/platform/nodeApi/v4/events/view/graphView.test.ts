@@ -43,14 +43,33 @@ function documentOnScreen() {
   const inner = new LGraphNode('Inner')
   subgraph.add(inner)
   const canvas = canvasShowing(root)
-  const { comfy, host, useCanvas } = apiOnTestCanvas(root)
+  const { comfy, host, useCanvas, show } = apiOnTestCanvas(root)
   useCanvas(canvas)
   const handle = (node: LGraphNode) => {
     const found = comfy.graph.node(String(node.id))
     assert(found)
     return found
   }
-  return { root, first, second, subgraph, inner, canvas, comfy, host, handle }
+  return {
+    root,
+    first,
+    second,
+    subgraph,
+    inner,
+    canvas,
+    comfy,
+    host,
+    handle,
+    show
+  }
+}
+
+function addGroups(graph: LGraph, ...titles: string[]): LGraphGroup[] {
+  return titles.map((title) => {
+    const group = new LGraphGroup(title)
+    graph.add(group)
+    return group
+  })
 }
 
 describe('graph.selection and graph.select', () => {
@@ -117,6 +136,65 @@ describe('graph.selection and graph.select', () => {
 
     expect(comfy.graph.selection()).toEqual([])
     expect(comfy.graph.select([])).toBe(false)
+  })
+})
+
+describe('graph.groupSelection', () => {
+  it('reads the groups the canvas selected, in draw order, frozen, apart from the nodes', () => {
+    const { root, first, canvas, comfy, handle } = documentOnScreen()
+    const [back, middle, front] = addGroups(root, 'Back', 'Middle', 'Front')
+    const groups = comfy.graph.groups() ?? []
+
+    canvas.select(front)
+    canvas.select(first)
+    canvas.select(back)
+
+    expect(comfy.graph.groupSelection()).toEqual([groups[0], groups[2]])
+    expect(comfy.graph.groupSelection()[0]).toBe(groups[0])
+    expect(Object.isFrozen(comfy.graph.groupSelection())).toBe(true)
+    expect(comfy.graph.selection()).toEqual([handle(first)])
+
+    canvas.deselect(front)
+    canvas.select(middle)
+
+    expect(comfy.graph.groupSelection()).toEqual([groups[0], groups[1]])
+  })
+
+  it('reads the graph the user is in, not the one left behind', () => {
+    const { root, subgraph, canvas, comfy, show } = documentOnScreen()
+    const [outer] = addGroups(root, 'Outer')
+    const [inner] = addGroups(subgraph, 'Inner')
+    canvas.select(outer)
+
+    canvas.setGraph(subgraph)
+    show(subgraph)
+    canvas.select(inner)
+
+    expect(comfy.graph.groupSelection()).toEqual(
+      comfy.graph.subgraphs()[0].groups()
+    )
+    expect(comfy.graph.groupSelection()[0].getTitle()).toBe('Inner')
+  })
+
+  it('drops a selected group once it is removed', () => {
+    const { root, canvas, comfy } = documentOnScreen()
+    const [kept, removed] = addGroups(root, 'Kept', 'Removed')
+    canvas.select(kept)
+    canvas.select(removed)
+    expect(comfy.graph.groupSelection()).toHaveLength(2)
+
+    root.remove(removed)
+
+    expect(
+      comfy.graph.groupSelection().map((group) => group.getTitle())
+    ).toEqual(['Kept'])
+  })
+
+  it('is empty and frozen before there is a graph on screen', () => {
+    const { comfy } = createComfyApi({ getGraph: () => null })
+
+    expect(comfy.graph.groupSelection()).toEqual([])
+    expect(Object.isFrozen(comfy.graph.groupSelection())).toBe(true)
   })
 })
 
