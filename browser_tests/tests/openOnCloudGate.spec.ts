@@ -7,12 +7,17 @@ import {
 } from '@e2e/fixtures/helpers/openOnCloudTraffic'
 
 test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
-  test('boots, loads and hovers the top menu without any Open on Cloud surface or traffic while the gate is off', async ({
+  test('boots, loads and hovers the top menu without a Cloud button or handoff traffic when Cloud disables it', async ({
     comfyPage
   }) => {
-    await comfyPage.featureFlags.seedServerFlags({
-      open_on_cloud_enabled: false
-    })
+    await comfyPage.page.route(
+      (url) => url.protocol === 'https:' && url.pathname === '/api/features',
+      (route) =>
+        route.fulfill({
+          headers: { 'access-control-allow-origin': '*' },
+          json: { open_on_cloud_enabled: false }
+        })
+    )
     const traffic = recordOpenOnCloudTraffic(comfyPage.page)
 
     await comfyPage.workflow.reloadAndWaitForApp()
