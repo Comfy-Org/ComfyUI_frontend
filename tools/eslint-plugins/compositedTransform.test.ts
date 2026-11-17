@@ -58,6 +58,10 @@ describe('composited transform bindings', () => {
       'src/components/graph/lint-fixture/LintFixture.vue',
       '<template><div :style="{ [scale]: width }" /></template>'
     ],
+    [
+      'src/components/graph/lint-fixture/LintFixture.vue',
+      '<template><div :style="{ width: getWidth({ scale: zoom }) }" /></template>'
+    ],
     ['src/components/sidebar/lint-fixture/LintFixture.vue', boundTransform],
     [
       'src/renderer/extensions/vueNodes/components/LGraphNode.vue',
