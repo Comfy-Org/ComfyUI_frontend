@@ -500,7 +500,6 @@
           "src/platform/auth/sso/ssoTelemetry.ts",
           "src/platform/auth/sso/useContinueWithSso.ts",
           "src/platform/auth/unified/**",
-          "src/platform/auth/webSessionFlagOff.test.ts",
           "src/platform/auth/webSessionFlagOn.test.ts",
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.ts",
           "src/platform/workspace/stores/legacyWorkspaceTokenRail.lifecycle.test.ts",
