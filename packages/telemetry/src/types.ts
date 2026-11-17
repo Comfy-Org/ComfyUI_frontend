@@ -125,7 +125,11 @@ export interface ImageLoadFailureMetadata {
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
   timed_out?: boolean
-  /** `MediaError.code` from the video element, when it reported one. 4 is an unsupported format or source. */
+  /**
+   * `MediaError.code` from the video element, when it reported one. 4 covers both an unsupported
+   * format and a source that failed before any data arrived (404, CORS, offline), so read it with
+   * `status` and `probe_outcome`.
+   */
   media_error_code?: number
   /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
   status?: number

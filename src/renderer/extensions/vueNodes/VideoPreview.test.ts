@@ -60,7 +60,7 @@ describe('VideoPreview', () => {
   }
 
   describe('load failure telemetry', () => {
-    it('reports the media error code so a format failure can be told from a network one', async () => {
+    it('reports the media error code from the video element', async () => {
       resetImageFailureProbesForTest()
       vi.mocked(fetch).mockImplementation(
         async () => new Response(null, { status: 200 })
