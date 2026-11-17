@@ -389,7 +389,14 @@ registered, so `extend` cannot depend on the order.
     and `addWidget` (3), and `DefRegistry.defineWidgetType` (3) need the
     widget definitions and handles; `NodeDefinition.resolve` (6),
     `NodeDefBuilder.setSupply` (1), `onPromptSerialize` (1) and `onPreview`
-    (1) need frontend execution and previews.
+    (1) need frontend execution and previews. `NodeDefinition.presentation`
+    (rgthree, 2 definitions; it is in the later V2 contract stored with
+    rgthree, not in the V2 contract document) is how a node is drawn, so it is left for the
+    part that draws pack-owned nodes (`canvas`): of its fields, a hidden
+    title, `resizable` and `collapsible` have host owners
+    (`title_mode`, `resizable`, `collapsable`), and `chrome: 'none'`,
+    `sizing: 'fixed'` and `pinnedInteraction: 'pass-through'` have none in
+    either renderer.
 40. `NodeDefBuilder.onUnplacedLink` (1 pack) and its event are not built. The
     host announces a link dropped on a node (`dropped-on-node`) before it
     tries to place it, and nothing after it fails to, so a hook for "the host
