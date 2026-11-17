@@ -1,3 +1,4 @@
+import { tryOnScopeDispose } from '@vueuse/core'
 import { toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -25,6 +26,7 @@ export function useCompositedTransform(
       return
     }
 
+    releaseTransform()
     animation = element.animate(keyframes, { duration: 1, fill: 'both' })
     animation.pause()
     animatedElement = element
@@ -35,6 +37,8 @@ export function useCompositedTransform(
     animation = undefined
     animatedElement = undefined
   }
+
+  tryOnScopeDispose(releaseTransform)
 
   return { setTransform, releaseTransform }
 }

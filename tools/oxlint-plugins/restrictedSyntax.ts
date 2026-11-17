@@ -98,6 +98,17 @@ interface CallExpression extends Node {
   readonly arguments: readonly Node[]
 }
 
+interface ObjectExpression extends Node {
+  readonly type: 'ObjectExpression'
+  readonly properties: readonly Node[]
+}
+
+interface Property extends Node {
+  readonly type: 'Property'
+  readonly computed: boolean
+  readonly key: Node
+}
+
 interface AssignmentExpression extends Node {
   readonly type: 'AssignmentExpression'
   readonly left: Node
@@ -263,6 +274,48 @@ function isStyleObject(node: Node): boolean {
   )
 }
 
+function setsTransformProperty(
+  callee: MemberExpression,
+  args: readonly Node[]
+): boolean {
+  const name = args.at(0)
+  const property = name && staticString(name)
+  return (
+    staticPropertyName(callee) === 'setProperty' &&
+    isStyleObject(callee.object) &&
+    !!property &&
+    TRANSFORM_STYLE_PROPERTIES.has(property)
+  )
+}
+
+function mayHoldTransformProperty(source: Node): boolean {
+  if (source.type !== 'ObjectExpression') return true
+  return (source as ObjectExpression).properties.some((entry) => {
+    if (entry.type !== 'Property') return true
+    const { computed, key } = entry as Property
+    const name = computed ? staticString(key) : propertyKeyName(key)
+    return !name || TRANSFORM_STYLE_PROPERTIES.has(name)
+  })
+}
+
+function propertyKeyName(key: Node): string | undefined {
+  return identifierName(key) ?? staticString(key)
+}
+
+function assignsTransformToStyle(
+  callee: MemberExpression,
+  args: readonly Node[]
+): boolean {
+  const target = args.at(0)
+  return (
+    staticPropertyName(callee) === 'assign' &&
+    identifierName(callee.object) === 'Object' &&
+    !!target &&
+    isStyleObject(target) &&
+    args.slice(1).some(mayHoldTransformProperty)
+  )
+}
+
 export const noDirectTransformWrite = {
   create(context: RuleContext) {
     function report(node: Node) {
@@ -285,19 +338,9 @@ export const noDirectTransformWrite = {
       CallExpression(node: CallExpression) {
         if (node.callee.type !== 'MemberExpression') return
         const member = node.callee as MemberExpression
-        const method = staticPropertyName(member)
-        const firstArgument = node.arguments.at(0)
-        if (!firstArgument) return
-
-        if (method === 'setProperty' && isStyleObject(member.object)) {
-          const property = staticString(firstArgument)
-          if (property && TRANSFORM_STYLE_PROPERTIES.has(property)) report(node)
-          return
-        }
         if (
-          method === 'assign' &&
-          identifierName(member.object) === 'Object' &&
-          isStyleObject(firstArgument)
+          setsTransformProperty(member, node.arguments) ||
+          assignsTransformToStyle(member, node.arguments)
         ) {
           report(node)
         }

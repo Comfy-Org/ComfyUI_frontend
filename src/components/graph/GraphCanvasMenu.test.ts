@@ -1,19 +1,12 @@
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick, ref } from 'vue'
+import { defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-
-vi.mock<unknown>(
-  import('@/renderer/extensions/minimap/composables/useMinimap'),
-  () => ({
-    useMinimap: () => ({ containerStyles: ref({}) })
-  })
-)
 
 const i18n = createI18n({
   legacy: false,

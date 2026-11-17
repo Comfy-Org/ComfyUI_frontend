@@ -55,6 +55,14 @@ const transformWriteProbes = [
   ['set-property.ts', "element.style.setProperty('transform', 'scale(2)')"],
   ['style-object-assign.ts', 'Object.assign(element.style, nextStyle)'],
   [
+    'style-literal-assign.ts',
+    "Object.assign(element.style, { width: '4px', 'transform': 'none' })"
+  ],
+  [
+    'style-spread-assign.ts',
+    "Object.assign(element.style, { width: '4px', ...nextStyle })"
+  ],
+  [
     'script-setup.vue',
     `<script setup lang="ts">
 element.style.scale = '2'
@@ -156,6 +164,7 @@ computed(() => element.getBoundingClientRect())
 element.style.setProperty('--offset', '4px')
 void element.style.transform
 Object.assign(target, element.style)
+Object.assign(element.style, { opacity: '0', 'width': '4px' })
 setTransform('scale(2)')
 `
   },

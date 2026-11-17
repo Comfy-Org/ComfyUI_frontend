@@ -33,11 +33,17 @@ describe('composited transform bindings', () => {
     }
   )
 
-  it('rejects a transform inside a conditional style object', async () => {
+  it.for([
+    'open ? { transform } : undefined',
+    "{ 'transform': position }",
+    '{ translate: position }',
+    '{ scale: zoom }',
+    "{ 'rotate': angle }"
+  ])('rejects the bound style %s', async (style) => {
     expect(
       await restrictedSyntaxMessages(
         'src/components/graph/lint-fixture/LintFixture.vue',
-        '<template><div :style="open ? { transform } : undefined" /></template>'
+        `<template><div :style="${style}" /></template>`
       )
     ).toHaveLength(1)
   })

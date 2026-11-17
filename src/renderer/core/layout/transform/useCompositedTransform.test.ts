@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import { useCompositedTransform } from './useCompositedTransform'
 
@@ -29,7 +30,7 @@ describe('useCompositedTransform', () => {
     ])
   })
 
-  it('animates the current element when the target changes', () => {
+  it('moves the animation to the current element when the target changes', () => {
     const first = document.createElement('div')
     const second = document.createElement('div')
     let target = first
@@ -39,8 +40,39 @@ describe('useCompositedTransform', () => {
     target = second
     setTransform('scale(2)')
 
-    expect(keyframeTransforms(first)).toEqual([['scale(1)', 'scale(1)']])
+    expect(keyframeTransforms(first)).toEqual([])
     expect(keyframeTransforms(second)).toEqual([['scale(2)', 'scale(2)']])
+  })
+
+  it('leaves no animation behind after returning to an earlier target', () => {
+    const first = document.createElement('div')
+    const second = document.createElement('div')
+    let target = first
+    const { setTransform, releaseTransform } = useCompositedTransform(
+      () => target
+    )
+
+    setTransform('scale(1)')
+    target = second
+    setTransform('scale(2)')
+    target = first
+    setTransform('scale(3)')
+    releaseTransform()
+
+    expect(first.style.transform).toBe('scale(3)')
+    expect(keyframeTransforms(first)).toEqual([])
+    expect(keyframeTransforms(second)).toEqual([])
+  })
+
+  it('drops the animation when its effect scope stops', () => {
+    const element = document.createElement('div')
+    const scope = effectScope()
+    scope.run(() => useCompositedTransform(element).setTransform('scale(2)'))
+
+    scope.stop()
+
+    expect(element.style.transform).toBe('scale(2)')
+    expect(keyframeTransforms(element)).toEqual([])
   })
 
   it('keeps the inline transform and drops the animation when released', () => {

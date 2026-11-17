@@ -14,7 +14,6 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        'overflow-clip [overflow-clip-margin:64px]',
         'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'

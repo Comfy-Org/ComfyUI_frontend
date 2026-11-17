@@ -125,7 +125,7 @@ const graphCanvasTemplates = [
 
 const transformBindingRestriction = {
   selector:
-    "VAttribute[directive=true][key.name.name='bind'][key.argument.name='style'] Property[key.name='transform']",
+    "VAttribute[directive=true][key.name.name='bind'][key.argument.name='style'] Property:matches([key.name=/^(transform|translate|scale|rotate)$/], [key.value=/^(transform|translate|scale|rotate)$/])",
   message:
     'A bound transform makes Chrome recomposite the whole page each time it changes. Set it with useCompositedTransform, or list the file here when the transform only changes outside pan, zoom and drag.'
 }
@@ -553,6 +553,7 @@ export default defineConfig([
         files: graphCanvasTemplates,
         ignores: [
           ...tooltipProviderSurfaces,
+          'src/renderer/extensions/linearMode/MobileDisplay.vue',
           'src/renderer/extensions/vueNodes/components/LGraphNode.vue'
         ],
         rules: {

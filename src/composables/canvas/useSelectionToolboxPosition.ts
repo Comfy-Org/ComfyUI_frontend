@@ -19,10 +19,6 @@ import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
-/**
- * Manages the position of the selection toolbox independently.
- */
-
 // Shared signals for auxiliary UI (e.g., MoreOptions) to coordinate hide/restore
 const moreOptionsOpen = ref(false)
 const forceCloseMoreOptionsSignal = ref(0)

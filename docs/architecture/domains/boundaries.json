@@ -695,6 +695,7 @@
           "src/components/graph/CanvasModeSelector.vue",
           "src/components/graph/CanvasModeSelector.test.ts",
           "src/components/graph/GraphCanvasMenu.vue",
+          "src/components/graph/GraphCanvasMenu.test.ts",
           "src/components/graph/LinkOverlayCanvas.vue",
           "src/components/graph/NodeSelectionModeBanner.vue",
           "src/components/graph/NodeSelectionModeBanner.test.ts",

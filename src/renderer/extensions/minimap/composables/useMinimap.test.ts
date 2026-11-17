@@ -845,47 +845,59 @@ describe('useMinimap', () => {
   })
 
   describe('viewport updates', () => {
-    it('should update viewport transform correctly', async () => {
-      const minimap = await createAndInitializeMinimap()
+    function transformNumbers(transform: string) {
+      return [...transform.matchAll(/-?[0-9]+(?:[.][0-9]+)?/g)].map(([value]) =>
+        Number(value)
+      )
+    }
 
-      await minimap.init()
-      await nextTick()
+    function expectNumbers(transform: string, expected: number[]) {
+      const actual = transformNumbers(transform)
+      expect(actual).toHaveLength(expected.length)
+      for (const [index, value] of expected.entries()) {
+        expect(actual[index]).toBeCloseTo(value, 6)
+      }
+    }
+
+    it('places and scales the viewport box from the camera', async () => {
+      moduleMockCanvas.canvas.clientWidth = 1000
+      moduleMockCanvas.canvas.clientHeight = 400
+      moduleMockCanvas.ds.scale = 2
+      moduleMockCanvas.ds.offset = [-100, 50]
+      const minimap = await createAndInitializeMinimap()
 
       const { box, horizontalEdge, verticalEdge } =
         minimap.viewportTransforms.value
 
-      expect(box).toMatch(
-        /^translate\(-?\d+(\.\d+)?px, -?\d+(\.\d+)?px\) scale\(\d+(\.\d+)?, \d+(\.\d+)?\)$/
-      )
-      expect(horizontalEdge).toMatch(/^scaleY\(\d+(\.\d+)?\)$/)
-      expect(verticalEdge).toMatch(/^scaleX\(\d+(\.\d+)?\)$/)
+      expect(box).toMatch(/^translate[(].+px, .+px[)] scale[(].+, .+[)]$/)
+      expectNumbers(box, [118.25, 87.625, 0.18, 0.09])
+      expect(horizontalEdge).toMatch(/^scaleY[(].+[)]$/)
+      expectNumbers(horizontalEdge, [1 / 0.09])
+      expect(verticalEdge).toMatch(/^scaleX[(].+[)]$/)
+      expectNumbers(verticalEdge, [1 / 0.18])
       expect(minimap.viewportStyles).toMatchObject({
         width: '250px',
         height: '200px'
       })
     })
 
-    it('should handle canvas dimension updates', async () => {
+    it('rescales the viewport box when the canvas is resized', async () => {
       const minimap = await createAndInitializeMinimap()
-
-      await minimap.init()
 
       moduleMockCanvas.canvas.clientWidth = 1200
       moduleMockCanvas.canvas.clientHeight = 900
 
-      const resizeHandler = vi
-        .mocked(window.addEventListener)
-        .mock.calls.find((call) => call[0] === 'resize')?.[1] as
-        | EventListener
-        | undefined
-
-      if (resizeHandler) {
-        resizeHandler(new Event('resize'))
+      for (const [type, listener] of vi.mocked(window.addEventListener).mock
+        .calls) {
+        if (type === 'resize' && typeof listener === 'function')
+          listener(new Event('resize'))
       }
+      await triggerRAF()
 
-      await nextTick()
-
-      expect(minimap.viewportTransforms.value.box).toContain('scale(')
+      expectNumbers(
+        minimap.viewportTransforms.value.box,
+        [109.25, 92.125, 0.432, 0.405]
+      )
     })
   })
 
