@@ -249,6 +249,14 @@ export class WorkflowHelper {
     })
   }
 
+  async getChangeCount(): Promise<number | undefined> {
+    return this.comfyPage.page.evaluate(() => {
+      const workflow = (window.app!.extensionManager as WorkspaceStore).workflow
+        .activeWorkflow
+      return workflow?.changeTracker.changeCount
+    })
+  }
+
   async getRedoQueueSize(): Promise<number | undefined> {
     return this.comfyPage.page.evaluate(() => {
       const workflow = (window.app!.extensionManager as WorkspaceStore).workflow

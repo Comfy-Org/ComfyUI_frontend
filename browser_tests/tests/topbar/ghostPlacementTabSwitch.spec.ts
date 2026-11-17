@@ -1,25 +1,7 @@
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import type { WorkspaceStore } from '@e2e/types/globals'
-
-const SEARCH_POSITION = { x: 400, y: 400 }
-
-function getActiveChangeCount(comfyPage: ComfyPage) {
-  return comfyPage.page.evaluate(
-    () =>
-      (window.app!.extensionManager as WorkspaceStore).workflow.activeWorkflow
-        ?.changeTracker.changeCount
-  )
-}
-
-async function switchToTab(comfyPage: ComfyPage, index: number) {
-  const { topbar } = comfyPage.menu
-  await topbar.getTab(index).click()
-  await expect(topbar.getTab(index).and(topbar.getActiveTab())).toBeVisible()
-}
 
 for (const mode of ['litegraph', 'vue'] as const) {
   test.describe(
@@ -33,15 +15,17 @@ for (const mode of ['litegraph', 'vue'] as const) {
       test('cancels the unplaced node and keeps later edits in that workflow', async ({
         comfyPage
       }) => {
-        const { searchBoxV2 } = comfyPage
+        const { searchBoxV2, workflow } = comfyPage
         const { topbar } = comfyPage.menu
+        const position = { x: 400, y: 400 }
 
         await topbar.openBlankWorkflows(1)
         await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
-        await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+        const [tabA, tabB] = await topbar.getTabNames()
+        await comfyPage.expectNodeCount(0)
 
         await test.step('Search a node in B and leave it following the cursor', async () => {
-          await searchBoxV2.openByDoubleClickCanvas(SEARCH_POSITION)
+          await searchBoxV2.openByDoubleClickCanvas(position)
           await searchBoxV2.input.fill('KSampler')
           await expect(searchBoxV2.results.first()).toContainText('KSampler')
           await comfyPage.page.keyboard.press('Enter')
@@ -56,26 +40,19 @@ for (const mode of ['litegraph', 'vue'] as const) {
         })
 
         await test.step('Switch to A and back to B without placing it', async () => {
-          await switchToTab(comfyPage, 0)
-          await switchToTab(comfyPage, 1)
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(0)
+          await workflow.switchToTab(tabA)
+          await workflow.switchToTab(tabB)
+          await comfyPage.expectNodeCount(0)
         })
 
         await test.step('A node placed afterwards in B survives a tab round trip', async () => {
-          await comfyPage.page.mouse.click(SEARCH_POSITION.x, SEARCH_POSITION.y)
-          await searchBoxV2.addNode('KSampler', { position: SEARCH_POSITION })
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
+          await searchBoxV2.addNode('KSampler', { position })
+          await comfyPage.expectNodeCount(1)
 
-          await switchToTab(comfyPage, 0)
-          await switchToTab(comfyPage, 1)
-          await expect
-            .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-            .toBe(1)
-          await expect.poll(() => getActiveChangeCount(comfyPage)).toBe(0)
+          await workflow.switchToTab(tabA)
+          await workflow.switchToTab(tabB)
+          await comfyPage.expectNodeCount(1)
+          await expect.poll(() => workflow.getChangeCount()).toBe(0)
         })
       })
     }
