@@ -1717,6 +1717,7 @@
     "confirmQuit": "There are unsaved workflows open; any unsaved changes will be lost.  Ignore this and quit?"
   },
   "settingsCategories": {
+    "PromptTags": "Prompt tags",
     "Comfy-Desktop": "Comfy-Desktop",
     "General": "General",
     "Appearance": "Appearance",

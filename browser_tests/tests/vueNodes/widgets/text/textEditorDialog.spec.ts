@@ -138,23 +138,34 @@ test.describe(
       const widget = node.getByRole('textbox', { name: 'text' })
       const dialog = new TextEditorDialog(comfyPage.page)
 
-      await test.step('import a catalog in the expanded prompt editor', async () => {
+      await test.step('import a catalog once in Settings', async () => {
+        await comfyPage.settingDialog.open()
+        await comfyPage.settingDialog.category('Prompt tags').click()
+        await comfyPage.settingDialog.root
+          .getByLabel('Import prompt tags')
+          .setInputFiles({
+            name: 'tags.txt',
+            mimeType: 'text/plain',
+            buffer: Buffer.from('blue_eyes,20\nblue_hair,10')
+          })
+        await expect(
+          comfyPage.settingDialog.root.getByText(
+            '2 tags loaded for this session',
+            {
+              exact: true
+            }
+          )
+        ).toBeVisible()
+        await comfyPage.settingDialog.close()
         await widget.fill('')
         await widget.hover()
         await node
           .getByRole('group', { name: 'Actions' })
           .getByRole('button', { name: 'Expand' })
           .click()
-        await dialog.root.getByLabel('Import prompt tags').setInputFiles({
-          name: 'tags.txt',
-          mimeType: 'text/plain',
-          buffer: Buffer.from('blue_eyes,20\nblue_hair,10')
-        })
-        await expect(
-          dialog.root.getByText('2 tags loaded for this session', {
-            exact: true
-          })
-        ).toBeVisible()
+        await expect(dialog.root.getByLabel('Import prompt tags')).toHaveCount(
+          0
+        )
       })
 
       await test.step('navigate and accept without leaving the textarea', async () => {

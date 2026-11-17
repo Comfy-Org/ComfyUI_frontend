@@ -42,11 +42,11 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWidgetAugmentations } from '@/platform/extensions/useWidgetAugmentations'
 import type { WidgetAugmentationTarget } from '@/platform/extensions/widgetAugmentation'
-import TextareaAutocomplete from '@/renderer/extensions/textEditor/components/TextareaAutocomplete.vue'
 import {
   supportsPromptTagCatalog,
   usePromptTagCatalogStore
-} from '@/renderer/extensions/textEditor/promptTagCatalogStore'
+} from '@/platform/settings/promptTagCatalogStore'
+import TextareaAutocomplete from '@/renderer/extensions/textEditor/components/TextareaAutocomplete.vue'
 import { useTextareaEdit } from '@/renderer/extensions/textEditor/useTextareaEdit'
 
 const {

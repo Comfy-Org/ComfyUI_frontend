@@ -272,6 +272,7 @@ export type SettingPanelType =
   | 'credits'
   | 'extension'
   | 'keybinding'
+  | 'prompt-tags'
   | 'secrets'
   | 'server-config'
   | 'user'
