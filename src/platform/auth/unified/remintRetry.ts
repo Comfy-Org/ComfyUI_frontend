@@ -5,7 +5,6 @@ import type {
 } from 'axios'
 import axios, { AxiosHeaders } from 'axios'
 
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { RetrySignalLifecycle } from '@comfyorg/api-client/apiAuthProvider'
 import {
   presentForRefusal,
@@ -22,10 +21,6 @@ import { fetchWithRetry } from '@comfyorg/api-client/fetchWithRetry'
 import type { RetryPolicy } from '@comfyorg/api-client/retryPolicy'
 import { withSignInRefusalRetry } from '@comfyorg/api-client/retryPolicy'
 
-let cachedUnifiedFlags:
-  | { readonly unifiedCloudAuthEnabled: boolean }
-  | undefined
-
 type UnifiedRemint = (expectedToken: string) => Promise<string | null>
 
 let remintUnified: UnifiedRemint | undefined
@@ -35,17 +30,9 @@ export function provideUnifiedRemint(remint: UnifiedRemint): void {
   remintUnified = remint
 }
 
-/**
- * Single gate for the reactive guard: a cloud build with `unified_cloud_auth`
- * ON. Memoizes the feature-flag accessor so the hot `fetchApi` path does not
- * build a fresh reactive proxy per request (the cached getter still reflects
- * live flag changes), and is reused at every cloud request seam so the gate
- * cannot be forgotten on a new call site.
- */
+/** Single gate for the reactive 401 guard, reused at every cloud request seam: true on Cloud. */
 export async function shouldRemintCloudRequest(): Promise<boolean> {
-  if (!isCloud) return false
-  if (!cachedUnifiedFlags) cachedUnifiedFlags = useFeatureFlags().flags
-  return cachedUnifiedFlags.unifiedCloudAuthEnabled
+  return isCloud
 }
 
 /** `policy`, also sending a write the sign-in check refused once more on cloud. */
@@ -232,9 +219,8 @@ async function presentSsoRefusal(error: unknown): Promise<void> {
 /**
  * Installs a response interceptor that gives a cloud axios client the same
  * reactive 401 guard as {@link fetchWithUnifiedRemint}: a single re-mint + a
- * single retry on `401`, surfacing a persistent `401` unchanged. A strict
- * no-op while `unified_cloud_auth` is OFF — the original error rejects exactly
- * as it does today.
+ * single retry on `401`, surfacing a persistent `401` unchanged. A no-op off
+ * Cloud: the original error rejects unchanged.
  */
 export function attachUnifiedRemintInterceptor(client: AxiosInstance): void {
   client.interceptors.response.use(

@@ -26,8 +26,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const RAILS_ON = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const PENDING_OPERATION_ID = 'op-e2e-idle-tab'

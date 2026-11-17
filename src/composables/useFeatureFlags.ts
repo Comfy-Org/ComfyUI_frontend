@@ -299,15 +299,6 @@ export function useFeatureFlags() {
         undefined
       )
     },
-    get unifiedCloudAuthEnabled() {
-      if (!isCloud) return false
-
-      return resolveFlag(
-        ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
-        remoteConfig.value.unified_cloud_auth,
-        false
-      )
-    },
     get unifiedWebSessionEnabled() {
       if (!isCloud) return false
 
@@ -371,9 +362,9 @@ export function useFeatureFlags() {
         remoteConfig.value.billing_auto_top_up_at_checkout_enabled
       )
     },
-    /** Top-up, subscription and billing reads run on the billing SDK, which needs the unified session. */
+    /** Top-up, subscription and billing reads run on the billing SDK on Cloud. */
     get billingSdkRailEnabled() {
-      return this.unifiedCloudAuthEnabled
+      return isCloud
     },
     get unifiedBillingSettingsEnabled() {
       if (!isCloud) return opensLocalBillingHandoff()
@@ -470,7 +461,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
-      [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
       [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED]:

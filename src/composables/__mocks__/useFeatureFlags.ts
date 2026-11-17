@@ -36,7 +36,6 @@ const defaultFlags: FeatureFlags = {
   hostedBillingDestination: 'stripe',
   hostedBillingWebEnabled: false,
   showSignInButton: undefined,
-  unifiedCloudAuthEnabled: false,
   unifiedWebSessionEnabled: false,
   ssoEnabled: false,
   webSessionLapseRecoveryEnabled: false,
