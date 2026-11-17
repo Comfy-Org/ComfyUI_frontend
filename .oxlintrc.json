@@ -283,6 +283,13 @@
       }
     },
     {
+      "files": ["src/**/*.{ts,vue}"],
+      "excludeFiles": ["src/**/*.{test,stories}.ts", "src/**/__mocks__/**"],
+      "rules": {
+        "comfy/no-app-singleton-import": "error"
+      }
+    },
+    {
       "files": [
         "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
