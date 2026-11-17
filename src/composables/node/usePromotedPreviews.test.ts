@@ -13,7 +13,7 @@ import {
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
-import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
+import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { usePromotedPreviews } from './usePromotedPreviews'
 
 function createSetup() {
@@ -137,6 +137,7 @@ describe(usePromotedPreviews, () => {
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
@@ -190,7 +191,7 @@ describe(usePromotedPreviews, () => {
     ])
   })
 
-  it('returns separate entries for multiple promoted $$ widgets', () => {
+  it('names each promoted preview by its exposure, not its shared leaf name', () => {
     const setup = createSetup()
     addInteriorNode(setup, { id: 10, previewMediaType: 'image' })
     addInteriorNode(setup, { id: 20, previewMediaType: 'image' })
@@ -202,8 +203,16 @@ describe(usePromotedPreviews, () => {
 
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
-      expect.objectContaining({ items: outputItems('a.png') }),
-      expect.objectContaining({ items: outputItems('b.png') })
+      expect.objectContaining({
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        items: outputItems('a.png')
+      }),
+      expect.objectContaining({
+        name: `${CANVAS_IMAGE_PREVIEW_WIDGET}_1`,
+        sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
+        items: outputItems('b.png')
+      })
     ])
   })
 
@@ -220,6 +229,7 @@ describe(usePromotedPreviews, () => {
     const { promotedPreviews } = usePromotedPreviews(() => setup.subgraphNode)
     expect(promotedPreviews.value).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'preview',
@@ -256,6 +266,7 @@ describe(usePromotedPreviews, () => {
 
     expect(promotedPreviews.value).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'preview',
@@ -316,6 +327,7 @@ describe(usePromotedPreviews, () => {
     )
     expect(promotedPreviews.value).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'image',
@@ -370,6 +382,7 @@ describe(usePromotedPreviews, () => {
     expect(usePromotedPreviews(() => firstHost).promotedPreviews.value).toEqual(
       [
         {
+          name: CANVAS_IMAGE_PREVIEW_WIDGET,
           sourceNodeId: '10',
           sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
           type: 'preview',
@@ -381,6 +394,7 @@ describe(usePromotedPreviews, () => {
       usePromotedPreviews(() => secondHost).promotedPreviews.value
     ).toEqual([
       {
+        name: CANVAS_IMAGE_PREVIEW_WIDGET,
         sourceNodeId: '10',
         sourceWidgetName: CANVAS_IMAGE_PREVIEW_WIDGET,
         type: 'preview',

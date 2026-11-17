@@ -27,7 +27,6 @@ export async function mockAutoTopUpPurchase(
   await setupCloudApp(page, {
     workspace: PERSONAL_WORKSPACE,
     features: {
-      unified_cloud_auth: true,
       billing_new_ux_enabled: true,
       billing_auto_top_up_at_checkout_enabled: atCheckout
     } satisfies RemoteConfig,

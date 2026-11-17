@@ -19,6 +19,7 @@ import { noPositionalBooleanParams } from './positionalBoolean.ts'
 import {
   noDeprecatedApiSchema,
   noDirectSelectionWrite,
+  noDirectTransformWrite,
   noDomInComputed,
   noEs2023ArrayCopyMethod,
   noJsPrivateClassMembers,
@@ -51,6 +52,7 @@ export default {
     'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-direct-selection-write': noDirectSelectionWrite,
+    'no-direct-transform-write': noDirectTransformWrite,
     'no-dom-in-computed': noDomInComputed,
     'no-js-extension-imports': noJsExtensionImports,
     'no-js-private-class-members': noJsPrivateClassMembers,

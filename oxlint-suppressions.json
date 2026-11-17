@@ -279,7 +279,7 @@
       "count": 9
     },
     "comfy/no-positional-boolean-params": {
-      "count": 7
+      "count": 6
     },
     "comfy/no-reexports": {
       "count": 1
@@ -296,9 +296,6 @@
     }
   },
   "src/lib/litegraph/src/LGraphNode.ts": {
-    "comfy/no-new-error-throw": {
-      "count": 1
-    },
     "comfy/no-positional-boolean-params": {
       "count": 22
     }
@@ -351,6 +348,11 @@
   "src/lib/litegraph/src/canvas/ToOutputRenderLink.ts": {
     "comfy/no-new-error-throw": {
       "count": 4
+    }
+  },
+  "src/lib/litegraph/src/connectivitySystem.ts": {
+    "comfy/no-new-error-throw": {
+      "count": 1
     }
   },
   "src/lib/litegraph/src/litegraph.ts": {

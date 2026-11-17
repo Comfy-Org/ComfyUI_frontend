@@ -359,6 +359,22 @@
     },
     {
       "files": [
+        "src/components/graph/**/*.{ts,vue}",
+        "src/composables/canvas/**/*.{ts,vue}",
+        "src/composables/graph/**/*.{ts,vue}",
+        "src/renderer/**/*.{ts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/renderer/core/layout/transform/useCompositedTransform.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-transform-write": "error"
+      }
+    },
+    {
+      "files": [
         "src/platform/remote/**/*.ts",
         "src/platform/remote/**/*.vue",
         "packages/api-client/src/**/*.ts"
