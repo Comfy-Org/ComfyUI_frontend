@@ -4103,15 +4103,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     document.addEventListener('keydown', this._ghostKeyHandler, true)
   }
 
-  /**
-   * Finalizes ghost placement mode.
-   * @param cancelled If true, the node is removed; otherwise it's placed
-   */
   /** Cancels the in-flight ghost placement, if any. */
   cancelGhostPlacement(): void {
     if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
   }
 
+  /**
+   * Finalizes ghost placement mode.
+   * @param cancelled If true, the node is removed; otherwise it's placed
+   */
   finalizeGhostPlacement(cancelled: boolean): void {
     const ownedGhostState =
       this._ghostPointerHandler != null || this._ghostKeyHandler != null
