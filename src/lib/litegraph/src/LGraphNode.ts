@@ -1335,10 +1335,11 @@ export class LGraphNode
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
-    useWidgetValueStore().prepareNodeComponents(
-      this.properties,
-      info.properties ?? {}
-    )
+    if (info.properties)
+      useWidgetValueStore().prepareNodeComponents(
+        this.properties,
+        info.properties
+      )
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
         graphId,
@@ -1406,7 +1407,7 @@ export class LGraphNode
       clearWidgetRestorationSlots(this)
       useWidgetValueStore().clearNodeWidgetRestoration(graphId, this.id)
     }
-    if (this.graph?.getNodeById(this.id) === this)
+    if (info.properties && this.graph?.getNodeById(this.id) === this)
       useWidgetValueStore().adoptNodeComponents(
         graphId,
         this.id,

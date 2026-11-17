@@ -163,6 +163,7 @@ function createPlaceholderNode(
     mode: 0,
     flags: {},
     has_errors: true,
+    properties: {},
     last_serialization: {
       id,
       type,
@@ -207,6 +208,7 @@ function createNewNode(
     mode: 0,
     flags: {},
     has_errors: false,
+    properties: {},
     inputs: inputs.map((i) => ({ ...i, type: 'IMAGE' })),
     outputs: outputs.map((o) => ({ ...o, type: 'IMAGE' })),
     widgets: widgets.map((w) => ({ ...w, type: 'combo', options: {} })),
