@@ -2,8 +2,9 @@ import { createApp } from 'vue'
 
 import { resolveSwitch } from './activation'
 import { pointConfig } from './config'
-import PointLayer from './PointLayer.vue'
+import { createHistoryKeeper, historySettings } from './historyKeeper'
 import type { PointHost } from './pointHost'
+import PointRoot from './PointRoot.vue'
 
 /** Mounts the overlay in its own root under `document.body`; returns its removal. */
 export function mountPointLayer(host: PointHost): () => void {
@@ -15,12 +16,13 @@ export function mountPointLayer(host: PointHost): () => void {
     window.location.search,
     window.localStorage
   )
-  const overlay = createApp(PointLayer, {
+  const overlay = createApp(PointRoot, {
     host,
     config: {
       ...pointConfig,
       strokeEntry: pointConfig.strokeEntry || strokeSwitch
-    }
+    },
+    history: createHistoryKeeper(() => window.localStorage, historySettings)
   })
   overlay.mount(root)
   return () => {

@@ -139,6 +139,7 @@ export type PointEvent =
   | { type: 'targetRemoved' }
   | { type: 'finished' }
   | { type: 'dismissed' }
+  | { type: 'workflowChanged' }
 
 export const idleState: PointState = { phase: 'idle' }
 
@@ -396,11 +397,14 @@ function reducePhase(state: PointState, event: PointEvent): PointState {
  * Pure transition: an event that means nothing in the current phase returns
  * `state`. While a follow-up waits, the answer on screen is held: only its
  * reply, its failure, a cancel or the loss of the target changes anything.
+ * Another workflow becoming the open one ends whatever was going on.
  */
 export function reducePointState(
   state: PointState,
   event: PointEvent
 ): PointState {
+  if (event.type === 'workflowChanged')
+    return state.phase === 'idle' ? state : idleState
   if (state.phase === 'guiding' && state.followUp?.status === 'waiting')
     return reduceHeld(state, state.followUp, event)
   switch (event.type) {

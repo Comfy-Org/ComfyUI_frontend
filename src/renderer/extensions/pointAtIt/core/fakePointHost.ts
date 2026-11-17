@@ -107,6 +107,10 @@ interface FakePointHost extends PointHost {
   revealed: HostAddress[]
   forwardedWheels: WheelEvent[]
   rejectsWrites: boolean
+  workflow: string | null
+  /** True from `hideCanvasInfo()` until the function it returned is called. */
+  canvasInfoHidden: boolean
+  openWorkflow(key: string | null): void
   queueRun(): void
   setValue(target: SettingAddress, value: SettingValue): void
   removeNode(nodeId: NodeLocatorId): void
@@ -117,6 +121,7 @@ export function createFakePointHost(
   nodes: HostNode[] = textToImageNodes()
 ): FakePointHost {
   const runListeners = new Set<() => void>()
+  const workflowListeners = new Set<() => void>()
 
   function findSetting(target: SettingAddress): HostSetting | undefined {
     return host.nodes
@@ -130,6 +135,8 @@ export function createFakePointHost(
     revealed: [],
     forwardedWheels: [],
     rejectsWrites: false,
+    workflow: null,
+    canvasInfoHidden: false,
     readNodes: () => host.nodes,
     readSelection: () => host.selection,
     readTarget(target) {
@@ -166,6 +173,21 @@ export function createFakePointHost(
     },
     isGraphElement: (element) => element.hasAttribute('data-fake-graph'),
     topBarPlace: () => null,
+    hideCanvasInfo() {
+      host.canvasInfoHidden = true
+      return () => {
+        host.canvasInfoHidden = false
+      }
+    },
+    workflowKey: () => host.workflow,
+    onWorkflowChange(listener) {
+      workflowListeners.add(listener)
+      return () => workflowListeners.delete(listener)
+    },
+    openWorkflow(key) {
+      host.workflow = key
+      workflowListeners.forEach((listener) => listener())
+    },
     queueRun() {
       runListeners.forEach((listener) => listener())
     },

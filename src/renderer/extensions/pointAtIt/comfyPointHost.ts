@@ -1,6 +1,8 @@
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { watch } from 'vue'
 
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
@@ -14,13 +16,16 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { collectAllNodes, getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
+import { hideCanvasInfoOf } from './canvasInfo'
 import { placeAfterMarker } from './core/dockSlot'
 import type { DockPlace } from './core/dockSlot'
 import type { Rect } from './core/geometry'
+import { followSettled } from './core/settledValue'
 import type {
   HostLink,
   HostNode,
@@ -41,6 +46,7 @@ const TOP_BAR_ACTIONS = '[data-testid="integrated-tab-bar-actions"]'
 const AGENT_ENTRY_SEPARATOR = '[data-testid="agent-entry-separator"]'
 const CLASSIC_ROW_MARGIN = 6
 const EMPTY_VIEWPORT: Rect = { x: 0, y: 0, width: 0, height: 0 }
+const WORKFLOW_SETTLE_MS = 50
 
 type GraphRect = readonly [x: number, y: number, width: number, height: number]
 
@@ -304,6 +310,18 @@ export function createComfyPointHost(): PointHost {
     return () => api.removeEventListener('promptQueued', listener)
   }
 
+  function rootGraphId(): string | null {
+    const id = app.rootGraphOrUndefined?.id
+    return id && id !== zeroUuid ? id : null
+  }
+
+  const workflow = followSettled({
+    read: rootGraphId,
+    isBusy: () => ChangeTracker.isLoadingGraph,
+    watch: (changed) => watch(rootGraphId, changed, { flush: 'sync' }),
+    settleMs: WORKFLOW_SETTLE_MS
+  })
+
   return {
     readNodes,
     readSelection,
@@ -314,6 +332,9 @@ export function createComfyPointHost(): PointHost {
     onRunQueued,
     forwardWheel: forwardEventToCanvas,
     isGraphElement,
-    topBarPlace
+    topBarPlace,
+    hideCanvasInfo: () => hideCanvasInfoOf(() => canvasStore.canvas),
+    workflowKey: workflow.current,
+    onWorkflowChange: workflow.onChange
   }
 }

@@ -58,4 +58,17 @@ export interface PointHost {
    * own element `own`; null when that part of the bar is not on screen.
    */
   topBarPlace(own: Element): DockPlace | null
+  /**
+   * Stops the canvas drawing its own info lines (the fps and the rest, at the
+   * bottom left) and returns what brings them back. The app's setting for
+   * those lines is not changed.
+   */
+  hideCanvasInfo(): () => void
+  /**
+   * What identifies the open workflow, also after a reload; null while none
+   * is loaded. A copy saved under another name has another key.
+   */
+  workflowKey(): string | null
+  /** Calls `listener` after `workflowKey` has changed; returns its removal. */
+  onWorkflowChange(listener: () => void): () => void
 }

@@ -1,5 +1,11 @@
 import { useEventListener, useRafFn } from '@vueuse/core'
-import { computed, onScopeDispose, shallowRef } from 'vue'
+import {
+  computed,
+  hasInjectionContext,
+  inject,
+  onScopeDispose,
+  shallowRef
+} from 'vue'
 
 import { modelBackend, scriptedBackend } from './agentBackends'
 import type { AgentBackend } from './agentBackends'
@@ -14,6 +20,10 @@ import {
   unionRects
 } from './geometry'
 import type { Point, Rect } from './geometry'
+import { createHistoryKeeper, HISTORY_KEEPER } from './historyKeeper'
+import type { HistoryKeeper, HistorySettings } from './historyKeeper'
+import { highestIdNumber } from './historyStorage'
+import type { PendingFollowUp } from './historyStorage'
 import { draftForSelection, matchMark, targetAtPoint } from './markMatching'
 import type { PickedTarget } from './markMatching'
 import { MARK_KEY, messages } from './messages'
@@ -33,6 +43,7 @@ import { idleState, reducePointState, waitsOnFollowUp } from './pointState'
 import type { Draft, GuidingState, PointEvent, PointState } from './pointState'
 import { checkReply } from './replyValidation'
 import type { GuidanceStep, StepWait } from './replyValidation'
+import { askRole } from './slotView'
 import type {
   AnnotationTarget,
   ElementAddress,
@@ -45,6 +56,7 @@ import type { ThinkingEvent, ThinkingLog } from './thinkingLog'
 import {
   emptyConversation,
   historyOf,
+  isPinned,
   latestAnswer,
   noteOf,
   numberedComments,
@@ -65,6 +77,11 @@ interface SessionOptions {
   model?: AgentBackend
   /** Finds the page element under a window point; replaced in tests. */
   elementAt?: (point: Point) => Element | null
+  /**
+   * Keeps each workflow's history. Without one, the keeper the layer's root
+   * provides is used, and without that the history stays in memory.
+   */
+  history?: HistoryKeeper
 }
 
 export interface GuidanceView {
@@ -94,6 +111,11 @@ const MIN_STROKE_STEP = 3
 const SCENE_MAX_AGE_MS = 500
 const ELEMENT_SEARCH_GAP_MS = 500
 const MALFORMED = { kind: 'malformed', detail: '' } as const
+const IN_MEMORY: HistorySettings = {
+  enabled: false,
+  maxCharsPerWorkflow: 0,
+  maxWorkflows: 0
+}
 const KEPT_FROM_THE_PAGE = [
   'pointerdown',
   'mousedown',
@@ -136,15 +158,35 @@ function isInLayer(target: EventTarget | null): boolean {
   return target instanceof Element && isOwnElement(target)
 }
 
+function providedHistory(): HistoryKeeper | null {
+  return hasInjectionContext() ? inject(HISTORY_KEEPER, null) : null
+}
+
+function waitingFollowUp(state: PointState): PendingFollowUp | null {
+  if (state.phase !== 'guiding' || state.followUp?.status !== 'waiting')
+    return null
+  const commentId = state.steps[state.index].annotationId
+  return commentId ? { commentId, text: state.followUp.text } : null
+}
+
 /** Owns the layer's states and every command that changes them. */
 export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   const config = options.config ?? pointConfig
   const elementAt = options.elementAt ?? topElementAt
+  const history =
+    options.history ?? providedHistory() ?? createHistoryKeeper(null, IN_MEMORY)
   const state = shallowRef<PointState>(idleState)
   const conversation = shallowRef<Conversation>(emptyConversation)
   const thinking = shallowRef<ThinkingLog | null>(null)
   const panelState = shallowRef<PanelState>('closed')
-  const panelOpen = computed(() => panelState.value === 'open')
+  const panelOpen = computed(() => panelState.value === 'questions')
+  const askButton = computed(() =>
+    askRole({
+      panel: panelState.value,
+      phase: state.value.phase,
+      thinking: thinking.value
+    })
+  )
   const sendBlock = computed(() => {
     if (state.value.phase === 'waiting') return messages.sendBlocked.waiting
     if (state.value.phase !== 'guiding') return ''
@@ -156,6 +198,10 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   const pins = shallowRef<PinView[]>([])
   const hover = shallowRef<PickedTarget | null>(null)
   const draftAnchor = shallowRef<Rect | null>(null)
+  const opensThinkingOnSend =
+    config.thinkingDockOpensOnSend &&
+    config.agent === 'model' &&
+    config.model.showThinking
   const backends: Record<PointConfig['agent'], AgentBackend> = {
     scripted: scriptedBackend(config.scripted),
     model: options.model ?? modelBackend(config.model)
@@ -166,10 +212,13 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   let idCount = 0
   let stepRun: StepRun | null = null
   let markKeyHeld = false
+  /** A question to put in the next comment box that opens, when one was offered. */
+  let seed = ''
   let disposed = false
   let inFlight: AbortController | null = null
   let askedRequest: BatchRequest | null = null
   let pointer: Point | null = null
+  let workflowKey: string | null = null
   let scene: HostNode[] = []
   let sceneAt = Number.NEGATIVE_INFINITY
 
@@ -251,6 +300,10 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     panelState.value = reducePanel(panelState.value, event)
   }
 
+  function keepHistory(): void {
+    history.keep(workflowKey, conversation.value, waitingFollowUp(state.value))
+  }
+
   function hasSomethingToShow(): boolean {
     const { turns, unsent } = conversation.value
     return (
@@ -268,11 +321,16 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     if (next === previous) return
     state.value = next
     const endsFollowUp = waitsOnFollowUp(previous) && !waitsOnFollowUp(next)
+    if (waitsOnFollowUp(previous) !== waitsOnFollowUp(next)) keepHistory()
     if (previous.phase === 'waiting' || endsFollowUp) inFlight?.abort()
-    if (previous.phase === 'annotating' && next.phase !== 'annotating')
+    if (previous.phase === 'annotating' && next.phase !== 'annotating') {
+      seed = ''
       panel({ type: 'modeLeft', hasContent: hasSomethingToShow() })
+    }
     if (previous.phase !== 'waiting' && next.phase === 'waiting' && !next.asked)
-      panel({ type: 'sendStarted' })
+      panel({ type: 'sendStarted', opensThinking: opensThinkingOnSend })
+    if (previous.phase === 'waiting' && next.phase !== 'waiting')
+      panel({ type: 'requestEnded' })
     const cancelsFollowUp =
       endsFollowUp &&
       previous.phase === 'guiding' &&
@@ -304,8 +362,26 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
 
   function converse(event: ConversationEvent): void {
     conversation.value = reduceConversation(conversation.value, event)
+    keepHistory()
     refreshPins()
     syncFrames()
+  }
+
+  function showWorkflow(key: string | null): void {
+    workflowKey = key
+    conversation.value = history.load(key)
+    idCount = Math.max(idCount, highestIdNumber(conversation.value))
+    elements.clear()
+    elementSearchedAt.clear()
+    think({ type: 'cleared' })
+    send({ type: 'workflowChanged' })
+    refreshPins()
+    syncFrames()
+  }
+
+  function followWorkflow(): void {
+    const key = host.workflowKey()
+    if (key !== workflowKey) showWorkflow(key)
   }
 
   function waitOutcome(
@@ -363,14 +439,21 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   }
 
   function refreshPins(): void {
-    const next = numberedComments(conversation.value).map(
-      ({ annotation, number, turn }) => ({
-        id: annotation.id,
-        number,
-        rect: rectOf(annotation.targets),
-        missing: annotation.targets.every((target) => read(target) === null),
-        locked: turn !== null
-      })
+    const next = numberedComments(conversation.value).flatMap(
+      ({ annotation, number, turn }): PinView[] =>
+        number === null
+          ? []
+          : [
+              {
+                id: annotation.id,
+                number,
+                rect: rectOf(annotation.targets),
+                missing: annotation.targets.every(
+                  (target) => read(target) === null
+                ),
+                locked: turn !== null
+              }
+            ]
     )
     if (!sameJson(pins.value, next)) pins.value = next
   }
@@ -451,11 +534,17 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     tickGuidance(now)
   }
 
+  function takeSeed(): string {
+    const taken = seed
+    seed = ''
+    return taken
+  }
+
   function readSelectionDraft(): Draft | null {
     const selection = host.readSelection()
-    return selection.length > 0
-      ? draftForSelection(selection, host.readNodes())
-      : null
+    if (selection.length === 0) return null
+    const draft = draftForSelection(selection, host.readNodes())
+    return draft && { ...draft, comment: takeSeed() }
   }
 
   function toggleAnnotate(): void {
@@ -469,10 +558,21 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
   }
 
   function pressTrigger(): void {
+    if (askButton.value !== 'mode') {
+      panel({ type: 'thinkingToggled' })
+      return
+    }
     const wasOff = state.value.phase !== 'annotating'
     toggleAnnotate()
     if (wasOff && state.value.phase === 'annotating')
       panel({ type: 'modeEnteredFromTrigger' })
+  }
+
+  /** Turns the mode on from home, with `question` ready in the first comment box. */
+  function startAsking(question: string): void {
+    if (state.value.phase !== 'idle') return
+    seed = question
+    pressTrigger()
   }
 
   function pressCaret(): void {
@@ -485,6 +585,10 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
 
   function openPanel(): void {
     panel({ type: 'stripPressed' })
+  }
+
+  function toggleTaller(): void {
+    panel({ type: 'tallerPressed' })
   }
 
   function onKeyDown(event: KeyboardEvent): void {
@@ -581,7 +685,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
         annotationId: null,
         targets: [registered(found.picked.address, found.element)],
         label: found.picked.label,
-        comment: ''
+        comment: takeSeed()
       }
     })
   }
@@ -677,6 +781,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     if (state.value.phase === 'waiting' || waitsOnFollowUp(state.value)) return
     send({ type: 'dismissed' })
     converse({ type: 'startedOver' })
+    panel({ type: 'startedOver' })
     think({ type: 'cleared' })
     elements.clear()
     elementSearchedAt.clear()
@@ -811,6 +916,28 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     sendBatch()
   }
 
+  /**
+   * Says `text` to her from home, as a comment of its own that is sent at
+   * once: pinned on the selected nodes, as the first box of the Ask mode is,
+   * or on nothing. Like Send, it takes the questions not sent yet with it,
+   * except an earlier message pinned on nothing that a failure or a cancel
+   * left behind: nothing on screen shows it, so the new message replaces it.
+   */
+  function sendMessage(text: string): void {
+    if (state.value.phase !== 'idle' || !text.trim()) return
+    for (const left of conversation.value.unsent)
+      if (!isPinned(left)) converse({ type: 'removed', id: left.id })
+    const selected = draftForSelection(host.readSelection(), host.readNodes())
+    converse({
+      type: 'saved',
+      id: nextId('comment'),
+      targets: selected?.targets ?? [],
+      label: selected?.label ?? '',
+      comment: text
+    })
+    sendBatch()
+  }
+
   function followUp(text: string): void {
     const guiding = state.value
     if (guiding.phase !== 'guiding') return
@@ -932,9 +1059,12 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     }
   )
   const stopRunListener = host.onRunQueued(() => send({ type: 'runQueued' }))
+  const stopWorkflowListener = host.onWorkflowChange(followWorkflow)
+  showWorkflow(host.workflowKey())
   onScopeDispose(() => {
     disposed = true
     stopRunListener()
+    stopWorkflowListener()
     inFlight?.abort()
   })
 
@@ -946,12 +1076,16 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     pins,
     hover,
     draftAnchor,
+    panelState,
     panelOpen,
+    askButton,
     sendBlock,
     pressTrigger,
+    startAsking,
     pressCaret,
     collapsePanel,
     openPanel,
+    toggleTaller,
     toggleAnnotate,
     pressPointer,
     movePointer,
@@ -966,6 +1100,7 @@ export function usePointSession(host: PointHost, options: SessionOptions = {}) {
     startOver,
     sendBatch,
     sendFromDraft,
+    sendMessage,
     followUp,
     retryFollowUp,
     cancelFollowUp,
