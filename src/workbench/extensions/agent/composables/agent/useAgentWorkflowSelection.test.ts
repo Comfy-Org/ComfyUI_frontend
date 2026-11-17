@@ -421,7 +421,7 @@ describe('historical workflow restoration', () => {
       extra: { ds: { offset: [-9000, -9000], scale: 0.5 }, note: 'kept' }
     })
 
-    expect(await selection.restoreTarget('wf-saved', () => true)).toBe(true)
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(true)
 
     const reopened = workflows.activeWorkflow
     assert.exists(reopened)
@@ -453,7 +453,7 @@ describe('historical workflow restoration', () => {
     const { selection, workflows, bindings, panel, loadHostWorkflow } = setup()
     loadHostWorkflow.mockResolvedValueOnce(hostGraph())
 
-    expect(await selection.restoreTarget('wf-unnamed', () => true)).toBe(true)
+    expect((await selection.restoreTarget('wf-unnamed', () => true)).ready).toBe(true)
 
     const reopened = workflows.activeWorkflow
     assert.exists(reopened)

@@ -22,6 +22,10 @@ vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 vi.mock(import('@/platform/telemetry/reportError'))
+// The model picker's list (demo builds) loads beside the run mode; this suite is about the panel root
+vi.mock(import('@/workbench/extensions/agent/stores/agent/agentModelStore'), () => ({
+  useAgentModelStore: (() => ({ load: async () => {} })) as never
+}))
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
