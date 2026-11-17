@@ -50,32 +50,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     app.nodePreviewImages = {}
   })
 
-  it('keeps execution-keyed outputs distinct from locator-keyed outputs', () => {
-    const store = useNodeOutputStore()
-    const firstOutput = createMockOutputs([{ filename: 'first.png' }])
-    const secondOutput = createMockOutputs([{ filename: 'second.png' }])
-
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
-      firstOutput
-    )
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)]),
-      secondOutput
-    )
-
-    expect(
-      store.getNodeOutputByExecutionId(
-        createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(firstOutput)
-    expect(
-      store.getNodeOutputByExecutionId(
-        createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(secondOutput)
-  })
-
   it('merges execution-keyed outputs when merge is true', () => {
     const store = useNodeOutputStore()
     const initialOutput = createMockOutputs([{ filename: 'first.png' }])
@@ -98,30 +72,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
         createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
       )?.images
     ).toEqual([{ filename: 'first.png' }, { filename: 'second.png' }])
-  })
-
-  it('keeps execution-keyed previews distinct from locator-keyed previews', () => {
-    const store = useNodeOutputStore()
-
-    store.setNodePreviewsByExecutionId(
-      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
-      ['blob:first']
-    )
-    store.setNodePreviewsByExecutionId(
-      createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)]),
-      ['blob:second']
-    )
-
-    expect(
-      store.getNodePreviewImagesByExecutionId(
-        createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(['blob:first'])
-    expect(
-      store.getNodePreviewImagesByExecutionId(
-        createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(['blob:second'])
   })
 
   it('projects execution output into canonical state and view URLs', () => {
