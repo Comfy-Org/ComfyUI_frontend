@@ -175,6 +175,39 @@ review finding requires it. The counts below are packs, then call sites.
       `applyTextReplacements` over the root graph, so `%Node.widget%`
       reaches nodes in subgraphs too. Before there is a graph it returns
       `undefined` rather than the unexpanded text.
+    - `getExtra(document, key)` (1 pack, 1 site) returns a frozen copy,
+      made by `savedCopier`, of one key of the `extra` object the
+      document's workflow saves, as `getProperty` does for a node
+      property: `undefined` for a key the object does not own, for a value
+      a save could not write, for a closed document and for `undefined` (so
+      a pack can pass `current()` or the document `onWorkflowLoaded` gives
+      it). While the document is on screen the key is read from the root
+      graph's live `extra`, even when the user is inside a subgraph, so a
+      write in the same batch is seen; otherwise it is read from the state
+      its change tracker saves, which is what the host writes to disk.
+      "On screen" is the host's own test for capturing the canvas into a
+      tracker: the tracker is the active workflow's, it may capture the
+      canvas (`canCaptureCanvas`), and no graph is loading. Keys the host
+      fills in only as it saves (`ds`, `reroutes`, `linkExtensions`,
+      `linkPresentation`) are therefore in a background document's
+      `extra` and not in the live one; they are the host's, not a pack's.
+    - `setExtra(document, key, value)` (1 pack, 1 site) writes a copy of
+      `value` into the root graph's `extra` of the document on screen,
+      and `undefined` deletes the key. The write runs inside
+      `comfy.edit.batch`, so the change tracker captures it as one undo
+      step (or as part of the pack's batch), marks the workflow modified
+      and saves it, and undo and redo restore `extra` with the rest of the
+      graph, as the host's own app-mode selections are kept in `extra`.
+      It returns `true` once written and `false` for a background, closed
+      or missing document, or while a graph loads: the change tracker can
+      only capture the graph on the canvas. A key that is not a string, the
+      key `__proto__` (which would replace the object's prototype), a value
+      the workflow cannot save (`savableCopy`, the check `setProperty`
+      uses) and a value that is not a document handle are refused with a
+      `TypeError` before anything changes. Both members take the document
+      first because a document is what `extra` belongs to; the old
+      contract read and wrote the active document only, and returned
+      promises because the sandbox answered across a worker.
 16. `registerImporter(importer)` (4 packs) adds a reader for files the host
     finds no workflow in. Every field is checked at registration (A-10):
     `id` a non-empty string no other importer has, `parse` a function,
@@ -411,6 +444,11 @@ the API reports, recorded here with the change that would lift it.
   default should be the rectangle's centre in client coordinates.
 - **No session uid.** ADR-GRAPH-DOCUMENT-0026 Phase 1; decision 11 says
   what replaces it until then.
+- **No write to a background document's history.** The change tracker
+  captures only the graph on the canvas, so `setExtra` returns `false`
+  for an open document that is not on screen. A tracker method that
+  applies a change to its saved state and pushes the previous state onto
+  its undo queue would let it write there.
 - **Execution events are not addressed to their document.**
   ADR-GRAPH-DOCUMENT-0026 decision D2; see `executingNode()` above.
 
@@ -436,8 +474,16 @@ the API reports, recorded here with the change that would lift it.
   `graphHandle.ts` does for `queryNodes`, and adds what reading does not
   need: following the user between graphs and the set of subgraphs as it
   changes.
-- **A frozen copy.** `snapshot()` uses `savedCopier` from
-  `shared/savedCopy.ts`, the copy the node handles use for property values.
+- **A frozen copy.** `snapshot()` and `getExtra` use `savedCopier` from
+  `shared/savedCopy.ts`, the copy the node handles use for property values;
+  `setExtra` checks its value with the edit core's `savableCopy`.
+- **The undo step.** `setExtra` writes through `comfy.edit.batch`, the edit
+  core's runner over the change tracker, rather than calling the tracker
+  itself.
+- **Which document is on screen.** `setExtra` and `getExtra` ask the same
+  three questions the change tracker asks before it captures the canvas
+  (`activeWorkflow`, `canCaptureCanvas`, `ChangeTracker.isLoadingGraph`);
+  the tracker's own `isActiveTracker` is not exported.
 - **Workflow validation and text replacement.** `validateComfyWorkflow` from
   the workflow schema and `applyTextReplacements` from
   `utils/searchAndReplace`, unchanged.
