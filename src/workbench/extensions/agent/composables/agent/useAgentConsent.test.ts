@@ -674,7 +674,7 @@ describe('useAgentConsent', () => {
 
     await vi.waitFor(() => {
       expect(fetchWithUnifiedRemint).toHaveBeenLastCalledWith(
-        'https://cloud.comfy.test/api/global-settings',
+        'https://api.comfy.test/api/global-settings',
         expect.objectContaining({
           method: 'POST',
           headers: expect.objectContaining({
@@ -943,7 +943,7 @@ describe('useAgentConsent', () => {
     expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
-      'https://cloud.comfy.test/api/global-settings',
+      'https://api.comfy.test/api/global-settings',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ key: stored.key, value: true })

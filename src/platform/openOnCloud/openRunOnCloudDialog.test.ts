@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 
+await import('@/platform/openOnCloud/components/RunOnCloudDialog.vue')
+
 describe(openRunOnCloudDialog, () => {
   it('opens the dialog when the answer is still current after loading', async () => {
     await expect(openRunOnCloudDialog(() => true)).resolves.toBe(true)
