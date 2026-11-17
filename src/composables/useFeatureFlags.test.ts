@@ -494,6 +494,41 @@ describe('useFeatureFlags', () => {
     )
   })
 
+  describe('openOnCloudUseLocalAgentEnabled', () => {
+    beforeEach(() => {
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (_path, defaultValue) => defaultValue
+      )
+    })
+
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
+    it.for([false, true])('defaults off in dev=%s', (dev) => {
+      vi.stubEnv('DEV', dev)
+
+      expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
+        false
+      )
+    })
+
+    it.for([
+      { served: true, expected: true },
+      { served: false, expected: false },
+      { served: 'true', expected: false }
+    ])(
+      'uses only a boolean true from remote config: $served',
+      ({ served, expected }) => {
+        remoteConfig.value = { open_on_cloud_use_local_agent_enabled: served }
+
+        expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
+          expected
+        )
+      }
+    )
+  })
+
   describe('assetsEnabled', () => {
     it.for([
       ['stable cohort without the flag', undefined, false],

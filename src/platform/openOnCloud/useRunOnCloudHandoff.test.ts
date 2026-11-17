@@ -25,7 +25,7 @@ vi.mock(import('@/composables/useCopyToClipboard'), () => {
 
 describe('run on Cloud handoff', () => {
   it.for(['localhost', 'desktop'] as const)(
-    'copies the saved workflow location and CLI instructions on %s without exporting',
+    'copies a preparation-only handoff with the saved workflow location on %s without exporting',
     async (distribution) => {
       const handoff = useRunOnCloudHandoff(distribution)
       useWorkflowStore().activeWorkflow = fromPartial({
@@ -40,7 +40,7 @@ describe('run on Cloud handoff', () => {
       await expect(handoff.copyBrief()).resolves.toBe(true)
 
       expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledWith(
-        `Run my ComfyUI workflow on Comfy Cloud and give me the link that opens it.
+        `Prepare my ComfyUI workflow on Comfy Cloud and give me the link that opens it, ready to run.
 
 First make sure comfy-cli is 1.26.0 or newer:
   comfy --version
@@ -51,6 +51,13 @@ Still older, or the upgrade fails: tell me the version it prints, and stop.
 
 Then read the skill and follow it:
   comfy skills show comfy-run-on-cloud
+
+For this request, stop at the ready-to-run link. Do not submit or execute any
+workflow job, including validation or preflight runs. This overrides the skill's
+instructions to run a real job. Use checks that do not execute the workflow,
+build and deploy if needed with the skill's required confirmations, then save
+the workflow and return its link. Report "prepared, not run" and state that
+execution has not been verified. I will run the workflow myself.
 
 The workflow is the one open in my ComfyUI tab, saved on the server below.
 Fetch it from the server; there is no exported copy on disk.
