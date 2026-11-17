@@ -27,6 +27,14 @@ vi.mock(import('@/utils/imageUtil'), () => ({
   fitDimensionsToNodeWidth: () => ({ minHeight: 256, minWidth: 256 })
 }))
 
+function load(video: HTMLVideoElement, width: number, height: number) {
+  Object.defineProperties(video, {
+    videoWidth: { value: width },
+    videoHeight: { value: height }
+  })
+  video.onloadeddata?.(new Event('loadeddata'))
+}
+
 describe('useNodeVideo', () => {
   async function setup() {
     vi.clearAllMocks()
@@ -53,11 +61,35 @@ describe('useNodeVideo', () => {
     showPreview()
 
     const video = createdVideos[0]
-    video.onloadeddata?.(new Event('loadeddata'))
+    load(video, 640, 480)
     await vi.runAllTimersAsync()
 
-    return { node, video }
+    return { node, video, createdVideos }
   }
+
+  it('says the browser cannot play a video that loads with no picture', async () => {
+    const { node, createdVideos } = await setup()
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      'http://video/prores-with-audio.mov'
+    ])
+
+    useNodeVideo(node).showPreview()
+    load(createdVideos[1], 0, 0)
+    await vi.advanceTimersByTimeAsync(1)
+    load(createdVideos[2], 0, 0)
+    await vi.advanceTimersByTimeAsync(1)
+
+    expect(node.videoContainer?.querySelector('video')).toBeNull()
+    expect(node.videoContainer?.textContent).toBe(
+      "This video can't be played in the browser."
+    )
+  })
+
+  it('shows a video that loads with a picture', async () => {
+    const { node, video } = await setup()
+
+    expect(node.videoContainer?.firstChild).toBe(video)
+  })
 
   it('creates a video-preview widget and forwards canvas events while alive', async () => {
     const { node, video } = await setup()

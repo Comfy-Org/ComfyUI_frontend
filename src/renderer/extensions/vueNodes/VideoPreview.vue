@@ -131,7 +131,10 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import { videoFailureMessageKey } from '@/composables/node/useNodeImage'
+import {
+  MEDIA_ERR_SRC_NOT_SUPPORTED,
+  videoFailureMessageKey
+} from '@/composables/node/useNodeImage'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { useTelemetry } from '@comfyorg/telemetry'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -196,8 +199,11 @@ const handleVideoLoad = (event: Event) => {
   if (!event.target || !(event.target instanceof HTMLVideoElement)) return
   const video = event.target
   showLoader.value = false
-  videoError.value = false
-  if (video.videoWidth && video.videoHeight) {
+  // An undecodable video track with a playable audio track loads without error, but with no picture
+  videoError.value = !video.videoWidth || !video.videoHeight
+  if (videoError.value) {
+    errorCode.value = MEDIA_ERR_SRC_NOT_SUPPORTED
+  } else {
     actualDimensions.value = `${video.videoWidth} x ${video.videoHeight}`
   }
 }

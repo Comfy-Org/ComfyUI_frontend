@@ -18,7 +18,7 @@ const VIDEO_DEFAULT_OPTIONS = {
 const MEDIA_LOAD_TIMEOUT = 8192
 const MAX_RETRIES = 1
 const DEFAULT_VIDEO_SIZE = 256
-const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
+export const MEDIA_ERR_SRC_NOT_SUPPORTED = 4
 
 /** Message for a failed video load, from the media error codes of its attempts. */
 export function videoFailureMessageKey(errorCodes: (number | undefined)[]) {
@@ -209,6 +209,11 @@ export const useNodeVideo = (node: LGraphNode, callback?: () => void) => {
       Object.assign(video, VIDEO_DEFAULT_OPTIONS)
 
       video.onloadeddata = () => {
+        // An undecodable video track with a playable audio track loads without error, but with no picture
+        if (!video.videoWidth || !video.videoHeight) {
+          errorCodes.push(MEDIA_ERR_SRC_NOT_SUPPORTED)
+          return resolve(null)
+        }
         setMinDimensions(video)
         resolve(video)
       }
