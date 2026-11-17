@@ -95,6 +95,21 @@ test.describe('Add credits auto top-up at checkout', { tag: '@cloud' }, () => {
         })
         .toEqual(presetsWhenOpened)
     })
+
+    test('keeps the dialog in view when the window shrinks after opening', async ({
+      page
+    }) => {
+      await page.setViewportSize({ width: 1280, height: 1800 })
+      const dialog = new TopUpCreditsDialog(page)
+      await dialog.openFromTopupLink()
+      await expect(dialog.presets).toBeInViewport()
+
+      await page.setViewportSize({ width: 1280, height: 600 })
+
+      const panel = dialog.root.getByTestId('add-credits-dialog')
+      await expect(panel).toBeInViewport({ ratio: 1 })
+      await expect(dialog.presets).toBeInViewport()
+    })
   })
 
   test.describe('with billing_auto_top_up_at_checkout_enabled off', () => {

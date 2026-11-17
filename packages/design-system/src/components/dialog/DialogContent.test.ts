@@ -56,6 +56,24 @@ describe('DialogContent', () => {
     }
   )
 
+  it('moves a growsDown dialog back into view when the window shrinks', async () => {
+    vi.stubGlobal('innerHeight', 1800)
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(400)
+    render(GrowingDialog, { props: { growsDown: true } })
+    const dialog = screen.getByRole('dialog')
+    await waitFor(() => expect(dialog.style.top).toBe('700px'))
+
+    vi.stubGlobal('innerHeight', 600)
+    window.dispatchEvent(new Event('resize'))
+
+    await waitFor(() =>
+      expect(dialog.style).toMatchObject({
+        top: '100px',
+        maxHeight: 'calc(100dvh - 116px)'
+      })
+    )
+  })
+
   it('leaves a dialog without growsDown centred', async () => {
     render(GrowingDialog)
     await nextTick()
