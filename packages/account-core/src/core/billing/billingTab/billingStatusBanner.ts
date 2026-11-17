@@ -43,12 +43,10 @@ function deriveEnterpriseBanner(
 }
 
 function deriveLifecycleNotice(
-  facts: BillingStatusBannerFacts,
-  audience: BillingStatusBannerAudience
+  facts: BillingStatusBannerFacts
 ): BillingStatusBannerKind | null {
   if (facts.isCancelled && facts.endDate) return 'ending'
   const showsPlanChange =
-    audience === 'team' &&
     facts.hasScheduledChange &&
     !facts.isCancelled &&
     facts.canManage &&
@@ -70,8 +68,7 @@ function cloudCreditBannersOpen(facts: BillingStatusBannerFacts): boolean {
 }
 
 function deriveNoticeBanner(
-  facts: BillingStatusBannerFacts,
-  audience: BillingStatusBannerAudience
+  facts: BillingStatusBannerFacts
 ): BillingStatusBannerKind | null {
   if (!facts.billingControlEnabled) return null
   const creditsOpen = cloudCreditBannersOpen(facts)
@@ -80,7 +77,7 @@ function deriveNoticeBanner(
   if (creditsOpen && facts.hasFunds === false && !facts.outOfCreditsDismissed) {
     return 'outOfCredits'
   }
-  return deriveLifecycleNotice(facts, audience)
+  return deriveLifecycleNotice(facts)
 }
 
 function hasPlanEnded(
@@ -101,5 +98,5 @@ export function deriveBillingStatusBanner(
     return facts.planEndedDismissed ? null : 'planEnded'
   }
   if (facts.enterpriseEndingNotice) return deriveEnterpriseBanner(facts)
-  return audience ? deriveNoticeBanner(facts, audience) : null
+  return audience ? deriveNoticeBanner(facts) : null
 }

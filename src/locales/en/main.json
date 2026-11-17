@@ -3309,6 +3309,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "unknownTierName": "Current plan",
+    "planWithPeriod": {
+      "monthly": "{plan} monthly",
+      "annual": "{plan} yearly"
+    },
     "salesManagedRunBlockedTitle": "Plan inactive",
     "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
