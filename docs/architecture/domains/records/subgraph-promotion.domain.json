@@ -19,9 +19,6 @@
       "path": "src/lib/litegraph/src/subgraph/promotedWidgetStoreProjection.ts"
     },
     {
-      "path": "src/services/subgraphPseudoWidgetCache.ts"
-    },
-    {
       "path": "src/stores/previewExposureStore.ts"
     }
   ],
@@ -60,10 +57,7 @@
     },
     {
       "name": "Preview exposures and promoted preview pseudo-widgets resolve to their inner host nodes",
-      "checks": [
-        "src/stores/previewExposureStore.test.ts",
-        "src/services/subgraphPseudoWidgetCache.test.ts"
-      ]
+      "checks": ["src/stores/previewExposureStore.test.ts"]
     },
     {
       "name": "Subgraph nodes expose promoted inner previews",
