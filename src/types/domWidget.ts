@@ -4,8 +4,11 @@ import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 
+/** What a DOM widget's value can be; the host reads a missing value as `''`. */
+export type DOMWidgetValue = object | string | number | boolean
+
 export interface BaseDOMWidget<
-  V extends object | string = object | string
+  V extends DOMWidgetValue = object | string
 > extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
   // ICustomWidget properties
   type: string
@@ -29,7 +32,7 @@ export interface BaseDOMWidget<
  */
 export interface DOMWidget<
   T extends HTMLElement,
-  V extends object | string
+  V extends DOMWidgetValue
 > extends BaseDOMWidget<V> {
   element: T
   /**
@@ -62,7 +65,7 @@ export interface ComponentWidget<
 }
 
 export interface DOMWidgetOptions<
-  V extends object | string
+  V extends DOMWidgetValue
 > extends IWidgetOptions {
   vueNodeRenderer?: 'dom' | 'native'
   /**
