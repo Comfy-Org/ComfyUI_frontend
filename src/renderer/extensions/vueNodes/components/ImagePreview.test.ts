@@ -445,6 +445,36 @@ describe('ImagePreview', () => {
     expect(openHdrViewer).toHaveBeenCalledWith(viewUrl('out.exr'))
   })
 
+  it('loads an HDR gallery preview after its separate thumbnail fails', async () => {
+    renderImagePreview({
+      items: [
+        outputItem('out.exr', {
+          previewUrl: '/hdr-preview.png',
+          thumbnailUrl: '/hdr-thumbnail.png'
+        }),
+        outputItem('other.png')
+      ]
+    })
+    const user = userEvent.setup()
+
+    await fireEvent.error(
+      screen.getByRole('img', { name: 'Gallery thumbnail 1' })
+    )
+    expect(
+      screen.queryByRole('img', { name: 'Gallery thumbnail 1' })
+    ).not.toBeInTheDocument()
+
+    await switchToGallery(user)
+
+    expect(screen.getByTestId('main-image')).toHaveAttribute(
+      'src',
+      '/hdr-preview.png'
+    )
+    await fireEvent.error(screen.getByTestId('main-image'))
+    expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('main-image')).not.toBeInTheDocument()
+  })
+
   it('displays calculating dimensions text in gallery mode', async () => {
     renderImagePreview({ items: [defaultProps.items[0]] })
 
