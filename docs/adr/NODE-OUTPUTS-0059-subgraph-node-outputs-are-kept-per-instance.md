@@ -1,4 +1,4 @@
-# ADR-NODE-OUTPUTS-0058: Subgraph Node Outputs Are Kept Per Instance
+# ADR-NODE-OUTPUTS-0059: Subgraph Node Outputs Are Kept Per Instance
 
 Date: 2026-11-17
 
@@ -74,9 +74,9 @@ writer for interior nodes.
 
 - Removing a subgraph node from any graph, on screen or not, prunes the
   instance entries whose execution path no longer resolves and releases their
-  blob URLs. The store listens for the `remove_node` graph intent, which every
-  graph emits from `LGraph.remove`, so the pruning does not depend on a
-  renderer.
+  blob URLs. The store listens for the `remove_node` graph intent. `LGraph.remove`
+  emits it for every graph after the node has left the graph, so the pruning
+  does not depend on a renderer.
 - Removing a node's outputs, unpacking a subgraph, resetting, and stashing or
   restoring previews on a workflow switch cover both maps.
 - `snapshotOutputs` returns instance entries keyed by execution ID next to
@@ -92,6 +92,23 @@ The new maps are not reachable from extensions.
 Every store write echoes back through the `app.nodeOutputs` mutation view, so
 the legacy write path cannot tell an extension write from the store's own. It
 therefore updates only the locator entry and never clears instance entries.
+
+## Relation to ADR-WIDGET-COMPONENTS-0058
+
+Widget components are durable data owned by a widget. On node removal,
+`clearNodeOwnedStoreState` copies them into the node's detached metadata and
+then clears the live copies, so undo and paste restore them.
+
+Per-instance outputs are execution state, not widget components, and are not
+registered with the component system. Removal follows the same order: the node
+detaches, then its per-instance entries are cleared. Nothing is copied into
+metadata. A host restored by undo or paste has not run, so it shows nothing
+until it runs.
+
+The clearing runs from the `remove_node` intent rather than from
+`clearNodeOwnedStoreState`. That function runs before the node leaves its
+graph, and `LGraph` imports it, so importing `nodeOutputStore` there creates an
+import cycle through the workflow store.
 
 ## Relation to ADR-GRAPH-DOCUMENT-0026
 
