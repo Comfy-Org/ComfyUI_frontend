@@ -1,4 +1,4 @@
-# ADR-NODE-OUTPUTS-0058: Subgraph Node Outputs Are Kept Per Instance
+# ADR-NODE-OUTPUTS-0059: Subgraph Node Outputs Are Kept Per Instance
 
 Date: 2026-11-17
 
@@ -74,9 +74,9 @@ writer for interior nodes.
 
 - Removing a subgraph node from any graph, on screen or not, prunes the
   instance entries whose execution path no longer resolves and releases their
-  blob URLs. The store listens for the `remove_node` graph intent, which every
-  graph emits from `LGraph.remove`, so the pruning does not depend on a
-  renderer.
+  blob URLs. The store listens for the `remove_node` graph intent. `LGraph.remove`
+  emits it for every graph after the node has left the graph, so the pruning
+  does not depend on a renderer.
 - Removing a node's outputs, unpacking a subgraph, resetting, and stashing or
   restoring previews on a workflow switch cover both maps.
 - `snapshotOutputs` returns instance entries keyed by execution ID next to
