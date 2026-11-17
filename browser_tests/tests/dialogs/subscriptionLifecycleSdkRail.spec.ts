@@ -93,13 +93,7 @@ async function mockCloudBoot(page: Page): Promise<LifecycleRoutes> {
   let resubscribeNotFound = false
   let portalNotFound = false
 
-  await page.route('**/api/features', (r) =>
-    r.fulfill(
-      jsonRoute({
-        unified_cloud_auth: true
-      })
-    )
-  )
+  await page.route('**/api/features', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )

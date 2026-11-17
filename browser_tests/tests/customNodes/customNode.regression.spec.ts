@@ -471,13 +471,8 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
     'attribution self-check requires core PrimitiveInt and PreviewAny'
   ).toEqual([])
   await comfyPage.workflow.loadGraphData(
-    readWorkflow(assetPath('customNodes/core_primitive_preview_run.json'))
+    readWorkflow(assetPath('customNodes/core_smoke.json'))
   )
-  // Once the run's event tap starts filling, inject ONE terminal error under
-  // a prompt id this page never queued. The positive prompt-id filter must
-  // discard it; the pre-capture harness let the never-seen id through the
-  // seen-set and misclassified the run as EXECUTION_ERROR. This is the
-  // discriminating guard for the foreign-attribution bug class.
   await comfyPage.page.evaluate(() => {
     const w = window as unknown as {
       __cnEvents?: object[]
@@ -502,11 +497,6 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
     ]),
     timeoutMs: 15000
   })
-  // Prove the stimulus actually landed before trusting the PASS: without
-  // this, a run that finishes before the injector's next tick never injects
-  // the foreign event, and PASS then holds for the wrong reason (it would
-  // hold identically against a harness with the prompt-id filter removed).
-  // Clearing a not-yet-fired timer stops a post-run push from faking it.
   const injectionLanded = await comfyPage.page.evaluate(() => {
     const w = window as unknown as {
       __cnEvents?: { prompt_id?: string }[]

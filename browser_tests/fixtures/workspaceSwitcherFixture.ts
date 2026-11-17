@@ -10,10 +10,7 @@ import {
   ENDED_STANDARD_BILLING_STATUS
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { makeWorkspaceTokenResponse } from '@e2e/fixtures/data/workspaceAuthFixtures'
-import {
-  WORKSPACE_SWITCHER_REMOTE_CONFIG,
-  WORKSPACE_SWITCHER_WORKSPACES
-} from '@e2e/fixtures/data/workspaceSwitcher'
+import { WORKSPACE_SWITCHER_WORKSPACES } from '@e2e/fixtures/data/workspaceSwitcher'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
@@ -31,9 +28,7 @@ export const workspaceSwitcherTest = comfyPageFixture.extend<{
   workspaceSwitchTokenGate: WorkspaceSwitchTokenGate
 }>({
   page: async ({ page }, use) => {
-    await page.route('**/api/features', (route) =>
-      route.fulfill(jsonRoute(WORKSPACE_SWITCHER_REMOTE_CONFIG))
-    )
+    await page.route('**/api/features', (route) => route.fulfill(jsonRoute({})))
 
     await mockWorkspaceList(page, WORKSPACE_SWITCHER_WORKSPACES)
 

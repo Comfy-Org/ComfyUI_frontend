@@ -106,9 +106,11 @@ import {
   unregisterDomWidgets
 } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import {
   promptErrorHasLockedCredits,
+  promptRefusalPrecondition,
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -237,6 +239,13 @@ import {
 } from '@/composables/usePaste'
 
 export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
+
+function servedRefusalPrecondition(error: unknown) {
+  if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
+  return error instanceof PromptExecutionError
+    ? promptRefusalPrecondition(error.response.error)
+    : undefined
+}
 
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
@@ -2068,10 +2077,10 @@ export class ComfyApp implements IComfyApp {
                 ? normalizePromptError(error.response.error)
                 : null
             const promptPrecondition = promptError
-              ? resolveAccountPrecondition({
+              ? (resolveAccountPrecondition({
                   exceptionType: promptError.type,
                   exceptionMessage: promptError.message
-                })
+                }) ?? servedRefusalPrecondition(error))
               : undefined
             if (promptPrecondition) {
               const opened = await useAccountPreconditionDialog().open(
