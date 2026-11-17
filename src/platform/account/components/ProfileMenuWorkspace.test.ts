@@ -261,6 +261,20 @@ describe('ProfileMenuWorkspace', () => {
     expect(await screen.findByTestId('credits-flyout')).toBeInTheDocument()
   })
 
+  it('opens the credits flyout at once when ArrowRight is pressed on the Credits row', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderMenu()
+    screen.getByTestId('credits-menu-item').focus()
+
+    await user.keyboard('{ArrowRight}')
+
+    expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+  })
+
   it('keeps the credits flyout closed while the workspace switcher is open', async () => {
     vi.useFakeTimers()
     onTestFinished(() => {
