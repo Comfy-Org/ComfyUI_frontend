@@ -115,6 +115,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -325,14 +326,10 @@ describe('ComfyApp', () => {
     const blocked = () => {
       throw new DOMException('Storage is blocked', 'SecurityError')
     }
-    const get = vi
-      .spyOn(Storage.prototype, 'getItem')
-      .mockImplementation(blocked)
-    const set = vi
-      .spyOn(Storage.prototype, 'setItem')
-      .mockImplementation(blocked)
+    const get = vi.spyOn(localStorage, 'getItem').mockImplementation(blocked)
+    const set = vi.spyOn(localStorage, 'setItem').mockImplementation(blocked)
     const remove = vi
-      .spyOn(Storage.prototype, 'removeItem')
+      .spyOn(localStorage, 'removeItem')
       .mockImplementation(blocked)
     try {
       app.loadTemplateData({ templates: [{ data }, { data }] })
@@ -345,6 +342,35 @@ describe('ComfyApp', () => {
       set.mockRestore()
       remove.mockRestore()
     }
+  })
+
+  it('imports legacy template links by relative index rather than serialized node ID', () => {
+    const graph = new LGraph()
+    const sourceGraph = new LGraph()
+    const source = createTestNode(sourceGraph, [], ['MODEL'])
+    const target = createTestNode(sourceGraph, ['MODEL'], [])
+    source.pos = [11, 17]
+    target.pos = [211, 47]
+    const canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
+    onTestFinished(() => canvas.unbindEvents())
+    app.canvas = canvas
+    canvas.graph_mouse[0] = 317
+    canvas.graph_mouse[1] = 451
+    const data = JSON.stringify({
+      nodes: [
+        { ...source.serialize(), id: 41 },
+        { ...target.serialize(), id: 87 }
+      ],
+      links: [[0, 0, 1, 0]]
+    })
+
+    app.loadTemplateData({ templates: [{ data }] })
+
+    expect(graph.nodes.map((node) => Array.from(node.pos))).toEqual([
+      [317, 451],
+      [517, 481]
+    ])
+    expect(graph.nodes[1].getInputNode(0)).toBe(graph.nodes[0])
   })
 
   it('applies extension paste overrides when the clipspace editor saves', () => {

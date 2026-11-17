@@ -491,6 +491,7 @@ describe('useCoreCommands', () => {
       app.canvas = canvas
       onTestFinished(() => {
         app.canvas = previousCanvas
+        canvas.unbindEvents()
         canvas.canvas.remove()
         localStorage.removeItem(CANVAS_CLIPBOARD_KEY)
       })
@@ -544,10 +545,7 @@ describe('useCoreCommands', () => {
       )
     })
 
-    it.for([
-      'Comfy.Canvas.PasteFromClipboard',
-      'Comfy.Canvas.PasteFromClipboardWithConnect'
-    ])('%s inserts cached nodes into the graph', async (id) => {
+    it('inserts cached nodes into the graph', async () => {
       const { graph } = useClipboardCanvas()
       const node = createTestNode(graph, [], [], 'Pasted node')
       localStorage.setItem(
@@ -556,12 +554,34 @@ describe('useCoreCommands', () => {
       )
       graph.remove(node)
 
-      await findCommand(id).function()
+      await findCommand('Comfy.Canvas.PasteFromClipboard').function()
 
       expect(graph.nodes).toEqual([
         expect.objectContaining({ title: 'Pasted node', type: node.type })
       ])
       expect([...app.canvas.selectedItems]).toEqual(graph.nodes)
+    })
+
+    it('reconnects the pasted target to its original source with Paste with Connect', async () => {
+      const { graph, canvas } = useClipboardCanvas()
+      const source = createTestNode(graph, [], ['MODEL'], 'Source')
+      const target = createTestNode(graph, ['MODEL'], [], 'Target')
+      source.connect(0, target, 0)
+      canvas.selectItems([target])
+      await findCommand('Comfy.Canvas.CopySelected').function()
+
+      await findCommand('Comfy.Canvas.PasteFromClipboardWithConnect').function()
+
+      const pasted = graph.nodes.find(
+        (node) => node !== source && node !== target
+      )
+      assert.exists(pasted)
+      const link = pasted.inputs[0].link
+      assert.exists(link)
+      expect(graph.links.get(link)).toMatchObject({
+        origin_id: source.id,
+        target_id: pasted.id
+      })
     })
 
     it('should select all items', async () => {

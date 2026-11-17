@@ -4,7 +4,16 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-di
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
-import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 
 import { fromAny } from '@total-typescript/shoehorn'
 
@@ -3032,6 +3041,15 @@ describe('useWorkflowService', () => {
   })
 
   describe('insertWorkflow', () => {
+    function useInsertionCanvas(graph: LGraph) {
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
+      onTestFinished(() => canvas.unbindEvents())
+      return canvas
+    }
+
     function insertionWorkflow(): LoadedComfyWorkflow {
       const source = new LGraph()
       const node = createTestNode(source, [], [], 'Inserted')
@@ -3050,7 +3068,7 @@ describe('useWorkflowService', () => {
       const graph = new LGraph()
       const existing = createTestNode(graph, [], [], 'Existing')
       existing.pos = [400, 500]
-      app.canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
+      app.canvas = useInsertionCanvas(graph)
 
       await useWorkflowService().insertWorkflow(insertionWorkflow(), {
         position: [120, 240]
@@ -3072,10 +3090,7 @@ describe('useWorkflowService', () => {
           original: LGraph,
           _replacement: LGraph
         ) => {
-          app.canvas = createTestCanvas(
-            original,
-            createMockCanvasRenderingContext2D()
-          )
+          app.canvas = useInsertionCanvas(original)
         }
       },
       {
@@ -3095,10 +3110,7 @@ describe('useWorkflowService', () => {
         createTestNode(original, [], [], 'Original')
         const replacement = new LGraph()
         createTestNode(replacement, [], [], 'Replacement')
-        const canvas = createTestCanvas(
-          original,
-          createMockCanvasRenderingContext2D()
-        )
+        const canvas = useInsertionCanvas(original)
         app.canvas = canvas
         const workflow = insertionWorkflow()
         let finishLoad: (value: LoadedComfyWorkflow) => void = () => {}

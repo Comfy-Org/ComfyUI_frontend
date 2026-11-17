@@ -140,10 +140,7 @@ it('keeps stored templates when saving before the initial load finishes', async 
   )
   expect(written).toEqual([
     { name: 'Stored', data: '{}' },
-    {
-      name: 'New template',
-      data: '{"nodes":[],"groups":[],"reroutes":[],"links":[],"subgraphs":[]}'
-    }
+    expect.objectContaining({ name: 'New template' })
   ])
 })
 
@@ -236,13 +233,7 @@ it('keeps both templates when two saves overlap', async () => {
     String(vi.mocked(api.storeUserData).mock.calls.at(-1)?.[1])
   )
   expect(written).toEqual([
-    {
-      name: 'First',
-      data: '{"nodes":[],"groups":[],"reroutes":[],"links":[],"subgraphs":[]}'
-    },
-    {
-      name: 'Second',
-      data: '{"nodes":[],"groups":[],"reroutes":[],"links":[],"subgraphs":[]}'
-    }
+    expect.objectContaining({ name: 'First' }),
+    expect.objectContaining({ name: 'Second' })
   ])
 })

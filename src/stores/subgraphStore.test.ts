@@ -111,12 +111,13 @@ describe('useSubgraphStore', () => {
     graph.add(subgraphNode)
     const previousCanvas = comfyApp.canvas
     const canvas = createCanvas(graph)
-    comfyApp.canvas = canvas
-    canvas.selectItems([subgraphNode])
     onTestFinished(() => {
       comfyApp.canvas = previousCanvas
+      canvas.unbindEvents()
       canvas.canvas.remove()
     })
+    comfyApp.canvas = canvas
+    canvas.selectItems([subgraphNode])
     vi.mocked(api.storeUserData).mockResolvedValue(
       Response.json({
         path: 'subgraphs/testname.json',
