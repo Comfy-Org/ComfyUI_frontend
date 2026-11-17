@@ -602,6 +602,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   const components = useWidgetComponents()
 
   return {
+    prepareNodeComponents: components.prepareNode,
     adoptNodeComponents: components.adoptNode,
     writeNodeComponents: components.writeNode,
     registerWidget,

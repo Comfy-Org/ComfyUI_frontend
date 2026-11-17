@@ -9,6 +9,15 @@ export const widgetComponentStores = [
 export function useWidgetComponents() {
   const stores = widgetComponentStores.map((useStore) => useStore())
 
+  function prepareNode(
+    properties: Parameters<(typeof stores)[number]['adoptNode']>[2],
+    incoming: Parameters<(typeof stores)[number]['adoptNode']>[2]
+  ) {
+    for (const { wireKey } of stores) {
+      if (!Object.hasOwn(incoming, wireKey)) delete properties[wireKey]
+    }
+  }
+
   function adoptNode(
     ...args: Parameters<(typeof stores)[number]['adoptNode']>
   ) {
@@ -51,6 +60,7 @@ export function useWidgetComponents() {
   }
 
   return {
+    prepareNode,
     adoptNode,
     writeNode,
     detachNode,

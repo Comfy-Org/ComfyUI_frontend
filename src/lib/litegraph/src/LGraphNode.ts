@@ -1335,6 +1335,10 @@ export class LGraphNode
     )
     const namedValues = restoration.named
     const graphId = this.graph?.rootGraph.id ?? zeroUuid
+    useWidgetValueStore().prepareNodeComponents(
+      this.properties,
+      info.properties ?? {}
+    )
     try {
       useWidgetValueStore().setNodeWidgetRestoration(
         graphId,

@@ -86,6 +86,15 @@ export function defineWidgetComponentStore<
       }
     }
 
-    return { get, set, move, clearNode, clearGraph, writeNode, adoptNode }
+    return {
+      wireKey: definition.wireKey,
+      get,
+      set,
+      move,
+      clearNode,
+      clearGraph,
+      writeNode,
+      adoptNode
+    }
   })
 }

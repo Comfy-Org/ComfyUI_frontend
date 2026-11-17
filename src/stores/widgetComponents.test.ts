@@ -101,6 +101,21 @@ describe.for(
     expect(node.properties).not.toHaveProperty(sample.wireKey)
   })
 
+  it('does not resurrect detached components when an override is omitted from a restored snapshot', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('component owner')
+    graph.add(node)
+    const empty = node.serialize()
+    configure(node)
+    graph.remove(node)
+
+    node.configure(empty)
+    graph.add(node)
+
+    expect(useStore().get(widgetId(graph.id, node.id, 'model'))).toBeUndefined()
+    expect(node.serialize().properties).not.toHaveProperty(sample.wireKey)
+  })
+
   it('adopts copied components after node identity collision resolution', () => {
     const graph = new LGraph()
     const original = new LGraphNode('original')
