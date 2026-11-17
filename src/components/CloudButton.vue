@@ -56,7 +56,13 @@ function prefetch() {
 function showModal() {
   const current = check.value
   if (current.phase === 'failed') {
-    toast.error(t('openOnCloud.checkFailed'))
+    toast.error(
+      current.nodeType
+        ? t('openOnCloud.missingLocalModelLoader', {
+            nodeType: current.nodeType
+          })
+        : t('openOnCloud.checkFailed')
+    )
     return
   }
   void openRunOnCloudDialog(() => isMounted && check.value === current)
