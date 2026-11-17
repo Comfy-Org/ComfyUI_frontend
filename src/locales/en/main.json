@@ -132,6 +132,7 @@
     "resizeFromBottomLeft": "Resize from bottom-left corner",
     "resizeFromTopLeft": "Resize from top-left corner",
     "resizePreviewHeight": "Resize preview height",
+    "resizeNumberedPreviewHeight": "Resize preview {index} height",
     "resizeWidgetHeight": "Resize {name} height",
     "info": "Node Info",
     "bookmark": "Save to Library",

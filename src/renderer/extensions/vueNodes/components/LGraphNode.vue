@@ -172,7 +172,7 @@
             />
 
             <div
-              v-for="region in mediaRegions"
+              v-for="(region, index) in mediaRegions"
               :key="region.name"
               :class="
                 cn(
@@ -200,7 +200,11 @@
               </div>
               <GrowableRegionHandle
                 :name="region.name"
-                :label="t('g.resizePreviewHeight')"
+                :label="
+                  mediaRegions.length > 1
+                    ? t('g.resizeNumberedPreviewHeight', { index: index + 1 })
+                    : t('g.resizePreviewHeight')
+                "
               />
             </div>
             <LivePreview

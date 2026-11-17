@@ -440,7 +440,11 @@ test.describe(
       const firstHeight = await heightOf(first)
       const secondHeight = await heightOf(second)
 
-      await host.dragHandle(host.growableRegionHandle().first(), 0, 80)
+      await host.dragHandle(
+        host.root.getByRole('separator', { name: 'Resize preview 1 height' }),
+        0,
+        80
+      )
 
       await expect.poll(() => heightOf(first)).toBeGreaterThan(firstHeight + 40)
       expect(await heightOf(second)).toBeCloseTo(secondHeight, 0)
