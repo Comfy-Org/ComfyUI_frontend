@@ -21,7 +21,7 @@
           >
         </div>
       </div>
-      <PopoverRoot v-else v-slot="{ close }">
+      <PopoverRoot v-else v-slot="{ close }" v-model:open="switcherOpen">
         <PopoverTrigger as-child>
           <Button
             variant="textonly"
@@ -36,6 +36,7 @@
             <WorkspaceProfilePic
               class="size-8 shrink-0 text-sm"
               :workspace-name
+              :subscription-tier="activeSummary?.subscriptionTier"
             />
             <div class="flex min-w-0 flex-1 flex-col">
               <span class="truncate text-foreground">{{ workspaceName }}</span>
@@ -65,7 +66,11 @@
         </PopoverContent>
       </PopoverRoot>
 
-      <HoverCard :open-delay="120">
+      <HoverCard
+        :open="creditsOpen && !switcherOpen"
+        :open-delay="120"
+        @update:open="creditsOpen = $event"
+      >
         <HoverCardTrigger as-child>
           <button
             type="button"
@@ -176,7 +181,7 @@ import type { SettingPanelType } from '@comfyorg/settings-core/types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -203,6 +208,7 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -224,6 +230,9 @@ const menuRowClass =
 
 const { t, locale } = useI18n()
 const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
+const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
+const switcherOpen = ref(false)
+const creditsOpen = ref(false)
 const { userDisplayName, userEmail, handleSignOut, isApiKeyLogin } =
   useCurrentUser()
 const { balance, isLoading, fetchBalance } = useBillingContext()

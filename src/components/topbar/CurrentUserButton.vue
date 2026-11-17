@@ -22,6 +22,18 @@
               v-if="showWorkspaceSkeleton"
               class="size-8 rounded-full"
             />
+            <span
+              v-else-if="flags.billingNewUxEnabled"
+              aria-hidden="true"
+              data-testid="current-user-monogram"
+              :class="
+                cn(
+                  'flex aspect-square items-center justify-center rounded-full bg-foreground text-sm font-medium text-background uppercase',
+                  compact ? 'size-full' : 'size-8'
+                )
+              "
+              >{{ monogram }}</span
+            >
             <WorkspaceProfilePic
               v-else-if="showWorkspaceIcon"
               :workspace-name="workspaceName"
@@ -98,7 +110,11 @@ const {
   side?: 'bottom' | 'left' | 'right'
 }>()
 
-const { isLoggedIn, userPhotoUrl } = useCurrentUser()
+const { isLoggedIn, userPhotoUrl, userDisplayName, userEmail } =
+  useCurrentUser()
+const monogram = computed(() =>
+  (userDisplayName.value || userEmail.value || '').trim().charAt(0)
+)
 
 const photoURL = computed<string | undefined>(
   () => userPhotoUrl.value ?? undefined
