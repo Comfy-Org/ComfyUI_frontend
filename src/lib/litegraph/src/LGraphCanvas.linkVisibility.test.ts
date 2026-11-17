@@ -704,6 +704,99 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
     })
 
+    it('keeps an expanded stack expanded when the second click of its rename lands beside the pill', () => {
+      const { canvas, links, relayout, prompt } = createStackFixture([
+        undefined,
+        undefined,
+        undefined
+      ])
+      pressAt(canvas, 420, 300, 100)
+      relayout()
+
+      pressAt(canvas, 420, 300, 500)
+      relayout()
+      pressAt(canvas, 420, 284, 600)
+      relayout()
+
+      expect(prompt).toHaveBeenCalledOnce()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBe(links[0].id)
+    })
+
+    it('leaves a stack collapsed when Escape is pressed during the second press', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
+      const init = { isPrimary: true, pointerId: 1, clientX: 420, clientY: 300 }
+      const down = new PointerEvent('pointerdown', {
+        ...init,
+        button: 0,
+        buttons: 1
+      })
+      const up = new PointerEvent('pointerup', {
+        ...init,
+        button: 0,
+        buttons: 0
+      })
+      vi.spyOn(down, 'timeStamp', 'get').mockReturnValue(200)
+      vi.spyOn(up, 'timeStamp', 'get').mockReturnValue(220)
+
+      pressAt(canvas, 420, 300, 100)
+      relayout()
+      canvas.processMouseDown(down)
+      canvas.processKey(new KeyboardEvent('keydown', { key: 'Escape' }))
+      canvas.processMouseUp(up)
+      relayout()
+
+      expect(prompt).toHaveBeenCalledOnce()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
+    })
+
+    function dragFromBesideStackAfterClickingIt(gap: number) {
+      const previousBehavior = LiteGraph.leftMouseClickBehavior
+      LiteGraph.leftMouseClickBehavior = 'select'
+      onTestFinished(() => {
+        LiteGraph.leftMouseClickBehavior = previousBehavior
+      })
+      const { canvas, relayout } = createStackFixture()
+      pressAt(canvas, 420, 300, 100)
+      relayout()
+
+      const init = { isPrimary: true, pointerId: 1, button: 0 }
+      const down = new PointerEvent('pointerdown', {
+        ...init,
+        buttons: 1,
+        clientX: 420,
+        clientY: 284
+      })
+      vi.spyOn(down, 'timeStamp', 'get').mockReturnValue(100 + gap)
+      canvas.processMouseDown(down)
+      canvas.processMouseMove(
+        new PointerEvent('pointermove', {
+          ...init,
+          buttons: 1,
+          clientX: 460,
+          clientY: 244
+        })
+      )
+      const draggingCanvas = canvas.dragging_canvas
+      canvas.processMouseUp(
+        new PointerEvent('pointerup', {
+          ...init,
+          buttons: 0,
+          clientX: 460,
+          clientY: 244
+        })
+      )
+      return { draggingCanvas, offset: [...canvas.ds.offset] }
+    }
+
+    it('selects, not pans, when dragging from beside a just-clicked stack', () => {
+      const outsideDoubleClickWindow = dragFromBesideStackAfterClickingIt(1000)
+
+      expect(outsideDoubleClickWindow.draggingCanvas).toBe(false)
+      expect(dragFromBesideStackAfterClickingIt(100)).toEqual(
+        outsideDoubleClickWindow
+      )
+    })
+
     it('keeps a stack expanded when a member click sits between two head clicks', () => {
       const { canvas, links, relayout, prompt } = createStackFixture()
 

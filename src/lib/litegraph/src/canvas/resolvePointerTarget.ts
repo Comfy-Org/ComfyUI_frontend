@@ -27,19 +27,13 @@ import {
 } from './hitTesting'
 import {
   queryHiddenLinkBadgeAtPoint,
-  queryHiddenLinkStackAtPoint,
-  queryHiddenLinkStackToggledAt
+  queryHiddenLinkStackAtPoint
 } from './linkBadgeRenderer'
 
 export type PointerTarget =
   | { kind: 'node'; node: LGraphNode }
   | { kind: 'linkBadge'; link: LLink }
-  | {
-      kind: 'linkBadgeStack'
-      stackKey: string
-      links: LLink[]
-      toggledByDoubleClickedPress: boolean
-    }
+  | { kind: 'linkBadgeStack'; stackKey: string; links: LLink[] }
   | { kind: 'subgraphIO'; ioNode: SubgraphInputNode | SubgraphOutputNode }
   | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
   | { kind: 'link'; segment: LinkSegment }
@@ -60,25 +54,8 @@ export function resolvePointerTarget(
 
   const point: Point = [e.canvasX, e.canvasY]
 
-  const toggledStack = queryHiddenLinkStackToggledAt(
-    canvas,
-    graph,
-    canvas.pointer.doubleClickedTimeStamp
-  )
-  if (toggledStack)
-    return {
-      kind: 'linkBadgeStack',
-      ...toggledStack,
-      toggledByDoubleClickedPress: true
-    }
-
   const stack = queryHiddenLinkStackAtPoint(canvas, graph, ...point)
-  if (stack)
-    return {
-      kind: 'linkBadgeStack',
-      ...stack,
-      toggledByDoubleClickedPress: false
-    }
+  if (stack) return { kind: 'linkBadgeStack', ...stack }
 
   const badgeLink = queryHiddenLinkBadgeAtPoint(
     canvas,
