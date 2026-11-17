@@ -702,6 +702,7 @@ export interface NodeDefinition {
   readonly outputs?: readonly NodeDefinitionOutput[]
   /** `'frontend'`, the default, leaves the node out of the prompt; `'backend'` sends it as its type. */
   readonly execution?: 'backend' | 'frontend'
+  readonly presentation?: NodePresentation
   onCreated?(node: NodeHandle, event: NodeCreatedEvent): void
   onConfigured?(node: NodeHandle, data: Readonly<Record<string, unknown>>): void
   onRemoved?(node: NodeHandle): void
@@ -718,4 +719,14 @@ export interface NodeDefinitionSlot {
 export interface NodeDefinitionOutput extends NodeDefinitionSlot {
   /** How the host draws the output's dot; `'default'` is its own choice. A load keeps it. */
   readonly shape?: SlotShape
+}
+
+/** How the host draws a defined type's nodes, in both renderers. Any other field is refused. */
+export interface NodePresentation {
+  /** `'hidden'` draws the nodes without a title bar. */
+  readonly title?: 'default' | 'hidden'
+  /** `false` stops the user resizing the nodes; pinning stops it too. A load or undo keeps it. */
+  readonly resizable?: boolean
+  /** `false` stops the user collapsing the nodes. `comfy.edit` can still collapse one. */
+  readonly collapsible?: boolean
 }
