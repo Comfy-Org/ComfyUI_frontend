@@ -9,6 +9,7 @@ import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutpu
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { previewDisplayChoices } from '@/composables/node/previewDisplayChoices'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
@@ -241,8 +242,16 @@ export function useImageMenuOptions() {
         }
   }
 
+  const getPreviewDisplayOptions = (node: LGraphNode): MenuOption[] =>
+    previewDisplayChoices(node).map(({ label, icon, choose }) => ({
+      label,
+      icon,
+      action: choose
+    }))
+
   return {
     getImageMenuOptions,
-    getPreviewResolutionOption
+    getPreviewResolutionOption,
+    getPreviewDisplayOptions
   }
 }

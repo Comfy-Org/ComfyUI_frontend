@@ -22,6 +22,11 @@ const samples = {
     wireKey: 'widgetHeights',
     wire: 137,
     component: { height: 137 }
+  },
+  widgetPreviewDisplay: {
+    wireKey: 'previewDisplay',
+    wire: 'hidden',
+    component: { mode: 'hidden' }
   }
 } satisfies Record<
   ReturnType<(typeof widgetComponentStores)[number]>['$id'],

@@ -11,7 +11,7 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import { nodePreviewOf } from '@/systems/nodePreviewSystem'
+import { nodePreviewOf, previewDisplay } from '@/systems/nodePreviewSystem'
 import type { NodePreviewPart } from '@/systems/nodePreviewSystem'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import {
@@ -71,7 +71,7 @@ export function usePromotedPreviews(
   const promotedPreviews = computed((): PromotedPreview[] => {
     const node = toValue(lgraphNode)
     if (!(node instanceof SubgraphNode)) return []
-    if (node.isDetached) return []
+    if (node.isDetached || previewDisplay(node) === 'hidden') return []
 
     const rootGraphId = node.rootGraph.id
     const hostLocator = getPreviewExposureHostLocator(node)
@@ -111,6 +111,7 @@ export function usePromotedPreviews(
     }
 
     return exposures.flatMap((exposure): PromotedPreview[] => {
+      if (previewDisplay(node, exposure.name) === 'hidden') return []
       const resolved = previewExposureStore.resolveChain(
         rootGraphId,
         hostLocator,

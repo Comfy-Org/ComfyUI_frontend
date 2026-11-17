@@ -1,7 +1,11 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useImagePreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImagePreviewWidget'
 
-import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
+import {
+  CANVAS_IMAGE_PREVIEW_WIDGET,
+  isMediaPreviewWidgetName
+} from '@/core/graph/subgraph/preview/mediaPreviewName'
+import { chosenPreviewDisplay } from '@/systems/nodePreviewSystem'
 
 /**
  * Composable for handling canvas image previews in nodes
@@ -14,7 +18,10 @@ export function useNodeCanvasImagePreview() {
    */
   function showCanvasImagePreview(node: LGraphNode) {
     if (!node.imgs?.length) return
+    reserveCanvasImagePreview(node)
+  }
 
+  function reserveCanvasImagePreview(node: LGraphNode) {
     if (node.isSubgraphNode()) return
 
     if (!node.widgets?.find((w) => w.name === CANVAS_IMAGE_PREVIEW_WIDGET)) {
@@ -42,8 +49,35 @@ export function useNodeCanvasImagePreview() {
     }
   }
 
+  function removeCanvasMediaPreviews(node: LGraphNode) {
+    const previews =
+      node.widgets?.filter((w) => isMediaPreviewWidgetName(w.name)) ?? []
+    for (const preview of previews) {
+      preview.onRemove?.()
+      node.widgets?.splice(node.widgets.indexOf(preview), 1)
+    }
+    if (node.videoContainer) {
+      node.videoContainer = undefined
+      node.images = undefined
+    }
+  }
+
+  function applyPreviewDisplay(node: LGraphNode): boolean {
+    const display = chosenPreviewDisplay(node)
+    if (display === 'hidden') {
+      removeCanvasMediaPreviews(node)
+      return false
+    }
+    if (display === 'shown' && !node.animatedImages)
+      reserveCanvasImagePreview(node)
+    else if (!node.imgs?.length) removeCanvasImagePreview(node)
+    return true
+  }
+
   return {
     showCanvasImagePreview,
-    removeCanvasImagePreview
+    reserveCanvasImagePreview,
+    removeCanvasImagePreview,
+    applyPreviewDisplay
   }
 }

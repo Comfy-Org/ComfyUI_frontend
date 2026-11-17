@@ -12,6 +12,7 @@
         v-if="hasMedia && media?.type === 'video'"
         :image-urls="media.items.map((item) => resultItemPreviewUrl(item))"
         :node-id="nodeId"
+        :fits-container="fitsContainer"
         class="mt-2 flex-auto"
       />
       <AudioPreview

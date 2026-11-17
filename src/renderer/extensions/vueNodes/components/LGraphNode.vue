@@ -175,7 +175,9 @@
               :class="
                 cn(
                   'flex flex-col',
-                  activityParts.length ? 'relative min-h-0 flex-1' : 'contents'
+                  fittedActivityParts.length
+                    ? 'relative min-h-0 flex-1'
+                    : 'contents'
                 )
               "
             >
@@ -183,7 +185,7 @@
                 :class="
                   cn(
                     'flex flex-col',
-                    activityParts.length ? 'absolute inset-0' : 'contents'
+                    fittedActivityParts.length ? 'absolute inset-0' : 'contents'
                   )
                 "
                 :style="{ rowGap: `${NODE_CONTENT_GAP}px` }"
@@ -191,9 +193,12 @@
                 <div
                   v-for="(region, index) in mediaRegions"
                   :key="region.name"
+                  data-testid="node-preview-region"
                   :class="
                     cn(
                       'relative flex min-h-0 flex-col',
+                      !region.parts.length &&
+                        'rounded-sm outline-1 -outline-offset-1 outline-node-border outline-dashed',
                       region.height !== undefined
                         ? 'grid shrink-0'
                         : region.fills
@@ -211,7 +216,9 @@
                   <NodePreviewParts
                     :parts="region.parts"
                     :node-data
-                    :fits-container="activityParts.length > 0"
+                    :fits-container="
+                      fittedActivityParts.length > 0 || region.fitsContainer
+                    "
                   />
                   <GrowableRegionHandle
                     :name="region.name"
@@ -225,16 +232,23 @@
                   />
                 </div>
                 <div
-                  v-if="activityParts.length"
+                  v-if="fittedActivityParts.length"
                   class="flex min-h-0 flex-1 flex-col"
                   data-testid="subgraph-activity-preview"
                 >
-                  <NodePreviewParts :parts="activityParts" fits-container />
+                  <NodePreviewParts
+                    :parts="fittedActivityParts"
+                    fits-container
+                  />
                 </div>
               </div>
             </div>
             <LivePreview
-              v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
+              v-if="
+                shouldShowPreviewImg &&
+                display === 'auto' &&
+                !lgraphNode?.isSubgraphNode()
+              "
               :image-url="latestPreviewUrl"
             />
           </div>
@@ -365,8 +379,15 @@ import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { isWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
-import { activityInside, nodePreview } from '@/systems/nodePreviewSystem'
-import type { NodeMediaPart } from '@/systems/nodePreviewSystem'
+import {
+  activityInside,
+  nodePreview,
+  previewDisplay
+} from '@/systems/nodePreviewSystem'
+import type {
+  NodeMediaPart,
+  NodePreviewPart
+} from '@/systems/nodePreviewSystem'
 import {
   getNodeByLocatorId,
   locatorIdFromState
@@ -388,7 +409,8 @@ import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 import {
   IMAGE_PREVIEW_HEIGHT_RESERVE,
-  NODE_CONTENT_GAP
+  NODE_CONTENT_GAP,
+  PREVIEW_ZONE_DEFAULT_HEIGHT
 } from './imagePreviewLayout'
 
 const { nodeData } = defineProps<{
@@ -469,14 +491,17 @@ onErrorCaptured((error) => {
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
+function previewRegionId(name: string) {
+  const graphId = canvasStore.rootGraphId
+  const bareNodeId = stripGraphPrefix(nodeData.id)
+  if (!graphId || !bareNodeId) return
+  const id = widgetId(graphId, bareNodeId, name)
+  return isWidgetId(id) ? id : undefined
+}
+
 const growable = useGrowableRegions({
-  regionId: (name) => {
-    const graphId = canvasStore.rootGraphId
-    const bareNodeId = stripGraphPrefix(nodeData.id)
-    if (!graphId || !bareNodeId || name === soleGrowableWidget.value) return
-    const id = widgetId(graphId, bareNodeId, name)
-    return isWidgetId(id) ? id : undefined
-  },
+  regionId: (name) =>
+    name === soleGrowableWidget.value ? undefined : previewRegionId(name),
   resizeNode: resizeNodeTo,
   onCommit: () =>
     useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
@@ -487,7 +512,8 @@ const mediaUserHeight = computed(() =>
 
 const imageSharesNodeWithWidgets = computed(
   () =>
-    nodeMediaParts.value.some((part) => part.type === 'image') &&
+    (previewZoneShown.value ||
+      nodeMediaParts.value.some((part) => part.type === 'image')) &&
     hasExpandingWidget.value
 )
 
@@ -581,25 +607,47 @@ const handleResizePointerDown = (
   startResize(event, corner)
 }
 
-const mediaRegions = computed(() => [
-  ...(nodeMediaParts.value.length
+const ownPreviewParts = computed((): NodePreviewPart[] =>
+  previewZoneShown.value
     ? [
-        {
-          name: CANVAS_IMAGE_PREVIEW_WIDGET,
-          parts: nodeMediaParts.value,
-          height: mediaUserHeight.value,
-          fills: !imageSharesNodeWithWidgets.value,
-          growsIntoLeftover: !widgetTakesSpareHeight.value
-        }
+        ...(shouldShowPreviewImg.value && !lgraphNode.value?.isSubgraphNode()
+          ? [
+              {
+                kind: 'live' as const,
+                source: String(nodeData.id),
+                url: latestPreviewUrl.value
+              }
+            ]
+          : []),
+        ...nodeMediaParts.value,
+        ...activityParts.value
       ]
-    : []),
+    : nodeMediaParts.value
+)
+
+const mediaRegions = computed(() => [
   ...promotedPreviews.value.map((preview) => ({
     name: preview.name,
     parts: preview.parts,
     height: growable.heightOf(preview.name),
     fills: true,
-    growsIntoLeftover: false
-  }))
+    growsIntoLeftover: false,
+    fitsContainer: false
+  })),
+  ...(ownPreviewParts.value.length || previewZoneShown.value
+    ? [
+        {
+          name: CANVAS_IMAGE_PREVIEW_WIDGET,
+          parts: ownPreviewParts.value,
+          height: previewZoneShown.value
+            ? (mediaUserHeight.value ?? PREVIEW_ZONE_DEFAULT_HEIGHT)
+            : mediaUserHeight.value,
+          fills: !imageSharesNodeWithWidgets.value,
+          growsIntoLeftover: !widgetTakesSpareHeight.value,
+          fitsContainer: previewZoneShown.value
+        }
+      ]
+    : [])
 ])
 
 // Computed classes and conditions for better reusability
@@ -747,9 +795,20 @@ const lgraphNode = computed(resolveLGraphNode)
 // TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+const display = computed(() =>
+  lgraphNode.value
+    ? previewDisplay(
+        lgraphNode.value,
+        CANVAS_IMAGE_PREVIEW_WIDGET,
+        previewRegionId(CANVAS_IMAGE_PREVIEW_WIDGET)
+      )
+    : 'auto'
+)
+const previewZoneShown = computed(() => display.value === 'shown')
+
 const activityParts = computed(() => {
   const node = lgraphNode.value
-  if (!node?.isSubgraphNode()) return []
+  if (!node?.isSubgraphNode() || display.value === 'hidden') return []
   const exposedSources = new Set(
     promotedPreviews.value.flatMap(({ parts }) =>
       parts.flatMap((part) => (part.kind === 'live' ? [part.source] : []))
@@ -757,6 +816,9 @@ const activityParts = computed(() => {
   )
   return activityInside(node, exposedSources)
 })
+const fittedActivityParts = computed(() =>
+  previewZoneShown.value ? [] : activityParts.value
+)
 
 const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 
@@ -798,7 +860,8 @@ const hasExpandingWidget = computed(() =>
 )
 
 const soleGrowableWidget = computed(() => {
-  if (nodeMediaParts.value.length || promotedPreviews.value.length) return
+  if (ownPreviewParts.value.length || previewZoneShown.value) return
+  if (promotedPreviews.value.length) return
   const visible = processedWidgets.value.filter(({ visible }) => visible)
   const [widget] = visible
   return visible.length === 1 &&
@@ -846,7 +909,7 @@ const hasVideoPreviewWidget = computed(() =>
 
 const nodeMediaParts = computed((): NodeMediaPart[] => {
   const node = lgraphNode.value
-  if (!node || node.hideOutputImages || hideExecutedOutput.value) return []
+  if (!node || display.value === 'hidden' || hideExecutedOutput.value) return []
   if (node instanceof SubgraphNode) return []
 
   const outputs = nodeOutputs.getNodeOutputs(node)

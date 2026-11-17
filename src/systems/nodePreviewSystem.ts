@@ -3,11 +3,16 @@ import type { ComputedRef } from 'vue'
 
 import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
 import { supportsVirtualCanvasImagePreview } from '@/composables/node/canvasImagePreviewTypes'
-import { isMediaPreviewWidgetName } from '@/core/graph/subgraph/preview/mediaPreviewName'
+import {
+  CANVAS_IMAGE_PREVIEW_WIDGET,
+  isMediaPreviewWidgetName
+} from '@/core/graph/subgraph/preview/mediaPreviewName'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useWidgetPreviewDisplayStore } from '@/stores/widgetPreviewDisplayStore'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { isAudioResult, isImageResult, isVideoResult } from '@/utils/resultItem'
 
@@ -168,5 +173,51 @@ export function canHavePreview(node: LGraphNode): boolean {
     supportsVirtualCanvasImagePreview(node) ||
     !!node.widgets?.some((widget) => isMediaPreviewWidgetName(widget.name)) ||
     !!useNodeOutputStore().getNodeOutputs(node)?.images?.length
+  )
+}
+
+/** How a preview region shows: by its content, reserved before content arrives, or not at all. */
+export type PreviewDisplay = 'auto' | 'shown' | 'hidden'
+
+function previewDisplayId(node: LGraphNode, name: string) {
+  return node.graph
+    ? widgetId(node.graph.rootGraph.id, node.id, name)
+    : undefined
+}
+
+/** The display the user chose for `node`'s preview `name`, or `auto` when they chose none. */
+export function chosenPreviewDisplay(
+  node: LGraphNode,
+  name = CANVAS_IMAGE_PREVIEW_WIDGET,
+  id = previewDisplayId(node, name)
+): PreviewDisplay {
+  return (id && useWidgetPreviewDisplayStore().get(id)?.mode) || 'auto'
+}
+
+/**
+ * How `node`'s preview `name` shows: the user's choice, else hidden when an
+ * extension hides output images. `id` overrides the preview's identity.
+ */
+export function previewDisplay(
+  node: LGraphNode,
+  name = CANVAS_IMAGE_PREVIEW_WIDGET,
+  id = previewDisplayId(node, name)
+): PreviewDisplay {
+  const chosen = chosenPreviewDisplay(node, name, id)
+  if (chosen !== 'auto') return chosen
+  return node.hideOutputImages ? 'hidden' : 'auto'
+}
+
+/** Records the user's display choice for `node`'s preview `name`; `auto` clears it. */
+export function setPreviewDisplay(
+  node: LGraphNode,
+  display: PreviewDisplay,
+  name = CANVAS_IMAGE_PREVIEW_WIDGET
+): void {
+  const id = previewDisplayId(node, name)
+  if (!id) return
+  useWidgetPreviewDisplayStore().set(
+    id,
+    display === 'auto' ? undefined : { mode: display }
   )
 }

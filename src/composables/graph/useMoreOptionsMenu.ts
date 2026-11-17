@@ -115,8 +115,11 @@ export function useMoreOptionsMenu() {
   const canvasStore = useCanvasStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  const { getImageMenuOptions, getPreviewResolutionOption } =
-    useImageMenuOptions()
+  const {
+    getImageMenuOptions,
+    getPreviewResolutionOption,
+    getPreviewDisplayOptions
+  } = useImageMenuOptions()
   const { hasMultipleOutputs } = useNodeOutputsExport()
   const {
     getNodeInfoOption,
@@ -286,6 +289,11 @@ export function useMoreOptionsMenu() {
         ? getPreviewResolutionOption(selectedNodes.value[0])
         : undefined
     if (previewResolutionOption) options.push(previewResolutionOption)
+    if (isSingleNode.value && node) {
+      const previewDisplayOptions = getPreviewDisplayOptions(node)
+      if (previewDisplayOptions.length)
+        options.push(...previewDisplayOptions, { type: 'divider' })
+    }
     const widgetName = invocationContext.value?.widgetName
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (node && widget) {

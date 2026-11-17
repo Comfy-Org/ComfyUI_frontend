@@ -79,6 +79,9 @@ const CORE_MENU_ITEMS = new Set([
   'Save Image',
   'Show Full Resolution',
   'Show Downscaled Preview',
+  'Show Preview Zone',
+  'Hide Preview',
+  'Show Preview Automatically',
   'Open in Mask Editor',
   'Edit Subgraph Widgets',
   'Unpack Subgraph',
@@ -260,7 +263,10 @@ const MENU_ORDER: string[] = [
   'Color',
   // Section 5: Clipspace operations
   'Copy (Clipspace)',
-  'Paste (Clipspace)'
+  'Paste (Clipspace)',
+  'Show Preview Zone',
+  'Hide Preview',
+  'Show Preview Automatically'
 ]
 
 /**

@@ -1,9 +1,11 @@
 import { useWidgetFolderLockStore } from './widgetFolderLockStore'
 import { useWidgetHeightStore } from './widgetHeightStore'
+import { useWidgetPreviewDisplayStore } from './widgetPreviewDisplayStore'
 
 export const widgetComponentStores = [
   useWidgetFolderLockStore,
-  useWidgetHeightStore
+  useWidgetHeightStore,
+  useWidgetPreviewDisplayStore
 ]
 
 export function useWidgetComponents() {
