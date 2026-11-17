@@ -4457,8 +4457,12 @@
     "actionUnavailable": "The text could not be updated. Your text is unchanged; edit it manually instead.",
     "characterCount": "{count} char | {count} chars",
     "expand": "Expand",
+    "importTags": "Import prompt tags",
+    "importTagsError": "Could not load tags. Choose a TXT list or a tag CSV (name, category, count, aliases), up to 10 MB. Your previous catalog is unchanged.",
+    "importTagsHint": "CSV or TXT · local to this session",
     "suggestionCount": "{count} suggestion available | {count} suggestions available",
     "suggestions": "Prompt suggestions",
+    "tagsLoaded": "{count} tag loaded for this session | {count} tags loaded for this session",
     "title": "{widget} · {node}"
   },
   "widgetFileUpload": {
