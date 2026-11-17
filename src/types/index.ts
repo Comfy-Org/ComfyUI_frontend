@@ -241,7 +241,7 @@ declare global {
     /** For use by extensions and in the browser console. First-party code calls `useApp()` from '@/scripts/appInstance' instead. */
     app?: ComfyApp
 
-    /** For use by extensions and in the browser console. First-party code reads `useApp().graph` instead. */
+    /** For use by extensions and in the browser console. First-party code reads `useApp().rootGraph` instead. */
     graph?: unknown
 
     LiteGraph?: LiteGraphGlobal
