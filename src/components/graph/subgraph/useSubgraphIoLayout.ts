@@ -3,6 +3,7 @@ import { computed, onScopeDispose, shallowRef, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import type {
+  PointTuple,
   RectTuple,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
@@ -106,8 +107,11 @@ export function useSubgraphIoLayout(
     { immediate: true }
   )
 
+  let resizeOrigin: PointTuple = [0, 0]
   const { startResize: resize } = useNodeResize(({ size: next }) => {
-    ioNode().size = [next.width, next.height]
+    const node = ioNode()
+    node.pos = resizeOrigin
+    node.size = [next.width, next.height]
     report(next)
   })
 
@@ -117,6 +121,7 @@ export function useSubgraphIoLayout(
     if (event.button !== 0 || !panel || canvasStore.isReadOnly || node.pinned)
       return
     const [x, y] = node.boundingRect
+    resizeOrigin = [x, y]
     resize(event, 'SE', { element: panel, position: { x, y } })
   }
 

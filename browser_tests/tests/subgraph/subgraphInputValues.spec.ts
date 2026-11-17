@@ -369,6 +369,7 @@ test.describe(
           await expect
             .poll(async () => (await panel.boundingBox())?.width)
             .toBeGreaterThan(before.width + 100)
+          expect((await panel.boundingBox())?.x).toBeCloseTo(before.x, 0)
           await expect
             .poll(async () => (await panel.boundingBox())?.height)
             .toBeGreaterThan(before.height + 80)
