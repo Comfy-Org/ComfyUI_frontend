@@ -5,49 +5,52 @@ import { ref } from 'vue'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { parseWidgetId } from '@comfyorg/graph-model/widgetId'
 import type { UUID } from '@/utils/uuid'
 
 /** User-sized heights of Vue node widgets and previews, keyed by {@link WidgetId} and saved in a node's `widgetHeights` property. */
 export const useWidgetHeightStore = defineStore('widgetHeight', () => {
-  const nodeHeights = ref(new Map<string, Map<string, number>>())
+  const graphHeights = ref(new Map<UUID, Map<string, Map<string, number>>>())
 
-  function nodeKey(graphId: UUID, nodeId: NodeId) {
-    return widgetId(graphId, nodeId, '')
+  function nodeHeightsOf(graphId: UUID, nodeId: NodeId) {
+    return graphHeights.value.get(graphId)?.get(String(nodeId))
   }
 
-  function splitWidgetId(id: WidgetId) {
-    const nameStart = id.lastIndexOf(':') + 1
-    return {
-      node: id.slice(0, nameStart),
-      name: decodeURIComponent(id.slice(nameStart))
-    }
+  function setNodeHeights(
+    graphId: UUID,
+    nodeId: NodeId,
+    heights: Map<string, number>
+  ) {
+    const nodes = graphHeights.value.get(graphId) ?? new Map()
+    if (heights.size) nodes.set(String(nodeId), heights)
+    else nodes.delete(String(nodeId))
+    if (nodes.size) graphHeights.value.set(graphId, nodes)
+    else graphHeights.value.delete(graphId)
   }
 
   function getHeight(id: WidgetId): number | undefined {
-    const { node, name } = splitWidgetId(id)
-    return nodeHeights.value.get(node)?.get(name)
+    const { graphId, nodeId, name } = parseWidgetId(id)
+    return nodeHeightsOf(graphId, nodeId)?.get(name)
   }
 
   function setHeight(id: WidgetId, height: number | undefined): void {
-    const { node, name } = splitWidgetId(id)
-    const heights = nodeHeights.value.get(node) ?? new Map<string, number>()
+    const { graphId, nodeId, name } = parseWidgetId(id)
+    const heights = new Map(nodeHeightsOf(graphId, nodeId))
     if (height === undefined) heights.delete(name)
     else heights.set(name, Math.round(height))
-    if (heights.size) nodeHeights.value.set(node, heights)
-    else nodeHeights.value.delete(node)
+    setNodeHeights(graphId, nodeId, heights)
   }
 
   function getNodeHeights(
     graphId: UUID,
     nodeId: NodeId
   ): Record<string, number> | undefined {
-    const heights = nodeHeights.value.get(nodeKey(graphId, nodeId))
+    const heights = nodeHeightsOf(graphId, nodeId)
     return heights?.size ? Object.fromEntries(heights) : undefined
   }
 
   function clearNode(graphId: UUID, nodeId: NodeId): void {
-    nodeHeights.value.delete(nodeKey(graphId, nodeId))
+    setNodeHeights(graphId, nodeId, new Map())
   }
 
   function adoptNodeHeights(
@@ -57,20 +60,18 @@ export const useWidgetHeightStore = defineStore('widgetHeight', () => {
   ): void {
     const saved = properties.widgetHeights
     delete properties.widgetHeights
-    clearNode(graphId, nodeId)
-    if (!isPlainObject(saved)) return
-    const heights = Object.entries(saved).flatMap(([name, height]) =>
-      typeof height === 'number' && height > 0
-        ? [[name, Math.round(height)] as const]
-        : []
-    )
-    if (heights.length)
-      nodeHeights.value.set(nodeKey(graphId, nodeId), new Map(heights))
+    const heights = isPlainObject(saved)
+      ? Object.entries(saved).flatMap(([name, height]) =>
+          typeof height === 'number' && height > 0
+            ? [[name, Math.round(height)] as const]
+            : []
+        )
+      : []
+    setNodeHeights(graphId, nodeId, new Map(heights))
   }
 
   function clearGraph(graphId: UUID): void {
-    for (const node of nodeHeights.value.keys())
-      if (node.startsWith(`${graphId}:`)) nodeHeights.value.delete(node)
+    graphHeights.value.delete(graphId)
   }
 
   return {
