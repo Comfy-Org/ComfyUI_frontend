@@ -66,6 +66,9 @@ describe('LGraphNode widget heights', () => {
     const pasted = new LGraphNode('Prompt')
     pasted.graph = graph
     pasted.configure({ ...savedNode({ text: 240 }), id: original.id })
+
+    expect(pasted.serialize().properties?.widgetHeights).toEqual({ text: 240 })
+
     graph.add(pasted)
     const store = useWidgetHeightStore()
 

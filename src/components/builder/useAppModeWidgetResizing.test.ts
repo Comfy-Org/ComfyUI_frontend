@@ -50,7 +50,7 @@ describe('useAppModeWidgetResizing', () => {
     bind(wrapper, WIDGET_PROMPT)
 
     textarea.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    window.dispatchEvent(new PointerEvent('pointerup'))
+    textarea.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
 
     expect(onResize).not.toHaveBeenCalled()
   })
@@ -64,7 +64,7 @@ describe('useAppModeWidgetResizing', () => {
     bind(wrapper, WIDGET_PROMPT)
 
     button.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    window.dispatchEvent(new PointerEvent('pointerup'))
+    button.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
 
     expect(onResize).not.toHaveBeenCalled()
   })
@@ -131,7 +131,7 @@ describe('useAppModeWidgetResizing', () => {
 
     inner.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
     setHeight(outerIndicator, 250)
-    window.dispatchEvent(new PointerEvent('pointerup'))
+    inner.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }))
 
     expect(onResize).not.toHaveBeenCalled()
   })
