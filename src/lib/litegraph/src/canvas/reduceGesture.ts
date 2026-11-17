@@ -70,6 +70,15 @@ function isDoubleClick(
   )
 }
 
+/** The earlier click that the current press double-clicks if it ends as a click. */
+export function doubleClickedClick(
+  state: GestureState
+): ClickRecord | undefined {
+  return state.phase === 'pressed' && isDoubleClick(state)
+    ? state.lastClick
+    : undefined
+}
+
 function unchanged(state: GestureState): GestureResult {
   return { state, effects: [] }
 }
