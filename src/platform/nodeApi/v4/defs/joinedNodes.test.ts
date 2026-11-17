@@ -120,6 +120,44 @@ describe('which nodes an extension reaches', () => {
     })
   })
 
+  describe('a drop on a node', () => {
+    it('asks the hook of a node that joined after the extension, not of one already there', async () => {
+      const existing = added()
+      const asked: string[] = []
+      extend((builder) =>
+        builder.onDrop((handle) => {
+          asked.push(handle.id)
+          return true
+        })
+      )
+      const later = added()
+      const event = new DragEvent('drop')
+
+      await expect(existing.onDragDrop?.(event)).resolves.toBe(false)
+      await expect(later.onDragDrop?.(event)).resolves.toBe(true)
+      expect(asked).toEqual([String(later.id)])
+    })
+
+    it('does not ask the hook of a node whose drop handling the host set on the node itself', async () => {
+      const asked: string[] = []
+      extend((builder) =>
+        builder.onDrop((handle) => {
+          asked.push(handle.id)
+          return false
+        })
+      )
+      const control = added()
+      const uploading = added()
+      useNodeDragAndDrop(uploading, { onDrop: async () => [] })
+      const event = new DragEvent('drop')
+
+      await control.onDragDrop?.(event)
+      await uploading.onDragDrop?.(event)
+
+      expect(asked).toEqual([String(control.id)])
+    })
+  })
+
   describe('made before and after the node joined', () => {
     it('reaches a node that joins after it and not one that was already there', () => {
       const existing = added()

@@ -572,6 +572,128 @@ describe('connection, property and pointer hooks', () => {
     })
   })
 
+  describe('onDrop', () => {
+    const drop = () => new DragEvent('drop')
+
+    it('claims the drop when a hook answers true, given the node handle and the browser event', async () => {
+      const asked: [string, DragEvent][] = []
+      extend((builder) =>
+        builder.onDrop((handle, event) => {
+          asked.push([handle.id, event])
+          return true
+        })
+      )
+      const node = probe()
+      const event = drop()
+
+      await expect(node.onDragDrop?.(event)).resolves.toBe(true)
+      expect(asked).toEqual([[String(node.id), event]])
+      expect(asked[0][1]).toBe(event)
+    })
+
+    it('waits for a hook that answers with a promise', async () => {
+      let answer: (claimed: boolean) => void = () => {}
+      extend((builder) =>
+        builder.onDrop(
+          () =>
+            new Promise<boolean>((resolve) => {
+              answer = resolve
+            })
+        )
+      )
+      const node = probe()
+      let settled = false
+      const claimed = node.onDragDrop?.(drop())
+      void Promise.resolve(claimed).then(() => {
+        settled = true
+      })
+
+      await Promise.resolve()
+      expect(settled).toBe(false)
+      answer(true)
+
+      await expect(claimed).resolves.toBe(true)
+    })
+
+    it('asks the hooks during the call, while the drop event is still being delivered', () => {
+      const asked = vi.fn()
+      extend((builder) => builder.onDrop(asked))
+      const node = probe()
+
+      void node.onDragDrop?.(drop())
+
+      expect(asked).toHaveBeenCalledOnce()
+    })
+
+    it('leaves the drop to the editor when no hook claims it, reporting one that throws or rejects', async () => {
+      extend((builder) => {
+        builder.onDrop(() => false)
+        builder.onDrop(() => {})
+        builder.onDrop(async () => undefined)
+        builder.onDrop(() => {
+          throw new Error('hook failed')
+        })
+        builder.onDrop(() => Promise.reject(new Error('hook rejected')))
+      })
+      const node = probe()
+
+      await expect(node.onDragDrop?.(drop())).resolves.toBe(false)
+      expect(reportError).toHaveBeenCalledTimes(2)
+    })
+
+    it('claims it when any hook claims it, and asks every hook', async () => {
+      const later = vi.fn(() => false)
+      extend((builder) => builder.onDrop(async () => true))
+      extend((builder) => builder.onDrop(later))
+      const node = probe()
+
+      await expect(node.onDragDrop?.(drop())).resolves.toBe(true)
+      expect(later).toHaveBeenCalledOnce()
+    })
+
+    it('asks no hook once the extension is disposed', async () => {
+      const claim = vi.fn(() => true)
+      const stop = extend((builder) => builder.onDrop(claim))
+      const node = probe()
+
+      stop()
+
+      await expect(node.onDragDrop?.(drop())).resolves.toBe(false)
+      expect(claim).not.toHaveBeenCalled()
+    })
+
+    it.for([
+      { own: 'claims it', claimed: true, hooksAsked: 0 },
+      { own: 'leaves it', claimed: false, hooksAsked: 1 }
+    ])(
+      'asks the hooks only when the type itself $own',
+      async ({ claimed, hooksAsked }) => {
+        const own: DragEvent[] = []
+        class Dropping extends LGraphNode {
+          override async onDragDrop(event: DragEvent) {
+            own.push(event)
+            return claimed
+          }
+        }
+        host.nodeTypeHooks.beforeRegisterNodeDef(
+          Dropping,
+          hostNodeDef('Dropping')
+        )
+        LiteGraph.registerNodeType('Dropping', Dropping)
+        const hook = vi.fn(() => false)
+        defs.extend('Dropping', (builder) => builder.onDrop(hook))
+        const node = LiteGraph.createNode('Dropping')
+        assert(node)
+        graph.add(node)
+        const event = drop()
+
+        await expect(node.onDragDrop?.(event)).resolves.toBe(claimed)
+        expect(own).toEqual([event])
+        expect(hook).toHaveBeenCalledTimes(hooksAsked)
+      }
+    )
+  })
+
   describe('a defined type', () => {
     it('runs the connection and property hooks its definition declares', () => {
       const onConnectionsChanged = vi.fn()

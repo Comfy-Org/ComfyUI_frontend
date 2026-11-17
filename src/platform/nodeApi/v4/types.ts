@@ -573,12 +573,19 @@ export interface NodeDefBuilder {
   onHover(callback: (node: NodeHandle, hovering: boolean) => void): void
   /** A node was double-clicked. Called by the canvas renderer, not by Vue nodes. */
   onDoubleClick(callback: (node: NodeHandle) => void): void
-  /**
-   * A browser drag is over a node, in either renderer. Returning `true` marks the node as the drop
-   * target; there is no drop hook, so the drop is handled by the node's type or the editor.
-   */
+  /** A browser drag is over a node, in either renderer. Returning `true` marks the node as the drop target. */
   onDragOver(
     callback: (node: NodeHandle, event: DragEvent) => boolean | void
+  ): void
+  /**
+   * A browser drop on a node, which the editor awaits. Returning `true` claims it; otherwise the editor handles
+   * it. Not asked if the type's own handling claims it. Canvas asks the drop target; Vue nodes, any node dropped on.
+   */
+  onDrop(
+    callback: (
+      node: NodeHandle,
+      event: DragEvent
+    ) => boolean | void | Promise<boolean | void>
   ): void
   /** Adds an entry to the context menu of the type's nodes. */
   addMenuItem(item: NodeMenuItem): void
