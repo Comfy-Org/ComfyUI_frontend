@@ -225,6 +225,15 @@ export function useFeatureFlags() {
         import.meta.env.DEV
       )
     },
+    get openOnCloudUseLocalAgentEnabled() {
+      return (
+        resolveFlag<unknown>(
+          ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
+          remoteConfig.value.open_on_cloud_use_local_agent_enabled,
+          false
+        ) === true
+      )
+    },
     get deployToCloud() {
       return api.getServerFeature(ServerFeatureFlag.DEPLOY_TO_CLOUD, false)
     },
@@ -451,6 +460,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.USER_SECRETS_ENABLED]: flags.userSecretsEnabled,
       [ServerFeatureFlag.NODE_REPLACEMENTS]: flags.nodeReplacementsEnabled,
       [ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED]: flags.openOnCloudEnabled,
+      [ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED]:
+        flags.openOnCloudUseLocalAgentEnabled,
       [ServerFeatureFlag.NODE_LIBRARY_ESSENTIALS_ENABLED]:
         flags.nodeLibraryEssentialsEnabled,
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
