@@ -575,11 +575,9 @@ function renameToggledLinkStackOnDoubleClick(
     queryHiddenLinkStackToggledAt(canvas, graph, toggledAt)
   if (isLocked() || !toggledStack()) return
 
-  const onDoubleClickOfPressedTarget = pointer.onDoubleClick
-  pointer.onDoubleClick = (upEvent) => {
-    if (isLocked()) return
+  pointer.onDoubleClick = () => {
     const stack = toggledStack()
-    if (!stack) return onDoubleClickOfPressedTarget?.call(pointer, upEvent)
+    if (isLocked() || !stack) return
     toggleLinkBadgeStack(canvas, stack.stackKey)
     canvas.dirty_bgcanvas = true
     promptRenameLinkStack(canvas, graph, stack, event)
@@ -2951,8 +2949,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           toggleLinkBadgeStack(this, target.stackKey, e.timeStamp)
           this.dirty_bgcanvas = true
         }
-        pointer.onDoubleClick = () =>
+        pointer.onDoubleClick = () => {
+          if (this.read_only || this.selectOnly) return
           promptRenameLinkStack(this, graph, target, e)
+        }
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
@@ -8950,23 +8950,18 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      const { reroute, linkSegment, link, stackedLinks, stackKey, group } =
+      const { reroute, linkSegment, link, stack, group } =
         getCanvasContextMenuTarget(this, event.canvasX, event.canvasY)
-      if (stackedLinks && stackKey) {
+      if (stack) {
         const { graph } = this
         const graphScope = graphScopeOf(graph)
-        const stackedLinkIds = stackedLinks.map(({ id }) => id)
+        const stackedLinkIds = stack.links.map(({ id }) => id)
         new LiteGraph.ContextMenu<string>(getLinkStackMenuOptions(), {
           event,
           callback: (item) => {
             const action = typeof item === 'string' ? item : item?.value
             if (action === 'Rename')
-              promptRenameLinkStack(
-                this,
-                graph,
-                { stackKey, links: stackedLinks },
-                event
-              )
+              promptRenameLinkStack(this, graph, stack, event)
             if (action === 'Show Links')
               showLinks(this, graphScope, stackedLinkIds)
           }

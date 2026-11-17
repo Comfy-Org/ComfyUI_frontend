@@ -14,12 +14,12 @@ function shouldUseLegacyContextMenu(
 }
 
 function groupUnderBareCursor(canvas: LGraphCanvas, x: number, y: number) {
-  const { reroute, link, stackedLinks, group } = getCanvasContextMenuTarget(
+  const { reroute, link, stack, group } = getCanvasContextMenuTarget(
     canvas,
     x,
     y
   )
-  return reroute || link || stackedLinks ? undefined : group
+  return reroute || link || stack ? undefined : group
 }
 
 /**

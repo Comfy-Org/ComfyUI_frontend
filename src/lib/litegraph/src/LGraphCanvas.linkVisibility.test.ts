@@ -733,9 +733,13 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(prompt).not.toHaveBeenCalled()
     })
 
-    it('opens no rename prompt when the canvas turns read-only during the second press', () => {
-      const { canvas, relayout, prompt } = createStackFixture()
-      const init = { isPrimary: true, pointerId: 1, clientX: 420, clientY: 300 }
+    function holdPressAt(
+      canvas: LGraphCanvas,
+      clientX: number,
+      clientY: number,
+      timeStamp: number
+    ) {
+      const init = { isPrimary: true, pointerId: 1, clientX, clientY }
       const down = new PointerEvent('pointerdown', {
         ...init,
         button: 0,
@@ -746,43 +750,63 @@ describe('LGraphCanvas link visibility interactions', () => {
         button: 0,
         buttons: 0
       })
-      vi.spyOn(down, 'timeStamp', 'get').mockReturnValue(200)
-      vi.spyOn(up, 'timeStamp', 'get').mockReturnValue(220)
+      vi.spyOn(down, 'timeStamp', 'get').mockReturnValue(timeStamp)
+      vi.spyOn(up, 'timeStamp', 'get').mockReturnValue(timeStamp + 20)
+      canvas.processMouseDown(down)
+      return () => canvas.processMouseUp(up)
+    }
+
+    it('opens no rename prompt when the canvas turns read-only during the second press', () => {
+      const { canvas, relayout, prompt } = createStackFixture()
 
       pressAt(canvas, 420, 300, 100)
       relayout()
-      canvas.processMouseDown(down)
+      const release = holdPressAt(canvas, 420, 300, 200)
       canvas.read_only = true
-      canvas.processMouseUp(up)
+      release()
 
       expect(prompt).not.toHaveBeenCalled()
     })
 
-    it('leaves a stack collapsed when Escape is pressed during the second press', () => {
+    it('opens no rename prompt when the canvas turns read-only during a double click whose first click missed', () => {
+      const { canvas, prompt } = createStackFixture()
+
+      pressAt(canvas, 420, 280, 100)
+      const release = holdPressAt(canvas, 420, 295, 200)
+      canvas.read_only = true
+      release()
+
+      expect(prompt).not.toHaveBeenCalled()
+    })
+
+    it('cancels the rename and keeps the collapse when Escape is pressed during the second press', () => {
       const { canvas, relayout, prompt } = createStackFixture()
-      const init = { isPrimary: true, pointerId: 1, clientX: 420, clientY: 300 }
-      const down = new PointerEvent('pointerdown', {
-        ...init,
-        button: 0,
-        buttons: 1
-      })
-      const up = new PointerEvent('pointerup', {
-        ...init,
-        button: 0,
-        buttons: 0
-      })
-      vi.spyOn(down, 'timeStamp', 'get').mockReturnValue(200)
-      vi.spyOn(up, 'timeStamp', 'get').mockReturnValue(220)
 
       pressAt(canvas, 420, 300, 100)
       relayout()
-      canvas.processMouseDown(down)
+      const release = holdPressAt(canvas, 420, 300, 200)
       canvas.processKey(new KeyboardEvent('keydown', { key: 'Escape' }))
-      canvas.processMouseUp(up)
+      release()
       relayout()
 
-      expect(prompt).toHaveBeenCalledOnce()
+      expect(prompt).not.toHaveBeenCalled()
       expect(queryLinkBadgeAtPoint(canvas, 420, 322)).toBeUndefined()
+    })
+
+    it('renames no single link when Escape is pressed during a second press on the layer edge', () => {
+      const { canvas, relayout, prompt } = createStackFixture([
+        undefined,
+        undefined,
+        undefined
+      ])
+
+      pressAt(canvas, 420, 313, 100)
+      relayout()
+      const release = holdPressAt(canvas, 420, 313, 200)
+      canvas.processKey(new KeyboardEvent('keydown', { key: 'Escape' }))
+      release()
+
+      expect(prompt).not.toHaveBeenCalled()
     })
 
     function dragFromBesideStackAfterClickingIt(gap: number) {
@@ -812,6 +836,7 @@ describe('LGraphCanvas link visibility interactions', () => {
           clientY: 244
         })
       )
+      expect(canvas.dragging_rectangle).not.toBeNull()
       const draggingCanvas = canvas.dragging_canvas
       canvas.processMouseUp(
         new PointerEvent('pointerup', {

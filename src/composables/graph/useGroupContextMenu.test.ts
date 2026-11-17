@@ -258,10 +258,13 @@ describe('useGroupContextMenu', () => {
 
   it('falls through to the legacy menu when the cursor is on a stack of hidden links', () => {
     mockGetCanvasContextMenuTarget.mockReturnValue({
-      stackedLinks: [
-        createMockLLink({ id: toLinkId(5) }),
-        createMockLLink({ id: toLinkId(6) })
-      ],
+      stack: {
+        stackKey: 'output:1:0',
+        links: [
+          createMockLLink({ id: toLinkId(5) }),
+          createMockLLink({ id: toLinkId(6) })
+        ]
+      },
       group
     })
 
