@@ -106,6 +106,19 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     ])
   })
 
+  it('keeps the shared input preview when an instance first runs without images', () => {
+    const { interior, firstRun } = arrangeTwoInstances()
+    const store = useNodeOutputStore()
+    store.setNodeOutputs(interior, 'upload.png')
+
+    store.setNodeOutputsByExecutionId(firstRun, { text: ['done'] })
+
+    expect(store.getNodeOutputByExecutionId(firstRun)).toMatchObject({
+      text: ['done'],
+      images: [expect.objectContaining({ filename: 'upload.png' })]
+    })
+  })
+
   it('keeps one instance live preview when the other instance starts', () => {
     vi.useFakeTimers()
     const { firstRun, secondRun } = arrangeTwoInstances()

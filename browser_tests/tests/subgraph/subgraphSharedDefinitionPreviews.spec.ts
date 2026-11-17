@@ -13,20 +13,29 @@ test.describe(
       await comfyPage.workflow.loadWorkflow(
         'subgraphs/shared-definition-two-hosts-save-image'
       )
-      const exposedPreview = (hostId: string) =>
+      const exposedPreviewSrcs = (hostId: string) =>
         comfyPage.vueNodes
           .getNodeLocator(hostId)
           .getByTestId(`node-body-${hostId}`)
           .locator('.image-preview img')
+          .evaluateAll((images) =>
+            images.map((image) => image.getAttribute('src'))
+          )
 
       await comfyPage.runButton.click()
 
-      await expect(exposedPreview('5')).toHaveAttribute('src', /hostA_\d+_/, {
-        timeout: 30_000
-      })
-      await expect(exposedPreview('6')).toHaveAttribute('src', /hostB_\d+_/, {
-        timeout: 30_000
-      })
+      await expect
+        .poll(
+          async () => [
+            await exposedPreviewSrcs('5'),
+            await exposedPreviewSrcs('6')
+          ],
+          { timeout: 30_000 }
+        )
+        .toEqual([
+          [expect.stringMatching(/hostA_\d+_/)],
+          [expect.stringMatching(/hostB_\d+_/)]
+        ])
     })
   }
 )
