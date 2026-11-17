@@ -63,7 +63,6 @@ describe('canvas node picking', () => {
     store.startNodePicking()
 
     const [, top] = animate.mock.calls[0][1]!.viewport!
-    // Banner: top-4 offset (16) + p-4 padding (32) + two text-sm lines (40) + border (2).
     expect(top).toBeGreaterThanOrEqual(90)
   })
 

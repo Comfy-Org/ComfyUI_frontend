@@ -44,12 +44,7 @@ export const useTitleEditorStore = defineStore('titleEditor', () => {
   }
 })
 
-/**
- * Screen pixels at the top of the canvas taken by the node-selection-mode
- * banner (`NodeSelectionModeBanner`: `top-4` offset plus a two-line
- * `CanvasBanner`), with a small gap. Framing below it keeps the banner from
- * covering the top node's title bar on short canvases.
- */
+/** Screen pixels reserved at the top of the canvas for the node-selection-mode banner. */
 export const NODE_PICKING_BANNER_CLEARANCE = 96
 
 function belowNodePickingBanner(viewport: ReadOnlyRect): ReadOnlyRect {
