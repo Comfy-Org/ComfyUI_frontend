@@ -166,7 +166,12 @@ function arrange(scenario: Scenario = {}) {
       manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
-        fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
+        fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' }),
+        fromPartial<Plan>({
+          slug: 'standard-monthly',
+          tier: 'STANDARD',
+          duration: 'MONTHLY'
+        })
       ]),
       balance: computed(() => scenario.balance ?? null),
       renewalDate: computed(() => scenario.renewalDate ?? null),
@@ -951,6 +956,44 @@ describe('BillingTab', () => {
         expect(dialog).not.toHaveTextContent('$')
       }
     )
+
+    describe('when only the billing period changes', () => {
+      const yearlyToMonthly: SubscriptionInfo = {
+        ...activeSubscription,
+        tier: 'STANDARD',
+        duration: 'ANNUAL',
+        planSlug: 'standard-annual',
+        scheduledChange: {
+          plan_slug: 'standard-monthly',
+          effective_at: '2027-11-17T00:00:00Z',
+          team_credit_stop: null
+        }
+      }
+
+      it('names the period on the plan row', () => {
+        arrange({ subscription: yearlyToMonthly })
+
+        expect(
+          screen.getByText(/Changes to Standard monthly on November 17, 2027\./)
+        ).toBeInTheDocument()
+      })
+
+      it('names the period when confirming Stay', async () => {
+        arrange({
+          subscription: yearlyToMonthly,
+          canRevertScheduledChange: true
+        })
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Stay on Standard' })
+        )
+
+        expect(
+          screen.getByRole('dialog', {
+            name: 'Cancel your change to Standard monthly?'
+          })
+        ).toBeInTheDocument()
+      })
+    })
 
     it('reverts the scheduled change and rereads status when confirmed', async () => {
       const { fetchStatus, refresh } = await openStay()
