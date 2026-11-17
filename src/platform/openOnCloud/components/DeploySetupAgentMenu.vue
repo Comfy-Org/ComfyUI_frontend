@@ -25,7 +25,12 @@
       </Button>
     </template>
     <MenuItem
-      v-if="flags.openOnCloudUseLocalAgentEnabled && localAgentEnabled"
+      v-if="
+        pendingServerFact(
+          'BE-26598',
+          flags.openOnCloudUseLocalAgentEnabled && localAgentEnabled
+        )
+      "
       :disabled="isOpeningAgent"
       @select="useLocalAgent"
     >
@@ -57,6 +62,7 @@ import MenuItem from '@/components/ui/menu/MenuItem.vue'
 import { useLocalAgentPanelPort } from '@/platform/openOnCloud/localAgentPanelPort'
 import DesktopAgentMarks from '@/platform/openOnCloud/components/DesktopAgentMarks.vue'
 import AgentMark from '@/platform/workflow/deploy/components/AgentMark.vue'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import { useRunOnCloudHandoff } from '@/platform/openOnCloud/useRunOnCloudHandoff'
 import { switcherMenuMotionClass } from '@/platform/workspace/components/deploymentSwitcherStyles'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
