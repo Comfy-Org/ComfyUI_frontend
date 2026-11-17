@@ -11,20 +11,6 @@ import {
 
 const WIDGETS = ['seed', 'steps', 'cfg']
 
-function linearApp(fileName: string, widgets: string[]) {
-  return {
-    fileName,
-    workflow: {
-      extra: {
-        linearData: {
-          inputs: widgets.map((widget) => ['3', widget]),
-          outputs: ['9']
-        }
-      }
-    }
-  }
-}
-
 async function saveCloseAndReopenAsApp(
   comfyPage: ComfyPage,
   appMode: AppModeHelper,
@@ -166,14 +152,28 @@ test.describe('Builder input reordering', { tag: '@ui' }, () => {
     const app1Reordered = ['steps', 'cfg', 'seed']
 
     await test.step('Load both apps', async () => {
-      await comfyPage.workflow.loadWorkflow(
-        'default',
-        linearApp('linear-basic-app-1', WIDGETS)
-      )
-      await comfyPage.workflow.loadWorkflow(
-        'default',
-        linearApp('linear-basic-app-2', app2Widgets)
-      )
+      await comfyPage.workflow.loadWorkflow('default', {
+        fileName: 'linear-basic-app-1',
+        workflow: {
+          extra: {
+            linearData: {
+              inputs: WIDGETS.map((widget) => ['3', widget]),
+              outputs: ['9']
+            }
+          }
+        }
+      })
+      await comfyPage.workflow.loadWorkflow('default', {
+        fileName: 'linear-basic-app-2',
+        workflow: {
+          extra: {
+            linearData: {
+              inputs: app2Widgets.map((widget) => ['3', widget]),
+              outputs: ['9']
+            }
+          }
+        }
+      })
     })
 
     await test.step('Reorder app1 inputs', async () => {
