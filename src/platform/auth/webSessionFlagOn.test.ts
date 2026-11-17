@@ -86,10 +86,7 @@ import { createDisposablePinia } from '@/testing/pinia'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
-import {
-  clearAllWorkspaceStorage,
-  prepareWorkflowLogoutTransition
-} from '@/platform/workflow/persistence/base/storageIO'
+import { prepareWorkflowLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
@@ -275,6 +272,7 @@ function installServer(
     session: initial,
     requests: [] as SessionRequest[],
     dropPosts: false,
+    deleteStatus: 200,
     revokeAllStatus: 200,
     revokeAllRequests: [] as {
       authorization: string | null
@@ -314,6 +312,9 @@ function installServer(
   const answerSession = (method: string): Response => {
     if (method === 'POST') return answerCreate()
     if (method === 'DELETE') {
+      if (server.deleteStatus !== 200) {
+        return jsonResponse({}, server.deleteStatus)
+      }
       server.session = 'revoked'
       return jsonResponse({ success: true })
     }
@@ -426,6 +427,23 @@ describe('cloud app on the shared web session', () => {
     )
   })
 
+  it('fails available and reports a degraded server sign-out', async () => {
+    const server = installServer({ userId: 'user-a' })
+    server.deleteStatus = 503
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+
+    await expect(useCloudWebSessionStore().signOut()).resolves.toBeUndefined()
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'auth',
+      errorType: 'auth_session_cookie_delete_failed',
+      level: 'error',
+      tags: { failure_code: 'SESSION_UNAVAILABLE', outcome: 'degraded' }
+    })
+  })
+
   it.for([
     { session: 'none', requiresSso: false },
     { session: 'sso_required', requiresSso: true }
@@ -510,7 +528,6 @@ describe('cloud app on the shared web session', () => {
       properties: { origin: location.origin }
     })
     expect(prepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
-    expect(clearAllWorkspaceStorage).toHaveBeenCalledOnce()
   })
 
   it.for([
@@ -573,6 +590,7 @@ describe('cloud app on the shared web session', () => {
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
 
     expect(firebaseSignOut).toHaveBeenCalledOnce()
+    expect(prepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
     expect(api.resetSocket).toHaveBeenCalledOnce()
     expect(
       sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)

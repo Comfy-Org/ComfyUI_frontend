@@ -53,6 +53,10 @@ import { provideAuthStore } from '@/platform/auth/authStoreAccess'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  abortWorkflowLogoutTransition,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 
 type CreateCustomerResponse =
   operations['createCustomer']['responses']['201']['content']['application/json']
@@ -795,21 +799,38 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid === user?.uid ? token : undefined
   }
 
-  const logout = async (): Promise<void> =>
-    executeAuthAction(async () => {
-      await revokePartnerNodeLogin()
-      const signsOutDesktopHost = isDesktopHostSignedIn()
-      if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
-        throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+  const logout = async (): Promise<void> => {
+    const persistenceTransition = isCloud
+      ? prepareWorkflowLogoutTransition()
+      : undefined
+    try {
+      await executeAuthAction(async () => {
+        await revokePartnerNodeLogin()
+        const signsOutDesktopHost = isDesktopHostSignedIn()
+        if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
+          throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
+        }
+        const storedApiKeyWouldTakeOver = isCloud || signsOutDesktopHost
+        const apiKeyStore = useApiKeyAuthStore()
+        if (storedApiKeyWouldTakeOver && apiKeyStore.getApiKey() !== null) {
+          await apiKeyStore.clearStoredApiKey()
+        }
+        await useCloudWebSessionStore().signOut()
+        if (currentUser.value) await firebaseIdentity.signOut()
+      })
+    } catch (error) {
+      if (persistenceTransition) {
+        abortWorkflowLogoutTransition(persistenceTransition)
+        reportError(error, {
+          surface: 'workspace',
+          errorType: 'workflow_persistence_logout_aborted',
+          level: 'warning',
+          tags: { outcome: 'degraded' }
+        })
       }
-      const storedApiKeyWouldTakeOver = isCloud || signsOutDesktopHost
-      const apiKeyStore = useApiKeyAuthStore()
-      if (storedApiKeyWouldTakeOver && apiKeyStore.getApiKey() !== null) {
-        await apiKeyStore.clearStoredApiKey()
-      }
-      await useCloudWebSessionStore().signOut()
-      if (currentUser.value) await firebaseIdentity.signOut()
-    })
+      throw error
+    }
+  }
 
   const sendPasswordReset = async (email: string): Promise<void> =>
     executeAuthAction(() => firebaseIdentity.sendPasswordReset(email))

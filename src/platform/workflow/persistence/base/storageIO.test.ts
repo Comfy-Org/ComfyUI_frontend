@@ -655,11 +655,13 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.prepareWorkflowWorkspaceTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition()
+      isolatedStorageIO.completeWorkflowLogoutTransition({
+        ownerId: Symbol('not-a-logout')
+      })
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition()
+      const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.completeWorkflowLogoutTransition(transition)
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
     })
@@ -668,15 +670,26 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.markStorageUnavailable()
-      isolatedStorageIO.prepareWorkflowLogoutTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition()
+      const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.completeWorkflowLogoutTransition(transition)
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
     })
 
-    it('cancels pending persistence before fencing logout writes', async () => {
+    it('fences logout writes before cancelling pending persistence', async () => {
       const isolatedStorageIO = await import('./storageIO')
-      const pending = { flush: vi.fn(), cancel: vi.fn() }
+      const pending = {
+        flush: vi.fn(),
+        cancel: vi.fn(() => {
+          expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+          expect(
+            isolatedStorageIO.writePayload('ws-1', 'stale', {
+              data: '{}',
+              updatedAt: 1
+            })
+          ).toBe(false)
+        })
+      }
       const unregister = isolatedStorageIO.registerWorkflowPersistence(pending)
 
       isolatedStorageIO.prepareWorkflowLogoutTransition()
@@ -689,12 +702,18 @@ describe('storageIO', () => {
     it('reports cancellation failure once and keeps logout writes fenced', async () => {
       const isolatedStorageIO = await import('./storageIO')
       const error = new DOMException('Cancellation failed', 'AbortError')
+      const successfulCancel = vi.fn()
       const unregister = isolatedStorageIO.registerWorkflowPersistence({
         flush: vi.fn(),
         cancel: () => {
           throw error
         }
       })
+      const unregisterSuccessful =
+        isolatedStorageIO.registerWorkflowPersistence({
+          flush: vi.fn(),
+          cancel: successfulCancel
+        })
 
       expect(() =>
         isolatedStorageIO.prepareWorkflowLogoutTransition()
@@ -706,6 +725,29 @@ describe('storageIO', () => {
         level: 'error'
       })
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+      expect(successfulCancel).toHaveBeenCalledOnce()
+      unregister()
+      unregisterSuccessful()
+    })
+
+    it('ignores stale logout completion and resumes aborted work', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+      const resumeAfterAbort = vi.fn()
+      const unregister = isolatedStorageIO.registerWorkflowPersistence({
+        flush: vi.fn(),
+        cancel: vi.fn(),
+        resumeAfterAbort
+      })
+
+      const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
+      isolatedStorageIO.completeWorkflowLogoutTransition({
+        ownerId: Symbol('stale')
+      })
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+
+      isolatedStorageIO.abortWorkflowLogoutTransition(transition)
+      expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
+      expect(resumeAfterAbort).toHaveBeenCalledOnce()
       unregister()
     })
 

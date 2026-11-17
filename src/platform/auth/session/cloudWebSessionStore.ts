@@ -67,10 +67,7 @@ import {
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
-import {
-  clearAllWorkspaceStorage,
-  prepareWorkflowLogoutTransition
-} from '@/platform/workflow/persistence/base/storageIO'
+import { prepareWorkflowLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -303,9 +300,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     if (!isCloud) return false
     const session = createCloudIdentity((change) => {
       resetForAccountChange(change)
+      if (!signingOut) prepareWorkflowLogoutTransition()
       if (change.reason === 'signed_out' && !signingOut) {
-        prepareWorkflowLogoutTransition()
-        clearAllWorkspaceStorage()
         void signedOutElsewhere.trigger()
       }
     })
@@ -414,10 +410,12 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
       signingOut = false
     })
     if (result === undefined || result.status === 'ok') return
-    reportError(new Error('Session cookie deletion failed'), {
+    const error = new Error(`Session cookie deletion failed: ${result.code}`)
+    reportError(error, {
       surface: 'auth',
       errorType: 'auth_session_cookie_delete_failed',
-      level: 'error'
+      level: 'error',
+      tags: { failure_code: result.code, outcome: 'degraded' }
     })
   }
 

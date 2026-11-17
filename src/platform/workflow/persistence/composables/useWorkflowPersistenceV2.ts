@@ -40,6 +40,7 @@ import {
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistence
 } from '@/platform/workflow/persistence/base/storageIO'
+import type { WorkflowLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -73,6 +74,7 @@ export function useWorkflowPersistenceV2() {
   let resolvedAuthSubject: string | null = null
   let authTransitionVersion = 0
   let authTransition = Promise.resolve()
+  let logoutTransition: WorkflowLogoutTransition | undefined
 
   function stopPendingWorkspaceReadinessWatcher(): void {
     stopWorkspaceReadinessWatcher?.()
@@ -151,7 +153,8 @@ export function useWorkflowPersistenceV2() {
 
   const unregisterPersistence = registerWorkflowPersistence({
     flush: flushPendingPersistence,
-    cancel: () => debouncedPersist.cancel()
+    cancel: () => debouncedPersist.cancel(),
+    resumeAfterAbort: () => persistCurrentWorkflow()
   })
   window.addEventListener('pagehide', flushPendingPersistence)
 
@@ -160,9 +163,22 @@ export function useWorkflowPersistenceV2() {
       teamWorkspaceStore.activeWorkspaceId !== null) ||
     teamWorkspaceStore.initState === 'error'
 
+  function beginLogoutTransition(): WorkflowLogoutTransition {
+    logoutTransition = prepareWorkflowLogoutTransition()
+    return logoutTransition
+  }
+
+  function completeLogoutTransition(transition = logoutTransition): void {
+    if (!transition) return
+    completeWorkflowLogoutTransition(transition)
+    if (logoutTransition?.ownerId === transition.ownerId) {
+      logoutTransition = undefined
+    }
+  }
+
   function resumePersistenceWhenWorkspaceIsReady(): void {
     if (isWorkspaceInitConcluded()) {
-      completeWorkflowLogoutTransition()
+      completeLogoutTransition()
       return
     }
 
@@ -170,7 +186,7 @@ export function useWorkflowPersistenceV2() {
       isWorkspaceInitConcluded,
       () => {
         stopWorkspaceReadinessWatcher = undefined
-        completeWorkflowLogoutTransition()
+        completeLogoutTransition()
       },
       { once: true }
     )
@@ -195,8 +211,7 @@ export function useWorkflowPersistenceV2() {
     resolvedAuthSubject = null
     draftStore.setAuthSubject(null)
     stopPendingWorkspaceReadinessWatcher()
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
+    beginLogoutTransition()
     clearAllWorkspaceStorage()
   })
   onUserResolved((user) => {
@@ -213,8 +228,7 @@ export function useWorkflowPersistenceV2() {
 
     const transitionVersion = ++authTransitionVersion
 
-    debouncedPersist.cancel()
-    prepareWorkflowLogoutTransition()
+    const transition = beginLogoutTransition()
     clearWorkflowRestoreState()
     authTransition = authTransition
       .then(async () => {
@@ -226,13 +240,14 @@ export function useWorkflowPersistenceV2() {
           draftStore.setAuthSubject(user.id)
           await waitForWorkspaceInitialization()
           if (transitionVersion !== authTransitionVersion) return
+          completeLogoutTransition(transition)
           await draftStore.loadPersistedWorkflow({
             fallbackToLatestDraft: true
           })
         } finally {
           if (transitionVersion === authTransitionVersion) {
             draftStore.setAuthSubject(user.id)
-            completeWorkflowLogoutTransition()
+            completeLogoutTransition(transition)
           }
         }
       })

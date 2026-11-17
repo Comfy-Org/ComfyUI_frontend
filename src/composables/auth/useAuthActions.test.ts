@@ -34,8 +34,6 @@ const mockDistributionState = vi.hoisted(() => ({
   isDesktop: false
 }))
 const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
-const mockCompleteWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
-const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
 const authErrorMessages: Record<string, string> = enLocale.auth.errors
 
@@ -74,9 +72,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
-  completeWorkflowLogoutTransition: mockCompleteWorkflowLogoutTransition,
-  prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
+  clearAllWorkspaceStorage: mockClearAllWorkspaceStorage
 }))
 
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
@@ -166,11 +162,7 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
     expect(mockClearAllWorkspaceStorage).toHaveBeenCalledExactlyOnceWith()
-    expect(
-      mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
-    ).toBeLessThan(vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0])
     expect(
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
     ).toBeLessThan(mockClearAllWorkspaceStorage.mock.invocationCallOrder[0])
@@ -209,8 +201,6 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
-    expect(mockCompleteWorkflowLogoutTransition).toHaveBeenCalledOnce()
     expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
   })
 

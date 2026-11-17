@@ -49,9 +49,21 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 }))
 
 const mockReportError = vi.hoisted(() => vi.fn())
+const mockPersistenceTransition = vi.hoisted(() => ({
+  ownerId: Symbol('logout')
+}))
+const mockPrepareWorkflowLogoutTransition = vi.hoisted(() =>
+  vi.fn(() => mockPersistenceTransition)
+)
+const mockAbortWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
+}))
+
+vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
+  prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition,
+  abortWorkflowLogoutTransition: mockAbortWorkflowLogoutTransition
 }))
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
@@ -571,7 +583,9 @@ describe('useAuthStore', () => {
 
       await store.logout()
 
+      expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
+      expect(mockAbortWorkflowLogoutTransition).not.toHaveBeenCalled()
     })
 
     it('should handle logout errors', async () => {
@@ -581,6 +595,15 @@ describe('useAuthStore', () => {
       await expect(store.logout()).rejects.toThrow('Network error')
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
+      expect(mockAbortWorkflowLogoutTransition).toHaveBeenCalledExactlyOnceWith(
+        mockPersistenceTransition
+      )
+      expect(mockReportError).toHaveBeenCalledWith(mockError, {
+        surface: 'workspace',
+        errorType: 'workflow_persistence_logout_aborted',
+        level: 'warning',
+        tags: { outcome: 'degraded' }
+      })
     })
   })
 

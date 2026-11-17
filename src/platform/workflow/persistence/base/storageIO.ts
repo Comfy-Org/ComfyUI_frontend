@@ -27,6 +27,7 @@ type WorkflowStorageState =
       status: 'transitioning'
       reason: 'logout'
       resumeAvailability: StorageAvailability
+      ownerId: symbol
     }
 
 let workflowStorageState: WorkflowStorageState = {
@@ -36,6 +37,11 @@ let workflowStorageState: WorkflowStorageState = {
 interface PendingWorkflowPersistence {
   flush: () => void
   cancel: () => void
+  resumeAfterAbort?: () => void
+}
+
+export interface WorkflowLogoutTransition {
+  readonly ownerId: symbol
 }
 
 const pendingWorkflowPersistence = new Set<PendingWorkflowPersistence>()
@@ -86,9 +92,13 @@ export function markStorageUnavailable(): void {
 }
 
 function isStorageReadable(): boolean {
-  return workflowStorageState.status === 'transitioning'
-    ? workflowStorageState.resumeAvailability === 'available'
-    : workflowStorageState.availability === 'available'
+  if (workflowStorageState.status === 'ready') {
+    return workflowStorageState.availability === 'available'
+  }
+  return (
+    workflowStorageState.reason === 'workspace' &&
+    workflowStorageState.resumeAvailability === 'available'
+  )
 }
 
 /** @internal Test-only: do not call from production code paths. */
@@ -637,28 +647,65 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
   }
 }
 
-export function prepareWorkflowLogoutTransition(): void {
-  cancelPendingWorkflowPersistence()
+export function prepareWorkflowLogoutTransition(): WorkflowLogoutTransition {
+  if (
+    workflowStorageState.status === 'transitioning' &&
+    workflowStorageState.reason === 'logout'
+  ) {
+    return { ownerId: workflowStorageState.ownerId }
+  }
+
+  const ownerId = Symbol('workflow-logout-transition')
   workflowStorageState = {
     status: 'transitioning',
     reason: 'logout',
     resumeAvailability:
       workflowStorageState.status === 'transitioning'
         ? workflowStorageState.resumeAvailability
-        : workflowStorageState.availability
+        : workflowStorageState.availability,
+    ownerId
   }
+  cancelPendingWorkflowPersistence()
+  return { ownerId }
 }
 
-export function completeWorkflowLogoutTransition(): void {
+export function completeWorkflowLogoutTransition(
+  transition: WorkflowLogoutTransition
+): void {
   if (
     workflowStorageState.status !== 'transitioning' ||
-    workflowStorageState.reason !== 'logout'
+    workflowStorageState.reason !== 'logout' ||
+    workflowStorageState.ownerId !== transition.ownerId
   )
     return
 
   workflowStorageState = {
     status: 'ready',
     availability: workflowStorageState.resumeAvailability
+  }
+}
+
+export function abortWorkflowLogoutTransition(
+  transition: WorkflowLogoutTransition
+): void {
+  if (
+    workflowStorageState.status !== 'transitioning' ||
+    workflowStorageState.reason !== 'logout' ||
+    workflowStorageState.ownerId !== transition.ownerId
+  )
+    return
+
+  completeWorkflowLogoutTransition(transition)
+  for (const { resumeAfterAbort } of pendingWorkflowPersistence) {
+    try {
+      resumeAfterAbort?.()
+    } catch (error) {
+      reportError(error, {
+        surface: 'workspace',
+        errorType: 'workflow_persistence_resume_failed',
+        level: 'error'
+      })
+    }
   }
 }
 
