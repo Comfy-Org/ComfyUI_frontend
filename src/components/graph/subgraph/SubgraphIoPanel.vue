@@ -103,33 +103,47 @@ function sourceTitleOf(source: EditableInputValueSource | undefined) {
     : t('subgraphInputValues.locateSource')
 }
 
-const rows = computed(() => {
+function portFieldsOf(port: TNode['allSlots'][number]) {
   const direction = isInputNode.value ? 'input' : 'output'
+  const isAddPort = port === ioNode.emptySlot
+  return {
+    port,
+    isAddPort,
+    reorderable: !isAddPort && !canvasStore.isReadOnly,
+    portTestId: isAddPort
+      ? `subgraph-add-${direction}`
+      : `subgraph-${direction}-port`,
+    portLabel: isAddPort ? undefined : port.displayName
+  }
+}
+
+function sourceFieldsOf(
+  source: InputValueSource | undefined,
+  editedWidgets: Set<WidgetId>
+) {
+  const editable = source?.kind === 'editable' ? source : undefined
+  const editedEarlier = !!editable && editedWidgets.has(editable.widgetId)
+  if (editable) editedWidgets.add(editable.widgetId)
+  return {
+    shared: editable?.shared,
+    editable: editedEarlier ? undefined : editable,
+    upstream: upstreamOf(source),
+    status: editedEarlier
+      ? t('subgraphInputValues.sharedSource')
+      : statusOf(source),
+    sourceTitle: sourceTitleOf(editable)
+  }
+}
+
+const rows = computed(() => {
   const editedWidgets = new Set<WidgetId>()
-  return slots.value.map((port) => {
-    const source = isInputNode.value ? sources.value.get(port.name) : undefined
-    const editable = source?.kind === 'editable' ? source : undefined
-    const editsHere = !!editable && !editedWidgets.has(editable.widgetId)
-    if (editable) editedWidgets.add(editable.widgetId)
-    const isAddPort = port === ioNode.emptySlot
-    return {
-      port,
-      isAddPort,
-      reorderable: !isAddPort && !canvasStore.isReadOnly,
-      portTestId: isAddPort
-        ? `subgraph-add-${direction}`
-        : `subgraph-${direction}-port`,
-      portLabel: isAddPort ? undefined : port.displayName,
-      shared: editable?.shared,
-      editable: editsHere ? editable : undefined,
-      upstream: upstreamOf(source),
-      status:
-        editable && !editsHere
-          ? t('subgraphInputValues.sharedSource')
-          : statusOf(source),
-      sourceTitle: sourceTitleOf(editable)
-    }
-  })
+  return slots.value.map((port) => ({
+    ...portFieldsOf(port),
+    ...sourceFieldsOf(
+      isInputNode.value ? sources.value.get(port.name) : undefined,
+      editedWidgets
+    )
+  }))
 })
 const hint = computed(() =>
   isInputNode.value && !navigationStore.currentHost
