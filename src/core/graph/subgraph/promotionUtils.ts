@@ -12,13 +12,14 @@ import { nextUniqueName } from '@/lib/litegraph/src/strings'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
-  supportsVirtualCanvasImagePreview
-} from '@/composables/node/canvasImagePreviewTypes'
+  isMediaPreviewWidgetName,
+  previewSourceName
+} from '@/core/graph/subgraph/preview/mediaPreviewName'
+import { supportsVirtualCanvasImagePreview } from '@/composables/node/canvasImagePreviewTypes'
 import {
   providePromoteRecommendedWidgets,
   useCanvasStore
 } from '@/renderer/core/canvas/canvasStore'
-import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
@@ -28,6 +29,7 @@ import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
@@ -236,8 +238,18 @@ function isPreviewExposed(
     .some(
       (exposure) =>
         exposure.sourceNodeId === source.sourceNodeId &&
-        exposure.sourcePreviewName === source.sourceWidgetName
+        exposure.sourcePreviewName === exposedPreviewName(subgraphNode, source)
     )
+}
+
+function exposedPreviewName(
+  subgraphNode: SubgraphNode,
+  source: PromotedWidgetSource
+): string {
+  return previewSourceName(
+    subgraphNode.subgraph.getNodeById(source.sourceNodeId) ?? undefined,
+    source.sourceWidgetName
+  )
 }
 
 export function isWidgetPromotedOnSubgraphNode(
@@ -368,8 +380,9 @@ export function seedNestedPromotedInputState(
 function promotePreviewViaExposure(
   subgraphNode: SubgraphNode,
   sourceNode: LGraphNode,
-  sourcePreviewName: string
+  previewName: string
 ): void {
+  const sourcePreviewName = previewSourceName(sourceNode, previewName)
   const store = usePreviewExposureStore()
   const rootGraphId = subgraphNode.rootGraph.id
   const hostLocator = getPreviewExposureHostLocator(subgraphNode)
@@ -455,6 +468,14 @@ function demotePromotedInput(
   return true
 }
 
+/** Removes the exposed preview entity and its components. */
+export function removePreviewExposure(host: SubgraphNode, name: string): void {
+  const hostLocator = getPreviewExposureHostLocator(host)
+  if (!hostLocator) return
+  usePreviewExposureStore().removeExposure(host.rootGraph.id, hostLocator, name)
+  useWidgetValueStore().deleteWidget(widgetId(host.rootGraph.id, host.id, name))
+}
+
 export function demoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
@@ -473,14 +494,10 @@ export function demoteWidget(
         .find(
           (entry) =>
             entry.sourceNodeId === source.sourceNodeId &&
-            entry.sourcePreviewName === source.sourceWidgetName
+            entry.sourcePreviewName === exposedPreviewName(parent, source)
         )
       if (exposure) {
-        previewStore.removeExposure(
-          parent.rootGraph.id,
-          hostLocator,
-          exposure.name
-        )
+        removePreviewExposure(parent, exposure.name)
         continue
       }
     }
@@ -574,33 +591,37 @@ export function isRecommendedWidget([node, widget]: WidgetItem) {
   )
 }
 
-function supportsVirtualPreviewWidget(node: LGraphNode): boolean {
-  return supportsVirtualCanvasImagePreview(node)
-}
-
-function createVirtualCanvasImagePreviewWidget(): IBaseWidget {
-  return {
-    name: CANVAS_IMAGE_PREVIEW_WIDGET,
-    type: 'IMAGE_PREVIEW',
-    options: { serialize: false },
-    serialize: false,
-    y: 0,
-    computedDisabled: false
-  }
-}
-
-export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
-  const widgets = [...(node.widgets ?? [])]
-
-  const hasCanvasPreviewWidget = widgets.some(
-    (widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET
+function hasMediaPreview(node: LGraphNode): boolean {
+  return (
+    supportsVirtualCanvasImagePreview(node) ||
+    !!node.widgets?.some((widget) => isMediaPreviewWidgetName(widget.name)) ||
+    !!useNodeOutputStore().getNodeOutputs(node)?.images?.length
   )
-  const supportsVirtualPreview = supportsVirtualPreviewWidget(node)
-  if (!hasCanvasPreviewWidget && supportsVirtualPreview) {
-    widgets.push(createVirtualCanvasImagePreviewWidget())
-  }
+}
 
-  return widgets
+function mediaPreviewWidget(node: LGraphNode): IBaseWidget {
+  return (
+    node.widgets?.find(
+      (widget) => widget.name === CANVAS_IMAGE_PREVIEW_WIDGET
+    ) ?? {
+      name: CANVAS_IMAGE_PREVIEW_WIDGET,
+      type: 'IMAGE_PREVIEW',
+      options: { serialize: false },
+      serialize: false,
+      y: 0,
+      computedDisabled: false
+    }
+  )
+}
+
+/** A node's widgets with its image, animation, or video preview listed once under {@link CANVAS_IMAGE_PREVIEW_WIDGET}, even before the preview is drawn. */
+export function getPromotableWidgets(node: LGraphNode): IBaseWidget[] {
+  const widgets = (node.widgets ?? []).filter(
+    (widget) => !isMediaPreviewWidgetName(widget.name)
+  )
+  return hasMediaPreview(node)
+    ? [...widgets, mediaPreviewWidget(node)]
+    : widgets
 }
 
 function nodeWidgets(n: LGraphNode): WidgetItem[] {
@@ -609,29 +630,12 @@ function nodeWidgets(n: LGraphNode): WidgetItem[] {
 
 export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
   if (subgraphNode.properties.previewExposures !== undefined) return
-  const { updatePreviews } = useLitegraphServiceAccess()
-  const interiorNodes = subgraphNode.subgraph.nodes
-  for (const node of interiorNodes) {
+  for (const node of subgraphNode.subgraph.nodes) {
     node.updateComputedDisabled()
-
-    const hasPreviewWidget = () =>
-      node.widgets?.some(isPreviewPseudoWidget) ?? false
-
-    function promotePreviewWidget() {
-      const widget = node.widgets?.find(isPreviewPseudoWidget)
-      if (!widget) return
-      promotePreviewViaExposure(subgraphNode, node, widget.name)
-    }
-    promotePreviewWidget()
-
-    if (hasPreviewWidget()) continue
-
-    if (supportsVirtualCanvasImagePreview(node)) {
-      promotePreviewViaExposure(subgraphNode, node, CANVAS_IMAGE_PREVIEW_WIDGET)
-      continue
-    }
-
-    requestAnimationFrame(() => updatePreviews(node, promotePreviewWidget))
+    const preview =
+      node.widgets?.find(isPreviewPseudoWidget)?.name ??
+      (hasMediaPreview(node) ? CANVAS_IMAGE_PREVIEW_WIDGET : undefined)
+    if (preview) promotePreviewViaExposure(subgraphNode, node, preview)
   }
 }
 

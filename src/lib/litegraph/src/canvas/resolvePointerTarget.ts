@@ -33,7 +33,7 @@ import {
 export type PointerTarget =
   | { kind: 'node'; node: LGraphNode }
   | { kind: 'linkBadge'; link: LLink }
-  | { kind: 'linkBadgeStack'; stackKey: string }
+  | { kind: 'linkBadgeStack'; stackKey: string; links: LLink[] }
   | { kind: 'subgraphIO'; ioNode: SubgraphInputNode | SubgraphOutputNode }
   | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
   | { kind: 'link'; segment: LinkSegment }
@@ -55,7 +55,7 @@ export function resolvePointerTarget(
   const point: Point = [e.canvasX, e.canvasY]
 
   const stack = queryHiddenLinkStackAtPoint(canvas, graph, ...point)
-  if (stack) return { kind: 'linkBadgeStack', stackKey: stack.stackKey }
+  if (stack) return { kind: 'linkBadgeStack', ...stack }
 
   const badgeLink = queryHiddenLinkBadgeAtPoint(
     canvas,

@@ -56,12 +56,12 @@ const heightCases: HeightCase[] = [
     expectedCanvasHeight: 64
   },
   {
-    name: 'layout minimum before legacy size',
+    name: 'legacy size before layout minimum',
     widget: {
       computeLayoutSize: () => ({ minWidth: 0, minHeight: 30 }),
       computeSize: () => [0, -4]
     },
-    expectedCanvasHeight: 64
+    expectedCanvasHeight: 0
   },
   {
     name: 'positive legacy size',

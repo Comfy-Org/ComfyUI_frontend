@@ -47,6 +47,7 @@ export type PlanRowState =
       planName: string | null
       cadence: BillingCadence | null
       endedAt: string | null
+      salesManaged?: true
     }
   | {
       kind: 'noPlan'
@@ -91,7 +92,8 @@ function endedRow(facts: PlanRowFacts): PlanRowState {
     kind: 'ended',
     planName: facts.planName,
     cadence: toCadence(facts.duration),
-    endedAt: endedDate(facts)
+    endedAt: endedDate(facts),
+    ...(facts.planKind === 'sales_managed' && { salesManaged: true })
   }
 }
 
