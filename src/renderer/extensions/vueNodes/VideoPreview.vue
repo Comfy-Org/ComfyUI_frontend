@@ -1,7 +1,12 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="video-preview flex size-full min-h-55 min-w-16 flex-col px-2"
+    :class="
+      cn(
+        'video-preview flex size-full min-w-16 flex-col px-2',
+        fitsContainer ? 'min-h-0' : 'min-h-55'
+      )
+    "
     @keydown="handleKeyDown"
   >
     <!-- Video Wrapper -->
@@ -144,6 +149,7 @@ interface VideoPreviewProps {
   readonly imageUrls: readonly string[] // Named imageUrls for consistency with parent components
   /** Optional node ID for context-aware actions */
   readonly nodeId?: NodeId
+  readonly fitsContainer?: boolean
 }
 
 const props = defineProps<VideoPreviewProps>()
