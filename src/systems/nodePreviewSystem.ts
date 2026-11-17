@@ -47,6 +47,23 @@ const ITEMS_OF_TYPE: Record<
   audio: isAudioResult
 }
 
+function isNodePreviewMediaType(
+  hint: LGraphNode['previewMediaType']
+): hint is NodePreviewMediaType {
+  return hint === 'image' || hint === 'video' || hint === 'audio'
+}
+
+const RESULT_TYPE_PRIORITY = ['image', 'video', 'audio'] as const
+
+function resultMediaType(
+  items: readonly AugmentedResultItem[]
+): NodePreviewMediaType {
+  return (
+    RESULT_TYPE_PRIORITY.find((type) => items.some(ITEMS_OF_TYPE[type])) ??
+    'image'
+  )
+}
+
 function previewMediaType({
   outputs,
   items,
@@ -54,17 +71,9 @@ function previewMediaType({
   hasVideoInput
 }: NodePreviewSources): NodePreviewMediaType {
   if (isVideoOutput(outputs)) return 'video'
-  if (
-    mediaTypeHint === 'image' ||
-    mediaTypeHint === 'video' ||
-    mediaTypeHint === 'audio'
-  )
-    return mediaTypeHint
+  if (isNodePreviewMediaType(mediaTypeHint)) return mediaTypeHint
   if (!mediaTypeHint && hasVideoInput) return 'video'
-  if (items.some(isImageItem)) return 'image'
-  if (items.some(isVideoResult)) return 'video'
-  if (items.some(isAudioResult)) return 'audio'
-  return 'image'
+  return resultMediaType(items)
 }
 
 /** Chooses one media type for a node's outputs and keeps only the items of that type. */
