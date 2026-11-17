@@ -146,7 +146,7 @@ const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
 const {
   scheduledChange,
-  planName: scheduledPlanName,
+  planNameWithPeriod: scheduledPlanName,
   isDisplayable: canShowScheduledChange
 } = useScheduledPlanChange()
 const { showTopUpCreditsDialog } = useBillingDialogs()

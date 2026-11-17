@@ -27,6 +27,7 @@ interface Subscription {
   endDate: string | null
   endedAt?: string | null
   tier?: SubscriptionInfo['tier']
+  duration?: SubscriptionInfo['duration']
   scheduledChange?: SubscriptionInfo['scheduledChange']
 }
 
@@ -80,7 +81,8 @@ vi.mock<unknown>(
       subscriptionStatus: computed(() => state.subscriptionStatus),
       subscription: computed(() => state.subscription),
       plans: computed(() => [
-        { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' }
+        { slug: 'pro-annual', tier: 'PRO', duration: 'ANNUAL' },
+        { slug: 'standard-monthly', tier: 'STANDARD', duration: 'MONTHLY' }
       ]),
       renewalDate: computed(() => '2026-12-15T00:00:00Z'),
       nextCreditRefillAt: computed(() => state.nextCreditRefillAt),
@@ -231,6 +233,10 @@ const i18n = createI18n({
       subscription: {
         teamPlanName: 'Team',
         unknownTierName: 'Unknown',
+        planWithPeriod: {
+          monthly: '{plan} monthly',
+          annual: '{plan} yearly'
+        },
         tiers: {
           standard: { name: 'Standard' },
           creator: { name: 'Creator' },
@@ -996,6 +1002,52 @@ describe('BillingStatusBanner', () => {
     expect(screen.getByRole('status')).toHaveTextContent(
       'Members keep full access until then.'
     )
+  })
+
+  describe('in a personal workspace', () => {
+    function personalStandardYearly() {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      state.isTeamPlan = false
+      state.workspaceType = 'personal'
+    }
+
+    function scheduledFromStandardYearly(planSlug: string) {
+      scheduledFor(planSlug)
+      state.subscription = {
+        ...state.subscription!,
+        tier: 'STANDARD',
+        duration: 'ANNUAL'
+      }
+    }
+
+    it('names the billing period when only the period changes', () => {
+      personalStandardYearly()
+      scheduledFromStandardYearly('standard-monthly')
+      renderBanner('billing')
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your plan changes to Standard monthly on October 1, 2026.'
+      )
+    })
+
+    it('names only the tier when the tier changes', () => {
+      personalStandardYearly()
+      scheduledFromStandardYearly('pro-annual')
+      renderBanner()
+
+      expect(screen.getByRole('status')).toHaveTextContent(
+        'Your plan changes to Pro on October 1, 2026.'
+      )
+    })
+
+    it('hides the scheduled change from a member', () => {
+      personalStandardYearly()
+      state.canManageSubscription = false
+      scheduledFromStandardYearly('standard-monthly')
+      renderBanner()
+
+      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+    })
   })
 
   it('dismisses a scheduled change banner', async () => {

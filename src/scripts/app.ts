@@ -409,7 +409,6 @@ export class ComfyApp implements IComfyApp {
     this.rootGraphRef.value = graph
   }
 
-  // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
   get graph() {
     return this.rootGraphInternal!
