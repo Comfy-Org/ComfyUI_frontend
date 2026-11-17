@@ -14,12 +14,14 @@ import type {
   WorkflowHandle
 } from '@/platform/nodeApi/v4/types'
 
+import type { WorkflowExtra } from './workflowExtra'
 import type { WorkflowImporters } from './workflowImporters'
 
 export function createWorkflowHandle(
   current: () => DocumentHandle | undefined,
   importers: WorkflowImporters,
-  getGraph: () => LGraph | null
+  getGraph: () => LGraph | null,
+  extra: WorkflowExtra
 ): WorkflowHandle {
   const copyOfSaved = savedCopier()
   return Object.freeze({
@@ -52,6 +54,7 @@ export function createWorkflowHandle(
       const root = getGraph()?.rootGraph
       return root && applyTextReplacements(root, value)
     },
-    registerImporter: importers.register
+    registerImporter: importers.register,
+    ...extra
   })
 }
