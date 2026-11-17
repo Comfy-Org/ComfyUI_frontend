@@ -626,7 +626,7 @@ onMounted(async () => {
     window.app = comfyApp
     Object.defineProperty(window, 'graph', {
       configurable: true,
-      get: () => comfyApp.graph
+      get: () => comfyApp.rootGraph
     })
 
     comfyAppReady.value = true
