@@ -13,7 +13,7 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        hasOpaqueNodeColors ? ['shadow-xl', shapeClass] : 'drop-shadow-lg',
+        isTransparentHeaderless ? 'drop-shadow-lg' : ['shadow-xl', shapeClass],
         'outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
@@ -325,10 +325,7 @@ import {
   locatorIdFromState
 } from '@/utils/graphTraversalUtil'
 import { cn } from '@comfyorg/tailwind-utils'
-import {
-  isOpaqueColor,
-  isTransparent
-} from '@comfyorg/shared-frontend-utils/colorUtil'
+import { isTransparent } from '@comfyorg/shared-frontend-utils/colorUtil'
 
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
@@ -526,12 +523,6 @@ const shapeClass = computed(() =>
     card: 'rounded-tl-(--node-radius) rounded-br-(--node-radius)',
     default: 'rounded-(--node-radius)'
   })
-)
-
-const hasOpaqueNodeColors = computed(() =>
-  [nodeData.color, nodeData.bgcolor].every(
-    (color) => !color || isOpaqueColor(color)
-  )
 )
 
 const isTransparentHeaderless = computed(
