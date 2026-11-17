@@ -45,6 +45,7 @@ import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
 import {
   RESEED_CONFLICT,
+  SOCKET_CREDENTIAL_REFUSED,
   isPermanentSubscribeRefusalCode,
   isRetryableReseedCode
 } from './docFrameCodes'
@@ -814,6 +815,19 @@ function startAgentCrdtFollower(
     }
   }
 
+  let credentialReconnectSpent = false
+  function reconnectForCredential(code: unknown): boolean {
+    if (credentialReconnectSpent || code !== SOCKET_CREDENTIAL_REFUSED)
+      return false
+    credentialReconnectSpent = true
+    lifecycle.awaitReconnect()
+    recordDevEvent('subscribe_credential_reconnect', {
+      workflowId: subscribedWorkflowId.value
+    })
+    transport.reconnect()
+    return true
+  }
+
   function handleRejectedSubscription(
     detail: {
       workflowId?: unknown
@@ -822,6 +836,11 @@ function startAgentCrdtFollower(
       message?: unknown
     } | null
   ): void {
+    if (reconnectForCredential(detail?.code)) {
+      sender.abortIfUnbound('subscribe_refused')
+      releaseHeldOps()
+      return
+    }
     const reseeding = tryReseed()
     const refusal = reseeding
       ? { shouldNotify: false }
@@ -889,6 +908,7 @@ function startAgentCrdtFollower(
         }
       }
       terminal.value = null
+      credentialReconnectSpent = false
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
@@ -1314,6 +1334,7 @@ function startAgentCrdtFollower(
     debugSnapshot,
     retrySubscription: () => {
       if (!lifecycle.retry()) return
+      credentialReconnectSpent = false
       connected.value = false
       terminal.value = null
     },
