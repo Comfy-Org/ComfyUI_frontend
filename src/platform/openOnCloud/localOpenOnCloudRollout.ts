@@ -15,6 +15,7 @@ type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
 type RolloutRead =
   | { ok: true; value: OpenOnCloudRollout }
   | { ok: false; retryable: boolean; cause: unknown }
+type RolloutReadState = 'retryable' | 'reading' | 'settled'
 
 const ROLLOUT_RETRY_DELAYS_MS = [500, 1_000]
 const rollout = shallowRef<OpenOnCloudRollout>()
@@ -93,16 +94,21 @@ async function fetchRolloutWithRetry(
 async function readRollout(
   getToken: () => Promise<string | undefined>,
   signal: AbortSignal
-): Promise<void> {
+): Promise<Exclude<RolloutReadState, 'reading'>> {
   try {
     const endpoint = new URL('/api/features', getBuildTimeComfyCloudBaseUrl())
-    if (endpoint.protocol !== 'https:') return
+    if (endpoint.protocol !== 'https:') return 'settled'
     const result = await fetchRolloutWithRetry(endpoint, getToken, signal)
-    if (signal.aborted) return
-    if (result.ok) rollout.value = result.value
-    else reportRolloutReadFailure(result.cause)
+    if (signal.aborted) return 'settled'
+    if (result.ok) {
+      rollout.value = result.value
+      return 'settled'
+    }
+    reportRolloutReadFailure(result.cause)
+    return result.retryable ? 'retryable' : 'settled'
   } catch (error) {
     if (!signal.aborted) reportRolloutReadFailure(error)
+    return 'settled'
   }
 }
 
@@ -113,10 +119,23 @@ export function startLocalOpenOnCloudRollout(
   const stop = watch(
     getUserId,
     (userId, _, onCleanup) => {
+      rollout.value = undefined
+      if (!userId) return
+
       const controller = new AbortController()
       onCleanup(() => controller.abort())
-      rollout.value = undefined
-      if (userId) void readRollout(getToken, controller.signal)
+      const { signal } = controller
+      let state: RolloutReadState = 'retryable'
+      const readIfNeeded = () => {
+        if (state !== 'retryable' || signal.aborted) return
+        state = 'reading'
+        void readRollout(getToken, signal).then((nextState) => {
+          state = nextState
+        })
+      }
+      window.addEventListener('online', readIfNeeded, { signal })
+      window.addEventListener('focus', readIfNeeded, { signal })
+      readIfNeeded()
     },
     { immediate: true, flush: 'sync' }
   )

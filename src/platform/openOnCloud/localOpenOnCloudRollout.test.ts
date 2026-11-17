@@ -104,7 +104,10 @@ it('ignores a grant returned after sign-out and renders a denied account as off'
   userId.value = 'other-token'
   await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
   await vi.advanceTimersByTimeAsync(0)
+  window.dispatchEvent(new Event('online'))
+  await vi.advanceTimersByTimeAsync(0)
   expect(visible()).toBe(false)
+  expect(fetch).toHaveBeenCalledTimes(2)
 })
 
 it('recovers for the same account after a missing token and a temporary Cloud error', async () => {
@@ -137,3 +140,27 @@ it('stops retrying when the account signs out during backoff', async () => {
   expect(visible()).toBe(false)
   expect(fetch).toHaveBeenCalledOnce()
 })
+
+it.for(['online', 'focus'])(
+  'recovers on %s after the initial retries are exhausted',
+  async (event) => {
+    const { userId, visible } = start()
+    vi.mocked(fetch)
+      .mockRejectedValueOnce(new TypeError('network offline'))
+      .mockRejectedValueOnce(new TypeError('network offline'))
+      .mockRejectedValueOnce(new TypeError('network offline'))
+      .mockResolvedValueOnce(Response.json(allowed))
+
+    userId.value = 'employee-token'
+    await vi.advanceTimersByTimeAsync(1_500)
+    expect(visible()).toBe(false)
+    expect(fetch).toHaveBeenCalledTimes(3)
+
+    window.dispatchEvent(new Event(event))
+    window.dispatchEvent(new Event(event))
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(visible()).toBe(true)
+    expect(fetch).toHaveBeenCalledTimes(4)
+  }
+)
