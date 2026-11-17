@@ -49,6 +49,7 @@ import {
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
+import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'
 function isTooltipValueType(val: unknown): val is TooltipValueType {
@@ -69,7 +70,6 @@ interface WidgetErrorTarget {
 
 export interface ProcessedWidget extends WidgetGridItem {
   hasError: boolean
-  hasLayoutSize: boolean
   tooltipText: string
   updateHandler: (value: WidgetValue) => void
   widgetId: WidgetId
@@ -448,7 +448,9 @@ function processWidget(
 
   return {
     handleContextMenu: widgetContextMenu(ctx, widgetState.name),
-    hasLayoutSize: renderState?.hasLayoutSize ?? false,
+    get sizing() {
+      return live ? getWidgetSizing(live.widget, live.node) : undefined
+    },
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,

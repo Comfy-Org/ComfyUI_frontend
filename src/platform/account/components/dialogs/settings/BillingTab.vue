@@ -181,6 +181,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { isCloud } from '@/platform/distribution/types'
@@ -381,11 +382,13 @@ async function retry() {
 }
 
 onMounted(() => {
-  if (!billing.isInitialized.value && !billing.isLoading.value) {
+  if (billing.isInitialized.value) {
+    void refreshBilling('account')
+  } else if (!billing.isLoading.value) {
     void billing.initialize().catch(() => undefined)
   }
   void capabilities.initialize()
 })
 
-useRefreshBillingOnReturn()
+useRefreshBillingOnReturn({ includeCloud: true })
 </script>

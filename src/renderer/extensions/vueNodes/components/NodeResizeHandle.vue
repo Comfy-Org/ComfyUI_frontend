@@ -8,6 +8,7 @@ import type { ResizeHandle } from '@/renderer/extensions/vueNodes/interactions/r
 const { handle } = defineProps<{ handle: ResizeHandle }>()
 const emit = defineEmits<{
   resize: [event: PointerEvent, corner: CompassCorners]
+  fit: [event: MouseEvent]
 }>()
 const { t } = useI18n()
 </script>
@@ -19,12 +20,13 @@ const { t } = useI18n()
     :aria-label="t(handle.i18nKey)"
     :class="
       cn(
-        'pointer-events-auto absolute size-5 touch-none opacity-0 group-hover/node:opacity-100 focus-visible:outline-2 focus-visible:outline-white/40',
+        'pointer-events-auto absolute z-30 size-5 touch-none opacity-0 group-hover/node:opacity-100 focus-visible:outline-2 focus-visible:outline-white/40',
         handle.positionClasses,
         handle.cursorClass
       )
     "
     @pointerdown.stop="emit('resize', $event, handle.corner)"
+    @dblclick.stop="emit('fit', $event)"
   >
     <svg
       xmlns="http://www.w3.org/2000/svg"

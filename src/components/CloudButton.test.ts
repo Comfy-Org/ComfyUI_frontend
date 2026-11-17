@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
@@ -36,6 +37,7 @@ vi.mock(
 )
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/platform/openOnCloud/cloudCompatibilityApi'))
@@ -54,10 +56,17 @@ function deferredVerdict() {
 describe('Cloud button compatibility checks', () => {
   it.for([
     {
+      flag: true,
       enabled: false,
       rows: ['Open in Claude desktop', 'Open in Codex', 'Copy prompt']
     },
     {
+      flag: false,
+      enabled: true,
+      rows: ['Open in Claude desktop', 'Open in Codex', 'Copy prompt']
+    },
+    {
+      flag: true,
       enabled: true,
       rows: [
         'Use local agent',
@@ -67,8 +76,11 @@ describe('Cloud button compatibility checks', () => {
       ]
     }
   ])(
-    'preserves agent choice for missing nodes when local agent enabled is $enabled',
-    async ({ enabled, rows }) => {
+    'preserves agent choice for missing nodes when flag=$flag and available=$enabled',
+    async ({ flag, enabled, rows }) => {
+      Object.assign(useFeatureFlags().flags, {
+        openOnCloudUseLocalAgentEnabled: flag
+      })
       useAgentPanelStore().enabled = enabled
       vi.mocked(checkCloudCompatibility).mockResolvedValue({
         kind: 'missing',
@@ -235,6 +247,22 @@ describe('Cloud button compatibility checks', () => {
       )
     )
     expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
+  })
+
+  it('names the missing model loader and explains how to continue', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'unreadableModelLoader',
+      nodeType: 'ImpactCheckpointLoader'
+    })
+    render(CloudButton, { global: { plugins: [testI18n] } })
+
+    await userEvent.setup().click(screen.getByTestId('cloud-button'))
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'Could not read the model settings for ImpactCheckpointLoader. Install the node pack that provides it, then try again.'
+      )
+    )
   })
 
   it('opens the dialog when Cloud is missing nodes or models', async () => {

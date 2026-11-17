@@ -169,21 +169,6 @@ describe('useImagePreviewWidget', () => {
     })
   })
 
-  describe('createCopyForNode', () => {
-    it('creates a copy bound to a new node', () => {
-      const constructor = useImagePreviewWidget()
-      const node1 = createMockNode({ id: 1 })
-      constructor(node1, defaultInputSpec)
-
-      const widget = getWidget(node1)
-      const node2 = createMockNode({ id: 2 })
-      const copy = widget.createCopyForNode(node2)
-
-      expect(copy.name).toBe('preview')
-      expect(copy.type).toBe('custom')
-    })
-  })
-
   describe('drawWidget — upload spinner', () => {
     it('renders spinner when node.isUploading is true', () => {
       const constructor = useImagePreviewWidget()

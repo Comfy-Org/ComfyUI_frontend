@@ -3,7 +3,7 @@ import _ from 'es-toolkit/compat'
 import { reactive, unref, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
-import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/auth/partnerNode/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { normalizeCameraState } from '@/renderer/core/canvas/cameraState'
 import {
@@ -97,9 +97,11 @@ import {
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { ComponentWidgetImpl, DOMWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import {
   promptErrorHasLockedCredits,
+  promptRefusalPrecondition,
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -227,7 +229,14 @@ import {
   pasteVideoNodes
 } from '@/composables/usePaste'
 
-export { ANIM_PREVIEW_WIDGET } from '@/composables/node/useNodeAnimatedImage'
+export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
+
+function servedRefusalPrecondition(error: unknown) {
+  if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
+  return error instanceof PromptExecutionError
+    ? promptRefusalPrecondition(error.response.error)
+    : undefined
+}
 
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
@@ -1990,10 +1999,10 @@ export class ComfyApp implements IComfyApp {
                 ? normalizePromptError(error.response.error)
                 : null
             const promptPrecondition = promptError
-              ? resolveAccountPrecondition({
+              ? (resolveAccountPrecondition({
                   exceptionType: promptError.type,
                   exceptionMessage: promptError.message
-                })
+                }) ?? servedRefusalPrecondition(error))
               : undefined
             if (promptPrecondition) {
               const opened = await useAccountPreconditionDialog().open(
