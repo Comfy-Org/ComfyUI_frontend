@@ -1032,6 +1032,14 @@ export interface WorkflowHandle {
   applyTextReplacements(value: string): string | undefined
   /** Asks `importer` for a workflow when a file the host cannot read is opened or dropped. */
   registerImporter(importer: WorkflowImporter): Unsubscribe
+  /** A frozen copy of `key` in the `extra` the document's workflow saves; `undefined` if absent or closed. */
+  getExtra(document: DocumentHandle | undefined, key: string): unknown
+  /** Writes `key` in the on-screen document's `extra` as one undo step; `undefined` deletes it. False for any other document. */
+  setExtra(
+    document: DocumentHandle | undefined,
+    key: string,
+    value: unknown
+  ): boolean
 }
 
 export interface WorkflowImportContext {

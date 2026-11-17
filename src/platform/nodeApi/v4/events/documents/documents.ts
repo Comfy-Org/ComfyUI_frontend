@@ -11,8 +11,13 @@ import type { DocumentHandle, Unsubscribe } from '@/platform/nodeApi/v4/types'
 
 type Session = NonNullable<ComfyWorkflow['changeTracker']>
 
-interface Documents {
+export interface Documents {
   current(): DocumentHandle | undefined
+  /**
+   * The change tracker of the open document `document` names: `undefined` for `undefined`
+   * or a closed document, and a `TypeError` naming `member` for a value that is not a document.
+   */
+  changeTrackerOf(member: string, document: unknown): Session | undefined
   onWorkflowLoaded(
     listener: (document: DocumentHandle | undefined) => void
   ): Unsubscribe
@@ -25,6 +30,7 @@ interface Documents {
 /** Open documents, one per editing session: a workflow from open until close. */
 export function createDocuments(): Documents {
   const handles = new WeakMap<Session, DocumentHandle>()
+  const sessions = new WeakMap<object, Session>()
   const loaded =
     createListeners<[DocumentHandle | undefined]>('onWorkflowLoaded')
 
@@ -33,6 +39,7 @@ export function createDocuments(): Documents {
     if (!handle) {
       handle = documentHandle(createUuidv4(), () => openWorkflowOf(session))
       handles.set(session, handle)
+      sessions.set(handle, session)
     }
     return handle
   }
@@ -42,8 +49,24 @@ export function createDocuments(): Documents {
     return session ? handleFor(session) : undefined
   }
 
+  function changeTrackerOf(
+    member: string,
+    document: unknown
+  ): Session | undefined {
+    if (document === undefined) return undefined
+    const session =
+      typeof document === 'object' && document !== null
+        ? sessions.get(document)
+        : undefined
+    if (!session) {
+      throw invalidArgument(member, 'a document handle or undefined', document)
+    }
+    return openWorkflowOf(session) && session
+  }
+
   return {
     current,
+    changeTrackerOf,
     onWorkflowLoaded(listener) {
       if (typeof listener !== 'function') {
         throw invalidArgument(

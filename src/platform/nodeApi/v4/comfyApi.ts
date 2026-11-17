@@ -17,6 +17,7 @@ import { createGroupHandles } from './edit/groupHandles'
 import { nodeHandleMembers } from './edit/nodeHandleMembers'
 import { createSlotHandles } from './edit/slotHandles'
 import { createDocuments } from './events/documents/documents'
+import { createWorkflowExtra } from './events/documents/workflowExtra'
 import { createWorkflowHandle } from './events/documents/workflowHandle'
 import { createWorkflowImporters } from './events/documents/workflowImporters'
 import type { WorkflowImporters } from './events/documents/workflowImporters'
@@ -150,7 +151,12 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
     workflow: createWorkflowHandle(
       documents.current,
       importers,
-      services.getGraph
+      services.getGraph,
+      createWorkflowExtra(
+        documents.changeTrackerOf,
+        services.getGraph,
+        edit.batch
+      )
     ),
     queue: queue.queue,
     defs: definitions.defs,
