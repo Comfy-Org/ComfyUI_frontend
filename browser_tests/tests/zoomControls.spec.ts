@@ -35,6 +35,27 @@ test.describe('Zoom Controls', { tag: '@canvas' }, () => {
     await expect.poll(() => comfyPage.canvasOps.getScale()).toBeCloseTo(1.0, 1)
   })
 
+  test('Zoom percentage keeps its width across zoom levels', async ({
+    comfyPage
+  }) => {
+    const zoomButton = comfyPage.page.getByTestId(
+      TestIds.canvas.zoomControlsButton
+    )
+    const widthAt = async (scale: number) => {
+      await comfyPage.canvasOps.setScale(scale)
+      await comfyPage.page.evaluate(() =>
+        window.app!.canvas.setDirty(true, true)
+      )
+      await expect(zoomButton).toContainText(`${Math.round(scale * 100)}%`)
+      return (await zoomButton.boundingBox())?.width
+    }
+
+    const width = await widthAt(1)
+    for (const scale of [0.1, 0.95, 2.5, 10]) {
+      expect(await widthAt(scale)).toBe(width)
+    }
+  })
+
   test('Zoom to fit reduces percentage', async ({ comfyPage }) => {
     const zoomButton = comfyPage.page.getByTestId(
       TestIds.canvas.zoomControlsButton

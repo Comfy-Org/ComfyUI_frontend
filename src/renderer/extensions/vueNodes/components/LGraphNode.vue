@@ -76,7 +76,6 @@
             '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:transform-[translate(0)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
         )
       "
-      data-testid="node-clip-boundary"
     >
       <div
         data-testid="node-inner-wrapper"

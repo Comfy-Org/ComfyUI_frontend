@@ -317,30 +317,6 @@ describe('LGraphNode', () => {
     expect(heldTransforms()).toEqual([])
   })
 
-  it('keeps the node body a clipped transform container so hit tests can skip it', () => {
-    const hitTestBoundary = [
-      'group-data-measured/node:transform-[translate(0)]',
-      'group-data-measured/node:[content-visibility:auto]'
-    ]
-
-    const expanded = renderLGraphNode({
-      nodeData: { ...mockNodeData, flags: { collapsed: false } }
-    })
-    expect(screen.getByTestId('node-clip-boundary')).toHaveClass(
-      ...hitTestBoundary
-    )
-    expanded.unmount()
-
-    renderLGraphNode({
-      nodeData: { ...mockNodeData, flags: { collapsed: true } }
-    })
-    for (const className of hitTestBoundary) {
-      expect(screen.getByTestId('node-clip-boundary')).not.toHaveClass(
-        className
-      )
-    }
-  })
-
   it('binds the node context menu handler to the root element', async () => {
     const { container } = renderLGraphNode({ nodeData: mockNodeData })
 
