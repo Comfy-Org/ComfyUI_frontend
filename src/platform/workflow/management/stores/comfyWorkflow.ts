@@ -14,6 +14,20 @@ import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { generateUUID } from '@/utils/formatUtil'
+import { reportError } from '@comfyorg/telemetry/reportError'
+
+const ownedGraph = Symbol('ownedGraph')
+
+function clearReleasedGraph(graph: LGraph | null): void {
+  try {
+    graph?.clear()
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'failure_disposing_workflow_graph'
+    })
+  }
+}
 
 export interface InputWidgetConfig {
   height?: number
@@ -322,6 +336,8 @@ function requireActiveStateForSave(
 }
 
 export class ComfyWorkflow extends UserFile {
+  [ownedGraph]: Raw<LGraph> | null = null
+
   static readonly basePath: string = 'workflows/'
   readonly tintCanvasBg?: string
   /** Unique, stable identity for this workflow instance in the current session. */
@@ -331,8 +347,10 @@ export class ComfyWorkflow extends UserFile {
    * The change tracker for the workflow. Non-reactive raw object.
    */
   changeTracker: WorkflowChangeTracker | null = null
-  /** The live litegraph instance this workflow owns once loaded. */
-  graph: Raw<LGraph> | null = null
+
+  get graph(): Raw<LGraph> | null {
+    return this[ownedGraph]
+  }
   /**
    * Whether the workflow has been modified comparing to the initial state.
    */
@@ -432,17 +450,17 @@ export class ComfyWorkflow extends UserFile {
 
   /** Take ownership of `graph`, disposing any previously owned instance. */
   adoptGraph(graph: LGraph): void {
-    if (this.graph === graph) return
-    const previous = this.graph
-    this.graph = markRaw(graph)
-    previous?.clear()
+    if (this[ownedGraph] === graph) return
+    const previous = this[ownedGraph]
+    this[ownedGraph] = markRaw(graph)
+    clearReleasedGraph(previous)
   }
 
   /** Dispose the owned graph instance and its per-root store state. */
   releaseGraph(): void {
-    const graph = this.graph
-    this.graph = null
-    graph?.clear()
+    const graph = this[ownedGraph]
+    this[ownedGraph] = null
+    clearReleasedGraph(graph)
   }
 
   override unload(): void {

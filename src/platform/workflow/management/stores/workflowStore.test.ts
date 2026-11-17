@@ -13,6 +13,7 @@ import { nextTick, reactive } from 'vue'
 import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -51,6 +52,7 @@ import {
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'), { spy: true })
 
 // Mock comfyApp globally for the store setup
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -888,6 +890,39 @@ describe('useWorkflowStore', () => {
     })
   })
 
+  describe('graph adoption', () => {
+    it.for([
+      { name: 'successful', remove: () => {} },
+      {
+        name: 'throwing',
+        remove: () => {
+          throw new Error('onRemoved failed')
+        }
+      }
+    ])('keeps the replacement graph after $name cleanup', ({ remove }) => {
+      const workflow = store.createTemporary('replacement.json')
+      const first = new LGraph()
+      const previous = new LGraphNode('previous')
+      previous.onRemoved = vi.fn(remove)
+      first.add(previous)
+      const second = new LGraph()
+      const retained = new LGraphNode('retained')
+      second.add(retained)
+      const clearFirst = vi.spyOn(first, 'clear')
+      const clearSecond = vi.spyOn(second, 'clear')
+      workflow.adoptGraph(first)
+
+      expect(() => workflow.adoptGraph(second)).not.toThrow()
+      workflow.adoptGraph(second)
+
+      expect(workflow.graph).toBe(second)
+      expect(second.nodes).toEqual([retained])
+      expect(clearFirst).toHaveBeenCalledOnce()
+      expect(clearSecond).not.toHaveBeenCalled()
+      expect(previous.onRemoved).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('closeWorkflow', () => {
     it('should close a workflow', async () => {
       const workflow = store.createTemporary('test.json')
@@ -921,9 +956,7 @@ describe('useWorkflowStore', () => {
       graph.add(node)
       workflow.adoptGraph(graph)
 
-      await expect(store.closeWorkflow(workflow)).rejects.toThrow(
-        'onRemoved failed'
-      )
+      await expect(store.closeWorkflow(workflow)).resolves.toBeUndefined()
 
       expect(store.isOpen(workflow)).toBe(false)
       expect(store.getWorkflowByPath(workflow.path)).toBeNull()
@@ -944,9 +977,7 @@ describe('useWorkflowStore', () => {
       graph.add(node)
       workflow.adoptGraph(graph)
 
-      await expect(store.closeWorkflow(workflow)).rejects.toThrow(
-        'onRemoved failed'
-      )
+      await expect(store.closeWorkflow(workflow)).resolves.toBeUndefined()
 
       expect(store.isOpen(workflow)).toBe(false)
       expect(workflow.isModified).toBe(false)
@@ -962,9 +993,16 @@ describe('useWorkflowStore', () => {
       graph.add(node)
       workflow.adoptGraph(graph)
 
-      expect(() => workflow.releaseGraph()).toThrow('onRemoved failed')
+      expect(() => workflow.releaseGraph()).not.toThrow()
 
       expect(workflow.graph).toBeNull()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({ message: 'onRemoved failed' }),
+        {
+          surface: 'graph',
+          errorType: 'failure_disposing_workflow_graph'
+        }
+      )
     })
     it('unloads workflow state and file content when a node removal hook throws', async () => {
       vi.mocked(api.getUserData).mockResolvedValue(
@@ -989,7 +1027,7 @@ describe('useWorkflowStore', () => {
       expect(workflow.isLoaded).toBe(true)
       expect(workflow.originalContent).toBe(defaultGraphJSON)
 
-      expect(() => workflow.unload()).toThrow(error)
+      expect(() => workflow.unload()).not.toThrow()
 
       expect({
         graph: workflow.graph,
