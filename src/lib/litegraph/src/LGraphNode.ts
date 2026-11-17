@@ -1434,11 +1434,20 @@ export class LGraphNode
       showAdvanced: state.showAdvanced
     }
 
+    o.properties = LiteGraph.cloneObject(state.properties)
+    if (this.graph?.getNodeById(this.id) === this)
+      useWidgetValueStore().writeNodeComponents(
+        this.graph.rootGraph.id,
+        state.id,
+        o.properties
+      )
+
     if (this.constructor === LGraphNode && state.lastSerialization)
       return {
         ...LiteGraph.cloneObject(state.lastSerialization),
         mode: o.mode,
-        pos: o.pos
+        pos: o.pos,
+        properties: o.properties
       }
 
     o.inputs = state.inputs.map((input, i) =>
@@ -1450,14 +1459,6 @@ export class LGraphNode
 
     if (state.title && state.title != this.constructor.title)
       o.title = state.title
-
-    o.properties = LiteGraph.cloneObject(state.properties)
-    if (this.graph?.getNodeById(this.id) === this)
-      useWidgetValueStore().writeNodeComponents(
-        this.graph.rootGraph.id,
-        state.id,
-        o.properties
-      )
 
     const { widgets } = this
     if (widgets?.length && this.serialize_widgets)
