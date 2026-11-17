@@ -186,11 +186,6 @@ function scanNodeErrorTargets(
 function getActiveExecutionId(node: LGraphNode): string | null {
   const rootGraph = useApp().rootGraphOrUndefined
   if (!rootGraph) return null
-  // Skip when any enclosing subgraph is muted/bypassed. Callers only
-  // verify each node's own mode, so an active node added inside a
-  // bypassed subgraph reaches this point without the ancestor check.
-  // A null execId means the node has no current graph (e.g. detached
-  // mid lifecycle) — also skip, since we cannot verify its scope.
   const execId = getExecutionIdByNode(rootGraph, node)
   if (!execId || !isExecutionPathActive(rootGraph, execId)) return null
   return execId
@@ -325,9 +320,6 @@ async function verifyAndAddPendingModels(
   pending: MissingModelCandidate[],
   signal?: AbortSignal
 ): Promise<void> {
-  // Capture rootGraph at scan time so a late verification for workflow
-  // A cannot leak into workflow B after a switch — execution IDs (esp.
-  // root-level like "1") collide across workflows.
   const rootGraphAtScan = useApp().rootGraphOrUndefined
   const ownersAtScan = new Map(
     pending.map((candidate) => [
@@ -423,8 +415,6 @@ async function runAddedNodeScan(
       scanSingleNodeModelsAndTypes(target, pendingVerifications, signal)
     )
 
-    // Paste/drop handlers need another microtask to mark upload state before
-    // media detection reads the widget value.
     await Promise.resolve()
     if (signalAborted(signal) || useApp().rootGraphOrUndefined !== rootGraph)
       return
