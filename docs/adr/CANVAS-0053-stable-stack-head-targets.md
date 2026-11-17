@@ -25,9 +25,10 @@ states. Decorative layers may disappear, but the head retains its target and
 members avoid that target during layout.
 
 Use ordinary canvas click and double-click dispatch. A click toggles expansion;
-a double-click opens Rename for the stack under the second press. The first
-click's toggle remains in effect. Rename does not restore the expansion state
-from before the gesture or retarget a second press outside the head.
+a double-click opens Rename for the stack under the second press. Submitting
+Rename collapses that stack. Cancelling leaves the first click's toggle in
+effect. Rename does not restore the expansion state from before the gesture
+or retarget a second press outside the head.
 
 Escape retains ordinary canvas behavior: it collapses stacks without implicitly
 cancelling the pending Rename callback. Editing-mode guards still apply when

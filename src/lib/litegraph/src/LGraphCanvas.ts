@@ -107,10 +107,10 @@ import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
   clearLinkBadgeHitAreas,
+  collapseLinkBadgeStack,
   collapseLinkBadgeStacks,
   drawHiddenLinkBadges,
   queryLinkBadgeHitAtPoint,
-  relabelExpandedLinkBadgeStack,
   toggleLinkBadgeStack
 } from './canvas/linkBadges'
 import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
@@ -555,7 +555,7 @@ function promptRenameLinkStack(
     graphScopeOf(graph),
     links.map(({ id }) => id),
     event,
-    (name) => relabelExpandedLinkBadgeStack(canvas, stackKey, name)
+    () => collapseLinkBadgeStack(canvas, stackKey)
   )
 }
 

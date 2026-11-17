@@ -321,12 +321,7 @@ test.describe(
         ])
       })
 
-      await test.step('Collapse the renamed stack', async () => {
-        await linkVisibility.clickOutputBadgeRow(
-          checkpointLoaderId,
-          clipSlot,
-          0
-        )
+      await test.step('Submitting Rename collapses the renamed stack', async () => {
         await linkVisibility.parkPointer()
         await expectRegionScreenshot(
           comfyPage.page,

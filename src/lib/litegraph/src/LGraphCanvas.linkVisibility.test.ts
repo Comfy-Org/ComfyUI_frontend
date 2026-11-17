@@ -666,7 +666,7 @@ describe('LGraphCanvas link visibility interactions', () => {
       return hit?.stackKey ? hit.linkIds : undefined
     }
 
-    it('renames every link in a collapsed stack after its first click expands it', () => {
+    it('collapses the stack after submitting its batch Rename', () => {
       const { canvas, links, relayout, prompt, submitPrompt, labelOf } =
         createStackFixture([undefined, undefined, 'untouched'])
 
@@ -680,6 +680,8 @@ describe('LGraphCanvas link visibility interactions', () => {
         expect.any(Function),
         expect.anything()
       )
+      relayout()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 325)).toBe(links[0].id)
       submitPrompt('render_size')
 
       expect(links.map(labelOf)).toEqual([
@@ -690,7 +692,7 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(stackedLinkIdsAt(canvas, 420, 300)).toEqual(
         links.slice(0, 2).map(({ id }) => id)
       )
-      expect(queryLinkBadgeAtPoint(canvas, 420, 325)).toBe(links[0].id)
+      expect(queryLinkBadgeAtPoint(canvas, 420, 325)).toBe(links[2].id)
     })
 
     it('renames the whole stack when the double click lands on its layer edge', () => {
@@ -703,7 +705,7 @@ describe('LGraphCanvas link visibility interactions', () => {
       submitPrompt('edge')
 
       expect(links.map(labelOf)).toEqual(['edge', 'edge', 'edge'])
-      expect(queryLinkBadgeAtPoint(canvas, 420, 335)).toBe(links[0].id)
+      expect(queryLinkBadgeAtPoint(canvas, 420, 335)).toBeUndefined()
     })
 
     it('does not retarget a second click beside the head back to the stack', () => {
@@ -894,14 +896,19 @@ describe('LGraphCanvas link visibility interactions', () => {
       expect(queryLinkBadgeAtPoint(canvas, 420, 325)).toBeUndefined()
     })
 
-    it('keeps an expanded stack expanded when its menu Rename clears the name', () => {
+    it('collapses only the renamed stack when its menu Rename clears the name', () => {
       const { canvas, links, relayout, submitPrompt } = createStackFixture([
         'batch',
-        'batch'
+        'batch',
+        'other',
+        'other'
       ])
       const menu = vi
         .spyOn(LiteGraph, 'ContextMenu')
         .mockImplementation(fromPartial<typeof LiteGraph.ContextMenu>(class {}))
+      clickAt(canvas, 420, 325)
+      relayout()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 350)).toBe(links[2].id)
       clickAt(canvas, 420, 300)
       relayout()
 
@@ -915,7 +922,11 @@ describe('LGraphCanvas link visibility interactions', () => {
       })
       submitPrompt('')
 
-      expect(queryLinkBadgeAtPoint(canvas, 420, 325)).toBe(links[0].id)
+      expect(stackedLinkIdsAt(canvas, 420, 300)).toEqual(
+        links.slice(0, 2).map(({ id }) => id)
+      )
+      expect(queryLinkBadgeAtPoint(canvas, 420, 325)).toBeUndefined()
+      expect(queryLinkBadgeAtPoint(canvas, 420, 350)).toBe(links[2].id)
     })
 
     it('leaves a stack collapsed when the first click of a double click missed it', () => {

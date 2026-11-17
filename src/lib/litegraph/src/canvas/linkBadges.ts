@@ -107,18 +107,8 @@ export function toggleLinkBadgeStack(host: object, stackKey: string): void {
   expandedStacksByHost.set(host, expanded)
 }
 
-/** Keeps a stack expanded under the key its links get when they all take `label`. */
-export function relabelExpandedLinkBadgeStack(
-  host: object,
-  stackKey: string,
-  label: string
-): void {
-  const expanded = expandedStacksByHost.get(host)
-  const head = endpointsByHost
-    .get(host)
-    ?.find(({ hitArea }) => hitArea.stackKey === stackKey)
-  if (!head || !expanded?.delete(stackKey)) return
-  expanded.add(labelledStackKey(head.socketKey, label.trim()))
+export function collapseLinkBadgeStack(host: object, stackKey: string): void {
+  expandedStacksByHost.get(host)?.delete(stackKey)
 }
 
 /** Collapses every expanded stack on the host; returns whether one was on screen. */
