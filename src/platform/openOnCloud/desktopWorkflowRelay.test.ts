@@ -9,12 +9,14 @@ import {
   vi
 } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import * as distributionTypes from '@/platform/distribution/types'
 import {
   handleDesktopWorkflowHandoff,
   stageDesktopWorkflowHandoff
 } from '@/platform/openOnCloud/desktopWorkflowRelay'
+import { refreshLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
@@ -166,7 +168,7 @@ describe(handleDesktopWorkflowHandoff, () => {
     expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
   })
 
-  it('leaves the transfer untouched when Cloud disables it in development', async () => {
+  it('keeps Cloud’s disable decision when the startup read fails', async () => {
     vi.stubEnv('DEV', true)
     const { relay } = await stagedRelay()
     openAt(relay)
@@ -180,6 +182,11 @@ describe(handleDesktopWorkflowHandoff, () => {
     await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
 
     expect(api.getUserData).not.toHaveBeenCalled()
+
+    vi.mocked(fetch).mockResolvedValueOnce(new Response(null, { status: 503 }))
+    await refreshLocalOpenOnCloudRollout()
+
+    expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
   })
 
   it('accepts the staged Cloud origin after reading the relay server features', async () => {
