@@ -1603,6 +1603,23 @@ export const zBillingEventsResponse = z.object({
 })
 
 /**
+ * The plan a Platform billing tab continues to checkout with. Selections only; checkout prices them.
+ */
+export const zBillingHandoffCheckoutRequest = z.object({
+  plan_slug: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9_-]+$/),
+  team_credit_stop_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9_-]+$/)
+    .optional()
+})
+
+/**
  * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
  */
 export const zBillingHandoffCreateRequest = z.object({
@@ -2316,9 +2333,12 @@ export const zCccStaffPermissions = z.object({
   display_name: z.string().max(200).optional(),
   updated_at: z.iso.datetime(),
   updated_by: z.string(),
-  version: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
-    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-  })
+  version: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
 })
 
 export const zCccStagingMediaUse = z.object({
@@ -6927,6 +6947,14 @@ export const zCreateBillingHandoffBody = zBillingHandoffCreateRequest
  */
 export const zCreateBillingHandoffResponse = zBillingHandoffCreateResponse
 
+export const zCreateBillingHandoffCheckoutBody = zBillingHandoffCheckoutRequest
+
+/**
+ * Handoff issued. `entry_url` is billing-web's handoff page with `intent=checkout`, `plan` and `team_credit_stop_id` (if any) in the query and the token in the fragment.
+ */
+export const zCreateBillingHandoffCheckoutResponse =
+  zBillingHandoffCreateResponse
+
 export const zExchangeBillingHandoffBody = zBillingHandoffExchangeRequest
 
 /**
@@ -7395,6 +7423,7 @@ export const zGetFeaturesResponse = z.object({
   model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
   open_on_cloud_enabled: z.boolean().optional(),
+  open_on_cloud_use_local_agent_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
@@ -8628,9 +8657,12 @@ export const zGetCccPublicCacheAuthorityResponse = z.object({
 })
 
 export const zGetCccRevisionItemPath = z.object({
-  rev: z.coerce.bigint().gte(BigInt(1)).max(BigInt('9223372036854775807'), {
-    error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-  }),
+  rev: z.coerce
+    .bigint()
+    .gte(BigInt(1))
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   uid: z.uuid()
 })
 
