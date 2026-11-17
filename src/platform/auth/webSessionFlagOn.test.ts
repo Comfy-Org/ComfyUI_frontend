@@ -17,7 +17,6 @@ import { defineComponent, effectScope } from 'vue'
 import type { Router } from 'vue-router'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
-import type { ComfyApi as ComfyApiClient } from '@comfyorg/api-client/ComfyApi'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
@@ -130,29 +129,6 @@ const identity = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/scripts/api'), async () => {
-  const { TestRunner } = await import('vitest')
-  const { ComfyApi } = await import('@comfyorg/api-client/ComfyApi')
-  const { createApi } = await import('@/scripts/createApi')
-  const collectionApi = createApi()
-  const testApis = new WeakMap<object, ComfyApiClient>()
-  function currentApi() {
-    const test = TestRunner.getCurrentTest()
-    if (!test) return collectionApi
-    const existing = testApis.get(test)
-    if (existing) return existing
-    const created = createApi()
-    testApis.set(test, created)
-    return created
-  }
-  return {
-    ComfyApi,
-    get api() {
-      return currentApi()
-    }
-  }
-})
-
 const firebaseSignOut = vi.hoisted(() => vi.fn<() => Promise<void>>())
 const registeredExtensions = vi.hoisted((): ComfyExtension[] => [])
 
@@ -207,14 +183,13 @@ useExtensionService().registerExtension(cloudSessionCookieExtension)
 const { createAppRouter } = await import('@/router')
 const it = baseIt.extend<{ router: Router }>({
   router: async ({}, use) => {
-    await use(await createAppRouter())
+    const router = await createAppRouter()
+    await use(router)
+    router.options.history.destroy()
   }
 })
 
-beforeEach(() => {
-  installCloudApiAuth()
-})
-
+installCloudApiAuth()
 installWorkspaceApiAuth()
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
@@ -429,6 +404,7 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -941,6 +917,7 @@ describe('cloud API requests on the shared web session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -1169,6 +1146,7 @@ describe('workspace API and global settings on the shared web session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -1731,6 +1709,7 @@ describe('comfy-api calls on the shared web session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -2041,6 +2020,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -2159,6 +2139,7 @@ describe('the Run token on the shared web session', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -2463,6 +2444,7 @@ describe('a sibling tab on the unified Cloud JWT', () => {
     identity.reset()
     openChannels.clear()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
     vi.stubGlobal('BroadcastChannel', InMemoryChannel)
     vi.spyOn(navigator, 'locks', 'get').mockReturnValue(followerLocks)
   })
@@ -2571,6 +2553,7 @@ describe('billing on a tab that arrived by session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -2690,6 +2673,7 @@ describe('a tab that arrived on the session with no Firebase login', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -2772,6 +2756,7 @@ describe('booting the cloud identity from the session', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -3235,6 +3220,7 @@ describe('signing in again after a sign-out', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -3367,6 +3353,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
     assign = vi.fn<(url: string | URL) => void>()
     vi.spyOn(window.location, 'assign').mockImplementation(assign)
   })
@@ -3726,6 +3713,7 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -3888,6 +3876,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
