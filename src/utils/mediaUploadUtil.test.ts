@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   hasFilenameExtension,
   isExtensionlessVideo,
-  isExtensionlessVideoUpload,
+  isUntypedOrVideoWithoutExtension,
   isUploadableVideo
 } from '@/utils/mediaUploadUtil'
 
@@ -47,15 +47,19 @@ describe('mediaUploadUtil', () => {
 
   it('treats an untyped extensionless file as a video on video routes', () => {
     expect(isExtensionlessVideo(new File([], 'clip'))).toBe(false)
-    expect(isExtensionlessVideoUpload(new File([], 'clip'))).toBe(true)
+    expect(isUntypedOrVideoWithoutExtension(new File([], 'clip'))).toBe(true)
     expect(
-      isExtensionlessVideoUpload(new File([], 'clip', { type: 'video/mp4' }))
+      isUntypedOrVideoWithoutExtension(
+        new File([], 'clip', { type: 'video/mp4' })
+      )
     ).toBe(true)
     expect(
-      isExtensionlessVideoUpload(new File([], 'clip.mp4', { type: '' }))
+      isUntypedOrVideoWithoutExtension(new File([], 'clip.mp4', { type: '' }))
     ).toBe(false)
     expect(
-      isExtensionlessVideoUpload(new File([], 'clip', { type: 'image/png' }))
+      isUntypedOrVideoWithoutExtension(
+        new File([], 'clip', { type: 'image/png' })
+      )
     ).toBe(false)
   })
 })

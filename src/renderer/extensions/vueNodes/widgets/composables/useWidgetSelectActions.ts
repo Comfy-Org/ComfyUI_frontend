@@ -20,7 +20,7 @@ import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 import {
   isExtensionlessVideo,
-  isExtensionlessVideoUpload
+  isUntypedOrVideoWithoutExtension
 } from '@/utils/mediaUploadUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
@@ -168,7 +168,7 @@ export function useWidgetSelectActions(options: UseWidgetSelectActionsOptions) {
     async (files: File[]) => {
       if (files.length === 0) return
       const isRejectedVideo = toValue(options.videoOnly)
-        ? isExtensionlessVideoUpload
+        ? isUntypedOrVideoWithoutExtension
         : isExtensionlessVideo
       if (files.some(isRejectedVideo)) {
         toast.warning(t('g.videoFilenameExtensionRequired'))
