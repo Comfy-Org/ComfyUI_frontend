@@ -40,11 +40,7 @@ export interface LineInput {
   latestTag: string
   publishedVersion: string | null
   commits: Commit[]
-  /**
-   * Tag whose GitHub release triggered this run, if any. PyPI publishing for
-   * it starts after the release is published, so a lag on that tag is a
-   * publish still in flight, not a stranded release. The daily run re-checks.
-   */
+  /** Tag whose GitHub release triggered this run, if any; empty on the daily cron. */
   justPublishedTag?: string | null
 }
 
