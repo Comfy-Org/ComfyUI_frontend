@@ -1,4 +1,5 @@
 import type { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { isEqual, isPlainObject } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -156,15 +157,37 @@ function checkedProperties(member: string, value: unknown): NodeWrite {
     if (name === '__proto__') {
       throw invalidArgument(member, 'a property name', name)
     }
-    return [name, savableCopy(member, `property ${name}`, property)] as const
+    return [
+      name,
+      property === undefined
+        ? undefined
+        : savableCopy(member, `property ${name}`, property)
+    ] as const
   })
   return (node) =>
     entries
-      .map(([name, property]) => {
-        node.setProperty(name, property)
-        return isEqual(node.properties[name], property)
-      })
+      .map(([name, property]) =>
+        property === undefined
+          ? deleteProperty(node, name)
+          : storeProperty(node, name, property)
+      )
       .every(Boolean)
+}
+
+function storeProperty(
+  node: LGraphNode,
+  name: string,
+  property: NodeProperty
+): boolean {
+  node.setProperty(name, property)
+  return isEqual(node.properties[name], property)
+}
+
+function deleteProperty(node: LGraphNode, name: string): boolean {
+  node.setProperty(name, undefined)
+  if (node.properties[name] !== undefined) return false
+  delete node.properties[name]
+  return true
 }
 
 function checkedDimensions(

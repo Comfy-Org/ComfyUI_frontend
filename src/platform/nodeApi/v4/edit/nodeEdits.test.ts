@@ -231,6 +231,60 @@ describe('node edits', () => {
       )
     })
 
+    it('deletes a property given undefined, through the node, so the workflow no longer saves it', () => {
+      const { node, handle } = add()
+      node.properties.stamp = 3
+      node.properties.kept = 1
+      const onPropertyChanged = vi.fn()
+      node.onPropertyChanged = onPropertyChanged
+
+      expect(
+        comfy.edit.updateNode(handle, { properties: { stamp: undefined } })
+      ).toBe(true)
+
+      expect(Object.hasOwn(node.properties, 'stamp')).toBe(false)
+      expect(node.properties).toEqual({ kept: 1 })
+      expect(node.serialize().properties).toEqual({ kept: 1 })
+      expect(onPropertyChanged).toHaveBeenCalledWith('stamp', undefined, 3)
+      expect(history.steps).toEqual(['before', 'after'])
+    })
+
+    it('answers true for deleting a property the node does not have, and changes nothing', () => {
+      const { node, handle } = add()
+      node.properties.kept = 1
+      const onPropertyChanged = vi.fn()
+      node.onPropertyChanged = onPropertyChanged
+
+      expect(handle.setProperty('missing', undefined)).toBe(true)
+
+      expect(node.properties).toEqual({ kept: 1 })
+      expect(onPropertyChanged).not.toHaveBeenCalled()
+    })
+
+    it('keeps a property the node refuses to delete, and answers false', () => {
+      const { node, handle } = add()
+      node.properties.stamp = 3
+      node.onPropertyChanged = () => false
+
+      expect(handle.setProperty('stamp', undefined)).toBe(false)
+
+      expect(node.properties).toEqual({ stamp: 3 })
+    })
+
+    it('sets one property and deletes another in one patch, as one step', () => {
+      const { node, handle } = add()
+      node.properties.old = 'x'
+
+      expect(
+        comfy.edit.updateNode(handle, {
+          properties: { old: undefined, fresh: 2 }
+        })
+      ).toBe(true)
+
+      expect(node.properties).toEqual({ fresh: 2 })
+      expect(history.steps).toEqual(['before', 'after'])
+    })
+
     it('sets the size through the node, so its resize callback runs', () => {
       const { node, handle } = add()
       const onResize = vi.fn()
@@ -285,7 +339,6 @@ describe('node edits', () => {
       ['properties that are not an object', { properties: [1] }],
       ['a __proto__ property', { properties: JSON.parse('{"__proto__":1}') }],
       ['a property the workflow cannot save', { properties: { f: () => 1 } }],
-      ['an undefined property', { properties: { gone: undefined } }],
       ['a circular property', { properties: { loop: circular() } }],
       ['serializeWidgets that is not a boolean', { serializeWidgets: 'yes' }],
       ['a position that is not an object', { position: 5 }],
@@ -484,6 +537,11 @@ describe('node handle edit methods', () => {
     ['setBgColor', (h) => h.setBgColor('#2'), { bgColor: '#2' }],
     ['setShape', (h) => h.setShape('round'), { shape: 'round' }],
     ['setProperty', (h) => h.setProperty('p', 1), { properties: { p: 1 } }],
+    [
+      'setProperty with undefined',
+      (h) => h.setProperty('p', undefined),
+      { properties: { p: undefined } }
+    ],
     [
       'setSerializeWidgets',
       (h) => h.setSerializeWidgets(true),
