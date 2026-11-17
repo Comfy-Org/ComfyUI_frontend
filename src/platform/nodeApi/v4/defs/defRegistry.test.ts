@@ -530,6 +530,13 @@ describe('node definitions', () => {
         definition: { type: 'T', inputs: ['i'] }
       },
       {
+        name: 'an input with a shape, which only outputs take',
+        definition: {
+          type: 'T',
+          inputs: [{ name: 'i', type: '*', shape: 'list' }]
+        }
+      },
+      {
         name: 'an output shape the host has no name for',
         definition: {
           type: 'T',
