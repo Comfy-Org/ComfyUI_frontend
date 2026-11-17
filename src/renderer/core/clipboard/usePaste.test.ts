@@ -2,6 +2,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   afterEach,
+  assert,
   beforeEach,
   describe,
   expect,
@@ -955,6 +956,37 @@ describe('usePaste', () => {
         expect(pasteFromCanvasClipboard).not.toHaveBeenCalled()
       }
     )
+
+    it('prefers a file over current graph metadata in the same paste', () => {
+      setupMediaNodeSelected()
+      const node = mockCanvas.current_node
+      assert.exists(node)
+      node.pasteFile = vi.fn()
+      const file = createImageFile()
+      const clipboard = copyNodes()
+      clipboard.items.add(file)
+
+      paste(clipboard)
+
+      expect(node.pasteFile).toHaveBeenCalledExactlyOnceWith(file)
+      expect(insertItems).not.toHaveBeenCalled()
+    })
+
+    it('rejects an uncached copy after another tab replaces the shared cache', () => {
+      setupMediaNodeSelected()
+      const refused = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation(() => {
+          throw new DOMException('Storage full', 'QuotaExceededError')
+        })
+      const keyboardCopy = copyNodes()
+      refused.mockRestore()
+      localStorage.setItem(CANVAS_CLIPBOARD_KEY, '{"groups":[]}')
+
+      paste(keyboardCopy)
+
+      expect(insertItems).not.toHaveBeenCalled()
+    })
 
     it('skips the default paste after a menu copy replaced the canvas clipboard', () => {
       setupMediaNodeSelected()

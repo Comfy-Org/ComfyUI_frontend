@@ -10,7 +10,10 @@ import {
 import { effectScope } from 'vue'
 import { useCopy } from './useCopy'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { forgetCanvasCopy } from '@/core/graph/clipboard/canvasClipboard'
+import {
+  copyToCanvasClipboard,
+  forgetCanvasCopy
+} from '@/core/graph/clipboard/canvasClipboard'
 import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
@@ -182,6 +185,7 @@ describe('useCopy', () => {
         graph,
         createMockCanvasRenderingContext2D()
       )
+      onTestFinished(() => canvas.unbindEvents())
       canvas.selectItems([node])
       useCanvasStore().canvas = canvas
       const spies = methods.map((method) =>
@@ -285,6 +289,47 @@ describe('useCopy', () => {
         expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(slotAfter)
         expect(dataTransfer.getData('text/html')).toBe('')
         expect(serializeItems).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      {
+        name: 'the keyboard copy',
+        laterCopy: () => {},
+        slotAfter: null
+      },
+      {
+        name: 'a later equal context-menu copy',
+        laterCopy: () => {
+          const canvas = useCanvasStore().canvas
+          assert.exists(canvas)
+          copyToCanvasClipboard(canvas)
+        },
+        slotAfter: keyboardNode
+      }
+    ])(
+      'keeps ownership of $name when stamp writes fail',
+      ({ laterCopy, slotAfter }) => {
+        const setItem = localStorage.setItem.bind(localStorage)
+        const storageSpy = vi
+          .spyOn(localStorage, 'setItem')
+          .mockImplementation((key, value) => {
+            if (key === CANVAS_CLIPBOARD_ID_KEY)
+              throw new DOMException('Storage full', 'QuotaExceededError')
+            setItem(key, value)
+          })
+        onTestFinished(() => storageSpy.mockRestore())
+        copyNodeWithKeyboard()
+        laterCopy()
+        const input = document.createElement('textarea')
+        input.value = 'selected text'
+        document.body.append(input)
+        onTestFinished(() => input.remove())
+        input.setSelectionRange(0, 'selected'.length)
+
+        dispatchCopy(input)
+
+        expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(slotAfter)
       }
     )
 

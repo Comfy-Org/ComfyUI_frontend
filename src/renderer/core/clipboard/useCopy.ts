@@ -4,13 +4,10 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   copyToCanvasClipboard,
+  discardCanvasCopy,
   forgetCanvasCopy
 } from '@/core/graph/clipboard/canvasClipboard'
 import { t } from '@/i18n'
-import {
-  discardClipboardStorage,
-  readClipboardId
-} from '@/core/graph/clipboard/clipboardStorage'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { hasTextSelection } from '@/workbench/eventHelpers'
 
@@ -36,25 +33,21 @@ function writeClipboardMetadata(
 
 export const useCopy = () => {
   const canvasStore = useCanvasStore()
-  let keyboardCopyId: string | null = null
+  let keyboardCopy: ReturnType<typeof copyToCanvasClipboard> | undefined
 
   useEventListener(document, 'copy', (e) => {
     if (shouldIgnoreCopyPaste(e.target)) {
-      if (hasTextSelection(e.target)) forgetCanvasCopy()
-      if (
-        keyboardCopyId !== null &&
-        hasTextSelection(e.target) &&
-        readClipboardId() === keyboardCopyId
-      ) {
-        discardClipboardStorage()
-        keyboardCopyId = null
+      if (hasTextSelection(e.target)) {
+        discardCanvasCopy(keyboardCopy)
+        forgetCanvasCopy()
+        keyboardCopy = undefined
       }
       return
     }
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
-      const { serialized, stored } = copyToCanvasClipboard(canvas)
-      keyboardCopyId = stored ? readClipboardId() : null
+      keyboardCopy = copyToCanvasClipboard(canvas)
+      const { serialized, stored } = keyboardCopy
       const metadataWritten = writeClipboardMetadata(
         e.clipboardData,
         serialized

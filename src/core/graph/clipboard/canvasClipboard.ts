@@ -4,19 +4,45 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 
-import { CANVAS_CLIPBOARD_KEY, writeClipboardStorage } from './clipboardStorage'
+import {
+  CANVAS_CLIPBOARD_KEY,
+  discardClipboardStorage,
+  readClipboardId,
+  writeClipboardStorage
+} from './clipboardStorage'
 import { insertItems, serializeItems } from './graphTransfer'
 import type { InsertOptions, InsertResult } from './graphTransfer'
 
-let currentCopy: { serialized: string; stored: boolean } | undefined
+let currentCopy:
+  | {
+      serialized: string
+      stored: boolean
+      id: string | null
+      cachedSerialized: string | null
+    }
+  | undefined
 
 export function forgetCanvasCopy(): void {
   currentCopy = undefined
 }
 
+function readCachedSerialized(): string | null | undefined {
+  try {
+    return localStorage.getItem(CANVAS_CLIPBOARD_KEY)
+  } catch {
+    return undefined
+  }
+}
+
 export function isCurrentCanvasCopy(serialized: string): boolean {
-  if (currentCopy && !currentCopy.stored)
+  if (currentCopy && !currentCopy.stored) {
+    const cached = readCachedSerialized()
+    if (cached !== undefined && cached !== currentCopy.cachedSerialized) {
+      forgetCanvasCopy()
+      return serialized === cached
+    }
     return serialized === currentCopy.serialized
+  }
   try {
     return serialized === localStorage.getItem(CANVAS_CLIPBOARD_KEY)
   } catch {
@@ -30,8 +56,26 @@ export function copyToCanvasClipboard(
 ): { serialized: string; stored: boolean } {
   const serialized = JSON.stringify(serializeItems(canvas, items))
   const stored = writeClipboardStorage(serialized)
-  currentCopy = { serialized, stored }
+  currentCopy = {
+    serialized,
+    stored,
+    id: stored ? readClipboardId() : null,
+    cachedSerialized: stored ? serialized : (readCachedSerialized() ?? null)
+  }
   return currentCopy
+}
+
+export function discardCanvasCopy(
+  copy: ReturnType<typeof copyToCanvasClipboard> | undefined
+): void {
+  if (
+    currentCopy &&
+    currentCopy === copy &&
+    currentCopy.stored &&
+    readClipboardId() === currentCopy.id
+  ) {
+    discardClipboardStorage()
+  }
 }
 
 export function pasteFromCanvasClipboard(

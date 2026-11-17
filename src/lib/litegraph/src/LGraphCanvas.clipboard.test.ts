@@ -132,6 +132,25 @@ describe('clipboard ID allocation', () => {
     expect(after).toHaveBeenCalledOnce()
   })
 
+  it('preserves advisory model properties through a cached copy and paste', () => {
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    onTestFinished(() => {
+      localStorage.removeItem(CANVAS_CLIPBOARD_KEY)
+      localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
+    })
+    const node = createTestNode(rootGraph)
+    node.properties.models = [{ name: 'local-model.safetensors' }]
+    canvas.copyToClipboard([node])
+
+    canvas.pasteFromClipboard()
+
+    expect(rootGraph.nodes.map((pasted) => pasted.properties.models)).toEqual([
+      [{ name: 'local-model.safetensors' }],
+      [{ name: 'local-model.safetensors' }]
+    ])
+  })
+
   it('clones extension values that structuredClone cannot clone', () => {
     const nodeType = 'test/clipboard-function-property'
     registerClipboardNodeType(nodeType)
