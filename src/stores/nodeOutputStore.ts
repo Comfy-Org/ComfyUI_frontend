@@ -810,10 +810,19 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const instanceEntries = Object.values(instanceOutputs.value).flatMap(
       (group) => Object.entries(group ?? {})
     )
+    const sharedOfLiveInstances = pickBy(
+      nodeOutputs.value,
+      (_, locatorId) => !outlivedEveryInstance(locatorId)
+    )
     return cloneOutputEntries([
       ...instanceEntries,
-      ...Object.entries(nodeOutputs.value)
+      ...Object.entries(sharedOfLiveInstances)
     ])
+  }
+
+  function outlivedEveryInstance(locatorId: string) {
+    const instances = instanceOutputs.value[locatorId]
+    return !!instances && Object.keys(instances).length === 0
   }
 
   function replaceOutputsFromLegacy(
