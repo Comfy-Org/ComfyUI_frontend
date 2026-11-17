@@ -3,7 +3,7 @@ import { z } from 'zod'
 /** The local proxy's port; the layer and the proxy both read it from here. */
 export const MODEL_PROXY_PORT = 5248
 
-const MAX_REQUEST_TOKENS = 16_000
+const MAX_REQUEST_TOKENS = 128_000
 
 /**
  * What the layer posts to the proxy's `/chat`: a chat-completions body without

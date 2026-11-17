@@ -11,7 +11,7 @@
     }"
   />
   <div
-    v-if="!view.landed"
+    v-if="showPointer && !view.landed"
     data-testid="point-at-it-pointer"
     class="absolute top-0 left-0 flex items-start gap-1"
     :style="{
@@ -38,7 +38,7 @@
     }"
   >
     <span
-      v-if="view.ring"
+      v-if="view.ring || attachTo"
       data-testid="point-at-it-tail"
       aria-hidden="true"
       :class="
@@ -49,31 +49,46 @@
       "
       :style="tail.style"
     />
-    <div v-if="answers" class="flex items-center gap-2">
+    <div class="flex items-center gap-2">
+      <template v-if="answers">
+        <span
+          class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-foreground"
+        >
+          {{ answers.number }}
+        </span>
+        <p class="m-0 min-w-0 flex-1 truncate text-xs text-muted-foreground">
+          {{ messages.answersComment(answers.label) }}
+        </p>
+      </template>
+      <span v-else class="flex-1" />
       <span
-        class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-xs text-foreground"
+        v-if="total > 1"
+        class="shrink-0 text-xs text-muted-foreground"
+        :title="messages.stopHint"
       >
-        {{ answers.number }}
+        {{ messages.stepOf(index + 1, total) }}
       </span>
-      <p class="m-0 truncate text-xs text-muted-foreground">
-        {{ messages.answersComment(answers.label) }}
-      </p>
-    </div>
-    <p v-if="replay" class="m-0 text-xs text-muted-foreground">
-      {{ messages.replayHint }}
-    </p>
-    <ThreadHistory v-if="thread && thread.length > 0" :thread />
-    <div class="flex items-start gap-2">
-      <p class="m-0 flex-1 whitespace-pre-line">{{ step.text }}</p>
       <Button
-        variant="textonly"
-        size="icon-sm"
-        :aria-label="messages.close"
-        @click="emit('close')"
+        v-if="isLast"
+        size="sm"
+        class="shrink-0"
+        :disabled="isHeld"
+        @click="emit('done')"
       >
-        <i class="icon-[lucide--x] size-3" aria-hidden="true" />
+        {{ messages.done }}
+      </Button>
+      <Button
+        v-else-if="!step.waitFor"
+        size="sm"
+        class="shrink-0"
+        :disabled="isHeld"
+        @click="emit('next')"
+      >
+        {{ messages.next }}
       </Button>
     </div>
+    <ThreadHistory v-if="thread && thread.length > 0" :thread />
+    <p class="m-0 whitespace-pre-line">{{ step.text }}</p>
     <p
       v-for="problem in step.problems"
       :key="problem"
@@ -85,24 +100,9 @@
     <p v-if="editFailed" role="alert" class="m-0 text-xs text-destructive">
       {{ messages.editFailed }}
     </p>
-    <div v-if="step.offerEdit || isLast || !step.waitFor" class="flex gap-2">
-      <Button
-        v-if="step.offerEdit"
-        variant="primary"
-        :disabled="isHeld"
-        @click="emit('applyEdit')"
-      >
+    <div v-if="step.offerEdit" class="flex gap-2">
+      <Button variant="primary" :disabled="isHeld" @click="emit('applyEdit')">
         {{ messages.doItForMe }}
-      </Button>
-      <Button v-if="isLast" :disabled="isHeld" @click="emit('done')">
-        {{ messages.done }}
-      </Button>
-      <Button
-        v-else-if="!step.waitFor"
-        :disabled="isHeld"
-        @click="emit('next')"
-      >
-        {{ messages.next }}
       </Button>
     </div>
     <FollowUpField
@@ -114,19 +114,17 @@
       @cancel="emit('cancelFollowUp')"
       @retry="emit('retryFollowUp')"
     />
-    <p class="m-0 text-xs text-muted-foreground">
-      {{ messages.stepOf(index + 1, total) }}
-    </p>
   </section>
 </template>
 
 <script setup lang="ts">
 import { useElementSize, useWindowSize } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { computed, onBeforeUnmount, useTemplateRef, watch } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { bubbleTail } from './bubbleTail'
 import FollowUpField from './FollowUpField.vue'
 import { placeAttached } from './geometry'
 import type { Rect, Side } from './geometry'
@@ -141,6 +139,8 @@ import type { GuidanceView } from './usePointSession'
 const RING_OUTSET = 3
 const BESIDE_TARGET: Side[] = ['right', 'left', 'below', 'above']
 const UNDER_CONTROL: Side[] = ['below', 'left', 'above', 'right']
+/** At her head the card goes to her right, or above her when it is too tall for that. */
+const BESIDE_HER: Side[] = ['right', 'above', 'left', 'below']
 
 const {
   step,
@@ -152,8 +152,9 @@ const {
   thread = null,
   followUp = null,
   thinking = null,
-  replay = false,
-  avoid = null
+  avoid = null,
+  attachTo = null,
+  showPointer = true
 } = defineProps<{
   step: GuidanceStep
   index: number
@@ -168,19 +169,27 @@ const {
   thread?: ThreadMessage[] | null
   followUp?: FollowUpActivity | null
   thinking?: ThinkingLog | null
-  replay?: boolean
   /** A rect the bubble should not sit under, when another side is free. */
   avoid?: Rect | null
+  /**
+   * Her head, when the step points at nothing and the answer is her reply: the
+   * card is attached to it, with its tail, and not to a pointer in the air.
+   * Without a ring this is what gives the card its place.
+   */
+  attachTo?: Rect | null
+  /** Draw the pointer glyph on its flight; false when something else points. */
+  showPointer?: boolean
 }>()
 
 const emit = defineEmits<{
   applyEdit: []
   next: []
   done: []
-  close: []
   followUp: [text: string]
   cancelFollowUp: []
   retryFollowUp: []
+  /** Where the card is, for whatever should stay off it; null when it is gone. */
+  placed: [card: Rect | null]
 }>()
 
 const bubble = useTemplateRef('bubble')
@@ -190,32 +199,34 @@ const windowSize = useWindowSize()
 const isLast = computed(() => index === total - 1)
 const isHeld = computed(() => followUp?.status === 'waiting')
 
+const sides = computed(() => {
+  if (view.ring === null && attachTo !== null) return BESIDE_HER
+  return step.target?.kind === 'control' ? UNDER_CONTROL : BESIDE_TARGET
+})
+
 const placement = computed(() =>
   placeAttached(
-    view.ring ?? { ...view.pointer, width: 0, height: 0 },
+    view.ring ?? attachTo ?? { ...view.pointer, width: 0, height: 0 },
     { width: bubbleSize.width.value, height: bubbleSize.height.value },
     { width: windowSize.width.value, height: windowSize.height.value },
-    step.target?.kind === 'control' ? UNDER_CONTROL : BESIDE_TARGET,
+    sides.value,
     avoid
   )
 )
 
-const TAIL_BORDERS: Record<Side, string> = {
-  right: 'border-b border-l',
-  left: 'border-t border-r',
-  below: 'border-t border-l',
-  above: 'border-b border-r'
-}
+watch(
+  () => ({
+    x: placement.value.position.x,
+    y: placement.value.position.y,
+    width: bubbleSize.width.value,
+    height: bubbleSize.height.value
+  }),
+  (card) => emit('placed', card),
+  { immediate: true }
+)
+onBeforeUnmount(() => emit('placed', null))
 
-const tail = computed(() => {
-  const { side, tail: offset } = placement.value
-  const at = `${offset}px`
-  const style = {
-    right: { left: '0', top: at },
-    left: { left: '100%', top: at },
-    below: { left: at, top: '0' },
-    above: { left: at, top: '100%' }
-  }[side]
-  return { classes: TAIL_BORDERS[side], style }
-})
+const tail = computed(() =>
+  bubbleTail(placement.value.side, placement.value.tail)
+)
 </script>

@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
 import {
-  clipAround,
+  dockCap,
+  placeAsk,
   placeAttached,
   placeBeside,
-  placePanel,
-  placeStrip
+  placeDock,
+  placeStanding,
+  placeStrip,
+  slotWidth
 } from './geometry'
-import type { Rect, Side } from './geometry'
+import type { Pointing, Rect, Side } from './geometry'
 
 const WINDOW = { width: 1000, height: 800 }
 const BUBBLE = { width: 320, height: 200 }
@@ -108,29 +111,42 @@ describe('keeping clear of the open panel', () => {
   })
 })
 
-describe('placePanel', () => {
-  const TRIGGER = { x: 1000, y: 8, width: 110, height: 28 }
+describe('placeAsk', () => {
   const CANVAS = { x: 0, y: 40, width: 1280, height: 760 }
 
-  it('P-12: sits under the trigger with right edges aligned and room to scroll', () => {
-    expect(placePanel(TRIGGER, 320, CANVAS, WIDE)).toEqual({
-      x: 790,
-      y: 44,
-      maxHeight: 748
-    })
+  it('BA-21: centres on the visible canvas and sits just above its bottom edge', () => {
+    expect(placeAsk(CANVAS, WIDE)).toEqual({ centerX: 640, bottom: 10 })
   })
 
-  it('P-13: moves left to stay over the canvas when the docked Agent panel is open', () => {
-    const besideAgentPanel = { ...CANVAS, width: 880 }
+  it('BA-21: follows the canvas when the docked Agent panel or a bottom panel narrows it', () => {
+    const smaller = { x: 0, y: 40, width: 880, height: 560 }
 
-    expect(placePanel(TRIGGER, 320, besideAgentPanel, WIDE).x).toBe(552)
+    expect(placeAsk(smaller, WIDE)).toEqual({ centerX: 440, bottom: 210 })
   })
 
-  it('P-13: stays inside a window too narrow for both', () => {
-    const narrow = { width: 400, height: 800 }
-    const sliver = { x: 0, y: 40, width: 100, height: 760 }
+  it('BA-21: centres on the window until the canvas has been measured', () => {
+    const unmeasured = { x: 0, y: 0, width: 0, height: 0 }
 
-    expect(placePanel({ ...TRIGGER, x: 250 }, 320, sliver, narrow).x).toBe(8)
+    expect(placeAsk(unmeasured, WIDE)).toEqual({ centerX: 640, bottom: 10 })
+  })
+})
+
+describe('slotWidth', () => {
+  it('BA-05: is about 60% of the canvas, within a reasonable range', () => {
+    expect(slotWidth({ x: 0, y: 40, width: 1000, height: 700 }, WIDE)).toBe(600)
+    expect(slotWidth({ x: 0, y: 40, width: 2000, height: 700 }, WIDE)).toBe(640)
+    expect(slotWidth({ x: 0, y: 40, width: 400, height: 700 }, WIDE)).toBe(320)
+  })
+
+  it('BA-05: never wider than the canvas it sits on', () => {
+    expect(slotWidth({ x: 0, y: 40, width: 300, height: 700 }, WIDE)).toBe(284)
+  })
+})
+
+describe('dockCap', () => {
+  it('BA-11: is a third of the canvas height, and never less than room for a few lines', () => {
+    expect(dockCap({ x: 0, y: 40, width: 1280, height: 720 }, WIDE)).toBe(240)
+    expect(dockCap({ x: 0, y: 40, width: 1280, height: 300 }, WIDE)).toBe(160)
   })
 })
 
@@ -173,11 +189,84 @@ describe('placeStrip', () => {
   })
 })
 
-describe('clipAround', () => {
-  it('P-15: leaves the trigger out of the surface that takes the pointer', () => {
-    expect(clipAround({ x: 1000, y: 8, width: 110, height: 28 })).toBe(
-      'polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, 1000px 8px, 1000px 36px, 1110px 36px, 1110px 8px, 1000px 8px)'
-    )
-    expect(clipAround(null)).toBeUndefined()
+describe('placeDock', () => {
+  const SIZE = { width: 72, height: 92 }
+
+  it('CP-01, CP-19: sits at the bottom left of the visible canvas, 40 px in from its left edge and 10 px up', () => {
+    const canvas = { x: 0, y: 40, width: 1280, height: 760 }
+
+    expect(placeDock(canvas, SIZE, WIDE)).toEqual({ x: 40, y: 698 })
+  })
+
+  it('CP-01, CP-19: follows the canvas when the docked Agent panel or a bottom panel narrows it', () => {
+    const smaller = { x: 320, y: 40, width: 960, height: 560 }
+
+    expect(placeDock(smaller, SIZE, WIDE)).toEqual({ x: 360, y: 498 })
+  })
+
+  it('CP-01, CP-19: sits in the window until the canvas has been measured', () => {
+    const unmeasured = { x: 0, y: 0, width: 0, height: 0 }
+
+    expect(placeDock(unmeasured, SIZE, WIDE)).toEqual({ x: 40, y: 698 })
+  })
+})
+
+describe('placeStanding', () => {
+  const SIZE = { width: 144, height: 144 }
+  const FIELD: Rect = { x: 400, y: 300, width: 180, height: 20 }
+  const STAND = {
+    order: ['right', 'left'] as Pointing[],
+    avoid: [] as Rect[],
+    fingertips: { left: { x: 19, y: 78 }, right: { x: 124, y: 79 } },
+    gap: 10
+  }
+
+  it('CP-06: stands left of the target and points right, her fingertip a gap from it and level with its centre', () => {
+    expect(placeStanding(FIELD, SIZE, WIDE, STAND)).toEqual({
+      points: 'right',
+      position: { x: 400 - 10 - 124, y: 310 - 79 }
+    })
+  })
+
+  it('CP-06: stands right of the target and points left when the left side does not fit the window', () => {
+    const nearTheLeftEdge = { ...FIELD, x: 60 }
+
+    expect(placeStanding(nearTheLeftEdge, SIZE, WIDE, STAND)).toEqual({
+      points: 'left',
+      position: { x: 60 + 180 + 10 - 19, y: 310 - 78 }
+    })
+  })
+
+  it('CP-06: stays beside a target near the top of the window, moved down to fit', () => {
+    const nearTheTop = { ...FIELD, y: 10 }
+
+    expect(placeStanding(nearTheTop, SIZE, WIDE, STAND)).toEqual({
+      points: 'right',
+      position: { x: 400 - 10 - 124, y: 8 }
+    })
+  })
+
+  it('CP-10: takes the other side when the answer card or the Ask strip is on her first one', () => {
+    const card = { x: 250, y: 200, width: 100, height: 120 }
+
+    expect(
+      placeStanding(FIELD, SIZE, WIDE, { ...STAND, avoid: [null, card] }).points
+    ).toBe('left')
+  })
+
+  it('CP-10: stays on the first side that fits when everything is covered', () => {
+    const everywhere = { x: 0, y: 0, width: 1280, height: 800 }
+
+    expect(
+      placeStanding(FIELD, SIZE, WIDE, { ...STAND, avoid: [everywhere] }).points
+    ).toBe('right')
+  })
+
+  it('CP-06: stays inside the window when neither side has room', () => {
+    const everything = { x: 0, y: 0, width: 1280, height: 800 }
+    const stood = placeStanding(everything, SIZE, WIDE, STAND)
+
+    expect(stood.points).toBe('right')
+    expect(stood.position).toEqual({ x: 8, y: 400 - 79 })
   })
 })

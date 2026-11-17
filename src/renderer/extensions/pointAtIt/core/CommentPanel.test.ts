@@ -53,9 +53,7 @@ const baseProps: ComponentProps<typeof CommentPanel> = {
     { id: 'comment-2', number: 2, rect: null, missing: false, locked: false }
   ],
   phase: 'idle',
-  waitingSince: null,
-  failure: null,
-  thinking: null
+  failure: null
 }
 
 function renderPanel(props: Partial<ComponentProps<typeof CommentPanel>> = {}) {
@@ -63,7 +61,7 @@ function renderPanel(props: Partial<ComponentProps<typeof CommentPanel>> = {}) {
 }
 
 describe('CommentPanel', () => {
-  it('P-08: its collapse control asks to hide the panel', async () => {
+  it('P-08, BA-04: its fold control asks to close the list', async () => {
     const user = userEvent.setup()
     const { emitted } = renderPanel()
 
@@ -151,61 +149,13 @@ describe('CommentPanel', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('T-01, T-02: shows the end of the thinking while waiting, and the whole of it in place when expanded', async () => {
-    const user = userEvent.setup()
-    const text = `${'Looking at the workflow. '.repeat(12)}The width is on Empty Latent Image.`
-    renderPanel({
-      phase: 'waiting',
-      waitingSince: Date.now(),
-      thinking: { requestId: 'request-1', text, done: false }
-    })
+  it('BA-04: holds only questions and their actions: no thinking, no waiting row', () => {
+    renderPanel({ phase: 'waiting' })
 
-    const strip = screen.getByRole('log', { name: messages.thinking })
-    expect(strip).toHaveTextContent(/^….*The width is on Empty Latent Image\.$/)
-    expect(strip.textContent.length).toBeLessThan(text.length)
-
-    await user.click(
-      screen.getByRole('button', { name: messages.showThinking })
-    )
-
+    expect(screen.queryByText(messages.thinking)).not.toBeInTheDocument()
     expect(
-      screen.getByRole('log', { name: messages.thinking })
-    ).toHaveTextContent(text.trim())
-    expect(screen.getByRole('button', { name: 'Cancel' })).toBeEnabled()
-  })
-
-  it('T-03: after the reply, keeps the thinking behind a collapsed control', async () => {
-    const user = userEvent.setup()
-    renderPanel({
-      thinking: {
-        requestId: 'request-1',
-        text: 'The width is here.',
-        done: true
-      }
-    })
-
-    expect(screen.queryByText('The width is here.')).not.toBeInTheDocument()
-
-    await user.click(
-      screen.getByRole('button', { name: messages.showThinking })
-    )
-
-    expect(screen.getByText('The width is here.')).toBeVisible()
-  })
-
-  it('T-04: says so when the model returned no thinking', () => {
-    renderPanel({ thinking: { requestId: 'request-1', text: '', done: true } })
-
-    expect(screen.getByText(messages.noThinking)).toBeVisible()
-  })
-
-  it('T-05: shows nothing about thinking for the scripted agent', () => {
-    renderPanel({ phase: 'waiting', waitingSince: Date.now(), thinking: null })
-
-    expect(
-      screen.queryByRole('button', { name: messages.showThinking })
+      screen.queryByRole('button', { name: messages.cancel })
     ).not.toBeInTheDocument()
-    expect(screen.queryByText(messages.noThinking)).not.toBeInTheDocument()
   })
 
   it('L-05 to L-07, L-10: shows the failure with Retry and keeps Send available', () => {

@@ -7,13 +7,39 @@
     @submit.prevent="emit('save', text)"
   >
     <div class="flex items-start gap-2">
-      <span class="flex-1 rounded-full bg-secondary px-2 py-0.5 text-xs">
-        {{ draft.label }}
-      </span>
+      <div class="flex min-w-0 flex-1 flex-col gap-1">
+        <div class="flex min-w-0 items-center gap-2">
+          <span
+            class="min-w-0 truncate text-sm font-medium text-foreground"
+            :title="draft.label"
+            data-testid="point-at-it-comment-target"
+          >
+            {{ summary }}
+          </span>
+          <Button
+            v-if="manyTargets"
+            type="button"
+            variant="textonly"
+            size="sm"
+            class="shrink-0"
+            :aria-expanded="listOpen"
+            @click="listOpen = !listOpen"
+          >
+            {{ listOpen ? messages.hidePicked : messages.showPicked }}
+          </Button>
+        </div>
+        <p
+          v-if="manyTargets && listOpen"
+          class="m-0 max-h-24 overflow-y-auto text-xs text-muted-foreground"
+        >
+          {{ draft.label }}
+        </p>
+      </div>
       <Button
         type="button"
         variant="textonly"
         size="icon-sm"
+        class="shrink-0"
         :aria-label="messages.close"
         @click="emit('close')"
       >
@@ -36,21 +62,27 @@
       {{ notice }}
     </p>
     <div class="flex items-center gap-2">
-      <Button type="submit" variant="primary" :disabled="!text.trim()">
-        {{ draft.annotationId ? messages.save : messages.add }}
-      </Button>
+      <p class="m-0 min-w-0 flex-1 truncate text-xs text-muted-foreground">
+        {{ messages.commentHint(sendKey) }}
+      </p>
       <Button
         v-if="draft.annotationId"
         type="button"
         variant="destructive-textonly"
+        class="shrink-0"
         @click="emit('remove')"
       >
         {{ messages.remove }}
       </Button>
+      <Button
+        type="submit"
+        variant="primary"
+        class="shrink-0"
+        :disabled="!text.trim()"
+      >
+        {{ draft.annotationId ? messages.save : messages.add }}
+      </Button>
     </div>
-    <p class="m-0 text-xs text-muted-foreground">
-      {{ messages.commentHint(sendKey) }}
-    </p>
   </form>
 </template>
 
@@ -96,11 +128,17 @@ const emit = defineEmits<{
 
 const sendKey = sendNowKeyLabel(navigator.userAgent)
 const text = ref(draft.comment)
+const listOpen = ref(false)
 const notice = ref('')
 const box = useTemplateRef('box')
 const input = useTemplateRef('input')
 const boxSize = useElementSize(box, undefined, { box: 'border-box' })
 const windowSize = useWindowSize()
+
+const manyTargets = computed(() => draft.targets.length > 1)
+const summary = computed(() =>
+  manyTargets.value ? messages.pickedCount(draft.targets.length) : draft.label
+)
 
 const position = computed(() =>
   placeBeside(

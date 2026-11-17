@@ -125,4 +125,51 @@ describe('CommentBox', () => {
     })
     expect(screen.getByRole('button', { name: messages.save })).toBeVisible()
   })
+
+  it('U-07: a single target is named on one line with the full name on hover', async () => {
+    await renderBox()
+
+    const target = screen.getByTestId('point-at-it-comment-target')
+    expect(target).toHaveTextContent('Empty Latent Image › width')
+    expect(target).toHaveAttribute('title', 'Empty Latent Image › width')
+    expect(
+      screen.queryByRole('button', { name: messages.showPicked })
+    ).toBeNull()
+  })
+
+  it('U-07: many targets collapse to a count, and the full list opens on demand', async () => {
+    const label = 'Save Image, Load CLIP, Load VAE, VAE Decode, KSampler'
+    const { user } = await renderBox({
+      draft: {
+        ...baseProps.draft,
+        targets: [width, width, width, width, width],
+        label
+      }
+    })
+
+    expect(screen.getByTestId('point-at-it-comment-target')).toHaveTextContent(
+      messages.pickedCount(5)
+    )
+    expect(screen.queryByText(label)).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: messages.showPicked }))
+    expect(screen.getByText(label)).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: messages.hidePicked }))
+    expect(screen.queryByText(label)).toBeNull()
+  })
+
+  it('U-07: when editing, Delete sits before the primary action, which is last', async () => {
+    await renderBox({
+      draft: { ...baseProps.draft, annotationId: 'comment-1', comment: 'wider' }
+    })
+
+    const buttons = screen
+      .getAllByRole('button')
+      .map((button) => button.textContent.trim())
+    expect(buttons.indexOf(messages.remove)).toBeLessThan(
+      buttons.indexOf(messages.save)
+    )
+    expect(buttons.at(-1)).toBe(messages.save)
+  })
 })

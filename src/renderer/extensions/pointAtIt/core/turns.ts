@@ -8,12 +8,20 @@ import { messages } from './messages'
 import type { GuidanceStep } from './replyValidation'
 import type { AnnotationTarget, SettingValue } from './targetAddress'
 
-/** One pinned comment. */
+/**
+ * One comment. It is pinned on its targets; a message said to her with
+ * nothing selected has none (`targets` is empty and `label` is '').
+ */
 export interface Annotation {
   id: string
   targets: AnnotationTarget[]
   label: string
   comment: string
+}
+
+/** False for a message pinned on nothing: it has no pin, no number and no label. */
+export function isPinned(annotation: Pick<Annotation, 'targets'>): boolean {
+  return annotation.targets.length > 0
 }
 
 /** How the person acted on a step: took the offered value, or changed it themselves. */
@@ -100,7 +108,8 @@ export type ConversationEvent =
 /** A comment with the number shown on its pin and the turn it is locked in. */
 export interface NumberedComment {
   annotation: Annotation
-  number: number
+  /** Null for a comment pinned on nothing: it has no pin to number. */
+  number: number | null
   turn: Turn | null
   /** How many answered follow-ups its thread has. */
   followUps: number
@@ -257,7 +266,10 @@ export function reduceConversation(
   }
 }
 
-/** Every comment in the order of its number; numbers continue across turns. */
+/**
+ * Every comment in the order it was made; numbers continue across turns and
+ * count only the comments that are pinned on something.
+ */
 export function numberedComments(state: Conversation): NumberedComment[] {
   const locked = state.turns.flatMap((turn) =>
     turn.comments.map((annotation) => ({
@@ -273,10 +285,12 @@ export function numberedComments(state: Conversation): NumberedComment[] {
     turn: null,
     followUps: 0
   }))
-  return [...locked, ...unsent].map((comment, index) => ({
-    ...comment,
-    number: index + 1
-  }))
+  let pins = 0
+  return [...locked, ...unsent].map((comment) => {
+    if (!isPinned(comment.annotation)) return { ...comment, number: null }
+    pins += 1
+    return { ...comment, number: pins }
+  })
 }
 
 /** The thread of an answered comment; null for an unsent or unknown one. */

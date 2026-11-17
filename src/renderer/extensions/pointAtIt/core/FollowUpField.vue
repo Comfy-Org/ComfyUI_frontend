@@ -1,28 +1,35 @@
 <template>
   <div data-testid="point-at-it-follow-up" class="flex flex-col gap-1 text-xs">
     <template v-if="activity?.status === 'waiting'">
-      <span class="text-muted-foreground">{{ messages.threadYou }}</span>
-      <span class="wrap-break-word whitespace-pre-line">
+      <span class="sr-only">{{ messages.threadYou }}</span>
+      <span
+        class="max-w-[85%] self-end rounded-lg bg-secondary px-3 py-1.5 text-sm wrap-break-word whitespace-pre-line"
+      >
         {{ activity.text }}
       </span>
-      <div role="status" class="flex items-center gap-2 text-muted-foreground">
+      <div role="status" class="flex items-start gap-2 text-muted-foreground">
         <i
-          class="icon-[lucide--loader-circle] motion-safe:animate-spin"
+          class="mt-0.5 icon-[lucide--loader-circle] motion-safe:animate-spin"
           aria-hidden="true"
         />
-        <span class="flex-1">
-          {{ messages.followUpWaiting(elapsedSeconds) }}
-        </span>
-        <Button size="sm" @click="emit('cancel')">{{ messages.cancel }}</Button>
+        <p
+          v-if="thinkingTail"
+          role="log"
+          :aria-label="messages.thinking"
+          class="m-0 line-clamp-2 flex-1"
+        >
+          {{ thinkingTail }}
+        </p>
+        <span v-else class="flex-1">{{ messages.followUpWaiting }}</span>
+        <Button
+          variant="muted-textonly"
+          size="sm"
+          class="shrink-0"
+          @click="emit('cancel')"
+        >
+          {{ messages.cancel }}
+        </Button>
       </div>
-      <p
-        v-if="thinkingTail"
-        role="log"
-        :aria-label="messages.thinking"
-        class="m-0 line-clamp-2 text-muted-foreground"
-      >
-        {{ thinkingTail }}
-      </p>
     </template>
     <template v-else>
       <div v-if="activity" role="alert" class="flex items-start gap-2">
@@ -31,23 +38,35 @@
         </span>
         <Button size="sm" @click="emit('retry')">{{ messages.retry }}</Button>
       </div>
-      <textarea
-        v-model="text"
-        rows="1"
-        class="resize-none rounded-md border border-border bg-transparent p-2 text-sm text-foreground outline-none focus-visible:ring-1 focus-visible:ring-ring"
-        :aria-label="messages.followUpLabel"
-        :placeholder="messages.followUpLabel"
-        @keydown.enter="onEnter"
-      />
-      <p class="m-0 text-muted-foreground">
-        {{ messages.followUpHint(sendKey) }}
-      </p>
+      <div
+        class="flex items-end gap-2 rounded-xl border border-border bg-background py-1.5 pr-1.5 pl-3 focus-within:border-muted-foreground"
+      >
+        <textarea
+          v-model="text"
+          rows="1"
+          class="field-sizing-content max-h-32 min-h-6 flex-1 resize-none border-none bg-transparent py-0.5 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          :aria-label="messages.followUpLabel"
+          :placeholder="messages.followUpLabel"
+          @keydown.enter="onEnter"
+        />
+        <Button
+          type="button"
+          variant="primary"
+          size="icon-sm"
+          class="shrink-0 rounded-full"
+          :aria-label="messages.followUpSend"
+          :title="messages.followUpHint(sendKey)"
+          :disabled="!text.trim()"
+          @click="sendText"
+        >
+          <i class="icon-[lucide--arrow-up]" aria-hidden="true" />
+        </Button>
+      </div>
     </template>
   </div>
 </template>
 
 <script setup lang="ts">
-import { useTimestamp } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -56,8 +75,7 @@ import { describeFailure, messages, sendNowKeyLabel } from './messages'
 import type { FollowUpActivity } from './pointState'
 import { takeEnter } from './textEntry'
 import type { ThinkingLog } from './thinkingLog'
-
-const TAIL_CHARS = 120
+import { latestThought } from './thoughtLine'
 
 const { activity, thinking } = defineProps<{
   /** The follow-up that was sent from here and has no reply yet, if any. */
@@ -72,24 +90,21 @@ const emit = defineEmits<{
 }>()
 
 const sendKey = sendNowKeyLabel(navigator.userAgent)
-const now = useTimestamp({ interval: 500 })
 const text = ref(activity?.text ?? '')
 
-const elapsedSeconds = computed(() =>
-  activity?.status === 'waiting'
-    ? Math.max(0, Math.floor((now.value - activity.startedAt) / 1000))
-    : 0
-)
 const thinkingTail = computed(() => {
   if (activity?.status !== 'waiting') return ''
   if (thinking?.requestId !== activity.requestId) return ''
-  const tail = thinking.text.trim()
-  return tail.length > TAIL_CHARS ? `…${tail.slice(-TAIL_CHARS)}` : tail
+  return latestThought(thinking.text, { done: thinking.done })
 })
 
 function onEnter(event: KeyboardEvent) {
   const meaning = takeEnter(event)
   if (meaning !== 'enter' && meaning !== 'sendNow') return
+  sendText()
+}
+
+function sendText() {
   if (text.value.trim()) emit('send', text.value)
 }
 </script>

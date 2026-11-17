@@ -203,6 +203,40 @@ describe('numberedComments', () => {
       [3, 'comment-3', 'unsent']
     ])
   })
+
+  it('CP-51: a comment pinned on nothing has no number, and the numbers of the others do not skip it', () => {
+    const message: Annotation = {
+      id: 'comment-4',
+      targets: [],
+      label: '',
+      comment: 'hi'
+    }
+    const withMessage = reduceConversation(secondTurnOpen, {
+      type: 'saved',
+      ...message
+    })
+    const messageFirst = reduceConversation(emptyConversation, {
+      type: 'saved',
+      ...message
+    })
+
+    expect(
+      numberedComments(withMessage).map(({ annotation, number }) => [
+        annotation.id,
+        number
+      ])
+    ).toEqual([
+      ['comment-1', 1],
+      ['comment-2', 2],
+      ['comment-3', 3],
+      ['comment-4', null]
+    ])
+    expect(
+      numberedComments(
+        reduceConversation(messageFirst, { type: 'saved', ...first })
+      ).map(({ number }) => number)
+    ).toEqual([null, 1])
+  })
 })
 
 describe('threads', () => {

@@ -4,26 +4,39 @@ export type PanelEvent =
   | { type: 'caretPressed' }
   | { type: 'collapsePressed' }
   | { type: 'stripPressed' }
-  | { type: 'sendStarted' }
+  | { type: 'sendStarted'; opensThinking: boolean }
+  | { type: 'requestEnded' }
+  | { type: 'thinkingToggled' }
+  | { type: 'tallerPressed' }
+  | { type: 'startedOver' }
 
-export type PanelState = 'open' | 'closed'
+export type PanelState = 'closed' | 'questions' | 'thinking' | 'thinkingTall'
 
-/**
- * Pure transition for whether the panel under the trigger is open. It is a
- * state of its own because it outlives the mode: the person can annotate
- * with it closed and read it with the mode off.
- */
 export function reducePanel(state: PanelState, event: PanelEvent): PanelState {
   switch (event.type) {
-    case 'modeEnteredFromTrigger':
     case 'stripPressed':
-      return 'open'
+      return 'questions'
+    case 'modeEnteredFromTrigger':
+      return state
     case 'modeLeft':
       return event.hasContent ? state : 'closed'
     case 'caretPressed':
-      return state === 'open' ? 'closed' : 'open'
+      return state === 'questions' ? 'closed' : 'questions'
     case 'collapsePressed':
-    case 'sendStarted':
+    case 'startedOver':
       return 'closed'
+    case 'sendStarted':
+      return event.opensThinking ? 'thinking' : 'closed'
+    case 'requestEnded':
+      return state === 'questions' ? state : 'closed'
+    case 'thinkingToggled':
+      return isThinkingPanel(state) ? 'closed' : 'thinking'
+    case 'tallerPressed':
+      if (state === 'thinking') return 'thinkingTall'
+      return state === 'thinkingTall' ? 'thinking' : state
   }
+}
+
+export function isThinkingPanel(state: PanelState): boolean {
+  return state === 'thinking' || state === 'thinkingTall'
 }

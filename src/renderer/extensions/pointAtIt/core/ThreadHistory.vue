@@ -3,14 +3,19 @@
     ref="list"
     role="log"
     :aria-label="messages.threadLabel"
-    class="m-0 flex max-h-48 list-none flex-col gap-2 overflow-y-auto p-0 text-xs"
+    class="m-0 flex max-h-64 list-none flex-col gap-3 overflow-y-auto p-0"
   >
     <li
       v-for="(message, index) in thread"
       :key="index"
-      class="flex flex-col gap-0.5"
+      :class="
+        cn(
+          'flex flex-col gap-1',
+          message.kind === 'answer' ? 'items-start' : 'items-end'
+        )
+      "
     >
-      <span class="text-muted-foreground">
+      <span class="sr-only">
         {{
           message.kind === 'answer' ? messages.threadAgent : messages.threadYou
         }}
@@ -19,7 +24,10 @@
         <span class="wrap-break-word whitespace-pre-line">
           {{ message.step.text }}
         </span>
-        <span v-if="message.step.offerEdit" class="text-muted-foreground">
+        <span
+          v-if="message.step.offerEdit"
+          class="text-xs text-muted-foreground"
+        >
           {{
             messages.offeredNote(
               message.step.offerEdit.target.setting,
@@ -30,12 +38,14 @@
         </span>
       </template>
       <template v-else>
-        <span class="wrap-break-word whitespace-pre-line">
+        <span
+          class="max-w-[85%] rounded-lg bg-secondary px-3 py-1.5 wrap-break-word whitespace-pre-line"
+        >
           {{ message.text }}
         </span>
         <details
           v-if="message.kind === 'followUp' && message.thinking"
-          class="text-muted-foreground"
+          class="text-xs text-muted-foreground"
         >
           <summary class="cursor-pointer">{{ messages.thinking }}</summary>
           <p
@@ -51,6 +61,8 @@
 
 <script setup lang="ts">
 import { nextTick, useTemplateRef, watch } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { messages } from './messages'
 import type { ThreadMessage } from './turns'

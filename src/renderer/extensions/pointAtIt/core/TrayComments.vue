@@ -9,6 +9,7 @@
         @click="emit('open', comment.annotation.id)"
       >
         <span
+          v-if="comment.number !== null"
           class="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary"
         >
           {{ comment.number }}

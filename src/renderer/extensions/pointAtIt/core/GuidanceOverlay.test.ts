@@ -116,3 +116,103 @@ describe('GuidanceOverlay: the thread in the bubble', () => {
     expect(screen.getByText('Go to 1408.')).toBeVisible()
   })
 })
+
+describe('GuidanceOverlay: the pointer and where the card is', () => {
+  const flying = {
+    ring: { x: 260, y: 384, width: 180, height: 18 },
+    pointer: { x: 100, y: 120 },
+    landed: false
+  }
+
+  it('shows the pointer glyph while it flies to the target', () => {
+    renderBubble({ view: flying })
+
+    expect(screen.getByTestId('point-at-it-pointer')).toBeInTheDocument()
+  })
+
+  it('CP-12: draws no pointer glyph when the companion is the pointer', () => {
+    renderBubble({ view: flying, showPointer: false })
+
+    expect(screen.queryByTestId('point-at-it-pointer')).not.toBeInTheDocument()
+    expect(screen.getByTestId('point-at-it-ring')).toBeInTheDocument()
+    expect(screen.getByTestId('point-at-it-bubble')).toBeInTheDocument()
+  })
+
+  it('CP-10: reports where the card is, and that it is gone when it goes', () => {
+    const { emitted, unmount } = renderBubble()
+    const card = screen.getByTestId('point-at-it-bubble')
+
+    expect(emitted('placed')[0]).toEqual([
+      {
+        x: parseFloat(card.style.left),
+        y: parseFloat(card.style.top),
+        width: 0,
+        height: 0
+      }
+    ])
+
+    unmount()
+
+    expect(emitted('placed').at(-1)).toEqual([null])
+  })
+})
+
+describe('GuidanceOverlay: her reply, which points at nothing', () => {
+  const head = { x: 70, y: 658, width: 60, height: 56 }
+  const reply: Partial<Props> = {
+    step: {
+      annotationId: 'comment-1',
+      text: 'Hello! Ask me about any node.',
+      target: null,
+      waitFor: null,
+      offerEdit: null,
+      problems: []
+    },
+    index: 0,
+    total: 1,
+    answers: null,
+    thread: [],
+    view: { ring: null, pointer: { x: 640, y: 400 }, landed: false },
+    attachTo: head
+  }
+
+  it('CP-63: the card is attached to her head, to its right, with its tail, and there is no ring', () => {
+    renderBubble(reply)
+
+    expect(screen.getByTestId('point-at-it-bubble').style.left).toBe(
+      `${head.x + head.width + 16}px`
+    )
+    expect(screen.getByTestId('point-at-it-tail')).toBeInTheDocument()
+    expect(screen.queryByTestId('point-at-it-ring')).not.toBeInTheDocument()
+  })
+
+  it('CP-63: it is a reply and not a step: no step count, no question number, Done, and a field to reply in', async () => {
+    const { user, emitted } = renderBubble(reply)
+
+    expect(screen.queryByText(messages.stepOf(1, 1))).not.toBeInTheDocument()
+    expect(screen.queryByText(/^Answers question/)).not.toBeInTheDocument()
+    await user.click(
+      screen.getByRole('textbox', { name: messages.followUpLabel })
+    )
+    await user.keyboard('and the sampler?{Enter}')
+    await user.click(screen.getByRole('button', { name: messages.done }))
+
+    expect(emitted('followUp')).toEqual([['and the sampler?']])
+    expect(emitted('done')).toHaveLength(1)
+  })
+
+  it('CP-63: without her head the card is placed by the pointer as before, with no tail', () => {
+    renderBubble({ ...reply, attachTo: null })
+
+    expect(screen.queryByTestId('point-at-it-tail')).not.toBeInTheDocument()
+  })
+
+  it('CP-63: a step with a ring is attached to the ring, whatever else is given', () => {
+    renderBubble({ ...baseProps, attachTo: head })
+
+    expect(screen.getByTestId('point-at-it-ring')).toBeInTheDocument()
+    expect(
+      parseFloat(screen.getByTestId('point-at-it-bubble').style.left)
+    ).toBeGreaterThan(260)
+  })
+})

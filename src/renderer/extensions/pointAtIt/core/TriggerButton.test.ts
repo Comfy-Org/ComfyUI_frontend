@@ -10,6 +10,7 @@ const baseProps: ComponentProps<typeof TriggerButton> = {
   active: false,
   disabled: false,
   panelOpen: false,
+  role: 'mode',
   unsent: 0,
   waitingSince: null
 }
@@ -40,6 +41,48 @@ describe('TriggerButton', () => {
     expect(main).toHaveAttribute('title', expect.stringContaining('(Q)'))
   })
 
+  it('BA-24: while the thinking is folded, Ask is the thinking toggle: named so, not pressed, and it asks to toggle', async () => {
+    const user = userEvent.setup()
+    const { emitted } = renderTrigger({
+      role: 'thinkingFolded',
+      waitingSince: Date.now()
+    })
+
+    const main = screen.getByRole('button', { name: messages.askThinking })
+    expect(main).toBeEnabled()
+    expect(main).toHaveAttribute('aria-pressed', 'false')
+    expect(
+      screen.queryByRole('button', { name: messages.annotate })
+    ).not.toBeInTheDocument()
+
+    await user.click(main)
+    expect(emitted('toggle')).toHaveLength(1)
+  })
+
+  it('BA-24: while the thinking is open, Ask looks pressed', () => {
+    renderTrigger({ role: 'thinkingOpen', waitingSince: Date.now() })
+
+    expect(
+      screen.getByRole('button', { name: messages.askThinking })
+    ).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('BA-24: the mode being on does not make the thinking toggle look pressed', () => {
+    renderTrigger({ role: 'thinkingFolded', active: true })
+
+    expect(
+      screen.getByRole('button', { name: messages.askThinking })
+    ).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('BA-24: no segment or button besides Ask and its caret, whatever Ask does', () => {
+    for (const role of ['mode', 'thinkingFolded', 'thinkingOpen'] as const) {
+      const { unmount } = renderTrigger({ role })
+      expect(screen.getAllByRole('button')).toHaveLength(2)
+      unmount()
+    }
+  })
+
   it('P-10: shows how many comments of the current turn are unsent, and nothing at zero', async () => {
     const { rerender } = renderTrigger({ unsent: 3 })
 
@@ -49,15 +92,24 @@ describe('TriggerButton', () => {
     expect(screen.queryByLabelText(/unsent/)).not.toBeInTheDocument()
   })
 
-  it('P-10, SD-01: shows a loading icon and the elapsed seconds while a request is waiting', () => {
+  it('P-10, SD-01: shows a loading icon and no duration while a request is waiting', () => {
     renderTrigger({ unsent: 2, waitingSince: Date.now() - 12_400 })
 
     expect(screen.getByTestId('point-at-it-loading')).toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: messages.annotate })
     ).toHaveAttribute('aria-busy', 'true')
-    expect(screen.getByRole('status')).toHaveTextContent('12 s')
+    expect(screen.queryByText(/\d+ s\b/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.queryByLabelText(/unsent/)).not.toBeInTheDocument()
+  })
+
+  it('BA-05: the caret waits too while a request is waiting, so the list cannot be opened over the thinking', () => {
+    renderTrigger({ waitingSince: Date.now() })
+
+    expect(
+      screen.getByRole('button', { name: messages.showPanel })
+    ).toBeDisabled()
   })
 
   it('SD-02: shows no loading icon when nothing is waiting', () => {

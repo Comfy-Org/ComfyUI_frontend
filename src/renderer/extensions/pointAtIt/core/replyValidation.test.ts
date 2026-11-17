@@ -248,6 +248,30 @@ describe('checkReply', () => {
     ])
   })
 
+  it('CP-54: a reply to a message pinned on nothing may point at nothing, in a batch or in a follow-up, and says nothing about it', () => {
+    const hi = { id: 'comment-1', label: '', comment: 'hi', targets: [] }
+    const chat = step({
+      text: 'Hello! Ask me about any node.',
+      target: null,
+      waitFor: null,
+      offerEdit: null
+    })
+    const asBatch: AgentRequest = {
+      kind: 'batch',
+      requestId: 'request-5',
+      annotations: [hi],
+      history: []
+    }
+    const asFollowUp: AgentRequest = { ...followUpRequest, comment: hi }
+
+    expect(checkReply({ steps: [chat] }, asBatch, nodes)).toEqual([
+      { ...chat, problems: [] }
+    ])
+    expect(checkReply({ steps: [chat] }, asFollowUp, nodes)).toEqual([
+      { ...chat, problems: [] }
+    ])
+  })
+
   it('answers no comment when the step names a comment that was not sent', () => {
     expect(check(step({ annotationId: 'comment-9' }))).toMatchObject([
       { annotationId: null }

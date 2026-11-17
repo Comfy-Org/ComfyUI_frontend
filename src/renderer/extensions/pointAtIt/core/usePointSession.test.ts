@@ -1326,6 +1326,7 @@ describe('usePointSession: send right away, and what the panel does on Send', ()
   it('SD-01, SD-02: Send collapses the panel, and the reply does not reopen it', () => {
     const { session } = startSession()
     session.pressTrigger()
+    session.pressCaret()
     comment(session, WIDTH_ROW, 'make this wider')
     expect(session.panelOpen.value).toBe(true)
 
@@ -1407,14 +1408,16 @@ describe('usePointSession: send right away, and what the panel does on Send', ()
 })
 
 describe('usePointSession: the trigger and its panel', () => {
-  it('P-04, P-05: the trigger turns the mode on and opens the panel; turning it off with nothing to show closes the panel', () => {
+  it('P-04, P-05: the trigger turns the mode on and leaves the panel closed; turning it off with nothing to show closes an opened panel', () => {
     const { session } = startSession()
 
     session.pressTrigger()
     expect([session.state.value.phase, session.panelOpen.value]).toEqual([
       'annotating',
-      true
+      false
     ])
+
+    session.pressCaret()
 
     session.pressTrigger()
     expect([session.state.value.phase, session.panelOpen.value]).toEqual([
@@ -1426,6 +1429,7 @@ describe('usePointSession: the trigger and its panel', () => {
   it('P-05: leaving the mode keeps the panel while there are comments to show', () => {
     const { session } = startSession()
     session.pressTrigger()
+    session.pressCaret()
     comment(session, WIDTH_ROW, 'make this wider')
 
     press('Escape')
@@ -1467,6 +1471,7 @@ describe('usePointSession: the trigger and its panel', () => {
   it('P-09: picking, which is a press outside the panel, leaves it open', () => {
     const { session } = startSession()
     session.pressTrigger()
+    session.pressCaret()
 
     session.pickAt(WIDTH_ROW)
     session.saveDraft('make this wider')
@@ -1697,5 +1702,60 @@ describe('usePointSession: the hidden stroke entry', () => {
         steps: [{ target: settingAddress(host.nodes[0].id, 'steps') }, {}]
       }
     ])
+  })
+})
+
+describe('usePointSession: starting to ask with a question ready', () => {
+  const QUESTION = 'What does this do?'
+
+  it('CP-31: the first comment box has the question in it, whether it opens from a click or from what is selected', () => {
+    const clicked = startSession()
+    clicked.session.startAsking(QUESTION)
+    clicked.session.pickAt(WIDTH_ROW)
+
+    expect(clicked.session.state.value).toMatchObject({
+      phase: 'annotating',
+      draft: { comment: QUESTION }
+    })
+
+    const selecting = startSession()
+    selecting.host.selection = [selecting.host.nodes[1].id]
+    selecting.session.startAsking(QUESTION)
+
+    expect(selecting.session.state.value).toMatchObject({
+      phase: 'annotating',
+      draft: { comment: QUESTION }
+    })
+  })
+
+  it('CP-31: it is offered once: the next comment box is empty, and so is one in a later round of asking', () => {
+    const { session } = startSession()
+    session.startAsking(QUESTION)
+    session.pickAt(WIDTH_ROW)
+    session.saveDraft('this one is mine')
+    session.pickAt(SAVE_NODE)
+
+    expect(session.state.value).toMatchObject({ draft: { comment: '' } })
+
+    const later = startSession()
+    later.session.startAsking(QUESTION)
+    later.session.toggleAnnotate()
+    later.session.toggleAnnotate()
+    later.session.pickAt(WIDTH_ROW)
+
+    expect(later.session.state.value).toMatchObject({ draft: { comment: '' } })
+  })
+
+  it('CP-31: while asking is already on, or something else is going on, it changes nothing', () => {
+    const { session } = startSession()
+    session.toggleAnnotate()
+
+    session.startAsking(QUESTION)
+    session.pickAt(WIDTH_ROW)
+
+    expect(session.state.value).toMatchObject({
+      phase: 'annotating',
+      draft: { comment: '' }
+    })
   })
 })

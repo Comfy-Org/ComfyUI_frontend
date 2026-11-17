@@ -218,29 +218,118 @@ export function placeAttached(
   }
 }
 
-const PANEL_GAP = 8
-const PANEL_MIN_HEIGHT = 160
+/** Which way a finger points on screen: she faces front and points to a side. */
+export type Pointing = 'left' | 'right'
+
+export interface Standing {
+  position: Point
+  points: Pointing
+}
+
+export interface StandingOptions {
+  /**
+   * The ways she may point, best first. Pointing right means she stands left
+   * of the target, pointing left means she stands right of it.
+   */
+  order: readonly Pointing[]
+  /** Boxes she should not stand on, when another way is free. */
+  avoid: readonly (Rect | null)[]
+  /** Where her fingertip is inside her box when she points each way. */
+  fingertips: Record<Pointing, Point>
+  /** The space between her fingertip and the target. */
+  gap: number
+}
+
+function standingPosition(
+  target: Rect,
+  points: Pointing,
+  { fingertips, gap }: Pick<StandingOptions, 'fingertips' | 'gap'>
+): Point {
+  const tip = fingertips[points]
+  const x =
+    points === 'right'
+      ? target.x - gap - tip.x
+      : target.x + target.width + gap - tip.x
+  return { x, y: rectCenter(target).y - tip.y }
+}
 
 /**
- * Where the panel sits under its trigger: right edges aligned, pulled left
- * so that it stays over `canvas`, and always inside the window.
+ * Top-left corner of a box that stands beside `target` with its fingertip
+ * level with the target's centre: the first way in `order` that keeps the gap
+ * inside the window and stays clear of everything in `avoid`, otherwise the
+ * first way that keeps the gap, otherwise the first way pulled inside. Up and
+ * down the box is moved to fit rather than sent to the other side.
  */
-export function placePanel(
-  trigger: Rect,
-  width: number,
+export function placeStanding(
+  target: Rect,
+  size: Size,
+  viewport: Size,
+  options: StandingOptions
+): Standing {
+  const candidates = options.order.map((points) => {
+    const wanted = standingPosition(target, points, options)
+    const position = pullInside(wanted, size, viewport)
+    return { points, position, keepsGap: position.x === wanted.x }
+  })
+  const roomy = candidates.filter((candidate) => candidate.keepsGap)
+  const clear = roomy.find(
+    (candidate) =>
+      !options.avoid.some((other) => covers(candidate.position, size, other))
+  )
+  const chosen = clear ?? roomy.at(0) ?? candidates[0]
+  return { position: chosen.position, points: chosen.points }
+}
+
+const PANEL_GAP = 8
+const ASK_BOTTOM_GAP = 10
+const DOCK_SIDE_GAP = 40
+const SLOT_SHARE = 0.6
+const SLOT_MIN_WIDTH = 320
+const SLOT_MAX_WIDTH = 640
+const DOCK_MIN_CAP = 160
+const DOCK_CAP_SHARE = 1 / 3
+
+function visibleArea(canvas: Rect, viewport: Size): Rect {
+  return canvas.width > 0
+    ? canvas
+    : { x: 0, y: 0, width: viewport.width, height: viewport.height }
+}
+
+export function placeAsk(
   canvas: Rect,
   viewport: Size
-): { x: number; y: number; maxHeight: number } {
-  const windowRight = viewport.width - VIEWPORT_MARGIN
-  const canvasRight =
-    canvas.width > 0 ? canvas.x + canvas.width - VIEWPORT_MARGIN : windowRight
-  const right = Math.min(trigger.x + trigger.width, canvasRight, windowRight)
-  const y = trigger.y + trigger.height + PANEL_GAP
+): { centerX: number; bottom: number } {
+  const area = visibleArea(canvas, viewport)
   return {
-    x: Math.max(VIEWPORT_MARGIN, right - width),
-    y,
-    maxHeight: Math.max(PANEL_MIN_HEIGHT, viewport.height - y - VIEWPORT_MARGIN)
+    centerX: area.x + area.width / 2,
+    bottom: viewport.height - (area.y + area.height) + ASK_BOTTOM_GAP
   }
+}
+
+/**
+ * Top-left corner of a box that stands at the bottom left of the visible
+ * canvas, on the same baseline as the Ask column at the bottom centre.
+ */
+export function placeDock(canvas: Rect, size: Size, viewport: Size): Point {
+  const area = visibleArea(canvas, viewport)
+  return {
+    x: area.x + DOCK_SIDE_GAP,
+    y: area.y + area.height - ASK_BOTTOM_GAP - size.height
+  }
+}
+
+export function slotWidth(canvas: Rect, viewport: Size): number {
+  const area = visibleArea(canvas, viewport)
+  const wanted = Math.min(
+    SLOT_MAX_WIDTH,
+    Math.max(SLOT_MIN_WIDTH, area.width * SLOT_SHARE)
+  )
+  return Math.max(0, Math.min(wanted, area.width - VIEWPORT_MARGIN * 2))
+}
+
+export function dockCap(canvas: Rect, viewport: Size): number {
+  const area = visibleArea(canvas, viewport)
+  return Math.max(DOCK_MIN_CAP, area.height * DOCK_CAP_SHARE)
 }
 
 export function placeStrip(
@@ -249,10 +338,7 @@ export function placeStrip(
   viewport: Size,
   avoid: Rect | null
 ): Point {
-  const area =
-    canvas.width > 0
-      ? canvas
-      : { x: 0, y: 0, width: viewport.width, height: viewport.height }
+  const area = visibleArea(canvas, viewport)
   const centred = {
     x: area.x + area.width - VIEWPORT_MARGIN - size.width,
     y: Math.max(
@@ -265,16 +351,6 @@ export function placeStrip(
     x: Math.max(VIEWPORT_MARGIN, avoid.x - PANEL_GAP - size.width),
     y: centred.y
   }
-}
-
-/** A clip path for a full-window element that leaves `hole` out of it. */
-export function clipAround(hole: Rect | null): string | undefined {
-  if (!hole) return undefined
-  const left = `${hole.x}px`
-  const top = `${hole.y}px`
-  const right = `${hole.x + hole.width}px`
-  const bottom = `${hole.y + hole.height}px`
-  return `polygon(evenodd, 0 0, 100% 0, 100% 100%, 0 100%, 0 0, ${left} ${top}, ${left} ${bottom}, ${right} ${bottom}, ${right} ${top}, ${left} ${top})`
 }
 
 export const FLIGHT_MS = 450

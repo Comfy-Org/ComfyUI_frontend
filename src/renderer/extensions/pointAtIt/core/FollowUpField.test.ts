@@ -51,6 +51,19 @@ describe('FollowUpField', () => {
     expect(field()).not.toHaveFocus()
   })
 
+  it('TH-03b: the send button inside the reply box sends what was typed, and is off while the box is empty', async () => {
+    const { user, emitted } = renderField()
+    const send = screen.getByRole('button', { name: messages.followUpSend })
+
+    expect(send).toBeDisabled()
+
+    await user.type(field(), 'and why?')
+    expect(send).toBeEnabled()
+    await user.click(send)
+
+    expect(emitted().send).toEqual([['and why?']])
+  })
+
   it('TH-03: Enter sends what was typed; Shift+Enter makes a new line; empty text sends nothing', async () => {
     const { user, emitted } = renderField()
 
@@ -89,7 +102,7 @@ describe('FollowUpField', () => {
     expect(field()).toHaveValue('')
   })
 
-  it('TH-04: while waiting it shows the sent text, the elapsed time and the live thinking, with Cancel and no field', async () => {
+  it('TH-04: while waiting it shows the sent text, no duration and the live thinking, with Cancel and no field', async () => {
     const { user, emitted } = renderField({
       activity: waiting(),
       thinking: {
@@ -100,16 +113,26 @@ describe('FollowUpField', () => {
     })
 
     expect(screen.getByText('a bit more than that')).toBeVisible()
-    expect(screen.getByRole('status')).toHaveTextContent(
-      messages.followUpWaiting(4)
-    )
+    expect(screen.getByRole('status')).not.toHaveTextContent(/\d+ s\b/)
     expect(
       screen.getByRole('log', { name: messages.thinking })
     ).toHaveTextContent('Looking at the width setting.')
+    expect(screen.getByRole('status')).not.toHaveTextContent(
+      messages.followUpWaiting
+    )
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: messages.cancel }))
     expect(emitted('cancel')).toHaveLength(1)
+  })
+
+  it('TH-04: before any thought has finished the one line says it is waiting', () => {
+    renderField({ activity: waiting(), thinking: null })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      messages.followUpWaiting
+    )
+    expect(screen.queryByRole('log')).not.toBeInTheDocument()
   })
 
   it('TH-04: shows no thinking that belongs to another request', () => {
