@@ -649,7 +649,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       CanvasItem.SubgraphIoSlot
 
     let cursor = 'default'
-    if (this.state.draggingCanvas) {
+    if (this.state.draggingCanvas || this._draggingItems) {
       cursor = 'grabbing'
     } else if (this.state.readOnly) {
       cursor = 'grab'
@@ -704,6 +704,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   set isDragging(value: boolean) {
     const changed = this._draggingItems !== value
     this._draggingItems = value
+    this._updateCursorStyle()
     if (changed) {
       this.dispatchEvent('litegraph:dragging-items-changed', {
         dragging: value
