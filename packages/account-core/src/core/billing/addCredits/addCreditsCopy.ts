@@ -16,7 +16,7 @@ export const ADD_CREDITS_COPY = {
   'planLine.ended':
     "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
   'planLine.ended_sales_managed':
-    "Buying credits doesn't restart your plan. Contact sales to renew it.",
+    "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
   'planLine.free_runs':
     "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
   credits: '{credits} credits',
