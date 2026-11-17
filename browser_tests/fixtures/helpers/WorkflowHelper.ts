@@ -345,7 +345,10 @@ export class WorkflowHelper {
   }
 
   async switchToTab(tabName: string): Promise<void> {
-    await this.comfyPage.menu.topbar.getWorkflowTab(tabName).click()
+    const { topbar } = this.comfyPage.menu
+    const tab = topbar.getWorkflowTab(tabName)
+    await tab.click()
+    await expect(tab.and(topbar.getActiveTab())).toBeVisible()
     await this.waitForWorkflowIdle()
   }
 
