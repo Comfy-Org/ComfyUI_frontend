@@ -1,7 +1,7 @@
 import { omit } from 'es-toolkit'
 import { z } from 'zod'
 
-import { AGENT_INSTRUCTIONS } from './agentPrompt'
+import { AGENT_INSTRUCTIONS, THINKING_GUIDANCE } from './agentPrompt'
 import { agentReplySchema, answerableNotes } from './agentReply'
 import type {
   AgentRequest,
@@ -284,14 +284,14 @@ export function buildChatBody(
   const workflow = describeWorkflow(nodes, request)
   const history = describeHistory(request.history)
   const schema = replyJsonSchema()
+  const instructions = [
+    AGENT_INSTRUCTIONS,
+    ...(model.briefThinking ? [THINKING_GUIDANCE] : []),
+    ...(model.showThinking ? [replyFormatInstructions(schema)] : [])
+  ]
   return {
     messages: [
-      {
-        role: 'system',
-        content: model.showThinking
-          ? `${AGENT_INSTRUCTIONS}\n\n${replyFormatInstructions(schema)}`
-          : AGENT_INSTRUCTIONS
-      },
+      { role: 'system', content: instructions.join('\n\n') },
       {
         role: 'user',
         content: JSON.stringify({

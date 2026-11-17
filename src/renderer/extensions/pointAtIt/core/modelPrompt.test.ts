@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { AGENT_INSTRUCTIONS } from './agentPrompt'
+import { AGENT_INSTRUCTIONS, THINKING_GUIDANCE } from './agentPrompt'
 import type {
   AgentRequest,
   HistoryFollowUp,
@@ -135,6 +135,59 @@ describe('buildChatBody', () => {
     })
   })
 
+  it('CP-54: a message pinned on nothing is sent as it is, and the instructions say a reply with no target is fine', () => {
+    const message: AgentRequest = {
+      kind: 'batch',
+      requestId: 'request-1',
+      annotations: [{ id: 'comment-1', label: '', comment: 'hi', targets: [] }],
+      history: []
+    }
+
+    const body = buildChatBody(message, nodes, pointConfig.model)
+
+    expect(sent(body).comments).toEqual([
+      { id: 'comment-1', pinnedOn: [], label: '', comment: 'hi' }
+    ])
+    expect(body.messages[0].content).toContain('its pinnedOn is an empty list')
+    expect(body.messages[0].content).toContain('"hi"')
+    expect(body.messages[0].content).toContain(
+      'A reply with target null is fine'
+    )
+  })
+
+  it('CP-93: the instructions tell it to take the person through the workflow when asked to explain it: a lead-in with no target, the key nodes in the order the data flows, nothing changed', () => {
+    const instructions = buildChatBody(request, nodes, pointConfig.model)
+      .messages[0].content
+
+    expect(instructions).toContain('answer with a tour')
+    expect(instructions).toContain('First stop: target null')
+    expect(instructions).toContain(
+      'one stop per key node, in the order the data flows'
+    )
+    expect(instructions).toContain(
+      'no offerEdit, no waitFor and no closing run step'
+    )
+  })
+
+  it('CP-54: when nothing is pinned the workflow is cut down in its own order', () => {
+    const message: AgentRequest = {
+      kind: 'batch',
+      requestId: 'request-1',
+      annotations: [{ id: 'comment-1', label: '', comment: 'hi', targets: [] }],
+      history: []
+    }
+    const long = manyNodes(40, 'x'.repeat(150))
+
+    const { nodes: kept, cut } = describeWorkflow(long, message, 3000)
+
+    expect(kept.length).toBeGreaterThan(0)
+    expect(kept.length).toBeLessThan(long.length)
+    expect(kept).toMatchObject(
+      long.slice(0, kept.length).map(({ id }) => ({ id }))
+    )
+    expect(cut.at(-1)).toMatch(/nodes left out$/)
+  })
+
   it('T-06: with thinking on, asks for thinking and gives the reply format in the instructions', () => {
     const body = buildChatBody(request, nodes, {
       ...pointConfig.model,
@@ -168,9 +221,114 @@ describe('buildChatBody', () => {
         json_schema: { strict: true, schema: { required: ['steps'] } }
       }
     })
-    expect(body.messages[0].content).toBe(AGENT_INSTRUCTIONS)
+    expect(body.messages[0].content).toBe(
+      `${AGENT_INSTRUCTIONS}\n\n${THINKING_GUIDANCE}`
+    )
     expect(chatBodySchema.safeParse(body).success).toBe(true)
   })
+})
+
+describe('how the model is told to think', () => {
+  const followUpRequest: AgentRequest = {
+    kind: 'followUp',
+    requestId: 'request-2',
+    comment: request.annotations[0],
+    thread: [],
+    followUp: 'and taller?',
+    history: []
+  }
+
+  it('SP-01: with brief thinking on, the instructions say how to think, after how to answer and before the reply format, and the effort and limits stay as set', () => {
+    const model = {
+      ...pointConfig.model,
+      showThinking: true,
+      briefThinking: true
+    }
+
+    const body = buildChatBody(request, nodes, model)
+    const [instructions] = body.messages
+
+    expect(instructions.content.split(THINKING_GUIDANCE)).toHaveLength(2)
+    expect(instructions.content.indexOf(AGENT_INSTRUCTIONS)).toBe(0)
+    expect(instructions.content.indexOf(THINKING_GUIDANCE)).toBeLessThan(
+      instructions.content.indexOf('Reply format')
+    )
+    expect(body).toMatchObject({
+      reasoning: { effort: pointConfig.model.thinkingEffort },
+      max_tokens:
+        pointConfig.model.replyTokens + pointConfig.model.thinkingTokens
+    })
+  })
+
+  it('SP-01: the guidance asks for one decision and one pass, and never for less effort', () => {
+    expect(THINKING_GUIDANCE).toMatch(/first answer that is correct/)
+    expect(THINKING_GUIDANCE).toMatch(/Decide each thing once/)
+    expect(THINKING_GUIDANCE).toMatch(/Write the reply once/)
+    expect(pointConfig.model).toMatchObject({
+      thinkingEffort: 'max',
+      briefThinking: true
+    })
+  })
+
+  it('SP-02: with brief thinking off, that part is left out and nothing else changes', () => {
+    const on = buildChatBody(request, nodes, {
+      ...pointConfig.model,
+      briefThinking: true
+    })
+    const off = buildChatBody(request, nodes, {
+      ...pointConfig.model,
+      briefThinking: false
+    })
+
+    expect(off.messages[0].content).not.toContain(THINKING_GUIDANCE)
+    expect(off.messages[0].content).toBe(
+      on.messages[0].content.replace(`${THINKING_GUIDANCE}\n\n`, '')
+    )
+    expect({ ...off, messages: off.messages.slice(1) }).toEqual({
+      ...on,
+      messages: on.messages.slice(1)
+    })
+  })
+
+  it('SP-03: a follow-up is told to answer in one step, where to point, and when to offer an edit', () => {
+    expect(AGENT_INSTRUCTIONS).toMatch(
+      /Reply with one step that answers everything the message asks/
+    )
+    expect(AGENT_INSTRUCTIONS).toMatch(/Point where your last answer pointed/)
+    expect(AGENT_INSTRUCTIONS).toMatch(/say so and offer nothing/)
+    expect(AGENT_INSTRUCTIONS).toMatch(
+      /annotationId set to thread\.comment\.id/
+    )
+  })
+
+  it.for([
+    { name: 'a Send with brief thinking on', sent: request, brief: true },
+    { name: 'a Send with it off', sent: request, brief: false },
+    { name: 'a follow-up with it on', sent: followUpRequest, brief: true },
+    { name: 'a follow-up with it off', sent: followUpRequest, brief: false }
+  ])(
+    'SP-04: $name is still what the running proxy accepts: two plain text messages',
+    ({ sent, brief }) => {
+      const body = buildChatBody(sent, nodes, {
+        ...pointConfig.model,
+        briefThinking: brief
+      })
+
+      expect(chatBodySchema.safeParse(body).success).toBe(true)
+      expect(body.messages.map((message) => message.role)).toEqual([
+        'system',
+        'user'
+      ])
+      expect(Object.keys(body)).toHaveLength(3)
+      expect(body).toEqual(
+        expect.objectContaining({
+          max_tokens: expect.any(Number),
+          messages: expect.any(Array),
+          reasoning: expect.any(Object)
+        })
+      )
+    }
+  )
 })
 
 describe('describeHistory', () => {

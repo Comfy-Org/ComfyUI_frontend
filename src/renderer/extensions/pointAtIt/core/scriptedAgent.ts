@@ -19,18 +19,24 @@ interface NumberSetting {
   value: number
 }
 
-const ASKS_WHAT = /\bwhat(['’]?s| is| does| are| do)\b|\bexplain\b/
+const ASKS_WHAT =
+  /\bwhat(['’]?s| is| does| are| do)\b|\bexplain\b|\bwalk\b|\btour\b|\bhow (does|do) (this|it|that) work\b/
 const ASKS_SIZE =
   /\b(wider|narrower|taller|shorter|larger|bigger|smaller|size|resolution|width|height)\b/
 const ASKS_HEIGHT = /\b(taller|shorter|height)\b/
 const ASKS_SHRINK = /\b(narrower|shorter|smaller)\b/
 const ASKS_STEPS = /\b(steps?|detail|detailed|faster|quicker|quality)\b/
 const ASKS_FEWER = /\b(fewer|less|lower|reduce|faster|quicker)\b/
+const GREETS = /^\s*(hi|hello|hey|yo)\b/
 
 const SIZE_NODE_TYPE = /Empty.*Latent/i
 const SAMPLER_NODE_TYPE = /KSampler/i
 const SIZE_GRID = 64
 const STEPS_DELTA = 10
+/** Notes and plumbing: nodes a newcomer can skip on a tour. */
+const TOUR_SKIPS = /^(Note|MarkdownNote|Reroute|PrimitiveNode)$/
+/** A tour has at most this many stops, and its last stop is always the end of the chain. */
+const TOUR_STOPS = 6
 const RUN: ReplyAddress = { kind: 'control', control: 'run' }
 
 function numberValue(node: HostNode, name: string): number | undefined {
@@ -148,12 +154,63 @@ function describeElement(
   })
 }
 
-function describe(note: AnnotationNote, nodes: readonly HostNode[]): ReplyStep {
+function whatItIs(label: string, description: string): string {
+  return description
+    ? answers.describe(label, description)
+    : answers.noDescription(label)
+}
+
+/** The nodes in the order the data flows: those nothing feeds into first, the ones that end the chain last. */
+function inFlowOrder(nodes: readonly HostNode[]): HostNode[] {
+  const byId = new Map(nodes.map((node): [string, HostNode] => [node.id, node]))
+  const depths = new Map<string, number>()
+  function depthOf(node: HostNode, path: readonly string[]): number {
+    const known = depths.get(node.id)
+    if (known !== undefined) return known
+    const fed = node.links.flatMap((link) => {
+      const feeder = byId.get(link.from)
+      return feeder && !path.includes(feeder.id)
+        ? [depthOf(feeder, [...path, node.id]) + 1]
+        : []
+    })
+    const depth = Math.max(0, ...fed)
+    depths.set(node.id, depth)
+    return depth
+  }
+  return nodes
+    .map((node) => ({ node, depth: depthOf(node, []) }))
+    .sort((a, b) => a.depth - b.depth)
+    .map(({ node }) => node)
+}
+
+/** A message that asks to explain the workflow, with nothing marked: a lead-in, then one stop per main node. */
+function tour(note: AnnotationNote, nodes: readonly HostNode[]): ReplyStep[] {
+  const main = inFlowOrder(nodes.filter((node) => !TOUR_SKIPS.test(node.type)))
+  if (main.length === 0) return [say(note, answers.emptyWorkflow, null)]
+  const stops =
+    main.length <= TOUR_STOPS
+      ? main
+      : [...main.slice(0, TOUR_STOPS - 1), ...main.slice(-1)]
+  return [
+    say(note, answers.tourLead(stops.length), null),
+    ...stops.map((node) =>
+      say(note, whatItIs(node.title, node.description), {
+        kind: 'node',
+        nodeId: node.id
+      })
+    )
+  ]
+}
+
+function describe(
+  note: AnnotationNote,
+  nodes: readonly HostNode[]
+): ReplyStep[] {
   const target = note.targets.at(0)
-  if (!target || target.kind === 'element')
-    return unanswered(note, answers.noScript)
+  if (!target) return tour(note, nodes)
+  if (target.kind === 'element') return [unanswered(note, answers.noScript)]
   const node = nodes.find((candidate) => candidate.id === target.nodeId)
-  if (!node) return unanswered(note, answers.noScript)
+  if (!node) return [unanswered(note, answers.noScript)]
   const setting =
     target.kind === 'setting'
       ? node.settings.find((candidate) => candidate.name === target.setting)
@@ -161,26 +218,21 @@ function describe(note: AnnotationNote, nodes: readonly HostNode[]): ReplyStep {
   const { label, description } = setting
     ? describedSetting(node, setting)
     : { label: node.title, description: node.description }
-  return say(
-    note,
-    description
-      ? answers.describe(label, description)
-      : answers.noDescription(label),
-    target
-  )
+  return [say(note, whatItIs(label, description), target)]
 }
 
 function answerNote(
   note: AnnotationNote,
   nodes: readonly HostNode[]
-): ReplyStep {
+): ReplyStep[] {
   const pinnedOn = note.targets.at(0)
-  if (pinnedOn?.kind === 'element') return describeElement(note, pinnedOn)
+  if (pinnedOn?.kind === 'element') return [describeElement(note, pinnedOn)]
   const text = note.comment.toLowerCase()
   if (ASKS_WHAT.test(text)) return describe(note, nodes)
-  if (ASKS_SIZE.test(text)) return resize(note, text, nodes)
-  if (ASKS_STEPS.test(text)) return changeSteps(note, text, nodes)
-  return unanswered(note, answers.noScript)
+  if (ASKS_SIZE.test(text)) return [resize(note, text, nodes)]
+  if (ASKS_STEPS.test(text)) return [changeSteps(note, text, nodes)]
+  if (GREETS.test(text)) return [unanswered(note, answers.greeting)]
+  return [unanswered(note, answers.noScript)]
 }
 
 function withRunStep(steps: ReplyStep[]): ReplyStep[] {
@@ -235,7 +287,9 @@ export function answerRequest(
 ): AgentReply {
   const steps =
     request.kind === 'followUp'
-      ? [answerNote({ ...request.comment, comment: request.followUp }, nodes)]
-      : withRunStep(request.annotations.map((note) => answerNote(note, nodes)))
+      ? answerNote({ ...request.comment, comment: request.followUp }, nodes)
+      : withRunStep(
+          request.annotations.flatMap((note) => answerNote(note, nodes))
+        )
   return { steps: options.wrongTarget ? misdirected(steps, nodes) : steps }
 }

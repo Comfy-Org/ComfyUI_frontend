@@ -27,24 +27,55 @@ export const messages = {
   done: 'Done',
   close: 'Close',
   editFailed: 'That setting did not accept the value.',
-  stepOf: (index: number, total: number) =>
-    `${index} of ${total} · Esc to stop`,
+  stepOf: (index: number, total: number) => `${index} of ${total}`,
+  stopHint: 'Esc to stop',
   answersComment: (label: string) => `Answers question · ${label}`,
   trayTitle: 'Questions for the agent',
   annotateTooltip: `Ask the agent about something on the canvas (${keyLabel})`,
-  showPanel: 'Show questions and answers',
-  hidePanel: 'Hide questions and answers',
+  showPanel: 'Show questions',
+  hidePanel: 'Hide questions',
+  questionCount: (count: number) =>
+    count === 1 ? '1 question' : `${count} questions`,
   unsentCount: (count: number) =>
     count === 1 ? '1 unsent question' : `${count} unsent questions`,
-  waitingShort: (seconds: number) => `${seconds} s`,
   noCommentsYet: `No questions yet. Press Ask or ${keyLabel}, then click what you want to ask about.`,
   annotate: 'Ask',
   annotateHint:
     'Click a node, a setting or a part of the interface to ask about it. Esc to leave.',
+  tipsTooltip: `Talk to me (${keyLabel} to point at something)`,
+  tipsLabel: 'Ask me anything',
+  tipsTitle: 'Ask me anything',
+  tipsField: 'Type a message',
+  tipsSend: 'Send message',
+  /** The options on top of her card, which follow what is selected (`cardOptions.ts`); a click sends one at once. */
+  card: {
+    explain: 'Explain this workflow',
+    faster: 'Make it run faster',
+    larger: 'Make the picture larger',
+    whatThisDoes: 'What does this do?',
+    whatNamedDoes: (title: string) => `What does ${title} do?`,
+    settings: 'What do its settings do?',
+    connected: 'How is this connected?',
+    theseConnected: 'How are these connected?',
+    eachOne: 'What does each one do?',
+    start: 'Where do I start?',
+    canDo: 'What can you do?',
+    manyNodes: (count: number) => `${count} nodes`,
+    placeholderWorkflow: 'Ask about this workflow…',
+    placeholderNode: (title: string) => `Ask about ${title}…`,
+    placeholderNodes: 'Ask about these nodes…',
+    placeholderEmpty: 'Ask me how to start…'
+  },
+  /** The icon in the field that starts pointing; its key is in its tooltip. */
+  tipsStart: 'Point at something',
+  /** The key that starts it, shown on the button; it works while no text field has focus. */
+  tipsStartKey: keyLabel,
   commentPlaceholder: 'Your question',
   commentLabel: 'Question',
-  commentHint: (sendKey: string) =>
-    `Enter to add · ${sendKey} to send · Shift+Enter for a new line · Esc to close`,
+  commentHint: (sendKey: string) => `Enter to add · ${sendKey} to send`,
+  pickedCount: (count: number) => `${count} items`,
+  showPicked: 'Show all',
+  hidePicked: 'Hide',
   add: 'Add',
   save: 'Save',
   nothingToSend: 'Nothing to send yet: type a question first.',
@@ -63,7 +94,6 @@ export const messages = {
   clear: 'Clear',
   cancel: 'Cancel',
   retry: 'Retry',
-  waiting: (seconds: number) => `Waiting for the agent · ${seconds} s`,
   notOnScreen: 'not on screen right now',
   targetGoneNote: 'What this question points to is no longer in the workflow.',
   targetHiddenNote: 'What this question points to is not on screen right now.',
@@ -88,7 +118,6 @@ export const messages = {
   startOverKeep: 'Keep',
   noAnswerForComment: 'The agent gave no step for this question.',
   replayTargetGone: 'What this answer pointed at is no longer in the workflow.',
-  replayHint: 'An earlier answer, shown again for reading.',
   threadLabel: 'Thread',
   threadYou: 'You',
   threadAgent: 'Agent',
@@ -105,14 +134,18 @@ export const messages = {
     return `Offered ${JSON.stringify(value)} for ${setting} · ${outcome}`
   },
   followUpLabel: 'Follow up',
+  followUpSend: 'Send follow-up',
   followUpHint: (sendKey: string) =>
     `Enter or ${sendKey} to send · Shift+Enter for a new line`,
-  followUpWaiting: (seconds: number) => `Waiting for the reply · ${seconds} s`,
+  followUpWaiting: 'Waiting for the reply',
   followUpCount: (count: number) =>
     count === 1 ? '1 follow-up' : `${count} follow-ups`,
   thinking: 'Thinking',
+  thinkingTaller: 'Show more of the thinking',
+  thinkingShorter: 'Show less of the thinking',
   showThinking: 'Show the thinking',
   hideThinking: 'Hide the thinking',
+  askThinking: 'Ask: thinking',
   noThinking: 'The model returned no thinking for this request.'
 }
 
@@ -170,10 +203,15 @@ export const answers = {
     'I could not find a node with width and height settings in this workflow.',
   noStepsNode: 'I could not find a node with a steps setting in this workflow.',
   noScript: 'I have no scripted answer for that.',
+  tourLead: (count: number) =>
+    `Let me take you through this workflow in the order the data flows: ${count} main ${count === 1 ? 'node' : 'nodes'}.`,
+  emptyWorkflow:
+    'There is nothing in this workflow yet. Add a node, then ask me again.',
+  greeting: 'Hi! I am the scripted stand-in, so I only know a few things.',
   canAnswer: [
     'The scripted agent can answer:',
     '• make the picture wider, taller, larger or smaller',
     '• more or fewer steps',
-    '• what is this?'
+    '• explain this workflow, or what a node does'
   ].join('\n')
 }
