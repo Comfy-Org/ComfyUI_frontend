@@ -9,6 +9,8 @@ import { expectPngsToMatch } from '@e2e/fixtures/utils/pngComparison'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 import { alignCanvasWithExport } from '@e2e/fixtures/utils/workflowImageExport'
 
+test.use({ launchOptions: { args: ['--disable-lcd-text'] } })
+
 for (const { renderer, tags, workflow, imageCount } of [
   {
     renderer: 'classic',
