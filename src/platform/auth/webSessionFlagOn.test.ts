@@ -17,7 +17,6 @@ import { defineComponent, effectScope } from 'vue'
 import type { Router } from 'vue-router'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
-import type { ComfyApi as ComfyApiClient } from '@comfyorg/api-client/ComfyApi'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
@@ -36,7 +35,6 @@ import {
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import {
   bootCloudIdentity,
@@ -129,29 +127,6 @@ const identity = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/scripts/api'), async () => {
-  const { TestRunner } = await import('vitest')
-  const { ComfyApi } = await import('@comfyorg/api-client/ComfyApi')
-  const { createApi } = await import('@/scripts/createApi')
-  const collectionApi = createApi()
-  const testApis = new WeakMap<object, ComfyApiClient>()
-  function currentApi() {
-    const test = TestRunner.getCurrentTest()
-    if (!test) return collectionApi
-    const existing = testApis.get(test)
-    if (existing) return existing
-    const created = createApi()
-    testApis.set(test, created)
-    return created
-  }
-  return {
-    ComfyApi,
-    get api() {
-      return currentApi()
-    }
-  }
-})
-
 const firebaseSignOut = vi.hoisted(() => vi.fn<() => Promise<void>>())
 const registeredExtensions = vi.hoisted((): ComfyExtension[] => [])
 
@@ -206,14 +181,13 @@ useExtensionService().registerExtension(cloudSessionCookieExtension)
 const { createAppRouter } = await import('@/router')
 const it = baseIt.extend<{ router: Router }>({
   router: async ({}, use) => {
-    await use(await createAppRouter())
+    const router = await createAppRouter()
+    await use(router)
+    router.options.history.destroy()
   }
 })
 
-beforeEach(() => {
-  installCloudApiAuth()
-})
-
+installCloudApiAuth()
 installWorkspaceApiAuth()
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
@@ -245,12 +219,6 @@ type ServerSession =
   | 'restore_token_revoked'
   | 'sso_required'
   | { userId: string; provider?: string; email?: string }
-
-interface FeatureAnswers {
-  probe: boolean
-  anonymous: boolean
-  credentialed: boolean
-}
 
 interface SessionRequest {
   method: string
@@ -292,8 +260,7 @@ function sessionBody(
 
 function installServer(
   initial: ServerSession,
-  features: Record<string, boolean> = {},
-  answers?: FeatureAnswers
+  features: Record<string, boolean> = {}
 ) {
   const server = {
     session: initial,
@@ -304,10 +271,6 @@ function installServer(
       authorization: string | null
       client: string | null
       csrf: string | null
-    }[],
-    featureReads: [] as {
-      credentials: RequestCredentials | null
-      client: string | null
     }[]
   }
 
@@ -363,26 +326,10 @@ function installServer(
     return jsonResponse({ revoked: 2 })
   }
 
-  const answerFeatures = (init: RequestInit | undefined): Response => {
-    const client = new Headers(init?.headers).get('x-comfy-client')
-    const credentials = init?.credentials ?? null
-    server.featureReads.push({ credentials, client })
-    if (!answers)
-      return jsonResponse({ unified_web_session: true, ...features })
-    const credentialed = client !== null && credentials === 'include'
-    return jsonResponse({
-      ...features,
-      unified_web_session: credentialed
-        ? answers.credentialed
-        : answers.anonymous,
-      ...(answers.probe && !credentialed && { web_session_probe: true })
-    })
-  }
-
   vi.mocked(fetch).mockImplementation(async (input, init) => {
     const url = new URL(String(input), location.href)
     const method = (init?.method ?? 'GET').toUpperCase()
-    if (url.pathname === '/api/features') return answerFeatures(init)
+    if (url.pathname === '/api/features') return jsonResponse(features)
     if (url.pathname === '/api/auth/sessions/revoke-all') {
       return answerRevokeAll(init)
     }
@@ -420,7 +367,7 @@ function wireSessionCookieExtension() {
 const methodsOf = (requests: SessionRequest[]) =>
   requests.map(({ method }) => method)
 
-describe('cloud app on the shared web session (unified_web_session on)', () => {
+describe('cloud app on the shared web session', () => {
   let hooks: ReturnType<typeof effectScope> | undefined
 
   beforeEach(() => {
@@ -428,6 +375,7 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -873,9 +821,7 @@ function installIngest(features: Record<string, boolean> = {}) {
 
   vi.mocked(fetch).mockImplementation(async (input, init) => {
     const request = recordApiRequest(input, init)
-    if (request.path === '/api/features') {
-      return jsonResponse({ unified_web_session: true, ...features })
-    }
+    if (request.path === '/api/features') return jsonResponse(features)
     ingest.requests.push(request)
     if (request.path === '/api/auth/token' && ingest.mintGate) {
       ingest.heldMints += 1
@@ -939,6 +885,7 @@ describe('cloud API requests on the shared web session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -1166,6 +1113,7 @@ describe('workspace API and global settings on the shared web session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -1726,6 +1674,7 @@ describe('comfy-api calls on the shared web session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -2035,6 +1984,7 @@ describe('billing SDK rails on a tab that arrived by session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -2152,6 +2102,7 @@ describe('the Run token on the shared web session', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -2455,6 +2406,7 @@ describe('a sibling tab on the unified Cloud JWT', () => {
     identity.reset()
     openChannels.clear()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
     vi.stubGlobal('BroadcastChannel', InMemoryChannel)
     vi.spyOn(navigator, 'locks', 'get').mockReturnValue(followerLocks)
   })
@@ -2483,21 +2435,6 @@ describe('a sibling tab on the unified Cloud JWT', () => {
     expect(firebaseExchanges()).toEqual([])
   })
 
-  it('still mints at login and adopts the sibling token with the web session off', async () => {
-    await bootOnSession({
-      unified_web_session: false
-    })
-    const workspaceAuth = useWorkspaceAuthStore()
-
-    await vi.waitFor(() =>
-      expect(workspaceAuth.getUnifiedToken()).toBeDefined()
-    )
-    publishFromSibling()
-
-    expect(firebaseExchanges()).toHaveLength(1)
-    expect(workspaceAuth.currentWorkspace?.id).toBe('ws-personal')
-    expect(workspaceAuth.getUnifiedToken()).toBe('sibling-jwt')
-  })
   it('drops the fallback credential once the session signs the tab in, so a sibling token cannot move its Run', async () => {
     const ingest = installIngest()
     ingest.sessionMissing = true
@@ -2562,6 +2499,7 @@ describe('billing on a tab that arrived by session', () => {
   beforeEach(() => {
     identity.reset()
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -2680,6 +2618,7 @@ describe('a tab that arrived on the session with no Firebase login', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   it('takes its identity from the session', async () => {
@@ -2758,6 +2697,7 @@ describe('booting the cloud identity from the session', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   it('signs in on the session alone', async () => {
@@ -2859,44 +2799,6 @@ describe('booting the cloud identity from the session', () => {
     expect(outcome).toBe('signed_in')
     expect(authStore.currentUser).toBeNull()
     expect(authStore.userId).toBe('user-a')
-  })
-
-  it.for([
-    {
-      name: 'the credentialed read turns an anonymous false on',
-      answers: { probe: true, anonymous: false, credentialed: true },
-      enabled: true,
-      reads: 2
-    },
-    {
-      name: 'a credentialed read that comes back false (untrusted origin) stays off',
-      answers: { probe: true, anonymous: false, credentialed: false },
-      enabled: false,
-      reads: 2
-    },
-    {
-      name: 'no probe means the one anonymous read and nothing else',
-      answers: { probe: false, anonymous: false, credentialed: true },
-      enabled: false,
-      reads: 1
-    }
-  ])('unified_web_session: $name', async ({ answers, enabled, reads }) => {
-    const server = installServer({ userId: 'user-a' }, {}, answers)
-    await refreshRemoteConfig({ useAuth: false })
-    useAuthStore()
-    identity.resolve(null)
-
-    await expect(cloudSignIn()).resolves.toBe(
-      enabled ? 'signed_in' : 'signed_out'
-    )
-
-    expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(enabled)
-    expect(server.featureReads).toHaveLength(reads)
-    expect(server.featureReads.slice(1)).toEqual(
-      reads === 2 ? [{ credentials: 'include', client: COMFY_CLIENT }] : []
-    )
-    expect(server.featureReads[0].client).toBeNull()
-    expect(methodsOfServer(server)).toEqual(enabled ? ['GET'] : [])
   })
 
   it('holds a request while the session read is retrying, then sends it on the session', async () => {
@@ -3219,6 +3121,7 @@ describe('signing in again after a sign-out', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {
@@ -3302,26 +3205,6 @@ describe('signing in again after a sign-out', () => {
     expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
   })
 
-  it('carries a sign-in made while the flag read false to the reload where it reads true', async () => {
-    const features = {
-      unified_web_session: false
-    }
-    const server = installServer('revoked', features)
-    const loginPage = createDisposablePinia()
-    pages.push(loginPage)
-    setActivePinia(loginPage.pinia)
-    await refreshRemoteConfig({ useAuth: false })
-    await useAuthStore().login('user-a@example.com', 'password')
-    features.unified_web_session = true
-    await refreshRemoteConfig({ useAuth: false })
-    server.requests.length = 0
-
-    await startPage(USER_A)
-
-    expect(methodsSince(server)).toEqual(['POST', 'GET', 'GET'])
-    expect(await webSessionSend()).toBeDefined()
-  })
-
   it('rejects a marker stamped in the future', () => {
     markInteractiveSignIn('user-a')
     vi.setSystemTime(Date.now() - 60_000)
@@ -3350,6 +3233,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
     assign = vi.fn<(url: string | URL) => void>()
     vi.spyOn(window.location, 'assign').mockImplementation(assign)
   })
@@ -3535,7 +3419,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
       expect(readSsoHint()).toEqual(hint)
     })
 
-    it('with the flag off an SSO session leaves nothing', async ({
+    it('with sso_enabled off an SSO session leaves nothing', async ({
       router
     }) => {
       await loadPage(router, SSO_SESSION, false)
@@ -3577,7 +3461,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     expect(landings).toEqual([])
   })
 
-  it('with the flag off sends that tab to the plain login page', async ({
+  it('with sso_enabled off sends that tab to the plain login page', async ({
     router
   }) => {
     const landings = await inAppThenLapsed(router, false)
@@ -3708,6 +3592,7 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   it.for<{
@@ -3866,6 +3751,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
     vi.spyOn(api, 'resetSocket').mockResolvedValue()
+    vi.spyOn(api, 'reconnectSocket').mockResolvedValue()
   })
 
   afterEach(() => {

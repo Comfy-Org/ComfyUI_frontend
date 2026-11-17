@@ -2,8 +2,6 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
-
 import { api } from '@/scripts/api'
 
 import {
@@ -14,17 +12,6 @@ import {
 import { useRemoteConfigStore } from './remoteConfigStore'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@comfyorg/account-core/webSessionFlag'))
-
-const distribution = vi.hoisted(() => ({ isCloud: false }))
-vi.mock(import('@/platform/distribution/types'), () => ({
-  DISTRIBUTION: 'localhost' as const,
-  get isCloud() {
-    return distribution.isCloud
-  },
-  isDesktop: false,
-  isNightly: false
-}))
 
 function deferred<T>() {
   let resolve: (value: T) => void = () => {}
@@ -74,7 +61,6 @@ describe('refreshRemoteConfig', () => {
   }
 
   beforeEach(() => {
-    distribution.isCloud = false
     vi.mocked(api.apiURL).mockImplementation(
       (route: string) => `/ComfyUI/api${route}`
     )
@@ -346,31 +332,6 @@ describe('refreshRemoteConfig', () => {
       expect(store.authenticatedLoadState).toBe('unloaded')
       expect(store.loadState).toBe('anonymous')
     })
-
-    it.for([
-      { invalidated: false, expected: true },
-      { invalidated: true, expected: undefined }
-    ])(
-      'applies the credentialed web-session answer unless invalidated first ($invalidated)',
-      async ({ invalidated, expected }) => {
-        distribution.isCloud = true
-        const answer = deferred<boolean>()
-        vi.mocked(resolveUnifiedWebSession).mockReturnValue(answer.promise)
-        vi.mocked(global.fetch).mockResolvedValue(
-          mockSuccessResponse({ web_session_probe: true })
-        )
-
-        const refresh = refreshRemoteConfig({ useAuth: false })
-        await vi.waitFor(() =>
-          expect(resolveUnifiedWebSession).toHaveBeenCalledOnce()
-        )
-        if (invalidated) invalidateRemoteConfig()
-        answer.resolve(true)
-        await refresh
-
-        expect(useRemoteConfigStore().config.unified_web_session).toBe(expected)
-      }
-    )
 
     it('does not erase authenticated config or its grant on an anonymous 401', async () => {
       const existingConfig = {

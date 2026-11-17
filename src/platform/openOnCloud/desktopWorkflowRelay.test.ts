@@ -62,10 +62,8 @@ describe(handleDesktopWorkflowHandoff, () => {
   beforeEach(() => {
     openAt('http://127.0.0.1:8000/')
     api.user = 'desktop-user'
-    vi.mocked(fetch).mockImplementation(async () =>
-      Response.json({ open_on_cloud_enabled: true })
-    )
-    useRemoteConfigStore().acceptConfig({}, false)
+    vi.mocked(fetch).mockImplementation(async () => Response.json({}))
+    useRemoteConfigStore().acceptConfig({ open_on_cloud_enabled: true }, false)
   })
 
   it('lets the editor boot when the URL carries no relay', async () => {
@@ -140,6 +138,31 @@ describe(handleDesktopWorkflowHandoff, () => {
       expect.anything(),
       expect.objectContaining({ overwrite: false })
     )
+  })
+
+  it('forwards an already staged transfer from a signed-out browser', async () => {
+    const { relay, record } = await stagedRelay()
+    useRemoteConfigStore().acceptConfig({}, false)
+    openAt(relay)
+    const replace = relayed()
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(true)
+
+    expect(replace).toHaveBeenCalledExactlyOnceWith(record.destination)
+    expect(fetch).toHaveBeenCalledExactlyOnceWith(
+      '/api/features',
+      expect.objectContaining({ cache: 'no-store' })
+    )
+  })
+
+  it('does not stage a transfer when the toolbar is disabled', async () => {
+    useRemoteConfigStore().acceptConfig({ open_on_cloud_enabled: false }, false)
+
+    await expect(
+      stageDesktopWorkflowHandoff('portrait', defaultGraph)
+    ).resolves.toBeUndefined()
+
+    expect(api.storeUserData).not.toHaveBeenCalled()
   })
 
   it('accepts the staged Cloud origin after reading the relay server features', async () => {

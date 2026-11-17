@@ -8,6 +8,7 @@ import {
   showsCloudBillingNewUxOnLocal
 } from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
+import { localOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -48,7 +49,7 @@ function resolveFlag<T>(
  */
 function resolveStrictBooleanFlag(
   flagKey: string,
-  remoteConfigValue: boolean | undefined
+  remoteConfigValue: unknown
 ): boolean {
   try {
     return resolveFlag<unknown>(flagKey, remoteConfigValue, false) === true
@@ -218,19 +219,24 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get openOnCloudEnabled() {
-      return resolveFlag(
+      const served = isCloud
+        ? remoteConfig().open_on_cloud_enabled
+        : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ??
+          remoteConfig().open_on_cloud_enabled)
+      return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
-        remoteConfig().open_on_cloud_enabled,
-        import.meta.env.DEV
+        served
       )
     },
     get openOnCloudUseLocalAgentEnabled() {
-      return (
-        resolveFlag<unknown>(
-          ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
-          remoteConfig().open_on_cloud_use_local_agent_enabled,
-          false
-        ) === true
+      const served = isCloud
+        ? remoteConfig().open_on_cloud_use_local_agent_enabled
+        : (localOpenOnCloudRollout.value
+            ?.open_on_cloud_use_local_agent_enabled ??
+          remoteConfig().open_on_cloud_use_local_agent_enabled)
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,
+        served
       )
     },
     get deployToCloud() {
@@ -297,16 +303,6 @@ export function useFeatureFlags() {
         ServerFeatureFlag.SHOW_SIGNIN_BUTTON,
         undefined
       )
-    },
-    get unifiedWebSessionEnabled() {
-      if (!isCloud) return false
-
-      const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
-      const value =
-        getSessionOverride<unknown>(key) ??
-        getDevOverride<unknown>(key) ??
-        remoteConfig().unified_web_session
-      return value === true
     },
     get webSessionLapseRecoveryEnabled() {
       return resolveFlag(
@@ -459,7 +455,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
-      [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
       [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED]:
         flags.webSessionLapseRecoveryEnabled,

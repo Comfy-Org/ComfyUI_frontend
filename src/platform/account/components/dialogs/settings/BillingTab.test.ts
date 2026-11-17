@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -19,6 +19,7 @@ import type {
 
 import { i18n } from '@/i18n'
 import enMessages from '@/locales/en/main.json'
+import { onBillingRefresh } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
@@ -276,7 +277,20 @@ function arrange(scenario: Scenario = {}) {
     })
   )
 
-  render(BillingTab, {
+  const { unmount } = mountBillingTab()
+
+  return {
+    initialize,
+    refresh,
+    fetchStatus,
+    resubscribe,
+    manageSubscription,
+    unmount
+  }
+}
+
+function mountBillingTab() {
+  return render(BillingTab, {
     global: {
       plugins: [
         createI18n({
@@ -287,8 +301,6 @@ function arrange(scenario: Scenario = {}) {
       ]
     }
   })
-
-  return { initialize, refresh, fetchStatus, resubscribe, manageSubscription }
 }
 
 describe('BillingTab', () => {
@@ -2380,4 +2392,144 @@ describe('BillingTab refresh on return', () => {
 
     expect(refresh).toHaveBeenCalledOnce()
   })
+
+  it('re-reads plan, balance and capabilities once when the user returns to the tab on Cloud', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    const { refresh } = arrange()
+    const readAccount = vi.fn()
+    onTestFinished(onBillingRefresh(readAccount))
+
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(readAccount).toHaveBeenCalledExactlyOnceWith('account')
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('reads nothing on a return to the Cloud tab before billing has initialized', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    const readAccount = vi.fn()
+    onTestFinished(onBillingRefresh(readAccount))
+    const { refresh } = arrange({ isInitialized: false })
+
+    window.dispatchEvent(new Event('blur'))
+    window.dispatchEvent(new Event('focus'))
+
+    expect(readAccount).not.toHaveBeenCalled()
+    expect(refresh).not.toHaveBeenCalled()
+  })
+})
+
+describe('BillingTab reopened on Cloud after the plan changed elsewhere', () => {
+  const yearly: SubscriptionInfo = {
+    ...activeSubscription,
+    duration: 'ANNUAL',
+    planSlug: 'pro-yearly'
+  }
+
+  function openThenClose(changedElsewhere: Scenario) {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    const served = reactive<Scenario>({
+      subscription: yearly,
+      canReactivate: true,
+      canRevertScheduledChange: true
+    })
+    const { unmount } = arrange(served)
+    unmount()
+    const settles: Array<(read: 'served' | 'failed') => void> = []
+    onTestFinished(
+      onBillingRefresh(
+        () =>
+          new Promise<void>((resolve, reject) => {
+            settles.push((read) => {
+              if (read === 'failed') return reject(new Error('offline'))
+              Object.assign(served, changedElsewhere)
+              resolve()
+            })
+          })
+      )
+    )
+    const settleRead = async (read: 'served' | 'failed') => {
+      settles.forEach((settle) => settle(read))
+      await nextTick()
+      await nextTick()
+    }
+    return { settleRead }
+  }
+
+  const cancelScheduled: Scenario = {
+    subscription: {
+      ...yearly,
+      isCancelled: true,
+      endDate: '2026-10-28T00:00:00Z'
+    },
+    subscriptionStatus: 'canceled'
+  }
+
+  it('shows the plan ending with Resume plan on the banner and the plan row once the re-read lands', async () => {
+    const { settleRead } = openThenClose(cancelScheduled)
+
+    mountBillingTab()
+    await settleRead('served')
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your Pro plan ends on October 28, 2026'
+    )
+    expect(screen.getAllByRole('button', { name: 'Resume plan' })).toHaveLength(
+      2
+    )
+  })
+
+  it('shows a change scheduled elsewhere with Stay on plan', async () => {
+    const { settleRead } = openThenClose({
+      subscription: {
+        ...yearly,
+        scheduledChange: {
+          plan_slug: 'creator-yearly',
+          effective_at: '2026-10-28T00:00:00Z',
+          team_credit_stop: null
+        }
+      }
+    })
+
+    mountBillingTab()
+    await settleRead('served')
+
+    expect(
+      within(screen.getByTestId('billing-plan-row')).getByRole('button', {
+        name: 'Stay on Pro'
+      })
+    ).toBeVisible()
+  })
+
+  it.for(['pending', 'failed'] as const)(
+    'keeps the plan it already showed while the re-read is %s',
+    async (read) => {
+      const { settleRead } = openThenClose(cancelScheduled)
+
+      mountBillingTab()
+      await (read === 'failed' ? settleRead('failed') : nextTick())
+
+      expect(
+        within(screen.getByTestId('billing-plan-row')).getByRole('link', {
+          name: 'Manage'
+        })
+      ).toBeVisible()
+      expect(
+        screen.queryByTestId('billing-plan-skeleton')
+      ).not.toBeInTheDocument()
+      expect(screen.queryByTestId('billing-load-error')).not.toBeInTheDocument()
+    }
+  )
 })

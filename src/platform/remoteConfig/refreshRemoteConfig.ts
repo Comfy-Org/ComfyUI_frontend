@@ -1,9 +1,6 @@
 import { delay } from 'es-toolkit'
 
-import { resolveUnifiedWebSession } from '@comfyorg/account-core/webSessionFlag'
-
 import { hasServerFirebaseConfig } from '@/config/firebase'
-import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
@@ -60,24 +57,6 @@ async function fetchRemoteConfig(
   return { response, authenticated }
 }
 
-/**
- * The anonymous document answers `unified_web_session` false for a cookie-only
- * caller; only a credentialed read that names its client is authoritative.
- */
-async function readCredentialedWebSessionFlag(
-  config: Record<string, unknown>,
-  generation: number
-): Promise<void> {
-  if (!isCloud || config.web_session_probe !== true) return
-  const enabled = await resolveUnifiedWebSession({
-    cloudBaseUrl: window.location.origin,
-    fetchImpl: (...args) => fetch(...args),
-    probe: async () => true
-  })
-  if (generation !== refreshGeneration) return
-  useRemoteConfigStore().acceptUnifiedWebSession(enabled)
-}
-
 /** Loads `/features` into the remote config store, anonymously or with auth. */
 export async function refreshRemoteConfig(
   options: RefreshRemoteConfigOptions = {}
@@ -123,7 +102,6 @@ export async function refreshRemoteConfig(
       }
       authenticatedLoadingGeneration = undefined
       store.acceptConfig(config, useAuth)
-      if (!useAuth) await readCredentialedWebSessionFlag(config, generation)
       return
     }
     console.warn('Failed to load remote config:', response.statusText)

@@ -62,6 +62,7 @@ interface BadgeEndpoint {
   color: string
   width: number
   layers: number
+  socketKey: string
   memberOfStack?: string
   hitArea: BadgeHitArea
   tip: Point
@@ -70,6 +71,10 @@ interface BadgeEndpoint {
 const endpointsByHost = new WeakMap<object, BadgeEndpoint[]>()
 const expandedStacksByHost = new WeakMap<object, Set<string>>()
 const drawnStackKeysByHost = new WeakMap<object, Set<string>>()
+const lastStackToggleByHost = new WeakMap<
+  object,
+  { stackKey: string; timeStamp: number }
+>()
 
 export function clearLinkBadgeHitAreas(host: object): void {
   endpointsByHost.delete(host)
@@ -100,16 +105,49 @@ export function queryLinkBadgeAtPoint(
   return hit && !hit.stackKey ? hit.linkIds[0] : undefined
 }
 
-export function toggleLinkBadgeStack(host: object, stackKey: string): void {
+/** Expands or collapses a stack, remembering the press at `timeStamp` that did it. */
+export function toggleLinkBadgeStack(
+  host: object,
+  stackKey: string,
+  timeStamp = -Infinity
+): void {
   const expanded = expandedStacksByHost.get(host) ?? new Set<string>()
   if (!expanded.delete(stackKey)) expanded.add(stackKey)
   expandedStacksByHost.set(host, expanded)
+  lastStackToggleByHost.set(host, { stackKey, timeStamp })
+}
+
+/** The hit area of the stack that the press at `timeStamp` expanded or collapsed. */
+export function queryLinkBadgeStackToggledAt(
+  host: object,
+  timeStamp: number | undefined
+): Readonly<BadgeHitArea> | undefined {
+  const last = lastStackToggleByHost.get(host)
+  if (timeStamp === undefined || last?.timeStamp !== timeStamp) return
+  return endpointsByHost
+    .get(host)
+    ?.find(({ hitArea }) => hitArea.stackKey === last.stackKey)?.hitArea
+}
+
+/** Keeps a stack expanded under the key its links get when they all take `label`. */
+export function relabelExpandedLinkBadgeStack(
+  host: object,
+  stackKey: string,
+  label: string
+): void {
+  const expanded = expandedStacksByHost.get(host)
+  const head = endpointsByHost
+    .get(host)
+    ?.find(({ hitArea }) => hitArea.stackKey === stackKey)
+  if (!head || !expanded?.delete(stackKey)) return
+  expanded.add(labelledStackKey(head.socketKey, label.trim()))
 }
 
 /** Collapses every expanded stack on the host; returns whether one was on screen. */
 export function collapseLinkBadgeStacks(host: object): boolean {
   const expanded = expandedStacksByHost.get(host)
   expandedStacksByHost.delete(host)
+  lastStackToggleByHost.delete(host)
   const drawn = drawnStackKeysByHost.get(host)
   return [...(expanded ?? [])].some((stackKey) => drawn?.has(stackKey))
 }
@@ -189,16 +227,29 @@ function socketOf(link: LLink, side: BadgeSide) {
     : { nodeId: link.target_id, slot: link.target_slot }
 }
 
-function stackKeyOf(
-  { link, presentation }: HiddenLinkBadge,
+function socketKeyOf(
+  { link }: HiddenLinkBadge,
   side: BadgeSide,
   graphId: string | undefined
 ): string {
   const { nodeId, slot } = socketOf(link, side)
-  const label = presentation.label?.trim()
   const socketKey = `${side}:${nodeId}:${slot}`
-  const groupKey = label ? `${socketKey}=${JSON.stringify(label)}` : socketKey
-  return graphId ? `${graphId}/${groupKey}` : groupKey
+  return graphId ? `${graphId}/${socketKey}` : socketKey
+}
+
+function labelledStackKey(socketKey: string, label: string | undefined) {
+  return label ? `${socketKey}=${JSON.stringify(label)}` : socketKey
+}
+
+function stackKeyOf(
+  hidden: HiddenLinkBadge,
+  side: BadgeSide,
+  graphId: string | undefined
+): string {
+  return labelledStackKey(
+    socketKeyOf(hidden, side, graphId),
+    hidden.presentation.label?.trim()
+  )
 }
 
 function isUnlabelled({ presentation }: HiddenLinkBadge): boolean {
@@ -234,6 +285,7 @@ interface EndpointSpec {
   text: string
   color: string
   linkIds: readonly LinkId[]
+  socketKey: string
   stackKey?: string
   memberOfStack?: string
   layers?: number
@@ -244,7 +296,7 @@ function createBadgeEndpoint(
   spec: EndpointSpec
 ): BadgeEndpoint {
   const { link, side, rank, socket, text, color, linkIds, stackKey } = spec
-  const { groupOrder, memberOfStack } = spec
+  const { groupOrder, memberOfStack, socketKey } = spec
   const layers = spec.layers ?? 0
   const badge = makeBadge(text, color)
   const width = badge.getWidth(ctx)
@@ -263,6 +315,7 @@ function createBadgeEndpoint(
     color,
     width,
     layers,
+    socketKey,
     memberOfStack,
     hitArea: {
       linkIds,
@@ -353,7 +406,8 @@ export function layoutHiddenLinkBadges(
       rank: isUnlabelled(hidden) ? BADGE_RANK.unlabelled : BADGE_RANK.labelled,
       groupOrder: stacks.get(stackKey)?.[0] ?? link.id,
       text: linkBadgeText(link.type, presentation),
-      linkIds: [link.id]
+      linkIds: [link.id],
+      socketKey: socketKeyOf(hidden, side, graphId)
     }
     if (!stacks.has(stackKey)) return addEndpoint(spec)
     const head = stackHead(spec, stackKey)

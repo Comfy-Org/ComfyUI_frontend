@@ -121,9 +121,6 @@
       "path": "src/platform/auth/unified/**"
     },
     {
-      "path": "src/platform/auth/webSessionFlagOff.test.ts"
-    },
-    {
       "path": "src/platform/auth/webSessionFlagOn.test.ts"
     },
     {
@@ -222,7 +219,6 @@
         "src/platform/auth/session/useSessionCookie.test.ts",
         "src/platform/auth/session/components/SessionReconnecting.test.ts",
         "src/platform/auth/webSessionFlagOn.test.ts",
-        "src/platform/auth/webSessionFlagOff.test.ts",
         "src/platform/auth/nonWebClientsStayOnTokens.test.ts",
         "src/platform/auth/sso/ssoRequired.test.ts",
         "src/platform/auth/sso/ssoRequiredInline.test.ts",

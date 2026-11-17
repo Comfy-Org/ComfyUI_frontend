@@ -100,10 +100,6 @@ export const useRemoteConfigStore = defineStore('remoteConfig', () => {
     grantAgentForSession(next['agent-in-app-experience'] === true)
   }
 
-  function acceptUnifiedWebSession(enabled: boolean): void {
-    publishConfig({ ...config.value, unified_web_session: enabled })
-  }
-
   function failLoad(authenticated: boolean, status?: number): void {
     const identityRejected = authenticated && (status === 401 || status === 403)
     errorStatus.value = identityRejected ? status : null
@@ -149,7 +145,6 @@ export const useRemoteConfigStore = defineStore('remoteConfig', () => {
     beginAuthenticatedLoad,
     abandonAuthenticatedLoad,
     acceptConfig,
-    acceptUnifiedWebSession,
     failLoad,
     invalidate
   }
