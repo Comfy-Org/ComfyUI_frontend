@@ -132,25 +132,21 @@ test.describe(
     test('Promoting the saved image onto both copies of a subgraph shows each copy its own image', async ({
       comfyPage
     }) => {
-      const filenamePrefixOnly = {
-        properties: {
-          proxyWidgets: [['10', 'filename_prefix']],
-          previewExposures: []
-        }
-      }
       await comfyPage.workflow.loadWorkflow(
-        'subgraphs/shared-definition-two-hosts-save-image',
-        {
-          nodes: { [HOST_A]: filenamePrefixOnly, [HOST_B]: filenamePrefixOnly }
-        }
+        'subgraphs/shared-definition-two-hosts-save-image'
       )
       const { editor } = comfyPage.subgraph
       for (const host of [HOST_A, HOST_B]) {
-        await editor.togglePromotion(comfyPage.vueNodes.getNodeLocator(host), {
-          nodeId: '10',
-          widgetName: '$$canvas-image-preview',
-          toState: true
-        })
+        for (const toState of [false, true]) {
+          await editor.togglePromotion(
+            comfyPage.vueNodes.getNodeLocator(host),
+            {
+              nodeId: '10',
+              widgetName: '$$canvas-image-preview',
+              toState
+            }
+          )
+        }
       }
 
       await comfyPage.runButton.click()
