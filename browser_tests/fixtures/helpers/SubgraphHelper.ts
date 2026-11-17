@@ -379,12 +379,17 @@ export class SubgraphHelper {
     )
 
     const slot = await interiorNode.getInput(slotIndex)
-    await slot.removeLinks()
-    await this.comfyPage.nextFrame()
-    await slot.expectLinkCount(0, 'Interior link should be detached')
+    await this.page.evaluate(() => window.app!.canvas.emitBeforeChange())
+    try {
+      await slot.removeLinks()
+      await this.comfyPage.nextFrame()
+      await slot.expectLinkCount(0, 'Interior link should be detached')
 
-    await this.connectFromInput(interiorNode, slotIndex, inputName)
-    await slot.expectLinkCount(1, 'Interior link should be restored')
+      await this.connectFromInput(interiorNode, slotIndex, inputName)
+      await slot.expectLinkCount(1, 'Interior link should be restored')
+    } finally {
+      await this.page.evaluate(() => window.app!.canvas.emitAfterChange())
+    }
   }
 
   async promoteWidget(nodeLocator: Locator, widgetName: string): Promise<void> {
