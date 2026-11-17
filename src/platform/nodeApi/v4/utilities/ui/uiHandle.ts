@@ -3,6 +3,7 @@ import type { UiHandle } from '@/platform/nodeApi/v4/types'
 
 import { createBadgeSlot, createButtonSlot } from './chromeItems'
 import { showDialog } from './dialogs'
+import { createGraphOverlays } from './graphOverlays'
 import { showMenu } from './menus'
 import { prompt } from './prompts'
 import { addSidebarTab } from './sidebarTabs'
@@ -19,7 +20,8 @@ export function createUi(canvas: () => CanvasSource | undefined) {
     showDialog,
     showMenu,
     prompt,
-    mountViewportPanel: createViewportPanels(canvas)
+    mountViewportPanel: createViewportPanels(canvas),
+    mountGraphOverlay: createGraphOverlays(canvas)
   }
   return {
     ui: Object.freeze(ui),

@@ -1520,6 +1520,8 @@ export interface UiHandle {
   prompt(prompt: PromptDef): Promise<string | undefined>
   /** Mounts a panel over the graph view. `undefined` before the app has a graph view. */
   mountViewportPanel(panel: ViewportPanelDef): ViewportPanelHandle | undefined
+  /** Mounts a canvas over the graph, on the graph view once the app has one. An id already mounted throws. */
+  mountGraphOverlay(overlay: GraphOverlayDef): GraphOverlayHandle
 }
 
 export interface SidebarTabDef {
@@ -1699,4 +1701,78 @@ export interface SystemMonitorAccelerator {
   readonly utilization_percent: number | null
   /** `null`: the backend reports no temperature. */
   readonly temperature_c: number | null
+}
+
+/** A canvas over the graph and its nodes, below the viewport panels. Points are viewport pixels from its top left. */
+export interface GraphOverlayDef {
+  /** Unique among mounted overlays: `MyPack.notes`. */
+  readonly id: string
+  /** The overlay's accessible name. */
+  readonly ariaLabel: string
+  /** Defaults to `true`. */
+  readonly visible?: boolean
+  /** Takes the pointer in its hit regions, and keys while it has focus. Defaults to `false`. */
+  readonly interactive?: boolean
+  /** Draws on a cleared canvas after each frame the graph draws, and after `redraw()`, while visible. */
+  draw(
+    context: CanvasRenderingContext2D,
+    size: readonly [width: number, height: number],
+    viewport: GraphOverlayViewport
+  ): void
+  /** A press the overlay takes. It also gets that pointer's moves and its release or cancel. */
+  onPointerDown?(event: GraphOverlayPointerEvent): void
+  onPointerMove?(event: GraphOverlayPointerEvent): void
+  onPointerUp?(event: GraphOverlayPointerEvent): void
+  onPointerCancel?(event: GraphOverlayPointerEvent): void
+  /** A key pressed while the interactive overlay has focus. The app's shortcuts do not see it. */
+  onKeyDown?(event: GraphOverlayKeyEvent): void
+}
+
+/** The view on the graph when `draw` was called. */
+export interface GraphOverlayViewport {
+  readonly scale: number
+  /** Where a point in graph space is on the overlay now. */
+  graphToViewport(point: Point): Point
+}
+
+export interface GraphOverlayPointerEvent {
+  readonly pointerId: number
+  readonly pointerType: string
+  readonly button: number
+  readonly viewport: Point
+  readonly graph: Point
+}
+
+export interface GraphOverlayKeyEvent {
+  readonly key: string
+  readonly repeat: boolean
+  readonly ctrlKey: boolean
+  readonly metaKey: boolean
+  readonly shiftKey: boolean
+}
+
+export type GraphOverlayHitRegion =
+  | {
+      readonly kind: 'circle'
+      readonly x: number
+      readonly y: number
+      readonly radius: number
+    }
+  | {
+      readonly kind: 'rect'
+      readonly x: number
+      readonly y: number
+      readonly width: number
+      readonly height: number
+    }
+
+export interface GraphOverlayHandle {
+  /** Draws the overlay again at the next frame. */
+  redraw(): void
+  setInteractive(interactive: boolean): void
+  setVisible(visible: boolean): void
+  /** Limits the pointer the overlay takes to these regions; `[]` takes none. A pointer it took stays its own. */
+  setHitRegions(regions: readonly GraphOverlayHitRegion[]): void
+  /** Takes the overlay off the graph. Safe to call more than once. */
+  remove(): void
 }
