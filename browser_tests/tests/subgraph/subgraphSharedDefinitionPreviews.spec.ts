@@ -1,4 +1,3 @@
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -6,21 +5,6 @@ import {
 
 const HOST_A = '5'
 const HOST_B = '6'
-
-function previewSrcsByHost(comfyPage: ComfyPage) {
-  return comfyPage.page
-    .getByTestId(new RegExp(`^node-body-(${HOST_A}|${HOST_B})$`))
-    .evaluateAll((bodies) =>
-      Object.fromEntries(
-        bodies.map((body) => [
-          body.dataset.testid,
-          Array.from(body.querySelectorAll('img'), (image) =>
-            image.getAttribute('src')
-          )
-        ])
-      )
-    )
-}
 
 test.describe(
   'Subgraph shared-definition previews',
@@ -36,10 +20,12 @@ test.describe(
       await comfyPage.runButton.click()
 
       await expect
-        .poll(() => previewSrcsByHost(comfyPage), { timeout: 30_000 })
+        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]), {
+          timeout: 30_000
+        })
         .toEqual({
-          [`node-body-${HOST_A}`]: [expect.stringMatching(/hostA_\d+_/)],
-          [`node-body-${HOST_B}`]: [expect.stringMatching(/hostB_\d+_/)]
+          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
+          [HOST_B]: [expect.stringMatching(/hostB_\d+_/)]
         })
     })
 
@@ -55,10 +41,12 @@ test.describe(
       await comfyPage.runButton.click()
 
       await expect
-        .poll(() => previewSrcsByHost(comfyPage), { timeout: 30_000 })
+        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]), {
+          timeout: 30_000
+        })
         .toEqual({
-          [`node-body-${HOST_A}`]: [expect.stringMatching(/hostA_\d+_/)],
-          [`node-body-${HOST_B}`]: []
+          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
+          [HOST_B]: []
         })
     })
 
@@ -74,9 +62,12 @@ test.describe(
       await expect
         .poll(
           async () => {
-            const srcs = await previewSrcsByHost(comfyPage)
-            const hostA = srcs[`node-body-${HOST_A}`] ?? []
-            const hostB = srcs[`node-body-${HOST_B}`] ?? []
+            const srcs = await comfyPage.vueNodes.getBodyImageSources([
+              HOST_A,
+              HOST_B
+            ])
+            const hostA = srcs[HOST_A] ?? []
+            const hostB = srcs[HOST_B] ?? []
             return {
               bothLive: [...hostA, ...hostB].every((src) =>
                 src?.startsWith('blob:')
@@ -98,10 +89,12 @@ test.describe(
       )
       await comfyPage.runButton.click()
       await expect
-        .poll(() => previewSrcsByHost(comfyPage), { timeout: 30_000 })
+        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]), {
+          timeout: 30_000
+        })
         .toEqual({
-          [`node-body-${HOST_A}`]: [expect.stringMatching(/hostA_\d+_/)],
-          [`node-body-${HOST_B}`]: [expect.stringMatching(/hostB_\d+_/)]
+          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
+          [HOST_B]: [expect.stringMatching(/hostB_\d+_/)]
         })
 
       await comfyPage.vueNodes.deleteNode(HOST_B)
@@ -116,14 +109,14 @@ test.describe(
         .toBe(false)
 
       expect(
-        (await previewSrcsByHost(comfyPage))[`node-body-${HOST_B}`]
+        (await comfyPage.vueNodes.getBodyImageSources([HOST_B]))[HOST_B]
       ).toEqual([])
 
       await comfyPage.runButton.click()
       await expect
         .poll(
           async () =>
-            (await previewSrcsByHost(comfyPage))[`node-body-${HOST_B}`],
+            (await comfyPage.vueNodes.getBodyImageSources([HOST_B]))[HOST_B],
           { timeout: 30_000 }
         )
         .toEqual([expect.stringMatching(/hostB_\d+_/)])
@@ -136,26 +129,23 @@ test.describe(
         'subgraphs/shared-definition-two-hosts-save-image'
       )
       const { editor } = comfyPage.subgraph
-      for (const host of [HOST_A, HOST_B]) {
-        for (const toState of [false, true]) {
-          await editor.togglePromotion(
-            comfyPage.vueNodes.getNodeLocator(host),
-            {
-              nodeId: '10',
-              widgetName: '$$canvas-image-preview',
-              toState
-            }
-          )
-        }
-      }
+      const savedImage = { nodeId: '10', widgetName: '$$canvas-image-preview' }
+      const hostA = comfyPage.vueNodes.getNodeLocator(HOST_A)
+      const hostB = comfyPage.vueNodes.getNodeLocator(HOST_B)
+      await editor.togglePromotion(hostA, { ...savedImage, toState: false })
+      await editor.togglePromotion(hostA, { ...savedImage, toState: true })
+      await editor.togglePromotion(hostB, { ...savedImage, toState: false })
+      await editor.togglePromotion(hostB, { ...savedImage, toState: true })
 
       await comfyPage.runButton.click()
 
       await expect
-        .poll(() => previewSrcsByHost(comfyPage), { timeout: 30_000 })
+        .poll(() => comfyPage.vueNodes.getBodyImageSources([HOST_A, HOST_B]), {
+          timeout: 30_000
+        })
         .toEqual({
-          [`node-body-${HOST_A}`]: [expect.stringMatching(/hostA_\d+_/)],
-          [`node-body-${HOST_B}`]: [expect.stringMatching(/hostB_\d+_/)]
+          [HOST_A]: [expect.stringMatching(/hostA_\d+_/)],
+          [HOST_B]: [expect.stringMatching(/hostB_\d+_/)]
         })
     })
   }

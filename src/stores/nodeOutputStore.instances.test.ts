@@ -34,6 +34,7 @@ function arrangeTwoInstances() {
   return {
     rootGraph,
     interior,
+    first,
     second,
     locator: createNodeLocatorId(definition.id, interior.id),
     firstRun: createNodeExecutionId([first.id, interior.id]),
@@ -172,6 +173,19 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     expect(filenames(store.getNodeOutputByExecutionId(secondRun))).toEqual([
       'hostB.png'
     ])
+  })
+
+  it('shows nothing for the remaining instance after a snapshot of a removed instance output', () => {
+    const { rootGraph, first, firstRun, secondRun } = arrangeTwoInstances()
+    const store = useNodeOutputStore()
+    store.setNodeOutputsByExecutionId(firstRun, images('hostA.png'))
+    rootGraph.remove(first)
+
+    const snapshot = store.snapshotOutputs()
+    store.resetAllOutputsAndPreviews()
+    store.restoreOutputs(snapshot)
+
+    expect(store.getNodeOutputByExecutionId(secondRun)).toBeUndefined()
   })
 
   it('restores per-instance outputs recorded for an inactive workflow', () => {
