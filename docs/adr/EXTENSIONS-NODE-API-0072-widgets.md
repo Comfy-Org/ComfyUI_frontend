@@ -83,6 +83,24 @@ This ADR records how the API reaches widgets through those owners.
    It refuses a definition with a field it does not know, a name the node
    already has, and a combo without `options.values`, which the host's
    `addWidget` also refuses.
+
+   A widget's name may be empty, as V2 allowed. The host keeps such a widget:
+   it is in `node.widgets`, drawn on the litegraph canvas, saved in
+   `widgets_values` and reached by `widgets.get('')`. The widget value store
+   cannot key it (`registerWidget` warns "ignoring un-keyable widget id"),
+   so the Vue canvas, which draws from that store, does not show it. A
+   `mount`, `canvas` or declared type still needs a name: no stored pack
+   gives one an empty name, and its element would not show on the Vue
+   canvas.
+
+   A combo's `options.values` may be a function, as the host's combo allows
+   (`ComboWidget` and `WidgetSelectDefault` call it each time they read the
+   list). The API stores a function that calls the pack's with no
+   arguments, since the host passes it the widget and the node; a throw, or
+   a result that is not a list of text or finite numbers, is reported and
+   reads as an empty list. Any other function in a definition's options is
+   refused. `getOptions()` leaves the function out (decision 3).
+
 10. `remove(name)` uses `LGraphNode.removeWidget`. `reorder(names)` and
     `move(name, index)` splice `node.widgets`, whose view updates the order
     the Vue canvas draws from. `reorder` needs every name once; `move`

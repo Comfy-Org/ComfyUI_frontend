@@ -1,7 +1,8 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { assert, beforeEach, describe, expect, it } from 'vitest'
 
-import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LiteGraph, isComboWidget } from '@/lib/litegraph/src/litegraph'
+import { resolveComboValues } from '@/utils/litegraphUtil'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
@@ -148,6 +149,30 @@ describe('widgets in node definitions', () => {
       expect(widgets.get('enabled')?.getValue()).toBe(true)
     })
 
+    it('takes a widget with an empty name and a combo whose values come from a function', () => {
+      comfy.defs.define({
+        type: `${TYPE}/Defined`,
+        widgets: [
+          { type: 'text', name: '', value: 'shown' },
+          {
+            type: 'combo',
+            name: 'choice',
+            value: 'a',
+            options: { values: () => ['a', 'b'] }
+          }
+        ]
+      })
+
+      const node = added(`${TYPE}/Defined`)
+      const widgets = widgetsOf(node)
+
+      expect(widgets.names()).toEqual(['', 'choice'])
+      expect(widgets.get('')?.getValue()).toBe('shown')
+      const combo = node.widgets?.find(({ name }) => name === 'choice')
+      assert(combo && isComboWidget(combo))
+      expect(resolveComboValues(combo)).toEqual(['a', 'b'])
+    })
+
     it.for([
       [
         'widgets that are not a list',
@@ -157,7 +182,15 @@ describe('widgets in node definitions', () => {
       [
         'a widget without a name',
         { type: 'T', widgets: [{ type: 'number' }] },
-        'define needs a name'
+        'define needs a widget name as text'
+      ],
+      [
+        'a function among a widget’s options',
+        {
+          type: 'T',
+          widgets: [{ type: 'number', name: 'n', options: { step: () => 1 } }]
+        },
+        'define needs options.step as a string'
       ]
     ] as const)(
       'refuses %s, and registers nothing',
