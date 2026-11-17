@@ -87,7 +87,7 @@ test.describe(
       await test.step('Offer the deployment and desktop agent choices', async () => {
         await expect(
           comfyPage.page.getByRole('heading', {
-            name: 'Deploy your setup to Comfy Cloud',
+            name: 'Run your workflows on Comfy Cloud',
             exact: true
           })
         ).toBeVisible()

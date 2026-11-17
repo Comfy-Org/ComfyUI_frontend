@@ -326,8 +326,8 @@ it must reach, then call
 - For a narrower scan, pass a builder as the second argument, such as
   `accessibility.makeAxeBuilder().include('[role="dialog"]')`. Prefer listing a
   known rule ID to `exclude()`, which drops the element from every rule.
-- The `axe-results` attachment holds the full scan, including checks axe could
-  not decide.
+- The `axe-violations` attachment holds every violation axe reported, known
+  ones included.
 - axe cannot see nodes drawn on the LiteGraph canvas and does not check
   keyboard operation, focus order, or screen-reader output. Cover those with
   behavioral tests.

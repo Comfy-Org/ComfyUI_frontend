@@ -3,11 +3,16 @@ import { useI18n } from 'vue-i18n'
 
 import { downloadFile, openFileInNewTab } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { fullResolutionSrc, getImageFileUrl } from '@/utils/hdrFormatUtil'
+import { isImageNode } from '@/utils/litegraphUtil'
 
 import type { MenuOption } from './menuOption'
 
@@ -65,6 +70,19 @@ export function useImageMenuOptions() {
   const { t } = useI18n()
   const toast = useToast()
   const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
+  const nodeOutputStore = useNodeOutputStore()
+  const settingStore = useSettingStore()
+
+  const showsSingleImage = (node: LGraphNode) =>
+    isImageNode(node) &&
+    nodeOutputStore.getNodeOutputs(node)?.images?.length === 1
+
+  const toggleFullResolutionPreview = (node: LGraphNode) => {
+    node.flags.fullResolutionPreview = node.flags.fullResolutionPreview
+      ? undefined
+      : true
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
+  }
 
   const openMaskEditor = () => {
     const commandStore = useCommandStore()
@@ -201,7 +219,30 @@ export function useImageMenuOptions() {
     return options
   }
 
+  const getPreviewResolutionOption = (
+    node: LGraphNode
+  ): MenuOption | undefined => {
+    if (
+      !LiteGraph.vueNodesMode ||
+      !settingStore.get('Comfy.Node.DownscaleImagePreviews') ||
+      !showsSingleImage(node)
+    )
+      return
+    return node.flags.fullResolutionPreview
+      ? {
+          label: t('contextMenu.Show Downscaled Preview'),
+          icon: 'icon-[lucide--image-down]',
+          action: () => toggleFullResolutionPreview(node)
+        }
+      : {
+          label: t('contextMenu.Show Full Resolution'),
+          icon: 'icon-[lucide--image-upscale]',
+          action: () => toggleFullResolutionPreview(node)
+        }
+  }
+
   return {
-    getImageMenuOptions
+    getImageMenuOptions,
+    getPreviewResolutionOption
   }
 }

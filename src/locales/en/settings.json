@@ -252,6 +252,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Double click node title to edit"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Downscale large image previews",
+    "tooltip": "In Nodes 2.0, show large images on nodes as a copy at most 1024px on the longest side so many large previews stay responsive. Turn off to always show the original."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Middle-click creates a new Reroute node"
   },

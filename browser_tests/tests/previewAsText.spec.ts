@@ -80,6 +80,37 @@ test.describe('Preview as Text node', () => {
   )
 
   wstest(
+    'Save Text previews its execution result',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.searchBoxV2.addNode('Save Text')
+      const preview = comfyPage.vueNodes.getWidgetByName(
+        'Save Text',
+        'preview_text'
+      )
+      const id = await comfyPage.vueNodes.getNodeIdByTitle('Save Text')
+
+      await test.step('shows the saved text', async () => {
+        execution.executed('', id, { text: ['saved notes'] })
+        await expect(preview).toHaveValue('saved notes')
+      })
+
+      await test.step('replaces it with the next output', async () => {
+        execution.executed('', id, { text: ['revised notes'] })
+        await expect(preview).toHaveValue('revised notes')
+      })
+
+      await test.step('clears it when the output is empty', async () => {
+        execution.executed('', id, null)
+        await expect(preview).toHaveValue('')
+      })
+    }
+  )
+
+  wstest(
     'renders the payloads users reported blank',
     { tag: '@vue-nodes' },
     async ({ comfyPage, getWebSocket }) => {
