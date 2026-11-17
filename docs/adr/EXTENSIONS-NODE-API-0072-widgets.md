@@ -143,12 +143,21 @@ This ADR records how the API reaches widgets through those owners.
     (the widget's `options.serialize`, which `graphToPrompt` reads) to
     `serialize`; a mount without a default is decoration and is neither saved
     nor sent. `height` fixes the height as `setHeight` does.
-18. A mounted value is a string or a plain object or array. A DOM widget's
-    value type is `object | string`, and the host reads a missing value as
-    `''`, so `null` would not survive a save; a number or boolean is wrapped
-    by the pack. `MountedValue.set` commits through `WidgetHandle.setValue`.
+18. A mounted value is any value the workflow can save, as `setValue` takes
+    one (decision 4), so a pack holds a number or a boolean as it is. The
+    host's DOM widget reads its value through `options.getValue` and
+    replaces only a missing one with `''` (`readDomWidgetValue` in
+    `src/scripts/domWidget.ts`): a number or a boolean is held, saved,
+    restored and sent unchanged, and `DOMWidgetValue` in
+    `src/types/domWidget.ts` now types it so. `null` is the one value the
+    host cannot hold, since it reads back as `''`; the API holds `null` as
+    `''` from the start, so `get()`, `onChange` and the saved workflow agree.
+    This replaces the earlier rule that a mounted value is a string or a
+    plain object or array, which made a pack wrap a number and change its
+    reads. `MountedValue.set` commits through `WidgetHandle.setValue`.
     `onChange` runs for every other write, such as a load restoring the
-    value, and not for the pack's own `set`.
+    value or `setValue` on the widget's handle, with the value the widget
+    then holds, and not for the pack's own `set`.
 19. `render` is called once, when the widget is on its node; `destroy` is
     chained on the widget's `onRemove`, after the host's own cleanup, and the
     host runs it when the widget is removed and when its node is. Both are
@@ -183,7 +192,8 @@ This ADR records how the API reaches widgets through those owners.
     being created, and calls `render` with the element, the value accessor,
     the input's name and a context whose `getOptions()` copies the options
     the input was declared with. The value starts from the declaration's
-    `default` when it is text, else the type's `defaultValue`, else `''`.
+    `default` when it is a value the workflow can save other than `null`,
+    else the type's `defaultValue`, else `''`.
     `set` commits through the same edit as `setValue`; while the node is
     still being made, and so in no graph, it writes the value without an
     undo step. A teardown `render`
@@ -241,8 +251,6 @@ This ADR records how the API reaches widgets through those owners.
   join and leave a graph, which is the node lifecycle hooks of the node
   definitions feature, or a hook on the `LGraphNode` instance this API does
   not install.
-- A number, boolean or `null` as a mounted value: 2 sites in the stored
-  packs use one (`0` and `null` as `defaultValue`); see decision 18.
 - `WidgetTextEventBase.menuEvent`, `WidgetTextKeyEvent.altKey` and `repeat`,
   and `WidgetTextWheelEvent.deltaY`, `ctrlKey` and `preventDefault`: no
   stored pack uses them.
@@ -284,7 +292,11 @@ handle members seam (`createNodeHandles(handles, membersFor)`), and the edit
 core's `nodeHandleMembers` returns every member but `widgets`. Widget values
 and options are copied with `shared/savedCopy.ts`, as properties are.
 `DefRegistry` gains `defineWidgetType` (decision 21), and `useWidgetStore`
-gains `unregisterCustomWidget`.
+gains `unregisterCustomWidget`. The DOM widget types (`src/types/domWidget.ts`,
+`src/scripts/domWidget.ts`, `useDomWidgetStore().registerWidget`) take a value
+of type `DOMWidgetValue`, which adds the numbers and booleans the host already
+held at run time; the default value type stays `object | string`
+(decision 18).
 
 `createListeners` in `shared/listeners.ts` takes the arguments an event
 carries as a type parameter and passes them to each listener through

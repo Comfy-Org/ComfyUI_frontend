@@ -3,7 +3,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { addWidget } from '@/scripts/domWidget'
-import type { BaseDOMWidget } from '@/types/domWidget'
+import type { BaseDOMWidget, DOMWidgetValue } from '@/types/domWidget'
 
 import type { EditRunner } from '@/platform/nodeApi/v4/edit/editRunner'
 import type { WidgetDef, WidgetValue } from '@/platform/nodeApi/v4/types'
@@ -28,7 +28,7 @@ export interface WidgetEdits {
   addWidget(node: LGraphNode, def: WidgetDef): void
   addDomWidget(
     node: LGraphNode,
-    widget: BaseDOMWidget,
+    widget: BaseDOMWidget<DOMWidgetValue>,
     height: number | undefined
   ): void
   removeWidget(node: LGraphNode, widget: BaseWidget): void

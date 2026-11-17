@@ -1,8 +1,7 @@
-import { isPlainObject } from 'es-toolkit'
-
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
+import type { DOMWidgetValue } from '@/types/domWidget'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import {
@@ -10,18 +9,14 @@ import {
   createListeners
 } from '@/platform/nodeApi/shared/listeners'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
-import type {
-  MountDef,
-  MountedData,
-  MountedValue
-} from '@/platform/nodeApi/v4/types'
+import type { MountDef, MountedValue } from '@/platform/nodeApi/v4/types'
 import {
   definitionFields,
   optionalFlag,
   optionalSize,
   requiredName
 } from './definitionFields'
-import { assertSavable } from './savableValue'
+import { savableValue } from './savableValue'
 
 /** A mount definition from a pack, checked, with its defaults applied. */
 export interface MountSpec {
@@ -34,7 +29,7 @@ export interface MountSpec {
   readonly hideOnZoom: boolean
   readonly serialize: boolean
   readonly sendToPrompt: boolean
-  readonly defaultValue: MountedData | undefined
+  readonly defaultValue: DOMWidgetValue | undefined
   /** Runs after every write of the value, whoever made it. */
   readonly written: () => void
 }
@@ -75,18 +70,13 @@ export function checkedMountDef(member: string, def: unknown): MountSpec {
   }
 }
 
-/** A copy of a mounted widget's value, or a `TypeError` naming `member`. */
+/** A copy of a mounted widget's value as the host holds it, or a `TypeError` naming `member`. */
 export function mountedData(
   member: string,
   value: unknown,
   field: string
-): MountedData {
-  if (typeof value === 'string') return value
-  if (!Array.isArray(value) && !isPlainObject(value)) {
-    throw invalidArgument(member, 'a string, or a plain object or array', value)
-  }
-  assertSavable(member, value, field)
-  return structuredClone(value)
+): DOMWidgetValue {
+  return savableValue(member, value, field) ?? ''
 }
 
 /** The host DOM widget a mount definition describes, not yet on its node. */
@@ -94,14 +84,14 @@ export function createMountedWidget(
   node: LGraphNode,
   spec: MountSpec
 ): {
-  readonly widget: DOMWidgetImpl<HTMLDivElement, MountedData>
-  readonly onChange: ReturnType<typeof createListeners<[MountedData]>>
+  readonly widget: DOMWidgetImpl<HTMLDivElement, DOMWidgetValue>
+  readonly onChange: ReturnType<typeof createListeners<[DOMWidgetValue]>>
   readonly settingOwnValue: (set: () => void) => void
 } {
-  const onChange = createListeners<[MountedData]>('mount.onChange')
-  let value: MountedData = spec.defaultValue ?? ''
+  const onChange = createListeners<[DOMWidgetValue]>('mount.onChange')
+  let value: DOMWidgetValue = spec.defaultValue ?? ''
   let settingOwn = false
-  const widget = new DOMWidgetImpl<HTMLDivElement, MountedData>({
+  const widget = new DOMWidgetImpl<HTMLDivElement, DOMWidgetValue>({
     node,
     name: spec.name,
     type: 'custom',
@@ -112,7 +102,7 @@ export function createMountedWidget(
       getValue: () => value,
       setValue: (next) => {
         value = next
-        if (!settingOwn) onChange.notify(next)
+        if (!settingOwn) onChange.notify(widget.value)
         spec.written()
       }
     }
@@ -139,7 +129,7 @@ export function createMountedWidget(
 export function renderMounted(
   spec: MountSpec,
   mounted: ReturnType<typeof createMountedWidget>,
-  commit: (value: MountedData) => void,
+  commit: (value: DOMWidgetValue) => void,
   copyOfSaved: SavedCopier
 ): MountedValue {
   const value: MountedValue = Object.freeze({

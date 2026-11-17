@@ -4,12 +4,12 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { addWidget } from '@/scripts/domWidget'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { CustomComfyWidgetConstructor } from '@/types/comfy'
+import type { DOMWidgetValue } from '@/types/domWidget'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type {
   DefRegistry,
-  MountedData,
   WidgetTypeContext,
   WidgetTypeDef
 } from '@/platform/nodeApi/v4/types'
@@ -25,6 +25,7 @@ import {
   renderMounted
 } from './mountedWidget'
 import type { MountSpec } from './mountedWidget'
+import { isSavable } from './savableValue'
 import { fixHeight } from './widgetEdits'
 import type { WidgetEdits } from './widgetEdits'
 
@@ -43,7 +44,7 @@ const FIELDS = [
 
 interface CheckedWidgetType {
   readonly render: (...args: unknown[]) => unknown
-  readonly defaultValue: MountedData | undefined
+  readonly defaultValue: DOMWidgetValue | undefined
   readonly height: number | undefined
   readonly minHeight: number | undefined
   readonly serialize: boolean
@@ -137,7 +138,7 @@ function commitTo(
   node: LGraphNode,
   widget: ReturnType<typeof createMountedWidget>['widget'],
   edits: WidgetEdits
-): (value: MountedData) => void {
+): (value: DOMWidgetValue) => void {
   return (value) => edits.setInput(node, widget, value)
 }
 
@@ -148,6 +149,6 @@ function declaredOptions(
   return isPlainObject(options) ? options : {}
 }
 
-function declaredDefault(value: unknown): string | undefined {
-  return typeof value === 'string' ? value : undefined
+function declaredDefault(value: unknown): DOMWidgetValue | undefined {
+  return value !== null && isSavable(value) ? structuredClone(value) : undefined
 }
