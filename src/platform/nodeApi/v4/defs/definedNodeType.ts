@@ -1,13 +1,15 @@
+import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import { isPlainObject } from 'es-toolkit'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedChoice } from '@/platform/nodeApi/v4/edit/checkedArguments'
+import { SLOT_SHAPES } from '@/platform/nodeApi/v4/edit/slotVocabulary'
 import type {
   NodeDef,
   NodeDefBuilder,
-  NodeDefinition,
-  NodeDefinitionSlot
+  NodeDefinition
 } from '@/platform/nodeApi/v4/types'
 import type { HookCallbacks } from './nodeHooks'
 
@@ -23,14 +25,20 @@ type DefinitionHooks = Partial<
   >
 >
 
+interface CheckedSlot {
+  readonly name: string
+  readonly type: string
+  readonly shape?: RenderShape
+}
+
 /** A definition every field of which has been checked, with its defaults filled in. */
 export interface CheckedDefinition {
   readonly type: string
   readonly title: string
   readonly category: string
   readonly description: string
-  readonly inputs: readonly NodeDefinitionSlot[]
-  readonly outputs: readonly NodeDefinitionSlot[]
+  readonly inputs: readonly CheckedSlot[]
+  readonly outputs: readonly CheckedSlot[]
   readonly execution: 'backend' | 'frontend'
   readonly hooks: DefinitionHooks
 }
@@ -121,7 +129,9 @@ export function registerDefinedType(
     constructor(nodeTitle: string) {
       super(nodeTitle)
       for (const input of inputs) this.addInput(input.name, input.type)
-      for (const output of outputs) this.addOutput(output.name, output.type)
+      for (const { name, type, shape } of outputs) {
+        this.addOutput(name, type, shape === undefined ? {} : { shape })
+      }
       if (execution === 'frontend') this.isVirtualNode = true
       else this.comfyClass = definition.type
     }
@@ -133,8 +143,7 @@ export function registerDefinedType(
 }
 
 export function nodeDefFromDefinition(definition: CheckedDefinition): NodeDef {
-  const slot = ({ name, type }: NodeDefinitionSlot) =>
-    Object.freeze({ name, type })
+  const slot = ({ name, type }: CheckedSlot) => Object.freeze({ name, type })
   return Object.freeze({
     type: definition.type,
     title: definition.title,
@@ -176,24 +185,42 @@ function optionalText(field: string, value: unknown): string | undefined {
   throw invalidArgument('define', `a ${field} that is text`, value)
 }
 
+const SLOT_FIELDS = {
+  inputs: ['name', 'type'],
+  outputs: ['name', 'type', 'shape']
+} as const
+
 function checkedSlots(
   field: 'inputs' | 'outputs',
   slots: unknown
-): readonly NodeDefinitionSlot[] {
+): readonly CheckedSlot[] {
   if (slots === undefined) return []
   if (!Array.isArray(slots)) {
     throw invalidArgument('define', `a list of ${field}`, slots)
   }
+  const fields: readonly string[] = SLOT_FIELDS[field]
   return slots.map((slot: unknown) => {
     if (
       !isPlainObject(slot) ||
-      Object.keys(slot).some((key) => key !== 'name' && key !== 'type') ||
+      Object.keys(slot).some((key) => !fields.includes(key)) ||
       typeof slot.name !== 'string' ||
       typeof slot.type !== 'string'
     ) {
-      throw invalidArgument('define', `${field} of { name, type } text`, slot)
+      throw invalidArgument(
+        'define',
+        `${field} of { ${fields.join(', ')} } with text name and type`,
+        slot
+      )
     }
-    return Object.freeze({ name: slot.name, type: slot.type })
+    const shape =
+      slot.shape === undefined
+        ? undefined
+        : SLOT_SHAPES[checkedChoice('define', 'shape', slot.shape, SLOT_SHAPES)]
+    return Object.freeze({
+      name: slot.name,
+      type: slot.type,
+      ...(shape === undefined ? {} : { shape })
+    })
   })
 }
 
