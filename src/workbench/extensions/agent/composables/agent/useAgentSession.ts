@@ -432,12 +432,7 @@ const turnStartedAt = new Map<TurnId, number>()
  * flight, consumed exactly once at ack.
  */
 let sendInFlight = false
-/**
- * Each send gets its own attempt number, and a pending stop names the attempt
- * it was clicked during, so only that attempt's acknowledgement (or the turn
- * its refusal re-attaches to) can take it: a stale or parallel send never
- * stops a later, unrelated turn.
- */
+// A pending stop belongs to one send attempt, so a stale or parallel send never stops a later turn.
 let sendAttempt = 0
 let stopPendingAck: {
   method: AgentStopMethod | undefined
@@ -1626,14 +1621,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return adoptedActiveTurn
   }
 
-  /**
-   * The server answered a send over a card with an error, not an
-   * acknowledgement. It keeps the card open when it refuses a message before
-   * accepting it, so the dismissed card may still be live: reload the thread
-   * to show what the server holds rather than leave the card greyed out. A
-   * network failure gives no answer, so the card stays dismissed until the
-   * server says otherwise.
-   */
+  // After a 5xx the server may still hold the card open, so show what it holds; a network error gives no answer.
   async function reloadAfterRefusedSend(
     threadAtSend: string,
     generation: number
@@ -1947,15 +1935,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
-    // A POST that has not acked yet may start a turn: remember the intent for
-    // that attempt and cancel what it acknowledges. sendInFlight, not this
-    // instance's sending: the panel that posted may have been remounted, and
-    // the stop arrives through the new instance.
+    // sendInFlight, not this instance's sending: a remounted panel's Stop must reach the send that acks.
     if (sendInFlight) stopPendingAck = { method, attempt: sendAttempt }
     if (threadId === null || turnId === null) return
-    // A send over an open card leaves the old turn active until its
-    // acknowledgement. Stop it now too, in case the server refuses the
-    // replacement; the click is counted once, on the pending stop.
+    // Stop the old turn now too in case the replacement is refused; the click counts once, on the pending stop.
     await stopActiveTurn(sendInFlight ? undefined : method)
   }
 
