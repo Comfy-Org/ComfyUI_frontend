@@ -7,6 +7,7 @@ import { useSubgraphOperations } from '@/composables/graph/useSubgraphOperations
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { useNodeCanvasImagePreview } from '@/composables/node/useNodeCanvasImagePreview'
 import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { drawSubgraphActivityPreview } from '@/composables/node/subgraphActivityPreview'
 import { addWidgetPromotionOptions } from '@/core/graph/subgraph/promotionUtils'
 import { applyDynamicInputs } from '@/core/graph/widgets/dynamicWidgets'
 import { resolveNodeDefSlotText, st, t } from '@/i18n'
@@ -803,8 +804,9 @@ export const useLitegraphService = () => {
         'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'
       )
     }
-    node.prototype.onDrawBackground = function () {
+    node.prototype.onDrawBackground = function (ctx) {
       updatePreviews(this)
+      if (this.isSubgraphNode()) drawSubgraphActivityPreview(this, ctx)
     }
   }
 
