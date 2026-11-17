@@ -614,10 +614,10 @@ describe('useFeatureFlags', () => {
       expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
     })
 
-    it('defaults on in a development build that serves no value', () => {
+    it('stays off in a development build that serves no value', () => {
       vi.stubEnv('DEV', true)
 
-      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(true)
+      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
     })
 
     it.for([
