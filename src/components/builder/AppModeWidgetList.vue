@@ -16,7 +16,7 @@ import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { draggableItemClass } from '@/scripts/ui/draggableList'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -147,7 +147,7 @@ async function handleDragDrop() {
     return false
   }
 
-  app.dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
+  useApp().dragOverNode = { id: UNASSIGNED_NODE_ID, onDragDrop }
 }
 
 defineExpose({ handleDragDrop })

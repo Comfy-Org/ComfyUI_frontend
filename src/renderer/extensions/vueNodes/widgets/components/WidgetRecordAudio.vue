@@ -89,7 +89,7 @@ import { useI18n } from 'vue-i18n'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
 import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { isDOMWidget } from '@/scripts/domWidget'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -155,7 +155,7 @@ const { isPlaying, audioElementKey } = playback
 const isWaveformActive = computed(() => isRecording.value || isPlaying.value)
 
 const litegraphNode = useLiveGraphNode(() =>
-  props.nodeId ? app.canvas.graph?.getNodeById(props.nodeId) : null
+  props.nodeId ? useApp().canvas.graph?.getNodeById(props.nodeId) : null
 )
 
 function handleRecordingComplete(blob: Blob) {

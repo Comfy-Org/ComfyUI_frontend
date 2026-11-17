@@ -1132,16 +1132,16 @@ export class ComfyApp implements IComfyApp {
       // Check for old clipboard format
       const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
-        deserialiseAndCreate(template.data, app.canvas)
+        deserialiseAndCreate(template.data, this.canvas)
       } else {
         localStorage.setItem('litegrapheditor_clipboard', template.data)
-        app.canvas.pasteFromClipboard()
+        this.canvas.pasteFromClipboard()
       }
 
       // Move mouse position down to paste the next template below
       let maxY: number | undefined
 
-      for (const node of selectedCanvasNodes(app.canvas)) {
+      for (const node of selectedCanvasNodes(this.canvas)) {
         const nodeBottom = node.pos[1] + node.size[1]
         if (maxY === undefined || nodeBottom > maxY) {
           maxY = nodeBottom
@@ -1149,7 +1149,7 @@ export class ComfyApp implements IComfyApp {
       }
 
       if (maxY !== undefined) {
-        app.canvas.graph_mouse[1] = maxY + 50
+        this.canvas.graph_mouse[1] = maxY + 50
       }
     }
 
@@ -2597,7 +2597,7 @@ export class ComfyApp implements IComfyApp {
           }
           node.id = nodeId
           node.title = data._meta?.title ?? node.title
-          app.rootGraph.add(node)
+          this.rootGraph.add(node)
           if (placeholderEntry && node.last_serialization) {
             node.last_serialization.id = node.id
             placeholderEntry.nodeId = String(node.id)
@@ -2608,7 +2608,7 @@ export class ComfyApp implements IComfyApp {
         const processNodeInputs = (id: string) => {
           const data = apiData[id]
           const currentNodeId = localNodeIdsByApiId.get(id) ?? toNodeId(id)
-          const node = app.rootGraph.getNodeById(currentNodeId)
+          const node = this.rootGraph.getNodeById(currentNodeId)
           if (!node) return
           const targetNode = node
           const inputs = restoreDynamicGroupInputs(node, data.inputs)
@@ -2616,9 +2616,9 @@ export class ComfyApp implements IComfyApp {
           for (const input in inputs) {
             const value = inputs[input]
             if (value instanceof Array) {
-              function connectInput() {
+              const connectInput = () => {
                 const [fromId, fromSlot] = value
-                const fromNode = app.rootGraph.getNodeById(
+                const fromNode = this.rootGraph.getNodeById(
                   localNodeIdsByApiId.get(String(fromId)) ?? toNodeId(fromId)
                 )
                 if (!fromNode?.outputs[fromSlot]) return false
@@ -2688,13 +2688,13 @@ export class ComfyApp implements IComfyApp {
           if (remainingInputs.length === pendingInputs.length) break
           pendingInputs = remainingInputs
         }
-        for (const node of app.rootGraph.nodes) {
+        for (const node of this.rootGraph.nodes) {
           if (!node.last_serialization) continue
           node.last_serialization.inputs = node.inputs.map((input, i) =>
             inputAsSerialisable(input, node, i)
           )
         }
-        app.rootGraph.arrange()
+        this.rootGraph.arrange()
       })
 
       await withGraphIntentSource('load', () =>
