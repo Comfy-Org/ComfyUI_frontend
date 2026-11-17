@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
+import { NO_WEB_SESSION } from '@e2e/fixtures/data/webSession'
 import {
   defaultWorkspaceTokenResponse,
   mockPersonalWorkspace,
   mockTeamWorkspace,
   mockWorkspacesRemoteConfig
 } from '@e2e/fixtures/data/workspaceAuthFixtures'
-import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import { mockWorkspaceList } from '@e2e/fixtures/utils/workspaceMocks'
 
 export class WorkspaceAuthHelper {
@@ -35,7 +35,9 @@ export class WorkspaceAuthHelper {
       })
     )
 
-    await mockWebSessionServer(this.page)
+    await this.page.route('**/api/auth/session', (route) =>
+      route.fulfill({ status: 401, json: NO_WEB_SESSION })
+    )
   }
 
   async mockTokenRoute(
