@@ -1,7 +1,7 @@
 import type {
   DeclaredModelFile,
   ModelFile
-} from '@/platform/workflow/validation/schemas/workflowSchema'
+} from '@comfyorg/graph-model/workflowSchema'
 import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
 import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
@@ -11,6 +11,7 @@ import {
   isNodeAndAncestorsActive
 } from '@/platform/workflow/core/utils/modelRequirements'
 import type { MissingModelCandidate } from './types'
+import { findModelReplacements } from './modelReplacements'
 import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -29,9 +30,9 @@ import type {
   IAssetWidget,
   IBaseWidget,
   IComboWidget
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { useAssetsStore } from '@/stores/assetsStore'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode,
@@ -43,9 +44,14 @@ export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]
 }
 
+type CandidateVerification = Pick<
+  MissingModelCandidate,
+  'isMissing' | 'replacements'
+>
+
 type DeferredVerification = (
   signal?: AbortSignal
-) => Promise<boolean | undefined>
+) => Promise<CandidateVerification>
 
 /**
  * On a developer-platform deployment (FE-2434) the editor's node catalog is
@@ -338,7 +344,7 @@ function deferToReleaseOptions(
       target.definitionWidgetName,
       signal
     )
-    return options?.includes(candidate.name) ? false : undefined
+    return { isMissing: options?.includes(candidate.name) ? false : undefined }
   })
 }
 
@@ -398,23 +404,28 @@ function scanComboWidget(
     return candidate
   }
 
-  const isAbsentFromOptions = () =>
-    !resolveComboValues(target.definitionWidget).includes(value)
+  const verifyAgainstOptions = (): CandidateVerification => {
+    const options = resolveComboValues(target.definitionWidget)
+    if (options.includes(value)) return { isMissing: false }
+    const replacements = findModelReplacements(value, options)
+    return replacements.length
+      ? { isMissing: true, replacements }
+      : { isMissing: true }
+  }
   const inventory = getComboWidgetInventory(target.definitionWidget)
   if (inventory && inventory.getStatus() !== 'ready') {
     pendingVerifications.set(candidate, async (signal) => {
       await untilSettledOrAborted(inventory.waitForSettled(signal), signal)
       if (signal?.aborted || inventory.getStatus() !== 'ready') {
-        return undefined
+        return { isMissing: undefined }
       }
-      if (target.valueWidget.value !== value) return undefined
-      return isAbsentFromOptions()
+      if (target.valueWidget.value !== value) return { isMissing: undefined }
+      return verifyAgainstOptions()
     })
     return candidate
   }
 
-  candidate.isMissing = isAbsentFromOptions()
-  return candidate
+  return Object.assign(candidate, verifyAgainstOptions())
 }
 
 async function untilSettledOrAborted(
@@ -516,8 +527,8 @@ export async function verifyAssetSupportedCandidates(
       const verify = pendingVerifications.get(candidate)
       if (!verify) return
       pendingVerifications.delete(candidate)
-      const isMissing = await verify(signal)
-      if (!signal?.aborted) candidate.isMissing = isMissing
+      const verification = await verify(signal)
+      if (!signal?.aborted) Object.assign(candidate, verification)
     })
   )
 

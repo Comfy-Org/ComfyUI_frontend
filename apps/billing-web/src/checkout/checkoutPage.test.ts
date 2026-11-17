@@ -795,6 +795,33 @@ describe('reduceCheckoutPage reconciliation', () => {
       expected: { kind: 'resolving', outcome: declinedElsewhere }
     },
     {
+      name: "this tab's own Pay whose watch lapsed declines onto its card once the re-read settles",
+      events: [
+        ...live,
+        submitted,
+        { type: 'payRejectedAsPending', because: 'unanswered' },
+        reconciled({ ...pendingOperation(), awaitedHere: true }),
+        changed(failedOperation('card_declined'), declinedElsewhere)
+      ],
+      expected: { kind: 'resolving', outcome: declinedElsewhere }
+    },
+    {
+      name: "this tab's own Pay whose watch lapsed keeps its card when the re-read finds the challenge refused",
+      events: [
+        ...live,
+        submitted,
+        { type: 'payRejectedAsPending', because: 'unanswered' },
+        reconciled(
+          { ...refusedChallenge(), awaitedHere: true },
+          { kind: 'not_completed', operationId: 'op_3ds' }
+        )
+      ],
+      expected: {
+        kind: 'resolving',
+        outcome: { kind: 'not_completed', operationId: 'op_3ds' }
+      }
+    },
+    {
       name: 'a form that watched another tab start paying is waiting on a sibling',
       events: [...live, reconciled(pendingOperation())],
       expected: { kind: 'waiting', sibling: true }
@@ -1152,6 +1179,21 @@ describe('reduceCheckoutPage endings', () => {
   it.for<{ name: string; from: CheckoutPage; event: CheckoutPageEvent }>([
     { name: 'Try again on capture', from: collect('ready'), event: tryAgain },
     { name: 'Try again while resolving', from: RESOLVING, event: tryAgain },
+    {
+      name: "another poll of this tab's own refused challenge over its not-verified card",
+      from: replay([
+        ...live,
+        submitted,
+        changed(
+          { ...refusedChallenge(), awaitedHere: true },
+          { kind: 'not_verified', operationId: 'op_3ds' }
+        )
+      ]),
+      event: changed(
+        { ...refusedChallenge(), awaitedHere: true },
+        { kind: 'not_verified', operationId: 'op_3ds' }
+      )
+    },
     {
       name: 'a late unknown plan after capture',
       from: collect('ready'),

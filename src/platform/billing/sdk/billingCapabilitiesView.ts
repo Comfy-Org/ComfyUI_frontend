@@ -1,6 +1,6 @@
 import type { CapabilitiesSnapshot } from '@comfyorg/account-core/billing'
 
-import type { BillingCapabilitiesRead } from '@/platform/workspace/api/workspaceApi'
+import type { BillingCapabilitiesRead } from '@comfyorg/billing-core'
 
 /**
  * The SDK's cached capabilities snapshot in the shape the capabilities
@@ -11,6 +11,15 @@ export function projectBillingCapabilities(
   snapshot: CapabilitiesSnapshot
 ): BillingCapabilitiesRead {
   return {
+    ...(snapshot.autoTopUpEnabled === undefined
+      ? {}
+      : { auto_top_up_enabled: snapshot.autoTopUpEnabled }),
+    ...(snapshot.autoTopUpMemberView === undefined
+      ? {}
+      : { auto_top_up_member_view: snapshot.autoTopUpMemberView }),
+    ...(snapshot.autoTopUpSetup === undefined
+      ? {}
+      : { auto_top_up_setup: snapshot.autoTopUpSetup }),
     capabilities: snapshot.capabilities,
     denied_reasons: snapshot.denials,
     expires_at: new Date(snapshot.freshUntil).toISOString(),

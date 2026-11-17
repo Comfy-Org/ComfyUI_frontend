@@ -45,12 +45,15 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { download: 'Download', moreOptions: 'More Options' },
+      g: {
+        delete: 'Delete',
+        download: 'Download',
+        moreOptions: 'More Options'
+      },
       linearMode: {
         rerun: 'Rerun',
         reuseParameters: 'Reuse Parameters',
         cancelThisRun: 'Cancel this run',
-        deleteAllAssets: 'Delete all',
         downloadAll: 'Download all'
       }
     }
@@ -167,7 +170,7 @@ describe('LinearPreview', () => {
       .setup()
       .click(screen.getByRole('button', { name: 'More Options' }))
     expect(
-      await screen.findByRole('menuitem', { name: 'Delete all' })
+      await screen.findByRole('menuitem', { name: 'Delete' })
     ).toBeInTheDocument()
     expect(screen.getByText('Rerun')).toBeInTheDocument()
     expect(screen.getByText('Reuse Parameters')).toBeInTheDocument()

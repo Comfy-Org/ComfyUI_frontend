@@ -37,16 +37,16 @@ test.describe(
 
         const node = comfyPage.vueNodes.getNodeLocator('1')
         await expect(
-          node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'seed', exact: true })
         ).toHaveValue('987654321')
         await expect(
-          node.getByLabel('steps', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'steps', exact: true })
         ).toHaveValue('37')
         await expect(
-          node.getByLabel('cfg', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'cfg', exact: true })
         ).toHaveValue('6.0')
         await expect(
-          node.getByLabel('denoise', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'denoise', exact: true })
         ).toHaveValue('0.75')
         await expect(
           node.getByRole('button', { name: 'Fixed Value', exact: true })

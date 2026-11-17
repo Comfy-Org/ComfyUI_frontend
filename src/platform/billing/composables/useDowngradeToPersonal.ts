@@ -1,5 +1,4 @@
 import type { BillingTelemetryFailure } from '@comfyorg/account-core/billing'
-import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -7,13 +6,13 @@ import type { DowngradeToPersonalResult } from '@/platform/billing/composables/t
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
-import type { PaymentIntentSource } from '@/platform/telemetry/types'
+import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 import { toTierKey } from '@/platform/billing/subscription/constants/tierPricing'
 import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+import type { PreviewSubscribeResponse } from '@comfyorg/billing-core'
 import type { SettledSubscribeResponse } from '@/platform/billing/sdk/subscriptionOperationView'
 import {
   SettledOperationError,
@@ -21,9 +20,9 @@ import {
 } from '@/platform/billing/sdk/subscriptionOperationView'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useSubscriptionRail } from '@/platform/billing/composables/useSubscriptionRail'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceMembership } from '@/platform/workspace/ports/workspaceMembership'
 import { openBillingUrl } from '@/platform/billing/billingTab'
 
 export interface DowngradePreview {
@@ -71,12 +70,12 @@ export class ReactivationAmountChangedError extends Error {
 export function useDowngradeToPersonal({
   paymentIntentSource
 }: { paymentIntentSource?: PaymentIntentSource } = {}) {
-  const workspaceStore = useTeamWorkspaceStore()
-  const { members } = storeToRefs(workspaceStore)
+  const workspaceStore = useWorkspaceMembership()
+  const members = computed(() => workspaceStore.members)
   const { subscribe, previewSubscribe, subscription, fetchStatus } =
     useBillingContext()
   const billingOperationStore = useBillingOperationStore()
-  const { permissions } = useWorkspaceUI()
+  const { permissions } = useBillingUI()
   const { canDowngradeToPersonal } = useBillingCapabilities()
   const telemetry = useTelemetry()
   let activeTelemetryAttempt: DowngradeTelemetryAttempt | undefined

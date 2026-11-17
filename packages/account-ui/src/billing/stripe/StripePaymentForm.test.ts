@@ -421,7 +421,7 @@ describe('StripePaymentForm', () => {
     })
   })
 
-  it('collects a one-time payment the card is never saved for when paying once', async () => {
+  it('collects a one-time card payment the card is never saved for when paying once', async () => {
     renderForm(2500, 'pmc_topup', { payOnce: true })
 
     await waitFor(() =>
@@ -432,12 +432,51 @@ describe('StripePaymentForm', () => {
         mode: 'payment',
         amount: 2500,
         currency: 'usd',
-        paymentMethodConfiguration: 'pmc_topup'
+        paymentMethodTypes: ['card']
       })
     )
     expect(stripeMocks.stripe.elements).not.toHaveBeenCalledWith(
       expect.objectContaining({ setupFutureUsage: expect.anything() })
     )
+    expect(stripeMocks.stripe.elements).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        paymentMethodConfiguration: expect.anything()
+      })
+    )
+    expect(stripeMocks.create).toHaveBeenCalledWith(
+      'payment',
+      expect.objectContaining({ wallets: { link: 'never' } })
+    )
+  })
+
+  it('collects a renewal method when the balance covers the whole first charge', async () => {
+    renderForm(0)
+
+    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+    expect(stripeMocks.stripe.elements).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'subscription',
+        amount: 0,
+        setupFutureUsage: 'off_session'
+      })
+    )
+    expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByRole<HTMLButtonElement>('button', {
+        name: 'Pay and subscribe'
+      }).disabled
+    ).toBe(false)
+  })
+
+  it('shows unavailable state when Stripe refuses the quoted amount', async () => {
+    stripeMocks.stripe.elements.mockImplementationOnce(() => {
+      throw new Error('IntegrationError: invalid amount')
+    })
+
+    renderForm(0, 'pmc_topup', { payOnce: true })
+
+    expect(await screen.findByText('Stripe is unavailable')).toBeTruthy()
+    expect(stripeMocks.mount).not.toHaveBeenCalled()
   })
 
   it('collects deferred subscription details and emits a confirmation token', async () => {
@@ -631,17 +670,23 @@ describe('StripePaymentForm', () => {
     ).toBe(true)
   })
 
-  it('updates Stripe Elements when the quote changes', async () => {
-    const { rerender } = renderForm()
-    await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
+  it.for([
+    { amountCents: 72000, currency: 'EUR' },
+    { amountCents: 0, currency: 'USD' }
+  ])(
+    'updates Stripe Elements when the quote changes to $amountCents $currency',
+    async ({ amountCents, currency }) => {
+      const { rerender } = renderForm()
+      await waitFor(() => expect(stripeMocks.mount).toHaveBeenCalledTimes(1))
 
-    await rerender({ amountCents: 72000, currency: 'EUR' })
+      await rerender({ amountCents, currency })
 
-    expect(stripeMocks.update).toHaveBeenCalledWith({
-      amount: 72000,
-      currency: 'eur'
-    })
-  })
+      expect(stripeMocks.update).toHaveBeenCalledWith({
+        amount: amountCents,
+        currency: currency.toLowerCase()
+      })
+    }
+  )
 
   it('destroys the Stripe elements when the preview unmounts', async () => {
     const { unmount } = renderForm()

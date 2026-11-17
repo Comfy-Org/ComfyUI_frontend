@@ -4,7 +4,6 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CreateTopupResponse,
   Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
@@ -20,30 +19,17 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
-import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * Subscription outcomes the other SDK-rail specs leave uncovered: leaving a
- * team plan for a personal one, a subscribe parked on a hosted payment page,
- * a session where only the subscription rail is on, and the end date a
- * cancelled plan shows once the page is reloaded.
- *
- * As in `planChangeSdkRail.spec.ts`, the transport is what tells the rails
- * apart: the SDK runs on `fetch` and keys every write, the legacy workspace
- * client runs on axios' XHR adapter and keys none.
- */
-const SUBSCRIPTION_RAIL_ONLY = {
+const RAIL_FEATURES = {
   billing_control_enabled: true,
-  unified_cloud_auth: true,
-  billing_sdk_subscription_enabled: true,
-  billing_sdk_topup_enabled: false
+  unified_cloud_auth: true
 } satisfies RemoteConfig
 
 const OPERATION_ID = 'op-e2e-outcome'
@@ -81,8 +67,10 @@ const ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -132,10 +120,8 @@ interface RailRoutes {
   readonly previewRequests: Request[]
   readonly opsRequests: Request[]
   readonly cancelRequests: Request[]
-  readonly topupRequests: Request[]
   readonly statusRequests: Request[]
   readonly memberRemovals: Request[]
-  /** Every URL the app asked the browser to open, in order. */
   openedUrls: () => Promise<string[]>
 }
 
@@ -155,19 +141,27 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
     previewRequests: [] as Request[],
     opsRequests: [] as Request[],
     cancelRequests: [] as Request[],
-    topupRequests: [] as Request[],
     statusRequests: [] as Request[],
     memberRemovals: [] as Request[]
   }
 
-  // Recorded rather than performed: a hosted page is an external origin, and
-  // the truthy return keeps the popup-blocked fallback out of these rows.
   await page.addInitScript(() => {
     const opened: string[] = []
     Object.defineProperty(window, '__openedUrls', { get: () => opened })
+    const standInTab = new Proxy(window, {
+      get: (target, property) =>
+        property === 'location'
+          ? {
+              set href(destination: string) {
+                opened.push(destination)
+              }
+            }
+          : Reflect.get(target, property),
+      set: () => true
+    })
     window.open = (url?: string | URL) => {
-      opened.push(String(url))
-      return window
+      if (url) opened.push(String(url))
+      return standInTab
     }
   })
 
@@ -180,14 +174,8 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
         is_original_owner: true
       })
     ],
-    features: SUBSCRIPTION_RAIL_ONLY,
+    features: RAIL_FEATURES,
     billingCapabilities: createWorkspaceBillingCapabilities(setup.workspace)
-  })
-  // The handshake is the fallback channel; seeding it too keeps the two
-  // channels agreeing, so neither alone is what the rows rest on.
-  await new FeatureFlagHelper(page).seedServerFlags({
-    billing_sdk_subscription_enabled: true,
-    billing_sdk_topup_enabled: false
   })
 
   await page.route('**/api/settings', (route) =>
@@ -233,18 +221,6 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
     setup.onCancel?.()
     return route.fulfill(
       jsonRoute({ billing_op_id: OPERATION_ID, status: 'pending' })
-    )
-  })
-  await page.route('**/api/billing/topup', (route) => {
-    if (route.request().method() !== 'POST') return route.fallback()
-    routes.topupRequests.push(route.request())
-    return route.fulfill(
-      jsonRoute({
-        billing_op_id: 'op-e2e-topup',
-        topup_id: 'topup-e2e',
-        status: 'completed',
-        amount_cents: 5_000
-      } satisfies CreateTopupResponse)
     )
   })
   await page.route('**/api/billing/ops/**', (route) => {
@@ -306,6 +282,8 @@ const PROCESSING_OPERATION = {
 } satisfies BillingOpStatusResponse
 
 test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('moves a team plan to a personal plan through the SDK transport', async ({
     page
   }) => {
@@ -431,40 +409,6 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
 
     await expect(successHeading(page)).toBeVisible()
     await expect(progressToast).toBeHidden()
-  })
-
-  test('keeps each write on its own rail when only the subscription rail is on', async ({
-    page
-  }) => {
-    const routes = await setupRail(page, {
-      workspace: workspace('personal', 'owner'),
-      billingStatus: () => ACTIVE_STANDARD_STATUS
-    })
-    await page.goto(APP_URL)
-    await waitForCloudApp(page)
-
-    const cancelDialog = new CancelSubscriptionDialog(page)
-    await cancelDialog.open('2099-02-20T00:00:00Z')
-    await cancelDialog.confirmCancel()
-
-    const topUp = new TopUpCreditsDialog(page)
-    await topUp.open()
-    await topUp.root
-      .getByRole('button', { name: 'Add credits', exact: true })
-      .click()
-    await topUp.root.getByRole('button', { name: 'Pay $50.00' }).click()
-
-    await expect.poll(() => routes.topupRequests.length).toBe(1)
-    expect(routes.cancelRequests).toHaveLength(1)
-    const [cancel] = routes.cancelRequests
-    expect(transport(cancel)).toBe('fetch')
-    expect(idempotencyKey(cancel)).toBeTruthy()
-    const [topup] = routes.topupRequests
-    expect(transport(topup)).toBe('xhr')
-    expect(idempotencyKey(topup)).toBeUndefined()
-    expect(topup.postDataJSON()).toMatchObject({
-      idempotency_key: expect.stringMatching(/^[0-9a-f-]{36}$/i)
-    })
   })
 
   test('shows the server end date for a cancelled plan after a reload', async ({

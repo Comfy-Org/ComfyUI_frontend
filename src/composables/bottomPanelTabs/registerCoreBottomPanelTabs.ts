@@ -1,6 +1,6 @@
 import { isDesktop } from '@/platform/distribution/types'
 import { useShortcutsTab } from '@/platform/keybindings/composables/useShortcutsTab'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 
 export async function registerCoreBottomPanelTabs() {

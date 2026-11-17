@@ -11,7 +11,8 @@ test.describe(
     test.use({
       agentConsentAccepted: false,
       initialLocalStorage: {
-        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true',
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true',
         'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal': 'true'
       }
     })
@@ -89,10 +90,62 @@ test.describe(
 )
 
 test.describe(
-  'Fresh signed-in Agent consent and tour sequencing',
+  'Fresh signed-in Agent: the launch card, then the coach',
   { tag: ['@cloud', '@ui'] },
   () => {
     test.use({ agentConsentAccepted: false })
+
+    test('shows the card over the opened panel and runs the coach after Agree', async ({
+      agentPanel,
+      agentConsentWrites,
+      comfyPage,
+      postedMessages
+    }) => {
+      const page = comfyPage.page
+      const consent = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      const coach = page.getByRole('dialog', {
+        name: enMessages.agent.coachTitle
+      })
+
+      await test.step('The launch card appears over Agent', async () => {
+        await expect(agentPanel.root).toBeVisible()
+        await expect(consent).toBeVisible()
+        await expect(coach).toHaveCount(0)
+      })
+
+      await test.step('Agree saves consent and starts the coach', async () => {
+        await consent
+          .getByRole('button', { name: enMessages.agent.consent.accept })
+          .click()
+        await expect(consent).toHaveCount(0)
+        await expect(coach).toBeVisible()
+        expect(agentConsentWrites).toEqual([true])
+      })
+
+      await test.step('Skipping the coach permits one send without another consent card', async () => {
+        await coach.getByRole('button', { name: enMessages.agent.skip }).click()
+        await agentPanel.selectWorkflow()
+        await agentPanel.sendMessage('Build a product photo workflow')
+        await expect.poll(() => postedMessages).toHaveLength(1)
+        await expect(consent).toHaveCount(0)
+      })
+    })
+  }
+)
+
+test.describe(
+  'Signed-in Agent who skipped the launch card: consent and tour sequencing on Send',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({
+      agentConsentAccepted: false,
+      initialLocalStorage: {
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true'
+      }
+    })
 
     for (const tourAction of ['finish', 'skip'] as const) {
       test(`resumes one held send after the user ${tourAction === 'finish' ? 'finishes' : 'skips'} the tour`, async ({
@@ -120,7 +173,6 @@ test.describe(
         const coachTitles = [
           enMessages.agent.coachTitle,
           enMessages.agent.coachWorkflowTitle,
-          enMessages.agent.coachGraphTitle,
           enMessages.agent.coachHistoryTitle
         ]
         await expect(
@@ -272,7 +324,8 @@ test.describe(
       agentConsentAccepted: false,
       agentPanelInitiallyOpen: true,
       initialLocalStorage: {
-        'Comfy.AgentConsent.AutoShown.test-user-e2e.ws-personal': 'true'
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true'
       }
     })
 

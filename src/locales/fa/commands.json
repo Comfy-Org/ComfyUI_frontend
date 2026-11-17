@@ -36,7 +36,7 @@
     "label": "راه‌اندازی مجدد"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "نمایشگر سه‌بعدی (بتا) را برای نود انتخاب‌شده باز کنید"
+    "label": "نمایشگر سه‌بعدی (بتا) را برای node انتخاب‌شده باز کنید"
   },
   "Comfy_BrowseModelAssets": {
     "label": "آزمایشی: مرور Model Assets"
@@ -106,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "جمع/باز کردن nodeهای انتخاب‌شده"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "پیوندهای nodeهای انتخاب‌شده را پنهان/نمایان کنید"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "بی‌صدا/فعال کردن nodeهای انتخاب‌شده"

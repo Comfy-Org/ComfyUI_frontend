@@ -5,11 +5,10 @@ import { computed } from 'vue'
 import type { BillingType } from '@/platform/billing/composables/types'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
+import { billingApi } from '@/platform/billing/api/billingApi'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import type { CancellationFlowDialogOptions } from './launchCancellationFlow'
@@ -23,19 +22,16 @@ const mocks = vi.hoisted(
     billingType: { value: BillingType }
     activeWorkspaceId: string | null
     isPersonal: boolean
-    billingRail: BillingRail | null
   } => ({
     billingType: { value: 'workspace' },
     activeWorkspaceId: 'workspace-1',
-    isPersonal: true,
-    billingRail: 'stripe'
+    isPersonal: true
   })
 )
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/i18n'))
-vi.mock(import('@/platform/telemetry/reportError'))
-vi.mock(import('@/platform/workspace/api/workspaceApi'))
+vi.mock(import('@/platform/billing/api/billingApi'))
 
 const offer = {
   id: 'save_30_next_3_v1',
@@ -74,7 +70,6 @@ beforeEach(() => {
   mocks.billingType.value = 'workspace'
   mocks.activeWorkspaceId = 'workspace-1'
   mocks.isPersonal = true
-  mocks.billingRail = 'stripe'
   remoteConfig.value = { cancellation_survey_id: 'survey-1' }
 
   vi.spyOn(
@@ -87,11 +82,6 @@ beforeEach(() => {
     'isInPersonalWorkspace',
     'get'
   ).mockImplementation(() => mocks.isPersonal)
-  vi.spyOn(
-    useTeamWorkspaceStore(),
-    'activeWorkspaceBillingRail',
-    'get'
-  ).mockImplementation(() => mocks.billingRail)
 })
 
 afterEach(() => {
@@ -101,34 +91,25 @@ afterEach(() => {
 describe('launchCancellationFlow', () => {
   it.for([
     {
-      name: 'legacy billing',
-      billingType: 'legacy',
-      isPersonal: true,
-      billingRail: 'stripe'
-    },
-    {
-      name: 'Metronome billing',
-      billingType: 'workspace',
-      isPersonal: true,
-      billingRail: 'metronome'
+      name: 'unresolved billing',
+      billingType: 'unknown',
+      isPersonal: true
     },
     {
       name: 'a team workspace',
       billingType: 'workspace',
-      isPersonal: false,
-      billingRail: 'stripe'
+      isPersonal: false
     }
   ] as const)(
     'opens the flow without a retention session for $name',
-    async ({ billingType, isPersonal, billingRail }) => {
+    async ({ billingType, isPersonal }) => {
       mocks.billingType.value = billingType
       mocks.isPersonal = isPersonal
-      mocks.billingRail = billingRail
       const { shown, showFlow } = captureFlow()
 
       await launchCancellationFlow({ cancelAt: '2026-11-12', showFlow })
 
-      expect(workspaceApi.prepareRetentionFlow).not.toHaveBeenCalled()
+      expect(billingApi.prepareRetentionFlow).not.toHaveBeenCalled()
       expect(shown).toEqual([
         {
           cancelAt: '2026-11-12',
@@ -141,8 +122,29 @@ describe('launchCancellationFlow', () => {
     }
   )
 
-  it('keeps legacy cancellation available while workspace state initializes', async () => {
-    mocks.billingType.value = 'legacy'
+  it('prepares a retention session for a loaded personal workspace', async () => {
+    vi.mocked(billingApi.prepareRetentionFlow).mockResolvedValue(
+      retentionFlow()
+    )
+    const { shown, showFlow } = captureFlow()
+
+    await launchCancellationFlow({ showFlow })
+
+    expect(billingApi.prepareRetentionFlow).toHaveBeenCalledOnce()
+    expect(shown[0].flow).toEqual(retentionFlow())
+  })
+
+  it('does not prepare a retention session for a launch captured before the workspace loaded', async () => {
+    const { shown, showFlow } = captureFlow()
+
+    await launchCancellationFlow({ launchWorkspaceId: null, showFlow })
+
+    expect(billingApi.prepareRetentionFlow).not.toHaveBeenCalled()
+    expect(shown[0].flow).toBeNull()
+  })
+
+  it('keeps cancellation available while workspace state initializes', async () => {
+    mocks.billingType.value = 'unknown'
     mocks.activeWorkspaceId = null
     const { shown, showFlow } = captureFlow()
 
@@ -199,13 +201,13 @@ describe('launchCancellationFlow', () => {
   ])(
     'opens the flow without an offer when $name',
     async ({ error, reported }) => {
-      vi.mocked(workspaceApi.prepareRetentionFlow).mockRejectedValue(error)
+      vi.mocked(billingApi.prepareRetentionFlow).mockRejectedValue(error)
       const { shown, showFlow } = captureFlow()
 
       await launchCancellationFlow({ showFlow })
 
       expect(shown[0].flow).toBeNull()
-      expect(workspaceApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
+      expect(billingApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
       expect(vi.mocked(reportError).mock.calls.length > 0).toBe(reported)
     }
   )
@@ -223,18 +225,18 @@ describe('launchCancellationFlow', () => {
   ])(
     'hands over the session for $name, leaving the open to the dialog',
     async ({ flow }) => {
-      vi.mocked(workspaceApi.prepareRetentionFlow).mockResolvedValue(flow)
+      vi.mocked(billingApi.prepareRetentionFlow).mockResolvedValue(flow)
       const { shown, showFlow } = captureFlow()
 
       await launchCancellationFlow({ showFlow })
 
-      expect(workspaceApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
+      expect(billingApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
       expect(shown[0].flow).toEqual(flow)
     }
   )
 
   it('prepares one session for repeated launches from the same workspace', async () => {
-    vi.mocked(workspaceApi.prepareRetentionFlow).mockResolvedValue(
+    vi.mocked(billingApi.prepareRetentionFlow).mockResolvedValue(
       retentionFlow({ experiment_variant: offer.id, offer })
     )
     const { showFlow } = captureFlow()
@@ -245,13 +247,13 @@ describe('launchCancellationFlow', () => {
     ])
     await launchCancellationFlow({ showFlow })
 
-    expect(workspaceApi.prepareRetentionFlow).toHaveBeenCalledTimes(2)
+    expect(billingApi.prepareRetentionFlow).toHaveBeenCalledTimes(2)
     expect(showFlow).toHaveBeenCalledTimes(2)
   })
 
   it('keeps a pending launch while another workspace launches', async () => {
     let resolvePrepare: (flow: RetentionFlowResponse) => void = () => {}
-    vi.mocked(workspaceApi.prepareRetentionFlow).mockReturnValue(
+    vi.mocked(billingApi.prepareRetentionFlow).mockReturnValue(
       new Promise((resolve) => {
         resolvePrepare = resolve
       })
@@ -268,7 +270,7 @@ describe('launchCancellationFlow', () => {
     resolvePrepare(retentionFlow({ experiment_variant: offer.id, offer }))
     await Promise.all([firstLaunch, relaunch])
 
-    expect(workspaceApi.prepareRetentionFlow).toHaveBeenCalledOnce()
+    expect(billingApi.prepareRetentionFlow).toHaveBeenCalledOnce()
     expect(shown.map(({ workspaceId }) => workspaceId)).toEqual([
       'workspace-2',
       'workspace-1'
@@ -276,18 +278,16 @@ describe('launchCancellationFlow', () => {
   })
 
   it('stops when the active workspace changes during preparation', async () => {
-    vi.mocked(workspaceApi.prepareRetentionFlow).mockImplementation(
-      async () => {
-        mocks.activeWorkspaceId = 'workspace-2'
-        return retentionFlow({ experiment_variant: offer.id, offer })
-      }
-    )
+    vi.mocked(billingApi.prepareRetentionFlow).mockImplementation(async () => {
+      mocks.activeWorkspaceId = 'workspace-2'
+      return retentionFlow({ experiment_variant: offer.id, offer })
+    })
     const { showFlow } = captureFlow()
 
     await launchCancellationFlow({ showFlow })
 
     expect(showFlow).not.toHaveBeenCalled()
-    expect(workspaceApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
+    expect(billingApi.recordRetentionFlowEvent).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -341,12 +341,12 @@ describe('recordRetentionFlowEvent', () => {
     }
   ])('$name', async ({ error, outcome, reported }) => {
     if (error)
-      vi.mocked(workspaceApi.recordRetentionFlowEvent).mockRejectedValue(error)
+      vi.mocked(billingApi.recordRetentionFlowEvent).mockRejectedValue(error)
 
     await expect(
       recordRetentionFlowEvent('session-1', 'offer_shown')
     ).resolves.toBe(outcome)
-    expect(workspaceApi.recordRetentionFlowEvent).toHaveBeenCalledWith({
+    expect(billingApi.recordRetentionFlowEvent).toHaveBeenCalledWith({
       session_id: 'session-1',
       event: 'offer_shown'
     })

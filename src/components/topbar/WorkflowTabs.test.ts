@@ -2,27 +2,29 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { TabsTrigger } from 'reka-ui'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
-import type { AgentConsentTrigger } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowTabs from './WorkflowTabs.vue'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 const distribution = vi.hoisted(() => ({
   isCloud: false,
@@ -97,7 +99,8 @@ vi.mock(
     useAgentConsent: () => ({
       accepted: computed(() => useAgentPanelStore().consentAccepted),
       isChecking: computed(() => consentChecking.value),
-      withConsent
+      withConsent,
+      resumeAcceptAfterReload: vi.fn()
     })
   })
 )
@@ -141,14 +144,14 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
 vi.mock(import('./CurrentUserButton.vue'), () => ({
   default: defineComponent({
     name: 'CurrentUserButtonStub',
-    render: () => h('div')
+    render: () => h('div', { 'data-testid': 'current-user-button' })
   })
 }))
 
 vi.mock(import('./LoginButton.vue'), () => ({
   default: defineComponent({
     name: 'LoginButtonStub',
-    render: () => h('div')
+    render: () => h('div', { 'data-testid': 'login-button' })
   })
 }))
 
@@ -220,6 +223,57 @@ describe('WorkflowTabs feedback button', () => {
     expect(
       screen.queryByRole('button', { name: 'Feedback' })
     ).not.toBeInTheDocument()
+  })
+})
+
+describe('WorkflowTabs profile button', () => {
+  beforeEach(() => {
+    useCurrentUser().isLoggedIn = computed(() => true)
+  })
+
+  function setBillingNewUx(enabled: boolean) {
+    const previous = remoteConfig.value
+    remoteConfig.value = { ...previous, billing_new_ux_enabled: enabled }
+    onTestFinished(() => {
+      remoteConfig.value = previous
+    })
+  }
+
+  it('keeps the profile button in the top bar while billing_new_ux_enabled is off', () => {
+    setBillingNewUx(false)
+    renderComponent()
+
+    expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+    expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+  })
+
+  it('moves the profile button out of the top bar while billing_new_ux_enabled is on', () => {
+    setBillingNewUx(true)
+    renderComponent()
+
+    expect(screen.queryByTestId('current-user-button')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+  })
+
+  it('keeps the profile button in the top bar in builder mode, where the sidebar is hidden', async () => {
+    setBillingNewUx(true)
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('Builder workflow.json')
+      .load()
+    workflow.activeMode = 'builder:inputs'
+    workflowStore.activeWorkflow = workflow
+    renderComponent()
+
+    expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+  })
+
+  it('keeps the login button in the top bar when signed out with billing_new_ux_enabled on', () => {
+    setBillingNewUx(true)
+    useCurrentUser().isLoggedIn = computed(() => false)
+    renderComponent()
+
+    expect(screen.getByTestId('login-button')).toBeInTheDocument()
   })
 })
 
@@ -361,43 +415,32 @@ describe('WorkflowTabs agent entry button', () => {
       host: 'a local Desktop 2 window',
       desktop: false,
       bridge: { isRemote: () => false }
+    },
+    {
+      host: 'a browser tab on a local Core',
+      desktop: false,
+      bridge: undefined
+    },
+    {
+      host: 'a remote Desktop 2 view',
+      desktop: false,
+      bridge: { isRemote: () => true }
     }
   ])(
-    'toggles the locked panel without consent in $host',
+    'asks for consent from the entry button in $host',
     async ({ desktop, bridge }) => {
       distribution.isCloud = false
       distribution.isDesktop = desktop
       window.__comfyDesktop2 = bridge
       const { user } = renderComponent()
-      const button = screen.getByRole('button', {
-        name: enMessages.agent.entryButton
-      })
 
-      await user.click(button)
-      expect(useAgentPanelStore().isVisible).toBe(true)
-      expect(useAgentPanelStore().consentAccepted).toBe(false)
-      expect(button).toHaveAttribute('aria-pressed', 'true')
+      await user.click(
+        screen.getByRole('button', { name: enMessages.agent.entryButton })
+      )
 
-      await user.click(button)
-      expect(useAgentPanelStore().isVisible).toBe(false)
-      expect(withConsent).not.toHaveBeenCalled()
+      expect(withConsent).toHaveBeenCalledOnce()
     }
   )
-
-  it.for([
-    { host: 'a browser tab on a local Core', bridge: undefined },
-    { host: 'a remote Desktop 2 view', bridge: { isRemote: () => true } }
-  ])('asks for consent from the entry button in $host', async ({ bridge }) => {
-    distribution.isCloud = false
-    window.__comfyDesktop2 = bridge
-    const { user } = renderComponent()
-
-    await user.click(
-      screen.getByRole('button', { name: enMessages.agent.entryButton })
-    )
-
-    expect(withConsent).toHaveBeenCalledOnce()
-  })
 
   it('closes the visible panel when the entry button is clicked again', async () => {
     useAgentPanelStore().consentAccepted = true

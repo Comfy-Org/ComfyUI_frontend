@@ -2,7 +2,6 @@
   <Badge
     v-if="nodeDef.api_node && providerName"
     variant="outline"
-    class="text-foreground"
     :style="borderStyle"
   >
     <template #icon>
@@ -17,7 +16,7 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import {
   getProviderBorderStyle,

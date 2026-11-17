@@ -23,21 +23,21 @@ import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { DynamicComboSelection } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { RootGraphId } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import type { RootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import {
   findNodeInHierarchy,
   findSubgraphByUuid,
@@ -63,6 +63,10 @@ export interface DocOpMinterDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** Records a local edit that cannot yet enter the semantic document. */
+  onUnboundLocalIntent?(): void
+  /** Records a local edit to the visible workflow while another one, or none, is bound. */
+  onUnboundVisibleIntent?(): void
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The live root graph, or null when no workflow is open. */
@@ -187,7 +191,15 @@ interface PendingWidgetValue {
 
 type MissingSlotGrowth = NonNullable<ReturnType<typeof growForMissingSlot>>
 
-/** Returns the node's save-format snapshot for a semantic add operation. */
+/**
+ * Returns the node's save-format snapshot for a semantic add operation.
+ *
+ * Excludes only subgraph hosts, whose widget values are positional by design
+ * (`applyHostWidgets` indexes them against the live promoted inputs). Every
+ * other named-value node gets a declared `widgets_values_form` when one can
+ * be proven (schema A24); otherwise it keeps the positional snapshot rather
+ * than shipping an undeclared name-keyed record (KA-12).
+ */
 export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
@@ -204,15 +216,12 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
-  if (!named || node.isVirtualNode) return snapshot
+  if (!named || node.isSubgraphNode()) return snapshot
   const values = valueWidgetsOnly(node, named)
-  // The form is proven against the POST-HOOK serialization, not derived from
-  // the live widget list alone: `serialize()` above already ran the extension
-  // serialize hook, which may have replaced either widget-values field.
   const form = provenWidgetValuesForm(node, values, serialized)
-  return form
-    ? { ...snapshot, widgets_values: values, widgets_values_form: form }
-    : { ...snapshot, widgets_values: values }
+  if (form)
+    return { ...snapshot, widgets_values: values, widgets_values_form: form }
+  return node.isVirtualNode ? snapshot : { ...snapshot, widgets_values: values }
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
@@ -270,7 +279,7 @@ function promotedHostWrite(
     value_index: valueIndex,
     instance_path: [String(event.nodeId)],
     host_widgets_values: hostInputs.map((input, index) => {
-      if (index === valueIndex) return event.value
+      if (index === valueIndex) return undefined
       const value = widgetValueStore.getWidget(input.widgetId)?.value
       return isWidgetValue(value) ? value : undefined
     })
@@ -325,8 +334,7 @@ function routedWidgetOperation(
     op: 'set_widget',
     node_id: event.nodeId,
     widget: event.name,
-    value: event.value,
-    old: event.previous
+    value: event.value
   } as const
   const owningGraphId = node?.graph?.id ?? event.graphId
   if (owningGraphId === rootGraphId) {
@@ -804,14 +812,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     graphId: string,
     event: IntentOf<'set_widget'>
   ): void {
-    const key = `owner:${nodeKey(graphId, event.nodeId)}`
+    const key = `owner:${nodeKey(graphId, event.nodeId)}:${event.name}`
     if (reportedRefusals.has(key)) return
     reportedRefusals.add(key)
     reportLostEdit('mint_divergence', [{ op: 'set_widget' }], {
       code: 'unresolvable_widget_owner',
       errorType: 'agent_crdt_widget_owner_unresolved',
       graphId,
-      nodeId: event.nodeId
+      nodeId: event.nodeId,
+      widget: event.name
     })
   }
 
@@ -1186,14 +1195,38 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     schedule({ kind: 'add_node', graph: event.graph, node: event.node })
   }
 
+  function discardHeldWrite(event: GraphIntentEvent): void {
+    if (event.type === 'set_widget')
+      heldPromotedWrites.delete(heldWriteKey(event))
+  }
+
+  function intentRootGraphId(
+    event: GraphIntentEvent,
+    graph: LGraph | null
+  ): string | null {
+    if ('graph' in event) return event.graph.rootGraph.id
+    return graph !== null && reachableIntentGraph(graph, event.graphId) !== null
+      ? graph.id
+      : null
+  }
+
+  function noteUnboundLocalIntent(event: GraphIntentEvent): void {
+    const graph = deps.getGraph()
+    const eventRootGraphId = intentRootGraphId(event, graph)
+    if (eventRootGraphId === null) return
+    if (eventRootGraphId === deps.boundRootGraphId())
+      deps.onUnboundLocalIntent?.()
+    else if (eventRootGraphId === graph?.id) deps.onUnboundVisibleIntent?.()
+  }
+
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
-    if (!deps.isEnabled() || !deps.isDocBound()) {
-      if (event.type === 'set_widget')
-        heldPromotedWrites.delete(heldWriteKey(event))
+    if (deps.isEnabled() && deps.isDocBound()) {
+      mintIntent(event)
       return
     }
-    mintIntent(event)
+    if (deps.isEnabled()) noteUnboundLocalIntent(event)
+    discardHeldWrite(event)
   }
 
   function mintIntent(event: GraphIntentEvent): void {

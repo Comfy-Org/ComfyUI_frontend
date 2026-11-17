@@ -7,7 +7,7 @@ import type {
   OpenPathsPointer
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
 const CUSTOM_NODE_BLANK_WORKFLOW_PATH =
   'workflows/Custom Nodes E2E Blank Workflow.json'

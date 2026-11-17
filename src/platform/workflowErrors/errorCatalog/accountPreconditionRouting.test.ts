@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   isAccountPreconditionCatalogId,
   preconditionForCatalogId,
+  promptErrorHasLockedCredits,
   resolveAccountPrecondition
 } from './accountPreconditionRouting'
 import {
@@ -42,6 +43,33 @@ describe('resolveAccountPrecondition', () => {
       })
     ).toBe('subscription')
   })
+
+  it('keeps the retryable FREE_TIER_UNAVAILABLE 429 out of the subscription route', () => {
+    expect(
+      resolveAccountPrecondition({
+        exceptionType: 'FREE_TIER_UNAVAILABLE',
+        exceptionMessage: 'Subscription required to queue workflows'
+      })
+    ).toBeUndefined()
+  })
+
+  it.for([
+    'CLOUD_SUBSCRIPTION_REQUIRED',
+    'FREE_TIER_EXHAUSTED',
+    'PARTNER_NODE_PAYMENT_REQUIRED',
+    'MODEL_PAYMENT_REQUIRED'
+  ])(
+    'prefers the ExecutePrompt %s type over a conflicting credit message',
+    (exceptionType) => {
+      expect(
+        resolveAccountPrecondition({
+          exceptionType,
+          exceptionMessage:
+            'Payment Required: Please add credits to your account to use this node.'
+        })
+      ).toBe('subscription')
+    }
+  )
 
   it('classifies a subscription-upgrade error as a subscription precondition', () => {
     expect(
@@ -137,5 +165,27 @@ describe('preconditionForCatalogId / isAccountPreconditionCatalogId', () => {
       false
     )
     expect(isAccountPreconditionCatalogId(undefined)).toBe(false)
+  })
+})
+
+describe('promptErrorHasLockedCredits', () => {
+  it('is true only when the refusal says the credits are locked', () => {
+    expect(
+      promptErrorHasLockedCredits({
+        type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+        credits_locked: true
+      })
+    ).toBe(true)
+    expect(
+      promptErrorHasLockedCredits({
+        type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+        credits_locked: false
+      })
+    ).toBe(false)
+    expect(promptErrorHasLockedCredits({ type: 'FREE_TIER_EXHAUSTED' })).toBe(
+      false
+    )
+    expect(promptErrorHasLockedCredits('a plain string error')).toBe(false)
+    expect(promptErrorHasLockedCredits(null)).toBe(false)
   })
 })

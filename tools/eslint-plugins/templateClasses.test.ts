@@ -20,9 +20,11 @@ const filename = path.join(
   '../../src/components/LintFixture.vue'
 )
 const buttonImport =
-  "<script setup>\nimport Button from '@/components/ui/button/Button.vue'\n</script>\n"
+  "<script setup>\nimport Button from '@comfyorg/design-system/button/Button'\n</script>\n"
 const inputImport =
-  "<script setup>\nimport Input from '@/components/ui/input/Input.vue'\n</script>\n"
+  "<script setup>\nimport Input from '@comfyorg/design-system/input/Input'\n</script>\n"
+const badgeImport =
+  "<script setup>\nimport Badge from '@comfyorg/design-system/badge/Badge'\n</script>\n"
 
 function vue(template: string, script = '') {
   return { filename, code: `${script}<template>${template}</template>\n` }
@@ -31,6 +33,71 @@ function vue(template: string, script = '') {
 function redundant(template: string, output: string, script = '') {
   return { ...vue(template, script), output: vue(output, script).code }
 }
+
+ruleTester.run('icon-element', templateClasses.rules['icon-element'], {
+  valid: [
+    vue('<i class="icon-[lucide--check]" />'),
+    vue('<i class="icon-[lucide--check] size-5 shrink" />'),
+    vue('<i class="size-4 shrink-0" />'),
+    vue('<i class="icon-[lucide--check]" :title="\'size-4 shrink-0\'" />'),
+    vue('<i class="icon-[lucide--check]" :class="size === \'size-4\'" />'),
+    vue("<i :class=\"active ? 'icon-[lucide--check]' : 'size-4 shrink-0'\" />"),
+    vue('<i :class="cn(loading && \'icon-[lucide--loader]\')" />'),
+    vue('<span class="text-sm" />'),
+    vue('<Button icon="icon-[lucide--check]" />'),
+    vue('<div @click="track(\'icon-[lucide--check]\')" />'),
+    vue('<i v-bind="{ class: \'icon-[lucide--check]\' }" />'),
+    vue('<span v-bind="{ title: \'icon-[lucide--check]\' }" />'),
+    vue(
+      "<span v-bind=\"{ class: 'text-sm', title: 'icon-[lucide--check]' }\" />"
+    ),
+    vue(
+      "<span :class=\"iconName === 'icon-[lucide--check]' ? 'active' : ''\" />"
+    ),
+    vue('<span :class="iconName === \'icon-[lucide--check]\'" />'),
+    vue('<div class="[&_i]:size-4"><i class="icon-[comfy--logo]" /></div>')
+  ],
+  invalid: [
+    ...[
+      '<span class="size-4 icon-[lucide--check]" />',
+      '<div class="icon-[comfy--logo]" />',
+      '<button class="hover:icon-[lucide--check]" />',
+      '<Button class="icon-[lucide--check]" />',
+      '<span :class="\'icon-[lucide--check]\'" />',
+      '<span :class="cn(loading && \'icon-[lucide--loader]\')" />',
+      "<span :class=\"active ? 'icon-[lucide--check]' : 'text-sm'\" />",
+      '<span :class="{ \'icon-[lucide--check]\': active }" />',
+      '<span v-bind="{ class: \'icon-[lucide--check]\' }" />',
+      "<span v-bind=\"{ 'class': cn(active && 'icon-[lucide--check]') }\" />",
+      "<span :class=\"iconName === 'check' ? 'icon-[lucide--check]' : ''\" />",
+      "<span :class=\"'icon-[lucide--' + name + ']'\" />",
+      '<span :class="`icon-[${family}--${name}]`" />'
+    ].map((template) => ({
+      ...vue(template),
+      errors: [{ messageId: 'wrongElement' }]
+    })),
+    ...[
+      '<i class="icon-[lucide--check] size-4" />',
+      '<i class="shrink-0" :class="\'icon-[lucide--check]\'" />',
+      '<i class="icon-[lucide--check]" :class="cn(active && \'size-4\')" />',
+      "<i :class=\"{ 'icon-[lucide--check]': active, 'shrink-0': true }\" />",
+      '<i v-bind="{ class: \'icon-[lucide--check] size-4\' }" />',
+      '<i class="icon-mask-[comfy--logo] shrink-0" />',
+      '<i class="icon-img-[comfy--logo] size-4" />',
+      '<i class="icon-s1.5-[lucide--check] size-4" />'
+    ].map((template) => ({
+      ...vue(template),
+      errors: [{ messageId: 'redundantIconUtility' }]
+    })),
+    {
+      ...vue('<i class="icon-[lucide--check] size-4 shrink-0" />'),
+      errors: [
+        { messageId: 'redundantIconUtility', data: { token: 'size-4' } },
+        { messageId: 'redundantIconUtility', data: { token: 'shrink-0' } }
+      ]
+    }
+  ]
+})
 
 ruleTester.run(
   'no-default-utilities',
@@ -109,6 +176,39 @@ ruleTester.run(
   {
     valid: [
       vue('<Button size="lg" class="h-8 rounded-md">Go</Button>', buttonImport),
+      ...[
+        '<Button :size="size" class="p-2" />',
+        '<Button size="unset" class="p-2" />',
+        '<Button class="p-3 p-2" />',
+        '<Button :class="\'p-3 p-2\'" />',
+        '<Button class="p-3" :class="\'p-2\'" />',
+        '<Button class="p-2" :class="classes" />',
+        "<Button :class=\"cn('p-3', cn('p-2'))\" />",
+        '<Button :class="active ? \'p-2\' : classes" />',
+        '<Button :class="forwardedClass" />',
+        '<Button :[attribute]="value" class="p-2" />'
+      ].map((template) => vue(template, buttonImport)),
+      ...[
+        '<Badge severity="muted" class="text-foreground" />',
+        '<Badge variant="outline" severity="muted" class="text-muted-foreground" />',
+        '<Badge :variant="variant" class="rounded-md" />',
+        '<Badge :severity="severity" class="rounded-md" />',
+        '<Badge variant="unknown" class="rounded-md" />',
+        '<Badge severity="unknown" class="rounded-md" />',
+        '<Badge v-bind="badgeProps" class="rounded-md" />'
+      ].map((template) => vue(template, badgeImport)),
+      vue(
+        '<Button class="p-2" />',
+        "<script setup>import Button from '@/components/ui/unrelated/Button.vue'</script>"
+      ),
+      vue(
+        '<Message :severity="severity" class="rounded-lg" />',
+        "<script setup>import Message from '@comfyorg/design-system/message/Message'</script>"
+      ),
+      vue(
+        '<Message severity="unknown" class="rounded-lg" />',
+        "<script setup>import Message from '@comfyorg/design-system/message/Message'</script>"
+      ),
       vue(
         '<Button :variant="kind" class="rounded-lg">Go</Button>',
         buttonImport
@@ -119,6 +219,77 @@ ruleTester.run(
       )
     ],
     invalid: [
+      ...[
+        [
+          '<Badge class="rounded-md max-w-80" />',
+          '<Badge class="max-w-80" />',
+          'rounded-md'
+        ],
+        [
+          '<Badge variant="outline" severity="muted" class="bg-transparent max-w-80" />',
+          '<Badge variant="outline" severity="muted" class="max-w-80" />',
+          'bg-transparent'
+        ],
+        [
+          '<Badge variant="outline" severity="muted" class="text-foreground max-w-80" />',
+          '<Badge variant="outline" severity="muted" class="max-w-80" />',
+          'text-foreground'
+        ]
+      ].map(([template, output, token]) => ({
+        ...redundant(template, output, badgeImport),
+        errors: [
+          { messageId: 'redundant', data: { token, component: 'Badge' } }
+        ]
+      })),
+      ...[
+        [
+          '<Button size="unset" class="font-medium p-3" />',
+          '<Button size="unset" class="p-3" />',
+          'font-medium'
+        ],
+        [
+          '<Button :class="\'p-2 font-bold\'" />',
+          '<Button :class="\'font-bold\'" />',
+          'p-2'
+        ],
+        [
+          "<Button :class=\"active ? 'p-2 font-bold' : 'p-3'\" />",
+          "<Button :class=\"active ? 'font-bold' : 'p-3'\" />",
+          'p-2'
+        ],
+        ['<Button :class="\'p-2\'" />', '<Button :class="\'\'" />', 'p-2']
+      ].map(([template, output, token]) => ({
+        ...redundant(template, output, buttonImport),
+        errors: [
+          { messageId: 'redundant', data: { token, component: 'Button' } }
+        ]
+      })),
+      ...[
+        'apps/billing-web/src/LintFixture.vue',
+        'packages/account-ui/src/LintFixture.vue'
+      ].map((importer) => ({
+        ...redundant('<Button class="p-2" />', '<Button />', buttonImport),
+        filename: path.join(import.meta.dirname, '../..', importer),
+        errors: [
+          {
+            messageId: 'redundant',
+            data: { token: 'p-2', component: 'Button' }
+          }
+        ]
+      })),
+      {
+        ...redundant(
+          '<Message severity="success" class="bg-success/15 font-bold" />',
+          '<Message severity="success" class="font-bold" />',
+          "<script setup>import Message from '@comfyorg/design-system/message/Message'</script>"
+        ),
+        errors: [
+          {
+            messageId: 'redundant',
+            data: { token: 'bg-success/15', component: 'Message' }
+          }
+        ]
+      },
       {
         ...redundant(
           '<Button size="lg" class="h-10 px-4 font-bold">Go</Button>',
@@ -230,5 +401,39 @@ ruleTester.run(
         ]
       }
     ]
+  }
+)
+
+ruleTester.run(
+  'prefer-design-system-button',
+  templateClasses.rules['prefer-design-system-button'],
+  {
+    valid: [
+      vue('<button class="flex cursor-pointer bg-transparent p-0" />'),
+      vue("<button :class=\"cn('size-full', active && 'bg-none')\" />"),
+      vue('<button class="flex"><span class="bg-secondary" /></button>'),
+      vue('<div class="bg-secondary hover:bg-secondary/80" />'),
+      vue('<Button class="bg-secondary" />', buttonImport),
+      vue('<button :title="\'bg-secondary\'" />'),
+      vue('<button class="bg-transparent! p-0" />'),
+      vue("<button :class=\"`bg-${quiet ? 'transparent' : 'none'}`\" />")
+    ],
+    invalid: [
+      [
+        '<button class="flex hover:bg-secondary/80" />',
+        'hover:bg-secondary/80'
+      ],
+      ['<button class="rounded-md bg-secondary" />', 'bg-secondary'],
+      ['<button class="hover:!bg-secondary" />', 'hover:!bg-secondary'],
+      [
+        "<button :class=\"cn('flex', primary ? 'bg-foreground' : 'bg-transparent')\" />",
+        'bg-foreground'
+      ],
+      ['<button :class="{ \'bg-muted\': selected }" />', 'bg-muted'],
+      ['<button v-bind:class="`px-2 ${size} bg-base`" />', 'bg-base']
+    ].map(([template, token]) => ({
+      ...vue(template),
+      errors: [{ messageId: 'styled', data: { token } }]
+    }))
   }
 )

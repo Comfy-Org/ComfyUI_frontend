@@ -70,6 +70,7 @@ export type InlineOutcome =
       readonly serverMessage?: string
     }
   | { readonly kind: 'not_completed'; readonly operationId?: string }
+  | { readonly kind: 'not_verified'; readonly operationId?: string }
   | { readonly kind: 'price_updated' }
   | { readonly kind: 'promo_expired'; readonly code: string }
   | { readonly kind: 'reconciling'; readonly because?: Recheck }
@@ -1099,17 +1100,31 @@ function awaitsUnansweredPay(page: Capture): boolean {
   )
 }
 
+function showsVerdict(
+  page: Capture,
+  operation: BillingOperationState,
+  outcome: OperationOutcome | undefined
+): boolean {
+  return (
+    outcome?.kind === page.outcome?.kind &&
+    namesOperation(page.outcome, operation.id)
+  )
+}
+
 function waitingInCapture(
   page: Capture,
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
+  if (showsVerdict(page, operation, outcome)) return page
+  if (outcome !== undefined && operation.awaitedHere)
+    return { kind: 'resolving', outcome }
   if (!isInFlight(operation) || outcome !== undefined)
     return nothingPending(page)
   return {
     kind: 'waiting',
     operation,
-    sibling: true,
+    ...(operation.awaitedHere ? {} : { sibling: true }),
     ...(awaitsUnansweredPay(page) ? { unanswered: true } : {}),
     rail: page.rail
   }

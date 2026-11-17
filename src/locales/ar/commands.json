@@ -36,7 +36,7 @@
     "label": "إعادة التشغيل"
   },
   "Comfy_3DViewer_Open3DViewer": {
-    "label": "افتح عارض ثلاثي الأبعاد (تجريبي) للعقدة المحددة"
+    "label": "فتح عارض ثلاثي الأبعاد (بيتا) للعقدة المحددة"
   },
   "Comfy_BrowseModelAssets": {
     "label": "تجريبي: تصفح أصول النماذج"
@@ -106,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "طي/توسيع العقد المحددة"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "إخفاء/إظهار الروابط على العقد المحددة"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "كتم/إلغاء كتم العقد المحددة"

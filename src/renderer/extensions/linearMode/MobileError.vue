@@ -2,9 +2,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Dialogue from '@/components/common/Dialogue.vue'
-import { useErrorGroups } from '@/components/rightSidePanel/errors/useErrorGroups'
-import Button from '@/components/ui/button/Button.vue'
+import Dialogue from '@comfyorg/design-system/dialog/Dialogue'
+import { useErrorGroups } from '@/platform/workflowErrors/panel/useErrorGroups'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAppMode } from '@/composables/useAppMode'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useExternalLink } from '@/composables/useExternalLink'
@@ -125,7 +125,10 @@ function copy(obj: unknown) {
             />
           </i18n-t>
         </p>
-        <Dialogue :title="t('linearMode.error.log')">
+        <Dialogue
+          :title="t('linearMode.error.log')"
+          :close-label="t('g.close')"
+        >
           <template #button>
             <Button variant="textonly">
               {{ t('linearMode.error.promptShow') }}

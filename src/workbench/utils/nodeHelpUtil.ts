@@ -1,17 +1,6 @@
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { NodeSourceType, getNodeSource } from '@/types/nodeSource'
-import { normalizePackId } from '@/utils/packUtils'
-
-export function extractCustomNodeName(
-  pythonModule: string | undefined
-): string | null {
-  const modules = pythonModule?.split('.') || []
-  if (modules.length >= 2 && modules[0] === 'custom_nodes') {
-    // Use normalizePackId to remove version suffix
-    return normalizePackId(modules[1])
-  }
-  return null
-}
+import { extractCustomNodeName } from '@/platform/customNodes/manager/utils/packUtils'
 
 export function getNodeHelpBaseUrl(node: ComfyNodeDefImpl): string {
   const nodeSource = getNodeSource(node.python_module)

@@ -7,20 +7,20 @@ import type {
   Reroute,
   SubgraphInputNode,
   SubgraphOutputNode
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 
 import type {
   LinkSegment,
-  Point,
   Positionable
-} from '@/lib/litegraph/src/interfaces'
+} from '@comfyorg/graph-model/interfaces'
+import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
 
 import {
   LinkMarkerShape,
   LinkRenderType
-} from '@/lib/litegraph/src/types/globalEnums'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+} from '@comfyorg/graph-model/globalEnums'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import {
   findRerouteAtPoint,
   queryRenderedLinkSegmentsAtPoint

@@ -87,10 +87,12 @@ Flag:
 - **A store-level reconciliation pass** — any code that diffs a snapshot of the stores
   against the live graph or the document and patches one to match the other
   (`reconcile*`, `resync*`, snapshot-diff, slot-array merge). The applier reads the
-  document's own change set (`DocChangeCollector`) for incremental frames. For catch-up,
-  `syncFromDoc` drives the live graph to the document through the graph API: it adds,
-  updates, and removes graph entities, sparing only the local human's pending edits
-  (`PendingLocalEdits`). It never patches stores or "corrects" store state directly.
+  document's own change set (`DocChangeCollector`) for incremental frames. After a lineage
+  reset, `AgentCrdtProjection.replaceOnNextFrame` makes the next frame apply in `replace`
+  mode, which drives the live graph to the document through the graph API: it adds,
+  updates, and removes graph entities. Between frames, `LocalWidgetWrites` holds back a
+  frame's value for a widget the local human edited until the document holds the local
+  value. Neither patches stores or "corrects" store state directly.
 - **Remote writes outside the provenance scope** — a graph-API call for a remote change
   that runs outside `withGraphIntentSource('agent-remote', ...)` / `withRemoteActor`, or
   asynchronous work started inside that scope and finished later (it will be attributed
@@ -174,3 +176,14 @@ from `src/base/assert.ts` (DEV throws, prod reports to Sentry), with a message t
 the broken invariant and links this ADR, e.g. `assert(!isFollower, 'followers never write
 the shared doc — see FOLLOWER')`. Flag a follower-boundary change that adds no such guard
 where one is warranted.
+
+`pnpm follower-document-mutations:check` (also run by the unit suite) recursively parses
+every non-test TypeScript module in `src/workbench/extensions/agent/crdt/` except the
+`mergeScenarios.ts` merge laboratory, and fails closed when the `followerDoc.ts` seam is
+missing or a source is malformed. It flags the shared-document mutations it can trace
+syntactically within one file, so it does not replace the review checks above: a document
+passed to a helper parameter not annotated with a `Y.` shared type, returned from a getter,
+stored in an array or object, reassigned after its declaration, or written through
+`Reflect.apply` is not traced. The sole permitted raw Yjs integration is
+`FollowerDoc.applyRemoteUpdate`, which applies a host-delivered update to its local follower
+document.

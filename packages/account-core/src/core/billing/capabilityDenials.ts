@@ -30,6 +30,7 @@ export type CapabilityDenialReason =
   | 'not_original_owner'
   | 'creator_only_provisioning'
   | 'payment_past_due'
+  | 'topup_purchases_paused'
   | 'free_plan'
   | 'no_subscription'
   | 'subscription_ended'
@@ -43,6 +44,7 @@ export type CapabilityDenialReason =
   | 'membership_managed_by_directory'
   | 'personal_workspace_creator'
   | 'workspace_creator'
+  | 'workspace_owner'
   | 'only_owner'
   | 'billing_state_unknown'
   | 'free_tier_exhausted'
@@ -53,6 +55,7 @@ export type CapabilityDenialReason =
   | 'no_upgrade_available'
   | 'partner_governance_not_entitled'
   | 'plan_ending'
+  | 'plan_not_enterprise'
   | 'project_cap_exceeded'
   | 'rollout_disabled'
   | 'sales_managed'
@@ -80,6 +83,7 @@ const KNOWN_REASONS: Readonly<
   not_original_owner: true,
   creator_only_provisioning: true,
   payment_past_due: true,
+  topup_purchases_paused: true,
   free_plan: true,
   no_subscription: true,
   subscription_ended: true,
@@ -93,6 +97,7 @@ const KNOWN_REASONS: Readonly<
   membership_managed_by_directory: true,
   personal_workspace_creator: true,
   workspace_creator: true,
+  workspace_owner: true,
   only_owner: true,
   billing_state_unknown: true,
   free_tier_exhausted: true,
@@ -103,6 +108,7 @@ const KNOWN_REASONS: Readonly<
   no_upgrade_available: true,
   partner_governance_not_entitled: true,
   plan_ending: true,
+  plan_not_enterprise: true,
   project_cap_exceeded: true,
   rollout_disabled: true,
   sales_managed: true,

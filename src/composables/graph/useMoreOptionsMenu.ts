@@ -10,7 +10,7 @@ import {
 } from '@/renderer/extensions/vueNodes/utils/linkedCoreMediaUtils'
 import { getExtraOptionsForWidget } from '@/services/litegraphService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { filterUnavailableCoreMediaMenuActions } from '@/utils/coreMediaMenuActionUtils'
 import type { CoreMediaMenuActionKind } from '@/utils/coreMediaMenuActionUtils'
 import { isLGraphGroup } from '@/utils/litegraphUtil'
@@ -115,7 +115,8 @@ export function useMoreOptionsMenu() {
   const canvasStore = useCanvasStore()
   const nodeOutputStore = useNodeOutputStore()
 
-  const { getImageMenuOptions } = useImageMenuOptions()
+  const { getImageMenuOptions, getPreviewResolutionOption } =
+    useImageMenuOptions()
   const { hasMultipleOutputs } = useNodeOutputsExport()
   const {
     getNodeInfoOption,
@@ -280,6 +281,11 @@ export function useMoreOptionsMenu() {
       )
       options.push({ type: 'divider' })
     }
+    const previewResolutionOption =
+      isSingleNode.value && !hideLinkedInputPreview
+        ? getPreviewResolutionOption(selectedNodes.value[0])
+        : undefined
+    if (previewResolutionOption) options.push(previewResolutionOption)
     const widgetName = invocationContext.value?.widgetName
     const widget = node?.widgets?.find((w) => w.name === widgetName)
     if (node && widget) {

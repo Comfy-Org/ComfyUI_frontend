@@ -7,9 +7,9 @@
     @pointerdown.stop="focusContainer"
     @mousedown.stop
     @contextmenu.stop.prevent
-    @dragover.prevent.stop="handleDragOver"
+    @dragover="handleDragOver"
     @dragleave.stop="handleDragLeave"
-    @drop.prevent.stop="handleDrop"
+    @drop="handleDrop"
   >
     <LoadingOverlay :loading="loading" :loading-message="loadingMessage" />
     <div
@@ -28,7 +28,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 import { useLoad3dDrag } from '@/extensions/core/load3d/composables/useLoad3dDrag'
 
 const props = defineProps<{

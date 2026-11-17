@@ -1,8 +1,8 @@
 import { describe, expect, it, onTestFinished } from 'vitest'
 
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { LinkPresentation } from '@/types/linkPresentation'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { LinkPresentation } from '@comfyorg/graph-model/linkPresentation'
 
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
@@ -13,9 +13,9 @@ import {
 import { MovingInputLink } from '@/lib/litegraph/src/canvas/MovingInputLink'
 import { MovingOutputLink } from '@/lib/litegraph/src/canvas/MovingOutputLink'
 import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import { toRerouteId } from '@/types/rerouteId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
+import type { LinkConnectorEventMap } from '@comfyorg/graph-model/LinkConnectorEventMap'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import {
   createTestRootGraph,

@@ -5,7 +5,7 @@ import type {
   SerialisableGraph,
   SerialisableLLink,
   SerialisableReroute
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 
 type LegacyWorkflowGraph = Omit<ISerialisedGraph, 'links'> & {
   links?: ISerialisedGraph['links']

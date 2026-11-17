@@ -6,8 +6,8 @@ import { nextTick, reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { toNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import {
   LGraphNode as LGraphNodeClass,
   SubgraphNode
@@ -17,8 +17,8 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { widgetId } from '@/types/widgetId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import type {
   InputWidgetConfig,
   LinearInput,
@@ -33,7 +33,7 @@ import {
   createNodeState
 } from '@/utils/__tests__/litegraphTestUtils'
 import { resolveNode } from '@/utils/litegraphUtil'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {

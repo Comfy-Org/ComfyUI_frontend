@@ -4,6 +4,8 @@ import type {
   WorkflowReferenceOption
 } from '@/workbench/extensions/agent/types/workflowReference'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import {
   isInaccessible,
   render,
@@ -12,7 +14,15 @@ import {
   within
 } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { defineComponent, h, nextTick, ref, shallowRef } from 'vue'
 import type { ShallowRef } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -20,10 +30,10 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { i18n } from '@/i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToast } from '@/components/ui/toast/toastStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
@@ -34,7 +44,7 @@ setupInlinePromptEditorDom()
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
 const fetchApi = vi.mocked(api.fetchApi)
 const telemetryProvider = useTelemetry()
@@ -126,6 +136,135 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
     expect(emitted().send).toBeUndefined()
   })
+
+  it('attaches the error context as an inline reference and serializes it into the sent message', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [
+        {
+          category: 'execution_failure',
+          message: 'RuntimeError: boom',
+          nodeId: '5',
+          nodeType: 'KSampler'
+        }
+      ]
+    })
+    const view = mount()
+
+    expect(await screen.findByTestId('error-reference-chip')).toBeVisible()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Can you fix this?')
+    await userEvent.keyboard('{Enter}')
+
+    const sent = view.emitted().send as [string, ...unknown[]][]
+    expect(sent).toHaveLength(1)
+    const [text] = sent[0]
+    expect(text).toContain('Can you fix this?')
+    expect(text).toContain('[Execution failure]')
+    expect(text).toContain('RuntimeError: boom')
+  })
+
+  it('removes the inline error reference on request', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 2,
+      label: 'Missing Inputs',
+      severity: 'warning',
+      problems: [
+        { category: 'missing_media', message: 'image missing' },
+        { category: 'missing_media', message: 'video missing' }
+      ]
+    })
+    mount()
+
+    expect(
+      await screen.findByTestId('error-reference-count')
+    ).toHaveTextContent('2')
+    await userEvent.click(screen.getByTestId('error-reference-remove'))
+
+    expect(screen.queryByTestId('error-reference-chip')).toBeNull()
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  it('deletes the inline error reference with Backspace', async () => {
+    useAgentComposerStore().setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+    mount()
+
+    await screen.findByTestId('error-reference-chip')
+    const editor = screen.getByRole('textbox')
+    await userEvent.click(editor)
+    await userEvent.keyboard('{Backspace}{Backspace}')
+
+    expect(screen.queryByTestId('error-reference-chip')).toBeNull()
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
+  function renderComposerWhenPanelOpens() {
+    const selectWorkflowReference = vi.fn(
+      async (workflow: WorkflowReferenceOption) => ({
+        id: workflow.id ?? 'saved-scratch',
+        name: workflow.name
+      })
+    )
+    const Harness = defineComponent({
+      setup() {
+        const panel = useAgentPanelStore()
+        return () =>
+          h('div', [
+            h('button', { type: 'button' }, 'Elsewhere'),
+            panel.isOpen
+              ? h(Composer, {
+                  hasWorkflowTarget: true,
+                  selectWorkflowReference
+                })
+              : null
+          ])
+      }
+    })
+    render(Harness, { global: { plugins: [i18n] } })
+  }
+
+  it.for(['closed', 'open'] as const)(
+    'an error attachment focuses the %s composer after the chip',
+    async (panelState) => {
+      const panel = useAgentPanelStore()
+      if (panelState === 'open') panel.open('topbar_button')
+      const issue: AgentErrorContext = {
+        scope: 'single',
+        label: 'SaveImage failed',
+        count: 1,
+        severity: 'error',
+        problems: [{ category: 'execution_failure', message: 'boom' }]
+      }
+      renderComposerWhenPanelOpens()
+      await nextTick()
+      await userEvent.click(screen.getByRole('button', { name: 'Elsewhere' }))
+
+      useAgentComposerStore().setErrorContext(issue)
+      if (panelState === 'closed') panel.open('error_context')
+      await nextTick()
+
+      const textbox = screen.getByRole('textbox')
+      expect(textbox).toHaveFocus()
+      await userEvent.keyboard('now')
+      const prompt = useAgentComposerStore().prompt
+      expect(prompt.text).toBe(' now')
+      expect(prompt.references[0]).toMatchObject({
+        kind: 'error',
+        textOffset: 0
+      })
+      expect(useAgentComposerStore().pendingCaret).toBeNull()
+    }
+  )
 
   it('blocks all node entry points and explains why while workflow references remain available', async () => {
     const reason = 'Please select a workflow first'
@@ -578,6 +717,52 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
   })
 
+  function dispatchComposerEnter(init: KeyboardEventInit) {
+    const pageKeydown = vi.fn()
+    window.addEventListener('keydown', pageKeydown)
+    onTestFinished(() => window.removeEventListener('keydown', pageKeydown))
+    const box = screen.getByRole('textbox')
+    box.focus()
+    const notCanceled = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Enter',
+        bubbles: true,
+        cancelable: true,
+        ...init
+      })
+    )
+    return { pageKeydown, notCanceled }
+  }
+
+  it.for([
+    { chord: 'Ctrl+Enter', init: { ctrlKey: true }, props: {} },
+    { chord: 'Meta+Enter', init: { metaKey: true }, props: {} },
+    {
+      chord: 'Ctrl+Shift+Enter',
+      init: { ctrlKey: true, shiftKey: true },
+      props: {}
+    },
+    {
+      chord: 'Ctrl+Enter while a chat is opening',
+      init: { ctrlKey: true },
+      props: { openingChat: true }
+    }
+  ])('keeps $chord away from page keybindings', ({ init, props }) => {
+    mount(props)
+    const { pageKeydown } = dispatchComposerEnter(init)
+    expect(pageKeydown).not.toHaveBeenCalled()
+  })
+
+  it('keeps Ctrl+Enter during IME composition away from page keybindings without canceling it', () => {
+    mount()
+    const { pageKeydown, notCanceled } = dispatchComposerEnter({
+      ctrlKey: true,
+      isComposing: true
+    })
+    expect(pageKeydown).not.toHaveBeenCalled()
+    expect(notCanceled).toBe(true)
+  })
+
   it('lets Escape close the mention list before it stops a run', async () => {
     const { emitted } = mount({
       streaming: true,
@@ -591,6 +776,88 @@ describe('Composer', () => {
     expect(emitted().stop).toBeUndefined()
     await userEvent.keyboard('{Escape}')
     expect(emitted().stop).toHaveLength(1)
+  })
+
+  async function mountRunningWithAttachment(onStop: () => void) {
+    vi.useFakeTimers()
+    const composer = ref<InstanceType<typeof Composer> | null>(null)
+    const Host = defineComponent({
+      setup: () => () =>
+        h(Composer, {
+          ref: composer,
+          hasWorkflowTarget: true,
+          streaming: true,
+          onStop
+        })
+    })
+    render(Host, { global: { plugins: [i18n] } })
+    composer.value?.addAttachment({
+      id: 'attachment-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png',
+      previewUrl: 'https://example.com/cat.png'
+    })
+    await nextTick()
+    return {
+      user: userEvent.setup({ advanceTimers: vi.advanceTimersByTimeAsync }),
+      trigger: screen.getByRole('button', { name: 'Preview cat.png' }),
+      previewed: () => screen.queryByRole('dialog', { name: 'cat.png' })
+    }
+  }
+
+  it('lets Escape close an attachment preview before it stops a run', async () => {
+    const onStop = vi.fn()
+    const { user, trigger, previewed } =
+      await mountRunningWithAttachment(onStop)
+
+    await user.click(screen.getByRole('textbox'))
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(previewed()).toBeVisible()
+
+    await user.keyboard('{Escape}')
+    expect(previewed()).toBeNull()
+    expect(onStop).not.toHaveBeenCalled()
+
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(previewed()).toBeVisible()
+    await user.keyboard('{Escape}')
+    expect(previewed()).toBeNull()
+    expect(onStop).not.toHaveBeenCalled()
+
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    await user.click(screen.getByRole('textbox'))
+    await user.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps an Escape that closed an attachment preview away from the page', async () => {
+    const pageEscape = vi.fn()
+    window.addEventListener('keydown', pageEscape)
+    onTestFinished(() => window.removeEventListener('keydown', pageEscape))
+    const onStop = vi.fn()
+    const { user, trigger, previewed } =
+      await mountRunningWithAttachment(onStop)
+
+    await user.hover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    expect(previewed()).toBeVisible()
+    expect(trigger).not.toHaveFocus()
+    expect(previewed()).not.toHaveFocus()
+
+    await user.keyboard('{Escape}')
+    expect(previewed()).toBeNull()
+    expect(pageEscape).not.toHaveBeenCalled()
+    expect(onStop).not.toHaveBeenCalled()
+
+    await user.unhover(trigger)
+    await vi.advanceTimersByTimeAsync(250)
+    await user.keyboard('{Escape}')
+    expect(pageEscape).toHaveBeenCalledTimes(1)
   })
 
   it('keeps handled Escapes inside the composer and lets idle Escape bubble', async () => {
@@ -1275,12 +1542,10 @@ describe('Composer', () => {
 
     it('keeps a failed workflow mention retryable and consumes it only on success', async () => {
       const selectWorkflowReference = vi
-        .fn(
-          async (): Promise<WorkflowReferenceMetadata | undefined> => ({
-            id: 'saved-scratch',
-            name: 'Scratch'
-          })
-        )
+        .fn(async (): Promise<WorkflowReferenceMetadata | undefined> => ({
+          id: 'saved-scratch',
+          name: 'Scratch'
+        }))
         .mockResolvedValueOnce(undefined)
       mount({
         availableWorkflows: [{ tabPath: 'scratch.json', name: 'Scratch' }],

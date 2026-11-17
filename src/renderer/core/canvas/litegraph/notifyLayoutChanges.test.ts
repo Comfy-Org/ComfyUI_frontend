@@ -4,7 +4,7 @@ import { notifyLayoutChanges } from '@/renderer/core/canvas/litegraph/notifyLayo
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
-import { toGroupId } from '@/types/groupId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { createUuidv4 } from '@/utils/uuid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 

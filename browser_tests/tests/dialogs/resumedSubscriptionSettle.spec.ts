@@ -13,10 +13,10 @@ import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import type { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 /**
@@ -32,12 +32,11 @@ type Rail = 'sdk' | 'legacy'
 const RAIL_FEATURES: Record<Rail, RemoteConfig> = {
   sdk: {
     billing_control_enabled: true,
-    unified_cloud_auth: true,
-    billing_sdk_subscription_enabled: true
+    unified_cloud_auth: true
   },
   legacy: {
     billing_control_enabled: true,
-    unified_cloud_auth: true
+    unified_cloud_auth: false
   }
 }
 
@@ -103,8 +102,10 @@ const ACTIVE_STANDARD = {
   renewal_date: '2099-02-20T00:00:00Z',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
-  scheduled_change: null
+  scheduled_change: null,
+  next_charge: null
 } satisfies BillingStatusResponse
 
 const SAVED_CARD = {
@@ -155,11 +156,6 @@ async function setupResume(page: Page, rail: Rail): Promise<ResumeRoutes> {
   await page.route('**/api/settings', (route) =>
     route.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
-  if (rail === 'sdk') {
-    await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
-      billing_sdk_subscription_enabled: true
-    })
-  }
 
   await page.route('**/api/billing/payment-methods', (route) =>
     route.fulfill(jsonRoute([SAVED_CARD]))
@@ -275,6 +271,8 @@ async function expectResumedSubscribeSettles(
 }
 
 test.describe('Resumed subscription settle', { tag: '@cloud' }, () => {
+  test.beforeEach(({ page }) => keepPricingTableInApp(page))
+
   test('reports a subscribe that settles after a reload on the SDK rail', async ({
     page,
     toast

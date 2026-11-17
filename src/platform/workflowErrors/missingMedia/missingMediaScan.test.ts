@@ -3,8 +3,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { IComboWidget } from '@comfyorg/graph-model/widgets'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   createMediaNodeDef,
@@ -722,6 +722,21 @@ describe('verifyMediaCandidates', () => {
       assetsEnabled: false,
       isMissing: undefined,
       fetched: false
+    },
+    {
+      source: 'store hash under a subfolder',
+      name: 'myproject/aa11.png [output]',
+      output: [makeAsset('img_00001_.png', 'aa11.png')],
+      isMissing: false,
+      fetched: false
+    },
+    {
+      source: 'store name in another subfolder without assets',
+      name: 'myproject/photo.png [output]',
+      output: [makeAsset('photo.png')],
+      assetsEnabled: false,
+      isMissing: undefined,
+      fetched: false
     }
   ])(
     'resolves from $source',
@@ -748,10 +763,40 @@ describe('verifyMediaCandidates', () => {
     await verifyMediaCandidates(candidates, { signal })
 
     expect(hashLookups()).toEqual([
-      ['/assets?hash=photo.png&limit=1', { signal }]
+      ['/assets?hash=photo.png&include_public=true&limit=1', { signal }]
     ])
     expect(candidates.map((c) => c.isMissing)).toEqual([true, true])
   })
+
+  it('queries remote assets by the hash filename of a subfolder-qualified value', async () => {
+    stubAssets({})
+    const { signal } = new AbortController()
+    const candidates = [
+      makeCandidate('1', 'clipspace/bb22.png [input]', { isMissing: undefined })
+    ]
+
+    await verifyMediaCandidates(candidates, { signal })
+
+    expect(hashLookups()).toEqual([
+      ['/assets?hash=bb22.png&include_public=true&limit=1', { signal }]
+    ])
+  })
+
+  it.for(['/ [output]', 'deadbeef/ [output]'])(
+    'marks %s, which has no filename, missing without a hash query',
+    async (name) => {
+      stubAssets({
+        output: [makeAsset('folder-named.png', 'deadbeef')],
+        remote: [makeAsset('unrelated.png', 'cc33.png')]
+      })
+      const candidates = [makeCandidate('1', name, { isMissing: undefined })]
+
+      await verifyMediaCandidates(candidates)
+
+      expect(candidates[0].isMissing).toBe(true)
+      expect(hashLookups()).toEqual([])
+    }
+  )
 
   it('leaves resolved candidates untouched', async () => {
     stubAssets({})

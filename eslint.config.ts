@@ -2,7 +2,6 @@
 
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
-import { configs as astroConfigs } from 'eslint-plugin-astro'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { getDefaultSelectors } from 'eslint-plugin-better-tailwindcss/api/defaults'
 import {
@@ -143,13 +142,7 @@ const oxlintConfigs = oxlint.buildFromOxlintConfigFile(
   path.resolve(import.meta.dirname, '.oxlintrc.json')
 )
 const sharedIgnores = oxlintConfigs.filter((config) => !config.rules)
-// Astro components are parsed by ESLint only, so they keep every rule.
-const rulesCoveredByOxlint = oxlintConfigs
-  .filter((config) => config.rules)
-  .map((config) => ({
-    ...config,
-    ignores: [...(config.ignores ?? []), '**/*.astro', '**/*.astro/**']
-  }))
+const rulesCoveredByOxlint = oxlintConfigs.filter((config) => config.rules)
 
 const commonGlobals = {
   ...globals.browser,
@@ -207,19 +200,6 @@ const billingWebI18nSettings = {
   }
 } as const
 
-const websiteI18nSettings = {
-  'vue-i18n': {
-    localeDir: [
-      {
-        pattern: './apps/website/src/locales/en/main.json',
-        localeKey: 'path'
-      }
-    ],
-    cwd: import.meta.dirname,
-    messageSyntaxVersion: '^9.0.0'
-  }
-} as const
-
 const commonParserOptions = {
   parser: tseslintParser,
   ecmaVersion: 2020,
@@ -227,7 +207,22 @@ const commonParserOptions = {
   extraFileExtensions
 } as const
 
-// Tailwind CSS v4 linting (class ordering, duplicates, conflicts, etc.)
+const layerClassRestriction = {
+  pattern: '^(?:.*:)?!?-?z-(?:[0-9]{3,}|\\[.*\\]|\\(.*\\))!?$',
+  message:
+    'Use a named layer for cross-component ordering; keep local stacking inside an isolated owner.'
+}
+
+const arbitraryVariantWithHas = '\\[(?:[^\\[\\]]|\\[[^\\[\\]]*\\])*:has\\('
+
+const compoundVariantPrefixes = '(?:(?:not|in|peer|group)-)*'
+
+const nestedHasClassRestriction = {
+  pattern: `(?:^|:)${compoundVariantPrefixes}(?:group-|not-in-)${compoundVariantPrefixes}(?:has-|${arbitraryVariantWithHas})|(?:^|:)(?:not-)?has-.+:\\*{1,2}:`,
+  message:
+    'This compiles to :has() inside :is() or :not() ahead of a descendant combinator, which makes Chrome restyle the whole document on any DOM insertion. Use an arbitrary variant such as [.group:has(:focus-visible)_&]: instead.'
+}
+
 const tailwindConfigs = defineConfig([
   betterTailwindcss.configs.recommended,
   {
@@ -261,17 +256,36 @@ const tailwindConfigs = defineConfig([
         'error',
         { collapse: false }
       ],
-      'better-tailwindcss/no-deprecated-classes': 'error'
+      'better-tailwindcss/no-deprecated-classes': 'error',
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        { restrict: [nestedHasClassRestriction] }
+      ]
+    }
+  },
+  {
+    name: 'design-system/owned-layers',
+    files: ['src/**/*.{ts,vue}'],
+    rules: {
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        { restrict: [layerClassRestriction, nestedHasClassRestriction] }
+      ]
     }
   },
   {
     name: 'design-system/core-ui-theme-tokens',
-    files: ['src/components/ui/**/*.{ts,vue}'],
+    files: [
+      'src/components/ui/**/*.{ts,vue}',
+      'packages/design-system/src/components/**/*.{ts,vue}'
+    ],
     rules: {
       'better-tailwindcss/no-restricted-classes': [
         'error',
         {
           restrict: [
+            layerClassRestriction,
+            nestedHasClassRestriction,
             {
               pattern: specializedThemeClassPattern,
               message:
@@ -290,14 +304,6 @@ const tailwindConfigs = defineConfig([
           import.meta.dirname,
           'apps/billing-web/src/styles.css'
         )
-      }
-    }
-  },
-  {
-    files: ['apps/website/**/*.{astro,ts,mts,vue}'],
-    settings: {
-      'better-tailwindcss': {
-        entryPoint: 'apps/website/src/styles/global.css'
       }
     }
   }
@@ -364,34 +370,28 @@ export default defineConfig([
       },
       // Difference in typecheck on CI vs Local
       pluginVue.configs['flat/recommended'],
-      astroConfigs['flat/recommended'],
-      {
-        files: ['apps/website/**/*.astro'],
-        settings,
-        languageOptions: {
-          parserOptions: {
-            parser: tseslintParser
-          }
-        }
-      },
-      {
-        files: ['apps/website/**/*.astro/*.{js,ts}'],
-        rules: {
-          'no-empty': ['error', { allowEmptyCatch: true }]
-        }
-      },
       ...tailwindConfigs,
+      {
+        files: ['**/*.vue'],
+        plugins: { 'template-classes': templateClasses },
+        rules: {
+          'template-classes/icon-element': 'error'
+        }
+      },
       {
         files: [
           'src/**/*.vue',
           'apps/billing-web/**/*.vue',
-          'packages/account-ui/**/*.vue'
+          'packages/account-ui/**/*.vue',
+          'packages/layer-editor-ui/**/*.vue',
+          'packages/mask-editor/src/ui/**/*.vue'
         ],
         plugins: { 'template-classes': templateClasses },
         rules: {
           'template-classes/no-default-utilities': 'error',
           'template-classes/no-redundant-component-classes': 'error',
-          'template-classes/no-inherited-utilities': 'error'
+          'template-classes/no-inherited-utilities': 'error',
+          'template-classes/prefer-design-system-button': 'error'
         }
       },
       // Disables ESLint rules that conflict with formatters
@@ -400,7 +400,7 @@ export default defineConfig([
       importX.flatConfigs.typescript,
       {
         // oxlint runs this rule elsewhere; it cannot see template usages in SFCs
-        files: ['**/*.vue', '**/*.astro'],
+        files: ['**/*.vue'],
         plugins: { 'unused-imports': unusedImports },
         rules: { 'unused-imports/no-unused-imports': 'error' }
       },
@@ -417,6 +417,8 @@ export default defineConfig([
           'vue/multi-word-component-names': 'off', // TODO: fix
           'vue/no-template-shadow': 'off', // TODO: fix
           'vue/match-component-import-name': 'error',
+          'vue/no-content-outside-block': 'error',
+          'vue/no-props-shadow': 'error',
           'vue/no-unused-properties': 'error',
           'vue/no-unused-refs': 'error',
           'vue/no-useless-mustaches': 'error',
@@ -498,35 +500,6 @@ export default defineConfig([
       },
 
       {
-        files: ['apps/website/**/*.vue'],
-        rules: {
-          '@intlify/vue-i18n/no-raw-text': 'off',
-          'vue/no-v-html': 'error'
-        }
-      },
-      // Astro exposes virtual modules (astro:content, astro:assets, ...) that the
-      // TypeScript resolver cannot see but are valid at build time.
-      {
-        files: ['apps/website/**/*.{astro,ts,mts,vue}'],
-        rules: {
-          'import-x/no-unresolved': ['error', { ignore: ['^astro:'] }]
-        }
-      },
-      // reka-ui wrappers forward props via v-bind, which the rule cannot trace.
-      {
-        files: [
-          'apps/website/src/components/ui/accordion/*.vue',
-          'apps/website/src/components/ui/dialog/*.vue',
-          'apps/website/src/components/ui/navigation-menu/*.vue',
-          'apps/website/src/components/ui/sheet/*.vue',
-          'apps/website/src/components/ui/slider/*.vue',
-          'apps/website/src/components/ui/toggle-group/*.vue'
-        ],
-        rules: {
-          'vue/no-unused-properties': 'off'
-        }
-      },
-      {
         name: 'comfy/enforce-sanitized-html-boundary',
         files: ['src/**/*.vue'],
         rules: {
@@ -546,7 +519,6 @@ export default defineConfig([
         ignores: [
           'src/App.vue',
           'src/components/graph/SelectionToolbox.vue',
-          'src/components/ui/tooltip/*.vue',
           'src/renderer/core/layout/transform/TransformPane.vue'
         ],
         rules: {
@@ -563,18 +535,14 @@ export default defineConfig([
       }
     ]
   },
-  // Every tree checked against its own catalog. These entries add only the
-  // catalog and the rule, so the extensions must be ones the blocks above
-  // already parse: tailwindScriptFiles for .ts, templateFiles for .vue and
-  // .astro. Adding .mts here would lint it with espree and fail on syntax.
   ...(
     [
       ['src', settings],
-      ['apps/billing-web', billingWebI18nSettings],
-      ['apps/website', websiteI18nSettings]
+      ['packages/mask-editor/src/ui', settings],
+      ['apps/billing-web', billingWebI18nSettings]
     ] as const
   ).map(([root, treeSettings]) => ({
-    files: [`${root}/**/*.{ts,vue,astro}`],
+    files: [`${root}/**/*.{ts,vue}`],
     ignores: tailwindScriptIgnores,
     settings: treeSettings,
     plugins: { '@intlify/vue-i18n': i18nPlugin },
@@ -612,6 +580,40 @@ export default defineConfig([
             "CallExpression[callee.property.name=/^(split|lastIndexOf)$/]:matches([arguments.0.value='.'], [arguments.0.value='/'], [arguments.0.value='\\\\'])",
           message:
             'Use the platform filename utilities (getFilenameDetails, getPathDetails).'
+        }
+      ]
+    }
+  },
+  {
+    name: 'comfy/mask-editor-package-direction',
+    files: ['packages/mask-editor/src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts'],
+    plugins: { 'import-x': importX },
+    settings,
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@/*'],
+              message:
+                'Keep application integration in the mask-editor host adapters.'
+            }
+          ]
+        }
+      ],
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './packages/mask-editor/src',
+              from: './src',
+              message:
+                'Keep application integration in the mask-editor host adapters.'
+            }
+          ]
         }
       ]
     }

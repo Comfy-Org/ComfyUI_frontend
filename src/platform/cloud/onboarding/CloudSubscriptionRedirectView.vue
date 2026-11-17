@@ -3,7 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
@@ -125,11 +125,16 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
 
   if (isPaidPersonalTierKey(tierKeyParam)) {
     if (!isCheckoutTierKey(tierKeyParam)) {
-      showPricingTable({ reason: 'deep_link', planMode: 'personal' })
+      showPricingTable({
+        reason: 'deep_link',
+        sameTab: true,
+        planMode: 'personal'
+      })
       return
     }
     showPricingTable({
       reason: 'deep_link',
+      sameTab: true,
       planMode: 'personal',
       initialCheckout: {
         planMode: 'personal',
@@ -151,6 +156,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
   )
   showPricingTable({
     reason: 'deep_link',
+    sameTab: true,
     planMode: 'team',
     initialCheckout
   })

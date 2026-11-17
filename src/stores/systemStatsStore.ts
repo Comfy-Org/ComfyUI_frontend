@@ -2,7 +2,7 @@ import { useAsyncState } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import type { SystemStats } from '@/platform/remote/comfyui/types'
+import type { SystemStats } from '@comfyorg/api-client/types'
 import { api } from '@/scripts/api'
 
 export const useSystemStatsStore = defineStore('systemStats', () => {

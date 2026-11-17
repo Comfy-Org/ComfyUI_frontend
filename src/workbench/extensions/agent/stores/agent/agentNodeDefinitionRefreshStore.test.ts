@@ -1,14 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentNodeDefinitionRefreshStore } from './agentNodeDefinitionRefreshStore'
 
-vi.mock(import('@/platform/telemetry/reportError'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 function toolCall(

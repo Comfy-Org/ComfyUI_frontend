@@ -24,7 +24,10 @@
     <div
       class="relative aspect-square overflow-hidden"
       @click.stop="handlePreviewClick"
-      @dblclick.stop="(fileKind === 'image' || isHdr) && handleZoomClick()"
+      @dblclick.stop="
+        (fileKind === 'image' || fileKind === 'video' || isHdr) &&
+        handleZoomClick()
+      "
     >
       <!-- Loading State -->
       <div v-if="loading" class="size-full animate-pulse rounded-lg bg-muted" />
@@ -71,9 +74,7 @@
       >
         <i
           aria-hidden="true"
-          :class="
-            cn('icon-[lucide--check] size-4 shrink-0', !selected && 'opacity-0')
-          "
+          :class="cn('icon-[lucide--check]', !selected && 'opacity-0')"
         />
       </Button>
 
@@ -85,7 +86,7 @@
             'absolute top-2 right-2 z-1 flex flex-wrap justify-end gap-2',
             'pointer-events-none opacity-0 transition-opacity',
             'group-hover:pointer-events-auto group-hover:opacity-100',
-            'group-has-focus-visible:pointer-events-auto group-has-focus-visible:opacity-100',
+            '[.group:has(:focus-visible)_&]:pointer-events-auto [.group:has(:focus-visible)_&]:opacity-100',
             'touch:pointer-events-auto touch:opacity-100'
           )
         "
@@ -97,7 +98,7 @@
             :aria-label="$t('mediaAsset.actions.download')"
             @click.stop="handleDownload"
           >
-            <i class="icon-[lucide--download] size-4" />
+            <i class="icon-[lucide--download]" />
           </Button>
           <Button
             variant="overlay-white"
@@ -105,7 +106,7 @@
             :aria-label="$t('mediaAsset.actions.moreOptions')"
             @click.stop="handleContextMenu"
           >
-            <i class="icon-[lucide--ellipsis] size-4" />
+            <i class="icon-[lucide--ellipsis]" />
           </Button>
         </IconGroup>
       </div>
@@ -142,7 +143,7 @@
             variant="secondary"
             @click.stop="handleOutputCountClick"
           >
-            <i class="icon-[lucide--layers] size-4" />
+            <i class="icon-[lucide--layers]" />
             <span>{{ outputCount }}</span>
           </Button>
         </div>
@@ -152,12 +153,14 @@
 </template>
 
 <script setup lang="ts">
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
+
 import { cn } from '@comfyorg/tailwind-utils'
 import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 
-import IconGroup from '@/components/button/IconGroup.vue'
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
-import Button from '@/components/ui/button/Button.vue'
+import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
+import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
+import Button from '@comfyorg/design-system/button/Button'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -183,7 +186,7 @@ import {
 } from '@/platform/assets/utils/assetMetadataUtils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
-import MediaTitle from './MediaTitle.vue'
+import MediaTitle from '@comfyorg/design-system/media/MediaTitle'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
 
@@ -236,7 +239,7 @@ const emit = defineEmits<{
 }>()
 
 // Store actual image dimensions
-const imageDimensions = ref<{ width: number; height: number } | undefined>()
+const imageDimensions = ref<Size2D | undefined>()
 
 const actions = useMediaAssetActions()
 

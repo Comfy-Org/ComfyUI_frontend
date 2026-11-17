@@ -13,6 +13,9 @@
             <TableHead>{{ $t('credits.eventType') }}</TableHead>
             <TableHead>{{ $t('credits.details') }}</TableHead>
             <TableHead>{{ $t('credits.time') }}</TableHead>
+            <TableHead v-if="showMemberColumn">{{
+              $t('credits.member')
+            }}</TableHead>
             <TableHead>{{ $t('credits.additionalInfo') }}</TableHead>
           </TableRow>
         </TableHeader>
@@ -60,15 +63,18 @@
             <TableCell>
               {{ customerEventService.formatDate(event.createdAt ?? '') }}
             </TableCell>
+            <TableCell v-if="showMemberColumn">
+              {{ memberLabel(event) }}
+            </TableCell>
             <TableCell>
               <Button
                 v-if="customerEventService.hasAdditionalInfo(event)"
-                :tooltip="additionalInfoTooltip(event)"
+                :tooltip="customerEventService.getTooltipContent(event)"
                 variant="textonly"
                 size="icon-sm"
                 :aria-label="$t('credits.additionalInfo')"
               >
-                <i class="pi pi-info-circle" />
+                <i class="icon-[lucide--info]" />
               </Button>
             </TableCell>
           </TableRow>
@@ -87,43 +93,50 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Message from '@comfyorg/design-system/message/Message'
 import AppPagination from '@/components/common/AppPagination.vue'
 import AppSpinner from '@/components/common/AppSpinner.vue'
-import Table from '@/components/ui/table/Table.vue'
-import TableBody from '@/components/ui/table/TableBody.vue'
-import TableCell from '@/components/ui/table/TableCell.vue'
-import TableHead from '@/components/ui/table/TableHead.vue'
-import TableHeader from '@/components/ui/table/TableHeader.vue'
-import TableRow from '@/components/ui/table/TableRow.vue'
-import { formatCreditsFromUsd } from '@/base/credits/comfyCredits'
+import Table from '@comfyorg/design-system/table/Table'
+import TableBody from '@comfyorg/design-system/table/TableBody'
+import TableCell from '@comfyorg/design-system/table/TableCell'
+import TableHead from '@comfyorg/design-system/table/TableHead'
+import TableHeader from '@comfyorg/design-system/table/TableHeader'
+import TableRow from '@comfyorg/design-system/table/TableRow'
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
-import { useTelemetry } from '@/platform/telemetry'
-import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import { readOnRail } from '@/platform/billing/composables/readOnRail'
-import { useBillingReadRail } from '@/platform/billing/composables/useBillingReadRail'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { usePendingTopup } from '@/platform/billing/composables/usePendingTopup'
-import type { AuditLog } from '@/services/customerEventsService'
+import { toFiniteNumber } from '@/platform/billing/api/customerEventParams'
+import type { AuditLog } from '@/platform/billing/api/customerEventsService'
 import {
   EventType,
   useCustomerEventsService
-} from '@/services/customerEventsService'
+} from '@/platform/billing/api/customerEventsService'
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
+const { flags } = useFeatureFlags()
 
-const events = ref<AuditLog[]>([])
+type BillingEvent = NonNullable<
+  Awaited<ReturnType<typeof readWorkspaceBillingEvents>>
+>['events'][number]
+type ActivityEvent = AuditLog &
+  Pick<BillingEvent, 'member_display_name' | 'member_email' | 'member_former'>
+
+const events = ref<ActivityEvent[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 
 const customerEventService = useCustomerEventsService()
 
 const { shouldUseWorkspaceBilling } = useBillingRouting()
+const routingPending = computed(() => !shouldUseWorkspaceBilling.value)
 
 const pagination = ref({
   page: 1,
@@ -131,52 +144,36 @@ const pagination = ref({
   total: 0
 })
 
-function toFiniteNumber(raw: unknown) {
-  const value = typeof raw === 'string' && raw.trim() ? Number(raw) : raw
-  return typeof value === 'number' && Number.isFinite(value) ? value : undefined
+const showMemberColumn = computed(
+  () =>
+    flags.billingNewUxEnabled &&
+    events.value.some((e) => e.member_display_name || e.member_email)
+)
+
+function memberLabel(event: ActivityEvent) {
+  const name = event.member_display_name || event.member_email
+  if (!name) return '-'
+  return event.member_former ? t('credits.formerMember', { name }) : name
 }
 
 function eventAmount(event: AuditLog) {
   return toFiniteNumber(event.params?.amount)
 }
 
-function formatChargeCredits(microUsd: number) {
-  const amount = formatCreditsFromUsd({
-    usd: microUsd / 1_000_000,
-    locale: locale.value,
-    numberOptions: { minimumFractionDigits: 0, maximumFractionDigits: 0 }
-  })
-  return `${amount} ${t('credits.credits')}`
-}
-
-function formatParam(key: string, value: unknown) {
-  const microUsd =
-    key === 'charge_micro_usd' ? toFiniteNumber(value) : undefined
-  if (microUsd !== undefined) {
-    return `${t('credits.charge')}: ${formatChargeCredits(microUsd)}`
-  }
-  return `${customerEventService.formatJsonKey(key)}: ${customerEventService.formatJsonValue(value)}`
-}
-
-function additionalInfoTooltip(event: AuditLog) {
-  return Object.entries(event.params ?? {})
-    .map(([key, value]) => formatParam(key, value))
-    .join('\n')
-}
-
 // A billing-route flip can overlap two loads against different backends; only
 // the latest may mutate state, so a superseded response is discarded.
 let latestLoadToken = 0
 
-const readWorkspaceEvents = (params: { page: number; limit: number }) => {
-  const rail = useBillingReadRail()
-  return rail === null
-    ? workspaceApi.getBillingEvents(params)
-    : readOnRail(() => rail.readEvents(params), 'getBillingEvents')
-}
-
 const loadEvents = async () => {
   const loadToken = ++latestLoadToken
+  if (routingPending.value) {
+    dropRenderedEvents()
+    error.value = workspaceInitSettled.value
+      ? t('credits.loadEventsError')
+      : null
+    loading.value = !workspaceInitSettled.value
+    return
+  }
   loading.value = true
   error.value = null
 
@@ -185,13 +182,10 @@ const loadEvents = async () => {
       page: pagination.value.page,
       limit: pagination.value.limit
     }
-    const response = shouldUseWorkspaceBilling.value
-      ? await readWorkspaceEvents(params)
-      : await customerEventService.getMyEvents(params)
+    const response = await readWorkspaceBillingEvents(params)
 
     // Completion telemetry must run even when a mid-checkout route flip
-    // supersedes this load, since legacy and workspace backends emit different
-    // top-up events and the winning fetch may not carry the completion yet.
+    // supersedes this load.
     const completedTopup = usePendingTopup().consumeCompletedTopup(
       response?.events
     )
@@ -235,10 +229,7 @@ const loadEvents = async () => {
         pagination.value.total = response.total
       }
     } else {
-      const legacyError = shouldUseWorkspaceBilling.value
-        ? null
-        : customerEventService.error.value
-      error.value = legacyError || t('credits.loadEventsError')
+      error.value = t('credits.loadEventsError')
     }
   } catch (err) {
     if (loadToken !== latestLoadToken) return
@@ -271,13 +262,18 @@ const refresh = async () => {
   await loadEvents()
 }
 
-const workspaceStore = useTeamWorkspaceStore()
+const workspaceStore = useWorkspaceIdentity()
+const workspaceInitSettled = computed(() => workspaceStore.initSettled)
 
 // The active workspace is watched alongside the billing mode: a switch between
 // two workspaces on the same mode leaves this table mounted, and without this
 // nothing reloads it at all when no read happens to be in flight.
 watch(
-  [shouldUseWorkspaceBilling, () => workspaceStore.activeWorkspaceId],
+  [
+    shouldUseWorkspaceBilling,
+    () => workspaceStore.activeWorkspaceId,
+    workspaceInitSettled
+  ],
   ([, workspaceId], previous) => {
     if (previous !== undefined && previous[1] !== workspaceId) {
       dropRenderedEvents()

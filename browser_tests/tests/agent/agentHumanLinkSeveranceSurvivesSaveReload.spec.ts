@@ -12,7 +12,7 @@ const CASE = 'agent-rec-text-only-answer'
 // the other two — the reporter noticed the bug precisely because a sibling link
 // off the same node was still correct.
 const SEVERED_LINK_ID = 1
-const SEVERED_TARGET = { node: 6, slot: 0 }
+const SEVERED_TARGET = { node: 6, input: 'clip' }
 const SURVIVING_LINK_IDS = [2, 3, 4, 5, 6]
 const SEEDED_LINK_IDS = [SEVERED_LINK_ID, ...SURVIVING_LINK_IDS]
 const SAVED_NAME = 'Severed link survives reload'
@@ -85,7 +85,7 @@ function inputLinkIds(node: { inputs?: unknown } | undefined): number[] {
 function inputLinkAt(
   graph: DraftGraph,
   nodeId: number,
-  slot: number
+  inputName: string
 ): number | null {
   const node = graph.nodes.find(
     (candidate) => (candidate as { id?: unknown }).id === nodeId
@@ -93,7 +93,13 @@ function inputLinkAt(
   if (node === undefined)
     throw new Error(`the draft workflow has no node ${nodeId}`)
   const inputs = Array.isArray(node.inputs) ? node.inputs : []
-  const link = (inputs[slot] as { link?: unknown } | undefined)?.link
+  const input = inputs.find(
+    (candidate) =>
+      typeof candidate === 'object' &&
+      candidate !== null &&
+      (candidate as { name?: unknown }).name === inputName
+  ) as { link?: unknown } | undefined
+  const link = input?.link
   return typeof link === 'number' ? link : null
 }
 
@@ -144,7 +150,7 @@ test.describe(
         const seeded = draftGraph(await seededTurn)
         expect(linkIds(seeded)).toEqual(SEEDED_LINK_IDS)
         expect(
-          inputLinkAt(seeded, SEVERED_TARGET.node, SEVERED_TARGET.slot)
+          inputLinkAt(seeded, SEVERED_TARGET.node, SEVERED_TARGET.input)
         ).toBe(SEVERED_LINK_ID)
         expect(hostLinkIds(agentConversation)).toEqual(SEEDED_LINK_IDS)
         expect(await canvasLinkIds(page)).toEqual(SEEDED_LINK_IDS)
@@ -166,7 +172,9 @@ test.describe(
         const targetNode = await comfyPage.nodeOps.getNodeRefById(
           SEVERED_TARGET.node
         )
-        const targetInput = await targetNode.getInput(SEVERED_TARGET.slot)
+        const targetInput = await targetNode.getInputByName(
+          SEVERED_TARGET.input
+        )
         const emptyCanvasPosition = await page.evaluate(() => {
           const app = window.app!
           const canvas = app.canvas.canvas
@@ -261,7 +269,7 @@ test.describe(
         const reloaded = draftGraph(await reloadedTurn)
         expect(linkIds(reloaded)).toEqual(SURVIVING_LINK_IDS)
         expect(
-          inputLinkAt(reloaded, SEVERED_TARGET.node, SEVERED_TARGET.slot)
+          inputLinkAt(reloaded, SEVERED_TARGET.node, SEVERED_TARGET.input)
         ).toBeNull()
         await expect
           .poll(() => agentConversation.subscribeCount())

@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  errorResponseFromBody,
-  isWorkspaceBillingRequiredError,
-  parseErrorResponse
-} from './errors'
+import { errorResponseFromBody, parseErrorResponse } from './errors'
 
 describe('errorResponseFromBody', () => {
   it('passes through a canonical body with details', () => {
@@ -259,24 +255,5 @@ describe('parseErrorResponse', () => {
       code: 'UNKNOWN_ERROR',
       message: 'HTTP 402'
     })
-  })
-})
-
-describe('isWorkspaceBillingRequiredError', () => {
-  const refusal = (status?: number, code = 'WORKSPACE_BILLING_REQUIRED') =>
-    Object.assign(new Error('refused'), { status, code })
-
-  it('matches the 409 refusal code', () => {
-    expect(isWorkspaceBillingRequiredError(refusal(409))).toBe(true)
-  })
-
-  it('requires the 409 status', () => {
-    expect(isWorkspaceBillingRequiredError(refusal(403))).toBe(false)
-    expect(isWorkspaceBillingRequiredError(refusal(undefined))).toBe(false)
-  })
-
-  it('ignores other codes and non-errors', () => {
-    expect(isWorkspaceBillingRequiredError(refusal(409, 'OTHER'))).toBe(false)
-    expect(isWorkspaceBillingRequiredError({ status: 409 })).toBe(false)
   })
 })

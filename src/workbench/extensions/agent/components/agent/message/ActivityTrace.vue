@@ -13,7 +13,8 @@ import type {
 import { isUnconfirmedCanvasWrite } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   toolGlyph,
-  toolLabel
+  toolLabel,
+  toolUsesOutcomeCopy
 } from '@/workbench/extensions/agent/services/agent/agentToolGlyph'
 
 const { parts, live = false } = defineProps<{
@@ -39,21 +40,34 @@ function glyphOf(row: ActivityRow): string {
     : toolGlyph(row.name, row.state, row)
 }
 
+function skillLabel(
+  row: Extract<ActivityRow, { kind: 'tool' }>,
+  skill: string
+): string {
+  const activeLabel = t('agent.toolLoadingSkill', { skill })
+  if (row.state === 'streaming') return activeLabel
+  if (row.ok === true) return t('agent.toolLoadedSkill', { skill })
+  if (row.ok === false) return t('agent.toolFailedSkill', { skill })
+  return t('agent.toolOutcomeUnknown', { tool: activeLabel })
+}
+
+function settledToolLabel(row: Extract<ActivityRow, { kind: 'tool' }>): string {
+  if (!toolUsesOutcomeCopy(row.name)) return toolLabel(row.name, row.state, t)
+  const activeLabel = toolLabel(row.name, 'streaming', t)
+  return t(row.ok === false ? 'agent.toolFailed' : 'agent.toolOutcomeUnknown', {
+    tool: activeLabel
+  })
+}
+
 function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
   if (isUnconfirmedCanvasWrite(row))
     return t('agent.toolNotConfirmedOnCanvas', {
       tool: toolLabel(row.name, row.state, t)
     })
-  if (row.name === 'load_skill' && row.skill) {
-    const label =
-      row.state === 'streaming'
-        ? 'agent.toolLoadingSkill'
-        : row.ok === false
-          ? 'agent.toolFailedSkill'
-          : 'agent.toolLoadedSkill'
-    return t(label, { skill: row.skill })
-  }
-  return toolLabel(row.name, row.state, t)
+  if (row.name === 'load_skill' && row.skill) return skillLabel(row, row.skill)
+  if (row.state === 'streaming' || row.ok === true)
+    return toolLabel(row.name, row.state, t)
+  return settledToolLabel(row)
 }
 
 function rowSignature(row: ActivityRow): string {
@@ -81,10 +95,9 @@ function rowSignature(row: ActivityRow): string {
       :class="cn('flex gap-2 px-2', live && 'agent-row-enter')"
     >
       <div class="flex w-4 shrink-0 flex-col items-center">
-        <span
-          :class="
-            cn('mt-0.5 size-4 shrink-0 text-muted-foreground', glyphOf(row))
-          "
+        <i
+          aria-hidden="true"
+          :class="cn('mt-0.5 text-muted-foreground', glyphOf(row))"
         />
         <span
           v-if="index < rows.length - 1"
