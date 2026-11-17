@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
+import { addDynamicCombo } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
@@ -52,6 +53,47 @@ describe.for(
 
     expect(store.get(id)).toBeUndefined()
     expect(node.serialize().properties).not.toHaveProperty(sample.wireKey)
+  })
+
+  it('preserves components when configure omits properties', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('component owner')
+    graph.add(node)
+    configure(node)
+    const { properties, ...withoutProperties } = node.serialize()
+    expect(properties?.[sample.wireKey]).toEqual({ model: sample.wire })
+
+    node.configure(withoutProperties)
+
+    expect(useStore().get(widgetId(graph.id, node.id, 'model'))).toEqual(
+      sample.component
+    )
+  })
+
+  it('preserves components while a dynamic option temporarily removes its widgets', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('component owner')
+    graph.add(node)
+    addDynamicCombo(node, [['STRING'], ['IMAGE']])
+    const selector = node.widgets?.[0]
+    const child = node.widgets?.[1]
+    assert(selector)
+    assert(child)
+    node.configure({
+      ...node.serialize(),
+      properties: { [sample.wireKey]: { [child.name]: sample.wire } }
+    })
+
+    selector.value = '1'
+    selector.value = '0'
+
+    expect(node.widgets?.[1]?.name).toBe(child.name)
+    expect(useStore().get(widgetId(graph.id, node.id, child.name))).toEqual(
+      sample.component
+    )
+    expect(node.serialize().properties?.[sample.wireKey]).toEqual({
+      [child.name]: sample.wire
+    })
   })
 
   it('moves components with a widget rename and deletes them with the widget', () => {

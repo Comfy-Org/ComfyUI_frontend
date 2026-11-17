@@ -447,13 +447,19 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     return true
   }
 
-  function deleteWidget(widgetId: WidgetId): boolean {
+  function releaseWidget(widgetId: WidgetId): boolean {
     if (!isWidgetId(widgetId)) return false
 
     const { graphId } = parseWidgetId(widgetId)
     removeNodeWidgetOrder(widgetId)
-    useWidgetComponents().remove(widgetId)
     return graphWidgets.value.get(graphId)?.delete(widgetId) ?? false
+  }
+
+  function deleteWidget(widgetId: WidgetId): boolean {
+    if (!isWidgetId(widgetId)) return false
+
+    useWidgetComponents().remove(widgetId)
+    return releaseWidget(widgetId)
   }
 
   function renameWidget(
@@ -618,6 +624,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     setLabel,
     setOptions,
     updateOptions,
+    releaseWidget,
     deleteWidget,
     renameWidget,
     getNodeWidgets,

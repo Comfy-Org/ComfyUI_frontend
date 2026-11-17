@@ -35,8 +35,9 @@ Node removal clears live components after copying them into detached workflow
 metadata. Attachment restores them after identity collision resolution. Copies
 therefore acquire components under their destination identities. Snapshot restore
 replaces previous components, including clearing overrides omitted from the
-snapshot. Invalid saved entries are ignored independently, preserving valid
-siblings.
+snapshot's properties. Configuring a node without properties leaves its existing
+components unchanged. Invalid saved entries are ignored independently, preserving
+valid siblings.
 
 Existing workflow property names and value representations remain compatible.
 Extension configure callbacks see the incoming metadata before the frontend
