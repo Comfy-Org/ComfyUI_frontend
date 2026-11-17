@@ -1117,6 +1117,8 @@ export interface QueueHandle {
 export interface GraphHandle {
   /** The selected nodes of the graph on screen, in the graph's order. */
   selection(): readonly NodeHandle[]
+  /** The selected groups of the graph on screen, in the graph's draw order. */
+  groupSelection(): readonly GroupHandle[]
   /**
    * Selects exactly these nodes; an empty list clears the selection. `false`,
    * and nothing changes, if one is gone or not on screen.
