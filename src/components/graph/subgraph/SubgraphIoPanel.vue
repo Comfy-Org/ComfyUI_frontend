@@ -218,7 +218,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
     :aria-label="title"
     :class="
       cn(
-        'group/node lg-node pointer-events-auto absolute top-0 left-0 isolate z-panel flex min-h-(--node-height) origin-top-left touch-none flex-col text-xs text-node-foreground contain-layout contain-style',
+        'group/node lg-node pointer-events-auto absolute top-0 left-0 isolate z-panel flex min-h-(--node-height) origin-top-left cursor-grab touch-none flex-col text-xs text-node-foreground contain-layout contain-style',
         side.panel
       )
     "
