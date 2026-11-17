@@ -86,7 +86,7 @@ describe('group edits', () => {
       }
     )
 
-    it('leaves the nodes inside where they are, as the editor’s own group resize does', () => {
+    it('leaves the nodes inside where they are, and the group’s own list of them, as the editor’s own group resize does', () => {
       const group = addGroup([0, 0, 400, 400])
       const node = new LGraphNode('Inside')
       node.pos = [50, 100]
@@ -102,6 +102,10 @@ describe('group edits', () => {
 
       expect(Array.from(node.pos)).toEqual([55, 105])
       expect(handle.nodes()).toEqual([])
+      expect(group.nodes).toEqual([node])
+
+      group.recomputeInsideNodes()
+      expect(group.nodes).toEqual([])
     })
 
     it('raises a size below the editor’s minimum group size to it, as the editor’s resize does', () => {
