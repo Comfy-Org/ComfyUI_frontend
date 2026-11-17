@@ -1,6 +1,6 @@
 # Release workflow for ComfyUI frontend: version bump → PyPI publish → ComfyUI PR.
 # Runs weekly (every Monday) for minor releases, or manually for patch/hotfix releases.
-name: "Release: ComfyUI"
+name: 'Release: ComfyUI'
 
 on:
   # Weekly release freeze: every Monday at 20:00 UTC (noon PST / 13:00 PDT).
@@ -17,26 +17,26 @@ on:
   # already dispatches this workflow off-cadence when a consumed release line
   # has unshipped commits, so the Monday cron is a baseline, not the only path.
   schedule:
-    - cron: "0 20 * * 1"
+    - cron: '0 20 * * 1'
 
   # Manual trigger for both on-demand minor and patch/hotfix releases
   workflow_dispatch:
     inputs:
       release_type:
-        description: "minor = next minor version (weekly cadence), patch = hotfix for current production version"
+        description: 'minor = next minor version (weekly cadence), patch = hotfix for current production version'
         required: true
-        default: "minor"
+        default: 'minor'
         type: choice
         options:
           - minor
           - patch
       comfyui_fork:
-        description: "ComfyUI fork to use for PR (e.g., Comfy-Org/ComfyUI)"
+        description: 'ComfyUI fork to use for PR (e.g., Comfy-Org/ComfyUI)'
         required: false
-        default: "Comfy-Org/ComfyUI"
+        default: 'Comfy-Org/ComfyUI'
         type: string
       target_branch:
-        description: "Optional: force a specific release branch, e.g. core/1.47 or core/2.0. Overrides the pin-derived target — use to skip a dead minor or do an out-of-cadence / major release."
+        description: 'Optional: force a specific release branch, e.g. core/1.47 or core/2.0. Overrides the pin-derived target — use to skip a dead minor or do an out-of-cadence / major release.'
         required: false
         type: string
 
@@ -113,7 +113,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version-file: "frontend/.nvmrc"
+          node-version-file: 'frontend/.nvmrc'
 
       - name: Install dependencies
         working-directory: frontend
@@ -245,7 +245,7 @@ jobs:
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
           TARGET_BRANCH: ${{ needs.resolve-version.outputs.target_branch }}
           RUN_ID: ${{ github.run_id }}
-        run: "$RUNNER_TEMP/cicd/wait-for-release-tag.sh"
+        run: '$RUNNER_TEMP/cicd/wait-for-release-tag.sh'
 
       - name: Checkout code at target version
         uses: actions/checkout@v7
@@ -260,8 +260,8 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
-          node-version-file: "release/.nvmrc"
-          cache: "pnpm"
+          node-version-file: 'release/.nvmrc'
+          cache: 'pnpm'
           cache-dependency-path: release/pnpm-lock.yaml
 
       - name: Build project
@@ -270,8 +270,8 @@ jobs:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
           ALGOLIA_APP_ID: ${{ secrets.ALGOLIA_APP_ID }}
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY }}
-          ENABLE_MINIFY: "true"
-          USE_PROD_CONFIG: "true"
+          ENABLE_MINIFY: 'true'
+          USE_PROD_CONFIG: 'true'
         run: |
           pnpm install --frozen-lockfile
           pnpm build
@@ -279,7 +279,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: "3.x"
+          python-version: '3.x'
 
       - name: Install build dependencies
         run: python -m pip install build
@@ -308,7 +308,7 @@ jobs:
         env:
           PACKAGE: comfyui-frontend-package
           TARGET_VERSION: ${{ needs.resolve-version.outputs.target_version }}
-        run: "$RUNNER_TEMP/cicd/wait-for-pypi-version.sh"
+        run: '$RUNNER_TEMP/cicd/wait-for-pypi-version.sh'
 
       - name: Summary
         run: |
@@ -324,7 +324,7 @@ jobs:
         check-release-week,
         resolve-version,
         trigger-release-if-needed,
-        publish-pypi,
+        publish-pypi
       ]
     if: always() && needs.resolve-version.result == 'success' && needs.publish-pypi.result == 'success' && (needs.check-release-week.outputs.is_release_week == 'true' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
