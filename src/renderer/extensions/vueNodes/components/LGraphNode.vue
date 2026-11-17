@@ -338,7 +338,7 @@ import {
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { isWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
@@ -447,9 +447,9 @@ const growable = useGrowableRegions({
   regionId: (name) => {
     const graphId = canvasStore.rootGraphId
     const bareNodeId = stripGraphPrefix(nodeData.id)
-    return graphId && bareNodeId && name !== soleGrowableWidget.value
-      ? widgetId(graphId, bareNodeId, name)
-      : undefined
+    if (!graphId || !bareNodeId || name === soleGrowableWidget.value) return
+    const id = widgetId(graphId, bareNodeId, name)
+    return isWidgetId(id) ? id : undefined
   },
   resizeNode: resizeNodeTo,
   onCommit: () =>
