@@ -110,14 +110,10 @@ import {
   collapseLinkBadgeStacks,
   drawHiddenLinkBadges,
   queryLinkBadgeHitAtPoint,
-  queryLinkBadgeStackToggledAt,
   relabelExpandedLinkBadgeStack,
   toggleLinkBadgeStack
 } from './canvas/linkBadges'
-import {
-  layoutGraphLinkBadges,
-  queryHiddenLinkStackToggledAt
-} from './canvas/linkBadgeRenderer'
+import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
 import {
   getLinkMenuOptions,
   getLinkStackMenuOptions,
@@ -561,27 +557,6 @@ function promptRenameLinkStack(
     event,
     (name) => relabelExpandedLinkBadgeStack(canvas, stackKey, name)
   )
-}
-
-function renameToggledLinkStackOnDoubleClick(
-  canvas: LGraphCanvas,
-  graph: LGraph,
-  event: CanvasPointerEvent
-): void {
-  const { pointer } = canvas
-  const toggledAt = pointer.doubleClickedTimeStamp
-  const isLocked = () => canvas.read_only || canvas.selectOnly
-  const toggledStack = () =>
-    queryHiddenLinkStackToggledAt(canvas, graph, toggledAt)
-  if (isLocked() || !toggledStack()) return
-
-  pointer.onDoubleClick = () => {
-    const stack = toggledStack()
-    if (isLocked() || !stack) return
-    toggleLinkBadgeStack(canvas, stack.stackKey)
-    canvas.dirty_bgcanvas = true
-    promptRenameLinkStack(canvas, graph, stack, event)
-  }
 }
 
 interface SnappingLink {
@@ -2788,7 +2763,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // left button mouse / single finger
     if (e.button === 0 && !pointer.isDouble) {
       this._processPrimaryButton(e, node)
-      if (!node) renameToggledLinkStackOnDoubleClick(this, graph, e)
     } else if (isMiddleButtonEvent(e)) {
       this._processMiddleButton(e, node)
     } else if (
@@ -2946,7 +2920,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
       case 'linkBadgeStack': {
         pointer.onClick = () => {
-          toggleLinkBadgeStack(this, target.stackKey, e.timeStamp)
+          toggleLinkBadgeStack(this, target.stackKey)
           this.dirty_bgcanvas = true
         }
         pointer.onDoubleClick = () => {
@@ -4250,9 +4224,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const { eDown } = pointer
     const pressedBadge =
-      eDown &&
-      (queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY) ??
-        queryLinkBadgeStackToggledAt(this, pointer.doubleClickedTimeStamp))
+      eDown && queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY)
     const wasConnecting = this.linkConnector.isConnecting
     const isClick = pointer.up(e)
     if (e.button === 0 && !wasConnecting) {

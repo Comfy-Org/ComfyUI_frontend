@@ -321,7 +321,12 @@ test.describe(
         ])
       })
 
-      await test.step('The links stay one collapsed stack with the new name', async () => {
+      await test.step('Collapse the renamed stack', async () => {
+        await linkVisibility.clickOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          0
+        )
         await linkVisibility.parkPointer()
         await expectRegionScreenshot(
           comfyPage.page,
