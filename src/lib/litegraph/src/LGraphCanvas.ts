@@ -81,8 +81,8 @@ import {
 } from './canvas/linkSnapGeometry'
 import { SelectedItemsView } from './canvas/SelectedItemsView'
 import {
-  CANVAS_CLIPBOARD_ID_KEY,
-  CANVAS_CLIPBOARD_KEY
+  CANVAS_CLIPBOARD_KEY,
+  writeClipboardStorage
 } from './canvas/clipboardStorage'
 
 import { createCursorCache } from './cursorCache'
@@ -92,6 +92,7 @@ import type { AnimationOptions } from './DragAndScale'
 import { LGraphGroup } from './LGraphGroup'
 
 import { LGraphNode } from './LGraphNode'
+import { markNodeMenuCallback } from './types/nodeMenu'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId } from '@comfyorg/graph-model/nodeId'
@@ -106,11 +107,13 @@ import { LinkConnector } from './canvas/LinkConnector'
 import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
+  cancelPendingLinkBadgeStackExpansion,
   clearLinkBadgeHitAreas,
   collapseLinkBadgeStacks,
+  collapseRenamedLinkBadgeStack,
   drawHiddenLinkBadges,
   queryLinkBadgeHitAtPoint,
-  toggleLinkBadgeStack
+  requestLinkBadgeStackToggle
 } from './canvas/linkBadges'
 import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
 import {
@@ -404,6 +407,8 @@ const cursors = {
   NW: 'nwse-resize'
 } as const
 
+const linkBadgePresses = new WeakSet<CanvasPointerEvent>()
+
 // Optimised buffers used during rendering
 const temp = new Rectangle()
 const temp_vec2: Point = [0, 0]
@@ -538,7 +543,25 @@ function marqueeSelectsLinks(
   )
 }
 
-function toggleStackOnceOnDoubleClick(): void {}
+interface HiddenLinkStack {
+  stackKey: string
+  links: LLink[]
+}
+
+function promptRenameLinkStack(
+  canvas: LGraphCanvas,
+  graph: LGraph,
+  { stackKey, links }: HiddenLinkStack,
+  event: CanvasPointerEvent
+): void {
+  promptRenameLinkBadge(
+    canvas,
+    graphScopeOf(graph),
+    links.map(({ id }) => id),
+    event,
+    (label) => collapseRenamedLinkBadgeStack(canvas, stackKey, label)
+  )
+}
 
 interface SnappingLink {
   link: LLink
@@ -2178,6 +2201,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   clear(): void {
+    collapseLinkBadgeStacks(this)
     releaseCanvasSelection(this)
     applyCanvasSelection(this, { type: 'selection.clear' })
     this.resetTransientState()
@@ -2412,6 +2436,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * unbinds mouse events from the canvas
    */
   unbindEvents(): void {
+    cancelPendingLinkBadgeStackExpansion(this)
     if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
     if (!this._events_binded) {
       console.warn('LGraphCanvas: no events bound')
@@ -2695,7 +2720,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const { graph, pointer } = this
     this.adjustMouseEvent(e)
-    if (e.isPrimary) pointer.down(e)
+    if (e.isPrimary) {
+      pointer.down(e)
+      if (queryLinkBadgeHitAtPoint(this, e.canvasX, e.canvasY))
+        linkBadgePresses.add(e)
+    }
 
     if (this.set_canvas_dirty_on_mouse_event) this.dirty_canvas = true
 
@@ -2714,8 +2743,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     let node =
       graph.getNodeOnPos(e.canvasX, e.canvasY, this.visible_nodes) ?? undefined
 
-    // In Vue nodes mode, slots extend beyond node bounds due to CSS transforms.
-    // If no node was found, check if the click is on a slot and use its owning node.
     if (!node && LiteGraph.vueNodesMode) {
       const slotLayout = getSlotLayoutAtPoint(graph, {
         x: e.canvasX,
@@ -2741,7 +2768,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (this.onMouse?.(e) == true) return
 
-    // left button mouse / single finger
     if (e.button === 0 && !pointer.isDouble) {
       this._processPrimaryButton(e, node)
     } else if (isMiddleButtonEvent(e)) {
@@ -2752,16 +2778,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !this.read_only &&
       !this.selectOnly
     ) {
-      // Right / aux button
       const { linkConnector, subgraph } = this
 
-      // Sticky select - won't remove single nodes
       if (subgraph?.inputNode.containsPoint(this.graph_mouse)) {
-        // Subgraph input node
         this.processSelect(subgraph.inputNode, e, true)
         subgraph.inputNode.onPointerDown(e, pointer, linkConnector)
       } else if (subgraph?.outputNode.containsPoint(this.graph_mouse)) {
-        // Subgraph output node
         this.processSelect(subgraph.outputNode, e, true)
         subgraph.outputNode.onPointerDown(e, pointer, linkConnector)
       } else {
@@ -2789,7 +2811,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
 
-        // Show context menu for the node or group under the pointer
         pointer.onClick ??= () => this.processContextMenu(node, e)
       }
     }
@@ -2800,7 +2821,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     graph.change()
 
-    // this is to ensure to defocus(blur) if a text input element is on focus
     if (
       !ref_window.document.activeElement ||
       (ref_window.document.activeElement.nodeName.toLowerCase() != 'input' &&
@@ -2893,19 +2913,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       case 'linkBadge': {
         const { link } = target
         pointer.onDoubleClick = () =>
-          promptRenameLinkBadge(this, graphScopeOf(graph), link.id, e)
+          promptRenameLinkBadge(this, graphScopeOf(graph), [link.id], e)
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
       }
 
       case 'linkBadgeStack': {
-        const { stackKey } = target
-        pointer.onClick = () => {
-          toggleLinkBadgeStack(this, stackKey)
-          this.dirty_bgcanvas = true
+        cancelPendingLinkBadgeStackExpansion(this, target.stackKey)
+        pointer.onClick = () =>
+          requestLinkBadgeStackToggle(this, target.stackKey, {
+            delay: CanvasPointer.doubleClickTime,
+            onChange: () => (this.dirty_bgcanvas = true)
+          })
+        pointer.onDoubleClick = () => {
+          if (this.read_only || this.selectOnly) return
+          promptRenameLinkStack(this, graph, target, e)
         }
-        pointer.onDoubleClick = toggleStackOnceOnDoubleClick
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
@@ -4202,8 +4226,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     e.click_time = now - this.last_mouseclick
 
     const { eDown } = pointer
-    const pressedBadge =
-      eDown && queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY)
+    const pressedBadge = eDown && linkBadgePresses.has(eDown)
     const wasConnecting = this.linkConnector.isConnecting
     const isClick = pointer.up(e)
     if (e.button === 0 && !wasConnecting) {
@@ -4478,20 +4501,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   copyToClipboard(items?: Iterable<Positionable>): string {
     const serializedData = JSON.stringify(this._serializeItems(items))
-    try {
-      localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
-      localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
-    } catch (error) {
-      localStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
-      if (
-        !(error instanceof DOMException && error.name === 'QuotaExceededError')
-      ) {
-        reportError(error, {
-          errorType: 'error_writing_clipboard_storage',
-          surface: 'graph'
-        })
-      }
-    }
+    writeClipboardStorage(serializedData)
     return serializedData
   }
 
@@ -7019,7 +7029,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (link) showLink(this, graphScope, link.id)
           break
         case 'Rename':
-          if (link) promptRenameLinkBadge(this, graphScope, link.id, e)
+          if (link) promptRenameLinkBadge(this, graphScope, [link.id], e)
           break
         default:
       }
@@ -8700,7 +8710,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return Array.isArray(extra) ? options.concat(extra) : options
   }
 
-  // called by processContextMenu to extract the menu list
   getNodeMenuOptions(node: LGraphNode) {
     let options: (
       | IContextMenuValue<string>
@@ -8716,7 +8725,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options = [
         {
           content: 'Convert to Subgraph',
-          callback: () => this._graph.convertToSubgraph(this.selectedItems)
+          callback: markNodeMenuCallback(
+            () => this._graph.convertToSubgraph(this.selectedItems),
+            'convertSubgraph'
+          )
         },
         {
           content: 'Properties',
@@ -8725,7 +8737,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         },
         {
           content: 'Properties Panel',
-          callback: function (
+          callback: markNodeMenuCallback(function (
             _item: Positionable,
             _options: IContextMenuOptions | undefined,
             _e: MouseEvent | undefined,
@@ -8733,7 +8745,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             node: LGraphNode
           ) {
             LGraphCanvas.active_canvas.showShowNodePanel(node)
-          }
+          }, null)
         },
         null,
         {
@@ -8767,10 +8779,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options.push(
         {
           content: node.pinned ? 'Unpin' : 'Pin',
-          callback: () => {
+          callback: markNodeMenuCallback(() => {
             for (const node of selectedCanvasNodes(this)) node.pin()
             this.setDirty(true, true)
-          }
+          }, null)
         },
         {
           content: 'Colors',
@@ -8901,18 +8913,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      const { reroute, linkSegment, link, stackedLinks, group } =
+      const { reroute, linkSegment, link, stack, group } =
         getCanvasContextMenuTarget(this, event.canvasX, event.canvasY)
-      if (stackedLinks) {
-        const graphScope = graphScopeOf(this.graph)
+      if (stack) {
+        const { graph } = this
+        const graphScope = graphScopeOf(graph)
+        const stackedLinkIds = stack.links.map(({ id }) => id)
         new LiteGraph.ContextMenu<string>(getLinkStackMenuOptions(), {
           event,
-          callback: () =>
-            showLinks(
-              this,
-              graphScope,
-              stackedLinks.map(({ id }) => id)
-            )
+          callback: (item) => {
+            const action = typeof item === 'string' ? item : item?.value
+            if (action === 'Rename')
+              promptRenameLinkStack(this, graph, stack, event)
+            if (action === 'Show Links')
+              showLinks(this, graphScope, stackedLinkIds)
+          }
         })
         return
       }

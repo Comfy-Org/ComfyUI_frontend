@@ -49,14 +49,11 @@
         </Button>
         <Button
           v-else-if="banner.action === 'choosePlan'"
-          as="a"
-          :href="plansHref"
-          target="_blank"
-          rel="noopener"
+          v-bind="plansButton"
           variant="inverted"
           size="lg"
           class="no-underline"
-          @click="trackPlans"
+          @click="openPlans"
         >
           {{ $t('workspacePanel.billingTab.plan.actions.choosePlan') }}
           <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -111,7 +108,7 @@ import { useScheduledPlanChange } from '@/platform/billing/composables/useSchedu
 import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformPlansLink } from '@/platform/billing/composables/usePlatformHandoff'
 
 type BannerAction =
   | 'addCredits'
@@ -155,10 +152,7 @@ const {
 } = useScheduledPlanChange()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
-const { href: plansHref, track: trackPlans } = usePlatformHandoff(
-  '/profile/billing/plans',
-  { target: 'plans' }
-)
+const { button: plansButton, open: openPlans } = usePlatformPlansLink()
 const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
 

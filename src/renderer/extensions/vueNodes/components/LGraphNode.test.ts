@@ -14,7 +14,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, ref, shallowRef } from 'vue'
 import type { PropType } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
@@ -28,10 +28,12 @@ import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import { setSelectedIn } from '@/core/selection/selectionStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
@@ -93,15 +95,15 @@ vi.mock(import('@/composables/useErrorHandling'))
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/layout/useNodeLayout'),
   () => ({
-    useNodeLayout: () => ({
-      position: { x: 100, y: 50 },
+    useNodeLayout: vi.fn(() => ({
+      position: shallowRef({ x: 100, y: 50 }),
       size: computed(() => ({ width: 200, height: 100 })),
       zIndex: 0,
       startDrag: vi.fn(),
       handleDrag: vi.fn(),
       endDrag: vi.fn(),
       moveTo: vi.fn()
-    })
+    }))
   })
 )
 
@@ -255,6 +257,7 @@ describe('LGraphNode', () => {
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
     app.dragOverNode = null
+    layoutStore.isDraggingVueNodes.value = false
 
     const canvasStore = useCanvasStore()
     canvasStore.selectedNodeIds.clear()
@@ -281,6 +284,37 @@ describe('LGraphNode', () => {
     expect(getNodeRoot(container).getAttribute('data-node-id')).toBe(
       'test-node-123'
     )
+  })
+
+  it('follows a position change after a drag has ended', async () => {
+    const layout = useNodeLayout(mockNodeData.id)
+    vi.mocked(useNodeLayout).mockReturnValue(layout)
+    const { container } = renderLGraphNode({ nodeData: mockNodeData })
+    const root = getNodeRoot(container)
+    const heldTransforms = () =>
+      root
+        .getAnimations()
+        .flatMap(({ effect }) =>
+          effect instanceof KeyframeEffect
+            ? effect.getKeyframes().map(({ transform }) => transform)
+            : []
+        )
+
+    layoutStore.isDraggingVueNodes.value = true
+    layout.position.value = { x: 300, y: 200 }
+    await nextTick()
+    expect(heldTransforms()).toEqual([
+      'translate(300px, 170px)',
+      'translate(300px, 170px)'
+    ])
+
+    layoutStore.isDraggingVueNodes.value = false
+    await nextTick()
+    layout.position.value = { x: 10, y: 20 }
+    await nextTick()
+
+    expect(root.style.transform).toBe('translate(10px, -10px)')
+    expect(heldTransforms()).toEqual([])
   })
 
   it('binds the node context menu handler to the root element', async () => {

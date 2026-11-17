@@ -76,7 +76,12 @@ describe('projectSubscriptionResult', () => {
     {
       phase: 'timed_out',
       operation: settledOperation('timed_out'),
-      detail: "We couldn't update your subscription. Please try again."
+      detail: 'Subscription cancellation timed out'
+    },
+    {
+      phase: 'timed_out',
+      operation: settledOperation('timed_out', 'subscription'),
+      detail: 'Subscription verification timed out'
     },
     {
       phase: 'reconciliation_needed',
@@ -84,7 +89,7 @@ describe('projectSubscriptionResult', () => {
       detail: "We couldn't update your subscription. Please try again."
     }
   ] as const)(
-    'reports a $phase operation as a settled failure with a sentence for the customer',
+    'reports a $phase $operation.kind operation as a settled failure with a sentence for the customer',
     ({ phase, operation, detail }) => {
       const outcome = projectSubscriptionResult({
         status: 'ok',
@@ -253,7 +258,7 @@ describe('projectSubscribeResult', () => {
     {
       phase: 'timed_out',
       operation: settledOperation('timed_out', 'subscription'),
-      detail: "We couldn't update your subscription. Please try again."
+      detail: 'Subscription verification timed out'
     }
   ] as const)(
     'reports a $phase subscribe as a settled failure with a sentence for the customer',

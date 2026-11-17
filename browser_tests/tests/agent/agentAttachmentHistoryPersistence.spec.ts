@@ -99,15 +99,15 @@ for (const scenario of [
       let attachmentThreadId: string | undefined
 
       await page.route(
-        `**/view?filename=${firstImage.filename}&type=input`,
+        `**/view?filename=${firstImage.filename}&type=input*`,
         (route) => route.fulfill({ path: assetPath('image64x64.webp') })
       )
       await page.route(
-        `**/view?filename=${secondImage.filename}&type=input`,
+        `**/view?filename=${secondImage.filename}&type=input*`,
         (route) => route.fulfill({ path: assetPath('image32x32.webp') })
       )
       await page.route(
-        `**/view?filename=${video.filename}&type=input`,
+        `**/view?filename=${video.filename}&type=input*`,
         (route) =>
           route.fulfill({
             path: assetPath('workflowInMedia/workflow.mp4'),

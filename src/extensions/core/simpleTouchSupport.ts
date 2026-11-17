@@ -1,7 +1,7 @@
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 import { canvasOrReport } from './touchCanvasAccess'
 import { touchGesture } from './touchPointerGuards'
@@ -74,7 +74,7 @@ export const simpleTouchSupportExtension: ComfyExtension = {
       }
     }
 
-    app.canvasEl.parentElement?.addEventListener(
+    useApp().canvasEl.parentElement?.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
         touchGesture.count += e.changedTouches.length
@@ -100,7 +100,7 @@ export const simpleTouchSupportExtension: ComfyExtension = {
       true
     )
 
-    app.canvasEl.parentElement?.addEventListener(
+    useApp().canvasEl.parentElement?.addEventListener(
       'touchend',
       (e: TouchEvent) => {
         touchGesture.count -= e.changedTouches.length
@@ -108,7 +108,7 @@ export const simpleTouchSupportExtension: ComfyExtension = {
         if (e.touches.length !== 1) touchGesture.zooming = false
         if (touchTime && !e.touches.length) {
           if (new Date().getTime() - touchTime.getTime() > 600) {
-            if (e.target === app.canvasEl) {
+            if (e.target === useApp().canvasEl) {
               const touch = {
                 button: 2,
                 clientX: e.changedTouches[0].clientX,
@@ -116,9 +116,13 @@ export const simpleTouchSupportExtension: ComfyExtension = {
                 pointerId: 1,
                 isPrimary: true
               }
-              app.canvasEl.dispatchEvent(new PointerEvent('pointerdown', touch))
+              useApp().canvasEl.dispatchEvent(
+                new PointerEvent('pointerdown', touch)
+              )
               setTimeout(() => {
-                app.canvasEl.dispatchEvent(new PointerEvent('pointerup', touch))
+                useApp().canvasEl.dispatchEvent(
+                  new PointerEvent('pointerup', touch)
+                )
               })
               e.preventDefault()
             }
@@ -143,7 +147,10 @@ export const simpleTouchSupportExtension: ComfyExtension = {
       }
     })
 
-    app.canvasEl.parentElement?.addEventListener('touchcancel', resetTouchState)
+    useApp().canvasEl.parentElement?.addEventListener(
+      'touchcancel',
+      resetTouchState
+    )
 
     function handlePinchMove(e: TouchEvent) {
       if (!lastTouch) return
@@ -171,7 +178,7 @@ export const simpleTouchSupportExtension: ComfyExtension = {
       zoomCanvasAroundPinch(canvas, scale, center, lastTouch)
     }
 
-    app.canvasEl.parentElement?.addEventListener(
+    useApp().canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
         if (touchTime && lastTouch && e.touches.length === 1) {

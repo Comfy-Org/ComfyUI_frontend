@@ -7,6 +7,7 @@ import {
 import { GraphCanvasMenu } from '@e2e/fixtures/components/GraphCanvasMenu'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 
 const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
@@ -92,10 +93,12 @@ test.describe('App mode usage', () => {
   })
 
   test('Widget Interaction', async ({ comfyPage }) => {
+    const promptInput: [string, string] = ['6', 'text']
+    const promptKey = promptInput.join(':')
     await comfyPage.appMode.enterAppModeWithInputs([
       ['3', 'seed'],
       ['3', 'sampler_name'],
-      ['6', 'text']
+      promptInput
     ])
     const seed = comfyPage.appMode.linearWidgets.filter({
       has: comfyPage.page.getByRole('spinbutton', { name: 'seed', exact: true })
@@ -128,6 +131,32 @@ test.describe('App mode usage', () => {
       .fill('uni')
     await comfyPage.page.keyboard.press('Enter')
     await expect(sampler).toHaveText('uni_pc')
+
+    const { appMode } = comfyPage
+    const textarea = appMode.widgets
+      .getWidgetItem(promptKey)
+      .locator('textarea')
+    let resizedHeight = 0
+
+    await test.step('Dragging the grip grows the textarea', async () => {
+      const startHeight = (await textarea.boundingBox())!.height
+      await appMode.widgets.resizeTextareaBy(promptKey, 80)
+      resizedHeight = (await textarea.boundingBox())!.height
+      expect(resizedHeight).toBeGreaterThan(startHeight + 60)
+    })
+
+    await test.step('Reopened workflow restores the height', async () => {
+      const workflowName = `${Date.now()} app-mode-textarea-resize`
+      await appMode.toggleAppMode()
+      await comfyPage.menu.topbar.saveWorkflow(workflowName)
+      await openWorkflowFromSidebar(comfyPage, workflowName)
+      await appMode.toggleAppMode()
+
+      await expect(textarea).toBeVisible()
+      await expect
+        .poll(async () => (await textarea.boundingBox())?.height)
+        .toBe(resizedHeight)
+    })
   })
 
   test('FormDropdown search Enter selects the top filtered item', async ({

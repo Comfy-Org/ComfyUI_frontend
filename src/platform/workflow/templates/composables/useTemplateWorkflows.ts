@@ -33,7 +33,8 @@ import {
   zLegacyLoadableWorkflow
 } from '@comfyorg/graph-model/workflowSchema'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import type { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -61,7 +62,7 @@ export type PreparedWorkflowTemplate = {
 
 function updateTemplateEducation(
   isPartnerNode: boolean | undefined,
-  loadedWorkflow: Awaited<ReturnType<typeof app.loadGraphData>>
+  loadedWorkflow: Awaited<ReturnType<ComfyApp['loadGraphData']>>
 ) {
   const educationStore = usePartnerNodesEducationStore()
   if (isPartnerNode && typeof loadedWorkflow === 'object') {
@@ -234,7 +235,7 @@ export function useTemplateWorkflows() {
       preparedJson = result.workflow
       if (result.uploadedCount > 0) {
         await useAssetsStore().inputAssets.invalidate()
-        await app.reloadNodeDefs()
+        await useApp().reloadNodeDefs()
       }
       signal.throwIfAborted()
     } catch (error) {
@@ -283,7 +284,7 @@ export function useTemplateWorkflows() {
     sourceModule: string
   ): Promise<TemplateLoadResult> {
     try {
-      const loadedWorkflow = await app.loadGraphData(
+      const loadedWorkflow = await useApp().loadGraphData(
         json as ComfyWorkflowJSON,
         true,
         true,
