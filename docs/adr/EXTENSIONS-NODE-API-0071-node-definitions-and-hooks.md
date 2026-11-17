@@ -304,6 +304,22 @@ registered, so `extend` cannot depend on the order.
 28. `onHover` and `onDoubleClick` are delivered from the node's
     `onMouseEnter`, `onMouseLeave` and `onDblClick`, which only the canvas
     renderer calls; the Vue node renderer does not, and the JSDoc says so.
+    `onDragOver` is asked from the node's `onDragOver`, which both renderers
+    call while a browser drag is over the node (the editor's `dragover`
+    listener in `app.ts` and Vue nodes' `LGraphNode.vue`), with the node's
+    handle and the browser's own `DragEvent`, as V2 gave it; no host object
+    is passed. The node is the drop target if the type's own method accepts,
+    in which case the hooks are not asked, or if any hook returns `true`; a
+    hook that throws is reported and does not accept. The answer only marks
+    the node as the target: the editor then gives the drop to the node's
+    `onDragDrop` if it has one and otherwise handles it itself, and there is
+    no drop hook (decision 38). rgthree asks it for every node type to offer
+    a drop-to-import; the census missed it, on a builder it could not type
+    (acceptance finding B8). The host's own drag handling for upload widgets
+    (`useNodeDragAndDrop`, on image, audio and 3D upload nodes) assigns
+    `onDragOver` on the node itself, which replaces the dispatcher for that
+    node as any assignment does (decision 17), so the hooks are not asked
+    there.
 29. A definition may also declare `onConnectionsChanged` and
     `onPropertyChanged`.
 
@@ -354,11 +370,15 @@ registered, so `extend` cannot depend on the order.
 ### Left out
 
 38. Members of the old contract that no stored pack calls are not built:
-    `NodeDefBuilder.setTitle`, `setCategory`, `setExecution`, `onDragOver` and
-    `onDrop`; `NodeDef.source`; `PropertyChangeEvent.previous`;
+    `NodeDefBuilder.setTitle`, `setCategory` and `setExecution`;
+    `NodeDef.source`; `PropertyChangeEvent.previous`;
     `BeforeConnectEvent.peerNodeId`, `peerIndex` and `peerType`;
     `NodeDefinition.supply`, `onExecuted`, `onDragOver`,
-    `onDrop` and `onPromptSerialize` (0 packs each). With `setTitle` gone, a
+    `onDrop` and `onPromptSerialize` (0 packs each). `NodeDefBuilder.onDrop`
+    was counted with them, but rgthree calls it beside `onDragOver` (the
+    acceptance run found both); it is not built yet, and the `extend` call
+    that adds both still fails at `onDrop`, which decision 6 reports, keeping
+    neither hook. Whether to build it is open for the owner. With `setTitle` gone, a
     late extension cannot rename a type, so review finding A-08 cannot arise;
     with `setExecution` gone, only `define` decides whether a type runs in the
     frontend, on a class it owns, so disposing an extension cannot change it
@@ -376,8 +396,10 @@ registered, so `extend` cannot depend on the order.
     found no slot" needs a new event in LiteGraph's `LinkConnector`, which this
     API does not change.
 41. Nothing here exists for a sandbox: no proxies, no capability checks, and
-    no asynchronous hooks. `onPromptSerialize` was awaited, and `onDrop` was
-    asynchronous, so that a sandboxed pack could answer; neither is built.
+    no asynchronous hooks. `onPromptSerialize` was awaited so that a
+    sandboxed pack could answer, and is not built. `onDrop` may be
+    asynchronous without a sandbox too, since the editor awaits a node's
+    `onDragDrop`, so the sandbox is not why it is left out (decision 38).
 
 42. Conversion rows (V1 pattern, V4 form, not one to one because):
     - A prototype patch or `nodeCreated` override made after nodes exist,

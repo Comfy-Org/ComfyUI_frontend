@@ -93,7 +93,11 @@ import {
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
-import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
+import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import {
+  hostNodeDef,
+  registerHostType
+} from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
 import type { NodeCreatedEvent, NodeHandle } from '@/platform/nodeApi/v4/types'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
@@ -7896,6 +7900,34 @@ describe('ComfyApp', () => {
       } finally {
         releaseOpenWorkflow()
       }
+    })
+
+    it('marks a node as the drag target when an onDragOver hook of the node API accepts the drag', () => {
+      const graph = new LGraph()
+      const { comfy, host } = createComfyApi({ getGraph: () => graph })
+      registerHostType(host.nodeTypeHooks, hostNodeDef('DragTargetProbe'))
+      let accepts = true
+      comfy.defs.extend('DragTargetProbe', (builder) =>
+        builder.onDragOver(() => accepts)
+      )
+      const node = LiteGraph.createNode('DragTargetProbe')
+      assert(node)
+      graph.add(node)
+      const canvasElement = document.createElement('canvas')
+      app.canvasElRef.value = canvasElement
+      app.canvas = fromPartial<LGraphCanvas>({
+        adjustMouseEvent: vi.fn(),
+        setDirty: vi.fn(),
+        graph: fromPartial<LGraph>({ getNodeOnPos: () => node })
+      })
+      addScopedDropHandler()
+
+      canvasElement.dispatchEvent(new DragEvent('dragover'))
+      expect(app.dragOverNode).toBe(node)
+
+      accepts = false
+      canvasElement.dispatchEvent(new DragEvent('dragover'))
+      expect(app.dragOverNode).toBeNull()
     })
 
     it('claims but ignores a drop while the canvas is select-only', async () => {

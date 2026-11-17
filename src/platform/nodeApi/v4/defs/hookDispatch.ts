@@ -37,6 +37,7 @@ const METHODS_FOR: Readonly<Record<HookName, readonly string[]>> = {
   onPropertyChanged: ['onPropertyChanged'],
   onHover: ['onMouseEnter', 'onMouseLeave'],
   onDoubleClick: ['onDblClick'],
+  onDragOver: ['onDragOver'],
   addMenuItem: []
 }
 
