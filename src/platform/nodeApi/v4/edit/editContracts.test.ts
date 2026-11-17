@@ -95,7 +95,7 @@ describe('edit contracts', () => {
         'modify',
         (target: NodeHandle) => target.inputs.at(0)?.modify(Object(1))
       ],
-      ['add', (target: NodeHandle) => target.inputs.add('', 'INT')],
+      ['add', (target: NodeHandle) => target.inputs.add('first', 'INT')],
       ['reorder', (target: NodeHandle) => target.outputs.reorder(['a'])]
     ] as const)('name %s', ([member, call]) => {
       expect(() => call(handle)).toThrow(new RegExp(`^${member} needs `))

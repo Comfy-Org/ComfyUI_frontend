@@ -18,14 +18,13 @@ import type {
   OutputSlotHandle,
   SlotSide
 } from '@/platform/nodeApi/v4/types'
-import { checkedChoice } from './checkedArguments'
+import { checkedChoice, checkedString } from './checkedArguments'
 import type { EditRunner } from './editRunner'
 import type { SlotHandles } from './liveSlot'
 import { liveNodeOf } from './nodeEdits'
 import { assertNotSubgraphNode, assertPositionShown } from './refusedEdits'
 import {
   assertFitsNode,
-  checkedSlotName,
   checkedSlotOptions,
   checkedSlotPatch,
   checkedSlotType
@@ -71,7 +70,7 @@ export function createSlotEdits(
     [node, name, type, options]: readonly unknown[]
   ) {
     const live = liveNodeOf(nodes, member, node)
-    const slotName = checkedSlotName(member, name)
+    const slotName = checkedString(member, 'name', name)
     const slotType = checkedSlotType(member, type)
     const extra = checkedSlotOptions(member, options, side)
     if (!live) return undefined
