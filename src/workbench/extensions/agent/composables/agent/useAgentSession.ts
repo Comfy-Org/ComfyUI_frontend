@@ -432,10 +432,21 @@ const turnStartedAt = new Map<TurnId, number>()
  * flight, consumed exactly once at ack.
  */
 let sendInFlight = false
-let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+/**
+ * Each send gets its own attempt number, and a pending stop names the attempt
+ * it was clicked during, so only that attempt's acknowledgement (or the turn
+ * its refusal re-attaches to) can take it: a stale or parallel send never
+ * stops a later, unrelated turn.
+ */
+let sendAttempt = 0
+let stopPendingAck: {
+  method: AgentStopMethod | undefined
+  attempt: number
+} | null = null
 
-function consumeStopPendingAck() {
+function consumeStopPendingAck(attempt: number) {
   const pending = stopPendingAck
+  if (pending === null || pending.attempt !== attempt) return null
   stopPendingAck = null
   return pending
 }
@@ -491,6 +502,18 @@ function refusedBeforeAcceptance(error: unknown): boolean {
     error.status >= 400 &&
     error.status < 500 &&
     parseTurnInProgress(error) === undefined
+  )
+}
+
+function serverRefusedSendOverCard(
+  error: unknown,
+  dismissedAskIds: string[]
+): boolean {
+  return (
+    dismissedAskIds.length > 0 &&
+    error instanceof AgentApiError &&
+    error.status >= 500 &&
+    !refusedBeforeAcceptance(error)
   )
 }
 
@@ -1416,10 +1439,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     ack: AgentTurnAccepted,
     text: string,
     wfContext: WorkflowTurnContext | undefined,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    skillScope = skillPacks.scope
+    attachments: SentAttachment[] | undefined,
+    tags: SentTag[] | undefined,
+    workflowReferences: WorkflowReference[] | undefined,
+    skillScope: typeof skillPacks.scope,
+    attempt: number
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
@@ -1454,7 +1478,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
-    stopPendingActiveTurn()
+    stopPendingActiveTurn(attempt)
     runAcceptedTurnSideEffect(
       () => onThreadActivated?.(ack.thread_id),
       'agent_thread_activated_callback_failed'
@@ -1470,9 +1494,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
   }
 
-  function stopPendingActiveTurn(): void {
-    const pendingStop = consumeStopPendingAck()
-    if (pendingStop !== null) void stopTurn(pendingStop.method)
+  function stopPendingActiveTurn(attempt: number): void {
+    const pendingStop = consumeStopPendingAck(attempt)
+    if (pendingStop !== null) void stopActiveTurn(pendingStop.method)
   }
 
   function recordSendError(
@@ -1575,7 +1599,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function reattachRefusedTurn(
     error: unknown,
     threadAtSend: string,
-    generation: number
+    generation: number,
+    attempt: number
   ): Promise<boolean> {
     const conflict = parseTurnInProgress(error)
     if (conflict === undefined || threadAtSend === 'new') return false
@@ -1597,8 +1622,31 @@ export function useAgentSession(deps: AgentSessionDeps) {
         activeTurnId === conflict.active_message_id)
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
-    if (adoptedActiveTurn) stopPendingActiveTurn()
+    if (adoptedActiveTurn) stopPendingActiveTurn(attempt)
     return adoptedActiveTurn
+  }
+
+  /**
+   * The server answered a send over a card with an error, not an
+   * acknowledgement. It keeps the card open when it refuses a message before
+   * accepting it, so the dismissed card may still be live: reload the thread
+   * to show what the server holds rather than leave the card greyed out. A
+   * network failure gives no answer, so the card stays dismissed until the
+   * server says otherwise.
+   */
+  async function reloadAfterRefusedSend(
+    threadAtSend: string,
+    generation: number
+  ): Promise<void> {
+    if (threadAtSend === 'new') return
+    const isCurrent = () =>
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration &&
+      conversationStore.threadId === threadAtSend
+    await Promise.race([
+      hydrateFromServer(threadAtSend, isCurrent),
+      new Promise<void>((resolve) => setTimeout(resolve, RECONCILE_TIMEOUT_MS))
+    ])
   }
 
   async function recoverFailedSend({
@@ -1608,7 +1656,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     accepted,
     threadAtSend,
     generation,
-    dismissedAskIds
+    dismissedAskIds,
+    attempt
   }: {
     error: unknown
     text: string
@@ -1617,14 +1666,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadAtSend: string
     generation: number
     dismissedAskIds: string[]
+    attempt: number
   }): Promise<false> {
     releaseDisownedWorkflow(sentContext, error)
     if (generation !== loadGeneration) return false
     const reattached = await reattachRefusedTurn(
       error,
       threadAtSend,
-      generation
+      generation,
+      attempt
     )
+    if (generation !== loadGeneration) return false
+    if (!reattached && serverRefusedSendOverCard(error, dismissedAskIds))
+      await reloadAfterRefusedSend(threadAtSend, generation)
     if (generation !== loadGeneration) return false
     recordCurrentSendError(
       error,
@@ -1648,6 +1702,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     dismissAsk = false
   ): Promise<boolean> {
     const generation = loadGeneration
+    const attempt = sendAttempt
     const skillScopeAtSend = skillPacks.scope
     const threadAtSend = conversationStore.threadId ?? 'new'
     const originContext = workflow?.current()
@@ -1687,7 +1742,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         attachments,
         tags,
         workflowReferences,
-        skillScopeAtSend
+        skillScopeAtSend,
+        attempt
       )
       rememberMint(input, wfContext, ack.workflow_id)
       return true
@@ -1699,7 +1755,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         accepted,
         threadAtSend,
         generation,
-        dismissedAskIds
+        dismissedAskIds,
+        attempt
       })
     }
   }
@@ -1750,6 +1807,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sending.value = true
     const releaseSendGate = sendGateStore.begin()
     sendInFlight = true
+    sendAttempt++
     stopPendingAck = null
     try {
       const sent = await performSend(
@@ -1889,13 +1947,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
-    if (threadId === null || turnId === null) {
-      // The POST has not acked yet; remember the intent and cancel on ack.
-      // sendInFlight, not this instance's sending: the panel that posted may
-      // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
-      return
-    }
+    // A POST that has not acked yet may start a turn: remember the intent for
+    // that attempt and cancel what it acknowledges. sendInFlight, not this
+    // instance's sending: the panel that posted may have been remounted, and
+    // the stop arrives through the new instance.
+    if (sendInFlight) stopPendingAck = { method, attempt: sendAttempt }
+    if (threadId === null || turnId === null) return
+    // A send over an open card leaves the old turn active until its
+    // acknowledgement. Stop it now too, in case the server refuses the
+    // replacement; the click is counted once, on the pending stop.
+    await stopActiveTurn(sendInFlight ? undefined : method)
+  }
+
+  async function stopActiveTurn(method?: AgentStopMethod): Promise<void> {
+    const threadId = conversationStore.threadId
+    const turnId = conversationStore.activeTurnId
+    if (threadId === null || turnId === null) return
     if (isStoppingTurn(turnId)) return
     promptEditState.value = { phase: 'stopping', turnId }
     const stopMetadata = captureStopMetadata(

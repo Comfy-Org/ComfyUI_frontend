@@ -3640,6 +3640,33 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.sendDismissesAsk.value).toBe(false)
     })
 
+    it('reopens the card when the server refuses the replacement with an error', async () => {
+      const { source, emit, status } = fakeEvents()
+      const rest = fakeRest({
+        postMessage: refusedSend(
+          new AgentApiError('bad gateway', 502, {
+            error: 'failed to inspect attached workflow'
+          })
+        ),
+        getMessages: waitingTurn('turn-1:call-1')
+      })
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+
+      expect(rest.getMessages).toHaveBeenCalled()
+      expect(runCard()).toBeDefined()
+      expect(runCard()).not.toMatchObject({ dismissed: true })
+      expect(useAgentConversationStore().activeTurnId).toBe('msg-1')
+      expect(rest.cancelMessage).not.toHaveBeenCalled()
+    })
+
     it('keeps offering Send over cards when the reload shows a different card', async () => {
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({
@@ -3737,13 +3764,16 @@ describe('useAgentSession (v1 composition root)', () => {
       }
     )
 
-    it('keeps the card dismissed when the send fails with a server error', async () => {
+    it('keeps the card dismissed when the reload after a server error fails', async () => {
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({
           postMessage: refusedSend(
             new AgentApiError('Bad Gateway', 502, { error: 'Bad Gateway' })
-          )
+          ),
+          getMessages: vi.fn(async (): Promise<AgentMessages> => {
+            throw new TypeError('Failed to fetch')
+          })
         }),
         events: source
       })
@@ -3899,10 +3929,14 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
 
-    it('stops the waiting turn when Stop lands while the replacement is posting', async () => {
-      const { source, emit, status } = fakeEvents()
-      const stopDuringPost = vi.fn<() => Promise<void>>()
-      const postMessage = vi
+    function replacementPostWithStop(
+      stop: () => Promise<void>,
+      ack: AgentTurnAccepted | Error = {
+        thread_id: 'th-1',
+        message_id: 'msg-2'
+      }
+    ) {
+      return vi
         .fn<
           (
             threadId: string,
@@ -3911,10 +3945,76 @@ describe('useAgentSession (v1 composition root)', () => {
         >()
         .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
         .mockImplementationOnce(async () => {
-          await stopDuringPost()
-          return { thread_id: 'th-1', message_id: 'msg-2' }
+          await stop()
+          if (ack instanceof Error) throw ack
+          return ack
         })
-      const rest = fakeRest({ postMessage })
+    }
+
+    it('stops the replacement turn when Stop lands while it is posting', async () => {
+      const { source, emit, status } = fakeEvents()
+      const stopDuringPost = vi.fn<() => Promise<void>>()
+      const rest = fakeRest({
+        postMessage: replacementPostWithStop(stopDuringPost)
+      })
+      const session = useAgentSession({ rest, events: source })
+      stopDuringPost.mockImplementation(() => session.stopTurn('button'))
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        true
+      )
+
+      expect(vi.mocked(rest.cancelMessage).mock.calls).toEqual([
+        ['th-1', 'msg-1'],
+        ['th-1', 'msg-2']
+      ])
+      expect(
+        telemetry.trackAgentStopClicked.mock.calls.map(
+          ([metadata]) => metadata.turn_id
+        )
+      ).toEqual(['msg-2'])
+    })
+
+    it('stops the replacement turn when Stop comes through a remounted panel', async () => {
+      const { source, emit, status } = fakeEvents()
+      const stopDuringPost = vi.fn<() => Promise<void>>()
+      const rest = fakeRest({
+        postMessage: replacementPostWithStop(stopDuringPost)
+      })
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+      stopDuringPost.mockImplementation(() =>
+        useAgentSession({ rest, events: fakeEvents().source }).stopTurn()
+      )
+
+      await sendOverCard(session, 'actually, do this instead')
+
+      expect(vi.mocked(rest.cancelMessage).mock.calls).toContainEqual([
+        'th-1',
+        'msg-2'
+      ])
+    })
+
+    it('does not carry a Stop from a refused replacement to a later turn', async () => {
+      const { source, emit, status } = fakeEvents()
+      const stopDuringPost = vi.fn<() => Promise<void>>()
+      const postMessage = replacementPostWithStop(
+        stopDuringPost,
+        new AgentApiError('bad gateway', 502, {
+          error: 'failed to inspect attached workflow'
+        })
+      ).mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-3' })
+      const rest = fakeRest({
+        postMessage,
+        getMessages: waitingTurn('turn-1:call-1')
+      })
       const session = useAgentSession({ rest, events: source })
       stopDuringPost.mockImplementation(() => session.stopTurn())
       session.start()
@@ -3922,7 +4022,11 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       emit(runApproval('msg-1'))
 
-      await sendOverCard(session, 'actually, do this instead')
+      expect(await sendOverCard(session, 'actually, do this instead')).toBe(
+        false
+      )
+      emit(done('msg-1'))
+      expect(await session.sendMessage('something new')).toBe(true)
 
       expect(vi.mocked(rest.cancelMessage).mock.calls).toEqual([
         ['th-1', 'msg-1']
