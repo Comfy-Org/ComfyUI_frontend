@@ -1395,9 +1395,6 @@ describe('useAuthStore', () => {
     }
 
     it('does not reset the socket on the initial sign-in', () => {
-      // The store is created in beforeEach, which drives the initial
-      // authStateCallback(mockUser); the first identity must not reconnect
-      // because api.init() already owns the initial connect.
       expect(api.resetSocket).not.toHaveBeenCalled()
     })
 
@@ -1458,8 +1455,6 @@ describe('useAuthStore', () => {
     it('does not reconnect on a same-account token refresh', () => {
       vi.mocked(api.resetSocket).mockClear()
 
-      // Same UID observed again (e.g. onAuthStateChanged re-emitting the same
-      // user) must not tear down the connection.
       authStateCallback(mockUser)
 
       expect(api.resetSocket).not.toHaveBeenCalled()
@@ -1477,8 +1472,6 @@ describe('useAuthStore', () => {
       authStateCallback(null)
       vi.mocked(api.resetSocket).mockClear()
 
-      // Re-signing in from a signed-out state records the identity again; the
-      // socket was already torn down on sign-out, so there is no extra reset.
       authStateCallback(accountB)
 
       expect(api.resetSocket).not.toHaveBeenCalled()
