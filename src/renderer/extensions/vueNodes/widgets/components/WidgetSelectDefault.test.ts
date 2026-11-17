@@ -536,6 +536,35 @@ describe('WidgetSelectDefault', () => {
     expect(optionLabels()).toEqual(['Other/b.safetensors'])
   })
 
+  it('retains search focus and filtering until closing after unlocking a removed folder', async () => {
+    let values = ['MOSS/a.safetensors', 'Other/b.safetensors']
+    const { user, onUpdate } = renderComponent(
+      createWidget(() => values),
+      'MOSS/a.safetensors'
+    )
+    await openDropdown(user)
+    await user.click(screen.getByRole('button', { name: 'Lock folder: MOSS' }))
+    await user.keyboard('{Escape}')
+    values = ['None']
+    await openDropdown(user)
+    await user.keyboard('{Shift>}{Tab}{/Shift}{Enter}')
+
+    const search = screen.getByRole('combobox', { name: 'Search' })
+    expect(search).toHaveFocus()
+    expect(optionLabels()).toEqual(['None'])
+    await user.type(search, 'missing')
+    expect(optionLabels()).toEqual([])
+    await user.clear(search)
+    expect(optionLabels()).toEqual(['None'])
+    expect(onUpdate).not.toHaveBeenCalled()
+
+    await user.keyboard('{Escape}')
+    expect(screen.getByTestId('widget-select-default-trigger')).toHaveFocus()
+    await openDropdown(user)
+    expect(screen.queryByRole('combobox', { name: 'Search' })).toBeNull()
+    expect(optionLabels()).toEqual(['None'])
+  })
+
   async function expectHighlightedOption(name: string) {
     await waitFor(() => {
       expect(screen.getByRole('option', { name })).toHaveAttribute(
