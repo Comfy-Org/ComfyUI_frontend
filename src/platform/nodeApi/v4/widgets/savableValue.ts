@@ -45,17 +45,25 @@ function firstUnsavable(
   path: string,
   ancestors: Set<object>
 ): Unsavable | undefined {
-  if (typeof value === 'string' || typeof value === 'boolean') return undefined
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? undefined : { path, value }
-  }
-  if (value === null) return undefined
-  if (typeof value !== 'object' || ancestors.has(value)) return { path, value }
-  if (!Array.isArray(value) && !isPlainObject(value)) return { path, value }
+  if (isSavablePrimitive(value)) return undefined
+  if (!isContainer(value) || ancestors.has(value)) return { path, value }
   ancestors.add(value)
   const found = firstUnsavableField(value, path, ancestors)
   ancestors.delete(value)
   return found
+}
+
+function isSavablePrimitive(value: unknown): boolean {
+  return (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    Number.isFinite(value)
+  )
+}
+
+function isContainer(value: unknown): value is object {
+  return Array.isArray(value) || isPlainObject(value)
 }
 
 function firstUnsavableField(

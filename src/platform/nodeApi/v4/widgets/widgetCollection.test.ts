@@ -340,7 +340,8 @@ describe('a node’s widgets', () => {
           options: { values: () => ['a'], label: () => 'A' }
         }
       ],
-      ['a combo without values', { type: 'combo', name: 'x', options: {} }]
+      ['a combo without values', { type: 'combo', name: 'x', options: {} }],
+      ['a combo without options', { type: 'combo', name: 'x' }]
     ] as const)('refuses a definition with %s, and adds nothing', ([, def]) => {
       const { node, widgets } = nodeWith('seed')
 
