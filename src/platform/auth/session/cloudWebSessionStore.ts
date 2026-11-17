@@ -67,6 +67,10 @@ import {
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
+import {
+  clearAllWorkspaceStorage,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -300,6 +304,8 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     const session = createCloudIdentity((change) => {
       resetForAccountChange(change)
       if (change.reason === 'signed_out' && !signingOut) {
+        prepareWorkflowLogoutTransition()
+        clearAllWorkspaceStorage()
         void signedOutElsewhere.trigger()
       }
     })

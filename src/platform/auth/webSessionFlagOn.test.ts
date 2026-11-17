@@ -86,12 +86,20 @@ import { createDisposablePinia } from '@/testing/pinia'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
+import {
+  clearAllWorkspaceStorage,
+  prepareWorkflowLogoutTransition
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
   resultItemUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
+
+vi.mock(import('@/platform/workflow/persistence/base/storageIO'), {
+  spy: true
+})
 
 type IdentityObserver = (user: User | null) => void
 
@@ -501,6 +509,8 @@ describe('cloud app on the shared web session', () => {
       name: 'session_signed_out_remotely',
       properties: { origin: location.origin }
     })
+    expect(prepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
+    expect(clearAllWorkspaceStorage).toHaveBeenCalledOnce()
   })
 
   it.for([

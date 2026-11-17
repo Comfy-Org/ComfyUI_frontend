@@ -38,7 +38,7 @@ import {
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
-  registerWorkflowPersistenceFlush
+  registerWorkflowPersistence
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
@@ -149,9 +149,10 @@ export function useWorkflowPersistenceV2() {
     debouncedPersist.flush()
   }
 
-  const unregisterPersistenceFlush = registerWorkflowPersistenceFlush(
-    flushPendingPersistence
-  )
+  const unregisterPersistence = registerWorkflowPersistence({
+    flush: flushPendingPersistence,
+    cancel: () => debouncedPersist.cancel()
+  })
   window.addEventListener('pagehide', flushPendingPersistence)
 
   const isWorkspaceInitConcluded = () =>
@@ -394,7 +395,7 @@ export function useWorkflowPersistenceV2() {
   tryOnScopeDispose(() => {
     api.removeEventListener('graphChanged', debouncedPersist)
     window.removeEventListener('pagehide', flushPendingPersistence)
-    unregisterPersistenceFlush()
+    unregisterPersistence()
     debouncedPersist.cancel()
     stopPendingWorkspaceReadinessWatcher()
   })

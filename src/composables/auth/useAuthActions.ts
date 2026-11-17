@@ -21,6 +21,7 @@ import type { AuthFlowAction } from '@comfyorg/telemetry/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   clearAllWorkspaceStorage,
+  completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
@@ -157,11 +158,14 @@ export const useAuthActions = () => {
 
       if (beforeSignOut && !(await beforeSignOut())) return false
 
-      await authStore.logout()
-      if (isCloud) {
-        prepareWorkflowLogoutTransition()
-        clearAllWorkspaceStorage()
+      if (isCloud) prepareWorkflowLogoutTransition()
+      try {
+        await authStore.logout()
+      } catch (error) {
+        if (isCloud) completeWorkflowLogoutTransition()
+        throw error
       }
+      if (isCloud) clearAllWorkspaceStorage()
 
       toast.success(t('auth.signOut.success'), {
         description: t('auth.signOut.successDetail'),

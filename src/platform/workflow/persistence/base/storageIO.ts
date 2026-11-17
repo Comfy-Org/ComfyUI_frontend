@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 /**
  * V2 Storage I/O - localStorage read/write with error handling.
  *
@@ -31,21 +33,40 @@ let workflowStorageState: WorkflowStorageState = {
   status: 'ready',
   availability: 'available'
 }
-const pendingPersistenceFlushes = new Set<() => void>()
-
-export function registerWorkflowPersistenceFlush(
+interface PendingWorkflowPersistence {
   flush: () => void
+  cancel: () => void
+}
+
+const pendingWorkflowPersistence = new Set<PendingWorkflowPersistence>()
+
+export function registerWorkflowPersistence(
+  pending: PendingWorkflowPersistence
 ): () => void {
-  pendingPersistenceFlushes.add(flush)
-  return () => pendingPersistenceFlushes.delete(flush)
+  pendingWorkflowPersistence.add(pending)
+  return () => pendingWorkflowPersistence.delete(pending)
 }
 
 function flushPendingWorkflowPersistence(): void {
-  for (const flush of pendingPersistenceFlushes) {
+  for (const { flush } of pendingWorkflowPersistence) {
     try {
       flush()
     } catch (error) {
       console.warn('Failed to flush pending workflow persistence', error)
+    }
+  }
+}
+
+function cancelPendingWorkflowPersistence(): void {
+  for (const { cancel } of pendingWorkflowPersistence) {
+    try {
+      cancel()
+    } catch (error) {
+      reportError(error, {
+        surface: 'workspace',
+        errorType: 'workflow_persistence_cancel_failed',
+        level: 'error'
+      })
     }
   }
 }
@@ -617,6 +638,7 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
 }
 
 export function prepareWorkflowLogoutTransition(): void {
+  cancelPendingWorkflowPersistence()
   workflowStorageState = {
     status: 'transitioning',
     reason: 'logout',
