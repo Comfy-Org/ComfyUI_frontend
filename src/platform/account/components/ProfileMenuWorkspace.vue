@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="menu"
     data-testid="current-user-popover"
     class="current-user-popover flex flex-col p-1"
   >
@@ -27,7 +28,10 @@
             variant="textonly"
             size="unset"
             :class="
-              cn(menuRowClass, 'justify-start data-[state=open]:bg-accent')
+              cn(
+                profileMenuRowClass,
+                'justify-start data-[state=open]:bg-accent'
+              )
             "
             :title="workspaceName"
             :aria-label="$t('profileMenu.switchWorkspace')"
@@ -54,9 +58,10 @@
           align="start"
           :side-offset="flyoutGap"
           :align-offset="-menuInset"
+          :align-flip="false"
           prioritize-position
           dismiss-on-viewport-change
-          class="w-auto overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0 data-[state=open]:data-[side=right]:slide-in-from-left-0"
+          class="w-64 overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0 data-[state=open]:data-[side=right]:slide-in-from-left-0"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherFlyout
@@ -74,9 +79,10 @@
         <HoverCardTrigger as-child>
           <button
             type="button"
-            :class="menuRowClass"
+            :class="profileMenuRowClass"
             data-testid="credits-menu-item"
             @click="openSettings('workspace')"
+            @keydown.arrow-right.prevent="creditsOpen = true"
           >
             <i class="icon-[lucide--coins] text-muted-foreground" />
             <span class="flex-1 text-foreground">{{
@@ -107,7 +113,11 @@
           :side="flyoutSide"
           align="start"
           :side-offset="flyoutGap"
-          class="rounded-xl p-2"
+          :align-offset="creditsFlyoutAlignOffset"
+          :collision-boundary="menu"
+          :side-flip="false"
+          :align-flip="false"
+          class="w-64 rounded-xl border-border bg-background p-0"
         >
           <ProfileMenuCreditsFlyout
             @open-billing="openSettings('workspace')"
@@ -118,7 +128,7 @@
 
       <button
         type="button"
-        :class="menuRowClass"
+        :class="profileMenuRowClass"
         data-testid="workspace-settings-menu-item"
         @click="openSettings('workspace')"
       >
@@ -152,7 +162,7 @@
 
     <button
       type="button"
-      :class="menuRowClass"
+      :class="profileMenuRowClass"
       data-testid="user-settings-menu-item"
       @click="openSettings('user')"
     >
@@ -164,7 +174,7 @@
 
     <button
       type="button"
-      :class="menuRowClass"
+      :class="profileMenuRowClass"
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
@@ -181,7 +191,7 @@ import type { SettingPanelType } from '@comfyorg/settings-core/types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -197,6 +207,7 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import ProfileMenuCreditsFlyout from '@/platform/account/components/ProfileMenuCreditsFlyout.vue'
 import WorkspaceSwitcherFlyout from '@/platform/account/components/WorkspaceSwitcherFlyout.vue'
+import { profileMenuRowClass } from '@/platform/account/components/profileMenuRow'
 import {
   PROFILE_MENU_ROLE_KEY,
   profileMenuPlanLabel
@@ -220,17 +231,16 @@ const { accountActionsOnly = false, flyoutSide = 'left' } = defineProps<{
 
 const menuInset = 5
 const flyoutGap = menuInset + 8
+const creditsFlyoutAlignOffset = -13
 
 const emit = defineEmits<{
   close: []
 }>()
 
-const menuRowClass =
-  'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none'
-
 const { t, locale } = useI18n()
 const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
 const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
+const menu = useTemplateRef<HTMLElement>('menu')
 const switcherOpen = ref(false)
 const creditsOpen = ref(false)
 const { userDisplayName, userEmail, handleSignOut, isApiKeyLogin } =
