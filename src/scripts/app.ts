@@ -848,6 +848,7 @@ export class ComfyApp implements IComfyApp {
       )) {
         setNodePreviewsByExecutionId(executionId, [blobUrl])
       }
+      this.canvas.setDirty(true, false)
       releaseSharedObjectUrl(blobUrl)
     })
 
