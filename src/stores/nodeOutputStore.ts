@@ -1,5 +1,5 @@
 import { useTimeoutFn } from '@vueuse/core'
-import { mapKeys, mapValues, pickBy } from 'es-toolkit'
+import { isEqual, mapKeys, mapValues, pickBy } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { onScopeDispose, ref, toRaw } from 'vue'
 
@@ -568,13 +568,22 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   function revokePreviewsByExecutionId(executionId: NodeExecutionId) {
     const nodeLocatorId = resolveLocator(executionId)
     if (!nodeLocatorId) return
-    scheduleRevoke(nodeLocatorId, () => releaseSharedPreviews(nodeLocatorId))
-    if (!isInteriorLocator(nodeLocatorId)) return
+    const sharedFrame = nodePreviewImages.value[nodeLocatorId]
+    const instances = instancePreviewImages.value[nodeLocatorId]
+    const instanceFrame = instances?.[executionId]
+
+    if (!instances || isEqual(sharedFrame, instanceFrame))
+      scheduleRevoke(nodeLocatorId, () => {
+        if (nodePreviewImages.value[nodeLocatorId] === sharedFrame)
+          releaseSharedPreviews(nodeLocatorId)
+      })
+    if (!instanceFrame) return
 
     scheduleRevoke(executionId, () => {
-      const instances = instancePreviewImages.value[nodeLocatorId]
-      releaseUrls(instances?.[executionId])
-      delete instances?.[executionId]
+      const current = instancePreviewImages.value[nodeLocatorId]
+      if (current?.[executionId] !== instanceFrame) return
+      releaseUrls(instanceFrame)
+      delete current[executionId]
     })
   }
 

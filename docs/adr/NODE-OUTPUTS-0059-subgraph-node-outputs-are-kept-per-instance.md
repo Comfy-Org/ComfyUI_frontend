@@ -54,7 +54,10 @@ still sit at the root.
   select, GLSL and webcam previews): write the locator entry and clear that
   locator's instance entries. Interior widget values belong to the definition,
   so such a write applies to every instance.
-- **Revoking** a live preview by execution ID affects only that instance.
+- **Revoking** a live preview by execution ID affects only that instance. The
+  release is delayed, and it releases only the frame that was current when it
+  was scheduled: a newer frame for the same key, from another instance or from
+  a workflow restored in the meantime, survives it.
 
 ### Reads
 
