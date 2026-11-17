@@ -1,12 +1,8 @@
 import { useEventListener } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
-import { getMenuAnchorPosition } from './menuAnchor'
+import { getMenuAnchorPosition, isMenuDismissalClick } from './menuAnchor'
 
-/**
- * State for a non-modal menu opened from code at the event's pointer or element.
- * Bind `menuProps` to a `Menu`; any outside press closes it, even one stopped before reaching the document.
- */
 export function usePointMenu(onShow?: (event: Event) => void) {
   const open = ref(false)
   const reference = shallowRef<{ getBoundingClientRect: () => DOMRect }>()
@@ -28,15 +24,8 @@ export function usePointMenu(onShow?: (event: Event) => void) {
   }
 
   function toggle(event: Event) {
-    const control = event.currentTarget
-    const pressDismissedMenu =
-      event instanceof MouseEvent &&
-      event.detail > 0 &&
-      control instanceof Node &&
-      control === shownFrom &&
-      dismissingPress !== null &&
-      control.contains(dismissingPress)
-    if (open.value || pressDismissedMenu) hide()
+    if (open.value || isMenuDismissalClick(event, shownFrom, dismissingPress))
+      hide()
     else show(event)
   }
 

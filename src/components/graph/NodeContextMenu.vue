@@ -32,7 +32,10 @@ import { useEventListener, useMutationObserver } from '@vueuse/core'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import Menu from '@comfyorg/design-system/menu/Menu'
-import { getMenuAnchorPosition } from '@comfyorg/design-system/lib/menu/menuAnchor'
+import {
+  getMenuAnchorPosition,
+  isMenuDismissalClick
+} from '@comfyorg/design-system/lib/menu/menuAnchor'
 import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import {
@@ -46,6 +49,7 @@ import {
 import { useNodeCustomization } from '@/composables/graph/useNodeCustomization'
 import { withNodeMenuSource } from '@/lib/litegraph/src/canvas/nodeMenuSource'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
@@ -129,6 +133,30 @@ function closeNative() {
   nativeDismissingPress = null
 }
 
+function collectNodeMenu(node: LGraphNode | null | undefined) {
+  const source = () =>
+    toLegacyNodeMenu(menuOptions.value, getCurrentShape()?.localizedName ?? '')
+  const fallback = source()
+  if (
+    !node ||
+    canvasStore.selectedItems.length !== 1 ||
+    !isLGraphNode(canvasStore.selectedItems[0])
+  ) {
+    return fallback
+  }
+  try {
+    return withNodeMenuSource(lgCanvas, source, () =>
+      lgCanvas.getNodeMenuOptions(node)
+    )
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'error_collecting_node_menu'
+    })
+    return fallback
+  }
+}
+
 function prepare(event: Event): boolean {
   if (event.type === 'contextmenu') event.preventDefault()
   closeNative()
@@ -137,30 +165,24 @@ function prepare(event: Event): boolean {
   const node = invocationContext.value
     ? canvasStore.currentGraph?.getNodeById(invocationContext.value.nodeId)
     : selected[0]
-  const source = () =>
-    toLegacyNodeMenu(menuOptions.value, getCurrentShape()?.localizedName ?? '')
-  let items = source()
-  if (node && selected.length === 1 && canvasStore.selectedItems.length === 1) {
-    try {
-      items = withNodeMenuSource(lgCanvas, source, () =>
-        lgCanvas.getNodeMenuOptions(node)
-      )
-    } catch (error) {
-      reportError(error, {
-        surface: 'graph',
-        errorType: 'error_collecting_node_menu'
-      })
-    }
-  }
-  const result = projectNodeMenu(items)
+  const result = projectNodeMenu(collectNodeMenu(node))
   if (result.kind === 'vue') {
     menuItems.value = result.items
     return true
   }
+  showNative(event, node, result.items)
+  return false
+}
+
+function showNative(
+  event: Event,
+  node: LGraphNode | null | undefined,
+  items: Parameters<typeof projectNodeMenu>[0]
+) {
   hideVue()
   const { x, y } = getMenuAnchorPosition(event)
   if (node) LGraphCanvas.active_node = node
-  nativeMenu.value = new LiteGraph.ContextMenu(result.items, {
+  nativeMenu.value = new LiteGraph.ContextMenu(items, {
     event: event instanceof MouseEvent ? event : undefined,
     left: x,
     top: y,
@@ -177,7 +199,6 @@ function prepare(event: Event): boolean {
   nativeShownFrom = event.currentTarget
   nativeRoot.value = nativeMenu.value.root.parentElement ?? undefined
   nativeOpen.value = nativeMenu.value.root.isConnected
-  return false
 }
 
 function show(event: Event) {
@@ -190,15 +211,11 @@ function hide() {
 }
 
 function toggle(event: Event) {
-  const control = event.currentTarget
-  const pressDismissedNative =
-    event instanceof MouseEvent &&
-    event.detail > 0 &&
-    control instanceof Node &&
-    control === nativeShownFrom &&
-    nativeDismissingPress !== null &&
-    control.contains(nativeDismissingPress)
-  if (nativeOpen.value || pressDismissedNative) hide()
+  if (
+    nativeOpen.value ||
+    isMenuDismissalClick(event, nativeShownFrom, nativeDismissingPress)
+  )
+    hide()
   else if (vueOpen.value || prepare(event)) toggleVue(event)
 }
 
