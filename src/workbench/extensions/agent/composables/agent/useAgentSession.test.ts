@@ -3585,7 +3585,9 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('build it and run it')
       events.emit(runApproval('msg-1'))
 
-      const answered = await session.answerAsk('turn-1:call-1', 'cancel')
+      const answered = await session.answerAsk('turn-1:call-1', {
+        selected: ['cancel']
+      })
 
       expect(answered).toBe(false)
       expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
@@ -4816,7 +4818,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('go')
     emit(runApproval('msg-1'))
     status(false)
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
@@ -6008,7 +6010,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.sendMessage('go')
       emit(runApproval('msg-1'))
       status(false)
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
       expect(approvalParts(session)).toHaveLength(0)
 
       status(true)
@@ -6051,7 +6053,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(1)
 
       status(false)
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
       expect(approvalParts(session)).toHaveLength(0)
 
       await vi.advanceTimersByTimeAsync(31_000)
@@ -6096,7 +6098,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(1)
       await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
 
-      const answered = session.answerAsk('turn-1:call-1', 'run')
+      const answered = session.answerAsk('turn-1:call-1', { selected: ['run'] })
       await vi.advanceTimersByTimeAsync(5_000)
       await answered
       expect(approvalParts(session)).toHaveLength(0)
@@ -6119,7 +6121,7 @@ describe('useAgentSession (v1 composition root)', () => {
     emit(runApproval('msg-1'))
     status(false)
 
-    await session.answerAsk('turn-1:call-1', 'run')
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       surface: 'agent',
@@ -6211,7 +6213,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(0)
       expect(approvalParts(first)).toHaveLength(1)
 
-      await first.answerAsk('turn-1:call-1', 'run')
+      await first.answerAsk('turn-1:call-1', { selected: ['run'] })
       first.stop()
 
       const secondEvents = fakeEvents()
@@ -6314,7 +6316,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(approvalParts(session)).toHaveLength(1)
       status(false)
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
       expect(session.notices.value).toEqual([
         {
           level: 'error',
@@ -6392,7 +6394,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(0)
 
       expect(approvalParts(session).map((part) => part.askId)).toEqual([
         currentAskId
@@ -6535,7 +6537,7 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
       emit(runApproval('msg-1'))
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(session.notices.value).toHaveLength(0)
       expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
@@ -6560,7 +6562,7 @@ describe('useAgentSession (v1 composition root)', () => {
       status(false)
       status(true)
       await vi.advanceTimersByTimeAsync(3_000)
-      await session.answerAsk('turn-1:call-1', 'run')
+      await session.answerAsk('turn-1:call-1', { selected: ['run'] })
 
       expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
         surface: 'agent',

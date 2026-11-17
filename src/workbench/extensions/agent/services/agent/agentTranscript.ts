@@ -553,8 +553,6 @@ function keepAuthoritativeAsk(
       !isAskUnavailable(askId)
     )
   })
-  // The snapshot's newest ask stays authoritative even while its answer is
-  // in flight. Falling back then would resurrect an older card.
   const authoritativeAskId =
     rowAsk !== undefined && !isAskRetired(rowAsk.ask_id)
       ? rowAsk.ask_id
