@@ -114,7 +114,9 @@ describe('createBillingStatusReader', () => {
     { name: 'malformed date', body: { ...STATUS, ended_at: 'not-a-date' } },
     { name: 'numeric date', body: { ...STATUS, ended_at: 1730000000 } },
     { name: 'malformed core field', body: { ...STATUS, has_funds: 'true' } },
-    { name: 'missing core field', body: { ...STATUS, is_active: undefined } }
+    { name: 'missing core field', body: { ...STATUS, is_active: undefined } },
+    { name: 'null tier', body: { ...STATUS, subscription_tier: null } },
+    { name: 'numeric tier', body: { ...STATUS, subscription_tier: 3 } }
   ])('rejects a $name without replacing valid status', async ({ body }) => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(STATUS), httpOk(body)])
