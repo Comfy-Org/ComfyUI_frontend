@@ -77,16 +77,8 @@ onScopeDispose(() => {
 })
 
 async function useLocalAgent() {
-  if (!flags.openOnCloudUseLocalAgentEnabled) return
   const prompt = prepareBrief()
-  if (
-    prompt &&
-    (await openLocalAgent(
-      prompt,
-      () => isActive && flags.openOnCloudUseLocalAgentEnabled
-    )) &&
-    isActive
-  )
+  if (prompt && (await openLocalAgent(prompt, () => isActive)) && isActive)
     emit('done')
 }
 

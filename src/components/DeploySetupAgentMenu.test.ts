@@ -166,44 +166,53 @@ describe('DeploySetupAgentMenu', () => {
   it.for([
     {
       change: 'agent becomes unavailable',
-      revoke: () => {
+      applyChange: () => {
         useAgentPanelStore().enabled = false
-      }
+      },
+      opens: false,
+      handoff: null
     },
     {
       change: 'rollout flag is disabled',
-      revoke: () => {
+      applyChange: () => {
         Object.assign(useFeatureFlags().flags, {
           openOnCloudUseLocalAgentEnabled: false
         })
-      }
+      },
+      opens: true,
+      handoff: expect.stringContaining(
+        'Workflow: "workflows/portraits/upscale.json"'
+      )
     }
-  ])('does not hand off when $change during consent', async ({ revoke }) => {
-    Object.assign(useFeatureFlags().flags, {
-      openOnCloudUseLocalAgentEnabled: true
-    })
-    useWorkflowStore().activeWorkflow = fromPartial({
-      path: 'workflows/portraits/upscale.json',
-      isPersisted: true,
-      isModified: false,
-      changeTracker: { prepareForSave: vi.fn() }
-    })
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
-      revoke()
-      onAccept()
-    })
-    render(GlobalDialog, { global: { plugins: [testI18n] } })
-    await openDeploySetupDialog()
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
+  ])(
+    'opens=$opens when $change during consent',
+    async ({ applyChange, opens, handoff }) => {
+      Object.assign(useFeatureFlags().flags, {
+        openOnCloudUseLocalAgentEnabled: true
+      })
+      useWorkflowStore().activeWorkflow = fromPartial({
+        path: 'workflows/portraits/upscale.json',
+        isPersisted: true,
+        isModified: false,
+        changeTracker: { prepareForSave: vi.fn() }
+      })
+      const panel = useAgentPanelStore()
+      panel.enabled = true
+      withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
+        applyChange()
+        onAccept()
+      })
+      render(GlobalDialog, { global: { plugins: [testI18n] } })
+      await openDeploySetupDialog()
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
 
-    await pickRow(user, 'Use local agent')
+      await pickRow(user, 'Use local agent')
 
-    expect(panel.isOpen).toBe(false)
-    expect(panel.pendingCloudHandoff).toBeNull()
-    expect(downloadBlob).not.toHaveBeenCalled()
-  })
+      expect(panel.isOpen).toBe(opens)
+      expect(panel.pendingCloudHandoff).toEqual(handoff)
+      expect(downloadBlob).not.toHaveBeenCalled()
+    }
+  )
 
   it('cancels pending local agent consent when the deployment dialog closes', async () => {
     Object.assign(useFeatureFlags().flags, {
