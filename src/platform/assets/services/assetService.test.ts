@@ -1039,6 +1039,60 @@ describe(assetService.getWorkspaceLibraryModels, () => {
   })
 })
 
+describe(assetService.getWorkspaceLibraryFolders, () => {
+  function libraryRow(id: string, tags: string[]): AssetItem {
+    return {
+      id,
+      name: `${id}.safetensors`,
+      tags,
+      created_at: '2026-10-29T00:00:00Z',
+      updated_at: '2026-10-29T00:00:00Z'
+    }
+  }
+
+  it('lists each folder tag on the workspace library models once, from one walk', async () => {
+    vi.mocked(api.fetchApi)
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            libraryRow('3f0b6c1e-0000-4000-8000-000000000101', [
+              'models',
+              'loras'
+            ]),
+            libraryRow('3f0b6c1e-0000-4000-8000-000000000102', [
+              'models',
+              'checkpoints'
+            ])
+          ],
+          { hasMore: true, nextCursor: 'page-2', total: 3 }
+        )
+      )
+      .mockResolvedValueOnce(
+        buildAssetListResponse(
+          [
+            libraryRow('3f0b6c1e-0000-4000-8000-000000000103', [
+              'models',
+              'loras'
+            ])
+          ],
+          { total: 3 }
+        )
+      )
+
+    await expect(assetService.getWorkspaceLibraryFolders()).resolves.toEqual([
+      'loras',
+      'checkpoints'
+    ])
+    const [first, second] = vi
+      .mocked(api.fetchApi)
+      .mock.calls.map(([url]) => new URL(url, 'http://localhost').searchParams)
+    expect(first.get('include_tags')).toBe('models')
+    expect(first.get('include_public')).toBe('false')
+    expect(first.get('workspace_library')).toBe('true')
+    expect(second.get('after')).toBe('page-2')
+  })
+})
+
 describe(assetService.onModelsScanned, () => {
   it('invokes the callback when the scan event fires and unsubscribes cleanly', () => {
     const callback = vi.fn()

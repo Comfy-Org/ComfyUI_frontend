@@ -1,5 +1,11 @@
 import { defineStore } from 'pinia'
-import { effectScope, onScopeDispose, shallowReactive, watch } from 'vue'
+import {
+  effectScope,
+  onScopeDispose,
+  shallowReactive,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
@@ -70,20 +76,29 @@ export const useDeploymentLibraryModelsStore = defineStore(
     const watchedFolders = new Map<string, number>()
     const latestRequest = new Map<string, number>()
     const listeners = effectScope()
+    const uploadFolderTags = shallowRef<readonly string[]>(NO_NAMES)
+    let uploadFolderWatchers = 0
+    let uploadFoldersRequest = 0
     let generation = 0
 
     function loadWatchedFolders() {
       for (const folder of watchedFolders.keys()) {
         if (!folders.has(folder)) refresh(folder)
       }
+      if (uploadFolderWatchers > 0) refreshUploadFolders()
+    }
+
+    function clearFolders() {
+      generation++
+      folders.clear()
+      latestRequest.clear()
+      uploadFolderTags.value = NO_NAMES
     }
 
     watch(
       () => workspaceStore.workspaceId,
       () => {
-        generation++
-        folders.clear()
-        latestRequest.clear()
+        clearFolders()
         loadWatchedFolders()
       },
       { flush: 'sync' }
@@ -96,9 +111,7 @@ export const useDeploymentLibraryModelsStore = defineStore(
           loadWatchedFolders()
           return
         }
-        generation++
-        folders.clear()
-        latestRequest.clear()
+        clearFolders()
       },
       { flush: 'sync' }
     )
@@ -106,14 +119,16 @@ export const useDeploymentLibraryModelsStore = defineStore(
     watch(
       () => downloads.lastCompletedDownload,
       (completed) => {
-        if (!completed || !folders.has(completed.modelType)) return
-        refresh(completed.modelType)
+        if (!completed) return
+        if (uploadFolderWatchers > 0) refreshUploadFolders()
+        if (folders.has(completed.modelType)) refresh(completed.modelType)
       }
     )
 
     onScopeDispose(
       assetService.onAssetsChanged(() => {
         for (const folder of folders.keys()) refresh(folder)
+        if (uploadFolderWatchers > 0) refreshUploadFolders()
       })
     )
 
@@ -159,6 +174,50 @@ export const useDeploymentLibraryModelsStore = defineStore(
           })
         }
       )
+    }
+
+    function refreshUploadFolders() {
+      if (!flags.runtimeLibraryModelsEnabled || !workspaceStore.workspaceId) {
+        return
+      }
+      const startedIn = generation
+      const request = ++uploadFoldersRequest
+      const isCurrent = () =>
+        startedIn === generation && uploadFoldersRequest === request
+      void assetService.getWorkspaceLibraryFolders().then(
+        (tags) => {
+          if (isCurrent()) uploadFolderTags.value = tags
+        },
+        (err: unknown) => {
+          if (!isCurrent()) return
+          reportError(err, {
+            surface: 'workspace',
+            errorType: 'error_loading_library_models',
+            level: 'warning'
+          })
+        }
+      )
+    }
+
+    function uploadFolders(): readonly string[] {
+      if (!flags.runtimeLibraryModelsEnabled) return NO_NAMES
+      return uploadFolderTags.value.filter((folder) =>
+        deploymentDownloads(folder)
+      )
+    }
+
+    /**
+     * Loads the folders the library has uploads in, and reloads them on library changes until the returned stop is called.
+     */
+    function watchUploadFolders(): () => void {
+      uploadFolderWatchers++
+      refreshUploadFolders()
+      let stopped = false
+      return () => {
+        if (stopped) return
+        stopped = true
+        uploadFolderWatchers--
+      }
     }
 
     function loaded(folder: string): LibraryFolder | undefined {
@@ -216,7 +275,10 @@ export const useDeploymentLibraryModelsStore = defineStore(
       namesIn,
       statusOf,
       waitForSettled,
-      refresh
+      refresh,
+      uploadFolders,
+      watchUploadFolders,
+      refreshUploadFolders
     }
   }
 )

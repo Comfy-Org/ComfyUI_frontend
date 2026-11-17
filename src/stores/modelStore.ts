@@ -306,7 +306,6 @@ export const useModelStore = defineStore('models', () => {
     return isCloud && deploymentDownloads(folder)
   }
 
-  /** The workspace library's uploads a picked deployment can load, after its Release's models. */
   function libraryModelsIn(folder: ModelFolder): ComfyModelDef[] {
     if (
       folder.state !== ResourceState.Loaded ||
@@ -323,27 +322,52 @@ export const useModelStore = defineStore('models', () => {
       .map((name) => new ComfyModelDef(name, folder.directory, 0))
   }
 
-  const watchedLibraryFolders = new Set<string>()
+  const libraryStops = new Map<string, () => void>()
 
-  function loadLibraryFolder(folder: string): Promise<void> {
+  function loadLibraryFolder(folder: string): void {
+    if (!showsLibrary(folder)) return
     const library = useDeploymentLibraryModelsStore()
-    if (watchedLibraryFolders.has(folder)) {
-      library.refresh(folder)
-    } else {
-      watchedLibraryFolders.add(folder)
-      library.watchFolder(folder, () => {})
-    }
-    return library.waitForSettled(folder)
+    if (libraryStops.has(folder)) library.refresh(folder)
+    else
+      libraryStops.set(
+        folder,
+        library.watchFolder(folder, () => {})
+      )
   }
 
-  /** The server's folder listing; on a picked deployment, also loads the workspace library's names for the folder. */
-  async function getListedModels(folder: string): Promise<ModelFile[]> {
-    if (!showsLibrary(folder)) return api.getModels(folder)
-    const [release] = await Promise.all([
-      api.getModels(folder),
-      loadLibraryFolder(folder)
-    ])
-    return release
+  function getListedModels(folder: string): Promise<ModelFile[]> {
+    loadLibraryFolder(folder)
+    return api.getModels(folder)
+  }
+
+  const showsLibraryFolders = () => isCloud && !!deploymentPick?.bootDeployment
+
+  let stopUploadFolders: (() => void) | undefined
+
+  function discoverLibraryFolders(): void {
+    if (!showsLibraryFolders()) return
+    const library = useDeploymentLibraryModelsStore()
+    if (stopUploadFolders) library.refreshUploadFolders()
+    else stopUploadFolders = library.watchUploadFolders()
+  }
+
+  const libraryOnlyFolderNames = computed<readonly string[]>(() =>
+    showsLibraryFolders()
+      ? useDeploymentLibraryModelsStore().uploadFolders()
+      : []
+  )
+
+  function withLibraryFolders(
+    names: string[],
+    folders: Record<string, ModelFolder>
+  ): string[] {
+    const added = libraryOnlyFolderNames.value.filter(
+      (name) => !names.includes(name)
+    )
+    for (const name of added) {
+      folders[name] ??= new ModelFolder(name, getListedModels)
+    }
+    return added.length > 0 ? [...names, ...added] : names
   }
 
   /**
@@ -377,6 +401,7 @@ export const useModelStore = defineStore('models', () => {
         : 'asset-legacy-tags'
   )
   let committedSource = modelSource.value
+  let foldersCommitted = false
   let modelFoldersRequestId = 0
 
   /**
@@ -405,6 +430,7 @@ export const useModelStore = defineStore('models', () => {
    */
   async function prepareModelFolders(): Promise<PreparedModelFolders | null> {
     const requestId = ++modelFoldersRequestId
+    discoverLibraryFolders()
     const resData = await api.getModelFolders()
     if (requestId !== modelFoldersRequestId) return null
     const getModelsFunc = createGetModelsFunc()
@@ -421,7 +447,10 @@ export const useModelStore = defineStore('models', () => {
     return {
       requestId,
       source: modelSource.value,
-      names: resData.map((folder) => folder.name),
+      names: withLibraryFolders(
+        resData.map((folder) => folder.name),
+        folders
+      ),
       folders
     }
   }
@@ -431,10 +460,19 @@ export const useModelStore = defineStore('models', () => {
     folders,
     source
   }: PreparedModelFolders): void {
-    modelFolderNames.value = names
+    modelFolderNames.value = withLibraryFolders(names, folders)
     modelFolderByName.value = folders
     committedSource = source
+    foldersCommitted = true
   }
+
+  watch(libraryOnlyFolderNames, () => {
+    if (!foldersCommitted) return
+    modelFolderNames.value = withLibraryFolders(
+      modelFolderNames.value,
+      modelFolderByName.value
+    )
+  })
 
   /** Loads the model folder structure from the server; false when superseded. */
   async function loadModelFolders(): Promise<boolean> {
@@ -585,6 +623,8 @@ export const useModelStore = defineStore('models', () => {
   onScopeDispose(() => {
     scheduleModelReload.cancel()
     unsubscribeModelsScanned()
+    for (const stop of libraryStops.values()) stop()
+    stopUploadFolders?.()
   })
 
   /**

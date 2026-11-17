@@ -821,6 +821,20 @@ function createAssetService() {
     )
   }
 
+  /**
+   * Lists the folder tags on the workspace library's models, from one walk of the library.
+   */
+  async function getWorkspaceLibraryFolders(): Promise<string[]> {
+    const assets = await walkAssetPages(
+      'workspace library',
+      undefined,
+      (after) => getWorkspaceLibraryAssetsPage({ limit: DEFAULT_LIMIT, after })
+    )
+    return uniq(
+      assets.flatMap((asset) => asset.tags.filter((tag) => tag !== MODELS_TAG))
+    )
+  }
+
   async function deleteAsset(id: AssetId): Promise<void> {
     const res = await api.fetchApi(`${ASSETS_ENDPOINT}/${id}`, {
       method: 'DELETE'
@@ -1186,6 +1200,7 @@ function createAssetService() {
     getAssetsByTag,
     getAssetsPageByTag,
     getAllAssetsByTag,
+    getWorkspaceLibraryFolders,
     getWorkspaceLibraryModels,
     getWorkspaceLibraryAssetsPage,
     deleteAsset,

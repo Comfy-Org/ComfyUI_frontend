@@ -1,3 +1,4 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -12,6 +13,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const deployment: WorkspaceDeployment = {
   deployment_id: 'dep-1',
@@ -28,6 +30,9 @@ describe('useDeploymentLibraryModelsStore', () => {
     library.clear()
     vi.spyOn(assetService, 'getWorkspaceLibraryModels').mockImplementation(
       async (folder) => library.get(folder) ?? []
+    )
+    vi.spyOn(assetService, 'getWorkspaceLibraryFolders').mockImplementation(
+      async () => [...library.keys()]
     )
     Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-1' })
     useDeploymentPickStore().bootDeployment = deployment
@@ -122,5 +127,50 @@ describe('useDeploymentLibraryModelsStore', () => {
 
     expect(store.namesIn('loras')).toEqual([])
     expect(store.namesIn('checkpoints')).toEqual(['my_style.safetensors'])
+  })
+
+  it('reports a failed read and marks the folder failed', async () => {
+    const failure = new Error('library unavailable')
+    vi.mocked(assetService.getWorkspaceLibraryModels).mockRejectedValueOnce(
+      failure
+    )
+    const store = useDeploymentLibraryModelsStore()
+    store.watchFolder('loras', () => {})
+    await store.waitForSettled('loras')
+
+    expect(store.statusOf('loras')).toBe('error')
+    expect(reportError).toHaveBeenCalledWith(
+      failure,
+      expect.objectContaining({ errorType: 'error_loading_library_models' })
+    )
+  })
+
+  it('lists the folders with uploads a deployment can load', async () => {
+    library.set('loras', ['a.safetensors'])
+    library.set('input', ['photo.png'])
+    library.set('checkpoints', ['b.safetensors'])
+    const store = useDeploymentLibraryModelsStore()
+    store.watchUploadFolders()
+
+    await vi.waitFor(() =>
+      expect(store.uploadFolders()).toEqual(['loras', 'checkpoints'])
+    )
+  })
+
+  it('reads the upload folders again for a new workspace until stopped', async () => {
+    library.set('loras', ['a.safetensors'])
+    const store = useDeploymentLibraryModelsStore()
+    const stop = store.watchUploadFolders()
+    await vi.waitFor(() => expect(store.uploadFolders()).toEqual(['loras']))
+
+    library.set('vae', ['c.safetensors'])
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+    await vi.waitFor(() =>
+      expect(store.uploadFolders()).toEqual(['loras', 'vae'])
+    )
+
+    stop()
+    Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-3' })
+    expect(assetService.getWorkspaceLibraryFolders).toHaveBeenCalledTimes(2)
   })
 })

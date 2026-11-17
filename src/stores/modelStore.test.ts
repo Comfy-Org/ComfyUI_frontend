@@ -43,6 +43,7 @@ beforeEach(() => {
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetModels: vi.fn(),
+    getWorkspaceLibraryFolders: vi.fn(),
     getWorkspaceLibraryModels: vi.fn(),
     invalidateModelBuckets: vi.fn(),
     onAssetsChanged: vi.fn(),
@@ -77,6 +78,7 @@ function enableMocks(assetsEnabled = false) {
   vi.mocked(assetService.onModelsScanned).mockReturnValue(() => {})
   vi.mocked(assetService.onAssetsChanged).mockReturnValue(() => {})
   vi.mocked(assetService.getWorkspaceLibraryModels).mockResolvedValue([])
+  vi.mocked(assetService.getWorkspaceLibraryFolders).mockResolvedValue([])
 
   vi.mocked(api.viewMetadata).mockImplementation((_, model) => {
     if (model === 'noinfo.safetensors') {
@@ -161,6 +163,9 @@ describe('useModelStore', () => {
   describe('workspace library on a picked deployment', () => {
     const library = new Map<string, string[]>()
     let notifyAssetsChanged = () => {}
+    const keys = () => store.models.map((model) => model.key)
+    const folderNames = () =>
+      store.modelFolders.map((folder) => folder.directory)
 
     beforeEach(() => {
       enableMocks(true)
@@ -174,6 +179,9 @@ describe('useModelStore', () => {
         can_start: false,
         created_at: '2026-10-01T00:00:00Z'
       }
+      vi.mocked(api.getModelFolders).mockResolvedValue([
+        { name: 'checkpoints', folders: [] }
+      ])
       vi.mocked(api.getModels).mockImplementation(async (folder) =>
         folder === 'checkpoints'
           ? [{ name: 'release.safetensors', pathIndex: 0 }]
@@ -181,9 +189,12 @@ describe('useModelStore', () => {
       )
       library.clear()
       library.set('checkpoints', ['release.safetensors', 'upload.safetensors'])
-      library.set('vae', ['upload_vae.safetensors'])
+      library.set('loras', ['upload_lora.safetensors'])
       vi.mocked(assetService.getWorkspaceLibraryModels).mockImplementation(
         async (folder) => library.get(folder) ?? []
+      )
+      vi.mocked(assetService.getWorkspaceLibraryFolders).mockImplementation(
+        async () => [...library.keys()]
       )
       vi.mocked(assetService.onAssetsChanged).mockImplementation((listener) => {
         notifyAssetsChanged = listener
@@ -194,26 +205,93 @@ describe('useModelStore', () => {
     it('lists the uploads beside the Release models in their folders', async () => {
       store = useModelStore()
       await store.loadModels()
+      await vi.waitFor(() =>
+        expect(folderNames()).toEqual(['checkpoints', 'loras'])
+      )
+      await store.loadModels()
 
-      expect(store.models.map((model) => model.key)).toEqual([
-        'checkpoints/release.safetensors',
-        'checkpoints/upload.safetensors',
-        'vae/upload_vae.safetensors'
-      ])
+      await vi.waitFor(() =>
+        expect(keys()).toEqual([
+          'checkpoints/release.safetensors',
+          'checkpoints/upload.safetensors',
+          'loras/upload_lora.safetensors'
+        ])
+      )
+    })
+
+    it('lists a folder the Release has no models in when the library has uploads there', async () => {
+      store = useModelStore()
+      await store.loadModels()
+
+      await vi.waitFor(() =>
+        expect(folderNames()).toEqual(['checkpoints', 'loras'])
+      )
+      await store.getLoadedModelFolder('loras')
+      await vi.waitFor(() =>
+        expect(keys()).toContain('loras/upload_lora.safetensors')
+      )
     })
 
     it('drops an upload once the library no longer has it', async () => {
       store = useModelStore()
       await store.loadModels()
+      await vi.waitFor(() =>
+        expect(keys()).toContain('checkpoints/upload.safetensors')
+      )
       library.set('checkpoints', [])
 
       notifyAssetsChanged()
       await vi.waitFor(() =>
-        expect(store.models.map((model) => model.key)).toEqual([
-          'checkpoints/release.safetensors',
-          'vae/upload_vae.safetensors'
-        ])
+        expect(keys()).not.toContain('checkpoints/upload.safetensors')
       )
+      expect(keys()).toContain('checkpoints/release.safetensors')
+    })
+
+    it('lists the Release models while the library read is still pending', async () => {
+      vi.mocked(assetService.getWorkspaceLibraryModels).mockReturnValue(
+        new Promise(() => {})
+      )
+      store = useModelStore()
+      void store.loadModels()
+
+      await vi.waitFor(() => {
+        expect(store.modelFolders[0].state).toBe(ResourceState.Loaded)
+        expect(keys()).toEqual(['checkpoints/release.safetensors'])
+      })
+    })
+
+    it('keeps the Release models listed when the library read fails', async () => {
+      vi.mocked(assetService.getWorkspaceLibraryModels).mockRejectedValue(
+        new Error('library unavailable')
+      )
+      store = useModelStore()
+      await store.loadModels()
+      await Promise.allSettled(
+        vi
+          .mocked(assetService.getWorkspaceLibraryModels)
+          .mock.results.map((read) => read.value)
+      )
+
+      expect(store.modelFolders[0].state).toBe(ResourceState.Loaded)
+      expect(keys()).toEqual(['checkpoints/release.safetensors'])
+    })
+
+    it('releases its library folders when the store is disposed', async () => {
+      store = useModelStore()
+      await store.loadModels()
+      await vi.waitFor(() =>
+        expect(assetService.getWorkspaceLibraryModels).toHaveBeenCalledWith(
+          'checkpoints'
+        )
+      )
+      store.$dispose()
+      vi.mocked(assetService.getWorkspaceLibraryModels).mockClear()
+      vi.mocked(assetService.getWorkspaceLibraryFolders).mockClear()
+
+      Object.assign(useTeamWorkspaceStore(), { workspaceId: 'ws-2' })
+
+      expect(assetService.getWorkspaceLibraryModels).not.toHaveBeenCalled()
+      expect(assetService.getWorkspaceLibraryFolders).not.toHaveBeenCalled()
     })
   })
 
