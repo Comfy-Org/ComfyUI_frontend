@@ -8,6 +8,7 @@ let resolveNodeDefText: typeof I18nModule.resolveNodeDefText
 let resolveNodeDefSlotText: typeof I18nModule.resolveNodeDefSlotText
 let setBackendNodeText: typeof I18nModule.setBackendNodeText
 let mergeCustomNodesI18n: typeof I18nModule.mergeCustomNodesI18n
+let mergeExtensionI18n: typeof I18nModule.mergeExtensionI18n
 let resolveSupportedLocale: typeof I18nModule.resolveSupportedLocale
 let setActiveLocale: typeof I18nModule.setActiveLocale
 let te: typeof I18nModule.te
@@ -20,6 +21,7 @@ async function importI18nModule() {
   resolveNodeDefSlotText = i18nModule.resolveNodeDefSlotText
   setBackendNodeText = i18nModule.setBackendNodeText
   mergeCustomNodesI18n = i18nModule.mergeCustomNodesI18n
+  mergeExtensionI18n = i18nModule.mergeExtensionI18n
   resolveSupportedLocale = i18nModule.resolveSupportedLocale
   setActiveLocale = i18nModule.setActiveLocale
   te = i18nModule.te
@@ -232,6 +234,36 @@ describe('i18n', () => {
       expect(zhMessages.plugin2).toEqual({ name: '插件2' })
       // First call's data is overwritten
       expect(zhMessages.plugin1).toBeUndefined()
+    })
+  })
+
+  describe('mergeExtensionI18n', () => {
+    function messagesOf(locale: string) {
+      return i18n.global.getLocaleMessage(locale) as Record<string, unknown>
+    }
+
+    it('merges into a loaded locale at once, later messages winning', () => {
+      mergeExtensionI18n('en', { welcome: 'Hello', pack: { a: 'A' } })
+      mergeExtensionI18n('en', { pack: { b: 'B' } })
+
+      expect(messagesOf('en')).toMatchObject({
+        welcome: 'Hello',
+        enOnly: 'English only',
+        pack: { a: 'A', b: 'B' }
+      })
+    })
+
+    it('keeps messages for a locale not loaded, and merges them over the custom nodes when it loads', async () => {
+      mergeCustomNodesI18n({ zh: { pack: { a: 'custom', c: 'C' } } })
+      mergeExtensionI18n('zh', { pack: { a: 'extension' } })
+
+      expect(messagesOf('zh').pack).toBeUndefined()
+      await loadLocale('zh')
+
+      expect(messagesOf('zh')).toMatchObject({
+        welcome: '欢迎',
+        pack: { a: 'extension', c: 'C' }
+      })
     })
   })
 

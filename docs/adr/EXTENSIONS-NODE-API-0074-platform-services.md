@@ -240,6 +240,47 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     supplied a canvas there is no view, and the call mounts nothing and
     returns `undefined`.
 
+### Localization (`comfy.localization`, 1 / 1)
+
+26. `registerCatalog(locale, catalog)` merges `catalog.messages` into the
+    app's vue-i18n messages for `locale` through `mergeExtensionI18n`, a
+    function this ADR adds to `src/i18n.ts` beside `mergeCustomNodesI18n`. It
+    merges into a locale already loaded at once, and keeps the messages so
+    `loadLocale` merges them again, after the custom nodes' data, when a
+    locale loads later; until then the app has only its English messages for
+    that locale. `mergeCustomNodesI18n` could not be used: it replaces all
+    the custom nodes' data each call, so one pack's catalog would remove
+    what the `/i18n` route gave and every other pack's. Merging straight into
+    vue-i18n without the host function would be lost when `loadLocale`
+    replaces a lazily loaded locale's messages. A pack registers the catalogs
+    of every locale it carries at load (the one stored pack registers five),
+    and none of them causes a locale file to be fetched.
+27. The locale must be one the app ships (`localeDefinitions`), as the
+    earlier contract asked; a legacy id such as `zh-CN` is refused, because
+    the app never loads it. `messages` must hold only strings, `null` and
+    plain objects, with no loop; it is copied with `savedCopy` before it is
+    kept, so a change the pack makes later reaches nothing. `null` is taken
+    as vue-i18n takes it: the key resolves to the fallback locale. A catalog
+    lasts for the page and later catalogs win: vue-i18n has no way to take
+    merged messages out of a locale, so `registerCatalog` returns nothing,
+    as `settings.declare` does.
+
+### System (`comfy.system`, 1 / 2)
+
+28. `monitor()` reads the backend's `/system_stats` through the backend
+    client's `getSystemStats`, the route the host's system-stats store reads.
+    The store is not used: it keeps the first reading, and a pack polling
+    for a fresh one would get the same values. The route gives the RAM
+    (`ram_total`, `ram_free`) and each device's name and memory; the
+    snapshot keeps the earlier contract's shape with what the route has.
+    `cpu.utilization_percent`, each accelerator's `utilization_percent` and
+    `temperature_c` are `null` and `volumes` is empty, because the backend
+    reports none of them; the earlier contract already gave `null` for a
+    sensor the host lacks. The CPU device is not an accelerator. A device's
+    id is its name, which the backend makes unique (`cuda:0 ...`). The reply
+    is read field by field; a failed request or a reply of another shape
+    resolves `undefined`. The snapshot is frozen.
+
 ### Left out
 
 The sandbox the earlier contract served is out of scope, and nothing here
@@ -255,10 +296,14 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   sandbox, and threw everywhere else. A pack calls its routes with
   `backend.fetch('/my-pack/route')`.
 - `backend.sessionId` (0 / 0) has no use.
-- `comfy.system` and its snapshot types (1 / 2) are deferred. Their only
-  host, the `/system_monitor` route, is not in ComfyUI; it exists on an
-  unreleased backend branch. A wrapper over a route the server lacks would
-  have no working path. The members return when that route ships.
+- CPU load, disk volumes, device load and temperature in
+  `system.monitor` (decision 28): the backend reports none of them. The
+  `/system_monitor` route the earlier contract read is not in ComfyUI.
+- `LocalizationCatalog.phrases` (1 / 1): translations of exact English
+  text, used where the host renders a string with no message key. The host
+  has no such lookup; every translated string in the app goes through a
+  key. An extra field is ignored (decision 1), so a catalog that holds
+  `phrases` still registers its `messages`.
 - `VueSidebarTab` and `VueDialog` (0 / 0): the host would have rendered a
   pack's Vue component with its own Vue, which only the sandbox needed.
 - `BadgeContribution.icon` (0 / 0) has no use. `ViewportPanelDef.destroy`
@@ -300,8 +345,9 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
 
 - Host lines: `actionBarButtonStore.ts` and `topbarBadgeStore.ts` each
   append `useComfyApiStore()`'s list, and `comfyApi.ts` and
-  `comfyApiStore.ts` pass the lists through. Each has a test that fails when
-  the line is removed.
+  `comfyApiStore.ts` pass the lists through. `src/i18n.ts` gains
+  `mergeExtensionI18n` and one loop in `loadLocale` (decision 26). Each has a
+  test that fails when the line is removed.
 - The settings store, the command store and the keybinding store cannot
   remove a registration, so `declare` and `register` last for the page, as
   `extension.settings` and `extension.commands` do. A removal method in each
@@ -325,6 +371,16 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
 - **Checking a JSON value.** `isJsonValue` walks the value once. A JSON round
   trip would drop `undefined` and functions and turn `NaN` into `null`
   without saying so, which is the silent change the check exists to refuse.
+- **Checking a message tree.** `localizationHandle.ts` walks a catalog as
+  `isJsonValue` does, but takes only strings, `null` and plain objects,
+  the values a vue-i18n message can be; `isJsonValue` would pass a number or
+  a list, which vue-i18n takes and then fails on when the message is shown.
+- **Reading the system stats.** `systemHandle.ts` reads the reply of
+  `getSystemStats` field by field. The generated `zSystemStatsResponse`
+  schema in `@comfyorg/ingest-types` describes the route, but no frontend
+  code parses with it, and it does not carry the device fields the
+  snapshot needs checked as numbers (`vram_total` and `vram_free` are
+  optional there).
 - **Reading a server's list.** `textFieldOfEach` reads one string field of
   each entry of a reply, for the storage and model lists, which the
   client returns unchecked.
