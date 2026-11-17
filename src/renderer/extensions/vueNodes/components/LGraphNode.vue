@@ -208,7 +208,7 @@
               />
             </div>
             <LivePreview
-              v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
+              v-if="shouldShowPreviewImg && !promotedLivePreviewShown"
               :image-url="latestPreviewUrl"
             />
           </div>
@@ -718,6 +718,9 @@ const lgraphNode = computed(resolveLGraphNode)
 // TODO: Surface subgraph info more cleanly in NodeState instead of
 // reaching through lgraphNode for promoted preview resolution.
 const { promotedPreviews } = usePromotedPreviews(lgraphNode)
+const promotedLivePreviewShown = computed(() =>
+  promotedPreviews.value.some((preview) => preview.type === 'preview')
+)
 
 const { hideExecutedOutput } = useGLSLPreview(lgraphNode)
 

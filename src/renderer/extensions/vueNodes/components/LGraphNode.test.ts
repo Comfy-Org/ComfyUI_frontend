@@ -37,16 +37,23 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import type { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 
 type ResizeCallback = (
   result: ResizeCallbackPayload,
   element: HTMLElement
 ) => void
 
+type PromotedPreviews = ReturnType<
+  typeof usePromotedPreviews
+>['promotedPreviews']['value']
+
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
   mockLgraphNode: null as Record<string, unknown> | null,
-  resizeCallback: null as ResizeCallback | null
+  resizeCallback: null as ResizeCallback | null,
+  livePreviewUrl: '',
+  promotedPreviews: [] as PromotedPreviews
 }))
 const mockNodeEventHandlers = vi.hoisted(
   (): ReturnType<typeof useNodeEventHandlers> => ({
@@ -59,7 +66,7 @@ const mockNodeEventHandlers = vi.hoisted(
 vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
   fromAny<LiteGraphNode, unknown>(
-    mockData.mockLgraphNode ?? { isSubgraphNode: () => false, inputs: [] }
+    mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
   )
 )
 
@@ -122,11 +129,17 @@ vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/preview/useNodePreviewState'),
   () => ({
     useNodePreviewState: vi.fn(() => ({
-      latestPreviewUrl: computed(() => ''),
-      shouldShowPreviewImg: computed(() => false)
+      latestPreviewUrl: computed(() => mockData.livePreviewUrl),
+      shouldShowPreviewImg: computed(() => !!mockData.livePreviewUrl)
     }))
   })
 )
+
+vi.mock(import('@/composables/node/usePromotedPreviews'), () => ({
+  usePromotedPreviews: vi.fn(() => ({
+    promotedPreviews: computed(() => mockData.promotedPreviews)
+  }))
+}))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'),
@@ -254,6 +267,8 @@ describe('LGraphNode', () => {
     mockData.mockExecuting = false
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
+    mockData.livePreviewUrl = ''
+    mockData.promotedPreviews = []
     app.dragOverNode = null
 
     const canvasStore = useCanvasStore()
@@ -574,6 +589,63 @@ describe('LGraphNode', () => {
       expect(screen.getByTestId('node-content')).toHaveTextContent('output.png')
     }
   )
+
+  describe('a subgraph node during a run', () => {
+    const exposure = {
+      name: '$$canvas-image-preview',
+      sourceNodeId: toNodeId(10),
+      sourceWidgetName: '$$canvas-image-preview'
+    }
+
+    it.for<{
+      shows: string
+      promotedPreviews: PromotedPreviews
+      urls: string[]
+    }>([
+      {
+        shows: 'its own live preview when it exposes no preview',
+        promotedPreviews: [],
+        urls: ['blob:inside']
+      },
+      {
+        shows: 'its own live preview below an exposed final output',
+        promotedPreviews: [
+          {
+            ...exposure,
+            type: 'image',
+            items: [
+              {
+                filename: 'exposed.png',
+                mediaType: 'images',
+                nodeId: '10',
+                subfolder: ''
+              }
+            ]
+          }
+        ],
+        urls: ['blob:inside']
+      },
+      {
+        shows: 'only the exposed live preview when an exposure shows one',
+        promotedPreviews: [
+          { ...exposure, type: 'preview', url: 'blob:exposed' }
+        ],
+        urls: ['blob:exposed']
+      }
+    ])('shows $shows', ({ promotedPreviews, urls }) => {
+      mockData.mockLgraphNode = { isSubgraphNode: () => true, inputs: [] }
+      mockData.livePreviewUrl = 'blob:inside'
+      mockData.promotedPreviews = promotedPreviews
+
+      renderLGraphNode({ nodeData: mockNodeData })
+
+      expect(
+        screen
+          .getAllByRole('img', { name: 'g.liveSamplingPreview' })
+          .map((img) => img.getAttribute('src'))
+      ).toEqual(urls)
+    })
+  })
 
   it('restores only the core LoadAudio input player on disconnect', async () => {
     const isAudioLinked = ref(true)
