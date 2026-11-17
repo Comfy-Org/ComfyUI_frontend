@@ -1,3 +1,8 @@
+// @vitest-environment node
+//
+// Reading ~700 template files is pure Node I/O with no DOM in it, and the
+// default happy-dom environment makes it about fifty times slower: 25s against
+// 0.5s, enough to blow the default 10s hook timeout as the corpus grows.
 /**
  * Every workflow template we ship has to be strictly loadable.
  *
