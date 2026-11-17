@@ -666,6 +666,29 @@ describe('LGraphCanvas link visibility interactions', () => {
       )
     })
 
+    it('expands a held stack after another stack expands during the press', () => {
+      const { canvas, links, relayout } = createStackFixture([
+        undefined,
+        undefined,
+        'other',
+        'other'
+      ])
+
+      pressAt(canvas, 420, 300, 100)
+      const release = holdPressAt(canvas, 478, 325, 200)
+      vi.advanceTimersByTime(300)
+      relayout()
+      release()
+      vi.advanceTimersByTime(300)
+      const layout = relayout()
+      const second = layout.get(links[2].id)
+      assert.exists(second)
+
+      expect(queryLinkBadgeAtPoint(canvas, ...second.output.tip)).toBe(
+        links[2].id
+      )
+    })
+
     it('keeps an expanded stack open while panning from empty canvas', () => {
       const { canvas, relayout } = createStackFixture()
       singleClickAt(canvas, 420, 300)
