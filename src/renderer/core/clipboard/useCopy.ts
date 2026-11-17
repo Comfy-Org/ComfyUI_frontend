@@ -17,6 +17,23 @@ import { hasTextSelection } from '@/workbench/eventHelpers'
 import { clipboardHtml } from './clipboardHtml'
 import { shouldIgnoreCopyPaste } from './clipboardTarget'
 
+function writeClipboardMetadata(
+  data: DataTransfer | null,
+  serialized: string
+): boolean {
+  if (!data) return false
+  try {
+    data.setData('text/html', clipboardHtml(serialized))
+    return true
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_writing_clipboard_metadata',
+      surface: 'graph'
+    })
+    return false
+  }
+}
+
 export const useCopy = () => {
   const canvasStore = useCanvasStore()
   let keyboardCopyId: string | null = null
@@ -38,18 +55,10 @@ export const useCopy = () => {
     if (canvas?.selectedItems) {
       const { serialized, stored } = copyToCanvasClipboard(canvas)
       keyboardCopyId = stored ? readClipboardId() : null
-      let metadataWritten = false
-      try {
-        if (e.clipboardData) {
-          e.clipboardData.setData('text/html', clipboardHtml(serialized))
-          metadataWritten = true
-        }
-      } catch (error) {
-        reportError(error, {
-          errorType: 'error_writing_clipboard_metadata',
-          surface: 'graph'
-        })
-      }
+      const metadataWritten = writeClipboardMetadata(
+        e.clipboardData,
+        serialized
+      )
       if (!stored && !metadataWritten) {
         forgetCanvasCopy()
         useToast().error(t('g.error'), {
