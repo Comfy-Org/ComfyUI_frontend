@@ -259,11 +259,7 @@ export interface PostMessageInput {
   content: string
   workflowId?: string
   selection?: Record<string, unknown>
-  /**
-   * Nodes selected on the canvas with an ordinary click, not added to the
-   * message: `{ node_ids, workflow_id }`. Context for the agent, never the
-   * request's target (that is `selection`).
-   */
+  /** Plain canvas selection, sent apart from the tagged `selection`. */
   canvasSelection?: Record<string, unknown>
   attachments?: string[]
   workflowReferences?: AgentPostMessageRequest['workflow_references']
@@ -290,10 +286,6 @@ export interface PostMessageInput {
 
 const CLIENT_VERSION = `${__COMFYUI_FRONTEND_VERSION__}+${__COMFYUI_FRONTEND_COMMIT__}`
 
-/**
- * The turn body plus `canvas_selection`, which the server accepts before the
- * synced Ingest types carry it (older servers ignore the field).
- */
 type PostMessageBody = AgentPostMessageRequest & {
   canvas_selection?: Record<string, unknown>
 }

@@ -159,17 +159,12 @@ export interface AgentSessionDeps {
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
-    /**
-     * Ids of the nodes the user has selected on the agent's target canvas
-     * with an ordinary click (not through node selection mode). Read when the
-     * send starts; empty when the canvas shows a different workflow.
-     */
+    /** Node ids selected on the target canvas, outside node selection mode. */
     canvasSelection?(): string[]
   }
 }
 
 const PREPARE_TIMEOUT_MS = 3000
-/** Most plain-canvas node ids sent with one turn; the rest are counted. */
 const MAX_CANVAS_SELECTION_IDS = 20
 const RECONCILE_TIMEOUT_MS = 5000
 
@@ -1305,12 +1300,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  /**
-   * A plain canvas selection the user did not add to the message. It is sent
-   * apart from the tagged `selection` so the agent can answer "what is this
-   * node" without treating an incidental selection as the request's target.
-   * Nodes already tagged are left out: they ride `selection`.
-   */
   function plainCanvasSelection(
     canvasNodeIds: string[] | undefined,
     tags: SentTag[] | undefined,
@@ -1320,7 +1309,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const nodeIds = (canvasNodeIds ?? []).filter((id) => !tagged.has(id))
     if (nodeIds.length === 0) return undefined
     return {
-      // A select-all on a large graph must not flood every turn's context.
       node_ids: nodeIds.slice(0, MAX_CANVAS_SELECTION_IDS),
       ...(nodeIds.length > MAX_CANVAS_SELECTION_IDS
         ? { total_selected: nodeIds.length }
@@ -1653,7 +1641,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const originContext = workflow?.current()
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
-    // Read before awaiting so a selection made after Send is not attached.
     const canvasNodeIds = workflow?.canvasSelection?.()
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false

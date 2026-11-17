@@ -42,7 +42,6 @@ test.describe(
       expect(sentTurn(postedMessages).selection?.node_ids).toEqual([
         String(node.id)
       ])
-      // The tagged node rides selection only, never again as canvas context.
       expect(JSON.parse(postedMessages[0])).not.toHaveProperty(
         'canvas_selection'
       )
@@ -69,10 +68,9 @@ test.describe(
 
       await expect.poll(() => postedMessages).toHaveLength(1)
       expect(sentTurn(postedMessages).selection).toBeUndefined()
-      const posted = JSON.parse(postedMessages[0]) as {
-        canvas_selection?: { node_ids?: string[] }
-      }
-      expect(posted.canvas_selection?.node_ids).toEqual([String(node.id)])
+      expect(JSON.parse(postedMessages[0])).toMatchObject({
+        canvas_selection: { node_ids: [String(node.id)] }
+      })
     })
   }
 )
