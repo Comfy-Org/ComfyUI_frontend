@@ -576,6 +576,7 @@ onMounted(async () => {
 
     if (settingsError.value) {
       if (settingsError.value instanceof UnauthorizedError) {
+        startupError = { error: settingsError.value }
         localStorage.removeItem('Comfy.userId')
         localStorage.removeItem('Comfy.userName')
         window.location.reload()

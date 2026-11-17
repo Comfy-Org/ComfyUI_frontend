@@ -326,11 +326,15 @@ describe('GraphCanvas first-run tour wiring', () => {
     const failure = new Error('init failed')
     mocks.initializeWorkflow.mockRejectedValue(failure)
     const errors: unknown[] = []
+    const complete = vi.spyOn(bootstrapTracer, 'complete')
 
     await mountGraphCanvas({}, (error) => errors.push(error))
 
     expect(errors).toEqual([failure])
     expect(useWorkflowStore().tabsRestored).toBe(true)
+    expect(complete).toHaveBeenCalledExactlyOnceWith('failed', {
+      error: failure
+    })
   })
 
   it('offers the tour over a workflow that arrived from the URL', async () => {
@@ -1006,7 +1010,7 @@ describe('deployment model options at startup', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(useWorkspaceStore().spinner).toBe(false)
-      expect(complete).toHaveBeenCalledExactlyOnceWith('completed')
+      expect(complete).toHaveBeenCalledExactlyOnceWith('completed', undefined)
       expect(mocks.initializeWorkflow).toHaveBeenCalledOnce()
     }
   )

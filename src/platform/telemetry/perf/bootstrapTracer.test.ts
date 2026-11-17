@@ -278,10 +278,10 @@ describe('bootstrapTracer', () => {
     ).not.toContain('secret detail')
   })
 
-  it('reports an error name that is not identifier-shaped as Error', async () => {
+  it('reports an unrecognized error name as Error', async () => {
     const tracer = new BootstrapTracer()
     const error = new Error('boom')
-    error.name = 'Failed for user someone@example.com'
+    error.name = 'Alice'
 
     await expect(
       tracer.settle('bootstrap/settings', () => Promise.reject(error))

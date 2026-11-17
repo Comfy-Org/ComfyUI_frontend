@@ -72,13 +72,24 @@ import type { PerfSpan } from './perfMark'
  */
 const BOOTSTRAP_WATCHDOG_MS = 30_000
 
-const SAFE_ERROR_NAME = /^[A-Z][A-Za-z0-9_]{0,63}$/
+const SAFE_ERROR_NAMES = new Set([
+  'AggregateError',
+  'DOMException',
+  'Error',
+  'EvalError',
+  'RangeError',
+  'ReferenceError',
+  'SyntaxError',
+  'TypeError',
+  'UnauthorizedError',
+  'URIError'
+])
 
 function safeErrorName(error: unknown): string {
   if (!(error instanceof Error)) return typeof error
   try {
     const { name } = error
-    return typeof name === 'string' && SAFE_ERROR_NAME.test(name)
+    return typeof name === 'string' && SAFE_ERROR_NAMES.has(name)
       ? name
       : 'Error'
   } catch {

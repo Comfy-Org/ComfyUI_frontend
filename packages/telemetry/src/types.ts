@@ -184,7 +184,11 @@ export interface BootstrapCompleteMetadata {
    * phase still open, else `untraced` (the error was thrown outside any phase).
    */
   failure_phase?: string
-  /** Only set for `failed` with a rejected phase: the error's `name`, never its message. */
+  /**
+   * Only set for `failed`: a safe terminal error name, or the rejection
+   * value's type for non-Error values. Its presence does not prove a phase
+   * rejected.
+   */
   failure_error?: string
 }
 
