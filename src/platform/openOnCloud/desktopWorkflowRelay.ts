@@ -13,6 +13,7 @@ import {
   cloudOrigin,
   isLocalOrigin
 } from '@/platform/openOnCloud/localHandoffProtocol'
+import { refreshLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { api } from '@/scripts/api'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
@@ -92,6 +93,7 @@ async function isOpenOnCloudEnabled(): Promise<boolean> {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false })
+  await refreshLocalOpenOnCloudRollout()
   const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
   return useFeatureFlags().flags.openOnCloudEnabled
 }

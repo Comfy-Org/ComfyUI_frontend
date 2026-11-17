@@ -8,6 +8,7 @@ import {
   showsCloudBillingNewUxOnLocal
 } from '@/platform/billing/localBillingWebEnabled'
 import { isCloud, isNightly } from '@/platform/distribution/types'
+import { localOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   isAuthenticatedConfigLoaded,
   remoteConfig,
@@ -219,9 +220,13 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get openOnCloudEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
-        remoteConfig.value.open_on_cloud_enabled,
+      return (
+        resolveFlag<boolean | undefined>(
+          ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+          remoteConfig.value.open_on_cloud_enabled,
+          undefined
+        ) ??
+        (isCloud ? undefined : localOpenOnCloudRollout.value) ??
         import.meta.env.DEV
       )
     },
