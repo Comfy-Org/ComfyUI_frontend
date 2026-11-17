@@ -33,7 +33,11 @@ test.describe(
   { tag: ['@vue-nodes', '@widget'] },
   () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('vueNodes/null-combo-value')
+      await comfyPage.workflow.loadWorkflow('inputs/checkpoint_loader', {
+        nodes: {
+          4: { widgets_values: [null] }
+        }
+      })
     })
 
     test('loading a workflow with an unset combo value does not display "null"', async ({

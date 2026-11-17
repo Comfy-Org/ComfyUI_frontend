@@ -102,7 +102,8 @@ describe('CurrentUserButton', () => {
   })
 
   function renderComponent(
-    workspacePopover: Component = CurrentUserPopoverWorkspaceStub
+    workspacePopover: Component = CurrentUserPopoverWorkspaceStub,
+    props: { side?: 'bottom' | 'left' | 'right' } = {}
   ) {
     const user = userEvent.setup()
     const i18n = createI18n({
@@ -112,11 +113,16 @@ describe('CurrentUserButton', () => {
     })
 
     const result = render(CurrentUserButton, {
+      props,
       global: {
         plugins: [i18n],
         stubs: {
           CurrentUserPopoverWorkspace: workspacePopover,
-          ProfileMenuWorkspace: { template: '<div>New Profile Menu</div>' },
+          ProfileMenuWorkspace: {
+            props: ['flyoutSide'],
+            template:
+              '<div :data-flyout-side="flyoutSide" data-testid="profile-menu">New Profile Menu</div>'
+          },
           WorkspaceSwitcherPopover: true,
           SubscribeButton: true,
           DeploymentSwitcher: true
@@ -284,6 +290,32 @@ describe('CurrentUserButton', () => {
 
       expect(screen.getByText(shown)).toBeInTheDocument()
       expect(screen.queryByText(hidden)).not.toBeInTheDocument()
+    }
+  )
+
+  it.for([
+    { side: undefined, flyoutSide: 'left' },
+    { side: 'right', flyoutSide: 'right' },
+    { side: 'left', flyoutSide: 'left' }
+  ] as const)(
+    'opens the menu on side=$side with flyouts toward the canvas ($flyoutSide)',
+    async ({ side, flyoutSide }) => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+      useTeamWorkspaceStore().initState = 'ready'
+      const { user } = renderComponent(CurrentUserPopoverWorkspaceStub, {
+        side
+      })
+
+      await user.click(screen.getByRole('button', { name: 'Current user' }))
+
+      expect(screen.getByTestId('profile-menu')).toHaveAttribute(
+        'data-flyout-side',
+        flyoutSide
+      )
+      expect(screen.getByRole('dialog')).toHaveAttribute(
+        'data-side',
+        side ?? 'bottom'
+      )
     }
   )
 })

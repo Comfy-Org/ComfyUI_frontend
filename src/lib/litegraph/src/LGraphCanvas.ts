@@ -93,6 +93,7 @@ import type { AnimationOptions } from './DragAndScale'
 import { LGraphGroup } from './LGraphGroup'
 
 import { LGraphNode } from './LGraphNode'
+import { markNodeMenuCallback } from './types/nodeMenu'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId } from '@comfyorg/graph-model/nodeId'
@@ -107,11 +108,13 @@ import { LinkConnector } from './canvas/LinkConnector'
 import { findRerouteAtPoint } from './canvas/hitTesting'
 import { getCanvasContextMenuTarget } from './canvas/getCanvasContextMenuTarget'
 import {
+  cancelPendingLinkBadgeStackExpansion,
   clearLinkBadgeHitAreas,
   collapseLinkBadgeStacks,
+  collapseRenamedLinkBadgeStack,
   drawHiddenLinkBadges,
   queryLinkBadgeHitAtPoint,
-  toggleLinkBadgeStack
+  requestLinkBadgeStackToggle
 } from './canvas/linkBadges'
 import { layoutGraphLinkBadges } from './canvas/linkBadgeRenderer'
 import {
@@ -405,6 +408,8 @@ const cursors = {
   NW: 'nwse-resize'
 } as const
 
+const linkBadgePresses = new WeakSet<CanvasPointerEvent>()
+
 // Optimised buffers used during rendering
 const temp = new Rectangle()
 const temp_vec2: Point = [0, 0]
@@ -539,7 +544,25 @@ function marqueeSelectsLinks(
   )
 }
 
-function toggleStackOnceOnDoubleClick(): void {}
+interface HiddenLinkStack {
+  stackKey: string
+  links: LLink[]
+}
+
+function promptRenameLinkStack(
+  canvas: LGraphCanvas,
+  graph: LGraph,
+  { stackKey, links }: HiddenLinkStack,
+  event: CanvasPointerEvent
+): void {
+  promptRenameLinkBadge(
+    canvas,
+    graphScopeOf(graph),
+    links.map(({ id }) => id),
+    event,
+    (label) => collapseRenamedLinkBadgeStack(canvas, stackKey, label)
+  )
+}
 
 interface SnappingLink {
   link: LLink
@@ -757,7 +780,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   /** Maximum frames per second to render. 0: unlimited. Default: 0 */
   public get maximumFps() {
     return this._maximumFrameGap > Number.EPSILON
-      ? this._maximumFrameGap / 1000
+      ? 1000 / this._maximumFrameGap
       : 0
   }
 
@@ -2179,6 +2202,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   clear(): void {
+    collapseLinkBadgeStacks(this)
     releaseCanvasSelection(this)
     applyCanvasSelection(this, { type: 'selection.clear' })
     this.resetTransientState()
@@ -2413,6 +2437,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * unbinds mouse events from the canvas
    */
   unbindEvents(): void {
+    cancelPendingLinkBadgeStackExpansion(this)
     if (clearRevealedLinks(this)) this.dirty_bgcanvas = true
     if (!this._events_binded) {
       console.warn('LGraphCanvas: no events bound')
@@ -2479,8 +2504,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     this._autoPan = new AutoPanController({
-      canvas: this.canvas,
-      ds: this.ds,
+      canvas: this,
       maxPanSpeed: this.auto_pan_speed,
       onPan: () => {
         const rect = this.canvas.getBoundingClientRect()
@@ -2567,7 +2591,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     function renderFrame(this: LGraphCanvas) {
       if (!this.pause_rendering) {
         try {
-          runCanvasFramePhase(this.canvas, 'update', this._maximumFrameGap)
+          runCanvasFramePhase(this, 'update', this._maximumFrameGap)
           layoutStore.flushPendingChanges()
           const drawsSomething = this.dirty_canvas || this.dirty_bgcanvas
           this.draw()
@@ -2697,7 +2721,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     const { graph, pointer } = this
     this.adjustMouseEvent(e)
-    if (e.isPrimary) pointer.down(e)
+    if (e.isPrimary) {
+      pointer.down(e)
+      if (queryLinkBadgeHitAtPoint(this, e.canvasX, e.canvasY))
+        linkBadgePresses.add(e)
+    }
 
     if (this.set_canvas_dirty_on_mouse_event) this.dirty_canvas = true
 
@@ -2716,8 +2744,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     let node =
       graph.getNodeOnPos(e.canvasX, e.canvasY, this.visible_nodes) ?? undefined
 
-    // In Vue nodes mode, slots extend beyond node bounds due to CSS transforms.
-    // If no node was found, check if the click is on a slot and use its owning node.
     if (!node && LiteGraph.vueNodesMode) {
       const slotLayout = getSlotLayoutAtPoint(graph, {
         x: e.canvasX,
@@ -2743,7 +2769,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (this.onMouse?.(e) == true) return
 
-    // left button mouse / single finger
     if (e.button === 0 && !pointer.isDouble) {
       this._processPrimaryButton(e, node)
     } else if (isMiddleButtonEvent(e)) {
@@ -2754,16 +2779,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !this.read_only &&
       !this.selectOnly
     ) {
-      // Right / aux button
       const { linkConnector, subgraph } = this
 
-      // Sticky select - won't remove single nodes
       if (subgraph?.inputNode.containsPoint(this.graph_mouse)) {
-        // Subgraph input node
         this.processSelect(subgraph.inputNode, e, true)
         subgraph.inputNode.onPointerDown(e, pointer, linkConnector)
       } else if (subgraph?.outputNode.containsPoint(this.graph_mouse)) {
-        // Subgraph output node
         this.processSelect(subgraph.outputNode, e, true)
         subgraph.outputNode.onPointerDown(e, pointer, linkConnector)
       } else {
@@ -2791,7 +2812,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           }
         }
 
-        // Show context menu for the node or group under the pointer
         pointer.onClick ??= () => this.processContextMenu(node, e)
       }
     }
@@ -2802,7 +2822,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     graph.change()
 
-    // this is to ensure to defocus(blur) if a text input element is on focus
     if (
       !ref_window.document.activeElement ||
       (ref_window.document.activeElement.nodeName.toLowerCase() != 'input' &&
@@ -2895,19 +2914,23 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       case 'linkBadge': {
         const { link } = target
         pointer.onDoubleClick = () =>
-          promptRenameLinkBadge(this, graphScopeOf(graph), link.id, e)
+          promptRenameLinkBadge(this, graphScopeOf(graph), [link.id], e)
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
       }
 
       case 'linkBadgeStack': {
-        const { stackKey } = target
-        pointer.onClick = () => {
-          toggleLinkBadgeStack(this, stackKey)
-          this.dirty_bgcanvas = true
+        cancelPendingLinkBadgeStackExpansion(this, target.stackKey)
+        pointer.onClick = () =>
+          requestLinkBadgeStackToggle(this, target.stackKey, {
+            delay: CanvasPointer.doubleClickTime,
+            onChange: () => (this.dirty_bgcanvas = true)
+          })
+        pointer.onDoubleClick = () => {
+          if (this.read_only || this.selectOnly) return
+          promptRenameLinkStack(this, graph, target, e)
         }
-        pointer.onDoubleClick = toggleStackOnceOnDoubleClick
         pointer.onDragStart = () => (this.dragging_canvas = true)
         pointer.finally = () => (this.dragging_canvas = false)
         return
@@ -4025,8 +4048,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
   private _startNodeAutoPan(): void {
     this._autoPan = new AutoPanController({
-      canvas: this.canvas,
-      ds: this.ds,
+      canvas: this,
       maxPanSpeed: this.auto_pan_speed,
       onPan: (panX, panY) => {
         const selected = this.selectedItems
@@ -4205,8 +4227,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     e.click_time = now - this.last_mouseclick
 
     const { eDown } = pointer
-    const pressedBadge =
-      eDown && queryLinkBadgeHitAtPoint(this, eDown.canvasX, eDown.canvasY)
+    const pressedBadge = eDown && linkBadgePresses.has(eDown)
     const wasConnecting = this.linkConnector.isConnecting
     const isClick = pointer.up(e)
     if (e.button === 0 && !wasConnecting) {
@@ -4426,23 +4447,19 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       links: [],
       subgraphs: []
     }
-
-    // NOTE: logic for traversing nested subgraphs depends on this being a set.
     const subgraphs = new Set<Subgraph>()
-
-    // Create serialisable objects
     for (const item of items ?? this.selectedItems) {
       if (item instanceof LGraphNode) {
-        // Nodes
         if (item.clonable === false) continue
 
         const cloned = item.clone()?.serialize()
         if (!cloned) continue
 
         cloned.id = serializeNodeId(item.id)
+        cloned.inputs = item
+          .serialize()
+          .inputs?.map((input) => ({ ...input, link: null }))
         serialisable.nodes.push(cloned)
-
-        // Links
         for (const { link: linkId } of item.inputs) {
           if (linkId == null) continue
 
@@ -4458,22 +4475,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             )
           })
         }
-
-        // Find all unique referenced subgraphs
         if (item instanceof SubgraphNode) {
           subgraphs.add(item.subgraph)
         }
       } else if (item instanceof LGraphGroup) {
-        // Groups
         serialisable.groups.push(item.serialize())
       } else if (item instanceof Reroute) {
-        // Reroutes
         serialisable.reroutes.push(item.asSerialisable())
       }
     }
-
-    // Add unique subgraph entries
-    // NOTE: subgraphs is appended to mid iteration.
     for (const subgraph of subgraphs) {
       for (const node of subgraph.nodes) {
         if (node instanceof SubgraphNode) {
@@ -5226,7 +5236,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.drawFrontCanvas(nodesForFrontPass, graphForFrontPass)
     }
 
-    runCanvasFramePhase(this.canvas, 'present', this._maximumFrameGap)
+    runCanvasFramePhase(this, 'present', this._maximumFrameGap)
     this.fps = this.render_time ? 1.0 / this.render_time : 0
     this.frame++
   }
@@ -5619,7 +5629,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   renderInfo(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const lineHeight = 13
-    const lineCount = (this.graph ? 5 : 1) + (this.info_text ? 1 : 0)
+    const lineCount = (this.graph ? 3 : 1) + (this.info_text ? 1 : 0)
     x = x || 15
     y = y || this.canvas.height / this.dpr - (lineCount + 1) * lineHeight
 
@@ -5631,12 +5641,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     ctx.textAlign = 'left'
     let line = 1
     if (this.graph) {
-      ctx.fillText(
-        `T: ${this.graph.globaltime.toFixed(2)}s`,
-        0,
-        lineHeight * line++
-      )
-      ctx.fillText(`I: ${this.graph.iteration}`, 0, lineHeight * line++)
       ctx.fillText(
         `N: ${this.graph._nodes.length} [${this.visible_nodes.length}]`,
         0,
@@ -6921,7 +6925,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           if (link) showLink(this, graphScope, link.id)
           break
         case 'Rename':
-          if (link) promptRenameLinkBadge(this, graphScope, link.id, e)
+          if (link) promptRenameLinkBadge(this, graphScope, [link.id], e)
           break
         default:
       }
@@ -8602,7 +8606,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return Array.isArray(extra) ? options.concat(extra) : options
   }
 
-  // called by processContextMenu to extract the menu list
   getNodeMenuOptions(node: LGraphNode) {
     let options: (
       | IContextMenuValue<string>
@@ -8618,7 +8621,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options = [
         {
           content: 'Convert to Subgraph',
-          callback: () => this._graph.convertToSubgraph(this.selectedItems)
+          callback: markNodeMenuCallback(
+            () => this._graph.convertToSubgraph(this.selectedItems),
+            'convertSubgraph'
+          )
         },
         {
           content: 'Properties',
@@ -8627,7 +8633,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         },
         {
           content: 'Properties Panel',
-          callback: function (
+          callback: markNodeMenuCallback(function (
             _item: Positionable,
             _options: IContextMenuOptions | undefined,
             _e: MouseEvent | undefined,
@@ -8635,7 +8641,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             node: LGraphNode
           ) {
             LGraphCanvas.active_canvas.showShowNodePanel(node)
-          }
+          }, null)
         },
         null,
         {
@@ -8669,10 +8675,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options.push(
         {
           content: node.pinned ? 'Unpin' : 'Pin',
-          callback: () => {
+          callback: markNodeMenuCallback(() => {
             for (const node of selectedCanvasNodes(this)) node.pin()
             this.setDirty(true, true)
-          }
+          }, null)
         },
         {
           content: 'Colors',
@@ -8803,18 +8809,21 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       menu_info = this.getCanvasMenuOptions()
       if (!this.graph) throw new NullGraphError()
 
-      const { reroute, linkSegment, link, stackedLinks, group } =
+      const { reroute, linkSegment, link, stack, group } =
         getCanvasContextMenuTarget(this, event.canvasX, event.canvasY)
-      if (stackedLinks) {
-        const graphScope = graphScopeOf(this.graph)
+      if (stack) {
+        const { graph } = this
+        const graphScope = graphScopeOf(graph)
+        const stackedLinkIds = stack.links.map(({ id }) => id)
         new LiteGraph.ContextMenu<string>(getLinkStackMenuOptions(), {
           event,
-          callback: () =>
-            showLinks(
-              this,
-              graphScope,
-              stackedLinks.map(({ id }) => id)
-            )
+          callback: (item) => {
+            const action = typeof item === 'string' ? item : item?.value
+            if (action === 'Rename')
+              promptRenameLinkStack(this, graph, stack, event)
+            if (action === 'Show Links')
+              showLinks(this, graphScope, stackedLinkIds)
+          }
         })
         return
       }

@@ -36,7 +36,7 @@ link it handled. A link the loader has not settled, such as a newer link the
 browser navigated to meanwhile, stays in the URL and the stash. Nothing opens
 it until the next page load. A workflow that opened stays open when another
 navigation cancels that cleanup; the final URL-action sweep clears the link it
-left. Only a reload in flight stops the URL actions. A link that is not settled
+left. A reload in flight stops the URL actions. A link that is not settled
 does not stop them: the other loaders run, and the final sweep removes their
 params but leaves `workflowId` and its stash. A navigation guard can hold a
 newer link in the stash while the URL still shows the old one. While the URL
@@ -50,8 +50,9 @@ older stashed link rather than clearing the stash: an older link cannot keep
 the empty one from being rejected as invalid, and while a guard holds the empty
 link, an earlier lookup still sees a newer link in flight and its cleanup
 cannot cancel that navigation. While the stash holds a link the loader never
-started and the URL does not show, the sweep makes no replace either, so that
-link's navigation is not cancelled.
+started and the URL does not show, the loaders after the workflow-id link do
+not run, the sweep included. Their URL cleanup would cancel that link's
+navigation. Their params stay in their stashes for the next page load.
 
 The reply and the 409 body are validated with the generated
 `@comfyorg/ingest-types` schemas. The spec types the 409 as `ErrorResponse` and
@@ -62,9 +63,9 @@ records any other value as `unknown`.
 Error reports for the link carry a fixed message, the error type and the
 failing error's class name when it is a built-in JavaScript error class, or
 `other` for any other name or a name that cannot be read. They never carry the
-caught error, its message or a name it chose: a failed file read names the
-file, a parser error quotes the reply, and custom node code that runs while the
-workflow loads can throw an error under any name.
+caught error, its message or a name it chose: a parser error quotes the reply,
+and custom node code that runs while the workflow loads can throw an error under
+any name. A failed file read reports its status without the file path.
 
 ## Alternatives considered
 

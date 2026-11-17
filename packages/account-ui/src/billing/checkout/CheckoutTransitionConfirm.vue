@@ -112,14 +112,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * The confirm step of a change to an existing subscription: what it switches
- * to and when, what is charged today, and — for a subscription set to end —
- * the reactivation the change implies, which the server may require
- * acknowledged before the confirm unlocks. A host following a payment it did
- * not quote here replaces the plan and charge through the `summary` slot and
- * `summaryReplaced`.
- */
 import { computed, ref, watch } from 'vue'
 
 import type {

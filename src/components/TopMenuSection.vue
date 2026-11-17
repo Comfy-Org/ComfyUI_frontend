@@ -67,10 +67,14 @@
                 @update:progress-target="updateProgressTarget"
               />
               <CurrentUserButton
-                v-if="isLoggedIn && !isIntegratedTabBar"
+                v-if="
+                  isLoggedIn &&
+                  !isIntegratedTabBar &&
+                  !flags.billingNewUxEnabled
+                "
                 class="shrink-0"
               />
-              <LoginButton v-else-if="!isIntegratedTabBar" />
+              <LoginButton v-else-if="!isLoggedIn && !isIntegratedTabBar" />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
                 :tooltip="t('menu.manageExtensions')"
@@ -111,7 +115,7 @@
               >
                 <i class="icon-[comfy--send]" />
               </Button>
-              <div v-if="!isRightSidePanelOpen" class="relative">
+              <div v-if="!isPropertiesPanelOpen" class="relative">
                 <Button
                   :tooltip="t('rightSidePanel.togglePanel')"
                   tooltip-side="bottom"
@@ -124,7 +128,7 @@
                   variant="secondary"
                   size="icon"
                   :aria-label="t('rightSidePanel.togglePanel')"
-                  @click="openRightSidePanel"
+                  @click="openPropertiesPanel"
                 >
                   <i class="icon-[lucide--panel-right]" />
                 </Button>
@@ -212,16 +216,15 @@ import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/
 import { waitForDeploymentListing } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { isCloud } from '@/platform/distribution/types'
-import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
+import CloudButton from '@/components/CloudButton.vue'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
@@ -237,7 +240,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const settingStore = useSettingStore()
 const workspaceStore = useWorkspaceStore()
-const rightSidePanelStore = useRightSidePanelStore()
+const propertiesPanelStore = usePropertiesPanelStore()
 const canvasStore = useCanvasStore()
 const isActionBarsHidden = computed(() => canvasStore.isPickingNodes)
 const managerState = useManagerState()
@@ -248,11 +251,7 @@ const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const isCloudButtonShown = computed(
-  () =>
-    !isCloud &&
-    !handsPopupsToSystemBrowser() &&
-    flags.openOnCloudEnabled &&
-    canHandOffToCloud()
+  () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
 )
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
@@ -287,7 +286,7 @@ const hasDockedButtons = computed(() => {
   if (managerState.shouldShowExtensionsButton.value) return true
   if (isCloudButtonShown.value || isDeployButtonShown.value) return true
   if (isCloud) return true
-  if (!isRightSidePanelOpen.value) return true
+  if (!isPropertiesPanelOpen.value) return true
   return false
 })
 const isActionbarContainerEmpty = computed(
@@ -338,19 +337,18 @@ const showErrorIndicatorOnPanelButton = computed(
   () =>
     isErrorsTabEnabled.value &&
     hasAnyError.value &&
-    !isRightSidePanelOpen.value &&
+    !isPropertiesPanelOpen.value &&
     !isErrorOverlayOpen.value
 )
 
-// Right side panel toggle
-const { isOpen: isRightSidePanelOpen } = storeToRefs(rightSidePanelStore)
+const { isOpen: isPropertiesPanelOpen } = storeToRefs(propertiesPanelStore)
 
-function openRightSidePanel() {
+function openPropertiesPanel() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'right_side_panel_opened',
     element_group: 'top_menu'
   })
-  rightSidePanelStore.togglePanel()
+  propertiesPanelStore.togglePanel()
 }
 
 const legacyCommandsContainerRef = ref<HTMLElement>()
@@ -382,8 +380,8 @@ useMutationObserver(
 onMounted(() => {
   const container = legacyCommandsContainerRef.value
   if (!container) return
-  app.menu.element.style.width = 'fit-content'
-  container.appendChild(app.menu.element)
+  useApp().menu.element.style.width = 'fit-content'
+  container.appendChild(useApp().menu.element)
   checkLegacyContent()
 })
 

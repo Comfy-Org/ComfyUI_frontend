@@ -29,14 +29,16 @@ test.describe('Billing rollout', () => {
       enabled: false,
       memberColumns: 0,
       primaryAction: 'Add credits',
-      newDialogs: 0
+      newDialogs: 0,
+      legacy160Markers: 1
     },
     {
       version: '1.61',
       enabled: true,
       memberColumns: 1,
       primaryAction: 'Continue',
-      newDialogs: 1
+      newDialogs: 1,
+      legacy160Markers: 0
     }
   ]) {
     test.describe(
@@ -44,6 +46,44 @@ test.describe('Billing rollout', () => {
       { tag: '@cloud' },
       () => {
         test.use({ billingNewUx: false })
+
+        test('selects the release Billing tab', async ({ comfyPage }) => {
+          const { page } = comfyPage
+          test.setTimeout(60_000)
+          const billing = new CloudWorkspaceMockHelper(page)
+          await billing.setup(
+            DEFAULT_TEAM_MEMBERS,
+            workspace('personal', 'owner'),
+            {
+              ...PERSONAL_BILLING_STATUS,
+              billing_status: 'paid',
+              is_active: true,
+              subscription_status: 'active',
+              subscription_tier: 'PRO',
+              subscription_duration: 'MONTHLY',
+              plan_slug: 'pro-monthly'
+            }
+          )
+          await page.route('**/api/features', (route) =>
+            route.fulfill(
+              jsonRoute({
+                billing_new_ux_enabled: release.enabled,
+                unified_billing_settings: true
+              })
+            )
+          )
+          await page.route('**/api/billing/payment-methods', (route) =>
+            route.fulfill(jsonRoute([]))
+          )
+
+          const content = await billing.openPlanAndCreditsSettings('Billing')
+          const tab = content.getByTestId('billing-tab')
+          await expect(tab).toBeVisible()
+          await expect(tab.getByTestId('billing-plan-row')).toBeVisible()
+          await expect(
+            content.locator('[data-billing-release="1.60"]')
+          ).toHaveCount(release.legacy160Markers)
+        })
 
         test('selects the release Activity columns and Add credits UI from the same account facts', async ({
           comfyPage
@@ -95,6 +135,9 @@ test.describe('Billing rollout', () => {
           )
 
           const content = await billing.openPlanAndCreditsSettings()
+          await expect(
+            content.locator('[data-billing-release="1.60"]')
+          ).toHaveCount(release.legacy160Markers)
           await content
             .getByRole('button', { name: 'Activity', exact: true })
             .click()
@@ -130,18 +173,18 @@ test.describe('Billing rollout', () => {
   }
 })
 
-async function runAndGetRefused(page: Page, creditsLocked: boolean) {
+interface RunRefusal {
+  type: string
+  message: string
+  credits_locked?: boolean
+  reason?: string
+}
+
+async function runAndGetRefusedWith(page: Page, error: RunRefusal) {
   await page.route('**/api/prompt', (route) =>
     route.request().method() === 'POST'
       ? route.fulfill({
-          ...jsonRoute({
-            node_errors: {},
-            error: {
-              type: 'CLOUD_SUBSCRIPTION_REQUIRED',
-              message: 'A cloud subscription is required to queue workflows.',
-              credits_locked: creditsLocked
-            }
-          }),
+          ...jsonRoute({ node_errors: {}, error }),
           status: 402
         })
       : route.fallback()
@@ -152,6 +195,83 @@ async function runAndGetRefused(page: Page, creditsLocked: boolean) {
 
   await page.getByTestId(TestIds.topbar.queueButton).click()
 }
+
+function runAndGetRefused(page: Page, creditsLocked: boolean) {
+  return runAndGetRefusedWith(page, {
+    type: 'CLOUD_SUBSCRIPTION_REQUIRED',
+    message: 'A cloud subscription is required to queue workflows.',
+    credits_locked: creditsLocked
+  })
+}
+
+const PROMPT_GATE_REFUSAL = {
+  type: 'PAYMENT_REQUIRED',
+  message: 'Subscription or credits required to queue workflows'
+}
+
+async function arrangeRunnableWorkspaceWithoutPlan(page: Page) {
+  await new CloudWorkspaceMockHelper(page).setup(
+    DEFAULT_TEAM_MEMBERS,
+    workspace('personal', 'owner'),
+    { ...FREE_ACCOUNT_WITH_CREDITS, subscription_state: 'ended' },
+    { can_run_workflows: true }
+  )
+  await page.route('**/api/features', (route) =>
+    route.fulfill(jsonRoute({ subscription_required: true }))
+  )
+}
+
+test.describe(
+  'Run refused by the prompt gate with a served reason',
+  { tag: '@cloud' },
+  () => {
+    test('opens the plans dialog when the reason is an inactive subscription', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+      await arrangeRunnableWorkspaceWithoutPlan(page)
+
+      await runAndGetRefusedWith(page, {
+        ...PROMPT_GATE_REFUSAL,
+        reason: 'subscription_inactive'
+      })
+
+      const dialog = page.getByTestId('platform-plans-link-dialog')
+      await expect(dialog.getByText("Your workflow didn't run")).toBeVisible()
+      await expect(
+        dialog.getByRole('link', { name: 'Choose a plan' })
+      ).toBeVisible()
+    })
+
+    test('opens Add credits when the reason is no funds', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+      await arrangeRunnableWorkspaceWithoutPlan(page)
+
+      await runAndGetRefusedWith(page, {
+        ...PROMPT_GATE_REFUSAL,
+        reason: 'no_funds'
+      })
+
+      await expect(page.getByTestId('add-credits-dialog')).toBeVisible()
+      await expect(page.getByTestId('platform-plans-link-dialog')).toBeHidden()
+    })
+
+    test('opens no account dialog when no reason is served', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+      await arrangeRunnableWorkspaceWithoutPlan(page)
+
+      await runAndGetRefusedWith(page, PROMPT_GATE_REFUSAL)
+
+      await expect(page.getByText(PROMPT_GATE_REFUSAL.message)).toBeVisible()
+      await expect(page.getByTestId('platform-plans-link-dialog')).toBeHidden()
+      await expect(page.getByTestId('add-credits-dialog')).toBeHidden()
+    })
+  }
+)
 
 test.describe('Run refused without a plan', { tag: '@cloud' }, () => {
   const ROWS = [
@@ -231,6 +351,23 @@ test.describe(
       await expectPlatformPlansOpened(page, () => runAndGetRefused(page, true))
 
       await expect(page.getByTestId('platform-plans-link-dialog')).toBeHidden()
+    })
+
+    test('keeps a prompt-gate refusal as a toast even when a reason is served', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+      await arrangeRunnableWorkspaceWithoutPlan(page)
+      const tabsBeforeRun = page.context().pages().length
+
+      await runAndGetRefusedWith(page, {
+        ...PROMPT_GATE_REFUSAL,
+        reason: 'subscription_inactive'
+      })
+
+      await expect(page.getByText(PROMPT_GATE_REFUSAL.message)).toBeVisible()
+      await expect(page.getByTestId('platform-plans-link-dialog')).toBeHidden()
+      expect(page.context().pages()).toHaveLength(tabsBeforeRun)
     })
   }
 )
