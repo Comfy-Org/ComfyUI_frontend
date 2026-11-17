@@ -102,6 +102,7 @@ import { useAccountPreconditionDialog } from '@/platform/billing/subscription/co
 import {
   promptErrorHasLockedCredits,
   promptRefusalPrecondition,
+  withRefusalReason,
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -231,10 +232,10 @@ import {
 
 export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 
-function servedRefusalPrecondition(error: unknown) {
+function servedRefusal(error: unknown): unknown {
   if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
   return error instanceof PromptExecutionError
-    ? promptRefusalPrecondition(error.response.error)
+    ? error.response.error
     : undefined
 }
 
@@ -2001,7 +2002,7 @@ export class ComfyApp implements IComfyApp {
               ? (resolveAccountPrecondition({
                   exceptionType: promptError.type,
                   exceptionMessage: promptError.message
-                }) ?? servedRefusalPrecondition(error))
+                }) ?? promptRefusalPrecondition(servedRefusal(error)))
               : undefined
             if (promptPrecondition) {
               const opened = await useAccountPreconditionDialog().open(
@@ -2074,7 +2075,7 @@ export class ComfyApp implements IComfyApp {
                 promptError
               ) {
                 executionErrorStore.recordPromptError(
-                  promptError,
+                  withRefusalReason(promptError, servedRefusal(error)),
                   queuedRunErrorKey
                 )
               }

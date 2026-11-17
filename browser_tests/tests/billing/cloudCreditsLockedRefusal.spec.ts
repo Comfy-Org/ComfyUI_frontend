@@ -209,6 +209,25 @@ const PROMPT_GATE_REFUSAL = {
   message: 'Subscription or credits required to queue workflows'
 }
 
+const BLOCKED_RUN_REFUSALS = [
+  {
+    reason: 'manual_block',
+    body: 'This workspace has been blocked. Contact support.'
+  },
+  {
+    reason: 'workspace_cap_exceeded',
+    body: 'This workspace has reached its spending limit.'
+  },
+  {
+    reason: 'project_cap_exceeded',
+    body: 'This project has reached its spending limit.'
+  },
+  {
+    reason: 'user_cap_exceeded',
+    body: "You've reached your spending limit in this workspace."
+  }
+]
+
 async function arrangeRunnableWorkspaceWithoutPlan(page: Page) {
   await new CloudWorkspaceMockHelper(page).setup(
     DEFAULT_TEAM_MEMBERS,
@@ -257,6 +276,25 @@ test.describe(
       await expect(page.getByTestId('add-credits-dialog')).toBeVisible()
       await expect(page.getByTestId('platform-plans-link-dialog')).toBeHidden()
     })
+
+    for (const { reason, body } of BLOCKED_RUN_REFUSALS) {
+      test(`explains a run refused for ${reason}`, async ({ comfyPage }) => {
+        const { page } = comfyPage
+        await arrangeRunnableWorkspaceWithoutPlan(page)
+
+        await runAndGetRefusedWith(page, { ...PROMPT_GATE_REFUSAL, reason })
+
+        const errorDialog = page.getByTestId('error-dialog')
+        await expect(
+          errorDialog.getByRole('heading', { name: "Your workflow didn't run" })
+        ).toBeVisible()
+        await expect(errorDialog.getByText(body, { exact: true })).toBeVisible()
+        await expect(
+          page.getByTestId('platform-plans-link-dialog')
+        ).toBeHidden()
+        await expect(page.getByTestId('add-credits-dialog')).toBeHidden()
+      })
+    }
 
     test('opens no account dialog when no reason is served', async ({
       comfyPage
@@ -368,6 +406,27 @@ test.describe(
       await expect(page.getByText(PROMPT_GATE_REFUSAL.message)).toBeVisible()
       await expect(page.getByTestId('platform-plans-link-dialog')).toBeHidden()
       expect(page.context().pages()).toHaveLength(tabsBeforeRun)
+    })
+
+    test('keeps the message Cloud sent for a blocked workspace', async ({
+      comfyPage
+    }) => {
+      const { page } = comfyPage
+      await arrangeRunnableWorkspaceWithoutPlan(page)
+
+      await runAndGetRefusedWith(page, {
+        ...PROMPT_GATE_REFUSAL,
+        reason: 'manual_block'
+      })
+
+      const errorDialog = page.getByTestId('error-dialog')
+      await expect(
+        errorDialog.getByRole('heading', { name: 'Prompt execution failed' })
+      ).toBeVisible()
+      await expect(
+        errorDialog.getByText(PROMPT_GATE_REFUSAL.message, { exact: true })
+      ).toBeVisible()
+      await expect(page.getByText("Your workflow didn't run")).toBeHidden()
     })
   }
 )
