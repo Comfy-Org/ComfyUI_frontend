@@ -7,6 +7,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -92,6 +93,10 @@ describe('resolveWidgetInputSource', () => {
       { skip_render: true, skip_events: true }
     )
     useCanvasStore().canvas = canvas
+    vi.spyOn(app, 'canvasOrUndefined', 'get').mockReturnValue(canvas)
+    canvas.canvas.addEventListener('litegraph:set-graph', () =>
+      useWorkflowStore().updateActiveGraph()
+    )
     await nextTick()
     useSubgraphNavigationStore()
 
