@@ -1,6 +1,7 @@
 import _ from 'es-toolkit/compat'
 import { once } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
 
 import { ComfyApp } from '@/scripts/app'
 import { useApp } from '@/scripts/appInstance'
@@ -164,9 +165,12 @@ export const maskEditorExtension: ComfyExtension = {
 
       options.push({
         content: 'Open in MaskEditor | Image Canvas',
-        callback: markCoreMediaMenuCallback(() => {
-          useMaskEditor().openMaskEditor(this)
-        }, 'preview')
+        callback: markNodeMenuCallback(
+          markCoreMediaMenuCallback(() => {
+            useMaskEditor().openMaskEditor(this)
+          }, 'preview'),
+          'maskEditor'
+        )
       })
       return extra
     }

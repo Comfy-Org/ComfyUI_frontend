@@ -92,6 +92,7 @@ import type { AnimationOptions } from './DragAndScale'
 import { LGraphGroup } from './LGraphGroup'
 
 import { LGraphNode } from './LGraphNode'
+import { markNodeMenuCallback } from './types/nodeMenu'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId } from '@comfyorg/graph-model/nodeId'
@@ -8717,7 +8718,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     return Array.isArray(extra) ? options.concat(extra) : options
   }
 
-  // called by processContextMenu to extract the menu list
   getNodeMenuOptions(node: LGraphNode) {
     let options: (
       | IContextMenuValue<string>
@@ -8733,7 +8733,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options = [
         {
           content: 'Convert to Subgraph',
-          callback: () => this._graph.convertToSubgraph(this.selectedItems)
+          callback: markNodeMenuCallback(
+            () => this._graph.convertToSubgraph(this.selectedItems),
+            'convertSubgraph'
+          )
         },
         {
           content: 'Properties',
@@ -8742,7 +8745,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         },
         {
           content: 'Properties Panel',
-          callback: function (
+          callback: markNodeMenuCallback(function (
             _item: Positionable,
             _options: IContextMenuOptions | undefined,
             _e: MouseEvent | undefined,
@@ -8750,7 +8753,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             node: LGraphNode
           ) {
             LGraphCanvas.active_canvas.showShowNodePanel(node)
-          }
+          }, null)
         },
         null,
         {
@@ -8784,10 +8787,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       options.push(
         {
           content: node.pinned ? 'Unpin' : 'Pin',
-          callback: () => {
+          callback: markNodeMenuCallback(() => {
             for (const node of selectedCanvasNodes(this)) node.pin()
             this.setDirty(true, true)
-          }
+          }, null)
         },
         {
           content: 'Colors',
