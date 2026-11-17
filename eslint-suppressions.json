@@ -24,6 +24,11 @@
       "count": 1
     }
   },
+  "packages/mask-editor/src/ui/components/BrushSettingsPanel.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 4
+    }
+  },
   "src/components/builder/BuilderToolbar.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 2
@@ -32,11 +37,6 @@
   "src/components/palette/PaletteSwatchRow.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 1
-    }
-  },
-  "src/renderer/extensions/propertiesPanel/settings/SetNodeColor.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 2
     }
   },
   "src/components/videoEdit/VideoEditPanel.vue": {
@@ -64,9 +64,14 @@
       "count": 2
     }
   },
-  "packages/mask-editor/src/ui/components/BrushSettingsPanel.vue": {
+  "src/renderer/extensions/propertiesPanel/settings/FormSelectButton.vue": {
     "template-classes/prefer-design-system-button": {
-      "count": 4
+      "count": 2
+    }
+  },
+  "src/renderer/extensions/propertiesPanel/settings/SetNodeColor.vue": {
+    "template-classes/prefer-design-system-button": {
+      "count": 2
     }
   },
   "src/renderer/extensions/vueNodes/widgets/components/ValueControlButton.vue": {
@@ -79,29 +84,14 @@
       "count": 3
     }
   },
-  "src/renderer/extensions/propertiesPanel/settings/FormSelectButton.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 2
-    }
-  },
   "src/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdownMenuFilter.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 2
     }
   },
-  "src/workbench/extensions/agent/components/agent/composer/AssetHoverPreview.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 1
-    }
-  },
   "src/workbench/extensions/agent/components/agent/message/ReplyVisualAsset.vue": {
     "template-classes/prefer-design-system-button": {
       "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/CrdtDevPanel.vue": {
-    "template-classes/prefer-design-system-button": {
-      "count": 3
     }
   }
 }
