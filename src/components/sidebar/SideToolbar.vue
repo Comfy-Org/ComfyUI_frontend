@@ -304,11 +304,6 @@ onMounted(() => {
 </script>
 
 <style>
-/* Global CSS variables for sidebar
- * These variables need to be global (not scoped) because they are used by
- * teleported components like WhatsNewPopup that render outside the sidebar
- * but need to reference sidebar dimensions for proper positioning.
- */
 :root {
   --sidebar-padding: 4px;
   --sidebar-icon-size: 1rem;
@@ -329,16 +324,16 @@ onMounted(() => {
   --sidebar-item-height: var(--sidebar-default-item-height);
 }
 
-:root:has(.side-tool-bar-container.small-sidebar) {
+.side-tool-bar-container.small-sidebar {
   --sidebar-width: var(--sidebar-small-floating-width);
   --sidebar-item-height: var(--sidebar-small-item-height);
 }
 
-:root:has(.side-tool-bar-container.connected-sidebar) {
+.side-tool-bar-container.connected-sidebar {
   --sidebar-width: var(--sidebar-default-connected-width);
 }
 
-:root:has(.side-tool-bar-container.small-sidebar.connected-sidebar) {
+.side-tool-bar-container.small-sidebar.connected-sidebar {
   --sidebar-width: var(--sidebar-small-connected-width);
 }
 </style>

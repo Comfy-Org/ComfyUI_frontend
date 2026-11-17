@@ -15,6 +15,8 @@ function renderEnded(state: HandoffState | undefined) {
 }
 
 const LINK = 'This checkout link no longer works'
+const UNCONFIRMED_CLOSE_LINE =
+  "You can close this page. We'll email your invoice once this goes through."
 const OUTCOME = 'https://testcloud.comfy.org/api/billing/ops/op-7/outcome'
 const NOW = Date.parse('2026-11-09T12:30:00Z')
 
@@ -96,7 +98,7 @@ describe('HandoffEndedView', () => {
         })
       ).toBeVisible()
       expect(screen.getByText(/Don't pay again yet/)).toBeVisible()
-      expect(screen.getByText('You can close this tab.')).toBeVisible()
+      expect(screen.getByText(UNCONFIRMED_CLOSE_LINE)).toBeVisible()
       expect(screen.queryByText(/Nothing was charged/)).toBeNull()
       expect(screen.queryByText(/automatically update/)).toBeNull()
       expect(screen.queryByTestId('checkout-ending-code')).toBeNull()
@@ -173,12 +175,17 @@ describe('HandoffEndedView', () => {
       screen.getByRole('heading', { name: "We couldn't confirm your payment" })
     ).toBeVisible()
     expect(screen.getByText(/Don't pay again yet/)).toBeVisible()
-    expect(screen.getByText(/contact support with this code:/)).toBeVisible()
+    expect(
+      screen.getByText(
+        'If nothing has changed after 24 hours, contact support with this code:'
+      )
+    ).toBeVisible()
     expect(screen.getByTestId('checkout-ending-code')).toHaveTextContent('op-7')
     expect(
       screen.getByRole('link', { name: 'Contact support' })
     ).toHaveAttribute('href', expect.stringContaining('Reference%3A%20op-7'))
-    expect(screen.getByText('You can close this tab.')).toBeVisible()
+    expect(screen.getByText(UNCONFIRMED_CLOSE_LINE)).toBeVisible()
+    expect(screen.queryByText(/still can't confirm/)).toBeNull()
     expect(screen.queryByText(/Nothing was charged/)).toBeNull()
   })
 

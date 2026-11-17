@@ -7,15 +7,17 @@ import {
   beforeEach,
   describe,
   expect,
-  it,
+  it as baseIt,
   onTestFinished,
   vi
 } from 'vitest'
 import type { Mock } from 'vitest'
 import { setActivePinia } from 'pinia'
 import { defineComponent, effectScope } from 'vue'
+import type { Router } from 'vue-router'
 
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type { ComfyApi as ComfyApiClient } from '@comfyorg/api-client/ComfyApi'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
@@ -128,6 +130,29 @@ const identity = vi.hoisted(() => {
   }
 })
 
+vi.mock(import('@/scripts/api'), async () => {
+  const { TestRunner } = await import('vitest')
+  const { ComfyApi } = await import('@comfyorg/api-client/ComfyApi')
+  const { createApi } = await import('@/scripts/createApi')
+  const collectionApi = createApi()
+  const testApis = new WeakMap<object, ComfyApiClient>()
+  function currentApi() {
+    const test = TestRunner.getCurrentTest()
+    if (!test) return collectionApi
+    const existing = testApis.get(test)
+    if (existing) return existing
+    const created = createApi()
+    testApis.set(test, created)
+    return created
+  }
+  return {
+    ComfyApi,
+    get api() {
+      return currentApi()
+    }
+  }
+})
+
 const firebaseSignOut = vi.hoisted(() => vi.fn<() => Promise<void>>())
 const registeredExtensions = vi.hoisted((): ComfyExtension[] => [])
 
@@ -180,9 +205,16 @@ const { cloudSessionCookieExtension } =
   await import('@/extensions/core/cloudSessionCookie')
 useExtensionService().registerExtension(cloudSessionCookieExtension)
 const { createAppRouter } = await import('@/router')
-const router = await createAppRouter()
+const it = baseIt.extend<{ router: Router }>({
+  router: async ({}, use) => {
+    await use(await createAppRouter())
+  }
+})
 
-installCloudApiAuth()
+beforeEach(() => {
+  installCloudApiAuth()
+})
+
 installWorkspaceApiAuth()
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
@@ -1304,7 +1336,6 @@ describe('live updates and media on the shared web session', () => {
     FakeSocket.created = []
     vi.stubGlobal('WebSocket', FakeSocket)
     window.name = ''
-    api.socket = null
   })
 
   afterEach(() => {
@@ -1529,7 +1560,9 @@ describe('live updates and media on the shared web session', () => {
     ).toEqual(['/api/auth/session'])
   })
 
-  it('sends a hidden tab to login once when its failed socket finds no remaining sign-in', async () => {
+  it('sends a hidden tab to login once when its failed socket finds no remaining sign-in', async ({
+    router
+  }) => {
     const server = await bootHiddenSocket(false)
     await router.push('/cloud/login')
     await router.push('/user-select')
@@ -1982,9 +2015,7 @@ describe('comfy-api calls on the shared web session', () => {
 
 describe('billing SDK rails on a tab that arrived by session', () => {
   const BILLING_SDK_RAILS = {
-    unified_cloud_auth: true,
-    billing_sdk_topup_enabled: true,
-    billing_sdk_subscription_enabled: true
+    unified_cloud_auth: true
   }
 
   const bootSessionOnly = async (workspace = 'ws-personal') => {
@@ -2967,16 +2998,18 @@ describe.for([{ unified: false }, { unified: true }])(
         clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.DESKTOP_LOGIN)
       })
 
-      const enterApp = async () => {
+      const enterApp = async (router: Router) => {
         await router.push('/cloud/login')
         await router.push('/user-select')
         return router.currentRoute.value.path
       }
 
-      it('sends a revoked session to login, and a fresh sign-in there gets into the app without looping', async () => {
+      it('sends a revoked session to login, and a fresh sign-in there gets into the app without looping', async ({
+        router
+      }) => {
         await install('revoked')
         identity.resolve(null)
-        await expect(enterApp()).resolves.toBe('/cloud/login')
+        await expect(enterApp(router)).resolves.toBe('/cloud/login')
 
         await useAuthStore().login('user-a@example.com', 'password')
 
@@ -2984,10 +3017,12 @@ describe.for([{ unified: false }, { unified: true }])(
         expect(router.currentRoute.value.path).toBe('/user-select')
       })
 
-      it('waits for a slow session creation after a fresh sign-in instead of bouncing to login', async () => {
+      it('waits for a slow session creation after a fresh sign-in instead of bouncing to login', async ({
+        router
+      }) => {
         await install('revoked')
         identity.resolve(null)
-        await expect(enterApp()).resolves.toBe('/cloud/login')
+        await expect(enterApp(router)).resolves.toBe('/cloud/login')
         const fetchNow = vi.mocked(fetch).getMockImplementation()
         assert.exists(fetchNow)
         vi.mocked(fetch).mockImplementation(
@@ -3010,7 +3045,9 @@ describe.for([{ unified: false }, { unified: true }])(
         expect(router.currentRoute.value.path).toBe('/user-select')
       })
 
-      it('lets the reload after that sign-in into the app', async () => {
+      it('lets the reload after that sign-in into the app', async ({
+        router
+      }) => {
         const { server } = await install('revoked')
         markInteractiveSignIn('user-a')
         const reloaded = createDisposablePinia()
@@ -3018,7 +3055,7 @@ describe.for([{ unified: false }, { unified: true }])(
         useAuthStore()
         identity.resolve(USER_A)
 
-        await expect(enterApp()).resolves.toBe('/user-select')
+        await expect(enterApp(router)).resolves.toBe('/user-select')
 
         expect(methodsOfServer(server).filter((m) => m === 'POST')).toEqual([
           'POST'
@@ -3026,7 +3063,9 @@ describe.for([{ unified: false }, { unified: true }])(
         reloaded[Symbol.dispose]()
       })
 
-      it('lets a public route through while the session read never answers', async () => {
+      it('lets a public route through while the session read never answers', async ({
+        router
+      }) => {
         await install({ userId: 'user-a' })
         identity.resolve(null)
         const fetchNow = vi.mocked(fetch).getMockImplementation()
@@ -3045,16 +3084,18 @@ describe.for([{ unified: false }, { unified: true }])(
         expect(router.currentRoute.value.path).toBe('/cloud/forgot-password')
       })
 
-      it('lets a session-only tab in without a login page', async () => {
+      it('lets a session-only tab in without a login page', async ({
+        router
+      }) => {
         await install({ userId: 'user-a' })
         identity.resolve(null)
 
-        await expect(enterApp()).resolves.toBe('/user-select')
+        await expect(enterApp(router)).resolves.toBe('/user-select')
       })
 
       it.for(['/user-select', '/cloud/login', '/cloud/user-check'])(
         'sends a session-only tab holding a desktop login code at %s to sign in without looping',
-        async (path) => {
+        async (path, { router }) => {
           await install({ userId: 'user-a' })
           identity.resolve(null)
           await router.push('/cloud/forgot-password')
@@ -3079,11 +3120,11 @@ describe.for([{ unified: false }, { unified: true }])(
         }
       )
 
-      it('sends a revoked session to the login page', async () => {
+      it('sends a revoked session to the login page', async ({ router }) => {
         await install('revoked')
         identity.resolve(null)
 
-        await expect(enterApp()).resolves.toBe('/cloud/login')
+        await expect(enterApp(router)).resolves.toBe('/cloud/login')
       })
 
       describe('once the tab is in the app', () => {
@@ -3093,10 +3134,10 @@ describe.for([{ unified: false }, { unified: true }])(
           stopRecording.splice(0).forEach((stop) => stop())
         })
 
-        const enterAppRecordingNavigations = async () => {
+        const enterAppRecordingNavigations = async (router: Router) => {
           const { server } = await install({ userId: 'user-a' })
           identity.resolve(null)
-          await expect(enterApp()).resolves.toBe('/user-select')
+          await expect(enterApp(router)).resolves.toBe('/user-select')
           const started: string[] = []
           const landings: string[] = []
           stopRecording.push(
@@ -3118,8 +3159,9 @@ describe.for([{ unified: false }, { unified: true }])(
           }
         ])(
           'sends the tab to the login page once, keeping its path, when $name',
-          async ({ session }) => {
-            const { server, landings } = await enterAppRecordingNavigations()
+          async ({ session }, { router }) => {
+            const { server, landings } =
+              await enterAppRecordingNavigations(router)
 
             server.session = session
             await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
@@ -3133,8 +3175,11 @@ describe.for([{ unified: false }, { unified: true }])(
           }
         )
 
-        it('closes the dialogs left open when the session is signed out elsewhere', async () => {
-          const { server, landings } = await enterAppRecordingNavigations()
+        it('closes the dialogs left open when the session is signed out elsewhere', async ({
+          router
+        }) => {
+          const { server, landings } =
+            await enterAppRecordingNavigations(router)
           const dialogs = useDialogStore()
           dialogs.showDialog({ key: 'global-settings', component: {} })
 
@@ -3145,8 +3190,10 @@ describe.for([{ unified: false }, { unified: true }])(
           expect(dialogs.dialogStack).toEqual([])
         })
 
-        it('leaves the navigation of a sign-out in this tab to the sign-out flow', async () => {
-          const { started } = await enterAppRecordingNavigations()
+        it('leaves the navigation of a sign-out in this tab to the sign-out flow', async ({
+          router
+        }) => {
+          const { started } = await enterAppRecordingNavigations(router)
 
           await useAuthStore().logout()
           await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
@@ -3155,7 +3202,9 @@ describe.for([{ unified: false }, { unified: true }])(
         })
       })
 
-      it('waits out an outage instead of sending the tab to the login page', async () => {
+      it('waits out an outage instead of sending the tab to the login page', async ({
+        router
+      }) => {
         const { server } = await install('network')
         identity.resolve(null)
         await router.push('/cloud/login')
@@ -3356,7 +3405,11 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     remoteConfig.value = {}
   })
 
-  const loadPage = async (session: ServerSession, ssoEnabled = true) => {
+  const loadPage = async (
+    router: Router,
+    session: ServerSession,
+    ssoEnabled = true
+  ) => {
     const page = createDisposablePinia()
     pages.push(page)
     setActivePinia(page.pinia)
@@ -3368,7 +3421,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     return server
   }
 
-  const visit = async (path: string) => {
+  const visit = async (router: Router, path: string) => {
     await router.push(path)
     const { path: landed, query } = router.currentRoute.value
     return { landed, query }
@@ -3383,9 +3436,9 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     }
   }
 
-  const inAppThenLapsed = async (ssoEnabled: boolean) => {
-    const server = await loadPage(SSO_SESSION, ssoEnabled)
-    await expect(visit('/user-select')).resolves.toMatchObject({
+  const inAppThenLapsed = async (router: Router, ssoEnabled: boolean) => {
+    const server = await loadPage(router, SSO_SESSION, ssoEnabled)
+    await expect(visit(router, '/user-select')).resolves.toMatchObject({
       landed: '/user-select'
     })
     const landings: string[] = []
@@ -3411,10 +3464,12 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
           ([event]) => event.name === 'app:sso_sign_in_completed'
         )
 
-    it('reports an SSO session after an attempt this tab continued, by id only', async () => {
+    it('reports an SSO session after an attempt this tab continued, by id only', async ({
+      router
+    }) => {
       const attempt = ssoFlowStore.markContinued('cloud_login')
 
-      await loadPage(SSO_SESSION)
+      await loadPage(router, SSO_SESSION)
 
       expect(ssoSignIns()).toEqual([
         [
@@ -3428,8 +3483,10 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
       expect(useTelemetry()?.trackAuth).not.toHaveBeenCalled()
     })
 
-    it('reports a lapse sent straight to SSO, then the SSO session it brings back', async () => {
-      await inAppThenLapsed(true)
+    it('reports a lapse sent straight to SSO, then the SSO session it brings back', async ({
+      router
+    }) => {
+      await inAppThenLapsed(router, true)
       await vi.waitFor(() => expect(assign).toHaveBeenCalledOnce())
       const [[shown]] = vi.mocked(useTelemetry()!.trackSsoEvent).mock.calls
       expect(shown).toEqual({
@@ -3442,7 +3499,7 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
         }
       })
 
-      await loadPage(SSO_SESSION)
+      await loadPage(router, SSO_SESSION)
 
       expect(ssoSignIns()).toEqual([
         [
@@ -3477,13 +3534,16 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
         arrange: () => ssoFlowStore.markContinued('cloud_login'),
         session: { userId: 'user-a' }
       }
-    ])('reports nothing for $name', async ({ arrange, session }) => {
-      arrange()
+    ])(
+      'reports nothing for $name',
+      async ({ arrange, session }, { router }) => {
+        arrange()
 
-      await loadPage(session)
+        await loadPage(router, session)
 
-      expect(ssoSignIns()).toEqual([])
-    })
+        expect(ssoSignIns()).toEqual([])
+      }
+    )
   })
 
   describe('the hint', () => {
@@ -3511,25 +3571,27 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
         ssoEnabled: true,
         hint: null
       }
-    ])('$name', async ({ session, ssoEnabled, hint }) => {
+    ])('$name', async ({ session, ssoEnabled, hint }, { router }) => {
       localStorage.setItem(
         'Comfy.WebSession.SsoHint',
         JSON.stringify({ email: 'earlier@example.com' })
       )
 
-      await loadPage(session, ssoEnabled)
+      await loadPage(router, session, ssoEnabled)
 
       expect(readSsoHint()).toEqual(hint)
     })
 
-    it('with the flag off an SSO session leaves nothing', async () => {
-      await loadPage(SSO_SESSION, false)
+    it('with the flag off an SSO session leaves nothing', async ({
+      router
+    }) => {
+      await loadPage(router, SSO_SESSION, false)
 
       expect(readSsoHint()).toBeNull()
     })
 
-    it('is cleared by a sign-out in this tab', async () => {
-      await loadPage(SSO_SESSION)
+    it('is cleared by a sign-out in this tab', async ({ router }) => {
+      await loadPage(router, SSO_SESSION)
       expect(readSsoHint()).not.toBeNull()
 
       await useAuthStore().logout()
@@ -3537,9 +3599,9 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
       expect(readSsoHint()).toBeNull()
     })
 
-    it('is cleared when the session is revoked', async () => {
-      const server = await loadPage(SSO_SESSION)
-      await visit('/user-select')
+    it('is cleared when the session is revoked', async ({ router }) => {
+      const server = await loadPage(router, SSO_SESSION)
+      await visit(router, '/user-select')
 
       server.session = 'revoked'
       await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
@@ -3548,8 +3610,10 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     })
   })
 
-  it('sends a tab whose SSO session lapses under it to SSO, returning to its page', async () => {
-    const landings = await inAppThenLapsed(true)
+  it('sends a tab whose SSO session lapses under it to SSO, returning to its page', async ({
+    router
+  }) => {
+    const landings = await inAppThenLapsed(router, true)
 
     await vi.waitFor(() => expect(assign).toHaveBeenCalledOnce())
     expect(startedAt(0)).toEqual({
@@ -3560,15 +3624,19 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     expect(landings).toEqual([])
   })
 
-  it('with the flag off sends that tab to the plain login page', async () => {
-    const landings = await inAppThenLapsed(false)
+  it('with the flag off sends that tab to the plain login page', async ({
+    router
+  }) => {
+    const landings = await inAppThenLapsed(router, false)
 
     await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
     expect(router.currentRoute.value.query.sso).toBeUndefined()
     expect(assign).not.toHaveBeenCalled()
   })
 
-  it('redirects a reload once per tab per five minutes, then opens the SSO entry instead', async () => {
+  it('redirects a reload once per tab per five minutes, then opens the SSO entry instead', async ({
+    router
+  }) => {
     rememberSignedInSession({
       id: 'user-a',
       email: 'ada@acme.com',
@@ -3576,15 +3644,15 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
       signInProvider: 'saml.workos'
     })
 
-    await loadPage('none')
-    await expect(visit('/user-select')).resolves.toMatchObject({
+    await loadPage(router, 'none')
+    await expect(visit(router, '/user-select')).resolves.toMatchObject({
       landed: '/cloud/login'
     })
     expect(assign).toHaveBeenCalledOnce()
     expect(startedAt(0).email).toBe('ada@acme.com')
 
-    await loadPage('none')
-    await expect(visit('/user-select')).resolves.toEqual({
+    await loadPage(router, 'none')
+    await expect(visit(router, '/user-select')).resolves.toEqual({
       landed: '/cloud/login',
       query: {
         previousFullPath: encodeURIComponent('/user-select'),
@@ -3594,21 +3662,24 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     expect(assign).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(FIVE_MINUTES_MS)
-    await loadPage('none')
-    await visit('/user-select')
+    await loadPage(router, 'none')
+    await visit(router, '/user-select')
     expect(assign).toHaveBeenCalledTimes(2)
   })
 
-  it('shows the login page with the error when SSO comes back with sso_error', async () => {
+  it('shows the login page with the error when SSO comes back with sso_error', async ({
+    router
+  }) => {
     rememberSignedInSession({
       id: 'user-a',
       email: 'ada@acme.com',
       emailVerified: true,
       signInProvider: 'saml.workos'
     })
-    await loadPage('none')
+    await loadPage(router, 'none')
 
     const { landed, query } = await visit(
+      router,
       '/user-select?sso_error=SSO_IDP_ERROR'
     )
 
@@ -3620,10 +3691,10 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
 
   it.for([{ ssoEnabled: true }, { ssoEnabled: false }])(
     'sends a visitor with no hint and no session to the plain login page (sso_enabled $ssoEnabled)',
-    async ({ ssoEnabled }) => {
-      await loadPage('none', ssoEnabled)
+    async ({ ssoEnabled }, { router }) => {
+      await loadPage(router, 'none', ssoEnabled)
 
-      await expect(visit('/user-select')).resolves.toEqual({
+      await expect(visit(router, '/user-select')).resolves.toEqual({
         landed: '/cloud/login',
         query: { previousFullPath: encodeURIComponent('/user-select') }
       })
@@ -3631,9 +3702,11 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     }
   )
 
-  it('sends a tab whose Google session lapses under it to the plain login page', async () => {
-    const server = await loadPage({ userId: 'user-a' })
-    await visit('/user-select')
+  it('sends a tab whose Google session lapses under it to the plain login page', async ({
+    router
+  }) => {
+    const server = await loadPage(router, { userId: 'user-a' })
+    await visit(router, '/user-select')
 
     server.session = 'none'
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
@@ -3647,13 +3720,15 @@ describe('a lapsed SSO session signs in again through SSO (sso_enabled)', () => 
     expect(assign).not.toHaveBeenCalled()
   })
 
-  it('sends a tab that signed out here to the plain login page', async () => {
-    await loadPage(SSO_SESSION)
-    await visit('/user-select')
+  it('sends a tab that signed out here to the plain login page', async ({
+    router
+  }) => {
+    await loadPage(router, SSO_SESSION)
+    await visit(router, '/user-select')
 
     await useAuthStore().logout()
     await router.push('/cloud/login')
-    const { query } = await visit('/user-select')
+    const { query } = await visit(router, '/user-select')
 
     expect(query.sso).toBeUndefined()
     expect(assign).not.toHaveBeenCalled()
@@ -3748,7 +3823,7 @@ describe('an SSO account with no Firebase login (sso_enabled)', () => {
     { name: 'no stored API key', apiKey: false }
   ])(
     'SSO on: a session-only tab with $name enters the app as the session user',
-    async ({ apiKey }) => {
+    async ({ apiKey }, { router }) => {
       const { authStore } = await install(
         { userId: 'user-a' },
         { sso: true, apiKey }
@@ -3857,7 +3932,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
     { sso: false, provider: 'saml.workos', inApp: false, code: 'F' }
   ])(
     'a pending desktop login code on a $provider session-only tab (sso_enabled $sso)',
-    async ({ sso, provider, inApp, code }) => {
+    async ({ sso, provider, inApp, code }, { router }) => {
       const desktopCode = `dlc_${code.repeat(43)}`
       installServer({ userId: 'user-a', provider }, { sso_enabled: sso })
       await refreshRemoteConfig({ useAuth: false })
@@ -3934,22 +4009,12 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
   }
 
   it.for([
-    {
-      sso: true,
-      login: 'session',
-      signIn: signInWithSessionOnly,
-      keyKept: false
-    },
-    {
-      sso: true,
-      login: 'firebase',
-      signIn: signInWithFirebase,
-      keyKept: false
-    },
-    { sso: false, login: 'firebase', signIn: signInWithFirebase, keyKept: true }
+    { sso: true, login: 'session', signIn: signInWithSessionOnly },
+    { sso: true, login: 'firebase', signIn: signInWithFirebase },
+    { sso: false, login: 'firebase', signIn: signInWithFirebase }
   ])(
-    'a stored API key outlives a $login sign-out only with SSO off (sso_enabled $sso)',
-    async ({ sso, signIn, keyKept }) => {
+    'a stored API key does not outlive a $login sign-out on Cloud (sso_enabled $sso)',
+    async ({ sso, signIn }) => {
       installServer({ userId: 'user-a' }, { sso_enabled: sso })
       await refreshRemoteConfig({ useAuth: false })
       localStorage.setItem('comfy_api_key', STORED_API_KEY)
@@ -3961,9 +4026,7 @@ describe('an SSO session with no Firebase login reaching Firebase-only paths', (
       await authStore.logout()
 
       expect(authStore.isAuthenticated).toBe(false)
-      expect(useApiKeyAuthStore().getApiKey()).toBe(
-        keyKept ? STORED_API_KEY : null
-      )
+      expect(useApiKeyAuthStore().getApiKey()).toBeNull()
     }
   )
 })

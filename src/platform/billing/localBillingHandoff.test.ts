@@ -1,6 +1,8 @@
 import { useTelemetry } from '@comfyorg/telemetry'
 import { fetchRequests, respondToFetch } from '@comfyorg/test-utils/fetch'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { FirebaseError } from 'firebase/app'
+import { AuthErrorCodes } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -22,6 +24,7 @@ import {
 } from '@/platform/billing/localBillingHandoff'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { signInFirebaseUser } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/i18n'))
@@ -308,6 +311,43 @@ describe('issueLocalBillingHandoff', () => {
       expect(useToast().error).not.toHaveBeenCalled()
     })
 
+    it('opens the Platform page a view names, with the token still in the fragment', async () => {
+      const { tab } = reservedTab()
+      respondToFetch(HANDOFFS, issued)
+
+      await openPlatformBillingHandoff('plans')
+
+      const opened = new URL(tab.location.href)
+      expect(opened.searchParams.get('view')).toBe('plans')
+      expect(opened.hash).toBe('#token=abc')
+      const [request] = fetchRequests(HANDOFFS)
+      const body = JSON.parse(String(request.body))
+      expect(body.receiver).toBe('platform')
+      expect(body).not.toHaveProperty('intent')
+    })
+
+    it('closes the tab and shows the generic message when the issued URL cannot carry the view', async () => {
+      const { tab } = reservedTab()
+      respondToFetch(HANDOFFS, () =>
+        Response.json(
+          {
+            entry_url: 'https://',
+            expires_at: '2026-11-11T00:01:00Z',
+            request_id: 'req-1'
+          },
+          { status: 201 }
+        )
+      )
+
+      await openPlatformBillingHandoff('plans')
+
+      expect(tab.close).toHaveBeenCalledOnce()
+      expect(tab.location.href).toBe('')
+      expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
+        'subscription.billingPortalUnavailable'
+      )
+    })
+
     it.for([
       {
         name: 'the server message when Cloud explained the refusal',
@@ -450,6 +490,24 @@ describe('issueLocalBillingHandoff', () => {
       )
       expect(open).toHaveBeenCalledExactlyOnceWith(ENTRY_URL, '_blank')
       expect(fetchRequests(HANDOFFS)).toHaveLength(0)
+    })
+
+    it('opens the Platform page a view names in the system browser, through the same Platform handoff', async () => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+
+      await openPlatformBillingHandoff('plans')
+
+      expect(issue).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        'platform',
+        undefined,
+        undefined
+      )
+      const [[url]] = open.mock.calls
+      const opened = new URL(String(url))
+      expect(opened.searchParams.get('view')).toBe('plans')
+      expect(opened.hash).toBe('#token=abc')
     })
 
     it.for([
@@ -759,5 +817,108 @@ describe('reserveBillingHandoffTab', () => {
     expect(page.body.textContent).toBe(
       'billingHandoff.openingbillingHandoff.openingDetail'
     )
+  })
+})
+
+describe('issueLocalBillingHandoff for a Firebase sign-in', () => {
+  function signIn(mint: () => Promise<string>) {
+    signInFirebaseUser(mint)
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+  }
+
+  it.for([
+    {
+      name: 'a token minted for this handoff instead of the cached one',
+      mint: async () => 'minted-token',
+      sent: 'Bearer minted-token'
+    },
+    {
+      name: 'the cached token when a new one cannot be minted',
+      mint: () =>
+        Promise.reject(
+          new FirebaseError(AuthErrorCodes.NETWORK_REQUEST_FAILED, 'offline')
+        ),
+      sent: 'Bearer cached-token'
+    }
+  ])('issues with $name', async ({ mint, sent }) => {
+    signIn(mint)
+    respondToFetch(HANDOFFS, issued)
+
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+      status: 'ok',
+      url: ENTRY_URL
+    })
+
+    expect(fetchRequests(HANDOFFS)[0].headers.get('Authorization')).toBe(sent)
+  })
+
+  it('frees the next handoff once the caller abandons one still minting its ID token, and issues nothing for the late token', async () => {
+    let deliverLate: (token: string) => void = () => {}
+    const mint = vi
+      .fn<() => Promise<string>>()
+      .mockReturnValueOnce(
+        new Promise((resolve) => {
+          deliverLate = resolve
+        })
+      )
+      .mockResolvedValue('minted-token')
+    signIn(mint)
+    respondToFetch(HANDOFFS, issued)
+    const abandoned = new AbortController()
+
+    const dropped = issueLocalBillingHandoff(TOP_UP, abandoned.signal)
+    abandoned.abort()
+    await expect(dropped).resolves.toEqual({
+      status: 'error',
+      message: undefined
+    })
+    deliverLate('late-token')
+
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+      status: 'ok',
+      url: ENTRY_URL
+    })
+    expect(
+      fetchRequests(HANDOFFS).map((request) =>
+        request.headers.get('Authorization')
+      )
+    ).toEqual(['Bearer minted-token'])
+  })
+
+  it('gives up on an ID token that never arrives, so later clicks are not stuck', async () => {
+    const overdue = new AbortController()
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValueOnce(overdue.signal)
+    const mint = vi
+      .fn<() => Promise<string>>()
+      .mockReturnValueOnce(new Promise(() => {}))
+      .mockResolvedValue('minted-token')
+    signIn(mint)
+    respondToFetch(HANDOFFS, issued)
+
+    const stuck = issueLocalBillingHandoff(TOP_UP, live)
+    overdue.abort()
+
+    await expect(stuck).resolves.toEqual({
+      status: 'error',
+      message: undefined
+    })
+    expect(AbortSignal.timeout).toHaveBeenCalledWith(15_000)
+    await expect(issueLocalBillingHandoff(TOP_UP, live)).resolves.toEqual({
+      status: 'ok',
+      url: ENTRY_URL
+    })
+  })
+
+  it('is not superseded by the ID token rotation it causes, nor is the next handoff', async () => {
+    signIn(async () => 'minted-token')
+    respondToFetch(HANDOFFS, issued)
+
+    const duringRotation = await issueLocalBillingHandoff(TOP_UP, live)
+    const afterRotation = await issueLocalBillingHandoff(TOP_UP, live)
+
+    expect([duringRotation, afterRotation]).toEqual([
+      { status: 'ok', url: ENTRY_URL },
+      { status: 'ok', url: ENTRY_URL }
+    ])
   })
 })

@@ -16,7 +16,6 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -143,20 +142,9 @@ interface RecoveryRoutes {
   readonly hostedOpens: () => Promise<string[]>
 }
 
-interface RecoveryOptions {
-  /**
-   * Serves `billing_sdk_subscription_enabled` on `/api/features`, the channel
-   * the staged rollout publishes on. Boot awaits it (`main.ts:56`), so unlike
-   * the websocket handshake it is readable before the billing gate picks a
-   * rail for recovery.
-   */
-  railOnFeatures?: boolean
-}
-
 async function setupRecovery(
   page: Page,
-  operation: BillingOpStatusResponse,
-  { railOnFeatures = false }: RecoveryOptions = {}
+  operation: BillingOpStatusResponse
 ): Promise<RecoveryRoutes> {
   const ws = workspace('personal', 'owner')
   const pollRequests: Request[] = []
@@ -176,9 +164,7 @@ async function setupRecovery(
   })
 
   await mockCloudBoot(page, {
-    features: railOnFeatures
-      ? { ...BOOT_FEATURES, billing_sdk_subscription_enabled: true }
-      : BOOT_FEATURES,
+    features: BOOT_FEATURES,
     settings: { 'Comfy.TutorialCompleted': true }
   })
   await mockGraphBootExtras(page)
@@ -220,20 +206,6 @@ function transports(requests: Request[]): string[] {
   return requests.map((request) => request.resourceType())
 }
 
-/**
- * The websocket half of the flag, paired with `railOnFeatures` so both
- * channels agree. Answered on the handshake rather than seeded on
- * `window.app`: recovery runs while the billing gate resolves, before
- * `GraphCanvas`'s `onMounted` assigns `window.app`, so `seedServerFlags()`
- * lands after the rail has already been chosen — which is what the first run
- * of this spec showed.
- */
-async function enableSdkRail(page: Page) {
-  await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
-    billing_sdk_subscription_enabled: true
-  })
-}
-
 // sessionStorage must be seeded before any app code runs; attemptedAt is
 // stamped in the init script so the entry is always fresher than the 24h cap.
 async function seedPendingCheckout(
@@ -262,61 +234,18 @@ const confirmPaymentHeading = (page: Page) =>
   page.getByRole('heading', { name: 'Confirm your payment' })
 
 test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
-  test('adopts a server-reported pending operation on the legacy poller while the rail is off', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    const routes = await setupRecovery(page, PENDING_OPERATION)
-
-    await page.goto(APP_URL)
-
-    await waitForCloudApp(page)
-    await cloudAppExpect
-      .poll(() => routes.pollRequests.length)
-      .toBeGreaterThan(0)
-    expect(transports(routes.pollRequests)).not.toContain('fetch')
-
-    // The legacy rail leaves the parked hosted step on its pointer for a
-    // surface to put behind a button; it opens nothing on its own. Pinned
-    // because the SDK row above does the opposite, and the difference is
-    // customer-visible.
-    expect(await routes.hostedOpens()).toEqual([])
-  })
-
   /**
    * Asserts **exactly one adopter** first, and the rail second.
    *
    * The invariant is the one FE-2484 is actually about: two transports polling
    * one operation is the double-poll this PR exists to prevent. It is also the
    * stronger claim, because it holds no matter which rail wins.
-   *
-   * The rail assertion was previously omitted, because
-   * `billingSdkSubscriptionRailEnabled` drew its two halves from two channels:
-   * `unified_cloud_auth` off `/api/features`, which boot awaits, and
-   * `billing_sdk_subscription_enabled` off `api.serverFeatureFlags`, which only
-   * the websocket `feature_flags` handshake populates (`api.ts:1012`) and which
-   * nothing awaits. `resumePendingOperation` runs from the billing gate's first
-   * status read, so the two raced — this spec's first CI run measured the
-   * legacy poll going out 145ms before the handshake landed.
-   *
-   * #18141 moved that flag onto `/api/features` as its primary channel, so
-   * with `railOnFeatures` both halves are readable before the gate chooses and
-   * the race is gone from this spec.
-   *
-   * **This makes the test deterministic, not production.** Anonymous
-   * `/api/features` returns a concrete `false` for this key
-   * (`cloud@main:common/featuregates/flags.go:591`), so a real boot still
-   * resolves `false` and its first reads still go legacy. The FE-2487 evidence
-   * caveat stands.
    */
   test('adopts a server-reported pending operation exactly once, on one rail', async ({
     page
   }) => {
     test.setTimeout(60_000)
-    const routes = await setupRecovery(page, PENDING_OPERATION, {
-      railOnFeatures: true
-    })
-    await enableSdkRail(page)
+    const routes = await setupRecovery(page, PENDING_OPERATION)
 
     await page.goto(APP_URL)
 
@@ -339,26 +268,27 @@ test.describe('Operation recovery rail (FE-2485)', { tag: '@cloud' }, () => {
     expect(await routes.hostedOpens()).toEqual([])
   })
 
-  test('still restores the tier and cycle from the host pointer when recovery fails', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    // The SDK's own pointer is scope-keyed and carries no selection; the host
-    // pointer is what reopens the checkout on the plan the customer chose.
-    await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
-    await setupRecovery(page, FAILED_OPERATION, { railOnFeatures: true })
-    await enableSdkRail(page)
+  test.describe('with billing_new_ux_enabled off', () => {
+    test.use({ billingNewUx: false })
 
-    await page.goto(APP_URL)
+    test('still restores the tier and cycle from the host pointer when recovery fails', async ({
+      page
+    }) => {
+      test.setTimeout(60_000)
+      await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
+      await setupRecovery(page, FAILED_OPERATION)
 
-    await cloudAppExpect(confirmPaymentHeading(page)).toBeVisible()
-    const checkoutDialog = page.getByRole('dialog')
-    await expect(
-      checkoutDialog.getByRole('button', { name: 'Subscribe to Creator' })
-    ).toBeVisible()
-    await expect(
-      checkoutDialog.getByText('$336 Billed yearly').filter({ visible: true })
-    ).toBeVisible()
-    await expect.poll(() => readPendingCheckout(page)).toBeNull()
+      await page.goto(APP_URL)
+
+      await cloudAppExpect(confirmPaymentHeading(page)).toBeVisible()
+      const checkoutDialog = page.getByRole('dialog')
+      await expect(
+        checkoutDialog.getByRole('button', { name: 'Subscribe to Creator' })
+      ).toBeVisible()
+      await expect(
+        checkoutDialog.getByText('$336 Billed yearly').filter({ visible: true })
+      ).toBeVisible()
+      await expect.poll(() => readPendingCheckout(page)).toBeNull()
+    })
   })
 })

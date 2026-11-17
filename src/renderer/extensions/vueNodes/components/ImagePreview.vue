@@ -288,6 +288,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import { useNodeOutputsExport } from '@/platform/assets/composables/useNodeOutputsExport'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { describeImageLoadFailure } from '@/platform/telemetry/imageFailureDiagnostics'
 import { openHdrViewer } from '@/services/hdrViewerService'
@@ -308,14 +309,20 @@ const PRELOAD_MIN_SCALE = 1
 interface ImagePreviewProps {
   readonly items: readonly AugmentedResultItem[]
   readonly nodeId?: NodeId
+  readonly fullResolution?: boolean
 }
 
-const { items, nodeId } = defineProps<ImagePreviewProps>()
+const {
+  items,
+  nodeId,
+  fullResolution = false
+} = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
 const nodeOutputStore = useNodeOutputStore()
 const { getDisplayImage } = useImagePreviewStore()
+const settingStore = useSettingStore()
 const { hasMultipleOutputs, showOutputsExportDialog } = useNodeOutputsExport()
 const toast = useToast()
 
@@ -362,7 +369,14 @@ const gridUrls = computed(() =>
   mediaSources.value.map((media) => media.thumbnailUrl)
 )
 const isHdr = computed(
-  () => !mediaSources.value[currentIndex.value]?.canEditPixels
+  () => mediaSources.value[currentIndex.value]?.canEditPixels === false
+)
+const hasMultipleImages = computed(() => items.length > 1)
+const downscaleEnabled = computed(() =>
+  settingStore.get('Comfy.Node.DownscaleImagePreviews')
+)
+const showFullResolution = computed(
+  () => !downscaleEnabled.value || (fullResolution && !hasMultipleImages.value)
 )
 
 const currentImageUrl = computed(
@@ -370,7 +384,13 @@ const currentImageUrl = computed(
 )
 const displayImage = computedAsync(async () => {
   const source = currentImageUrl.value
-  if (viewMode.value !== 'gallery' || !source || isHdr.value) return undefined
+  if (
+    viewMode.value !== 'gallery' ||
+    !source ||
+    isHdr.value ||
+    showFullResolution.value
+  )
+    return undefined
   return getDisplayImage(source, DISPLAY_MAX_EDGE)
 })
 const currentDisplayImage = computed(() =>
@@ -380,14 +400,15 @@ const currentDisplayImage = computed(() =>
 )
 const displayImageUrl = useObjectUrl(() => currentDisplayImage.value?.blob)
 const mainImageSrc = computed(() =>
-  isHdr.value
+  isHdr.value || showFullResolution.value
     ? currentImageUrl.value
     : currentDisplayImage.value?.blob
       ? displayImageUrl.value
       : currentDisplayImage.value?.source
 )
-const isDownscaled = computed(() => !!currentDisplayImage.value?.blob)
-const hasMultipleImages = computed(() => items.length > 1)
+const isDownscaled = computed(
+  () => !showFullResolution.value && !!currentDisplayImage.value?.blob
+)
 const canExportOutputs = computed(() => {
   const node = nodeId ? resolveNode(nodeId) : undefined
   return !!node && hasMultipleOutputs(node)
@@ -400,7 +421,8 @@ const gridCols = computed(() => {
 const { camera } = useTransformState()
 const isZoomedIn = computed(() => camera.z >= PRELOAD_MIN_SCALE)
 const preloadUrls = computed(() => {
-  if (!hasMultipleImages.value || !isZoomedIn.value) return []
+  if (!downscaleEnabled.value || !hasMultipleImages.value || !isZoomedIn.value)
+    return []
   const count = items.length
   const candidates =
     viewMode.value === 'grid'
@@ -438,6 +460,15 @@ watch(
     if (newUrls.length > 0) startDelayedLoader()
   },
   { immediate: true }
+)
+
+watch(
+  [showFullResolution, mainImageSrc],
+  ([fullRes, src], [previousFullRes, previousSrc]) => {
+    if (fullRes === previousFullRes) return
+    imageError.value = false
+    if (src !== previousSrc) startDelayedLoader()
+  }
 )
 
 let isUnmounted = false
