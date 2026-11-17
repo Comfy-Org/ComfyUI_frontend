@@ -402,7 +402,6 @@ export class ComfyApp implements IComfyApp {
   /** Shallow: the graph is observed for readiness, never deep-proxied. */
   private readonly rootGraphRef = shallowRef<LGraph | undefined>(undefined)
 
-  // TODO: Migrate internal usage to the
   /** @deprecated Use {@link rootGraph} instead */
   get graph() {
     return this.rootGraphRef.value!
