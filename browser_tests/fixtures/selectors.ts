@@ -55,6 +55,7 @@ export const TestIds = {
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
     errorOverlayMessages: 'error-overlay-messages',
+    errorOverlayDownloadAll: 'error-overlay-download-all-models',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
     missingNodePackExpand: 'missing-node-pack-expand',
