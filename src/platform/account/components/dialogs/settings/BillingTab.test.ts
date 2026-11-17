@@ -1238,6 +1238,27 @@ describe('BillingTab', () => {
         subscriptionStatus: 'ended'
       }
 
+      it.for([
+        {
+          planKind: 'sales_managed',
+          note: "Buying credits doesn't restart your Cloud plan. Contact sales to renew it."
+        },
+        {
+          planKind: 'self_serve',
+          note: "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud."
+        }
+      ] as const)(
+        'tells an ended $planKind workspace how its plan comes back under the credit balance',
+        ({ planKind, note }) => {
+          vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+          arrangeOnCloud({ ...ended, subscriptionState: 'ended', planKind })
+
+          expect(
+            screen.getByTestId('billing-credits-plan-note').textContent.trim()
+          ).toBe(note)
+        }
+      )
+
       it('shows Plan ended with Choose a plan as the white button on both the banner and the plan row', async () => {
         arrangeOnCloud(ended)
 
