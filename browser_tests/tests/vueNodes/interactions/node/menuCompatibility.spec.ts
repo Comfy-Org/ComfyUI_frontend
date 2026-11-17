@@ -7,33 +7,38 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
     await comfyPage.workflow.loadWorkflow('default')
   })
 
-  test('preserves final menu mutations and swaps width and height once', async ({
-    comfyPage
-  }) => {
-    const node = await comfyPage.nodeOps.getNodeRefByTitle('Empty Latent Image')
-    await comfyPage.page.evaluate((id) => {
-      const node = window.app!.graph.getNodeById(id)
-      const height = node?.widgets?.find((widget) => widget.name === 'height')
-      if (!height) throw new Error('Expected a height widget')
-      height.value = 768
-      const canvas = window.app!.canvas
-      const previous = canvas.getNodeMenuOptions
-      canvas.getNodeMenuOptions = function (node) {
-        const options = previous.call(this, node)
-        return options.filter((item) => item?.content !== 'Copy').reverse()
-      }
-    }, node.id)
-    const width = await node.getWidgetByName('width')
-    const height = await node.getWidgetByName('height')
-    const menu = await openContextMenu(comfyPage, 'Empty Latent Image')
-    await expect(menu.getByRole('menuitem').first()).toHaveText('Go to node')
-    await expect(
-      menu.getByRole('menuitem', { name: 'Copy', exact: true })
-    ).toHaveCount(0)
-    await expect.poll(() => width.getValue()).toBe(512)
-    await comfyPage.contextMenu.clickMenuItemExact('Swap width/height')
-    await expect.poll(() => width.getValue()).toBe(768)
-    await expect.poll(() => height.getValue()).toBe(512)
+  test.describe('Final menu mutations', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('default', {
+        nodes: { '5': { widgets_values: [512, 768, 1] } }
+      })
+      await comfyPage.page.evaluate(() => {
+        const canvas = window.app!.canvas
+        const previous = canvas.getNodeMenuOptions
+        canvas.getNodeMenuOptions = function (node) {
+          const options = previous.call(this, node)
+          return options.filter((item) => item?.content !== 'Copy').reverse()
+        }
+      })
+    })
+
+    test('preserves final menu mutations and swaps width and height once', async ({
+      comfyPage
+    }) => {
+      const node =
+        await comfyPage.nodeOps.getNodeRefByTitle('Empty Latent Image')
+      const width = await node.getWidgetByName('width')
+      const height = await node.getWidgetByName('height')
+      const menu = await openContextMenu(comfyPage, 'Empty Latent Image')
+      await expect(menu.getByRole('menuitem').first()).toHaveText('Go to node')
+      await expect(
+        menu.getByRole('menuitem', { name: 'Copy', exact: true })
+      ).toHaveCount(0)
+      await expect.poll(() => width.getValue()).toBe(512)
+      await comfyPage.contextMenu.clickMenuItemExact('Swap width/height')
+      await expect.poll(() => width.getValue()).toBe(768)
+      await expect.poll(() => height.getValue()).toBe(512)
+    })
   })
 
   test('Go to node centers the chosen real node only after selection', async ({
@@ -72,7 +77,35 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
   })
 
   test.describe('Native connection layout', () => {
-    test.use({ menuScenario: 'native' })
+    test.use({
+      menuScenario: 'native',
+      initialSettings: { 'Comfy.Canvas.SelectionToolbox': true }
+    })
+
+    test('anchors keyboard activation to the opening control', async ({
+      comfyPage
+    }) => {
+      const node =
+        await comfyPage.nodeOps.getNodeRefByTitle('Empty Latent Image')
+      await node.centerOnNode()
+      await node.click('title')
+      const button = comfyPage.selectionToolbox.getByRole('button', {
+        name: 'More Options',
+        exact: true
+      })
+      await expect(button).toBeVisible()
+      await button.hover()
+      await button.focus()
+      await button.press('Enter')
+      const menu = comfyPage.page.locator('.litecontextmenu')
+      await expect(menu).toBeVisible()
+      const anchor = await button.boundingBox()
+      const bounds = await menu.boundingBox()
+      if (!anchor || !bounds)
+        throw new Error('Expected menu and opening control bounds')
+      expect(bounds.x).toBeCloseTo(anchor.x, 0)
+      expect(bounds.y).toBeCloseTo(anchor.y, 0)
+    })
 
     test('opens the imperative submenu and applies its selected property', async ({
       comfyPage
@@ -110,15 +143,20 @@ test.describe('Explicit node menu compatibility', { tag: '@vue-nodes' }, () => {
     })
   })
 
-  test('does not regenerate core actions after a complete method override', async ({
-    comfyPage
-  }) => {
-    await comfyPage.page.evaluate(() => {
-      window.app!.canvas.getNodeMenuOptions = () => [
-        { content: 'Replacement only' }
-      ]
+  test.describe('Complete method override', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        window.app!.canvas.getNodeMenuOptions = () => [
+          { content: 'Replacement only' }
+        ]
+      })
     })
-    const menu = await openContextMenu(comfyPage, 'Empty Latent Image')
-    await expect(menu.getByRole('menuitem')).toHaveText(['Replacement only'])
+
+    test('does not regenerate core actions after a complete method override', async ({
+      comfyPage
+    }) => {
+      const menu = await openContextMenu(comfyPage, 'Empty Latent Image')
+      await expect(menu.getByRole('menuitem')).toHaveText(['Replacement only'])
+    })
   })
 })

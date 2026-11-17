@@ -47,7 +47,11 @@ export function toLegacyNodeMenu(
         })
       else presentation.set(item, metadata)
     } else {
-      if (option.action) item.callback = closureOnly(option.action)
+      const { action } = option
+      if (action)
+        item.callback = closureOnly(() => {
+          action()
+        })
       presentation.set(item, metadata)
     }
     return item

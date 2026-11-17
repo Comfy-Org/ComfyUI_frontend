@@ -28,8 +28,9 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
-import { useMutationObserver } from '@vueuse/core'
+import { useEventListener, useMutationObserver } from '@vueuse/core'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { getMenuAnchorPosition } from '@comfyorg/design-system/lib/menu/menuAnchor'
 import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
@@ -79,6 +80,18 @@ const menuItems = shallowRef<MenuItem[]>([])
 const nativeMenu = shallowRef<InstanceType<typeof LiteGraph.ContextMenu>>()
 const nativeRoot = shallowRef<HTMLElement>()
 const nativeOpen = ref(false)
+let nativeShownFrom: EventTarget | null = null
+let nativeDismissingPress: Node | null = null
+useEventListener(
+  document,
+  'pointerdown',
+  ({ target }) => {
+    nativeDismissingPress = null
+    if (!nativeOpen.value || !(target instanceof Node)) return
+    if (!nativeMenu.value?.containsNode(target)) nativeDismissingPress = target
+  },
+  { capture: true }
+)
 useMutationObserver(
   nativeRoot,
   () => {
@@ -113,6 +126,7 @@ function closeNative() {
   nativeMenu.value = undefined
   nativeRoot.value = undefined
   nativeOpen.value = false
+  nativeDismissingPress = null
 }
 
 function prepare(event: Event): boolean {
@@ -125,12 +139,19 @@ function prepare(event: Event): boolean {
     : selected[0]
   const source = () =>
     toLegacyNodeMenu(menuOptions.value, getCurrentShape()?.localizedName ?? '')
-  const items =
-    node && selected.length === 1
-      ? withNodeMenuSource(lgCanvas, source, () =>
-          lgCanvas.getNodeMenuOptions(node)
-        )
-      : source()
+  let items = source()
+  if (node && selected.length === 1 && canvasStore.selectedItems.length === 1) {
+    try {
+      items = withNodeMenuSource(lgCanvas, source, () =>
+        lgCanvas.getNodeMenuOptions(node)
+      )
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'error_collecting_node_menu'
+      })
+    }
+  }
   const result = projectNodeMenu(items)
   if (result.kind === 'vue') {
     menuItems.value = result.items
@@ -145,6 +166,15 @@ function prepare(event: Event): boolean {
     top: y,
     extra: node
   })
+  if (
+    event.type === 'click' &&
+    event instanceof MouseEvent &&
+    event.detail === 0
+  ) {
+    nativeMenu.value.root.style.left = `${x}px`
+    nativeMenu.value.root.style.top = `${y}px`
+  }
+  nativeShownFrom = event.currentTarget
   nativeRoot.value = nativeMenu.value.root.parentElement ?? undefined
   nativeOpen.value = nativeMenu.value.root.isConnected
   return false
@@ -160,7 +190,15 @@ function hide() {
 }
 
 function toggle(event: Event) {
-  if (nativeOpen.value) hide()
+  const control = event.currentTarget
+  const pressDismissedNative =
+    event instanceof MouseEvent &&
+    event.detail > 0 &&
+    control instanceof Node &&
+    control === nativeShownFrom &&
+    nativeDismissingPress !== null &&
+    control.contains(nativeDismissingPress)
+  if (nativeOpen.value || pressDismissedNative) hide()
   else if (vueOpen.value || prepare(event)) toggleVue(event)
 }
 

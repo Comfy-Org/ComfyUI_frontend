@@ -6,6 +6,41 @@ import { closureOnly } from '@/scripts/nodeMenu'
 import { projectNodeMenu, toLegacyNodeMenu } from './nodeMenuBoundary'
 
 describe('node menu compatibility boundary', () => {
+  it('does not turn curated action results into native keep-open signals', () => {
+    let opened = false
+    const items = toLegacyNodeMenu(
+      [{ label: 'Open panel', action: () => (opened = true) }],
+      ''
+    )
+    const item = items[0]
+    assert(item?.callback)
+    const result = Reflect.apply(item.callback, undefined, [])
+    expect(opened).toBe(true)
+    expect(result).toBeUndefined()
+  })
+
+  it('keeps an extension-disabled shape unavailable after projection', () => {
+    const items = toLegacyNodeMenu(
+      [
+        {
+          label: 'Shape',
+          isShapePicker: true,
+          submenu: [{ label: 'Round', action() {} }]
+        }
+      ],
+      'Round'
+    )
+    const child = items[0]?.submenu?.options[0]
+    assert(child && typeof child !== 'string')
+    child.disabled = true
+    const result = projectNodeMenu(items)
+    assert(result.kind === 'vue')
+    expect(result.items[0]?.radioGroup).toBeUndefined()
+    expect(result.items[0]?.items).toMatchObject([
+      { label: 'Round', disabled: true }
+    ])
+  })
+
   it.for([
     { content: 'Native title', title: 'Displayed title' },
     { content: 'Native class', className: 'extension-menu' },
