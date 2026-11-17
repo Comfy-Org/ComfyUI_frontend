@@ -228,9 +228,6 @@ export const useAuthStore = defineStore('auth', () => {
 
     currentUser.value = user
     isInitialized.value = true
-    if (user !== null && isCloud && !flags.unifiedWebSessionEnabled) {
-      void mintUnifiedToken(user.uid)
-    }
   })
 
   const dropDormantApiKey = (): void => {
@@ -805,10 +802,7 @@ export const useAuthStore = defineStore('auth', () => {
       if (signsOutDesktopHost && !(await requestDesktopHostSignOut())) {
         throw new AuthStoreError(t('auth.desktopHost.signOutFailed'))
       }
-      const storedApiKeyWouldTakeOver =
-        isCloud ||
-        signsOutDesktopHost ||
-        (flags.ssoEnabled && flags.unifiedWebSessionEnabled)
+      const storedApiKeyWouldTakeOver = isCloud || signsOutDesktopHost
       const apiKeyStore = useApiKeyAuthStore()
       if (storedApiKeyWouldTakeOver && apiKeyStore.getApiKey() !== null) {
         await apiKeyStore.clearStoredApiKey()

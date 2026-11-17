@@ -299,18 +299,6 @@ export function useFeatureFlags() {
         undefined
       )
     },
-    get unifiedWebSessionEnabled() {
-      if (!isCloud) return false
-
-      const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
-      // Overrides skip the server's web_session_enabled pairing; whoever overrides
-      // this key must also be in the web_session_enabled set.
-      const value =
-        getSessionOverride<unknown>(key) ??
-        getDevOverride<unknown>(key) ??
-        remoteConfig.value.unified_web_session
-      return value === true
-    },
     get webSessionLapseRecoveryEnabled() {
       return resolveFlag(
         ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED,
@@ -461,7 +449,6 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
         flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
-      [ServerFeatureFlag.UNIFIED_WEB_SESSION]: flags.unifiedWebSessionEnabled,
       [ServerFeatureFlag.SSO_ENABLED]: flags.ssoEnabled,
       [ServerFeatureFlag.WEB_SESSION_LAPSE_RECOVERY_ENABLED]:
         flags.webSessionLapseRecoveryEnabled,
