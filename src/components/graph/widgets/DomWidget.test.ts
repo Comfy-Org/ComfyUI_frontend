@@ -1,19 +1,24 @@
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, reactive, ref } from 'vue'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useTextPreviewWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useProgressTextWidget'
+import { ComponentWidgetImpl } from '@/scripts/domWidget'
 import type { BaseDOMWidget } from '@/types/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 import DomWidget from './DomWidget.vue'
 import { reportDomWidgetMountFailure } from './domWidgetMountReporting'
 
+vi.mock(import('@/scripts/app'))
 vi.mock(import('./domWidgetMountReporting'), () => ({
   reportDomWidgetMountFailure: vi.fn()
 }))
@@ -246,6 +251,32 @@ describe('DomWidget component widgets', () => {
     render(DomWidget, { props: { widgetState } })
 
     expect(screen.getByRole('status')).toHaveTextContent('node 1')
+  })
+
+  it('shows execution progress for the node a progress text widget was copied to', () => {
+    const source = Object.assign(new LGraphNode('source'), {
+      id: toNodeId('1')
+    })
+    const target = Object.assign(new LGraphNode('target'), {
+      id: toNodeId('2')
+    })
+    const widget = useTextPreviewWidget()(source, {
+      name: 'progress_text',
+      type: 'progressText'
+    })
+    assert.instanceOf(widget, ComponentWidgetImpl)
+    const copy = widget.createCopyForNode(target)
+    useDomWidgetStore().registerWidget(copy)
+    const widgetState = useDomWidgetStore().widgetStates.get(copy.id)
+    assert.exists(widgetState)
+    Object.assign(useExecutionStore(), {
+      isIdle: false,
+      executingNodeIds: ['2']
+    })
+
+    render(DomWidget, { props: { widgetState } })
+
+    expect(screen.getByTestId('skeleton')).toBeInTheDocument()
   })
 })
 
