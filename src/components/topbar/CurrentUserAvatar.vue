@@ -5,7 +5,8 @@
   />
   <WorkspaceProfilePic
     v-else-if="flags.billingNewUxEnabled"
-    :class="inSidebar ? 'size-6 text-xs' : compact && 'size-full'"
+    :small="inSidebar"
+    :class="!inSidebar && compact && 'size-full'"
     :workspace-name="teamWorkspaceName"
     :subscription-tier="activeSummary?.subscriptionTier"
   />

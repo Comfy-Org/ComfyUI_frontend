@@ -284,9 +284,9 @@ describe('CurrentUserButton', () => {
 
     renderComponent(CurrentUserPopoverWorkspaceStub, { side: 'right' })
 
-    expect(screen.getByText('WorkspaceProfilePic')).toHaveClass(
-      'size-6',
-      'text-xs'
+    expect(screen.getByText('WorkspaceProfilePic')).toHaveAttribute(
+      'small',
+      'true'
     )
     expect(screen.getByRole('button', { name: 'Current user' })).toHaveClass(
       'h-10',
