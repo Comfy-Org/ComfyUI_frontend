@@ -46,7 +46,7 @@ export const saveImageExtraOutputExtension: ComfyExtension = {
         if (!widget) return r
         widget.serializeValue = () =>
           typeof widget.value === 'string'
-            ? applyTextReplacements(useApp().graph, widget.value)
+            ? applyTextReplacements(useApp().rootGraph, widget.value)
             : widget.value
 
         return r

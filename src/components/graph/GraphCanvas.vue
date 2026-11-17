@@ -616,7 +616,7 @@ onMounted(async () => {
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
     window.app = comfyApp
-    window.graph = comfyApp.graph
+    window.graph = comfyApp.rootGraph
 
     comfyAppReady.value = true
 

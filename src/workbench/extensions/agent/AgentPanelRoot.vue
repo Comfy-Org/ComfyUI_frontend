@@ -855,8 +855,11 @@ let nodeReferenceWorkflow = selectionTags.value.length
 
 function viewedGraphNodes() {
   return (
-    (canvasStore.currentGraph ?? useApp().canvas?.graph ?? useApp().graph)
-      ?.nodes ?? []
+    (
+      canvasStore.currentGraph ??
+      useApp().canvas?.graph ??
+      useApp().rootGraphOrUndefined
+    )?.nodes ?? []
   )
 }
 
