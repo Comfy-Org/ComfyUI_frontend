@@ -54,6 +54,8 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import {
+  connect,
+  connectFloatingReroute,
   connectSlots,
   disconnectInput,
   disconnectOutput
@@ -87,7 +89,7 @@ import type { LGraphButtonOptions } from './LGraphButton'
 
 import { canvasClass } from './canvas/canvasClassAccess'
 import { realignGroupWidgetChildLinks } from './linkDeduplication'
-import { LLink } from './LLink'
+import type { LLink } from './LLink'
 import {
   inputHasLink,
   inputLink,
@@ -3184,112 +3186,13 @@ export class LGraphNode
     )
   }
 
-  /**
-   * Connect an output of this node to an input of another node
-   * @param slot (could be the number of the slot or the string with the name of the slot)
-   * @param target_node the target node
-   * @param target_slot the input slot of the target node (could be the number of the slot or the string with the name of the slot, or -1 to connect a trigger)
-   * @returns the link_info is created, otherwise null
-   */
   connect(
     slot: number | string,
     target_node: LGraphNode | number | null,
     target_slot: number | string,
     afterRerouteId?: RerouteId
   ): LLink | null {
-    // Allow legacy API support for searching target_slot by string, without mutating the input variables
-    let targetIndex: number | null
-
-    const { graph, outputs } = this
-    if (!graph) {
-      // could be connected before adding it to a graph
-      // due to link ids being associated with graphs
-      console.error(
-        "Connect: Error, node doesn't belong to any graph. Nodes must be added first to a graph before connecting them."
-      )
-      return null
-    }
-
-    // seek for the output slot
-    if (typeof slot === 'string') {
-      slot = this.findOutputSlot(slot)
-      if (slot == -1) {
-        if (LiteGraph.debug)
-          console.error(`Connect: Error, no slot of name ${slot}`)
-        return null
-      }
-    } else if (slot >= outputs.length) {
-      if (LiteGraph.debug)
-        console.error('Connect: Error, slot number not found')
-      return null
-    }
-
-    if (typeof target_node === 'number') {
-      const nodeById = graph.getNodeById(toNodeId(target_node))
-      if (!nodeById) throw 'target node is null'
-
-      target_node = nodeById
-    }
-    if (!target_node) throw 'target node is null'
-
-    // avoid loopback
-    if (target_node == this) return null
-
-    // you can specify the slot by name
-    if (typeof target_slot === 'string') {
-      targetIndex = target_node.findInputSlot(target_slot)
-      if (targetIndex == -1) {
-        if (LiteGraph.debug)
-          console.error(`Connect: Error, no slot of name ${targetIndex}`)
-        return null
-      }
-    } else if (target_slot === LiteGraph.EVENT) {
-      // TODO: Events
-      if (LiteGraph.do_add_triggers_slots) {
-        target_node.changeMode(LGraphEventMode.ON_TRIGGER)
-        targetIndex = target_node.findInputSlot('onTrigger')
-      } else {
-        return null
-      }
-    } else if (typeof target_slot === 'number') {
-      targetIndex = target_slot
-    } else {
-      targetIndex = 0
-    }
-
-    // Allow target node to change slot
-    if (target_node.onBeforeConnectInput) {
-      // This way node can choose another slot (or make a new one?)
-      const requestedIndex = target_node.onBeforeConnectInput(
-        targetIndex,
-        target_slot
-      )
-      targetIndex = typeof requestedIndex === 'number' ? requestedIndex : null
-    }
-
-    if (targetIndex === null || targetIndex >= target_node.inputs.length) {
-      if (LiteGraph.debug)
-        console.error('Connect: Error, slot number not found')
-      return null
-    }
-
-    const input = target_node.inputs[targetIndex]
-    const output = legacyArrayItem(outputs, slot)
-
-    if (!output) return null
-
-    if (outputHasLinks(graph, this.id, slot)) {
-      if (
-        output.type === LiteGraph.EVENT &&
-        !LiteGraph.allow_multi_output_for_events
-      ) {
-        graph.beforeChange()
-        this.disconnectOutput(slot)
-      }
-    }
-
-    const link = this.connectSlots(output, target_node, input, afterRerouteId)
-    return link ?? null
+    return connect(this, slot, target_node, target_slot, afterRerouteId)
   }
 
   connectSlots(
@@ -3309,54 +3212,7 @@ export class LGraphNode
     slot: INodeInputSlot | INodeOutputSlot,
     afterRerouteId?: RerouteId
   ): Reroute | undefined {
-    const { graph, id } = this
-    if (!graph) throw new NullGraphError()
-
-    // Assertion: It's either there or it isn't.
-    const inputIndex = this.inputs.indexOf(slot)
-    const outputIndex = this.outputs.indexOf(slot)
-    if (inputIndex === -1 && outputIndex === -1) {
-      console.error('Invalid slot')
-      return
-    }
-
-    const slotType = outputIndex === -1 ? 'input' : 'output'
-
-    const reroute = graph.setReroute({
-      pos,
-      parentId: afterRerouteId,
-      linkIds: [],
-      floating: { slotType }
-    })
-    if (!reroute) return
-
-    const parentReroute = graph.getReroute(afterRerouteId)
-    const fromLastFloatingReroute =
-      parentReroute?.floating?.slotType === 'output'
-
-    // Adding from an output, or a floating reroute that is NOT the tip of an existing floating chain
-    if (afterRerouteId == null || !fromLastFloatingReroute) {
-      const link = new LLink(
-        toLinkId(-1),
-        slot.type,
-        outputIndex === -1 ? -1 : id,
-        outputIndex,
-        inputIndex === -1 ? -1 : id,
-        inputIndex
-      )
-      link.parentId = reroute.id
-      graph.addFloatingLink(link)
-      return reroute
-    }
-
-    // Adding a new floating reroute from the tip of a floating chain.
-    const link = parentReroute.getFloatingLinks('output')?.[0]
-    if (!link)
-      throw new Error('[connectFloatingReroute] Floating link not found')
-
-    link.parentId = reroute.id
-    parentReroute.floating = undefined
-    return reroute
+    return connectFloatingReroute(this, pos, slot, afterRerouteId)
   }
 
   disconnectOutput(slot: string | number, target_node?: LGraphNode): boolean {
