@@ -15,6 +15,7 @@ function createBillingContextMock(): BillingContext {
     plans: computed(() => []),
     currentPlanSlug: computed(() => null),
     teamCreditStops: computed(() => null),
+    subscriptionPaymentRecovery: computed(() => null),
     currentTeamCreditStop: computed(() => null),
     maxSeats: computed(() => null),
     occupiedSeats: computed(() => null),

@@ -288,6 +288,16 @@ describe('GettingStartedScreen', () => {
         ).not.toHaveBeenCalled()
         expect(mocks.dismiss).not.toHaveBeenCalled()
         expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
+
+        mocks.loadTemplate.mockResolvedValue('loaded')
+        await pickFirstTemplate()
+
+        await waitFor(() =>
+          expect(mocks.dismissIntoTour).toHaveBeenCalledWith(
+            CURATED_TEMPLATE_IDS[0]
+          )
+        )
+        expect(mocks.loadTemplate).toHaveBeenCalledTimes(2)
       }
     )
 

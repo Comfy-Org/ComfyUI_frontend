@@ -126,7 +126,7 @@ describe('useAskAgentAboutIssues', () => {
     expect(panel.pendingErrorContext).toBeNull()
   })
 
-  it('opens the panel without attaching when the tab changes during consent', async () => {
+  it('hands the request to the panel when the tab changes during consent, so the panel can say why nothing attached', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true
     const workflowStore = useWorkflowStore()
@@ -148,7 +148,9 @@ describe('useAskAgentAboutIssues', () => {
     accept()
 
     expect(panel.isOpen).toBe(true)
-    expect(panel.pendingErrorContext).toBeNull()
+    expect(panel.pendingErrorContext).toMatchObject({
+      workflowPath: 'workflows/broken.json'
+    })
   })
 
   it('carries the clicked workflow path with the request', async () => {

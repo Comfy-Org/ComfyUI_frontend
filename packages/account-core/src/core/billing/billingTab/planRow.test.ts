@@ -277,7 +277,8 @@ describe('derivePlanRow', () => {
         kind: 'ended',
         planName: null,
         cadence: 'monthly',
-        endedAt: '2026-09-01T00:00:00Z'
+        endedAt: '2026-09-01T00:00:00Z',
+        salesManaged: true
       }
     },
     {

@@ -14,12 +14,13 @@
 </template>
 
 <script setup lang="ts">
-import { useRafFn } from '@vueuse/core'
 import { computed, useTemplateRef, watch } from 'vue'
 
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useTransformSettling } from '@/renderer/core/layout/transform/useTransformSettling'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
@@ -51,11 +52,17 @@ const transformPaneRef = useTemplateRef('transformPaneRef')
  * Mutating the DOM directly limits the update to a single element.
  */
 
-watch([transformStyle, transformPaneRef], ([newStyle, el]) => {
-  if (el) {
-    Object.assign(el.style, newStyle)
+const { setTransform: setPaneTransform } =
+  useCompositedTransform(transformPaneRef)
+
+watch(
+  [transformStyle, transformPaneRef],
+  ([{ transform, transformOrigin }, el]) => {
+    if (!el) return
+    el.style.transformOrigin = transformOrigin
+    setPaneTransform(transform)
   }
-})
+)
 watch([isInteracting, transformPaneRef], ([interacting, el]) => {
   if (el) {
     el.classList.toggle('will-change-transform', interacting)
@@ -63,12 +70,12 @@ watch([isInteracting, transformPaneRef], ([interacting, el]) => {
   }
 })
 
-useRafFn(
-  () => {
-    if (!props.canvas) {
-      return
-    }
-    syncWithCanvas(props.canvas)
+watch(
+  () => props.canvas,
+  (canvas, _, onCleanup) => {
+    if (!canvas) return
+    syncWithCanvas(canvas)
+    onCleanup(onCanvasFrame(canvas, 'present', () => syncWithCanvas(canvas)))
   },
   { immediate: true }
 )

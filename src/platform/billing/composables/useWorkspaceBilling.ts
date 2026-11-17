@@ -294,6 +294,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     () => statusData.value?.plan_slug ?? billingPlans.currentPlanSlug.value
   )
   const teamCreditStops = computed(() => billingPlans.teamCreditStops.value)
+  const subscriptionPaymentRecovery = computed(
+    () => billingPlans.subscriptionPaymentRecovery.value
+  )
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )
@@ -330,24 +333,6 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     }
   }
 
-  /**
-   * Whether the rail that issues this kind of operation is the one that owns a
-   * pending one at load. Adopting on the other rail is what makes a mid-session
-   * flag flip ambiguous: the operation's writes went one way and its poller the
-   * other.
-   *
-   * A server predating `pending_billing_op_type` only ever had subscriptions to
-   * hand back, so it follows the subscription rail — the same reading
-   * `resumeModeFor` takes of an absent field.
-   */
-  function railOwnsResume(
-    type: BillingStatusResponse['pending_billing_op_type']
-  ): boolean {
-    return type === 'topup'
-      ? flags.billingSdkTopupRailEnabled
-      : flags.billingSdkSubscriptionRailEnabled
-  }
-
   async function resumePendingOperation(
     status: BillingStatusResponse
   ): Promise<boolean> {
@@ -355,7 +340,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     if (billingOperationStore.getOperation(status.pending_billing_op_id)) {
       return true
     }
-    if (railOwnsResume(status.pending_billing_op_type)) {
+    if (flags.billingSdkRailEnabled) {
       return useBillingSdkStore()
         .recover()
         .catch(() => false)
@@ -872,6 +857,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,

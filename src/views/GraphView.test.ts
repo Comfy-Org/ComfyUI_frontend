@@ -1,6 +1,9 @@
 import { render, screen, waitFor } from '@testing-library/vue'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
+import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
@@ -12,6 +15,8 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { runWhenGlobalIdle } from '@/base/common/async'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { api as apiMock } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -19,9 +24,21 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
+import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 beforeEach(() => {
+  distribution.isDesktop = false
+  vi.stubGlobal('electronAPI', {
+    changeTheme: vi.fn<ElectronAPI['changeTheme']>(),
+    Events: {
+      incrementUserProperty:
+        vi.fn<ElectronAPI['Events']['incrementUserProperty']>(),
+      trackEvent: vi.fn<ElectronAPI['Events']['trackEvent']>()
+    }
+  })
   vi.mocked(apiMock.getHistory).mockResolvedValue([])
   vi.mocked(apiMock.getSystemStats).mockResolvedValue({
     system: {
@@ -75,7 +92,10 @@ const templateInputMock = vi.hoisted(() => ({
     }
   ]),
   stopProgress: vi.fn(),
-  subscribeProgress: vi.fn(),
+  subscribeProgress:
+    vi.fn<
+      NonNullable<ComfyDesktop2Bridge['onTemplateInputDownloadProgress']>
+    >(),
   updateProgress: vi.fn()
 }))
 
@@ -176,14 +196,8 @@ vi.mock(import('@/services/autoQueueService'), () => ({
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     registerCoreKeybindings: vi.fn(),
+    registerUserKeybindings: vi.fn(),
     keybindHandler: vi.fn()
-  })
-}))
-
-vi.mock<unknown>(import('@/utils/envUtil'), () => ({
-  electronAPI: () => ({
-    changeTheme: vi.fn(),
-    Events: { incrementUserProperty: vi.fn(), trackEvent: vi.fn() }
   })
 }))
 
@@ -195,7 +209,13 @@ vi.mock<unknown>(
     default: { template: '<div data-testid="education-card-stub" />' }
   })
 )
-vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => stubModule)
+vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => ({
+  default: {
+    emits: ['ready'],
+    template:
+      '<div data-testid="graph-canvas-stub"><button type="button" @click="$emit(\'ready\')">Graph ready</button></div>'
+  }
+}))
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
 vi.mock<unknown>(
   import('@/platform/settings/components/SettingDialog.vue'),
@@ -255,7 +275,6 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 
 describe('GraphView - reconnect wiring', () => {
   beforeEach(() => {
-    distribution.isDesktop = false
     templateInputMock.subscribeProgress.mockReturnValue(
       templateInputMock.stopProgress
     )
@@ -266,7 +285,6 @@ describe('GraphView - reconnect wiring', () => {
     vi.mocked(inputStore.updateProgress).mockImplementation(
       templateInputMock.updateProgress
     )
-    delete window.__comfyDesktop2
   })
 
   it('wires the reconnected event to the toast, queue refresh and node definition refresh', () => {
@@ -279,53 +297,54 @@ describe('GraphView - reconnect wiring', () => {
     expect(useReconnectNodeDefinitionRefresh()).toHaveBeenCalledTimes(1)
   })
 
-  it('reconciles a completed template input without a page refresh', async () => {
-    distribution.isDesktop = true
-    Object.defineProperty(window, '__comfyDesktop2', {
-      configurable: true,
-      value: {
+  it.for([
+    { name: 'native localhost Desktop', legacyDesktop: false },
+    { name: 'legacy Desktop', legacyDesktop: true }
+  ])(
+    'reconciles a completed template input without a page refresh on $name',
+    async ({ legacyDesktop }) => {
+      distribution.isDesktop = legacyDesktop
+      vi.stubGlobal('__comfyDesktop2', {
         isRemote: () => false,
         onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
-      }
-    })
-    render(GraphView, { global: { plugins: [i18n] } })
+      } satisfies ComfyDesktop2Bridge)
+      render(GraphView, { global: { plugins: [i18n] } })
 
-    const listener = templateInputMock.subscribeProgress.mock.calls[0]?.[0]
-    expect(listener).toBeTypeOf('function')
+      const listener = templateInputMock.subscribeProgress.mock.calls[0]?.[0]
+      assert.exists(listener)
 
-    listener({
-      downloadId: 'download-1',
-      filename: 'subject.png',
-      progress: 1,
-      status: 'completed',
-      templateInputs: [{ templateId: 'starter-detail', assetId: 'subject' }]
-    })
+      listener({
+        downloadId: 'download-1',
+        filename: 'subject.png',
+        progress: 1,
+        status: 'completed',
+        templateInputs: [{ templateId: 'starter-detail', assetId: 'subject' }]
+      })
 
-    await waitFor(() => {
-      expect(templateInputMock.runMissingMediaPipeline).toHaveBeenCalledOnce()
-    })
-    expect(templateInputMock.updateProgress).toHaveBeenCalledOnce()
-    expect(templateInputMock.refreshBindings).toHaveBeenCalledOnce()
-    expect(templateInputMock.completeGraphSync).toHaveBeenCalledWith([
-      'subject.png'
-    ])
-  })
+      await waitFor(() => {
+        expect(templateInputMock.runMissingMediaPipeline).toHaveBeenCalledOnce()
+      })
+      expect(templateInputMock.updateProgress).toHaveBeenCalledOnce()
+      expect(templateInputMock.refreshBindings).toHaveBeenCalledOnce()
+      expect(templateInputMock.completeGraphSync).toHaveBeenCalledWith([
+        'subject.png'
+      ])
+    }
+  )
 
   it('releases a completed template input when the graph refresh fails', async () => {
-    distribution.isDesktop = true
-    Object.defineProperty(window, '__comfyDesktop2', {
-      configurable: true,
-      value: {
-        isRemote: () => false,
-        onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
-      }
-    })
+    vi.stubGlobal('__comfyDesktop2', {
+      isRemote: () => false,
+      onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
+    } satisfies ComfyDesktop2Bridge)
     vi.mocked(app.reloadNodeDefs).mockRejectedValueOnce(
       new Error('reload failed')
     )
     render(GraphView, { global: { plugins: [i18n] } })
 
-    templateInputMock.subscribeProgress.mock.calls[0]?.[0]({
+    const listener = templateInputMock.subscribeProgress.mock.calls[0]?.[0]
+    assert.exists(listener)
+    listener({
       downloadId: 'download-1',
       filename: 'subject.png',
       progress: 1,
@@ -340,6 +359,124 @@ describe('GraphView - reconnect wiring', () => {
     })
     expect(templateInputMock.refreshBindings).not.toHaveBeenCalled()
   })
+
+  it('stops native input tracking and pending graph refresh when the view unmounts', async () => {
+    vi.stubGlobal('__comfyDesktop2', {
+      isRemote: () => false,
+      onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
+    } satisfies ComfyDesktop2Bridge)
+    const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
+    const inputStore = useTemplateInputDownloadStore()
+    const listener = templateInputMock.subscribeProgress.mock.calls[0]?.[0]
+    assert.exists(listener)
+
+    listener({
+      downloadId: 'download-1',
+      filename: 'subject.png',
+      progress: 1,
+      status: 'completed',
+      templateInputs: []
+    })
+    unmount()
+    await syncCompletedTemplateInputsWithCurrentGraph()
+
+    expect(templateInputMock.stopProgress).toHaveBeenCalledOnce()
+    expect(inputStore.clear).toHaveBeenCalledOnce()
+    expect(app.reloadNodeDefs).not.toHaveBeenCalled()
+    expect(templateInputMock.refreshBindings).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      name: 'host detection is malformed',
+      bridge: { isRemote: false }
+    },
+    {
+      name: 'host detection throws',
+      bridge: {
+        isRemote: () => {
+          throw new Error('Host detection failed')
+        }
+      }
+    },
+    {
+      name: 'progress registration is malformed',
+      bridge: { isRemote: () => false, onTemplateInputDownloadProgress: true }
+    },
+    {
+      name: 'progress registration throws',
+      bridge: {
+        isRemote: () => false,
+        onTemplateInputDownloadProgress: () => {
+          throw new Error('Progress registration failed')
+        }
+      }
+    }
+  ])('keeps the graph usable when native $name', ({ bridge }) => {
+    vi.stubGlobal('__comfyDesktop2', bridge)
+    const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
+
+    expect(screen.getByTestId('graph-canvas-stub')).toBeInTheDocument()
+    expect(
+      vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, context]) =>
+            context.errorType === 'workflow_template_input_tracking_failed'
+        )
+    ).toEqual([
+      [
+        expect.any(Error),
+        {
+          surface: 'graph',
+          errorType: 'workflow_template_input_tracking_failed',
+          level: 'warning'
+        }
+      ]
+    ])
+    expect(templateInputMock.updateProgress).not.toHaveBeenCalled()
+
+    unmount()
+    expect(useTemplateInputDownloadStore().clear).toHaveBeenCalledOnce()
+    expect(templateInputMock.stopProgress).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      name: 'ordinary local web',
+      nativeHost: false,
+      remote: undefined,
+      remoteFlag: undefined
+    },
+    {
+      name: 'remote Desktop',
+      nativeHost: true,
+      remote: () => true,
+      remoteFlag: undefined
+    },
+    {
+      name: 'older remote Desktop',
+      nativeHost: true,
+      remote: undefined,
+      remoteFlag: true
+    }
+  ])(
+    'does not track native input downloads on $name',
+    ({ nativeHost, remote, remoteFlag }) => {
+      const bridge: ComfyDesktop2Bridge = {
+        isRemote: remote,
+        onTemplateInputDownloadProgress: templateInputMock.subscribeProgress
+      }
+      vi.stubGlobal('__comfyDesktop2', nativeHost ? bridge : undefined)
+      vi.stubGlobal('__comfyDesktop2Remote', remoteFlag)
+      const { unmount } = render(GraphView, { global: { plugins: [i18n] } })
+
+      expect(templateInputMock.subscribeProgress).not.toHaveBeenCalled()
+      expect(templateInputMock.updateProgress).not.toHaveBeenCalled()
+      unmount()
+      expect(templateInputMock.stopProgress).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('GraphView - output assets refresh', () => {
@@ -437,4 +574,37 @@ describe('GraphView - missing nodes notice', () => {
     expect(noticeMissingNodes).not.toHaveBeenCalled()
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
+})
+
+describe('GraphView - shell layout telemetry', () => {
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it.for([{ open: true }, { open: false }])(
+    'reports the properties panel as open=$open once the graph is ready on Cloud',
+    async ({ open }) => {
+      distribution.isCloud = true
+      vi.mocked(runWhenGlobalIdle).mockImplementation((callback) => {
+        callback({ didTimeout: false, timeRemaining: () => 50 })
+        return { dispose: () => {} }
+      })
+      useSettingStore().$patch({
+        settingValues: {
+          'Comfy.UseNewMenu': 'Top',
+          'Comfy.RightSidePanel.IsOpen': open,
+          'Comfy.Server.ServerConfigValues': {}
+        }
+      })
+      render(GraphView, { global: { plugins: [i18n] } })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Graph ready' }))
+
+      await waitFor(() =>
+        expect(useTelemetry()?.trackShellLayout).toHaveBeenCalledWith(
+          expect.objectContaining({ right_side_panel_open: open })
+        )
+      )
+    }
+  )
 })

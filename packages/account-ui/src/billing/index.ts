@@ -53,10 +53,14 @@ export type { AddCreditsUi } from './addCredits/addCreditsPresentation'
 export { default as AddCreditsDialog } from './addCredits/AddCreditsDialog.vue'
 export type { PlanRowCopy } from './tab/planRowCopy'
 export { default as BillingPlanRow } from './tab/BillingPlanRow.vue'
-export type { CreditsCardCopy } from './tab/creditsCardCopy'
+export type {
+  CreditsBreakdownCopy,
+  CreditsCardCopy
+} from './tab/creditsCardCopy'
 export { CREDITS_PER_USD } from './tab/creditsCardCopy'
 export { default as AddCreditsAction } from './tab/AddCreditsAction.vue'
 export { default as BillingCreditsCard } from './tab/BillingCreditsCard.vue'
+export { default as BillingCreditsBreakdown } from './tab/BillingCreditsBreakdown.vue'
 export type {
   AutoTopUpActionLabel,
   AutoTopUpCardCopy,
@@ -67,7 +71,12 @@ export type {
 } from './tab/autoTopUpCardView'
 export { autoTopUpCardView, autoTopUpViewKey } from './tab/autoTopUpCardView'
 export { default as BillingAutoTopUpCard } from './tab/BillingAutoTopUpCard.vue'
-export type { AutoTopUpMemberBlockCopy } from './tab/BillingAutoTopUpMemberBlock.vue'
+export type {
+  AutoTopUpMemberBlockCopy,
+  AutoTopUpMemberBlockView,
+  AutoTopUpMemberView
+} from './tab/autoTopUpMemberView'
+export { autoTopUpMemberView } from './tab/autoTopUpMemberView'
 export { default as BillingAutoTopUpMemberBlock } from './tab/BillingAutoTopUpMemberBlock.vue'
 export type {
   BillingBannerAction,
@@ -79,6 +88,7 @@ export type {
 export {
   planCheckoutBannerView,
   selectBillingBanners,
+  suppressesCreditBanners,
   topupCheckoutBannerView
 } from './tab/billingBannerView'
 export { default as BillingBanner } from './tab/BillingBanner.vue'

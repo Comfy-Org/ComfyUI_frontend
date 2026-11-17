@@ -98,7 +98,9 @@ test.describe(
       const canvasGroup =
         await test.step('user groups it with Ctrl+G', async () => {
           await agentConversation.vueNodes.selectNode(addedId)
-          await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
+          await expect(agentConversation.vueNodes.emphasizedNodes).toHaveCount(
+            1
+          )
           await page.keyboard.press('Control+g')
           await expect
             .poll(() =>

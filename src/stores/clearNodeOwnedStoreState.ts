@@ -5,6 +5,7 @@ import { parseNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { usePreviewExposureStore } from './previewExposureStore'
 import { useWidgetValueStore } from './widgetValueStore'
+import { useWidgetComponents } from './widgetComponents'
 
 export function clearNodeOwnedStoreState(node: LGraphNode): void {
   const graph = node.graph
@@ -12,6 +13,7 @@ export function clearNodeOwnedStoreState(node: LGraphNode): void {
 
   const rootGraphId = graph.isRootGraph ? graph.id : graph.rootGraph.id
   const nodeId = parseNodeId(node.id) ?? node.id
+  useWidgetComponents().detachNode(rootGraphId, nodeId, node.properties)
   useWidgetValueStore().clearNode(rootGraphId, nodeId)
   usePreviewExposureStore().clearHost(
     rootGraphId,

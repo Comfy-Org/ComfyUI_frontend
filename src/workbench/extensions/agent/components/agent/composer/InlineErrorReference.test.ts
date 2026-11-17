@@ -32,13 +32,13 @@ function renderChip(ctx: AgentErrorContext) {
 }
 
 describe('InlineErrorReference', () => {
-  it('renders an outline error icon and the label for error severity', () => {
+  it('shows the label for error severity', () => {
     renderChip(context())
 
     expect(screen.getByText('Execution failed')).toBeVisible()
   })
 
-  it('renders an outline warning icon and the count for warning severity', () => {
+  it('shows the problem count when a warning has more than one problem', () => {
     renderChip(
       context({ severity: 'warning', label: 'Missing Inputs', count: 3 })
     )
