@@ -8006,6 +8006,49 @@ describe('ComfyApp', () => {
       expect(app.dragOverNode).toBeNull()
     })
 
+    it.for([
+      { hook: 'claims it', claims: true, editorReadsFiles: 0 },
+      { hook: 'leaves it', claims: false, editorReadsFiles: 1 }
+    ])(
+      'gives a drop on the drag target to an onDrop hook of the node API, and the editor handles it only when the hook $hook',
+      async ({ claims, editorReadsFiles }) => {
+        const graph = new LGraph()
+        const { comfy, host } = createComfyApi({ getGraph: () => graph })
+        registerHostType(host.nodeTypeHooks, hostNodeDef('DropTargetProbe'))
+        const dropped: [string, DragEvent][] = []
+        comfy.defs.extend('DropTargetProbe', (builder) => {
+          builder.onDragOver(() => true)
+          builder.onDrop(async (handle, event) => {
+            dropped.push([handle.id, event])
+            return claims
+          })
+        })
+        const node = LiteGraph.createNode('DropTargetProbe')
+        assert(node)
+        graph.add(node)
+        const canvasElement = document.createElement('canvas')
+        app.canvasElRef.value = canvasElement
+        app.canvas = fromPartial<LGraphCanvas>({
+          ...createMockCanvas(),
+          graph_mouse: [0, 0],
+          adjustMouseEvent: vi.fn(),
+          graph: fromPartial<LGraph>({ getNodeOnPos: () => node })
+        })
+        addScopedDropHandler()
+        canvasElement.dispatchEvent(new DragEvent('dragover'))
+
+        const drop = new DragEvent('drop')
+        document.dispatchEvent(drop)
+
+        await vi.waitFor(() => expect(dropped).toHaveLength(1))
+        await new Promise((resolve) => setTimeout(resolve))
+        expect(dropped).toEqual([[String(node.id), drop]])
+        expect(extractFilesFromDragEvent).toHaveBeenCalledTimes(
+          editorReadsFiles
+        )
+      }
+    )
+
     it('claims but ignores a drop while the canvas is select-only', async () => {
       app.canvas = fromPartial<LGraphCanvas>({
         ...createMockCanvas(),

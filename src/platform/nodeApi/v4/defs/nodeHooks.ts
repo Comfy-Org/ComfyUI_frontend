@@ -36,6 +36,10 @@ export interface HookCallbacks {
   onHover: (node: NodeHandle, hovering: boolean) => void
   onDoubleClick: (node: NodeHandle) => void
   onDragOver: (node: NodeHandle, event: DragEvent) => boolean | void
+  onDrop: (
+    node: NodeHandle,
+    event: DragEvent
+  ) => boolean | void | Promise<boolean | void>
   addMenuItem: CheckedMenuItem
 }
 
@@ -54,6 +58,7 @@ export const HOOK_NAMES = [
   'onHover',
   'onDoubleClick',
   'onDragOver',
+  'onDrop',
   'addMenuItem'
 ] as const satisfies readonly HookName[]
 
@@ -80,6 +85,7 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
     onHover: [],
     onDoubleClick: [],
     onDragOver: [],
+    onDrop: [],
     addMenuItem: []
   }
   let open = true
@@ -121,6 +127,7 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
     onHover: hook('onHover'),
     onDoubleClick: hook('onDoubleClick'),
     onDragOver: hook('onDragOver'),
+    onDrop: hook('onDrop'),
     addMenuItem: adder('addMenuItem', (item: unknown) =>
       checkedReadable(
         'addMenuItem',

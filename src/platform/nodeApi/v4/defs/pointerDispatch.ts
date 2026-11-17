@@ -1,6 +1,6 @@
 import type { Deliver, MethodInstaller } from './dispatchContext'
 
-/** Delivers what the renderers report of the pointer over a node, and asks whether it takes a drag. */
+/** Delivers what the renderers report of the pointer over a node, and asks whether it takes a drag and its drop. */
 export function pointerInstallers(
   deliver: Deliver
 ): Record<string, MethodInstaller> {
@@ -39,6 +39,20 @@ export function pointerInstallers(
         return deliver(type, 'onDragOver', this, (callback, handle) =>
           callback(handle, event)
         ).includes(true)
+      }
+    },
+    onDragDrop(target, type) {
+      const previous = target.onDragDrop
+      target.onDragDrop = async function (event) {
+        if (previous && (await previous.call(this, event))) return true
+        const answers = await Promise.allSettled(
+          deliver(type, 'onDrop', this, (callback, handle) =>
+            callback(handle, event)
+          )
+        )
+        return answers.some(
+          (answer) => answer.status === 'fulfilled' && answer.value === true
+        )
       }
     }
   }

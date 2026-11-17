@@ -310,16 +310,36 @@ registered, so `extend` cannot depend on the order.
     handle and the browser's own `DragEvent`, as V2 gave it; no host object
     is passed. The node is the drop target if the type's own method accepts,
     in which case the hooks are not asked, or if any hook returns `true`; a
-    hook that throws is reported and does not accept. The answer only marks
-    the node as the target: the editor then gives the drop to the node's
-    `onDragDrop` if it has one and otherwise handles it itself, and there is
-    no drop hook (decision 38). rgthree asks it for every node type to offer
-    a drop-to-import; the census missed it, on a builder it could not type
-    (acceptance finding B8). The host's own drag handling for upload widgets
+    hook that throws is reported and does not accept. The answer marks the
+    node as the target, and the editor then gives the drop to the node's
+    `onDragDrop` if it has one and otherwise handles it itself. rgthree asks
+    it for every node type to offer a drop-to-import; the census missed it,
+    on a builder it could not type (acceptance finding B8).
+    `onDrop` is asked from the node's `onDragDrop`, the host's own drop path:
+    the editor's document `drop` listener in `app.ts` awaits it for the drop
+    target, and the node claims the drop if it answers `true`; otherwise the
+    editor loads the dropped files itself. The dispatcher calls the method
+    the type had first, awaiting it, and if that claims the drop the hooks
+    are not asked. Otherwise every reached hook is asked, in order, with the
+    node's handle and the browser's `DragEvent`, as V2 gave them; a hook may
+    answer with a promise, and the node claims the drop if any hook answers
+    or resolves `true`. A hook that throws or rejects is reported and does
+    not claim. When the type has no method of its own, the hooks are called
+    within the dispatcher's call, before its first `await`, so they run while
+    the browser is still delivering the drop event. Hooks are listeners
+    (decision 17), so two extensions that both claim a drop are both asked;
+    no stored pack has two drop hooks on one type. rgthree's drop-to-import
+    adds `onDrop` beside `onDragOver` in the same `apply`. Which drops reach
+    `onDragDrop` is the renderer's: the canvas renderer gives the drop only
+    to the node that accepted the drag (`app.dragOverNode`), and Vue nodes'
+    `LGraphNode.vue` makes any node the pointer drops on the target, whether
+    it accepted the drag or not, unless something under it already handled
+    the drop. The API asks the hooks whenever the host asks the node, and
+    the JSDoc says so. The host's own drag handling for upload widgets
     (`useNodeDragAndDrop`, on image, audio and 3D upload nodes) assigns
-    `onDragOver` on the node itself, which replaces the dispatcher for that
-    node as any assignment does (decision 17), so the hooks are not asked
-    there.
+    `onDragOver` and `onDragDrop` on the node itself, which replaces the
+    dispatchers for that node as any assignment does (decision 17), so the
+    hooks are not asked there.
 29. A definition may also declare `onConnectionsChanged` and
     `onPropertyChanged`.
 
@@ -376,9 +396,7 @@ registered, so `extend` cannot depend on the order.
     `NodeDefinition.supply`, `onExecuted`, `onDragOver`,
     `onDrop` and `onPromptSerialize` (0 packs each). `NodeDefBuilder.onDrop`
     was counted with them, but rgthree calls it beside `onDragOver` (the
-    acceptance run found both); it is not built yet, and the `extend` call
-    that adds both still fails at `onDrop`, which decision 6 reports, keeping
-    neither hook. Whether to build it is open for the owner. With `setTitle` gone, a
+    acceptance run found both), so it is built (decision 28). With `setTitle` gone, a
     late extension cannot rename a type, so review finding A-08 cannot arise;
     with `setExecution` gone, only `define` decides whether a type runs in the
     frontend, on a class it owns, so disposing an extension cannot change it
@@ -403,10 +421,12 @@ registered, so `extend` cannot depend on the order.
     found no slot" needs a new event in LiteGraph's `LinkConnector`, which this
     API does not change.
 41. Nothing here exists for a sandbox: no proxies, no capability checks, and
-    no asynchronous hooks. `onPromptSerialize` was awaited so that a
-    sandboxed pack could answer, and is not built. `onDrop` may be
-    asynchronous without a sandbox too, since the editor awaits a node's
-    `onDragDrop`, so the sandbox is not why it is left out (decision 38).
+    no hook made asynchronous for one. `onPromptSerialize` was awaited so
+    that a sandboxed pack could answer, and is not built. `onDrop` is the one
+    hook whose answer the API waits for when it is a promise, and not because
+    of a sandbox: the editor itself awaits a node's `onDragDrop`, so the hook
+    keeps the host's own shape. An earlier text of this decision left `onDrop` out as a
+    sandbox hook; that reason was wrong.
 
 42. Conversion rows (V1 pattern, V4 form, not one to one because):
     - A prototype patch or `nodeCreated` override made after nodes exist,
@@ -430,6 +450,9 @@ registered, so `extend` cannot depend on the order.
       fields to add, and refuse a field the node saves itself.
     - Overrides that run in module order -> hooks in the order the
       extensions were made (decision 3).
+    - An `onDragDrop` override that handles a drop before the type's own
+      method, or instead of it -> `onDrop`, asked only when the type's own
+      handling leaves the drop.
     - An assignment over a method -> unchanged: it replaces the dispatcher.
     - A subclass registered under another name -> hears none of the hooks of
       the class it extends; extend its own type.
