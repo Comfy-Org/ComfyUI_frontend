@@ -104,7 +104,8 @@ export function useBillingDialogs() {
           : TopUpCreditsDialogContentWorkspace,
       props: options,
       dialogComponentProps: {
-        headless: true
+        headless: true,
+        growsDown: true
       }
     })
   }
