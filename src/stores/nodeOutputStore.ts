@@ -125,6 +125,12 @@ function preserveInputPreviewImages(
     : outputs
 }
 
+function inputPreviewOf(
+  output: ExecutedWsMessage['output'] | undefined
+): ExecutedWsMessage['output'] | undefined {
+  return isInputPreviewOutput(output) ? { images: output.images } : undefined
+}
+
 function concatOutputArrays(
   existingOutput: ExecutedWsMessage['output'],
   outputs: ExecutedWsMessage['output']
@@ -473,15 +479,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   ) {
     if (outputs == null) return
 
-    writeSharedOutputs(
-      nodeLocatorId,
-      mergeOutput(nodeOutputs.value[nodeLocatorId], outputs, options)
-    )
+    const shared = nodeOutputs.value[nodeLocatorId]
+    writeSharedOutputs(nodeLocatorId, mergeOutput(shared, outputs, options))
     if (!isInteriorLocator(nodeLocatorId)) return
 
     const instances = (instanceOutputs.value[nodeLocatorId] ??= {})
     instances[executionId] = mergeOutput(
-      instances[executionId],
+      instances[executionId] ?? inputPreviewOf(shared),
       outputs,
       options
     )
@@ -725,7 +729,6 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     useApp().nodePreviewImages = clone(nodePreviewImages.value)
   }
 
-  /** Drops per-instance entries whose execution path no longer reaches their node. */
   function pruneDetachedInstances() {
     const rootGraph = useApp().rootGraphOrUndefined
     forEachDetachedInstance(
