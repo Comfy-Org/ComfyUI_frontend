@@ -77,7 +77,7 @@ export async function getOutputsForTask(
 
   try {
     const detail = await getJobDetail(task.jobId)
-    if (!detail?.outputs) {
+    if (!detail?.outputs || Object.keys(detail.outputs).length === 0) {
       jobDetailCache.delete(requestId)
       return latestTaskRequestId === requestId
         ? [...task.previewableOutputs]

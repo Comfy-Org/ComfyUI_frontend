@@ -149,7 +149,7 @@ describe('jobOutputCache', () => {
       expect(result).toEqual([previewOutput])
     })
 
-    it.for([undefined, { outputs: undefined }])(
+    it.for([undefined, { outputs: undefined }, { outputs: {} }])(
       'retries missing outputs on the next selection: %j',
       async (detail) => {
         const preview = createResultItem('preview')
