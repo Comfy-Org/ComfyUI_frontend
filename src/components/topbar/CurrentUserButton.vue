@@ -5,7 +5,9 @@
         <Button
           v-if="isLoggedIn"
           ref="buttonRef"
-          class="p-1 hover:bg-transparent"
+          :class="
+            cn('p-1 hover:bg-transparent', side !== 'bottom' && 'h-10 w-full')
+          "
           variant="muted-textonly"
           :aria-label="$t('g.currentUser')"
           data-testid="current-user-button"
@@ -18,7 +20,7 @@
               )
             "
           >
-            <CurrentUserAvatar :compact />
+            <CurrentUserAvatar :compact :in-sidebar="side !== 'bottom'" />
 
             <i v-if="showArrow" class="icon-[lucide--chevron-down] px-1" />
           </div>

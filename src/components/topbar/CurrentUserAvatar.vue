@@ -1,17 +1,14 @@
 <template>
-  <Skeleton v-if="showWorkspaceSkeleton" class="size-8 rounded-full" />
-  <span
+  <Skeleton
+    v-if="showWorkspaceSkeleton"
+    :class="cn('rounded-full', inSidebar ? 'size-6' : 'size-8')"
+  />
+  <WorkspaceProfilePic
     v-else-if="flags.billingNewUxEnabled"
-    aria-hidden="true"
-    data-testid="current-user-monogram"
-    :class="
-      cn(
-        'flex aspect-square items-center justify-center rounded-full bg-foreground text-sm font-medium text-background uppercase',
-        compact ? 'size-full' : 'size-8'
-      )
-    "
-    >{{ monogram }}</span
-  >
+    :class="inSidebar ? 'size-6 text-xs' : compact && 'size-full'"
+    :workspace-name="teamWorkspaceName"
+    :subscription-tier="activeSummary?.subscriptionTier"
+  />
   <WorkspaceProfilePic
     v-else-if="showWorkspaceIcon"
     :workspace-name="teamWorkspaceName"
@@ -40,9 +37,12 @@ import { isCloud } from '@/platform/distribution/types'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { compact = false } = defineProps<{ compact?: boolean }>()
+const { compact = false, inSidebar = false } = defineProps<{
+  compact?: boolean
+  inSidebar?: boolean
+}>()
 
-const { userPhotoUrl, userDisplayName, userEmail } = useCurrentUser()
+const { userPhotoUrl } = useCurrentUser()
 const { flags } = useFeatureFlags()
 const {
   workspaceName: teamWorkspaceName,
@@ -51,9 +51,6 @@ const {
 } = storeToRefs(useTeamWorkspaceStore())
 const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
 
-const monogram = computed(() =>
-  (userDisplayName.value || userEmail.value || '').trim().charAt(0)
-)
 const showWorkspaceSkeleton = computed(
   () => isCloud && initState.value === 'loading'
 )

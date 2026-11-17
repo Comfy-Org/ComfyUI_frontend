@@ -248,7 +248,7 @@ describe('CurrentUserButton', () => {
   })
 
   it.for(['personal', 'team'] as const)(
-    "shows the person's monogram in a %s workspace with the new billing UX",
+    'shows the workspace tile in a %s workspace with the new billing UX',
     (workspaceType) => {
       mockIsCloud.value = true
       vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
@@ -263,13 +263,36 @@ describe('CurrentUserButton', () => {
 
       renderComponent()
 
-      expect(screen.getByTestId('current-user-monogram')).toHaveTextContent('T')
-      expect(screen.queryByText('WorkspaceProfilePic')).not.toBeInTheDocument()
+      expect(screen.getByText('WorkspaceProfilePic')).toBeInTheDocument()
       expect(
         screen.queryByRole('img', { name: 'User Avatar' })
       ).not.toBeInTheDocument()
     }
   )
+
+  it('sizes the workspace tile and its click target for the sidebar', () => {
+    mockIsCloud.value = true
+    vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+    onTestFinished(() => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = false
+    })
+    useTeamWorkspaceStore().initState = 'ready'
+    Object.assign(useTeamWorkspaceStore(), {
+      isInPersonalWorkspace: false,
+      workspaceName: 'My Team'
+    })
+
+    renderComponent(CurrentUserPopoverWorkspaceStub, { side: 'right' })
+
+    expect(screen.getByText('WorkspaceProfilePic')).toHaveClass(
+      'size-6',
+      'text-xs'
+    )
+    expect(screen.getByRole('button', { name: 'Current user' })).toHaveClass(
+      'h-10',
+      'w-full'
+    )
+  })
 
   it('shows WorkspaceProfilePic for an active local team workspace', () => {
     useTeamWorkspaceStore().initState = 'ready'
