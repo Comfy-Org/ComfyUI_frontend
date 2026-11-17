@@ -2,11 +2,6 @@ import type { Page, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 interface PngMatchOptions {
-  /**
-   * Largest per-channel difference, 0–1, that still counts as matching.
-   * Matching renders differ by at most 3/255; a 1px misalignment shifts the
-   * background grid by 5–7/255.
-   */
   threshold?: number
   maxDiffPixelRatio?: number
 }
