@@ -5,9 +5,9 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { isCloud } from '@/platform/distribution/types'
 
-/** On local, re-reads plan, balance and capabilities on each return to this tab or window. */
-export function useRefreshBillingOnReturn(): void {
-  if (isCloud) return
+/** Re-reads plan, balance and capabilities on each return to this tab or window: always on local, on Cloud only with `includeCloud`. */
+export function useRefreshBillingOnReturn({ includeCloud = false } = {}): void {
+  if (isCloud && !includeCloud) return
   const billing = useBillingContext()
   onScopeDispose(
     registerRefreshOnReturn(async (returned) => {

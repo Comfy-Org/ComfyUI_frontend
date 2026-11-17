@@ -24,9 +24,9 @@ A user subscribes to a plan, changes plan mid-cycle, cancels, resumes before the
 
 Preconditions:
 
-- Doctor passes; signed in as an email-verified `@comfy.org` user; `flags.billingSdkSubscriptionRailEnabled` resolves as the scenario expects.
+- Doctor passes; signed in as an email-verified `@comfy.org` user; `flags.billingSdkRailEnabled` resolves true.
 - Stripe in test mode, card `4242 4242 4242 4242`. Confirm the TEST MODE banner before the first payment.
-- Both a personal and a team workspace available. S0 baseline plan name and renewal date recorded.
+- Both a personal and a team workspace available. Baseline plan name and renewal date recorded.
 
 - **Subscribe.** Choose a plan and complete checkout. The success screen names the plan chosen, and `Settings` agrees after a reload. Confirm the subscribe request ran on `fetch` with an `Idempotency-Key`.
 - **Change plan mid-cycle.** Switch to a different plan. The amount shown on the confirmation is what is actually charged. Verify against the provider receipt or the usage log, not just the dialog.

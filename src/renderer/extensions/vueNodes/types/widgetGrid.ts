@@ -4,6 +4,7 @@ import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetSizing } from '@comfyorg/graph-model/widgets'
 
 export interface WidgetSlotMetadata {
   index: number
@@ -28,7 +29,7 @@ export interface WidgetGridItem {
   inputRole?: 'socket' | 'autogrowGroup'
   handleContextMenu?: (e: PointerEvent) => void
   hasError?: boolean
-  hasLayoutSize?: boolean
+  readonly sizing?: WidgetSizing
   slotMetadata?: WidgetSlotMetadata
   /**
    * The widget's input is satisfied by an upstream link; the row renders

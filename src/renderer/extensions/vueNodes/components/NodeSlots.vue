@@ -63,7 +63,7 @@ import {
   linkedWidgetedInputs,
   nonWidgetedInputs
 } from '@/renderer/extensions/vueNodes/utils/nodeDataUtils'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
@@ -135,6 +135,7 @@ function isListedInput(node: LGraphNode, input: INodeInputSlot, index: number) {
 }
 
 const filteredInputs = computed(() => {
+  const app = useApp()
   const node = app.isGraphReady ? getNodeByState(app.rootGraph, nodeData) : null
   const inputs =
     unified || !node
