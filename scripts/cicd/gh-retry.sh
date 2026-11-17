@@ -23,12 +23,17 @@ trap 'rm -f "$stdout_file" "$stderr_file"' EXIT
 delay=$RETRY_DELAY_SECONDS
 attempt=1
 while true; do
-  if gh "$@" >"$stdout_file" 2>"$stderr_file"; then
+  # Capture status from the command itself, not from an `if` wrapping it:
+  # `if cmd; then ...; fi` with no `else` reports 0 as its OWN exit status
+  # once the condition is false and the branch is skipped, regardless of
+  # what `cmd` actually returned.
+  gh "$@" >"$stdout_file" 2>"$stderr_file"
+  status=$?
+  if ((status == 0)); then
     cat "$stdout_file"
     cat "$stderr_file" >&2
     exit 0
   fi
-  status=$?
   if ((attempt >= ATTEMPTS)) || ! is_rate_limited "$stderr_file"; then
     cat "$stdout_file"
     cat "$stderr_file" >&2
