@@ -168,6 +168,7 @@ export function useGrowableRegions({
     const stopRelease = useEventListener(handle, 'lostpointercapture', () => {
       stopMove()
       stopRelease()
+      onCommit()
     })
   }
 
