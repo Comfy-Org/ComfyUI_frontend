@@ -178,8 +178,17 @@ This ADR records how the API reaches widgets through those owners.
     then holds, and not for the pack's own `set`.
 19. `render` is called once, when the widget is on its node; `destroy` is
     chained on the widget's `onRemove`, after the host's own cleanup, and the
-    host runs it when the widget is removed and when its node is. Both are
+    host runs it when the widget is removed or when its node is. Both are
     called through the shared listener primitive, so a throw is reported.
+    That `destroy` (and a declared type's teardown) is called once relies on
+    the host fix in
+    [Comfy-Org/ComfyUI_frontend#23520](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23520),
+    which fixes #23476. Until it merges, `addWidget` in
+    `src/scripts/domWidget.ts` keeps calling a DOM widget's `onRemove` from
+    its node's `onRemoved` after `removeWidget` has already called it, so a
+    widget removed before its node has `destroy` called twice: once when it
+    is removed and again when the node is. The API does not guard against
+    this; the fix belongs in the host.
 20. `canvas(def)` is a mount whose element holds a `<canvas>`. `draw` gets the
     context scaled for the device pixel ratio, the size in CSS pixels, the
     theme, and the value accessor when `defaultValue` is given. It runs on

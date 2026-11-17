@@ -762,6 +762,7 @@ export interface WidgetSerializeEvent {
 /** What a widget is created from. */
 export interface WidgetDef {
   readonly type: string
+  /** May be empty; the Vue canvas does not show a widget with an empty name. */
   readonly name: string
   readonly value?: WidgetValue
   readonly options?: WidgetOptions
@@ -774,6 +775,7 @@ export interface WidgetDef {
 /** Options the host's widgets read. A widget type may read others. */
 export interface WidgetOptions {
   readonly [key: string]: unknown
+  /** A combo's choices: a list, or a function returning one, called with no arguments. */
   readonly values?: unknown
   readonly min?: number
   readonly max?: number
