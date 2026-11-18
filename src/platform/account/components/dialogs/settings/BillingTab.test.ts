@@ -2493,12 +2493,18 @@ const SIGNUP_RECOVERY: SubscriptionPaymentRecovery = {
 }
 
 describe('BillingTab plan not started banner', () => {
-  function serveSignupOperation() {
+  function serveSignupOperation(
+    paymentAction: Pick<
+      Awaited<ReturnType<typeof billingApi.getBillingOpStatus>>,
+      'action_url' | 'payment_intent_client_secret'
+    > = { action_url: 'https://invoice.stripe.example/i/signup' }
+  ) {
     vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
       id: 'op-signup',
       started_at: '2026-11-05T17:15:54Z',
       status: 'pending',
-      plan: { slug: 'creator-monthly', duration: 'MONTHLY', tier: 'CREATOR' }
+      plan: { slug: 'creator-monthly', duration: 'MONTHLY', tier: 'CREATOR' },
+      ...paymentAction
     })
   }
 
@@ -2516,6 +2522,22 @@ describe('BillingTab plan not started banner', () => {
     expect(
       within(banner).getByRole('button', { name: 'Finish payment' })
     ).toBeVisible()
+  })
+
+  it('keeps the banner without Finish payment when the operation serves only a client secret', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    serveSignupOperation({ payment_intent_client_secret: 'pi_signup_secret' })
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    await screen.findByText('Your Creator plan hasn’t started')
+    const banner = screen.getByTestId('billing-banner-planNotStarted')
+    expect(banner).toHaveTextContent('Finish paying to start it.')
+    expect(
+      within(banner).queryByRole('button', { name: 'Finish payment' })
+    ).not.toBeInTheDocument()
   })
 
   it('shows nothing on local ComfyUI even when the fact is served', () => {
