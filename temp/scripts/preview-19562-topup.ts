@@ -6,7 +6,8 @@ import {
   zBillingBalanceResponse,
   zBillingCapabilityDenials,
   zCreateTopupCheckoutResponse,
-  zHostedTopupCheckout
+  zHostedTopupCheckout,
+  zHostedTopupCheckoutList
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
@@ -155,6 +156,49 @@ async function cloudRequest(
   throw new TopUpError(`Cloud ${phase} returned HTTP ${result.status}${code}`)
 }
 
+async function verifyCreditGrant(
+  cloud: Page,
+  sessionId: string,
+  before?: number
+) {
+  phase = 'Cloud credit fulfillment'
+  const statusRoute = `/billing/topup/checkouts/${encodeURIComponent(sessionId)}`
+  const getStatus = async () =>
+    zHostedTopupCheckout.parse(await cloudRequest(cloud, statusRoute))
+  const deadline = Date.now() + 120_000
+  let status = await getStatus()
+  while (
+    ['open', 'payment_processing', 'credits_applying'].includes(status.state) &&
+    Date.now() < deadline
+  ) {
+    await wait(4_000)
+    status = await getStatus()
+  }
+  phase = 'updated balance read'
+  const after = balanceSchema.parse(
+    await cloudRequest(cloud, '/billing/balance')
+  )
+  console.log(
+    `Cloud checkout state ${status.state}. Balance ${after.amount_micros} ${after.currency} micros.`
+  )
+  if (
+    status.state !== 'fulfilled' ||
+    status.amount_cents !== BigInt(amountCents)
+  ) {
+    throw new TopUpError(`Cloud checkout ended in state ${status.state}`)
+  }
+  if (before !== undefined && after.amount_micros <= before) {
+    throw new TopUpError(
+      'Cloud reported fulfillment but the credit balance did not increase'
+    )
+  }
+  console.log(
+    before === undefined
+      ? 'Verified the existing $5 credit top-up without another submission.'
+      : `Verified the $5 credit top-up. Previous balance ${before} ${after.currency} micros.`
+  )
+}
+
 async function main() {
   const { SMOKE_ACCOUNT_EMAIL: email, SMOKE_ACCOUNT_PASSWORD: password } =
     process.env
@@ -219,6 +263,32 @@ async function main() {
     const before = balanceSchema.parse(
       await cloudRequest(cloud, '/billing/balance')
     )
+    phase = 'existing checkout status read'
+    const existing = zHostedTopupCheckoutList
+      .parse(await cloudRequest(cloud, '/billing/topup/checkouts'))
+      .checkouts.filter(
+        ({ amount_cents, session_id }) =>
+          amount_cents === BigInt(amountCents) &&
+          /^cs_test_[a-zA-Z0-9]+$/.test(session_id)
+      )
+    if (existing.length !== 1)
+      throw new TopUpError(
+        'Could not identify a single existing $5 Stripe test checkout'
+      )
+    const [priorCheckout] = existing
+    if (!priorCheckout)
+      throw new TopUpError('The existing Stripe test checkout is unavailable')
+    const priorStatus = zHostedTopupCheckout.parse(
+      await cloudRequest(
+        cloud,
+        `/billing/topup/checkouts/${encodeURIComponent(priorCheckout.session_id)}`
+      )
+    )
+    if (priorStatus.state !== 'open') {
+      await verifyCreditGrant(cloud, priorCheckout.session_id)
+      return
+    }
+    console.log('Verified the existing Stripe test checkout is open.')
     phase = 'top-up checkout creation'
     const checkout = zCreateTopupCheckoutResponse.parse(
       await cloudRequest(cloud, '/billing/topup/checkout', {
@@ -243,6 +313,7 @@ async function main() {
       !stripeCheckoutOrigins.has(destination.origin) ||
       !checkout.session_id ||
       !/^cs_test_[a-zA-Z0-9]+$/.test(checkout.session_id) ||
+      checkout.session_id !== priorCheckout.session_id ||
       !matchingCheckoutPath
     ) {
       throw new TopUpError(
@@ -333,6 +404,40 @@ async function main() {
       )
     }
     phase = 'Stripe test submission'
+    const buttonNames = await payment.evaluate(() =>
+      [...document.querySelectorAll('button')]
+        .filter((button) => button.getClientRects().length > 0)
+        .filter(
+          (button) =>
+            button.type === 'submit' ||
+            /^(Pay|Confirm)/i.test(button.textContent?.trim() ?? '')
+        )
+        .map((button) => ({
+          type: button.type,
+          disabled: button.disabled,
+          label: (button.getAttribute('aria-label') ?? button.textContent ?? '')
+            .trim()
+            .replace(/https?:\/\/\S+|\S+@\S+|\d{4,}/g, '[redacted]')
+            .slice(0, 90)
+        }))
+    )
+    console.log(
+      `Stripe checkout payment buttons ${JSON.stringify(buttonNames)}`
+    )
+    const submit = payment
+      .locator('button[type="submit"]')
+      .filter({
+        hasText: /^\s*(?:Pay(?!\s+with\b|Pal)|Confirm payment)/i,
+        visible: true
+      })
+      .or(
+        payment
+          .getByRole('button', {
+            name: /^(?:Pay(?:\s|$)(?!with\b)|Confirm payment)/i
+          })
+          .filter({ visible: true })
+      )
+    await submit.click({ trial: true, timeout: 8_000 })
     payment.on('response', async (confirmation) => {
       const url = new URL(confirmation.url())
       if (
@@ -354,41 +459,10 @@ async function main() {
       )
         console.log('Stripe acknowledged the test payment.')
     })
-    await payment
-      .getByRole('button', { name: /^Pay(?:\s+\$5(?:\.00)?(?:\s+USD)?)?$/i })
-      .click()
+    await submit.click({ timeout: 10_000, noWaitAfter: true })
     console.log('Submitted the Stripe test card ending in 4242 once.')
 
-    phase = 'Cloud credit fulfillment'
-    const deadline = Date.now() + 120_000
-    let status = await getStatus()
-    while (
-      ['open', 'payment_processing', 'credits_applying'].includes(
-        status.state
-      ) &&
-      Date.now() < deadline
-    ) {
-      await wait(4_000)
-      status = await getStatus()
-    }
-    if (
-      status.state !== 'fulfilled' ||
-      status.amount_cents !== BigInt(amountCents)
-    ) {
-      throw new TopUpError(`Cloud checkout ended in state ${status.state}`)
-    }
-    phase = 'updated balance read'
-    const after = balanceSchema.parse(
-      await cloudRequest(cloud, '/billing/balance')
-    )
-    console.log(
-      `Cloud checkout fulfilled. Balance changed from ${before.amount_micros} to ${after.amount_micros} ${after.currency} micros.`
-    )
-    if (after.amount_micros <= before.amount_micros) {
-      throw new TopUpError(
-        'Cloud reported fulfillment but the credit balance did not increase'
-      )
-    }
+    await verifyCreditGrant(cloud, checkout.session_id, before.amount_micros)
   } finally {
     await browser.close()
   }
