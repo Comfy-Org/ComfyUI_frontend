@@ -34,7 +34,6 @@
   <MenuHamburger />
   <TourOverlay v-if="graphReady" />
   <FirstRunTour />
-  <!-- DES-1355 prototype: the tune panel (explore code). -->
   <Des1355Tune />
 </template>
 

@@ -404,6 +404,14 @@ export function registerAgentPanelExtension(): void {
   registered = true
 }
 
+function prototypeForcesAgentOn(): boolean {
+  try {
+    return localStorage.getItem('proto.agentOn') === '1'
+  } catch {
+    return false
+  }
+}
+
 function setupFlagGate(
   loadConsentIfEligible: () => void,
   openWhenStartupDecided: () => void
@@ -412,8 +420,7 @@ function setupFlagGate(
   const devForcedOn =
     (import.meta.env.MODE === 'development' &&
       import.meta.env.VITE_AGENT_STANDALONE === 'true') ||
-    // DES-1355 prototype: the panel on without an agent service (tune menu).
-    localStorage.getItem('proto.agentOn') === '1'
+    prototypeForcesAgentOn()
 
   watch(
     () =>

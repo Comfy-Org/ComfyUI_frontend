@@ -18,7 +18,12 @@
       <div
         v-if="!isOverlay"
         data-testid="agent-panel-resize-handle"
-        class="absolute top-0 left-0 z-10 h-full w-[5px] cursor-col-resize transition-colors delay-300 duration-200 hover:bg-primary data-[resizing=true]:bg-primary"
+        :class="
+          cn(
+            'absolute top-0 z-10 h-full w-[5px] cursor-col-resize transition-colors delay-300 duration-200 hover:bg-primary data-[resizing=true]:bg-primary',
+            handleSide === 'right' ? 'right-0' : 'left-0'
+          )
+        "
         :data-resizing="isResizing"
         @pointerdown="onResizeStart"
         @lostpointercapture="isResizing = false"
@@ -133,8 +138,9 @@ function retryMount(): void {
 }
 
 /** Set by the parent that lays out both this panel and its left neighbour. */
-const { hasOpaqueNeighbor = false } = defineProps<{
+const { hasOpaqueNeighbor = false, handleSide = 'left' } = defineProps<{
   hasOpaqueNeighbor?: boolean
+  handleSide?: 'left' | 'right'
 }>()
 
 const agentPanelStore = useAgentPanelStore()
@@ -177,7 +183,10 @@ function onResizeStart(e: PointerEvent): void {
 
 useEventListener(document, 'pointermove', (e: PointerEvent) => {
   if (!isResizing.value) return
-  agentPanelStore.setWidth(resizeStartWidth + (resizeStartX - e.clientX))
+  const dragged = e.clientX - resizeStartX
+  agentPanelStore.setWidth(
+    resizeStartWidth + (handleSide === 'right' ? dragged : -dragged)
+  )
 })
 
 function stopResizing(): void {

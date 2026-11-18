@@ -86,14 +86,16 @@
               class="flex flex-col"
             >
               <div
-                :class="!graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)'"
+                ref="topMenuRef"
+                :class="
+                  cn(
+                    !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)',
+                    agentInside && 'relative z-1'
+                  )
+                "
               >
                 <slot name="topmenu" :sidebar-panel-visible />
               </div>
-
-              <!-- DES-1355 prototype: with the properties panel open, the agent
-                   sits inside it, between the canvas and the panel, below the
-                   top menu, so the run toolbar keeps its place. -->
               <div
                 :class="
                   cn(
@@ -143,11 +145,19 @@
                     <slot name="bottom-panel" />
                   </SplitterPanel>
                 </SplitterGroup>
-                <slot
+                <div
                   v-if="agentInside"
-                  name="agent-panel"
-                  :has-opaque-neighbor="false"
-                />
+                  class="flex"
+                  :style="{ marginTop: `${agentLift}px` }"
+                >
+                  <slot
+                    name="agent-panel"
+                    :has-opaque-neighbor="false"
+                    :handle-side="
+                      sidebarLocation === 'right' ? 'right' : 'left'
+                    "
+                  />
+                </div>
               </div>
             </SplitterPanel>
 
@@ -205,6 +215,7 @@
         v-if="!agentInside"
         name="agent-panel"
         :has-opaque-neighbor="agentPanelHasOpaqueNeighbor"
+        handle-side="left"
       />
     </div>
   </div>
@@ -212,7 +223,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { useElementSize } from '@vueuse/core'
+import { useElementBounding, useElementSize } from '@vueuse/core'
 import { debounce } from 'es-toolkit/compat'
 import { storeToRefs } from 'pinia'
 import {
@@ -302,13 +313,26 @@ const graphMeetsAgentPanel = computed(
   () => agentPanelOpen.value && !agentPanelHasOpaqueNeighbor.value
 )
 
-// DES-1355 prototype: the agent docks inside the properties panel while it's
-// open (tune: dock "inside"); otherwise it docks as today.
 const agentInside = computed(
   () =>
     protoOptions.value.dock === 'inside' &&
     oppositeSidePanelVisible.value &&
     !focusMode.value
+)
+
+const topMenuRef = ref<HTMLElement>()
+const actionBarCard = computed(
+  () =>
+    topMenuRef.value?.querySelector<HTMLElement>(
+      '[data-testid="action-bar-card"]'
+    ) ?? null
+)
+const { bottom: topMenuBottom } = useElementBounding(topMenuRef)
+const { bottom: actionBarBottom } = useElementBounding(actionBarCard)
+const agentLift = computed(() =>
+  actionBarCard.value
+    ? Math.min(0, actionBarBottom.value + 4 - topMenuBottom.value)
+    : 0
 )
 
 const sidebarPanelVisible = computed(
