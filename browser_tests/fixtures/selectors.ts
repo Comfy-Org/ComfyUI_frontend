@@ -126,6 +126,8 @@ export const TestIds = {
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
+    topMenuActions: 'top-menu-actionbars',
+    cloudButton: 'cloud-button',
     freeTierQuota: 'free-tier-quota',
     queueInlineProgress: 'queue-inline-progress',
     queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
@@ -287,7 +289,8 @@ export const TestIds = {
   user: {
     currentUserButton: 'current-user-button',
     currentUserIndicator: 'current-user-indicator',
-    currentUserPopover: 'current-user-popover'
+    currentUserPopover: 'current-user-popover',
+    logoutMenuItem: 'logout-menu-item'
   },
   queue: {
     jobHistorySidebar: 'job-history-sidebar',
