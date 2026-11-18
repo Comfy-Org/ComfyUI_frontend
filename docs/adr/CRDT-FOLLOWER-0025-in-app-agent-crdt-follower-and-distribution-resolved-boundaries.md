@@ -451,7 +451,13 @@ user makes it and the moment the host answers for its op.
   different value keeps its own hold through an older write's echo or
   rejection. The hold tracks values, not writes: when an older in-flight write
   carries the same value as the newest one (25, then 30, then 25), the older
-  write's echo or settlement ends the newest write's hold.
+  write's echo or settlement ends the newest write's hold. When an op settles
+  as `unconfirmed`, `unacknowledged` or `undeliverable`, its hold ends without
+  a read-back. A conflicting frame consumed while the hold was active is not
+  re-applied. The canvas keeps the local value until the next turn's draft
+  posts it
+  ([CRDT-AUTHORITY-0035](CRDT-AUTHORITY-0035-human-canvas-authority-and-draft-reconciliation.md)
+  decision 3).
 - **Never shadowed, replayed, or re-stamped.** Pending ops are not applied to a
   copy of the graph, are not re-applied to the canvas over a later frame or
   after a lineage reset, and keep the `op_id` and stamp they were minted with.
