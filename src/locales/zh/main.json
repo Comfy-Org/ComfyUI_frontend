@@ -1721,6 +1721,12 @@
     "reload": "重新加载",
     "retry": "重试",
     "retryLabel": "重试启动 {deployment}",
+    "runBlocked": {
+      "failed": "此部署失败了。点击以切换。",
+      "notReady": "此部署尚未就绪。点击以切换。",
+      "starting": "此部署正在启动。点击以切换。",
+      "stopped": "此部署已停止。点击以切换。"
+    },
     "runOn": "运行于",
     "runningOn": "运行于",
     "runsThisWorkflow": "运行此工作流",
