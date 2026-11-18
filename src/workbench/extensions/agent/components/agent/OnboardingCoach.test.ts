@@ -161,19 +161,29 @@ describe('OnboardingCoach', () => {
     expect(screen.queryByRole('button', { name: 'Skip' })).toBeNull()
   })
 
-  it.for([...STEPS.keys()].slice(0, LAST))(
-    'dismisses through Skip from card index %i',
-    async (index) => {
-      const user = userEvent.setup()
-      mount()
-      await screen.findByRole('dialog', { name: STEPS[0].title })
-      for (let i = 0; i < index; i++)
-        await user.click(screen.getByRole('button', { name: 'Next' }))
-      await user.click(screen.getByRole('button', { name: 'Skip' }))
-      expect(screen.queryByRole('dialog')).toBeNull()
-      expect(localStorage.getItem(KEY)).toBe('true')
-    }
-  )
+  it('dismisses through Skip on card 1', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(localStorage.getItem(KEY)).toBe('true')
+  })
+
+  it('dismisses through Skip on card 2', async () => {
+    const user = userEvent.setup()
+    mount()
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await screen.findByRole('dialog', { name: STEPS[1].title })
+
+    await user.click(screen.getByRole('button', { name: 'Skip' }))
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(localStorage.getItem(KEY)).toBe('true')
+  })
 
   it('returns to the previous card without completing the tour', async () => {
     const user = userEvent.setup()
@@ -225,25 +235,30 @@ describe('OnboardingCoach', () => {
     expect(skip).toHaveFocus()
   })
 
+  async function expectPlacedOnTarget(step: CoachStep) {
+    const dialog = await screen.findByRole('dialog', { name: step.title })
+    const targetRect = rectangles[step.target.slice(1)]
+    await waitFor(() =>
+      expect(cardPlacement(dialog, targetRect)).toEqual({
+        inViewport: true,
+        besideTarget: true
+      })
+    )
+    const spotlight = screen.getByTestId('agent-coach-spotlight')
+    expect(parseFloat(spotlight.style.left)).toBe(targetRect.left)
+    expect(parseFloat(spotlight.style.top)).toBe(targetRect.top)
+    expect(parseFloat(spotlight.style.width)).toBe(targetRect.width)
+  }
+
   it('places each card against its intended surface and moves the spotlight with it', async () => {
     const user = userEvent.setup()
     mount()
-    for (const [index, step] of STEPS.entries()) {
-      const dialog = await screen.findByRole('dialog', { name: step.title })
-      const targetRect = rectangles[step.target.slice(1)]
-      await waitFor(() =>
-        expect(cardPlacement(dialog, targetRect)).toEqual({
-          inViewport: true,
-          besideTarget: true
-        })
-      )
-      const spotlight = screen.getByTestId('agent-coach-spotlight')
-      expect(parseFloat(spotlight.style.left)).toBe(targetRect.left)
-      expect(parseFloat(spotlight.style.top)).toBe(targetRect.top)
-      expect(parseFloat(spotlight.style.width)).toBe(targetRect.width)
-      if (index < LAST)
-        await user.click(screen.getByRole('button', { name: 'Next' }))
-    }
+
+    await expectPlacedOnTarget(STEPS[0])
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectPlacedOnTarget(STEPS[1])
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await expectPlacedOnTarget(STEPS[2])
   })
 
   it.for(STEPS)(
@@ -366,14 +381,16 @@ describe('OnboardingCoach', () => {
 
   it('shows the target in its hover state with its tooltip inside the spotlight', async () => {
     const user = userEvent.setup()
-    const steps = STEPS.map((step, index) =>
-      index === LAST ? { ...step, tooltip: 'Show chat history' } : step
-    )
+    const steps = [
+      STEPS[0],
+      STEPS[1],
+      { ...STEPS[LAST], tooltip: 'Show chat history' }
+    ]
     mount(steps)
     const history = screen.getByTestId('history')
     await screen.findByRole('dialog', { name: STEPS[0].title })
-    for (let i = 0; i < LAST; i++)
-      await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
     await screen.findByRole('dialog', { name: STEPS[LAST].title })
 
     expect(screen.getByRole('tooltip')).toHaveTextContent('Show chat history')
@@ -506,10 +523,9 @@ describe('OnboardingCoach', () => {
     const user = userEvent.setup()
     mount()
     await screen.findByRole('dialog', { name: STEPS[0].title })
-    for (const index of STEPS.keys())
-      await user.click(
-        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
-      )
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
 
     // `reportedShown` latches per tour. A replay reuses the mounted component,
@@ -524,10 +540,9 @@ describe('OnboardingCoach', () => {
     const user = userEvent.setup()
     mount()
     await screen.findByRole('dialog', { name: STEPS[0].title })
-    for (const index of STEPS.keys())
-      await user.click(
-        screen.getByRole('button', { name: index === LAST ? 'Done' : 'Next' })
-      )
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    await user.click(screen.getByRole('button', { name: 'Done' }))
     expect(telemetry().trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
   })
 
