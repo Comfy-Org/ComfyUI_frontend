@@ -50,7 +50,7 @@ async function readRollout(
       return
     }
     const served = zOpenOnCloudRollout.safeParse(await response.json())
-    if (signal.aborted) return
+    signal.throwIfAborted()
     if (!served.success) {
       reportRolloutReadFailure(new Error('Invalid Cloud rollout response'))
       return

@@ -224,10 +224,12 @@ export function useFeatureFlags() {
         ? remoteConfig.value.open_on_cloud_public_enabled
         : (localOpenOnCloudRollout.value?.open_on_cloud_public_enabled ??
           remoteConfig.value.open_on_cloud_public_enabled)
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
-        publicRollout ?? this.openOnCloudAccountEnabled
-      )
+      return publicRollout === undefined
+        ? this.openOnCloudAccountEnabled
+        : resolveStrictBooleanFlag(
+            ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+            publicRollout
+          )
     },
     get openOnCloudAccountEnabled() {
       const served = isCloud
