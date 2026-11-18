@@ -847,6 +847,46 @@ describe('WorkflowTabs selection and overflow', () => {
   })
 
   it.for([
+    {
+      edge: 'right',
+      initialScrollLeft: 661,
+      tabRect: new DOMRect(503.375, 0, 201.015625, 37),
+      expectedScrollLeft: 662
+    },
+    {
+      edge: 'left',
+      initialScrollLeft: 100,
+      tabRect: new DOMRect(3.625, 0, 201.015625, 37),
+      expectedScrollLeft: 99
+    }
+  ])(
+    'nudges scrollLeft past a subpixel $edge overhang after scrollIntoView',
+    async ({ initialScrollLeft, tabRect, expectedScrollLeft }) => {
+      const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+      renderComponent()
+      await waitFor(() => expect(overflowObservers).toHaveLength(1))
+      await waitFor(() =>
+        expect(overflowObservers[0].checkOverflow).toHaveBeenCalled()
+      )
+      await nextTick()
+
+      const tabStrip = screen.getByTestId('workflow-tab-strip')
+      tabStrip.scrollLeft = initialScrollLeft
+      vi.spyOn(tabStrip, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(4, 0, 700, 37)
+      )
+      const secondTab = screen.getByRole('tab', { name: 'Second workflow' })
+      vi.spyOn(secondTab, 'getBoundingClientRect').mockReturnValue(tabRect)
+
+      scrollIntoView.mockClear()
+      useWorkflowStore().activeWorkflow = secondWorkflow
+
+      await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
+      expect(tabStrip.scrollLeft).toBe(expectedScrollLeft)
+    }
+  )
+
+  it.for([
     { propertyName: 'flex-shrink', resizesTabs: true },
     { propertyName: 'background-color', resizesTabs: false }
   ])(

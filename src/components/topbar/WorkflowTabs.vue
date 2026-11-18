@@ -21,7 +21,12 @@
         @update:model-value="openWorkflowByPath"
       >
         <TabsList
-          :class="cn('workflow-tabs h-full flex-nowrap gap-1', props.class)"
+          :class="
+            cn(
+              'workflow-tabs h-full flex-nowrap gap-1 after:-ml-1 after:h-px after:w-px after:shrink-0 after:content-[\'\']',
+              props.class
+            )
+          "
         >
           <WorkflowTab
             v-for="(option, index) in options"
@@ -146,9 +151,19 @@ function handleWheel(event: WheelEvent) {
 
 async function revealActiveTab() {
   await nextTick()
-  tabStripRef.value
-    ?.querySelector('[role="tab"][aria-selected="true"]')
-    ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  const strip = tabStripRef.value
+  const activeTab = strip?.querySelector<HTMLElement>(
+    '[role="tab"][aria-selected="true"]'
+  )
+  if (!strip || !activeTab) return
+  activeTab.scrollIntoView({ block: 'nearest', inline: 'nearest' })
+  const stripRect = strip.getBoundingClientRect()
+  const tabRect = activeTab.getBoundingClientRect()
+  if (tabRect.left < stripRect.left) {
+    strip.scrollLeft -= Math.ceil(stripRect.left - tabRect.left)
+  } else if (tabRect.right > stripRect.right) {
+    strip.scrollLeft += Math.ceil(tabRect.right - stripRect.right)
+  }
 }
 
 const { isOverflowing, checkOverflow } = useOverflowObserver(tabStripRef, {
