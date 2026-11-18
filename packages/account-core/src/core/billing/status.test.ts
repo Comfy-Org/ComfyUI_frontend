@@ -92,7 +92,7 @@ describe('createBillingStatusReader', () => {
     { name: 'a known', tier: 'TEAM', expected: 'TEAM' },
     { name: 'an unrecognized', tier: 'FUTURE_TIER', expected: undefined }
   ])(
-    'keeps the status usable with $name subscription tier',
+    'reads $name subscription tier and keeps the status usable',
     async ({ tier, expected }) => {
       const { scopeSource } = fakeSession()
       const { transport } = fakeTransport([
@@ -116,7 +116,11 @@ describe('createBillingStatusReader', () => {
     { name: 'malformed core field', body: { ...STATUS, has_funds: 'true' } },
     { name: 'missing core field', body: { ...STATUS, is_active: undefined } },
     { name: 'null tier', body: { ...STATUS, subscription_tier: null } },
-    { name: 'numeric tier', body: { ...STATUS, subscription_tier: 3 } }
+    { name: 'numeric tier', body: { ...STATUS, subscription_tier: 3 } },
+    {
+      name: 'malformed core field beside an unrecognized tier',
+      body: { ...STATUS, subscription_tier: 'FUTURE_TIER', has_funds: 'true' }
+    }
   ])('rejects a $name without replacing valid status', async ({ body }) => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(STATUS), httpOk(body)])

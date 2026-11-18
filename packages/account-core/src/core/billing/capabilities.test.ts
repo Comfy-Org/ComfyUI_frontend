@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import type { SessionSnapshot } from '#/core/session'
 import type { AccountCredential } from '#/core/sessionContracts'
@@ -215,8 +215,7 @@ describe('createCapabilitiesReader', () => {
 
       const result = await reader.read()
 
-      expect(result.status).toBe('ok')
-      if (result.status !== 'ok') return
+      assert(result.status === 'ok')
       expect(result.value).toMatchObject(expected)
     }
   )

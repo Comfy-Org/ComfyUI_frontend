@@ -1,4 +1,7 @@
-import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zBillingStatusResponse,
+  zSubscriptionTier
+} from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import type { BillingResult, BillingTransport } from './billingContracts'
@@ -7,13 +10,23 @@ import { createScopedReader } from './scopedReader'
 
 export const BILLING_STATUS_ROUTE = '/billing/status'
 
-const BillingStatusBodySchema = zBillingStatusResponse.extend({
-  ended_at: zBillingStatusResponse.shape.ended_at.optional(),
-  next_charge: zBillingStatusResponse.shape.next_charge.optional(),
-  subscription_tier: zBillingStatusResponse.shape.subscription_tier.or(
-    z.string().transform(() => undefined)
+const RecognizedTierSchema = z
+  .unknown()
+  .transform((tier) =>
+    typeof tier === 'string' && !zSubscriptionTier.safeParse(tier).success
+      ? undefined
+      : tier
   )
-})
+  .optional()
+
+const BillingStatusBodySchema = z
+  .looseObject({ subscription_tier: RecognizedTierSchema })
+  .pipe(
+    zBillingStatusResponse.extend({
+      ended_at: zBillingStatusResponse.shape.ended_at.optional(),
+      next_charge: zBillingStatusResponse.shape.next_charge.optional()
+    })
+  )
 
 export type BillingStatusData = z.infer<typeof BillingStatusBodySchema>
 
