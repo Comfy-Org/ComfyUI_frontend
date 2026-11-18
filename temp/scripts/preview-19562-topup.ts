@@ -71,7 +71,6 @@ async function captureStripeForm(page: Page, name: string) {
   await page
     .screenshot({
       path: `temp/preview-checkout-evidence/${name}.png`,
-      fullPage: true,
       mask: page
         .frames()
         .flatMap((frame) => [
@@ -409,6 +408,13 @@ async function main() {
       .locator('input#cardCvc, input[name="cvc"], input[autocomplete="cc-csc"]')
       .first()
       .fill('123', { timeout: 8_000 })
+    const enteredNumber = await cardFrame
+      .locator(cardNumberSelector)
+      .first()
+      .inputValue()
+    if (enteredNumber.replace(/\D/g, '') !== '4242424242424242') {
+      throw new TopUpError('Stripe did not retain the 4242 test card number')
+    }
     const saveInformation = await visibleStripeControl(payment, (frame) =>
       frame.getByRole('checkbox', {
         name: 'Save my information for faster checkout',
@@ -443,10 +449,22 @@ async function main() {
     )
     await manualAddress?.click()
     for (const [selector, value] of [
-      ['input#billingName', 'Cloud Preview Smoke'],
-      ['input#billingAddressLine1', '123 Test Street'],
-      ['input#billingLocality', 'Portland'],
-      ['input#billingPostalCode', '97201']
+      [
+        'input#billingName, input[autocomplete="cc-name"], input[autocomplete="billing name"]',
+        'Cloud Preview Smoke'
+      ],
+      [
+        'input#billingAddressLine1, input[autocomplete="billing address-line1"], input[autocomplete="address-line1"]',
+        '123 Test Street'
+      ],
+      [
+        'input#billingLocality, input[autocomplete="billing address-level2"], input[autocomplete="address-level2"]',
+        'Portland'
+      ],
+      [
+        'input#billingPostalCode, input[autocomplete="billing postal-code"], input[autocomplete="postal-code"]',
+        '97201'
+      ]
     ]) {
       const field = await visibleStripeControl(payment, (frame) =>
         frame.locator(selector)
@@ -540,10 +558,12 @@ async function main() {
         (url.origin !== 'https://api.stripe.com' &&
           !stripeCheckoutOrigins.has(url.origin)) ||
         !url.pathname.endsWith('/confirm') ||
-        confirmation.request().method() !== 'POST' ||
-        !confirmation.ok()
+        confirmation.request().method() !== 'POST'
       )
         return
+      console.log(
+        `Stripe confirmation endpoint returned HTTP ${confirmation.status()}.`
+      )
       const result = stripeConfirmationSchema.safeParse(
         await confirmation.json().catch(() => null)
       )
@@ -561,6 +581,49 @@ async function main() {
     }
     await submit.click({ timeout: 10_000, noWaitAfter: true })
     console.log('Submitted the Stripe test card ending in 4242 once.')
+    await wait(3000)
+    if (stripeCheckoutOrigins.has(new URL(payment.url()).origin)) {
+      const messages = (
+        await Promise.all(
+          stripeFrames(payment).map((frame) =>
+            frame
+              .evaluate(() =>
+                [
+                  ...document.querySelectorAll(
+                    '[role="alert"],[aria-invalid="true"],iframe[title]'
+                  )
+                ]
+                  .filter((element) => element.getClientRects().length > 0)
+                  .map((element) => ({
+                    field:
+                      element.getAttribute('autocomplete') ??
+                      element.getAttribute('name'),
+                    text: (
+                      element.getAttribute('title') ??
+                      element.textContent ??
+                      ''
+                    )
+                      .trim()
+                      .replace(/https?:\/\/\S+|\S+@\S+|\d{4,}/g, '[redacted]')
+                      .slice(0, 120)
+                  }))
+                  .filter(
+                    ({ field, text }) =>
+                      field ||
+                      /captcha|verify|address|postal|card|number|invalid|required/i.test(
+                        text
+                      )
+                  )
+              )
+              .catch(() => [])
+          )
+        )
+      ).flat()
+      console.log(
+        `Stripe post-submit validation ${JSON.stringify(messages.slice(0, 15))}`
+      )
+      await captureStripeForm(payment, 'stripe-form-after-pay')
+    }
 
     await verifyCreditGrant(cloud, checkout.session_id, before.amount_micros)
   } finally {
