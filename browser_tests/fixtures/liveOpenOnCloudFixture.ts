@@ -6,7 +6,6 @@ import { z } from 'zod'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { LoginButton } from '@e2e/fixtures/components/LoginButton'
 import { OpenOnCloudDialog } from '@e2e/fixtures/components/OpenOnCloudDialog'
-import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 const cloudOriginSchema = z
@@ -88,7 +87,6 @@ export const liveOpenOnCloudLoginFixture = liveOpenOnCloudFixture.extend({
 export const liveOpenOnCloudAcceptanceFixture = liveOpenOnCloudFixture.extend<{
   loginButton: LoginButton
   openOnCloudDialog: OpenOnCloudDialog
-  signIn: () => Promise<void>
   checkCloudCompatibility: () => Promise<CloudWorkflowCompatibility>
 }>({
   loginButton: async ({ page }, use) => {
@@ -96,39 +94,6 @@ export const liveOpenOnCloudAcceptanceFixture = liveOpenOnCloudFixture.extend<{
   },
   openOnCloudDialog: async ({ page }, use) => {
     await use(new OpenOnCloudDialog(page))
-  },
-  signIn: async ({ comfyPage, cloudOrigin, loginButton }, use) => {
-    await use(async () => {
-      const email = process.env.OPEN_ON_CLOUD_ENABLED_EMAIL
-      const password = process.env.OPEN_ON_CLOUD_ENABLED_PASSWORD
-      if (!email || !password) {
-        throw new Error(
-          'Set OPEN_ON_CLOUD_ENABLED_EMAIL and OPEN_ON_CLOUD_ENABLED_PASSWORD'
-        )
-      }
-
-      const { page, currentUserPopover } = comfyPage
-      const dialog = new SignInDialog(page)
-      await loginButton.trigger.click()
-      const [response] = await Promise.all([
-        page.waitForResponse(async (response) => {
-          const request = response.request()
-          return (
-            response.url() === `${cloudOrigin}/api/features` &&
-            request.method() === 'GET' &&
-            Boolean(await request.headerValue('authorization'))
-          )
-        }),
-        dialog.submitEmailAndPassword(email, password)
-      ])
-      expect(response.status()).toBe(200)
-      expect(await response.serverAddr()).not.toBeNull()
-      expect(await response.json()).toMatchObject({
-        open_on_cloud_enabled: true
-      })
-      await expect(currentUserPopover.trigger).toBeVisible()
-      await expect(dialog.emailInput).toBeHidden()
-    })
   },
   checkCloudCompatibility: async ({ comfyPage, cloudOrigin }, use) => {
     await use(async () => {

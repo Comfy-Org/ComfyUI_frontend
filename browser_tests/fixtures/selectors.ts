@@ -289,8 +289,7 @@ export const TestIds = {
   user: {
     currentUserButton: 'current-user-button',
     currentUserIndicator: 'current-user-indicator',
-    currentUserPopover: 'current-user-popover',
-    logoutMenuItem: 'logout-menu-item'
+    currentUserPopover: 'current-user-popover'
   },
   queue: {
     jobHistorySidebar: 'job-history-sidebar',
