@@ -1,0 +1,78 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { describe, expect, it } from 'vitest'
+import { defineComponent } from 'vue'
+
+import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
+
+import SharedNodeTooltip from './SharedNodeTooltip.vue'
+
+const Host = defineComponent({
+  components: { SharedNodeTooltip, TooltipProvider },
+  template: `
+    <div>
+      <TooltipProvider>
+        <div data-node-tooltip="First tip">first</div>
+        <div data-node-tooltip="Second tip" data-node-tooltip-side="left">second</div>
+        <div>plain</div>
+        <SharedNodeTooltip />
+      </TooltipProvider>
+    </div>
+  `
+})
+
+function renderHost() {
+  render(Host)
+  return userEvent.setup()
+}
+
+describe('SharedNodeTooltip', () => {
+  it('shows the text of the hovered element', async () => {
+    const user = renderHost()
+
+    await user.hover(screen.getByText('first'))
+
+    expect(await screen.findByRole('tooltip')).toHaveTextContent('First tip')
+    expect(screen.getByText('first')).toHaveAccessibleDescription('First tip')
+  })
+
+  it('follows the pointer to another element', async () => {
+    const user = renderHost()
+
+    await user.hover(screen.getByText('first'))
+    await screen.findByRole('tooltip')
+    await user.hover(screen.getByText('second'))
+
+    await waitFor(() =>
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Second tip')
+    )
+    expect(screen.getByTestId('tooltip-content')).toHaveAttribute(
+      'data-side',
+      'left'
+    )
+  })
+
+  it('stays closed over elements without a tooltip', async () => {
+    const user = renderHost()
+
+    await user.hover(screen.getByText('first'))
+    await screen.findByRole('tooltip')
+    await user.hover(screen.getByText('plain'))
+
+    await waitFor(() =>
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+    )
+  })
+
+  it('closes on press and stays closed until the pointer leaves', async () => {
+    const user = renderHost()
+    const first = screen.getByText('first')
+
+    await user.hover(first)
+    await screen.findByRole('tooltip')
+    await user.click(first)
+    await user.pointer({ target: first, coords: { x: 5, y: 5 } })
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+})

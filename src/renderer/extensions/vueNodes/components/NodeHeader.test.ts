@@ -202,25 +202,25 @@ describe('NodeHeader.vue', () => {
   )
 
   describe('Tooltips', () => {
-    it('shows the node description for its title', async () => {
-      const { user } = renderHeader({
+    it('shows the node description for its title', () => {
+      renderHeader({
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
-      await user.hover(screen.getByTestId('node-title'))
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      expect(screen.getByTestId('node-title')).toHaveAttribute(
+        'data-node-tooltip',
         'Advanced sampling node for diffusion models'
       )
     })
 
     it('describes the new type when the node data changes type', async () => {
-      const { user, rerender } = renderHeader({
+      const { rerender } = renderHeader({
         nodeData: makeNodeData({ type: 'UnknownNode' })
       })
       await rerender({ nodeData: makeNodeData({ type: 'KSampler' }) })
 
-      await user.hover(screen.getByTestId('node-title'))
-      expect(await screen.findByRole('tooltip')).toHaveTextContent(
+      expect(screen.getByTestId('node-title')).toHaveAttribute(
+        'data-node-tooltip',
         'Advanced sampling node for diffusion models'
       )
     })
@@ -230,15 +230,16 @@ describe('NodeHeader.vue', () => {
         nodeData: makeNodeData({ type: 'KSampler' })
       })
 
-      await user.hover(screen.getByTestId('node-title'))
-      expect(await screen.findByRole('tooltip')).toBeInTheDocument()
+      expect(screen.getByTestId('node-title')).toHaveAttribute(
+        'data-node-tooltip'
+      )
 
       await user.dblClick(screen.getByTestId('node-title'))
-      await user.unhover(screen.getByTestId('node-title'))
-      await user.hover(screen.getByTestId('node-title'))
 
       expect(screen.getByTestId('node-title-input')).toBeInTheDocument()
-      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+      expect(screen.getByTestId('node-title')).not.toHaveAttribute(
+        'data-node-tooltip'
+      )
     })
   })
 })
