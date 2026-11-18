@@ -1216,8 +1216,6 @@ export class ComfyApp implements IComfyApp {
       const data = options.resolveGraphData
         ? options.resolveGraphData()
         : graphData
-      // A resolver with nothing to load skips, rather than loading the
-      // default workflow over the canvas.
       if (options.resolveGraphData && !data) return false
       return this.loadGraphDataNow(data, clean, restore_view, workflow, options)
     })

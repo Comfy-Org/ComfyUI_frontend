@@ -170,30 +170,46 @@ function resetAndRestoreTracker(
   return true
 }
 
+interface SavedBaseline {
+  state: ComfyWorkflowJSON | undefined
+  content: string | null | undefined
+}
+
+function captureSavedBaseline(workflow: ComfyWorkflow): SavedBaseline {
+  return {
+    state: workflow.changeTracker?.initialState,
+    content: workflow.originalContent
+  }
+}
+
+function restoreSavedBaseline(
+  workflow: ComfyWorkflow,
+  saved: SavedBaseline
+): void {
+  const tracker = workflow.changeTracker
+  if (
+    tracker &&
+    saved.state &&
+    tracker.initialState !== saved.state &&
+    workflow.originalContent === saved.content
+  ) {
+    tracker.initialState = saved.state
+    workflow.isModified = !ChangeTracker.graphEqual(
+      saved.state,
+      tracker.activeState
+    )
+  }
+}
+
 async function keepingSavedBaseline<T>(
   workflow: ComfyWorkflow,
-  load: () => Promise<T>,
-  wasModified: () => boolean = () => true
+  load: () => Promise<T>
 ): Promise<T> {
-  const savedState = workflow.changeTracker?.initialState
-  const savedContent = workflow.originalContent
+  const saved = captureSavedBaseline(workflow)
   try {
     return await load()
   } finally {
-    const tracker = workflow.changeTracker
-    if (
-      wasModified() &&
-      tracker &&
-      savedState &&
-      tracker.initialState !== savedState &&
-      workflow.originalContent === savedContent
-    ) {
-      tracker.initialState = savedState
-      workflow.isModified = !ChangeTracker.graphEqual(
-        savedState,
-        tracker.activeState
-      )
-    }
+    restoreSavedBaseline(workflow, saved)
   }
 }
 
@@ -601,7 +617,7 @@ export const useWorkflowService = () => {
     workflow.isModified = wasModified
   }
 
-  function loadOpenedGraph(
+  async function loadOpenedGraph(
     workflow: ComfyWorkflow,
     {
       force,
@@ -619,44 +635,41 @@ export const useWorkflowService = () => {
     attempt: { skipped: boolean }
   ) {
     const reloadsCanvas = workflowStore.isActive(workflow)
-    // Whether the graph had unsaved edits when it was snapshotted. A reload of
-    // the canvas snapshots at its turn in the graph-load queue, so this is
-    // read then, not now.
-    let modifiedAtSnapshot = false
+    let saved: SavedBaseline | undefined
     const snapshot = () => {
       workflow.changeTracker?.prepareForSave()
-      modifiedAtSnapshot = workflow.isModified
+      saved =
+        keepSavedBaseline && workflow.isModified
+          ? captureSavedBaseline(workflow)
+          : undefined
       return toRaw(workflow.activeState) as ComfyWorkflowJSON | undefined
     }
     const queued = snapshot()
-    const load = () =>
-      useApp().loadGraphData(queued, true, true, workflow, {
+    const snapshotAtTurn = () => {
+      const data = snapshot()
+      if (!data) attempt.skipped = true
+      return data
+    }
+    const readyAtTurn = () => {
+      const ready = workflowStore.isActive(workflow) && isCurrent?.() !== false
+      if (!ready) attempt.skipped = true
+      return ready
+    }
+    try {
+      return await useApp().loadGraphData(queued, true, true, workflow, {
         checkForRerouteMigration: false,
         deferWarnings: true,
         skipAssetScans: !loadFromRemote && !force,
         workflowNavigationId: navigationIntentId,
         isCurrent: reloadsCanvas ? undefined : isCurrent,
-        // Reloading the graph on the canvas: check readiness and take the
-        // snapshot when the load reaches the front of the graph-load queue, so
-        // an edit made while loads queued directly on the app (paste,
-        // templates, shared links) ran ahead of it is kept, not overwritten.
         ...(reloadsCanvas && {
-          isReady: () => {
-            const ready =
-              workflowStore.isActive(workflow) && isCurrent?.() !== false
-            if (!ready) attempt.skipped = true
-            return ready
-          },
-          resolveGraphData: () => {
-            const data = snapshot()
-            if (!data) attempt.skipped = true
-            return data
-          }
+          isReady: readyAtTurn,
+          resolveGraphData: snapshotAtTurn
         })
       })
-    return keepSavedBaseline
-      ? keepingSavedBaseline(workflow, load, () => modifiedAtSnapshot)
-      : load()
+    } finally {
+      if (saved && !attempt.skipped) restoreSavedBaseline(workflow, saved)
+    }
   }
 
   const openWorkflow = (
@@ -714,8 +727,6 @@ export const useWorkflowService = () => {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           if (loadFromRemote && options.isCurrent?.() === false)
             discardSupersededLoad(workflow, wasModified)
-          // A reload skipped at its turn left the canvas to whatever is there
-          // now; only a load that failed has a canvas to put back.
           if (!attempt.skipped) await restoreRetainedWorkflow(workflow)
           return false
         }

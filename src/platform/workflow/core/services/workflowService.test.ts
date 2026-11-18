@@ -643,12 +643,9 @@ describe('useWorkflowService', () => {
     })
 
     describe('reload queued behind another graph load', () => {
-      /**
-       * Stands in for the app's graph-load queue: the load reaches the front
-       * only when `release` runs, and then loads what the options say it
-       * should at that point.
-       */
-      function queueBehindAnotherLoad() {
+      function queueBehindAnotherLoad(
+        onLoad: (data: ComfyWorkflowJSON) => void = () => {}
+      ) {
         let release = () => {}
         const front = new Promise<void>((resolve) => {
           release = resolve
@@ -661,9 +658,12 @@ describe('useWorkflowService', () => {
               loaded.push('skipped')
               return false
             }
-            loaded.push(
-              options.resolveGraphData ? options.resolveGraphData() : data
-            )
+            const graph = options.resolveGraphData
+              ? options.resolveGraphData()
+              : data
+            loaded.push(graph)
+            assert.exists(graph)
+            onLoad(graph)
             return true
           }
         )
@@ -730,24 +730,19 @@ describe('useWorkflowService', () => {
         expect(app.loadGraphData).toHaveBeenCalledOnce()
       })
 
+      function reloadedInto(workflow: LoadedComfyWorkflow) {
+        return (data: ComfyWorkflowJSON) => {
+          workflow.changeTracker.reset(data)
+          workflow.isModified = false
+        }
+      }
+
       it('keeps an edit made while it waited as unsaved', async () => {
         const workflow = activeWorkflow()
         useWorkflowStore().attachWorkflow(workflow, 0)
         const saved = workflow.changeTracker.initialState
         expect(workflow.isModified).toBe(false)
-        const queue = queueBehindAnotherLoad()
-        const loadGraphData = vi
-          .mocked(app.loadGraphData)
-          .getMockImplementation()
-        vi.mocked(app.loadGraphData).mockImplementation(async (...args) => {
-          const loaded = await loadGraphData?.(...args)
-          const data = queue.loaded.at(-1)
-          if (data && data !== 'skipped') {
-            workflow.changeTracker.reset(data)
-            workflow.isModified = false
-          }
-          return loaded
-        })
+        const queue = queueBehindAnotherLoad(reloadedInto(workflow))
 
         const reloading = useWorkflowService().reloadCurrentWorkflow()
         await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
@@ -757,6 +752,22 @@ describe('useWorkflowService', () => {
 
         expect(workflow.changeTracker.initialState).toBe(saved)
         expect(workflow.isModified).toBe(true)
+      })
+
+      it('keeps the saved baseline current at its turn, not the one from before it waited', async () => {
+        const workflow = activeWorkflow()
+        useWorkflowStore().attachWorkflow(workflow, 0)
+        app.rootGraph.extra.edited = true
+        const queue = queueBehindAnotherLoad(reloadedInto(workflow))
+
+        const reloading = useWorkflowService().reloadCurrentWorkflow()
+        await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+        const savedWhileWaiting = makeWorkflowData({ savedWhileWaiting: true })
+        workflow.changeTracker.initialState = savedWhileWaiting
+        queue.release()
+        await reloading
+
+        expect(workflow.changeTracker.initialState).toBe(savedWhileWaiting)
       })
 
       it('opens a background tab with its stored state, not a deferred snapshot', async () => {
