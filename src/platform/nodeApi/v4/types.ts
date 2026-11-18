@@ -1518,8 +1518,8 @@ export interface UiHandle {
   showMenu(menu: MenuDef): void
   /** Asks the user for text. Resolves `undefined` if they cancel. */
   prompt(prompt: PromptDef): Promise<string | undefined>
-  /** Mounts a panel over the graph view. `undefined` before the app has a graph view. */
-  mountViewportPanel(panel: ViewportPanelDef): ViewportPanelHandle | undefined
+  /** Mounts a panel over the graph view, once the app has one. An id already mounted throws. */
+  mountViewportPanel(panel: ViewportPanelDef): ViewportPanelHandle
   /** Mounts a canvas over the graph, on the graph view once the app has one. An id already mounted throws. */
   mountGraphOverlay(overlay: GraphOverlayDef): GraphOverlayHandle
 }
@@ -1628,9 +1628,9 @@ export interface ViewportPanelDef {
   readonly width?: number
   /** Pixels. */
   readonly maxHeight?: number
-  /** Fills the panel once, while it is in the document. */
+  /** Fills the panel once, when it joins the graph view. */
   render(container: HTMLElement): void
-  /** Called once when the panel is removed, before it leaves the document. */
+  /** Called once when a rendered panel is removed, before it leaves the document. */
   destroy?(): void
 }
 

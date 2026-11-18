@@ -1,3 +1,5 @@
+import { watch } from 'vue'
+
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import type {
@@ -29,9 +31,7 @@ const ANCHORS: readonly ViewportPanelAnchor[] = [
 export function createViewportPanels(canvas: () => CanvasSource | undefined) {
   const mounted = new Set<string>()
 
-  return function mountViewportPanel(
-    definition: unknown
-  ): ViewportPanelHandle | undefined {
+  return function mountViewportPanel(definition: unknown): ViewportPanelHandle {
     const fields = packObject(MEMBER, 'a viewport panel', definition)
     const id = fields.required('id', isName, 'a non-empty string')
     const panel = panelElement(id, fields)
@@ -43,22 +43,45 @@ export function createViewportPanels(canvas: () => CanvasSource | undefined) {
     if (mounted.has(id)) {
       throw invalidArgument(MEMBER, 'an id no mounted panel has', id)
     }
-    const view = canvas()?.canvas()?.canvas.parentElement
-    if (!view) return undefined
     mounted.add(id)
-    view.append(panel)
-    content.render(panel)
+    const stopWaiting = onceViewShown(canvas, (view) => {
+      view.append(panel)
+      content.render(panel)
+    })
     let removed = false
     return Object.freeze({
       remove() {
         if (removed) return
         removed = true
+        stopWaiting()
         mounted.delete(id)
         content.destroy()
         panel.remove()
       }
     })
   }
+}
+
+function onceViewShown(
+  canvas: () => CanvasSource | undefined,
+  shown: (view: HTMLElement) => void
+): () => void {
+  const viewOf = () => canvas()?.canvas()?.canvas.parentElement ?? undefined
+  const view = viewOf()
+  if (view) {
+    shown(view)
+    return () => {}
+  }
+  const stop = watch(
+    viewOf,
+    (next) => {
+      if (!next) return
+      stop()
+      shown(next)
+    },
+    { flush: 'sync' }
+  )
+  return stop
 }
 
 function panelElement(id: string, fields: PackObject): HTMLElement {

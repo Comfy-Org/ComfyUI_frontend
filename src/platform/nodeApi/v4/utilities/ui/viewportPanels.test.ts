@@ -1,6 +1,7 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { shallowRef } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
@@ -34,6 +35,28 @@ function showGraphView(): HTMLElement {
     canvasSource = undefined
   })
   return view
+}
+
+function appBeforeGraphView() {
+  const views: HTMLElement[] = []
+  const graphCanvas = shallowRef<LGraphCanvas | null>(null)
+  canvasSource = fromPartial<CanvasSource>({ canvas: () => graphCanvas.value })
+  onTestFinished(() => {
+    canvasSource = undefined
+  })
+  return {
+    showGraphView() {
+      const { view, source } = graphViewSource()
+      views.push(view)
+      graphCanvas.value = source.canvas()
+      return view
+    },
+    get firstView() {
+      const [first] = views
+      assert(first, 'no graph view shown yet')
+      return first
+    }
+  }
 }
 
 function panel(overrides: Partial<ViewportPanelDef> = {}): ViewportPanelDef {
@@ -125,8 +148,8 @@ describe('viewport panels', () => {
     })
     const handle = uiApi().mountViewportPanel(definition)
 
-    handle?.remove()
-    handle?.remove()
+    handle.remove()
+    handle.remove()
 
     expect(destroyedInDocument).toBe(true)
     expect(view.querySelector('[data-viewport-panel]')).toBeNull()
@@ -139,7 +162,7 @@ describe('viewport panels', () => {
     const handle = uiApi().mountViewportPanel(definition)
     view.remove()
 
-    handle?.remove()
+    handle.remove()
 
     expect(definition.destroy).toHaveBeenCalledOnce()
   })
@@ -155,7 +178,7 @@ describe('viewport panels', () => {
       )
     )
     expect(view.querySelectorAll('[data-viewport-panel]')).toHaveLength(1)
-    first?.remove()
+    first.remove()
     ui.mountViewportPanel(panel())
     expect(view.querySelectorAll('[data-viewport-panel]')).toHaveLength(1)
   })
@@ -164,10 +187,10 @@ describe('viewport panels', () => {
     const view = showGraphView()
     const ui = uiApi()
     const old = ui.mountViewportPanel(panel())
-    old?.remove()
+    old.remove()
     ui.mountViewportPanel(panel())
 
-    old?.remove()
+    old.remove()
 
     expect(view.querySelectorAll('[data-viewport-panel]')).toHaveLength(1)
     expect(() => ui.mountViewportPanel(panel())).toThrow(TypeError)
@@ -184,11 +207,51 @@ describe('viewport panels', () => {
     expect(mountedPanel(view, 'MyPack.progress').textContent).toBe('pack panel')
   })
 
-  it('mounts nothing and gives undefined before the renderer has a canvas', () => {
+  it('waits for the renderer to give a canvas, then mounts and renders over it once', () => {
+    const app = appBeforeGraphView()
     const definition = panel()
 
-    expect(uiApi().mountViewportPanel(definition)).toBeUndefined()
+    const handle = uiApi().mountViewportPanel(definition)
     expect(definition.render).not.toHaveBeenCalled()
+    app.showGraphView()
+    const later = app.showGraphView()
+
+    expect(mountedPanel(app.firstView, 'MyPack.progress').textContent).toBe(
+      'pack panel'
+    )
+    expect(later.querySelector('[data-viewport-panel]')).toBeNull()
+    expect(definition.render).toHaveBeenCalledOnce()
+    handle.remove()
+    expect(definition.destroy).toHaveBeenCalledOnce()
+    expect(app.firstView.querySelector('[data-viewport-panel]')).toBeNull()
+  })
+
+  it('renders nothing for a panel removed before the renderer gave a canvas, and frees its id', () => {
+    const app = appBeforeGraphView()
+    const ui = uiApi()
+    const definition = panel()
+    const handle = ui.mountViewportPanel(definition)
+
+    handle.remove()
+    app.showGraphView()
+
+    expect(app.firstView.querySelector('[data-viewport-panel]')).toBeNull()
+    expect(definition.render).not.toHaveBeenCalled()
+    expect(definition.destroy).not.toHaveBeenCalled()
+    ui.mountViewportPanel(panel())
+    expect(mountedPanel(app.firstView, 'MyPack.progress')).toBeTruthy()
+  })
+
+  it('refuses an id waiting for the graph view, as one already mounted', () => {
+    const app = appBeforeGraphView()
+    const ui = uiApi()
+    ui.mountViewportPanel(panel())
+
+    expect(() => ui.mountViewportPanel(panel())).toThrow(TypeError)
+    app.showGraphView()
+    expect(
+      app.firstView.querySelectorAll('[data-viewport-panel]')
+    ).toHaveLength(1)
   })
 
   it('reports a render that throws, and can still be removed', () => {
@@ -202,7 +265,7 @@ describe('viewport panels', () => {
       })
     )
 
-    handle?.remove()
+    handle.remove()
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       broken,

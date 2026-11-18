@@ -53,6 +53,17 @@ function overlayElement(view: HTMLElement, id = 'MyPack.notes') {
   return found
 }
 
+function mountToolsPanel(ui: UiHandle, view: HTMLElement): HTMLElement {
+  ui.mountViewportPanel({
+    id: 'MyPack.tools',
+    ariaLabel: 'Tools',
+    render: (container) => container.append(document.createElement('button'))
+  })
+  const button = view.querySelector<HTMLElement>('[data-viewport-panel] button')
+  assert(button, 'the tools panel has no button')
+  return button
+}
+
 function press(
   target: EventTarget,
   type: string,
@@ -479,13 +490,7 @@ describe('taking the pointer', () => {
     const { view, canvas, ui } = appShowingGraph()
     const onPointerDown = vi.fn()
     mount(ui, overlay({ interactive: true, onPointerDown }))
-    const panel = ui.mountViewportPanel({
-      id: 'MyPack.tools',
-      ariaLabel: 'Tools',
-      render: (container) => container.append(document.createElement('button'))
-    })
-    const button = view.querySelector('[data-viewport-panel] button')
-    assert(button && panel)
+    const button = mountToolsPanel(ui, view)
     const clicked = vi.fn()
     button.addEventListener('pointerdown', clicked)
     canvas.draw(true, true)
@@ -503,13 +508,7 @@ describe('taking the pointer', () => {
     const onPointerDown = vi.fn()
     mount(api.comfy.ui, overlay({ interactive: true, onPointerDown }))
     api.useCanvas(canvas)
-    const panel = api.comfy.ui.mountViewportPanel({
-      id: 'MyPack.tools',
-      ariaLabel: 'Tools',
-      render: (container) => container.append(document.createElement('button'))
-    })
-    const button = view.querySelector('[data-viewport-panel] button')
-    assert(button && panel)
+    const button = mountToolsPanel(api.comfy.ui, view)
     canvas.draw(true, true)
 
     press(button, 'pointerdown')
@@ -522,14 +521,30 @@ describe('taking the pointer', () => {
     )
   })
 
-  it('stays below a panel already shown when it is mounted, and above the graph', () => {
-    const { view, canvas, ui } = appShowingGraph()
-    const panel = ui.mountViewportPanel({
+  it('stays below a panel mounted after it at import, once the graph view comes', () => {
+    const { view, canvas } = graphView()
+    const api = apiOnTestCanvas(canvas.graph)
+    const onPointerDown = vi.fn()
+    mount(api.comfy.ui, overlay({ interactive: true, onPointerDown }))
+    api.comfy.ui.mountViewportPanel({
       id: 'MyPack.tools',
       ariaLabel: 'Tools',
-      render: () => {}
+      render: (container) => container.append(document.createElement('button'))
     })
-    assert(panel)
+
+    api.useCanvas(canvas)
+    canvas.draw(true, true)
+
+    const button = view.querySelector('[data-viewport-panel] button')
+    assert(button)
+    press(button, 'pointerdown')
+    expect(onPointerDown).not.toHaveBeenCalled()
+    expect(overlayElement(view).nextElementSibling).toBe(button.parentElement)
+  })
+
+  it('stays below a panel already shown when it is mounted, and above the graph', () => {
+    const { view, canvas, ui } = appShowingGraph()
+    mountToolsPanel(ui, view)
 
     mount(ui, overlay())
 

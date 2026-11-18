@@ -256,9 +256,15 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     name (finding A-14). An id already mounted is refused. `remove()` calls
     `destroy` once, while the panel is still in the document, and then
     removes it, even after the graph view itself was taken down; a stale
-    handle cannot free the id of a later panel. Before the renderer has
-    supplied a canvas there is no view, and the call mounts nothing and
-    returns `undefined`.
+    handle cannot free the id of a later panel. It returns its handle at
+    once, never `undefined`, as `mountGraphOverlay` does (decision 29): a
+    stored pack (`jot`) mounts its panel at import, before the app creates
+    the graph view, and a panel that mounted nothing there would never
+    appear. Such a panel waits for the first canvas the renderer supplies,
+    through a synchronous watch on `CanvasSource.canvas()`, and joins and is
+    rendered on that canvas's view then, which is before `onReady`. Its id is
+    taken while it waits; a panel removed before then is never rendered, so
+    its `destroy` is not called. A panel stays on the view it joined.
 
 ### Graph overlays (`ui.mountGraphOverlay`, 3 / 94)
 
