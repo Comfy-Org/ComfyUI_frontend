@@ -518,8 +518,7 @@ function collectEmbeddedModels(
 
 const ASSET_LOAD_ATTEMPTS = 2
 
-/** Loads a node type's assets; returns the failure, or undefined on success. */
-async function loadNodeTypeAssets(
+async function loadAssetsOrFailure(
   store: ReturnType<typeof useAssetsStore>,
   nodeType: string
 ): Promise<unknown> {
@@ -563,12 +562,8 @@ export async function verifyAssetSupportedCandidates(
   const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
-      // The store records a failed fetch on the category rather than
-      // rejecting, so both count as a failed load. Judging against that
-      // empty or partial list would mark installed models missing; retry
-      // once, then leave the candidates unresolved.
       for (let attempt = 1; !signal?.aborted; attempt++) {
-        const failure = await loadNodeTypeAssets(store, nodeType)
+        const failure = await loadAssetsOrFailure(store, nodeType)
         if (failure === undefined) return
         if (attempt < ASSET_LOAD_ATTEMPTS && !signal?.aborted) continue
         failedNodeTypes.add(nodeType)

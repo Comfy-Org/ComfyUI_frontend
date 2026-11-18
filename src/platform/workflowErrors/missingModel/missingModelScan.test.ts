@@ -1971,8 +1971,6 @@ describe('verifyAssetSupportedCandidates', () => {
     expect(candidates[0].isMissing).toBe(true)
   })
 
-  // The store catches a failed fetch and records it as an error instead of
-  // rejecting, so these mirror what a real network failure looks like.
   it('should retry a node type whose asset load the store reports as failed', async () => {
     const candidates = [makeAssetCandidate('dreamshaper_8.safetensors')]
     vi.mocked(useAssetsStore().getError)
