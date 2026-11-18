@@ -10633,4 +10633,45 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
       ]
     })
   })
+
+  it('dispatches leftover held events when the last in-flight send fails', async () => {
+    let rejectSecond: (error: unknown) => void = () => {}
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            rejectSecond = reject
+          })
+      )
+    const activeTab = vi.fn()
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source,
+      workflow: { current: () => undefined, adopted: vi.fn(), activeTab }
+    })
+    session.start()
+
+    await session.sendMessage('first')
+    emit(done('msg-1'))
+
+    const second = session.sendMessage('second')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledTimes(2))
+
+    emit(
+      wire({
+        type: 'agent_active_tab',
+        data: { workflow_id: 'wf-9', name: 'Video test', thread_id: 'th-1' }
+      })
+    )
+    expect(activeTab).not.toHaveBeenCalled()
+
+    rejectSecond(new Error('network'))
+    expect(await second).toBe(false)
+    expect(activeTab).toHaveBeenCalledWith(
+      expect.objectContaining({ workflow_id: 'wf-9', name: 'Video test' })
+    )
+  })
 })

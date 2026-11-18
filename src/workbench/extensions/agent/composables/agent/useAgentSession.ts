@@ -1945,10 +1945,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function finishInFlightSend(sendId: string): void {
     inFlightSends.delete(sendId)
-    if (inFlightSends.size === 0) {
-      pendingSendEvents.length = 0
-      conversationStore.clearPendingSendCanvasEvidence()
-    }
+    if (inFlightSends.size > 0) return
+    conversationStore.clearPendingSendCanvasEvidence()
+    for (const event of pendingSendEvents.splice(0)) handleAgentEvent(event)
   }
 
   async function performSend({
