@@ -6,18 +6,19 @@
     "packs": 97,
     "pythonModules": 287
   },
-  "projectedAt": "2026-10-29T20:37:19Z",
+  "projectedAt": "2026-11-18T07:03:49Z",
   "projection": {
-    "bytes": 2576756,
+    "bytes": 2999099,
     "droppedOptionKeys": ["tooltip", "description"],
     "keptNodeFields": [
       "input",
+      "input_order",
       "output",
       "output_name",
       "output_node",
       "python_module"
     ],
-    "sha256": "5f87fe014f0b7a2293197576a1f933f3668b363f2d8081b5f913a38a1652807d"
+    "sha256": "300541ac7adbe662374a07b11445693ee29b1b2274a4b1729862e9ad188cd8fe"
   },
   "source": {
     "bytes": 8992925,

@@ -12,10 +12,14 @@ image bakes and therefore the production-representative one. That repo is
 PRIVATE and this one is PUBLIC, so the committed fixture is a projection, not
 a copy, and the projection is the narrow one on purpose:
 
-  kept    input, output, output_name, output_node, python_module
-  dropped description, display_name, category, input_order, output_tooltips,
+  kept    input, input_order, output, output_name, output_node, python_module
+  dropped description, display_name, category, output_tooltips,
           search_aliases, is_input_list, has_intermediate_output, and the
           `tooltip` / `description` entries inside every input's options bag
+
+`input_order` decides the widget order at registration. The render sorts keys,
+so a class whose dump has no `input_order` gets one written from the dump's
+own key order; without it the sorted render would reorder its widgets.
 
 Everything kept is node-shape: it is what decides a node's widget list, and so
 what the predicate's verdict is a function of. Everything dropped is prose or
@@ -56,7 +60,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SHAPE = os.path.join(HERE, 'object_info.shape.json')
 PIN = os.path.join(HERE, 'object_info.pin.json')
 
-KEEP = ('input', 'output', 'output_name', 'output_node', 'python_module')
+KEEP = (
+    'input',
+    'input_order',
+    'output',
+    'output_name',
+    'output_node',
+    'python_module',
+)
 DROP_OPTS = ('tooltip', 'description')
 
 
@@ -87,6 +98,12 @@ def project(dump: dict) -> dict:
         src = dump[name]
         node = {k: src[k] for k in KEEP if k in src}
         if isinstance(node.get('input'), dict):
+            if not isinstance(node.get('input_order'), dict):
+                node['input_order'] = {
+                    section: list(spec)
+                    for section, spec in node['input'].items()
+                    if isinstance(spec, dict)
+                }
             node['input'] = {
                 section: project_input_spec(spec)
                 for section, spec in sorted(node['input'].items())

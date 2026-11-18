@@ -53,6 +53,24 @@ class ProjectionKeepsShape(unittest.TestCase):
             proj.project(weird)['N']['input']['required']['x'], {'odd': True}
         )
 
+    def test_keeps_widget_order_through_the_sorted_render(self):
+        dump = {
+            'Ordered': {'input': {'required': {
+                'width': ['INT', {}], 'height': ['INT', {}],
+                'batch_size': ['INT', {}],
+            }}},
+            'Declared': {
+                'input': {'required': {'b': ['INT', {}], 'a': ['INT', {}]}},
+                'input_order': {'required': ['a', 'b']},
+            },
+        }
+        out = json.loads(proj.render(proj.project(dump)))
+        self.assertEqual(
+            out['Ordered']['input_order'],
+            {'required': ['width', 'height', 'batch_size']},
+        )
+        self.assertEqual(out['Declared']['input_order'], {'required': ['a', 'b']})
+
     def test_is_deterministic_and_sorted(self):
         dump = {'B': {'python_module': 'nodes'}, 'A': {'python_module': 'nodes'}}
         self.assertEqual(list(proj.project(dump)), ['A', 'B'])
