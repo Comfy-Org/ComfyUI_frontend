@@ -22,6 +22,7 @@ import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { tagPlatformUrl } from '@/platform/workspace/utils/platformLink'
 import { useAuthStore } from '@/stores/authStore'
 
 const ISSUE_TIMEOUT_MS = 15_000
@@ -353,7 +354,9 @@ export async function openPlatformBillingHandoff(
     new AbortController().signal
   )
   const target =
-    issued.status === 'ok' ? withPlatformView(issued.url, view) : undefined
+    issued.status === 'ok'
+      ? withPlatformView(tagPlatformUrl(issued.url), view)
+      : undefined
   if (target !== undefined) return tab.navigate(target)
   tab.close()
   useToast().error(
