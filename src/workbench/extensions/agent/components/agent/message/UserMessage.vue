@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import { useClipboard, useClipboardItems } from '@vueuse/core'
-import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -34,7 +34,7 @@ import type {
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
-import AgentPaywallCard from './AgentPaywallCard.vue'
+import PendingSendStatus from './PendingSendStatus.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -78,55 +78,24 @@ watch(
     else if (current !== 'failed') justFailed.value = false
   }
 )
+const isSending = computed(() => pending?.status === 'sending')
+const failedPending = computed(() =>
+  pending?.status === 'failed' && pending.failure
+    ? { pending, failure: pending.failure }
+    : null
+)
+const hasBubbleContent = computed(() =>
+  Boolean(text || workflowReferences.length || skillReference)
+)
+const showBubbleRow = computed(() => hasBubbleContent.value || isSending.value)
+const canEdit = computed(() => editable && hasBubbleContent.value)
 
-const retryLocked = ref(false)
-let retryTimer: ReturnType<typeof setTimeout> | undefined
-function clearRetryTimer(): void {
-  if (retryTimer !== undefined) {
-    clearTimeout(retryTimer)
-    retryTimer = undefined
-  }
+function forwardPaywallAction(
+  action: AgentPaywallAction,
+  surface: AgentPaywallSurface
+): void {
+  emit('paywallAction', action, surface)
 }
-watch(
-  () => pending,
-  (current) => {
-    clearRetryTimer()
-    const failure = current?.status === 'failed' ? current.failure : undefined
-    if (failure?.kind !== 'retry_after') {
-      retryLocked.value = false
-      return
-    }
-    const targetMs =
-      failure.retryAtMs ??
-      (failure.retryAfterSeconds !== undefined
-        ? Date.now() + failure.retryAfterSeconds * 1000
-        : 0)
-    const remainingMs = Math.max(0, targetMs - Date.now())
-    retryLocked.value = remainingMs > 0
-    if (remainingMs > 0) {
-      retryTimer = setTimeout(() => {
-        retryTimer = undefined
-        retryLocked.value = false
-      }, remainingMs)
-    }
-  },
-  { immediate: true }
-)
-onBeforeUnmount(clearRetryTimer)
-
-const isGoneWorkflow = computed(
-  () =>
-    pending?.failure?.kind === 'disowned' ||
-    pending?.failure?.kind === 'target_unavailable'
-)
-const failedStatusText = computed(() => {
-  const failure = pending?.failure
-  if (!failure) return ''
-  if (failure.kind === 'paywall') return t('agent.sendFailed')
-  if (failure.kind === 'retry_after' && failure.retryAfterSeconds !== undefined)
-    return `${failure.message} ${t('agent.retryAfterSeconds', { seconds: failure.retryAfterSeconds })}`
-  return failure.message
-})
 const promptParts = computed(() =>
   promptReferenceParts(text, workflowReferences, skillReference)
 )
@@ -280,11 +249,11 @@ function attachmentUrl(
       </figure>
     </div>
     <div
-      v-if="text || workflowReferences.length || skillReference"
+      v-if="showBubbleRow"
       class="flex max-w-full items-center justify-end gap-1.5"
     >
       <div
-        v-if="pending?.status === 'sending'"
+        v-if="isSending"
         role="status"
         data-testid="pending-send-spinner"
         :aria-label="t('agent.sendingMessage')"
@@ -296,6 +265,7 @@ function attachmentUrl(
         />
       </div>
       <div
+        v-if="hasBubbleContent"
         ref="bubble"
         data-testid="user-message-bubble"
         class="w-fit max-w-full rounded-lg bg-secondary px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
@@ -344,72 +314,23 @@ function attachmentUrl(
         </template>
       </div>
     </div>
-    <div
-      v-else-if="pending?.status === 'sending'"
-      role="status"
-      data-testid="pending-send-spinner"
-      :aria-label="t('agent.sendingMessage')"
-      class="flex items-center text-muted-foreground"
-    >
-      <i
-        aria-hidden="true"
-        class="icon-[lucide--loader-circle] size-3.5 motion-safe:animate-spin"
-      />
-    </div>
-    <div
-      v-if="pending?.status === 'failed' && pending.failure"
-      class="flex w-full flex-col items-end gap-2"
-    >
-      <div
-        :role="justFailed ? 'alert' : 'status'"
-        data-testid="pending-send-error"
-        class="flex items-center justify-end gap-1.5 text-xs text-destructive"
-      >
-        <i aria-hidden="true" class="icon-[lucide--circle-alert] size-3.5" />
-        <span>{{ failedStatusText }}</span>
-      </div>
-      <div class="flex items-center justify-end gap-1.5">
-        <Button
-          v-if="isGoneWorkflow"
-          type="button"
-          variant="secondary"
-          size="sm"
-          @click="emit('newChat')"
-        >
-          {{ t('agent.newChat') }}
-        </Button>
-        <Button
-          v-else-if="pending.failure.retryable !== false"
-          type="button"
-          variant="secondary"
-          size="sm"
-          :disabled="retryLocked"
-          @click="emit('retryPending', pending.clientMessageId)"
-        >
-          {{ t('g.retry') }}
-        </Button>
-        <Button
-          type="button"
-          variant="muted-textonly"
-          size="sm"
-          @click="emit('deletePending', pending.clientMessageId)"
-        >
-          {{ t('g.delete') }}
-        </Button>
-      </div>
-      <AgentPaywallCard
-        v-if="pending.failure.kind === 'paywall' && !pending.paywallResolved"
-        :presentation="paywallPresentation"
-        :message="pending.failure.message"
-        @paywall-action="emit('paywallAction', $event, 'refused_send')"
-      />
-    </div>
+    <PendingSendStatus
+      v-if="failedPending"
+      :pending="failedPending.pending"
+      :failure="failedPending.failure"
+      :just-failed="justFailed"
+      :paywall-presentation="paywallPresentation"
+      @retry-pending="emit('retryPending', $event)"
+      @delete-pending="emit('deletePending', $event)"
+      @new-chat="emit('newChat')"
+      @paywall-action="forwardPaywallAction"
+    />
     <div
       v-if="readableText"
       class="pointer-events-none flex text-muted-foreground opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 touch:pointer-events-auto touch:opacity-100"
     >
       <Button
-        v-if="editable && (text || workflowReferences.length || skillReference)"
+        v-if="canEdit"
         :tooltip="t('g.edit')"
         type="button"
         variant="muted-textonly"

@@ -134,6 +134,7 @@ import type {
 import { toTurnId } from './schemas/agentApiSchema'
 import type {
   ConversationEntry,
+  PendingSendFailure,
   TurnTab
 } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -2461,58 +2462,66 @@ function onDeletePendingSend(clientMessageId: string): void {
   composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
 }
 
-async function onRetryPendingSend(clientMessageId: string): Promise<void> {
+function canRetryPendingFailure(
+  failure: PendingSendFailure | undefined
+): boolean {
+  if (!failure || failure.retryable === false) return false
+  if (failure.kind === 'disowned' || failure.kind === 'target_unavailable')
+    return false
+  if (failure.kind !== 'retry_after') return true
+  return failure.retryAtMs === undefined || failure.retryAtMs <= Date.now()
+}
+
+function retryablePendingSend(clientMessageId: string) {
   const pending = conversationStore.getPendingSend(clientMessageId)
-  if (!pending || pending.status !== 'failed') return
-  const kind = pending.failure?.kind
-  if (
-    kind === 'disowned' ||
-    kind === 'target_unavailable' ||
-    pending.failure?.retryable === false
-  )
-    return
-  if (
-    kind === 'retry_after' &&
-    pending.failure?.retryAtMs !== undefined &&
-    pending.failure.retryAtMs > Date.now()
-  )
-    return
+  if (!pending || pending.status !== 'failed') return null
+  if (!canRetryPendingFailure(pending.failure)) return null
   if (
     workflowSelecting.value ||
     conversationStore.hasSendingForOrigin(pending.origin)
   )
-    return
-  if (!hasAgentCredential() && !(await ensureSignedIn())) return
+    return null
+  return pending
+}
 
-  const retryClientMessageId = uuidv4()
-  const retried = conversationStore.retryPendingSend(
-    clientMessageId,
-    retryClientMessageId
-  )
-  if (!retried) return
-  composerStore.transferRetainedAssets(
-    pendingAssetOwnerKey(clientMessageId),
-    pendingAssetOwnerKey(retryClientMessageId)
-  )
+function buildRetryMetadata(
+  retryClientMessageId: string,
+  retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>,
+  workflowId: string | null
+): AgentMessageSentMetadata {
+  const starter = retried.starterPrompt
+  return {
+    attachment_count: retried.sentAttachments.length,
+    node_tag_count: retried.sentTags.length,
+    thread_id:
+      retried.origin.kind === 'thread' ? retried.origin.threadId : null,
+    workflow_id: workflowId,
+    client_message_id: retryClientMessageId,
+    input_method: retried.inputMethod ?? 'typed',
+    starter_prompt_id: starter ? starter.id : null,
+    starter_prompt_click_id: starter ? starter.clickId : null
+  }
+}
 
+function recordRetryTelemetry(
+  retryClientMessageId: string,
+  retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>
+): TurnOrigin {
   const turnOrigin: TurnOrigin = retried.targetTabPath
     ? { tabPath: retried.targetTabPath }
     : null
-  const originContext = targetWorkflowTurnContext(turnOrigin)
+  const workflowId = targetWorkflowTurnContext(turnOrigin)?.id ?? null
   pendingTelemetry.set(retryClientMessageId, {
-    metadata: {
-      attachment_count: retried.sentAttachments.length,
-      node_tag_count: retried.sentTags.length,
-      thread_id:
-        retried.origin.kind === 'thread' ? retried.origin.threadId : null,
-      workflow_id: originContext?.id ?? null,
-      client_message_id: retryClientMessageId,
-      input_method: retried.inputMethod ?? 'typed',
-      starter_prompt_id: retried.starterPrompt?.id ?? null,
-      starter_prompt_click_id: retried.starterPrompt?.clickId ?? null
-    },
+    metadata: buildRetryMetadata(retryClientMessageId, retried, workflowId),
     origin: turnOrigin
   })
+  return turnOrigin
+}
+
+async function dispatchRetryPendingSend(
+  retryClientMessageId: string,
+  retried: NonNullable<ReturnType<typeof conversationStore.getPendingSend>>
+): Promise<void> {
   const selectionWorkflow = retried.targetTabPath
     ? originWorkflow({ tabPath: retried.targetTabPath })
     : undefined
@@ -2541,6 +2550,24 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
         pendingAssetOwnerKey(retryClientMessageId)
       )
   }
+}
+
+async function onRetryPendingSend(clientMessageId: string): Promise<void> {
+  if (!retryablePendingSend(clientMessageId)) return
+  if (!hasAgentCredential() && !(await ensureSignedIn())) return
+
+  const retryClientMessageId = uuidv4()
+  const retried = conversationStore.retryPendingSend(
+    clientMessageId,
+    retryClientMessageId
+  )
+  if (!retried) return
+  composerStore.transferRetainedAssets(
+    pendingAssetOwnerKey(clientMessageId),
+    pendingAssetOwnerKey(retryClientMessageId)
+  )
+  recordRetryTelemetry(retryClientMessageId, retried)
+  await dispatchRetryPendingSend(retryClientMessageId, retried)
 }
 
 function onStop(method: AgentStopMethod): void {

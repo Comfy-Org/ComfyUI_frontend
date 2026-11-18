@@ -1626,24 +1626,23 @@ export const useAgentConversationStore = defineStore(
       return sole
     }
 
+    function setIfNonEmpty<T>(
+      target: Map<TurnId, T[]>,
+      id: TurnId,
+      items: T[] | undefined
+    ): void {
+      if (items?.length) target.set(id, items)
+    }
+
     function restoreBackgroundUserText(entry: BackgroundTurn): void {
-      if (
-        entry.userText !== undefined &&
-        !userTexts.value.has(entry.message.id)
-      ) {
-        userTexts.value.set(entry.message.id, entry.userText)
-        if (entry.attachments && entry.attachments.length > 0)
-          userAttachments.value.set(entry.message.id, entry.attachments)
-        if (entry.tags && entry.tags.length > 0)
-          userTags.value.set(entry.message.id, entry.tags)
-        if (entry.workflowReferences && entry.workflowReferences.length > 0)
-          userWorkflowReferences.value.set(
-            entry.message.id,
-            entry.workflowReferences
-          )
-        if (entry.skillReference)
-          userSkillReferences.value.set(entry.message.id, entry.skillReference)
-      }
+      const id = entry.message.id
+      if (entry.userText === undefined || userTexts.value.has(id)) return
+      userTexts.value.set(id, entry.userText)
+      setIfNonEmpty(userAttachments.value, id, entry.attachments)
+      setIfNonEmpty(userTags.value, id, entry.tags)
+      setIfNonEmpty(userWorkflowReferences.value, id, entry.workflowReferences)
+      if (entry.skillReference)
+        userSkillReferences.value.set(id, entry.skillReference)
     }
 
     function removeHydratedCopy(
