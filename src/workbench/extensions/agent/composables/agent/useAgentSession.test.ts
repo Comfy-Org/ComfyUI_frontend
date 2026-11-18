@@ -6386,6 +6386,11 @@ describe('useAgentSession (v1 composition root)', () => {
       status(false)
       status(true)
       await vi.advanceTimersByTimeAsync(0)
+      expect(approvalParts(session).map((part) => part.askId)).toEqual([
+        'turn-1:call-1'
+      ])
+
+      await vi.advanceTimersByTimeAsync(1_000)
 
       expect(approvalParts(session).map((part) => part.askId)).toEqual([
         currentAskId
