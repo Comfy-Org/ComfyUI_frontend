@@ -531,18 +531,8 @@ async function main() {
       payment,
       (frame) =>
         frame
-          .locator('button[type="submit"], input[type="submit"]')
-          .filter({
-            hasText: /^\s*(?:Pay(?!\s+with\b|Pal)|Confirm payment)/i,
-            visible: true
-          })
-          .or(
-            frame
-              .getByRole('button', {
-                name: /^(?:Pay(?:\s|$)(?!with\b)|Confirm payment)/i
-              })
-              .filter({ visible: true })
-          ),
+          .locator('button[type="submit"]')
+          .and(frame.getByRole('button', { name: 'Pay', exact: true })),
       10_000
     )
     try {
