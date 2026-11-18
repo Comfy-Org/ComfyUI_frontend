@@ -125,6 +125,7 @@ import {
   LLink,
   registerLinkTopology,
   resolveLinkTopology,
+  serialisableLinkType,
   unregisterAllLinkTopologies,
   unregisterLinkTopology
 } from './LLink'
@@ -446,7 +447,7 @@ function serialiseOwnedTopology(owner: LGraph) {
       origin_slot: link.originSlot,
       target_id: serializeNodeId(link.targetNodeId),
       target_slot: link.targetSlot,
-      type: link.type,
+      type: serialisableLinkType(link.type),
       ...(link.parentId !== undefined && { parentId: link.parentId }),
       ...presentation
     }
