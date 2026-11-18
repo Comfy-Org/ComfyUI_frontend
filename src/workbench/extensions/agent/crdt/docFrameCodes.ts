@@ -27,6 +27,9 @@ export function isPermanentSubscribeRefusalCode(
   return PERMANENT_SUBSCRIBE_REFUSAL_CODES.has(code)
 }
 
+/** A document frame refused for the events socket's connect-time credential. */
+export const SOCKET_CREDENTIAL_REFUSED = 'unauthorized'
+
 export const STALE_SCHEMA_RESEED_REQUIRED = 'stale_schema_reseed_required'
 export const RESEED_CONFLICT = 'conflict'
 
