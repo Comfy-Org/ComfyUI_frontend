@@ -334,7 +334,10 @@ import { resolveAgentIdentity } from './services/agent/agentIdentity'
 import type { AgentIdentityState } from './services/agent/agentIdentity'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
-import { recordUnsyncedHumanOps } from './crdt/unsyncedHumanOps'
+import {
+  hasUnsyncedHumanOps,
+  recordUnsyncedHumanOps
+} from './crdt/unsyncedHumanOps'
 import type { DocOpMinter, DocOpMinterDeps } from './crdt/docOpMinter'
 
 const docOpMinterDeps = vi.hoisted(() => ({
@@ -7640,6 +7643,165 @@ describe('AgentPanelRoot history', () => {
         ).toBeNull()
       }
     )
+
+    describe('an edit that is still unconfirmed when the panel unbinds while its tab is inactive', () => {
+      beforeEach(() => {
+        useAgentPanelStore().enabled = true
+      })
+
+      type SentFrame = {
+        type: string
+        data: { workflow_id?: string; ops?: { op_id: string }[] }
+      }
+
+      function sentFrames(type: string): SentFrame[] {
+        return socketSend.mock.calls
+          .map(([frame]) => JSON.parse(String(frame)) as SentFrame)
+          .filter((frame) => frame.type === type)
+      }
+
+      function lostEditReports(): unknown[] {
+        return vi
+          .mocked(reportError)
+          .mock.calls.filter(([, options]) =>
+            options.errorType.startsWith('failure_syncing_agent_edit')
+          )
+      }
+
+      async function editFirstTabWithoutAnAnswer(
+        transcripts: Partial<
+          Record<
+            string,
+            { workflowId?: string; response?: () => Promise<Response> }
+          >
+        > = { 'th-first': { workflowId: 'wf-first' } }
+      ) {
+        const first = addTab('workflows/first.json', {
+          activeState: fromPartial<ComfyWorkflowJSON>({ id: 'graph-first' })
+        })
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            })
+          ],
+          transcripts
+        )
+        renderWithSelectedTarget()
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText('First chat'))
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['Prompt in th-first'])
+        )
+        await settleFollow()
+        await vi.waitFor(() =>
+          expect(sentFrames('doc_subscribe')).toHaveLength(1)
+        )
+        ws.emit('doc_subscribed', {
+          v: 1,
+          workflow_id: 'wf-first',
+          ok: true,
+          seq: 0
+        })
+        docOpMinterDeps.current?.enqueue([
+          { op: 'delete_node', node_id: '1', removed_links: [] }
+        ])
+        await vi.waitFor(() => expect(sentFrames('doc_ops')).toHaveLength(1))
+        vi.mocked(reportError).mockClear()
+        return { first, second }
+      }
+
+      it('HC-03: shows the chat of the tab again and subscribes its workflow again when the user returns', async () => {
+        const { first, second } = await editFirstTabWithoutAnAnswer()
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBeNull()
+        )
+        expect(lostEditReports()).toEqual([])
+
+        await activateTabAsUser(first)
+
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+        await vi.waitFor(() =>
+          expect(
+            sentFrames('doc_subscribe').map(({ data }) => data.workflow_id)
+          ).toEqual(['wf-first', 'wf-first'])
+        )
+        ws.emit('doc_ops_result', {
+          v: 1,
+          workflow_id: 'wf-first',
+          ok: true,
+          seq: 2,
+          applied: sentFrames('doc_ops')[0].data.ops?.map(({ op_id }) => op_id),
+          skipped: []
+        })
+        await vi.waitFor(() =>
+          expect(hasUnsyncedHumanOps('wf-first')).toBe(false)
+        )
+        expect(lostEditReports()).toEqual([])
+      })
+
+      it('T1-25: keeps the workflow unbound on return when an unbound visible edit occurs while its transcript is loading', async () => {
+        let messageLoads = 0
+        let resolveReturnTranscript!: () => void
+        const returnTranscript = new Promise<Response>((resolve) => {
+          resolveReturnTranscript = () =>
+            resolve(transcriptFor('th-first', 'wf-first'))
+        })
+        const { first, second } = await editFirstTabWithoutAnAnswer({
+          'th-first': {
+            workflowId: 'wf-first',
+            response: async () =>
+              ++messageLoads === 1
+                ? transcriptFor('th-first', 'wf-first')
+                : returnTranscript
+          }
+        })
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBeNull()
+        )
+
+        await activateTabAsUser(first)
+        await vi.waitFor(() => expect(messageLoads).toBe(2))
+        expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+
+        docOpMinterDeps.current?.onUnboundVisibleIntent?.()
+        resolveReturnTranscript()
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+        await settleFollow()
+
+        expect(
+          sentFrames('doc_subscribe').map(({ data }) => data.workflow_id)
+        ).toEqual(['wf-first'])
+        expect(docOpMinterDeps.current?.boundRootGraphId()).toBeNull()
+        expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
+        expect(hasUnsyncedHumanOps('wf-first')).toBe(true)
+      })
+    })
   })
 
   describe('history row title for the active chat', () => {
