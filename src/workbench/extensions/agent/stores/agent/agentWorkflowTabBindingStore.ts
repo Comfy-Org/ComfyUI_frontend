@@ -172,6 +172,17 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       tabByWorkflow.value[workflowId] = { ...record, confirmedAt: Date.now() }
     }
 
+    // Save As on a draft and an in-place rename keep the tab and change its
+    // path. The owner's record follows the tab, or after a reload no tab sits
+    // at the stored path and the chat reports its workflow as gone.
+    function followRenamedTab({ tab, path }: OpenTab, previous: OpenTab[]) {
+      const before = previous.find((entry) => entry.tab === tab)
+      if (before === undefined || before.path === path) return
+      const workflowId = recordIdFor(before.path)
+      if (workflowId !== undefined && isVerifiedOwner(workflowId, tab))
+        bind(workflowId, path)
+    }
+
     watch(
       (): OpenTab[] =>
         workflows.openWorkflows.map((tab) => ({ tab, path: tab.path })),
@@ -179,6 +190,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         previous
           .filter(({ tab }) => !open.some((entry) => entry.tab === tab))
           .forEach(releaseClosedTab)
+        open.forEach((entry) => followRenamedTab(entry, previous))
         open.forEach(adoptOpenTab)
       },
       { immediate: true }

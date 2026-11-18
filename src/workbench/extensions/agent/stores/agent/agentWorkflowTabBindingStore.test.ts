@@ -246,6 +246,59 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-3', third)).toBe(true)
   })
 
+  it('moves the binding with its draft when Save As renames the tab', async () => {
+    const savedPath = 'workflows/Saved by user.json'
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Unsaved Workflow.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+
+    await workflows.renameWorkflow(draft, savedPath)
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-draft')).toBe(savedPath)
+    expect(bindings.workflowIdFor(savedPath)).toBe('wf-draft')
+    expect(bindings.workflowIdFor(DEFAULT_PATH)).toBeUndefined()
+    expect(storedBindings()).toMatchObject({
+      'wf-draft': { tabPath: savedPath, graphId: DRAFT_GRAPH_ID }
+    })
+
+    bindings.$dispose()
+    const reloaded = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    expect(reloaded.tabPathFor('wf-draft')).toBe(savedPath)
+    expect(reloaded.matchesWorkflow('wf-draft', draft)).toBe(true)
+  })
+
+  it('leaves a binding in place when a tab that does not own it is renamed', async () => {
+    seedBindings({
+      'wf-abandoned': {
+        tabPath: DEFAULT_PATH,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const fresh = workflows.createTemporary()
+    workflows.openWorkflowsInBackground({ right: [fresh.path] })
+    await nextTick()
+
+    await workflows.renameWorkflow(fresh, 'workflows/Renamed.json')
+    await nextTick()
+
+    expect(bindings.workflowIdFor('workflows/Renamed.json')).toBeUndefined()
+    expect(storedBindings()).toMatchObject({
+      'wf-abandoned': { tabPath: DEFAULT_PATH, graphId: DRAFT_GRAPH_ID }
+    })
+  })
+
   it('prunes bindings not confirmed within the TTL at store creation', () => {
     seedBindings({
       'wf-expired': {

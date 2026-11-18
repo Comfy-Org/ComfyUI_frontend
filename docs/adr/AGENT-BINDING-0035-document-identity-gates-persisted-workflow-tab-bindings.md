@@ -82,6 +82,12 @@ A persisted binding is keyed by tab path and proven by document identity.
   never-reused paths; it is not the correctness gate. The initial value is 30
   days; the value itself is open and needs a product call, since nothing in
   the code fixes it.
+- A record follows its verified owner across a rename. Save As on a draft and
+  an in-place rename keep the same tab and change its path, so the watcher
+  rebinds the record to the new path. Without this the record keeps the old
+  path, no tab sits there after a reload, and the chat reports its workflow
+  as gone (release QA C-164). A rename of a tab that does not own the record
+  moves nothing.
 
 The gate lives in the lookups, not only in the adoption watcher, because
 navigation consumers (`TabLinkCard`, `useAgentTargetNavigation`) resolve
