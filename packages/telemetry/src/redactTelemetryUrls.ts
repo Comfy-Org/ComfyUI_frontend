@@ -23,8 +23,9 @@ const SPACED_QUERY_URL_PATTERN = new RegExp(
   'gi'
 )
 
-const QUOTE_CLOSES_RUN = `[\\s)\\]}.!:>]|$`
-const QUERY_VALUE_UNIT = `[^\\s"'<>]|'(?!(?:${QUOTE_CLOSES_RUN})|[,;](?:'|${QUOTE_CLOSES_RUN}))`
+const QUOTE_IMMEDIATE_END = `\\s|$`
+const QUOTE_CLOSES_RUN = `${QUOTE_IMMEDIATE_END}|[)\\]}.,;!:>](?:${QUOTE_IMMEDIATE_END}|')`
+const QUERY_VALUE_UNIT = `[^\\s"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
 const QUERY_VALUE_RUN = `(?:${QUERY_VALUE_UNIT})*`
 const QUERY_VALUE_RUN_PLUS = `(?:${QUERY_VALUE_UNIT})+`
 const URL_TOKEN_PATTERN = new RegExp(

@@ -199,6 +199,11 @@ describe('redactTelemetryUrls', () => {
       kind: 'a quoted URL followed by an exclamation mark',
       input: "say 'https://h/x?token=S'!",
       expected: "say 'https://h/x'!"
+    },
+    {
+      kind: 'a period-glued suffix after the query apostrophe',
+      input: "https://h/x?q=a'.b&token=SECRET",
+      expected: 'https://h/x'
     }
   ])('$kind', ({ input, expected }) => {
     it('redacts a query apostrophe without leaking the rest of the query', () => {
