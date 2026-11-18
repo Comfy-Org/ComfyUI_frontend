@@ -21,14 +21,8 @@ import { uploadImageExtension } from '@/extensions/core/uploadImage'
 import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
+import { publishedApi } from './__tests__/publishedApi'
 import { useComfyApiStore } from './comfyApiStore'
-
-function publishedApi() {
-  useComfyApiStore().publish()
-  const { comfy_v4 } = window
-  assert(comfy_v4)
-  return comfy_v4
-}
 
 function showOnCanvas(graph: LGraph) {
   const previousCanvas = app.canvasOrUndefined
