@@ -761,7 +761,7 @@ function startAgentCrdtFollower(
       workflowId: subscribedWorkflowId.value
     })
     transport.reconnect()
-    sender.abortIfUnbound('subscribe_refused')
+    sender.abortIfUnbound()
     releaseHeldOps()
     return true
   }
