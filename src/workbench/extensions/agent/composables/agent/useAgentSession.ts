@@ -2512,8 +2512,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     const firstLive = connection === 'initial'
     connection = 'live'
-    if (reconnected) reconcileLiveTurns('reconnect')
-    else if (firstLive) reconcileLiveTurns('hydrate')
+    if (reconnected) {
+      conversationStore.markActiveTurnMissedFrames()
+      reconcileLiveTurns('reconnect')
+    } else if (firstLive) reconcileLiveTurns('hydrate')
   }
 
   function reconcileLiveTurns(cause: RecoveryCause): void {

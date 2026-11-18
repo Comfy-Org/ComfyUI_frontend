@@ -442,6 +442,7 @@ export const useAgentConversationStore = defineStore(
       UnreconciledSnapshotTurn
     >()
     const snapshotTurnSettled = createEventHook<LiveTurn>()
+    const missedFrameTurnIds = new Set<TurnId>()
     const workflowStore = useWorkflowStore()
     const openTabPaths = computed(
       () =>
@@ -971,8 +972,9 @@ export const useAgentConversationStore = defineStore(
       | UnreconciledSnapshotTurn
       | undefined {
       const slot = activeSlot.value
-      if (slot?.origin !== 'snapshot' || slot.threadId === null)
-        return undefined
+      if (slot === null || slot.threadId === null) return undefined
+      const missedFrames = missedFrameTurnIds.delete(slot.turnId)
+      if (slot.origin !== 'snapshot' && !missedFrames) return undefined
       const unreconciled: UnreconciledSnapshotTurn = {
         turn: { threadId: slot.threadId, messageId: slot.turnId },
         messageId: slot.message.id,
@@ -994,6 +996,15 @@ export const useAgentConversationStore = defineStore(
       settledActiveTransports.delete(unreconciled.transport)
       unreconciled.announced = true
       void snapshotTurnSettled.trigger(unreconciled.turn)
+    }
+
+    /**
+     * The socket dropped while the active turn was live, so frames may be
+     * missing; settling it then reconciles with the stored row.
+     */
+    function markActiveTurnMissedFrames(): void {
+      const slot = activeSlot.value
+      if (slot !== null) missedFrameTurnIds.add(slot.turnId)
     }
 
     function reconcileSettledTurn(
@@ -1509,6 +1520,7 @@ export const useAgentConversationStore = defineStore(
 
     function clearActive(): void {
       activeSlot.value = null
+      missedFrameTurnIds.clear()
     }
 
     // PM-1575: reset() and hydrate() both discard the active transport (if
@@ -1868,6 +1880,7 @@ export const useAgentConversationStore = defineStore(
       historySkillNames,
       settleTurn,
       reconcileSettledTurn,
+      markActiveTurnMissedFrames,
       isApprovalShown,
       isAskShown,
       hasApprovalShown,

@@ -2707,6 +2707,63 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  describe('a local turn that missed frames while the connection was down', () => {
+    const storedParts = (): AssistantMessage['parts'] => [
+      { type: 'thinking', text: 'round one', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      },
+      { type: 'thinking', text: 'round two', state: 'done' },
+      { type: 'text', text: 'Added it.', state: 'done' }
+    ]
+    const missedToolCallThenSettled = () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(thinking('t1', 'round one'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(thinking('t1', 'round two'))
+      store.ingest(delta('t1', 'Added it.'))
+      store.ingest(done('t1'))
+      return { store, settled }
+    }
+
+    it('asks for the stored row when the socket settles it first', () => {
+      const { settled } = missedToolCallThenSettled()
+
+      expect(settled).toEqual([T1])
+    })
+
+    it('renders the stored row, so the missed tool call shows and each round shows once', () => {
+      const { store } = missedToolCallThenSettled()
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: T1 },
+        storedParts()
+      )
+
+      expect(store.messages[0].parts).toEqual(storedParts())
+    })
+
+    it('does not ask for the stored row when the turn kept its connection', () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(thinking('t1', 'round one'))
+      store.ingest(done('t1'))
+
+      expect(settled).toEqual([])
+    })
+  })
+
   it('keeps a local tab link between persisted text and tool parts', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
