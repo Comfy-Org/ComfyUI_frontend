@@ -1,0 +1,82 @@
+name: 'CI: Authenticated Open on Cloud smoke'
+
+on:
+  push:
+    branches: [codex/open-on-cloud-signed-out-live-e2e]
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: authenticated-open-on-cloud-smoke
+  cancel-in-progress: false
+
+jobs:
+  authenticated-relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      OPEN_ON_CLOUD_URL: https://pr-19562.testenvs.comfy.org
+      ROLLOUT_REVISION: c6e01a3186013a31d50888376821fa34272d58be
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Build the local editor with the frontend rollout
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$ROLLOUT_REVISION"
+          rollout_file=src/platform/openOnCloud/localOpenOnCloudRollout.ts
+          git show "$ROLLOUT_REVISION:$rollout_file" > "$rollout_file"
+          VITE_STAGING_CLOUD_BASE_URL="$OPEN_ON_CLOUD_URL" \
+            VITE_USE_LEGACY_DEFAULT_GRAPH=true pnpm exec vite build --config vite.config.mts
+
+      - uses: ./.github/actions/start-comfyui-server
+
+      - name: Install Chromium
+        run: pnpm exec playwright install chromium
+
+      - name: Sign in, import the workflow, and complete a Cloud job
+        shell: bash
+        env:
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+          PLAYWRIGHT_CLOUD_LIVE: '1'
+          PLAYWRIGHT_CLOUD_SMOKE: '1'
+          PLAYWRIGHT_TEST_URL: http://localhost:8188
+          PLAYWRIGHT_SETUP_API_URL: http://localhost:8188
+        run: |
+          set -euo pipefail
+          if [ "$SMOKE_ACCOUNT_EMAIL" != smoke-test@comfy.org ] || [ -z "$SMOKE_ACCOUNT_PASSWORD" ]; then
+            echo "::error::Configure the smoke-test@comfy.org credentials in the frontend CI secrets."
+            exit 1
+          fi
+          pnpm test:browser browser_tests/tests/liveCloud/openOnCloudSmoke.spec.ts \
+            --project=cloud-live --workers=1 --reporter=line \
+            --output="$RUNNER_TEMP/open-on-cloud-smoke"
+
+      - name: Upload screenshot and job evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: open-on-cloud-authenticated-evidence
+          path: |
+            ${{ runner.temp }}/open-on-cloud-smoke/**/01-hosted-sign-in.png
+            ${{ runner.temp }}/open-on-cloud-smoke/**/02-imported-workflow.png
+            ${{ runner.temp }}/open-on-cloud-smoke/**/03-after-cloud-execution.png
+            ${{ runner.temp }}/open-on-cloud-smoke/**/cloud-job-result.json
+          retention-days: 7
+          if-no-files-found: ignore

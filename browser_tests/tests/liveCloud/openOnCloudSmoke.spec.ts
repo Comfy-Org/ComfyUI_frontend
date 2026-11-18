@@ -1,3 +1,5 @@
+import { writeFile } from 'node:fs/promises'
+
 import type { Request } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { zJobDetailResponse, zPromptResponse } from '@comfyorg/ingest-types/zod'
@@ -39,7 +41,7 @@ test.describe(
       cloudOrigin,
       comfyPage,
       relayTransfer
-    }) => {
+    }, testInfo) => {
       test.setTimeout(240_000)
       const email = process.env.SMOKE_ACCOUNT_EMAIL
       const password = process.env.SMOKE_ACCOUNT_PASSWORD
@@ -47,6 +49,9 @@ test.describe(
         throw new Error('Set SMOKE_ACCOUNT_EMAIL and SMOKE_ACCOUNT_PASSWORD')
       }
       const { page, actionbar } = comfyPage
+      const capture = async (name: string) => {
+        await page.screenshot({ path: testInfo.outputPath(name) })
+      }
 
       await test.step('Follow the Desktop relay and sign in on the Cloud preview', async () => {
         await page.goto(relayTransfer.url, { waitUntil: 'domcontentloaded' })
@@ -57,6 +62,7 @@ test.describe(
             exact: true
           })
         ).toBeVisible()
+        await capture('01-hosted-sign-in.png')
         await page
           .getByRole('button', { name: 'Use email instead', exact: true })
           .click()
@@ -91,6 +97,7 @@ test.describe(
             )
           )
           .toEqual(['EmptyImage', 'SaveImage'])
+        await capture('02-imported-workflow.png')
       })
 
       await test.step('Run the imported workflow and confirm its Cloud output', async () => {
@@ -127,6 +134,11 @@ test.describe(
           status: 'completed',
           outputs_count: 1
         })
+        await writeFile(
+          testInfo.outputPath('cloud-job-result.json'),
+          JSON.stringify(completedJob, null, 2)
+        )
+        await capture('03-after-cloud-execution.png')
       })
     })
   }
