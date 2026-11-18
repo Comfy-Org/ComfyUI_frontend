@@ -223,6 +223,7 @@ describe('offersAutoTopUpAtLocalCheckout', () => {
     atCheckout: boolean
     isCloud?: boolean
     isDesktop?: boolean
+    host?: Host
     expected: boolean
   }>([
     {
@@ -248,6 +249,7 @@ describe('offersAutoTopUpAtLocalCheckout', () => {
       handoffFlag: true,
       atCheckout: true,
       isDesktop: true,
+      host: 'signed_in',
       expected: false
     },
     {
@@ -264,10 +266,11 @@ describe('offersAutoTopUpAtLocalCheckout', () => {
       atCheckout,
       isCloud = false,
       isDesktop = false,
+      host = 'none',
       expected
     }) => {
       Object.assign(distribution, { isCloud, isDesktop })
-      if (isDesktop) await startHost('signed_in', true)
+      await startHost(host, true)
       setLocalBillingWebEnabled(handoffFlag)
       setLocalAutoTopUpAtCheckoutEnabled(atCheckout)
 

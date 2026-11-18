@@ -152,10 +152,10 @@ describe('useAddCreditsAutoTopUpOffer', () => {
       status: 'off',
       atCheckout: true
     })
-    await new Promise((resolve) => setTimeout(resolve))
 
-    expect(offer.value.kind).toBe('hidden')
     expect(activatesAtCheckout()).toBe(false)
+    expect(billingApi.listSavedPaymentMethods).not.toHaveBeenCalled()
+    expect(offer.value.kind).toBe('hidden')
   })
 
   it('shows nothing when the auto top-up rollout is off', () => {
