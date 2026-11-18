@@ -9,22 +9,22 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { cancelNodePress } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 
 type MouseCallbackInvoker = (
   node: LGraphNode,
   event: CanvasPointerEvent,
   pos: Point,
   canvas: LGraphCanvas
-) => void
+) => boolean | void
 
 const invokers = {
   onMouseEnter: (node, event) => node.onMouseEnter?.(event),
   onMouseMove: (node, event, pos, canvas) =>
     node.onMouseMove?.(event, pos, canvas),
   onMouseLeave: (node, event) => node.onMouseLeave?.(event),
-  onMouseDown: (node, event, pos, canvas) => {
+  onMouseDown: (node, event, pos, canvas) =>
     node.onMouseDown?.(event, pos, canvas)
-  }
 } satisfies Record<string, MouseCallbackInvoker>
 
 type MouseCallback = keyof typeof invokers
@@ -39,10 +39,14 @@ function toCanvasPointerEvent(
   return event
 }
 
-function holdCanvasPointerUntilRelease(canvas: LGraphCanvas) {
+function holdCanvasPointerUntilRelease(
+  canvas: LGraphCanvas,
+  pointerId: number
+) {
   if (canvas.pointer.isDown) return
   canvas.pointer.isDown = true
-  const release = () => {
+  const release = (event: PointerEvent) => {
+    if (event.pointerId !== pointerId) return
     canvas.pointer.isDown = false
     window.removeEventListener('pointerup', release, true)
     window.removeEventListener('pointercancel', release, true)
@@ -78,9 +82,9 @@ export function useNodeMouseCallbacks(
     node: LGraphNode | undefined,
     callback: MouseCallback,
     pointerEvent: PointerEvent
-  ) {
+  ): boolean {
     const canvas = canvasStore.canvas
-    if (!canvas || !node?.[callback]) return
+    if (!canvas || !node?.[callback]) return false
     canvas.setDirty(true)
     const event = toCanvasPointerEvent(canvas, pointerEvent)
     try {
@@ -88,9 +92,10 @@ export function useNodeMouseCallbacks(
         event.canvasX - node.pos[0],
         event.canvasY - node.pos[1]
       ]
-      invokers[callback](node, event, pos, canvas)
+      return invokers[callback](node, event, pos, canvas) === true
     } catch (error) {
       reportMouseCallbackFailure(error, node, callback)
+      return false
     }
   }
 
@@ -110,10 +115,10 @@ export function useNodeMouseCallbacks(
   useEventListener(target, 'pointerdown', (event: PointerEvent) => {
     const canvas = canvasStore.canvas
     const node = canvas?.graph?.getNodeById(toValue(nodeId))
-    if (!canvas || canvasStore.isReadOnly || event.button !== 0) return
-    if (!node?.onMouseDown) return
-    holdCanvasPointerUntilRelease(canvas)
-    deliver(node, 'onMouseDown', event)
+    if (!canvas || canvasStore.isReadOnly || canvas.selectOnly) return
+    if (event.button !== 0 || !node?.onMouseDown) return
+    holdCanvasPointerUntilRelease(canvas, event.pointerId)
+    if (deliver(node, 'onMouseDown', event)) cancelNodePress(event.pointerId)
   })
 
   useEventListener(target, 'pointerleave', (event: PointerEvent) => {

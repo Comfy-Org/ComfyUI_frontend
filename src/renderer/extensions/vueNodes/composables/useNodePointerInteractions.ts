@@ -36,6 +36,11 @@ interface Press {
 
 const pressCancellers = new Map<number, () => void>()
 
+/** Cancels the node press, and any drag it started, held by this pointer. */
+export function cancelNodePress(pointerId: number) {
+  pressCancellers.get(pointerId)?.()
+}
+
 export function useNodePointerInteractions(
   nodeStateRef: MaybeRefOrGetter<NodeState>
 ) {

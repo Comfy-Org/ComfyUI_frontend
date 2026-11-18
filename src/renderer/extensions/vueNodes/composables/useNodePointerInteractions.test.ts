@@ -18,6 +18,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useNodeMouseCallbacks } from '@/renderer/extensions/vueNodes/composables/useNodeMouseCallbacks'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
@@ -321,6 +322,22 @@ describe('useNodePointerInteractions', () => {
     expect(endDrag).toHaveBeenCalledExactlyOnceWith(up, first.id)
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
     expect(selectedTitles(canvas)).toEqual(['First', 'Second'])
+  })
+
+  it('a node whose classic onMouseDown returns true neither selects nor drags', async () => {
+    const { canvas, first, second } = await setup()
+    first.onMouseDown = () => true
+    const node = mountNode(createNodeState({ id: first.id }))
+    node.scope.run(() => useNodeMouseCallbacks(first.id, node.element))
+    await nextTick()
+    canvas.select(second)
+
+    node.press(10, 10)
+    node.move(10 + DRIFT + 1, 10)
+    node.release(40, 10)
+
+    expect(useNodeDrag().startDrag).not.toHaveBeenCalled()
+    expect(selectedTitles(canvas)).toEqual(['Second'])
   })
 
   it('plain drag of a selected node keeps the multi-selection', async () => {

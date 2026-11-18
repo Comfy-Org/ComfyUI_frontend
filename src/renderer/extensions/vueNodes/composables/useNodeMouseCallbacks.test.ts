@@ -65,11 +65,14 @@ async function renderHoverHost(nodeId: NodeId) {
           clientX: 130,
           clientY: 245,
           button: 0,
+          pointerId: 1,
           bubbles: true
         })
       ),
-    release: () =>
-      window.dispatchEvent(new PointerEvent('pointerup', { button: 0 }))
+    release: (pointerId = 1) =>
+      window.dispatchEvent(
+        new PointerEvent('pointerup', { button: 0, pointerId })
+      )
   }
 }
 
@@ -115,11 +118,29 @@ describe('useNodeMouseCallbacks', () => {
 
     const pointer = await renderHoverHost(node.id)
     pointer.down()
-    const heldDuringPress = canvas.pointer_is_down
+    pointer.release(2)
+    const heldAfterOtherPointerRelease = canvas.pointer_is_down
     pointer.release()
 
     expect(downs).toEqual([{ pos: [30, 45], pointerIsDown: true }])
-    expect(heldDuringPress).toBe(true)
+    expect(heldAfterOtherPointerRelease).toBe(true)
+    expect(canvas.pointer_is_down).toBe(false)
+  })
+
+  it('does not call onMouseDown while the canvas is select-only', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Comparer')
+    graph.add(node)
+    const canvas = createCanvas(graph)
+    canvas.selectOnly = true
+    const onMouseDown = vi.fn(() => false)
+    node.onMouseDown = onMouseDown
+    await nextTick()
+
+    const pointer = await renderHoverHost(node.id)
+    pointer.down()
+
+    expect(onMouseDown).not.toHaveBeenCalled()
     expect(canvas.pointer_is_down).toBe(false)
   })
 
