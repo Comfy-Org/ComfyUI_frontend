@@ -331,6 +331,75 @@ describe('AgentPanel', () => {
     )
   })
 
+  describe('landing state for the visible workflow', () => {
+    function mountLanding(props: Record<string, unknown> = {}) {
+      return render(AgentPanel, {
+        props: {
+          entries: [],
+          historyGroups: createHistoryGroups(),
+          landing: { workflowName: 'portrait', status: 'loading' as const },
+          ...props
+        },
+        global: { plugins: [i18n], stubs: { Composer: true } }
+      })
+    }
+
+    it('hides starter prompts while loading or failed, keeps the composer usable, and emits retryLanding', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const { emitted, rerender } = mountLanding()
+
+      expect(screen.queryByTestId('suggested-prompts')).toBeNull()
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+
+      await vi.advanceTimersByTimeAsync(120)
+      expect(
+        screen.getByRole('status', {
+          name: i18n.global.t('agent.loadingWorkflowChats', {
+            workflowName: 'portrait'
+          })
+        })
+      ).toBeVisible()
+
+      await rerender({
+        landing: { workflowName: 'portrait', status: 'failed' as const }
+      })
+      expect(screen.queryByTestId('suggested-prompts')).toBeNull()
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+
+      vi.useRealTimers()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.retryFollowedChat', {
+            workflowName: 'portrait'
+          })
+        })
+      )
+
+      expect(emitted('retryLanding')).toHaveLength(1)
+    })
+
+    it('shows only a loading state while the chat of the tab opens', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      mountLanding({ landing: null, openingWorkflowName: 'portrait' })
+
+      expect(screen.queryByTestId('suggested-prompts')).toBeNull()
+      expect(screen.queryByTestId('workflow-chat-landing')).toBeNull()
+      expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+      await vi.advanceTimersByTimeAsync(120)
+      expect(
+        screen.getByRole('status', {
+          name: i18n.global.t('agent.openingWorkflowChat', {
+            workflowName: 'portrait'
+          })
+        })
+      ).toBeVisible()
+    })
+  })
+
   it('renders the winning static Cloud starter prompts', () => {
     distribution.isCloud = true
     render(AgentPanel, {

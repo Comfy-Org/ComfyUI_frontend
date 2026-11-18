@@ -30,6 +30,9 @@ type WorkflowResolverDeps = {
 
 export type CloudWorkflowLifecycle = 'live' | 'gone' | 'unknown'
 
+/** How a refresh of the cloud workflow list ended: last page reached, stopped early, or no answer. */
+export type CloudWorkflowRefreshOutcome = 'complete' | 'incomplete' | 'failed'
+
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
@@ -51,25 +54,29 @@ export function useAgentWorkflowResolver({
     )
   })
 
-  async function refreshCloudWorkflowIds(): Promise<boolean> {
+  async function refreshCloudWorkflowListing(): Promise<CloudWorkflowRefreshOutcome> {
     const generation = ++refreshGeneration
     try {
       const { entries, complete } = await listCloudWorkflows()
-      if (generation !== refreshGeneration) return false
+      if (generation !== refreshGeneration) return 'failed'
       listedCloudIds.value = new Set(entries.map(({ id }) => id))
       listingComplete.value = complete
       cloudIndex.value = entries.flatMap(({ id, name }) =>
         name === undefined ? [] : [{ id, name }]
       )
-      return true
+      return complete ? 'complete' : 'incomplete'
     } catch (error) {
-      if (generation !== refreshGeneration) return false
+      if (generation !== refreshGeneration) return 'failed'
       reportError(error, {
         surface: 'agent',
         errorType: 'agent_cloud_workflow_ids_refresh_failed'
       })
-      return false
+      return 'failed'
     }
+  }
+
+  async function refreshCloudWorkflowIds(): Promise<boolean> {
+    return (await refreshCloudWorkflowListing()) !== 'failed'
   }
 
   /**
@@ -252,6 +259,7 @@ export function useAgentWorkflowResolver({
 
   return {
     refreshCloudWorkflowIds,
+    refreshCloudWorkflowListing,
     forgetCloudWorkflowId,
     cloudIdFor,
     cloudWorkflowName,

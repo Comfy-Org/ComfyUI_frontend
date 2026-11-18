@@ -6054,7 +6054,24 @@ describe('AgentPanelRoot history', () => {
       )
     }
 
-    it('keeps the current chat when the active tab has no matching thread', async () => {
+    const mismatchNotice = () => i18n.global.t('agent.viewingDifferentWorkflow')
+
+    function watchStarterPrompts(): () => boolean {
+      let shown = false
+      const look = () => {
+        if (screen.queryByTestId('suggested-prompts') !== null) shown = true
+      }
+      look()
+      const observer = new MutationObserver(look)
+      observer.observe(document.body, { childList: true, subtree: true })
+      onTestFinished(() => observer.disconnect())
+      return () => {
+        look()
+        return shown
+      }
+    }
+
+    it('T1-02: shows a blank chat when the active tab has no matching thread', async () => {
       const first = addTab('workflows/first.json')
       const second = addTab('workflows/second.json')
       workflowStore.activeWorkflow = second
@@ -6077,10 +6094,97 @@ describe('AgentPanelRoot history', () => {
       )
 
       await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBeNull()
+      )
+      expect(userPrompts()).toEqual([])
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+      expect(screen.queryByText(mismatchNotice())).toBeNull()
+      expect(loadedThreads).toEqual(['th-first'])
+    })
+
+    it('T1-02: shows a blank chat for a saved tab that has no cloud workflow', async () => {
+      const { loadedThreads } = await openFirstChatWithHistory([])
+      const unlisted = addTab('workflows/fourth.json')
+
+      await activateTabAsUser(unlisted)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBeNull()
+      )
+      expect(userPrompts()).toEqual([])
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(unlisted.path)
+      expect(screen.queryByText(mismatchNotice())).toBeNull()
+      expect(loadedThreads).toEqual(['th-first'])
+    })
+
+    it('T1-01 T1-03: shows a blank chat for a new unsaved tab at once without a loading state and keeps the previous chat in history', async () => {
+      const { loadedThreads } = await openFirstChatWithHistory([])
+      const blank = addTab('workflows/Unsaved Workflow.json', {
+        isTemporary: true
+      })
+
+      await activateTabAsUser(blank)
+
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(screen.queryByTestId('workflow-chat-landing')).toBeNull()
+      expect(userPrompts()).toEqual([])
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(blank.path)
+      expect(screen.queryByText(mismatchNotice())).toBeNull()
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+      expect(loadedThreads).toEqual(['th-first'])
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      expect(await screen.findByText('First chat')).toBeVisible()
+    })
+
+    it('T1-01: leaves a running chat running when the tab has no chat of its own', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory([])
+      renderWithSelectedTarget()
+      await sendFromComposer('make it blue')
+      await vi.waitFor(() =>
+        expect(useAgentComposerStore().submission).toBeNull()
+      )
+      expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+
+      await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBeNull()
+      )
+      expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+      expect(userPrompts()).toEqual([])
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+      expect(fetchRequests({ method: 'POST', url: /\/cancel$/ })).toEqual([])
+    })
+
+    it('T1-10 T1-17: forgets a deleted chat so returning to its tab does not bring it back', async () => {
+      const { first, second, loadedThreads } = await openFirstChatWithHistory(
+        []
+      )
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+      )
+      await userEvent.click(
+        await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+      )
+      await activateTabAsUser(second)
+      await activateTabAsUser(first)
       await settleFollow()
 
-      expect(useAgentConversationStore().threadId).toBe('th-first')
-      expect(userPrompts()).toEqual(['Prompt in th-first'])
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
       expect(loadedThreads).toEqual(['th-first'])
     })
 
@@ -6469,7 +6573,6 @@ describe('AgentPanelRoot history', () => {
     it.for([
       {
         outcome: 'succeeds',
-        titleSource: 'existing chat',
         response: async () => transcriptFor('th-second', 'wf-second'),
         expectedThreadId: 'th-second',
         expectedTitle: 'Second chat',
@@ -6477,14 +6580,13 @@ describe('AgentPanelRoot history', () => {
       },
       {
         outcome: 'fails',
-        titleSource: 'unsent chat',
         response: async () => json(500, { error: 'unavailable' }),
         expectedThreadId: null,
-        expectedTitle: 'Duck storyboard',
+        expectedTitle: 'Untitled',
         showsFailure: true
       }
     ])(
-      'keeps the $titleSource title when following from a renamed unsent chat $outcome',
+      'T1-04: clears the unsent chat title when following from a renamed unsent chat $outcome',
       async ({ response, expectedThreadId, expectedTitle, showsFailure }) => {
         workflowStore.activeWorkflow = addTab('workflows/first.json')
         const second = addTab('workflows/second.json')
@@ -6652,7 +6754,7 @@ describe('AgentPanelRoot history', () => {
       expect(loadedThreads).toEqual(['th-first', 'th-third'])
     })
 
-    it('does not follow a temporary tab, including one the agent created', async () => {
+    it('T1-05: opens the chat bound to an unsaved tab the user returns to', async () => {
       const first = addTab('workflows/first.json')
       const scratch = addTab('workflows/second.json', { isTemporary: true })
       workflowStore.activeWorkflow = first
@@ -6672,9 +6774,26 @@ describe('AgentPanelRoot history', () => {
 
       await activateTabAsUser(scratch)
 
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      expect(loadedThreads).toEqual(['th-second'])
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(scratch.path)
+    })
+
+    it('T1-26: keeps the chat when the app opens an unsaved tab on its own', async () => {
+      const { first, loadedThreads } = await openFirstChatWithHistory([])
+      const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+
+      await useWorkflowService().openWorkflow(scratch)
       await settleFollow()
-      expect(loadedThreads).not.toContain('th-second')
-      expect(useAgentConversationStore().threadId).toBeNull()
+
+      expect(workflowStore.activeWorkflow?.path).toBe(scratch.path)
+      expect(useAgentConversationStore().threadId).toBe('th-first')
+      expect(userPrompts()).toEqual(['Prompt in th-first'])
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+      expect(screen.getByText(mismatchNotice())).toBeVisible()
+      expect(loadedThreads).toEqual(['th-first'])
     })
 
     it('lands the chat of the last activated tab when activations overlap', async () => {
@@ -6770,7 +6889,7 @@ describe('AgentPanelRoot history', () => {
         answer: () => json(500, { error: 'unavailable' })
       }
     ])(
-      'keeps the original chat unlocked when pending second-tab messages $outcome after returning to first',
+      'T1-04 T1-10: resumes the original chat when pending second-tab messages $outcome after returning to first',
       async ({ answer }) => {
         const first = addTab('workflows/first.json')
         const second = addTab('workflows/second.json')
@@ -6822,6 +6941,9 @@ describe('AgentPanelRoot history', () => {
           })
         ).toBeVisible()
         await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['Prompt in th-first'])
+        )
         await waitFor(() =>
           expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
             'inert'
@@ -6843,7 +6965,7 @@ describe('AgentPanelRoot history', () => {
         )
         expect(screen.getByRole('textbox')).toHaveTextContent(/^$/)
         expect(screen.queryByText(followFailure())).toBeNull()
-        expect(loadedThreads).toEqual(['th-first', 'th-second'])
+        expect(loadedThreads).toEqual(['th-first', 'th-second', 'th-first'])
       }
     )
 
@@ -6937,43 +7059,47 @@ describe('AgentPanelRoot history', () => {
     }
 
     it.for([
-      {
-        listing: 'failed',
-        cached: 'an old matching chat',
-        threads: [cachedSecondThread],
-        answer: failedFollowListing
-      },
-      {
-        listing: 'incomplete',
-        cached: 'an old matching chat',
-        threads: [cachedSecondThread],
-        answer: incompleteFollowListing
-      },
-      {
-        listing: 'failed',
-        cached: 'no matching chat',
-        threads: [],
-        answer: failedFollowListing
-      },
-      {
-        listing: 'incomplete',
-        cached: 'no matching chat',
-        threads: [],
-        answer: incompleteFollowListing
-      }
+      { listing: 'failed', answer: failedFollowListing },
+      { listing: 'incomplete', answer: incompleteFollowListing }
     ])(
-      'keeps the current chat after a $listing follow listing with $cached cached, then retries the newest chat',
-      async ({ threads, answer }) => {
-        const { first, second, loadedThreads } =
-          await openFirstChatWithHistory(threads)
+      'T1-05: opens the known chat when the $listing refresh behind it settles',
+      async ({ answer }) => {
+        const { second, loadedThreads } = await openFirstChatWithHistory([
+          cachedSecondThread
+        ])
         respondToFetch(threadListRoute, answer)
 
         await activateTabAsUser(second)
         await settleFollow()
 
-        expect(useAgentConversationStore().threadId).toBe('th-first')
-        expect(userPrompts()).toEqual(['Prompt in th-first'])
-        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-second')
+        )
+        expect(userPrompts()).toEqual(['Prompt in th-second'])
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+        expect(loadedThreads).toEqual(['th-first', 'th-second'])
+        expect(screen.queryByText(followFailure())).toBeNull()
+        expect(executionErrors.recordPromptError).not.toHaveBeenCalled()
+        expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
+      { listing: 'failed', answer: failedFollowListing },
+      { listing: 'incomplete', answer: incompleteFollowListing }
+    ])(
+      'T1-04 T1-09: clears the old chat and shows retry in the body after a $listing follow listing, then opens the newest chat on retry',
+      async ({ answer }) => {
+        const { second, loadedThreads } = await openFirstChatWithHistory([])
+        respondToFetch(threadListRoute, answer)
+        const startersShown = watchStarterPrompts()
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(userPrompts()).toEqual([])
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
         expect(workflowStore.activeWorkflow?.path).toBe(second.path)
         expect(loadedThreads).toEqual(['th-first'])
         expect(await screen.findByText(followFailure())).toBeVisible()
@@ -7013,33 +7139,68 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
         expect(loadedThreads).toEqual(['th-first', 'th-newest'])
         expect(screen.queryByText(followFailure())).toBeNull()
+        expect(startersShown()).toBe(false)
       }
     )
+
+    it('T1-02 T1-08: shows neither starter prompts nor failure while loading, then shows starter prompts when no chat exists', async () => {
+      const { second } = await openFirstChatWithHistory([])
+      let answerList!: () => void
+      const listing = new Promise<Response>((resolve) => {
+        answerList = () => resolve(json(200, agentThreadList([])))
+      })
+      respondToFetch(threadListRoute, () => listing)
+      const startersShown = watchStarterPrompts()
+
+      await activateTabAsUser(second)
+      await settleFollow()
+
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(screen.queryByTestId('suggested-prompts')).toBeNull()
+      expect(startersShown()).toBe(false)
+
+      answerList()
+
+      expect(await screen.findByTestId('suggested-prompts')).toBeVisible()
+      expect(startersShown()).toBe(true)
+    })
+
+    it('T1-09: shows the error in the body when it cannot be told whether the tab has chats', async () => {
+      await openFirstChatWithHistory([])
+      const unlisted = addTab('workflows/fourth.json')
+      respondToFetch(/\/api\/workflows(?:\?|$)/, () =>
+        json(500, { error: 'unavailable' })
+      )
+
+      await activateTabAsUser(unlisted)
+
+      expect(
+        await screen.findByText(
+          i18n.global.t('agent.followedChatOpenFailed', {
+            workflowName: 'fourth'
+          })
+        )
+      ).toBeVisible()
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(userPrompts()).toEqual([])
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(unlisted.path)
+      expect(screen.queryByText(mismatchNotice())).toBeNull()
+    })
 
     it.for([
       {
         listing: 'failed',
-        cancel: 'returning to the original tab',
-        answer: failedFollowListing,
-        retire: activateTabAsUser
-      },
-      {
-        listing: 'incomplete',
-        cancel: 'starting a draft',
-        answer: incompleteFollowListing,
-        retire: async () => useAgentComposerStore().setText('Keep this chat')
+        answer: failedFollowListing
       },
       {
         listing: 'complete',
-        cancel: 'returning to the original tab',
-        answer: () => json(200, agentThreadList([cachedSecondThread])),
-        retire: activateTabAsUser
+        answer: () => json(200, agentThreadList([cachedSecondThread]))
       }
     ])(
-      'ignores a late $listing follow listing after $cancel',
-      async ({ answer, retire }) => {
+      'T1-10 T1-12: ignores a late $listing follow listing after returning to the original tab',
+      async ({ answer }) => {
         const { first, second, loadedThreads } = await openFirstChatWithHistory(
-          [cachedSecondThread]
+          []
         )
         let answerList!: () => void
         const listing = new Promise<Response>((resolve) => {
@@ -7048,21 +7209,18 @@ describe('AgentPanelRoot history', () => {
         respondToFetch(threadListRoute, () => listing)
 
         await activateTabAsUser(second)
-        expect(
-          await screen.findByRole('status', {
-            name: i18n.global.t('agent.openingWorkflowChat', {
-              workflowName: 'second'
-            })
-          })
-        ).toBeVisible()
-        await retire(first)
+        expect(await screen.findByTestId('workflow-chat-landing')).toBeVisible()
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
         answerList()
         await settleFollow()
 
         expect(useAgentConversationStore().threadId).toBe('th-first')
         expect(userPrompts()).toEqual(['Prompt in th-first'])
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
-        expect(loadedThreads).toEqual(['th-first'])
+        expect(loadedThreads).toEqual(['th-first', 'th-first'])
         expect(screen.queryByText(followFailure())).toBeNull()
         expect(screen.queryByRole('status', { name: /Opening/ })).toBeNull()
         expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
@@ -7072,8 +7230,29 @@ describe('AgentPanelRoot history', () => {
       }
     )
 
-    it('keeps the current conversation covered until the followed chat is ready', async () => {
-      await openFirstChatThenLoseTranscripts()
+    it('T1-11: stops a pending follow listing when the user starts typing and keeps the draft', async () => {
+      const { second, loadedThreads } = await openFirstChatWithHistory([])
+      let answerList!: () => void
+      const listing = new Promise<Response>((resolve) => {
+        answerList = () => resolve(incompleteFollowListing())
+      })
+      respondToFetch(threadListRoute, () => listing)
+
+      await activateTabAsUser(second)
+      expect(await screen.findByTestId('workflow-chat-landing')).toBeVisible()
+
+      useAgentComposerStore().setText('Keep this note')
+      answerList()
+      await settleFollow()
+
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(useAgentComposerStore().draft).toBe('Keep this note')
+      expect(screen.queryByText(followFailure())).toBeNull()
+      expect(loadedThreads).toEqual(['th-first'])
+    })
+
+    it('T1-04 T1-05: takes the old conversation out at once and shows the chat of the tab only when it is ready', async () => {
+      await openFirstChatWithHistory([])
       const second = workflowStore.getWorkflowByPath('workflows/second.json')
       assert(second)
       const serve = vi.mocked(fetch).getMockImplementation()
@@ -7114,6 +7293,16 @@ describe('AgentPanelRoot history', () => {
 
       await activateTabAsUser(second)
 
+      expect(screen.queryByTestId('agent-conversation')).toBeNull()
+      expect(screen.queryByText('Prompt in th-first')).toBeNull()
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+
+      answerList()
+      await messagesRequested
+
       expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
       expect(
         await screen.findByRole('status', {
@@ -7122,26 +7311,9 @@ describe('AgentPanelRoot history', () => {
           })
         })
       ).toBeVisible()
-      expect(
-        within(screen.getByTestId('agent-conversation')).getByText(
-          'Prompt in th-first'
-        )
-      ).toBeInTheDocument()
-
-      answerList()
-      await messagesRequested
-
-      expect(
-        screen.getByRole('status', {
-          name: i18n.global.t('agent.openingWorkflowChat', {
-            workflowName: 'second'
-          })
-        })
-      ).toBeVisible()
-      expect(userPrompts()).toEqual(['Prompt in th-first'])
 
       answerMessages()
-      await within(screen.getByTestId('agent-conversation')).findByText(
+      await within(await screen.findByTestId('agent-conversation')).findByText(
         'Prompt in th-second'
       )
 
@@ -7215,7 +7387,7 @@ describe('AgentPanelRoot history', () => {
       }
     )
 
-    it('keeps the open chat untouched when the followed chat fails to open, and retries', async () => {
+    it('T1-04 T1-07: leaves the previous chat and shows retry in the body when the followed chat fails to open, and retries', async () => {
       const { loadedThreads, restoreTranscripts } =
         await openFirstChatThenLoseTranscripts()
       const second = workflowStore.getWorkflowByPath('workflows/second.json')
@@ -7224,12 +7396,13 @@ describe('AgentPanelRoot history', () => {
       await activateTabAsUser(second)
 
       expect(await screen.findByText(followFailure())).toBeVisible()
-      expect(userPrompts()).toEqual(['Prompt in th-first'])
-      expect(useAgentConversationStore().threadId).toBe('th-first')
-      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
-        'workflows/first.json'
-      )
+      expect(userPrompts()).toEqual([])
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
       expect(workflowStore.activeWorkflow?.path).toBe(second.path)
+      expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+        'inert'
+      )
       expect(loadedThreads).toEqual(['th-first', 'th-second'])
 
       restoreTranscripts()
@@ -7248,7 +7421,7 @@ describe('AgentPanelRoot history', () => {
       expect(screen.queryByText(followFailure())).toBeNull()
     })
 
-    it('drops the follow failure notice once the user sends in the open chat', async () => {
+    it('T1-07: drops the follow failure notice once the user sends in the new chat', async () => {
       await openFirstChatThenLoseTranscripts()
       const second = workflowStore.getWorkflowByPath('workflows/second.json')
       assert(second)
@@ -7258,7 +7431,7 @@ describe('AgentPanelRoot history', () => {
       await sendFromComposer('keep going here')
 
       expect(screen.queryByText(followFailure())).toBeNull()
-      expect(useAgentConversationStore().threadId).toBe('th-first')
+      expect(useAgentConversationStore().threadId).toBe('new')
     })
 
     it('holds the follow back while a message is still being sent', async () => {
@@ -7410,6 +7583,7 @@ describe('AgentPanelRoot history', () => {
       await vi.waitFor(() =>
         expect(userPrompts()).toEqual(['Prompt in th-open'])
       )
+      useAgentComposerStore().setText('keep this note')
       await activateTabAsUser(second)
 
       await userEvent.click(
@@ -7454,7 +7628,7 @@ describe('AgentPanelRoot history', () => {
       expect(useAgentConversationStore().threadId).toBe('th-second')
     })
 
-    it("opens the tab's newest chat when it started after the list loaded", async () => {
+    it('T1-05: opens the known chat History holds at once without waiting for the refresh when a newer chat started on the server', async () => {
       workflowStore.activeWorkflow = addTab('workflows/first.json')
       const second = addTab('workflows/second.json')
       const threads = [
@@ -7463,6 +7637,41 @@ describe('AgentPanelRoot history', () => {
           title: 'Old chat',
           last_message_at: '2026-09-22T09:00:00Z',
           workflow_id: 'wf-second'
+        })
+      ]
+      const { loadedThreads } = stubWorkflowBoundHistory(threads)
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
+      )
+      threads.push(
+        agentThread({
+          id: 'th-new',
+          title: 'New chat',
+          last_message_at: '2026-09-22T11:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      )
+
+      await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-old')
+      )
+      await settleFollow()
+      expect(useAgentConversationStore().threadId).toBe('th-old')
+      expect(loadedThreads).toEqual(['th-old'])
+    })
+
+    it("T1-05: opens the tab's newest chat when it had none cached in History", async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const threads = [
+        agentThread({
+          id: 'th-first',
+          title: 'First chat',
+          last_message_at: '2026-09-22T09:00:00Z',
+          workflow_id: 'wf-first'
         })
       ]
       const { loadedThreads } = stubWorkflowBoundHistory(threads)
@@ -7580,7 +7789,11 @@ describe('AgentPanelRoot history', () => {
         expect(userPrompts()).toEqual(['Prompt in th-older'])
       )
 
+      const composer = useAgentComposerStore()
+      composer.setText('keep this note')
       await activateTabAsUser(second)
+      await settleFollow()
+      composer.setText('')
       await activateTabAsUser(first)
       await settleFollow()
 
@@ -7592,6 +7805,47 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentConversationStore().threadId).toBe('th-third')
       )
       expect(loadedThreads).toEqual(['th-older', 'th-third'])
+    })
+
+    it('T1-16: opens the tab chat when the panel reopens on another tab after closing with a blank chat, and keeps its own blank chat on return to the same tab', async () => {
+      const first = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      workflowStore.activeWorkflow = first
+      stubWorkflowBoundHistory([
+        agentThread({
+          id: 'th-second',
+          title: 'Second chat',
+          last_message_at: '2026-09-22T10:00:00Z',
+          workflow_id: 'wf-second'
+        })
+      ])
+      const firstMount = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      expect(useAgentConversationStore().threadId).toBeNull()
+      firstMount.unmount()
+
+      await activateTabAsUser(second)
+      const secondMount = render(AgentPanelRoot, {
+        global: { plugins: [i18n] }
+      })
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+      secondMount.unmount()
+
+      await activateTabAsUser(first)
+      const thirdMount = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await settleFollow()
+
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+
+      thirdMount.unmount()
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await settleFollow()
+      expect(useAgentConversationStore().threadId).toBeNull()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
     })
     it.for([
       { outcome: 'opens', answer: () => json(200, []) },
@@ -7720,6 +7974,39 @@ describe('AgentPanelRoot history', () => {
         return { first, second }
       }
 
+      it('HC-03: shows the chat of the tab again and subscribes its workflow again when the user returns from a follow-driven blank chat', async () => {
+        const { first, second } = await editFirstTabWithoutAnAnswer()
+
+        await activateTabAsUser(second)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBeNull()
+        )
+        expect(lostEditReports()).toEqual([])
+
+        await activateTabAsUser(first)
+
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+        await vi.waitFor(() =>
+          expect(
+            sentFrames('doc_subscribe').map(({ data }) => data.workflow_id)
+          ).toEqual(['wf-first', 'wf-first'])
+        )
+        ws.emit('doc_ops_result', {
+          v: 1,
+          workflow_id: 'wf-first',
+          ok: true,
+          seq: 2,
+          applied: sentFrames('doc_ops')[0].data.ops?.map(({ op_id }) => op_id),
+          skipped: []
+        })
+        await vi.waitFor(() =>
+          expect(hasUnsyncedHumanOps('wf-first')).toBe(false)
+        )
+        expect(lostEditReports()).toEqual([])
+      })
+
       it('HC-03: shows the chat of the tab again and subscribes its workflow again when the user returns', async () => {
         const { first, second } = await editFirstTabWithoutAnAnswer()
 
@@ -7801,6 +8088,94 @@ describe('AgentPanelRoot history', () => {
         expect(docOpMinterDeps.current?.isDocBound()).toBe(false)
         expect(hasUnsyncedHumanOps('wf-first')).toBe(true)
       })
+    })
+
+    it('T1-11: keeps a new thread started from the new-chat screen when the pending lookup returns an older chat', async () => {
+      workflowStore.activeWorkflow = addTab('workflows/first.json')
+      const second = addTab('workflows/second.json')
+      const loadedThreads: string[] = []
+      const postedUrls: string[] = []
+      let resolveSecondList!: () => void
+      const secondListPending = new Promise<void>((resolve) => {
+        resolveSecondList = resolve
+      })
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (url.includes('/api/workflows'))
+            return json(200, {
+              data: [
+                { id: 'wf-first', name: 'first' },
+                { id: 'wf-second', name: 'second' }
+              ],
+              pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+            })
+          if (url.includes('workflow_id=wf-second')) {
+            await secondListPending
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-second-old',
+                  title: 'Older second chat',
+                  last_message_at: '2026-09-22T08:00:00Z',
+                  workflow_id: 'wf-second'
+                })
+              ])
+            )
+          }
+          if (threadListRoute.test(url)) return json(200, agentThreadList([]))
+          if (init?.method === 'POST' && url.includes('/messages')) {
+            postedUrls.push(url)
+            return json(202, {
+              thread_id: 'th-second-new',
+              message_id: `msg-${postedUrls.length}`,
+              workflow_id: 'wf-second'
+            })
+          }
+          const match = url.match(/\/api\/agent\/threads\/([^/]+)\/messages$/)
+          if (match) {
+            loadedThreads.push(match[1])
+            return transcriptFor(match[1], 'wf-second')
+          }
+          return json(200, { data: [], pagination: { has_more: false } })
+        }
+      )
+
+      renderWithSelectedTarget()
+      await vi.waitFor(() =>
+        expect(fetchRequests(/\/api\/workflows/)).toHaveLength(1)
+      )
+
+      await activateTabAsUser(second)
+      await vi.waitFor(() =>
+        expect(fetchRequests(/workflow_id=wf-second/)).toHaveLength(1)
+      )
+
+      const composer = screen.getByRole('textbox')
+      await userEvent.click(composer)
+      await userEvent.paste('First message on second')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second-new')
+      )
+      ws.emit('agent_message_done', {
+        message_id: 'msg-1',
+        thread_id: 'th-second-new'
+      })
+      await screen.findByRole('button', { name: 'Send' })
+
+      resolveSecondList()
+      await settleFollow()
+
+      expect(useAgentConversationStore().threadId).toBe('th-second-new')
+      expect(loadedThreads).toEqual([])
+
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Follow-up on second')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await vi.waitFor(() => expect(postedUrls).toHaveLength(2))
+      expect(postedUrls[1]).toBe('/api/agent/threads/th-second-new/messages')
     })
   })
 

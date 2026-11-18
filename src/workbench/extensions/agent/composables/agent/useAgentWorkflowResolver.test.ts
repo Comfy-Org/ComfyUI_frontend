@@ -472,6 +472,29 @@ describe('Cloud listing completeness', () => {
     expect(resolver.cloudListingOmits('cloud-b')).toBe(complete)
   })
 
+  it.for([
+    { walk: 'reached the last page', complete: true, outcome: 'complete' },
+    { walk: 'gave up early', complete: false, outcome: 'incomplete' }
+  ])(
+    'LK-02 LK-06: reports a listing that $walk as $outcome, while the id refresh still counts it as an answer',
+    async ({ complete, outcome }) => {
+      const { resolver, listCloudWorkflows } = setup([])
+      listCloudWorkflows.mockResolvedValue(
+        listing([{ id: 'cloud-a', name: 'A' }], complete)
+      )
+
+      expect(await resolver.refreshCloudWorkflowListing()).toBe(outcome)
+      expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+    }
+  )
+
+  it('LK-04: reports a failed request as failed', async () => {
+    const { resolver, listCloudWorkflows } = setup([])
+    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
+
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('failed')
+  })
+
   it('does not leave a truncated verdict standing after a complete refresh', async () => {
     const { resolver, listCloudWorkflows } = setup([])
     listCloudWorkflows.mockResolvedValueOnce(listing([], false))

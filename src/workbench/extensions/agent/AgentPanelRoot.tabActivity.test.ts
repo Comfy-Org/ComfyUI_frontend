@@ -600,12 +600,8 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     const running = workflowStore.activeWorkflow!
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
-      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' },
-      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
     ])
-    respondToFetch('/api/agent/threads/th-2/messages', () =>
-      json(200, liveOtherThread('wf-other'))
-    )
     const releaseFollow = deferFollowOf('wf-other')
     renderPanel()
     await send('add an upscaler')
@@ -737,7 +733,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
     expect([...useWorkflowTabActivityStore().editingPaths]).toEqual([
       runningTab
     ])
-    expect(useAgentConversationStore().threadId).toBe('th-1')
+    expect(useAgentConversationStore().threadId).toBeNull()
 
     answerOther()
     await vi.waitFor(() =>

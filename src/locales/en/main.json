@@ -6280,6 +6280,7 @@
     "targetWorkflowOpenFailed": "Couldn’t open the target workflow.",
     "openingWorkflowChat": "Opening chat for {workflowName}…",
     "openingChat": "Opening chat…",
+    "loadingWorkflowChats": "Loading the chats for {workflowName}",
     "followedChatOpenFailed": "Couldn’t open the chat for {workflowName}.",
     "retryFollowedChat": "Retry opening the chat for {workflowName}",
     "showTargetWorkflow": "Show target workflow: {workflowName}",
