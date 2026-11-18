@@ -23,13 +23,16 @@ const SPACED_QUERY_URL_PATTERN = new RegExp(
   'gi'
 )
 
-const QUERY_VALUE_RUN = `(?:[^\\s"'<>]|'(?![\\s,;)\\]]|$))*`
+const QUOTE_CLOSES_RUN = `[\\s)\\]}.!:>]|$`
+const QUERY_VALUE_UNIT = `[^\\s"'<>]|'(?!(?:${QUOTE_CLOSES_RUN})|[,;](?:'|${QUOTE_CLOSES_RUN}))`
+const QUERY_VALUE_RUN = `(?:${QUERY_VALUE_UNIT})*`
+const QUERY_VALUE_RUN_PLUS = `(?:${QUERY_VALUE_UNIT})+`
 const URL_TOKEN_PATTERN = new RegExp(
   `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})${QUERY_VALUE_RUN}` +
-    `|${RELATIVE_URL_START}\\?[^\\s"<>]*=[^\\s"<>]*` +
-    `|${RELATIVE_URL_START_WITH_SEPARATOR}#[^\\s"<>]+` +
-    `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=[^\\s"<>]*` +
-    `|(?<![A-Z0-9._~%/-])[?#][A-Z0-9_~%-]+=[^\\s"<>]*`,
+    `|${RELATIVE_URL_START}\\?${QUERY_VALUE_RUN}=${QUERY_VALUE_RUN}` +
+    `|${RELATIVE_URL_START_WITH_SEPARATOR}#${QUERY_VALUE_RUN_PLUS}` +
+    `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=${QUERY_VALUE_RUN}` +
+    `|(?<![A-Z0-9._~%/-])[?#][A-Z0-9_~%-]+=${QUERY_VALUE_RUN}`,
   'gi'
 )
 

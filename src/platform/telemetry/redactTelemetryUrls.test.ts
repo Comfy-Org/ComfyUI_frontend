@@ -186,6 +186,33 @@ describe('redactTelemetryUrls', () => {
 
   describe.for([
     {
+      kind: 'a semicolon-glued suffix after the query apostrophe',
+      input: "https://h/x?q=o';token=SECRET",
+      expected: 'https://h/x'
+    },
+    {
+      kind: 'a quoted URL followed by sentence punctuation',
+      input: "'https://h/x?token=SECRET'.",
+      expected: "'https://h/x'."
+    },
+    {
+      kind: 'a quoted URL followed by an exclamation mark',
+      input: "say 'https://h/x?token=S'!",
+      expected: "say 'https://h/x'!"
+    }
+  ])('$kind', ({ input, expected }) => {
+    it('redacts a query apostrophe without leaking the rest of the query', () => {
+      expect(redactTelemetryUrls(input)).toBe(expected)
+    })
+  })
+
+  it('redacts relative URLs in a stringified array without merging across elements', () => {
+    const redacted = redactTelemetryUrls("['a/b?t=1','c/d?t=2']")
+    expect(redacted).toBe("['a/b','c/d']")
+  })
+
+  describe.for([
+    {
       kind: 'a single-quoted URL',
       input: "GET 'https://h/x?token=SECRET'",
       expected: "GET 'https://h/x'"
