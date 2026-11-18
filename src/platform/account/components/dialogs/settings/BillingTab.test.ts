@@ -2574,7 +2574,7 @@ describe('BillingTab plan not started banner', () => {
       within(banner).getByRole('link', { name: 'Complete verification' })
     ).toHaveAttribute(
       'href',
-      'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly&workspace=workspace-a'
+      'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly&workspace=workspace-a&operation=op-signup'
     )
     expect(
       within(banner).queryByRole('button', { name: 'Finish payment' })

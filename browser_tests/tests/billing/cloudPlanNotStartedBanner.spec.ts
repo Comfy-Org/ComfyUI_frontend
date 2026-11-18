@@ -112,7 +112,7 @@ test.describe('Billing tab plan not started banner', { tag: '@cloud' }, () => {
     await expect(verify).toHaveAttribute(
       'href',
       new RegExp(
-        `^${BILLING_WEB_ORIGIN}/v1/checkout\\?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly&workspace=`
+        `^${BILLING_WEB_ORIGIN}/v1/checkout\\?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly&workspace=[^&]+&operation=${SIGNUP_OP_ID}$`
       )
     )
     await expect(

@@ -102,6 +102,33 @@ test('a reload while a payment is in flight renders the waiting state on its own
   expect(subscribeRequests(cloud)).toHaveLength(0)
 })
 
+test('a checkout link naming an unfinished signup follows that operation, not another one the server reports pending', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: 'op_topup',
+    pending_billing_op_type: 'topup'
+  }
+  cloud.scenario.operations.op_topup = processingOperation('op_topup')
+  cloud.scenario.operations.op_signup = {
+    ...processingOperation('op_signup'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  await signIn(
+    entryPath('checkout', { plan: 'pro_monthly', operation: 'op_signup' })
+  )
+
+  await expect(waiting(page)).toHaveText(WAITING)
+  cloud.scenario.operations.op_signup = succeededOperation('op_signup')
+
+  await expect(page.getByTestId('checkout-ending-code')).toHaveText('op_signup')
+  expect(subscribeRequests(cloud)).toHaveLength(0)
+})
+
 test('an operation parked on a payment method renders capture, and Pay resubmits it', async ({
   page,
   cloud,

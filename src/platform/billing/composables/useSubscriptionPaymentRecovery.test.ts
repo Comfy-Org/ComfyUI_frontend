@@ -301,7 +301,7 @@ describe('useSubscriptionPaymentRecovery', () => {
       expect(recoveryPaymentPage.value).toEqual({
         kind: 'clientSecretOnly',
         checkoutUrl:
-          'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly&workspace=ws-signup'
+          'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly&workspace=ws-signup&operation=op-signup'
       })
     )
   })
