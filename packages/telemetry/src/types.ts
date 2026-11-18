@@ -1232,8 +1232,10 @@ export interface AgentTargetUnavailableMetadata extends Record<
   workflow_id: string | null
   /**
    * Restore causes only: whether startup had restored the saved tabs when the
-   * decision was made. `false` means the startup tab-restore wait ran out.
-   * `null` for `workflow_deleted`.
+   * decision was made. With `restore_not_listed`, `false` means the startup
+   * tab-restore wait ran out. `restore_gone` can report `false` without
+   * waiting, because a local tab already owned the workflow. `null` for
+   * `workflow_deleted`.
    */
   startup_tabs_restored: boolean | null
 }

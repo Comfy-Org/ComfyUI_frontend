@@ -53,6 +53,12 @@ describe('Agent target tab lifetime', () => {
 
 type TargetSetup = Awaited<ReturnType<typeof setup>>
 
+const deletedEvent = {
+  cause: 'workflow_deleted',
+  workflow_id: null,
+  startup_tabs_restored: null
+} as const
+
 function saveTarget(target: ComfyWorkflow): void {
   target.size = 1
   vi.spyOn(target, 'delete').mockResolvedValue()
@@ -80,6 +86,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: true,
+      events: [deletedEvent],
       selected: undefined
     },
     {
@@ -89,6 +96,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: true,
+      events: [deletedEvent],
       selected: undefined
     },
     {
@@ -96,6 +104,7 @@ describe('Agent target deletion', () => {
       act: async ({ workflows, target }: TargetSetup) =>
         workflows.deleteWorkflow(target),
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -109,6 +118,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(successor)
       },
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -125,6 +135,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: true,
+      events: [deletedEvent],
       selected: undefined
     },
     {
@@ -138,6 +149,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -151,6 +163,7 @@ describe('Agent target deletion', () => {
         await deleting
       },
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -165,6 +178,7 @@ describe('Agent target deletion', () => {
         await deleting
       },
       unavailable: true,
+      events: [deletedEvent],
       selected: undefined
     },
     {
@@ -172,6 +186,7 @@ describe('Agent target deletion', () => {
       act: async ({ workflows, target }: TargetSetup) =>
         workflows.closeWorkflow(target),
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -182,6 +197,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(other)
       },
       unavailable: false,
+      events: [],
       selected: 'workflows/a.json'
     },
     {
@@ -196,6 +212,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: false,
+      events: [],
       selected: 'workflows/b.json'
     },
     {
@@ -207,11 +224,12 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: false,
+      events: [],
       selected: 'workflows/b.json'
     }
   ])(
     '$event: unavailable=$unavailable',
-    async ({ act, unavailable, selected }) => {
+    async ({ act, unavailable, events, selected }) => {
       const context = await setup()
       await nextTick()
 
@@ -220,13 +238,9 @@ describe('Agent target deletion', () => {
 
       expect(context.panel.targetUnavailable).toBe(unavailable)
       expect(context.panel.selectedWorkflow?.path).toBe(selected)
-      if (unavailable)
-        expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
-          cause: 'workflow_deleted',
-          workflow_id: null,
-          startup_tabs_restored: null
-        })
-      else expect(trackAgentTargetUnavailable).not.toHaveBeenCalled()
+      expect(
+        trackAgentTargetUnavailable.mock.calls.map(([event]) => event)
+      ).toEqual(events)
     }
   )
 

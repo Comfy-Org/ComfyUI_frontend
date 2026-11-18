@@ -322,7 +322,8 @@ export function useAgentWorkflowSelection({
     if (cached !== null)
       return openRestoredWorkflow(cached, workflowId, isCurrent)
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
-    if (resolved.outcome === 'superseded') return RESTORE_ABANDONED
+    if (resolved.outcome === 'superseded' || !isCurrent())
+      return RESTORE_ABANDONED
     if (resolved.outcome === 'deleted') {
       panelStore.markWorkflowTargetUnavailable({
         cause: resolved.cause,
