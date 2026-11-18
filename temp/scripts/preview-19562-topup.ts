@@ -42,28 +42,63 @@ let phase = 'credential and preview checks'
 class TopUpError extends Error {}
 
 const cardNumberSelector =
-  'input#cardNumber, input[name="cardnumber"], input[name="number"], input[autocomplete="cc-number"]'
+  'input#cardNumber, input[name="cardnumber"], input[name="number"], input[autocomplete="cc-number"], input[placeholder="1234 1234 1234 1234"]'
+const cardChoiceLabel =
+  /^(?:Card|Credit or debit card|Credit card|Debit card|Pay by card|Pay with card|Use a card|Pay without Link|Continue as guest)(?:\b|$)/i
 
 async function findCardFrame(page: Page): Promise<Frame> {
   const deadline = Date.now() + 20_000
-  const cardChoice = page
-    .getByRole('radio', { name: /^Card(?:\b|$)/i })
-    .or(page.getByRole('button', { name: /^Card$/i }))
-    .filter({ visible: true })
-    .first()
-  let opened = false
+  const openedChoices = new Set<string>()
   while (Date.now() < deadline) {
     for (const frame of page.frames()) {
+      const origin = new URL(frame.url()).origin
+      if (
+        !stripeCheckoutOrigins.has(origin) &&
+        origin !== 'https://js.stripe.com'
+      )
+        continue
       if (await frame.locator(cardNumberSelector).first().isVisible())
         return frame
-    }
-    if (!opened && (await cardChoice.isVisible())) {
+      const cardChoice = frame
+        .getByRole('radio', { name: cardChoiceLabel })
+        .or(frame.getByRole('button', { name: cardChoiceLabel }))
+        .or(
+          frame.getByRole('link', {
+            name: /^(?:Pay without Link|Continue as guest)$/i
+          })
+        )
+        .filter({ visible: true })
+        .first()
+      if (!(await cardChoice.isVisible())) continue
+      const label =
+        (await cardChoice.textContent({ timeout: 3000 }))?.trim() ?? ''
+      if (openedChoices.has(label)) continue
       await cardChoice.click({ timeout: 3000 })
-      opened = true
+      openedChoices.add(label)
     }
     await wait(500)
   }
   const layout = await page.evaluate(() => ({
+    paymentOptions: [
+      ...document.querySelectorAll('h1,h2,h3,button,[role="radio"],label,a')
+    ]
+      .filter((element) => element.getClientRects().length > 0)
+      .map((element) =>
+        (element.getAttribute('aria-label') ?? element.textContent ?? '')
+          .trim()
+          .replace(/\s+/g, ' ')
+      )
+      .filter((text) =>
+        /^(?:Card|Credit|Debit|Link|Pay|Checkout|Billing|Sandbox|Test mode|Continue|Use|Other|Choose|Expired|Verify)\b/i.test(
+          text
+        )
+      )
+      .map((text) =>
+        text
+          .replace(/https?:\/\/\S+|\S+@\S+|\d{4,}/g, '[redacted]')
+          .slice(0, 80)
+      )
+      .slice(0, 20),
     cardControls: [...document.querySelectorAll('input')]
       .filter((input) =>
         /card|address|billing/i.test(`${input.id} ${input.name}`)
