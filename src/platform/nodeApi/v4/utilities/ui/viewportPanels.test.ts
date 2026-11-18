@@ -45,6 +45,11 @@ function appBeforeGraphView() {
     canvasSource = undefined
   })
   return {
+    showCanvasOutsideView() {
+      graphCanvas.value = fromPartial<LGraphCanvas>({
+        canvas: document.createElement('canvas')
+      })
+    },
     showGraphView() {
       const { view, source } = graphViewSource()
       views.push(view)
@@ -224,6 +229,21 @@ describe('viewport panels', () => {
     handle.remove()
     expect(definition.destroy).toHaveBeenCalledOnce()
     expect(app.firstView.querySelector('[data-viewport-panel]')).toBeNull()
+  })
+
+  it('keeps waiting through a canvas that is in no view yet', () => {
+    const app = appBeforeGraphView()
+    const definition = panel()
+    uiApi().mountViewportPanel(definition)
+
+    app.showCanvasOutsideView()
+    expect(definition.render).not.toHaveBeenCalled()
+    app.showGraphView()
+
+    expect(mountedPanel(app.firstView, 'MyPack.progress').textContent).toBe(
+      'pack panel'
+    )
+    expect(definition.render).toHaveBeenCalledOnce()
   })
 
   it('renders nothing for a panel removed before the renderer gave a canvas, and frees its id', () => {
