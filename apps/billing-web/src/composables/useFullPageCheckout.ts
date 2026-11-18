@@ -53,7 +53,7 @@ import {
 import { createNamedSignup } from '@/checkout/namedSignup'
 import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
-import { pricingTableUrl } from '@/checkout/cloudLinks'
+import { platformPlansUrl } from '@/checkout/platformLinks'
 import { createOperationChannel } from '@/checkout/operationChannel'
 import { promoEntryLive, promoRejectionOf } from '@/checkout/promoEntry'
 import { checkoutIdentity, createPromoMemory } from '@/checkout/promoMemory'
@@ -684,17 +684,14 @@ export function useFullPageCheckout() {
     if (!handedOff && !leftForPayment()) journey.abandoned('page_exit')
   })
 
-  /**
-   * The live catalog, on the Team tab when the link asked for a team plan:
-   * one the quote named without its stop, or a link that carries a stop.
-   */
   const viewPlansLink = computed(() => {
     const current = page.value
+    const arrival = entry.value
     const asksTeam =
-      entry.value?.teamCreditStopId !== undefined ||
+      arrival?.teamCreditStopId !== undefined ||
       (current.kind === 'plan_unavailable' &&
         current.reason === 'team_stop_missing')
-    return pricingTableUrl(asksTeam ? 'team' : 'default', billedWorkspace())
+    return platformPlansUrl(arrival, billedWorkspace(), asksTeam)
   })
 
   /** Try again re-runs the whole resolve in place: the re-read and the capture read. */

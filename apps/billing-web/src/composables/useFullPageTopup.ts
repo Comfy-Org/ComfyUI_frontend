@@ -36,7 +36,7 @@ import {
   reconciledEvent,
   topupVerdictOf
 } from '@/checkout/payVerdict'
-import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
+import { platformBillingUrl } from '@/checkout/platformLinks'
 import {
   interactivePaymentOf,
   interactiveVerdictOf,
@@ -376,7 +376,7 @@ export function useFullPageTopup() {
   }
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
-  const settingsLink = computed(() => planCreditsSettingsUrl(billedWorkspace()))
+  const settingsLink = computed(() => platformBillingUrl(billedWorkspace()))
 
   function retryLoad() {
     void reconcile()
