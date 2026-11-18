@@ -149,7 +149,7 @@ function rewrittenInPlace(
   if (!before || !Array.isArray(produced)) return false
   return (
     produced.length !== before.length ||
-    produced.some((value, index) => !Object.is(value, before[index]))
+    before.some((value, index) => !Object.is(produced[index], value))
   )
 }
 
@@ -207,7 +207,7 @@ function proveFreshNode(
       graph.add(node)
       return proveNodeForm(node, pristine)
     } finally {
-      if (graph._nodes.includes(node)) graph.remove(node)
+      if (graph._nodes.includes(node)) graph.remove(node, { force: true })
     }
   } catch {
     return { verdict: HARNESS_VERDICT.threw, needsForm: false }

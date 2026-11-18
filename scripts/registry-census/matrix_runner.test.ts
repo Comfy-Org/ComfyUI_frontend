@@ -16,6 +16,7 @@ const FIXTURE = path.join(HERE, 'object_info.fixture.json')
 const initialVueNodesMode = LiteGraph.vueNodesMode
 const pristineSerialize = LGraphNode.prototype.serialize
 const pristineFromStore = LGraphNode.prototype.serializeFromStoreState
+const pristineOnAdded = LGraphNode.prototype.onAdded
 const outputDirs: string[] = []
 const reporter = path.join(import.meta.dirname, 'summarize_form_agreement.py')
 let outputDir = ''
@@ -24,6 +25,7 @@ afterEach(() => {
   LiteGraph.vueNodesMode = initialVueNodesMode
   LGraphNode.prototype.serialize = pristineSerialize
   LGraphNode.prototype.serializeFromStoreState = pristineFromStore
+  LGraphNode.prototype.onAdded = pristineOnAdded
   for (const dir of [...outputDirs, outputDir].filter(Boolean)) {
     fs.rmSync(dir, { recursive: true, force: true })
   }
@@ -588,6 +590,21 @@ describe('form proof, hooks that rewrite in place', () => {
   )
 
   it(
+    'refuses a hook that deletes an entry without changing the length',
+    { timeout: 60_000 },
+    async () => {
+      const { formProof } = await rowFor(
+        'form-hole',
+        serializingPack('form-hole', function (data) {
+          if (data.widgets_values) delete data.widgets_values[0]
+        })
+      )
+
+      expect(verdictFor(formProof, 'KSampler')).toBe('values_replaced')
+    }
+  )
+
+  it(
     'refuses a class whose prototype serialize a pack replaced, even in place',
     { timeout: 60_000 },
     async () => {
@@ -609,6 +626,30 @@ describe('form proof, hooks that rewrite in place', () => {
       expect(registryForms.histogram).toEqual({
         class_may_rewrite_payload: registryForms.classes
       })
+    }
+  )
+})
+
+describe('form proof, temporary nodes', () => {
+  it(
+    'removes each temporary node even when a pack forbids removal',
+    { timeout: 60_000 },
+    async () => {
+      const strays: number[] = []
+
+      await rowFor('form-unremovable', () => {
+        LGraphNode.prototype.onAdded = function (graph) {
+          this.ignore_remove = true
+          strays.push(
+            graph._nodes.filter(
+              (n) => n !== this && n.pos[0] === 1400 && n.pos[1] === 100
+            ).length
+          )
+        }
+      })
+
+      expect(strays.length).toBeGreaterThan(1)
+      expect(Math.max(...strays)).toBe(0)
     }
   )
 })
