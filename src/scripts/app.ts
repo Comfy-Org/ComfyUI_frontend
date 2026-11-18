@@ -175,6 +175,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { warnAboutSlowHasSelectors } from '@/utils/slowHasSelectorUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
@@ -1014,6 +1015,7 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+    warnAboutSlowHasSelectors()
 
     await defaultWorkflowReady
 
