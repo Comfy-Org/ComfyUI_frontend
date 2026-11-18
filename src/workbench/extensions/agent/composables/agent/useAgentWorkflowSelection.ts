@@ -70,19 +70,17 @@ function restorationOutcomeFor(
 
 interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
-  canSelectTarget: () => boolean
   warnWorkflowUnavailable: () => void
   warnRestoreFailed: () => void
   onTargetBound?: (
     workflowId: string,
     previousWorkflowId: string | null,
-    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>
+    source: Extract<AgentWorkflowBindSource, 'restored'>
   ) => void
 }
 
 export function useAgentWorkflowSelection({
   resolver,
-  canSelectTarget,
   warnWorkflowUnavailable,
   warnRestoreFailed,
   onTargetBound
@@ -113,32 +111,13 @@ export function useAgentWorkflowSelection({
   )
   let composerContextGeneration = 0
 
-  const workflowSelection = ref<{
-    purpose: 'target' | 'reference'
-    workflow: ComfyWorkflow
-  } | null>(null)
-  const selectingTarget = computed(() =>
-    workflowSelection.value?.purpose === 'target'
-      ? workflowSelection.value.workflow
-      : null
-  )
-  const savingReference = computed(
-    () => workflowSelection.value?.purpose === 'reference'
-  )
-  let targetSelectionGeneration = 0
-  function onVisibleWorkflowChanged(): void {
-    if (!panelStore.followsVisibleWorkflow) return
-    if (
-      workflowSelection.value?.purpose === 'target' &&
-      workflowSelection.value.workflow !== workflowStore.activeWorkflow
-    )
-      ++targetSelectionGeneration
-  }
+  const savingReference = ref(false)
+  let restorationGeneration = 0
 
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
     workflowId: string,
-    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>,
+    source: Extract<AgentWorkflowBindSource, 'restored'>,
     previousWorkflowId: string | null = editableWorkflowId.value ?? null
   ): void {
     bindingStore.bind(workflowId, workflow.path)
@@ -191,41 +170,10 @@ export function useAgentWorkflowSelection({
     toast.warning(t('shareWorkflow.saveFailedTitle'), { description: detail })
   }
 
-  async function onSelectWorkflowTarget(path: string): Promise<boolean> {
-    const tab = workflowStore.getWorkflowByPath(path)
-    if (!tab || workflowSelection.value || !canSelectTarget()) return false
-    workflowSelection.value = { purpose: 'target', workflow: tab }
-    const generation = ++targetSelectionGeneration
-    const isCurrent = () =>
-      generation === targetSelectionGeneration &&
-      workflowStore.openWorkflows.includes(tab)
-    try {
-      const workflowId = await prepareWorkflowSelection(tab, isCurrent)
-      if (workflowId === undefined || !isCurrent()) return false
-      const previousWorkflowId = editableWorkflowId.value ?? null
-      if (!(await workflowService.openWorkflow(tab))) {
-        if (isCurrent())
-          warnWorkflowSelectionFailed(t('agent.targetNavigationUnavailable'))
-        return false
-      }
-      if (!isCurrent()) return false
-      commitWorkflowTarget(tab, workflowId, 'selector_chip', previousWorkflowId)
-      return true
-    } catch (error) {
-      if (isCurrent())
-        warnWorkflowSelectionFailed(
-          error instanceof Error ? error.message : undefined
-        )
-      return false
-    } finally {
-      workflowSelection.value = null
-    }
-  }
-
   async function onSelectWorkflowReference(
     option: WorkflowReferenceOption
   ): Promise<WorkflowReferenceMetadata | undefined> {
-    if (workflowSelection.value) return undefined
+    if (savingReference.value) return undefined
     if (option.id !== undefined) {
       if (
         option.id === editableWorkflowId.value ||
@@ -236,7 +184,7 @@ export function useAgentWorkflowSelection({
     }
     const tab = workflowStore.getWorkflowByPath(option.tabPath)
     if (!tab || !workflowStore.openWorkflows.includes(tab)) return undefined
-    workflowSelection.value = { purpose: 'reference', workflow: tab }
+    savingReference.value = true
     const generation = composerContextGeneration
     const isCurrent = () =>
       generation === composerContextGeneration &&
@@ -261,12 +209,12 @@ export function useAgentWorkflowSelection({
         )
       return undefined
     } finally {
-      workflowSelection.value = null
+      savingReference.value = false
     }
   }
 
   function onRequestWorkflowReferences(): void {
-    if (!workflowSelection.value) void refreshCloudWorkflowIds()
+    if (!savingReference.value) void refreshCloudWorkflowIds()
   }
 
   /**
@@ -327,9 +275,9 @@ export function useAgentWorkflowSelection({
   ): Promise<WorkflowRestoration> {
     if (!isSessionCurrent()) return RESTORE_ABANDONED
     if (!canRestoreWorkflow.value) return NOT_RESTORED
-    const generation = ++targetSelectionGeneration
+    const generation = ++restorationGeneration
     const isCurrent = () =>
-      generation === targetSelectionGeneration &&
+      generation === restorationGeneration &&
       isSessionCurrent() &&
       canRestoreWorkflow.value
     if (workflowId === undefined) return NOT_RESTORED
@@ -403,16 +351,12 @@ export function useAgentWorkflowSelection({
 
   function cancelSelection(): void {
     ++composerContextGeneration
-    ++targetSelectionGeneration
+    ++restorationGeneration
   }
   onScopeDispose(cancelSelection)
 
   return {
-    isSelecting: computed(() => workflowSelection.value !== null),
-    selectingTarget,
-    savingReference,
-    onVisibleWorkflowChanged,
-    selectTarget: onSelectWorkflowTarget,
+    savingReference: computed(() => savingReference.value),
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,
     adoptTarget,

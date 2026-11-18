@@ -110,8 +110,7 @@ function mountTargetlessPanel() {
     },
     global: {
       plugins: [pinia, i18n],
-      directives: { tooltip: {} },
-      stubs: { WorkflowSelectorChip: true }
+      directives: { tooltip: {} }
     }
   })
 }
@@ -408,8 +407,7 @@ describe('AgentPanel', () => {
         historyGroups: createHistoryGroups()
       },
       global: {
-        plugins: [i18n],
-        stubs: { WorkflowSelectorChip: true }
+        plugins: [i18n]
       }
     })
 
@@ -639,7 +637,7 @@ describe('AgentPanel', () => {
     mount()
 
     expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+      'The agent can now edit portrait. It works on 1 workflow at a time.'
     )
     expect(
       screen.getByRole('button', { name: 'Share feedback' })
@@ -650,11 +648,135 @@ describe('AgentPanel', () => {
     mount(true)
 
     expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit portrait. It works on 1 workflow at a time, and you can switch workflows during chat.'
+      'The agent can now edit portrait. It works on 1 workflow at a time.'
     )
     expect(
       screen.getByRole('button', { name: 'Share feedback' })
     ).toBeInTheDocument()
+  })
+
+  it('hides the edit notice while following the visible tab and shows it once following stops', async () => {
+    const { rerender } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
+        followsVisibleWorkflow: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.queryByRole('note')).toBeNull()
+
+    await rerender({ followsVisibleWorkflow: false })
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'The agent can now edit portrait. It works on 1 workflow at a time.'
+    )
+  })
+
+  it('does not render a workflow selector chip and still attaches @ workflow references', async () => {
+    const pinia = getActivePinia()
+    assert.exists(pinia)
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
+        availableWorkflows: [
+          {
+            id: 'wf-ref',
+            name: 'Lighting Reference'
+          }
+        ],
+        selectWorkflowReference: async (workflow) => ({
+          id: workflow.id ?? 'wf-ref',
+          name: workflow.name
+        })
+      },
+      global: { plugins: [pinia, i18n] }
+    })
+
+    expect(screen.queryByRole('button', { name: 'Switch workflow' })).toBeNull()
+    expect(
+      screen.queryByText('Select a workflow for agent to work in')
+    ).toBeNull()
+
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('@')
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Workflows' }))
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: 'Lighting Reference' })
+    )
+    await userEvent.paste('use this')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(emitted().send).toEqual([
+      [
+        ' use this',
+        [],
+        [{ id: 'wf-ref', name: 'Lighting Reference', textOffset: 0 }]
+      ]
+    ])
+  })
+
+  it('disables sending when the target workflow is unavailable and starts a new chat from the notice', async () => {
+    const pinia = getActivePinia()
+    assert.exists(pinia)
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        workflowDetached: true,
+        targetUnavailable: true
+      },
+      global: { plugins: [pinia, i18n] }
+    })
+
+    expect(
+      screen.getByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).toBeVisible()
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.type(textbox, 'draft while unavailable{Enter}')
+
+    expect(textbox).toHaveTextContent('draft while unavailable')
+    expect(screen.getByRole('button', { name: 'Send' })).toBeDisabled()
+    expect(emitted().send).toBeUndefined()
+
+    await userEvent.click(
+      within(screen.getByRole('note')).getByRole('button', {
+        name: i18n.global.t('agent.startNewChat')
+      })
+    )
+    expect(emitted().newChat).toEqual([['new_chat_button']])
+  })
+
+  it('shows the mismatch notice and emits showTarget when viewing a different workflow', async () => {
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
+        visibleTabPath: 'workflows/other.json'
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.viewingDifferentWorkflow')
+    )
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show target workflow: portrait' })
+    )
+    expect(emitted().showTarget).toHaveLength(1)
   })
 
   it('shows the targetless run notice 500ms after the first composer focus, and a refocus does not restart that deadline', async () => {
@@ -766,10 +888,7 @@ describe('AgentPanel', () => {
     render(AgentPanel, {
       props: { entries: [], historyGroups: createHistoryGroups() },
       global: {
-        plugins: [pinia, i18n],
-        stubs: {
-          WorkflowSelectorChip: true
-        }
+        plugins: [pinia, i18n]
       }
     })
     const prompt = i18n.global.t('agent.suggestedPrompts.local.0')
@@ -818,8 +937,7 @@ describe('AgentPanel', () => {
           historyGroups: createHistoryGroups()
         },
         global: {
-          plugins: [pinia, i18n],
-          stubs: { WorkflowSelectorChip: true }
+          plugins: [pinia, i18n]
         }
       })
       const textarea = screen.getByRole('textbox')
@@ -1127,8 +1245,7 @@ describe('AgentPanel', () => {
           ChatHistoryScreen: chatHistoryStub,
           Composer: eventComposerStub,
           EmptyState: true,
-          PanelHeader: eventPanelHeaderStub,
-          WorkflowSelectorChip: true
+          PanelHeader: eventPanelHeaderStub
         }
       }
     })

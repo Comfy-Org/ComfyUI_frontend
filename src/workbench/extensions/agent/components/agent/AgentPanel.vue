@@ -43,7 +43,6 @@ import FreeUseNotice from './FreeUseNotice.vue'
 import NewChatScreen from './NewChatScreen.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
-import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
 import AgentPaywallCard from './message/AgentPaywallCard.vue'
 
 const {
@@ -62,11 +61,8 @@ const {
   savingReference = false,
   editableWorkflowId,
   activeTab = null,
-  workflowTabs = [],
   visibleTabPath = null,
   followsVisibleWorkflow = false,
-  selectingTabPath = null,
-  selectTab = async () => false,
   workflowDetached = false,
   targetUnavailable = false,
   canvasEmptyAfterTurn = false,
@@ -105,11 +101,8 @@ const {
   savingReference?: boolean
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
-  workflowTabs?: ActiveTab[]
   visibleTabPath?: string | null
   followsVisibleWorkflow?: boolean
-  selectingTabPath?: string | null
-  selectTab?: (path: string) => Promise<boolean>
   workflowDetached?: boolean
   targetUnavailable?: boolean
   canvasEmptyAfterTurn?: boolean
@@ -185,7 +178,7 @@ const targetNotice = computed(() => {
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
     return 'mismatch'
-  return followsVisibleWorkflow ? 'following' : undefined
+  return undefined
 })
 
 const panelStore = useAgentPanelStore()
@@ -306,29 +299,15 @@ const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
       immediate: false
     }
   )
-const workflowSelectorRef = ref<InstanceType<typeof WorkflowSelectorChip>>()
 
 function onComposerFocus(): void {
   if (runNoticeTimerPending.value || runNoticeReady.value) return
   startRunNoticeTimer()
 }
 
-function onWorkflowTargetRequired(): void {
-  workflowSelectorRef.value?.openPicker()
-}
-
 const { t } = useI18n()
 
 const footerInert = computed(() => openingChat.value || blocked)
-const runNoticeWorkflowName = computed(() =>
-  workflowDetached ? undefined : activeTab?.name
-)
-const workflowSelecting = computed(
-  () => selectingTabPath !== null || savingReference
-)
-const selectorDisabled = computed(
-  () => streaming || submitting || savingReference
-)
 
 function addAttachment(attachment: ComposerAttachment): boolean {
   return composerRef.value?.addAttachment(attachment) ?? false
@@ -477,10 +456,12 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <RunNoticeBanner
             :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
-            :workflow-name="runNoticeWorkflowName"
+            :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :follows-visible-workflow
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"
+            @new-chat="onNewChat()"
           />
           <FreeUseNotice
             v-if="freeUsePlacement === 'near-composer'"
@@ -498,8 +479,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :select-workflow-reference
             :available-workflows
             :editable-workflow-id
-            :has-workflow-target="!workflowDetached"
-            :workflow-selecting
+            :has-workflow-target="!workflowDetached && !targetUnavailable"
+            :workflow-selecting="savingReference"
             :get-mention-nodes
             @focusin="onComposerFocus"
             @send="onComposerSend"
@@ -517,21 +498,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
               (workflowId, workflowName) =>
                 emit('openReferenceWorkflow', workflowId, workflowName)
             "
-            @workflow-target-required="onWorkflowTargetRequired"
-          >
-            <template #header>
-              <WorkflowSelectorChip
-                ref="workflowSelectorRef"
-                :active-tab
-                :tabs="workflowTabs"
-                :visible-tab-path
-                :selecting-tab-path
-                :select-tab
-                :detached="workflowDetached"
-                :disabled="selectorDisabled"
-              />
-            </template>
-          </Composer>
+          />
           <AgentFeedbackCaption />
         </div>
       </footer>

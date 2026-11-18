@@ -603,7 +603,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let pendingWorkflowBind: {
     workflowId: string
     previousWorkflowId: string | null
-    source: 'selector_chip' | 'restored'
+    source: 'restored'
   } | null = null
 
   function resolveLastReportedWorkflow(
@@ -623,7 +623,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     const currentThreadId = conversationStore.threadId
     if (currentThreadId === null) {
-      if (source === 'selector_chip' || source === 'restored')
+      if (source === 'restored')
         pendingWorkflowBind = { workflowId, previousWorkflowId, source }
       return
     }
