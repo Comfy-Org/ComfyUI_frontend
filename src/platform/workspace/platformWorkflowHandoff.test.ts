@@ -224,12 +224,16 @@ describe('openPlatformWithWorkflow', () => {
 
   it('makes a new nonce for each click', () => {
     openWorkflow()
-    const open = vi
-      .spyOn(window, 'open')
-      .mockReturnValue(fromPartial<Window>({ closed: true }))
+    const open = vi.spyOn(window, 'open').mockImplementation(() => {
+      const opened = openedWindow()
+      closeAll.push(opened.close)
+      return opened.wizard
+    })
+    const closeAll: (() => void)[] = []
 
     openPlatformWithWorkflow('custom-deployment-card')
     openPlatformWithWorkflow('custom-deployment-card')
+    closeAll.forEach((close) => close())
     vi.advanceTimersByTime(1000)
 
     const [first, second] = open.mock.calls.map(([url]) => String(url))
@@ -244,6 +248,16 @@ describe('openPlatformWithWorkflow', () => {
       arrange: () => {
         openWorkflow()
         vi.spyOn(window, 'open').mockReturnValue(null)
+      },
+      opens: 1
+    },
+    {
+      when: 'the tab comes back already closed',
+      arrange: () => {
+        openWorkflow()
+        vi.spyOn(window, 'open').mockReturnValue(
+          fromPartial<Window>({ closed: true })
+        )
       },
       opens: 1
     },

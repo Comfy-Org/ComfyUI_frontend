@@ -101,7 +101,7 @@ export function openPlatformWithWorkflow(
   if (!handed) return false
   const nonce = createUuidv4()
   const wizard = window.open(workflowHandoffUrl(nonce, surface), '_blank')
-  if (!wizard) return false
+  if (!wizard || wizard.closed) return false
   answerWorkflowHandoff({
     ...handed,
     nonce,

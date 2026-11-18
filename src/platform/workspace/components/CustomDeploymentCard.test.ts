@@ -32,7 +32,8 @@ const i18n = createI18n({
 
 function renderCard(
   pitch: Partial<CustomDeploymentPitch> = {},
-  videoSources: { src: string; type: string }[] = []
+  videoSources: { src: string; type: string }[] = [],
+  handsOverWorkflow = false
 ) {
   const user = userEvent.setup()
   const onDone = vi.fn()
@@ -48,6 +49,7 @@ function renderCard(
         ...pitch
       },
       videoSources,
+      handsOverWorkflow,
       onDone,
       onDismiss
     },
@@ -64,12 +66,26 @@ function openWorkflow() {
   })
 }
 
-function linkFollowedOnNextClick(): () => boolean {
-  const clicks: MouseEvent[] = []
-  document.addEventListener('click', (event) => clicks.push(event), {
-    once: true
+function windowThatClosesAfterOpening(): Window {
+  let reads = 0
+  return fromPartial<Window>({
+    get closed() {
+      return reads++ > 0
+    }
   })
-  return () => clicks.length === 1 && !clicks[0].defaultPrevented
+}
+
+function linkFollowedOnNextClick(): () => boolean {
+  const followed: boolean[] = []
+  document.addEventListener(
+    'click',
+    (event) => {
+      followed.push(!event.defaultPrevented)
+      event.preventDefault()
+    },
+    { once: true }
+  )
+  return () => followed.length === 1 && followed[0]
 }
 
 describe('CustomDeploymentCard', () => {
@@ -107,13 +123,13 @@ describe('CustomDeploymentCard', () => {
     expect(onDone).toHaveBeenCalledOnce()
   })
 
-  it('opens the build wizard itself on Cloud, in place of the link, when a workflow is open', async () => {
+  it('opens the build wizard itself on Cloud, in place of the link, when it hands over the open workflow', async () => {
     vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     openWorkflow()
     const open = vi
       .spyOn(window, 'open')
-      .mockReturnValue(fromPartial<Window>({ closed: true }))
-    const { onDone, user } = renderCard()
+      .mockReturnValue(windowThatClosesAfterOpening())
+    const { onDone, user } = renderCard({}, [], true)
 
     const followsLink = linkFollowedOnNextClick()
     await user.click(screen.getByRole('link', { name: 'Deploy on Platform' }))
@@ -128,13 +144,26 @@ describe('CustomDeploymentCard', () => {
     expect(onDone).toHaveBeenCalledOnce()
   })
 
+  it('leaves the click to the link when it does not hand over the workflow', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    openWorkflow()
+    const open = vi.spyOn(window, 'open')
+    const { user } = renderCard()
+
+    const followsLink = linkFollowedOnNextClick()
+    await user.click(screen.getByRole('link', { name: 'Deploy on Platform' }))
+
+    expect(open).not.toHaveBeenCalled()
+    expect(followsLink()).toBe(true)
+  })
+
   it.for(['Meta', 'Control', 'Shift', 'Alt'])(
     'leaves a %s click to the link',
     async (key) => {
       vi.stubGlobal('__DISTRIBUTION__', 'cloud')
       openWorkflow()
       const open = vi.spyOn(window, 'open')
-      const { user } = renderCard()
+      const { user } = renderCard({}, [], true)
 
       const followsLink = linkFollowedOnNextClick()
       await user.keyboard(`{${key}>}`)

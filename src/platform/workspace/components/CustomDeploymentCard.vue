@@ -144,9 +144,11 @@ import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 const {
   pitch,
   videoSources = [],
-  posterSrc = ''
+  posterSrc = '',
+  handsOverWorkflow = false
 } = defineProps<{
   pitch: CustomDeploymentPitch
+  handsOverWorkflow?: boolean
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
 }>()
@@ -170,6 +172,7 @@ function asksForItsOwnTab(event: MouseEvent): boolean {
 
 function createOnPlatform(event: MouseEvent) {
   if (
+    handsOverWorkflow &&
     !asksForItsOwnTab(event) &&
     openPlatformWithWorkflow('custom-deployment-card')
   )
