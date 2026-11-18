@@ -611,6 +611,45 @@ describe('useWorkflowPersistenceV2', () => {
       expect(draftStore.getDraft(draftPath)?.data).toBe(draftGraph)
     })
 
+    it.for([
+      ['no id', {}],
+      ['a legacy id', { id: 'legacy-workflow-id' }]
+    ] as const)(
+      'keeps the draft of an unsaved background tab with %s when it is first loaded',
+      async ([, idFields]) => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const workflowStore = useWorkflowStore()
+        vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+        const draftStore = useWorkflowDraftStoreV2()
+        const draftPath = 'workflows/Background.json'
+        draftStore.saveDraft(
+          draftPath,
+          JSON.stringify({ ...blankGraph, ...idFields, extra: { a: 1 } }),
+          { name: 'Background.json', isTemporary: true }
+        )
+        const active = workflowStore.createTemporary('Active.json')
+        writeTabState([draftPath, active.path], 1)
+        vi.advanceTimersByTime(60_000)
+
+        const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+        await restoreWorkflowTabsState()
+        const background = workflowStore.getWorkflowByPath(draftPath)
+        expect(background?.isLoaded).toBe(false)
+
+        await background!.load()
+
+        const kept = draftStore.getDraft(draftPath)
+        expect(kept).toBeDefined()
+        const keptGraph = JSON.parse(kept!.data)
+        expect(keptGraph.extra).toEqual({ a: 1 })
+        expect(keptGraph.id).toBe(background!.initialState?.id)
+        expect(background!.activeState?.id).toBe(background!.initialState?.id)
+      }
+    )
+
     it('leaves a reused workflow outside the workflows folder unstamped', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       onTestFinished(() => {

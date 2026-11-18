@@ -446,15 +446,34 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
-  const stampWithDraftTime = (
+  /**
+   * A restored tab is created at reload time, so its first load would treat
+   * its own draft as stale and delete it. Stamp the tab with the draft's time.
+   * A draft without a valid id first gets the id createTemporary minted for
+   * the tab, so the draft that load() applies matches the tab.
+   */
+  const keepDraftForRestoredTab = (
     restored: ComfyWorkflow,
     draftPath: string,
     draftData: ComfyWorkflowJSON,
-    draftUpdatedAt: number
+    draft: { name: string; updatedAt: number }
   ) => {
-    const builtFromThisDraft =
-      restored.path === draftPath && isValidUuid(draftData.id)
-    if (builtFromThisDraft) restored.lastModified = draftUpdatedAt
+    if (restored.path !== draftPath) return
+    if (isValidUuid(draftData.id)) {
+      restored.lastModified = draft.updatedAt
+      return
+    }
+    const normalized = restored.originalContent
+    if (
+      typeof normalized !== 'string' ||
+      !draftStore.saveDraft(draftPath, normalized, {
+        name: draft.name,
+        isTemporary: true
+      })
+    )
+      return
+    const rewritten = draftStore.getDraft(draftPath)
+    if (rewritten) restored.lastModified = rewritten.updatedAt
   }
 
   const restoreSavedTabs = async () => {
@@ -491,7 +510,7 @@ export function useWorkflowPersistenceV2() {
       try {
         const workflowData = JSON.parse(draft.data)
         const restored = workflowStore.createTemporary(draft.name, workflowData)
-        stampWithDraftTime(restored, path, workflowData, draft.updatedAt)
+        keepDraftForRestoredTab(restored, path, workflowData, draft)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',
