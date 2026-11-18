@@ -2329,6 +2329,50 @@ describe('useAgentConversationStore', () => {
       ])
     })
 
+    it('keeps a post-reload tab link behind the live tool it followed when a later tool was missed', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'run', 'success'))
+      store.ingest(activeTab('wf-1', SNAPSHOT_ROW_ID))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [
+          storedTool(),
+          {
+            type: 'tool',
+            callId: 'call-save',
+            name: 'save',
+            state: 'done',
+            ok: true
+          },
+          {
+            type: 'tool',
+            callId: 'call-connect',
+            name: 'connect',
+            state: 'done',
+            ok: true
+          },
+          {
+            type: 'tool',
+            callId: 'call-run',
+            name: 'run',
+            state: 'done',
+            ok: true
+          }
+        ]
+      )
+
+      expect(
+        reconciledParts(store)?.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['add_node', 'save', 'connect', 'run', 'tabLink'])
+    })
+
     it('keeps a live canvas confirmation for a call the stored row keys by row id', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()
@@ -2376,6 +2420,58 @@ describe('useAgentConversationStore', () => {
       )
 
       expect(reconciledParts(store)).toEqual(storedParts())
+    })
+
+    it('places a post-reload tab link after the stored pre-reload tool when the recovery read settles the turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(activeTab('wf-1', SNAPSHOT_ROW_ID))
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+
+      store.settleTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)?.map((part) => part.type)).toEqual([
+        'thinking',
+        'tool',
+        'thinking',
+        'tabLink',
+        'text'
+      ])
+    })
+
+    it('keeps a live canvas confirmation for a call the stored row keys by row id when the recovery read settles the turn', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+      store.settleTurn({ threadId: 'th', messageId: SNAPSHOT_ROW_ID }, [
+        {
+          type: 'tool',
+          callId: 'row-fallback-id',
+          name: 'add_node',
+          state: 'done',
+          ok: true,
+          canvasConfirmed: false
+        },
+        { type: 'text', text: 'Added it.', state: 'done' }
+      ])
+
+      expect(
+        reconciledParts(store)?.find((part) => part.type === 'tool')
+      ).toMatchObject({ callId: 'row-fallback-id', canvasConfirmed: true })
     })
 
     const verdictWorkflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
@@ -2704,6 +2800,232 @@ describe('useAgentConversationStore', () => {
       expect(
         store.messages.find((m) => m.id === SNAPSHOT_TURN_ID)?.parts
       ).toEqual([])
+    })
+  })
+
+  describe('a local turn that missed frames while the connection was down', () => {
+    const storedParts = (): AssistantMessage['parts'] => [
+      { type: 'thinking', text: 'round one', state: 'done' },
+      {
+        type: 'tool',
+        callId: 'call-add_node',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      },
+      { type: 'thinking', text: 'round two', state: 'done' },
+      { type: 'text', text: 'Added it.', state: 'done' }
+    ]
+    const missedToolCallThenSettled = () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(thinking('t1', 'round one'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(thinking('t1', 'round two'))
+      store.ingest(delta('t1', 'Added it.'))
+      store.ingest(done('t1'))
+      return { store, settled }
+    }
+
+    it('asks for the stored row when the socket settles it first', () => {
+      const { settled } = missedToolCallThenSettled()
+
+      expect(settled).toEqual([T1])
+    })
+
+    it('renders the stored row, so the missed tool call shows and each round shows once', () => {
+      const { store } = missedToolCallThenSettled()
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: T1 },
+        storedParts()
+      )
+
+      expect(store.messages[0].parts).toEqual(storedParts())
+    })
+
+    it('keeps a tab link sent before the drop in front of the tool call it missed', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(activeTab('wf-1', 't1'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(toolCall('t1', 'save', 'success'))
+      store.ingest(done('t1'))
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-save',
+          name: 'save',
+          state: 'done',
+          ok: true
+        },
+        { type: 'text', text: 'Saved it.', state: 'done' }
+      ])
+
+      expect(
+        store.messages[0].parts.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['tabLink', 'add_node', 'save', 'text'])
+    })
+
+    it('keeps a tab link sent after a live tool call right behind that call', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(toolCall('t1', 'add_node', 'success'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(toolCall('t1', 'save', 'success'))
+      store.ingest(activeTab('wf-1', 't1'))
+      store.ingest(done('t1'))
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-connect',
+          name: 'connect',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-save',
+          name: 'save',
+          state: 'done',
+          ok: true
+        }
+      ])
+
+      expect(
+        store.messages[0].parts.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['add_node', 'connect', 'save', 'tabLink'])
+    })
+
+    function confirmedLiveAddNode() {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.markActiveTurnMissedFrames()
+      store.ingest(
+        toolCall('t1', 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      store.ingest(done('t1'))
+      return store
+    }
+    const storedAddNode = (
+      callId: string
+    ): AssistantMessage['parts'][number] => ({
+      type: 'tool',
+      callId,
+      name: 'add_node',
+      state: 'done',
+      ok: true,
+      canvasConfirmed: false
+    })
+    const canvasVerdicts = (store: ConversationStore) =>
+      store.messages[0].parts.flatMap((part) =>
+        part.type === 'tool' ? [part.canvasConfirmed] : []
+      )
+
+    it('keeps a live canvas confirmation on the stored call with the same id when an earlier call was missed', () => {
+      const store = confirmedLiveAddNode()
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        storedAddNode('call-missed'),
+        storedAddNode('call-add_node')
+      ])
+
+      expect(canvasVerdicts(store)).toEqual([false, true])
+    })
+
+    it('does not move a live canvas confirmation onto a stored call it cannot identify', () => {
+      const store = confirmedLiveAddNode()
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        storedAddNode('row-1'),
+        storedAddNode('row-2')
+      ])
+
+      expect(canvasVerdicts(store)).toEqual([false, false])
+    })
+
+    it('anchors local parts by call id when the recovery read settles a reconnected turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(toolCall('t1', 'add_node', 'success'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(toolCall('t1', 'save', 'success'))
+      store.ingest(activeTab('wf-1', 't1'))
+
+      store.settleTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-connect',
+          name: 'connect',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-save',
+          name: 'save',
+          state: 'done',
+          ok: true
+        }
+      ])
+
+      expect(
+        store.messages[0].parts.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['add_node', 'connect', 'save', 'tabLink'])
+    })
+
+    it('does not ask for the stored row when the turn kept its connection', () => {
+      const store = useAgentConversationStore()
+      const settled: TurnId[] = []
+      store.onSnapshotTurnSettled((turn) => settled.push(turn.messageId))
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(thinking('t1', 'round one'))
+      store.ingest(done('t1'))
+
+      expect(settled).toEqual([])
     })
   })
 

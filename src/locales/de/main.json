@@ -1721,6 +1721,12 @@
     "reload": "Neu laden",
     "retry": "Erneut versuchen",
     "retryLabel": "Starten von {deployment} erneut versuchen",
+    "runBlocked": {
+      "failed": "Dieses Deployment ist fehlgeschlagen. Klicken Sie, um zu wechseln.",
+      "notReady": "Dieses Deployment ist nicht bereit. Klicken Sie, um zu wechseln.",
+      "starting": "Dieses Deployment wird gestartet. Klicken Sie, um zu wechseln.",
+      "stopped": "Dieses Deployment ist gestoppt. Klicken Sie, um zu wechseln."
+    },
     "runOn": "Ausführen auf",
     "runningOn": "Wird ausgeführt auf",
     "runsThisWorkflow": "Führt diesen Workflow aus",

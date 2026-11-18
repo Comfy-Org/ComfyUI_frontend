@@ -79,23 +79,20 @@ import {
   trackCheckoutJourneyPhase,
   useCheckoutJourneyExit
 } from '@/platform/billing/utils/checkoutJourneyTelemetry'
+import { buildSupportUrl } from '@/platform/support/config'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { buildSupportFormUrl } from '@/utils/supportFormUrl'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
   source?: PaymentIntentSource
 }>()
 
-const BILLING_SUPPORT_URL =
-  'https://comfysupport.portal.usepylon.com/forms/billing-refund-issue'
-
 const authStore = useAuthStore()
 const billingSupportUrl = computed(() =>
-  buildSupportFormUrl(BILLING_SUPPORT_URL, {
+  buildSupportUrl('billing', {
     email: authStore.userEmail,
     userId: authStore.userId
   })
