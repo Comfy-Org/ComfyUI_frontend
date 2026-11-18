@@ -933,7 +933,8 @@ export const useAgentConversationStore = defineStore(
       for (const [askId, submitted] of submittedAskAnswers)
         if (
           submitted.owner === turn.threadId &&
-          submitted.messageId === turn.messageId
+          submitted.messageId === turn.messageId &&
+          !answeringAskIds.value.has(askId)
         )
           submittedAskAnswers.delete(askId)
     }

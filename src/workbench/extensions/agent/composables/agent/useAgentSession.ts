@@ -393,11 +393,15 @@ type AnswerReceiptSource =
   | AgentAnswerReceipt
   | ZodInfer<typeof zAgentAskConflict>
 
-function namesCommittedAnswer({
-  selected,
-  other_text
-}: CommittedAnswerSource): boolean {
-  return Array.isArray(selected) || Boolean(other_text)
+function namesCommittedAnswer(
+  { selected, other_text }: CommittedAnswerSource,
+  submitted?: AgentAnswerRequest
+): boolean {
+  if (other_text) return true
+  if (!Array.isArray(selected)) return false
+  const submittedWasNonEmpty =
+    (submitted?.selected.length ?? 0) > 0 || Boolean(submitted?.other_text)
+  return selected.length > 0 || !submittedWasNonEmpty
 }
 
 function diffAnswers(
@@ -1879,7 +1883,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     if (answeringAskIds.value.has(askId)) return false
-    const runApprovalAnswer = conversationStore.askKind(askId) === 'runApproval'
     conversationStore.recordAskAnswer(askId, answer, currentThreadId)
     conversationStore.setAskAnswering(askId, true)
     const answerChannelEpoch = resolutionChannelEpoch
@@ -1896,7 +1899,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         answer,
         currentThreadId,
         receipt,
-        runApprovalAnswer,
         resolutionChannelDropped
       })
     } catch (error) {
@@ -1905,7 +1907,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
           error,
           askId,
           currentThreadId,
-          runApprovalAnswer,
           resolutionChannelWasLost()
         )
       return false
@@ -1917,17 +1918,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answer,
     currentThreadId,
     receipt,
-    runApprovalAnswer,
     resolutionChannelDropped
   }: {
     askId: string
     answer: AgentAnswerRequest
     currentThreadId: string
     receipt: AgentAnswerReceipt
-    runApprovalAnswer: boolean
     resolutionChannelDropped: () => boolean
   }): boolean {
-    if (!receiptNamesCommittedAnswer(receipt, runApprovalAnswer))
+    if (!receiptNamesCommittedAnswer(receipt, answer))
       return commitStatusOnlyAskReceipt({
         askId,
         answer,
@@ -1947,13 +1946,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function receiptNamesCommittedAnswer(
     receipt: AnswerReceiptSource,
-    runApprovalAnswer = false
+    submitted?: AgentAnswerRequest
   ): boolean {
     if (receipt.status !== 'answered') return false
-    if (receipt.other_text) return true
-    if (receipt.selected === undefined || receipt.selected === null)
-      return false
-    return !runApprovalAnswer || receipt.selected.length > 0
+    return namesCommittedAnswer(receipt, submitted)
   }
 
   function commitStatusOnlyAskReceipt({
@@ -1984,8 +1980,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         askKind,
         askMessageId
       )
-      conversationStore.markAskAwaitingResolution(askId, 'accepted', () =>
-        reportAcceptedRecoveredAnswer(askId, true)
+      conversationStore.markAskAwaitingResolution(
+        askId,
+        'accepted',
+        () => !stopped && reportAcceptedRecoveredAnswer(askId, true)
       )
     }
     return !supersededAnswerReports.has(askId)
@@ -2030,7 +2028,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: unknown,
     askId: string,
     threadId: string,
-    runApprovalAnswer: boolean,
     resolutionChannelWasLost = connection === 'dropped'
   ): boolean {
     conversationStore.clearAskAwaitingResolution(askId)
@@ -2039,7 +2036,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         error,
         askId,
         threadId,
-        runApprovalAnswer,
         resolutionChannelWasLost
       )
     }
@@ -2076,7 +2072,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: AgentApiError,
     askId: string,
     threadId: string,
-    runApprovalAnswer: boolean,
     resolutionChannelWasLost: boolean
   ): boolean {
     const conflict = zAgentAskConflict.safeParse(error.body)
@@ -2095,7 +2090,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const submitted = conversationStore.submittedAskAnswer(askId)
     if (
       conflict.success &&
-      receiptNamesCommittedAnswer(conflict.data, runApprovalAnswer)
+      receiptNamesCommittedAnswer(conflict.data, submitted)
     ) {
       const committed = toAskResolution(conflict.data)
       const superseded =
@@ -2144,8 +2139,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
           askKind,
           askMessageId
         )
-        conversationStore.markAskAwaitingResolution(askId, 'conflict', () =>
-          reportUnconfirmedConflict(askId)
+        conversationStore.markAskAwaitingResolution(
+          askId,
+          'conflict',
+          () => !stopped && reportUnconfirmedConflict(askId)
         )
       }
       return
@@ -2161,7 +2158,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     source: CommittedAnswerSource
   ): void {
-    if (!namesCommittedAnswer(source)) return
+    const submittedAnswer = conversationStore.submittedAskAnswer(askId)
+    if (!namesCommittedAnswer(source, submittedAnswer)) return
     const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
@@ -2710,6 +2708,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     let hasUnconfirmedObservation = false
     let sawStreamingObservation = false
     let consecutiveThreadMissing = 0
+    const deliveredAtRecoveryStart = new Set(deliveredAsks)
+    const snapshotNamedDeliveredAsks = new Set<string>()
+    const deliveredAsksAwaitingSnapshot = new Set<string>()
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return false
@@ -2735,21 +2736,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       sawStreamingObservation = true
       const pendingAskId = streamingPendingAskId(outcome)
+      if (pendingAskId !== undefined && deliveredAsks.has(pendingAskId)) {
+        snapshotNamedDeliveredAsks.add(pendingAskId)
+        deliveredAsksAwaitingSnapshot.delete(pendingAskId)
+      }
+      for (const askId of deliveredAsks)
+        if (
+          !deliveredAtRecoveryStart.has(askId) &&
+          !snapshotNamedDeliveredAsks.has(askId)
+        )
+          deliveredAsksAwaitingSnapshot.add(askId)
       const pendingAskConfirmed =
         previousObservation !== undefined &&
         previousObservation.pendingAskId === pendingAskId
       hasUnconfirmedObservation = !pendingAskConfirmed
-      const deliveredSincePreviousObservation = new Set(
-        [...deliveredAsks].filter(
-          (askId) => !previousObservation?.deliveredAskIds.has(askId)
-        )
-      )
       reconcileStreamingApproval(
         turn,
         outcome,
         cause,
         pendingAskConfirmed,
-        deliveredSincePreviousObservation
+        deliveredAsksAwaitingSnapshot
       )
       previousObservation = recordPendingAskObservation(
         key,

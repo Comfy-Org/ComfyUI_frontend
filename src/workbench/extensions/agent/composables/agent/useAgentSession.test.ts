@@ -3026,7 +3026,7 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
 
-    it('reports an empty committed answer that replaced this one', async () => {
+    it('treats an empty resolution frame as status-only for a non-empty answer', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
 
@@ -3035,12 +3035,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(card()).toMatchObject({
         resolution: { status: 'answered', selected: [] }
       })
-      expect(session.notices.value).toEqual([
-        {
-          level: 'error',
-          text: enMessages.agent.runApproval.answerSuperseded
-        }
-      ])
+      expect(session.notices.value).toEqual([])
     })
 
     it('accepts an explicitly empty answer committed by the server', async () => {
