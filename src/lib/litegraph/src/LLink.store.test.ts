@@ -618,23 +618,18 @@ describe('LLink ↔ linkStore integration', () => {
   })
 
   describe('array-valued link types (COMBO option lists)', () => {
-    // Older saved workflows can carry a COMBO option list as a link type
-    // (`link[5]`), see https://github.com/Comfy-Org/ComfyUI_frontend/issues/20190.
-    // Once a link is registered, its type is read through the store's
-    // reactive state, so serialising must hand out a plain array or
-    // `structuredClone` of the workflow throws DataCloneError.
     const comboType = ['normal', 'karras']
 
-    function loadWorkflowWithArrayLinkType() {
+    function loadWorkflowWithArrayTypes() {
       const source = new LGraph()
       const a = new LGraphNode('A')
       const b = new LGraphNode('B')
-      a.addOutput('out', 'COMBO')
-      b.addInput('in', 'COMBO')
+      a.addOutput('out', [...comboType])
+      b.addInput('in', [...comboType])
       source.add(a)
       source.add(b)
       a.connect(0, b, 0)
-      const saved = JSON.parse(JSON.stringify(source.serialize()))
+      const saved = structuredClone(source.serialize())
       saved.links[0][5] = [...comboType]
 
       const graph = new LGraph()
@@ -659,19 +654,27 @@ describe('LLink ↔ linkStore integration', () => {
       expect(structuredClone(link.asSerialisable()).type).toEqual(comboType)
     })
 
-    it('loads a workflow with an array link type into a cloneable graph', () => {
-      const graph = loadWorkflowWithArrayLinkType()
+    it('loads a workflow with array link and slot types into a cloneable graph', () => {
+      const graph = loadWorkflowWithArrayTypes()
 
       const serialised = structuredClone(graph.serialize())
       expect(serialised.links[0][5]).toEqual(comboType)
+      expect(serialised.nodes.flatMap((node) => node.inputs ?? [])).toEqual(
+        expect.arrayContaining([expect.objectContaining({ type: comboType })])
+      )
+      expect(serialised.nodes.flatMap((node) => node.outputs ?? [])).toEqual(
+        expect.arrayContaining([expect.objectContaining({ type: comboType })])
+      )
       expect(() => structuredClone(graph.asSerialisable())).not.toThrow()
     })
 
     it('does not share the stored array with the serialised output', () => {
-      const graph = loadWorkflowWithArrayLinkType()
+      const graph = loadWorkflowWithArrayTypes()
       const [link] = graph.links.values()
 
-      const serialisedType = link.serialize()[5] as string[]
+      const serialisedType = link.serialize()[5]
+      if (!Array.isArray(serialisedType))
+        expect.unreachable('expected an array link type')
       serialisedType.push('mutated')
 
       expect(link.type).toEqual(comboType)

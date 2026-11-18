@@ -66,13 +66,9 @@ export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
 }
 
-/**
- * A registered link reads its type through the link store's reactive state,
- * so an array type (a COMBO option list from an older saved workflow) is a
- * Vue proxy that `structuredClone` cannot copy. Serialise a plain copy.
- */
+/** Returns a plain, serialisation-safe copy of a link type. */
 export function serialisableLinkType(type: ISlotType): ISlotType {
-  return Array.isArray(type) ? [...type] : type
+  return Array.isArray(type) ? structuredClone(toRaw(type)) : type
 }
 
 function defineEnumerableTopologyFacade(link: LLink): void {
