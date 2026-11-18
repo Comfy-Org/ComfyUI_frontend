@@ -73,6 +73,7 @@ function addMultilineWidget(
 
   widget.element = inputEl
 
+  /** @deprecated Use {@link widget.element} instead (renamed in PR #8594). */
   defineDeprecatedProperty(
     widget,
     'inputEl',

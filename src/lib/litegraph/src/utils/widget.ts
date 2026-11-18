@@ -81,16 +81,17 @@ export function deriveWidgetRenderState(
   widget: Readonly<IBaseWidget>
 ): WidgetRenderState {
   const isDOMWidget = isDOMBackedWidget(widget)
+  const useDOMElement =
+    isDOMWidget &&
+    'element' in widget &&
+    !!widget.element &&
+    !(
+      'vueNodeRenderer' in widget.options &&
+      widget.options.vueNodeRenderer === 'native'
+    )
   return {
     isDOMWidget,
-    useDOMElement:
-      isDOMWidget &&
-      'element' in widget &&
-      !!widget.element &&
-      !(
-        'vueNodeRenderer' in widget.options &&
-        widget.options.vueNodeRenderer === 'native'
-      ),
+    useDOMElement,
     tooltip: widget.tooltip
   }
 }
