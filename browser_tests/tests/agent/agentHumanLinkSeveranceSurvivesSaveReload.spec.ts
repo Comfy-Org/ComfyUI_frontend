@@ -1,8 +1,6 @@
 import { expect } from '@playwright/test'
 import type { Page, Request } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
@@ -246,14 +244,10 @@ test.describe(
         )
         await page.reload({ waitUntil: 'domcontentloaded' })
         await expect(agentConversation.panel).toBeVisible({ timeout: 30_000 })
-        const picker = agentConversation.panel.getByRole('button', {
-          name: enMessages.agent.switchWorkflow
-        })
-        await picker.click()
-        await page
-          .getByRole('menuitemradio', { name: SAVED_NAME, exact: true })
-          .click()
-        await expect(picker).toHaveText(SAVED_NAME)
+        await expect(
+          agentConversation.topbar.getWorkflowTab(SAVED_NAME)
+        ).toBeVisible({ timeout: 30_000 })
+        await agentConversation.topbar.getWorkflowTab(SAVED_NAME).click()
         expect((await restored).ok()).toBe(true)
         await expect.poll(() => canvasLinkIds(page)).toEqual(SURVIVING_LINK_IDS)
       })

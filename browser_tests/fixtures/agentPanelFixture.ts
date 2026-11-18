@@ -229,15 +229,6 @@ export async function sendUnsavedWorkflowPromptAndWaitForSubscribe(
   prompt: string,
   { expectedConnections }: { expectedConnections?: number } = {}
 ): Promise<void> {
-  const picker = panel.getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
-
   if (expectedConnections !== undefined)
     await expect
       .poll(() => hostSocket.connectionCount())
@@ -338,8 +329,7 @@ export async function bootAgentApp(
 }
 
 /**
- * Replaces the boot tab's graph in place, so `AgentPanel.selectWorkflow()`
- * still finds it as "Unsaved Workflow". Boot's own default-workflow load is
+ * Replaces the boot tab's graph in place. Boot's own default-workflow load is
  * not awaited by {@link bootAgentApp}, so the active workflow is awaited
  * first. The follower merges a subscribe's catch-up into whatever the canvas
  * already shows; a fake host doc must therefore start from the same graph

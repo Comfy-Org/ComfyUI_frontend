@@ -25,7 +25,6 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
-import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -570,8 +569,6 @@ export class AgentTurnLockHarness {
   constructor(
     private readonly page: Page,
     private readonly server: TurnLockServer,
-    private readonly finishSave: (success: boolean) => void,
-    private readonly savedPaths: () => number,
     private readonly getAgentSocket: () => Promise<WebSocketRoute>,
     private readonly nextAgentSocket: () => Promise<WebSocketRoute>
   ) {
@@ -659,16 +656,6 @@ export class AgentTurnLockHarness {
       })
       .click()
     await expect(this.panel).toBeVisible()
-    // Not AgentPanel.selectWorkflow(): it asserts the picker label straight
-    // after the menu click, but under this fixture the label only settles once
-    // the pending workflow save is released below.
-    await this.agentPanel.workflowPicker.click()
-    await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect.poll(() => this.savedPaths()).toBe(1)
-    this.finishSave(true)
-    await expect(this.agentPanel.workflowPicker).toHaveText('Unsaved Workflow')
   }
 
   /** Sends a prompt and streams it to the point where a user sees work happening. */
@@ -864,24 +851,13 @@ export class AgentTurnLockHarness {
 
 export const agentTurnLockTest = mergeTests(
   agentTest,
-  workflowSelectionTest,
   webSocketFixture
 ).extend<{ turnLock: AgentTurnLockHarness }>({
-  turnLock: async (
-    { page, workflowSelection, getAgentSocket, nextAgentSocket },
-    use
-  ) => {
+  turnLock: async ({ page, getAgentSocket, nextAgentSocket }, use) => {
     const server = new TurnLockServer()
     await routeTurnLock(page, server)
     await use(
-      new AgentTurnLockHarness(
-        page,
-        server,
-        workflowSelection.finishSave,
-        () => workflowSelection.savedPaths.length,
-        getAgentSocket,
-        nextAgentSocket
-      )
+      new AgentTurnLockHarness(page, server, getAgentSocket, nextAgentSocket)
     )
   }
 })

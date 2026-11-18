@@ -103,12 +103,11 @@ test.describe(
             data: { message_id: messageId, thread_id: THREAD_ID }
           })
         )
-        await expect(picker).toBeEnabled()
+        await expect(agentPanel.sendButton).toBeVisible()
       }
 
       const agentPanel = new AgentPanel(page)
       const panel = agentPanel.root
-      const picker = agentPanel.workflowPicker
       const topbar = new Topbar(page)
       const newBlankTab = page.getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
@@ -116,11 +115,11 @@ test.describe(
       })
 
       await test.step('the account already has a saved workflow', async () => {
-        await agentPanel.open()
-        await agentPanel.chooseWorkflow(SAVED_TAB)
+        const saving = topbar.saveWorkflowAs(SAVED_TAB)
         await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
         workflowSelection.finishSave(true)
-        await expect(picker).toHaveText(SAVED_TAB)
+        await saving
+        await agentPanel.open()
       })
 
       await test.step('at a phone width the panel is the entire viewport', async () => {
@@ -138,10 +137,6 @@ test.describe(
         expect(box!.height).toBe(viewport!.height)
         expect(box!.y).toBe(0)
         await expect(
-          picker,
-          'the chip is the only affordance naming the bound workflow at this width'
-        ).toBeVisible()
-        await expect(
           agentPanel.closeButton,
           'and the close control is the only way back to the canvas'
         ).toBeVisible()
@@ -153,15 +148,8 @@ test.describe(
         await expect(topbar.getActiveTab()).toHaveText(NEW_TAB)
       })
 
-      await test.step('the user reopens the Agent and starts a chat on that tab', async () => {
+      await test.step('the user reopens the Agent on that tab', async () => {
         await agentPanel.open()
-        await panel
-          .getByRole('button', { name: enMessages.agent.newChat })
-          .click()
-        await expect(
-          picker,
-          'a new chat targets the tab on screen, not the account-saved workflow'
-        ).toHaveText(NEW_TAB)
       })
 
       await test.step('the first turn names the tab on screen, not the saved workflow', async () => {
@@ -182,9 +170,8 @@ test.describe(
         ).not.toBe(SAVED_WORKFLOW_ID)
       })
 
-      await test.step('the minted workflow the server returns stays named in the chip', async () => {
+      await test.step('the minted workflow the server returns stays bound on the next turn', async () => {
         await finishTurn(FIRST_MESSAGE_ID)
-        await expect(picker).toHaveText(NEW_TAB)
 
         nextAck = {
           ...nextAck,
@@ -199,13 +186,14 @@ test.describe(
         await finishTurn(SECOND_MESSAGE_ID)
       })
 
-      await test.step('the user hand-picks the saved workflow from the chip', async () => {
-        await expect(picker).toBeEnabled()
-        await agentPanel.chooseWorkflow(SAVED_TAB)
-        await expect(picker).toHaveText(SAVED_TAB)
+      await test.step('the user activates the saved workflow tab', async () => {
+        await agentPanel.close()
+        await topbar.getWorkflowTab(SAVED_TAB).click()
+        await expect(topbar.getActiveTab()).toHaveText(SAVED_TAB)
+        await agentPanel.open()
       })
 
-      await test.step('the next turn is still bound to that pick, with no re-selection', async () => {
+      await test.step('the next turn is bound to that saved workflow', async () => {
         nextAck = {
           ...nextAck,
           message_id: THIRD_MESSAGE_ID,
@@ -215,17 +203,14 @@ test.describe(
         await expect.poll(() => posted.length).toBe(3)
         expect(
           posted[2].workflow_id,
-          'the turn after a hand-pick must carry the workflow the user picked'
+          'switching to the saved tab must carry that workflow id'
         ).toBe(SAVED_WORKFLOW_ID)
         expect(
           posted[2].current_tab_unbound,
-          'a bound pick is not an unbound tab'
+          'a bound tab is not an unbound tab'
         ).toBeUndefined()
         await finishTurn(THIRD_MESSAGE_ID)
-        await expect(
-          picker,
-          'the binding must survive the turn without a second hand-pick'
-        ).toHaveText(SAVED_TAB)
+        await expect(panel.getByRole('note')).toContainText(SAVED_TAB)
       })
     })
   }

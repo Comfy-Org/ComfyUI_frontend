@@ -186,8 +186,8 @@ test(
 
     await expect(topbar.getActiveTab()).toContainText('Portrait')
     await expect(
-      panel.getByText(enMessages.agent.selectWorkflowForAgent)
-    ).toBeVisible()
+      panel.getByRole('button', { name: enMessages.agent.send })
+    ).toBeDisabled()
     await expect
       .poll(() =>
         page.evaluate(

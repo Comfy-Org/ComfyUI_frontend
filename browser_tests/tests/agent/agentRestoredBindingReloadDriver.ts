@@ -72,9 +72,13 @@ export class RestoredBindingReloadDriver {
     await expect(
       panel.getByText(this.restoredAssistantText).first()
     ).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await expect(this.agentConversation.topbar.getActiveTab()).toContainText(
+      workflowName,
+      { timeout: PANEL_MOUNT_TIMEOUT }
+    )
     await expect(
-      panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
-    ).toHaveText(workflowName, { timeout: PANEL_MOUNT_TIMEOUT })
+      panel.getByRole('button', { name: enMessages.agent.send })
+    ).toBeEnabled({ timeout: PANEL_MOUNT_TIMEOUT })
   }
 
   /** The widget values `nodeId` carries in the draft of the next posted message. */

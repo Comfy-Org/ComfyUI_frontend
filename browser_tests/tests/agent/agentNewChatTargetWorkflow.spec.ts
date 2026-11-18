@@ -32,18 +32,13 @@ test.describe(
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       const panel = agentPanel.root
-      const targetPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
+      const topbar = new Topbar(page)
 
-      // Save tab A so the existing conversation has a Cloud identity.
-      await targetPicker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
+      const saving = topbar.saveWorkflowAs('Unsaved Workflow')
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
-      await expect(targetPicker).toHaveText('Unsaved Workflow')
+      await saving
+
       const initialComposer = panel.getByRole('textbox', {
         includeHidden: true
       })
@@ -78,24 +73,17 @@ test.describe(
       await expect(agentPanel.stopButton).toBeVisible()
       await initialComposer.fill('Only edit workflow A')
 
-      // Open a second workflow tab (B), then switch back to A so B is just
-      // another open tab rather than the newest/active one.
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      const topbar = new Topbar(page)
       await expect(topbar.tabs).toHaveCount(2)
       await topbar.getTab(0).click()
       await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
+      await expect(initialComposer).toHaveText('Only edit workflow A')
 
-      // A pinned target surviving a plain tab switch is intentional (asserted
-      // elsewhere in agentWorkflowSelection.spec.ts); it is not the bug here.
-      await expect(targetPicker).toHaveText('Unsaved Workflow')
-
-      // Now bring tab B on screen and start a new chat from there.
       await topbar.getTab(1).click()
       await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       const panelBeforeNewChat = await panel.screenshot({
@@ -107,7 +95,12 @@ test.describe(
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await expect(composer).toHaveText('')
       await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
-      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+      await composer.fill('Edit workflow B')
+      await composer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(2)
+      expect(JSON.parse(workflowSelection.postedMessages[1])).toMatchObject({
+        current_tab_unbound: true
+      })
 
       await testInfo.attach('before-new-chat', {
         body: panelBeforeNewChat,
@@ -128,18 +121,13 @@ test.describe(
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       const panel = agentPanel.root
-      const targetPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
+      const topbar = new Topbar(page)
 
-      // Save the workflow before establishing this conversation.
-      await targetPicker.click()
-      await page
-        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-        .click()
+      const saving = topbar.saveWorkflowAs('Unsaved Workflow')
       await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
       workflowSelection.finishSave(true)
-      await expect(targetPicker).toHaveText('Unsaved Workflow')
+      await saving
+
       const initialComposer = panel.getByRole('textbox', {
         includeHidden: true
       })
@@ -173,23 +161,25 @@ test.describe(
       await expect(panel.getByTestId('pending-send-error')).toHaveCount(0)
       await expect(agentPanel.stopButton).toBeVisible()
 
-      // Create a brand new, still-unsaved tab - it becomes the one on screen.
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
           exact: true
         })
         .click()
-      await expect(new Topbar(page).getActiveTab()).toHaveText(
-        'Unsaved Workflow (2)'
-      )
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
 
       await panel
         .getByRole('button', { name: enMessages.agent.newChat })
         .click()
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await expect(composer).toHaveText('')
-      await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
+      await composer.fill('Ask on new tab')
+      await composer.press('Enter')
+      await expect.poll(() => workflowSelection.postedMessages.length).toBe(2)
+      expect(JSON.parse(workflowSelection.postedMessages[1])).toMatchObject({
+        current_tab_unbound: true
+      })
     })
   }
 )

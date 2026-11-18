@@ -12,13 +12,14 @@ import {
 } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.use({
   connectWebSocketToServer: false,
   nodeDefinitions: { ColorBalance: referenceNode }
 })
 
-// The first workflow saved through the target picker gets this id from
+// The first workflow saved gets this id from
 // `agentWorkflowSelectionFixture`; here that is "Portrait study", the tab the
 // staged node comes from.
 const PORTRAIT_CLOUD_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
@@ -53,14 +54,11 @@ test(
     const agentPanel = new AgentPanel(page)
     await agentPanel.open()
     const panel = agentPanel.root
-    const targetPicker = panel.getByRole('button', {
-      name: enMessages.agent.switchWorkflow
-    })
-    await targetPicker.click()
-    await page.getByRole('menuitemradio', { name: /Portrait study/ }).click()
+    const topbar = new Topbar(page)
+    const saving = topbar.saveWorkflowAs('Portrait study')
     await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
     workflowSelection.finishSave(true)
-    await expect(targetPicker).toHaveText('Portrait study')
+    await saving
 
     const editor = panel.getByRole('textbox')
     await editor.fill('Warm up @')
@@ -70,18 +68,15 @@ test(
     await panel.getByRole('menuitem', { name: /Color balance/ }).click()
     await expect(editor).toHaveText('Warm up Color balance #12 ')
 
-    // Navigate away from the target: the node is still Portrait study's, but
-    // the workflow on screen at send time is a different tab.
-    await page
-      .getByRole('button', {
-        name: enMessages.sideToolbar.newBlankWorkflow,
-        exact: true
-      })
-      .click()
-    await expect(new Topbar(page).getActiveTab()).toHaveText(
-      'Unsaved Workflow (2)'
+    await page.evaluate(async () => {
+      const store = (window.app!.extensionManager as WorkspaceStore).workflow
+      const blank = store.createTemporary('Unsaved Workflow (2).json')
+      await store.openWorkflow(blank)
+    })
+    await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
+    await expect(panel.getByRole('note')).toContainText(
+      enMessages.agent.viewingDifferentWorkflow
     )
-    await expect(targetPicker).toHaveText('Portrait study')
     await expect(editor).toHaveText('Warm up Color balance #12 ')
     await testInfo.attach('staged-node-from-other-tab', {
       body: await panel.screenshot({

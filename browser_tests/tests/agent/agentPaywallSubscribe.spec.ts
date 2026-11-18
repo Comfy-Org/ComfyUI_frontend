@@ -87,12 +87,6 @@ async function mockNoFundsOnNextTurn(page: Page): Promise<void> {
 
 async function sendMessageExpectingPaywall(page: Page) {
   const panel = page.locator('#agent-panel-root')
-  await panel
-    .getByRole('button', { name: enMessages.agent.switchWorkflow })
-    .click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
 
   await mockNoFundsOnNextTurn(page)
 

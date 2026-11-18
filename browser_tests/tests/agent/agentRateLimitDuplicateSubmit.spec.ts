@@ -23,7 +23,6 @@ test.describe(
       postedMessages: string[]
     }): Promise<void> {
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await agentPanel.composer.fill(prompt)
       await agentPanel.composer.press('Enter')

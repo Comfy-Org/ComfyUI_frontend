@@ -253,7 +253,6 @@ test.describe(
         await expect(historyHeading).toBeHidden()
         await expect(markerNode).toBeVisible()
         await expect(topbar.getActiveTab()).toHaveText(SAVED_WORKFLOW_NAME)
-        await expect(agentPanel.workflowPicker).toHaveText(SAVED_WORKFLOW_NAME)
       })
     })
   }

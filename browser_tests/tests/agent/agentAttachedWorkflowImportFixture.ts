@@ -232,7 +232,6 @@ class AgentAttachedWorkflowImportFixture {
 
   async attachWorkflow(): Promise<void> {
     await this.agentPanel.open()
-    await this.agentPanel.selectWorkflow()
     await this.agentPanel.fileInput.setInputFiles({
       name: this.attachmentName,
       mimeType: 'application/json',

@@ -198,22 +198,23 @@ test.describe(
       )
       await expect(unavailable).toBeVisible()
 
-      const workflowPicker = panel.getByRole('button', {
-        name: enMessages.agent.switchWorkflow
-      })
-      await workflowPicker.click()
-      await page
-        .getByRole('menuitemradio', { name: DEFAULT_TAB_NAME, exact: true })
+      await agentPanel.composer.fill('draft while unavailable')
+      await expect(agentPanel.composer).toHaveText('draft while unavailable')
+      await expect(agentPanel.sendButton).toBeDisabled()
+
+      await panel
+        .getByRole('button', { name: enMessages.agent.startNewChat })
         .click()
-      await expect(workflowPicker).toHaveText(DEFAULT_TAB_NAME)
       await expect(unavailable).toBeHidden()
       await panel.getByRole('textbox').fill('continue here')
-      await panel
-        .getByRole('button', { name: enMessages.agent.send, exact: true })
-        .click()
+      await expect(agentPanel.sendButton).toBeEnabled()
+      await agentPanel.sendButton.click()
       await expect.poll(() => posted.length).toBe(1)
+      expect(posted[0]).not.toMatchObject({
+        workflow_id: staleWorkflowId
+      })
       expect(posted[0]).toMatchObject({
-        workflow_id: 'a81718a4-02ae-41e6-ae85-000000000001'
+        current_tab_unbound: true
       })
 
       await testInfo.attach('stale-workflow-canvas', {

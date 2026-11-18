@@ -9,13 +9,15 @@ import {
   agentThreadSummary
 } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import { WORKFLOW_ID, agentTest } from '@e2e/tests/agent/agentPanelMocks'
 
 const WORKSPACE_ID = 'personal'
 const THREAD_ID = 'b0f1b6d6-94ad-4d0f-9f0c-7f0b2f9a1d31'
 const AGENT_TURN_ID = '8f0a9c2e-5d41-4a7b-9b2f-13c6e0a44b02'
 const USER_TURN_ID = '2b7c4d10-6e85-4c13-8a41-9f5d7e6c0b14'
 const THREAD_TITLE = 'Agent-started chat'
+const WORKFLOW_NAME = 'Agent started'
+const WORKFLOW_PATH = `workflows/${WORKFLOW_NAME}.json`
 
 export const AGENT_OPENING_LINE =
   "I noticed VAE Decode's vae input is not connected. Want me to wire it up?"
@@ -41,6 +43,7 @@ const agentRow: AgentMessage = {
   seq: 2,
   role: 'assistant',
   status: 'complete',
+  workflow_id: WORKFLOW_ID,
   content: { text: AGENT_OPENING_LINE }
 }
 
@@ -51,6 +54,7 @@ const userRow: AgentMessage = {
   seq: 1,
   role: 'user',
   status: 'complete',
+  workflow_id: WORKFLOW_ID,
   content: { text: EARLIER_USER_MESSAGE }
 }
 
@@ -67,10 +71,49 @@ export const test = agentTest.extend<{
   exhaustedRestoredThread: [
     async ({ comfyPage, agentBilling, threadSeed }, use) => {
       const { page } = comfyPage
+      await page.route('**/api/workflows**', (route) =>
+        route.fulfill(
+          jsonRoute({
+            data: [{ id: WORKFLOW_ID, name: WORKFLOW_NAME }],
+            pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+          })
+        )
+      )
+      await page.route('**/api/userdata?*', (route) => {
+        const dir = new URL(route.request().url()).searchParams.get('dir')
+        if (dir !== 'workflows') return route.fallback()
+        return route.fulfill(
+          jsonRoute([
+            { path: `${WORKFLOW_NAME}.json`, modified: Date.now(), size: 1 }
+          ])
+        )
+      })
+      await page.route('**/api/userdata/*', (route) => {
+        const path = decodeURIComponent(
+          new URL(route.request().url()).pathname.split('/userdata/')[1]
+        )
+        if (path !== WORKFLOW_PATH) return route.fallback()
+        return route.fulfill(
+          jsonRoute({
+            last_node_id: 0,
+            last_link_id: 0,
+            nodes: [],
+            links: [],
+            groups: [],
+            config: {},
+            extra: {},
+            version: 0.4
+          })
+        )
+      })
       await page.route('**/api/agent/threads?*', (route) =>
         route.fulfill(
           jsonRoute(
-            agentThreadPage([agentThreadSummary(THREAD_ID, THREAD_TITLE)])
+            agentThreadPage([
+              agentThreadSummary(THREAD_ID, THREAD_TITLE, {
+                workflow_id: WORKFLOW_ID
+              })
+            ])
           )
         )
       )
