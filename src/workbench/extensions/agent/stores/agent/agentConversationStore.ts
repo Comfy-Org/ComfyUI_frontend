@@ -134,6 +134,7 @@ interface UnreconciledSnapshotTurn {
   messageId: string
   transport: AgentEventTransport
   announced: boolean
+  missedFrom: 'reload' | 'reconnect'
 }
 
 interface AnchoredLocalPart {
@@ -304,9 +305,9 @@ function storedCallIdOf(
 
 function preserveCanvasVerdicts(
   liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts']
+  persistedParts: AssistantMessage['parts'],
+  offset = liveToolOffset(liveParts, persistedParts)
 ): AssistantMessage['parts'] {
-  const offset = liveToolOffset(liveParts, persistedParts)
   const storedCallId = storedCallIdOf(liveParts, persistedParts, offset)
   const liveTools = toolPartsOf(liveParts)
   const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
@@ -352,17 +353,43 @@ function finishSnapshotTurn(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts']
 ): void {
-  finishWithPersistedParts(
-    message,
-    persistedParts,
-    liveToolOffset(message.parts, persistedParts)
-  )
+  const offset = liveToolOffset(message.parts, persistedParts)
+  finishWithPersistedParts(message, persistedParts, {
+    canvasOffset: offset,
+    toolCountOf: (toolCount) => toolCount + offset
+  })
+}
+
+/**
+ * A reconnected turn streamed from its start, so its live tools line up with
+ * the stored row from index 0, but tools missed in the drop can sit anywhere.
+ * Each local part is re-anchored behind the live tool it followed.
+ */
+function finishReconnectedTurn(
+  message: AssistantMessage,
+  persistedParts: AssistantMessage['parts']
+): void {
+  const liveCallIds = toolCallIdsOf(message.parts)
+  const persistedCallIds = toolCallIdsOf(persistedParts)
+  finishWithPersistedParts(message, persistedParts, {
+    canvasOffset: 0,
+    toolCountOf: (toolCount) => {
+      if (toolCount === 0) return 0
+      const at = persistedCallIds.indexOf(liveCallIds[toolCount - 1])
+      return at < 0 ? toolCount : at + 1
+    }
+  })
+}
+
+interface LocalPartAlignment {
+  canvasOffset?: number
+  toolCountOf: (liveToolCount: number) => number
 }
 
 function finishWithPersistedParts(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts'] | undefined,
-  localToolOffset = 0
+  alignment: LocalPartAlignment = { toolCountOf: (toolCount) => toolCount }
 ): void {
   if (persistedParts === undefined) {
     message.parts = message.parts.filter((part) => !isOpenAskPart(part))
@@ -378,14 +405,18 @@ function finishWithPersistedParts(
   )
   message.parts = interleaveLocalParts(
     preserveLiveToolStartTimes(
-      preserveCanvasVerdicts(message.parts, persistedParts),
+      preserveCanvasVerdicts(
+        message.parts,
+        persistedParts,
+        alignment.canvasOffset
+      ),
       message.parts
     ),
     anchorLocalParts(message.parts)
       .filter(({ part }) => !persistedHasThinking || part.type !== 'thinking')
       .map((anchor) => ({
         ...anchor,
-        toolCount: anchor.toolCount + localToolOffset
+        toolCount: alignment.toolCountOf(anchor.toolCount)
       }))
   )
 }
@@ -979,7 +1010,8 @@ export const useAgentConversationStore = defineStore(
         turn: { threadId: slot.threadId, messageId: slot.turnId },
         messageId: slot.message.id,
         transport: slot.transport,
-        announced: false
+        announced: false,
+        missedFrom: slot.origin === 'snapshot' ? 'reload' : 'reconnect'
       }
       unreconciledSnapshotTurns.set(slot.turnId, unreconciled)
       return unreconciled
@@ -1021,7 +1053,9 @@ export const useAgentConversationStore = defineStore(
       )
       if (index < 0) return
       const reconciled = { ...messages.value[index] }
-      finishSnapshotTurn(reconciled, persistedParts)
+      if (unreconciled.missedFrom === 'reconnect')
+        finishReconnectedTurn(reconciled, persistedParts)
+      else finishSnapshotTurn(reconciled, persistedParts)
       messages.value[index] = reconciled
     }
 

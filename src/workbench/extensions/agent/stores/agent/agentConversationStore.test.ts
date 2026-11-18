@@ -2751,6 +2751,123 @@ describe('useAgentConversationStore', () => {
       expect(store.messages[0].parts).toEqual(storedParts())
     })
 
+    it('keeps a tab link sent before the drop in front of the tool call it missed', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(activeTab('wf-1', 't1'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(toolCall('t1', 'save', 'success'))
+      store.ingest(done('t1'))
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-save',
+          name: 'save',
+          state: 'done',
+          ok: true
+        },
+        { type: 'text', text: 'Saved it.', state: 'done' }
+      ])
+
+      expect(
+        store.messages[0].parts.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['tabLink', 'add_node', 'save', 'text'])
+    })
+
+    it('keeps a tab link sent after a live tool call right behind that call', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(toolCall('t1', 'add_node', 'success'))
+      store.markActiveTurnMissedFrames()
+      store.ingest(toolCall('t1', 'save', 'success'))
+      store.ingest(activeTab('wf-1', 't1'))
+      store.ingest(done('t1'))
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'call-add_node',
+          name: 'add_node',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-connect',
+          name: 'connect',
+          state: 'done',
+          ok: true
+        },
+        {
+          type: 'tool',
+          callId: 'call-save',
+          name: 'save',
+          state: 'done',
+          ok: true
+        }
+      ])
+
+      expect(
+        store.messages[0].parts.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['add_node', 'connect', 'save', 'tabLink'])
+    })
+
+    it('keeps a live canvas confirmation on the stored tool it came from when a later call was missed', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.startTurn(T1)
+      store.ingest(
+        toolCall('t1', 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+      store.markActiveTurnMissedFrames()
+      store.ingest(done('t1'))
+
+      store.reconcileSettledTurn({ threadId: 'th', messageId: T1 }, [
+        {
+          type: 'tool',
+          callId: 'row-1',
+          name: 'add_node',
+          state: 'done',
+          ok: true,
+          canvasConfirmed: false
+        },
+        {
+          type: 'tool',
+          callId: 'row-2',
+          name: 'add_node',
+          state: 'done',
+          ok: true,
+          canvasConfirmed: false
+        }
+      ])
+
+      expect(
+        store.messages[0].parts.map((part) =>
+          part.type === 'tool' ? part.canvasConfirmed : part.type
+        )
+      ).toEqual([true, false])
+    })
+
     it('does not ask for the stored row when the turn kept its connection', () => {
       const store = useAgentConversationStore()
       const settled: TurnId[] = []
