@@ -25,21 +25,7 @@ type DrawForeground = NonNullable<LGraphCanvas['onDrawForeground']>
 /** Mounts overlays on the canvas the renderer supplies, refusing an id already mounted. */
 export function createGraphOverlays(source: () => CanvasSource | undefined) {
   const mounted = new Set<string>()
-  const graphFrames = createHostEvent<[LGraphCanvas]>(MEMBER, (drawn) => {
-    let unchain: (() => void) | undefined
-    const stopWatching = watch(
-      () => source()?.canvas() ?? undefined,
-      (canvas) => {
-        unchain?.()
-        unchain = canvas && afterForeground(canvas, () => drawn(canvas))
-      },
-      { immediate: true, flush: 'sync' }
-    )
-    return () => {
-      stopWatching()
-      unchain?.()
-    }
-  })
+  const graphFrames = createGraphFrames(source)
 
   return function mountGraphOverlay(definition: unknown): GraphOverlayHandle {
     const fields = packObject(MEMBER, 'a graph overlay', definition)
@@ -76,6 +62,24 @@ export function createGraphOverlays(source: () => CanvasSource | undefined) {
       mounted.delete(id)
     })
   }
+}
+
+function createGraphFrames(source: () => CanvasSource | undefined) {
+  return createHostEvent<[LGraphCanvas]>(MEMBER, (drawn) => {
+    let unchain: (() => void) | undefined
+    const stopWatching = watch(
+      () => source()?.canvas() ?? undefined,
+      (canvas) => {
+        unchain?.()
+        unchain = canvas && afterForeground(canvas, () => drawn(canvas))
+      },
+      { immediate: true, flush: 'sync' }
+    )
+    return () => {
+      stopWatching()
+      unchain?.()
+    }
+  })
 }
 
 function overlayCallbacks(fields: PackObject): OverlayCallbacks {

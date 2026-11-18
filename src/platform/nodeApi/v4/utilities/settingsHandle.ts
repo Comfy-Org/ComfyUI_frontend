@@ -35,8 +35,6 @@ interface SettingChange {
   readonly oldValue: unknown
 }
 
-const SETTING_ID = 'a setting id no object inherits'
-
 export function createSettingsHandle(): SettingsHandle {
   const onAnySettingChange = createHostEvent<[SettingChange]>(
     'settings.onChange',
@@ -44,40 +42,21 @@ export function createSettingsHandle(): SettingsHandle {
   )
 
   const settings: SettingsHandle = {
-    declare(setting) {
-      const params = settingParams(setting)
-      const store = useSettingStore()
-      if (Object.hasOwn(store.settingsById, params.id)) {
-        throw invalidArgument(
-          'settings.declare',
-          'an id no other setting has',
-          params.id
-        )
-      }
-      store.addSetting(params)
-    },
+    declare: declareSetting,
 
-    get(id) {
-      if (!isStoreKey(id)) {
-        throw invalidArgument('settings.get', SETTING_ID, id)
-      }
-      return frozenSettingValue(useSettingStore().get(hostSettingId(id)))
-    },
+    get: (id) =>
+      frozenSettingValue(useSettingStore().get(settingId('settings.get', id))),
 
     set(id, value) {
-      if (!isStoreKey(id)) {
-        throw invalidArgument('settings.set', SETTING_ID, id)
-      }
+      const key = settingId('settings.set', id)
       if (!isSettingValue(value)) {
         throw invalidArgument('settings.set', 'a value JSON can hold', value)
       }
-      return useSettingStore().set(hostSettingId(id), hostSettingValue(value))
+      return useSettingStore().set(key, hostSettingValue(value))
     },
 
     onChange(id, listener) {
-      if (!isStoreKey(id)) {
-        throw invalidArgument('settings.onChange', SETTING_ID, id)
-      }
+      const key = settingId('settings.onChange', id)
       if (!isCallback(listener)) {
         throw invalidArgument(
           'settings.onChange',
@@ -86,7 +65,7 @@ export function createSettingsHandle(): SettingsHandle {
         )
       }
       return onAnySettingChange((change) => {
-        if (change.id !== id) return
+        if (change.id !== key) return
         listener(
           frozenSettingValue(change.value),
           frozenSettingValue(change.oldValue)
@@ -95,6 +74,26 @@ export function createSettingsHandle(): SettingsHandle {
     }
   }
   return Object.freeze(settings)
+}
+
+function declareSetting(setting: unknown): void {
+  const params = settingParams(setting)
+  const store = useSettingStore()
+  if (Object.hasOwn(store.settingsById, params.id)) {
+    throw invalidArgument(
+      'settings.declare',
+      'an id no other setting has',
+      params.id
+    )
+  }
+  store.addSetting(params)
+}
+
+function settingId(member: string, id: unknown): keyof Settings {
+  if (!isStoreKey(id)) {
+    throw invalidArgument(member, 'a setting id no object inherits', id)
+  }
+  return hostSettingId(id)
 }
 
 const DEFAULT_VALUE_CHECKS: Readonly<
