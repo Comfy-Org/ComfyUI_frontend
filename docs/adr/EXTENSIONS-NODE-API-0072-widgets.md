@@ -90,7 +90,9 @@ This ADR records how the API reaches widgets through those owners.
      `CanvasDef.height` and `WidgetTypeDef.height` says so, and the ticket
      is under "Core limitation".
 9. `add(def)` adds a widget with `addCustomWidget` from a copy of the
-   definition, with `serialize`, `disabled` and `hidden` on it before it is
+   definition, its type in lower case as the host's `addWidget` makes it (so
+   `'COMBO'` is a combo and is checked as one), with `serialize`,
+   `disabled` and `hidden` on it before it is
    added, so the host counts its saved slot correctly when it restores values.
    It refuses a definition with a field it does not know, a name the node
    already has, and a combo without `options.values`, which the host's
@@ -110,8 +112,14 @@ This ADR records how the API reaches widgets through those owners.
    list). The API stores a function that calls the pack's with no
    arguments, since the host passes it the widget and the node; a throw, or
    a result that is not a list of text or finite numbers, is reported and
-   reads as an empty list. Any other function in a definition's options is
-   refused. `getOptions()` leaves the function out (decision 3).
+   reads as an empty list. A getter of `values` is the same computed list:
+   the API calls it on the pack's options object each time the host reads
+   the list, as the host's combo would have read it. The stored kjnodes Get
+   node (1 pack, 1 site) gives its choices so, and V2 handed the options to
+   the host unchanged; refusing the getter, as the savable-value check
+   refuses any other (decision 11), left that node with no widget. Any
+   other function in a definition's options is refused. `getOptions()`
+   leaves the function or getter out (decision 3).
 
 10. `remove(name)` uses `LGraphNode.removeWidget`. `reorder(names)` and
     `move(name, index)` splice `node.widgets`, whose view updates the order

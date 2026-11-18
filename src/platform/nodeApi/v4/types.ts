@@ -902,7 +902,7 @@ export interface WidgetDef {
 /** Options the host's widgets read. A widget type may read others. */
 export interface WidgetOptions {
   readonly [key: string]: unknown
-  /** A combo's choices: a list, or a function returning one, called with no arguments. */
+  /** A combo's choices: a list, or a function (called with no arguments) or getter returning one, read each time. */
   readonly values?: unknown
   readonly min?: number
   readonly max?: number

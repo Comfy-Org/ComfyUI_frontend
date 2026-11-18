@@ -217,6 +217,24 @@ describe('a node’s widgets', () => {
       expect(storedOrder(node)).toEqual(['seed', 'sampler'])
     })
 
+    it('reads the type in lower case, as the host’s addWidget does', () => {
+      const { node, widgets } = nodeWith()
+
+      const added = widgets.add({
+        type: 'COMBO',
+        name: 'sampler',
+        options: { values: ['euler'] }
+      })
+
+      expect(added?.widgetType).toBe('combo')
+      const widget = node.widgets?.[0]
+      assert(widget)
+      expect(isComboWidget(widget)).toBe(true)
+      expect(() =>
+        widgets.add({ type: 'Combo', name: 'other', options: {} })
+      ).toThrow(TypeError)
+    })
+
     it('records the addition as one change', () => {
       const { node, widgets } = nodeWith()
       probe = () => node.widgets?.length ?? 0
@@ -387,6 +405,42 @@ describe('a node’s widgets', () => {
         expect(values).toHaveBeenCalledExactlyOnceWith()
         expect(widget.options.max).toBe(2)
         expect(handle.getOptions()).toEqual({ max: 2 })
+      })
+
+      it('lists what a getter of values returns, each time the host reads them', () => {
+        const { node, widgets } = nodeWith()
+        const listed = [['a'], ['a', 'b']]
+        const options = { max: 2 }
+        Object.defineProperty(options, 'values', {
+          get: () => listed.shift(),
+          enumerable: true
+        })
+        widgets.add({ type: 'combo', name: 'choice', value: 'a', options })
+        const widget = node.widgets?.[0]
+        assert(widget && isComboWidget(widget))
+
+        expect(resolveComboValues(widget)).toEqual(['a'])
+        expect(resolveComboValues(widget)).toEqual(['a', 'b'])
+        expect(widget.options.max).toBe(2)
+      })
+
+      it('reads a getter of values on the options object the pack gave', () => {
+        const { node, widgets } = nodeWith()
+        widgets.add({
+          type: 'combo',
+          name: 'choice',
+          value: 'x',
+          options: {
+            choices: ['x', 'y'],
+            get values() {
+              return this.choices
+            }
+          }
+        })
+        const widget = node.widgets?.[0]
+        assert(widget && isComboWidget(widget))
+
+        expect(resolveComboValues(widget)).toEqual(['x', 'y'])
       })
 
       const throwing = (): unknown => {
