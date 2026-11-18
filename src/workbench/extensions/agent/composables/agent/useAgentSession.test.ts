@@ -5692,7 +5692,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g21) a terminal event that beats the pending history fetch keeps the socket transcript', async () => {
+  it('(g21) a terminal event that beats the pending history fetch ignores that read and settles from a fresh one', async () => {
     const pendingHistory: Array<(rows: AgentMessages) => void> = []
     let deliveredResponses = 0
     const getMessages = vi.fn(() =>
@@ -5733,6 +5733,20 @@ describe('useAgentSession (v1 composition root)', () => {
       assert(assistant?.role === 'assistant')
       expect(assistant.parts).toEqual([
         { type: 'text', text: 'partial from socket', state: 'done' }
+      ])
+    })
+
+    const settledRead = pendingHistory.at(1)
+    assert.exists(settledRead)
+    settledRead([
+      historyRow(1, 'user', 'msg-1', 'go'),
+      historyRow(2, 'assistant', 'msg-1', 'stored final', 'msg-1')
+    ])
+    await vi.waitFor(() => {
+      const assistant = session.entries.value.at(-1)
+      assert(assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'stored final', state: 'done' }
       ])
     })
   })

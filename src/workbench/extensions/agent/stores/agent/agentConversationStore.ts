@@ -306,8 +306,13 @@ function storedCallIdOf(
 function preserveCanvasVerdicts(
   liveParts: AssistantMessage['parts'],
   persistedParts: AssistantMessage['parts'],
-  offset = liveToolOffset(liveParts, persistedParts)
+  alignedOffset: number | 'exact-ids' = liveToolOffset(
+    liveParts,
+    persistedParts
+  )
 ): AssistantMessage['parts'] {
+  const exactIdsOnly = alignedOffset === 'exact-ids'
+  const offset = exactIdsOnly ? 0 : alignedOffset
   const storedCallId = storedCallIdOf(liveParts, persistedParts, offset)
   const liveTools = toolPartsOf(liveParts)
   const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
@@ -319,7 +324,8 @@ function preserveCanvasVerdicts(
   for (const part of liveTools) {
     if (
       !persistedCallIds.has(part.callId) &&
-      liveCounts.get(part.name) !== alignedCounts.get(part.name)
+      (exactIdsOnly ||
+        liveCounts.get(part.name) !== alignedCounts.get(part.name))
     )
       continue
     liveByStoredCallId.set(storedCallId(part.callId), part)
@@ -360,25 +366,16 @@ function finishSnapshotTurn(
   })
 }
 
-/**
- * A reconnected turn streamed from its start, so its live tools line up with
- * the stored row from index 0, but tools missed in the drop can sit anywhere.
- */
 function finishReconnectedTurn(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts']
 ): void {
   finishWithPersistedParts(message, persistedParts, {
-    canvasOffset: 0,
+    canvasOffset: 'exact-ids',
     toolCountOf: behindLiveCallId(message.parts, persistedParts, 0)
   })
 }
 
-/**
- * Re-anchors a local part behind the stored copy of the live tool it followed,
- * so a tool missed between two live ones does not shift it; `offset` places
- * parts that came before any live tool.
- */
 function behindLiveCallId(
   liveParts: AssistantMessage['parts'],
   persistedParts: AssistantMessage['parts'],
@@ -394,16 +391,20 @@ function behindLiveCallId(
 }
 
 interface LocalPartAlignment {
-  canvasOffset?: number
+  canvasOffset?: number | 'exact-ids'
   toolCountOf: (liveToolCount: number) => number
 }
 
 function finishActiveTurn(
   slot: Pick<ActiveTurnSlot, 'origin' | 'message'>,
-  persistedParts: AssistantMessage['parts'] | undefined
+  persistedParts: AssistantMessage['parts'] | undefined,
+  missedFrames: boolean
 ): void {
-  if (slot.origin === 'snapshot' && persistedParts !== undefined)
+  if (persistedParts === undefined)
+    finishWithPersistedParts(slot.message, persistedParts)
+  else if (slot.origin === 'snapshot')
     finishSnapshotTurn(slot.message, persistedParts)
+  else if (missedFrames) finishReconnectedTurn(slot.message, persistedParts)
   else finishWithPersistedParts(slot.message, persistedParts)
 }
 
@@ -1051,10 +1052,7 @@ export const useAgentConversationStore = defineStore(
       void snapshotTurnSettled.trigger(unreconciled.turn)
     }
 
-    /**
-     * The socket dropped while the active turn was live, so frames may be
-     * missing; settling it then reconciles with the stored row.
-     */
+    /** Frames may be missing: reconcile the active turn with its stored row. */
     function markActiveTurnMissedFrames(): void {
       const slot = activeSlot.value
       if (slot !== null) missedFrameTurnIds.add(slot.turnId)
@@ -1453,7 +1451,11 @@ export const useAgentConversationStore = defineStore(
         turn.messageId === slot.turnId
       if (isActive) {
         clearSettledAskState(turn.threadId)
-        finishActiveTurn(slot, persistedParts)
+        finishActiveTurn(
+          slot,
+          persistedParts,
+          missedFrameTurnIds.has(slot.turnId)
+        )
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()
