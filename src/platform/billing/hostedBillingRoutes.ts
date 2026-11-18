@@ -46,6 +46,7 @@ export type HostedBillingRouteFields = Pick<
   | 'correlationId'
   | 'source'
   | 'operationId'
+  | 'purchaseKey'
   | 'amountCents'
   | 'autoTopUp'
 >

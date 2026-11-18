@@ -29,6 +29,7 @@ import {
 } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 import {
   setLocalAutoTopUpAtCheckoutEnabled,
@@ -69,7 +70,8 @@ const hoisted = vi.hoisted(() => ({
       (
         amountCents: number,
         autoTopUp: unknown,
-        workspaceId: string | undefined
+        workspaceId: string | undefined,
+        purchaseKey: string
       ) => string | undefined
     >()
 }))
@@ -831,5 +833,44 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
     await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
     await hoisted.balanceIncreased!()
     expect(billingApi.getTopupCheckout).not.toHaveBeenCalled()
+    expect(
+      await screen.findByText('Open Billing to check that auto top-up is on.')
+    ).toBeVisible()
+    expect(
+      screen.queryByRole('heading', { name: 'Auto top-up is on' })
+    ).toBeNull()
+  })
+
+  it('reads the balance before opening billing-web, so a payment made there counts against the balance from before it', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+
+    await waitFor(() =>
+      expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(TOPUP_PAGE)
+    )
+    const [balanceRead] = vi.mocked(useBillingContext().fetchBalance).mock
+      .invocationCallOrder
+    expect(balanceRead).toBeLessThan(
+      hoisted.cloudTabNavigate.mock.invocationCallOrder[0]
+    )
+  })
+
+  it('reopens the same billing-web purchase, so a second page pays under the first page’s key', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await user.click(
+      await screen.findByRole('button', { name: 'Reopen checkout' })
+    )
+
+    await waitFor(() =>
+      expect(hoisted.billingWebTopupUrl).toHaveBeenCalledTimes(2)
+    )
+    const [first, reopened] = hoisted.billingWebTopupUrl.mock.calls
+    expect(reopened).toStrictEqual(first)
+    expect(first[3]).toEqual(expect.any(String))
   })
 })

@@ -660,6 +660,48 @@ describe('FullPageTopupView paying once', () => {
     expect(fresh.payment).toStrictEqual({ savedPaymentMethodId: 'pm_mc' })
   })
 
+  it('pays the link’s purchase under its key whichever card is chosen, and after a decline under that key’s next attempt, so another page of the purchase replays it', async () => {
+    const fake = renderTopup(
+      {
+        topupQuote: PAYS_ONCE,
+        paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
+      },
+      `${TOPUP_PATH}&purchase_key=pk_dialog_1`
+    )
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce(NO_ANSWER)
+      .mockResolvedValueOnce({
+        status: 'declined',
+        operation: {
+          ...failedOperation('card_declined', 'op_topup'),
+          phase: 'failed',
+          declineReason: 'card_declined',
+          retryable: true
+        }
+      })
+      .mockResolvedValueOnce(SUCCEEDED)
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(payButton())
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    await userEvent.click(payButton())
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('Payment declined')
+    )
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(3)
+    )
+    expect(
+      fake.createInteractiveTopup.mock.calls.map(
+        ([request]) => request.idempotencyKey
+      )
+    ).toStrictEqual(['pk_dialog_1', 'pk_dialog_1', 'pk_dialog_1-1'])
+  })
+
   it.for<{ name: string; answer: TopupResult }>([
     { name: 'a 503', answer: NO_ANSWER },
     {

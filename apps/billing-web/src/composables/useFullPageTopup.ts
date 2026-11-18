@@ -186,6 +186,10 @@ export function useFullPageTopup() {
   })
 
   let held: HeldAttempt | undefined
+  const purchaseKey = arrival?.purchaseKey ?? crypto.randomUUID()
+  let settledAttempts = 0
+  const attemptKey = () =>
+    settledAttempts === 0 ? purchaseKey : `${purchaseKey}-${settledAttempts}`
 
   function dispatch(event: CheckoutPageEvent) {
     const before = page.value
@@ -346,7 +350,7 @@ export function useFullPageTopup() {
     const payment = interactivePaymentOf(choice, returnUrl)
     if (held !== undefined && isSamePayment(held.payment, payment)) return held
     if (payment === undefined) return undefined
-    held = { payment, idempotencyKey: crypto.randomUUID() }
+    held = { payment, idempotencyKey: attemptKey() }
     return held
   }
 
@@ -362,7 +366,10 @@ export function useFullPageTopup() {
         ? {}
         : { autoTopUp: topupAutoTopUpOf(autoTopUp) })
     })
-    if (held === attempt && settlesAttempt(result)) held = undefined
+    if (held === attempt && settlesAttempt(result)) {
+      held = undefined
+      settledAttempts++
+    }
     return result
   }
 

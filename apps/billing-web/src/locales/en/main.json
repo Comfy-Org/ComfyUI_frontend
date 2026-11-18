@@ -534,7 +534,8 @@
       "INVALID_WORKSPACE_ID": "That link names a workspace we can't read.",
       "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read.",
       "INVALID_PROMOTION_CODE": "That link carries a promo code we can't read.",
-      "INVALID_OPERATION_ID": "That link names a payment we can't read."
+      "INVALID_OPERATION_ID": "That link names a payment we can't read.",
+      "INVALID_PURCHASE_KEY": "That link names a purchase we can't read."
     },
     "failure": {
       "unknown": "Something went wrong. Please try again.",

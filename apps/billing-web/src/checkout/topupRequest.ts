@@ -110,6 +110,9 @@ export function topupReturnUrl(
     ...(arrival.autoTopUp === undefined
       ? {}
       : { autoTopUp: arrival.autoTopUp }),
+    ...(arrival.purchaseKey === undefined
+      ? {}
+      : { purchaseKey: arrival.purchaseKey }),
     ...(workspaceId === undefined ? {} : { workspaceId })
   })
   return built.status === 'ok' ? built.url.href : undefined

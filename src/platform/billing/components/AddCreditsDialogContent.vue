@@ -181,21 +181,44 @@ async function createHandoffCheckout(
   return { status: 'ok', url: issued.url }
 }
 
-function billingWebCheckout(
+const purchaseKeys = new Map<string, string>()
+
+function purchaseKeyFor(
   amountCents: number,
   autoTopUp: AutoTopUpActivation | undefined
-): Awaited<ReturnType<AddCreditsPorts['createCheckout']>> | undefined {
-  const url =
-    flags.unifiedBillingSettingsEnabled &&
-    billingWebTopupUrl(
-      amountCents,
-      autoTopUp,
-      workspaceIdentity.activeWorkspaceId ?? undefined
-    )
-  if (!url) return undefined
-  ownedCheckout = {
-    generation: workspaceIdentity.workspaceTransitionGeneration
+): string {
+  const purchase = JSON.stringify([amountCents, autoTopUp ?? null])
+  const key = purchaseKeys.get(purchase) ?? crypto.randomUUID()
+  purchaseKeys.set(purchase, key)
+  return key
+}
+
+function billingWebUrl(
+  amountCents: number,
+  autoTopUp: AutoTopUpActivation | undefined
+): string | undefined {
+  if (!flags.unifiedBillingSettingsEnabled) return undefined
+  return billingWebTopupUrl(
+    amountCents,
+    autoTopUp,
+    workspaceIdentity.activeWorkspaceId ?? undefined,
+    purchaseKeyFor(amountCents, autoTopUp)
+  )
+}
+
+async function openBillingWebCheckout(
+  url: string,
+  autoTopUp: AutoTopUpActivation | undefined
+): ReturnType<AddCreditsPorts['createCheckout']> {
+  const checkout = {
+    generation: workspaceIdentity.workspaceTransitionGeneration,
+    activationUnreadable: autoTopUp !== undefined
   }
+  if (!balance.value) await Promise.allSettled([fetchBalance()])
+  if (!ownsCheckout(checkout)) {
+    return { status: 'error', refusal: { kind: 'checkout_failed' } }
+  }
+  ownedCheckout = checkout
   return { status: 'ok', url }
 }
 
@@ -256,10 +279,10 @@ const ports: AddCreditsPorts = {
     }
     if (opensHandoff)
       return createHandoffCheckout(amountCents, signal, autoTopUp)
-    return (
-      billingWebCheckout(amountCents, autoTopUp) ??
-      createHostedTopupCheckout(amountCents, signal, autoTopUp)
-    )
+    const billingWeb = billingWebUrl(amountCents, autoTopUp)
+    return billingWeb
+      ? openBillingWebCheckout(billingWeb, autoTopUp)
+      : createHostedTopupCheckout(amountCents, signal, autoTopUp)
   },
   reserveTab: opensHandoff ? reserveBillingHandoffTab : reserveBillingTab,
   watchPayment(landed) {
