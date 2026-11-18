@@ -922,16 +922,21 @@ export const useAgentConversationStore = defineStore(
     function clearSettledProvisionalAsks(turn: LiveTurn): void {
       const provisional = provisionalRetiredAsks.get(turn.threadId)
       if (provisional === undefined) return
-      const activeOwnsTurn =
+      const settledAskIds = settledProvisionalAskIds(turn)
+      if (settledAskIds === null) provisional.clear()
+      else for (const askId of settledAskIds) provisional.delete(askId)
+      if (provisional.size === 0) provisionalRetiredAsks.delete(turn.threadId)
+    }
+
+    function settledProvisionalAskIds(turn: LiveTurn): string[] | null {
+      if (
         activeSlot.value?.threadId === turn.threadId &&
         activeSlot.value.turnId === turn.messageId
-      if (activeOwnsTurn) provisional.clear()
-      else
-        for (const part of liveTurnMessage(turn)?.parts ?? []) {
-          const askId = askIdOf(part)
-          if (askId !== undefined) provisional.delete(askId)
-        }
-      if (provisional.size === 0) provisionalRetiredAsks.delete(turn.threadId)
+      )
+        return null
+      return (liveTurnMessage(turn)?.parts ?? [])
+        .map(askIdOf)
+        .filter((askId): askId is string => askId !== undefined)
     }
 
     function discardDetachedAskState(): void {
