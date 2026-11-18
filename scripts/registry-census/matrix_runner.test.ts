@@ -107,6 +107,7 @@ describe('matrix runner', () => {
         driveTypes?: Record<string, string>
         driveTypesOmitted?: number
         formNodes?: Array<{ t: string; src: string }>
+        formProof?: { driven: Record<string, string> }
       }
       const drivenTypes = row.formNodes
         ?.filter((node) => node.src === 'driven')
@@ -115,6 +116,10 @@ describe('matrix runner', () => {
       expect(Object.keys(row.driveTypes ?? {})).toEqual(nodeTypes)
       expect(row.driveTypesOmitted).toBe(0)
       expect(drivenTypes).toEqual(nodeTypes)
+      expect(Object.keys(row.formProof?.driven ?? {})).toEqual(nodeTypes)
+      expect(row.formProof?.driven[nodeTypes[11]]).toBe(
+        'widgets_not_serialized'
+      )
     }
   )
 
@@ -151,10 +156,14 @@ describe('matrix runner', () => {
         newTypes?: string[]
         driveTypes?: Record<string, string>
         driveTypesOmitted?: number
+        formProof?: { driven: Record<string, string> }
       }
 
       expect(row.newTypes).toEqual(nodeTypes)
       expect(Object.keys(row.driveTypes ?? {})).toEqual(nodeTypes.slice(0, 64))
+      expect(Object.keys(row.formProof?.driven ?? {})).toEqual(
+        nodeTypes.slice(0, 64)
+      )
       expect(row.driveTypesOmitted).toBe(1)
     }
   )

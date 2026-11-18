@@ -1232,7 +1232,7 @@ export async function runPack(
 
   row.formProof = measureFormProof(
     graph,
-    newTypes.slice(0, 8),
+    selectedTypes,
     (t) => LiteGraph.createNode(t),
     lg.LGraphNode
   )
