@@ -45,6 +45,8 @@ The login fixture permits the hosted application's analytics, diagnostics, and I
 
 Use an HTTP `localhost` editor and a non-production Cloud deployment with the receiver flag enabled for the smoke account and a worker that can run the workflow. Inject `SMOKE_ACCOUNT_EMAIL` and `SMOKE_ACCOUNT_PASSWORD` through the approved secret store or job environment.
 
+The draft PR CI workflow uses `smoke-test+open-on-cloud-preview@comfy.org` in `dreamboothy-dev`. GitHub Actions reads its password from `OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD` and checks the preview's Firebase project before signing in.
+
 ```sh
 PLAYWRIGHT_CLOUD_LIVE=1 \
 PLAYWRIGHT_CLOUD_SMOKE=1 \

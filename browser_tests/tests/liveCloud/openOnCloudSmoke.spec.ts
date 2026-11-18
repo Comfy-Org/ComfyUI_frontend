@@ -16,9 +16,12 @@ const jobResult = zJobDetailResponse.pick({
 const firebaseSignInError = z.object({
   error: z.object({
     message: z.enum([
+      'CAPTCHA_CHECK_FAILED',
       'EMAIL_NOT_FOUND',
       'INVALID_LOGIN_CREDENTIALS',
       'INVALID_PASSWORD',
+      'INVALID_RECAPTCHA_TOKEN',
+      'MISSING_RECAPTCHA_TOKEN',
       'OPERATION_NOT_ALLOWED',
       'TOO_MANY_ATTEMPTS_TRY_LATER',
       'USER_DISABLED'
@@ -89,7 +92,8 @@ test.describe(
             const url = new URL(response.url())
             return (
               url.origin === 'https://identitytoolkit.googleapis.com' &&
-              url.pathname === '/v1/accounts:signInWithPassword'
+              url.pathname === '/v1/accounts:signInWithPassword' &&
+              response.request().method() === 'POST'
             )
           }),
           page.getByRole('button', { name: 'Sign in', exact: true }).click()

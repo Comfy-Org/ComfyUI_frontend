@@ -38,6 +38,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          firebase_project=$(curl --fail --silent --show-error "$OPEN_ON_CLOUD_URL/api/features" \
+            | python3 -c 'import json, sys; print(json.load(sys.stdin)["firebase_config"]["projectId"])')
+          if [ "$firebase_project" != dreamboothy-dev ]; then
+            echo "::error::The smoke test requires a dreamboothy-dev preview."
+            exit 1
+          fi
           git fetch --no-tags --depth=1 origin "$ROLLOUT_REVISION"
           rollout_file=src/platform/openOnCloud/localOpenOnCloudRollout.ts
           git show "$ROLLOUT_REVISION:$rollout_file" > "$rollout_file"
@@ -63,16 +69,16 @@ jobs:
       - name: Sign in, import the workflow, and complete a Cloud job
         shell: bash
         env:
-          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
-          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
+          SMOKE_ACCOUNT_EMAIL: smoke-test+open-on-cloud-preview@comfy.org
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD }}
           PLAYWRIGHT_CLOUD_LIVE: '1'
           PLAYWRIGHT_CLOUD_SMOKE: '1'
           PLAYWRIGHT_TEST_URL: http://localhost:8188
           PLAYWRIGHT_SETUP_API_URL: http://localhost:8188
         run: |
           set -euo pipefail
-          if [ "$SMOKE_ACCOUNT_EMAIL" != smoke-test@comfy.org ] || [ -z "$SMOKE_ACCOUNT_PASSWORD" ]; then
-            echo "::error::Configure the smoke-test@comfy.org credentials in the frontend CI secrets."
+          if [ -z "$SMOKE_ACCOUNT_PASSWORD" ]; then
+            echo "::error::Configure OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD in GitHub Actions."
             exit 1
           fi
           pnpm test:browser browser_tests/tests/liveCloud/openOnCloudSmoke.spec.ts \
