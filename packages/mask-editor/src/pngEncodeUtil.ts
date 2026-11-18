@@ -99,3 +99,21 @@ export async function encodeRgbaAsPng(image: RgbaImage): Promise<Blob> {
     { type: 'image/png' }
   )
 }
+
+export async function insertPngTextChunk(
+  png: Blob,
+  keyword: string,
+  text: string
+): Promise<Blob> {
+  const ihdrLength = await png
+    .slice(PNG_SIGNATURE.length, PNG_SIGNATURE.length + 4)
+    .arrayBuffer()
+  const ihdrEnd =
+    PNG_SIGNATURE.length + 12 + new DataView(ihdrLength).getUint32(0)
+  const data = new TextEncoder().encode(`${keyword}\0\0\0\0\0${text}`)
+
+  return new Blob(
+    [png.slice(0, ihdrEnd), ...pngChunk('iTXt', data), png.slice(ihdrEnd)],
+    { type: 'image/png' }
+  )
+}

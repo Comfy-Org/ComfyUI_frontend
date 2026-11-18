@@ -8,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 import type {
   BillingCapabilitiesResponse,
   HostedTopupCheckout,
+  SubscriptionPaymentRecovery,
   SubscriptionState
 } from '@comfyorg/ingest-types'
 import { selectBillingBanners } from '@comfyorg/account-ui/billing'
@@ -120,6 +121,7 @@ interface Scenario {
   hasParkedBillingOperation?: boolean
   renewalDate?: string | null
   nextCreditRefillAt?: string | null
+  statusPaymentRecovery?: SubscriptionPaymentRecovery | null
 }
 
 function correlationIdOf(link: HTMLElement) {
@@ -166,13 +168,22 @@ function arrange(scenario: Scenario = {}) {
       manageSubscription,
       isTeamPlan: computed(() => false),
       plans: computed(() => [
-        fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' })
+        fromPartial<Plan>({ slug: 'creator-yearly', tier: 'CREATOR' }),
+        fromPartial<Plan>({
+          slug: 'standard-monthly',
+          tier: 'STANDARD',
+          duration: 'MONTHLY'
+        })
       ]),
       balance: computed(() => scenario.balance ?? null),
       renewalDate: computed(() => scenario.renewalDate ?? null),
       currentTeamCreditStop: computed(() => null),
       periodCreditGrant: computed(() => null),
       nextCreditRefillAt: computed(() => scenario.nextCreditRefillAt ?? null),
+      subscriptionPaymentRecovery: computed(() => null),
+      statusPaymentRecovery: computed(
+        () => scenario.statusPaymentRecovery ?? null
+      ),
       initialize,
       fetchStatus,
       resubscribe
@@ -952,6 +963,44 @@ describe('BillingTab', () => {
       }
     )
 
+    describe('when only the billing period changes', () => {
+      const yearlyToMonthly: SubscriptionInfo = {
+        ...activeSubscription,
+        tier: 'STANDARD',
+        duration: 'ANNUAL',
+        planSlug: 'standard-annual',
+        scheduledChange: {
+          plan_slug: 'standard-monthly',
+          effective_at: '2027-11-17T00:00:00Z',
+          team_credit_stop: null
+        }
+      }
+
+      it('names the period on the plan row', () => {
+        arrange({ subscription: yearlyToMonthly })
+
+        expect(
+          screen.getByText(/Changes to Standard monthly on November 17, 2027\./)
+        ).toBeInTheDocument()
+      })
+
+      it('names the period when confirming Stay', async () => {
+        arrange({
+          subscription: yearlyToMonthly,
+          canRevertScheduledChange: true
+        })
+        await userEvent.click(
+          screen.getByRole('button', { name: 'Stay on Standard' })
+        )
+
+        expect(
+          screen.getByRole('dialog', {
+            name: 'Cancel your change to Standard monthly?'
+          })
+        ).toBeInTheDocument()
+      })
+    })
+
     it('reverts the scheduled change and rereads status when confirmed', async () => {
       const { fetchStatus, refresh } = await openStay()
       fetchStatus.mockClear()
@@ -1237,6 +1286,27 @@ describe('BillingTab', () => {
         },
         subscriptionStatus: 'ended'
       }
+
+      it.for([
+        {
+          planKind: 'sales_managed',
+          note: "Buying credits doesn't restart your Cloud plan. Contact sales to renew it."
+        },
+        {
+          planKind: 'self_serve',
+          note: "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud."
+        }
+      ] as const)(
+        'tells an ended $planKind workspace how its plan comes back under the credit balance',
+        ({ planKind, note }) => {
+          vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = true
+          arrangeOnCloud({ ...ended, subscriptionState: 'ended', planKind })
+
+          expect(
+            screen.getByTestId('billing-credits-plan-note').textContent.trim()
+          ).toBe(note)
+        }
+      )
 
       it('shows Plan ended with Choose a plan as the white button on both the banner and the plan row', async () => {
         arrangeOnCloud(ended)
@@ -2267,6 +2337,7 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
   const BANNER_KINDS: Record<string, BillingBannerKind> = {
     'billing-banner-paused': 'paused',
     'billing-banner-planCheckout': 'planCheckout',
+    'billing-banner-planNotStarted': 'planNotStarted',
     'billing-banner-topupCheckout': 'topupCheckout',
     'billing-banner-parked': 'parked',
     'billing-banner-autoTopUp': 'autoTopUp',
@@ -2283,6 +2354,11 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
       action: null,
       href: null,
       dismissKey: null
+    },
+    planNotStarted: {
+      kind: 'planNotStarted',
+      ...text,
+      action: 'finishPayment'
     },
     topupCheckout: {
       kind: 'topupCheckout',
@@ -2338,6 +2414,25 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
     })
   }
 
+  it('stacks an unfinished first plan payment while out of credits like the tab on Cloud', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    arrange({
+      subscription: { ...activeSubscription, hasFunds: false },
+      statusPaymentRecovery: SIGNUP_RECOVERY
+    })
+    await screen.findByTestId('billing-banner-planNotStarted')
+
+    expect(shownStack()).toEqual(
+      selectBillingBanners([VIEWS.planNotStarted, VIEWS.credit]).map(
+        ({ kind }) => kind
+      )
+    )
+  })
+
   it.for<{
     case: string
     scenario: Scenario
@@ -2390,6 +2485,106 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
       )
     }
   )
+})
+
+const SIGNUP_RECOVERY: SubscriptionPaymentRecovery = {
+  billing_op_id: 'op-signup',
+  reason: 'payment_required'
+}
+
+describe('BillingTab plan not started banner', () => {
+  function serveSignupOperation(
+    paymentAction: Pick<
+      Awaited<ReturnType<typeof billingApi.getBillingOpStatus>>,
+      'action_url' | 'payment_intent_client_secret'
+    > = { action_url: 'https://invoice.stripe.example/i/signup' }
+  ) {
+    vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+      id: 'op-signup',
+      started_at: '2026-11-05T17:15:54Z',
+      status: 'pending',
+      plan: { slug: 'creator-monthly', duration: 'MONTHLY', tier: 'CREATOR' },
+      ...paymentAction
+    })
+  }
+
+  it('names the plan whose first payment billing status says is unfinished on Cloud', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    serveSignupOperation()
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    await screen.findByText('Your Creator plan hasn’t started')
+    const banner = screen.getByTestId('billing-banner-planNotStarted')
+    expect(banner).toHaveTextContent('Finish paying to start it.')
+    expect(
+      within(banner).getByRole('button', { name: 'Finish payment' })
+    ).toBeVisible()
+  })
+
+  it('keeps the banner without Finish payment when the operation serves only a client secret', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    serveSignupOperation({ payment_intent_client_secret: 'pi_signup_secret' })
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    await screen.findByText('Your Creator plan hasn’t started')
+    const banner = screen.getByTestId('billing-banner-planNotStarted')
+    expect(banner).toHaveTextContent('Finish paying to start it.')
+    expect(
+      within(banner).queryByRole('button', { name: 'Finish payment' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('still offers Finish payment when reading the operation fails', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(billingApi.getBillingOpStatus).mockRejectedValue(
+      new Error('network down')
+    )
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'error_reading_signup_payment_recovery_plan'
+        })
+      )
+    )
+    const banner = screen.getByTestId('billing-banner-planNotStarted')
+    expect(banner).toHaveTextContent('Your plan hasn’t started')
+    expect(
+      within(banner).getByRole('button', { name: 'Finish payment' })
+    ).toBeVisible()
+  })
+
+  it('shows nothing on local ComfyUI even when the fact is served', () => {
+    serveSignupOperation()
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    expect(
+      screen.queryByTestId('billing-banner-planNotStarted')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows nothing on Cloud when billing status serves no recovery', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    arrange()
+
+    expect(
+      screen.queryByTestId('billing-banner-planNotStarted')
+    ).not.toBeInTheDocument()
+  })
 })
 
 describe('BillingTab refresh on return', () => {

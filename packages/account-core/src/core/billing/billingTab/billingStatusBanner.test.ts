@@ -151,8 +151,20 @@ describe('deriveBillingStatusBanner', () => {
       ).toBeNull()
     })
 
-    it('never shows a scheduled plan change', () => {
-      expect(derive({ ...personal, hasScheduledChange: true })).toBeNull()
+    it('shows a scheduled plan change to the owner', () => {
+      expect(derive({ ...personal, hasScheduledChange: true })).toBe(
+        'planChange'
+      )
+    })
+
+    it.for<{ name: string; inputs: Partial<BillingStatusBannerFacts> }>([
+      { name: 'a member', inputs: { canManage: false } },
+      { name: 'a cancelled plan', inputs: { isCancelled: true } },
+      { name: 'a dismissed change', inputs: { planChangeDismissed: true } }
+    ])('hides a scheduled plan change for $name', ({ inputs }) => {
+      expect(
+        derive({ ...personal, hasScheduledChange: true, ...inputs })
+      ).toBeNull()
     })
   })
 
