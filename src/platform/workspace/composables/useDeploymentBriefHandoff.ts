@@ -15,11 +15,18 @@ export function useDeploymentBriefHandoff(handoff: () => BriefHandoff) {
   const toast = useToast()
   const { copyToClipboard } = useCopyToClipboard()
 
-  function workflowDownload(): (() => void) | null {
+  function prepareDownload(): { download: () => void } | null {
     const { workflow } = handoff()
-    if (!workflow) return null
-    const blob = new Blob([workflow.serialize()], { type: 'application/json' })
-    return () => downloadBlob(workflow.fileName, blob)
+    if (!workflow) return { download: () => {} }
+    const json = workflow.serialize()
+    if (json === null) {
+      reportHandoffFailure(
+        new Error('The workflow the brief names is no longer loaded')
+      )
+      return null
+    }
+    const blob = new Blob([json], { type: 'application/json' })
+    return { download: () => downloadBlob(workflow.fileName, blob) }
   }
 
   function reportHandoffFailure(error: unknown) {
@@ -34,10 +41,13 @@ export function useDeploymentBriefHandoff(handoff: () => BriefHandoff) {
 
   async function copyBrief(): Promise<boolean> {
     try {
-      const download = workflowDownload()
-      if (!(await copyToClipboard(handoff().brief, { toastOnSuccess: false })))
+      const prepared = prepareDownload()
+      if (
+        !prepared ||
+        !(await copyToClipboard(handoff().brief, { toastOnSuccess: false }))
+      )
         return false
-      download?.()
+      prepared.download()
       return true
     } catch (error) {
       reportHandoffFailure(error)
@@ -47,7 +57,9 @@ export function useDeploymentBriefHandoff(handoff: () => BriefHandoff) {
 
   function openBriefIn(app: AgentApp): void {
     try {
-      workflowDownload()?.()
+      const prepared = prepareDownload()
+      if (!prepared) return
+      prepared.download()
       openAgentApp(app, handoff().brief)
     } catch (error) {
       reportHandoffFailure(error)

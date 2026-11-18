@@ -26,6 +26,7 @@ import type {
   MissingItemsRow
 } from '@/platform/workspace/customDeploymentPitch'
 import { workflowDeploymentBrief } from '@/platform/workspace/deploymentBuildBrief'
+import type { MissingBuildModel } from '@/platform/workspace/deploymentBuildBrief'
 import {
   missingModelsOf,
   missingPacksOf,
@@ -45,11 +46,19 @@ const missingNodes = nodesNeedingDeployment(
   useMissingNodesErrorStore().missingNodesError?.nodeTypes ?? []
 )
 const packs = missingPacksOf(missingNodes)
-const models = computed(() =>
-  missingModelsOf(missingModelStore.visibleMissingModelCandidates ?? [])
+const workflowStore = useWorkflowStore()
+const openedWorkflow = workflowStore.activeWorkflow
+const models = computed<MissingBuildModel[]>((modelsWhenLastActive) =>
+  modelsWhenLastActive && workflowStore.activeWorkflow !== openedWorkflow
+    ? modelsWhenLastActive
+    : missingModelsOf(missingModelStore.visibleMissingModelCandidates ?? [])
 )
 
-const briefWorkflow = briefWorkflowOf(useWorkflowStore().activeWorkflow)
+const briefWorkflow = briefWorkflowOf(openedWorkflow)
+
+function browserKeptFileName(name: string): string {
+  return name.replace(/[^\p{L}\p{M}\p{N} ._()-]+/gu, '_').replace(/^\.+/, '')
+}
 
 function briefWorkflowOf(
   workflow: ComfyWorkflow | null
@@ -57,11 +66,13 @@ function briefWorkflowOf(
   if (!workflow) return
   return {
     fileName: handoffFileName(
-      workflow.filename.replace(/\.json$/i, '') || 'workflow'
+      browserKeptFileName(workflow.filename.replace(/\.json$/i, ''))
     ),
     serialize: () => {
       workflow.changeTracker?.prepareForSave()
-      return JSON.stringify(workflow.activeState, null, 2)
+      return workflow.activeState === null
+        ? null
+        : JSON.stringify(workflow.activeState, null, 2)
     }
   }
 }

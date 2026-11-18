@@ -9,10 +9,10 @@ export interface MissingItemsRow {
   names: string
 }
 
-/** The workflow a brief names, serialized when the brief is handed over. */
+/** The workflow a brief names, serialized when the brief is handed over; null once it is unloaded. */
 export interface BriefWorkflow {
   fileName: string
-  serialize: () => string
+  serialize: () => string | null
 }
 
 /** The copy a custom deployment dialog shows. */

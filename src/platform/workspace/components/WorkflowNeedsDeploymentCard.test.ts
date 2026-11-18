@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { useExternalLink } from '@/composables/useExternalLink'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
@@ -283,12 +284,65 @@ describe('WorkflowNeedsDeploymentCard', () => {
       activeState: { nodes: [] },
       changeTracker: { prepareForSave: vi.fn() }
     })
+    useMissingModelStore().setMissingModels([checkpoint('other.safetensors')])
+    await nextTick()
 
     await copyPrompt(user)
 
     const [fileName, blob] = vi.mocked(downloadBlob).mock.calls[0]
     expect(fileName).toBe('portrait.json')
     expect(JSON.parse(await blob.text())).toEqual(activeState)
+    const brief = await navigator.clipboard.readText()
+    expect(brief).toContain('sd_xl_base_1.0.safetensors')
+    expect(brief).not.toContain('other.safetensors')
+  })
+
+  it('names the file as the browser saves it', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: '.SDXL: portrait?\u202E.json',
+      activeState: {},
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const user = renderCard()
+
+    await copyPrompt(user)
+
+    expect(vi.mocked(downloadBlob).mock.calls[0][0]).toBe(
+      'SDXL_ portrait_.json'
+    )
+    expect(await navigator.clipboard.readText()).toContain(
+      'downloaded the workflow as `SDXL_ portrait_.json`'
+    )
+  })
+
+  it('reports a failure and downloads nothing when its workflow is no longer loaded', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait.json',
+      activeState: {},
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const user = renderCard()
+    Object.assign(useWorkflowStore().activeWorkflow ?? {}, {
+      activeState: null,
+      changeTracker: null
+    })
+
+    await user.click(screen.getByTestId('custom-deployment-agent'))
+    await user.click(
+      await screen.findByRole('menuitem', { name: 'Copy prompt' })
+    )
+
+    await waitFor(() =>
+      expect(useToast().toasts).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            description:
+              'The brief for your agent could not be prepared. Try again.'
+          })
+        ])
+      )
+    )
+    expect(downloadBlob).not.toHaveBeenCalled()
   })
 
   it('names no workflow file and downloads nothing when no workflow is open', async () => {
