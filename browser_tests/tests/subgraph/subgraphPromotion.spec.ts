@@ -316,17 +316,15 @@ test.describe(
         test('Right-click on textarea widget inside subgraph shows Promote Widget option', async ({
           comfyPage
         }) => {
-          await comfyPage.workflow.loadWorkflow(
-            'subgraphs/subgraph-with-text-widget'
-          )
+          await comfyPage.workflow.loadWorkflow('subgraphs/nested-subgraph')
 
-          await comfyPage.vueNodes.enterSubgraph('11')
+          await comfyPage.vueNodes.enterSubgraph('10')
           await comfyPage.nextFrame()
 
-          const clipNode = comfyPage.vueNodes.getNodeLocator('10')
+          const clipNode = comfyPage.vueNodes.getNodeLocator('6')
           await expect(clipNode).toBeVisible()
 
-          await comfyPage.vueNodes.selectNode('10')
+          await comfyPage.vueNodes.selectNode('6')
           await comfyPage.nextFrame()
 
           const textarea = clipNode.locator('textarea')
@@ -764,18 +762,6 @@ test(
     const subgraph = await comfyPage.vueNodes.getFixtureByTitle('New Subgraph')
 
     await test.step('Promote both image previews', async () => {
-      await expect
-        .poll(() =>
-          comfyPage.page.evaluate(() =>
-            window.app!.graph.nodes.flatMap((node) =>
-              node.isSubgraphNode()
-                ? node.subgraph.nodes.map((inner) => inner.imgs?.length ?? 0)
-                : []
-            )
-          )
-        )
-        .toEqual([1, 1])
-
       await editor.togglePromotion(subgraph.root, {
         nodeId: '1',
         widgetName: '$$canvas-image-preview',

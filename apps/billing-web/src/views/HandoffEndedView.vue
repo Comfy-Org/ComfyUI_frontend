@@ -57,9 +57,9 @@ const VIEW: Readonly<Record<HandoffEnding, EndingView>> = {
     code: true
   },
   unconfirmed: {
-    copy: 'checkout.fullPage.ending.unconfirmed',
+    copy: 'handoff.unconfirmed',
     icon: CLOCK,
-    closeLine: CLOSE_TAB,
+    closeLine: 'handoff.unconfirmed.closeLine',
     code: true,
     support: true
   }

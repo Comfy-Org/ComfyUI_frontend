@@ -1,23 +1,18 @@
 import { onScopeDispose } from 'vue'
 
-import { refreshBilling } from '@/platform/billing/billingRefresh'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { isCloud } from '@/platform/distribution/types'
 
-/** On local, re-reads plan, balance and capabilities on each return to this tab or window. */
-export function useRefreshBillingOnReturn(): void {
-  if (isCloud) return
+/** Re-reads plan, balance and capabilities on each return to this tab or window: always on local, on Cloud only with `includeCloud`. */
+export function useRefreshBillingOnReturn({ includeCloud = false } = {}): void {
+  if (isCloud && !includeCloud) return
   const billing = useBillingContext()
-  const capabilities = useBillingCapabilities()
   onScopeDispose(
-    registerRefreshOnReturn(async () => {
+    registerRefreshOnReturn(async (returned) => {
       if (!billing.isInitialized.value) return
-      await Promise.allSettled([
-        refreshBilling('account'),
-        capabilities.refresh()
-      ])
+      await refreshBillingAccount(returned)
     })
   )
 }

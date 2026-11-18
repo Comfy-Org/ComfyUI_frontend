@@ -20,7 +20,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -508,7 +508,7 @@ function collectCurrentMediaUiDiagnostics() {
   try {
     const nodeOutputStore = useNodeOutputStore()
     return collectMediaUiDiagnostics({
-      nodes: collectAllNodes(app.rootGraph),
+      nodes: collectAllNodes(useApp().rootGraph),
       getNodeOutputs: (node) => nodeOutputStore.getNodeOutputs(node),
       getNodeImageUrls: (node) => nodeOutputStore.getNodeImageUrls(node),
       root: document
@@ -556,7 +556,7 @@ function serializeActiveWorkflow(): Pick<
   'workflow' | 'workflowError'
 > {
   try {
-    return { workflow: app.rootGraph.serialize() }
+    return { workflow: useApp().rootGraph.serialize() }
   } catch (error) {
     return { workflowError: String(error) }
   }

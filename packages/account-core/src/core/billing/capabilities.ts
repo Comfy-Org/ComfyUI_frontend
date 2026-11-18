@@ -70,6 +70,8 @@ const CapabilitiesBodySchema = z.object({
     .optional()
     .catch(undefined),
   auto_top_up_setup: zBillingCapabilitiesResponse.shape.auto_top_up_setup,
+  billing_notice_audience:
+    zBillingCapabilitiesResponse.shape.billing_notice_audience,
   billing_web_checkout_ui:
     zBillingCapabilitiesResponse.shape.billing_web_checkout_ui
       .optional()
@@ -77,6 +79,8 @@ const CapabilitiesBodySchema = z.object({
   cancel_takes_effect_immediately:
     zBillingCapabilitiesResponse.shape.cancel_takes_effect_immediately,
   capabilities: zBillingCapabilities,
+  ending_notice_starts_at:
+    zBillingCapabilitiesResponse.shape.ending_notice_starts_at,
   expires_at: z.string(),
   has_parked_billing_operation:
     zBillingCapabilitiesResponse.shape.has_parked_billing_operation,
@@ -108,10 +112,12 @@ export interface CapabilitiesSnapshot {
   readonly autoTopUpSetup?: z.infer<
     typeof zBillingCapabilitiesResponse.shape.auto_top_up_setup
   >
+  readonly billingNoticeAudience?: CapabilitiesBody['billing_notice_audience']
   /** As received. Absent when the server omits it or sends an unknown variant. */
   readonly billingWebCheckoutUi?: CapabilitiesBody['billing_web_checkout_ui']
   /** As received. Absent when the server omits it: unknown, never false. */
   readonly cancelTakesEffectImmediately?: boolean
+  readonly endingNoticeStartsAt?: string
   readonly hasParkedBillingOperation?: boolean
   readonly paymentRecoveryAvailable?: boolean
   readonly planKind?: z.infer<
@@ -222,10 +228,12 @@ export function createCapabilitiesReader(
         autoTopUpEnabled: data.auto_top_up_enabled,
         autoTopUpMemberView: data.auto_top_up_member_view,
         autoTopUpSetup: data.auto_top_up_setup,
+        billingNoticeAudience: data.billing_notice_audience,
         billingWebCheckoutUi: data.billing_web_checkout_ui,
         cancelTakesEffectImmediately: data.cancel_takes_effect_immediately,
         capabilities: data.capabilities,
         denials,
+        endingNoticeStartsAt: data.ending_notice_starts_at,
         hasParkedBillingOperation: data.has_parked_billing_operation,
         paymentRecoveryAvailable: data.payment_recovery_available,
         planKind: data.plan_kind,

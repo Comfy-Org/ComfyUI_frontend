@@ -234,30 +234,25 @@ export const useAppModeStore = defineStore('appMode', () => {
     resetSelectedToWorkflow
   )
 
+  function writeLinearData(inputs: LinearInput[], outputs: NodeId[]) {
+    if (ChangeTracker.isLoadingGraph || !useApp().isGraphReady) return
+    useApp().rootGraph.extra.linearData = {
+      inputs: inputs.map(([id, name, config]): LinearInput =>
+        config
+          ? [id, name, JSON.parse(JSON.stringify(config)) as InputWidgetConfig]
+          : [id, name]
+      ),
+      outputs: [...outputs]
+    }
+    workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+  }
+
   watch(
     () =>
       isBuilderMode.value
         ? { inputs: selectedInputs.value, outputs: selectedOutputs.value }
         : null,
-    (data) => {
-      if (!data || ChangeTracker.isLoadingGraph) return
-      if (!useApp().isGraphReady) return
-      const graph = useApp().rootGraph
-      const extra = graph.extra
-      extra.linearData = {
-        inputs: data.inputs.map(([id, name, config]): LinearInput =>
-          config
-            ? [
-                id,
-                name,
-                JSON.parse(JSON.stringify(config)) as InputWidgetConfig
-              ]
-            : [id, name]
-        ),
-        outputs: [...data.outputs]
-      }
-      workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
-    },
+    (data) => data && writeLinearData(data.inputs, data.outputs),
     { deep: true }
   )
 
@@ -324,6 +319,8 @@ export const useAppModeStore = defineStore('appMode', () => {
     if (index === -1) return
     const [id, type, options] = selectedInputs.value[index]
     selectedInputs.value.splice(index, 1, [id, type, { ...options, ...config }])
+    if (!isBuilderMode.value)
+      writeLinearData(selectedInputs.value, selectedOutputs.value)
   }
 
   return {

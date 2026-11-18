@@ -125,6 +125,8 @@ export interface ImageLoadFailureMetadata {
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
   timed_out?: boolean
+  /** `MediaError.code` of the failed load. Code 4 alone does not prove a format failure; see `status`. */
+  media_error_code?: number
   /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
   status?: number
   probe_outcome?:
@@ -693,6 +695,7 @@ export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
     | 'automatic_consent'
     | 'activation'
     | 'error_context'
+    | 'cloud_button'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'

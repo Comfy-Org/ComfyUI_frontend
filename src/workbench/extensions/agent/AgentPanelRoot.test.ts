@@ -205,6 +205,7 @@ const appMock = vi.hoisted(() => {
     ui: { autoQueueEnabled: false },
     graph,
     rootGraph: graph,
+    rootGraphOrUndefined: graph,
     isGraphReady: false,
     canvas: undefined as
       | LGraphCanvas
@@ -736,6 +737,33 @@ describe('AgentPanelRoot first-use experience', () => {
     )
   })
 
+  it('prefills a pending Cloud handoff on mount without replacing the draft or sending it', async () => {
+    useAgentComposerStore().setText('Keep my draft')
+    useAgentPanelStore().pendingCloudHandoff = 'Prepare this workflow on Cloud.'
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toHaveTextContent(
+      'Keep my draft Prepare this workflow on Cloud.'
+    )
+    expect(screen.queryByTestId('user-message-bubble')).not.toBeInTheDocument()
+    expect(useAgentPanelStore().pendingCloudHandoff).toBeNull()
+  })
+
+  it('prefills a Cloud handoff in an already mounted composer without sending it', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    useAgentPanelStore().pendingCloudHandoff = 'Prepare this workflow on Cloud.'
+
+    await waitFor(() =>
+      expect(screen.getByRole('textbox')).toHaveTextContent(
+        'Prepare this workflow on Cloud.'
+      )
+    )
+    expect(screen.queryByTestId('user-message-bubble')).not.toBeInTheDocument()
+  })
+
   it('opens directly to the composer without another dialog', async () => {
     const history = useAgentChatHistoryStore()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -755,7 +783,7 @@ describe('AgentPanelRoot first-use experience', () => {
     paywallAgentScopedHasFundsAuthoritative.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({
-        variant: ref('top-banner'),
+        variant: ref('near-composer'),
         reportNotice: reportFreeUseNotice
       })
     )
@@ -765,7 +793,7 @@ describe('AgentPanelRoot first-use experience', () => {
     return screen.findByRole('note', { name: 'Free use notice' })
   }
 
-  it('forwards free-use notice interactions to the experiment', async () => {
+  it('forwards Local free-use notice interactions to telemetry', async () => {
     placeFundedFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -774,8 +802,8 @@ describe('AgentPanelRoot first-use experience', () => {
     )
 
     expect(reportFreeUseNotice.mock.calls).toEqual([
-      [{ action: 'shown', placement: 'top-banner' }],
-      [{ action: 'dismissed', placement: 'top-banner' }]
+      [{ action: 'shown', placement: 'near-composer' }],
+      [{ action: 'dismissed', placement: 'near-composer' }]
     ])
   })
 

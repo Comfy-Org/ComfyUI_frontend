@@ -45,7 +45,7 @@ import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
-import { app as comfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { isValidUuid } from '@/utils/formatUtil'
 
@@ -111,7 +111,7 @@ export function useWorkflowPersistenceV2() {
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
-    const graphData = comfyApp.rootGraph.serialize()
+    const graphData = useApp().rootGraph.serialize()
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
@@ -304,7 +304,7 @@ export function useWorkflowPersistenceV2() {
     workflowLinkPending = false
   ): Promise<StartupOutcome> => {
     if (settingStore.get('Comfy.TutorialCompleted')) {
-      await comfyApp.loadGraphData()
+      await useApp().loadGraphData()
       return 'restored'
     }
 
