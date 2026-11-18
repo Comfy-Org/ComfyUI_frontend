@@ -1,6 +1,6 @@
 import type { SubscriptionPaymentRecovery } from '@comfyorg/ingest-types'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Mock } from 'vitest'
 import { computed, effectScope, nextTick, shallowRef } from 'vue'
 
@@ -81,9 +81,18 @@ function trackArmedReturnRefreshes() {
 
 function openPricingDialog() {
   const scope = effectScope()
+  onTestFinished(() => scope.stop())
   const dialog = scope.run(() => useSubscriptionPaymentRecovery())
   if (!dialog) throw new Error('pricing dialog scope did not run')
   return { finishPayment: dialog.finishPayment, close: () => scope.stop() }
+}
+
+async function payFromClosedDialogs(attempts: number) {
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    const dialog = openPricingDialog()
+    await dialog.finishPayment()
+    dialog.close()
+  }
 }
 
 function deferNextOperationLookup() {
@@ -313,11 +322,7 @@ describe('useSubscriptionPaymentRecovery return refresh across pricing dialogs',
     serveRecovery(true)
     const armedReturnRefreshes = trackArmedReturnRefreshes()
 
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const dialog = openPricingDialog()
-      await dialog.finishPayment()
-      dialog.close()
-    }
+    await payFromClosedDialogs(3)
 
     expect(registerRefreshOnReturn).toHaveBeenCalledTimes(3)
     expect(armedReturnRefreshes()).toBe(1)
@@ -326,11 +331,7 @@ describe('useSubscriptionPaymentRecovery return refresh across pricing dialogs',
   it('disarms every return refresh once the latest open dialog stops being served the recovery', async () => {
     const recovery = serveLiveRecovery()
     const armedReturnRefreshes = trackArmedReturnRefreshes()
-    for (let attempt = 0; attempt < 2; attempt++) {
-      const dialog = openPricingDialog()
-      await dialog.finishPayment()
-      dialog.close()
-    }
+    await payFromClosedDialogs(2)
     const latest = openPricingDialog()
     await latest.finishPayment()
 
@@ -351,6 +352,31 @@ describe('useSubscriptionPaymentRecovery return refresh across pricing dialogs',
     openPricingDialog()
 
     expect(armedReturnRefreshes()).toBe(0)
+  })
+
+  it('drops a plans payment whose recovery cleared while its operation loaded, keeping the status refresh', async () => {
+    const plansRecovery = serveLiveRecovery()
+    const context = useBillingContext()
+    context.statusPaymentRecovery = computed(() => ({
+      billing_op_id: SIGNUP_OP,
+      reason: 'payment_required'
+    }))
+    vi.mocked(useBillingContext).mockReturnValue(context)
+    const armedReturnRefreshes = trackArmedReturnRefreshes()
+    const pricing = openPricingDialog()
+    const settlePricing = deferNextOperationLookup()
+    const pricingPaying = pricing.finishPayment()
+    const tab = vi.mocked(reserveBillingTab).mock.results.at(-1)?.value
+    await useSubscriptionPaymentRecovery('status').finishPayment()
+
+    plansRecovery.value = null
+    await nextTick()
+    settlePricing()
+    await pricingPaying
+
+    expect(tab).toMatchObject({ opened: [], closed: true })
+    expect(registerRefreshOnReturn).toHaveBeenCalledOnce()
+    expect(armedReturnRefreshes()).toBe(1)
   })
 
   it.for([
