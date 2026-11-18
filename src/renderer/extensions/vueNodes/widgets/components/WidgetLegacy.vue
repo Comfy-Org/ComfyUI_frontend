@@ -26,6 +26,7 @@ const props = defineProps<{
 
 const canvasEl = ref()
 const containerHeight = ref(20)
+let drawnHeight = 20
 
 const canvasStore = useCanvasStore()
 const canvas: LGraphCanvas = canvasStore.canvas as LGraphCanvas
@@ -114,6 +115,7 @@ function draw() {
   const heights = getRowHeights(widgetInstance, node, row)
   const { minHeight, height, grows } = heights
   containerHeight.value = minHeight
+  drawnHeight = grows ? height : minHeight
   node.canvasHeight = height
   const drawY = classicDrawY(node, heights)
   widgetInstance.y = drawY - 1
@@ -126,7 +128,7 @@ function draw() {
   if (!ctx) return
   ctx.scale(scaleFactor, scaleFactor)
   ctx.translate(0, 1 - drawY)
-  widgetInstance.draw?.(ctx, node, width, drawY, grows ? height : minHeight)
+  widgetInstance.draw?.(ctx, node, width, drawY, drawnHeight)
 }
 function augmentToWidgetPointerEvent(
   e: PointerEvent,
@@ -140,7 +142,7 @@ function augmentToWidgetPointerEvent(
   })
 }
 function isInWidgetBand(e: PointerEvent) {
-  return e.offsetY <= containerHeight.value + 2
+  return e.offsetY <= drawnHeight + 2
 }
 function handleDown(e: PointerEvent) {
   if (!isInWidgetBand(e)) return
