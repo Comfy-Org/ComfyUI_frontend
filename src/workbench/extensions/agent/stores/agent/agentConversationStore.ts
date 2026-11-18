@@ -1387,7 +1387,9 @@ export const useAgentConversationStore = defineStore(
         turn.messageId === slot.turnId
       if (isActive) {
         clearSettledAskState(turn.threadId)
-        finishWithPersistedParts(slot.message, persistedParts)
+        if (slot.origin === 'snapshot' && persistedParts !== undefined)
+          finishSnapshotTurn(slot.message, persistedParts)
+        else finishWithPersistedParts(slot.message, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()
