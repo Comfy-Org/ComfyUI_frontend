@@ -72,8 +72,7 @@
       :class="
         cn(
           'relative flex flex-1 flex-col',
-          !isCollapsed &&
-            '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:transform-[translate(0)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
+          !isCollapsed && 'transform-[translate(0)] [clip-path:inset(-16px)]'
         )
       "
     >
