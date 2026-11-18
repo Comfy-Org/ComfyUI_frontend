@@ -2354,6 +2354,35 @@ describe('AgentPanel extension flag gate', () => {
       })
     })
 
+    it.for([
+      { case: 'problems is not a list', problems: 'not a list' },
+      { case: 'a problem is null', problems: [null] }
+    ])(
+      'keeps the draft but drops an error context when $case',
+      async ({ problems }) => {
+        sessionStorage.setItem(
+          PENDING_KEY,
+          JSON.stringify({
+            draft: 'make it blue',
+            errorContext: {
+              scope: 'card',
+              count: 1,
+              label: 'Missing media',
+              severity: 'warning',
+              problems
+            },
+            savedAt: Date.now()
+          })
+        )
+
+        await loadEntryAndSetup()
+
+        expect(resume()).toHaveBeenCalledExactlyOnceWith({
+          draft: 'make it blue'
+        })
+      }
+    )
+
     it('keeps the draft but drops an error context that is not one', async () => {
       sessionStorage.setItem(
         PENDING_KEY,

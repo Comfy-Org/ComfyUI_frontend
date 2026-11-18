@@ -21,6 +21,8 @@ import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/s
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import { useAgentConsent } from './useAgentConsent'
 import { useOpenAgentPanel } from './useOpenAgentPanel'
@@ -1414,10 +1416,31 @@ describe('useAgentConsent', () => {
       })
     })
 
+    function restoredWorkflow() {
+      const active = ref<ComfyWorkflow | null>(null)
+      Object.defineProperty(useWorkflowStore(), 'activeWorkflow', {
+        configurable: true,
+        get: () => active.value
+      })
+      return {
+        restore: () =>
+          (active.value = createMockLoadedWorkflow({
+            path: 'workflows/errored.json'
+          }))
+      }
+    }
+
+    function consentSaves() {
+      fetchWithUnifiedRemint.mockImplementation(
+        async (_url: string, init: RequestInit) =>
+          init.method === 'POST' ? savedResponse() : settingResponse(false)
+      )
+    }
+
     it('opens the chat with the error chip once the post-reload save succeeds', async () => {
       signedIn()
-      scopeResolves()
-      vi.spyOn(useAgentConsentStore(), 'accept').mockResolvedValueOnce(true)
+      consentSaves()
+      restoredWorkflow().restore()
       const panel = useAgentPanelStore()
 
       await useAgentConsent().resumeAcceptAfterReload({
@@ -1427,6 +1450,28 @@ describe('useAgentConsent', () => {
 
       expect(panel.isOpen).toBe(true)
       expect(panel.view).toEqual({ screen: 'chat' })
+      expect(panel.pendingErrorContext).toEqual(ERROR_CONTEXT)
+    })
+
+    it('holds the error chip until the errored workflow is restored when consent saves first', async () => {
+      signedIn()
+      consentSaves()
+      const workflow = restoredWorkflow()
+      const panel = useAgentPanelStore()
+
+      const resume = useAgentConsent().resumeAcceptAfterReload({
+        draft: '',
+        errorContext: ERROR_CONTEXT
+      })
+      await vi.waitFor(() => expect(useAgentConsentStore().accepted).toBe(true))
+      await setImmediate()
+      expect(panel.isOpen).toBe(false)
+      expect(panel.pendingErrorContext).toBeNull()
+
+      workflow.restore()
+      await resume
+
+      expect(panel.isOpen).toBe(true)
       expect(panel.pendingErrorContext).toEqual(ERROR_CONTEXT)
     })
 

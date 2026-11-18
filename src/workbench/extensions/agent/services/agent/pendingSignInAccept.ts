@@ -34,18 +34,44 @@ export function clearPendingSignInAccept(): void {
   }
 }
 
+const ERROR_SCOPES: readonly unknown[] = ['single', 'card', 'all']
+const ERROR_CATEGORIES: readonly unknown[] = [
+  'missing_model',
+  'missing_media',
+  'missing_node',
+  'validation',
+  'execution_failure'
+]
+
+function isOptionalString(value: unknown): boolean {
+  return value === undefined || typeof value === 'string'
+}
+
+function isErrorProblem(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false
+  const problem = value as Record<string, unknown>
+  return (
+    ERROR_CATEGORIES.includes(problem.category) &&
+    typeof problem.message === 'string' &&
+    isOptionalString(problem.details) &&
+    isOptionalString(problem.nodeId) &&
+    isOptionalString(problem.nodeType) &&
+    isOptionalString(problem.nodeTitle)
+  )
+}
+
 function isErrorContext(value: unknown): value is AgentErrorContext {
   if (typeof value !== 'object' || value === null) return false
-  const { scope, count, problems, label, severity } = value as Record<
-    string,
-    unknown
-  >
+  const context = value as Record<string, unknown>
   return (
-    typeof scope === 'string' &&
-    typeof count === 'number' &&
-    Array.isArray(problems) &&
-    typeof label === 'string' &&
-    (severity === 'error' || severity === 'warning')
+    ERROR_SCOPES.includes(context.scope) &&
+    typeof context.count === 'number' &&
+    Array.isArray(context.problems) &&
+    context.problems.every(isErrorProblem) &&
+    typeof context.label === 'string' &&
+    (context.severity === 'error' || context.severity === 'warning') &&
+    isOptionalString(context.workflowName) &&
+    isOptionalString(context.workflowPath)
   )
 }
 
