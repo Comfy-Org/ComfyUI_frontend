@@ -131,6 +131,37 @@ test.describe('Item Interaction', { tag: ['@node'] }, () => {
       .toEqual([expect.closeTo(-215, 1), expect.closeTo(43, 1)])
   })
 
+  test('A node drag after a Space pan does not replay the panned travel', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    const origin = await node.getProperty<[number, number]>('pos')
+    const scale = await comfyPage.canvasOps.getScale()
+    const start = await comfyPage.canvasOps.toAbsolute(
+      await node.getTitlePosition()
+    )
+
+    await comfyPage.canvas.focus()
+    await comfyPage.page.mouse.move(start.x, start.y)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.keyboard.down('Space')
+    await comfyPage.page.mouse.move(start.x - 4, start.y + 3)
+    await comfyPage.page.keyboard.up('Space')
+    await comfyPage.page.mouse.move(start.x - 215, start.y + 43, {
+      steps: 40
+    })
+    await comfyPage.page.mouse.up()
+    await comfyPage.nextFrame()
+
+    await expect
+      .poll(async () => {
+        const [x, y] = await node.getProperty<[number, number]>('pos')
+        return [(x - origin[0]) * scale, (y - origin[1]) * scale]
+      })
+      .toEqual([expect.closeTo(-211, 1), expect.closeTo(40, 1)])
+  })
+
   test(
     'Can pin/unpin items with keyboard shortcut',
     { tag: ['@screenshot'] },

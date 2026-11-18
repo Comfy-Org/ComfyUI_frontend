@@ -3687,11 +3687,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (e.isPrimary) pointer.move(e)
     const startedMoving =
       !wasMoving && (this.isDragging || this.dragging_canvas)
-    const origin =
-      startedMoving && pointer.eDown
-        ? [pointer.eDown.clientX, pointer.eDown.clientY]
-        : previousMouse
-    const delta = [mouse[0] - origin[0], mouse[1] - origin[1]]
+    const { eDown } = pointer
+    const canvasDelta: Point =
+      startedMoving && eDown
+        ? [x - eDown.canvasX, y - eDown.canvasY]
+        : [
+            (mouse[0] - previousMouse[0]) / this.ds.scale,
+            (mouse[1] - previousMouse[1]) / this.ds.scale
+          ]
 
     /** See {@link state}.{@link LGraphCanvasState.hoveringOver hoveringOver} */
     let underPointer = CanvasItem.Nothing
@@ -3739,8 +3742,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       underPointer |= CanvasItem.Group
       pointer.resizeDirection = 'SE'
     } else if (this.dragging_canvas) {
-      this.ds.offset[0] += delta[0] / this.ds.scale
-      this.ds.offset[1] += delta[1] / this.ds.scale
+      this.ds.offset[0] += canvasDelta[0]
+      this.ds.offset[1] += canvasDelta[1]
       this._dirty()
     } else if (
       (this.allow_interaction || node?.flags.allow_interaction) &&
@@ -3960,11 +3963,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._lastDragModifiers = { ctrlKey: e.ctrlKey, metaKey: e.metaKey }
         const allItems = getDraggedItems(selected, e)
 
-        const deltaX = delta[0] / this.ds.scale
-        const deltaY = delta[1] / this.ds.scale
-
         for (const item of allItems) {
-          item.move(deltaX, deltaY, true)
+          item.move(canvasDelta[0], canvasDelta[1], true)
         }
 
         this._dirty()
