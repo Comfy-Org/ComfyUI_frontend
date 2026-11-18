@@ -8870,6 +8870,85 @@ describe('AgentPanelRoot history', () => {
         expect(screen.getByRole('textbox')).toHaveTextContent('')
       })
 
+      it('TC-01/TC-03/TC-14: shows a tab returning to its previously opened chat at once, then refreshes in the background', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let releaseRecheck!: () => void
+        let firstReads = 0
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ],
+          {
+            'th-first': {
+              workflowId: 'wf-first',
+              response: () => {
+                firstReads += 1
+                if (firstReads === 1)
+                  return Promise.resolve(transcriptFor('th-first', 'wf-first'))
+                return new Promise<Response>((resolve) => {
+                  releaseRecheck = () =>
+                    resolve(
+                      json(200, [
+                        {
+                          id: 'u-first-recheck',
+                          thread_id: 'th-first',
+                          turn_id: 'turn-first-recheck',
+                          seq: 1,
+                          role: 'user',
+                          status: 'complete',
+                          workflow_id: 'wf-first',
+                          content: { text: 'Updated in th-first' }
+                        }
+                      ])
+                    )
+                })
+              }
+            },
+            'th-second': { workflowId: 'wf-second' }
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['Prompt in th-first'])
+        )
+
+        await activateTabAsUser(second)
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['Prompt in th-second'])
+        )
+
+        await activateTabAsUser(first)
+        await vi.waitFor(() => expect(releaseRecheck).toBeDefined())
+
+        expect(useAgentConversationStore().threadId).toBe('th-first')
+        expect(userPrompts()).toEqual(['Prompt in th-first'])
+        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.getByRole('textbox')).toHaveAttribute(
+          'contenteditable',
+          'true'
+        )
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+
+        releaseRecheck()
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['Updated in th-first'])
+        )
+      })
+
       it('PD-14: keeps the draft with its chat when the panel opens again on another tab', async () => {
         const first = addTab('workflows/first.json')
         const second = addTab('workflows/second.json')
@@ -9226,6 +9305,11 @@ describe('AgentPanelRoot history', () => {
         await vi.waitFor(() =>
           expect(useAgentConversationStore().threadId).toBeNull()
         )
+        dispatchApiEvent('agent_message_delta', {
+          thread_id: 'th-first',
+          message_id: 'm-other',
+          delta: 'x'
+        })
 
         await activateTabAsUser(first)
         await vi.waitFor(() => expect(messageLoads).toBe(2))

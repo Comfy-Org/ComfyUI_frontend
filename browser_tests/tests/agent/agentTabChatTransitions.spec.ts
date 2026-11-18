@@ -9,15 +9,18 @@ test.describe(
   { tag: ['@cloud', '@agent'] },
   () => {
     for (const status of [200, 500]) {
-      test(`late B messages ${status} cannot take over after returning to A`, async ({
+      test(`a late recheck of B’s chat (${status}) cannot take over after returning to A`, async ({
         tabChats
       }) => {
         const pending = tabChats.holdMessages(1, status)
 
         await tabChats.tab(1).click()
         await pending.entered
-        await expect(tabChats.opening(1)).toBeVisible()
-        await expect(tabChats.panel.sendButton).toBeDisabled()
+        await expect(tabChats.panel.userMessageBubbles).toHaveText([
+          'Landscape existing request'
+        ])
+        await expect(tabChats.opening(1)).toHaveCount(0)
+        await expect(tabChats.panel.composer).toBeEditable()
         await tabChats.tab(0).click()
         await expect(tabChats.panel.userMessageBubbles).toHaveText([
           'Portrait existing request'
@@ -133,7 +136,10 @@ test.describe(
 
       await tabChats.tab(1).click()
       await pending.entered
-      await expect(tabChats.opening(1)).toBeVisible()
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Landscape existing request'
+      ])
+      await expect(tabChats.opening(1)).toHaveCount(0)
       await expect(tabChats.working(0)).toBeVisible()
       await pending.release()
       await expect(tabChats.panel.userMessageBubbles).toHaveText([

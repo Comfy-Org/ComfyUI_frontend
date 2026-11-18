@@ -2,7 +2,7 @@ import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useIntervalFn } from '@vueuse/core'
-import { delay, xor } from 'es-toolkit'
+import { delay, isEqual, xor } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
@@ -68,6 +68,8 @@ import {
   isAttachmentKind,
   normalizeAgentTranscript
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import type { TranscriptRead } from '@/workbench/extensions/agent/services/agent/agentTranscriptCache'
+import { createTranscriptCache } from '@/workbench/extensions/agent/services/agent/agentTranscriptCache'
 import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
 import type { CanvasSyncEvidence } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
@@ -404,6 +406,12 @@ const ANSWER_FAILURE_ERROR_TYPES: Record<AnswerFailure, string> = {
   unconfirmed: 'agent_ask_answer_failed'
 }
 
+const FRAMES_THAT_LEAVE_TRANSCRIPTS_ALONE: ReadonlySet<string> = new Set([
+  'agent_active_tab'
+])
+
+const leaveChatAsItIs = (): void => undefined
+
 function classifyAnswerFailure(error: unknown): AnswerFailure {
   if (!(error instanceof AgentApiError)) return 'unconfirmed'
   if (error.status === 422) return 'rejected'
@@ -691,6 +699,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let receivedStatusSnapshot = false
   let resolutionChannelEpoch = 0
   interface RunningRecovery {
+    threadId: string
     controller: AbortController
     cause: RecoveryCause
     rerun: boolean
@@ -1126,7 +1135,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadId: string,
     history: AgentMessages,
     buffer: HydrationBuffer,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    restoreWorkflow = true
   ): Promise<boolean> {
     if (conversationStore.threadId !== threadId || !isCurrent()) return false
     deletedThreads.delete(threadId)
@@ -1135,6 +1145,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     reconcileLiveTurns('hydrate')
     readyThreadId.value = threadId
     drainHydration(buffer)
+    if (!restoreWorkflow) return true
     const workflowReady = await workflow?.restored?.(
       conversationStore.latestWorkflowId,
       isCurrent
@@ -1146,6 +1157,66 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  const transcripts = createTranscriptCache()
+
+  function readTranscript(threadId: string): TranscriptRead {
+    return transcripts.fetch(threadId, () => rest.getMessages(threadId))
+  }
+
+  function fetchTranscript(threadId: string): Promise<AgentMessages> {
+    return readTranscript(threadId).answer
+  }
+
+  function warmTranscript(threadId: string | null): void {
+    if (threadId === null || stopped) return
+    const alreadyKept = transcripts.has(threadId)
+    const alreadyBeingRead = transcripts.isFetching(threadId)
+    const turnStillRunning = conversationStore
+      .liveTurns()
+      .some((turn) => turn.threadId === threadId)
+    const sendInFlight = conversationStore.hasSendingForOrigin({
+      kind: 'thread',
+      threadId
+    })
+    if (alreadyKept || alreadyBeingRead || turnStillRunning || sendInFlight)
+      return
+    void fetchTranscript(threadId).catch(() => undefined)
+  }
+
+  function warmLeftChat(threadId: string | null): void {
+    const beingReadBack = [...recoveringTurns.values()].some(
+      (recovery) => recovery.threadId === threadId
+    )
+    if (!beingReadBack) warmTranscript(threadId)
+  }
+
+  async function recheckTranscript(
+    threadId: string,
+    shown: AgentMessages,
+    generation: number
+  ): Promise<void> {
+    const isStillShown = () =>
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration &&
+      conversationStore.threadId === threadId &&
+      !conversationStore.hasPendingSendForOrigin({
+        kind: 'thread',
+        threadId
+      }) &&
+      conversationStore.activeTurnId === null
+    const buffer = armHydration(threadId)
+    try {
+      const read = readTranscript(threadId)
+      const fresh = await read.answer
+      if (!read.isOutdated() && !isEqual(fresh, shown) && isStillShown())
+        await applyHydration(threadId, fresh, buffer, isStillShown, false)
+    } catch {
+      leaveChatAsItIs()
+    } finally {
+      drainHydration(buffer)
+    }
+  }
+
   async function hydrateFromServer(
     threadId: string,
     isCurrent: () => boolean = () => true,
@@ -1153,17 +1224,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       stashedTurn = false,
       forThreadLoad = false,
       openThread,
-      failureNotice = 'error_overlay'
+      failureNotice = 'error_overlay',
+      cached
     }: {
       stashedTurn?: boolean
       forThreadLoad?: boolean
       openThread?: () => void
       failureNotice?: 'error_overlay' | 'inline_notice'
+      cached?: AgentMessages
     } = {}
   ): Promise<boolean> {
     const buffer = armHydration(threadId, forThreadLoad)
     try {
-      const history = await rest.getMessages(threadId)
+      const history = cached ?? (await fetchTranscript(threadId))
       if (openThread && isCurrent()) openThread()
       return await applyHydration(threadId, history, buffer, isCurrent)
     } catch (error) {
@@ -1217,6 +1290,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function stop(): void {
     stopped = true
+    transcripts.clear()
     readyThreadId.value = null
     inFlightSends.clear()
     pendingSendEvents.length = 0
@@ -1602,6 +1676,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     },
     missedCause: RecoveryCause | null = null
   ): void {
+    transcripts.touch(ack.thread_id)
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
     let adoptWorkflow: (() => void) | undefined
@@ -1729,6 +1804,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     missedCause?: RecoveryCause | null
   }): void {
+    transcripts.touch(ack.thread_id)
     const turnId = toTurnId(ack.message_id)
     const workflowId = ack.workflow_id
     adoptBackgroundWorkflow(workflowId, wfContext, boundAtSend)
@@ -2391,6 +2467,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
+  function touchSendOrigin(origin: PendingSendOrigin): void {
+    if (origin.kind === 'thread') transcripts.touch(origin.threadId)
+  }
+
   async function sendMessage(
     text: string,
     attachments?: SentAttachment[],
@@ -2430,6 +2510,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       workflowReferences,
       targetTabPath
     )
+    touchSendOrigin(origin)
     promptEditState.value = { phase: 'idle' }
     const releaseSendGate = sendGateStore.begin()
     try {
@@ -2928,6 +3009,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     source?: Exclude<AgentSessionThreadStartSource, 'first_open'>,
     blankChatId?: string
   ): void {
+    warmLeftChat(conversationStore.threadId)
     readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
@@ -2959,6 +3041,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       stashedTurn: false,
       switched: false
     }
+    const cached = transcripts.recall(threadId)
     const isLoadCurrent = () =>
       load.generation === loadGeneration &&
       ownedGeneration === sessionGeneration
@@ -2969,6 +3052,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       !isNavigationCurrent() &&
       readyThreadId.value === threadId
     function openThread(): void {
+      if (conversationStore.threadId !== threadId)
+        warmLeftChat(conversationStore.threadId)
       readyThreadId.value = null
       load.generation = ++loadGeneration
       promptEditState.value = { phase: 'idle' }
@@ -2988,9 +3073,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ? {
             openThread,
             failureNotice: 'inline_notice',
-            forThreadLoad: true
+            forThreadLoad: true,
+            cached
           }
-        : { stashedTurn: load.stashedTurn, forThreadLoad: true }
+        : { stashedTurn: load.stashedTurn, forThreadLoad: true, cached }
     )
     const opened = hydrated && isCurrent()
     if (opened || outlivedItsNavigation()) {
@@ -2998,6 +3084,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       onThreadActivated?.(threadId)
       conversationStore.resumeBackgroundTurn()
     }
+    if (opened && cached !== undefined)
+      void recheckTranscript(threadId, cached, load.generation)
     return opened
   }
 
@@ -3007,6 +3095,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!('message_id' in raw.data)) return undefined
     const messageId = raw.data.message_id
     return typeof messageId === 'string' ? toTurnId(messageId) : undefined
+  }
+
+  function malformedEventThreadId(raw: object): string | undefined {
+    if (!('data' in raw) || typeof raw.data !== 'object' || raw.data === null)
+      return undefined
+    if (!('thread_id' in raw.data)) return undefined
+    const threadId = raw.data.thread_id
+    return typeof threadId === 'string' ? threadId : undefined
   }
 
   function finishSkillTurnsFor(messageId: TurnId | null): void {
@@ -3049,6 +3145,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadId: event.data.thread_id,
       messageId: toTurnId(event.data.message_id)
     })
+    if (event.data.thread_id !== conversationStore.threadId)
+      warmTranscript(event.data.thread_id)
   }
 
   /**
@@ -3254,7 +3352,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     pendingSendEvents.length = 0
     pendingSendEvents.push(...remaining)
-    for (const event of matched) dispatchPendingSendEvent(event)
+    for (const event of matched) {
+      noteTranscriptActivity(event.type, event.data.thread_id)
+      dispatchPendingSendEvent(event)
+    }
   }
 
   function dispatchAgentEvent(event: AgentWsEvent): void {
@@ -3277,15 +3378,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
     dispatchAgentEvent(event)
   }
 
+  function noteTranscriptActivity(type: string, threadId?: unknown): void {
+    if (FRAMES_THAT_LEAVE_TRANSCRIPTS_ALONE.has(type)) return
+    if (typeof threadId === 'string') transcripts.touch(threadId)
+    else transcripts.touchAll()
+  }
+
   function onRaw(raw: unknown): void {
     if (typeof raw !== 'object' || raw === null) return
     const type = (raw as { type?: unknown }).type
     if (typeof type !== 'string' || !isAgentEvent(type)) return
     const parsed = parseAgentWsEvent(raw)
     if (!parsed.success) {
+      noteTranscriptActivity(type, malformedEventThreadId(raw))
       handleMalformedEvent(type, raw, parsed.error)
       return
     }
+    noteTranscriptActivity(type, parsed.data.data.thread_id)
     onAgentEvent?.(parsed.data)
     handleAgentEvent(parsed.data)
   }
@@ -3339,7 +3448,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const key = recoveryKey(turn)
     if (deferToRunningRecovery(key, cause)) return
     const recovery = new AbortController()
-    const state = {
+    const state: RunningRecovery = {
+      threadId: turn.threadId,
       controller: recovery,
       cause,
       rerun: false,
@@ -3451,6 +3561,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     recoveringTurns.get(key)?.controller.abort()
     const recovery = new AbortController()
     const state: RunningRecovery = {
+      threadId: turn.threadId,
       controller: recovery,
       cause: 'hydrate',
       rerun: false,
@@ -3865,6 +3976,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function forgetDeletedThread(turn: LiveTurn): void {
+    transcripts.touch(turn.threadId)
     deletedThreads.add(turn.threadId)
     skillTurnUsage.delete(recoveryKey(turn))
     recoveryPendingAskObservations.delete(recoveryKey(turn))
