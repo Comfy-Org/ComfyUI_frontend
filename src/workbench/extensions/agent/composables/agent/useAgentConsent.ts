@@ -49,6 +49,8 @@ export interface ConsentOfferHooks {
   onShown?: () => void
   /** Asked right before the card mounts, after every await that precedes it. */
   canShow?: () => boolean
+  /** Told when the user turns the card down rather than accepting it. */
+  onExit?: (exit: 'declined' | 'dismissed') => void
 }
 
 export function useAgentConsent() {
@@ -101,7 +103,7 @@ export function useAgentConsent() {
     trigger: AgentConsentTrigger,
     persistOnAccept = true,
     expectedIdentity?: string,
-    { onShown, canShow }: ConsentOfferHooks = {}
+    { onShown, canShow, onExit }: ConsentOfferHooks = {}
   ): Promise<boolean> {
     if ((canShow && !canShow()) || dialogStore.isDialogOpen(CONSENT_DIALOG_KEY))
       return Promise.resolve(false)
@@ -118,9 +120,13 @@ export function useAgentConsent() {
         })
       }
 
+      let scopeChanged = false
       const stopScopeWatch = watch(
         [identity, isLoggedIn],
-        () => dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY }),
+        () => {
+          scopeChanged = true
+          dialogStore.closeDialog({ key: CONSENT_DIALOG_KEY })
+        },
         { flush: 'sync' }
       )
 
@@ -224,6 +230,7 @@ export function useAgentConsent() {
               identity.value === expectedIdentity
             )
               void recordConsentOfferDeclined()
+            onExit?.('declined')
             closeWith(false)
           }
         },
@@ -237,6 +244,7 @@ export function useAgentConsent() {
             if (shown) {
               clearPendingSignInAccept()
               reportOutcome('dismissed')
+              if (!scopeChanged) onExit?.('dismissed')
             } else reportRequestExit('card_closed_before_mount', trigger)
             resolve(false)
           }
