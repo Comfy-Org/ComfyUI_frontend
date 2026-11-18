@@ -74,7 +74,13 @@
                 "
                 class="shrink-0"
               />
-              <LoginButton v-else-if="!isLoggedIn && !isIntegratedTabBar" />
+              <LoginButton
+                v-else-if="
+                  !isLoggedIn &&
+                  !isIntegratedTabBar &&
+                  !flags.billingNewUxEnabled
+                "
+              />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
                 :tooltip="t('menu.manageExtensions')"

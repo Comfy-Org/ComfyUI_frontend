@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, useTemplateRef } from 'vue'
+import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
+import GreetingHeading from './GreetingHeading.vue'
+import ProactiveGreeting from './ProactiveGreeting.vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -12,14 +15,17 @@ import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/sta
 const {
   userName,
   hasSelection = false,
-  showIntro = true
+  showIntro = true,
+  greeting
 } = defineProps<{
   userName?: string
   hasSelection?: boolean
   showIntro?: boolean
+  greeting?: AgentGreeting
 }>()
 const emit = defineEmits<{
   insert: [text: string, prompt: AgentStarterPromptAttribution]
+  prefilled: [delayMs: number]
 }>()
 
 const { t, te, tm, locale } = useI18n()
@@ -45,18 +51,36 @@ const promptIcons = [
 ]
 const prompts = computed(() => tm(selectedPromptKey.value) as string[])
 const suggestions = computed(() =>
-  prompts.value
-    .map((text, index) => ({
-      text,
-      index,
-      icon: promptIcons[index] ?? 'icon-[lucide--sparkles]',
-      requiresSelection:
-        selectedPromptKey.value !== treatmentPromptKey &&
-        index === SELECTED_NODE_PROMPT_INDEX
-    }))
-    .filter(({ requiresSelection }) => !requiresSelection || hasSelection)
+  greeting?.variant === 'A'
+    ? (
+        tm('agent.proactiveGreeting.controlPrompts') as {
+          label: string
+          prompt: string
+        }[]
+      ).map((item, index) => ({
+        text: item.label,
+        prompt: item.prompt,
+        index,
+        icon: promptIcons[index] ?? 'icon-[lucide--sparkles]',
+        requiresSelection: false
+      }))
+    : prompts.value
+        .map((text, index) => ({
+          text,
+          prompt: text,
+          index,
+          icon: promptIcons[index] ?? 'icon-[lucide--sparkles]',
+          requiresSelection:
+            selectedPromptKey.value !== treatmentPromptKey &&
+            index === SELECTED_NODE_PROMPT_INDEX
+        }))
+        .filter(({ requiresSelection }) => !requiresSelection || hasSelection)
 )
 const promptLocale = computed(() => {
+  if (greeting?.variant === 'A')
+    return te('agent.proactiveGreeting.controlPrompts.0.label', locale.value)
+      ? locale.value
+      : FALLBACK_LOCALE
   return te(`${selectedPromptKey.value}.0`, locale.value)
     ? locale.value
     : FALLBACK_LOCALE
@@ -72,12 +96,12 @@ function visiblePromptCount(): number {
   ).length
 }
 
-function onPromptClick(text: string, index: number): void {
+function onPromptClick(prompt: string, label: string, index: number): void {
   emit(
     'insert',
-    text,
+    prompt,
     starterPromptAttribution(
-      text,
+      label,
       index,
       suggestions.value.length,
       promptLocale.value,
@@ -88,19 +112,23 @@ function onPromptClick(text: string, index: number): void {
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8">
+  <ProactiveGreeting
+    v-if="showIntro && greeting && greeting.variant !== 'A'"
+    :greeting
+    :user-name
+    @prefilled="emit('prefilled', $event)"
+  />
+  <div
+    v-else
+    class="flex h-full flex-col overflow-x-hidden overflow-y-auto px-4 py-8"
+  >
     <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
-      <div
+      <GreetingHeading
         v-if="showIntro"
-        class="flex max-w-sm flex-col items-center pt-12 text-base/snug font-semibold tracking-tight @min-[570px]:text-2xl/snug"
-      >
-        <p class="my-0">
-          {{ t('agent.greeting', { name: userName ?? t('agent.friend') }) }}
-        </p>
-        <p class="my-0">
-          {{ t('agent.greetingQuestion') }}
-        </p>
-      </div>
+        class="pt-12"
+        :user-name
+        :title="t('agent.greetingQuestion')"
+      />
       <div
         v-if="showIntro"
         ref="promptList"
@@ -119,7 +147,9 @@ function onPromptClick(text: string, index: number): void {
               displayIndex >= COMPACT_PROMPT_COUNT && '@max-[460px]:hidden'
             )
           "
-          @click="onPromptClick(suggestion.text, suggestion.index)"
+          @click="
+            onPromptClick(suggestion.prompt, suggestion.text, suggestion.index)
+          "
         >
           <i
             :class="cn('size-3 text-muted-foreground', suggestion.icon)"

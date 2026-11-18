@@ -150,8 +150,8 @@ const tabs = computed<PropertiesPanelTabList>(() => {
             className: cn(
               'ml-1',
               hasBlockingError.value
-                ? 'icon-[lucide--octagon-alert] bg-destructive'
-                : 'icon-[lucide--triangle-alert] bg-warning'
+                ? 'icon-[comfy--circle-alert-filled] bg-destructive'
+                : 'icon-[comfy--triangle-alert-filled] bg-warning'
             ),
             label: () =>
               t(

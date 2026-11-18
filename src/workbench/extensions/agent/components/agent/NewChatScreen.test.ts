@@ -34,8 +34,10 @@ function mount(props: Record<string, unknown> = {}) {
 }
 
 describe('NewChatScreen', () => {
-  it('lists the chats of the workflow in place of the greeting and the starter prompts', () => {
-    mount()
+  it('lists the chats instead of the assigned greeting until opening a blank chat', async () => {
+    const { rerender } = mount({
+      greeting: { variant: 'B', canvas: 'workflow' }
+    })
 
     expect(
       screen.getByRole('button', { name: 'Retouch the skin' })
@@ -44,6 +46,20 @@ describe('NewChatScreen', () => {
     expect(
       screen.queryByText(i18n.global.t('agent.greetingQuestion'))
     ).toBeNull()
+    expect(
+      screen.queryByRole('heading', {
+        name: 'A little help to get you started!'
+      })
+    ).not.toBeInTheDocument()
+
+    await rerender({ landing: null })
+
+    expect(
+      screen.getByRole('heading', {
+        name: 'A little help to get you started!'
+      })
+    ).toBeVisible()
+    expect(screen.queryByTestId('workflow-chat-list')).not.toBeInTheDocument()
   })
 
   describe('while it is not known whether the workflow has chats', () => {

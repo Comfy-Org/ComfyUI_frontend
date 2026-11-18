@@ -45,6 +45,7 @@ import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
 import {
   RESEED_CONFLICT,
+  SOCKET_CREDENTIAL_REFUSED,
   isPermanentSubscribeRefusalCode,
   isRetryableReseedCode
 } from './docFrameCodes'
@@ -816,6 +817,21 @@ function startAgentCrdtFollower(
     }
   }
 
+  let credentialReconnectSpent = false
+  function reconnectForCredential(code: unknown): boolean {
+    if (credentialReconnectSpent || code !== SOCKET_CREDENTIAL_REFUSED)
+      return false
+    credentialReconnectSpent = true
+    lifecycle.awaitReconnect()
+    recordDevEvent('subscribe_credential_reconnect', {
+      workflowId: subscribedWorkflowId.value
+    })
+    transport.reconnect()
+    sender.abortIfUnbound('subscribe_refused')
+    releaseHeldOps()
+    return true
+  }
+
   function handleRejectedSubscription(
     detail: {
       workflowId?: unknown
@@ -839,6 +855,13 @@ function startAgentCrdtFollower(
     releaseHeldOps()
     if (refusal.shouldNotify)
       events.onSyncError?.(refusal.message, refusal.code)
+  }
+
+  function answerRefusedSubscription(
+    detail: Parameters<typeof handleRejectedSubscription>[0]
+  ): void {
+    if (!reconnectForCredential(detail?.code))
+      handleRejectedSubscription(detail)
   }
 
   function subscribeBaselineIsIntegrated(seq: number | undefined): boolean {
@@ -891,12 +914,13 @@ function startAgentCrdtFollower(
         }
       }
       terminal.value = null
+      credentialReconnectSpent = false
       lifecycle.onSubscribeConfirmed()
       forgetUnsyncedAtLoad(subscribedWorkflowId.value)
       resumeHeldOpsIfSubscribed()
       sender.retryTransport()
     } else {
-      handleRejectedSubscription(detail)
+      answerRefusedSubscription(detail)
     }
   }
   function settleCatchUpProjection(
@@ -1321,6 +1345,7 @@ function startAgentCrdtFollower(
     debugSnapshot,
     retrySubscription: () => {
       if (!lifecycle.retry()) return
+      credentialReconnectSpent = false
       connected.value = false
       terminal.value = null
     },

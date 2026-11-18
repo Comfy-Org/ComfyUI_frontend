@@ -44,7 +44,8 @@ function mountSignals(cloudIds: Record<string, string | undefined>) {
     {
       setup() {
         useAgentTabSignals({
-          cloudIdFor: (workflow) => cloudIds[workflow.path]
+          cloudIdFor: (workflow) => cloudIds[workflow.path],
+          onIdentityChange: vi.fn(() => vi.fn())
         })
         return () => null
       }

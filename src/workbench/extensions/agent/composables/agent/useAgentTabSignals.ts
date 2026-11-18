@@ -1,26 +1,37 @@
 import { watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
-import { setAgentTabTitlePrefix } from '@/workbench/extensions/agent/services/agent/agentTabTitlePrefix'
+import {
+  holdAgentTabTitlePrefixUntil,
+  setAgentTabTitlePrefix
+} from '@/workbench/extensions/agent/services/agent/agentTabTitlePrefix'
 import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentOpenChatsStore } from '@/workbench/extensions/agent/stores/agent/agentOpenChatsStore'
 
 type AgentTabSignalsDeps = {
   cloudIdFor: (workflow: ComfyWorkflow) => string | undefined
+  onIdentityChange(listener: () => void): () => void
 }
 
+const answerWaitLimitMs = pendingServerFact('BE-25470', 15 * 60_000)
+
 /** Mirrors the agent's turns onto the workflow tabs and the browser tab title. */
-export function useAgentTabSignals({ cloudIdFor }: AgentTabSignalsDeps) {
+export function useAgentTabSignals({
+  cloudIdFor,
+  onIdentityChange
+}: AgentTabSignalsDeps) {
   const { t } = useI18n()
   const conversationStore = useAgentConversationStore()
   const workflowStore = useWorkflowStore()
   const history = useAgentChatHistoryStore()
   const openChats = useAgentOpenChatsStore()
   const tabActivity = useWorkflowTabActivityStore()
+  const askSeenAt = new Map<string, number>()
 
   conversationStore.onTurnCompleted((path) => {
     const endedInBackground = path !== workflowStore.activeWorkflow?.path
@@ -50,10 +61,28 @@ export function useAgentTabSignals({ cloudIdFor }: AgentTabSignalsDeps) {
     setAgentTabTitlePrefix,
     { immediate: true, flush: 'sync' }
   )
+  watch(
+    () => conversationStore.pendingAskIds,
+    (askIds) => {
+      const now = Date.now()
+      for (const askId of askIds)
+        if (!askSeenAt.has(askId)) askSeenAt.set(askId, now)
+    },
+    { immediate: true, flush: 'sync' }
+  )
 
   function clearTurnSignals(): void {
     tabActivity.setAgentTurnTabs([])
-    setAgentTabTitlePrefix(null)
+    const askIds = conversationStore.pendingAskIds
+    for (const askId of askSeenAt.keys())
+      if (!askIds.includes(askId)) askSeenAt.delete(askId)
+    if (!conversationStore.awaitingApproval || askSeenAt.size === 0)
+      setAgentTabTitlePrefix(null)
+    else
+      holdAgentTabTitlePrefixUntil(
+        Math.max(...askSeenAt.values()) + answerWaitLimitMs,
+        onIdentityChange
+      )
   }
 
   return { clearTurnSignals }

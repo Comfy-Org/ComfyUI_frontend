@@ -11,12 +11,14 @@ const {
   workflowName,
   followsVisibleWorkflow = false,
   genericNoticeReady = false,
+  hideIntro = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
   followsVisibleWorkflow?: boolean
   genericNoticeReady?: boolean
+  hideIntro?: boolean
   context?: 'mismatch' | 'unavailable' | 'emptyCanvas'
 }>()
 
@@ -36,7 +38,8 @@ const followsNamedWorkflow = computed(
 const visible = computed(
   () =>
     Boolean(context) ||
-    (!dismissed.value &&
+    (!hideIntro &&
+      !dismissed.value &&
       !followsNamedWorkflow.value &&
       Boolean(workflowName || genericNoticeReady))
 )

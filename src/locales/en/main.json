@@ -1642,6 +1642,7 @@
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
+    "Export (Workflow Image)": "Export (Workflow Image)",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
     "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Exit Subgraph": "Exit Subgraph",
@@ -2642,6 +2643,7 @@
     "linkedWorkflowNotOpened": "Couldn't open this workflow",
     "linkedWorkflowLoadFailed": "Couldn't open this workflow. Please try again.",
     "failedToSaveDraft": "Failed to save workflow draft",
+    "failedToExportWorkflowImage": "Failed to export workflow image",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
@@ -3904,6 +3906,13 @@
           "body": "Your bank requires additional verification to complete this payment.",
           "title": "Verify your payment"
         }
+      },
+      "planNotStarted": {
+        "title": "Your {plan} plan hasn’t started",
+        "titleNoPlan": "Your plan hasn’t started",
+        "body": "Finish paying to start it.",
+        "bodyUnavailable": "Your plan starts once the payment goes through.",
+        "viewPlans": "View on Plans"
       },
       "parked": {
         "title": "Something went wrong with a recent payment",
@@ -6316,6 +6325,36 @@
     "skip": "Skip",
     "gotIt": "Got it",
     "greeting": "Hello {name},",
+    "proactiveGreeting": {
+      "emptyCanvas": {
+        "title": "Have something in mind?",
+        "description": "Tell Comfy Agent what you'd like to create."
+      },
+      "workflowOpen": {
+        "title": "Ask a question or describe a change.",
+        "description": "Comfy Agent shows you what it plans to do before anything in your workflow changes.",
+        "prompt": "Help me improve this workflow"
+      },
+      "firstOpen": {
+        "title": "A little help to get you started!",
+        "description": "Not sure where to begin? Send the question below, or write your own.",
+        "prompt": "What can you help me with?"
+      },
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ]
+    },
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Describe what you want to create",
     "placeholderWithoutSkills": "Describe what you want to create",

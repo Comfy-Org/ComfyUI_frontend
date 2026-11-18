@@ -4,6 +4,7 @@ import { computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { FollowLanding } from '@/workbench/extensions/agent/composables/agent/useAgentWorkflowChatFollow'
+import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 
 import EmptyState from './EmptyState.vue'
@@ -15,14 +16,17 @@ const {
   openingWorkflowName,
   landing = null,
   userName,
+  greeting,
   hasSelection = false
 } = defineProps<{
   openingWorkflowName?: string
   landing?: FollowLanding | null
   userName?: string
+  greeting?: AgentGreeting
   hasSelection?: boolean
 }>()
 const emit = defineEmits<{
+  prefilled: [delayMs: number]
   insert: [text: string, prompt: AgentStarterPromptAttribution]
   selectChat: [id: string]
   retry: []
@@ -79,8 +83,10 @@ watch(
     :aria-busy="openingListedChat || loadingChats"
     :inert="openingListedChat"
     :user-name
+    :greeting
     :has-selection
     :show-intro="landing === null"
+    @prefilled="emit('prefilled', $event)"
     @insert="(text, prompt) => emit('insert', text, prompt)"
   >
     <WorkflowChatList
