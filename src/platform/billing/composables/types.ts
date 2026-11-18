@@ -197,6 +197,8 @@ export interface BillingState {
   occupiedSeats: ComputedRef<number | null>
   isLoading: Ref<boolean>
   error: Ref<string | null>
+  /** True once a balance read failed and no later read has succeeded. */
+  balanceReadFailed: ComputedRef<boolean>
   canAccessSubscriptionFeatures: ComputedRef<boolean>
   /** Reflects the active workspace's tier, not the user's personal tier. */
   isFreeTier: ComputedRef<boolean>
