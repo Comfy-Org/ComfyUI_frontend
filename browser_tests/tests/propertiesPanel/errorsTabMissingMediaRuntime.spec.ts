@@ -30,9 +30,9 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 import type { RawJobListItem } from '@comfyorg/api-client/jobTypes'
-import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const ossTest = mergeTests(test, jobsRouteFixture)
@@ -271,7 +271,7 @@ async function getCachedMissingMediaWarningNames(
 async function expectNoErrorsTab(comfyPage: ComfyPage) {
   await expect(getErrorOverlay(comfyPage)).toBeHidden()
 
-  const panel = new PropertiesPanelHelper(comfyPage.page)
+  const panel = new PropertiesPanel(comfyPage.page)
   await panel.open(comfyPage.actionbar.propertiesButton)
   await expect(
     panel.root.getByTestId(TestIds.propertiesPanel.errorsTab)
@@ -635,7 +635,7 @@ test.describe(
         `${promotedMediaHostTitle} - ${promotedMediaHostWidgetName}`
       )
 
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.close()
       await comfyPage.subgraph.enterSubgraphWithFallback(
         String(promotedMediaHostNodeId)
@@ -666,7 +666,7 @@ test.describe(
       await expectNoErrorsTab(comfyPage)
       await expect(missingMediaRow).toHaveCount(0)
 
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.close()
       await comfyPage.subgraph.enterSubgraphWithFallback(
         String(promotedMediaHostNodeId)
@@ -705,7 +705,7 @@ test.describe(
 
       await comfyPage.keyboard.bypass()
       await expect(host.getByText('Bypassed', { exact: true })).toBeHidden()
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)
       await expect(panel.errorsTab).toBeHidden()
       await expect(getErrorOverlay(comfyPage)).toBeHidden()

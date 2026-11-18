@@ -9,7 +9,10 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef,
+  ObjectInfoResponse
+} from '@comfyorg/object-info-parser'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type {
@@ -70,7 +73,7 @@ import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowP
 import { loadSeedIntoActiveTab } from '@e2e/fixtures/utils/seedActiveTab'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
-const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
+export const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
 const turnId = (turn: number): string =>
   `0c5b1e77-2d4a-4f9e-8b63-1a2c3d4e5${turn.toString(16).padStart(3, '0')}`
@@ -406,6 +409,55 @@ export class AgentConversationHarness {
     this.hostSocket.refuseSubscribes(reason)
   }
 
+  async returnToRecordedWorkflowAfterRefusedSubscribe(): Promise<void> {
+    const receipt = crypto.randomUUID()
+    const attribute = 'data-agent-refused-subscribe-handled'
+    const cleanupType = `agent-refused-subscribe-cleanup-${receipt}`
+    await this.page.evaluate(
+      ({ receipt, attribute, cleanupType, handledEvent }) => {
+        function cleanup() {
+          document.removeEventListener(handledEvent, onHandled)
+          document.removeEventListener(cleanupType, cleanup)
+        }
+        function isRecord(value: unknown): value is Record<string, unknown> {
+          return typeof value === 'object' && value !== null
+        }
+        function onHandled(event: Event) {
+          if (!(event instanceof CustomEvent)) return
+          if (typeof event.detail !== 'string') return
+          const frame: unknown = JSON.parse(event.detail)
+          if (!isRecord(frame) || frame.type !== 'doc_subscribed') return
+          if (!isRecord(frame.data) || frame.data.ok !== false) return
+          document.documentElement.setAttribute(attribute, receipt)
+          cleanup()
+        }
+        document.addEventListener(handledEvent, onHandled)
+        document.addEventListener(cleanupType, cleanup, { once: true })
+      },
+      {
+        receipt,
+        attribute,
+        cleanupType,
+        handledEvent: AGENT_FRAME_HANDLED_EVENT
+      }
+    )
+    try {
+      await this.topbar.getTab(0).click()
+      await expect(this.page.locator('html')).toHaveAttribute(
+        attribute,
+        receipt
+      )
+    } finally {
+      await this.page.evaluate(
+        ({ attribute, cleanupType }) => {
+          document.dispatchEvent(new CustomEvent(cleanupType))
+          document.documentElement.removeAttribute(attribute)
+        },
+        { attribute, cleanupType }
+      )
+    }
+  }
+
   async sendPrompt(turn = 0): Promise<void> {
     const { content } = this.conversation.turns[turn].request
     await this.composer.fill(content)
@@ -549,6 +601,25 @@ export class AgentConversationHarness {
     return [...latest.values()]
   }
 
+  private async expectWidgetValuesReplayed(throughTurn: number): Promise<void> {
+    for (const { nodeId, widget, value } of this.recordedWidgetValues(
+      throughTurn
+    )) {
+      const field = this.vueNodes
+        .getNodeLocator(nodeId)
+        .getByLabel(widget, { exact: true })
+      if (typeof value === 'number') {
+        await expect
+          .poll(async () => Number(await field.inputValue()))
+          .toBe(value)
+        continue
+      }
+      const tag = await field.evaluate((el) => el.tagName.toLowerCase())
+      if (tag === 'button') await expect(field).toContainText(value)
+      else await expect(field).toHaveValue(value)
+    }
+  }
+
   // The renderer's link map names the endpoints no DOM surface does; the
   // painted result is a screenshot expectation in the replay spec.
   private async renderedLinks(): Promise<RecordedLink[]> {
@@ -674,25 +745,7 @@ export class AgentConversationHarness {
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
-    for (const { nodeId, widget, value } of this.recordedWidgetValues(
-      throughTurn
-    )) {
-      const field = this.vueNodes
-        .getNodeLocator(nodeId)
-        .getByLabel(widget, { exact: true })
-      if (typeof value === 'number') {
-        // Number widgets format their input (0.5 renders as 0.50), so compare the number.
-        await expect
-          .poll(async () =>
-            Number(await field.locator('input').first().inputValue())
-          )
-          .toBe(value)
-        continue
-      }
-      const tag = await field.evaluate((el) => el.tagName.toLowerCase())
-      if (tag === 'button') await expect(field).toContainText(value)
-      else await expect(field).toHaveValue(value)
-    }
+    await this.expectWidgetValuesReplayed(throughTurn)
 
     const projectedLinks = projected.links.map((raw): RecordedLink => {
       const [, fromNode, fromSlot, toNode, toSlot] = zProjectedLink.parse(raw)
@@ -725,8 +778,6 @@ export class AgentConversationHarness {
     )
     links.sort(byLinkKey)
     await expect.poll(() => this.renderedLinks()).toEqual(links)
-    // A widget-backed input renders no slot row on an uncollapsed node
-    // (NodeSlots.vue); the wire above already covers that end.
     for (const link of links) {
       await expect(
         this.vueNodes.getOutputSlotRow(link.fromNode, link.fromSlot)
@@ -931,6 +982,39 @@ export class AgentConversationHarness {
         removed_links: removedLinkIds
       }
     ])
+  }
+
+  applyOpsOnHostUnsent(operations: RecordedGraphOperation[]): void {
+    this.host.apply(operations)
+    for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
+  }
+
+  /** Holds `threadId`'s transcript reads until `release` is called. */
+  async holdTranscript(
+    threadId: string
+  ): Promise<{ requested: Promise<void>; release: () => void }> {
+    let release!: () => void
+    let reached!: () => void
+    const held = new Promise<void>((resolve) => (release = resolve))
+    const requested = new Promise<void>((resolve) => (reached = resolve))
+    await this.page.route(
+      `**/api/agent/threads/${threadId}/messages`,
+      async (route) => {
+        if (route.request().method() !== 'GET') return route.fallback()
+        reached()
+        await held
+        return route.fallback()
+      }
+    )
+    return { requested, release }
+  }
+
+  /** Serves a second workflow's document beside the recorded one. */
+  serveWorkflow(workflowId: string, seed: WorkflowJSON): void {
+    this.hostSocket.addWorkflow(
+      workflowId,
+      new HostDoc(workflowId, seed, this.conversation.workflow.catalog)
+    )
   }
 
   // Rises once per follower subscribe; a tab return re-subscribes and the
@@ -1482,10 +1566,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   },
   viewport: VIEWPORT,
   video: {
-    mode:
-      process.env.PLAYWRIGHT_LOCAL || process.env.RECORD_VIDEO === 'true'
-        ? 'on'
-        : 'off',
+    mode: process.env.RECORD_VIDEO === 'true' ? 'on' : 'off',
     size: VIEWPORT
   },
   agentConversation: async (

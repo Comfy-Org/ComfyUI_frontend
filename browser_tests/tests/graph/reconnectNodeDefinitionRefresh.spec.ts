@@ -5,7 +5,7 @@ import {
   comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture).extend<{

@@ -5,6 +5,7 @@ import {
   resolveMissingMediaItemLabel,
   resolveRunErrorMessage
 } from './errorMessageResolver'
+import { withRefusalReason } from './accountPreconditionRouting'
 import type { NodeValidationError } from './types'
 import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
@@ -676,6 +677,76 @@ describe('errorMessageResolver', () => {
     })
   })
 
+  describe('a run Cloud refused with a served reason', () => {
+    const refusal = {
+      type: 'PAYMENT_REQUIRED',
+      message: 'Subscription or credits required to queue workflows',
+      details: ''
+    }
+
+    it.for([
+      ['manual_block', 'This workspace has been blocked. Contact support.'],
+      [
+        'workspace_cap_exceeded',
+        'This workspace has reached its spending limit.'
+      ],
+      ['project_cap_exceeded', 'This project has reached its spending limit.'],
+      [
+        'user_cap_exceeded',
+        "You've reached your spending limit in this workspace."
+      ]
+    ])('explains the reason %s', ([reason, displayMessage]) => {
+      expect(
+        resolveRunErrorMessage({
+          kind: 'prompt',
+          isCloud: true,
+          error: withRefusalReason(refusal, { reason })
+        })
+      ).toEqual({ displayTitle: "Your workflow didn't run", displayMessage })
+    })
+
+    it.for([
+      [
+        'an unknown reason',
+        withRefusalReason(refusal, { reason: 'something_new' })
+      ],
+      ['no reason', refusal]
+    ] as const)('adds no copy for %s', ([, error]) => {
+      expect(
+        resolveRunErrorMessage({ kind: 'prompt', isCloud: true, error })
+      ).toEqual({})
+    })
+
+    it('falls back to English when the active locale lacks the sentence', () => {
+      const locale = i18n.global.locale.value
+      i18n.global.locale.value = 'fr'
+      try {
+        expect(
+          resolveRunErrorMessage({
+            kind: 'prompt',
+            isCloud: true,
+            error: withRefusalReason(refusal, { reason: 'manual_block' })
+          })
+        ).toEqual({
+          displayTitle: "Your workflow didn't run",
+          displayMessage: 'This workspace has been blocked. Contact support.'
+        })
+      } finally {
+        i18n.global.locale.value = locale
+      }
+    })
+
+    it('adds no copy off Cloud', () => {
+      expect(
+        resolveRunErrorMessage({
+          kind: 'prompt',
+          isCloud: false,
+          error: withRefusalReason(refusal, { reason: 'manual_block' })
+        })
+      ).toEqual({})
+    })
+  })
+
   it('resolves agent API failures with catalog copy', () => {
     expect(
       resolveRunErrorMessage({
@@ -973,6 +1044,41 @@ describe('errorMessageResolver', () => {
         'Not enough GPU memory. Try reducing image resolution or batch size and run again.',
       displayDetails: 'GPU out of memory'
     })
+  })
+
+  it('tells a Cloud server memory kill apart from GPU out of memory', () => {
+    const serverOomMessage =
+      'This workflow ran out of memory on the server. Try a shorter video, lower resolution or smaller batch.'
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        nodeDisplayName: 'Motion Transfer',
+        error: executionError('OOMError', serverOomMessage)
+      })
+    ).toMatchObject({
+      catalogId: 'server_out_of_memory',
+      displayTitle: 'Ran out of memory',
+      displayMessage:
+        'This workflow ran out of memory on the server. Try a shorter video, lower resolution or a smaller batch, then run it again.',
+      displayItemLabel: 'Motion Transfer'
+    })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        nodeDisplayName: 'Motion Transfer',
+        error: executionError('OOMError', `  ${serverOomMessage}\n`)
+      })
+    ).toMatchObject({ catalogId: 'server_out_of_memory' })
+
+    expect(
+      resolveRunErrorMessage({
+        kind: 'execution',
+        nodeDisplayName: 'KSampler',
+        error: executionError('OOMError', 'OOMError: Workflow execution failed')
+      })
+    ).toMatchObject({ catalogId: 'out_of_memory' })
   })
 
   it.for([

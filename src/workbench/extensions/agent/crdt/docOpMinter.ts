@@ -68,6 +68,10 @@ export interface DocOpMinterDeps {
   isEnabled(): boolean
   /** A semantic doc is bound for the active workflow. */
   isDocBound(): boolean
+  /** Records a local edit that cannot yet enter the semantic document. */
+  onUnboundLocalIntent?(): void
+  /** Records a local edit to the visible workflow while another one, or none, is bound. */
+  onUnboundVisibleIntent?(): void
   /** Receives minted semantic operations (the sender's inbox). */
   enqueue(operations: GraphOperation[]): void
   /** The live root graph, or null when no workflow is open. */
@@ -192,8 +196,19 @@ interface PendingWidgetValue {
 
 type MissingSlotGrowth = NonNullable<ReturnType<typeof growForMissingSlot>>
 
-/** Returns the node's save-format snapshot for a semantic add operation. */
-export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
+/**
+ * Returns the node's save-format snapshot for a semantic add operation.
+ *
+ * Excludes only subgraph hosts, whose widget values are positional by design
+ * (`applyHostWidgets` indexes them against the live promoted inputs). Every
+ * other named-value node gets a declared `widgets_values_form` when one can
+ * be proven (schema A24); otherwise it keeps the positional snapshot rather
+ * than shipping an undeclared name-keyed record (KA-12).
+ */
+export function wireNodeSnapshot(
+  node: LGraphNode,
+  onPositionalDropped?: (counts: { positional: number; named: number }) => void
+): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
     serialized = node.serialize()
@@ -209,12 +224,14 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
     ...rest
   } = wireSerialized
   const snapshot = { ...rest, flags } satisfies WorkflowNode
-  if (!named || node.isVirtualNode) return snapshot
+  if (!named || node.isSubgraphNode()) return snapshot
   const values = valueWidgetsOnly(node, named)
-  // The form is proven against the POST-HOOK serialization, not derived from
-  // the live widget list alone: `serialize()` above already ran the extension
-  // serialize hook, which may have replaced either widget-values field.
   const form = provenWidgetValuesForm(node, values, serialized)
+  if (!form && node.isVirtualNode) return snapshot
+  const positional = serialized.widgets_values
+  const namedCount = Object.keys(named).length
+  if (Array.isArray(positional) && positional.length > namedCount)
+    onPositionalDropped?.({ positional: positional.length, named: namedCount })
   return form
     ? { ...snapshot, widgets_values: values, widgets_values_form: form }
     : { ...snapshot, widgets_values: values }
@@ -545,6 +562,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   const pendingWidgetValues = new Map<string, PendingWidgetValue>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
+  const reportedPositionalDrops = new Set<string>()
   const heldPromotedWrites = new Map<string, HeldPromotedWrite>()
   let heldRetryTimer: ReturnType<typeof setTimeout> | null = null
   let dynamicSlotRetryTimer: ReturnType<typeof setTimeout> | null = null
@@ -720,7 +738,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     node: LGraphNode
   ): GraphOperation | null {
     if (node.graph !== graph) return null
-    const snapshot = wireNodeSnapshot(node)
+    const snapshot = wireNodeSnapshot(node, (counts) =>
+      reportOnce(
+        `positional:${node.type}`,
+        'agent_wire_positional_values_dropped',
+        'agent_wire_positional_values_dropped',
+        { nodeType: node.type, ...counts },
+        reportedPositionalDrops
+      )
+    )
     if (!snapshot) {
       const key = `snapshot:${nodeKey(graph.id, node.id)}`
       if (reported.has(key)) return null
@@ -1418,14 +1444,38 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
   }
 
+  function discardHeldWrite(event: GraphIntentEvent): void {
+    if (event.type === 'set_widget')
+      heldPromotedWrites.delete(heldWriteKey(event))
+  }
+
+  function intentRootGraphId(
+    event: GraphIntentEvent,
+    graph: LGraph | null
+  ): string | null {
+    if ('graph' in event) return event.graph.rootGraph.id
+    return graph !== null && reachableIntentGraph(graph, event.graphId) !== null
+      ? graph.id
+      : null
+  }
+
+  function noteUnboundLocalIntent(event: GraphIntentEvent): void {
+    const graph = deps.getGraph()
+    const eventRootGraphId = intentRootGraphId(event, graph)
+    if (eventRootGraphId === null) return
+    if (eventRootGraphId === deps.boundRootGraphId())
+      deps.onUnboundLocalIntent?.()
+    else if (eventRootGraphId === graph?.id) deps.onUnboundVisibleIntent?.()
+  }
+
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
-    if (!deps.isEnabled() || !deps.isDocBound()) {
-      if (event.type === 'set_widget')
-        heldPromotedWrites.delete(heldWriteKey(event))
+    if (deps.isEnabled() && deps.isDocBound()) {
+      mintIntent(event)
       return
     }
-    mintIntent(event)
+    if (deps.isEnabled()) noteUnboundLocalIntent(event)
+    discardHeldWrite(event)
   }
 
   function mintIntent(event: GraphIntentEvent): void {

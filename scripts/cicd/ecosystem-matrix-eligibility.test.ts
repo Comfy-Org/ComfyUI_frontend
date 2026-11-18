@@ -25,8 +25,11 @@ const workflowSchema = z.object({
   )
 })
 
-const workflow = (file: string) =>
-  workflowSchema.parse(parse(readFileSync(`.github/workflows/${file}`, 'utf8')))
+function workflow(file: string) {
+  return workflowSchema.parse(
+    parse(readFileSync(`.github/workflows/${file}`, 'utf8'))
+  )
+}
 
 const matrix = workflow('ci-ecosystem-matrix.yaml')
 const bump = workflow('update-corpus-pins.yaml')
@@ -34,13 +37,18 @@ const bump = workflow('update-corpus-pins.yaml')
 const shouldRun = matrix.jobs['changes'].outputs?.['should-run']
 if (!shouldRun) throw new Error('ci-ecosystem-matrix lost changes.should-run')
 
-const bumpBranch = (() => {
-  const step = bump.jobs['update-pins'].steps?.find((candidate) =>
+function createPullRequestStep() {
+  const found = bump.jobs['update-pins'].steps?.find((candidate) =>
     candidate.uses?.startsWith('peter-evans/create-pull-request@')
   )
-  const branch = step?.with?.['branch']
-  return z.string().min(1).parse(branch)
-})()
+  if (!found) throw new Error('update-corpus-pins lost its PR step')
+  return found
+}
+
+const bumpBranch = z
+  .string()
+  .min(1)
+  .parse(createPullRequestStep().with?.['branch'])
 
 function evaluate(expression: string, context: object) {
   const javascript = expression
@@ -133,15 +141,9 @@ describe('ecosystem matrix candidate eligibility', () => {
 })
 
 describe('corpus pin bump PR creation', () => {
-  const step = () => {
-    const found = bump.jobs['update-pins'].steps?.find((candidate) =>
-      candidate.uses?.startsWith('peter-evans/create-pull-request@')
-    )
-    if (!found) throw new Error('update-corpus-pins lost its PR step')
-    return found
-  }
-
   it('opens the PR with PR_GH_TOKEN', () => {
-    expect(step().with?.['token']).toBe('${{ secrets.PR_GH_TOKEN }}')
+    expect(createPullRequestStep().with?.['token']).toBe(
+      '${{ secrets.PR_GH_TOKEN }}'
+    )
   })
 })

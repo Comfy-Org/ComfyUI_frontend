@@ -8,7 +8,7 @@ import type {
   Subgraph,
   SubgraphInput
 } from '@comfyorg/graph-model/entityRegistry'
-import { once } from 'es-toolkit'
+import { once, uniqBy } from 'es-toolkit'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
@@ -48,6 +48,7 @@ import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
+import { previewSourceName } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import {
   getPreviewExposureHostLocator,
@@ -559,7 +560,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const rootGraphId = this.rootGraph.id
     const rawProperty = this.properties.previewExposures
     const hasExplicitProperty = Array.isArray(rawProperty)
-    const fromProperty = parsePreviewExposures(rawProperty)
+    const fromProperty = uniqBy(
+      parsePreviewExposures(rawProperty).map((exposure) => ({
+        ...exposure,
+        sourcePreviewName: previewSourceName(
+          this.subgraph.getNodeById(exposure.sourceNodeId) ?? undefined,
+          exposure.sourcePreviewName
+        )
+      })),
+      ({ sourceNodeId, sourcePreviewName }) =>
+        `${sourceNodeId}:${sourcePreviewName}`
+    )
     if (fromProperty.length || hasExplicitProperty) {
       const hostLocator = tryGetPreviewExposureHostLocator(this)
       if (hostLocator)

@@ -1,5 +1,5 @@
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 

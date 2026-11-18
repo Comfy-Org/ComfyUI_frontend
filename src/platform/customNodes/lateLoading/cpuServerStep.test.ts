@@ -53,7 +53,8 @@ function pendingReading() {
 async function signIn() {
   provideCurrentUser(() => ({
     userEmail: computed(() => null),
-    isApiKeyLogin: computed(() => true)
+    isApiKeyLogin: computed(() => true),
+    isLoggedIn: computed(() => true)
   }))
   await useTeamWorkspaceStore().initialize()
 }

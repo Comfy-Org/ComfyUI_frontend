@@ -12,6 +12,10 @@ fi
 
 pnpm deps:audit 1>&2
 pnpm knip 1>&2
+# Vendored upstream specs carry a recorded hash, and their generated output has
+# to match the spec in the tree. A refresh that skips `generate` otherwise
+# leaves the types describing the old revision with every other check green.
+pnpm --recursive --if-present run check:generated 1>&2
 git fetch --quiet --no-tags origin main
 # Audit only what this branch adds. A backport branch forks from a release
 # branch (core/* or cloud/*), and its merge base with main covers the whole

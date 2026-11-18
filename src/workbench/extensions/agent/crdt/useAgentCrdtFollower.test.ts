@@ -29,6 +29,7 @@ import type { GraphOperation } from './graphOperations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 import { createFakeAgentSocket } from './__fixtures__/agentSocket'
+import { hasUnsyncedHumanOps } from './unsyncedHumanOps'
 
 const bridgeState = (() => {
   const liveSubscriptions = new Map<object, Set<string>>()
@@ -64,10 +65,12 @@ const bridgeState = (() => {
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
     isSubscribeBaselineIntegrated = false
+    isCatchingUp = false
     follower = {
       updatesApplied: 0,
       doc: {
-        getMap: () => ({ toJSON: () => ({}) })
+        share: new Map(),
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
       }
     }
   }
@@ -1127,6 +1130,132 @@ describe('useAgentCrdtFollower', () => {
       expect(bridge().resubscribe).toHaveBeenCalledTimes(attempts)
       unmount()
     })
+
+    describe('a subscribe refused for the socket credential', () => {
+      beforeEach(() => {
+        vi.useFakeTimers()
+      })
+
+      function refuseCredential(): void {
+        dispatchFrame('doc_subscribed', {
+          ok: false,
+          workflow_id: 'wf-1',
+          code: 'unauthorized'
+        })
+      }
+
+      function confirmSubscribe(): void {
+        dispatchFrame('doc_subscribed', {
+          ok: true,
+          workflow_id: 'wf-1',
+          seq: 3
+        })
+      }
+
+      function refuseEverySubscribeUntilReconnected(): void {
+        bridge().resubscribe.mockImplementation(() => {
+          refuseCredential()
+          return true
+        })
+        bridge().reconnect.mockImplementation(confirmSubscribe)
+        agentSocket.reconnect.mockImplementation(() => {
+          agentSocket.drop()
+          agentSocket.open()
+        })
+      }
+
+      function reconnectThenExhaustRetries(): void {
+        refuseCredential()
+        agentSocket.drop()
+        agentSocket.open()
+        for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
+          refuseCredential()
+          vi.advanceTimersByTime(delay)
+        }
+        refuseCredential()
+      }
+
+      it('does not end in "This workflow can\'t sync" when the socket credential expired', () => {
+        const { unmount, status } = mountFollower('wf-1')
+        agentSocket.open()
+        refuseEverySubscribeUntilReconnected()
+
+        refuseCredential()
+        vi.advanceTimersByTime(60_000)
+
+        expect(status().terminal).toBeNull()
+        expect(status().connected).toBe(true)
+        unmount()
+      })
+
+      it('reconnects the socket for a fresh credential instead of exhausting the retry budget', () => {
+        const { unmount, status } = mountFollower('wf-1')
+        agentSocket.open()
+        const attempts = bridge().resubscribe.mock.calls.length
+
+        refuseCredential()
+        vi.advanceTimersByTime(60_000)
+
+        expect(status().terminal).toBeNull()
+        expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+        expect(bridge().resubscribe).toHaveBeenCalledTimes(attempts)
+        unmount()
+      })
+
+      it('follows again once the reconnected socket confirms the subscribe', () => {
+        const { unmount, status } = mountFollower('wf-1')
+        agentSocket.open()
+
+        refuseCredential()
+        agentSocket.drop()
+        agentSocket.open()
+        confirmSubscribe()
+
+        expect(bridge().reconnect).toHaveBeenCalled()
+        expect(status().terminal).toBeNull()
+        expect(status().connected).toBe(true)
+        unmount()
+      })
+
+      it('falls back to the bounded retry when the fresh credential is refused too', () => {
+        const { unmount, status } = mountFollower('wf-1')
+        agentSocket.open()
+
+        reconnectThenExhaustRetries()
+
+        expect(agentSocket.reconnect).toHaveBeenCalledOnce()
+        expect(status().terminal).toBe('retry_exhausted')
+        unmount()
+      })
+
+      it('lets Retry reconnect for a fresh credential again', () => {
+        const { unmount, status, retry } = mountFollower('wf-1')
+        agentSocket.open()
+        reconnectThenExhaustRetries()
+        expect(status().terminal).toBe('retry_exhausted')
+
+        retry()
+        refuseCredential()
+
+        expect(agentSocket.reconnect).toHaveBeenCalledTimes(2)
+        expect(status().terminal).toBeNull()
+        unmount()
+      })
+
+      it('may reconnect again after a confirmed subscribe', () => {
+        const { unmount } = mountFollower('wf-1')
+        agentSocket.open()
+
+        refuseCredential()
+        agentSocket.drop()
+        agentSocket.open()
+        confirmSubscribe()
+        refuseCredential()
+
+        expect(agentSocket.reconnect).toHaveBeenCalledTimes(2)
+        unmount()
+      })
+    })
   })
 
   it('FE-2158: one follower retargets across a tab switch and releases across remount', async () => {
@@ -1477,7 +1606,10 @@ describe('useAgentCrdtFollower', () => {
     // and clear applied state without arming a lineage replacement.
     const replacementFollower = {
       updatesApplied: 7,
-      doc: { getMap: () => ({ toJSON: () => ({}) }) }
+      doc: {
+        share: new Map(),
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
+      }
     }
     const initialFollower = bridge().follower
     bridge().subscribe.mockImplementationOnce((nextWorkflowId: string) => {
@@ -2477,7 +2609,10 @@ describe('useAgentCrdtFollower', () => {
 
     it('arms a lineage replacement on a doc_reset and rebinds the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
-      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      const replacementDoc = {
+        share: new Map(),
+        getMap: () => ({ toJSON: () => ({}), get: () => undefined })
+      }
 
       dispatchFrame('doc_reset', {
         workflowId: 'wf-1',
@@ -2803,35 +2938,82 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('defers rejected-op reverts until the bound workflow is active again', async () => {
+  it.for([
+    {
+      name: 'rejected',
+      result: (opId: string) => ({
+        ok: false,
+        applied: [],
+        skipped: [],
+        failed: { index: 0, op_id: opId, code: 'unknown_node' }
+      })
+    },
+    {
+      name: 'overwritten',
+      result: (opId: string) => ({
+        ok: true,
+        applied: [],
+        skipped: [opId],
+        lwwDropped: [opId]
+      })
+    }
+  ])(
+    'defers $name-op reverts until the bound workflow is active again',
+    async ({ result }) => {
+      const readyGraph = fromPartial<LGraph>({})
+      const { unmount, enqueue, isTargetActive } = mountFollower(
+        'wf-1',
+        true,
+        () => readyGraph
+      )
+      enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+      await Promise.resolve()
+      const [, , ops] = clientState.sendOps.mock.calls[0]
+
+      isTargetActive.value = false
+      await nextTick()
+      bridge().resubscribe.mockClear()
+      dispatchFrame('doc_ops_result', {
+        workflowId: 'wf-1',
+        ...result(ops[0].op_id)
+      })
+
+      expect(projectionState.revertRejected).not.toHaveBeenCalled()
+      expect(bridge().resubscribe).not.toHaveBeenCalled()
+
+      isTargetActive.value = true
+      await nextTick()
+
+      expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
+        'wf-1',
+        [ops[0]]
+      )
+      unmount()
+    }
+  )
+
+  it('reverts a batch that was both overwritten and rejected once', async () => {
     const readyGraph = fromPartial<LGraph>({})
-    const { unmount, enqueue, isTargetActive } = mountFollower(
-      'wf-1',
-      true,
-      () => readyGraph
-    )
-    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => readyGraph)
+    enqueue([
+      { op: 'delete_node', node_id: '1', removed_links: [] },
+      { op: 'delete_node', node_id: '2', removed_links: [] }
+    ])
     await Promise.resolve()
     const [, , ops] = clientState.sendOps.mock.calls[0]
 
-    isTargetActive.value = false
-    await nextTick()
     dispatchFrame('doc_ops_result', {
       workflowId: 'wf-1',
       ok: false,
       applied: [],
-      skipped: [],
-      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
+      skipped: [ops[0].op_id],
+      lwwDropped: [ops[0].op_id],
+      failed: { index: 1, op_id: ops[1].op_id, code: 'unknown_node' }
     })
-
-    expect(projectionState.revertRejected).not.toHaveBeenCalled()
-
-    isTargetActive.value = true
-    await nextTick()
 
     expect(projectionState.revertRejected).toHaveBeenCalledExactlyOnceWith(
       'wf-1',
-      [ops[0]]
+      [ops[0], ops[1]]
     )
     unmount()
   })
@@ -3052,6 +3234,102 @@ describe('useAgentCrdtFollower', () => {
     expect(resent[0].op_id).toBe(refused[0].op_id)
     expect(resent[0].base_version).toBe(refused[0].base_version)
     unmount()
+  })
+
+  it.for([
+    {
+      name: 'applied',
+      outcome: projectionState.applied(),
+      canvasMayBeStale: false
+    },
+    {
+      name: 'deferred',
+      outcome: projectionState.notApplied(),
+      canvasMayBeStale: true
+    }
+  ])(
+    'holds a human edit until the reconnect catch-up integrates with $name projection',
+    async ({ outcome, canvasMayBeStale }) => {
+      vi.useFakeTimers()
+      const edit: GraphOperation = {
+        op: 'set_widget',
+        node_id: '1',
+        widget: 'cfg',
+        value: 4.5
+      }
+      const { enqueue, status, unmount } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 1
+      })
+      agentSocket.drop()
+
+      enqueue([edit])
+      await Promise.resolve()
+      agentSocket.open()
+      dispatchFrame('doc_subscribed', {
+        ok: true,
+        workflow_id: 'wf-1',
+        seq: 44
+      })
+      vi.advanceTimersByTime(10_000)
+
+      expect(clientState.sendOps).not.toHaveBeenCalled()
+
+      projectionState.applyFrame.mockReturnValueOnce(outcome)
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 44,
+        catchUp: true
+      })
+
+      expect(status().canvasMayBeStale).toBe(canvasMayBeStale)
+      expect(clientState.sendOps).toHaveBeenCalledOnce()
+      expect(clientState.sendOps.mock.calls[0][2][0]).toMatchObject({
+        op: 'set_widget',
+        widget: 'cfg'
+      })
+      unmount()
+    }
+  )
+
+  it('holds a human edit made before a fresh subscribe has caught up', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount } = mountFollower('wf-1')
+    bridge().isCatchingUp = true
+
+    enqueue([{ op: 'set_widget', node_id: '1', widget: 'cfg', value: 4.5 }])
+    await Promise.resolve()
+    vi.advanceTimersByTime(10_000)
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+
+    bridge().isCatchingUp = false
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 44,
+      catchUp: true
+    })
+
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    unmount()
+  })
+
+  it('marks the workflow unsynced when counter exhaustion refuses an edit during admission', async () => {
+    const workflowId = 'wf-counter-exhausted'
+    const { enqueue, unmount } = mountFollower(workflowId)
+    bridge().subscribedWorkflowId = workflowId
+    bridge().lastSequence = Number.MAX_SAFE_INTEGER
+
+    enqueue([
+      { op: 'set_widget', node_id: '1', widget: 'cfg', value: 4.5 },
+      { op: 'set_widget', node_id: '2', widget: 'cfg', value: 5.5 }
+    ])
+    await Promise.resolve()
+
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+    unmount()
+    expect(hasUnsyncedHumanOps(workflowId)).toBe(true)
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed immediately, without waiting the resend (residual of #16637)', async () => {
@@ -3438,6 +3716,13 @@ describe('useAgentCrdtFollower', () => {
 
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
       expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      expect(telemetryState.reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'retarget' }),
+          context: expect.objectContaining({ reason: 'retarget' })
+        })
+      )
       unmount()
     })
 
@@ -3517,6 +3802,13 @@ describe('useAgentCrdtFollower', () => {
 
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
       expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      expect(telemetryState.reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({ reason: 'subscribe_refused' }),
+          context: expect.objectContaining({ reason: 'subscribe_refused' })
+        })
+      )
       unmount()
     })
   })

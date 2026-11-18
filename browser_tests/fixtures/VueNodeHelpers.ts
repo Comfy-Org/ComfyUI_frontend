@@ -18,14 +18,11 @@ export class VueNodeHelpers {
    * Get locator for all Vue node components in the DOM
    */
   public readonly nodes: Locator
-  /**
-   * Get locator for selected Vue node components (using visual selection indicators)
-   */
-  public readonly selectedNodes: Locator
+  public readonly emphasizedNodes: Locator
 
   constructor(private page: Page) {
     this.nodes = page.locator('[data-node-id]')
-    this.selectedNodes = page.locator('[data-node-id].outline-foreground')
+    this.emphasizedNodes = page.locator('[data-node-id][data-emphasized]')
   }
 
   /**

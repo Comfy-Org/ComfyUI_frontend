@@ -1,4 +1,8 @@
-import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
+import type {
+  AgentAskConflict,
+  AgentAskOption,
+  AgentExtensionChangedData
+} from '@comfyorg/ingest-types'
 import {
   zAgentDeleteApprovalContext,
   zAgentPausedContext,
@@ -73,6 +77,14 @@ export interface TabLinkPart {
   workflowId: string
   locatorId?: string
   name?: string
+}
+
+export interface ExtensionChangePart {
+  type: 'extensionChange'
+  action: AgentExtensionChangedData['action']
+  pack: string
+  agentCreated: boolean
+  restartRequired: boolean
 }
 
 export interface RunApprovalPart {
@@ -388,6 +400,7 @@ export type MessagePart =
   | NoticePart
   | AskUnavailablePart
   | TabLinkPart
+  | ExtensionChangePart
   | RunApprovalPart
   | AskUserPart
   | DeleteApprovalPart
