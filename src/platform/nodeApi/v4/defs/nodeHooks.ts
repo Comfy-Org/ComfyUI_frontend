@@ -179,7 +179,7 @@ function widgetAdder(def: unknown): HookCallbacks['onCreated'] {
 
 /** A callback that hides the widget named `name` on each node made. */
 function widgetHider(name: unknown): HookCallbacks['onCreated'] {
-  if (typeof name !== 'string' || !name) {
+  if (typeof name !== 'string') {
     throw invalidArgument('hideWidget', 'a widget name', name)
   }
   return (node) => node.widgets.get(name)?.setHidden(true)

@@ -154,7 +154,6 @@ function paint(
   element.width = Math.round(width * ratio)
   element.height = Math.round(height * ratio)
   context.setTransform(ratio, 0, 0, ratio, 0, 0)
-  context.clearRect(0, 0, width, height)
   const size = Object.freeze([width, height] as const)
   callListener('canvas.draw', () =>
     draw(context, size, themeOf(element), value)

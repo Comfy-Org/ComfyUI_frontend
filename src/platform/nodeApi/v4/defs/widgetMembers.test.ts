@@ -83,6 +83,26 @@ describe('widgets in node definitions', () => {
     })
   })
 
+  it('gives back the values of widgets reordered in onCreated when the graph is rebuilt from its saved state', () => {
+    comfy.defs.extend(TYPE, (builder) => {
+      builder.addWidget({ type: 'number', name: 'a', value: 1 })
+      builder.addWidget({ type: 'number', name: 'b', value: 2 })
+      builder.onCreated((node) => node.widgets.reorder(['b', 'a']))
+    })
+    const node = added()
+    node.serialize_widgets = true
+    widgetsOf(node).get('a')?.setValue(10)
+    widgetsOf(node).get('b')?.setValue(20)
+
+    graph.configure(graph.serialize())
+    const rebuilt = graph.getNodeById(node.id)
+    assert(rebuilt)
+
+    expect(widgetsOf(rebuilt).names()).toEqual(['b', 'a'])
+    expect(widgetsOf(rebuilt).get('a')?.getValue()).toBe(10)
+    expect(widgetsOf(rebuilt).get('b')?.getValue()).toBe(20)
+  })
+
   describe('hideWidget', () => {
     it('hides the named widget on each node of the type as it is made', () => {
       comfy.defs.extend(TYPE, (builder) => {
@@ -95,7 +115,16 @@ describe('widgets in node definitions', () => {
       expect(reportError).not.toHaveBeenCalled()
     })
 
-    it.for([[''], [3], [undefined]])(
+    it('hides a widget with an empty name, as add and get take one', () => {
+      comfy.defs.extend(TYPE, (builder) => {
+        builder.addWidget({ type: 'number', name: '', value: 0 })
+        builder.hideWidget('')
+      })
+
+      expect(widgetsOf(added()).get('')?.isHidden()).toBe(true)
+    })
+
+    it.for([[3], [undefined]])(
       'refuses a name that is not one: %o',
       ([name]) => {
         let refusal: unknown
