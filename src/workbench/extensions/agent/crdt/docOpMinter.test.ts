@@ -404,8 +404,9 @@ describe('attachDocOpMinter', () => {
         )
     }
 
-    it('reports the node type once when the wire drops appended positional values', async () => {
+    it('reports the node type once per session when the wire drops appended positional values', async () => {
       graph.add(packNode('PositionalPack', true))
+      await afterFlush()
       graph.add(packNode('PositionalPack', true))
       await afterFlush()
 

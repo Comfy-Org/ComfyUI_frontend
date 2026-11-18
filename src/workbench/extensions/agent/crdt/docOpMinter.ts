@@ -462,6 +462,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
   const pendingWidgetValues = new Map<string, PendingWidgetValue>()
   const reported = new Set<string>()
   const reportedRefusals = new Set<string>()
+  const reportedPositionalDrops = new Set<string>()
   const heldPromotedWrites = new Map<string, HeldPromotedWrite>()
   let heldRetryTimer: ReturnType<typeof setTimeout> | null = null
   let dynamicSlotRetryTimer: ReturnType<typeof setTimeout> | null = null
@@ -642,7 +643,8 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         `positional:${node.type}`,
         'agent_wire_positional_values_dropped',
         'agent_wire_positional_values_dropped',
-        { nodeType: node.type, ...counts }
+        { nodeType: node.type, ...counts },
+        reportedPositionalDrops
       )
     )
     if (!snapshot) {
