@@ -53,6 +53,14 @@ function renderCard(
   return { onDone, onDismiss, user }
 }
 
+function linkFollowedOnNextClick(): () => boolean {
+  const clicks: MouseEvent[] = []
+  document.addEventListener('click', (event) => clicks.push(event), {
+    once: true
+  })
+  return () => clicks.length === 1 && !clicks[0].defaultPrevented
+}
+
 describe('CustomDeploymentCard', () => {
   it('shows the pitch it is given', () => {
     renderCard()
@@ -85,8 +93,22 @@ describe('CustomDeploymentCard', () => {
     )
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    const followsLink = linkFollowedOnNextClick()
     await user.click(link)
     expect(open).toHaveBeenCalledExactlyOnceWith(href, '_blank')
+    expect(followsLink()).toBe(false)
+    expect(onDone).toHaveBeenCalledOnce()
+  })
+
+  it('leaves the click to the plain link when the browser blocks the new tab', async () => {
+    vi.spyOn(window, 'open').mockReturnValue(null)
+    const { onDone, user } = renderCard()
+    const link = screen.getByRole('link', { name: 'Deploy on Platform' })
+
+    const followsLink = linkFollowedOnNextClick()
+    await user.click(link)
+
+    expect(followsLink()).toBe(true)
     expect(onDone).toHaveBeenCalledOnce()
   })
 

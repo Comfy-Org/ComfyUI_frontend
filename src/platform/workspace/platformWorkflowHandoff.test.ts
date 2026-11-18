@@ -181,6 +181,10 @@ describe('workflowHandoffUrl', () => {
 describe('openPlatformWithWorkflow', () => {
   const URL_WITH_NONCE = `${PLATFORM}/profile/builds/new?step=import&handoff=${NONCE}`
 
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
   function openWorkflow() {
     const prepareForSave = vi.fn()
     useWorkflowStore().activeWorkflow = fromPartial({
@@ -199,6 +203,7 @@ describe('openPlatformWithWorkflow', () => {
     expect(openPlatformWithWorkflow(URL_WITH_NONCE, NONCE)).toBe(true)
     receive(READY, wizard)
     close()
+    vi.advanceTimersByTime(1000)
 
     expect(open).toHaveBeenCalledExactlyOnceWith(URL_WITH_NONCE, '_blank')
     expect(prepareForSave).toHaveBeenCalledOnce()
@@ -220,5 +225,14 @@ describe('openPlatformWithWorkflow', () => {
 
     expect(openPlatformWithWorkflow(URL_WITH_NONCE, NONCE)).toBe(false)
     expect(addListener).not.toHaveBeenCalledWith('message', expect.anything())
+  })
+
+  it('opens nothing on Desktop, which hands new tabs to the system browser', () => {
+    openWorkflow()
+    vi.stubGlobal('__comfyDesktop2', {})
+    const open = vi.spyOn(window, 'open')
+
+    expect(openPlatformWithWorkflow(URL_WITH_NONCE, NONCE)).toBe(false)
+    expect(open).not.toHaveBeenCalled()
   })
 })

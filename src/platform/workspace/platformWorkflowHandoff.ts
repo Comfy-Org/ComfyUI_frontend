@@ -1,4 +1,5 @@
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
@@ -85,8 +86,9 @@ function captureOpenWorkflow(): HandedWorkflow | null {
   }
 }
 
-/** Opens the wizard at `url` with this tab as its opener and hands it the open workflow; false when the browser blocked the tab. */
+/** Opens the wizard at `url` with this tab as its opener and hands it the open workflow; false when no tab opened, as on Desktop or when the browser blocked it. */
 export function openPlatformWithWorkflow(url: string, nonce: string): boolean {
+  if (handsPopupsToSystemBrowser()) return false
   const handed = captureOpenWorkflow()
   const wizard = window.open(url, '_blank')
   if (!wizard) return false
