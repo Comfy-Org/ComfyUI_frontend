@@ -60,6 +60,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { UserDataExistsError } from '@comfyorg/api-client/ComfyApi'
+import { cancelGhostPlacement } from '@/lib/litegraph/src/canvas/ghostPlacement'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   bindCanvasTracker,
@@ -147,6 +148,7 @@ vi.mock(import('@/base/common/downloadUtil'))
 vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/lib/litegraph/src/canvas/ghostPlacement'))
 
 const mockAssert = vi.hoisted(() => vi.fn())
 
@@ -450,9 +452,9 @@ describe('useWorkflowService', () => {
 
       useWorkflowService().beforeLoadNewGraph()
 
-      const { cancelGhostPlacement } = vi.mocked(app.canvas)
-      expect(cancelGhostPlacement).toHaveBeenCalledOnce()
-      expect(cancelGhostPlacement.mock.invocationCallOrder[0]).toBeLessThan(
+      const cancel = vi.mocked(cancelGhostPlacement)
+      expect(cancel).toHaveBeenCalledExactlyOnceWith(app.canvas)
+      expect(cancel.mock.invocationCallOrder[0]).toBeLessThan(
         vi.mocked(activeWorkflow.changeTracker.deactivate).mock
           .invocationCallOrder[0]
       )

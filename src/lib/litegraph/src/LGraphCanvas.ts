@@ -136,6 +136,7 @@ import {
   showLink,
   showLinks
 } from './canvas/linkVisibility'
+import { cancelGhostPlacement } from './canvas/ghostPlacement'
 import {
   clearLinkSelection,
   getSelectedLinkIds,
@@ -2227,7 +2228,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (newGraph === graph) return
 
     // Drop any in-flight ghost so listeners don't outlive the graph it belongs to
-    this.cancelGhostPlacement()
+    cancelGhostPlacement(this)
 
     releaseCanvasSelection(this)
     clearLinkSelection(this)
@@ -4049,7 +4050,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    */
   startGhostPlacement(node: LGraphNode, dragEvent?: MouseEvent): void {
     // Cancel any in-flight ghost so we don't leak its listeners
-    this.cancelGhostPlacement()
+    cancelGhostPlacement(this)
 
     this.emitBeforeChange()
     this.graph?.beforeChange()
@@ -4101,11 +4102,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       e.preventDefault()
     }
     document.addEventListener('keydown', this._ghostKeyHandler, true)
-  }
-
-  /** Cancels the in-flight ghost placement, if any. */
-  cancelGhostPlacement(): void {
-    if (this.state.ghostNodeId != null) this.finalizeGhostPlacement(true)
   }
 
   /**
