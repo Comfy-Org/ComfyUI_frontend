@@ -62,12 +62,12 @@
         <CurrentUserButton
           v-if="showProfileButton"
           :show-arrow="false"
-          :side="sidebarLocation === 'left' ? 'right' : 'left'"
+          :side="profileSide"
           class="flex w-full shrink-0 justify-center pb-1"
         />
         <LoginButton
           v-else-if="showLoginButton"
-          :side="sidebarLocation === 'left' ? 'right' : 'left'"
+          :side="profileSide"
           class="mb-1 shrink-0"
         />
       </div>
@@ -158,6 +158,9 @@ const isSmall = computed(
 )
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
+)
+const profileSide = computed(() =>
+  sidebarLocation.value === 'left' ? 'right' : 'left'
 )
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
 const isConnected = computed(
