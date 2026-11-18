@@ -127,10 +127,40 @@ This ADR records how the API reaches widgets through those owners.
     `setValue` here. The API chains it once per widget with the host's
     `useChainCallback`, after the callback that was there, as
     `useComputedWithWidgetWatch` does. `change` runs when the committed value
-    differs from the one the last commit left, with copies of both;
-    a value written without a commit, as a load restores it, is not a change.
-    `activate` runs on every commit that `setValue` did not make, which is
-    how a button is heard: its value never changes.
+    differs (`Object.is`) from the one the last commit left, with copies of
+    both, so a value another writer set without a commit is not compared,
+    and two equal objects are two values. `activate` runs on every commit
+    that `setValue` did not make, which is how a button is heard: its value
+    never changes.
+    - A value a load writes is not a change. On most widgets the restore
+      assigns `widget.value`, which runs no callback. A DOM widget's `value`
+      setter (`BaseDOMWidgetImpl` in `src/scripts/domWidget.ts`) runs
+      `callback` itself, so `LGraphNode.configure` restoring a mount, a
+      canvas, a declared type or a text area runs it. The callback is the
+      host's; what it means to a pack is the API's bridge. So the bridge
+      reports neither event while the host is loading or restoring a graph,
+      by the change tracker's own test for a write that is not a user's
+      change: `ChangeTracker.isLoadingGraph` (every `loadGraphData`: a load,
+      a tab switch, an undo or redo) or `isChangeCaptureSuppressed()` (the
+      API JSON and A1111 imports). It still records the value, so the first
+      commit after the load is compared with what the load left. The window
+      is the tracker's, not just `configure`: it includes the
+      `loadedGraphNode`, `afterConfigureGraph` and `afterLoadGraph` hooks
+      and `onWorkflowLoaded` listeners (ADR-EXTENSIONS-NODE-API-0075 decision
+      13), whose writes the tracker also records as part of the load and not
+      as an undo step. A pack reads values in `onWorkflowLoaded`. A paste or
+      a duplicate configures a new node outside that window, and a DOM
+      widget's listeners hear the pasted value as a change. `app.test.ts`
+      drives a load, an undo and an import's suppression through the real
+      host and `widgetEvents.test.ts` the rule.
+    - A commit on a DOM widget runs `activate` twice. `BaseWidget.setValue`,
+      the Vue canvas's update handler and the text area's input handler each
+      assign `value`, whose setter runs `callback`, and then call `callback`
+      again. The second call is the host's, and the bridge reports each call
+      the host makes: telling them apart would mean wrapping the setter. The
+      `activate` JSDoc says so, `app.test.ts` pins it, and the ticket is
+      under "Core limitation". `change` runs once, as the second call leaves
+      the value as the first did.
 14. `removed` chains the widget's `onRemove`, which the host runs when it
     releases the widget: `removeWidget`, and for a DOM widget the removal of
     its node. It runs once.
@@ -330,6 +360,18 @@ keep the widget's own value. The ticket to file:
   `LGraphNode.ts`, with the context telling a saved file from the copy
   `graphToPrompt` embeds. When it lands, `context` gains `'workflow'` and
   `'embedded'` as a patch.
+
+A DOM widget's commit runs its `callback` twice, and a load that restores
+its value runs it once (decision 13). The ticket to file:
+
+- **Title:** A DOM widget runs its callback from its value setter.
+- **Reproduction:** give a multiline text widget a `callback` that counts
+  its calls. Type one character: it counts 2. Load a workflow that holds a
+  value for it: it counts 1, though nobody edited it.
+- **Suggested direction:** let `BaseDOMWidgetImpl`'s `value` setter write
+  the value only, as `BaseWidget`'s does, and leave `callback` to the
+  commit paths that already call it. A V1 extension that depends on the
+  setter's call would need to call `callback` itself.
 
 ## Consequences
 

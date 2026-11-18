@@ -84,7 +84,8 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const canvas = () => services.canvas?.()
   const widgets = createWidgetCollections(
     handles,
-    createEditRunner(() => services.history?.())
+    createEditRunner(() => services.history?.()),
+    () => services.isLoading?.() ?? false
   )
   const nodes = createNodeHandles(handles, (handle) => ({
     ...nodeHandleMembers(handle, edit, nodes, slots),

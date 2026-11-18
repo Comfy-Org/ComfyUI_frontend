@@ -61,6 +61,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { beginChangeCaptureSuppression } from '@/services/changeCaptureSuppression'
 import {
   isCanvasOwner,
   bindCanvasTracker
@@ -142,6 +143,7 @@ import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   createTestRootGraph,
   createTestSubgraph,
@@ -4040,6 +4042,100 @@ describe('ComfyApp', () => {
 
       expect(kept.isDeleted).toBe(true)
       expect(kept.getTitle()).toBeUndefined()
+    })
+
+    describe('a mounted widget a pack listens to', () => {
+      function packThatMountsAndListens() {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        const [[nodeTypeHooks]] = vi.mocked(
+          mockExtensionService.registerExtension
+        ).mock.calls
+        nodeTypeHooks.beforeRegisterNodeDef?.(
+          LiteGraph.registered_node_types.HandleProbe,
+          hostNodeDef('HandleProbe'),
+          app
+        )
+        const heard: string[] = []
+        comfy.defs.extend('HandleProbe', (builder) =>
+          builder.onCreated((node) => {
+            node.setSerializeWidgets(true)
+            const mounted = node.widgets.mount({
+              name: 'm',
+              defaultValue: 'default',
+              render: () => {}
+            })
+            mounted?.on('change', (to, from) =>
+              heard.push(`change ${String(from)} ${String(to)}`)
+            )
+            mounted?.on('activate', (value) =>
+              heard.push(`activate ${String(value)}`)
+            )
+          })
+        )
+        return { heard }
+      }
+
+      function savedWithValue(value: string): ComfyWorkflowJSON {
+        const workflow = workflowWithFixedIdAndOneNode()
+        return {
+          ...workflow,
+          nodes: workflow.nodes.map((node) => ({
+            ...node,
+            widgets_values: [value]
+          }))
+        }
+      }
+
+      function mountedWidget() {
+        const widget = app.rootGraph
+          .getNodeById(toNodeId(1))
+          ?.widgets?.find(({ name }) => name === 'm')
+        assert(widget instanceof BaseWidget)
+        return widget
+      }
+
+      it('hears nothing while a load or an undo restores its value, and hears the next commit', async () => {
+        const { heard } = packThatMountsAndListens()
+
+        await app.loadGraphData(savedWithValue('loaded'), false)
+        await app.loadGraphData(savedWithValue('undone'), false, false, null, {
+          restoresHistory: true
+        })
+
+        expect(mountedWidget().value).toBe('undone')
+        expect(heard).toEqual([])
+
+        mountedWidget().value = 'typed'
+
+        expect(heard).toEqual(['change undone typed', 'activate typed'])
+      })
+
+      it('hears a canvas commit once as a change and twice as an activation, as the DOM widget runs its callback twice', async () => {
+        const { heard } = packThatMountsAndListens()
+        await app.loadGraphData(savedWithValue('loaded'), false)
+        const node = app.rootGraph.getNodeById(toNodeId(1))
+        assert(node)
+
+        mountedWidget().setValue('typed', { node })
+
+        expect(heard).toEqual([
+          'change loaded typed',
+          'activate typed',
+          'activate typed'
+        ])
+      })
+
+      it('hears nothing while the host suppresses change capture for an import, and hears again after', async () => {
+        const { heard } = packThatMountsAndListens()
+        await app.loadGraphData(savedWithValue('loaded'), false)
+
+        const release = beginChangeCaptureSuppression()
+        mountedWidget().value = 'imported'
+        release()
+        mountedWidget().value = 'typed'
+
+        expect(heard).toEqual(['change imported typed', 'activate typed'])
+      })
     })
 
     it('retires the handles of the open document when a load freezes it, and gives working ones once that load is replaced before it configures the graph', async () => {

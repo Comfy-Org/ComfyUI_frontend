@@ -45,6 +45,7 @@ type WidgetListeners = ReturnType<typeof widgetListeners>
 interface BridgeContext {
   readonly copy: (value: unknown) => Copy
   readonly isSettingValue: () => boolean
+  readonly isLoading: () => boolean
 }
 type Bridge = (
   widget: BaseWidget,
@@ -59,13 +60,17 @@ const BRIDGE_FOR: Readonly<Record<WidgetEvent, Bridge>> = {
   beforeSerialize: serializeBridge
 }
 
-export function createWidgetEvents(copyOfSaved: SavedCopier): WidgetEvents {
+export function createWidgetEvents(
+  copyOfSaved: SavedCopier,
+  isLoading: () => boolean
+): WidgetEvents {
   const listenersOf = new WeakMap<BaseWidget, WidgetListeners>()
   const bridgesOf = new WeakMap<BaseWidget, Set<Bridge>>()
   let settingValues = 0
   const context: BridgeContext = {
     copy: (value) => copyOfSaved('on', value ?? null),
-    isSettingValue: () => settingValues > 0
+    isSettingValue: () => settingValues > 0,
+    isLoading
   }
 
   function listenersFor(widget: BaseWidget, event: WidgetEvent) {
@@ -99,12 +104,13 @@ export function createWidgetEvents(copyOfSaved: SavedCopier): WidgetEvents {
 function commitBridge(
   widget: BaseWidget,
   listeners: WidgetListeners,
-  { copy, isSettingValue }: BridgeContext
+  { copy, isSettingValue, isLoading }: BridgeContext
 ): void {
   let committed = widget.value
   widget.callback = useChainCallback(widget.callback, () => {
     const previous = committed
     committed = widget.value
+    if (isLoading()) return
     if (!Object.is(previous, committed)) {
       listeners.change.notify(copy(committed), copy(previous))
     }

@@ -845,7 +845,10 @@ export interface WidgetHandle {
   /** Links these widgets of the same node to this one, in place of any linked before. */
   setLinked(names: readonly string[]): void
 
-  /** Runs after a commit changes the value, with copies of the value and the one before. */
+  /**
+   * Runs after a commit leaves a value other than the last commit's, with copies of both. Not while a workflow
+   * loads or an undo or redo restores it, `onWorkflowLoaded` listeners included.
+   */
   on(
     event: 'change',
     listener: (
@@ -853,7 +856,10 @@ export interface WidgetHandle {
       previous: WidgetValue | undefined
     ) => void
   ): Unsubscribe
-  /** Runs after each commit not made by `setValue`, such as a click on a button. */
+  /**
+   * Runs after each commit not made by `setValue`, such as a click on a button, and not while a workflow loads.
+   * On a DOM widget (a mount, canvas, declared type or text area) the host's commit runs it twice.
+   */
   on(
     event: 'activate',
     listener: (value: WidgetValue | undefined) => void

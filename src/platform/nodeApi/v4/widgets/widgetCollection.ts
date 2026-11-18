@@ -33,10 +33,11 @@ import type { WidgetHandleFor } from './widgetHandle'
 /** The widgets of each node, and the widget types packs declare. */
 export function createWidgetCollections(
   handles: DocumentHandles,
-  runner: EditRunner
+  runner: EditRunner,
+  isLoading: () => boolean
 ): { readonly widgetsOf: WidgetsOf; readonly widgetTypes: WidgetTypes } {
   const copyOfSaved = savedCopier()
-  const events = createWidgetEvents(copyOfSaved)
+  const events = createWidgetEvents(copyOfSaved, isLoading)
   const edits = createWidgetEdits(runner, events.asSetValue)
   const handleFor = createWidgetHandles(handles, { edits, events, copyOfSaved })
   return {
