@@ -43,36 +43,41 @@ const ERROR_CATEGORIES: readonly unknown[] = [
   'execution_failure'
 ]
 
-function isOptionalString(value: unknown): boolean {
-  return value === undefined || typeof value === 'string'
+type FieldChecks = Record<string, (value: unknown) => boolean>
+
+const isString = (value: unknown) => typeof value === 'string'
+const isOptionalString = (value: unknown) =>
+  value === undefined || isString(value)
+
+function hasFields(value: unknown, checks: FieldChecks): boolean {
+  if (typeof value !== 'object' || value === null) return false
+  const record = value as Record<string, unknown>
+  return Object.entries(checks).every(([key, check]) => check(record[key]))
 }
 
-function isErrorProblem(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) return false
-  const problem = value as Record<string, unknown>
-  return (
-    ERROR_CATEGORIES.includes(problem.category) &&
-    typeof problem.message === 'string' &&
-    isOptionalString(problem.details) &&
-    isOptionalString(problem.nodeId) &&
-    isOptionalString(problem.nodeType) &&
-    isOptionalString(problem.nodeTitle)
-  )
+const PROBLEM_FIELDS: FieldChecks = {
+  category: (value) => ERROR_CATEGORIES.includes(value),
+  message: isString,
+  details: isOptionalString,
+  nodeId: isOptionalString,
+  nodeType: isOptionalString,
+  nodeTitle: isOptionalString
+}
+
+const CONTEXT_FIELDS: FieldChecks = {
+  scope: (value) => ERROR_SCOPES.includes(value),
+  count: (value) => typeof value === 'number',
+  problems: (value) =>
+    Array.isArray(value) &&
+    value.every((problem) => hasFields(problem, PROBLEM_FIELDS)),
+  label: isString,
+  severity: (value) => value === 'error' || value === 'warning',
+  workflowName: isOptionalString,
+  workflowPath: isOptionalString
 }
 
 function isErrorContext(value: unknown): value is AgentErrorContext {
-  if (typeof value !== 'object' || value === null) return false
-  const context = value as Record<string, unknown>
-  return (
-    ERROR_SCOPES.includes(context.scope) &&
-    typeof context.count === 'number' &&
-    Array.isArray(context.problems) &&
-    context.problems.every(isErrorProblem) &&
-    typeof context.label === 'string' &&
-    (context.severity === 'error' || context.severity === 'warning') &&
-    isOptionalString(context.workflowName) &&
-    isOptionalString(context.workflowPath)
-  )
+  return hasFields(value, CONTEXT_FIELDS)
 }
 
 function readPendingSignInAccept(): PendingSignInAccept | null {
