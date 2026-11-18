@@ -96,7 +96,7 @@ function captureOpenWorkflow(): HandedWorkflow | null {
 export function openPlatformWithWorkflow(
   surface: PlatformLinkSurface
 ): boolean {
-  if (handsPopupsToSystemBrowser()) return false
+  if (__DISTRIBUTION__ !== 'cloud' || handsPopupsToSystemBrowser()) return false
   const handed = captureOpenWorkflow()
   if (!handed) return false
   const nonce = createUuidv4()

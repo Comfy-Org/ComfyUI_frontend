@@ -169,10 +169,11 @@ describe('answerWorkflowHandoff', () => {
 
 describe('openPlatformWithWorkflow', () => {
   const WIZARD_URL =
-    /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=([A-Za-z0-9_-]{16,64})&utm_source=comfyui&utm_medium=app&utm_content=custom-deployment-card&workspace=ws-123$/
+    /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=([A-Za-z0-9_-]{16,64})&utm_source=comfy_cloud&utm_medium=app&utm_content=custom-deployment-card&workspace=ws-123$/
 
   beforeEach(() => {
     vi.useFakeTimers()
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-123' })
     useWorkflowStore().activeWorkflow = null
   })
@@ -249,6 +250,15 @@ describe('openPlatformWithWorkflow', () => {
     {
       when: 'no workflow is open',
       arrange: () => {
+        vi.spyOn(window, 'open')
+      },
+      opens: 0
+    },
+    {
+      when: 'the build is not Cloud, so a new tab must send no referrer',
+      arrange: () => {
+        openWorkflow()
+        vi.stubGlobal('__DISTRIBUTION__', 'localhost')
         vi.spyOn(window, 'open')
       },
       opens: 0

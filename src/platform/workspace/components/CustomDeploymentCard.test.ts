@@ -107,7 +107,8 @@ describe('CustomDeploymentCard', () => {
     expect(onDone).toHaveBeenCalledOnce()
   })
 
-  it('opens the build wizard itself, in place of the link, when a workflow is open', async () => {
+  it('opens the build wizard itself on Cloud, in place of the link, when a workflow is open', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
     openWorkflow()
     const open = vi
       .spyOn(window, 'open')
@@ -119,7 +120,7 @@ describe('CustomDeploymentCard', () => {
 
     expect(open).toHaveBeenCalledExactlyOnceWith(
       expect.stringMatching(
-        /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=[A-Za-z0-9_-]{16,64}&utm_source=comfyui&utm_medium=app&utm_content=custom-deployment-card$/
+        /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=[A-Za-z0-9_-]{16,64}&utm_source=comfy_cloud&utm_medium=app&utm_content=custom-deployment-card$/
       ),
       '_blank'
     )
@@ -130,6 +131,7 @@ describe('CustomDeploymentCard', () => {
   it.for(['Meta', 'Control', 'Shift', 'Alt'])(
     'leaves a %s click to the link',
     async (key) => {
+      vi.stubGlobal('__DISTRIBUTION__', 'cloud')
       openWorkflow()
       const open = vi.spyOn(window, 'open')
       const { user } = renderCard()
