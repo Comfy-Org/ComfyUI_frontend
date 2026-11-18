@@ -1,4 +1,4 @@
-import type { BillingStatus } from '@comfyorg/ingest-types'
+import type { BillingStatus, SubscriptionState } from '@comfyorg/ingest-types'
 
 export type BillingStatusBannerKind =
   | 'paused'
@@ -32,6 +32,7 @@ export interface BillingStatusBannerFacts {
   runDeniedPastDue: boolean
   unifiedBillingSettingsEnabled: boolean
   isActive: boolean
+  subscriptionState: SubscriptionState | null
 }
 
 function deriveEnterpriseBanner(

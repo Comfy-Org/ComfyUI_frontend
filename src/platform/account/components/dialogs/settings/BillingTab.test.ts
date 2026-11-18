@@ -120,6 +120,7 @@ interface Scenario {
   hasParkedBillingOperation?: boolean
   renewalDate?: string | null
   nextCreditRefillAt?: string | null
+  freeRuns?: { available: number; max: number }
 }
 
 function correlationIdOf(link: HTMLElement) {
@@ -285,9 +286,9 @@ function arrange(scenario: Scenario = {}) {
   )
   vi.mocked(useFreeTierQuota).mockReturnValue(
     fromPartial({
-      quotaEnabled: computed(() => false),
-      available: ref(0),
-      maxAvailable: ref(0)
+      quotaEnabled: computed(() => scenario.freeRuns !== undefined),
+      available: ref(scenario.freeRuns?.available ?? 0),
+      maxAvailable: ref(scenario.freeRuns?.max ?? 0)
     })
   )
 
@@ -438,6 +439,33 @@ describe('BillingTab', () => {
     ).not.toBeInTheDocument()
     expect(banner).not.toHaveTextContent('Subscription paused')
     expect(banner).not.toHaveTextContent('plan ends')
+  })
+
+  it('shows free runs and no out of credits on a never-subscribed Cloud workspace the server reports as active', () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    arrange({
+      subscription: {
+        ...activeSubscription,
+        tier: 'FREE',
+        planSlug: null,
+        renewalDate: null,
+        hasFunds: false
+      },
+      subscriptionState: 'never_subscribed',
+      freeRuns: { available: 5, max: 5 },
+      balance: { amountMicros: 0, currency: 'usd', lowBalance: true }
+    })
+
+    expect(screen.getByTestId('billing-plan-row')).toHaveTextContent(
+      'You have 5 of 5 free runs left.'
+    )
+    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    expect(screen.queryByText('Credits are low')).not.toBeInTheDocument()
   })
 
   it('hides local credit banners when unified billing settings is off', () => {

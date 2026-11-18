@@ -1,3 +1,5 @@
+import type { SubscriptionState } from '@comfyorg/ingest-types'
+
 import type { AutoTopUpBannerKind } from './autoTopUpBanner'
 
 export type LocalCreditBannerKind =
@@ -9,6 +11,7 @@ export interface LocalCreditBannerInput {
   unifiedBillingSettingsEnabled: boolean
   isCloud: boolean
   isActive: boolean
+  subscriptionState: SubscriptionState | null
   hasFunds: boolean | null
   lowBalance: boolean | undefined
   outOfCreditsDismissed: boolean

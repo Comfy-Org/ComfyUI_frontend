@@ -53,7 +53,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   const outOfCreditsDismissed = ref(false)
   const lowCreditsDismissed = ref(false)
 
-  const { subscription, balance, isTeamPlan } = billing
+  const { subscription, subscriptionState, balance, isTeamPlan } = billing
 
   const autoTopUp = useAutoTopUpBannerKind()
   const { href, open } = usePlatformBillingLink('/profile/billing', {
@@ -69,6 +69,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
       unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
       isCloud,
       isActive: subscription.value?.isActive === true,
+      subscriptionState: subscriptionState.value,
       hasFunds: subscription.value?.hasFunds ?? null,
       lowBalance: balance.value?.lowBalance,
       outOfCreditsDismissed: outOfCreditsDismissed.value,
