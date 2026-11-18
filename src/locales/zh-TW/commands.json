@@ -35,9 +35,6 @@
   "Comfy-Desktop_Restart": {
     "label": "重新啟動"
   },
-  "Comfy_3DViewer_Open3DViewer": {
-    "label": "為選取的節點開啟 3D 檢視器（Beta）"
-  },
   "Comfy_BrowseModelAssets": {
     "label": "實驗性：瀏覽模型資源"
   },
