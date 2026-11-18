@@ -8,7 +8,10 @@ import type {
   SubscriptionPreview,
   TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
-import { isGrantLanding } from '@comfyorg/account-core/billing'
+import {
+  isAutoTopUpActivating,
+  isGrantLanding
+} from '@comfyorg/account-core/billing'
 
 type ElementStatus = 'loading' | 'ready' | 'failed'
 
@@ -891,14 +894,14 @@ export function waitingOn(operation: PendingBillingOperation): WaitingOn {
 /**
  * A screen that promised to update but whose operation the lifecycle no
  * longer polls: an outcome parked for a human, or a success whose credits
- * the server has not recorded yet. The page re-reads it itself.
+ * or auto top-up the server has not recorded yet. The page re-reads it itself.
  */
 export function awaitingServer(page: CheckoutPage): boolean {
   if (page.kind === 'unconfirmed') return true
   return (
     page.kind === 'terminal' &&
     page.operation !== undefined &&
-    isGrantLanding(page.operation)
+    (isGrantLanding(page.operation) || isAutoTopUpActivating(page.operation))
   )
 }
 

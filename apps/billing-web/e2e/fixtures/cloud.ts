@@ -158,6 +158,9 @@ const GET_REPLIES = new Map<string, ScenarioReply>([
               ...(scenario.planChangeCardChoice !== undefined && {
                 billing_web_plan_change_card_choice:
                   scenario.planChangeCardChoice
+              }),
+              ...(scenario.unifiedBillingSettings !== undefined && {
+                unified_billing_settings: scenario.unifiedBillingSettings
               })
             }
           : { firebase_config: E2E_FIREBASE_CONFIG }
