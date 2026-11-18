@@ -631,6 +631,7 @@ describe('useWorkflowPersistenceV2', () => {
           JSON.stringify({ ...blankGraph, ...idFields, extra: { a: 1 } }),
           { name: 'Background.json', isTemporary: true }
         )
+        const stored = draftStore.getDraft(draftPath)
         const active = workflowStore.createTemporary('Active.json')
         writeTabState([draftPath, active.path], 1)
         vi.advanceTimersByTime(60_000)
@@ -639,6 +640,10 @@ describe('useWorkflowPersistenceV2', () => {
         await restoreWorkflowTabsState()
         const background = workflowStore.getWorkflowByPath(draftPath)
         expect(background?.isLoaded).toBe(false)
+        expect(draftStore.getDraft(draftPath)).toMatchObject({
+          data: stored!.data,
+          updatedAt: stored!.updatedAt
+        })
 
         await background!.load()
 

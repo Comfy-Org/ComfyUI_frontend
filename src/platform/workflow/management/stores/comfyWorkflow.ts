@@ -11,6 +11,7 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { getLegacyWorkflowId } from '@/platform/workflow/core/utils/workflowId'
 import { generateUUID, isValidUuid } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {
@@ -226,7 +227,11 @@ function withTabId(
   draft: ComfyWorkflowJSON,
   tab: ComfyWorkflowJSON
 ): ComfyWorkflowJSON {
-  return !isValidUuid(draft.id) && isValidUuid(tab.id)
+  return typeof draft === 'object' &&
+    draft !== null &&
+    !Array.isArray(draft) &&
+    !isValidUuid(draft.id) &&
+    isValidUuid(tab.id)
     ? { ...draft, id: tab.id }
     : draft
 }
@@ -424,6 +429,8 @@ export class ComfyWorkflow extends UserFile {
     )
     if (draft?.state && draft.content) {
       const state = withTabId(draft.state, initialState)
+      if (state !== draft.state)
+        this.legacyId ??= getLegacyWorkflowId(draft.state.id)
       this.changeTracker.activeState = state
       this.content =
         state === draft.state ? draft.content : JSON.stringify(state)
