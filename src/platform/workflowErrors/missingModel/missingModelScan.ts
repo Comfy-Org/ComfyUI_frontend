@@ -516,6 +516,8 @@ function collectEmbeddedModels(
   return result
 }
 
+const ASSET_LOAD_ATTEMPTS = 2
+
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
   signal?: AbortSignal
@@ -548,15 +550,22 @@ export async function verifyAssetSupportedCandidates(
   const failedNodeTypes = new Set<string>()
   await Promise.allSettled(
     [...pendingNodeTypes].map(async (nodeType) => {
-      if (signal?.aborted) return
-      try {
-        await store.updateModelsForNodeType(nodeType)
-      } catch (err) {
-        failedNodeTypes.add(nodeType)
-        console.warn(
-          `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
-          err
-        )
+      // One retry: a single transient failure would otherwise drop every
+      // missing model of this node type from the panel with no sign.
+      for (let attempt = 1; attempt <= ASSET_LOAD_ATTEMPTS; attempt++) {
+        if (signal?.aborted) return
+        try {
+          await store.updateModelsForNodeType(nodeType)
+          return
+        } catch (err) {
+          if (attempt < ASSET_LOAD_ATTEMPTS && !signal?.aborted) continue
+          failedNodeTypes.add(nodeType)
+          console.warn(
+            `[Missing Model Pipeline] Failed to load assets for ${nodeType}:`,
+            err
+          )
+          return
+        }
       }
     })
   )
