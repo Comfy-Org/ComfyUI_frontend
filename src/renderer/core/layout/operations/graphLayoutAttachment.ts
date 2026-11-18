@@ -36,6 +36,7 @@ interface LayoutAttachment<TId> {
 type NodeLayoutAttachment = LayoutAttachment<LayoutNode['id']>
 
 const nodeAttachments = new WeakMap<LayoutNode, NodeLayoutAttachment>()
+const measuredSizeOutlivesResize = new WeakSet<LayoutNode>()
 const nodeAttachmentOwners = new Map<
   UUID,
   Map<LayoutNode['id'], WeakRef<LayoutNode>>
@@ -227,10 +228,11 @@ function commitNodeSize(node: LayoutNode): void {
   )
     return
 
-  ;(layoutStore as Partial<typeof layoutStore>).clearContentSize?.(
-    attachment.graphId,
-    attachment.id
-  )
+  if (!measuredSizeOutlivesResize.has(node))
+    (layoutStore as Partial<typeof layoutStore>).clearContentSize?.(
+      attachment.graphId,
+      attachment.id
+    )
   resizeNodeLayout(node, {
     width: projection.size[0],
     height: projection.size[1]
@@ -262,6 +264,7 @@ export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
 
 /** Keys a subgraph IO pseudo-node's layout by its definition. */
 export function attachIoNodeLayout(ioNode: IoLayoutNode): void {
+  measuredSizeOutlivesResize.add(ioNode)
   attachNodeLayoutIn(ioNode.subgraph.id, ioNode)
 }
 
