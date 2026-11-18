@@ -572,10 +572,15 @@ function startAgentCrdtFollower(
     const lost = classifyLostEdits(outcome)
     const anyLost = lost.overwritten.length + lost.unconfirmed.length > 0
     if (anyLost) rejectedOpNotifier.notifyLostEdits(result, lost)
-    const applied = new Set(result.applied)
+    const lostIds = new Set(
+      [...lost.overwritten, ...lost.unconfirmed].map((op) => op.op_id)
+    )
+    const accepted = new Set([...result.applied, ...result.skipped])
     const reverted = result.ok
       ? [...lost.overwritten, ...lost.unconfirmed]
-      : outcome.ops.filter((op) => !applied.has(op.op_id))
+      : outcome.ops.filter(
+          (op) => !accepted.has(op.op_id) || lostIds.has(op.op_id)
+        )
     const workflowId = result.workflowId ?? bridge.subscribedWorkflowId
     if (workflowId === null || (result.ok && !anyLost)) return
     revertRejectedOps(workflowId, reverted, result.seq)
