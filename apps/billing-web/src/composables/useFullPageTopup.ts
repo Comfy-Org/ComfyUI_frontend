@@ -169,6 +169,9 @@ export function useFullPageTopup() {
   const autoTopUpPaysHosted = computed(
     () => autoTopUp !== undefined && !paysOnce.value
   )
+  const autoTopUpPayGoesHosted = computed(
+    () => autoTopUpPaysHosted.value || !savedMethodsRead.value
+  )
   const offeredMethods = computed(() =>
     paysOnce.value ? eligibleCards(savedMethods.value) : savedMethods.value
   )
@@ -421,10 +424,7 @@ export function useFullPageTopup() {
 
   async function pay(choice: PayChoice) {
     if (!canPay.value || amountCents === undefined) return
-    if (
-      autoTopUp !== undefined &&
-      (autoTopUpPaysHosted.value || !savedMethodsRead.value)
-    )
+    if (autoTopUp !== undefined && autoTopUpPayGoesHosted.value)
       return payWithAutoTopUp(amountCents, autoTopUp)
     const run = sendFor(choice, amountCents)
     if (run === undefined) return
