@@ -1969,6 +1969,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }): boolean {
     const channelDropped = resolutionChannelDropped()
     const askKind = conversationStore.submittedAskKind(askId)
+    const askMessageId = conversationStore.submittedAskMessageId(askId)
     const resolutionStillPending =
       conversationStore.submittedAskAnswer(askId) !== undefined
     if (resolutionStillPending)
@@ -1976,7 +1977,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     recordDeliveredAsk(askId)
     conversationStore.commitAsk(askId, currentThreadId, { status: 'retired' })
     if (resolutionStillPending && !channelDropped) {
-      conversationStore.recordAskAnswer(askId, answer, currentThreadId, askKind)
+      conversationStore.recordAskAnswer(
+        askId,
+        answer,
+        currentThreadId,
+        askKind,
+        askMessageId
+      )
       conversationStore.markAskAwaitingResolution(askId, 'accepted')
     }
     return !supersededAnswerReports.has(askId)
@@ -2119,6 +2126,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     resolutionChannelWasLost: boolean
   ): void {
     const askKind = conversationStore.submittedAskKind(askId)
+    const askMessageId = conversationStore.submittedAskMessageId(askId)
     recordDeliveredAsk(askId)
     conversationStore.retireAsk(
       askId,
@@ -2127,7 +2135,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     if (!resolutionChannelWasLost) {
       if (submitted) {
-        conversationStore.recordAskAnswer(askId, submitted, threadId, askKind)
+        conversationStore.recordAskAnswer(
+          askId,
+          submitted,
+          threadId,
+          askKind,
+          askMessageId
+        )
         conversationStore.markAskAwaitingResolution(askId, 'conflict')
       }
       return
@@ -2571,6 +2585,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
     if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
+    else if (outcome.kind === 'turn-missing')
+      reportSettledReadFailure(
+        new Error(`agent turn ${turn.messageId} was missing after settlement`)
+      )
     else if (outcome.kind === 'terminal')
       conversationStore.reconcileSettledTurn(turn, outcome.parts)
   }
@@ -2633,7 +2651,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const running = recoveringTurns.get(key)
     if (running === undefined) return false
     if (cause !== 'reconnect') {
-      if (running.settledSnapshot) running.rerun = true
+      if (running.settledSnapshot) {
+        running.rerun = true
+        running.rerunCause = cause
+      }
+      if (!running.settledSnapshot && running.cause === 'reconnect') {
+        running.rerun = true
+        running.rerunCause = cause
+      }
       return true
     }
     if (running.cause === 'reconnect') {

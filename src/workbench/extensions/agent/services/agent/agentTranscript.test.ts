@@ -888,11 +888,7 @@ describe('normalizeAgentTranscript', () => {
     const latest = row(3, 'assistant', 'turn-a', '', 'row-3')
     latest.status = 'streaming'
 
-    const transcript = normalizeAgentTranscript(
-      [first, second, latest],
-      (askId) => askId === 'ask-retired',
-      (askId) => askId === 'ask-retired'
-    )
+    const transcript = normalizeAgentTranscript([first, second, latest])
 
     expect(transcript.pending?.message.streaming).toBe(true)
     expect(transcript.messages[0].parts).toEqual([])

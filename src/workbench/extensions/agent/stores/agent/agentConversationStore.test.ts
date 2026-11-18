@@ -1106,6 +1106,31 @@ describe('useAgentConversationStore', () => {
       ])
     })
 
+    it('keeps the newest approval visible while its answer is in flight', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.recordAskAnswer('turn-1:call-1', { selected: ['oil'] }, 'th')
+
+      store.hydrate(askUserTranscript())
+
+      expect(askUserCards(store)).toHaveLength(1)
+    })
+
+    it('clears a hydrated turn answer when its assistant row settles', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(askUserTranscript())
+      store.recordAskAnswer('turn-1:call-1', { selected: ['oil'] }, 'th')
+
+      store.settleTurn(
+        { threadId: 'th', messageId: 'assistant-message-1' as TurnId },
+        undefined
+      )
+
+      expect(store.submittedAskAnswer('turn-1:call-1')).toBeUndefined()
+    })
+
     it('rebuilds a retired delete approval read-only from a transcript that still lists it', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
