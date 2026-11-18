@@ -1,6 +1,6 @@
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { resolveInputSourceNode } from '@/utils/graphTraversalUtil'
@@ -12,7 +12,7 @@ function viewedSubgraphHost(
   const graph = node.graph
   if (!graph || graph === graph.rootGraph) return undefined
 
-  const rendered = app.canvas.graph?.getNodeById(renderedNodeId)
+  const rendered = useApp().canvas.graph?.getNodeById(renderedNodeId)
   if (rendered?.isSubgraphNode() && rendered.subgraph === graph) return rendered
 
   const { navigationStack } = useSubgraphNavigationStore()

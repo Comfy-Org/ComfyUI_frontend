@@ -7,8 +7,6 @@
 /src/platform/workflow/templates/                 @christian-byrne @comfyui-wiki @Comfy-Org/comfy_frontend_devs
 
 # Mask Editor
-/src/extensions/core/maskeditor.ts                @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
-/src/extensions/core/maskeditor.test.ts           @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /src/renderer/extensions/maskEditor/               @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 /packages/mask-editor/                            @trsommer @jtydhr88 @Comfy-Org/comfy_frontend_devs
 

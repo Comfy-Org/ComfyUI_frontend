@@ -9,11 +9,10 @@ import { WidgetInputBaseClass } from '@/renderer/extensions/vueNodes/widgets/com
 import type { FormDropdownInputProps } from './types'
 
 const {
+  inputId,
   isOpen,
   placeholder = 'Select...',
-  items,
-  displayItems,
-  selected,
+  selectedItems,
   maxSelectable,
   uploadable,
   disabled,
@@ -27,16 +26,11 @@ const emit = defineEmits<{
   (e: 'file-change', event: Event): void
 }>()
 
-const selectedItems = computed(() => {
-  const itemsToSearch = displayItems ?? items
-  return itemsToSearch.filter((item) => selected.has(item.id))
-})
-
 const theButtonStyle = computed(() =>
   cn(
     'border-0 bg-input text-muted-foreground outline-none',
     disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:bg-muted',
-    selectedItems.value.length > 0 && 'text-foreground'
+    selectedItems.length > 0 && 'text-foreground'
   )
 )
 
@@ -75,6 +69,7 @@ defineExpose({ focus, showPicker })
     "
   >
     <button
+      :id="inputId"
       ref="buttonRef"
       :class="
         cn(
@@ -106,6 +101,7 @@ defineExpose({ focus, showPicker })
         "
       />
     </button>
+    <slot name="anchor" :element="buttonRef" />
     <label
       v-if="uploadable"
       :class="

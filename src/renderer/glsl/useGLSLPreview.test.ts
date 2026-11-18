@@ -1,11 +1,15 @@
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -365,6 +369,58 @@ describe('useGLSLPreview', () => {
       for (let i = 0; i < 5; i++) await nextTick()
 
       expect(hideExecutedOutput.value).toBe(true)
+    })
+
+    it('renders a subgraph shader from a collapsed input with only a stored image URL', async () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'image', type: 'IMAGE' }]
+      })
+      const graph = subgraph.rootGraph
+      const owner = createTestSubgraphNode(subgraph)
+      graph.add(owner)
+      const upstream = new LGraphNode('LoadImage', 'LoadImage')
+      upstream.flags.collapsed = true
+      upstream.addOutput('IMAGE', 'IMAGE')
+      graph.add(upstream)
+      upstream.connect(0, owner, 0)
+
+      const shader = new LGraphNode('GLSLShader', 'GLSLShader')
+      const input = shader.addInput('images.image0', 'IMAGE')
+      subgraph.add(shader)
+      subgraph.inputNode.slots[0].connect(input, shader)
+      useWidgetValueStore().registerWidget(
+        widgetId(graph.id, shader.id, 'fragment_shader'),
+        { type: 'customtext', options: {}, value: 'void main() {}' }
+      )
+      useNodeOutputStore().nodeOutputs[String(shader.id)] = {
+        images: [{ filename: 'shader.png', subfolder: '', type: 'temp' }]
+      }
+      vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
+        (node) =>
+          node === upstream ? ['/api/view?filename=input.png'] : undefined
+      )
+      const image = document.createElement('img')
+      vi.stubGlobal(
+        'Image',
+        vi.fn(function () {
+          return image
+        })
+      )
+      const preview = useGLSLPreview(shallowRef(shader))
+      onTestFinished(preview.dispose)
+
+      await vi.advanceTimersByTimeAsync(100)
+      image.dispatchEvent(new Event('load'))
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(upstream.imgs).toBeUndefined()
+      expect(image.getAttribute('src')).toBe('/api/view?filename=input.png')
+      expect(mockRendererFactory.bindInputImage).toHaveBeenCalledWith(0, image)
+      expect(useNodeOutputStore().setNodePreviewsByNodeId).toHaveBeenCalledWith(
+        shader.id,
+        ['blob:test']
+      )
+      expect(preview.hideExecutedOutput.value).toBe(true)
     })
 
     it('revokes the live preview and reveals the executed output when the input is unavailable', async () => {

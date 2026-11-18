@@ -9,7 +9,6 @@ import {
   vi
 } from 'vitest'
 
-import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { ApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import { anonymousApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
@@ -41,14 +40,6 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 // from vitest.setup.ts); their actions are stubbed per-test below via
 // vi.mocked(store.action), not by mocking the store modules themselves.
 vi.mock(import('firebase/auth'))
-
-const mockFeatureFlags = vi.hoisted(() => ({
-  flags: { unifiedCloudAuthEnabled: true }
-}))
-vi.mock(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () =>
-    fromPartial<ReturnType<typeof useFeatureFlags>>(mockFeatureFlags)
-}))
 
 import { api } from '@/scripts/api'
 

@@ -90,8 +90,12 @@ for (const mode of renderModes) {
               .getNodeByTitle('KSampler')
               .first()
             if (emphasized)
-              await expect(vueNode).toHaveClass(/outline-foreground/)
-            else await expect(vueNode).not.toHaveClass(/outline-foreground/)
+              await expect(vueNode).toHaveAttribute('data-emphasized', 'true')
+            else
+              await expect(vueNode).not.toHaveAttribute(
+                'data-emphasized',
+                'true'
+              )
           }
         }
 

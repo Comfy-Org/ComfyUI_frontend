@@ -13,7 +13,7 @@ import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composab
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { nodeHasError } from '@/renderer/extensions/vueNodes/utils/nodeErrorState'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { nodeTypeValidForApp } from '@/stores/appModeStore'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
@@ -23,8 +23,8 @@ export { computeProcessedWidgets }
 export type { ProcessedWidget }
 
 function getHostNode(nodeData: NodeState): LGraphNode | null {
-  if (!app.isGraphReady) return null
-  return getNodeByState(app.rootGraph, nodeData)
+  if (!useApp().isGraphReady) return null
+  return getNodeByState(useApp().rootGraph, nodeData)
 }
 
 export function useProcessedWidgets(
@@ -67,8 +67,8 @@ export function useProcessedWidgets(
       widgetIds: widgetIdsGetter(),
       graphId: canvasStore.rootGraphId,
       showAdvanced: showAdvanced.value,
-      isGraphReady: app.isGraphReady,
-      rootGraph: app.isGraphReady ? app.rootGraph : null,
+      isGraphReady: useApp().isGraphReady,
+      rootGraph: useApp().isGraphReady ? useApp().rootGraph : null,
       ui
     })
   )
