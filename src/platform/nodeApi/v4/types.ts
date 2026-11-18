@@ -1664,18 +1664,10 @@ export interface SystemHandle {
 }
 
 export interface SystemMonitorSnapshot {
-  readonly cpu: SystemMonitorCpu
   /** The backend's RAM. */
   readonly memory: SystemMonitorMemory
-  /** Empty: the backend reports no disks. */
-  readonly volumes: readonly SystemMonitorVolume[]
   /** The backend's devices other than the CPU. */
   readonly accelerators: readonly SystemMonitorAccelerator[]
-}
-
-export interface SystemMonitorCpu {
-  /** `null`: the backend reports no CPU load. */
-  readonly utilization_percent: number | null
 }
 
 /** Bytes. */
@@ -1684,23 +1676,14 @@ export interface SystemMonitorMemory {
   readonly available: number
 }
 
-export interface SystemMonitorVolume extends SystemMonitorMemory {
-  readonly id: string
-  readonly label: string
-}
-
 export interface SystemMonitorAccelerator {
   /** The device's name, which the backend gives each device. */
   readonly id: string
   readonly name: string
   /** Bytes. */
-  readonly memory_total: number
+  readonly memoryTotal: number
   /** Bytes. */
-  readonly memory_available: number
-  /** `null`: the backend reports no device load. */
-  readonly utilization_percent: number | null
-  /** `null`: the backend reports no temperature. */
-  readonly temperature_c: number | null
+  readonly memoryAvailable: number
 }
 
 /** A canvas over the graph and its nodes, below the viewport panels. Points are viewport pixels from its top left. */
