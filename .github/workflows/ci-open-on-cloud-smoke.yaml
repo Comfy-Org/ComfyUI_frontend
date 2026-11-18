@@ -44,7 +44,18 @@ jobs:
           VITE_STAGING_CLOUD_BASE_URL="$OPEN_ON_CLOUD_URL" \
             VITE_USE_LEGACY_DEFAULT_GRAPH=true pnpm exec vite build --config vite.config.mts
 
-      - uses: ./.github/actions/start-comfyui-server
+      - name: Start the single-user ComfyUI backend
+        shell: bash
+        working-directory: /ComfyUI
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/comfyui-smoke-user"
+          python3 main.py --cpu --listen 127.0.0.1 \
+            --user-directory "$RUNNER_TEMP/comfyui-smoke-user" \
+            --front-end-root "$GITHUB_WORKSPACE/dist" --disable-all-custom-nodes \
+            >"$RUNNER_TEMP/comfyui-smoke-server.log" 2>&1 &
+          wait-for-it --service 127.0.0.1:8188 -t 90
+          curl --fail --silent --show-error http://localhost:8188/system_stats >/dev/null
 
       - name: Install Chromium
         run: pnpm exec playwright install chromium
@@ -80,3 +91,11 @@ jobs:
             ${{ runner.temp }}/open-on-cloud-smoke/**/cloud-job-result.json
           retention-days: 7
           if-no-files-found: ignore
+
+      - name: Show local backend diagnostics on failure
+        if: ${{ failure() }}
+        shell: bash
+        run: |
+          if [ -f "$RUNNER_TEMP/comfyui-smoke-server.log" ]; then
+            tail -80 "$RUNNER_TEMP/comfyui-smoke-server.log"
+          fi
