@@ -22,6 +22,7 @@ import {
 } from '@comfyorg/billing-contract'
 
 import { platformPlansUrl } from '@/checkout/platformLinks'
+import { TOPUP_RETURN_PATH } from '@/checkout/topupRequest'
 import { awaitCheckoutUiVariant } from '@/config/checkoutUi'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
@@ -54,7 +55,7 @@ const APP_ENTRY_PATH = '/'
 export const SIGN_IN_PATH = '/sign-in'
 
 /** Where hosted top-up checkouts from Desktop and local builds land; shipped builds keep this URL. */
-export const TOPUP_RETURN_PATH = '/return/topup'
+export { TOPUP_RETURN_PATH }
 
 declare module 'vue-router' {
   interface RouteMeta {
@@ -137,6 +138,22 @@ function handoffPlanChoice(
   return { plan, team_credit_stop_id: typeof stop === 'string' ? stop : '' }
 }
 
+const HANDOFF_AUTO_TOP_UP_PARAMS = [
+  'auto_top_up_threshold_credits',
+  'auto_top_up_target_credits',
+  'auto_top_up_monthly_budget_cents'
+] as const
+
+function handoffAutoTopUp(query: LocationQuery): Record<string, string> {
+  return Object.fromEntries(
+    HANDOFF_AUTO_TOP_UP_PARAMS.flatMap((param) =>
+      param in query
+        ? [[param, typeof query[param] === 'string' ? query[param] : '']]
+        : []
+    )
+  )
+}
+
 function handoffLanding(query: LocationQuery): string {
   const { intent, amount_cents: amount } = query
   if (intent === 'subscription') return handoffEntryPath('subscription')
@@ -145,7 +162,10 @@ function handoffLanding(query: LocationQuery): string {
     return choice ? handoffEntryPath('checkout', choice) : APP_ENTRY_PATH
   }
   if (intent !== 'top-up') return APP_ENTRY_PATH
-  return handoffEntryPath('top-up', { amount_cents: handoffAmount(amount) })
+  return handoffEntryPath('top-up', {
+    amount_cents: handoffAmount(amount),
+    ...handoffAutoTopUp(query)
+  })
 }
 
 const isPlanlessCheckout = (entry: BillingEntry) =>

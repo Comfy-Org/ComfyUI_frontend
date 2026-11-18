@@ -14,6 +14,7 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
+import type { EntryAutoTopUp } from '@comfyorg/billing-contract'
 
 import type {
   CheckoutPage,
@@ -34,14 +35,18 @@ import type { PayVerdict } from '@/checkout/payVerdict'
 import {
   outcomeFor,
   reconciledEvent,
+  refusalVerdict,
   topupVerdictOf
 } from '@/checkout/payVerdict'
 import { platformBillingUrl } from '@/checkout/platformLinks'
 import {
+  TOPUP_RETURN_PATH,
+  autoTopUpConsentOf,
   interactivePaymentOf,
   interactiveVerdictOf,
   isSamePayment,
   settlesAttempt,
+  topupAutoTopUpOf,
   topupReturnUrl
 } from '@/checkout/topupRequest'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
@@ -50,6 +55,7 @@ import type { PayChoice } from '@/composables/useFullPageCheckout'
 import { awaitUnifiedBillingSettings } from '@/config/checkoutUi'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { useAutoTopUpSettings } from '@/session/autoTopUpSettings'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 /** The contract bounds the amount; the server's quote applies its own limits. */
@@ -100,7 +106,9 @@ function revisited(page: CheckoutPage): boolean {
  * resending one purchase under one key until the server answers it. A Pay
  * with no answer keeps its key and the page locked while it re-reads what
  * the workspace is waiting on;
- * any other page charges the method on file.
+ * any other page charges the method on file. A link that turns auto top-up
+ * on with the payment shows its consent and pays on the hosted checkout,
+ * which carries the settings.
  * The lifecycle's operation moves the page to its ending.
  */
 export function useFullPageTopup() {
@@ -115,7 +123,27 @@ export function useFullPageTopup() {
   let savedGeneration = 0
 
   const amountCents = entry.value?.amountCents
+  const autoTopUp = entry.value?.autoTopUp
   const page = shallowRef<CheckoutPage>(arrivalPage())
+
+  const autoTopUpCeilingCents = shallowRef<number>()
+  if (autoTopUp !== undefined && autoTopUp.monthlyBudgetCents === undefined)
+    void useAutoTopUpSettings()
+      .read()
+      .then((read) => {
+        if (read.status === 'ok')
+          autoTopUpCeilingCents.value =
+            read.value.settings.max_monthly_budget_cents
+      })
+  const autoTopUpConsent = computed(() =>
+    autoTopUp === undefined
+      ? undefined
+      : autoTopUpConsentOf(
+          autoTopUp,
+          autoTopUpCeilingCents.value,
+          savedMethods.value
+        )
+  )
 
   function arrivalPage(): CheckoutPage {
     if (unreadableLink.value === 'INVALID_AMOUNT') return INVALID_AMOUNT_LINK
@@ -198,7 +226,7 @@ export function useFullPageTopup() {
   ): Promise<CheckoutPageEvent> {
     if (quoted.status !== 'ok')
       return { type: 'unavailable', code: quoted.code }
-    if (!paysOnce.value)
+    if (autoTopUp !== undefined || !paysOnce.value)
       return { type: 'quoted', reactivation: false, method: 'on_file' }
     const [cards, stripeKey] = await Promise.all([saved, stripeKeyRead])
     return {
@@ -356,8 +384,22 @@ export function useFullPageTopup() {
     dispatch({ type: 'payFailed', outcome })
   }
 
+  async function payWithAutoTopUp(amount: number, choice: EntryAutoTopUp) {
+    const mine = ++payGeneration
+    dispatch({ type: 'paySubmitted' })
+    const result = await topup.createHostedTopupCheckout({
+      amountCents: amount,
+      returnUrl: new URL(TOPUP_RETURN_PATH, window.location.origin).href,
+      autoTopUp: topupAutoTopUpOf(choice)
+    })
+    if (mine !== payGeneration) return
+    if (result.status === 'ok') return window.location.assign(result.url)
+    await follow(refusalVerdict(result))
+  }
+
   async function pay(choice: PayChoice) {
     if (!canPay.value || amountCents === undefined) return
+    if (autoTopUp !== undefined) return payWithAutoTopUp(amountCents, autoTopUp)
     const run = sendFor(choice, amountCents)
     if (run === undefined) return
     if (run === CARD_REQUIRED)
@@ -388,6 +430,7 @@ export function useFullPageTopup() {
     quote: shallowReadonly(quote),
     savedMethods: offeredMethods,
     paysOnce,
+    autoTopUpConsent,
     onPaymentPhase,
     retryElement: () => dispatch({ type: 'elementRetried' }),
     retrySaved: () => void retrySaved(),

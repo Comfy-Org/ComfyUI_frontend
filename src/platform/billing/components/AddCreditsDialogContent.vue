@@ -34,7 +34,10 @@
 import { computed, nextTick, onMounted, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { AddCreditsTranslate } from '@comfyorg/account-core/billing'
+import type {
+  AddCreditsTranslate,
+  AutoTopUpActivation
+} from '@comfyorg/account-core/billing'
 import { addCreditsRefusalFor } from '@comfyorg/account-core/billing'
 import type { AddCreditsPorts } from '@comfyorg/account-ui/billing'
 import { AddCreditsDialog } from '@comfyorg/account-ui/billing'
@@ -156,11 +159,12 @@ async function reopenForCurrentFlag(): Promise<void> {
 
 async function createHandoffCheckout(
   amountCents: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  autoTopUp: AutoTopUpActivation | undefined
 ): ReturnType<AddCreditsPorts['createCheckout']> {
   const generation = workspaceIdentity.workspaceTransitionGeneration
   const issued = await issueLocalBillingHandoff(
-    { intent: 'top-up', amountCents },
+    { intent: 'top-up', amountCents, autoTopUp },
     signal
   )
   if (issued.status === 'error') {
@@ -184,7 +188,7 @@ const ports: AddCreditsPorts = {
     return credits === null ? { status: 'error' } : { status: 'ok', credits }
   },
   get activatesAutoTopUp() {
-    return !opensHandoff && flags.billingAutoTopUpAtCheckoutEnabled
+    return opensHandoff || flags.billingAutoTopUpAtCheckoutEnabled
   },
   singleUseCheckout: opensHandoff,
   async createCheckout(amountCents, signal, autoTopUp) {
@@ -198,7 +202,8 @@ const ports: AddCreditsPorts = {
       void reopenForCurrentFlag()
       return { status: 'error', refusal: { kind: 'checkout_failed' } }
     }
-    if (opensHandoff) return createHandoffCheckout(amountCents, signal)
+    if (opensHandoff)
+      return createHandoffCheckout(amountCents, signal, autoTopUp)
     const returnUrl = topupCheckoutReturnUrl()
     if (!returnUrl) {
       return { status: 'error', refusal: { kind: 'checkout_failed' } }

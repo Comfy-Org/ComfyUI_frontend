@@ -81,6 +81,40 @@ test.describe('Local web billing handoff', () => {
       )
     })
 
+    test.describe('with auto top-up offered in Add credits', () => {
+      test.use({ autoTopUpOffered: true })
+
+      test('Continue carries the ticked auto top-up to billing-web through the handoff', async ({
+        comfyPage,
+        handoffRequests,
+        openAddCredits
+      }) => {
+        const page = comfyPage.page
+        const dialog = new TopUpCreditsDialog(page)
+        await openAddCredits()
+        await dialog.preset50.click()
+        await dialog.autoTopUpCheckbox.check()
+
+        const popupOpened = page.waitForEvent('popup')
+        await dialog.continueButton.click()
+        await expect(await popupOpened).toHaveURL(ENTRY_URL)
+
+        expect(handoffRequests).toHaveLength(1)
+        expect(handoffRequests[0].postDataJSON()).toEqual(
+          expect.objectContaining({
+            receiver: 'billing_web',
+            intent: 'top-up',
+            amount_cents: 5000,
+            auto_top_up: {
+              threshold_credits: 1000,
+              target_credits: 11_550,
+              monthly_budget_cents: null
+            }
+          })
+        )
+      })
+    })
+
     test('shows the Billing tab with no plain Platform link instead of Plan & Credits', async ({
       comfyPage,
       openSettings

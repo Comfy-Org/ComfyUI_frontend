@@ -7,6 +7,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { activateBillingScope } from '@/platform/billing/__tests__/activateBillingScope'
+import { billingApi } from '@/platform/billing/api/billingApi'
 import {
   autoTopUpCard,
   loadedAutoTopUp
@@ -113,6 +114,22 @@ describe('useAddCreditsAutoTopUpOffer', () => {
     const { offer } = offerFor({ status: 'off', atCheckout: false })
 
     await vi.waitFor(() => expect(offer.value.kind).toBe('hidden'))
+  })
+
+  it('offers the checkbox through the local billing handoff with auto top-up at checkout off, reading saved cards on the local client', async () => {
+    setLocalBillingWebEnabled(true)
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    vi.spyOn(billingApi, 'listSavedPaymentMethods').mockResolvedValue([visa])
+
+    const { offer } = offerFor({ status: 'off', atCheckout: false })
+
+    await vi.waitFor(() =>
+      expect(offer.value).toMatchObject({
+        kind: 'checkbox',
+        defaultCard: { brand: 'visa', last4: '4242' }
+      })
+    )
+    expect(useBillingSdkStore().readPaymentMethods).not.toHaveBeenCalled()
   })
 
   it('shows nothing when the auto top-up rollout is off', () => {

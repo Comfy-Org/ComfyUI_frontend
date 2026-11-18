@@ -541,6 +541,42 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
     }
   )
 
+  it('offers the auto top-up checkbox without the Cloud flag, carries the ticked settings through the handoff, and suggests no setup afterwards', async () => {
+    hoisted.balanceIncreased = undefined
+    hoisted.setupUrl.mockResolvedValue(
+      'https://platform.test/profile/billing?auto_top_up=setup'
+    )
+    hoisted.handoffTabs = [handoffTab()]
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(
+      await screen.findByRole('checkbox', { name: /Turn on auto top-up/ })
+    )
+    await user.click(continueButton())
+
+    expect(hoisted.issueHandoff).toHaveBeenCalledExactlyOnceWith(
+      {
+        intent: 'top-up',
+        amountCents: 5000,
+        autoTopUp: {
+          threshold_credits: 1000,
+          target_credits: 11_550,
+          monthly_budget_cents: null
+        }
+      },
+      expect.any(AbortSignal)
+    )
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    await hoisted.balanceIncreased!()
+
+    await waitFor(() =>
+      expect(screen.queryByText('Checkout opened in a new tab')).toBeNull()
+    )
+    expect(hoisted.setupUrl).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('add-credits-auto-top-up-set-up')).toBeNull()
+    expect(hoisted.createHostedCheckout).not.toHaveBeenCalled()
+  })
+
   it('issues a fresh handoff from the blocked step instead of showing a link', async () => {
     const tab = handoffTab()
     hoisted.handoffTabs = [null, tab]
