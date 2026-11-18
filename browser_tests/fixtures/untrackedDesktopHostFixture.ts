@@ -1,7 +1,7 @@
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 
 /** A local Desktop 2 host whose bridge downloads models but never reports their progress. */
-export const untrackedDesktopHostFixture = comfyPageFixture.extend({
+export const untrackedDesktopHostFixture = base.extend({
   page: async ({ page }, use) => {
     await page.addInitScript(() => {
       Object.assign(window, {

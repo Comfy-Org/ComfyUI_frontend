@@ -1,4 +1,4 @@
-import { expect } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 import {
   canvasDownload,
@@ -7,7 +7,7 @@ import {
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { desktopModelDownloadFixture as test } from '@e2e/fixtures/desktopModelDownloadFixture'
 import { cleanupFakeModel } from '@e2e/fixtures/helpers/ErrorsTabHelper'
-import { untrackedDesktopHostFixture as untrackedDesktopHost } from '@e2e/fixtures/untrackedDesktopHostFixture'
+import { untrackedDesktopHostFixture } from '@e2e/fixtures/untrackedDesktopHostFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const GATED_MODEL_URL =
@@ -163,6 +163,11 @@ comfyPageFixture.describe('Missing resources toast outside Desktop', () => {
     }
   )
 })
+
+const untrackedDesktopHost = mergeTests(
+  comfyPageFixture,
+  untrackedDesktopHostFixture
+)
 
 untrackedDesktopHost.describe(
   'Missing resources toast on a Desktop host that does not report download progress',
