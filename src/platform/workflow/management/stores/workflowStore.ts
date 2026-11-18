@@ -813,6 +813,10 @@ type BookmarkIndexRead =
   | { ok: true; index: Record<string, unknown>; favorites: string[] }
   | { ok: false }
 
+function emptyBookmarkIndex(): BookmarkIndexRead {
+  return { ok: true, index: {}, favorites: [] }
+}
+
 function bookmarkReadFailed(cause: unknown): BookmarkIndexRead {
   reportError(cause, {
     errorType: 'failure_loading_workflow_bookmarks',
@@ -825,7 +829,7 @@ async function readBookmarkIndex(): Promise<BookmarkIndexRead> {
   let index: unknown
   try {
     const resp = await api.getUserData(BOOKMARK_INDEX_FILE)
-    if (resp.status === 404) return { ok: true, index: {}, favorites: [] }
+    if (resp.status === 404) return emptyBookmarkIndex()
     if (resp.status !== 200) {
       return bookmarkReadFailed(
         new Error(`Bookmark index read failed: ${resp.status}`)
@@ -835,9 +839,7 @@ async function readBookmarkIndex(): Promise<BookmarkIndexRead> {
   } catch (cause) {
     return bookmarkReadFailed(cause)
   }
-  if (!isPlainObject(index)) {
-    return bookmarkReadFailed(new TypeError('Bookmark index is not an object'))
-  }
+  if (!isPlainObject(index)) return emptyBookmarkIndex()
   const { favorites } = index
   return {
     ok: true,

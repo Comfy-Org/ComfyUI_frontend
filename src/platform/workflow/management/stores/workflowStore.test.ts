@@ -133,6 +133,9 @@ function serveBookmarkIndex(
     saveElsewhere: (next: string[]) => {
       stored = JSON.stringify({ ...otherFields, favorites: next })
     },
+    storeContent: (content: string) => {
+      stored = content
+    },
     failNextRead: (status: number) => {
       readFailure = status
     },
@@ -2064,6 +2067,21 @@ describe('useWorkflowBookmarkStore', () => {
         sortOrder: 'name',
         favorites: [x, y, p]
       })
+    }
+  )
+
+  it.for(['[]', 'null', '42'])(
+    'reads a saved index of %s as no bookmarks and replaces it on the next change',
+    async (content) => {
+      const server = serveBookmarkIndex()
+      server.storeContent(content)
+      const store = useWorkflowBookmarkStore()
+
+      const moved = await store.moveBookmark(x, y)
+      const added = await store.setBookmarked(p, true)
+
+      expect({ moved, added }).toEqual({ moved: true, added: true })
+      expect(server.index()).toEqual({ favorites: [p] })
     }
   )
 
