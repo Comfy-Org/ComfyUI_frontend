@@ -454,10 +454,13 @@ user makes it and the moment the host answers for its op.
   write's echo or settlement ends the newest write's hold. When an op settles
   as `unconfirmed`, `unacknowledged` or `undeliverable`, its hold ends without
   a read-back. A conflicting frame consumed while the hold was active is not
-  re-applied. The canvas keeps the local value until the next turn's draft
-  posts it
+  re-applied, but later frames are no longer held, so the canvas keeps the
+  local value until a later frame writes that register or a turn's draft
+  reconciles the document
   ([CRDT-AUTHORITY-0035](CRDT-AUTHORITY-0035-human-canvas-authority-and-draft-reconciliation.md)
-  decision 3).
+  decision 3). That ADR withholds the draft while the follower marks the
+  canvas stale (decision 6), and the server-side reconciliation depends on
+  the backend change it assumes.
 - **Never shadowed, replayed, or re-stamped.** Pending ops are not applied to a
   copy of the graph, are not re-applied to the canvas over a later frame or
   after a lineage reset, and keep the `op_id` and stamp they were minted with.
