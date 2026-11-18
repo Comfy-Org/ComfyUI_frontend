@@ -122,6 +122,7 @@ test.describe('Item Interaction', { tag: ['@node'] }, () => {
       steps: 40
     })
     await comfyPage.page.mouse.up()
+    await comfyPage.nextFrame()
 
     await expect
       .poll(async () => {
@@ -858,6 +859,7 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     await comfyPage.page.mouse.down({ button: 'middle' })
     await comfyPage.page.mouse.move(187, 133, { steps: 40 })
     await comfyPage.page.mouse.up({ button: 'middle' })
+    await comfyPage.nextFrame()
 
     await comfyPage.canvasOps.expectNavigationTransform(before, {
       pan: [137, 83]
