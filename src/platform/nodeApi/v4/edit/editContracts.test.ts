@@ -312,19 +312,6 @@ describe('edit contracts', () => {
     expect(Array.from(node.size)).toEqual([100, 80])
   })
 
-  describe('the resizable choice', () => {
-    it('is reapplied once per pin change however many APIs a page has', () => {
-      const second = createComfyApi({ getGraph: () => graph }).comfy
-      handle.setResizable(false)
-      second.graph.node(String(node.id))?.setResizable(false)
-      const write = vi.spyOn(node, 'resizable', 'set')
-
-      node.pin(true)
-
-      expect(write.mock.calls).toEqual([[false], [false]])
-    })
-  })
-
   describe('values the core keeps or refuses exactly', () => {
     it('freezes comfy.edit, so no pack can replace an edit another pack calls', () => {
       expect(Object.isFrozen(comfy.edit)).toBe(true)

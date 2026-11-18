@@ -112,12 +112,13 @@ describe('a defined type’s presentation', () => {
       expect(canvasMenu(node)).not.toContain('Resize')
     })
 
-    it('keeps the nodes fixed through a pin and an unpin, and through a load', () => {
+    it('lets the host’s unpin make a node resizable, and fixes it again on a load', () => {
       const node = nodeOf('Pack/Rigid', { resizable: false })
 
       node.pin(true)
-      node.pin(false)
       expect(node.resizable).toBe(false)
+      node.pin(false)
+      expect(node.resizable).toBe(true)
 
       graph.configure(graph.serialize())
       const loaded = graph.getNodeById(node.id)

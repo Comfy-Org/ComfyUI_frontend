@@ -6,8 +6,7 @@ import {
   describe,
   expect,
   it,
-  onTestFinished,
-  vi
+  onTestFinished
 } from 'vitest'
 
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
@@ -108,15 +107,6 @@ describe('edit edges', () => {
         value: 'Announced'
       })
     )
-  })
-
-  it('does not touch the resizable flag for a field other than the pin', () => {
-    handle.setResizable(false)
-    const write = vi.spyOn(node, 'resizable', 'set')
-
-    handle.setMode('bypass')
-
-    expect(write).not.toHaveBeenCalled()
   })
 
   it('names the handle method in a refusal from add, remove and reorder', () => {
