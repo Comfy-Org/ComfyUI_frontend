@@ -353,7 +353,9 @@ to a subgraph input fed by a widget produce the widget's value.
   supplier applied, each graph in the prompt also costs one call per running
   node of a type with suppliers (a pack that extends every type asks every
   node), one view per node asked, and one pass over the graph's inputs.
-- `resolvedSupplies` asks the suppliers on every read.
+- `resolvedSupplies` asks the suppliers on every read, and a supplier that
+  reads `view.self.properties` copies that node's properties on each read;
+  a pack that extends every type asks every node. No cost was measured.
 - `graphToPrompt` asks `omittedInputs` once per prompt entry; with no
   `onPromptSerialize` hook applied the call returns at once.
 - `ResolvedNodeDTO` and `SuppliedNodeDTO` depend on `ExecutableNodeDTO`'s
