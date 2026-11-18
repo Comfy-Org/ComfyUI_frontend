@@ -2858,6 +2858,14 @@ function resetComposerForChatSwitch(): void {
   errorAttachRun++
 }
 
+function openFailedBlankTab(blankChatId: string): ComfyWorkflow | undefined {
+  const tabKey = conversationStore.tabKeyForBlankChat(blankChatId)
+  if (tabKey === null) return undefined
+  return workflowStore.openWorkflows.find(
+    (workflow) => workflow.instanceId === tabKey
+  )
+}
+
 function showOffscreenBlankSend(
   blankChatId: string,
   toastId: ToastId,
@@ -2875,6 +2883,16 @@ function showOffscreenBlankSend(
   agentPanelStore.view = { screen: 'chat' }
   retireFollow()
   resetComposerForChatSwitch()
+  const originTab = openFailedBlankTab(blankChatId)
+  if (originTab !== undefined) {
+    conversationStore.setBlankChatIdForTab(originTab.instanceId, blankChatId)
+    if (workflowStore.activeWorkflow?.path !== originTab.path) {
+      if (selectedTarget.value?.path === originTab.path)
+        agentPanelStore.startFollowingVisibleWorkflow()
+      void workflowService.openWorkflow(originTab, { initiator: 'user' })
+      return
+    }
+  }
   if (reopenBlankChat(blankChatId)) {
     void proactive.refresh()
     agentPanelStore.startFollowingVisibleWorkflow()

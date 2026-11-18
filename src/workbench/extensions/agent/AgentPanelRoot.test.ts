@@ -8266,6 +8266,128 @@ describe('AgentPanelRoot history', () => {
         ).toBeVisible()
       })
 
+      it('O0-14: Show activates the tab whose first message failed and opens its failed blank chat', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let failFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first-old',
+              title: 'Older chat',
+              last_message_at: '2026-09-22T08:00:00Z',
+              workflow_id: 'wf-first'
+            })
+          ],
+          { 'th-first-old': { workflowId: 'wf-first' } },
+          {
+            post: () =>
+              new Promise<Response>((_, reject) => {
+                failFirstPost = () => reject(new TypeError('Failed to fetch'))
+              })
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await sendFromComposer('will fail on first')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        await typeInComposer('draft on second')
+
+        failFirstPost()
+        await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+        expect(screen.getByRole('textbox')).toHaveTextContent('draft on second')
+        expect(userPrompts()).toEqual([])
+
+        vi.mocked(useWorkflowService().openWorkflow).mockClear()
+        useToast().toasts[0].actions[0].onClick()
+
+        await vi.waitFor(() => {
+          expect(workflowStore.activeWorkflow?.path).toBe(first.path)
+          expect(userPrompts()).toEqual(['will fail on first'])
+        })
+        expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(first, {
+          initiator: 'user'
+        })
+        expect(useToast().toasts).toHaveLength(0)
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        expect(
+          await screen.findByRole('button', { name: 'Retry' })
+        ).toBeVisible()
+      })
+
+      it('O0-14: Show opens the failed blank chat on its tab even after New chat advanced that tab', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let failFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [],
+          {},
+          {
+            post: () =>
+              new Promise<Response>((_, reject) => {
+                failFirstPost = () => reject(new TypeError('Failed to fetch'))
+              })
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await sendFromComposer('advanced blank fail')
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        failFirstPost()
+        await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+        useToast().toasts[0].actions[0].onClick()
+
+        await vi.waitFor(() => {
+          expect(workflowStore.activeWorkflow?.path).toBe(first.path)
+          expect(userPrompts()).toEqual(['advanced blank fail'])
+        })
+        expect(
+          await screen.findByRole('button', { name: 'Retry' })
+        ).toBeVisible()
+      })
+
+      it('O0-14: Show falls back to reopening on the visible tab if the failed send tab was closed', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let failFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [],
+          {},
+          {
+            post: () =>
+              new Promise<Response>((_, reject) => {
+                failFirstPost = () => reject(new TypeError('Failed to fetch'))
+              })
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await sendFromComposer('closed tab fail')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        await workflowStore.closeWorkflow(first)
+
+        failFirstPost()
+        await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+        useToast().toasts[0].actions[0].onClick()
+
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['closed tab fail'])
+        )
+        expect(workflowStore.activeWorkflow.path).toBe(second.path)
+        expect(useToast().toasts).toHaveLength(0)
+        expect(await screen.findByTestId('pending-send-error')).toBeVisible()
+      })
+
       it('T1-13: routes a workflow reference saved across a tab switch into X kept draft instead of B composer', async () => {
         const first = addTab('workflows/first.json')
         const second = addTab('workflows/second.json')

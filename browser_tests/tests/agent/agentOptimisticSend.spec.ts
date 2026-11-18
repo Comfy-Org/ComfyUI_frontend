@@ -361,13 +361,20 @@ test.describe(
         return route.fallback()
       })
 
+      const topbar = new Topbar(page)
+      await topbar.saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await agentPanel.sendMessage('Offscreen first message')
       await expect.poll(() => rejectPost).toBeDefined()
 
-      await agentPanel.newChatButton.click()
+      await page
+        .getByRole('button', {
+          name: enMessages.sideToolbar.newBlankWorkflow,
+          exact: true
+        })
+        .click()
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       await expect(agentPanel.userMessageBubbles).toHaveCount(0)
       await agentPanel.composer.fill('Draft in second chat')
 
@@ -389,6 +396,7 @@ test.describe(
         .click()
 
       await expect(toast).toHaveCount(0)
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
       await expect(agentPanel.userMessageBubbles).toHaveText([
         'Offscreen first message'
       ])

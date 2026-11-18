@@ -1226,6 +1226,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     const tabBlankChatIds = new Map<string, string>()
+    const blankChatTabs = new Map<string, string>()
     let hasAssignedBlankTab = false
 
     function setActiveBlankChatId(blankChatId: string): void {
@@ -1233,22 +1234,40 @@ export const useAgentConversationStore = defineStore(
       hasAssignedBlankTab = true
     }
 
+    function setBlankChatIdForTab(tabKey: string, blankChatId: string): void {
+      tabBlankChatIds.set(tabKey, blankChatId)
+      blankChatTabs.set(blankChatId, tabKey)
+    }
+
+    function tabKeyForBlankChat(blankChatId: string): string | null {
+      const mapped = blankChatTabs.get(blankChatId)
+      if (mapped !== undefined) return mapped
+      if (!blankChatId.startsWith('blank:')) return null
+      const suffix = blankChatId.slice('blank:'.length)
+      return suffix.length > 0 ? suffix : null
+    }
+
     function adoptInitialBlankTab(tabKey: string | null): void {
       if (hasAssignedBlankTab || threadId.value !== null) return
       if (hasPendingSendForOrigin(currentOrigin())) return
       if (tabKey === null) return
-      activeBlankChatId.value = blankChatIdForTab(tabKey)
+      const blankChatId = blankChatIdForTab(tabKey)
+      activeBlankChatId.value = blankChatId
       hasAssignedBlankTab = true
     }
 
     function blankChatIdForTab(tabKey: string | null): string {
       const key = tabKey ?? ''
-      return tabBlankChatIds.get(key) ?? `blank:${key}`
+      const blankChatId = tabBlankChatIds.get(key) ?? `blank:${key}`
+      if (tabKey !== null) blankChatTabs.set(blankChatId, tabKey)
+      return blankChatId
     }
 
     function advanceBlankChatIdForTab(tabKey: string | null): string {
       const next = nextBlankChatId()
-      tabBlankChatIds.set(tabKey ?? '', next)
+      const key = tabKey ?? ''
+      tabBlankChatIds.set(key, next)
+      if (tabKey !== null) blankChatTabs.set(next, tabKey)
       return next
     }
 
@@ -2485,6 +2504,8 @@ export const useAgentConversationStore = defineStore(
       adoptInitialBlankTab,
       blankChatIdForTab,
       advanceBlankChatIdForTab,
+      setBlankChatIdForTab,
+      tabKeyForBlankChat,
       currentOrigin,
       isOriginOnScreen,
       hasSendingPendingSend,
