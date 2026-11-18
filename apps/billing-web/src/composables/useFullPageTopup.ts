@@ -1,5 +1,11 @@
 import { useIntervalFn } from '@vueuse/core'
-import { computed, shallowReadonly, shallowRef, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  shallowReadonly,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { useBillingClient, useTopUp } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
@@ -120,6 +126,7 @@ export function useFullPageTopup() {
 
   /** This page's latest successful read only: empty while reading, and after a failure. */
   const savedMethods = shallowRef<readonly SavedPaymentMethod[]>([])
+  const savedMethodsRead = shallowRef(false)
   let savedGeneration = 0
 
   const amountCents = entry.value?.amountCents
@@ -141,7 +148,7 @@ export function useFullPageTopup() {
       : autoTopUpConsentOf(
           autoTopUp,
           autoTopUpCeilingCents.value,
-          savedMethods.value
+          savedMethodsRead.value ? savedMethods.value : undefined
         )
   )
 
@@ -214,9 +221,13 @@ export function useFullPageTopup() {
   async function readSaved(): Promise<SavedArrival> {
     const mine = ++savedGeneration
     savedMethods.value = []
+    savedMethodsRead.value = false
     const read = await paymentMethods.read()
     if (read.status !== 'ok') return 'failed'
-    if (mine === savedGeneration) savedMethods.value = read.value.methods
+    if (mine === savedGeneration) {
+      savedMethods.value = read.value.methods
+      savedMethodsRead.value = true
+    }
     return eligibleCards(read.value.methods).length
   }
 
@@ -332,6 +343,7 @@ export function useFullPageTopup() {
   )
 
   let payGeneration = 0
+  onScopeDispose(() => payGeneration++)
   const billedWorkspace = useBilledWorkspace()
 
   function attemptFor(choice: NonNullable<PayChoice>): HeldAttempt | undefined {
