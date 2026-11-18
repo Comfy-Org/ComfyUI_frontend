@@ -516,14 +516,27 @@ describe('AgentPanelRoot Ask agent about errors', () => {
       expect(useAgentComposerStore().errorContext).not.toBeNull()
     )
     const chatBeforeSwitch = useAgentChatHistoryStore().activeId
+    // Registered after the panel's own listener, so it runs once the panel
+    // has already decided whether to follow this activation.
+    const activationHandled = new Promise<void>((resolve) =>
+      workflowStore.onUserActivation(() => resolve())
+    )
 
     await useWorkflowService().openWorkflow(other, { initiator: 'user' })
-
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await activationHandled
     await nextTick()
 
     expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
-    expect(fetchRequests(/\/agent\/threads\?workflow_id=wf-other/)).toEqual([])
+    expect(
+      screen.queryByRole('status', {
+        name: i18n.global.t('agent.openingWorkflowChat', {
+          workflowName: 'other'
+        })
+      })
+    ).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
     expect(useAgentChatHistoryStore().activeId).toBe(chatBeforeSwitch)
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
     expect(useAgentComposerStore().errorContext?.workflowPath).toBe(runningTab)
