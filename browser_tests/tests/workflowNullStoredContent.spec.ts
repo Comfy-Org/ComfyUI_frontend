@@ -50,6 +50,10 @@ async function readDraft(page: Page): Promise<DraftCopy | null> {
   }, WORKFLOW_PATH)
 }
 
+test.afterEach(async ({ comfyPage }) => {
+  await comfyPage.workflow.setupWorkflowsDirectory({})
+})
+
 /**
  * Leaves `workflows/default.json` closed, stored as JSON `null`, with a
  * local draft newer than the stored file: the state the crashing sessions
@@ -163,10 +167,6 @@ test.describe(
         'broken-null.json': 'null-content.txt'
       })
       await comfyPage.workflow.reloadAndWaitForApp()
-    })
-
-    test.afterEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
     test('tells the user it cannot be opened and offers to delete it', async ({
