@@ -119,6 +119,54 @@ test('replacement of multiple links by one drop records one final snapshot', asy
   expect(tracker.changeCount).toBe(0)
 })
 
+test.for(['output', 'input'] as const)(
+  'dropping on a reroute toward its $0 records one final checkpoint',
+  async (direction) => {
+    const { graph, source, replacement, sink, tracker } = await trackedGraph(
+      'workflows/reroute-drop.json',
+      true
+    )
+    const connector = new LinkConnector(() => {})
+    const output = replacement.outputs[0]
+    assert(output)
+    const prepare = {
+      output: () => {
+        const reroute = replacement.connectFloatingReroute([137, 81], output)
+        const original = source.outputs[0]
+        assert(original)
+        connector.moveOutputLink(graph, source, original)
+        return reroute
+      },
+      input: () => {
+        const link = graph.links.values().next().value
+        assert(link)
+        const reroute = graph.createReroute([137, 81], link)
+        assert(reroute)
+        source.connect(0, sink, 1, reroute.id)
+        connector.dragNewFromOutput(graph, replacement, output)
+        return reroute
+      }
+    }
+    const reroute = prepare[direction]()
+    assert(reroute)
+    const initial = await validateComfyWorkflow(graph.serialize())
+    assert(initial)
+    tracker.reset(initial)
+    tracker.undoQueue.length = 0
+
+    connector.dropOnReroute(reroute, createMockCanvasPointerEvent(137, 81))
+
+    expect(tracker.undoQueue).toEqual([initial])
+    expect(tracker.activeState.links).toEqual([
+      [expect.any(Number), 2, 0, 3, 0, 'IMAGE'],
+      [expect.any(Number), 2, 0, 3, 1, 'IMAGE']
+    ])
+    expect(graph.links.size).toBe(2)
+    expect(graph.floatingLinks.size).toBe(0)
+    expect(tracker.activeState.floatingLinks).toBeUndefined()
+  }
+)
+
 test('rejection does not capture unrelated pending changes', async () => {
   const { source, sink, tracker } = await trackedGraph()
   sink.title = 'Uncaptured title'

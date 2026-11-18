@@ -870,34 +870,40 @@ export class LinkConnector {
   }
 
   dropOnReroute(reroute: Reroute, event: CanvasPointerEvent): void {
-    const mayContinue = this.events.dispatch('dropped-on-reroute', {
-      reroute,
-      event
-    })
-    if (!mayContinue) return
+    const node = this.renderLinks.at(0)?.node
+    const graph =
+      node instanceof SubgraphInputNode || node instanceof SubgraphOutputNode
+        ? node.subgraph
+        : node?.graph
+    withGraphEdit(graph, () => {
+      const mayContinue = this.events.dispatch('dropped-on-reroute', {
+        reroute,
+        event
+      })
+      if (!mayContinue) return
 
-    // Connecting to input
-    if (this.state.connectingTo === 'input') {
-      if (this.renderLinks.length !== 1) {
-        console.error(
-          `Attempted to connect ${this.renderLinks.length} input links to a reroute.`
-        )
+      if (this.state.connectingTo === 'input') {
+        if (this.renderLinks.length !== 1) {
+          console.error(
+            `Attempted to connect ${this.renderLinks.length} input links to a reroute.`
+          )
+          return
+        }
+
+        const renderLink = this.renderLinks[0]
+        this._connectOutputToReroute(reroute, renderLink)
+
         return
       }
 
-      const renderLink = this.renderLinks[0]
-      this._connectOutputToReroute(reroute, renderLink)
+      const drop = this._resolveOutputDrop(reroute)
+      if (!drop) return
 
-      return
-    }
-
-    const drop = this._resolveOutputDrop(reroute)
-    if (!drop) return
-
-    const { node, output, links } = drop
-    for (const link of links) {
-      link.connectToRerouteOutput(reroute, node, output, this.events)
-    }
+      const { node, output, links } = drop
+      for (const link of links) {
+        link.connectToRerouteOutput(reroute, node, output, this.events)
+      }
+    })
   }
 
   /** Resolves once: connecting a link re-anchors its chain, changing membership. */
