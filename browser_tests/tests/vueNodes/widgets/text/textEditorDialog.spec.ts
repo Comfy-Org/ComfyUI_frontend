@@ -102,6 +102,67 @@ test.describe(
           .getByRole('group', { name: 'Actions' })
           .getByRole('button', { name: 'Expand' })
           .click()
+      })
+
+      await test.step('navigate and accept without leaving the textarea', async () => {
+        await dialog.editor.pressSequentially('blue')
+        await expect(
+          dialog.root.getByRole('option', { selected: true })
+        ).toHaveText('blue eyes')
+        await dialog.editor.press('ArrowDown')
+        await expect(
+          dialog.root.getByRole('option', { selected: true })
+        ).toHaveText('blue hair')
+        await dialog.editor.press('Enter')
+        await expect(dialog.editor).toHaveValue('blue hair')
+        await expect(dialog.editor).toBeFocused()
+        await expect(dialog.root.getByRole('listbox')).toBeHidden()
+      })
+
+      await test.step('undo and redo the insertion through the native editor', async () => {
+        await dialog.editor.press('ControlOrMeta+z')
+        await expect(dialog.editor).toHaveValue('blue')
+        await dialog.editor.press('ControlOrMeta+Shift+z')
+        await expect(dialog.editor).toHaveValue('blue hair')
+        await dialog.close()
+        await expect(widget).toHaveValue('blue hair')
+      })
+    })
+
+    test('accepts an imported prompt tag with native undo and redo', async ({
+      comfyPage
+    }) => {
+      const node = comfyPage.vueNodes
+        .getNodeByTitle('CLIP Text Encode (Prompt)')
+        .first()
+      const widget = node.getByRole('textbox', { name: 'text' })
+      const dialog = new TextEditorDialog(comfyPage.page)
+
+      await test.step('import a catalog once in Settings', async () => {
+        await comfyPage.settingDialog.open()
+        await comfyPage.settingDialog.category('Prompt tags').click()
+        await comfyPage.settingDialog.root
+          .getByLabel('Import prompt tags')
+          .setInputFiles({
+            name: 'tags.txt',
+            mimeType: 'text/plain',
+            buffer: Buffer.from('blue_eyes,20\nblue_hair,10')
+          })
+        await expect(
+          comfyPage.settingDialog.root.getByText(
+            '2 tags loaded for this session',
+            {
+              exact: true
+            }
+          )
+        ).toBeVisible()
+        await comfyPage.settingDialog.close()
+        await widget.fill('')
+        await widget.hover()
+        await node
+          .getByRole('group', { name: 'Actions' })
+          .getByRole('button', { name: 'Expand' })
+          .click()
         await expect(dialog.root.getByLabel('Import prompt tags')).toHaveCount(
           0
         )
