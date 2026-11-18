@@ -3,7 +3,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { SmartGuide } from './snapSolver'
 
-/** Smart guide preferences, mirrored from settings by `useLitegraphSettings`. */
+/** Smart guide preferences, mirrored from settings by `useSmartGuidesSettings`. */
 export const smartGuidesConfig = {
   enabled: true,
   edges: true,
@@ -16,7 +16,6 @@ export const smartGuidesConfig = {
 /** Guides for the gesture in progress, in canvas units. */
 export const activeGuides = shallowRef<readonly SmartGuide[]>([])
 
-/** Nodes left evenly spaced by the last distribute, whose gaps show drag handles. */
 interface DistributeSession {
   graph: object
   axis: 'x' | 'y'
@@ -24,4 +23,5 @@ interface DistributeSession {
   selectionSize: number
 }
 
+/** Nodes left evenly spaced by the last distribute, whose gaps show drag handles. */
 export const distributeSession = shallowRef<DistributeSession | null>(null)

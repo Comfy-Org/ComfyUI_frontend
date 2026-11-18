@@ -40,12 +40,12 @@ describe('setGap', () => {
 })
 
 describe('gapAfterTravel', () => {
-  it('keeps the dragged handle under the pointer', () => {
-    const travel = 25
-    const gap = gapAfterTravel(row, 'x', 2, travel)
-    const spaced = setGap(row, 'x', 2, gap)
-    const handleBefore = row[3].x - 20 / 2
-    const handleAfter = spaced[3].x - gap / 2
+  it.for([0, 1, 2])('keeps handle %i under the pointer', (index) => {
+    const travel = 30
+    const gap = gapAfterTravel(row, 'x', index, travel)
+    const spaced = setGap(row, 'x', index, gap)
+    const handleBefore = row[index + 1].x - 20 / 2
+    const handleAfter = spaced[index + 1].x - gap / 2
     expect(handleAfter - handleBefore).toBeCloseTo(travel, 0)
   })
 })

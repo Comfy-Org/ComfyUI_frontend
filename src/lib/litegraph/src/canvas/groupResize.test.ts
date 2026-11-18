@@ -23,6 +23,11 @@ describe('resizeFromCorner', () => {
     expect(resizeFromCorner(rect, 'NW', 10, 20)).toEqual([110, 120, 190, 100])
     expect(resizeFromCorner(rect, 'SE', 10, 20)).toEqual([100, 100, 210, 140])
   })
+
+  it('rounds only the dragged edges to the grid', () => {
+    expect(resizeFromCorner(rect, 'NW', 5, 0, 10)).toEqual([110, 100, 190, 120])
+    expect(resizeFromCorner(rect, 'SE', 4, 6, 10)).toEqual([100, 100, 200, 130])
+  })
 })
 
 describe('clampToMinimum', () => {

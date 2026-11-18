@@ -24,7 +24,7 @@ export const useNodeDrag = createSharedComposable(() => {
 
   const { shouldSnap, applySnapToPosition } = useNodeSnap()
 
-  const { trackShiftKey } = useShiftKeySync()
+  const { trackShiftKey, isShiftHeld } = useShiftKeySync()
 
   const canvasStore = useCanvasStore()
 
@@ -38,7 +38,6 @@ export const useNodeDrag = createSharedComposable(() => {
 
   let moveSnap: MoveSnap | null = null
   let panOffset: Point = { x: 0, y: 0 }
-  let shiftHeld = false
 
   let autoPan: AutoPanController | null = null
   let lastPointerX = 0
@@ -90,7 +89,6 @@ export const useNodeDrag = createSharedComposable(() => {
         )
       : null
 
-    shiftHeld = initialShiftKey
     panOffset = { x: 0, y: 0 }
     moveSnap = startDragSnap(nodeId)
   }
@@ -162,7 +160,8 @@ export const useNodeDrag = createSharedComposable(() => {
       x: pointerDelta.x + panOffset.x,
       y: pointerDelta.y + panOffset.y
     }
-    const snapped = moveSnap?.offset(raw, { suspended: shiftHeld }) ?? raw
+    const snapped =
+      moveSnap?.offset(raw, { suspended: isShiftHeld.value }) ?? raw
     const canvasDelta = {
       x: pointerDelta.x + snapped.x - raw.x,
       y: pointerDelta.y + snapped.y - raw.y
@@ -225,7 +224,6 @@ export const useNodeDrag = createSharedComposable(() => {
 
     lastPointerX = event.clientX
     lastPointerY = event.clientY
-    shiftHeld = event.shiftKey
     startAutoPan(event, nodeId)
 
     const { canvas } = canvasStore

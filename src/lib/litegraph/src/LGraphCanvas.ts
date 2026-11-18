@@ -3030,21 +3030,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             start,
             corner,
             eMove.canvasX - e.canvasX,
-            eMove.canvasY - e.canvasY
+            eMove.canvasY - e.canvasY,
+            this._snapToGrid
           )
-          const pos: Point = [x, y]
-          const size: Point = [width, height]
-          if (this._snapToGrid) {
-            snapPoint(pos, this._snapToGrid)
-            snapPoint(size, this._snapToGrid)
-          }
-          const box = {
-            x: pos[0],
-            y: pos[1],
-            width: size[0],
-            height: size[1],
-            head
-          }
+          const box = { x, y, width, height, head }
           const snapped =
             resizeSnap?.resize(box, resizeEdgesOf(corner), {
               suspended: !!this._snapToGrid

@@ -69,9 +69,11 @@ vi.mock<unknown>(
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useShiftKeySync'),
-  () => {
+  async () => {
+    const { shallowRef } = await import('vue')
     const shiftKeySync: ReturnType<typeof useShiftKeySync> = {
-      trackShiftKey: vi.fn(() => () => {})
+      trackShiftKey: vi.fn(() => () => {}),
+      isShiftHeld: shallowRef(false)
     }
     return { useShiftKeySync: () => shiftKeySync }
   }

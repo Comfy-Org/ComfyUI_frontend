@@ -2,7 +2,7 @@ import type { SnapBox } from '@/lib/litegraph/src/canvas/gestureSnap'
 
 export type DistributeAxis = 'x' | 'y'
 
-type Anchor = 'start' | 'end' | 'center'
+type Anchor = 'start' | 'end'
 
 const EQUAL_EPSILON = 0.5
 
@@ -48,8 +48,7 @@ export function spaceEvenly(
     gap * (ordered.length - 1)
   const origin = {
     start: first[axis],
-    end: endAlong(last, axis) - total,
-    center: (first[axis] + endAlong(last, axis) - total) / 2
+    end: endAlong(last, axis) - total
   }[anchor]
 
   let cursor = origin
@@ -61,9 +60,7 @@ export function spaceEvenly(
 }
 
 function handleAnchor(index: number, gapCount: number): Anchor {
-  const middle = (gapCount - 1) / 2
-  if (index === middle) return 'center'
-  return index > middle ? 'start' : 'end'
+  return index >= (gapCount - 1) / 2 ? 'start' : 'end'
 }
 
 /** The gap that keeps the dragged handle under the pointer after it travels `travel` canvas units. */
@@ -78,8 +75,7 @@ export function gapAfterTravel(
   const anchor = handleAnchor(index, gapCount)
   const rate = {
     start: 1 / (index + 0.5),
-    end: -1 / (gapCount - index - 0.5),
-    center: 2 / gapCount
+    end: -1 / (gapCount - index - 0.5)
   }[anchor]
   return gap + travel * rate
 }

@@ -29,21 +29,23 @@ export function resizeCornerAt(
   return west ? 'SW' : 'SE'
 }
 
-/** Resizes `start` by dragging `corner` by a delta, keeping the opposite corner fixed. */
+/** Resizes `start` by dragging `corner` by a delta, keeping the opposite corner fixed and rounding the dragged edges to `grid`. */
 export function resizeFromCorner(
   [x, y, width, height]: ReadOnlyRect,
   corner: CompassCorners,
   deltaX: number,
-  deltaY: number
+  deltaY: number,
+  grid = 0
 ): [x: number, y: number, width: number, height: number] {
+  const toGrid = (value: number) =>
+    grid ? grid * Math.round(value / grid) : value
   const west = corner.includes('W')
   const north = corner.includes('N')
-  return [
-    west ? x + deltaX : x,
-    north ? y + deltaY : y,
-    west ? width - deltaX : width + deltaX,
-    north ? height - deltaY : height + deltaY
-  ]
+  const left = west ? toGrid(x + deltaX) : x
+  const top = north ? toGrid(y + deltaY) : y
+  const right = west ? x + width : toGrid(x + width + deltaX)
+  const bottom = north ? y + height : toGrid(y + height + deltaY)
+  return [left, top, right - left, bottom - top]
 }
 
 /** Grows `box` to the minimum size, keeping the edges opposite `corner` in place. */
