@@ -537,7 +537,13 @@ describe('OnboardingCoach', () => {
     { advance: 2, dismiss: 'Done', step: 3, card: 'history', action: 'finish' },
     { advance: 0, dismiss: 'Skip', step: 1, card: 'intro', action: 'skip' },
     { advance: 1, dismiss: 'Skip', step: 2, card: 'workflow', action: 'skip' },
-    { advance: 2, dismiss: 'Escape', step: 3, card: 'history', action: 'skip' },
+    {
+      advance: 2,
+      dismiss: 'Escape',
+      step: 3,
+      card: 'history',
+      action: 'finish'
+    },
     { advance: 1, dismiss: 'Escape', step: 2, card: 'workflow', action: 'skip' }
   ])(
     'reports $dismiss on card $step as action $action',
@@ -637,6 +643,20 @@ describe('OnboardingCoach', () => {
     await nextTick()
 
     expect(onFinished).toHaveBeenCalledOnce()
+  })
+
+  it.for([
+    { card: 'a card before the last', steps: STEPS, action: 'skip' },
+    { card: 'the last card', steps: [STEPS[0]], action: 'finish' }
+  ])('reports Escape on $card as $action', async ({ steps, action }) => {
+    const onFinished = vi.fn()
+    mountWithFinished(`coach-escape-${action}`, onFinished, steps)
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    await userEvent.keyboard('{Escape}')
+    await nextTick()
+    await nextTick()
+
+    expect(onFinished).toHaveBeenCalledExactlyOnceWith(action)
   })
 
   it('reports a later completion in another tab after a replay', async () => {
