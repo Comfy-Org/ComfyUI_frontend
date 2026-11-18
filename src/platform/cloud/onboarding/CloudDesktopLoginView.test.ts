@@ -1,26 +1,20 @@
 import { render, screen } from '@testing-library/vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
 import enMessages from '@/locales/en/main.json'
 import {
+  claimDesktopLoginRedemptionStatus,
   desktopLoginRedemptionStatus,
   hasPendingDesktopLoginCode
 } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 
 import CloudDesktopLoginView from './CloudDesktopLoginView.vue'
 
-vi.mock(
-  import('@/platform/cloud/onboarding/desktopLoginRedemption'),
-  async () => {
-    const { shallowRef } = await import('vue')
-    return {
-      desktopLoginRedemptionStatus: shallowRef('idle'),
-      hasPendingDesktopLoginCode: vi.fn(() => true)
-    }
-  }
-)
+vi.mock(import('@/platform/cloud/onboarding/desktopLoginRedemption'), {
+  spy: true
+})
 
 function renderView() {
   const router = createRouter({
@@ -44,7 +38,8 @@ function renderView() {
 }
 
 describe('CloudDesktopLoginView', () => {
-  afterEach(() => {
+  beforeEach(() => {
+    claimDesktopLoginRedemptionStatus()
     desktopLoginRedemptionStatus.value = 'idle'
   })
 
@@ -112,13 +107,59 @@ describe('CloudDesktopLoginView', () => {
     }
   )
 
-  it('forgets a settled outcome once the page is left', () => {
+  it('announces a dismissed approval, which no toast reports', async () => {
+    vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(true)
+    desktopLoginRedemptionStatus.value = 'awaiting_approval'
+
+    renderView()
+    expect(screen.getByRole('status')).toHaveTextContent('')
+
+    desktopLoginRedemptionStatus.value = 'declined'
+
+    await vi.waitFor(() =>
+      expect(screen.getByRole('status')).toHaveTextContent(
+        enMessages.desktopLogin.declinedDetail
+      )
+    )
+  })
+
+  it.for([
+    { statusWhenLeft: 'redeemed', lateResult: undefined },
+    { statusWhenLeft: 'redeeming', lateResult: 'redeemed' }
+  ] as const)(
+    'sends a later visit with nothing to approve to the workspace after leaving while $statusWhenLeft',
+    ({ statusWhenLeft, lateResult }) => {
+      vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
+      desktopLoginRedemptionStatus.value = statusWhenLeft
+
+      renderView().unmount()
+      if (lateResult) desktopLoginRedemptionStatus.value = lateResult
+      const { replace } = renderView()
+
+      expect(replace).toHaveBeenCalledWith(
+        expect.objectContaining({ path: '/' })
+      )
+      expect(
+        screen.queryByRole('heading', {
+          name: enMessages.desktopLogin.successSummary
+        })
+      ).toBeNull()
+    }
+  )
+
+  it('keeps showing a redemption that is still running when the page is revisited', async () => {
     vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
+    desktopLoginRedemptionStatus.value = 'redeeming'
+
+    renderView().unmount()
+    const { replace } = renderView()
     desktopLoginRedemptionStatus.value = 'redeemed'
 
-    const { unmount } = renderView()
-    unmount()
-
-    expect(desktopLoginRedemptionStatus.value).toBe('idle')
+    expect(
+      await screen.findByRole('heading', {
+        name: enMessages.desktopLogin.successSummary
+      })
+    ).toBeInTheDocument()
+    expect(replace).not.toHaveBeenCalled()
   })
 })

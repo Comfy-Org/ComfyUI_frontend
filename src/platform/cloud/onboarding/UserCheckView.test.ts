@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import type { User } from 'firebase/auth'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -60,13 +60,17 @@ describe('UserCheckView', () => {
       vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(true)
       const location = { href: '' }
       vi.stubGlobal('location', location)
+      useRoute().query.inviteToken = 'invite-1'
 
       renderView()
 
       await vi.waitFor(() =>
-        expect(useRouter().replace).toHaveBeenCalledWith({
-          name: 'cloud-desktop-login'
-        })
+        expect(useRouter().replace).toHaveBeenCalledWith(
+          expect.objectContaining({
+            name: 'cloud-desktop-login',
+            query: { inviteToken: 'invite-1' }
+          })
+        )
       )
       expect(location.href).toBe('')
     }

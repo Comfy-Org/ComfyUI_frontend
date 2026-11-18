@@ -21,7 +21,7 @@
 <script setup lang="ts">
 import { useAsyncState } from '@vueuse/core'
 import { computed, nextTick, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
@@ -37,6 +37,7 @@ import { useAuthStore } from '@/stores/authStore'
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
 import CloudSurveyViewSkeleton from './skeletons/CloudSurveyViewSkeleton.vue'
 
+const route = useRoute()
 const router = useRouter()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { flags } = useFeatureFlags()
@@ -49,6 +50,12 @@ const skeletonType = ref<'login' | 'survey' | 'loading'>('loading')
 const hasDesktopSignInToApprove = () =>
   useAuthStore().currentUser !== null && hasPendingDesktopLoginCode()
 
+const desktopLoginApprovalRoute = () => ({
+  name: 'cloud-desktop-login',
+  query: route.query,
+  hash: route.hash
+})
+
 const {
   isLoading,
   error,
@@ -60,7 +67,7 @@ const {
     if (!onboardingSurveyEnabled.value) {
       await router.replace(
         hasDesktopSignInToApprove()
-          ? { name: 'cloud-desktop-login' }
+          ? desktopLoginApprovalRoute()
           : { path: '/' }
       )
       return
@@ -86,7 +93,7 @@ const {
     }
 
     if (hasDesktopSignInToApprove()) {
-      await router.replace({ name: 'cloud-desktop-login' })
+      await router.replace(desktopLoginApprovalRoute())
       return
     }
 

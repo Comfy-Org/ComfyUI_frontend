@@ -3,6 +3,11 @@
     <div class="max-w-[100vw] text-center lg:w-[500px]">
       <h2 class="mb-3 text-xl text-foreground">{{ copy.heading }}</h2>
       <p class="mb-5 text-muted-foreground">{{ copy.detail }}</p>
+      <p role="status" class="sr-only">
+        <template v-if="isDeclined">
+          {{ copy.heading }} {{ copy.detail }}
+        </template>
+      </p>
       <RouterLink
         v-if="isSettled"
         :to="{ path: '/', query: route.query, hash: route.hash }"
@@ -20,13 +25,18 @@ import { useI18n } from 'vue-i18n'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import {
+  claimDesktopLoginRedemptionStatus,
   desktopLoginRedemptionStatus,
-  hasPendingDesktopLoginCode
+  hasPendingDesktopLoginCode,
+  isDesktopLoginRedemptionSettled,
+  releaseDesktopLoginRedemptionStatus
 } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
+
+claimDesktopLoginRedemptionStatus()
 
 const hasNothingToApprove =
   !hasPendingDesktopLoginCode() && desktopLoginRedemptionStatus.value === 'idle'
@@ -34,16 +44,15 @@ if (hasNothingToApprove) {
   void router.replace({ path: '/', query: route.query, hash: route.hash })
 }
 
-const isSettled = computed(
-  () =>
-    !['idle', 'awaiting_approval', 'redeeming'].includes(
-      desktopLoginRedemptionStatus.value
-    )
+const isSettled = computed(() =>
+  isDesktopLoginRedemptionSettled(desktopLoginRedemptionStatus.value)
 )
 
-onBeforeUnmount(() => {
-  if (isSettled.value) desktopLoginRedemptionStatus.value = 'idle'
-})
+onBeforeUnmount(releaseDesktopLoginRedemptionStatus)
+
+const isDeclined = computed(
+  () => desktopLoginRedemptionStatus.value === 'declined'
+)
 
 const copy = computed(() => {
   switch (desktopLoginRedemptionStatus.value) {

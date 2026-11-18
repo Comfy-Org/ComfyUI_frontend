@@ -1,4 +1,5 @@
-import { shallowRef, watch } from 'vue'
+import { effectScope, shallowRef, watch } from 'vue'
+import type { EffectScope } from 'vue'
 import type { Router } from 'vue-router'
 
 import { t } from '@/i18n'
@@ -250,6 +251,56 @@ type DesktopLoginRedemptionStatus =
 
 export const desktopLoginRedemptionStatus =
   shallowRef<DesktopLoginRedemptionStatus>('idle')
+
+const IN_FLIGHT_STATUSES: ReadonlySet<DesktopLoginRedemptionStatus> = new Set([
+  'idle',
+  'awaiting_approval',
+  'redeeming'
+])
+
+export function isDesktopLoginRedemptionSettled(
+  status: DesktopLoginRedemptionStatus
+): boolean {
+  return !IN_FLIGHT_STATUSES.has(status)
+}
+
+let pendingStatusRelease: EffectScope | null = null
+
+function cancelStatusRelease(): void {
+  pendingStatusRelease?.stop()
+  pendingStatusRelease = null
+}
+
+/**
+ * Binds the shown outcome to the approval-page visit that is watching it.
+ * Releasing forgets a settled outcome now, or an in-flight one the moment it
+ * settles, so a later visit never shows a result it did not start; claiming
+ * (a new visit) keeps an in-flight outcome visible again.
+ */
+export function claimDesktopLoginRedemptionStatus(): void {
+  cancelStatusRelease()
+}
+
+export function releaseDesktopLoginRedemptionStatus(): void {
+  cancelStatusRelease()
+  if (isDesktopLoginRedemptionSettled(desktopLoginRedemptionStatus.value)) {
+    desktopLoginRedemptionStatus.value = 'idle'
+    return
+  }
+  const scope = effectScope(true)
+  pendingStatusRelease = scope
+  scope.run(() =>
+    watch(
+      desktopLoginRedemptionStatus,
+      (status) => {
+        if (!isDesktopLoginRedemptionSettled(status)) return
+        cancelStatusRelease()
+        desktopLoginRedemptionStatus.value = 'idle'
+      },
+      { flush: 'sync' }
+    )
+  )
+}
 
 export function hasPendingDesktopLoginCode(): boolean {
   const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)

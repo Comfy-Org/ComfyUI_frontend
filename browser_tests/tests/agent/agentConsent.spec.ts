@@ -1,4 +1,3 @@
-import type { DesktopLoginCodeRedeemResponse } from '@comfyorg/ingest-types'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
@@ -8,10 +7,12 @@ import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 import { agentConsentTelemetryTest as telemetryTest } from '@e2e/fixtures/agentConsentTelemetryFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import {
+  DESKTOP_LOGIN_HANDOFF_URL,
+  fulfillDesktopLoginRedeem
+} from '@e2e/fixtures/utils/desktopLoginHandoff'
+import { trackDialogFlash } from '@e2e/fixtures/utils/flashDetector'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
-
-const DESKTOP_LOGIN_HANDOFF_URL =
-  '/?desktop_login_code=dlc_e2eApprovalCodeFE2808abcdefghijklmnopqrstu'
 
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {
@@ -736,14 +737,7 @@ telemetryTest.describe(
     telemetryTest.use({ agentConsentAccepted: false })
 
     telemetryTest.beforeEach(async ({ page }) => {
-      await page.route('**/api/auth/desktop-login-codes/redeem', (route) =>
-        route.fulfill({
-          status: 200,
-          json: {
-            status: 'redeemed'
-          } satisfies DesktopLoginCodeRedeemResponse
-        })
-      )
+      await fulfillDesktopLoginRedeem(page)
     })
 
     telemetryTest(
@@ -764,6 +758,10 @@ telemetryTest.describe(
           name: enMessages.g.confirm
         })
         const visitedPaths: string[] = []
+        const consentFlash = await trackDialogFlash(
+          page,
+          enMessages.agent.consent.title
+        )
 
         await telemetryTest.step(
           'The handoff lands on the dedicated approval page, not the workspace',
@@ -792,6 +790,7 @@ telemetryTest.describe(
             await expect(agentPanel.root).toHaveCount(0)
             expect(new URL(page.url()).pathname).toBe('/cloud/desktop-login')
             expect(visitedPaths).not.toContain('/')
+            expect(await consentFlash.hasFlashed()).toBe(false)
           }
         )
       }
@@ -818,6 +817,10 @@ telemetryTest.describe(
         const coach = page.getByRole('dialog', {
           name: enMessages.agent.coachTitle
         })
+        const coachFlash = await trackDialogFlash(
+          page,
+          enMessages.agent.coachTitle
+        )
 
         await comfyPage.goto({ url: DESKTOP_LOGIN_HANDOFF_URL })
         await expect
@@ -834,6 +837,7 @@ telemetryTest.describe(
         await expect(approval).toHaveCount(0)
         await expect(success).toBeVisible()
         await expect(coach).toHaveCount(0)
+        expect(await coachFlash.hasFlashed()).toBe(false)
       })
     })
   }

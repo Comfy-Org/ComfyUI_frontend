@@ -52,3 +52,41 @@ export async function hasElementFlashed(
     'true'
   )
 }
+
+/**
+ * Like {@link trackElementFlash}, but matches a `role="dialog"` by its
+ * accessible name (`aria-label`, else the text its `aria-labelledby` points
+ * at), for dialogs that carry no test id.
+ */
+export async function trackDialogFlash(
+  page: Page,
+  name: string
+): Promise<{ hasFlashed: () => Promise<boolean> }> {
+  const flagAttribute = flagAttributeFor(`dialog:${name}`)
+
+  await page.addInitScript(
+    ({ dialogName, attribute }: { dialogName: string; attribute: string }) => {
+      const accessibleName = (el: Element) =>
+        el.getAttribute('aria-label')?.trim() ||
+        (el.getAttribute('aria-labelledby') ?? '')
+          .split(/\s+/)
+          .map((id) => document.getElementById(id)?.textContent ?? '')
+          .join(' ')
+          .trim()
+      const sample = () => {
+        for (const el of document.querySelectorAll('[role="dialog"]')) {
+          if (accessibleName(el) === dialogName)
+            document.documentElement.setAttribute(attribute, 'true')
+        }
+        requestAnimationFrame(sample)
+      }
+      requestAnimationFrame(sample)
+    },
+    { dialogName: name, attribute: flagAttribute }
+  )
+
+  return {
+    hasFlashed: async () =>
+      (await page.locator('html').getAttribute(flagAttribute)) === 'true'
+  }
+}
