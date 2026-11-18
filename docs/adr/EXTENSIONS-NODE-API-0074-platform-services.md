@@ -229,9 +229,9 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     applied, keeps its id and place, and returns `false` once the item is
     removed; a refused update names `update`, as a refusal from any handle
     in the API names the handle's method. `remove()` takes away only that
-    item, so a stale handle cannot remove a later item under the same id. An id already shown is refused. A
-    button's `run` is called with the click's `MouseEvent`, which a pack reads
-    to place a menu at the pointer.
+    item, so a stale handle cannot remove a later item under the same id. An
+    id already shown is refused. A button's `run` is called with the click's
+    `MouseEvent`, which a pack reads to place a menu at the pointer.
 22. `showDialog(dialog)` (22 / 36) opens a dialog through the dialog store's
     `showExtensionDialog`, which prefixes the key with `extension-` and raises
     an open dialog with the same key rather than opening another. Its content
@@ -265,6 +265,52 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     rendered on that canvas's view then, which is before `onReady`. Its id is
     taken while it waits; a panel removed before then is never rendered, so
     its `destroy` is not called. A panel stays on the view it joined.
+
+### Localization (`comfy.localization`, 1 / 1)
+
+26. `registerCatalog(locale, catalog)` merges `catalog.messages` into the
+    app's vue-i18n messages for `locale` through `mergeExtensionI18n`, a
+    function this ADR adds to `src/i18n.ts` beside `mergeCustomNodesI18n`. It
+    merges into a locale already loaded at once, and keeps the messages so
+    `loadLocale` merges them again, after the custom nodes' data, when a
+    locale loads later; until then the app has only its English messages for
+    that locale. `mergeCustomNodesI18n` could not be used: it replaces all
+    the custom nodes' data each call, so one pack's catalog would remove
+    what the `/i18n` route gave and every other pack's. Merging straight into
+    vue-i18n without the host function would be lost when `loadLocale`
+    replaces a lazily loaded locale's messages. A pack registers the catalogs
+    of every locale it carries at load (the one stored pack registers five),
+    and none of them causes a locale file to be fetched. In `en` a node's
+    text comes from the backend whenever the backend gives it, unless the
+    `/i18n` route's custom-node data has the key (`resolveNodeDefPath`); a
+    catalog is not that data, so its `nodeDefs` take effect in the other
+    locales.
+27. The locale must be one the app ships (`localeDefinitions`), as the
+    earlier contract asked; a legacy id such as `zh-CN` is refused, because
+    the app never loads it. `messages` must hold only strings, `null` and
+    plain objects, with no loop; it is copied with `savedCopy` before it is
+    kept, so a change the pack makes later reaches nothing. `null` is taken
+    as vue-i18n takes it: the key resolves to the fallback locale, `en`, and
+    in `en` itself the key is shown. A catalog
+    lasts for the page and later catalogs win: vue-i18n has no way to take
+    merged messages out of a locale, so `registerCatalog` returns nothing,
+    as `settings.declare` does.
+
+### System (`comfy.system`, 1 / 2)
+
+28. `monitor()` reads the backend's `/system_stats` through the backend
+    client's `getSystemStats`, the route the host's system-stats store reads.
+    The store is not used: it keeps the first reading, and a pack polling
+    for a fresh one would get the same values. The route gives the RAM
+    (`ram_total`, `ram_free`) and each device's name and memory; the
+    snapshot keeps the earlier contract's shape with what the route has.
+    `cpu.utilization_percent`, each accelerator's `utilization_percent` and
+    `temperature_c` are `null` and `volumes` is empty, because the backend
+    reports none of them; the earlier contract already gave `null` for a
+    sensor the host lacks. The CPU device is not an accelerator. A device's
+    id is its name, which the backend makes unique (`cuda:0 ...`). The reply
+    is read field by field; a failed request or a reply of another shape
+    resolves `undefined`. The snapshot is frozen.
 
 ### Graph overlays (`ui.mountGraphOverlay`, 3 / 94)
 
@@ -320,47 +366,6 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     is a circle or a rectangle with finite coordinates and positive sizes.
     `remove()` takes the element away, drops a pointer it holds, frees the id
     and is safe to call twice.
-
-### Localization (`comfy.localization`, 1 / 1)
-
-26. `registerCatalog(locale, catalog)` merges `catalog.messages` into the
-    app's vue-i18n messages for `locale` through `mergeExtensionI18n`, a
-    function this ADR adds to `src/i18n.ts` beside `mergeCustomNodesI18n`. It
-    merges into a locale already loaded at once, and keeps the messages so
-    `loadLocale` merges them again, after the custom nodes' data, when a
-    locale loads later; until then the app has only its English messages for
-    that locale. `mergeCustomNodesI18n` could not be used: it replaces all
-    the custom nodes' data each call, so one pack's catalog would remove
-    what the `/i18n` route gave and every other pack's. Merging straight into
-    vue-i18n without the host function would be lost when `loadLocale`
-    replaces a lazily loaded locale's messages. A pack registers the catalogs
-    of every locale it carries at load (the one stored pack registers five),
-    and none of them causes a locale file to be fetched.
-27. The locale must be one the app ships (`localeDefinitions`), as the
-    earlier contract asked; a legacy id such as `zh-CN` is refused, because
-    the app never loads it. `messages` must hold only strings, `null` and
-    plain objects, with no loop; it is copied with `savedCopy` before it is
-    kept, so a change the pack makes later reaches nothing. `null` is taken
-    as vue-i18n takes it: the key resolves to the fallback locale. A catalog
-    lasts for the page and later catalogs win: vue-i18n has no way to take
-    merged messages out of a locale, so `registerCatalog` returns nothing,
-    as `settings.declare` does.
-
-### System (`comfy.system`, 1 / 2)
-
-28. `monitor()` reads the backend's `/system_stats` through the backend
-    client's `getSystemStats`, the route the host's system-stats store reads.
-    The store is not used: it keeps the first reading, and a pack polling
-    for a fresh one would get the same values. The route gives the RAM
-    (`ram_total`, `ram_free`) and each device's name and memory; the
-    snapshot keeps the earlier contract's shape with what the route has.
-    `cpu.utilization_percent`, each accelerator's `utilization_percent` and
-    `temperature_c` are `null` and `volumes` is empty, because the backend
-    reports none of them; the earlier contract already gave `null` for a
-    sensor the host lacks. The CPU device is not an accelerator. A device's
-    id is its name, which the backend makes unique (`cuda:0 ...`). The reply
-    is read field by field; a failed request or a reply of another shape
-    resolves `undefined`. The snapshot is frozen.
 
 ### Left out
 
@@ -466,6 +471,13 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
 
 ## What this feature replaces or duplicates, and why
 
+- **Chaining the foreground draw.** The overlay chains
+  `LGraphCanvas.onDrawForeground` itself (`afterForeground` in
+  `graphOverlays.ts`) instead of through `useChainCallback`, which
+  `DomWidgets.vue` uses on the same hook. `useChainCallback` returns a new
+  function and has no way to take one link out again; the overlay has to
+  give the canvas back the handler it had when the last overlay leaves, and
+  only while its own link is still the top one.
 - **Copying a value.** A setting value is copied with `savedCopy` from
   `shared/savedCopy.ts`, after `isJsonValue` has checked it, so the JSON
   round trip drops nothing. A backend payload is copied with
