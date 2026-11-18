@@ -5,6 +5,8 @@ import { toValue } from 'vue'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { startMoveSnap } from '@/lib/litegraph/src/canvas/gestureSnap'
+import type { MoveSnap } from '@/lib/litegraph/src/canvas/gestureSnap'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -33,6 +35,10 @@ export const useNodeDrag = createSharedComposable(() => {
   let stopShiftSync: (() => void) | null = null
 
   let nonNodeStartPositions: Map<Positionable, Point> | null = null
+
+  let moveSnap: MoveSnap | null = null
+  let panOffset: Point = { x: 0, y: 0 }
+  let shiftHeld = false
 
   let autoPan: AutoPanController | null = null
   let lastPointerX = 0
@@ -83,6 +89,25 @@ export const useNodeDrag = createSharedComposable(() => {
             .map((item) => [item, { x: item.pos[0], y: item.pos[1] }])
         )
       : null
+
+    shiftHeld = initialShiftKey
+    panOffset = { x: 0, y: 0 }
+    moveSnap = startDragSnap(nodeId)
+  }
+
+  function startDragSnap(nodeId: NodeId): MoveSnap | null {
+    const { canvas } = canvasStore
+    const graph = canvas?.graph
+    if (!canvas || !graph) return null
+    const nodeIds = [
+      nodeId,
+      ...(otherSelectedNodesStartPositions?.keys() ?? [])
+    ]
+    const nodes = nodeIds.flatMap((id) => graph.getNodeById(id) ?? [])
+    return startMoveSnap(canvas, [
+      ...nodes,
+      ...(nonNodeStartPositions?.keys() ?? [])
+    ])
   }
 
   function startAutoPan(event: PointerEvent, nodeId: NodeId) {
@@ -97,6 +122,7 @@ export const useNodeDrag = createSharedComposable(() => {
       canvas: lgCanvas,
       maxPanSpeed: lgCanvas.auto_pan_speed,
       onPan: (panX, panY) => {
+        panOffset = { x: panOffset.x + panX, y: panOffset.y + panY }
         if (dragStartPos) {
           dragStartPos.x += panX
           dragStartPos.y += panY
@@ -128,9 +154,18 @@ export const useNodeDrag = createSharedComposable(() => {
     const { rootGraphId, canvas } = canvasStore
     if (!rootGraphId || !canvas || canvasStore.isReadOnly) return
 
-    const canvasDelta = {
+    const pointerDelta = {
       x: (lastPointerX - dragStartMouse.x) / canvas.ds.scale,
       y: (lastPointerY - dragStartMouse.y) / canvas.ds.scale
+    }
+    const raw = {
+      x: pointerDelta.x + panOffset.x,
+      y: pointerDelta.y + panOffset.y
+    }
+    const snapped = moveSnap?.offset(raw, { suspended: shiftHeld }) ?? raw
+    const canvasDelta = {
+      x: pointerDelta.x + snapped.x - raw.x,
+      y: pointerDelta.y + snapped.y - raw.y
     }
 
     const updates = [
@@ -190,6 +225,7 @@ export const useNodeDrag = createSharedComposable(() => {
 
     lastPointerX = event.clientX
     lastPointerY = event.clientY
+    shiftHeld = event.shiftKey
     startAutoPan(event, nodeId)
 
     const { canvas } = canvasStore
@@ -266,6 +302,9 @@ export const useNodeDrag = createSharedComposable(() => {
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
     nonNodeStartPositions = null
+
+    moveSnap?.stop()
+    moveSnap = null
 
     autoPan?.stop()
     autoPan = null

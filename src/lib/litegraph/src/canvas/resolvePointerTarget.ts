@@ -13,8 +13,12 @@ import type {
   LinkSegment,
   Positionable
 } from '@comfyorg/graph-model/interfaces'
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  CompassCorners,
+  PointTuple as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
+import { resizeCornerAt } from './groupResize'
 
 import {
   LinkMarkerShape,
@@ -38,7 +42,7 @@ export type PointerTarget =
   | { kind: 'reroute'; reroute: Reroute; part: 'body' | 'input' | 'output' }
   | { kind: 'link'; segment: LinkSegment }
   | { kind: 'linkCentre'; segment: LinkSegment }
-  | { kind: 'groupResize'; group: LGraphGroup }
+  | { kind: 'groupResize'; group: LGraphGroup; corner: CompassCorners }
   | { kind: 'groupTitle'; group: LGraphGroup }
   | { kind: 'group'; group: LGraphGroup }
   | { kind: 'empty' }
@@ -77,8 +81,10 @@ export function resolvePointerTarget(
 
   const group = graph.getGroupOnPos(point[0], point[1])
   if (!group) return { kind: 'empty' }
-  if (group.isInResize(point[0], point[1]))
-    return { kind: 'groupResize', group }
+  const corner = group.pinned
+    ? undefined
+    : resizeCornerAt(group.boundingRect, point[0], point[1])
+  if (corner) return { kind: 'groupResize', group, corner }
   const inTitle = group.isPointInTitlebar(point[0], point[1])
   return { kind: inTitle ? 'groupTitle' : 'group', group }
 }

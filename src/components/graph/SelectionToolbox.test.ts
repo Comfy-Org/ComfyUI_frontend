@@ -63,6 +63,7 @@ function renderToolbox() {
       ],
       stubs: {
         TidyUpButton: true,
+        AlignButton: true,
         ColorPickerButton: {
           template: '<button aria-label="Color" />'
         },
