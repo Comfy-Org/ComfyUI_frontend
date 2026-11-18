@@ -250,6 +250,12 @@ const BILLING_READS = [
   '/billing/payment-methods'
 ]
 
+function refuseSession(cloud: MockCloud, extraReads: readonly string[] = []) {
+  cloud.reply('POST', '/auth/token', () => REFUSED)
+  for (const path of [...BILLING_READS, ...extraReads])
+    cloud.reply('GET', path, () => REFUSED)
+}
+
 for (const { name, pending, lands } of [
   { name: 'money in flight', pending: true, lands: 'waiting' },
   { name: 'nothing pending', pending: false, lands: 'capture' }
@@ -263,8 +269,7 @@ for (const { name, pending, lands } of [
     await signIn(CHECKOUT)
     await expect(payButton(page)).toBeEnabled()
 
-    cloud.reply('POST', '/auth/token', () => REFUSED)
-    for (const path of BILLING_READS) cloud.reply('GET', path, () => REFUSED)
+    refuseSession(cloud)
     await payButton(page).click()
 
     await expect(page).toHaveURL(
@@ -319,3 +324,46 @@ for (const { name, pending, lands } of [
     expect(subscribeRequests(cloud)).toHaveLength(0)
   })
 }
+
+test('a session that expires after paying in place of the linked signup returns from sign-in to the address without it, storage refusing writes', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.addInitScript(() => {
+    const setItem = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key.startsWith('comfy.billing-web.replaced-signups'))
+        throw new DOMException('full', 'QuotaExceededError')
+      setItem.call(this, key, value)
+    }
+  })
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.operations.op_signup = {
+    ...declinedOperation('op_signup'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  await signIn(
+    entryPath('checkout', { plan: 'pro_monthly', operation: 'op_signup' })
+  )
+  cloud.scenario.operations.op_subscribe = {
+    ...processingOperation('op_subscribe'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  cloud.reply('POST', '/billing/subscribe', () => {
+    markPending(cloud, 'op_subscribe')
+    return {
+      body: { billing_op_id: 'op_subscribe', status: 'pending_payment' }
+    }
+  })
+  await payButton(page).click()
+  await expect.poll(() => subscribeRequests(cloud)).toHaveLength(1)
+
+  refuseSession(cloud, ['/billing/ops/op_subscribe'])
+
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/sign-in' &&
+      url.searchParams.get('returnTo') === CHECKOUT
+  )
+})
