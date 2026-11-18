@@ -1520,41 +1520,25 @@ describe('useAgentConversationStore', () => {
     expect(store.isAskRetired('ask-2', 'th')).toBe(false)
   })
 
-  it('confirms provisional tombstones only for the snapshot turn', () => {
-    const store = useAgentConversationStore()
-    store.retireAsk('ask-1', { status: 'retired' }, 'th', false, T1)
-    store.retireAsk('ask-2', { status: 'retired' }, 'th', false, T2)
-
-    store.confirmApprovalSnapshot({ threadId: 'th', messageId: T1 })
-    store.confirmAskPending('ask-1', 'th')
-    store.confirmAskPending('ask-2', 'th')
-
-    expect(store.isAskRetired('ask-1', 'th')).toBe(true)
-    expect(store.isAskRetired('ask-2', 'th')).toBe(false)
-  })
-
-  it('does not confirm an ask delivered during the snapshot poll', () => {
+  it('keeps a snapshot tombstone reversible by a confirmed pending ask', () => {
     const store = useAgentConversationStore()
     store.retireAsk('ask-1', { status: 'retired' }, 'th', false, T1)
 
-    store.confirmApprovalSnapshot(
-      { threadId: 'th', messageId: T1 },
-      undefined,
-      new Set(['ask-1'])
-    )
     store.confirmAskPending('ask-1', 'th')
 
     expect(store.isAskRetired('ask-1', 'th')).toBe(false)
   })
 
-  it('bounds retired ask tombstones per thread', () => {
+  it('clears permanent tombstones when their owning turn settles', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
-    for (let index = 0; index < 65; index++)
-      store.retireAsk(`ask-${index}`, { status: 'retired' }, 'th')
+    store.startTurn(T1)
+    store.ingest(runApproval(T1, 'ask-1'))
+    store.retireAsk('ask-1', { status: 'retired' }, 'th')
 
-    expect(store.isAskRetired('ask-0', 'th')).toBe(false)
-    expect(store.isAskRetired('ask-64', 'th')).toBe(true)
+    store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
+
+    expect(store.isAskRetired('ask-1', 'th')).toBe(false)
   })
 
   it('holds the thread id and clears it on reset', () => {

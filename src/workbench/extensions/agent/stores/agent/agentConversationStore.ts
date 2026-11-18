@@ -444,7 +444,6 @@ function finishWithPersistedParts(
 }
 
 const MAX_DEPARTED_TURNS = 32
-const MAX_RETIRED_ASKS = 64
 
 interface SubmittedAskAnswer {
   answer: AgentAnswerRequest
@@ -720,9 +719,13 @@ export const useAgentConversationStore = defineStore(
       resolution: AskUserResolution,
       owner?: string,
       permanent = true,
-      provisionalTurnId?: string
+      provisionalTurnId?: TurnId
     ): void {
       const key = threadKey(owner)
+      const askTurnId =
+        provisionalTurnId ??
+        askOwnerMessageId(askId, owner) ??
+        submittedAskAnswers.get(askId)?.messageId
       if (key === threadKey()) {
         messages.value = messages.value.map((message) => {
           const parts = retireAskParts(message.parts, askId, resolution)
@@ -735,7 +738,7 @@ export const useAgentConversationStore = defineStore(
       for (const entry of backgroundTurns.values())
         if (entry.threadId === key)
           entry.transport.retireAskPart(askId, resolution)
-      rememberRetiredAsk(key, askId, resolution, permanent, provisionalTurnId)
+      rememberRetiredAsk(key, askId, resolution, permanent, askTurnId)
       clearAskRetirementWatchdog(askId)
       clearAskResolutionReportWatchdog(askId)
       submittedAskAnswers.delete(askId)
@@ -743,35 +746,31 @@ export const useAgentConversationStore = defineStore(
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
+    const retiredAskTurnIds = new Map<string, Map<string, TurnId>>()
     const provisionalRetiredAsks = new Map<string, Map<string, string>>()
-
-    function capAskLedger(ledger: Map<string, unknown> | Set<string>): void {
-      while (ledger.size > MAX_RETIRED_ASKS) {
-        const oldest = ledger.keys().next().value
-        if (oldest === undefined) break
-        ledger.delete(oldest)
-      }
-    }
 
     function rememberRetiredAsk(
       owner: string,
       askId: string,
       resolution: AskUserResolution,
       permanent: boolean,
-      provisionalTurnId?: string
+      askTurnId?: TurnId
     ): void {
       if (!permanent) {
         const provisional = provisionalRetiredAsksFor(owner)
         provisional.delete(askId)
-        provisional.set(askId, provisionalTurnId ?? '')
-        capAskLedger(provisional)
+        provisional.set(askId, askTurnId ?? '')
         return
       }
       const retired = retiredAsksFor(owner)
       const prior = retired.get(askId)
       retired.delete(askId)
       retired.set(askId, settleResolution(prior, resolution))
-      capAskLedger(retired)
+      if (askTurnId !== undefined) {
+        const owners = retiredAskTurnIds.get(owner) ?? new Map<string, TurnId>()
+        owners.set(askId, askTurnId)
+        retiredAskTurnIds.set(owner, owners)
+      }
       provisionalRetiredAsksFor(owner).delete(askId)
     }
 
@@ -802,26 +801,6 @@ export const useAgentConversationStore = defineStore(
 
     function isAskPermanentlyRetired(askId: string, owner?: string): boolean {
       return retiredAsks.get(threadKey(owner))?.has(askId) === true
-    }
-
-    function confirmApprovalSnapshot(
-      turn: LiveTurn,
-      pendingAskId?: string,
-      protectedAskIds: ReadonlySet<string> = new Set()
-    ): void {
-      const provisional = provisionalRetiredAsks.get(turn.threadId)
-      if (provisional === undefined) return
-      for (const [askId, turnId] of provisional) {
-        if (
-          turnId !== turn.messageId ||
-          askId === pendingAskId ||
-          protectedAskIds.has(askId) ||
-          submittedAskAnswers.has(askId) ||
-          answeringAskIds.value.has(askId)
-        )
-          continue
-        retireAsk(askId, { status: 'retired' }, turn.threadId)
-      }
     }
 
     function confirmAskPending(askId: string, owner?: string): void {
@@ -946,12 +925,26 @@ export const useAgentConversationStore = defineStore(
 
     function clearSettledAskState(turn: LiveTurn): void {
       clearSettledProvisionalAsks(turn)
+      clearSettledRetiredAsks(turn)
       for (const [askId, submitted] of submittedAskAnswers)
         if (
           submitted.owner === turn.threadId &&
           submitted.messageId === turn.messageId
         )
           submittedAskAnswers.delete(askId)
+    }
+
+    function clearSettledRetiredAsks(turn: LiveTurn): void {
+      const owners = retiredAskTurnIds.get(turn.threadId)
+      const retired = retiredAsks.get(turn.threadId)
+      if (owners === undefined || retired === undefined) return
+      for (const [askId, turnId] of owners)
+        if (turnId === turn.messageId) {
+          owners.delete(askId)
+          retired.delete(askId)
+        }
+      if (owners.size === 0) retiredAskTurnIds.delete(turn.threadId)
+      if (retired.size === 0) retiredAsks.delete(turn.threadId)
     }
 
     function clearSettledProvisionalAsks(turn: LiveTurn): void {
@@ -968,7 +961,10 @@ export const useAgentConversationStore = defineStore(
       )
       if (threadId.value !== null) retainedThreads.add(threadId.value)
       for (const owner of retiredAsks.keys())
-        if (!retainedThreads.has(owner)) retiredAsks.delete(owner)
+        if (!retainedThreads.has(owner)) {
+          retiredAsks.delete(owner)
+          retiredAskTurnIds.delete(owner)
+        }
       for (const owner of provisionalRetiredAsks.keys())
         if (!retainedThreads.has(owner)) provisionalRetiredAsks.delete(owner)
       for (const [askId, submitted] of submittedAskAnswers)
@@ -2048,7 +2044,6 @@ export const useAgentConversationStore = defineStore(
       isAskRetired,
       isAskPermanentlyRetired,
       confirmAskPending,
-      confirmApprovalSnapshot,
       reconcileApprovalParts,
       startTurn,
       ingest,
