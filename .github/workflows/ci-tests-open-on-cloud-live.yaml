@@ -9,8 +9,14 @@ on:
       - 'browser_tests/fixtures/components/OpenOnCloudDialog.ts'
       - 'browser_tests/fixtures/liveOpenOnCloudFixture.ts'
       - 'browser_tests/fixtures/selectors.ts'
+      - 'src/components/CloudButton.vue'
       - 'src/platform/openOnCloud/**'
   workflow_dispatch:
+    inputs:
+      rollout_preview:
+        description: Use the temporary Cloud preview and pinned frontend rollout
+        type: boolean
+        default: false
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -21,12 +27,15 @@ permissions:
 
 jobs:
   open-on-cloud-live:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      inputs.rollout_preview ||
+      (vars.OPEN_ON_CLOUD_LIVE_URL != '' &&
+        (github.event_name == 'workflow_dispatch' ||
+          github.event.pull_request.head.repo.full_name == github.repository))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      OPEN_ON_CLOUD_URL: https://pr-19562.testenvs.comfy.org
-      FRONTEND_MERGE_SHA: dbd0fe9f0bfc1e90100a18596a26e12d6c2bdc07
+      OPEN_ON_CLOUD_URL: ${{ inputs.rollout_preview && 'https://pr-19562.testenvs.comfy.org' || vars.OPEN_ON_CLOUD_LIVE_URL }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -34,6 +43,9 @@ jobs:
           fetch-depth: 0
 
       - name: Merge the frontend rollout under test
+        if: inputs.rollout_preview
+        env:
+          FRONTEND_MERGE_SHA: dbd0fe9f0bfc1e90100a18596a26e12d6c2bdc07
         run: |
           git fetch --no-tags origin "$FRONTEND_MERGE_SHA"
           git -c user.name=ci -c user.email=ci@localhost merge --no-edit "$FRONTEND_MERGE_SHA"
