@@ -1654,7 +1654,7 @@ export type LocalizationMessage =
   | { readonly [key: string]: LocalizationMessage }
 
 export interface LocalizationCatalog {
-  /** Keyed as the app's own messages: `nodeDefs`, `commands`, `settings` and the rest. */
+  /** Keyed as the app's own messages: `nodeDefs`, `commands`, `settings` and the rest. In `en`, node text comes from the backend. */
   readonly messages: { readonly [key: string]: LocalizationMessage }
 }
 
