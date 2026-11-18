@@ -40,8 +40,6 @@ export function useAgentTabSignals({
     () => conversationStore.pendingAskIds,
     (askIds) => {
       const now = Date.now()
-      for (const askId of askSeenAt.keys())
-        if (!askIds.includes(askId)) askSeenAt.delete(askId)
       for (const askId of askIds)
         if (!askSeenAt.has(askId)) askSeenAt.set(askId, now)
     },
@@ -50,6 +48,9 @@ export function useAgentTabSignals({
 
   function clearTurnSignals(): void {
     tabActivity.setAgentTurnTabs([])
+    const askIds = conversationStore.pendingAskIds
+    for (const askId of askSeenAt.keys())
+      if (!askIds.includes(askId)) askSeenAt.delete(askId)
     if (!conversationStore.awaitingApproval || askSeenAt.size === 0)
       setAgentTabTitlePrefix(null)
     else

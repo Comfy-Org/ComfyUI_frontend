@@ -115,7 +115,6 @@ function pendingAskIdsOf(message: AssistantMessage): string[] {
   )
 }
 
-/** Clears the retired resolution of `askId`'s card so it shows as pending again. */
 function reopenAsk(message: AssistantMessage, askId: string): void {
   message.parts = message.parts.map((part) =>
     (part.type === 'askUser' || part.type === 'deleteApproval') &&

@@ -1075,6 +1075,27 @@ describe('AgentPanelRoot tab activity across chats', () => {
     expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
   })
 
+  it('times the held prefix from when the ask first appeared after its chat is left and reopened', async () => {
+    const start = Date.now()
+    let now = start
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+
+    await openChat('Other chat', 'th-2')
+    now = start + 14 * 60_000
+    await openChat('Running chat', 'th-1')
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+    now = start + 16 * 60_000
+    unmount()
+    await nextTick()
+
+    expect(useBrowserTabTitleStore().prefix).toBe('')
+  })
+
   it('clears the page-wide prefix on close when nothing waits for an answer', async () => {
     const { unmount } = renderPanel()
     await send('install the video nodes')
