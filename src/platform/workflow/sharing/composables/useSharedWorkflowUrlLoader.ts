@@ -182,7 +182,8 @@ export function useSharedWorkflowUrlLoader() {
           workflowName,
           {
             openSource: 'shared_url',
-            shareId: payload.shareId
+            shareId: payload.shareId,
+            initiator: 'user'
           }
         )
       } catch (error) {

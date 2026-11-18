@@ -121,7 +121,9 @@ export function useWorkflowActionsMenu(
       icon: 'icon-[lucide--copy]',
       command: async () => {
         if (workflow) {
-          await workflowService.duplicateWorkflow(workflow)
+          await workflowService.duplicateWorkflow(workflow, {
+            initiator: 'user'
+          })
         }
       },
       visible: isRoot && !isBlueprint

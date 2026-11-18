@@ -298,7 +298,9 @@ export const usePaste = () => {
     }
 
     if (isWorkflow(workflow)) {
-      await useApp().loadGraphData(workflow)
+      await useApp().loadGraphData(workflow, true, true, null, {
+        initiator: 'user'
+      })
     } else {
       if (
         (e.target instanceof HTMLTextAreaElement &&

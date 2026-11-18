@@ -62,7 +62,9 @@ describe('ComfyUI file input', () => {
     await vi.waitFor(() =>
       expect(app.showErrorOnFileLoad).toHaveBeenCalledWith(file)
     )
-    expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button')
+    expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button', {
+      initiator: 'user'
+    })
     expect(console.error).toHaveBeenCalledWith('Failed to load file:', error)
     expect(vi.mocked(console.error).mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(app.showErrorOnFileLoad).mock.invocationCallOrder[0]
@@ -95,9 +97,43 @@ describe('ComfyUI file input', () => {
     fileInput.dispatchEvent(new Event('change'))
 
     await vi.waitFor(() =>
-      expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button')
+      expect(app.handleFile).toHaveBeenCalledWith(file, 'file_button', {
+        initiator: 'user'
+      })
     )
     expect(app.showErrorOnFileLoad).not.toHaveBeenCalled()
     expect(fileInput.value).toBe('')
+  })
+
+  it('loads the default workflow as a user activation from the legacy button', async ({
+    onTestFinished
+  }) => {
+    vi.stubGlobal(
+      'confirm',
+      vi.fn(() => true)
+    )
+    const ui = new ComfyUI(app, {
+      resetView: vi.fn(),
+      restoreOutputs: vi.fn(),
+      trackRunButton: vi.fn(),
+      enterFocusMode: vi.fn()
+    })
+    giveDialogDoublesRemovableElements(ui)
+    onTestFinished(() => ui.dispose())
+
+    const loadDefaultButton = ui.menuContainer.querySelector(
+      '#comfy-load-default-button'
+    ) as HTMLButtonElement | null
+    loadDefaultButton?.click()
+
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        undefined,
+        true,
+        true,
+        null,
+        { initiator: 'user' }
+      )
+    )
   })
 })

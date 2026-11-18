@@ -90,7 +90,8 @@ describe(useLocalHandoffUrlLoader, () => {
       expect.objectContaining({ nodes: expect.any(Array) }),
       true,
       true,
-      'desktop-portrait'
+      'desktop-portrait',
+      { initiator: 'user' }
     )
     expect(window.postMessage).not.toHaveBeenCalled()
     expect(useToast().toasts).toContainEqual(
@@ -140,7 +141,8 @@ describe(useLocalHandoffUrlLoader, () => {
       }),
       true,
       true,
-      'portrait'
+      'portrait',
+      { initiator: 'user' }
     )
   })
 
