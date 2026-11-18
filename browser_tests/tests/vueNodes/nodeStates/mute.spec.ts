@@ -8,6 +8,7 @@ import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 const MUTE_HOTKEY = 'Control+m'
 const MUTE_OPACITY = '0.5'
+const UNMUTED_OPACITY = '0.999'
 
 test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
   test(
@@ -26,7 +27,7 @@ test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
 
       await comfyPage.page.keyboard.press(MUTE_HOTKEY)
       await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
-      await expect(unselectedNode).toHaveCSS('opacity', '1')
+      await expect(unselectedNode).toHaveCSS('opacity', UNMUTED_OPACITY)
       await expectRegionScreenshot(
         comfyPage.page,
         [checkpointNode],
@@ -40,17 +41,17 @@ test.describe('Vue Node Mute', { tag: '@vue-nodes' }, () => {
       await comfyPage.page.keyboard.press(MUTE_HOTKEY)
       await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
       await expect(ksamplerNode).toHaveCSS('opacity', MUTE_OPACITY)
-      await expect(unselectedNode).toHaveCSS('opacity', '1')
+      await expect(unselectedNode).toHaveCSS('opacity', UNMUTED_OPACITY)
 
       await comfyPage.page.keyboard.press(MUTE_HOTKEY)
-      await expect(checkpointNode).toHaveCSS('opacity', '1')
-      await expect(ksamplerNode).toHaveCSS('opacity', '1')
-      await expect(unselectedNode).toHaveCSS('opacity', '1')
+      await expect(checkpointNode).toHaveCSS('opacity', UNMUTED_OPACITY)
+      await expect(ksamplerNode).toHaveCSS('opacity', UNMUTED_OPACITY)
+      await expect(unselectedNode).toHaveCSS('opacity', UNMUTED_OPACITY)
 
       await comfyPage.page.keyboard.press(MUTE_HOTKEY)
       await expect(checkpointNode).toHaveCSS('opacity', MUTE_OPACITY)
       await expect(ksamplerNode).toHaveCSS('opacity', MUTE_OPACITY)
-      await expect(unselectedNode).toHaveCSS('opacity', '1')
+      await expect(unselectedNode).toHaveCSS('opacity', UNMUTED_OPACITY)
 
       const checkpoint =
         await comfyPage.nodeOps.getNodeRefByTitle('Load Checkpoint')
