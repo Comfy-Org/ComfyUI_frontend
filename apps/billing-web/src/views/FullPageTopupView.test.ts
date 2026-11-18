@@ -16,7 +16,10 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
-import { readBillingErrorCode } from '@comfyorg/account-core/billing'
+import {
+  OPERATION_POLL_TIMING,
+  readBillingErrorCode
+} from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -1392,6 +1395,40 @@ describe('FullPageTopupView with auto top-up from the link', () => {
       })
     )
     expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('finishes Turning on auto top-up from the operation the receipt names when the browser kept no pointer to it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const activating = settledTopup({
+      amountChargedCents: 2500,
+      creditsAdded: 5275,
+      autoTopUpActivation: 'pending'
+    })
+    renderTopup({}, TOPUP_PATH, (fake) => {
+      fake.recover.mockResolvedValueOnce({ status: 'ok', value: activating })
+      fake.recover.mockImplementation(async (options) => ({
+        status: 'ok',
+        value:
+          options?.operation?.id === activating.id
+            ? {
+                ...activating,
+                receipt: { ...activating.receipt, autoTopUpActivation: 'on' }
+              }
+            : undefined
+      }))
+    })
+
+    expect(
+      await screen.findByTestId('checkout-ending-auto-top-up')
+    ).toHaveTextContent('Turning on auto top-up…')
+
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('checkout-ending-auto-top-up')
+      ).not.toBeInTheDocument()
+    )
   })
 
   it.for([

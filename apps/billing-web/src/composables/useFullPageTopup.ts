@@ -11,6 +11,7 @@ import { useBillingClient, useTopUp } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import type {
   BillingOperationState,
+  BillingRecoverOptions,
   BillingResult,
   CapabilitiesSnapshot,
   InteractiveTopupPayment,
@@ -93,6 +94,16 @@ function eligibleCards(
 interface HeldAttempt {
   readonly payment: InteractiveTopupPayment
   readonly idempotencyKey: string
+}
+
+function awaitedOperationOf(
+  current: CheckoutPage
+): Pick<BillingRecoverOptions, 'operation'> {
+  return current.kind === 'terminal' && current.operation !== undefined
+    ? {
+        operation: { id: current.operation.id, kind: current.operation.kind }
+      }
+    : {}
 }
 
 /**
@@ -199,7 +210,10 @@ export function useFullPageTopup() {
 
   async function reconcileOnce(): Promise<RecoveredOperation | undefined> {
     const mine = ++generation
-    const recovered = await lifecycle.recover({ includeSettled: true })
+    const recovered = await lifecycle.recover({
+      includeSettled: true,
+      ...awaitedOperationOf(page.value)
+    })
     if (mine !== generation) return undefined
     dispatch(reconciledEvent(recovered))
     return recovered
