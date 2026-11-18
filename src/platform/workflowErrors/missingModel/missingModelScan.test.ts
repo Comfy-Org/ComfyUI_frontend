@@ -1971,6 +1971,34 @@ describe('verifyAssetSupportedCandidates', () => {
     expect(candidates[0].isMissing).toBe(true)
   })
 
+  // The store catches a failed fetch and records it as an error instead of
+  // rejecting, so these mirror what a real network failure looks like.
+  it('should retry a node type whose asset load the store reports as failed', async () => {
+    const candidates = [makeAssetCandidate('dreamshaper_8.safetensors')]
+    vi.mocked(useAssetsStore().getError)
+      .mockReturnValueOnce(new Error('fetch failed'))
+      .mockReturnValue(undefined)
+    mockGetAssets.mockReturnValue([])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(2)
+    expect(candidates[0].isMissing).toBe(true)
+  })
+
+  it('should not report installed models as missing when the store keeps failing to load them', async () => {
+    const candidates = [makeAssetCandidate('installed.safetensors')]
+    vi.mocked(useAssetsStore().getError).mockReturnValue(
+      new Error('fetch failed')
+    )
+    mockGetAssets.mockReturnValue([])
+
+    await verifyAssetSupportedCandidates(candidates)
+
+    expect(mockUpdateModelsForNodeType).toHaveBeenCalledTimes(2)
+    expect(candidates[0].isMissing).toBeUndefined()
+  })
+
   it('should not retry a failed asset load after the scan is aborted', async () => {
     const controller = new AbortController()
     const candidates = [makeAssetCandidate('model.safetensors')]
