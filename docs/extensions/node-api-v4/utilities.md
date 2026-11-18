@@ -80,6 +80,25 @@ const loras = await comfy.models.list('loras')
 console.info(loras?.length ?? 'the server did not list them')
 ```
 
+## System readings
+
+`comfy.system.monitor()` reads what the backend's `/system_stats` reports: the
+RAM, and each GPU's VRAM, in bytes. CPU load, GPU load, temperature and disks
+are not available from the backend. A machine with no GPU has no
+accelerators. It resolves `undefined` when the backend cannot be read.
+
+```ts
+import { comfy } from '/comfy/api/v4.js'
+
+const snapshot = await comfy.system.monitor()
+if (snapshot) {
+  const { total, available } = snapshot.memory
+  console.info(`RAM ${Math.round((100 * (total - available)) / total)}% used`)
+  for (const gpu of snapshot.accelerators)
+    console.info(gpu.name, gpu.memoryTotal - gpu.memoryAvailable, 'bytes used')
+}
+```
+
 ## UI
 
 The pack renders content into the element it is given, with its own tools,
