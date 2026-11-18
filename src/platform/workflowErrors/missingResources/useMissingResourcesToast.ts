@@ -22,6 +22,7 @@ import type {
   TrackedModel
 } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 import { startModelDownload } from '@/platform/workflowErrors/missingResources/useTrackedModelActions'
+import { useCloseOverlayCoveredByToast } from '@/platform/workflowErrors/missingResources/useCloseOverlayCoveredByToast'
 
 const READY_DISMISS_DELAY_MS = 5000
 
@@ -161,6 +162,8 @@ export function useMissingResourcesToast() {
       !readyShownLongEnough.value &&
       state.value.kind !== 'hidden'
   )
+
+  useCloseOverlayCoveredByToast(() => visible.value)
 
   function dismiss() {
     dismissed.value = true

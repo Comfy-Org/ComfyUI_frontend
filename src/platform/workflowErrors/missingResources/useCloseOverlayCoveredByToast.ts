@@ -1,32 +1,34 @@
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 
-import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { isCoveredByMissingModelsToast } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { isCoveredByMissingModelsToast } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 
-/** Reactive coverage of the workflow's issues by the Desktop missing resources toast. */
-export function useMissingModelsToastCoverage() {
+/** Closes the error overlay whenever the visible missing resources toast already lists every issue it would show. */
+export function useCloseOverlayCoveredByToast(toastVisible: () => boolean) {
   const executionErrorStore = useExecutionErrorStore()
   const missingModelStore = useMissingModelStore()
   const missingNodesStore = useMissingNodesErrorStore()
   const missingMediaStore = useMissingMediaStore()
-  const downloadStore = useMissingModelDownloadStore()
 
   const coveredByToast = computed(() =>
     isCoveredByMissingModelsToast({
-      toastActive: downloadStore.tracksHostProgress(),
+      toastVisible: toastVisible(),
       missingModels: missingModelStore.hasMissingModels,
       missingNodes: missingNodesStore.hasMissingNodes,
-      missingMedia: missingMediaStore.hasMissingMedia,
-      runErrors:
-        executionErrorStore.hasExecutionError ||
-        executionErrorStore.hasPromptError ||
-        executionErrorStore.hasNodeError
+      missingMedia:
+        (missingMediaStore.visibleMissingMediaCandidates?.length ?? 0) > 0,
+      blockingErrors: executionErrorStore.errorClassification.hasBlockingError
     })
   )
 
-  return { coveredByToast }
+  watch(
+    () => executionErrorStore.isErrorOverlayOpen && coveredByToast.value,
+    (overlayRepeatsToast) => {
+      if (overlayRepeatsToast) executionErrorStore.dismissErrorOverlay()
+    },
+    { immediate: true }
+  )
 }

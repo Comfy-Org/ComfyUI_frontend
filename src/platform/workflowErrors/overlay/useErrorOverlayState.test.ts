@@ -7,16 +7,7 @@ import { createI18n } from 'vue-i18n'
 import { useErrorOverlayState } from './useErrorOverlayState'
 import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
-import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
-import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
-import type {
-  MissingModelCandidate,
-  MissingModelGroup
-} from '@/platform/workflowErrors/missingModel/types'
-import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type { NodeError } from '@comfyorg/api-client/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
@@ -25,6 +16,7 @@ import type {
 } from '@/platform/workflowErrors/panel/useErrorGroups'
 import type { ErrorGroup } from '@/platform/workflowErrors/panel/types'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 
 const mockErrorGroups = vi.hoisted(() => ({
   allErrorGroups: { value: [] as ErrorGroup[] },
@@ -110,7 +102,6 @@ function mountOverlayState() {
 
 describe('useErrorOverlayState', () => {
   beforeEach(() => {
-    delete window.__comfyDesktop2
     mockAllErrorGroups.value = []
     mockErrorGroups.missingPackGroups.value = []
     mockErrorGroups.missingModelGroups.value = []
@@ -589,43 +580,6 @@ describe('useErrorOverlayState', () => {
     expect(screen.getByTestId('visible')).toHaveTextContent('false')
 
     useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
-    await nextTick()
-
-    expect(screen.getByTestId('visible')).toHaveTextContent('true')
-  })
-
-  it('stays hidden while the Desktop toast lists every missing model, and opens once another issue appears', async () => {
-    window.__comfyDesktop2 = {
-      isRemote: () => false,
-      downloadModel: async () => true,
-      onDownloadProgress: () => () => {}
-    }
-    useMissingModelDownloadStore().startTracking()
-    useMissingModelStore().setMissingModels([
-      fromPartial<MissingModelCandidate>({
-        name: 'model.safetensors',
-        directory: 'checkpoints',
-        isMissing: true
-      })
-    ])
-    mockAllErrorGroups.value = [
-      {
-        type: 'missing_model',
-        severity: 'missing',
-        groupKey: 'missing_model',
-        displayTitle: 'Missing Models',
-        count: 1,
-        priority: 2,
-        blockedLastRun: false
-      }
-    ]
-    mountOverlayState()
-    useExecutionErrorStore().showErrorOverlay()
-    await nextTick()
-
-    expect(screen.getByTestId('visible')).toHaveTextContent('false')
-
-    useMissingNodesErrorStore().setMissingNodeTypes(['UnknownNode'])
     await nextTick()
 
     expect(screen.getByTestId('visible')).toHaveTextContent('true')

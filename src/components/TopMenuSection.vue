@@ -225,7 +225,6 @@ import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDepl
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingModelsToastCoverage } from '@/platform/workflowErrors/missingResources/useMissingModelsToastCoverage'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
@@ -334,7 +333,6 @@ const shouldShowRedDot = computed((): boolean => {
 })
 
 const { hasAnyError, isErrorOverlayOpen } = storeToRefs(executionErrorStore)
-const { coveredByToast } = useMissingModelsToastCoverage()
 const { viewErrorsInGraph } = useViewErrorsInGraph()
 provide(AskAgentPortKey, useAskAgentAboutIssues())
 
@@ -347,7 +345,7 @@ const showErrorIndicatorOnPanelButton = computed(
     isErrorsTabEnabled.value &&
     hasAnyError.value &&
     !isPropertiesPanelOpen.value &&
-    (!isErrorOverlayOpen.value || coveredByToast.value)
+    !isErrorOverlayOpen.value
 )
 
 const { isOpen: isPropertiesPanelOpen } = storeToRefs(propertiesPanelStore)

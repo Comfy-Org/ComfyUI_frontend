@@ -258,22 +258,22 @@ export function deriveMissingResourcesToastState(
 }
 
 interface MissingModelsToastCoverageInput {
-  toastActive: boolean
+  toastVisible: boolean
   missingModels: boolean
   missingNodes: boolean
   missingMedia: boolean
-  runErrors: boolean
+  blockingErrors: boolean
 }
 
-/** Whether the missing resources toast already lists every issue, so the error overlay would only repeat it. */
+/** Whether the visible missing resources toast already lists every issue, so the error overlay would only repeat it. */
 export function isCoveredByMissingModelsToast(
   input: MissingModelsToastCoverageInput
 ): boolean {
   return (
-    input.toastActive &&
+    input.toastVisible &&
     input.missingModels &&
     !input.missingNodes &&
     !input.missingMedia &&
-    !input.runErrors
+    !input.blockingErrors
   )
 }
