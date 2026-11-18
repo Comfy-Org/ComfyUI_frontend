@@ -271,6 +271,23 @@ describe('mounting a graph overlay', () => {
     )
   })
 
+  it('skips the draw when its canvas gives no 2D context, and the graph keeps drawing', () => {
+    const { view, canvas, ui } = appShowingGraph()
+    const draw = vi.fn()
+    const later = vi.fn()
+    mount(ui, overlay({ draw }))
+    mount(ui, overlay({ id: 'MyPack.later', draw: later }))
+    Object.defineProperty(overlayElement(view), 'getContext', {
+      value: () => null
+    })
+
+    canvas.draw(true, true)
+
+    expect(draw).not.toHaveBeenCalled()
+    expect(later).toHaveBeenCalledOnce()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
   it('reports a draw that throws at a frame it asked for, and the frame goes on', () => {
     const { canvas, ui } = appShowingGraph()
     const handle = mount(

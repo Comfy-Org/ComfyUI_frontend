@@ -37,7 +37,8 @@ export function createBackendHandle(): BackendHandle {
       if (init !== undefined && !isObject(init)) {
         throw invalidArgument('backend.fetch', 'request options', init)
       }
-      return api.fetchApi(path, { ...init, headers: headersOf(init?.headers) })
+      const { headers, ...options } = init ?? {}
+      return api.fetchApi(path, { ...options, headers: headersOf(headers) })
     },
 
     on(event, listener) {
