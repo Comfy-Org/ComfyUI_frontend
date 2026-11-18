@@ -817,11 +817,30 @@ describe('WorkflowTabs selection and overflow', () => {
     expect(
       screen.queryByTestId('workflow-overflow-menu')
     ).not.toBeInTheDocument()
+    const tabList = screen.getByRole('none')
+    expect(tabList).not.toHaveClass('after:w-px')
 
     overflowObservers[0].isOverflowing.value = true
     await nextTick()
 
     expect(screen.getByTestId('workflow-overflow-menu')).toBeInTheDocument()
+    expect(tabList).toHaveClass('after:w-px', 'after:h-px')
+  })
+
+  it('keeps close buttons outside tablist ownership via aria-owns', async () => {
+    renderComponent()
+    await nextTick()
+
+    const tabListContainer = screen.getByRole('none')
+    expect(tabListContainer).toHaveClass('workflow-tabs')
+    expect(tabListContainer).not.toHaveAttribute('aria-orientation')
+
+    const tabs = screen.getAllByRole('tab')
+    const tablist = screen.getByRole('tablist')
+    expect(tablist).toHaveAttribute(
+      'aria-owns',
+      tabs.map((tab) => tab.id).join(' ')
+    )
   })
 
   it('scrolls a newly active workflow into view', async () => {

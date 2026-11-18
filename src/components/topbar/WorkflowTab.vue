@@ -17,60 +17,63 @@
       >
         <TabsTrigger
           :value="workflowOption.workflow.path"
+          as-child
           class="h-full w-full py-2 pr-2 pl-3"
         >
-          <template v-if="showModeIcon">
-            <i
-              v-if="isBuilderState"
-              data-testid="workflow-mode-icon"
-              class="icon-[lucide--hammer] bg-muted-foreground"
+          <button :id="triggerId" type="button">
+            <template v-if="showModeIcon">
+              <i
+                v-if="isBuilderState"
+                data-testid="workflow-mode-icon"
+                class="icon-[lucide--hammer] bg-muted-foreground"
+              />
+              <i
+                v-else-if="workflowOption.workflow.initialMode === 'app'"
+                data-testid="workflow-mode-icon"
+                class="icon-[lucide--panels-top-left] bg-primary"
+              />
+            </template>
+            <WorkflowTabChatStatus
+              :workflow-path="workflowOption.workflow.path"
             />
-            <i
-              v-else-if="workflowOption.workflow.initialMode === 'app'"
-              data-testid="workflow-mode-icon"
-              class="icon-[lucide--panels-top-left] bg-primary"
-            />
-          </template>
-          <WorkflowTabChatStatus
-            :workflow-path="workflowOption.workflow.path"
-          />
-          <span class="inline-flex min-w-0 items-center">
+            <span class="inline-flex min-w-0 items-center">
+              <span
+                :class="
+                  cn(
+                    'workflow-label inline-block max-w-[150px] truncate font-inter text-xs leading-4 font-normal text-inherit',
+                    shouldShowUnsavedIndicator && 'italic'
+                  )
+                "
+              >
+                {{ workflowOption.workflow.filename }}
+              </span>
+              <span
+                v-if="shouldShowUnsavedIndicator"
+                data-testid="workflow-dirty-indicator"
+                class="shrink-0 font-inter text-xs leading-4 text-inherit italic after:content-['*']"
+              />
+            </span>
             <span
               :class="
                 cn(
-                  'workflow-label inline-block max-w-[150px] truncate font-inter text-xs leading-4 font-normal text-inherit',
-                  shouldShowUnsavedIndicator && 'italic'
+                  'relative size-4 shrink-0 group-focus-within/tab:invisible',
+                  revealsCloseOnHover && 'group-hover/tab:invisible'
                 )
               "
             >
-              {{ workflowOption.workflow.filename }}
+              <i
+                v-if="workflowStatus"
+                role="img"
+                :aria-label="workflowStatusLabel"
+                :class="
+                  cn(
+                    'absolute top-1/2 left-1/2 z-10 -translate-1/2',
+                    workflowStatusIconClasses[workflowStatus]
+                  )
+                "
+              />
             </span>
-            <span
-              v-if="shouldShowUnsavedIndicator"
-              data-testid="workflow-dirty-indicator"
-              class="shrink-0 font-inter text-xs leading-4 text-inherit italic after:content-['*']"
-            />
-          </span>
-          <span
-            :class="
-              cn(
-                'relative size-4 shrink-0 group-focus-within/tab:invisible',
-                revealsCloseOnHover && 'group-hover/tab:invisible'
-              )
-            "
-          >
-            <i
-              v-if="workflowStatus"
-              role="img"
-              :aria-label="workflowStatusLabel"
-              :class="
-                cn(
-                  'absolute top-1/2 left-1/2 z-10 -translate-1/2',
-                  workflowStatusIconClasses[workflowStatus]
-                )
-              "
-            />
-          </span>
+          </button>
         </TabsTrigger>
         <Button
           :class="
@@ -107,7 +110,7 @@
 
 <script setup lang="ts">
 import { ContextMenuRoot, ContextMenuTrigger } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -169,6 +172,7 @@ const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
+const triggerId = useId()
 const popoverOpen = ref(false)
 const popoverHovered = ref(false)
 const popoverClicked = ref(false)

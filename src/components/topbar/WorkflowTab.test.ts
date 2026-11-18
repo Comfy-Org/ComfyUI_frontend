@@ -487,6 +487,19 @@ describe('WorkflowTab - close button', () => {
     )
     expect(useWorkflowService().closeWorkflow).not.toHaveBeenCalled()
   })
+
+  it('uses a space-free tab trigger id when the workflow path contains spaces', () => {
+    renderTab({
+      workflowOption: makeWorkflowOption({
+        path: 'workflows/Unsaved Workflow.json',
+        filename: 'Unsaved Workflow'
+      })
+    })
+
+    const tab = screen.getByRole('tab')
+    expect(tab.id).not.toBe('')
+    expect(tab.id).not.toMatch(/\s/)
+  })
 })
 
 describe('WorkflowTab - compact', () => {
