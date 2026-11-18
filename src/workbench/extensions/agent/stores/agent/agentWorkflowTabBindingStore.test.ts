@@ -402,6 +402,7 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.tabPathFor('wf-saved')).toBe(path)
     const tab = workflows.getWorkflowByPath(path)!
     tab.originalContent = JSON.stringify({ ...blankGraph, id: OTHER_GRAPH_ID })
+    expect(bindings.tabPathFor('wf-saved')).toBe(path)
     vi.spyOn(api, 'moveUserData').mockImplementation(
       async (_from, to) => new Response(JSON.stringify(to), { status: 200 })
     )
