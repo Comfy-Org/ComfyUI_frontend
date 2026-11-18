@@ -220,6 +220,16 @@ export function useFeatureFlags() {
       return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
     },
     get openOnCloudEnabled() {
+      const publicRollout = isCloud
+        ? remoteConfig.value.open_on_cloud_public_enabled
+        : (localOpenOnCloudRollout.value?.open_on_cloud_public_enabled ??
+          remoteConfig.value.open_on_cloud_public_enabled)
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
+        publicRollout ?? this.openOnCloudAccountEnabled
+      )
+    },
+    get openOnCloudAccountEnabled() {
       const served = isCloud
         ? remoteConfig.value.open_on_cloud_enabled
         : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ??

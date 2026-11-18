@@ -30,7 +30,8 @@ export class GlobalSettingsApiError extends Error {
 
 function globalSettingsUrl(key?: GlobalSettingKey): string {
   const path = `/global-settings${key ? `/${encodeURIComponent(key)}` : ''}`
-  if (useFeatureFlags().flags.openOnCloudEnabled) return ingestApiUrl(path)
+  if (useFeatureFlags().flags.openOnCloudAccountEnabled)
+    return ingestApiUrl(path)
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
 }
 

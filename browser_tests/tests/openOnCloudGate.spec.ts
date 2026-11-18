@@ -24,7 +24,7 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
         (route) =>
           route.fulfill({
             headers: { 'access-control-allow-origin': '*' },
-            json: { open_on_cloud_enabled: false }
+            json: { open_on_cloud_public_enabled: false }
           })
       )
     })
@@ -87,12 +87,17 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
 
   test.describe('enabled menu', () => {
     test.beforeEach(async ({ page }) => {
-      await new FeatureFlagHelper(page).seedServerFlags({
-        open_on_cloud_enabled: true
-      })
+      await page.route(
+        (url) => url.protocol === 'https:' && url.pathname === '/api/features',
+        (route) =>
+          route.fulfill({
+            headers: { 'access-control-allow-origin': '*' },
+            json: { open_on_cloud_public_enabled: true }
+          })
+      )
     })
 
-    test('shows the Cloud button while the gate is on, proving the gate-off check looks at the right control', async ({
+    test('shows the Cloud button before sign-in when Cloud enables the public rollout', async ({
       comfyPage
     }) => {
       await expect(comfyPage.page.getByTestId('cloud-button')).toBeVisible()

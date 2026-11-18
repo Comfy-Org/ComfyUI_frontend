@@ -518,6 +518,21 @@ describe('useFeatureFlags', () => {
         expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(expected)
       }
     )
+
+    it.for([true, false])(
+      'uses the Cloud public switch %s for handoff independently of the account flag',
+      (enabled) => {
+        vi.mocked(distributionTypes).isCloud = true
+        remoteConfig.value = {
+          open_on_cloud_public_enabled: enabled,
+          open_on_cloud_enabled: !enabled
+        }
+
+        const { flags } = useFeatureFlags()
+        expect(flags.openOnCloudEnabled).toBe(enabled)
+        expect(flags.openOnCloudAccountEnabled).toBe(!enabled)
+      }
+    )
   })
 
   describe('openOnCloudUseLocalAgentEnabled', () => {

@@ -6,7 +6,8 @@ import { z } from 'zod'
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 
 const zOpenOnCloudRollout = z.object({
-  open_on_cloud_enabled: z.boolean(),
+  open_on_cloud_public_enabled: z.boolean().optional(),
+  open_on_cloud_enabled: z.boolean().optional(),
   open_on_cloud_use_local_agent_enabled: z.boolean().optional()
 })
 
@@ -26,19 +27,19 @@ function reportRolloutReadFailure(cause: unknown): void {
 }
 
 async function readRollout(
-  getToken: () => Promise<string | undefined>,
+  getToken: (() => Promise<string | undefined>) | undefined,
   signal: AbortSignal
 ): Promise<void> {
   try {
-    const token = await getToken()
-    if (!token) return
+    const token = await getToken?.()
+    signal.throwIfAborted()
 
     const endpoint = new URL('/api/features', getBuildTimeComfyCloudBaseUrl())
     if (endpoint.protocol !== 'https:') return
     const response = await fetch(endpoint, {
       cache: 'no-store',
       credentials: 'omit',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       redirect: 'error',
       signal: combineAbortSignals([signal, AbortSignal.timeout(5_000)])
     })
@@ -50,8 +51,15 @@ async function readRollout(
     }
     const served = zOpenOnCloudRollout.safeParse(await response.json())
     if (signal.aborted) return
-    if (served.success) rollout.value = served.data
-    else reportRolloutReadFailure(new Error('Invalid Cloud rollout response'))
+    if (!served.success) {
+      reportRolloutReadFailure(new Error('Invalid Cloud rollout response'))
+      return
+    }
+    rollout.value = token
+      ? served.data
+      : {
+          open_on_cloud_public_enabled: served.data.open_on_cloud_public_enabled
+        }
   } catch (error) {
     if (!signal.aborted) reportRolloutReadFailure(error)
   }
@@ -66,8 +74,11 @@ export function startLocalOpenOnCloudRollout(
     (userId, _, onCleanup) => {
       const controller = new AbortController()
       onCleanup(() => controller.abort())
-      rollout.value = undefined
-      if (userId) void readRollout(getToken, controller.signal)
+      rollout.value = {
+        open_on_cloud_public_enabled:
+          rollout.value?.open_on_cloud_public_enabled
+      }
+      void readRollout(userId ? getToken : undefined, controller.signal)
     },
     { immediate: true, flush: 'sync' }
   )

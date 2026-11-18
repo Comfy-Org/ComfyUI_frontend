@@ -39,24 +39,40 @@ function start() {
     userId,
     visible: () => [
       flags.openOnCloudEnabled,
-      flags.openOnCloudUseLocalAgentEnabled
+      flags.openOnCloudUseLocalAgentEnabled,
+      flags.openOnCloudAccountEnabled
     ]
   }
 }
 
+it('offers Open on Cloud to a signed-out user without granting account flags', async () => {
+  vi.mocked(fetch).mockResolvedValueOnce(
+    Response.json({ ...allowed, open_on_cloud_public_enabled: true })
+  )
+  const { visible } = start()
+
+  await vi.waitFor(() => expect(visible()).toEqual([true, false, false]))
+  expect(fetch).toHaveBeenCalledExactlyOnceWith(
+    new URL('/api/features', getBuildTimeComfyCloudBaseUrl()),
+    expect.objectContaining({ credentials: 'omit', headers: undefined })
+  )
+})
+
 it('renders both served flags for the current account and clears them on identity changes', async () => {
-  const { userId, visible } = start()
   const denies = deferredResponse()
   vi.mocked(fetch)
+    .mockResolvedValueOnce(Response.json({}))
     .mockResolvedValueOnce(Response.json(allowed))
     .mockReturnValueOnce(denies.promise)
+    .mockResolvedValueOnce(Response.json({}))
+  const { userId, visible } = start()
 
-  expect(visible()).toEqual([false, false])
-  expect(fetch).not.toHaveBeenCalled()
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+  expect(visible()).toEqual([false, false, false])
 
   userId.value = 'employee-token'
-  await vi.waitFor(() => expect(visible()).toEqual([true, true]))
-  expect(fetch).toHaveBeenCalledExactlyOnceWith(
+  await vi.waitFor(() => expect(visible()).toEqual([true, true, true]))
+  expect(fetch).toHaveBeenLastCalledWith(
     new URL('/api/features', getBuildTimeComfyCloudBaseUrl()),
     expect.objectContaining({
       headers: { Authorization: 'Bearer employee-token' },
@@ -65,40 +81,48 @@ it('renders both served flags for the current account and clears them on identit
   )
 
   userId.value = 'other-token'
-  expect(visible()).toEqual([false, false])
-  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+  expect(visible()).toEqual([false, false, false])
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(3))
   denies.resolve(
     Response.json({
       open_on_cloud_enabled: true,
       open_on_cloud_use_local_agent_enabled: false
     })
   )
-  await vi.waitFor(() => expect(visible()).toEqual([true, false]))
+  await vi.waitFor(() => expect(visible()).toEqual([true, false, true]))
   userId.value = undefined
-  expect(visible()).toEqual([false, false])
+  expect(visible()).toEqual([false, false, false])
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(4))
 })
 
 it('ignores a grant returned after sign-out and renders a denied account as off', async () => {
-  const { userId, visible } = start()
   const grant = deferredResponse()
   vi.mocked(fetch)
+    .mockResolvedValueOnce(
+      Response.json({ open_on_cloud_public_enabled: true })
+    )
     .mockReturnValueOnce(grant.promise)
     .mockResolvedValueOnce(
+      Response.json({ open_on_cloud_public_enabled: true })
+    )
+    .mockResolvedValueOnce(
       Response.json({
+        open_on_cloud_public_enabled: false,
         open_on_cloud_enabled: false,
         open_on_cloud_use_local_agent_enabled: false
       })
     )
+  const { userId, visible } = start()
 
+  await vi.waitFor(() => expect(visible()).toEqual([true, false, false]))
   userId.value = 'employee-token'
-  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
   userId.value = undefined
   grant.resolve(Response.json(allowed))
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(3))
   await vi.advanceTimersByTimeAsync(0)
-  expect(visible()).toEqual([false, false])
+  expect(visible()).toEqual([true, false, false])
 
   userId.value = 'other-token'
-  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
-  await vi.advanceTimersByTimeAsync(0)
-  expect(visible()).toEqual([false, false])
+  await vi.waitFor(() => expect(visible()).toEqual([false, false, false]))
 })
