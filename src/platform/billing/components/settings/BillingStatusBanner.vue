@@ -60,7 +60,7 @@
         </Button>
         <Button
           v-else-if="banner.action === 'contactSales'"
-          variant="secondary"
+          :variant="kind === 'planEnded' ? 'inverted' : 'secondary'"
           size="lg"
           @click="handleContactSales"
         >
