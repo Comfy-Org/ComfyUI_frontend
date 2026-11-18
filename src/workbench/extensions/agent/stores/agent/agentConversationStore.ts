@@ -376,6 +376,7 @@ interface SubmittedAskAnswer {
   owner: string
   messageId?: TurnId
   awaitingResolution?: 'accepted' | 'conflict'
+  onResolutionExpired?: () => void
 }
 
 export const useAgentConversationStore = defineStore(
@@ -666,7 +667,6 @@ export const useAgentConversationStore = defineStore(
     }
 
     const retiredAsks = new Map<string, Map<string, AskUserResolution>>()
-    const retiredAskTurnIds = new Map<string, Map<string, TurnId>>()
     const provisionalRetiredAsks = new Map<string, Map<string, string>>()
 
     function rememberRetiredAsk(
@@ -686,11 +686,6 @@ export const useAgentConversationStore = defineStore(
       const prior = retired.get(askId)
       retired.delete(askId)
       retired.set(askId, settleResolution(prior, resolution))
-      if (askTurnId !== undefined) {
-        const owners = retiredAskTurnIds.get(owner) ?? new Map<string, TurnId>()
-        owners.set(askId, askTurnId)
-        retiredAskTurnIds.set(owner, owners)
-      }
       provisionalRetiredAsksFor(owner).delete(askId)
     }
 
@@ -811,17 +806,19 @@ export const useAgentConversationStore = defineStore(
 
     function markAskAwaitingResolution(
       askId: string,
-      kind: 'accepted' | 'conflict'
+      kind: 'accepted' | 'conflict',
+      onExpired?: () => void
     ): void {
       const submitted = submittedAskAnswers.get(askId)
       if (!submitted) return
       submitted.awaitingResolution = kind
+      submitted.onResolutionExpired = onExpired
       clearAskResolutionReportWatchdog(askId)
       askResolutionReportWatchdogs.set(
         askId,
         setTimeout(() => {
           clearAskResolutionReportWatchdog(askId)
-          clearAskAwaitingResolution(askId)
+          expireAskResolution(askId)
         }, ASK_RESOLUTION_GRACE_MS)
       )
     }
@@ -840,31 +837,25 @@ export const useAgentConversationStore = defineStore(
 
     function clearAskAwaitingResolution(askId: string): void {
       const submitted = submittedAskAnswers.get(askId)
-      if (submitted) submitted.awaitingResolution = undefined
+      if (submitted) {
+        submitted.awaitingResolution = undefined
+        submitted.onResolutionExpired = undefined
+      }
+    }
+
+    function expireAskResolution(askId: string): void {
+      submittedAskAnswers.get(askId)?.onResolutionExpired?.()
+      clearAskAwaitingResolution(askId)
     }
 
     function clearSettledAskState(turn: LiveTurn): void {
       clearSettledProvisionalAsks(turn)
-      clearSettledRetiredAsks(turn)
       for (const [askId, submitted] of submittedAskAnswers)
         if (
           submitted.owner === turn.threadId &&
           submitted.messageId === turn.messageId
         )
           submittedAskAnswers.delete(askId)
-    }
-
-    function clearSettledRetiredAsks(turn: LiveTurn): void {
-      const owners = retiredAskTurnIds.get(turn.threadId)
-      const retired = retiredAsks.get(turn.threadId)
-      if (owners === undefined || retired === undefined) return
-      for (const [askId, turnId] of owners)
-        if (turnId === turn.messageId) {
-          owners.delete(askId)
-          retired.delete(askId)
-        }
-      if (owners.size === 0) retiredAskTurnIds.delete(turn.threadId)
-      if (retired.size === 0) retiredAsks.delete(turn.threadId)
     }
 
     function clearSettledProvisionalAsks(turn: LiveTurn): void {
@@ -881,10 +872,7 @@ export const useAgentConversationStore = defineStore(
       )
       if (threadId.value !== null) retainedThreads.add(threadId.value)
       for (const owner of retiredAsks.keys())
-        if (!retainedThreads.has(owner)) {
-          retiredAsks.delete(owner)
-          retiredAskTurnIds.delete(owner)
-        }
+        if (!retainedThreads.has(owner)) retiredAsks.delete(owner)
       for (const owner of provisionalRetiredAsks.keys())
         if (!retainedThreads.has(owner)) provisionalRetiredAsks.delete(owner)
       for (const [askId, submitted] of submittedAskAnswers)
@@ -936,10 +924,10 @@ export const useAgentConversationStore = defineStore(
       clearAskRetirementWatchdog(askId)
       askRetirementWatchdogs.set(
         askId,
-        setTimeout(
-          () => retireAsk(askId, committed, owner),
-          ASK_RESOLUTION_GRACE_MS
-        )
+        setTimeout(() => {
+          expireAskResolution(askId)
+          retireAsk(askId, committed, owner)
+        }, ASK_RESOLUTION_GRACE_MS)
       )
     }
 
@@ -1050,6 +1038,12 @@ export const useAgentConversationStore = defineStore(
     // something pending -- a settled transport with nothing held has no
     // reason to stay reachable.
     function settleActiveTurn(activeTransport: AgentEventTransport): void {
+      const slot = activeSlot.value
+      if (slot?.threadId !== null && slot?.threadId !== undefined)
+        clearSettledAskState({
+          threadId: slot.threadId,
+          messageId: slot.turnId
+        })
       rememberDepartedActiveTurn('settled-turn')
       activeTransport.settle()
       const restoredFromSnapshot = recordUnreconciledSnapshotTurn()
@@ -1135,6 +1129,10 @@ export const useAgentConversationStore = defineStore(
       }
       if (event.type === 'agent_message_done') {
         if (entry.settled) return
+        clearSettledAskState({
+          threadId: entry.threadId,
+          messageId: entry.messageId
+        })
         entry.transport.settle()
         updateBackgroundTurn(entry.messageId, { settled: true })
         announceCompletion(entry.tab)
