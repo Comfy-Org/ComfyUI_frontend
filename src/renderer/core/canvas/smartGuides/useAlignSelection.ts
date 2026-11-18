@@ -2,7 +2,10 @@ import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { alignBoxes } from '@/renderer/core/canvas/smartGuides/alignBoxes'
-import { nodeBox } from '@/renderer/core/canvas/smartGuides/dragSnapSession'
+import {
+  nodePlacement,
+  positionFor
+} from '@/renderer/core/canvas/smartGuides/dragSnapSession'
 import { orderAlong } from '@/renderer/core/canvas/smartGuides/distributeGaps'
 import type { DistributeAxis } from '@/renderer/core/canvas/smartGuides/distributeGaps'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
@@ -26,13 +29,14 @@ export function useAlignSelection() {
     const nodes = selectedNodes.value.filter((node) => !node.pinned)
     if (!rootGraphId || nodes.length < 2) return
 
-    const before = nodes.map(nodeBox)
+    const placements = nodes.map(nodePlacement)
+    const before = placements.map(({ box }) => box)
     const after = alignBoxes(before, action)
     mutations.batchMoveNodes(
       rootGraphId,
-      nodes.map((node, i) => ({
-        nodeId: node.id,
-        position: { x: after[i].x, y: after[i].y + after[i].head }
+      placements.map((placement, i) => ({
+        nodeId: placement.node.id,
+        position: positionFor(placement, after[i])
       }))
     )
     nodes.forEach((node, i) => {

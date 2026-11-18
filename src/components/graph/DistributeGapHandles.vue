@@ -50,11 +50,16 @@ import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SnapBox } from '@/lib/litegraph/src/canvas/gestureSnap'
+import type { NodePlacement } from '@/renderer/core/canvas/smartGuides/dragSnapSession'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { nodeBox } from '@/renderer/core/canvas/smartGuides/dragSnapSession'
+import {
+  nodeBox,
+  nodePlacement,
+  positionFor
+} from '@/renderer/core/canvas/smartGuides/dragSnapSession'
 import {
   evenGap,
   gapAfterTravel,
@@ -146,14 +151,14 @@ watch(
 function applyBoxes(
   canvas: LGraphCanvas,
   rootGraphId: string,
-  nodes: LGraphNode[],
+  placements: NodePlacement[],
   boxes: SnapBox[]
 ) {
   mutations.batchMoveNodes(
     rootGraphId,
-    nodes.map((node, i) => ({
-      nodeId: node.id,
-      position: { x: boxes[i].x, y: boxes[i].y + boxes[i].head }
+    placements.map((placement, i) => ({
+      nodeId: placement.node.id,
+      position: positionFor(placement, boxes[i])
     }))
   )
   canvas.setDirty(true, true)
@@ -179,14 +184,18 @@ function startDrag(event: PointerEvent, index: number) {
   const { graph } = canvas
   const workflow = workflowStore.activeWorkflow
   const session = distributeSession.value
+  const selection = [...canvas.selectedItems]
   const isStillEditable = () =>
     distributeSession.value === session &&
+    canvas.selectedItems.size === selection.length &&
+    selection.every((item) => canvas.selectedItems.has(item)) &&
     canvas.graph === graph &&
     canvasStore.rootGraphId === rootGraphId &&
     workflowStore.activeWorkflow === workflow &&
     !!sessionNodes(canvas)
 
-  const startBoxes = nodes.map(nodeBox)
+  const placements = nodes.map(nodePlacement)
+  const startBoxes = placements.map(({ box }) => box)
   const startPointer = pointerAlong(event)
   const scale = canvas.ds.scale || 1
   const { pointerId } = event
@@ -200,7 +209,7 @@ function startDrag(event: PointerEvent, index: number) {
     applyBoxes(
       canvas,
       rootGraphId,
-      nodes,
+      placements,
       setGap(startBoxes, axis.value, index, gap)
     )
     moved = true
@@ -238,10 +247,16 @@ function nudge(event: KeyboardEvent, index: number) {
   event.preventDefault()
   event.stopPropagation()
 
-  const boxes = nodes.map(nodeBox)
+  const placements = nodes.map(nodePlacement)
+  const boxes = placements.map(({ box }) => box)
   const gap =
     (evenGap(boxes, axis.value) ?? 0) + direction * (event.shiftKey ? 10 : 1)
-  applyBoxes(canvas, rootGraphId, nodes, setGap(boxes, axis.value, index, gap))
+  applyBoxes(
+    canvas,
+    rootGraphId,
+    placements,
+    setGap(boxes, axis.value, index, gap)
+  )
   workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 }
 </script>

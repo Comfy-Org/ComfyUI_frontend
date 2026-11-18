@@ -44,6 +44,26 @@ export function nodeBox(node: LGraphNode): SnapBox {
   return rectBox(node, node.pos[1] - node.boundingRect[1])
 }
 
+export interface NodePlacement {
+  node: LGraphNode
+  x: number
+  y: number
+  box: SnapBox
+}
+
+/** Reads a node's position together with its visual box. */
+export function nodePlacement(node: LGraphNode): NodePlacement {
+  return { node, x: node.pos[0], y: node.pos[1], box: nodeBox(node) }
+}
+
+/** The position that moves a placed node's visual box to `box`. */
+export function positionFor(
+  { x, y, box: from }: NodePlacement,
+  box: SnapBox
+): Point2D {
+  return { x: x + box.x - from.x, y: y + box.y - from.y }
+}
+
 function groupBox(group: LGraphGroup): SnapBox {
   return rectBox(group, group.titleHeight)
 }
