@@ -97,7 +97,18 @@ test.describe(
         .click()
       await expect(tabs).toHaveCount(1)
       workflowSelection.resumeWorkflowLookups()
-      await expect(composer).toHaveText('Keep this interrupted draft')
+      await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Keep this interrupted draft'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.targetNavigationUnavailable
+      )
+      await expect(
+        panel
+          .getByTestId('agent-conversation')
+          .getByRole('button', { name: enMessages.g.retry, exact: true })
+      ).toHaveCount(0)
       await expect(
         panel.getByText(enMessages.agent.selectWorkflowForAgent)
       ).toBeVisible()
@@ -154,7 +165,13 @@ test.describe(
       await composer.fill('Start in this workflow')
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Start in this workflow')
+      await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Start in this workflow'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.sendFailed
+      )
       await composer.fill('@')
       await panel
         .getByRole('menuitem', {
@@ -239,8 +256,13 @@ test.describe(
       await composer.fill('Start in this workflow')
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Start in this workflow')
-      await composer.fill('')
+      await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Start in this workflow'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.sendFailed
+      )
       await page
         .getByRole('button', {
           name: enMessages.sideToolbar.newBlankWorkflow,
@@ -430,7 +452,13 @@ test.describe(
 
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(composer).toHaveText('Find a workflow for skin upscaling')
+      await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Find a workflow for skin upscaling'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.sendFailed
+      )
 
       const editorTabs = page.getByTestId('workflow-tab')
       const targetTab = editorTabs

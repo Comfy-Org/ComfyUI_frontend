@@ -47,7 +47,13 @@ test.describe(
       await initialComposer.fill('Start in this workflow')
       await initialComposer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(initialComposer).toHaveText('Start in this workflow')
+      await expect(initialComposer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Start in this workflow'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.sendFailed
+      )
       await initialComposer.fill('Only edit workflow A')
 
       // Open a second workflow tab (B), then switch back to A so B is just
@@ -118,8 +124,13 @@ test.describe(
       await initialComposer.fill('Start in this workflow')
       await initialComposer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
-      await expect(initialComposer).toHaveText('Start in this workflow')
-      await initialComposer.fill('')
+      await expect(initialComposer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toHaveText([
+        'Start in this workflow'
+      ])
+      await expect(panel.getByTestId('pending-send-error')).toContainText(
+        enMessages.agent.sendFailed
+      )
 
       // Create a brand new, still-unsaved tab - it becomes the one on screen.
       await page
