@@ -1,0 +1,74 @@
+import { describe, expect, it } from 'vitest'
+
+import { createNamedSignup } from '@/checkout/namedSignup'
+
+function memoryStorage(): Storage {
+  const values = new Map<string, string>()
+  return {
+    get length() {
+      return values.size
+    },
+    clear: () => values.clear(),
+    getItem: (key) => values.get(key) ?? null,
+    key: (index) => [...values.keys()][index] ?? null,
+    removeItem: (key) => void values.delete(key),
+    setItem: (key, value) => void values.set(key, value)
+  }
+}
+
+function refusingStorage(): Storage {
+  const refuse = () => {
+    throw new Error('storage refused')
+  }
+  return {
+    length: 0,
+    clear: refuse,
+    getItem: refuse,
+    key: refuse,
+    removeItem: refuse,
+    setItem: refuse
+  }
+}
+
+const SIGNUP = { operationId: 'op_signup' }
+
+describe('createNamedSignup', () => {
+  it('names nothing for a link that names no operation', () => {
+    expect(createNamedSignup(() => memoryStorage()).recoverOptions({})).toEqual(
+      {}
+    )
+  })
+
+  it('names the linked signup until this tab pays in its place', () => {
+    const named = createNamedSignup(() => memoryStorage())
+
+    expect(named.recoverOptions(SIGNUP)).toEqual({
+      operation: { id: 'op_signup', kind: 'subscription' }
+    })
+    named.replaced(SIGNUP)
+    expect(named.recoverOptions(SIGNUP)).toEqual({})
+  })
+
+  it('keeps the replacement across a reload of the same tab', () => {
+    const storage = memoryStorage()
+    createNamedSignup(() => storage).replaced(SIGNUP)
+
+    expect(createNamedSignup(() => storage).recoverOptions(SIGNUP)).toEqual({})
+  })
+
+  it('still names a different linked signup after one was replaced', () => {
+    const named = createNamedSignup(() => memoryStorage())
+    named.replaced(SIGNUP)
+
+    expect(named.recoverOptions({ operationId: 'op_other' })).toEqual({
+      operation: { id: 'op_other', kind: 'subscription' }
+    })
+  })
+
+  it('remembers the replacement for the page when storage is refused', () => {
+    const named = createNamedSignup(() => refusingStorage())
+    named.replaced(SIGNUP)
+
+    expect(named.recoverOptions(SIGNUP)).toEqual({})
+  })
+})
