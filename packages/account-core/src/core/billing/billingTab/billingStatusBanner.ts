@@ -1,6 +1,5 @@
-import type { BillingStatus, SubscriptionState } from '@comfyorg/ingest-types'
-
 import { cloudCreditBannersAllowed } from './cloudCreditBanners'
+import type { PlanRowFacts } from './planRow'
 
 export type BillingStatusBannerKind =
   | 'paused'
@@ -18,7 +17,7 @@ export interface BillingStatusBannerFacts {
   audience: BillingStatusBannerAudience | null
   enterpriseEndingNotice: EnterpriseEndingNotice | null
   isLoaded: boolean
-  billingStatus: BillingStatus | null
+  billingStatus: PlanRowFacts['billingStatus']
   canAccessSubscriptionFeatures: boolean
   hasFunds: boolean | null
   isCancelled: boolean
@@ -34,7 +33,7 @@ export interface BillingStatusBannerFacts {
   runDeniedPastDue: boolean
   unifiedBillingSettingsEnabled: boolean
   isActive: boolean
-  subscriptionState: SubscriptionState | null
+  subscriptionState: PlanRowFacts['subscriptionState']
 }
 
 function deriveEnterpriseBanner(
