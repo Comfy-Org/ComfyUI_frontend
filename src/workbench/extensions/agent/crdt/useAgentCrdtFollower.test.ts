@@ -2858,7 +2858,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it.fails('keeps ops the host skipped when it refuses another op in the batch', async () => {
+  it('keeps ops the host skipped when it refuses another op in the batch', async () => {
     const readyGraph = fromPartial<LGraph>({})
     const { unmount, enqueue } = mountFollower('wf-1', true, () => readyGraph)
     enqueue([
