@@ -667,9 +667,6 @@ test(
       await expect.poll(isConnected).toBe(true)
     })
 
-    const rawClip = await comfyPage.subgraph.getInputBounds()
-    const absolutePos = await comfyPage.canvasOps.toAbsolute(rawClip)
-    const clip = { ...rawClip, ...absolutePos }
     const portNames = () =>
       comfyPage.subgraph.inputPorts.evaluateAll((elements) =>
         elements.map((element) => element.getAttribute('aria-label'))
@@ -693,11 +690,24 @@ test(
       const seedPos = await seedIOSlot.getPosition()
       await comfyPage.page.mouse.move(seedPos.x, seedPos.y)
 
+      const { subgraph } = comfyPage
+      await expect(
+        subgraph.inputPort('positive'),
+        'an incompatible input dims while an INT link is dragged'
+      ).toHaveCSS('opacity', '0.4')
+      await expect(
+        subgraph.inputPort('seed'),
+        'a compatible input stays fully visible'
+      ).toHaveCSS('opacity', '1')
       await expectRegionScreenshot(
         comfyPage.page,
-        [clip],
+        [
+          subgraph.inputSocket('positive'),
+          subgraph.inputSocket('seed'),
+          subgraph.addInputSocket
+        ],
         'vue-io-highlight.png',
-        { padding: 0 }
+        { padding: 6 }
       )
 
       await stepsSlot.hover()
