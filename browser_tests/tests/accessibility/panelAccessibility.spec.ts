@@ -10,31 +10,19 @@ test.describe('Panel accessibility', { tag: '@a11y' }, () => {
   test('node library sidebar', async ({ comfyPage, accessibility }) => {
     await comfyPage.menu.nodeLibraryTabV2.open()
 
-    await accessibility.expectOnlyKnownViolations([
-      'color-contrast',
-      'meta-viewport',
-      'tabindex'
-    ])
+    await accessibility.expectOnlyKnownViolations(['meta-viewport', 'tabindex'])
   })
 
   test('model library sidebar', async ({ comfyPage, accessibility }) => {
     await comfyPage.menu.modelLibraryTab.open()
 
-    await accessibility.expectOnlyKnownViolations([
-      'color-contrast',
-      'meta-viewport',
-      'tabindex'
-    ])
+    await accessibility.expectOnlyKnownViolations(['meta-viewport', 'tabindex'])
   })
 
   test('workflows sidebar', async ({ comfyPage, accessibility }) => {
     await comfyPage.menu.workflowsTab.open()
 
-    await accessibility.expectOnlyKnownViolations([
-      'color-contrast',
-      'meta-viewport',
-      'tabindex'
-    ])
+    await accessibility.expectOnlyKnownViolations(['meta-viewport', 'tabindex'])
   })
 
   test('apps sidebar', async ({ comfyPage, accessibility }) => {
@@ -54,7 +42,6 @@ test.describe('Panel accessibility', { tag: '@a11y' }, () => {
 
     await accessibility.expectOnlyKnownViolations([
       'aria-required-children',
-      'color-contrast',
       'meta-viewport',
       'tabindex'
     ])
@@ -69,7 +56,6 @@ test.describe('Panel accessibility', { tag: '@a11y' }, () => {
 
     await accessibility.expectOnlyKnownViolations([
       'aria-required-children',
-      'color-contrast',
       'meta-viewport',
       'scrollable-region-focusable',
       'tabindex'
@@ -82,7 +68,6 @@ test.describe('Panel accessibility', { tag: '@a11y' }, () => {
 
     await accessibility.expectOnlyKnownViolations([
       'aria-valid-attr-value',
-      'color-contrast',
       'landmark-unique',
       'meta-viewport',
       'tabindex'
@@ -92,11 +77,7 @@ test.describe('Panel accessibility', { tag: '@a11y' }, () => {
   test('job queue panel', async ({ comfyPage, accessibility }) => {
     await comfyPage.queuePanel.open()
 
-    await accessibility.expectOnlyKnownViolations([
-      'color-contrast',
-      'meta-viewport',
-      'tabindex'
-    ])
+    await accessibility.expectOnlyKnownViolations(['meta-viewport', 'tabindex'])
   })
 
   test('help center', async ({ helpCenter, accessibility }) => {
@@ -104,7 +85,6 @@ test.describe('Panel accessibility', { tag: '@a11y' }, () => {
 
     await accessibility.expectOnlyKnownViolations([
       'aria-required-children',
-      'color-contrast',
       'meta-viewport',
       'region',
       'tabindex'

@@ -14,7 +14,6 @@ test.describe('Menu accessibility', { tag: '@a11y' }, () => {
 
     await accessibility.expectOnlyKnownViolations([
       'aria-hidden-focus',
-      'color-contrast',
       'meta-viewport',
       'nested-interactive',
       'page-has-heading-one',
@@ -28,7 +27,6 @@ test.describe('Menu accessibility', { tag: '@a11y' }, () => {
 
     await accessibility.expectOnlyKnownViolations([
       'aria-required-parent',
-      'color-contrast',
       'meta-viewport',
       'region',
       'tabindex'

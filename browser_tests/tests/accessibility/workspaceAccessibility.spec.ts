@@ -13,11 +13,7 @@ test.describe('Workspace accessibility', { tag: '@a11y' }, () => {
   test('graph workspace', async ({ comfyPage, accessibility }) => {
     await expect(comfyPage.canvas).toBeVisible()
 
-    await accessibility.expectOnlyKnownViolations([
-      'color-contrast',
-      'meta-viewport',
-      'tabindex'
-    ])
+    await accessibility.expectOnlyKnownViolations(['meta-viewport', 'tabindex'])
   })
 
   test(
@@ -27,7 +23,6 @@ test.describe('Workspace accessibility', { tag: '@a11y' }, () => {
       await expect(comfyPage.vueNodes.getNodeByTitle('KSampler')).toBeVisible()
 
       await accessibility.expectOnlyKnownViolations([
-        'color-contrast',
         'meta-viewport',
         'tabindex'
       ])
@@ -51,7 +46,6 @@ test.describe('Workspace accessibility', { tag: '@a11y' }, () => {
       await expect(comfyPage.canvas).toBeVisible()
 
       await accessibility.expectOnlyKnownViolations([
-        'color-contrast',
         'meta-viewport',
         'tabindex'
       ])
@@ -66,7 +60,6 @@ test.describe('Workspace accessibility', { tag: '@a11y' }, () => {
       await expect(comfyPage.selectionToolbox).toBeVisible()
 
       await accessibility.expectOnlyKnownViolations([
-        'color-contrast',
         'meta-viewport',
         'tabindex'
       ])
