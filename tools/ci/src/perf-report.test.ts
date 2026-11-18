@@ -205,15 +205,34 @@ describe('perf-report baseline comparison', () => {
   })
 
   it('flags a real frame time regression against sampled history', () => {
-    const output = render(frames('grow', 0, 40), {
-      baseline: frames('grow', 0, 20),
-      history: [frames('grow', 0, 20), frames('grow', 0, 21)]
+    const output = render(frames('grow', 0, 16), {
+      baseline: frames('grow', 0, 8),
+      history: [frames('grow', 0, 8), frames('grow', 0, 8.5)]
     })
 
+    expect(heading(output)).not.toContain('FPS target')
     expect(heading(output)).toContain('2 regressions detected')
     expect(output.split('<details>')[0]).toContain(
       'Review the regressions below and profile the affected scenarios before merging.'
     )
-    expect(output).toContain('| grow: p95 frame time | 20ms | 40ms | +100% |')
+    expect(output).toContain('| grow: p95 frame time | 8ms | 16ms | +100% |')
+  })
+
+  it('shows one next step when a scenario misses the FPS target and regresses', () => {
+    const output = render(frames('grow', 0, 40), {
+      baseline: frames('grow', 0, 20),
+      history: [frames('grow', 0, 20), frames('grow', 0, 21)]
+    })
+    const visible = output.split('<details>')[0]
+    const nextSteps = visible
+      .split('\n')
+      .filter((line) => line.includes('before merging'))
+
+    expect(heading(output)).toMatch(
+      /^## ⚡ Performance: ❌ 1 below 52 FPS target · ⚠️ 2 regressions detected/
+    )
+    expect(nextSteps).toEqual([
+      '> ❌ **1 scenario below the ≥52 P5 FPS target** · ⚠️ **2 regressions detected**. Expand the scenario timings and regressions below and profile the affected scenarios before merging.'
+    ])
   })
 })

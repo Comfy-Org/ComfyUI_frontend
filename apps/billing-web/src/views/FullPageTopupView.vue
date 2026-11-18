@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { isLocked } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
 import { buildTopupLedger } from '@/checkout/topupLedger'
+import AutoTopUpCheckoutColumn from '@/components/fullPage/AutoTopUpCheckoutColumn.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.vue'
@@ -21,6 +22,7 @@ const {
   page,
   quote,
   paysOnce,
+  autoTopUpConsent,
   savedMethods,
   canPay,
   returnLink,
@@ -94,8 +96,15 @@ function openBillingSettings() {
     <h1 class="sr-only">{{ t('hosted.title.checkout') }}</h1>
     <div class="flex min-h-full flex-col lg:flex-row">
       <CheckoutSummaryColumn :ledger :locked @back="goBack" />
+      <AutoTopUpCheckoutColumn
+        v-if="autoTopUpConsent && page.kind === 'capture'"
+        :page
+        :consent="autoTopUpConsent"
+        :can-pay="canPay"
+        @pay="pay(undefined)"
+      />
       <CheckoutPaymentColumn
-        v-if="
+        v-else-if="
           page.kind === 'resolving' ||
           page.kind === 'capture' ||
           page.kind === 'waiting'

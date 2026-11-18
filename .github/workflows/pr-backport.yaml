@@ -213,7 +213,7 @@ jobs:
                   ($target | ascii_downcase) as $t |
                   map(select(
                     (.isCrossRepository | not) and
-                    (.headRefName | test("^backport-[0-9]+-to-") | not) and
+                    (.headRefName | test("^backport-[0-9]+-to-") and (test("^backport-\($pr)-to-") | not) | not) and
                     (.title | ascii_downcase |
                       startswith("[backport \($t)]") or
                       startswith("[\($t)]")) and
@@ -657,7 +657,33 @@ jobs:
             BACKPORT_PRS=$(gh api \
               "repos/${GH_REPO}/pulls?state=all&base=${label}&head=${GH_REPO%%/*}:${BACKPORT_BRANCH}" \
               --jq 'map(select(.state == "open" or .merged_at != null)) | length')
-            if [ "${BACKPORT_PRS}" -eq 0 ]; then
+            if [ "${BACKPORT_PRS}" -ne 0 ]; then
+              continue
+            fi
+            MANUAL_PRS=$(
+              for page in 1 2 3; do
+                gh api "repos/${GH_REPO}/pulls?state=all&base=${label}&per_page=100&page=${page}"
+              done |
+              jq -rs --arg target "${label}" --arg pr "${PR_NUMBER}" --arg repo "${GH_REPO}" '
+                "([^0-9]|$)" as $end |
+                ($target | ascii_downcase) as $t |
+                [.[][] | select(
+                  (.state == "open" or .merged_at != null) and
+                  .head.repo.full_name == $repo and
+                  (.head.ref | test("^backport-[0-9]+-to-") and (test("^backport-\($pr)-to-") | not) | not) and
+                  (.title | ascii_downcase |
+                    startswith("[backport \($t)]") or
+                    startswith("[\($t)]")) and
+                  (.title | test("revert"; "i") | not) and
+                  ((.title | test("\\(#\($pr)\\)$")) or
+                    (.head.ref |
+                      test("backport-\($pr)\($end)|(^|[/-])\($pr)-backport")) or
+                    ((.body // "") | test(
+                      "(^|\n)[ \t]*backport of (#|https://github[.]com/Comfy-Org/ComfyUI_frontend/pull/)\($pr)\($end)";
+                      "i")))
+                )] | length'
+            ) || MANUAL_PRS=0
+            if [ "${MANUAL_PRS:-0}" -eq 0 ]; then
               PENDING+=("${label}")
             fi
           done <<<"${LABELS}"

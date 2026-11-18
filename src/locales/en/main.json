@@ -3909,7 +3909,9 @@
       "planNotStarted": {
         "title": "Your {plan} plan hasn’t started",
         "titleNoPlan": "Your plan hasn’t started",
-        "body": "Finish paying to start it."
+        "body": "Finish paying to start it.",
+        "bodyUnavailable": "Your plan starts once the payment goes through.",
+        "viewPlans": "View on Plans"
       },
       "parked": {
         "title": "Something went wrong with a recent payment",
@@ -4336,7 +4338,13 @@
     "pickStopped": "{deployment} is stopped, so jobs won't run. Start it, or pick a ready deployment.",
     "pickFailed": "{deployment} failed, so jobs won't run. Start it again, or pick a ready deployment.",
     "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
-    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
+    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again.",
+    "runBlocked": {
+      "stopped": "This deployment is stopped. Click to switch.",
+      "starting": "This deployment is starting. Click to switch.",
+      "failed": "This deployment failed. Click to switch.",
+      "notReady": "This deployment isn't ready. Click to switch."
+    }
   },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",
@@ -6457,6 +6465,7 @@
     "viewAddedNodes": "View node | View nodes",
     "stopShortcut": "Esc",
     "thinking": "Thinking...",
+    "thinkingShortened": "Reasoning shortened: the rest was too long to save.",
     "working": "Working...",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
@@ -6747,6 +6756,10 @@
     "autoTopUpFailed": {
       "title": "Auto top-up didn't turn on",
       "body": "Your credits were added. Set up auto top-up in Billing to try again."
+    },
+    "autoTopUpUnconfirmed": {
+      "title": "Credits added",
+      "body": "Open Billing to check that auto top-up is on."
     }
   },
   "billingHandoff": {
