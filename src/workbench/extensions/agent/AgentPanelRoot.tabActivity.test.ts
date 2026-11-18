@@ -516,8 +516,6 @@ describe('AgentPanelRoot Ask agent about errors', () => {
       expect(useAgentComposerStore().errorContext).not.toBeNull()
     )
     const chatBeforeSwitch = useAgentChatHistoryStore().activeId
-    // Registered after the panel's own listener, so it runs once the panel
-    // has already decided whether to follow this activation.
     const activationHandled = new Promise<void>((resolve) =>
       workflowStore.onUserActivation(() => resolve())
     )
