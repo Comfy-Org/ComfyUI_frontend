@@ -342,6 +342,12 @@ describe('a supplier', () => {
       expect(supply).toHaveBeenCalledOnce()
       expect(supply.mock.calls[0][0].self.id).toBe(String(supplier.id))
       expect(Object.isFrozen(supply.mock.calls[0][0])).toBe(true)
+      expect(Object.isFrozen(supply.mock.calls[0][0].unconnectedInputs)).toBe(
+        true
+      )
+      expect(supply.mock.calls[0][0].unconnectedInputs).not.toHaveProperty(
+        'prototype'
+      )
     })
 
     it('is not asked for a node that joined before its extension was made, and is for one that joins after', async () => {

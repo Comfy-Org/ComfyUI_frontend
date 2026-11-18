@@ -223,11 +223,9 @@ function checkedTypeName(type: unknown): string {
   return type
 }
 
-function optionalHook<K extends keyof DefinitionHooks>(
-  name: K,
-  hook: unknown
-): DefinitionHooks[K] {
-  return optionalCallback('define', name, hook) as DefinitionHooks[K]
+function optionalHook<T>(name: string, hook: T): T | undefined {
+  if (hook === undefined || typeof hook === 'function') return hook
+  throw invalidArgument('define', `${name} as a function`, hook)
 }
 
 function checkedResolver(
