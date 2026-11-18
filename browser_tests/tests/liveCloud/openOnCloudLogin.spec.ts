@@ -47,16 +47,10 @@ test.describe(
     })
 
     test('opens the local workflow in Cloud after the user signs in', async ({
+      cloudAccount,
       comfyPage,
       cloudOrigin
     }) => {
-      const email = process.env.CLOUD_ACCOUNT_EMAIL
-      const password = process.env.CLOUD_ACCOUNT_PASSWORD
-      if (!email || !password)
-        throw new Error(
-          'Set CLOUD_ACCOUNT_EMAIL and CLOUD_ACCOUNT_PASSWORD for a Cloud account that has finished onboarding. See docs/testing/open-on-cloud-e2e.md.'
-        )
-
       await comfyPage.workflow.loadWorkflow('openOnCloud/01-runnable-on-cloud')
       await comfyPage.page.getByTestId('cloud-button').click()
       await expect(
@@ -87,8 +81,10 @@ test.describe(
           .click()
         await cloudTab
           .getByRole('textbox', { name: 'Email', exact: true })
-          .fill(email)
-        await cloudTab.getByLabel('Password', { exact: true }).fill(password)
+          .fill(cloudAccount.email)
+        await cloudTab
+          .getByLabel('Password', { exact: true })
+          .fill(cloudAccount.password)
         await cloudTab
           .getByRole('button', { name: 'Sign in', exact: true })
           .click()

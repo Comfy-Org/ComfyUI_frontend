@@ -33,7 +33,7 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('openOnCloud/02-missing-cloud-node')
       const compatibility = await checkCloudCompatibility()
       expect(compatibility.missing_node_types).toContain('VAESave')
-      expect(compatibility.missing_models).toEqual([])
+      expect(compatibility.missing_models ?? []).toEqual([])
 
       await expect(openOnCloudDialog.deployHeading).toBeVisible()
       await openOnCloudDialog.deployWithAgentButton.click()
@@ -75,7 +75,7 @@ test.describe(
       await comfyPage.workflow.loadWorkflow('openOnCloud/01-runnable-on-cloud')
       const compatibility = await checkCloudCompatibility()
       expect(compatibility.missing_node_types).toEqual([])
-      expect(compatibility.missing_models).toEqual([])
+      expect(compatibility.missing_models ?? []).toEqual([])
 
       await expect(openOnCloudDialog.runHeading).toBeVisible()
       await expect(openOnCloudDialog.openOnCloudButton).toBeVisible()

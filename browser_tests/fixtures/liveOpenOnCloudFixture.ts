@@ -68,7 +68,19 @@ const liveOpenOnCloudFixture = base.extend<{
   }
 })
 
-export const liveOpenOnCloudLoginFixture = liveOpenOnCloudFixture.extend({
+export const liveOpenOnCloudLoginFixture = liveOpenOnCloudFixture.extend<{
+  cloudAccount: { email: string; password: string }
+}>({
+  cloudAccount: async ({ cloudOrigin }, use) => {
+    const email = process.env.CLOUD_ACCOUNT_EMAIL
+    const password = process.env.CLOUD_ACCOUNT_PASSWORD
+    if (!email || !password) {
+      throw new Error(
+        `Set CLOUD_ACCOUNT_EMAIL and CLOUD_ACCOUNT_PASSWORD for an onboarded Cloud account at ${cloudOrigin}. See docs/testing/open-on-cloud-e2e.md.`
+      )
+    }
+    await use({ email, password })
+  },
   liveNetworkOrigins: async ({ liveNetworkOrigins, cloudOrigin }, use) => {
     const customerOrigin = getLiveCloudCustomerOrigin(
       cloudOriginSchema.parse(cloudOrigin)
