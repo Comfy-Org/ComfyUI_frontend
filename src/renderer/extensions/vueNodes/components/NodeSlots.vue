@@ -137,7 +137,7 @@ const layoutKey = computed(() =>
       getActualInputIndex(input, index)
     ),
     '|',
-    ...outputs.value.keys(),
+    ...outputSlots.value.map(({ index }) => index),
     unified
   ].join(':')
 )

@@ -288,6 +288,36 @@ describe('NodeSlots.vue', () => {
     ).toEqual({ x: 0, y: 50 - LiteGraph.NODE_TITLE_HEIGHT })
   })
 
+  it('measures slot offsets again when an earlier output is deleted', async () => {
+    const pinia = getActivePinia()!
+    const graph = new LGraph()
+    const canvasStore = useCanvasStore()
+    canvasStore.canvas = fromPartial<LGraphCanvas>({ graph })
+    canvasStore.currentGraph = graph
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue(
+      new DOMRect(100, 200, 200, 100)
+    )
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(200)
+    const node = new LGraphNode('Output removal')
+    node.addOutput('removed', 'IMAGE')
+    node.addOutput('kept', 'IMAGE')
+    renderSlots(node._state, defaultSlotStubs, pinia)
+    await nextTick()
+
+    Reflect.deleteProperty(node.outputs, '0')
+    await nextTick()
+
+    expect(
+      layoutStore.getSlotOffset(
+        graph.rootGraph.id,
+        node.id,
+        0,
+        'output',
+        'expanded'
+      )
+    ).toBeNull()
+  })
+
   it('measures slot offsets again after the layout store clears the graph', async () => {
     const pinia = getActivePinia()!
     const graph = new LGraph()
