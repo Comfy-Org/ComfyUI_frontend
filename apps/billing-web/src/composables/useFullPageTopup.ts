@@ -11,6 +11,7 @@ import { useBillingClient, useTopUp } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import type {
   BillingOperationState,
+  BillingRecoverOptions,
   BillingResult,
   CapabilitiesSnapshot,
   InteractiveTopupPayment,
@@ -95,6 +96,16 @@ interface HeldAttempt {
   readonly idempotencyKey: string
 }
 
+function awaitedOperationOf(
+  current: CheckoutPage
+): Pick<BillingRecoverOptions, 'operation'> {
+  return current.kind === 'terminal' && current.operation !== undefined
+    ? {
+        operation: { id: current.operation.id, kind: current.operation.kind }
+      }
+    : {}
+}
+
 /**
  * A top-up link is always for sale, so a top-up this tab already saw
  * succeed ends the revisit on Already completed instead of a second form.
@@ -158,6 +169,9 @@ export function useFullPageTopup() {
   const autoTopUpPaysHosted = computed(
     () => autoTopUp !== undefined && !paysOnce.value
   )
+  const autoTopUpPayGoesHosted = computed(
+    () => autoTopUpPaysHosted.value || !savedMethodsRead.value
+  )
   const offeredMethods = computed(() =>
     paysOnce.value ? eligibleCards(savedMethods.value) : savedMethods.value
   )
@@ -203,7 +217,10 @@ export function useFullPageTopup() {
 
   async function reconcileOnce(): Promise<RecoveredOperation | undefined> {
     const mine = ++generation
-    const recovered = await lifecycle.recover({ includeSettled: true })
+    const recovered = await lifecycle.recover({
+      includeSettled: true,
+      ...awaitedOperationOf(page.value)
+    })
     if (mine !== generation) return undefined
     dispatch(reconciledEvent(recovered))
     return recovered
@@ -414,7 +431,7 @@ export function useFullPageTopup() {
 
   async function pay(choice: PayChoice) {
     if (!canPay.value || amountCents === undefined) return
-    if (autoTopUp !== undefined && autoTopUpPaysHosted.value)
+    if (autoTopUp !== undefined && autoTopUpPayGoesHosted.value)
       return payWithAutoTopUp(amountCents, autoTopUp)
     const run = sendFor(choice, amountCents)
     if (run === undefined) return

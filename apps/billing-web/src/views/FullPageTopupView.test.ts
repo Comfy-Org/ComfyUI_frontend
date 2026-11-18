@@ -16,7 +16,10 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
-import { readBillingErrorCode } from '@comfyorg/account-core/billing'
+import {
+  OPERATION_POLL_TIMING,
+  readBillingErrorCode
+} from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -1409,6 +1412,65 @@ describe('FullPageTopupView with auto top-up from the link', () => {
       }
     })
     expect(createHostedTopupCheckout).not.toHaveBeenCalled()
+  })
+
+  it('pays a new card on the hosted checkout with the settings when the saved-card read failed, so the card is never confirmed under a guessed saving policy', async () => {
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      AUTO_TOP_UP_PATH,
+      { status: 'error', code: 'REQUEST_FAILED' },
+      PAYS_ONCE
+    )
+    await userEvent.click(
+      await screen.findByRole('tab', { name: 'Add new payment' })
+    )
+    readyCardForm()
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    await waitFor(() =>
+      expect(createHostedTopupCheckout).toHaveBeenCalledExactlyOnceWith({
+        amountCents: 2500,
+        returnUrl: `${window.location.origin}/return/topup`,
+        autoTopUp: { threshold_credits: 1055, target_credits: 11605 }
+      })
+    )
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('finishes Turning on auto top-up from the operation the receipt names when the browser kept no pointer to it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const activating = settledTopup({
+      amountChargedCents: 2500,
+      creditsAdded: 5275,
+      autoTopUpActivation: 'pending'
+    })
+    renderTopup({}, TOPUP_PATH, (fake) => {
+      fake.recover.mockResolvedValueOnce({ status: 'ok', value: activating })
+      fake.recover.mockImplementation(async (options) => ({
+        status: 'ok',
+        value:
+          options?.operation?.id === activating.id
+            ? {
+                ...activating,
+                receipt: { ...activating.receipt, autoTopUpActivation: 'on' }
+              }
+            : undefined
+      }))
+    })
+
+    expect(
+      await screen.findByTestId('checkout-ending-auto-top-up')
+    ).toHaveTextContent('Turning on auto top-up…')
+
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('checkout-ending-auto-top-up')
+      ).not.toBeInTheDocument()
+    )
   })
 
   it.for([
