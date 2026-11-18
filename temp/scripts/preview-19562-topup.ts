@@ -139,14 +139,25 @@ async function main() {
       })
     )
     const destination = new URL(checkout.checkout_url)
+    const sessionMode = checkout.session_id?.startsWith('cs_test_')
+      ? 'test'
+      : checkout.session_id?.startsWith('cs_live_')
+        ? 'live'
+        : checkout.session_id
+          ? 'other'
+          : 'missing'
+    const matchingCheckoutPath = Boolean(
+      checkout.session_id &&
+      destination.pathname.split('/').includes(checkout.session_id)
+    )
     if (
       destination.origin !== stripe ||
       !checkout.session_id ||
       !/^cs_test_[a-zA-Z0-9]+$/.test(checkout.session_id) ||
-      !destination.pathname.split('/').includes(checkout.session_id)
+      !matchingCheckoutPath
     ) {
       throw new TopUpError(
-        'Cloud did not return a Stripe test-mode Checkout session'
+        `Cloud checkout did not pass the Stripe test-mode check (${destination.origin}, session mode ${sessionMode}, matching path ${matchingCheckoutPath})`
       )
     }
 
