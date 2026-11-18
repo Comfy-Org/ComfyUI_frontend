@@ -2617,13 +2617,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     signal: AbortSignal
   ): Promise<boolean> {
     const key = recoveryKey(turn)
-    let previousObservation = recentPendingAskObservation(key)
-    let hasUnconfirmedObservation = false
-    let sawStreamingObservation = false
-    let consecutiveThreadMissing = 0
-    const deliveredAtRecoveryStart = new Set(deliveredAsks)
-    const snapshotNamedDeliveredAsks = new Set<string>()
-    const deliveredAsksAwaitingSnapshot = new Set<string>()
+    const state: RecoveryObservationState = {
+      previousObservation: recentPendingAskObservation(key),
+      hasUnconfirmedObservation: false,
+      sawStreamingObservation: false,
+      consecutiveThreadMissing: 0,
+      deliveredAtRecoveryStart: new Set(deliveredAsks),
+      snapshotNamedDeliveredAsks: new Set(),
+      deliveredAsksAwaitingSnapshot: new Set()
+    }
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
       if (!isTurnLive(turn, generation)) return false
@@ -2631,52 +2633,84 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const outcome = await fetchTurnOutcome(turn, signal)
       signal.throwIfAborted()
       if (!isTurnLive(turn, generation)) return false
-      consecutiveThreadMissing = nextThreadMissingCount(
-        outcome,
-        consecutiveThreadMissing
-      )
-      if (isTransientMissingTurn(outcome, consecutiveThreadMissing)) {
-        hasUnconfirmedObservation = true
-        continue
-      }
-      if (settleFinishedTurn(turn, outcome)) {
-        recoveryPendingAskObservations.delete(key)
-        return false
-      }
-      if (outcome.kind !== 'streaming') {
-        hasUnconfirmedObservation = true
-        continue
-      }
-      sawStreamingObservation = true
-      const pendingAskId = streamingPendingAskId(outcome)
-      if (pendingAskId !== undefined && deliveredAsks.has(pendingAskId)) {
-        snapshotNamedDeliveredAsks.add(pendingAskId)
-        deliveredAsksAwaitingSnapshot.delete(pendingAskId)
-      }
-      for (const askId of deliveredAsks)
-        if (
-          !deliveredAtRecoveryStart.has(askId) &&
-          !snapshotNamedDeliveredAsks.has(askId)
+      if (
+        observeRecoveryOutcome(
+          key,
+          state,
+          outcome,
+          deliveredBeforeFetch,
+          turn,
+          cause
         )
-          deliveredAsksAwaitingSnapshot.add(askId)
-      const pendingAskConfirmed =
-        previousObservation !== undefined &&
-        previousObservation.pendingAskId === pendingAskId
-      hasUnconfirmedObservation = !pendingAskConfirmed
-      reconcileStreamingApproval(
-        turn,
-        outcome,
-        cause,
-        pendingAskConfirmed,
-        deliveredAsksAwaitingSnapshot
       )
-      previousObservation = recordPendingAskObservation(
-        key,
-        pendingAskId,
-        deliveredBeforeFetch
-      )
+        return false
     }
-    return hasUnconfirmedObservation && sawStreamingObservation
+    return state.hasUnconfirmedObservation && state.sawStreamingObservation
+  }
+
+  interface RecoveryObservationState {
+    previousObservation: PendingAskObservation | undefined
+    hasUnconfirmedObservation: boolean
+    sawStreamingObservation: boolean
+    consecutiveThreadMissing: number
+    deliveredAtRecoveryStart: Set<string>
+    snapshotNamedDeliveredAsks: Set<string>
+    deliveredAsksAwaitingSnapshot: Set<string>
+  }
+
+  function observeRecoveryOutcome(
+    key: string,
+    state: RecoveryObservationState,
+    outcome: TurnOutcome,
+    deliveredBeforeFetch: Set<string>,
+    turn: LiveTurn,
+    cause: RecoveryCause
+  ): boolean {
+    state.consecutiveThreadMissing = nextThreadMissingCount(
+      outcome,
+      state.consecutiveThreadMissing
+    )
+    if (isTransientMissingTurn(outcome, state.consecutiveThreadMissing)) {
+      state.hasUnconfirmedObservation = true
+      return false
+    }
+    if (settleFinishedTurn(turn, outcome)) {
+      recoveryPendingAskObservations.delete(key)
+      return true
+    }
+    if (outcome.kind !== 'streaming') {
+      state.hasUnconfirmedObservation = true
+      return false
+    }
+    state.sawStreamingObservation = true
+    const pendingAskId = streamingPendingAskId(outcome)
+    if (pendingAskId !== undefined && deliveredAsks.has(pendingAskId)) {
+      state.snapshotNamedDeliveredAsks.add(pendingAskId)
+      state.deliveredAsksAwaitingSnapshot.delete(pendingAskId)
+    }
+    for (const askId of deliveredAsks)
+      if (
+        !state.deliveredAtRecoveryStart.has(askId) &&
+        !state.snapshotNamedDeliveredAsks.has(askId)
+      )
+        state.deliveredAsksAwaitingSnapshot.add(askId)
+    const pendingAskConfirmed =
+      state.previousObservation !== undefined &&
+      state.previousObservation.pendingAskId === pendingAskId
+    state.hasUnconfirmedObservation = !pendingAskConfirmed
+    reconcileStreamingApproval(
+      turn,
+      outcome,
+      cause,
+      pendingAskConfirmed,
+      state.deliveredAsksAwaitingSnapshot
+    )
+    state.previousObservation = recordPendingAskObservation(
+      key,
+      pendingAskId,
+      deliveredBeforeFetch
+    )
+    return false
   }
 
   function nextThreadMissingCount(
