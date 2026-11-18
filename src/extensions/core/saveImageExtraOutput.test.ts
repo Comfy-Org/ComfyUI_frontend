@@ -31,7 +31,7 @@ async function createNodeWithFilenamePrefix(
   sampler.addWidget('number', 'seed', 12345, () => undefined, {})
   graph.add(sampler)
 
-  vi.mocked(useApp).mockReturnValue(fromPartial<ComfyApp>({ graph }))
+  vi.mocked(useApp).mockReturnValue(fromPartial<ComfyApp>({ rootGraph: graph }))
   const ext = saveImageExtraOutputExtension
 
   const nodeType = {

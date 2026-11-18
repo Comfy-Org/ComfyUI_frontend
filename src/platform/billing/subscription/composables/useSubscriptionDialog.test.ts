@@ -1155,14 +1155,15 @@ describe('useSubscriptionDialog', () => {
         expect(mockShowLayoutDialog).not.toHaveBeenCalled()
       })
 
-      it('explains a blocked Plans tab with a link instead of the pricing table', async () => {
+      it('says the checkout did not finish when the Plans tab is blocked', async () => {
         vi.mocked(openBillingUrl).mockReturnValue(false)
 
         await resumeFailedCheckout()
 
         expect(mockShowLayoutDialog).toHaveBeenCalledOnce()
         expect(shownDialogProps()).toMatchObject({
-          title: "Plans page didn't open",
+          title: "Your checkout didn't finish",
+          body: 'Open the Plans page to try again. Your browser blocked it from opening on its own.',
           linkLabel: 'Open Plans page'
         })
       })
