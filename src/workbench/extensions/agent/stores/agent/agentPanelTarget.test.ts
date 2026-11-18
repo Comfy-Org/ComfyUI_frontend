@@ -56,7 +56,7 @@ type TargetSetup = Awaited<ReturnType<typeof setup>>
 const deletedEvent = {
   cause: 'workflow_deleted',
   workflow_id: null,
-  startup_tabs_restored: null
+  startup_tab_restore_settled: null
 } as const
 
 function saveTarget(target: ComfyWorkflow): void {
@@ -347,7 +347,7 @@ describe('Agent target tracking policy', () => {
     panel.markWorkflowTargetUnavailable({
       cause: 'restore_not_listed',
       workflow_id: 'wf-target',
-      startup_tabs_restored: true
+      startup_tab_restore_settled: true
     })
     expect(panel.targetUnavailable).toBe(true)
     expect(panel.selectedWorkflow).toBeNull()

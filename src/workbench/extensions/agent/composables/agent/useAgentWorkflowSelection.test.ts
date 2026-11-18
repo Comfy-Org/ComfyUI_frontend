@@ -565,7 +565,7 @@ describe('historical workflow restoration', () => {
     expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
       cause: 'restore_gone',
       workflow_id: 'wf-draft',
-      startup_tabs_restored: true
+      startup_tab_restore_settled: true
     })
   })
 
@@ -728,7 +728,7 @@ describe('historical workflow restoration', () => {
     expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
       cause: 'restore_not_listed',
       workflow_id: 'wf-deleted',
-      startup_tabs_restored: true
+      startup_tab_restore_settled: true
     })
   })
 
@@ -848,7 +848,7 @@ describe('historical workflow restoration', () => {
       expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
         cause: 'restore_not_listed',
         workflow_id: 'wf-deleted',
-        startup_tabs_restored: false
+        startup_tab_restore_settled: false
       })
     } finally {
       vi.useRealTimers()

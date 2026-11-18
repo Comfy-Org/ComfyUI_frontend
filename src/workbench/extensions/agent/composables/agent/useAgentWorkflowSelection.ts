@@ -328,7 +328,7 @@ export function useAgentWorkflowSelection({
       panelStore.markWorkflowTargetUnavailable({
         cause: resolved.cause,
         workflow_id: workflowId,
-        startup_tabs_restored: workflowStore.tabsRestored
+        startup_tab_restore_settled: workflowStore.tabsRestored
       })
       return NOT_RESTORED
     }

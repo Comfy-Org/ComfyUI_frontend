@@ -238,7 +238,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
             markWorkflowTargetUnavailable({
               cause: 'workflow_deleted',
               workflow_id: null,
-              startup_tabs_restored: null
+              startup_tab_restore_settled: null
             })
         })
     } else if (name === 'renameWorkflow') {

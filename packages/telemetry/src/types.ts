@@ -1223,8 +1223,8 @@ export interface AgentTargetUnavailableMetadata extends Record<
 > {
   cause: AgentTargetUnavailableCause
   workflow_id: string | null
-  /** Whether startup had restored saved tabs; null for `workflow_deleted`. */
-  startup_tabs_restored: boolean | null
+  /** Whether startup tab restore had finished, even if it failed; null on delete. */
+  startup_tab_restore_settled: boolean | null
 }
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
   turn_id: string

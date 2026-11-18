@@ -562,12 +562,12 @@ describe('HostTelemetrySink', () => {
         sink.trackAgentTargetUnavailable({
           cause: 'restore_not_listed',
           workflow_id: 'wf-1',
-          startup_tabs_restored: false
+          startup_tab_restore_settled: false
         }),
       properties: {
         cause: 'restore_not_listed',
         workflow_id: 'wf-1',
-        startup_tabs_restored: false
+        startup_tab_restore_settled: false
       }
     },
     {
