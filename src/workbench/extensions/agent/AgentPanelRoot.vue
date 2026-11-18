@@ -34,7 +34,10 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
-import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
+import {
+  formatWorkflowSyncErrorDetail,
+  workflowSyncErrorTelemetryCode
+} from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import {
   readWorkflowDraftLineage,
   useWorkflowService,
@@ -1224,10 +1227,15 @@ const {
       const path = bindingStore.tabPathFor(workflowId)
       if (path) writeWorkflowDraftLineage(path, { workflowId, lineageSeq })
     },
-    onSyncError: (message, code) =>
+    onSyncError: (message, code) => {
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
       })
+      trackAgentError('workflow_sync_failed', 'post_acceptance', 'toast', {
+        retryable: false,
+        syncErrorCode: workflowSyncErrorTelemetryCode(code)
+      })
+    }
   },
   applierDeps: {
     getCanvas: () => useApp().canvas,
