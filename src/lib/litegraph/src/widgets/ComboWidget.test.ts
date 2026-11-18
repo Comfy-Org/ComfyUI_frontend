@@ -122,8 +122,6 @@ describe('ComboWidget', () => {
       expect(widget._displayValue).toBe('0')
     })
 
-    // Custom nodes can set these; a non-string here used to stop the canvas
-    // render loop inside the text truncation (substring is not a function).
     it.for([
       { case: 'null value', value: null, values: ['a'], expected: '' },
       { case: 'boolean value', value: true, values: ['a'], expected: 'true' },
@@ -136,6 +134,24 @@ describe('ComboWidget', () => {
       {
         case: 'object values missing the key',
         value: 'gone',
+        values: { two: 2 },
+        expected: ''
+      },
+      {
+        case: 'object values with an inherited key',
+        value: 'constructor',
+        values: { two: 2 },
+        expected: ''
+      },
+      {
+        case: 'value that cannot become a string',
+        value: Object.create(null),
+        values: ['a'],
+        expected: ''
+      },
+      {
+        case: 'object values with a value that cannot become a key',
+        value: Object.create(null),
         values: { two: 2 },
         expected: ''
       }
@@ -272,6 +288,23 @@ describe('ComboWidget', () => {
   })
 
   describe('incrementValue / decrementValue', () => {
+    it('leaves the value alone when the combo has no values', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          value: 'kept',
+          options: { values: [] }
+        }),
+        node
+      )
+
+      const { mockCanvas, mockEvent } = setupIncrementDecrementTest()
+
+      widget.incrementValue({ e: mockEvent, node, canvas: mockCanvas })
+      widget.decrementValue({ e: mockEvent, node, canvas: mockCanvas })
+
+      expect(widget.value).toBe('kept')
+    })
+
     it('incrementing a numeric combo steps to the next option', () => {
       widget = new ComboWidget(
         createMockWidgetConfig({

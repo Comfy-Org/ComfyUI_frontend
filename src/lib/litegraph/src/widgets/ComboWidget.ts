@@ -34,9 +34,13 @@ function toArray(values: Values | null | undefined): (string | number)[] {
   return Array.isArray(values) ? values : Object.keys(values)
 }
 
-/** Extensions can set a combo value or option label to a non-string. */
 function toDisplayText(value: unknown): string {
-  return value == null ? '' : String(value)
+  if (value == null) return ''
+  try {
+    return String(value)
+  } catch {
+    return ''
+  }
 }
 
 function toContextMenuValue(
@@ -72,7 +76,11 @@ export class ComboWidget
       )
 
       if (values && !Array.isArray(values)) {
-        return toDisplayText(values[this.value])
+        const key = this.value
+        const isKey = typeof key === 'string' || typeof key === 'number'
+        return isKey && Object.hasOwn(values, key)
+          ? toDisplayText(values[key])
+          : ''
       }
     }
     return toDisplayText(this.value)
@@ -129,6 +137,7 @@ export class ComboWidget
   private tryChangeValue(delta: number, options: WidgetEventOptions): void {
     const values = this.getValues(options.node)
     const indexedValues = toArray(values)
+    if (!indexedValues.length) return
 
     // avoids double click event
     options.canvas.last_mouseclick = 0

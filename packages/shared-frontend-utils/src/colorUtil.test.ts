@@ -409,9 +409,12 @@ describe('colorUtil - adjustColor', () => {
     expect(adjustColor(undefined, { opacity: targetOpacity })).toBe(undefined)
   })
 
-  // A non-string node color from an extension used to throw
-  // (startsWith is not a function) and stop the canvas render loop.
-  it.for([{ color: 0xff0000 }, { color: { r: 255 } }])(
+  it.for([
+    { color: 0xff0000 },
+    { color: { r: 255 } },
+    { color: Object.create(null) },
+    { color: Symbol('color') }
+  ])(
     'returns a non-string color $color unchanged instead of throwing',
     ({ color }) => {
       const result = adjustColor(color as unknown as string, {

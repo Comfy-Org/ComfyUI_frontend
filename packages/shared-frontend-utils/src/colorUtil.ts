@@ -225,7 +225,6 @@ export function parseToRgb(color: string): RGB {
 }
 
 const identifyColorFormat = (color: unknown): ColorFormatInternal | null => {
-  // Extensions can assign a non-string node color; treat it as unsupported.
   if (typeof color !== 'string' || !color) return null
   if (
     color.startsWith('#') &&
@@ -468,11 +467,14 @@ const applyColorAdjustments = (
   return `hsla(${hsla.h}, ${hsla.s}%, ${hsla.l}%, ${hsla.a})`
 }
 
-export const adjustColor: (
-  color: string,
-  options: ColorAdjustOptions
-) => string = memoize(
+const memoizedAdjustColor = memoize(
   applyColorAdjustments,
   (color: string, options: ColorAdjustOptions): string =>
     `${color}-${JSON.stringify(options)}`
 )
+
+export const adjustColor = (
+  color: string,
+  options: ColorAdjustOptions
+): string =>
+  typeof color === 'string' ? memoizedAdjustColor(color, options) : color
