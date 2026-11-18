@@ -14,7 +14,10 @@ import { api } from '@/scripts/api'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
-import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type {
+  PendingSendEntryState,
+  UserAttachment
+} from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type {
   PromptSnapshot,
   WorkflowReference
@@ -37,6 +40,7 @@ const {
   tags = [],
   workflowReferences = [],
   skillReference,
+  pending,
   editable = false
 } = defineProps<{
   text: string
@@ -44,6 +48,7 @@ const {
   tags?: string[]
   workflowReferences?: WorkflowReference[]
   skillReference?: SkillReferenceData
+  pending?: PendingSendEntryState
   editable?: boolean
 }>()
 const emit = defineEmits<{
@@ -206,52 +211,87 @@ function attachmentUrl(
     </div>
     <div
       v-if="text || workflowReferences.length || skillReference"
-      ref="bubble"
-      data-testid="user-message-bubble"
-      class="w-fit max-w-full rounded-lg bg-secondary px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      class="flex max-w-full items-center justify-end gap-1.5"
     >
-      <template v-for="(part, index) in promptParts" :key="index">
-        <Tag
-          v-if="part.type === 'workflow'"
-          interactive
-          :label="part.reference.name"
-          class="-my-0.5 max-w-64 align-middle"
-          :aria-label="
-            part.reference.unavailable
-              ? t('agent.unavailableWorkflowReference', {
-                  name: part.reference.name
-                })
-              : t('agent.openWorkflowTab', { name: part.reference.name })
-          "
-          data-testid="workflow-reference-chip"
-          data-comfy-workflow="1"
-          :data-workflow-id="part.reference.id"
-          :data-workflow-unavailable="
-            part.reference.unavailable ? 'true' : undefined
-          "
-          :aria-disabled="part.reference.unavailable"
-          :aria-description="
-            part.reference.unavailable
-              ? t('agent.workflowReferenceUnavailableReason')
-              : undefined
-          "
-          :title="
-            part.reference.unavailable
-              ? t('agent.workflowReferenceUnavailableReason')
-              : undefined
-          "
-          @click="openReference(part.reference)"
-        >
-          <template #icon>
-            <i aria-hidden="true" class="icon-[comfy--workflow] size-3" />
-          </template>
-        </Tag>
-        <CatalogSkillReference
-          v-else-if="part.type === 'skill'"
-          :skill="part.reference"
+      <div
+        v-if="pending?.status === 'sending'"
+        role="status"
+        :aria-label="t('agent.sendingMessage')"
+        class="flex shrink-0 items-center text-muted-foreground"
+      >
+        <i
+          aria-hidden="true"
+          class="icon-[lucide--loader-circle] size-3.5 motion-safe:animate-spin"
         />
-        <template v-else>{{ part.text }}</template>
-      </template>
+      </div>
+      <div
+        ref="bubble"
+        data-testid="user-message-bubble"
+        class="w-fit max-w-full rounded-lg bg-secondary px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      >
+        <template v-for="(part, index) in promptParts" :key="index">
+          <Tag
+            v-if="part.type === 'workflow'"
+            interactive
+            :label="part.reference.name"
+            class="-my-0.5 max-w-64 align-middle"
+            :aria-label="
+              part.reference.unavailable
+                ? t('agent.unavailableWorkflowReference', {
+                    name: part.reference.name
+                  })
+                : t('agent.openWorkflowTab', { name: part.reference.name })
+            "
+            data-testid="workflow-reference-chip"
+            data-comfy-workflow="1"
+            :data-workflow-id="part.reference.id"
+            :data-workflow-unavailable="
+              part.reference.unavailable ? 'true' : undefined
+            "
+            :aria-disabled="part.reference.unavailable"
+            :aria-description="
+              part.reference.unavailable
+                ? t('agent.workflowReferenceUnavailableReason')
+                : undefined
+            "
+            :title="
+              part.reference.unavailable
+                ? t('agent.workflowReferenceUnavailableReason')
+                : undefined
+            "
+            @click="openReference(part.reference)"
+          >
+            <template #icon>
+              <i aria-hidden="true" class="icon-[comfy--workflow] size-3" />
+            </template>
+          </Tag>
+          <CatalogSkillReference
+            v-else-if="part.type === 'skill'"
+            :skill="part.reference"
+          />
+          <template v-else>{{ part.text }}</template>
+        </template>
+      </div>
+    </div>
+    <div
+      v-else-if="pending?.status === 'sending'"
+      role="status"
+      :aria-label="t('agent.sendingMessage')"
+      class="flex items-center text-muted-foreground"
+    >
+      <i
+        aria-hidden="true"
+        class="icon-[lucide--loader-circle] size-3.5 motion-safe:animate-spin"
+      />
+    </div>
+    <div
+      v-if="pending?.status === 'failed' && pending.failure"
+      role="alert"
+      data-testid="pending-send-error"
+      class="flex items-center justify-end gap-1.5 text-xs text-destructive"
+    >
+      <i aria-hidden="true" class="icon-[lucide--circle-alert] size-3.5" />
+      <span>{{ pending.failure.message }}</span>
     </div>
     <div
       v-if="readableText"

@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
@@ -318,17 +317,12 @@ describe('agentRunModeStore', () => {
       jsonResponse(200, { mode: 'auto', credit_limit: null })
     )
     const composer = useAgentComposerStore()
-    composer.startSubmission({
-      prompt: composer.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
+    composer.startGateHold('cm-1')
     const sendGate = useAgentSendGateStore()
     const releaseSend = sendGate.begin()
     const store = useAgentRunModeStore()
 
-    composer.invalidateSubmission()
+    composer.cancelGateHold()
     const save = store.save('auto', null)
     await nextTick()
 

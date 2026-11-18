@@ -24,6 +24,7 @@ import type { PendingSignInAccept } from '@/workbench/extensions/agent/services/
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
@@ -69,6 +70,7 @@ export function useAgentConsent() {
   const consentStore = useAgentConsentStore()
   const introductionStore = useAgentConsentIntroductionStore()
   const composerStore = useAgentComposerStore()
+  const conversationStore = useAgentConversationStore()
   const toast = useToast()
   const { isLoggedIn } = useCurrentUser()
   const { accepted, identity, isChecking } = storeToRefs(consentStore)
@@ -295,8 +297,7 @@ export function useAgentConsent() {
   }
 
   function heldDraftText(): string {
-    const held = composerStore.submission
-    return held?.phase === 'pending' ? held.snapshot.prompt.text.trim() : ''
+    return conversationStore.pendingSendingText()
   }
 
   async function acceptAfterSignIn(
@@ -379,7 +380,7 @@ export function useAgentConsent() {
       !composerStore.draft &&
       composerStore.prompt.references.length === 0 &&
       composerStore.attachments.length === 0 &&
-      !composerStore.submission
+      !composerStore.gateHold
     )
       composerStore.restorePrompt({ text: draft, references: [] }, [])
   }

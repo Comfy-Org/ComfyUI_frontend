@@ -7283,7 +7283,7 @@ describe('AgentPanelRoot history', () => {
       await settleFollow()
 
       expect(loadedThreads).toEqual([])
-      expect(useAgentComposerStore().submission?.phase).toBe('pending')
+      expect(useAgentConversationStore().hasSendingPendingSend).toBe(true)
     })
 
     it('follows while a sent message runs once the server has accepted it', async () => {
@@ -7304,7 +7304,7 @@ describe('AgentPanelRoot history', () => {
       )
       await sendFromComposer('make it blue')
       await vi.waitFor(() =>
-        expect(useAgentComposerStore().submission).toBeNull()
+        expect(useAgentConversationStore().hasSendingPendingSend).toBe(false)
       )
       expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
 
@@ -9141,7 +9141,9 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('textbox'))
       await userEvent.paste('build me a workflow')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-      await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+      await waitFor(() => expect(useAgentComposerStore().gateHold).toBeNull())
+      expect(useAgentComposerStore().draft).toBe('build me a workflow')
+      expect(useAgentConversationStore().entries).toEqual([])
 
       expect(telemetry.trackAgentSendGated).toHaveBeenLastCalledWith({
         gate: 'consent',
@@ -9200,7 +9202,7 @@ describe('AgentPanelRoot workflow binding', () => {
       await userEvent.click(screen.getByRole('textbox'))
       await userEvent.paste('build me a workflow')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-      await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+      await waitFor(() => expect(useAgentComposerStore().gateHold).toBeNull())
 
       expect(withConsent).toHaveBeenCalledExactlyOnceWith(
         'first_message',
@@ -9216,7 +9218,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it.for([
     {
       scenario: 'the pending submission is canceled',
-      change: () => useAgentComposerStore().invalidateSubmission(),
+      change: () => useAgentComposerStore().cancelGateHold(),
       sent: false,
       messages: []
     },
@@ -9258,7 +9260,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
       vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(signIn)
       const composer = useAgentComposerStore()
-      const settleSubmission = vi.spyOn(composer, 'settleSubmission')
+      const releaseGateHold = vi.spyOn(composer, 'releaseGateHold')
       const bodies = mockMessagesEndpoint('wf-42')
       renderWithSelectedTarget()
 
@@ -9268,9 +9270,9 @@ describe('AgentPanelRoot workflow binding', () => {
       await waitFor(() =>
         expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
       )
-      assert.exists(composer.submission)
-      const submissionId = composer.submission.id
-      expect(settleSubmission).not.toHaveBeenCalled()
+      assert.exists(composer.gateHold)
+      const gateId = composer.gateHold.id
+      expect(releaseGateHold).not.toHaveBeenCalled()
       expect(bodies).toHaveLength(0)
 
       change()
@@ -9283,10 +9285,9 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       finishSignIn(true)
 
-      await waitFor(() =>
-        expect(settleSubmission).toHaveBeenCalledWith(submissionId, sent)
-      )
-      expect(bodies).toMatchObject(messages)
+      await waitFor(() => expect(releaseGateHold).toHaveBeenCalledWith(gateId))
+      await waitFor(() => expect(bodies).toMatchObject(messages))
+      expect(bodies.length > 0).toBe(sent)
     }
   )
 
@@ -9393,11 +9394,11 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.paste('keep this draft in its original scope')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
-    expect(useAgentComposerStore().submission?.phase).toBe('pending')
+    expect(useAgentComposerStore().gateHold).not.toBeNull()
 
     Object.assign(useAgentConsentStore(), { accepted: false })
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
-    await waitFor(() => expect(useAgentComposerStore().submission).toBeNull())
+    await waitFor(() => expect(useAgentComposerStore().gateHold).toBeNull())
 
     expect(useAgentComposerStore().draft).toBe(
       'keep this draft in its original scope'
@@ -9408,10 +9409,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it('does not resume a consent-held send after closing in App Mode', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
-    const settleSubmission = vi.spyOn(
-      useAgentComposerStore(),
-      'settleSubmission'
-    )
+    const releaseGateHold = vi.spyOn(useAgentComposerStore(), 'releaseGateHold')
     Object.assign(useAgentConsentStore(), { accepted: false })
     let accept = () => {}
     withConsent.mockImplementationOnce(
@@ -9434,12 +9432,11 @@ describe('AgentPanelRoot workflow binding', () => {
     canvasStore.linearMode = true
     useAgentPanelStore().close('close_button')
     unmount()
-    expect(useAgentComposerStore().submission).toBeNull()
+    expect(useAgentComposerStore().gateHold).toBeNull()
     accept()
-    await waitFor(() =>
-      expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
-    )
+    await waitFor(() => expect(releaseGateHold).toHaveBeenCalled())
     expect(bodies).toHaveLength(0)
+    expect(useAgentConversationStore().entries).toEqual([])
   })
 
   describe('a first send held by the coach', () => {
@@ -9635,9 +9632,9 @@ describe('AgentPanelRoot workflow binding', () => {
       Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
-      const settleSubmission = vi.spyOn(
+      const releaseGateHold = vi.spyOn(
         useAgentComposerStore(),
-        'settleSubmission'
+        'releaseGateHold'
       )
       const { unmount } = renderWithSelectedTarget()
       await sendHeldByCoach('build me a workflow')
@@ -9653,12 +9650,7 @@ describe('AgentPanelRoot workflow binding', () => {
       try {
         canvasStore.linearMode = true
 
-        await waitFor(() =>
-          expect(settleSubmission).toHaveBeenCalledWith(
-            expect.any(Number),
-            false
-          )
-        )
+        await waitFor(() => expect(releaseGateHold).toHaveBeenCalled())
       } finally {
         stopCloseOnAppMode()
       }
@@ -9667,15 +9659,16 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(await screen.findByRole('textbox')).toHaveTextContent(
         'build me a workflow'
       )
+      expect(useAgentConversationStore().entries).toEqual([])
       expect(bodies).toHaveLength(0)
     })
 
     it('puts the draft back when consent is cleared before App Mode releases the hold', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
-      const settleSubmission = vi.spyOn(
+      const releaseGateHold = vi.spyOn(
         useAgentComposerStore(),
-        'settleSubmission'
+        'releaseGateHold'
       )
       renderWithSelectedTarget()
       await sendHeldByCoach('build me a workflow')
@@ -9683,9 +9676,9 @@ describe('AgentPanelRoot workflow binding', () => {
       Object.assign(useAgentConsentStore(), { accepted: false })
       canvasStore.linearMode = true
 
-      await waitFor(() =>
-        expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
-      )
+      await waitFor(() => expect(releaseGateHold).toHaveBeenCalled())
+      expect(useAgentComposerStore().draft).toBe('build me a workflow')
+      expect(useAgentConversationStore().entries).toEqual([])
       expect(bodies).toHaveLength(0)
     })
 
@@ -9706,9 +9699,9 @@ describe('AgentPanelRoot workflow binding', () => {
     it('puts the draft back instead of sending when the panel closes', async () => {
       makeTab('wf-42')
       const bodies = mockMessagesEndpoint('wf-42')
-      const settleSubmission = vi.spyOn(
+      const releaseGateHold = vi.spyOn(
         useAgentComposerStore(),
-        'settleSubmission'
+        'releaseGateHold'
       )
       const { unmount } = renderWithSelectedTarget()
       await sendHeldByCoach('build me a workflow')
@@ -9716,9 +9709,7 @@ describe('AgentPanelRoot workflow binding', () => {
       useAgentPanelStore().close('close_button')
       unmount()
 
-      await waitFor(() =>
-        expect(settleSubmission).toHaveBeenCalledWith(expect.any(Number), false)
-      )
+      await waitFor(() => expect(releaseGateHold).toHaveBeenCalled())
       expect(bodies).toHaveLength(0)
       const coachOutcomes = telemetry.trackAgentSendGated.mock.calls
         .map(([metadata]) => metadata)
@@ -9732,6 +9723,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(await screen.findByRole('textbox')).toHaveTextContent(
         'build me a workflow'
       )
+      expect(useAgentConversationStore().entries).toEqual([])
       expect(bodies).toHaveLength(0)
     })
   })
@@ -10092,15 +10084,16 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
     finishSend(json(503, { error: 'temporarily unavailable' }))
     await waitFor(() =>
-      expect(screen.getByRole('textbox')).toHaveTextContent('keep my target')
+      expect(screen.getByTestId('pending-send-error')).toBeVisible()
     )
+    expect(useAgentComposerStore().draft).toBe('')
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
     expect(useAgentConversationStore().threadId).toBeNull()
 
     panel.unmount()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
-    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await sendFromComposer('retry my target')
     await waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
 
@@ -15607,15 +15600,16 @@ describe('AgentPanelRoot workflow binding', () => {
         referenceIndex: composer.prompt.references.length
       })
       composer.referenceAttachment('upload-1')
-      const originalDraft = composer.draft
-      const originalReferences = [...composer.workflowReferences]
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
       expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
       expect(useAgentComposerStore().draft).toBe('')
       expect(composer.attachments).toEqual([])
+      expect(composer.workflowReferences).toEqual([])
       expect(
-        screen.queryByRole('button', { name: 'Open reference' })
+        within(screen.getByTestId('agent-panel-footer')).queryByRole('button', {
+          name: 'Open reference'
+        })
       ).toBeNull()
       expect(
         screen.queryByRole('button', { name: 'Remove KSampler #12 reference' })
@@ -15641,43 +15635,30 @@ describe('AgentPanelRoot workflow binding', () => {
         return
       }
       if (panel === 'closed') {
-        await vi.waitFor(() =>
-          expect(composer.submission?.phase).toBe('failed')
-        )
+        await vi.waitFor(() => {
+          const entry = useAgentConversationStore().entries[0]
+          expect(
+            entry.role === 'user' && entry.pending?.status === 'failed'
+          ).toBe(true)
+        })
         render(AgentPanelRoot, { global: { plugins: [i18n] } })
       }
       await vi.waitFor(() =>
         expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
       )
       if (nextAction === 'untouched') {
-        expect(useAgentComposerStore().draft).toBe(originalDraft)
-        expect(composer.workflowReferences).toEqual(originalReferences)
-        expect(composer.attachments).toMatchObject([
-          { ref: 'uploaded_cat.png' }
-        ])
-        expect(
-          screen.getByRole('button', { name: 'Open reference' })
-        ).toBeVisible()
-        expect(
-          screen.getByRole('button', { name: 'Remove KSampler #12 reference' })
-        ).toBeVisible()
-        await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-        await vi.waitFor(() => expect(bodies).toHaveLength(2))
-        expect(bodies[1]).toMatchObject({
-          workflow_id: 'wf-42',
-          content:
-            '@[Node: KSampler #12] Compare [reference](workflow://wf-reference) Keep this draft @[Image: cat.png]',
-          selection: { node_ids: ['12'] },
-          attachments: ['uploaded_cat.png'],
-          workflow_references: [
-            { workflow_id: 'wf-reference', name: 'reference' }
-          ]
-        })
+        expect(useAgentComposerStore().draft).toBe('')
+        expect(composer.workflowReferences).toEqual([])
+        expect(composer.attachments).toEqual([])
+        expect(await screen.findByTestId('pending-send-error')).toBeVisible()
       } else {
         expect(useAgentComposerStore().draft).toBe(expectedDraft)
         expect(composer.attachments).toEqual([])
         expect(
-          screen.queryByRole('button', { name: 'Open reference' })
+          within(screen.getByTestId('agent-panel-footer')).queryByRole(
+            'button',
+            { name: 'Open reference' }
+          )
         ).toBeNull()
         if (nextAction === 'new-chat')
           expect(useAgentConversationStore().entries).toHaveLength(0)
@@ -15685,7 +15666,7 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  it('cancels and restores the draft when its target closes during preparation', async () => {
+  it('keeps the failed pending send in the origin chat without refilling the composer when its target closes during preparation', async () => {
     const origin = makeTab('wf-origin')
     origin.activeState = fromPartial<ComfyWorkflowJSON>({ id: 'origin-draft' })
     const replacement = addTab('workflows/replacement.json', {
@@ -15733,8 +15714,11 @@ describe('AgentPanelRoot workflow binding', () => {
     releasePreparation()
 
     await vi.waitFor(() =>
-      expect(useAgentComposerStore().draft).toBe('build a graph')
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        i18n.global.t('agent.targetNavigationUnavailable')
+      )
     )
+    expect(useAgentComposerStore().draft).toBe('')
     expect(bodies).toHaveLength(0)
     expect(useAgentPanelStore().selectedWorkflow).toBeNull()
     expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
@@ -17300,6 +17284,445 @@ describe('AgentPanelRoot agent socket identity', () => {
 function dispatchApiEvent(type: string, detail: unknown): void {
   ws.emit(type, detail)
 }
+
+describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
+  function bindTab(workflowId = 'wf-42') {
+    const tab = addTab('workflows/current.json')
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind(workflowId, tab.path)
+    useAgentPanelStore().setWorkflowTarget(tab)
+    return tab
+  }
+
+  it.for(['new_chat', 'history'] as const)(
+    'O0-07: continues a pending send into the background on %s, updates History, and resumes on return',
+    async (chatChange) => {
+      const current = addTab('workflows/current.json')
+      workflowStore.activeWorkflow = current
+      useAgentWorkflowTabBindingStore().bind('wf-42', current.path)
+      useAgentPanelStore().setWorkflowTarget(current)
+      let resolvePost!: (response: Response) => void
+      const postPending = new Promise<Response>((resolve) => {
+        resolvePost = resolve
+      })
+      let createdOnServer = false
+      vi.mocked(fetch).mockImplementation(
+        async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (init?.method === 'POST' && url.includes('/messages'))
+            return postPending
+          if (url.includes('/threads/th-other/messages'))
+            return json(200, [
+              {
+                id: 'r-other',
+                thread_id: 'th-other',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 't-other',
+                workflow_id: 'wf-42',
+                content: { text: 'Other prompt' }
+              }
+            ] satisfies AgentMessages)
+          if (url.includes('/threads/th-created/messages'))
+            return json(200, [
+              {
+                id: 'r-created-1',
+                thread_id: 'th-created',
+                seq: 1,
+                role: 'user',
+                status: 'complete',
+                turn_id: 't-created',
+                workflow_id: 'wf-42',
+                content: { text: 'Build a cat workflow' }
+              },
+              {
+                id: 'r-created-2',
+                thread_id: 'th-created',
+                seq: 2,
+                role: 'assistant',
+                status: 'streaming',
+                turn_id: 't-created',
+                workflow_id: 'wf-42',
+                content: {}
+              }
+            ] satisfies AgentMessages)
+          if (url.includes('/workflows'))
+            return json(200, {
+              data: [{ id: 'wf-42', name: 'current' }],
+              pagination: { offset: 0, limit: 100, total: 1, has_more: false }
+            })
+          if (threadListRoute.test(url))
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-other',
+                  title: 'Other chat',
+                  last_message_at: '2026-09-22T09:00:00Z',
+                  workflow_id: 'wf-42'
+                }),
+                ...(createdOnServer
+                  ? [
+                      agentThread({
+                        id: 'th-created',
+                        title: 'Build a cat workflow',
+                        last_message_at: '2026-09-22T10:00:00Z',
+                        workflow_id: 'wf-42'
+                      })
+                    ]
+                  : [])
+              ])
+            )
+          return json(200, { data: [], pagination: { has_more: false } })
+        }
+      )
+
+      renderWithSelectedTarget()
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Build a cat workflow')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await vi.waitFor(() =>
+        expect(
+          fetchRequests({ method: 'POST', url: /\/messages$/ })
+        ).toHaveLength(1)
+      )
+
+      if (chatChange === 'new_chat') {
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+      } else {
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText('Other chat'))
+        await screen.findByText('Other prompt')
+      }
+
+      createdOnServer = true
+      resolvePost(
+        json(202, {
+          thread_id: 'th-created',
+          message_id: 'msg-created',
+          workflow_id: 'wf-42'
+        })
+      )
+
+      await vi.waitFor(() =>
+        expect(
+          useAgentChatHistoryStore().sessions.some(
+            ({ id }) => id === 'th-created'
+          )
+        ).toBe(true)
+      )
+      expect(useAgentConversationStore().liveTurns()).toEqual([
+        { threadId: 'th-created', messageId: toTurnId('msg-created') }
+      ])
+      expect(
+        vi
+          .mocked(reportError)
+          .mock.calls.filter(
+            ([, options]) =>
+              options.errorType ===
+              'failure_tracking_agent_accepted_turn_generation_change'
+          )
+      ).toEqual([])
+      expect(useAgentConversationStore().threadId).toBe(
+        chatChange === 'new_chat' ? null : 'th-other'
+      )
+
+      ws.emit('agent_message_delta', {
+        thread_id: 'th-created',
+        message_id: 'msg-created',
+        delta: 'Background reply'
+      })
+
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(await screen.findByText('Build a cat workflow'))
+      await screen.findByText('Background reply')
+      expect(useAgentConversationStore().threadId).toBe('th-created')
+    }
+  )
+
+  it('shows the optimistic message with a spinner at once and clears it on accept (O0-01, O0-02)', async () => {
+    bindTab('wf-42')
+    let resolvePost: (response: Response) => void = () => {}
+    respondToFetch(
+      { method: 'POST', url: /\/messages$/ },
+      () =>
+        new Promise<Response>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Hello optimistic')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Hello optimistic'
+    )
+    expect(
+      screen.getByRole('status', {
+        name: i18n.global.t('agent.sendingMessage')
+      })
+    ).toBeVisible()
+    expect(useAgentComposerStore().draft).toBe('')
+
+    resolvePost(json(202, ack('wf-42', 'm-opt')))
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('status', {
+          name: i18n.global.t('agent.sendingMessage')
+        })
+      ).toBeNull()
+    )
+    expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+  })
+
+  it('shows the message while consent holds and withdraws it back to the composer on decline or Stop (O0-01, O0-03, O0-06)', async () => {
+    bindTab('wf-42')
+    const bodies: Record<string, unknown>[] = []
+    respondToFetch(
+      { method: 'POST', url: /\/messages$/ },
+      async (_url, init) => {
+        bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
+        return json(202, ack('wf-42', 'm-consent'))
+      }
+    )
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let rejectConsent = () => {}
+    withConsent.mockImplementation(
+      (_trigger, _onAccept, hooks) =>
+        new Promise<void>((resolve) => {
+          rejectConsent = () => {
+            hooks?.onExit?.('declined')
+            resolve()
+          }
+        })
+    )
+    renderWithSelectedTarget()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Draft during consent')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Draft during consent'
+    )
+    expect(
+      screen.getByRole('status', {
+        name: i18n.global.t('agent.sendingMessage')
+      })
+    ).toBeVisible()
+    expect(useAgentComposerStore().draft).toBe('')
+
+    rejectConsent()
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().draft).toBe('Draft during consent')
+    )
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+    expect(bodies).toHaveLength(0)
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Draft during consent'
+    )
+    expect(useAgentComposerStore().gateHold).not.toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
+    expect(useAgentComposerStore().gateHold).toBeNull()
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+    expect(useAgentComposerStore().draft).toBe('Draft during consent')
+    expect(bodies).toHaveLength(0)
+  })
+
+  it('keeps a deleted History thread deleted when its pending send later accepts (O0-08)', async () => {
+    bindTab('wf-42')
+    let resolvePost: (response: Response) => void = () => {}
+    let postCall = 0
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        postCall += 1
+        return new Promise<Response>((resolve) => {
+          resolvePost = resolve
+        })
+      }
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'r-existing-1',
+            thread_id: 'th-del',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'turn-1',
+            workflow_id: 'wf-42',
+            content: { text: 'Existing prompt' }
+          },
+          {
+            id: 'msg-existing',
+            thread_id: 'th-del',
+            seq: 2,
+            role: 'assistant',
+            status: 'complete',
+            turn_id: 'turn-1',
+            workflow_id: 'wf-42',
+            content: { text: 'Existing reply' }
+          }
+        ] satisfies AgentMessages)
+      if (url.includes('/agent/threads/th-del') && init?.method === 'DELETE')
+        return json(200, {})
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-del',
+              title: 'Thread to delete',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-42'
+            })
+          ])
+        )
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Thread to delete'))
+    await screen.findByText('Existing prompt')
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Late send')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(postCall).toBe(1))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+
+    resolvePost(
+      json(202, {
+        thread_id: 'th-del',
+        message_id: 'msg-late',
+        workflow_id: 'wf-42'
+      })
+    )
+    await settleFollow()
+
+    expect(
+      useAgentChatHistoryStore().sessions.some(({ id }) => id === 'th-del')
+    ).toBe(false)
+    expect(useAgentConversationStore().liveTurns()).toEqual([])
+  })
+
+  it('lets two chats send concurrently and keeps Stop scoped to a chat with its own pending send (O0-09)', async () => {
+    bindTab('wf-42')
+    const resolvers: Array<(response: Response) => void> = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        return new Promise<Response>((resolve) => {
+          resolvers.push(resolve)
+        })
+      }
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'r-other-1',
+            thread_id: 'th-second',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'turn-other',
+            workflow_id: 'wf-42',
+            content: { text: 'Other prompt' }
+          },
+          {
+            id: 'msg-other',
+            thread_id: 'th-second',
+            seq: 2,
+            role: 'assistant',
+            status: 'complete',
+            turn_id: 'turn-other',
+            workflow_id: 'wf-42',
+            content: { text: 'Other reply' }
+          }
+        ] satisfies AgentMessages)
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-42'
+            })
+          ])
+        )
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Message in chat one')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findByText('Other prompt')
+    expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Send' })).toBeVisible()
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Message in chat two')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(resolvers).toHaveLength(2))
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+
+    resolvers[0](
+      json(202, {
+        thread_id: 'th-first',
+        message_id: 'msg-first',
+        workflow_id: 'wf-42'
+      })
+    )
+    resolvers[1](
+      json(202, {
+        thread_id: 'th-second',
+        message_id: 'msg-second',
+        workflow_id: 'wf-42'
+      })
+    )
+
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().liveTurns()).toHaveLength(2)
+    )
+  })
+})
 
 describe('AgentPanelRoot proactive qualification', () => {
   const assignment = {

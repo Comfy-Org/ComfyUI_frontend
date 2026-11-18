@@ -4047,4 +4047,99 @@ describe('useAgentConversationStore', () => {
       }
     )
   })
+
+  describe('pending sends and background acceptance (PR 0)', () => {
+    it('tracks pending sends per origin, appends them after settled entries, and clears on take', () => {
+      const store = useAgentConversationStore()
+      const blankOrigin = store.currentOrigin()
+      expect(blankOrigin.kind).toBe('blank')
+
+      store.startPendingSend({
+        clientMessageId: 'cm-blank',
+        text: 'hello blank',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        prompt: { text: 'hello blank', references: [] },
+        composerAttachments: [],
+        composerNodes: [],
+        target: null,
+        promptOrigin: 'typed',
+        starterPrompt: null
+      })
+
+      expect(store.hasSendingPendingSend).toBe(true)
+      expect(store.hasSendingForOrigin(blankOrigin)).toBe(true)
+      expect(store.entries).toMatchObject([
+        {
+          id: 'cm-blank',
+          role: 'user',
+          text: 'hello blank',
+          pending: { clientMessageId: 'cm-blank', status: 'sending' }
+        }
+      ])
+
+      store.reset()
+      expect(store.isOriginOnScreen(blankOrigin)).toBe(false)
+      expect(store.hasSendingPendingSend).toBe(false)
+      expect(store.hasSendingForOrigin(blankOrigin)).toBe(true)
+      expect(store.entries).toEqual([])
+
+      expect(
+        store.failPendingSend('cm-blank', {
+          kind: 'network',
+          message: 'offline'
+        })
+      ).toBe(true)
+      expect(store.hasSendingForOrigin(blankOrigin)).toBe(false)
+      expect(store.getPendingSend('cm-blank')).toMatchObject({
+        status: 'failed',
+        failure: { kind: 'network', message: 'offline' }
+      })
+      expect(store.takePendingSend('cm-blank')?.clientMessageId).toBe(
+        'cm-blank'
+      )
+      expect(store.getPendingSend('cm-blank')).toBeUndefined()
+    })
+
+    it('registers a background turn directly and resumes without duplicating user rows', () => {
+      const store = useAgentConversationStore()
+      const turnId = toTurnId('msg-bg')
+      store.startBackgroundTurn({
+        threadId: 'th-bg',
+        turnId,
+        text: 'Build background',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        tab: { status: 'unknown' }
+      })
+
+      expect(store.threadId).toBeNull()
+      expect(store.entries).toEqual([])
+      expect(store.liveTurns()).toEqual([
+        { threadId: 'th-bg', messageId: turnId }
+      ])
+
+      store.setThreadId('th-bg')
+      store.hydrate([
+        {
+          id: 'u-row',
+          thread_id: 'th-bg',
+          turn_id: 'msg-bg',
+          seq: 1,
+          role: 'user',
+          content: { text: 'Build background' },
+          status: 'complete',
+          created_at: '2026-11-18T00:00:00Z'
+        }
+      ])
+      store.resumeBackgroundTurn()
+
+      expect(
+        store.entries.filter((entry) => entry.role === 'user')
+      ).toHaveLength(1)
+      expect(store.activeTurnId).toBe(turnId)
+    })
+  })
 })

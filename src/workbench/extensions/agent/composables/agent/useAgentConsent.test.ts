@@ -19,6 +19,7 @@ import { api } from '@/scripts/api'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -1213,12 +1214,20 @@ describe('useAgentConsent', () => {
     }
 
     function holdDraft(text: string) {
-      useAgentComposerStore().startSubmission({
-        prompt: { text, references: [] },
+      useAgentConversationStore().startPendingSend({
+        clientMessageId: `cm-${text}`,
+        text,
         attachments: [],
-        nodes: [],
-        target: {} as ComfyWorkflow
+        tags: [],
+        workflowReferences: [],
+        prompt: { text, references: [] },
+        composerAttachments: [],
+        composerNodes: [],
+        target: {} as ComfyWorkflow,
+        promptOrigin: 'typed',
+        starterPrompt: null
       })
+      useAgentComposerStore().startGateHold(`cm-${text}`)
     }
 
     function scopeResolves() {
@@ -1581,7 +1590,7 @@ describe('useAgentConsent', () => {
         [{ decision: 'accepted', save_error_shown: false }]
       ])
       expect(useAgentComposerStore().draft).toBe('make it blue')
-      expect(useAgentComposerStore().submission).toBeNull()
+      expect(useAgentComposerStore().gateHold).toBeNull()
     })
 
     it.for([

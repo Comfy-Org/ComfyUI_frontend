@@ -18,7 +18,6 @@ import {
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { AgentInputMethod } from '@comfyorg/telemetry/types'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
@@ -38,6 +37,7 @@ import { insertComposerReference } from '@/workbench/extensions/agent/utils/comp
 import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
 import { createVideoThumbnail } from '@/workbench/extensions/agent/utils/videoThumbnail'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
+import { useAgentConversationStore } from './agentConversationStore'
 
 interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]
@@ -73,11 +73,10 @@ const zSavedDraft = z.object({
   )
 })
 
-interface SubmittedDraft {
-  attachments: ComposerAttachment[]
-  nodes: SelectedNode[]
-  target: ComfyWorkflow
-  prompt: ComposerPrompt
+interface GateHold {
+  id: number
+  clientMessageId: string
+  revision: number
 }
 
 export const useAgentComposerStore = defineStore('agentComposer', () => {
@@ -176,14 +175,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       updateAttachment(id, { previewUrl: url })
     })
   }
-  const submission = shallowRef<{
-    id: number
-    phase: 'pending' | 'failed'
-    revision: number
-    origin: AgentInputMethod
-    starterPrompt: AgentStarterPromptSource | null
-    snapshot: SubmittedDraft
-  } | null>(null)
+  const gateHold = shallowRef<GateHold | null>(null)
   const rejectedDraft = shallowRef<{
     prompt: ComposerPrompt
     attachmentIds: string[]
@@ -206,21 +198,21 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       )
     )
   })
-  let revision = 0
-  let nextSubmissionId = 0
+  const revision = ref(0)
+  let nextGateHoldId = 0
 
   function updateDraft(next: ComposerPrompt): void {
-    ++revision
+    ++revision.value
     draftState.value = next
   }
 
   function prefillGreeting(text: string): (() => void) | undefined {
-    if (draft.value !== '' || hasDraft.value || submission.value) return
+    if (draft.value !== '' || hasDraft.value || gateHold.value) return
     setText(text)
     markSuggestedPrompt()
-    const ownedRevision = revision
+    const ownedRevision = revision.value
     return () => {
-      if (revision !== ownedRevision) return
+      if (revision.value !== ownedRevision) return
       setText('')
       promptOrigin.value = 'typed'
       starterPrompt.value = null
@@ -549,7 +541,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       return false
     assetsById.set(attachment.id, { ...attachment })
     attachmentIds.value = [...attachmentIds.value, attachment.id]
-    ++revision
+    ++revision.value
     ensureThumbnail(attachment)
     return true
   }
@@ -590,6 +582,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     if (attachment.mediaUrl !== previous.mediaUrl) cancelThumbnail(id)
     revokePreview(previous, attachment)
     assetsById.set(id, attachment)
+    if (patch.previewUrl)
+      useAgentConversationStore().updatePendingAttachmentPreview(
+        id,
+        patch.previewUrl
+      )
     ensureThumbnail(attachment)
     if (
       prompt.value.references.some(
@@ -616,7 +613,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
     if (attachmentIds.value.includes(id)) {
       attachmentIds.value = attachmentIds.value.filter((item) => item !== id)
-      ++revision
+      ++revision.value
     }
     removeReference(`asset:${id}`)
   }
@@ -627,8 +624,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function releaseUnusedAssets(): void {
     const retained = new Set(attachments.value.map(({ id }) => id))
-    for (const attachment of submission.value?.snapshot.attachments ?? [])
-      retained.add(attachment.id)
+    for (const id of useAgentConversationStore().pendingAttachmentIds())
+      retained.add(id)
     for (const id of heldAssetIds.value) retained.add(id)
     for (const [id, attachment] of assetsById)
       if (!retained.has(id)) {
@@ -639,60 +636,41 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       }
   }
 
-  function startSubmission(snapshot: SubmittedDraft): number {
-    resetPromptHistory()
-    rejectedDraft.value = null
-    // Held with the snapshot, not dropped: a send that fails puts this draft
-    // back in the composer, and the retry came from the same chip or edited
-    // prompt the first attempt did.
-    const origin = promptOrigin.value
-    const chip = starterPrompt.value
-    promptOrigin.value = 'typed'
-    starterPrompt.value = null
-    attachmentIds.value = []
-    updateDraft({ text: '', references: [] })
-    insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
-    const id = ++nextSubmissionId
-    submission.value = {
-      id,
-      phase: 'pending',
-      revision,
-      origin,
-      starterPrompt: chip,
-      snapshot
-    }
+  function startGateHold(clientMessageId: string): number {
+    clearDraft()
+    const id = ++nextGateHoldId
+    gateHold.value = { id, clientMessageId, revision: revision.value }
     return id
   }
 
-  function settleSubmission(id: number, sent: boolean): void {
-    const pending = submission.value
-    if (pending?.id !== id) return
-    submission.value =
-      sent || pending.revision !== revision
-        ? null
-        : { ...pending, phase: 'failed' }
+  function releaseGateHold(id: number): void {
+    if (gateHold.value?.id !== id) return
+    gateHold.value = null
     releaseUnusedAssets()
   }
 
-  function takeFailedSubmission(): SubmittedDraft | undefined {
-    const failed = submission.value
-    if (failed?.phase !== 'failed') return
-    submission.value = null
-    if (failed.revision !== revision) return
-    promptOrigin.value = failed.origin
-    starterPrompt.value = failed.starterPrompt
-    return failed.snapshot
+  function cancelGateHold(): string | null {
+    const held = gateHold.value
+    if (!held) return null
+    gateHold.value = null
+    return held.clientMessageId
   }
 
-  function invalidateSubmission(): void {
-    submission.value = null
-    rejectedDraft.value = null
-    releaseUnusedAssets()
+  function restoreSubmissionMeta(
+    origin: AgentInputMethod,
+    chip: AgentStarterPromptSource | null
+  ): void {
+    promptOrigin.value = origin
+    starterPrompt.value = chip
   }
 
   function markRejectedDraft(): void {
+    if (!draftState.value.text && attachmentIds.value.length === 0) return
     rejectedDraft.value = {
-      prompt: draftState.value,
+      prompt: {
+        text: draftState.value.text,
+        references: [...draftState.value.references]
+      },
       attachmentIds: [...attachmentIds.value]
     }
   }
@@ -700,6 +678,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   function clearDraft(): void {
     rejectedDraft.value = null
     resetPromptHistory()
+    rejectedDraft.value = null
     promptOrigin.value = 'typed'
     starterPrompt.value = null
     attachmentIds.value = []
@@ -753,7 +732,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     starterPrompt,
     errorContext,
     insertionPoint,
-    submission,
+    gateHold,
+    draftRevision: computed(() => revision.value),
     pendingCaret,
     clearPendingCaret,
     rejectedDraftUnchanged,
@@ -782,10 +762,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateAttachment,
     removeAttachment,
     releaseUnusedAssets,
-    startSubmission,
-    settleSubmission,
-    takeFailedSubmission,
-    invalidateSubmission,
+    startGateHold,
+    releaseGateHold,
+    cancelGateHold,
+    restoreSubmissionMeta,
     holdAssets,
     clearDraft,
     trackDraftThread

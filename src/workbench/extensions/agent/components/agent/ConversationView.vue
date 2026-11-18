@@ -163,7 +163,9 @@ useResizeObserver(scrollContainer, followLatestAfterResize)
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
-  if (!last || !('parts' in last)) return `${entries.length}`
+  if (!last) return '0'
+  if (!('parts' in last))
+    return `${entries.length}:${last.pending?.status ?? ''}:${last.pending?.failure?.message ?? ''}`
   const tail = last.parts.at(-1)
   const tailText = tail && 'text' in tail ? tail.text.length : 0
   const settled = last.parts.filter(
@@ -237,6 +239,7 @@ watch(
               :tags="entry.tags"
               :workflow-references="entry.workflowReferences"
               :skill-reference="entry.skillReference"
+              :pending="entry.pending"
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
               @open-reference-workflow="

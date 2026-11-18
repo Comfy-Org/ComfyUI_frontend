@@ -45,11 +45,71 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
+import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
+import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import type {
+  AgentInputMethod,
+  AgentStopMethod
+} from '@comfyorg/telemetry/types'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
 
 export type { UserAttachment }
 
 type ConversationStatus = 'idle' | 'thinking' | 'streaming'
+
+export type PendingSendOrigin =
+  | { kind: 'thread'; threadId: string }
+  | { kind: 'blank'; blankChatId: string }
+
+type PendingSendStatus = 'sending' | 'failed'
+
+type PendingSendFailureKind =
+  | 'network'
+  | 'admission'
+  | 'paywall'
+  | 'retry_after'
+  | 'disowned'
+  | 'target_unavailable'
+  | 'turn_in_progress'
+  | 'request'
+
+export interface PendingSendFailure {
+  kind: PendingSendFailureKind
+  message: string
+  retryAfterSeconds?: number
+}
+
+export interface PendingSendEntryState {
+  clientMessageId: string
+  status: PendingSendStatus
+  failure?: PendingSendFailure
+}
+
+export interface PendingSendStop {
+  method?: AgentStopMethod
+}
+
+export interface PendingSend {
+  clientMessageId: string
+  origin: PendingSendOrigin
+  text: string
+  attachments: UserAttachment[]
+  tags: string[]
+  workflowReferences: WorkflowReference[]
+  skillReference?: SkillReference
+  prompt: ComposerPrompt
+  composerAttachments: ComposerAttachment[]
+  composerNodes: SelectedNode[]
+  target: ComfyWorkflow | null
+  promptOrigin: AgentInputMethod
+  starterPrompt: AgentStarterPromptSource | null
+  status: PendingSendStatus
+  failure?: PendingSendFailure
+  stopRequested?: PendingSendStop
+}
 
 interface UserEntry {
   id: TurnId
@@ -59,6 +119,7 @@ interface UserEntry {
   tags?: string[]
   workflowReferences?: WorkflowReference[]
   skillReference?: SkillReference
+  pending?: PendingSendEntryState
 }
 
 export type ConversationEntry = UserEntry | AssistantMessage
@@ -69,6 +130,9 @@ interface BackgroundTurn {
   message: AssistantMessage
   transport: AgentEventTransport
   userText: string | undefined
+  attachments?: UserAttachment[]
+  tags?: string[]
+  workflowReferences?: WorkflowReference[]
   skillReference?: SkillReference
   settled: boolean
   tab: TurnTab
@@ -444,6 +508,11 @@ function finishWithPersistedParts(
 }
 
 const MAX_DEPARTED_TURNS = 32
+let blankChatCounter = 0
+
+function nextBlankChatId(): string {
+  return `blank-${++blankChatCounter}`
+}
 
 interface SubmittedAskAnswer {
   answer: AgentAnswerRequest
@@ -488,6 +557,8 @@ export const useAgentConversationStore = defineStore(
     // has nothing left pending.
     const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = shallowReactive(new Map<string, BackgroundTurn>())
+    const activeBlankChatId = ref<string>(nextBlankChatId())
+    const pendingSends = shallowReactive(new Map<string, PendingSend>())
     let resolveTurnTab: () => TurnTab = () => UNKNOWN_TAB
     const turnCompleted = createEventHook<string>()
     const unreconciledSnapshotTurns = new Map<
@@ -901,6 +972,195 @@ export const useAgentConversationStore = defineStore(
           ASK_RESOLUTION_GRACE_MS
         )
       )
+    }
+
+    function currentOrigin(): PendingSendOrigin {
+      return threadId.value !== null
+        ? { kind: 'thread', threadId: threadId.value }
+        : { kind: 'blank', blankChatId: activeBlankChatId.value }
+    }
+
+    function originsEqual(a: PendingSendOrigin, b: PendingSendOrigin): boolean {
+      return a.kind === 'thread' && b.kind === 'thread'
+        ? a.threadId === b.threadId
+        : a.kind === 'blank' &&
+            b.kind === 'blank' &&
+            a.blankChatId === b.blankChatId
+    }
+
+    function isOriginOnScreen(origin: PendingSendOrigin): boolean {
+      return originsEqual(origin, currentOrigin())
+    }
+
+    const pendingSendsForCurrentChat = computed(() =>
+      [...pendingSends.values()].filter((send) => isOriginOnScreen(send.origin))
+    )
+
+    const hasSendingPendingSend = computed(() =>
+      pendingSendsForCurrentChat.value.some((send) => send.status === 'sending')
+    )
+
+    function hasSendingForOrigin(
+      origin: PendingSendOrigin,
+      excludeClientMessageId?: string
+    ): boolean {
+      for (const send of pendingSends.values())
+        if (
+          send.status === 'sending' &&
+          send.clientMessageId !== excludeClientMessageId &&
+          originsEqual(send.origin, origin)
+        )
+          return true
+      return false
+    }
+
+    function pendingSendingText(): string {
+      const current = [...pendingSendsForCurrentChat.value]
+        .reverse()
+        .find((send) => send.status === 'sending')
+      if (current) return current.text.trim()
+      const any = [...pendingSends.values()]
+        .reverse()
+        .find((send) => send.status === 'sending')
+      return any ? any.text.trim() : ''
+    }
+
+    function pendingAttachmentIds(): Set<string> {
+      const ids = new Set<string>()
+      for (const send of pendingSends.values())
+        for (const attachment of send.composerAttachments)
+          ids.add(attachment.id)
+      return ids
+    }
+
+    function startPendingSend(
+      input: Omit<
+        PendingSend,
+        'origin' | 'status' | 'skillReference' | 'failure'
+      > & {
+        origin?: PendingSendOrigin
+      }
+    ): PendingSend {
+      const parsed = parseSkillReferenceText(
+        input.text,
+        input.workflowReferences
+      )
+      const record: PendingSend = {
+        ...input,
+        origin: input.origin ?? currentOrigin(),
+        text: parsed.text,
+        workflowReferences: parsed.workflowReferences,
+        skillReference: parsed.skillReference,
+        status: 'sending'
+      }
+      pendingSends.set(record.clientMessageId, record)
+      return record
+    }
+
+    function failPendingSend(
+      clientMessageId: string,
+      failure: PendingSendFailure
+    ): boolean {
+      const existing = pendingSends.get(clientMessageId)
+      if (!existing) return false
+      pendingSends.set(clientMessageId, {
+        ...existing,
+        status: 'failed',
+        failure
+      })
+      return true
+    }
+
+    function markPendingSendStopped(
+      origin: PendingSendOrigin,
+      method?: PendingSendStop['method']
+    ): boolean {
+      let marked = false
+      for (const [id, send] of pendingSends) {
+        if (send.status !== 'sending' || !originsEqual(send.origin, origin))
+          continue
+        pendingSends.set(id, { ...send, stopRequested: { method } })
+        marked = true
+      }
+      return marked
+    }
+
+    function takePendingSend(clientMessageId: string): PendingSend | undefined {
+      const existing = pendingSends.get(clientMessageId)
+      if (!existing) return undefined
+      pendingSends.delete(clientMessageId)
+      return existing
+    }
+
+    function getPendingSend(clientMessageId: string): PendingSend | undefined {
+      return pendingSends.get(clientMessageId)
+    }
+
+    function clearPendingSends(): void {
+      pendingSends.clear()
+    }
+
+    function updatePendingAttachmentPreview(
+      id: string,
+      previewUrl: string
+    ): void {
+      for (const [sendId, send] of pendingSends) {
+        if (!send.composerAttachments.some((item) => item.id === id)) continue
+        pendingSends.set(sendId, {
+          ...send,
+          composerAttachments: send.composerAttachments.map((item) =>
+            item.id === id ? { ...item, previewUrl } : item
+          ),
+          attachments: send.attachments.map((item, index) =>
+            send.composerAttachments[index]?.id === id
+              ? { ...item, previewUrl }
+              : item
+          )
+        })
+      }
+    }
+
+    function startBackgroundTurn(input: {
+      threadId: string
+      turnId: TurnId
+      text: string
+      attachments?: UserAttachment[]
+      tags?: string[]
+      workflowReferences?: WorkflowReference[]
+      tab: TurnTab
+    }): void {
+      const parsed = parseSkillReferenceText(
+        input.text,
+        input.workflowReferences
+      )
+      if (input.attachments !== undefined && input.attachments.length > 0) {
+        const names = attachmentNamesByThread.get(input.threadId) ?? new Map()
+        for (const attachment of input.attachments)
+          if (attachment.ref) names.set(attachment.ref, attachment.name)
+        attachmentNamesByThread.set(input.threadId, names)
+      }
+      const message = createAssistantMessage(input.turnId)
+      const transport = createAgentEventTransport(
+        message,
+        (snapshot) => publishMessage(input.turnId, snapshot),
+        (workflowId) => canvasSyncGate(workflowId),
+        () => canvasSyncOutcomeCount(),
+        reportUndeliverableAskData
+      )
+      backgroundTurns.set(input.turnId, {
+        threadId: input.threadId,
+        messageId: input.turnId,
+        message,
+        transport,
+        userText: parsed.text,
+        attachments: input.attachments,
+        tags: input.tags,
+        workflowReferences: parsed.workflowReferences,
+        skillReference: parsed.skillReference,
+        settled: false,
+        tab: input.tab,
+        pendingAskIds: []
+      })
     }
 
     function startTurn(turnId: TurnId): void {
@@ -1332,6 +1592,15 @@ export const useAgentConversationStore = defineStore(
         !userTexts.value.has(entry.message.id)
       ) {
         userTexts.value.set(entry.message.id, entry.userText)
+        if (entry.attachments && entry.attachments.length > 0)
+          userAttachments.value.set(entry.message.id, entry.attachments)
+        if (entry.tags && entry.tags.length > 0)
+          userTags.value.set(entry.message.id, entry.tags)
+        if (entry.workflowReferences && entry.workflowReferences.length > 0)
+          userWorkflowReferences.value.set(
+            entry.message.id,
+            entry.workflowReferences
+          )
         if (entry.skillReference)
           userSkillReferences.value.set(entry.message.id, entry.skillReference)
       }
@@ -1617,6 +1886,7 @@ export const useAgentConversationStore = defineStore(
       dropAttachmentPreviews()
       attachmentNamesByThread.clear()
       threadId.value = null
+      activeBlankChatId.value = nextBlankChatId()
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedTurnIds = new Map()
@@ -1756,8 +2026,8 @@ export const useAgentConversationStore = defineStore(
       return undefined
     }
 
-    const entries = computed<ConversationEntry[]>(() =>
-      messages.value.flatMap((recordedMessage) => {
+    const entries = computed<ConversationEntry[]>(() => [
+      ...messages.value.flatMap((recordedMessage) => {
         const isPaywallResolved = resolvedPaywallIds.value.has(
           recordedMessage.id
         )
@@ -1777,7 +2047,7 @@ export const useAgentConversationStore = defineStore(
         return [
           {
             id: message.id,
-            role: 'user',
+            role: 'user' as const,
             text,
             attachments: userAttachments.value.get(message.id),
             tags: userTags.value.get(message.id),
@@ -1786,8 +2056,22 @@ export const useAgentConversationStore = defineStore(
           },
           ...assistantEntries
         ]
-      })
-    )
+      }),
+      ...pendingSendsForCurrentChat.value.map((send): UserEntry => ({
+        id: toTurnId(send.clientMessageId),
+        role: 'user',
+        text: send.text,
+        attachments: send.attachments,
+        tags: send.tags,
+        workflowReferences: send.workflowReferences,
+        ...(send.skillReference ? { skillReference: send.skillReference } : {}),
+        pending: {
+          clientMessageId: send.clientMessageId,
+          status: send.status,
+          failure: send.failure
+        }
+      }))
+    ])
 
     const activeMessage = computed(() =>
       activeSlot.value === null ? null : messages.value[activeSlot.value.index]
@@ -1896,6 +2180,21 @@ export const useAgentConversationStore = defineStore(
       moveTurnToTab,
       adoptThreadTab,
       threadId,
+      activeBlankChatId,
+      currentOrigin,
+      isOriginOnScreen,
+      hasSendingPendingSend,
+      hasSendingForOrigin,
+      pendingSendingText,
+      pendingAttachmentIds,
+      startPendingSend,
+      failPendingSend,
+      markPendingSendStopped,
+      takePendingSend,
+      getPendingSend,
+      clearPendingSends,
+      updatePendingAttachmentPreview,
+      startBackgroundTurn,
       isStreaming,
       status,
       latestWorkflowId,

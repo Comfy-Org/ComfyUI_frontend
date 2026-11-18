@@ -1,17 +1,17 @@
 import { getActivePinia } from 'pinia'
-import { assert, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import {
   getWorkspaceId,
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
+import { useAgentConversationStore } from './agentConversationStore'
 import { useAgentComposerStore } from './agentComposerStore'
 
 describe('composer reference ownership', () => {
-  it('does not let late pasted-name metadata overwrite a submitted draft or invalidate failure recovery', () => {
+  it('does not let late pasted-name metadata overwrite a withdrawn gate-held draft', () => {
     const store = useAgentComposerStore()
     store.setSkillScope('scope')
     const reference = {
@@ -25,9 +25,7 @@ describe('composer reference ownership', () => {
     store.restorePrompt({ text: ' colors', references: [reference] })
     const snapshot = {
       prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+      attachments: []
     }
     const resolved = {
       text: ' colors',
@@ -35,14 +33,12 @@ describe('composer reference ownership', () => {
         { ...reference, description: 'Resolved', resolvePastedName: undefined }
       ]
     }
-    const id = store.startSubmission(snapshot)
+    const id = store.startGateHold('cm-1')
     store.resolveSkillMetadata(resolved)
     expect(store.prompt).toEqual({ text: '', references: [] })
-    store.settleSubmission(id, false)
-    const failed = store.takeFailedSubmission()
-    expect(failed).toEqual(snapshot)
-    assert.exists(failed)
-    store.restorePrompt(failed.prompt, failed.attachments)
+    expect(store.cancelGateHold()).toBe('cm-1')
+    store.releaseGateHold(id)
+    store.restorePrompt(snapshot.prompt, snapshot.attachments)
     store.resolveSkillMetadata(resolved)
     expect(store.prompt.references[0]).toMatchObject({
       description: 'Resolved'
@@ -93,8 +89,9 @@ describe('composer reference ownership', () => {
     revoke.mockRestore()
   })
 
-  it('releases invalidated snapshot previews while retaining the current tray and ignoring repeated invalidation and stale settlement', () => {
+  it('releases obsolete previews while retaining assets held by the current tray or a pending send', () => {
     const store = useAgentComposerStore()
+    const conversation = useAgentConversationStore()
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const retained = {
       id: 'retained',
@@ -109,22 +106,32 @@ describe('composer reference ownership', () => {
       previewUrl: 'blob:old'
     })
     store.addAttachment(retained)
-    const id = store.startSubmission({
+    conversation.startPendingSend({
+      clientMessageId: 'cm-1',
+      text: '',
+      attachments: [],
+      tags: [],
+      workflowReferences: [],
       prompt: store.prompt,
-      attachments: store.attachments,
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+      composerAttachments: [...store.attachments],
+      composerNodes: [],
+      target: null,
+      promptOrigin: 'typed',
+      starterPrompt: null
     })
+    const gateId = store.startGateHold('cm-1')
     store.restorePrompt({ text: 'New draft', references: [] }, [retained])
-    store.invalidateSubmission()
-    store.invalidateSubmission()
-    store.settleSubmission(id, false)
+    conversation.takePendingSend('cm-1')
+    expect(store.cancelGateHold()).toBe('cm-1')
+    expect(store.cancelGateHold()).toBeNull()
+    store.releaseGateHold(gateId)
+    store.releaseUnusedAssets()
     expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:old')
     expect(store.attachments).toEqual([retained])
     expect(store.draft).toBe('New draft')
-    expect(store.takeFailedSubmission()).toBeUndefined()
     expect(store.referenceAttachment('old')).toBe(false)
     expect(store.referenceAttachment('retained')).toBe(true)
+    expect(conversation.pendingAttachmentIds().size).toBe(0)
   })
 
   it('keeps every asset occurrence and updates all of them after upload', () => {
@@ -473,13 +480,8 @@ describe('composer draft persistence (PM-2002)', () => {
     sent.trackDraftThread(null)
     sent.setText('Make it blue')
     await nextTick()
-    const id = sent.startSubmission({
-      prompt: sent.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
-    sent.settleSubmission(id, true)
+    const id = sent.startGateHold('cm-1')
+    sent.releaseGateHold(id)
     const afterSend = await reloadPage()
     afterSend.trackDraftThread(null)
     expect(afterSend.hasDraft).toBe(false)
@@ -523,29 +525,18 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     const store = useAgentComposerStore()
     store.markSuggestedPrompt()
 
-    store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
+    store.startGateHold('cm-1')
 
     expect(store.promptOrigin).toBe('typed')
   })
 
-  it('gives the origin back when a failed send returns the draft to the composer', () => {
+  it('restores the prompt origin when a withdrawn gate hold returns the draft', () => {
     const store = useAgentComposerStore()
     store.setText('Upscale this image')
     store.markSuggestedPrompt()
-    const id = store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
-    store.settleSubmission(id, false)
-
-    expect(store.takeFailedSubmission()).toBeDefined()
+    store.startGateHold('cm-1')
+    store.cancelGateHold()
+    store.restoreSubmissionMeta('suggestion', null)
 
     expect(store.promptOrigin).toBe('suggestion')
   })
@@ -566,12 +557,7 @@ describe('composer prompt origin (PM-1474 F11)', () => {
       clickId: 'click-1'
     })
 
-    store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
+    store.startGateHold('cm-1')
 
     expect(store.promptOrigin).toBe('typed')
     expect(store.starterPrompt).toBeNull()
@@ -605,19 +591,16 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     })
   })
 
-  it('gives the chip back with the origin when a failed send returns the draft', () => {
+  it('restores the chip with the origin when a withdrawn gate hold returns the draft', () => {
     const store = useAgentComposerStore()
     store.setText('Find the best workflow for skin upscaling')
     store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
-    const id = store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    store.startGateHold('cm-1')
+    store.cancelGateHold()
+    store.restoreSubmissionMeta('suggestion', {
+      id: 'slot_3',
+      clickId: 'click-1'
     })
-    store.settleSubmission(id, false)
-
-    expect(store.takeFailedSubmission()).toBeDefined()
 
     expect(store.promptOrigin).toBe('suggestion')
     expect(store.starterPrompt).toEqual({
@@ -636,20 +619,11 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     expect(store.starterPrompt).toBeNull()
   })
 
-  it('leaves the origin alone when the failed draft is too stale to restore', () => {
+  it('leaves the origin typed after a gate hold clears when the user writes something new', () => {
     const store = useAgentComposerStore()
     store.markSuggestedPrompt()
-    const id = store.startSubmission({
-      prompt: store.prompt,
-      attachments: [],
-      nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
-    })
-    store.settleSubmission(id, false)
-    // The user has moved on and written something of their own since.
+    store.startGateHold('cm-1')
     store.setText('never mind, do this instead')
-
-    expect(store.takeFailedSubmission()).toBeUndefined()
 
     expect(store.promptOrigin).toBe('typed')
   })

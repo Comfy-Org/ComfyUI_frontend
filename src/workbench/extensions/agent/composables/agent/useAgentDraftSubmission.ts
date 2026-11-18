@@ -1,4 +1,3 @@
-import { watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
 import type {
@@ -8,11 +7,15 @@ import type {
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
+
+export type DraftSendOutcome = 'sent' | 'withdrawn' | 'failed'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
@@ -32,46 +35,62 @@ interface UseAgentDraftSubmissionOptions {
     attachments: ComposerAttachment[],
     nodes: SelectedNode[],
     references: WorkflowReference[],
-    meta: SubmissionMeta
-  ) => Promise<boolean>
+    meta: SubmissionMeta,
+    releaseGate: () => void
+  ) => Promise<DraftSendOutcome>
 }
 
-/**
- * Identity of this send attempt, for the telemetry the caller emits. Carried
- * through `send` because `startSubmission` clears the draft it is derived from
- * before the send runs.
- */
 export interface SubmissionMeta {
   clientMessageId: string
   inputMethod: AgentInputMethod
-  /**
-   * The starter prompt this draft came from, `null` when none did. Read here
-   * rather than at report time for the same reason `inputMethod` is:
-   * `startSubmission` clears it, and a failed send restores it for the retry.
-   */
   starterPrompt: AgentStarterPromptSource | null
+}
+
+function toUserAttachments(
+  attachments: readonly ComposerAttachment[]
+): UserAttachment[] {
+  return attachments.map(({ name, previewUrl, mediaUrl, ref, mediaKind }) => ({
+    name,
+    previewUrl,
+    mediaUrl,
+    ref,
+    ...(mediaKind === 'image' || mediaKind === 'video' || mediaKind === 'audio'
+      ? { kind: mediaKind }
+      : {})
+  }))
 }
 
 export function useAgentDraftSubmission(
   options: UseAgentDraftSubmissionOptions
 ) {
   const composer = useAgentComposerStore()
+  const conversation = useAgentConversationStore()
   const { selection } = options
 
-  function recoverFailedSubmission(): void {
-    const snapshot = composer.takeFailedSubmission()
-    if (!snapshot || selection.staged.value.length > 0) return
-
+  function withdrawSubmission(
+    clientMessageId: string,
+    expectedRevision?: number
+  ): void {
+    const pending = conversation.takePendingSend(clientMessageId)
+    if (!pending) return
+    if (
+      (expectedRevision !== undefined &&
+        composer.draftRevision !== expectedRevision) ||
+      selection.staged.value.length > 0
+    ) {
+      composer.releaseUnusedAssets()
+      return
+    }
     composer.restorePrompt(
       {
-        text: snapshot.prompt.text,
-        references: snapshot.prompt.references.filter((reference) => {
+        text: pending.prompt.text,
+        references: pending.prompt.references.filter((reference) => {
           if (reference.kind === 'workflow')
             return reference.id !== options.editableWorkflowId()
           if (reference.kind === 'node')
             return (
-              options.target() === snapshot.target &&
-              snapshot.nodes.some(
+              options.target() === pending.target &&
+              pending.composerNodes.some(
                 (node) =>
                   selectedNodeKey(node) === selectedNodeKey(reference.node)
               )
@@ -79,16 +98,13 @@ export function useAgentDraftSubmission(
           return true
         })
       },
-      snapshot.attachments
+      pending.composerAttachments
     )
-    if (options.target() === snapshot.target) selection.replace(snapshot.nodes)
+    composer.restoreSubmissionMeta(pending.promptOrigin, pending.starterPrompt)
+    if (options.target() === pending.target)
+      selection.replace(pending.composerNodes)
     composer.markRejectedDraft()
   }
-
-  watch(() => composer.submission, recoverFailedSubmission, {
-    immediate: true,
-    flush: 'sync'
-  })
 
   async function submit(
     text: string,
@@ -101,8 +117,7 @@ export function useAgentDraftSubmission(
       return false
     }
     if (!options.canSubmit()) return reject('cannot_submit')
-    if (composer.submission?.phase === 'pending')
-      return reject('submission_pending')
+    if (composer.gateHold !== null) return reject('submission_pending')
     if (target === null) return reject('no_target')
     if (!text.trim() && attachments.length === 0) return reject('empty')
     if (attachments.some((attachment) => attachment.uploading))
@@ -119,23 +134,41 @@ export function useAgentDraftSubmission(
       selection.workflow() === target ? [...selection.staged.value] : []
 
     selection.consume()
-    const submissionId = composer.startSubmission({
-      prompt,
-      attachments: sentAttachments,
-      nodes,
-      target
-    })
-
-    const sent = await options.send(
+    const clientMessageId = uuidv4()
+    conversation.startPendingSend({
+      clientMessageId,
       text,
-      sentAttachments,
-      nodes,
-      sentReferences,
-      { clientMessageId: uuidv4(), inputMethod, starterPrompt }
-    )
-    composer.settleSubmission(submissionId, sent)
-    return sent
+      attachments: toUserAttachments(sentAttachments),
+      tags: nodes.map((tag) => `${tag.title} #${tag.id}`),
+      workflowReferences: sentReferences,
+      prompt,
+      composerAttachments: sentAttachments,
+      composerNodes: nodes,
+      target,
+      promptOrigin: inputMethod,
+      starterPrompt
+    })
+    const gateId = composer.startGateHold(clientMessageId)
+    const gateRevision = composer.draftRevision
+
+    let outcome: DraftSendOutcome = 'failed'
+    try {
+      outcome = await options.send(
+        text,
+        sentAttachments,
+        nodes,
+        sentReferences,
+        { clientMessageId, inputMethod, starterPrompt },
+        () => composer.releaseGateHold(gateId)
+      )
+    } finally {
+      composer.releaseGateHold(gateId)
+      if (outcome === 'withdrawn')
+        withdrawSubmission(clientMessageId, gateRevision)
+      else composer.releaseUnusedAssets()
+    }
+    return outcome === 'sent'
   }
 
-  return { submit }
+  return { submit, withdrawSubmission }
 }

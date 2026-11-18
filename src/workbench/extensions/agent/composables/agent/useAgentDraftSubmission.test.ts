@@ -7,8 +7,12 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyW
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
+import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import type { SubmissionMeta } from './useAgentDraftSubmission'
+import type {
+  DraftSendOutcome,
+  SubmissionMeta
+} from './useAgentDraftSubmission'
 import { useAgentDraftSubmission } from './useAgentDraftSubmission'
 import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'
@@ -20,8 +24,9 @@ type Send = (
   attachments: ComposerAttachment[],
   nodes: SelectedNode[],
   references: WorkflowReference[],
-  meta: SubmissionMeta
-) => Promise<boolean>
+  meta: SubmissionMeta,
+  releaseGate: () => void
+) => Promise<DraftSendOutcome>
 
 const scopes: EffectScope[] = []
 afterEach(() => {
@@ -70,8 +75,8 @@ function setup() {
       references: [...composer.workflowReferences],
       nodes: [...selection.staged.value]
     }
-    let resolveSend: (sent: boolean) => void = () => {}
-    const promise = new Promise<boolean>((resolve) => {
+    let resolveSend: (outcome: DraftSendOutcome) => void = () => {}
+    const promise = new Promise<DraftSendOutcome>((resolve) => {
       resolveSend = resolve
     })
     const pending = { promise, resolve: resolveSend }
@@ -94,6 +99,7 @@ function setup() {
     let mountedScope = scope
     return {
       composer,
+      conversation: useAgentConversationStore(),
       selection,
       original,
       target,
@@ -120,6 +126,9 @@ function setup() {
           composer.attachments,
           composer.workflowReferences
         )
+      },
+      withdrawSubmission(clientMessageId: string, expectedRevision?: number) {
+        submission.withdrawSubmission(clientMessageId, expectedRevision)
       }
     }
   })
@@ -128,8 +137,8 @@ function setup() {
 }
 
 describe('Agent draft submission', () => {
-  it('restores an untouched skill draft with its references after a failed send', async () => {
-    const { composer, submit, pending } = setup()
+  it('restores an untouched skill draft with its references when a gate withdraws it', async () => {
+    const { composer, conversation, submit, pending } = setup()
     composer.setSkillScope('workspace-a')
     composer.applyEditorPrompt({
       ...composer.prompt,
@@ -146,12 +155,13 @@ describe('Agent draft submission', () => {
     })
     const prompt = composer.prompt
     const sending = submit()
-    pending.resolve(false)
+    pending.resolve('withdrawn')
     await sending
     expect(composer.prompt).toEqual(prompt)
+    expect(conversation.entries).toEqual([])
   })
 
-  it('restores an attached error reference and its origin after a failed send', async () => {
+  it('restores an attached error reference and its origin when a gate withdraws it', async () => {
     const { composer, submit, pending } = setup()
     composer.setErrorContext({
       scope: 'card',
@@ -162,19 +172,30 @@ describe('Agent draft submission', () => {
     })
     const prompt = composer.prompt
     const sending = submit()
-    pending.resolve(false)
+    pending.resolve('withdrawn')
     await sending
     expect(composer.prompt).toEqual(prompt)
     expect(composer.promptOrigin).toBe('error_context')
   })
 
   it('clears the complete draft before sending its snapshot and preserves subsequent typing on success', async () => {
-    const { composer, selection, original, submit, send, pending } = setup()
+    const {
+      composer,
+      conversation,
+      selection,
+      original,
+      submit,
+      send,
+      pending
+    } = setup()
     send.mockImplementation(() => {
       expect(composer.draft).toBe('')
       expect(composer.attachments).toEqual([])
       expect(composer.workflowReferences).toEqual([])
       expect(selection.staged.value).toEqual([])
+      expect(conversation.entries).toMatchObject([
+        { role: 'user', text: 'Compare these', pending: { status: 'sending' } }
+      ])
       return pending.promise
     })
     const sending = submit()
@@ -187,12 +208,45 @@ describe('Agent draft submission', () => {
         clientMessageId: expect.any(String),
         inputMethod: 'typed',
         starterPrompt: null
-      }
+      },
+      expect.any(Function)
     )
     composer.setText('Next prompt')
-    pending.resolve(true)
+    conversation.takePendingSend(send.mock.calls[0][4].clientMessageId)
+    pending.resolve('sent')
     await sending
     expect(composer.draft).toBe('Next prompt')
+  })
+
+  it('does not refill the composer when the send fails after gates (O0-04)', async () => {
+    const { composer, conversation, selection, submit, send } = setup()
+    send.mockImplementation(
+      async (_text, _attachments, _nodes, _refs, meta, releaseGate) => {
+        releaseGate()
+        conversation.failPendingSend(meta.clientMessageId, {
+          kind: 'network',
+          message: 'offline'
+        })
+        return 'failed'
+      }
+    )
+
+    await submit()
+
+    expect(composer.draft).toBe('')
+    expect(composer.attachments).toEqual([])
+    expect(composer.workflowReferences).toEqual([])
+    expect(selection.staged.value).toEqual([])
+    expect(conversation.entries).toMatchObject([
+      {
+        role: 'user',
+        text: 'Compare these',
+        pending: {
+          status: 'failed',
+          failure: { kind: 'network', message: 'offline' }
+        }
+      }
+    ])
   })
 
   it.for([
@@ -239,10 +293,10 @@ describe('Agent draft submission', () => {
     }
   )
 
-  it('restores an untouched draft with its original whitespace and previews after immediate failure', async () => {
+  it('restores an untouched draft with its original whitespace and previews after immediate gate withdrawal', async () => {
     const { composer, selection, original, submit, send } = setup()
     const revoke = vi.spyOn(URL, 'revokeObjectURL')
-    send.mockResolvedValue(false)
+    send.mockResolvedValue('withdrawn')
 
     await submit()
 
@@ -253,8 +307,8 @@ describe('Agent draft submission', () => {
     expect(revoke).not.toHaveBeenCalled()
   })
 
-  it('retains media through a pending send and failed recovery, releasing it on success', async () => {
-    const { composer, submit, send, pending } = setup()
+  it('retains media through a pending or failed send and releases it once accepted', async () => {
+    const { composer, conversation, submit, send, pending } = setup()
     const revoke = vi.spyOn(URL, 'revokeObjectURL')
     composer.addAttachment({
       id: 'video',
@@ -267,20 +321,16 @@ describe('Agent draft submission', () => {
     const sending = submit()
     composer.releaseUnusedAssets()
     expect(revoke).not.toHaveBeenCalled()
-    pending.resolve(false)
+    conversation.failPendingSend(send.mock.calls[0][4].clientMessageId, {
+      kind: 'network',
+      message: 'offline'
+    })
+    pending.resolve('failed')
     await sending
     await nextTick()
-    expect(composer.attachments).toContainEqual({
-      id: 'video',
-      name: 'clip.mp4',
-      ref: 'clip.mp4',
-      mediaKind: 'video',
-      mediaUrl: 'blob:video'
-    })
     expect(revoke).not.toHaveBeenCalled()
-    send.mockResolvedValue(true)
-    await submit()
-    expect(composer.attachments).toEqual([])
+    conversation.takePendingSend(send.mock.calls[0][4].clientMessageId)
+    composer.releaseUnusedAssets()
     expect(revoke.mock.calls).toEqual([['blob:cat'], ['blob:video']])
   })
 
@@ -289,7 +339,7 @@ describe('Agent draft submission', () => {
     const sending = submit()
     composer.setText('Changed my mind')
     composer.setText('')
-    pending.resolve(false)
+    pending.resolve('withdrawn')
     await sending
 
     expect(composer.draft).toBe('')
@@ -298,7 +348,7 @@ describe('Agent draft submission', () => {
     expect(selection.staged.value).toEqual([])
   })
 
-  it('restores repeated mentions and unmentioned assets with their original inline positions after failure', async () => {
+  it('restores repeated mentions and unmentioned assets with their original inline positions after withdrawal', async () => {
     const { composer, submit, send } = setup()
     composer.referenceAttachment('upload-1')
     composer.referenceAttachment('upload-1')
@@ -309,7 +359,7 @@ describe('Agent draft submission', () => {
     })
     const prompt = composer.prompt
     const attachments = [...composer.attachments]
-    send.mockResolvedValue(false)
+    send.mockResolvedValue('withdrawn')
 
     await submit()
 
@@ -320,11 +370,11 @@ describe('Agent draft submission', () => {
     ).toHaveLength(2)
   })
 
-  it('keeps a newer tray attachment instead of restoring a failed submission', async () => {
+  it('keeps a newer tray attachment instead of restoring a withdrawn gate hold', async () => {
     const { composer, submit, pending } = setup()
     const sending = submit()
     composer.addAttachment({ id: 'new', name: 'new.png', ref: 'new.png' })
-    pending.resolve(false)
+    pending.resolve('withdrawn')
 
     await sending
 
@@ -341,12 +391,12 @@ describe('Agent draft submission', () => {
       const sending = submit()
       unmount()
       if (phase === 'failed') {
-        pending.resolve(false)
+        pending.resolve('failed')
         await sending
       }
       composer.setText('New input')
       composer.setText('')
-      pending.resolve(false)
+      pending.resolve('withdrawn')
       await sending
       remount()
 
@@ -364,22 +414,31 @@ describe('Agent draft submission', () => {
       { id: 'wf-new', name: 'New reference', textOffset: 0 }
     ])
     composer.setWorkflowReferences([])
-    pending.resolve(false)
+    pending.resolve('withdrawn')
     await sending
 
     expect(composer.draft).toBe('')
     expect(composer.workflowReferences).toEqual([])
   })
 
-  it('does not submit twice while the original request is pending after reopening', async () => {
-    const { composer, submit, send, onRejected, pending, remount } = setup()
+  it('does not submit twice while the original request is gate-held after reopening', async () => {
+    const {
+      composer,
+      conversation,
+      submit,
+      send,
+      onRejected,
+      pending,
+      remount
+    } = setup()
     const sending = submit()
     remount()
     composer.setText('Next prompt')
     await submit()
     expect(send).toHaveBeenCalledOnce()
     expect(onRejected).toHaveBeenCalledExactlyOnceWith('submission_pending')
-    pending.resolve(true)
+    conversation.takePendingSend(send.mock.calls[0][4].clientMessageId)
+    pending.resolve('sent')
     await sending
 
     expect(composer.draft).toBe('Next prompt')
@@ -388,21 +447,23 @@ describe('Agent draft submission', () => {
   })
 
   it('ignores the older attempt when a new context has already submitted', async () => {
-    const { composer, submit, send, pending, remount } = setup()
+    const { composer, submit, send, pending, remount, withdrawSubmission } =
+      setup()
     const first = submit()
     remount()
-    composer.invalidateSubmission()
+    const firstId = composer.cancelGateHold()
+    if (firstId !== null) withdrawSubmission(firstId)
     composer.setText('New chat draft')
-    let resolveNext: (sent: boolean) => void = () => {}
-    const next = new Promise<boolean>((resolve) => {
+    let resolveNext: (sent: DraftSendOutcome) => void = () => {}
+    const next = new Promise<DraftSendOutcome>((resolve) => {
       resolveNext = resolve
     })
     send.mockImplementationOnce(() => next)
     const second = submit()
-    pending.resolve(false)
+    pending.resolve('withdrawn')
     await first
     expect(composer.draft).toBe('')
-    resolveNext(false)
+    resolveNext('withdrawn')
     await second
 
     expect(composer.draft).toBe('New chat draft')
@@ -415,8 +476,10 @@ describe('Agent draft submission', () => {
   it('does not recover into a changed composer context', async () => {
     const { composer, selection, submit, pending } = setup()
     const sending = submit()
-    composer.invalidateSubmission()
-    pending.resolve(false)
+    composer.cancelGateHold()
+    composer.setText('Changed')
+    composer.setText('')
+    pending.resolve('withdrawn')
     await sending
 
     expect(composer.draft).toBe('')
@@ -438,7 +501,7 @@ describe('Agent draft submission', () => {
     const sending = submit()
     target.value = createMockLoadedWorkflow({ path: 'workflows/lighting.json' })
     editableWorkflowId.value = 'wf-reference'
-    pending.resolve(false)
+    pending.resolve('withdrawn')
     await sending
 
     expect(composer.draft).toBe(original.draft)
@@ -453,7 +516,7 @@ describe('Agent draft submission', () => {
     nodeWorkflow.value = createMockLoadedWorkflow({
       path: 'workflows/other.json'
     })
-    send.mockResolvedValue(false)
+    send.mockResolvedValue('withdrawn')
     await submit()
 
     expect(send).toHaveBeenCalledWith(
@@ -465,7 +528,8 @@ describe('Agent draft submission', () => {
         clientMessageId: expect.any(String),
         inputMethod: 'typed',
         starterPrompt: null
-      }
+      },
+      expect.any(Function)
     )
     expect(composer.draft).toBe(original.draft)
     expect(selection.staged.value).toEqual([])
@@ -473,7 +537,7 @@ describe('Agent draft submission', () => {
 
   it('gives each send attempt its own client message id', async () => {
     const { composer, submit, send } = setup()
-    send.mockResolvedValue(true)
+    send.mockResolvedValue('sent')
 
     await submit()
     composer.setText('and again')
@@ -496,7 +560,7 @@ describe('Agent draft submission', () => {
     }
   ])('reports the $origin the draft came from', async ({ origin, mark }) => {
     const { composer, submit, send } = setup()
-    send.mockResolvedValue(true)
+    send.mockResolvedValue('sent')
     mark(composer)
 
     await submit()
@@ -510,7 +574,7 @@ describe('Agent draft submission', () => {
 
   it('carries the starter prompt a suggestion came from into the send', async () => {
     const { composer, submit, send } = setup()
-    send.mockResolvedValue(true)
+    send.mockResolvedValue('sent')
     composer.markSuggestedPrompt({ id: 'slot_2', clickId: 'click-1' })
 
     await submit()
@@ -524,7 +588,7 @@ describe('Agent draft submission', () => {
 
   it('does not carry it into the next send', async () => {
     const { composer, submit, send } = setup()
-    send.mockResolvedValue(true)
+    send.mockResolvedValue('sent')
     composer.markSuggestedPrompt({ id: 'slot_2', clickId: 'click-1' })
 
     await submit()
@@ -538,9 +602,9 @@ describe('Agent draft submission', () => {
     })
   })
 
-  it('reports retries as separate attempts joined to the same starter click', async () => {
+  it('reports withdrawn gate retries as separate attempts joined to the same starter click', async () => {
     const { composer, submit, send } = setup()
-    send.mockResolvedValue(false)
+    send.mockResolvedValue('withdrawn')
     composer.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-2' })
 
     await submit()

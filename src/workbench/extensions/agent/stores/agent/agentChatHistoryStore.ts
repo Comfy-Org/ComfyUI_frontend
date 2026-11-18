@@ -113,6 +113,16 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     activeId.value = id
   }
 
+  function isDeleted(id: string): boolean {
+    return deletedIds.value.includes(id)
+  }
+
+  function rememberSession(session: ChatSession): void {
+    if (isDeleted(session.id)) return
+    if (sessions.value.some((item) => item.id === session.id)) return
+    sessions.value = [session, ...sessions.value]
+  }
+
   return {
     sessions,
     activeId,
@@ -121,6 +131,8 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     rename,
     remove,
     replaceAll,
-    setActive
+    setActive,
+    isDeleted,
+    rememberSession
   }
 })

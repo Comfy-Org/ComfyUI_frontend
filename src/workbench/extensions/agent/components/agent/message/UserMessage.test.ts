@@ -415,4 +415,47 @@ describe('UserMessage', () => {
     await userEvent.click(screen.getByRole('button', { name: t('agent.copy') }))
     expect(clipboard.text).toBe('@[File: clip.bin]')
   })
+
+  it('shows a sending spinner for a pending send and hides error alerts (O0-01)', () => {
+    renderMessage({
+      text: 'sending prompt',
+      pending: { clientMessageId: 'cm-1', status: 'sending' }
+    })
+
+    expect(
+      screen.getByRole('status', { name: t('agent.sendingMessage') })
+    ).toBeVisible()
+    expect(screen.queryByTestId('pending-send-error')).toBeNull()
+  })
+
+  it('shows a sending spinner even on an attachment-only pending send (O0-01)', () => {
+    renderMessage({
+      text: '',
+      attachments: [{ name: 'clip.bin' }],
+      pending: { clientMessageId: 'cm-1', status: 'sending' }
+    })
+
+    expect(
+      screen.getByRole('status', { name: t('agent.sendingMessage') })
+    ).toBeVisible()
+  })
+
+  it('shows the failure explanation and no spinner when a pending send fails (O0-04)', () => {
+    renderMessage({
+      text: 'failed prompt',
+      pending: {
+        clientMessageId: 'cm-2',
+        status: 'failed',
+        failure: {
+          kind: 'network',
+          message: 'Message failed to send: offline'
+        }
+      }
+    })
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+      'Message failed to send: offline'
+    )
+  })
 })

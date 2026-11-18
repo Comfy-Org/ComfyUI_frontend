@@ -69,7 +69,13 @@ import {
   normalizeAgentTranscript
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
-import type { LiveTurn } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type {
+  LiveTurn,
+  PendingSendFailure,
+  PendingSendOrigin,
+  TurnTab,
+  UserAttachment
+} from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import { useAgentSendGateStore } from '@/workbench/extensions/agent/stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
@@ -128,6 +134,8 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
+  onBackgroundTurnAccepted?: (ack: AgentTurnAccepted, text: string) => void
+  isDeletedThread?: (threadId: string) => boolean
   onAgentEvent?: (event: AgentWsEvent) => void
   onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
@@ -155,12 +163,13 @@ export interface AgentSessionDeps {
       workflowId: string | undefined,
       isCurrent: () => boolean
     ): Promise<boolean> | boolean
-    prepare?(): Promise<void>
+    prepare?(clientMessageId?: string): Promise<void>
     /** The server refused this workflow id; forget every cached trace of it. */
     disowned?(workflowId: string): void
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
+    turnTab?(origin?: TurnOrigin, workflowId?: string): TurnTab
     /** Node ids selected on the target canvas, outside node selection mode. */
     canvasSelection?(): string[]
   }
@@ -434,21 +443,6 @@ let sessionGeneration = 0
 let rememberedWorkflowId: string | null = null
 const turnStartedAt = new Map<TurnId, number>()
 
-/**
- * Module-level like `turnStartedAt`: a POST outlives the panel that sent it,
- * so a stop clicked from a remounted panel before the acknowledgement must
- * reach the continuation that acks. One owner: armed while a send is in
- * flight, consumed exactly once at ack.
- */
-let sendInFlight = false
-let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
-
-function consumeStopPendingAck() {
-  const pending = stopPendingAck
-  stopPendingAck = null
-  return pending
-}
-
 const CREDENTIAL_REFRESH_INTERVAL_MS = 4 * 60 * 1000
 
 function parseAdmissionError(error: unknown) {
@@ -505,6 +499,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rest,
     events,
     onThreadStarted,
+    onBackgroundTurnAccepted,
+    isDeletedThread,
     onAgentEvent,
     onThreadActivated,
     onAskResolved,
@@ -517,6 +513,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const conversationStore = useAgentConversationStore()
   const sendGateStore = useAgentSendGateStore()
   const skillPacks = useSkillPacksStore()
+  const deletedThreads = new Set<string>()
   const skillTurnUsage = new Map<string, { scope: string; used: boolean }>()
   watch(
     () => skillPacks.scope,
@@ -616,7 +613,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const notices = ref<SessionNotice[]>([])
   const readyThreadId = ref<string | null>(null)
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
-  const sending = ref(false)
   const answeringAskIds = computed(() => conversationStore.answeringAskIds)
   const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
     'first_open'
@@ -1125,6 +1121,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): false {
     if (!isCurrent()) return false
     if (error instanceof AgentApiError && error.status === 404) {
+      deletedThreads.add(threadId)
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
       if (localStorage.getItem(threadStorageKey) === threadId)
@@ -1176,17 +1173,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  async function prepareWorkflow(): Promise<void> {
+  async function prepareWorkflow(clientMessageId?: string): Promise<void> {
     if (!workflow?.prepare) return
     await Promise.race([
-      workflow.prepare().catch(() => undefined),
+      workflow.prepare(clientMessageId).catch(() => undefined),
       new Promise<void>((resolve) => setTimeout(resolve, PREPARE_TIMEOUT_MS))
     ])
   }
 
+  function originThreadId(origin: PendingSendOrigin): string | null {
+    return origin.kind === 'thread' ? origin.threadId : null
+  }
+
   function trackSendRefused(
     reason: AgentSessionRefusalReason,
-    clientMessageId: string | undefined
+    clientMessageId: string | undefined,
+    origin: PendingSendOrigin = conversationStore.currentOrigin()
   ): void {
     useTelemetry()?.trackAgentSendGated({
       gate: 'composer',
@@ -1194,41 +1196,49 @@ export function useAgentSession(deps: AgentSessionDeps) {
       reason,
       client_message_id: clientMessageId ?? null,
       held_ms: null,
-      thread_id: conversationStore.threadId,
+      thread_id: originThreadId(origin),
       client_session_id: agentClientSessionId()
     })
   }
 
-  function recordRefusedSend(
-    text: string,
+  function failTargetUnavailable(
+    sendId: string,
+    origin: PendingSendOrigin,
     clientMessageId: string | undefined,
     noticeKey: string
   ): void {
-    trackSendRefused('target_unavailable', clientMessageId)
-    conversationStore.recordFailedSend(
-      nextLocalErrorId(),
-      text,
-      i18n.global.t(noticeKey)
-    )
+    trackSendRefused('target_unavailable', clientMessageId, origin)
+    conversationStore.failPendingSend(sendId, {
+      kind: 'target_unavailable',
+      message: i18n.global.t(noticeKey)
+    })
   }
 
   function refusesTarget(
-    text: string,
+    sendId: string,
+    origin: PendingSendOrigin,
     originContext: WorkflowTurnContext | undefined,
     wfContext: WorkflowTurnContext | undefined,
     draft: DraftSnapshot | undefined,
-    clientMessageId: string | undefined
+    clientMessageId: string | undefined,
+    boundAtSend: string | null
   ): boolean {
     if (workflowTargetChanged(originContext, wfContext)) {
-      recordRefusedSend(
-        text,
+      failTargetUnavailable(
+        sendId,
+        origin,
         clientMessageId,
         'agent.targetNavigationUnavailable'
       )
       return true
     }
-    if (!lacksCanvasForRemint(wfContext, draft)) return false
-    recordRefusedSend(text, clientMessageId, 'agent.canvasNotReadyForSend')
+    if (!lacksCanvasForRemint(wfContext, draft, boundAtSend)) return false
+    failTargetUnavailable(
+      sendId,
+      origin,
+      clientMessageId,
+      'agent.canvasNotReadyForSend'
+    )
     return true
   }
 
@@ -1252,15 +1262,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
-    canvasNodeIds?: string[]
+    canvasNodeIds?: string[],
+    boundAtSend: string | null = boundWorkflowId.value
   ): PostMessageInput {
     const tabs = workflow?.tabs?.(origin)
-    const unboundTarget = isUnboundTarget(
-      wfContext,
-      boundWorkflowId.value,
-      draft,
-      tabs
-    )
+    const unboundTarget = isUnboundTarget(wfContext, boundAtSend, draft, tabs)
     const selectedWorkflowId = selectionWorkflowId?.()
     return {
       content: serializeWorkflowReferences(text, workflowReferences ?? []),
@@ -1375,22 +1381,23 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function rememberMint(
     input: PostMessageInput,
     wfContext: WorkflowTurnContext | undefined,
-    workflowId: string | undefined
+    workflowId: string | undefined,
+    boundAtSend: string | null
   ): void {
     if (!input.currentTabUnbound || wfContext === undefined) return
     const adoptedOrHeld =
       workflowId !== undefined &&
       bindingStore.tabPathFor(workflowId) !== undefined
-    if (!adoptedOrHeld)
-      unadoptedMintBinding.set(wfContext.tabPath, boundWorkflowId.value)
+    if (!adoptedOrHeld) unadoptedMintBinding.set(wfContext.tabPath, boundAtSend)
   }
 
   function lacksCanvasForRemint(
     wfContext: WorkflowTurnContext | undefined,
-    draft: DraftSnapshot | undefined
+    draft: DraftSnapshot | undefined,
+    boundAtSend: string | null
   ): boolean {
     if (wfContext === undefined || wfContext.id !== undefined) return false
-    if (boundWorkflowId.value === null) return false
+    if (boundAtSend === null) return false
     return workflow?.draft !== undefined && draft === undefined
   }
 
@@ -1411,11 +1418,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function recordTurnStarted(turnId: TurnId, startsThread: boolean): void {
+  function recordTurnStarted(
+    turnId: TurnId,
+    startsThread: boolean,
+    source: AgentSessionThreadStartSource | null = pendingThreadSource.value
+  ): void {
     turnStartedAt.set(turnId, Date.now())
-    if (startsThread && pendingThreadSource.value !== null) {
-      const source = pendingThreadSource.value
-      pendingThreadSource.value = null
+    if (startsThread && source !== null) {
+      if (pendingThreadSource.value === source) pendingThreadSource.value = null
       runAcceptedTurnSideEffect(
         () => onThreadStarted?.(source),
         'agent_thread_started_callback_failed'
@@ -1435,14 +1445,44 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function toUserAttachments(attachments?: SentAttachment[]): UserAttachment[] {
+    return (attachments ?? []).map(
+      ({ name, previewUrl, mediaUrl, ref, mediaKind }) => ({
+        name,
+        previewUrl,
+        mediaUrl,
+        ref,
+        ...(isAttachmentKind(mediaKind) ? { kind: mediaKind } : {})
+      })
+    )
+  }
+
+  function toTagStrings(tags?: SentTag[]): string[] {
+    return (tags ?? []).map((tag) => `${tag.title} #${tag.id}`)
+  }
+
+  function shouldAdoptWorkflow(
+    workflowId: string,
+    wfContext: WorkflowTurnContext | undefined,
+    boundBeforeAck: string | null
+  ): boolean {
+    return (
+      wfContext?.id !== undefined ||
+      (workflowId !== boundBeforeAck &&
+        bindingStore.tabPathFor(workflowId) === undefined)
+    )
+  }
+
   function acceptTurn(
     ack: AgentTurnAccepted,
     text: string,
     wfContext: WorkflowTurnContext | undefined,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    skillScope = skillPacks.scope
+    attachments: SentAttachment[] | undefined,
+    tags: SentTag[] | undefined,
+    workflowReferences: WorkflowReference[] | undefined,
+    skillScope: string,
+    threadSourceAtSend: AgentSessionThreadStartSource | null,
+    stopped?: { method?: AgentStopMethod }
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
@@ -1451,11 +1491,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (workflowId !== undefined) {
       const boundAtAck = boundWorkflowId.value
       bindWorkflow(workflowId)
-      const shouldAdopt =
-        wfContext?.id !== undefined ||
-        (workflowId !== boundAtAck &&
-          bindingStore.tabPathFor(workflowId) === undefined)
-      if (shouldAdopt)
+      if (shouldAdoptWorkflow(workflowId, wfContext, boundAtAck))
         adoptWorkflow = () =>
           workflow?.adopted(workflowId, wfContext, boundAtAck)
     }
@@ -1463,21 +1499,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.recordUser(
       turnId,
       text,
-      attachments?.map(({ name, previewUrl, mediaUrl, ref, mediaKind }) => ({
-        name,
-        previewUrl,
-        mediaUrl,
-        ref,
-        ...(isAttachmentKind(mediaKind) ? { kind: mediaKind } : {})
-      })),
-      tags?.map((tag) => `${tag.title} #${tag.id}`),
+      toUserAttachments(attachments),
+      toTagStrings(tags),
       workflowReferences
     )
     conversationStore.startTurn(turnId)
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
-    recordTurnStarted(turnId, startsThread)
-    stopPendingActiveTurn()
+    recordTurnStarted(turnId, startsThread, threadSourceAtSend)
+    if (stopped !== undefined) void stopTurn(stopped.method)
     runAcceptedTurnSideEffect(
       () => onThreadActivated?.(ack.thread_id),
       'agent_thread_activated_callback_failed'
@@ -1493,45 +1523,104 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
   }
 
-  function stopPendingActiveTurn(): void {
-    const pendingStop = consumeStopPendingAck()
-    if (pendingStop !== null) void stopTurn(pendingStop.method)
-  }
-
-  function recordSendError(
-    error: unknown,
-    text: string,
-    accepted: boolean,
-    reattached: boolean
-  ): void {
-    const admission = parseAdmissionError(error)
-    if (admission?.reason === 'no_funds') {
-      conversationStore.recordPaywall(
-        nextLocalErrorId(),
-        text,
-        admission.message
+  function acceptBackgroundTurn({
+    ack,
+    origin,
+    turnOrigin,
+    text,
+    wfContext,
+    attachments,
+    tags,
+    workflowReferences,
+    skillScope,
+    threadSourceAtSend,
+    boundAtSend,
+    stopped
+  }: {
+    ack: AgentTurnAccepted
+    origin: PendingSendOrigin
+    turnOrigin: TurnOrigin
+    text: string
+    wfContext: WorkflowTurnContext | undefined
+    attachments: SentAttachment[] | undefined
+    tags: SentTag[] | undefined
+    workflowReferences: WorkflowReference[] | undefined
+    skillScope: string
+    threadSourceAtSend: AgentSessionThreadStartSource | null
+    boundAtSend: string | null
+    stopped?: { method?: AgentStopMethod }
+  }): void {
+    const workflowId = ack.workflow_id
+    if (
+      workflowId !== undefined &&
+      shouldAdoptWorkflow(workflowId, wfContext, boundAtSend)
+    ) {
+      runAcceptedTurnSideEffect(
+        () => workflow?.adopted(workflowId, wfContext, boundAtSend),
+        'agent_workflow_adoption_callback_failed'
       )
+    }
+    const turnId = toTurnId(ack.message_id)
+    if (isDeletedThread?.(ack.thread_id)) {
+      if (stopped !== undefined)
+        void rest.cancelMessage(ack.thread_id, turnId).catch(() => undefined)
       return
     }
+    conversationStore.startBackgroundTurn({
+      threadId: ack.thread_id,
+      turnId,
+      text,
+      attachments: toUserAttachments(attachments),
+      tags: toTagStrings(tags),
+      workflowReferences,
+      tab: workflow?.turnTab?.(turnOrigin, workflowId) ?? { status: 'unknown' }
+    })
+    observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
+    recordTurnStarted(turnId, origin.kind === 'blank', threadSourceAtSend)
+    runAcceptedTurnSideEffect(
+      () => onBackgroundTurnAccepted?.(ack, text),
+      'agent_thread_activated_callback_failed'
+    )
+    if (stopped !== undefined)
+      void rest.cancelMessage(ack.thread_id, turnId).catch(() => undefined)
+  }
+
+  function classifySendFailure(error: unknown): PendingSendFailure {
+    const admission = parseAdmissionError(error)
+    if (admission?.reason === 'no_funds')
+      return { kind: 'paywall', message: admission.message }
     if (admission !== undefined) {
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        admission.message,
+      const retryAfterSeconds =
         admission.reason === 'funds_unavailable'
           ? admission.retryAfterSeconds
           : undefined
-      )
-      return
+      return {
+        kind: retryAfterSeconds !== undefined ? 'retry_after' : 'admission',
+        message: admission.message,
+        retryAfterSeconds
+      }
     }
     const message = error instanceof Error ? error.message : String(error)
-    conversationStore.recordFailedSend(
-      nextLocalErrorId(),
-      text,
-      reattached
-        ? i18n.global.t('agent.sendTurnInProgress')
-        : `${i18n.global.t('agent.sendFailed')}: ${message}`
-    )
+    if (disownsWorkflow(error)) {
+      return {
+        kind: 'disowned',
+        message: `${i18n.global.t('agent.sendFailed')}: ${message}`
+      }
+    }
+    if (error instanceof AgentApiError) {
+      return {
+        kind: error.retryAfterSeconds !== undefined ? 'retry_after' : 'request',
+        message: `${i18n.global.t('agent.sendFailed')}: ${message}`,
+        retryAfterSeconds: error.retryAfterSeconds
+      }
+    }
+    return {
+      kind: 'network',
+      message: `${i18n.global.t('agent.sendFailed')}: ${message}`
+    }
+  }
+
+  function reportRejectedSend(error: unknown, accepted: boolean): void {
     const turnAccepted = accepted || isUnreadableAckFailure(error)
     reportSendFailure(error)
     trackAgentError(
@@ -1540,18 +1629,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       'inline_notice',
       { retryable: isRetryableRequestFailure(error, turnAccepted) }
     )
-  }
-
-  function recordCurrentSendError(
-    error: unknown,
-    text: string,
-    accepted: boolean,
-    reattached: boolean,
-    threadAtSend: string
-  ): void {
-    if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
-      return
-    recordSendError(error, text, accepted, reattached)
   }
 
   /**
@@ -1601,11 +1678,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
         activeTurnId === conflict.active_message_id)
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
-    if (adoptedActiveTurn) stopPendingActiveTurn()
     return adoptedActiveTurn
   }
 
   async function recoverFailedSend({
+    sendId,
+    origin,
     error,
     text,
     sentContext,
@@ -1613,6 +1691,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadAtSend,
     generation
   }: {
+    sendId: string
+    origin: PendingSendOrigin
     error: unknown
     text: string
     sentContext: WorkflowTurnContext | undefined
@@ -1621,47 +1701,100 @@ export function useAgentSession(deps: AgentSessionDeps) {
     generation: number
   }): Promise<false> {
     releaseDisownedWorkflow(sentContext, error)
-    if (generation !== loadGeneration) return false
-    const reattached = await reattachRefusedTurn(
-      error,
-      threadAtSend,
-      generation
-    )
-    if (generation !== loadGeneration) return false
-    recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
+    if (
+      origin.kind === 'thread' &&
+      (deletedThreads.has(origin.threadId) ||
+        isDeletedThread?.(origin.threadId))
+    ) {
+      conversationStore.takePendingSend(sendId)
+      reportRejectedSend(error, accepted)
+      return false
+    }
+    const conflict = parseTurnInProgress(error)
+    if (conflict !== undefined && threadAtSend !== 'new') {
+      const onScreen =
+        (!stopped || ownedGeneration !== sessionGeneration) &&
+        conversationStore.isOriginOnScreen(origin)
+      const reattached = onScreen
+        ? await reattachRefusedTurn(error, threadAtSend, generation)
+        : false
+      if (reattached) {
+        const pending = conversationStore.takePendingSend(sendId)
+        conversationStore.recordFailedSend(
+          nextLocalErrorId(),
+          text,
+          i18n.global.t('agent.sendTurnInProgress')
+        )
+        if (pending?.stopRequested) void stopTurn(pending.stopRequested.method)
+      } else {
+        conversationStore.failPendingSend(sendId, {
+          kind: 'turn_in_progress',
+          message: i18n.global.t('agent.sendTurnInProgress')
+        })
+      }
+      reportRejectedSend(error, accepted)
+      return false
+    }
+    conversationStore.failPendingSend(sendId, classifySendFailure(error))
+    reportRejectedSend(error, accepted)
     return false
   }
 
-  async function performSend(
-    text: string,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string,
+  async function performSend({
+    sendId,
+    origin,
+    text,
+    attachments,
+    tags,
+    workflowReferences,
+    selectionWorkflowId,
+    clientMessageId,
+    onAccepted
+  }: {
+    sendId: string
+    origin: PendingSendOrigin
+    text: string
+    attachments?: SentAttachment[]
+    tags?: SentTag[]
+    workflowReferences?: WorkflowReference[]
+    selectionWorkflowId?: () => string | undefined
+    clientMessageId?: string
     onAccepted?: () => void
-  ): Promise<boolean> {
+  }): Promise<boolean> {
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
-    const threadAtSend = conversationStore.threadId ?? 'new'
+    const threadAtSend = origin.kind === 'thread' ? origin.threadId : 'new'
     const originContext = workflow?.current()
-    const origin: TurnOrigin =
+    const turnOrigin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     const canvasNodeIds = workflow?.canvasSelection?.()
+    const boundAtSend = boundWorkflowId.value
+    const threadSourceAtSend =
+      origin.kind === 'blank' ? pendingThreadSource.value : null
+    if (origin.kind === 'blank') pendingThreadSource.value = null
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
     try {
-      await prepareWorkflow()
-      if (generation !== loadGeneration) return false
-      const wfContext = workflow?.current(origin)
-      const draft = workflow?.draft?.(origin)
-      if (refusesTarget(text, originContext, wfContext, draft, clientMessageId))
+      await prepareWorkflow(clientMessageId)
+      const wfContext = workflow?.current(turnOrigin)
+      const draft = workflow?.draft?.(turnOrigin)
+      if (
+        refusesTarget(
+          sendId,
+          origin,
+          originContext,
+          wfContext,
+          draft,
+          clientMessageId,
+          boundAtSend
+        )
+      )
         return false
       sentContext = wfContext
       const input = buildPostInput(
         threadAtSend,
         text,
-        origin,
+        turnOrigin,
         wfContext,
         draft,
         attachments,
@@ -1669,25 +1802,60 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         selectionWorkflowId,
         clientMessageId,
-        canvasNodeIds
+        canvasNodeIds,
+        boundAtSend
       )
       const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
-      if (!observeAcceptedTurn(generation, ack, threadAtSend, onAccepted))
-        return false
-      acceptTurn(
-        ack,
-        text,
-        wfContext,
-        attachments,
-        tags,
-        workflowReferences,
-        skillScopeAtSend
+      runAcceptedTurnSideEffect(
+        () => onAccepted?.(),
+        'agent_turn_accepted_callback_failed'
       )
-      rememberMint(input, wfContext, ack.workflow_id)
+      if (stopped && ownedGeneration === sessionGeneration) return false
+      if (
+        (origin.kind === 'thread' && deletedThreads.has(origin.threadId)) ||
+        deletedThreads.has(ack.thread_id)
+      ) {
+        conversationStore.takePendingSend(sendId)
+        return false
+      }
+      const pending = conversationStore.takePendingSend(sendId)
+      const stoppedRequest = pending?.stopRequested
+      const onScreen = conversationStore.isOriginOnScreen(origin)
+      if (onScreen) {
+        acceptTurn(
+          ack,
+          text,
+          wfContext,
+          attachments,
+          tags,
+          workflowReferences,
+          skillScopeAtSend,
+          threadSourceAtSend,
+          stoppedRequest
+        )
+      } else {
+        acceptBackgroundTurn({
+          ack,
+          origin,
+          turnOrigin,
+          text,
+          wfContext,
+          attachments,
+          tags,
+          workflowReferences,
+          skillScope: skillScopeAtSend,
+          threadSourceAtSend,
+          boundAtSend,
+          stopped: stoppedRequest
+        })
+      }
+      rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
       return true
     } catch (error) {
       return recoverFailedSend({
+        sendId,
+        origin,
         error,
         text,
         sentContext,
@@ -1696,34 +1864,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         generation
       })
     }
-  }
-
-  function observeAcceptedTurn(
-    generation: number,
-    ack: AgentTurnAccepted,
-    threadAtSend: string,
-    onAccepted?: () => void
-  ): boolean {
-    runAcceptedTurnSideEffect(
-      () => onAccepted?.(),
-      'agent_turn_accepted_callback_failed'
-    )
-    const isCurrent = generation === loadGeneration
-    if (!isCurrent) {
-      reportError(
-        new Error('agent turn accepted after the send generation moved on'),
-        {
-          surface: 'agent',
-          errorType: 'failure_tracking_agent_accepted_turn_generation_change',
-          context: {
-            threadAtSend,
-            ackThreadId: ack.thread_id,
-            turnId: toTurnId(ack.message_id)
-          }
-        }
-      )
-    }
-    return isCurrent
   }
 
   function workflowTargetChanged(
@@ -1743,22 +1883,60 @@ export function useAgentSession(deps: AgentSessionDeps) {
     clientMessageId?: string,
     onAccepted?: () => void
   ): Promise<boolean> {
-    if (sending.value) {
-      trackSendRefused('send_busy', clientMessageId)
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        i18n.global.t('agent.sendBusy')
-      )
+    const sendId = clientMessageId ?? createUuidv4()
+    const existingPending = conversationStore.getPendingSend(sendId)
+    const origin = existingPending?.origin ?? conversationStore.currentOrigin()
+    if (conversationStore.hasSendingForOrigin(origin, sendId)) {
+      trackSendRefused('send_busy', clientMessageId, origin)
+      if (existingPending) {
+        conversationStore.failPendingSend(sendId, {
+          kind: 'request',
+          message: i18n.global.t('agent.sendBusy')
+        })
+      } else {
+        conversationStore.startPendingSend({
+          clientMessageId: sendId,
+          origin,
+          text,
+          attachments: toUserAttachments(attachments),
+          tags: toTagStrings(tags),
+          workflowReferences: workflowReferences ?? [],
+          prompt: { text, references: [] },
+          composerAttachments: [],
+          composerNodes: [],
+          target: null,
+          promptOrigin: 'typed',
+          starterPrompt: null
+        })
+        conversationStore.failPendingSend(sendId, {
+          kind: 'request',
+          message: i18n.global.t('agent.sendBusy')
+        })
+      }
       return false
     }
+    if (!existingPending) {
+      conversationStore.startPendingSend({
+        clientMessageId: sendId,
+        origin,
+        text,
+        attachments: toUserAttachments(attachments),
+        tags: toTagStrings(tags),
+        workflowReferences: workflowReferences ?? [],
+        prompt: { text, references: [] },
+        composerAttachments: [],
+        composerNodes: [],
+        target: null,
+        promptOrigin: 'typed',
+        starterPrompt: null
+      })
+    }
     promptEditState.value = { phase: 'idle' }
-    sending.value = true
     const releaseSendGate = sendGateStore.begin()
-    sendInFlight = true
-    stopPendingAck = null
     try {
-      const sent = await performSend(
+      return await performSend({
+        sendId,
+        origin,
         text,
         attachments,
         tags,
@@ -1766,13 +1944,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         selectionWorkflowId,
         clientMessageId,
         onAccepted
-      )
-      if (!sent) stopPendingAck = null
-      return sent
+      })
     } finally {
-      sending.value = false
       releaseSendGate()
-      sendInFlight = false
     }
   }
 
@@ -1895,10 +2069,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
-      // The POST has not acked yet; remember the intent and cancel on ack.
-      // sendInFlight, not this instance's sending: the panel that posted may
-      // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
+      conversationStore.markPendingSendStopped(
+        conversationStore.currentOrigin(),
+        method
+      )
       return
     }
     if (isStoppingTurn(turnId)) return
@@ -3064,6 +3238,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function forgetDeletedThread(turn: LiveTurn): void {
+    deletedThreads.add(turn.threadId)
     skillTurnUsage.delete(recoveryKey(turn))
     recoveryPendingAskObservations.delete(recoveryKey(turn))
     recoveryThreadMissingCounts.delete(recoveryKey(turn))
@@ -3080,7 +3255,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     localStorage.removeItem(threadStorageKey)
   }
 
-  const isSending = computed(() => sending.value)
+  const isSending = computed(() => conversationStore.hasSendingPendingSend)
   const editableTurnId = computed(() =>
     promptEditState.value.phase === 'ready'
       ? promptEditState.value.turnId

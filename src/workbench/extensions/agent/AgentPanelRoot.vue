@@ -1086,15 +1086,13 @@ function trackWorkflowOpenFailure(
   })
 }
 
-/**
- * The sent message, held from the moment the user sends until the cloud ids
- * are refreshed, alongside the turn's origin. Scoped to one `sendMessage`
- * call, so a send never hands these fields to the next one.
- */
-let pendingSend: {
-  metadata: AgentMessageSentMetadata
-  origin: TurnOrigin
-} | null = null
+const pendingTelemetry = new Map<
+  string,
+  {
+    metadata: AgentMessageSentMetadata
+    origin: TurnOrigin
+  }
+>()
 
 /**
  * A freshly opened tab has no cloud id until `refreshCloudWorkflowIds()` lands,
@@ -1107,14 +1105,22 @@ let pendingSend: {
  * starting a new chat while the refresh is in flight must not retarget the
  * report at a workflow the turn was never sent against.
  */
-function reportPendingSend(): void {
-  const sent = pendingSend
-  if (!sent) return
-  pendingSend = null
-  useTelemetry()?.trackAgentMessageSent({
-    ...sent.metadata,
-    workflow_id: targetWorkflowTurnContext(sent.origin)?.id ?? null
-  })
+function reportPendingSend(clientMessageId?: string): void {
+  const keys =
+    clientMessageId !== undefined
+      ? pendingTelemetry.has(clientMessageId)
+        ? [clientMessageId]
+        : []
+      : [...pendingTelemetry.keys()]
+  for (const key of keys) {
+    const sent = pendingTelemetry.get(key)
+    pendingTelemetry.delete(key)
+    if (!sent) continue
+    useTelemetry()?.trackAgentMessageSent({
+      ...sent.metadata,
+      workflow_id: targetWorkflowTurnContext(sent.origin)?.id ?? null
+    })
+  }
 }
 
 function registerAgentRunJobOwner(event: AgentWsEvent): void {
@@ -1157,6 +1163,21 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
+  onBackgroundTurnAccepted: (ack, text) => {
+    if (history.isDeleted(ack.thread_id)) return
+    history.rememberSession({
+      id: ack.thread_id,
+      title:
+        deriveSessionTitle([
+          { id: toTurnId(ack.message_id), role: 'user', text }
+        ]) || t('agent.untitledChat'),
+      updatedAt: Date.now(),
+      titleSource: 'fallback',
+      workflowId: ack.workflow_id
+    })
+    void refreshHistory('none')
+  },
+  isDeletedThread: history.isDeleted,
   onAgentEvent: observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
@@ -1166,19 +1187,20 @@ const {
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
     restored: restoreChatWorkflow,
-    prepare: async () => {
+    prepare: async (clientMessageId) => {
       try {
         await refreshCloudWorkflowIds()
       } finally {
         // In `finally` so a refresh that fails still reports the send, with
         // whichever id the client already had, rather than losing the event.
-        reportPendingSend()
+        reportPendingSend(clientMessageId)
       }
     },
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
     draft: targetWorkflowDraft,
+    turnTab: (origin, workflowId) => turnTabForOrigin(origin, workflowId),
     canvasSelection: () =>
       canReferenceNodes.value ? selectedNodes.value.map((node) => node.id) : []
   }
@@ -1190,7 +1212,7 @@ provide(
 )
 
 const isSending = computed(
-  () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
+  () => sessionIsSending.value || composerStore.gateHold !== null
 )
 
 const isBoundWorkflowActive = computed(() => {
@@ -1387,6 +1409,19 @@ function turnTab(): TurnTab {
       (context?.id === bound ? context.tabPath : undefined),
     'known'
   )
+}
+
+function turnTabForOrigin(origin?: TurnOrigin, workflowId?: string): TurnTab {
+  if (origin === undefined) return turnTab()
+  if (origin === null && workflowId === undefined) return { status: 'none' }
+  const context = targetWorkflowTurnContext(origin)
+  if (workflowId !== undefined)
+    return tabAt(
+      bindingStore.tabPathFor(workflowId) ??
+        (context?.id === workflowId ? context.tabPath : undefined),
+      'known'
+    )
+  return tabAt(context?.tabPath, 'guessed')
 }
 
 function adoptRestoredWorkflowTab(workflowId: string): void {
@@ -1809,14 +1844,15 @@ onBeforeUnmount(() => {
       if (
         !sendHeldByCoach.value &&
         (coachDeferredBy.value === null || !agentPanelStore.isVisible) &&
-        composerStore.submission?.id === consentHeldSubmissionId
+        composerStore.gateHold?.id === consentHeldSubmissionId
       ) {
         sendGates.end({
           gate: 'consent',
           outcome: 'dropped',
           reason: 'panel_closed'
         })
-        composerStore.invalidateSubmission()
+        const cancelledId = composerStore.cancelGateHold()
+        if (cancelledId !== null) withdrawSubmission(cancelledId)
       }
     },
     detachDocOpMinter: () => {
@@ -2045,7 +2081,8 @@ async function onSelectHistory(
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
   promptQueueStore.clear()
-  composerStore.invalidateSubmission()
+  const cancelledId = composerStore.cancelGateHold()
+  if (cancelledId !== null) withdrawSubmission(cancelledId)
   errorAttachRun++
   composerStore.clearErrorContext()
   cancelWorkflowSelection()
@@ -2237,7 +2274,7 @@ async function consentAllowsSubmission(
       consentHeldSubmissionId = undefined
   }
   return (
-    composerStore.submission?.id === submissionId &&
+    composerStore.gateHold?.id === submissionId &&
     hasConsent &&
     coachReleased &&
     consentAccepted.value &&
@@ -2267,7 +2304,7 @@ async function signedInForSend(
   if (!(await ensureSignedIn())) return false
   return (
     isCurrent() &&
-    composerStore.submission?.id === submissionId &&
+    composerStore.gateHold?.id === submissionId &&
     consentAccepted.value &&
     consentIdentity.value === identityBeforeSignIn
   )
@@ -2279,7 +2316,7 @@ function armPendingSend(
   meta: SubmissionMeta
 ): void {
   const originContext = targetWorkflowTurnContext()
-  pendingSend = {
+  pendingTelemetry.set(meta.clientMessageId, {
     metadata: {
       attachment_count: attachments.length,
       node_tag_count: nodes.length,
@@ -2292,7 +2329,7 @@ function armPendingSend(
     },
     origin:
       originContext === undefined ? null : { tabPath: originContext.tabPath }
-  }
+  })
 }
 
 async function sendTurn(
@@ -2301,18 +2338,20 @@ async function sendTurn(
   nodes: SelectedNode[] | ((target: ComfyWorkflow | null) => SelectedNode[]),
   references: WorkflowReference[],
   meta: SubmissionMeta,
+  releaseGate?: () => void,
   isCurrent: () => boolean = () => true
-): Promise<boolean> {
-  const submissionId = composerStore.submission?.id
+): Promise<DraftSendOutcome> {
+  const submissionId = composerStore.gateHold?.id
   if (!(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent)))
-    return false
+    return 'withdrawn'
   const selectionWorkflow = selectedTarget.value
   const sentNodes =
     typeof nodes === 'function' ? nodes(selectionWorkflow) : nodes
   armPendingSend(attachments, sentNodes, meta)
+  releaseGate?.()
   const sentUsageScope = proactive.scope.value
   try {
-    return await sendWithFundsRecheck((onAccepted) =>
+    const sent = await sendWithFundsRecheck((onAccepted) =>
       sendMessage(
         text,
         attachments,
@@ -2326,13 +2365,14 @@ async function sendTurn(
         }
       )
     )
+    return sent ? 'sent' : 'failed'
   } finally {
     if (proactive.scope.value === sentUsageScope) void proactive.refresh()
-    reportPendingSend()
+    reportPendingSend(meta.clientMessageId)
   }
 }
 
-const { submit: submitDraft } = useAgentDraftSubmission({
+const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
   onRejected: sendGates.rejectDraft,
@@ -2345,14 +2385,15 @@ const { submit: submitDraft } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: canvasStore.stopNodePicking
   },
-  send: sendTurn
+  send: (text, attachments, nodes, references, meta, releaseGate) =>
+    sendTurn(text, attachments, nodes, references, meta, releaseGate)
 })
 
 const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
   isBusy: () => isStreaming.value || isSending.value,
   submitDraft,
-  sendItem: (item) =>
-    sendTurn(
+  sendItem: async (item) =>
+    (await sendTurn(
       item.text,
       item.attachments,
       (target) => queuedNodesFor(item, target),
@@ -2362,8 +2403,9 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
         inputMethod: 'typed',
         starterPrompt: null
       },
+      undefined,
       () => promptQueueStore.runningId === item.id
-    ),
+    )) === 'sent',
   deferCapture: () => {
     canvasStore.stopNodePicking()
     consumeSelection()
@@ -2382,9 +2424,18 @@ void until(currentChatReady)
     if (promptQueueStore.runningId) void settleActiveAndPump()
   })
 
-// The session owns the acknowledgement boundary: a stop that lands before the
-// POST acks is remembered there and committed at ack (see stopPendingAck).
 function onStop(method: AgentStopMethod): void {
+  const held = composerStore.gateHold
+  if (held !== null) {
+    composerStore.cancelGateHold()
+    if (sendHeldByCoach.value)
+      releaseCoachCompletionWaiters(
+        { outcome: 'released', reason: 'elsewhere' },
+        false
+      )
+    withdrawSubmission(held.clientMessageId, held.revision)
+    return
+  }
   void stopTurn(method)
 }
 
@@ -2417,7 +2468,8 @@ function onNewChat(
   }
   provisionalTitle.value = undefined
   promptQueueStore.clear()
-  composerStore.invalidateSubmission()
+  const cancelledId = composerStore.cancelGateHold()
+  if (cancelledId !== null) withdrawSubmission(cancelledId)
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
   attachment.cancelAllUploads()

@@ -6529,6 +6529,7 @@
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
+    "sendingMessage": "Sending…",
     "recoveredTurnFailed": "The agent could not complete this response.",
     "sendBusy": "A message is already being sent",
     "sendTurnInProgress": "This chat still has a response running. Wait for it to finish, or stop it, then send again.",
