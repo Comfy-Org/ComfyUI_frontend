@@ -258,8 +258,6 @@ const zAgentThinkingData = z
     delta: z.string(),
     message_id: z.string(),
     thread_id: z.string(),
-    /** A tool round's first tool call, the id its stored thinking entry
-     * anchors on. Absent on the final round and on older servers. */
     tool_call_id: z.string().optional().catch(undefined)
   })
   .passthrough()

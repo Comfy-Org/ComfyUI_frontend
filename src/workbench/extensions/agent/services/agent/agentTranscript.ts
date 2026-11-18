@@ -336,9 +336,6 @@ function parseToolCalls(
   return parsedByCallId.size > 0 ? [...parsedByCallId.values()] : undefined
 }
 
-/** One stored thinking entry as a restored part, or `undefined` when the
- * entry is malformed or blank. A restored part keeps its round's
- * `tool_call_id` as `toolCallId` (see `ThinkingPart`). */
 function restoredThinkingPart(entry: unknown): ThinkingPart | undefined {
   const parsed = zPersistedThinkingEntry.safeParse(entry)
   if (!parsed.success || !parsed.data.text.trim()) return undefined
