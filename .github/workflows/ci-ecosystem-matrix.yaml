@@ -259,7 +259,7 @@ jobs:
     needs: corpus
     if: github.repository == 'Comfy-Org/ComfyUI_frontend'
     runs-on: ubuntu-latest
-    timeout-minutes: ${{ inputs.registry_forms && 40 || 20 }}
+    timeout-minutes: ${{ inputs.registry_forms && 120 || 20 }}
     strategy:
       fail-fast: false
       matrix:

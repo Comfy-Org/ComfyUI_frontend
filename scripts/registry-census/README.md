@@ -251,8 +251,11 @@ with the full projection. At ~485 packs that is ~43 CPU-minutes added per shard.
 The ordinary required matrix does not pay that cost. Per-pack registry forms run
 only when a manual workflow dispatch sets `registry_forms`, or when a local run
 sets `MATRIX_REGISTRY_FORMS=1`. The manual run asserts that every pack row wrote
-the channel and receives the 40-minute shard budget; ordinary required runs keep
+the channel and receives a 120-minute shard budget; ordinary required runs keep
 their prior 20-minute budget. A manual timeout cannot block a push or merge.
+40 minutes was too short: on 2026-11-18 every shard of
+[run 44250065389](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/44250065389)
+was cancelled at its 40-minute limit before writing a row.
 
 Note also where the matrix actually executes packs: `should-run` restricts that
 on pull requests to branches named `version-bump-*`, so an ordinary PR does not
@@ -283,16 +286,17 @@ It is a seam, not the production call site. A producer landing inside
 ### `coreIsLastWriter`, and the blind spot the census measures instead of hiding
 
 `coreIsLastWriter` is a **required** option with no default, because assuming it
-is how the predicate once accepted a subgraph host. The runner answers it the
-way the predicate's docstring prescribes — comparing both serialization entry
-points against `LGraphNode.prototype`.
+is how the predicate once accepted a subgraph host. The runner answers it by
+comparing both serialization entry points against references taken **before**
+any pack entry runs, not against the live `LGraphNode.prototype`. A pack that
+reassigns `LGraphNode.prototype.serialize` therefore makes every class refuse
+with `class_may_rewrite_payload` instead of reading as provable, and
+`registryForms.prototypePatched` still records which entry point moved.
 
-That comparison has one hole: a pack that reassigns
-`LGraphNode.prototype.serialize` leaves every node still identical to the
-prototype, so the check reads `true` while core is no longer the last writer.
-The census cannot close it from the outside, so it records
-`registryForms.prototypePatched` — captured from references taken **before** any
-pack entry runs. A provable rate is only as good as that flag is false.
+The predicate's identity check cannot see a hook that rewrites the core array
+in place (reverses it, say). The runner snapshots the array before the hook and
+treats a changed snapshot as a replaced array, so that hook refuses with
+`values_replaced`.
 
 ### `SubgraphNode`
 

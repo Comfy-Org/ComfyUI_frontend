@@ -147,7 +147,7 @@ describe('ecosystem matrix shard budget', () => {
   it.for([
     ['an ordinary run', {}, 20],
     ['a manual dispatch without the census', { registry_forms: false }, 20],
-    ['a manual registry-forms census', { registry_forms: true }, 40]
+    ['a manual registry-forms census', { registry_forms: true }, 120]
   ] satisfies [string, object, number][])(
     'budgets the pack shards for %s',
     ([, inputs, minutes]) => {
