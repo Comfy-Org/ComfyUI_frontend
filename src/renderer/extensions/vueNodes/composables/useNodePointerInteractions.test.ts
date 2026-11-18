@@ -331,6 +331,9 @@ describe('useNodePointerInteractions', () => {
     node.scope.run(() => useNodeMouseCallbacks(first.id, node.element))
     await nextTick()
     canvas.select(second)
+    onTestFinished(() => {
+      window.dispatchEvent(new PointerEvent('pointercancel', { pointerId: 1 }))
+    })
 
     node.press(10, 10)
     node.move(10 + DRIFT + 1, 10)
