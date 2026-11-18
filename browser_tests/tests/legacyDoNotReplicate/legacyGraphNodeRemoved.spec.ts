@@ -6,7 +6,7 @@ import {
   removeGraphNode
 } from '@e2e/fixtures/utils/legacyGraphInstancePatches'
 
-test(
+test.fail(
   'overwrite-only onNodeRemoved follows the active workflow',
   { tag: '@canvas' },
   async ({ comfyPage }) => {

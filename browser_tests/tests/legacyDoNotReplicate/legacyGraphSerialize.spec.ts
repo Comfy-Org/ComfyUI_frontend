@@ -5,7 +5,7 @@ import {
   readLegacyGraphInstancePatches
 } from '@e2e/fixtures/utils/legacyGraphInstancePatches'
 
-test(
+test.fail(
   'boot serialize wrapper reaches exports from another workflow',
   { tag: '@canvas' },
   async ({ comfyPage }) => {

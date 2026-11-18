@@ -110,8 +110,25 @@ the widgets of the graph on screen. `graph.clear()` still unregisters through
   patch applied in `setup` misses the boot graph. Prototype patches also reach
   subgraphs. Instance patches and graph event subscriptions installed in
   `afterLoadGraph` need a `WeakSet` of handled instances to avoid duplicates
-  when a graph returns. A census of the custom node ecosystem for this pattern is
-  a prerequisite for leaving draft.
+  when a graph returns.
+- Compatibility for instance patches applied in `init` or `setup` is limited to
+  an audited bridge. For a named allowlist of extensions, the bridge captures
+  the patch on the boot graph, reapplies it to each graph that becomes active,
+  and reports a `deprecated_extension_graph_patch` warning once per extension.
+  The bridge covers `onNodeAdded` (`pysssss.WidgetDefaults`), `beforeChange`,
+  `afterChange` and `convertToSubgraph` (`cg.customnodes.use_everywhere`), and
+  `clear` (`Comfy.ManagerMenu`). Replaying every extension's installer on each
+  graph was rejected: it fires `WeakSet`-guarded hooks twice and leaks per-node
+  wrappers across tabs.
+- These retained-instance patterns are unsupported and reach only the boot
+  graph. Each one has an expected-failure probe in
+  `browser_tests/tests/legacyDoNotReplicate/`, so a probe that starts passing
+  signals the behavior changed:
+  - wrapping `add` or `remove` on `app.graph` during `setup`;
+  - wrapping `configure` on `app.graph` during `setup`;
+  - wrapping `serialize` on `app.graph` during `setup`;
+  - assigning `onNodeRemoved` on `app.graph` without chaining the previous
+    handler.
 - Activation does not touch the `LGraph.start()` step loop. `setup` starts the
   boot graph and the first `clear()` stops it, as before; no graph runs the
   loop after its first load, whether it is on screen or in the background.

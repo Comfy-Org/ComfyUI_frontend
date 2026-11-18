@@ -6,7 +6,7 @@ import {
   removeGraphNode
 } from '@e2e/fixtures/utils/legacyGraphInstancePatches'
 
-test(
+test.fail(
   'boot add and remove wrappers reach another workflow',
   { tag: '@canvas' },
   async ({ comfyPage }) => {
