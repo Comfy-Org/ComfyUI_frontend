@@ -807,7 +807,7 @@ export interface WidgetCollection extends Iterable<WidgetHandle> {
   remove(name: string): boolean
   /** Puts the widgets in this order. `names` names every widget once. */
   reorder(names: readonly string[]): void
-  /** Moves one widget to `index`, clamped to the list. */
+  /** Moves one widget to `index`, clamped to the list: unlike `at`, a negative index is the front. */
   move(name: string, index: number): void
   /** Adds a widget whose element the pack fills. A name the node already has throws a `TypeError`. */
   mount(def: MountDef): WidgetHandle | undefined

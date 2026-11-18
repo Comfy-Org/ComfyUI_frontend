@@ -73,6 +73,9 @@ describe('canvas widgets', () => {
     const { handle, draw, element } = canvasOf()
     const colors: Record<string, string> = {
       '--color-input': ' #123456 ',
+      '--color-accent': '#234567',
+      '--color-node-border': '#345678',
+      '--color-node-foreground': '#456789',
       '--color-muted-foreground': 'gray'
     }
     const readStyle = vi.spyOn(window, 'getComputedStyle').mockReturnValue(
@@ -84,11 +87,22 @@ describe('canvas widgets', () => {
     handle.redraw()
 
     expect(readStyle).toHaveBeenCalledWith(element)
-    expect(draw.mock.calls[1]?.[2]).toMatchObject({
+    const theme = draw.mock.calls[1]?.[2]
+    expect(theme).toEqual({
       surface: '#123456',
-      textSecondary: 'gray',
-      border: 'currentColor'
+      surfaceHovered: '#234567',
+      border: '#345678',
+      text: '#456789',
+      textSecondary: 'gray'
     })
+    expect(Object.isFrozen(theme)).toBe(true)
+  })
+
+  it('watches the size of the element it was mounted in', () => {
+    const observe = vi.spyOn(ResizeObserver.prototype, 'observe')
+    const { node } = canvasOf()
+
+    expect(observe).toHaveBeenCalledExactlyOnceWith(containerOf(node))
   })
 
   it('draws again on redraw, and when the value changes', () => {

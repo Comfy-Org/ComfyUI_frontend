@@ -317,7 +317,8 @@ This ADR records how the API reaches widgets through those owners.
     refuses it. Each definition is checked when it is given, as `add`
     checks one, and a refusal names the member. A widget a node already has
     is refused by `add` inside the hook, reported, and the node's other
-    widgets are still added.
+    widgets are still added. `hideWidget` takes any text as a name, the
+    empty one included, as `add` and `get` do (decision 9).
 
 ## Alternatives considered
 
