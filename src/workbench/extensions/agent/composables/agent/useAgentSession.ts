@@ -2771,16 +2771,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     state.sawStreamingObservation = true
     const pendingAskId = streamingPendingAskId(outcome)
-    if (pendingAskId !== undefined && deliveredAsks.has(pendingAskId)) {
-      state.snapshotNamedDeliveredAsks.add(pendingAskId)
-      state.deliveredAsksAwaitingSnapshot.delete(pendingAskId)
-    }
-    for (const askId of deliveredAsks)
-      if (
-        !state.deliveredAtRecoveryStart.has(askId) &&
-        !state.snapshotNamedDeliveredAsks.has(askId)
-      )
-        state.deliveredAsksAwaitingSnapshot.add(askId)
+    trackDeliveredAsksAwaitingSnapshot(state, pendingAskId)
     const pendingAskConfirmed =
       state.previousObservation !== undefined &&
       state.previousObservation.pendingAskId === pendingAskId
@@ -2798,6 +2789,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
       deliveredBeforeFetch
     )
     return false
+  }
+
+  function trackDeliveredAsksAwaitingSnapshot(
+    state: RecoveryObservationState,
+    pendingAskId: string | undefined
+  ): void {
+    if (pendingAskId !== undefined && deliveredAsks.has(pendingAskId)) {
+      state.snapshotNamedDeliveredAsks.add(pendingAskId)
+      state.deliveredAsksAwaitingSnapshot.delete(pendingAskId)
+    }
+    for (const askId of deliveredAsks)
+      if (
+        !state.deliveredAtRecoveryStart.has(askId) &&
+        !state.snapshotNamedDeliveredAsks.has(askId)
+      )
+        state.deliveredAsksAwaitingSnapshot.add(askId)
   }
 
   function nextThreadMissingCount(
