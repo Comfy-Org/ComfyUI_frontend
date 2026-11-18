@@ -17863,6 +17863,65 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     )
   })
 
+  function guard7MessagesResponse(
+    init: RequestInit | undefined,
+    bodies: Record<string, unknown>[],
+    workflowId: string
+  ): Response {
+    if (init?.method !== 'POST') return json(200, [])
+    bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>)
+    return json(202, {
+      thread_id: 'th-guard-7',
+      message_id: 'msg-guard-7',
+      workflow_id: workflowId
+    })
+  }
+
+  function guard7ThreadsResponse(
+    bodies: Record<string, unknown>[],
+    workflowId: string
+  ): Response {
+    const threads =
+      bodies.length > 0
+        ? [
+            agentThread({
+              id: 'th-guard-7',
+              title: 'Guard prompt',
+              last_message_at: '2026-11-18T00:00:00Z',
+              workflow_id: workflowId
+            })
+          ]
+        : []
+    return json(200, agentThreadList(threads))
+  }
+
+  function createGuard7FetchMock(
+    workflowId: string,
+    workflowsHeld: Promise<void>,
+    onWorkflowCall: (count: number) => void
+  ) {
+    const bodies: Record<string, unknown>[] = []
+    let workflowCalls = 0
+    return {
+      bodies,
+      fetchImpl: async (input: RequestInfo | URL, init?: RequestInit) => {
+        const url = String(input)
+        if (url.includes('/messages'))
+          return guard7MessagesResponse(init, bodies, workflowId)
+        if (url.includes('/agent/threads'))
+          return guard7ThreadsResponse(bodies, workflowId)
+        if (!url.includes('/workflows')) return json(200, {})
+        workflowCalls += 1
+        onWorkflowCall(workflowCalls)
+        if (workflowCalls === 2) await workflowsHeld
+        return json(200, {
+          data: [],
+          pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+        })
+      }
+    }
+  }
+
   it.for([
     { scenario: 'unbound temporary tab', boundId: null },
     { scenario: 'previously bound temporary tab', boundId: 'wf-prev' }
@@ -17881,49 +17940,19 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
         useAgentWorkflowTabBindingStore().bind(boundId, tab.path)
       useAgentPanelStore().setWorkflowTarget(tab)
 
-      const bodies: Record<string, unknown>[] = []
       let workflowCalls = 0
       let releaseWorkflows = () => {}
       const workflowsHeld = new Promise<void>((resolve) => {
         releaseWorkflows = resolve
       })
-      vi.mocked(fetch).mockImplementation(async (input, init) => {
-        const url = String(input)
-        if (url.includes('/messages') && init?.method === 'POST') {
-          bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>)
-          return json(202, {
-            thread_id: 'th-guard-7',
-            message_id: 'msg-guard-7',
-            workflow_id: boundId ?? 'wf-minted'
-          })
+      const { bodies, fetchImpl } = createGuard7FetchMock(
+        boundId ?? 'wf-minted',
+        workflowsHeld,
+        (count) => {
+          workflowCalls = count
         }
-        if (url.includes('/messages')) return json(200, [])
-        if (url.includes('/agent/threads'))
-          return json(
-            200,
-            agentThreadList(
-              bodies.length > 0
-                ? [
-                    agentThread({
-                      id: 'th-guard-7',
-                      title: 'Guard prompt',
-                      last_message_at: '2026-11-18T00:00:00Z',
-                      workflow_id: boundId ?? 'wf-minted'
-                    })
-                  ]
-                : []
-            )
-          )
-        if (url.includes('/workflows')) {
-          workflowCalls += 1
-          if (workflowCalls === 2) await workflowsHeld
-          return json(200, {
-            data: [],
-            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-          })
-        }
-        return json(200, {})
-      })
+      )
+      vi.mocked(fetch).mockImplementation(fetchImpl)
 
       vi.mocked(reportError).mockClear()
       renderWithSelectedTarget()

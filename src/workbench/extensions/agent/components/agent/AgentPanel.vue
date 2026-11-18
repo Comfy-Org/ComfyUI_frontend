@@ -5,10 +5,6 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
-import Input from '@comfyorg/design-system/input/Input'
-import Menu from '@comfyorg/design-system/menu/Menu'
-import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
@@ -35,9 +31,9 @@ import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agen
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
+import AgentPanelChatControls from './AgentPanelChatControls.vue'
 import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
@@ -293,21 +289,6 @@ function onDeleteHistory(id: string): void {
   emit('deleteHistory', id)
 }
 
-const chatMenuItems = computed<MenuItem[]>(() => [
-  {
-    label: t('g.rename'),
-    icon: 'icon-[lucide--pencil]',
-    command: startRename
-  },
-  { separator: true },
-  {
-    label: t('g.delete'),
-    icon: 'icon-[lucide--trash-2]',
-    variant: 'destructive',
-    command: onDeleteChat
-  }
-])
-
 function onClose(): void {
   panelStore.interruptHistorySelection()
   emit('close')
@@ -346,53 +327,16 @@ function onWorkflowTargetRequired(): void {
 
 const { t } = useI18n()
 
-const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
-const displayTitle = computed(
-  () => sessionTitle.value || t('agent.newChatTitle')
+const footerInert = computed(() => openingChat.value || blocked)
+const runNoticeWorkflowName = computed(() =>
+  workflowDetached ? undefined : activeTab?.name
 )
-
-const renaming = ref(false)
-const renameDraft = ref('')
-const renameInput = ref<InstanceType<typeof Input>>()
-const titleButton = ref<InstanceType<typeof Button>>()
-
-async function startRename(): Promise<void> {
-  renameDraft.value = sessionTitle.value ?? ''
-  renaming.value = true
-  await nextTick()
-  renameInput.value?.focus()
-  renameInput.value?.select()
-}
-
-async function exitRename(): Promise<void> {
-  renaming.value = false
-  await nextTick()
-  const button: unknown = titleButton.value?.$el
-  if (button instanceof HTMLButtonElement) button.focus()
-}
-
-function onRenameKeydown(event: KeyboardEvent): void {
-  // A CJK composition confirms and cancels with these same keys.
-  if (event.isComposing) return
-  if (event.key === 'Enter') {
-    event.preventDefault()
-    commitRename()
-  } else if (event.key === 'Escape') {
-    event.preventDefault()
-    void exitRename()
-  }
-}
-
-function commitRename(): void {
-  if (!renaming.value) return
-  void exitRename()
-  const title = renameDraft.value.trim()
-  if (title !== '' && title !== sessionTitle.value) emit('renameChat', title)
-}
-
-function onDeleteChat(): void {
-  if (sessionId !== null) emit('deleteHistory', sessionId)
-}
+const workflowSelecting = computed(
+  () => selectingTabPath !== null || savingReference
+)
+const selectorDisabled = computed(
+  () => streaming || submitting || savingReference
+)
 
 function addAttachment(attachment: ComposerAttachment): boolean {
   return composerRef.value?.addAttachment(attachment) ?? false
@@ -458,77 +402,15 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-else>
-      <div
-        data-testid="agent-panel-chat-controls"
-        :inert="blocked"
-        class="flex h-10 shrink-0 items-center px-2"
-      >
-        <Button
-          id="agent-chat-history"
-          :tooltip="t('agent.showChatHistory')"
-          tooltip-side="right"
-          type="button"
-          variant="muted-textonly"
-          size="icon-sm"
-          :aria-label="t('agent.showChatHistory')"
-          class="size-6 shrink-0 data-coach-hover:bg-accent"
-          @click="onOpenHistory"
-        >
-          <i aria-hidden="true" class="icon-[lucide--history]" />
-        </Button>
-        <template v-if="renaming">
-          <Input
-            ref="renameInput"
-            v-model="renameDraft"
-            type="text"
-            :aria-label="t('g.rename')"
-            class="h-6 flex-1 px-2 py-1 text-xs"
-            @keydown="onRenameKeydown"
-            @blur="commitRename"
-          />
-        </template>
-        <div
-          v-else
-          role="group"
-          :aria-label="t('agent.chatOptions')"
-          class="flex w-fit max-w-full min-w-0 items-center"
-        >
-          <Button
-            ref="titleButton"
-            type="button"
-            variant="muted-textonly"
-            size="sm"
-            class="min-w-0 justify-start text-left"
-            @click="startRename"
-          >
-            <span class="min-w-0 truncate">{{ displayTitle }}</span>
-          </Button>
-          <Menu
-            v-if="sessionId"
-            :items="chatMenuItems"
-            side="bottom"
-            align="start"
-            :side-offset="4"
-            class="agent-scope"
-          >
-            <template #trigger>
-              <Button
-                :tooltip="t('agent.chatOptions')"
-                tooltip-side="bottom"
-                variant="muted-textonly"
-                size="icon-sm"
-                :aria-label="t('agent.chatOptions')"
-                class="size-6 shrink-0"
-              >
-                <i
-                  aria-hidden="true"
-                  class="icon-[lucide--chevron-down] size-3"
-                />
-              </Button>
-            </template>
-          </Menu>
-        </div>
-      </div>
+      <AgentPanelChatControls
+        :blocked
+        :session-id
+        :custom-title
+        :entries
+        @open-history="onOpenHistory"
+        @rename-chat="emit('renameChat', $event)"
+        @delete-chat="emit('deleteHistory', $event)"
+      />
 
       <div :inert="blocked" class="relative min-h-0 flex-1">
         <EmptyState
@@ -604,7 +486,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer
         data-testid="agent-panel-footer"
-        :inert="openingChat || blocked"
+        :inert="footerInert"
         class="shrink-0 py-3 inert:opacity-50"
       >
         <div
@@ -625,7 +507,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <RunNoticeBanner
             :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
-            :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :workflow-name="runNoticeWorkflowName"
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"
@@ -647,7 +529,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :available-workflows
             :editable-workflow-id
             :has-workflow-target="!workflowDetached"
-            :workflow-selecting="selectingTabPath !== null || savingReference"
+            :workflow-selecting
             :get-mention-nodes
             @focusin="onComposerFocus"
             @send="onComposerSend"
@@ -676,7 +558,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :selecting-tab-path
                 :select-tab
                 :detached="workflowDetached"
-                :disabled="streaming || submitting || savingReference"
+                :disabled="selectorDisabled"
               />
             </template>
           </Composer>

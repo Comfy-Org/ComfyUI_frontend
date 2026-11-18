@@ -1,19 +1,9 @@
 <script setup lang="ts">
 import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
-import { useClipboard, useClipboardItems } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-import Button from '@comfyorg/design-system/button/Button'
 import Tag from '@comfyorg/design-system/chip/Tag'
-import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
-import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
-import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
-import { api } from '@/scripts/api'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 
 import type {
   PendingSendEntryState,
@@ -23,8 +13,6 @@ import type {
   PromptSnapshot,
   WorkflowReference
 } from '@/workbench/extensions/agent/types/workflowReference'
-import type { ReplyAsset } from '@/workbench/extensions/agent/utils/replyAssets'
-import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets'
 import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
 import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
 import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
@@ -33,13 +21,11 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
 import PendingSendStatus from './PendingSendStatus.vue'
-import ReplyAssetGroup from './ReplyAssetGroup.vue'
-import {
-  selectedUserMessageClipboard,
-  userMessageClipboard
-} from './userMessageClipboard'
+import UserMessageActions from './UserMessageActions.vue'
+import UserMessageAttachments from './UserMessageAttachments.vue'
+import UserMessagePromptParts from './UserMessagePromptParts.vue'
+import { selectedUserMessageClipboard } from './userMessageClipboard'
 
 const {
   text,
@@ -109,40 +95,6 @@ const readableText = computed(() =>
   })
 )
 const bubble = useTemplateRef<HTMLElement>('bubble')
-const plainClipboard = useClipboard({ copiedDuring: 2000, legacy: true })
-const richClipboard = useClipboardItems({ copiedDuring: 2000 })
-const copied = computed(
-  () => plainClipboard.copied.value || richClipboard.copied.value
-)
-
-async function copyMessage(): Promise<void> {
-  if (
-    (workflowReferences.length || skillReference) &&
-    richClipboard.isSupported.value &&
-    typeof ClipboardItem !== 'undefined'
-  ) {
-    const content = userMessageClipboard({
-      text,
-      workflowReferences,
-      skillReference,
-      tags,
-      attachments
-    })
-    try {
-      await richClipboard.copy([
-        new ClipboardItem({
-          'text/plain': new Blob([content.text], { type: 'text/plain' }),
-          'text/html': new Blob([content.html], { type: 'text/html' })
-        })
-      ])
-      return
-    } catch {
-      await plainClipboard.copy(content.text)
-      return
-    }
-  }
-  await plainClipboard.copy(readableText.value)
-}
 
 function copySelection(event: ClipboardEvent): void {
   if (!bubble.value || !event.clipboardData) return
@@ -157,52 +109,8 @@ function copySelection(event: ClipboardEvent): void {
   event.stopPropagation()
 }
 
-function openReference(reference: WorkflowReference): void {
-  if (reference.unavailable) return
-  emit('openReferenceWorkflow', reference.id, reference.name)
-}
-
-/* The shared map's 'other' glyph is a checkmark, which reads as a status
-   rather than a file on this surface. */
-function attachmentIconClass(name: string): string {
-  const kind = getMediaTypeFromFilename(name)
-  return kind === 'other' ? 'icon-[lucide--file]' : iconForMediaType(kind)
-}
-
-const splitAttachments = computed(() => {
-  const grid: ReplyAsset[] = []
-  const plain: UserAttachment[] = []
-  for (const item of attachments) {
-    const asset = gridAsset(item)
-    if (asset) grid.push(asset)
-    else plain.push(item)
-  }
-  return { grid, plain }
-})
-
-function gridAsset(item: UserAttachment): ReplyAsset | undefined {
-  const kind = item.kind ?? getMediaTypeFromFilename(item.name)
-  if (!isReplyAssetKind(kind)) return undefined
-  const url = attachmentUrl(item, kind)
-  if (!url) return undefined
-  const filename = item.ref ?? item.name
-  return {
-    url,
-    filename,
-    kind,
-    label: filename === item.name ? undefined : item.name
-  }
-}
-
-function attachmentUrl(
-  item: UserAttachment,
-  kind: ReplyAsset['kind']
-): string | undefined {
-  const capturedUrl =
-    kind === 'video' || kind === 'audio' ? item.mediaUrl : item.previewUrl
-  if (capturedUrl) return capturedUrl
-  if (!item.ref || isHdrImageFilename(item.name)) return
-  return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+function forwardOpenReference(workflowId: string, workflowName: string): void {
+  emit('openReferenceWorkflow', workflowId, workflowName)
 }
 </script>
 
@@ -221,33 +129,7 @@ function attachmentUrl(
         </template>
       </Tag>
     </div>
-    <div v-if="splitAttachments.grid.length" class="w-full">
-      <ReplyAssetGroup :assets="splitAttachments.grid" />
-    </div>
-    <div
-      v-if="splitAttachments.plain.length"
-      class="grid w-56 max-w-full grid-cols-2 gap-1.5"
-    >
-      <figure
-        v-for="(item, index) in splitAttachments.plain"
-        :key="`${item.name}:${index}`"
-        class="m-0"
-      >
-        <div
-          class="flex aspect-square w-full items-center justify-center rounded-lg bg-secondary"
-        >
-          <i
-            aria-hidden="true"
-            :class="
-              cn(attachmentIconClass(item.name), 'size-6 text-muted-foreground')
-            "
-          />
-        </div>
-        <figcaption class="mt-0.5 truncate text-xs text-muted-foreground">
-          {{ item.name }}
-        </figcaption>
-      </figure>
-    </div>
+    <UserMessageAttachments v-if="attachments.length" :attachments />
     <div
       v-if="showBubbleRow"
       class="flex max-w-full items-center justify-end gap-1.5"
@@ -270,48 +152,10 @@ function attachmentUrl(
         data-testid="user-message-bubble"
         class="w-fit max-w-full rounded-lg bg-secondary px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
       >
-        <template v-for="(part, index) in promptParts" :key="index">
-          <Tag
-            v-if="part.type === 'workflow'"
-            interactive
-            :label="part.reference.name"
-            class="-my-0.5 max-w-64 align-middle"
-            :aria-label="
-              part.reference.unavailable
-                ? t('agent.unavailableWorkflowReference', {
-                    name: part.reference.name
-                  })
-                : t('agent.openWorkflowTab', { name: part.reference.name })
-            "
-            data-testid="workflow-reference-chip"
-            data-comfy-workflow="1"
-            :data-workflow-id="part.reference.id"
-            :data-workflow-unavailable="
-              part.reference.unavailable ? 'true' : undefined
-            "
-            :aria-disabled="part.reference.unavailable"
-            :aria-description="
-              part.reference.unavailable
-                ? t('agent.workflowReferenceUnavailableReason')
-                : undefined
-            "
-            :title="
-              part.reference.unavailable
-                ? t('agent.workflowReferenceUnavailableReason')
-                : undefined
-            "
-            @click="openReference(part.reference)"
-          >
-            <template #icon>
-              <i aria-hidden="true" class="icon-[comfy--workflow] size-3" />
-            </template>
-          </Tag>
-          <CatalogSkillReference
-            v-else-if="part.type === 'skill'"
-            :skill="part.reference"
-          />
-          <template v-else>{{ part.text }}</template>
-        </template>
+        <UserMessagePromptParts
+          :parts="promptParts"
+          @open-reference-workflow="forwardOpenReference"
+        />
       </div>
     </div>
     <PendingSendStatus
@@ -325,53 +169,16 @@ function attachmentUrl(
       @new-chat="emit('newChat')"
       @paywall-action="forwardPaywallAction"
     />
-    <div
+    <UserMessageActions
       v-if="readableText"
-      class="pointer-events-none flex text-muted-foreground opacity-0 transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 touch:pointer-events-auto touch:opacity-100"
-    >
-      <Button
-        v-if="canEdit"
-        :tooltip="t('g.edit')"
-        type="button"
-        variant="muted-textonly"
-        size="icon-sm"
-        :aria-label="t('g.edit')"
-        class="size-6 rounded-lg"
-        @click="
-          emit('edit', {
-            text,
-            workflowReferences,
-            ...(skillReference ? { skillReference } : {})
-          })
-        "
-      >
-        <i aria-hidden="true" class="icon-[lucide--pencil] size-3" />
-      </Button>
-      <Tooltip disable-closing-trigger>
-        <TooltipTrigger as-child>
-          <Button
-            type="button"
-            variant="muted-textonly"
-            size="icon-sm"
-            :aria-label="copied ? t('agent.copied') : t('agent.copy')"
-            class="size-6 rounded-lg"
-            @click="copyMessage"
-          >
-            <i
-              aria-hidden="true"
-              :class="
-                cn(
-                  'size-3',
-                  copied ? 'icon-[lucide--check]' : 'icon-[lucide--copy]'
-                )
-              "
-            />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent>{{
-          copied ? t('agent.copied') : t('agent.copy')
-        }}</TooltipContent>
-      </Tooltip>
-    </div>
+      :text
+      :readable-text
+      :attachments
+      :tags
+      :workflow-references
+      :skill-reference
+      :can-edit
+      @edit="emit('edit', $event)"
+    />
   </div>
 </template>
