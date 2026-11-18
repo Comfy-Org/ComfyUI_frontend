@@ -335,6 +335,12 @@ function continuationOf(issued: {
   }
 }
 
+interface NamedRecovery {
+  readonly id: string
+  readonly kind: BillingOperationKind
+  readonly commandsAtStart: number
+}
+
 function pendingFromStatus(
   status: BillingStatusData
 ): ServerPendingOperation | undefined {
@@ -442,6 +448,7 @@ export function createBillingOperationLifecycle(
 
   const operations = new Map<string, OperationRecord>()
   const inFlightCommands = new Map<BillingOperationKind, InFlightCommand>()
+  let commandsBegun = 0
   const listeners = new Set<(state: BillingOperationState) => void>()
   const lifetime = { disposed: false }
 
@@ -899,6 +906,7 @@ export function createBillingOperationLifecycle(
     if (lifetime.disposed) return Promise.resolve(SUPERSEDED)
     const context = scopeTracker.capture()
     if (context === undefined) return Promise.resolve(NOT_AUTHENTICATED)
+    commandsBegun++
 
     // Single-flight holds only within a scope: an attempt the scope change
     // already doomed to SUPERSEDED must not stand in for this caller's.
@@ -1003,14 +1011,15 @@ export function createBillingOperationLifecycle(
   }
 
   async function recoverNamed(
-    named: NonNullable<BillingRecoverOptions['operation']>,
+    named: NamedRecovery,
     rail: BillingStatusData['billing_rail'],
     pointer: BillingOperationPointer | undefined,
     context: BillingScopeContext,
     includeSettled: boolean
   ): Promise<BillingResult<BillingOperationState | undefined>> {
     const read = await readOperation(named.id)
-    if (!isLive(context)) return SUPERSEDED
+    if (!isLive(context) || commandsBegun !== named.commandsAtStart)
+      return SUPERSEDED
     if (read.status === 'error') {
       return read.code === 'NOT_FOUND'
         ? { status: 'ok', value: undefined }
@@ -1023,7 +1032,8 @@ export function createBillingOperationLifecycle(
     const known = pointer?.operationId === named.id ? pointer : undefined
     const record = adopt(
       {
-        ...named,
+        id: named.id,
+        kind: named.kind,
         context,
         ...served,
         initialStatus: read.value.data,
@@ -1050,6 +1060,10 @@ export function createBillingOperationLifecycle(
     if (lifetime.disposed) return SUPERSEDED
     const context = scopeTracker.capture()
     if (context === undefined) return NOT_AUTHENTICATED
+    const named =
+      operation === undefined
+        ? undefined
+        : { ...operation, commandsAtStart: commandsBegun }
 
     const status = await statusReader.read()
     if (!isLive(context)) return SUPERSEDED
@@ -1060,7 +1074,7 @@ export function createBillingOperationLifecycle(
 
     return recoverServed(
       status.value.status,
-      operation,
+      named,
       pointer,
       context,
       includeSettled
@@ -1069,7 +1083,7 @@ export function createBillingOperationLifecycle(
 
   function recoverServed(
     status: BillingStatusData,
-    operation: BillingRecoverOptions['operation'],
+    operation: NamedRecovery | undefined,
     pointer: BillingOperationPointer | undefined,
     context: BillingScopeContext,
     includeSettled: boolean
