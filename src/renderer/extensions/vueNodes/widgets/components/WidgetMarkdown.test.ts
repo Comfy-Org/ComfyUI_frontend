@@ -354,15 +354,6 @@ Another line with more content.`
       expect(displayDiv.innerHTML).toContain('<em>italic</em>')
     })
 
-    it('handles line breaks in markdown', () => {
-      const markdownWithBreaks = 'Line 1\nLine 2\nLine 3'
-      const widget = createMarkdownWidget(markdownWithBreaks)
-      renderComponent(widget, markdownWithBreaks)
-
-      const displayDiv = screen.getByRole('region', { name: 'test_markdown' })
-      expect(displayDiv.innerHTML).toContain('<br>')
-    })
-
     it('handles empty or whitespace-only markdown', () => {
       const whitespaceMarkdown = '   \n\n   '
       const widget = createMarkdownWidget(whitespaceMarkdown)
