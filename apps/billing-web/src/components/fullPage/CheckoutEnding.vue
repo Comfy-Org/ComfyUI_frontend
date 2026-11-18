@@ -162,6 +162,13 @@ const showsCode = computed(
     planCard.value === undefined &&
     !receipt.value.rowsReplaceCode
 )
+const autoTopUpNote = computed(() => {
+  const activation =
+    'receipt' in screen ? screen.receipt?.autoTopUpActivation : undefined
+  return activation === 'pending' || activation === 'failed'
+    ? activation
+    : undefined
+})
 const creditsAdded = computed(() =>
   'receipt' in screen ? screen.receipt?.creditsAdded : undefined
 )
@@ -220,6 +227,13 @@ function act() {
           </strong>
         </template>
       </i18n-t>
+      <p
+        v-if="autoTopUpNote"
+        class="m-0 text-sm/5 text-muted-foreground"
+        data-testid="checkout-ending-auto-top-up"
+      >
+        {{ t(`checkout.fullPage.ending.autoTopUp.${autoTopUpNote}`) }}
+      </p>
     </template>
 
     <EndingPlanCard
@@ -280,6 +294,19 @@ function act() {
         @click="act"
       >
         {{ t(`checkout.fullPage.ending.actions.${primary}`) }}
+      </button>
+      <button
+        v-if="autoTopUpNote === 'failed'"
+        type="button"
+        :class="
+          cn(
+            buttonVariants({ variant: 'textonly', size: 'lg' }),
+            'w-full font-semibold'
+          )
+        "
+        @click="emit('addCredits')"
+      >
+        {{ t('checkout.fullPage.ending.autoTopUp.openBilling') }}
       </button>
       <SuccessCloseFooter
         v-if="ending.closeFooter"
