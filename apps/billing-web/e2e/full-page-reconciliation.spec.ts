@@ -250,6 +250,12 @@ const BILLING_READS = [
   '/billing/payment-methods'
 ]
 
+function refuseSession(cloud: MockCloud, extraReads: readonly string[] = []) {
+  cloud.reply('POST', '/auth/token', () => REFUSED)
+  for (const path of [...BILLING_READS, ...extraReads])
+    cloud.reply('GET', path, () => REFUSED)
+}
+
 for (const { name, pending, lands } of [
   { name: 'money in flight', pending: true, lands: 'waiting' },
   { name: 'nothing pending', pending: false, lands: 'capture' }
@@ -263,8 +269,7 @@ for (const { name, pending, lands } of [
     await signIn(CHECKOUT)
     await expect(payButton(page)).toBeEnabled()
 
-    cloud.reply('POST', '/auth/token', () => REFUSED)
-    for (const path of BILLING_READS) cloud.reply('GET', path, () => REFUSED)
+    refuseSession(cloud)
     await payButton(page).click()
 
     await expect(page).toHaveURL(
@@ -354,9 +359,7 @@ test('a session that expires after paying in place of the linked signup returns 
   await payButton(page).click()
   await expect.poll(() => subscribeRequests(cloud)).toHaveLength(1)
 
-  cloud.reply('POST', '/auth/token', () => REFUSED)
-  for (const path of [...BILLING_READS, '/billing/ops/op_subscribe'])
-    cloud.reply('GET', path, () => REFUSED)
+  refuseSession(cloud, ['/billing/ops/op_subscribe'])
 
   await expect(page).toHaveURL(
     (url) =>
