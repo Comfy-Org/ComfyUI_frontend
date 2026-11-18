@@ -39,11 +39,30 @@ stopChange?.()
 stopSerialize?.()
 ```
 
-`change` runs after a commit changes the value; `activate` after each commit
-`setValue` did not make, such as a button press; `removed` once when the widget
-goes. `beforeSerialize` changes only the queued prompt, not the saved
-workflow. A listener belongs to the widget it was added to: a widget added
-again under the same name, or rebuilt by undo, starts with none.
+`change` runs after a commit leaves a value other than the last commit's;
+`activate` after each commit `setValue` did not make, such as a button press;
+`removed` once when the widget goes. Neither `change` nor `activate` runs while
+a workflow loads, an undo or redo restores it, or an import runs, and that
+includes `onWorkflowLoaded` listeners. On a DOM widget (a mount, canvas,
+declared type or text area) one commit by the user runs `activate` twice
+(core issue #23742). `beforeSerialize` changes only the queued prompt, not the
+saved workflow. A listener belongs to the widget it was added to: a widget
+added again under the same name, or rebuilt by undo, starts with none.
+
+A combo's `options.values` may be a list, a function called with no
+arguments, or a getter; it is read each time the combo shows its choices.
+
+## Changing a node's widgets
+
+Undo, redo and a reload rebuild a node from its type, then give the saved
+values back. A widget the pack adds, removes or moves after the node is made
+is not kept: an undo of the change puts the type's widgets back, but a redo, a
+later undo or a reload does not repeat it. By default the values are given
+back by position, so after a removed or moved widget they land on the wrong
+widgets; with the `Comfy.Workflow.NamedValuesRestore` setting on, they are
+given back by name (core issue #23744). Make such changes in the type's
+`onCreated` hook, which runs for every rebuilt node too. `move` with a negative
+index moves the widget to the front, and `add` lower-cases `type`.
 
 ## Adding widgets
 
@@ -93,6 +112,11 @@ meter?.redraw()
 A mounted value is any value a workflow can save; `null` reads back as `''`.
 `serialize` decides whether it is saved, and follows whether `defaultValue` is
 given; `sendToPrompt` decides whether it is sent, and follows `serialize`.
+
+`height` fixes the widget's height on the litegraph canvas. On Vue nodes a DOM
+widget (a mount, canvas, declared type or text area) shares the node's free
+height with the others whatever its `height` or `setHeight`, which only grows
+the node (core issue #23743).
 
 ## Widget types
 

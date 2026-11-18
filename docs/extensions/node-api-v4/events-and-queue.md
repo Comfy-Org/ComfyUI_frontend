@@ -22,10 +22,20 @@ comfy.onViewportChanged(() => {
 })
 ```
 
-`onNodeChanged` reports title, mode, color and body color changes, however
-they were made. `to` is what the node's matching read returns after the
-change. Its scope is `'visible'`, the graph on screen, unless the options say
-`'root-and-subgraphs'`.
+`onNodeChanged` reports title, mode, color and body color changes the user or
+a pack makes. `to` is what the node's matching read returns after the change.
+Its scope is `'visible'`, the graph on screen, unless the options say
+`'root-and-subgraphs'`. A load, undo or redo is not reported as such: it
+reports each saved mode other than `'always'` and each saved color, changed or
+not, and never a title (core issue #23741). Re-read the nodes in
+`onWorkflowLoaded` instead.
+
+`onNodeMoved` sees a pack's own moves too, and a load, undo or redo reports
+each node it places twice: first at its saved x and y 10, then at its saved
+position (core issue #23745). `onViewportChanged` goes silent if the canvas
+menu is hidden or builder mode is entered after its first listener
+subscribed, until every listener has left and one subscribes again (core
+issue #23740).
 
 ## Execution progress
 
@@ -80,7 +90,9 @@ if (outputs.length > 0) {
 }
 ```
 
-`run` resolves `true` once its prompts are submitted, and `false` if a node it
-names is gone or the run was folded into one in progress, refused, given node
-errors or stopped before sending. A run whose every prompt is refused fires
-only `onRejected`.
+`run` resolves `true` once its prompts are submitted, and also when a request
+fails with no answer from the backend. It resolves `false` if a node it names
+is gone or the run was folded into one in progress, refused, given node errors
+or stopped before sending. A run whose every prompt is refused fires only
+`onRejected`. A rejected promise from an async `onBeforeRun` is reported, and
+gives no cleanup function.

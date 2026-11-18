@@ -18,7 +18,9 @@ object that names the entity and reads it live each time it is asked.
   `undefined`, a list included, and an edit through it changes nothing.
 - A node that an undo or redo brings back is the same handle again, however
   many undos and redos ran while it was gone, unless one of them went back to
-  before the node was added; then take a new one.
+  before the node was added; then take a new one. A group's handle is retired
+  for good by an undo or redo that finds the group gone and no newer group in
+  its graph, because the next group made takes its id (core issue #23733).
 
 ```ts
 import type { v4 } from '@comfyorg/comfyui-frontend-types'

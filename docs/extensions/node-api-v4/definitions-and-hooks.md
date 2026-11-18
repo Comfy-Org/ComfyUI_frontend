@@ -43,7 +43,9 @@ stop()
   moment it joins. **A late `extend` reaches only nodes that join afterwards**:
   it never reaches a node already in a graph, and `onCreated` is not replayed
   for existing nodes. Read those through `comfy.graph`.
-- A hook runs only for a node in a graph, with that node's handle.
+- A hook runs only for a node in a graph, with that node's handle. App mode
+  does not ask `onDragOver` or `onDrop`: it calls the drag methods on a copy
+  of the node's state, which no hook can reach (core issue #23732).
 - A load, an undo and a redo rebuild the graph: their nodes are `loading` in
   `onCreated`, and `onRemoved` is called for every node they replace, not only
   for a node the user deleted.
@@ -74,7 +76,11 @@ comfy.defs.extend(/^MyPack\./, (builder) => {
 
 `define` registers a type the pack owns. Its `execution` defaults to
 `'frontend'`: the node is left out of the prompt. A type the backend runs
-needs `execution: 'backend'`.
+needs `execution: 'backend'`. Its `widgets` are saved with a node only while
+`node.isSerializingWidgets()` is true, and that flag is not saved, so a type
+whose widget values should be kept calls `node.setSerializeWidgets(true)` as
+each node is made. `presentation.resizable: false` lasts until the user unpins
+a node, as in the editor, and a load or undo sets it again.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'

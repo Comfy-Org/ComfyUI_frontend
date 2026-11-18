@@ -29,7 +29,9 @@ for (const node of comfy.graph.selection()) {
 ## Editing
 
 Each edit is one undo step and returns `false` when its node is gone. A field a
-patch leaves out stays as it is.
+patch leaves out stays as it is. `resizable` (and `node.setResizable`) is not
+saved and makes no undo step; a `false` lasts until the user unpins the node,
+which makes it resizable again, as the editor does (core issue #23731).
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
