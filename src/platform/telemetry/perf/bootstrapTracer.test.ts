@@ -381,6 +381,29 @@ describe('bootstrapTracer', () => {
     })
   })
 
+  it('keeps a later phase failure after an earlier, different failure was recorded', async () => {
+    const tracer = new BootstrapTracer()
+    const earlier = new Error('handled by the caller')
+    const terminal = new TypeError('workflow restore failed')
+
+    await expect(
+      tracer.settle('bootstrap/new-user', () => Promise.reject(earlier))
+    ).rejects.toBe(earlier)
+    await expect(
+      tracer.settle('bootstrap/workflow-restore', () =>
+        Promise.reject(terminal)
+      )
+    ).rejects.toBe(terminal)
+
+    tracer.complete('failed', { error: terminal })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/workflow-restore',
+      failure_error: 'TypeError'
+    })
+  })
+
   it('keeps the rejecting phase when the terminal error is that rejection', async () => {
     const tracer = new BootstrapTracer()
     const error = new RangeError('bad defs')

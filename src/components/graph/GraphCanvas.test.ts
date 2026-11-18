@@ -354,11 +354,16 @@ describe('GraphCanvas settings startup failure', () => {
   it('attributes an unauthorized settings failure to the settings phase and reloads', async () => {
     vi.spyOn(window.location, 'reload').mockReturnValue()
     const complete = vi.spyOn(bootstrapTracer, 'complete')
+    const noteFailure = vi.spyOn(bootstrapTracer, 'noteFailure')
     const error = new UnauthorizedError('expired session')
     useSettingStore().error = error
 
     await mountGraphCanvas({}, undefined, { settingsReady: false })
 
+    expect(noteFailure).toHaveBeenCalledExactlyOnceWith(
+      'bootstrap/settings',
+      error
+    )
     expect(complete).toHaveBeenCalledExactlyOnceWith('failed', { error })
     expect(window.location.reload).toHaveBeenCalledOnce()
   })

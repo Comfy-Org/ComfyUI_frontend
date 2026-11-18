@@ -215,7 +215,7 @@ export class BootstrapTracer {
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
   private _hidden = new HiddenTimeMeter()
-  private _failure: { phase: BootstrapPhase; error: unknown } | undefined
+  private _failurePhases = new Map<unknown, BootstrapPhase>()
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -253,18 +253,19 @@ export class BootstrapTracer {
    * startup went wrong, so the surviving sessions are the fast ones and every
    * percentile reads better than reality.
    *
-   * The first rejection wins attribution. Nested same-error rethrows are
-   * no-ops here since the inner `settle()` already recorded it, so the
-   * innermost phase sticks. For true siblings racing under the same parent,
-   * first-to-reject is also what `Promise.all` propagates, so a second,
-   * later concurrent rejection must not override the one that matters.
+   * Each error keeps the first phase it was seen in. Nested same-error
+   * rethrows are no-ops here since the inner `settle()` already recorded it,
+   * so the innermost phase sticks. Distinct errors each keep their own
+   * phase, so `complete()` can look the terminal error's phase up by
+   * identity even when an unrelated error (a sibling, or one a caller
+   * handled without letting it become terminal) was recorded first.
    */
   async settle<T>(phase: BootstrapPhase, work: () => Promise<T>): Promise<T> {
     const span = this.startPhase(phase)
     try {
       return await work()
     } catch (error) {
-      this._failure ??= { phase, error }
+      if (!this._failurePhases.has(error)) this._failurePhases.set(error, phase)
       throw error
     } finally {
       span.stop()
@@ -279,7 +280,7 @@ export class BootstrapTracer {
    * the phase; the caller still decides whether and how startup ends.
    */
   noteFailure(phase: BootstrapPhase, error: unknown): void {
-    this._failure ??= { phase, error }
+    if (!this._failurePhases.has(error)) this._failurePhases.set(error, phase)
   }
 
   /**
@@ -345,7 +346,7 @@ export class BootstrapTracer {
     clearTimeout(this._watchdog)
     const failure =
       outcome === 'failed' ? this._failureCause(terminal) : undefined
-    this._failure = undefined
+    this._failurePhases = new Map()
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
     this._report(outcome, undefined, failure)
     this._hidden.stop()
@@ -356,15 +357,15 @@ export class BootstrapTracer {
   ): Pick<BootstrapCompleteMetadata, 'failure_phase' | 'failure_error'> {
     const newestOpen = Array.from(this._spans.keys()).at(-1)
     if (terminal) {
-      const rejection =
-        this._failure?.error === terminal.error ? this._failure : undefined
       return {
-        failure_phase: rejection?.phase ?? newestOpen ?? 'untraced',
+        failure_phase:
+          this._failurePhases.get(terminal.error) ?? newestOpen ?? 'untraced',
         failure_error: safeErrorName(terminal.error)
       }
     }
-    if (this._failure) {
-      const { phase, error } = this._failure
+    const first = this._failurePhases.entries().next().value
+    if (first) {
+      const [error, phase] = first
       return {
         failure_phase: phase,
         failure_error: safeErrorName(error)
