@@ -3,6 +3,7 @@ import { assert, describe, expect, it } from 'vitest'
 import type { AskUserResolution, MessagePart } from './agentMessageParts'
 import {
   retireAskParts,
+  retireKnownAskParts,
   toAskOrNoticePart,
   toAskPart,
   toAskResolution
@@ -337,6 +338,32 @@ describe('toAskOrNoticePart', () => {
 })
 
 describe('retireAskParts', () => {
+  it('retires several known asks in one pass and preserves unrelated parts', () => {
+    const unrelated = { type: 'text', text: 'kept', state: 'done' } as const
+    const parts: MessagePart[] = [
+      { type: 'runApproval', askId: 'run' },
+      toAskOrNoticePart(askUser({ ask_id: 'question' })),
+      unrelated
+    ]
+
+    expect(
+      retireKnownAskParts(
+        parts,
+        new Map([
+          ['run', { status: 'retired' }],
+          ['question', { status: 'answered', selected: ['flux'] }]
+        ])
+      )
+    ).toEqual([
+      expect.objectContaining({
+        type: 'askUser',
+        askId: 'question',
+        resolution: { status: 'answered', selected: ['flux'] }
+      }),
+      unrelated
+    ])
+  })
+
   const question = toAskPart(askUser({ ask_id: 'q' }))
   assert(question)
   const parts: MessagePart[] = [
