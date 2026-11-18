@@ -819,7 +819,7 @@ describe('normalizeAgentTranscript', () => {
     ])
   })
 
-  it('keeps an older available approval when the newest streaming row has none', () => {
+  it('does not fall back to an older approval after the newest row moves on', () => {
     const first = row(1, 'assistant', 'turn-a', '', 'row-1')
     first.status = 'streaming'
     first.pending_ask = {
@@ -849,9 +849,7 @@ describe('normalizeAgentTranscript', () => {
     )
 
     expect(transcript.pending?.message.streaming).toBe(true)
-    expect(transcript.messages[0].parts).toContainEqual(
-      expect.objectContaining({ askId: 'ask-available' })
-    )
+    expect(transcript.messages[0].parts).toEqual([])
   })
 
   // Only a transport can resolve an ask, and a demoted row is not getting one.
