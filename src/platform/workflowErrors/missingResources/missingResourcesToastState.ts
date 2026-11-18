@@ -199,6 +199,16 @@ function batchAwarePhase(
     : phase
 }
 
+function settledInBatch(
+  tracked: TrackedModel,
+  batch: DownloadBatch
+): TrackedModel {
+  return batchAwarePhase(tracked, batch) === 'finished' &&
+    trackedModelPhase(tracked) !== 'finished'
+    ? { ...tracked, download: { status: 'done' } }
+    : tracked
+}
+
 /** Models a download-all click would start: waiting or failed, excluding ones the running batch already finished. */
 export function startableModels(
   tracked: readonly TrackedModel[],
@@ -226,11 +236,13 @@ export function deriveMissingResourcesToastState(
   ).length
 
   if (active.length > 0) {
-    const inProgress = tracked.filter(
-      (model, index) =>
-        phases[index] === 'active' ||
-        (batch.has(model.key) && phases[index] === 'finished')
-    )
+    const inProgress = tracked
+      .filter(
+        (model, index) =>
+          phases[index] === 'active' ||
+          (batch.has(model.key) && phases[index] === 'finished')
+      )
+      .map((model) => settledInBatch(model, batch))
     const bytes = combinedBytes(inProgress)
     return {
       kind: 'downloading',

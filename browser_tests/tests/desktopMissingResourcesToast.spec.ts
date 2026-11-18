@@ -7,6 +7,7 @@ import {
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { desktopModelDownloadFixture as test } from '@e2e/fixtures/desktopModelDownloadFixture'
 import { cleanupFakeModel } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { untrackedDesktopHostFixture as untrackedDesktopHost } from '@e2e/fixtures/untrackedDesktopHostFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 const GATED_MODEL_URL =
@@ -161,20 +162,6 @@ comfyPageFixture.describe('Missing resources toast outside Desktop', () => {
       await expect(comfyPage.page.getByTestId(TestIds.toast.panel)).toBeHidden()
     }
   )
-})
-
-const untrackedDesktopHost = comfyPageFixture.extend({
-  page: async ({ page }, use) => {
-    await page.addInitScript(() => {
-      Object.assign(window, {
-        __comfyDesktop2: {
-          isRemote: () => false,
-          downloadModel: async () => true
-        }
-      })
-    })
-    await use(page)
-  }
 })
 
 untrackedDesktopHost.describe(

@@ -382,6 +382,8 @@ describe('nextDownloadBatch', () => {
       kind: 'downloading',
       finished: 1,
       total: 2,
+      fraction: 0.75,
+      bytes: { received: 150, total: 200 },
       startable: 0
     })
   })
