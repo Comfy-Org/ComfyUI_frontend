@@ -49,9 +49,25 @@ import {
 } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
-import type { z } from 'zod'
+import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { z } from 'zod'
 
 type PromptOutputsSkippedData = z.infer<typeof zPromptOutputsSkippedData>
+
+const zRunningQueue = z.object({
+  queue_running: z.array(z.array(z.unknown()))
+})
+
+function findRunningPrompt(
+  body: unknown,
+  jobId: string
+): ComfyApiWorkflow | undefined {
+  const queue = zRunningQueue.safeParse(body)
+  if (!queue.success) return
+  const item = queue.data.queue_running.find((entry) => entry[1] === jobId)
+  const prompt = zComfyApiWorkflow.safeParse(item?.[2])
+  return prompt.success ? prompt.data : undefined
+}
 
 type RuntimeExecutionError = Omit<
   ExecutionErrorWsMessage,
@@ -621,6 +637,26 @@ export const useExecutionStore = defineStore('execution', () => {
     executionIdToLocatorCache.clear()
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
     activeJobId.value = jobId
+    if (!queuedJobs.value[jobId].nodeLookup) void adoptRunningPrompt(jobId)
+  }
+
+  async function adoptRunningPrompt(jobId: JobId) {
+    let prompt: ComfyApiWorkflow | undefined
+    try {
+      const res = await api.fetchApi('/queue')
+      if (!res.ok) return
+      prompt = findRunningPrompt(await res.json(), jobId)
+    } catch {
+      return
+    }
+    if (!prompt || activeJobId.value !== jobId) return
+    const job = activeJob.value
+    if (!job || job.nodeLookup) return
+    job.nodes = {
+      ...Object.fromEntries(Object.keys(prompt).map((id) => [id, false])),
+      ...job.nodes
+    }
+    job.nodeLookup = buildExecutionNodeLookup(prompt)
   }
 
   function reportAmbiguousExecutionStartRejection(jobId: JobId): void {
