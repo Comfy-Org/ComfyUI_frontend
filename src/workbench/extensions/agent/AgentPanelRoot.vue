@@ -855,8 +855,11 @@ let nodeReferenceWorkflow = selectionTags.value.length
 
 function viewedGraphNodes() {
   return (
-    (canvasStore.currentGraph ?? useApp().canvas?.graph ?? useApp().graph)
-      ?.nodes ?? []
+    (
+      canvasStore.currentGraph ??
+      useApp().canvas?.graph ??
+      useApp().rootGraphOrUndefined
+    )?.nodes ?? []
   )
 }
 
@@ -1136,7 +1139,9 @@ const {
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
-    draft: targetWorkflowDraft
+    draft: targetWorkflowDraft,
+    canvasSelection: () =>
+      canReferenceNodes.value ? selectedNodes.value.map((node) => node.id) : []
   }
 })
 
@@ -1776,8 +1781,6 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-// DES-1221. Read while the panel is on screen, so the experiment's denominator
-// is the panel openers the hypothesis is about.
 const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
   useFreeUsePlacement(isCloud)
 

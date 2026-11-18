@@ -205,6 +205,7 @@ const appMock = vi.hoisted(() => {
     ui: { autoQueueEnabled: false },
     graph,
     rootGraph: graph,
+    rootGraphOrUndefined: graph,
     isGraphReady: false,
     canvas: undefined as
       | LGraphCanvas
@@ -779,7 +780,7 @@ describe('AgentPanelRoot first-use experience', () => {
     paywallAgentScopedHasFundsAuthoritative.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({
-        variant: ref('top-banner'),
+        variant: ref('near-composer'),
         reportNotice: reportFreeUseNotice
       })
     )
@@ -789,7 +790,7 @@ describe('AgentPanelRoot first-use experience', () => {
     return screen.findByRole('note', { name: 'Free use notice' })
   }
 
-  it('forwards free-use notice interactions to the experiment', async () => {
+  it('forwards Local free-use notice interactions to telemetry', async () => {
     placeFundedFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -798,8 +799,8 @@ describe('AgentPanelRoot first-use experience', () => {
     )
 
     expect(reportFreeUseNotice.mock.calls).toEqual([
-      [{ action: 'shown', placement: 'top-banner' }],
-      [{ action: 'dismissed', placement: 'top-banner' }]
+      [{ action: 'shown', placement: 'near-composer' }],
+      [{ action: 'dismissed', placement: 'near-composer' }]
     ])
   })
 
