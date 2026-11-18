@@ -97,13 +97,19 @@ export function useRunOnCloudHandoff(
     }
   }
 
-  function openBriefIn(app: AgentApp): void {
+  async function openBriefIn(app: AgentApp): Promise<void> {
     try {
       const handoff = prepareHandoff()
       if (!handoff) return
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
+      const copying = copyToClipboard(handoff.brief, {
+        toastOnSuccess: false,
+        toastOnError: false
+      })
       openAgentApp(app, handoff.brief)
+      if (await copying)
+        toast.info(t('openOnCloud.agentMenu.promptCopiedForSignIn'))
     } catch (error) {
       reportHandoffFailure(error)
     }
