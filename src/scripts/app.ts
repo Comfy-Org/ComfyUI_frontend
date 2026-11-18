@@ -1246,13 +1246,7 @@ export class ComfyApp implements IComfyApp {
       resolveGraphData
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
-    const resolved =
-      isReady?.() === false
-        ? undefined
-        : resolveGraphData
-          ? resolveGraphData()
-          : graphData
-    if (!resolved && (isReady || resolveGraphData)) {
+    const skipUnreadyLoad = async () => {
       await useExtensionService().invokeExtensionsAsync(
         'onGraphLoadError',
         new DOMException('Workflow load was replaced', 'AbortError')
@@ -1263,10 +1257,15 @@ export class ComfyApp implements IComfyApp {
       )
       return false
     }
-    graphData = resolved
+    if (isReady?.() === false) return skipUnreadyLoad()
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
+      if (resolveGraphData) {
+        const resolved = resolveGraphData()
+        if (!resolved) return await skipUnreadyLoad()
+        graphData = resolved
+      }
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
       replaceCanvas()
       ChangeTracker.isLoadingGraph = true
