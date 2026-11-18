@@ -365,56 +365,71 @@ describe('DeploySetupAgentMenu', () => {
     )
   })
 
-  it.for([
-    { outcome: 'saved', saves: true, opens: 1 },
-    { outcome: 'cancelled', saves: false, opens: 0 }
-  ])(
-    'saves an unsaved workflow before Deploy on Platform: $outcome',
-    async ({ saves, opens }) => {
-      const workflow = fromPartial<LoadedComfyWorkflow>({
-        path: 'workflows/Unsaved Workflow.json',
-        isPersisted: false,
-        isModified: true
-      })
-      useWorkflowStore().activeWorkflow = workflow
-      vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
-        async (saved) => {
-          if (saves)
-            Object.assign(saved, { isPersisted: true, isModified: false })
-          return saves
-        }
-      )
-      const tab = fromPartial<Window>({ opener: window, location: {} })
-      const open = vi.spyOn(window, 'open').mockReturnValue(tab)
-      render(GlobalDialog, { global: { plugins: [testI18n] } })
-      await openDeploySetupDialog()
-      const user = userEvent.setup({ pointerEventsCheck: 0 })
-      const link = await screen.findByRole('link', {
-        name: 'Deploy on Platform'
-      })
-      const navigated = vi.fn<(prevented: boolean) => void>()
-      link.addEventListener('click', (event) => {
-        navigated(event.defaultPrevented)
-        event.preventDefault()
-      })
+  async function clickPlatformForNewWorkflow() {
+    const workflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'workflows/Unsaved Workflow.json',
+      isPersisted: false,
+      isModified: true
+    })
+    useWorkflowStore().activeWorkflow = workflow
+    const tab = fromPartial<Window>({ opener: window, location: {} })
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab)
+    render(GlobalDialog, { global: { plugins: [testI18n] } })
+    await openDeploySetupDialog()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const link = await screen.findByRole('link', {
+      name: 'Deploy on Platform'
+    })
+    const navigated = vi.fn<(prevented: boolean) => void>()
+    link.addEventListener('click', (event) => {
+      navigated(event.defaultPrevented)
+      event.preventDefault()
+    })
+    await user.click(link)
+    return { workflow, tab, open, link, navigated }
+  }
 
-      await user.click(link)
+  it('saves a new workflow, then opens Deploy on Platform', async () => {
+    vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
+      async (saved) => {
+        Object.assign(saved, { isPersisted: true, isModified: false })
+        return true
+      }
+    )
 
-      expect(navigated).toHaveBeenCalledExactlyOnceWith(true)
+    const { workflow, tab, open, link, navigated } =
+      await clickPlatformForNewWorkflow()
+
+    expect(navigated).toHaveBeenCalledExactlyOnceWith(true)
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledExactlyOnceWith(
+      workflow
+    )
+    await waitFor(() =>
+      expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
+    )
+    expect(tab.opener).toBeNull()
+    expect(tab.location.href).toBe(link.getAttribute('href'))
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      false
+    )
+  })
+
+  it('opens nothing when saving before Deploy on Platform is cancelled', async () => {
+    vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValue(false)
+
+    const { workflow, open, navigated } = await clickPlatformForNewWorkflow()
+
+    expect(navigated).toHaveBeenCalledExactlyOnceWith(true)
+    await waitFor(() =>
       expect(useWorkflowService().saveWorkflow).toHaveBeenCalledExactlyOnceWith(
         workflow
       )
-      await waitFor(() => expect(open).toHaveBeenCalledTimes(opens))
-      if (opens) {
-        expect(open).toHaveBeenCalledWith('', '_blank')
-        expect(tab.opener).toBeNull()
-        expect(tab.location.href).toBe(link.getAttribute('href'))
-      }
-      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
-        !saves
-      )
-    }
-  )
+    )
+    expect(open).not.toHaveBeenCalled()
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      true
+    )
+  })
 
   it('keeps the dialog open when the browser blocks the Platform tab', async () => {
     useWorkflowStore().activeWorkflow = fromPartial({

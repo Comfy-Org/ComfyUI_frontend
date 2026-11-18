@@ -132,8 +132,6 @@ async function openPlatform(event: MouseEvent, closes = true) {
   }
   event.preventDefault()
   if (!(await saveActiveWorkflow())) return
-  // A slow save can outlast the click's popup allowance; keep the dialog
-  // open so the now-saved link can be clicked again if the tab was blocked.
   const tab = window.open('', '_blank')
   if (!tab) {
     toast.info(t('openOnCloud.deploySetupDialog.platformTabBlocked'))
