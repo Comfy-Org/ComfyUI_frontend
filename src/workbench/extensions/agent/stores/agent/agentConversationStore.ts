@@ -752,7 +752,9 @@ export const useAgentConversationStore = defineStore(
         if (
           turnId !== turn.messageId ||
           askId === pendingAskId ||
-          protectedAskIds.has(askId)
+          protectedAskIds.has(askId) ||
+          submittedAskAnswers.has(askId) ||
+          answeringAskIds.value.has(askId)
         )
           continue
         retireAsk(askId, { status: 'retired' }, turn.threadId)
@@ -785,11 +787,10 @@ export const useAgentConversationStore = defineStore(
       askId: string,
       answer: AgentAnswerRequest,
       owner?: string,
-      knownKind?: RenderedAskKind | 'unknown'
+      knownKind?: RenderedAskKind | 'unknown',
+      knownMessageId?: TurnId
     ): void {
-      const message = messages.value.find((candidate) =>
-        candidate.parts.some((part) => askIdOf(part) === askId)
-      )
+      const prior = submittedAskAnswers.get(askId)
       const kind =
         knownKind ??
         messages.value
@@ -800,8 +801,28 @@ export const useAgentConversationStore = defineStore(
         answer,
         kind,
         owner: threadKey(owner),
-        messageId: message?.id
+        messageId:
+          knownMessageId ?? askOwnerMessageId(askId, owner) ?? prior?.messageId
       })
+    }
+
+    function askOwnerMessageId(
+      askId: string,
+      owner?: string
+    ): TurnId | undefined {
+      const key = threadKey(owner)
+      if (
+        activeSlot.value?.threadId === key &&
+        activeSlot.value.message.parts.some((part) => askIdOf(part) === askId)
+      )
+        return activeSlot.value.turnId
+      for (const entry of backgroundTurns.values())
+        if (
+          entry.threadId === key &&
+          entry.message.parts.some((part) => askIdOf(part) === askId)
+        )
+          return entry.messageId
+      return undefined
     }
 
     function submittedAskAnswer(askId: string): AgentAnswerRequest | undefined {
@@ -812,6 +833,10 @@ export const useAgentConversationStore = defineStore(
       askId: string
     ): RenderedAskKind | 'unknown' | undefined {
       return submittedAskAnswers.get(askId)?.kind
+    }
+
+    function submittedAskMessageId(askId: string): TurnId | undefined {
+      return submittedAskAnswers.get(askId)?.messageId
     }
 
     function takeSubmittedAskAnswer(
@@ -832,10 +857,10 @@ export const useAgentConversationStore = defineStore(
       clearAskResolutionReportWatchdog(askId)
       askResolutionReportWatchdogs.set(
         askId,
-        setTimeout(
-          () => clearAskAwaitingResolution(askId),
-          ASK_RESOLUTION_GRACE_MS
-        )
+        setTimeout(() => {
+          clearAskResolutionReportWatchdog(askId)
+          clearAskAwaitingResolution(askId)
+        }, ASK_RESOLUTION_GRACE_MS)
       )
     }
 
@@ -1675,14 +1700,7 @@ export const useAgentConversationStore = defineStore(
       unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
       clearActive()
-      const transcript = normalizeAgentTranscript(
-        history,
-        (askId) =>
-          isAskRetired(askId) ||
-          submittedAskAnswer(askId) !== undefined ||
-          answeringAskIds.value.has(askId),
-        (askId) => isAskRetired(askId)
-      )
+      const transcript = normalizeAgentTranscript(history)
       reapplyRetiredAsks(transcript)
       messages.value = transcript.messages
       resolvedPaywallIds.value = new Set()
@@ -1930,6 +1948,7 @@ export const useAgentConversationStore = defineStore(
       recordAskAnswer,
       submittedAskAnswer,
       submittedAskKind,
+      submittedAskMessageId,
       takeSubmittedAskAnswer,
       markAskAwaitingResolution,
       asksAwaitingResolution,
