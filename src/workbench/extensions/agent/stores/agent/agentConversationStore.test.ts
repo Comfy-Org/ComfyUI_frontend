@@ -470,6 +470,25 @@ describe('useAgentConversationStore', () => {
     }
   )
 
+  it('keeps the retirement timer when answer reporting is awaiting a frame', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.hydrate(parkedApprovalTranscript('th-A'))
+      store.recordAskAnswer('turn-1:call-1', { selected: ['run'] }, 'th-A')
+      store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
+      store.markAskAwaitingResolution('turn-1:call-1', 'accepted')
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(store.asksAwaitingResolution()).toEqual([])
+      expect(store.isAskRetired('turn-1:call-1', 'th-A')).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // PM-1575 regression (finding #3, medium): settleActiveTurn used to keep
   // only a single "settled but still holding" transport reachable. A second
   // turn settling within the same window while ALSO holding a part
@@ -1469,11 +1488,38 @@ describe('useAgentConversationStore', () => {
     store.setThreadId('th')
     store.startTurn(T1)
     store.ingest(runApproval(T1, 'ask-2'))
-    store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false, T1)
 
     store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
 
     expect(store.isAskRetired('ask-2', 'th')).toBe(false)
+  })
+
+  it('confirms provisional tombstones only for the snapshot turn', () => {
+    const store = useAgentConversationStore()
+    store.retireAsk('ask-1', { status: 'retired' }, 'th', false, T1)
+    store.retireAsk('ask-2', { status: 'retired' }, 'th', false, T2)
+
+    store.confirmApprovalSnapshot({ threadId: 'th', messageId: T1 })
+    store.confirmAskPending('ask-1', 'th')
+    store.confirmAskPending('ask-2', 'th')
+
+    expect(store.isAskRetired('ask-1', 'th')).toBe(true)
+    expect(store.isAskRetired('ask-2', 'th')).toBe(false)
+  })
+
+  it('does not confirm an ask delivered during the snapshot poll', () => {
+    const store = useAgentConversationStore()
+    store.retireAsk('ask-1', { status: 'retired' }, 'th', false, T1)
+
+    store.confirmApprovalSnapshot(
+      { threadId: 'th', messageId: T1 },
+      undefined,
+      new Set(['ask-1'])
+    )
+    store.confirmAskPending('ask-1', 'th')
+
+    expect(store.isAskRetired('ask-1', 'th')).toBe(false)
   })
 
   it('bounds retired ask tombstones per thread', () => {
