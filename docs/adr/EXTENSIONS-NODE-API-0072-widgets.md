@@ -58,8 +58,8 @@ This ADR records how the API reaches widgets through those owners.
    the value and commits it through `BaseWidget.setValue`, the canvas's own
    commit, so the value, a bound property, the widget's callback, the node's
    `onWidgetChanged` and the graph version all move as on a user's edit.
-5. A change the workflow saves (a value, an added or removed widget, a new
-   order) is applied through the edit runner of
+5. A change to a value, and a widget added, removed or moved (`add`,
+   `remove`, `reorder`, `move`), is applied through the edit runner of
    [ADR-EXTENSIONS-NODE-API-0073](EXTENSIONS-NODE-API-0073-functional-edit-core.md),
    over the `history` service it uses: one undo step of the open workflow,
    then a new graph version and a redraw. A change made while another is
@@ -67,6 +67,32 @@ This ADR records how the API reaches widgets through those owners.
    edit, joins it. A change the workflow does not save (label, option,
    hidden, disabled, height, links) is not recorded, as it would compare
    equal and add nothing, and only asks the node's canvas to redraw.
+   - The workflow saves a node's widget values, not its widgets. An undo of
+     the step gives back the state before it. A redo, the undo of any later
+     step and a reload rebuild the node from its saved state: the host
+     makes the node from its type (and its `onCreated` hooks, which run
+     before the values are restored), then `LGraphNode.configure` restores
+     `widgets_values` onto the widgets it made. So a widget added, removed
+     or moved by these members after the node was made is not given back:
+     the node has the type's widgets in the type's order again.
+   - Which values those widgets get depends on the host's experimental
+     setting `Comfy.Workflow.NamedValuesRestore` (`LiteGraph.namedValuesRestore`),
+     off by default. Off, the values are restored by position, so after a
+     `reorder` or `move` each widget gets the value of the one saved in its
+     place, and after a `remove` each later widget gets the value of the
+     one after it and the last its default: the values land on the wrong
+     widgets, are saved so, and are sent in the prompt. On, each value is
+     restored by name from `widgets_values_named`, which the host writes on
+     every save, so the values stay with their widgets and a removed widget
+     comes back at its default. An `add`ed widget is dropped either way.
+   - The same change made in `onCreated` is safe, because it runs again for
+     every rebuilt node before the values are restored; the stored packs
+     that reshape a node mostly do it there. Whether the API should refuse
+     these members after `onCreated`, or turn on named restore, is open.
+     `app.test.ts` ("a widget change made after the node is, rebuilt from
+     the saved state") records, through the real change tracker and with
+     the setting off and on, what the change, its undo, its redo, a later
+     undo and a reload leave, for each of the four members.
 6. `setOption(key, value)` writes through the widget's options object, whose
    shim applies `hidden`, `hideInPanel`, `canvasOnly` and `advanced` to the
    widget's visibility. It refuses `__proto__`, `constructor`, `prototype` and
@@ -381,6 +407,20 @@ keep the widget's own value. The ticket to file:
   `LGraphNode.ts`, with the context telling a saved file from the copy
   `graphToPrompt` embeds. When it lands, `context` gains `'workflow'` and
   `'embedded'` as a patch.
+
+A node's widgets are restored by position unless the experimental named
+restore is on (decision 5). The ticket to file:
+
+- **Title:** Undo, redo and reload restore widget values by position, so a
+  widget removed or moved after its node is made shifts the values after it.
+- **Reproduction:** on a KSampler, move `steps` to the front from an
+  extension (splice `node.widgets`), set `cfg`, then undo the `cfg` change:
+  `seed` holds 8, `control_after_generate` 42 and `steps` `"fixed"`, and
+  the queued prompt sends them so. With `Comfy.Workflow.NamedValuesRestore`
+  on, the values stay with their widgets.
+- **Suggested direction:** restore by name by default where the saved node
+  has `widgets_values_named`, which every save already writes, and keep
+  restoring by position for workflows saved without it.
 
 On Vue nodes a DOM widget's height is not fixed by its `computeSize`
 (decision 8). The ticket to file:

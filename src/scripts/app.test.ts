@@ -110,7 +110,8 @@ import {
 import type {
   Comfy,
   NodeCreatedEvent,
-  NodeHandle
+  NodeHandle,
+  WidgetCollection
 } from '@/platform/nodeApi/v4/types'
 import { runMissingModelPipeline } from '@/platform/workflowErrors/missingModel/missingModelPipeline'
 import * as missingMediaPipeline from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
@@ -3500,6 +3501,143 @@ describe('ComfyApp', () => {
         expect(kept.isDeleted).toBe(false)
         expect(comfy.graph.node(kept.id)).toBe(kept)
         expect(kept.type).toBe('HandleProbe')
+      })
+
+      describe('a widget change made after the node is, rebuilt from the saved state', () => {
+        class ThreeWidgets extends LGraphNode {
+          constructor(title?: string) {
+            super(title ?? 'ThreeWidgets')
+            this.serialize_widgets = true
+            this.addWidget('number', 'a', 1, () => {}, {})
+            this.addWidget('number', 'b', 2, () => {}, {})
+            this.addWidget('number', 'c', 3, () => {}, {})
+          }
+        }
+
+        function savedThreeWidgets(): ComfyWorkflowJSON {
+          const workflow = workflowWithFixedIdAndOneNode()
+          return {
+            ...workflow,
+            nodes: workflow.nodes.map((node) => ({
+              ...node,
+              type: 'ThreeWidgets',
+              widgets_values: [10, 20, 30]
+            }))
+          }
+        }
+
+        function shown(): string {
+          const widgets = app.rootGraph.getNodeById(toNodeId(1))?.widgets
+          return (widgets ?? [])
+            .map(({ name, value }) => `${name}=${String(value)}`)
+            .join(' ')
+        }
+
+        async function stepsAfter(
+          named: boolean,
+          change: (widgets: WidgetCollection) => void
+        ) {
+          const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+          LiteGraph.registerNodeType('ThreeWidgets', ThreeWidgets)
+          const before = LiteGraph.namedValuesRestore
+          LiteGraph.namedValuesRestore = named
+          onTestFinished(() => {
+            LiteGraph.namedValuesRestore = before
+          })
+          await app.loadGraphData(savedThreeWidgets(), false)
+          const tracker = historyOfTheOpenWorkflow()
+          const node = comfy.graph.node('1')
+          assert(node)
+          change(node.widgets)
+          const made = shown()
+          await tracker.undo()
+          const undone = shown()
+          await tracker.redo()
+          const redone = shown()
+          comfy.graph.node('1')?.setTitle('a later edit')
+          await tracker.undo()
+          const laterUndone = shown()
+          await app.loadGraphData(
+            structuredClone(app.rootGraph.serialize()) as ComfyWorkflowJSON,
+            false
+          )
+          return { made, undone, redone, laterUndone, reloaded: shown() }
+        }
+
+        const changes: Record<string, (widgets: WidgetCollection) => void> = {
+          reorder: (widgets) => widgets.reorder(['c', 'a', 'b']),
+          move: (widgets) => widgets.move('c', 0),
+          remove: (widgets) => {
+            widgets.remove('a')
+          },
+          add: (widgets) => {
+            widgets.add({ type: 'number', name: 'd', value: 40 })
+          }
+        }
+
+        it.for([
+          {
+            change: 'reorder',
+            named: false,
+            made: 'c=30 a=10 b=20',
+            rebuilt: 'a=30 b=10 c=20'
+          },
+          {
+            change: 'reorder',
+            named: true,
+            made: 'c=30 a=10 b=20',
+            rebuilt: 'a=10 b=20 c=30'
+          },
+          {
+            change: 'move',
+            named: false,
+            made: 'c=30 a=10 b=20',
+            rebuilt: 'a=30 b=10 c=20'
+          },
+          {
+            change: 'move',
+            named: true,
+            made: 'c=30 a=10 b=20',
+            rebuilt: 'a=10 b=20 c=30'
+          },
+          {
+            change: 'remove',
+            named: false,
+            made: 'b=20 c=30',
+            rebuilt: 'a=20 b=30 c=3'
+          },
+          {
+            change: 'remove',
+            named: true,
+            made: 'b=20 c=30',
+            rebuilt: 'a=1 b=20 c=30'
+          },
+          {
+            change: 'add',
+            named: false,
+            made: 'a=10 b=20 c=30 d=40',
+            rebuilt: 'a=10 b=20 c=30'
+          },
+          {
+            change: 'add',
+            named: true,
+            made: 'a=10 b=20 c=30 d=40',
+            rebuilt: 'a=10 b=20 c=30'
+          }
+        ])(
+          'after $change with named restore $named, undo gives back the state before it, and redo, a later undo and a reload give the type’s widgets with the values the host restores',
+          async ({ change, named, made, rebuilt }) => {
+            const steps = await stepsAfter(named, changes[change])
+
+            expect(steps).toEqual({
+              made,
+              undone: 'a=10 b=20 c=30',
+              redone: rebuilt,
+              laterUndone: rebuilt,
+              reloaded: rebuilt
+            })
+          }
+        )
       })
 
       function showTheRootGraph() {
