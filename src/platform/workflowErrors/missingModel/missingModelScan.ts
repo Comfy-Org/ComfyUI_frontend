@@ -518,6 +518,19 @@ function collectEmbeddedModels(
 
 const ASSET_LOAD_ATTEMPTS = 2
 
+/** Loads a node type's assets; returns the failure, or undefined on success. */
+async function loadNodeTypeAssets(
+  store: ReturnType<typeof useAssetsStore>,
+  nodeType: string
+): Promise<unknown> {
+  try {
+    await store.updateModelsForNodeType(nodeType)
+    return store.getError(nodeType)
+  } catch (err) {
+    return err ?? new Error('asset load failed')
+  }
+}
+
 export async function verifyAssetSupportedCandidates(
   candidates: MissingModelCandidate[],
   signal?: AbortSignal
@@ -554,15 +567,8 @@ export async function verifyAssetSupportedCandidates(
       // rejecting, so both count as a failed load. Judging against that
       // empty or partial list would mark installed models missing; retry
       // once, then leave the candidates unresolved.
-      for (let attempt = 1; attempt <= ASSET_LOAD_ATTEMPTS; attempt++) {
-        if (signal?.aborted) return
-        let failure: unknown
-        try {
-          await store.updateModelsForNodeType(nodeType)
-          failure = store.getError(nodeType)
-        } catch (err) {
-          failure = err ?? new Error('asset load failed')
-        }
+      for (let attempt = 1; !signal?.aborted; attempt++) {
+        const failure = await loadNodeTypeAssets(store, nodeType)
         if (failure === undefined) return
         if (attempt < ASSET_LOAD_ATTEMPTS && !signal?.aborted) continue
         failedNodeTypes.add(nodeType)
