@@ -525,6 +525,24 @@ describe('redactTelemetryValues', () => {
     })
   })
 
+  it('disambiguates a wide run of colliding keys without rescanning from scratch', () => {
+    const count = 20_000
+    const input = Object.fromEntries(
+      Array.from({ length: count }, (_, index) => [
+        `https://h/x?job=${index}`,
+        index
+      ])
+    )
+    vi.useRealTimers()
+    const start = performance.now()
+    const redacted = redactTelemetryValues(input)
+    expect(performance.now() - start).toBeLessThan(2_000)
+    expect(Object.keys(redacted ?? {})).toHaveLength(count)
+    expect(redacted?.['https://h/x']).toBe(0)
+    expect(redacted?.['https://h/x~2']).toBe(1)
+    expect(redacted?.[`https://h/x~${count}`]).toBe(count - 1)
+  })
+
   it('preserves inherited Error names and empty messages', () => {
     const error = new TypeError()
     Object.defineProperty(error, 'stack', {
