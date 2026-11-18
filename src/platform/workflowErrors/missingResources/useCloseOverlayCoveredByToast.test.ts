@@ -140,6 +140,17 @@ describe(useCloseOverlayCoveredByToast, () => {
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
 
+  it('leaves an open overlay open when its other issues clear', async () => {
+    useMissingNodesErrorStore().setMissingNodeTypes(['UnknownNode'])
+    watchOverlay()
+    await openOverlay()
+
+    useMissingNodesErrorStore().setMissingNodeTypes([])
+    await nextTick()
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+  })
+
   it('lets the overlay open again once the toast is dismissed', async () => {
     const { toastKind } = watchOverlay()
     await openOverlay()
