@@ -91,8 +91,8 @@ meter?.redraw()
 ```
 
 A mounted value is any value a workflow can save; `null` reads back as `''`.
-`serialize` decides whether it is saved, and `sendToPrompt` whether it is
-sent; both follow whether `defaultValue` is given.
+`serialize` decides whether it is saved, and follows whether `defaultValue` is
+given; `sendToPrompt` decides whether it is sent, and follows `serialize`.
 
 ## Widget types
 
