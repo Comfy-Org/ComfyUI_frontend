@@ -1,4 +1,4 @@
-import { useLocalStorage } from '@vueuse/core'
+import { useEventListener, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { toRaw, watch } from 'vue'
 
@@ -53,6 +53,20 @@ function liveBindings(
   )
 }
 
+function parseBindings(serialized: string | null): Record<string, unknown> {
+  if (serialized === null) return {}
+  try {
+    const parsed: unknown = JSON.parse(serialized)
+    return typeof parsed === 'object' &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+      ? (parsed as Record<string, unknown>)
+      : {}
+  } catch {
+    return {}
+  }
+}
+
 function graphIdOf(tab: ComfyWorkflow): string | undefined {
   const activeId = tab.activeState?.id
   if (activeId !== undefined) return activeId
@@ -74,11 +88,27 @@ export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
     clearLegacyAgentStorage()
+    const storageKey = StorageKeys.agentWorkflowTabBindings(getWorkspaceId())
     const tabByWorkflow = useLocalStorage<PersistedBindings>(
-      StorageKeys.agentWorkflowTabBindings(getWorkspaceId()),
-      {}
+      storageKey,
+      {},
+      {
+        listenToStorageChanges: false
+      }
     )
     tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
+    useEventListener(window, 'storage', (event: StorageEvent) => {
+      if (
+        !event.isTrusted ||
+        event.storageArea !== localStorage ||
+        event.key !== storageKey
+      )
+        return
+      tabByWorkflow.value = liveBindings(
+        parseBindings(event.newValue),
+        Date.now()
+      )
+    })
 
     const workflows = useWorkflowStore()
     const boundInstances = new Map<string, ComfyWorkflow>()

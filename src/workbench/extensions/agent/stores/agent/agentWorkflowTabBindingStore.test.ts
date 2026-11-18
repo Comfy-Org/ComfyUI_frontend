@@ -381,6 +381,37 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(store.tabPathFor('wf-3')).toBe('workflows/a.json')
   })
 
+  it('persists a binding change made in the same flush as another write', async () => {
+    const path = 'workflows/Agent draft.json'
+    const staleConfirmedAt = Date.now() - DAY_MS
+    seedBindings({
+      'wf-restored': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: staleConfirmedAt
+      }
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+
+    bindings.bind('wf-new', 'workflows/a.json')
+    const restored = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [restored.path] })
+    await nextTick()
+    await nextTick()
+
+    expect(storedBindings()).toMatchObject({
+      'wf-new': { tabPath: 'workflows/a.json' },
+      'wf-restored': { tabPath: path }
+    })
+    const stored = storedBindings() as Record<string, PersistedBinding>
+    expect(stored['wf-restored'].confirmedAt).toBeGreaterThan(staleConfirmedAt)
+  })
+
   it('resolves both directions after a bind', () => {
     const store = useAgentWorkflowTabBindingStore()
     store.bind('wf-1', 'workflows/a.json')
