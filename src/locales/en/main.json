@@ -5879,7 +5879,7 @@
     "needsDownload": "This workflow needs {count} model | This workflow needs {count} models",
     "needsAttention": "{count} model needs attention | {count} models need attention",
     "needsAttentionLabel": "Needs attention:",
-    "needsAttentionHint": "Some models have no download URL or are gated.",
+    "needsAttentionHint": "Some models can't be downloaded automatically or need access on Hugging Face.",
     "noDownloadUrl": "No download URL",
     "unsupportedSource": "Unsupported source",
     "unsupportedFile": "Unsupported file",

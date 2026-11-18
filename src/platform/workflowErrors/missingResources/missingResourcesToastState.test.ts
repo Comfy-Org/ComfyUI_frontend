@@ -350,8 +350,12 @@ describe('nextDownloadBatch', () => {
   it('keeps a finished model through the refresh that briefly reports it missing again', () => {
     const running = tracked(downloading(0.5))
     const first = tracked(downloading(0.9))
-    const done = { ...first, download: { status: 'done' as const } }
-    const reopened = { ...first, download: { status: 'idle' as const } }
+    const done = {
+      ...first,
+      download: { status: 'done' as const },
+      downloadedHere: true
+    }
+    const reopened = { ...done, download: { status: 'idle' as const } }
     const settled = { ...reopened, stillMissing: false }
 
     const batch = runBatch(
@@ -367,15 +371,15 @@ describe('nextDownloadBatch', () => {
     ).toMatchObject({ kind: 'downloading', finished: 1, total: 2 })
   })
 
-  it('counts a batch model that a rescan briefly reopens as finished, not as one to start again', () => {
-    const reopened = tracked({ status: 'idle' })
+  it('counts a model downloaded here that a rescan briefly reopens as finished, not as one to start again', () => {
+    const reopened = tracked({ status: 'idle' }, { downloadedHere: true })
     const running = tracked(downloading(0.5))
     const batch = new Map([
       [reopened.key, 'finished' as const],
       [running.key, 'active' as const]
     ])
 
-    expect(startableModels([reopened, running], batch)).toEqual([])
+    expect(startableModels([reopened, running])).toEqual([])
     expect(
       deriveMissingResourcesToastState([reopened, running], 0, batch)
     ).toMatchObject({
@@ -385,6 +389,14 @@ describe('nextDownloadBatch', () => {
       fraction: 0.75,
       bytes: { received: 150, total: 200 },
       startable: 0
+    })
+  })
+
+  it('stays ready when the only model downloaded here is briefly reopened after its batch ended', () => {
+    const reopened = tracked({ status: 'idle' }, { downloadedHere: true })
+
+    expect(deriveMissingResourcesToastState([reopened], 0)).toEqual({
+      kind: 'ready'
     })
   })
 

@@ -182,6 +182,10 @@ watch(
   { immediate: true }
 )
 
+watch(visible, (isVisible) => {
+  if (!isVisible) isExpanded.value = false
+})
+
 const headline = computed(() => {
   const current = state.value
   switch (current.kind) {

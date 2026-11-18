@@ -71,11 +71,16 @@ export function useMissingResourcesToast() {
     { immediate: true }
   )
 
+  const prefetchedUrls = new Set<string>()
+
   watch(
     trackedByKey,
     (tracked) => {
-      for (const model of tracked.values())
-        void prefetchModelMetadata(model.url)
+      for (const { url } of tracked.values()) {
+        if (prefetchedUrls.has(url)) continue
+        prefetchedUrls.add(url)
+        void prefetchModelMetadata(url)
+      }
     },
     { immediate: true }
   )
@@ -194,10 +199,7 @@ export function useMissingResourcesToast() {
   )
 
   function startDownloads() {
-    for (const tracked of startableModels(
-      trackedModels.value,
-      downloadBatch.value
-    ))
+    for (const tracked of startableModels(trackedModels.value))
       startModelDownload(tracked.model)
   }
 

@@ -57,7 +57,7 @@ export function trackedModelPhase(tracked: TrackedModel): TrackedModelPhase {
   if (isActiveDownload(download)) return 'active'
   if (!tracked.stillMissing) return 'finished'
   if (download.status === 'failed') return 'failed'
-  if (download.status === 'done') return 'finished'
+  if (download.status === 'done' || tracked.downloadedHere) return 'finished'
   return 'waiting'
 }
 
@@ -165,10 +165,7 @@ function batchPhase(
   current: TrackedModelPhase
 ): TrackedModelPhase | undefined {
   if (current === 'active') return current
-  if (previous === undefined) return undefined
-  if (current === 'finished') return current
-  if (current === 'waiting' && previous === 'finished') return previous
-  return undefined
+  return previous !== undefined && current === 'finished' ? current : undefined
 }
 
 /** The models whose progress the toast sums: every active download, plus those that finished while the batch was still running. */
@@ -189,33 +186,12 @@ export function nextDownloadBatch(
   )
 }
 
-function batchAwarePhase(
-  tracked: TrackedModel,
-  batch: DownloadBatch
-): TrackedModelPhase {
-  const phase = trackedModelPhase(tracked)
-  return phase === 'waiting' && batch.get(tracked.key) === 'finished'
-    ? 'finished'
-    : phase
-}
-
-function settledInBatch(
-  tracked: TrackedModel,
-  batch: DownloadBatch
-): TrackedModel {
-  return batchAwarePhase(tracked, batch) === 'finished' &&
-    trackedModelPhase(tracked) !== 'finished'
-    ? { ...tracked, download: { status: 'done' } }
-    : tracked
-}
-
-/** Models a download-all click would start: waiting or failed, excluding ones the running batch already finished. */
+/** Models a download-all click would start: waiting or failed. */
 export function startableModels(
-  tracked: readonly TrackedModel[],
-  batch: DownloadBatch = EMPTY_BATCH
+  tracked: readonly TrackedModel[]
 ): TrackedModel[] {
   return tracked.filter((model) => {
-    const phase = batchAwarePhase(model, batch)
+    const phase = trackedModelPhase(model)
     return phase === 'waiting' || phase === 'failed'
   })
 }
@@ -228,21 +204,20 @@ export function deriveMissingResourcesToastState(
 ): MissingResourcesToastState {
   if (tracked.length === 0 && unavailable === 0) return { kind: 'hidden' }
 
-  const phases = tracked.map((model) => batchAwarePhase(model, batch))
+  const phases = tracked.map(trackedModelPhase)
   const active = tracked.filter((_, index) => phases[index] === 'active')
-  const startable = startableModels(tracked, batch)
+  const startable = startableModels(tracked)
   const failed = startable.filter(
     ({ download }) => download.status === 'failed'
   ).length
 
   if (active.length > 0) {
-    const inProgress = tracked
-      .filter(
-        (model, index) =>
-          phases[index] === 'active' ||
-          (batch.has(model.key) && phases[index] === 'finished')
-      )
-      .map((model) => settledInBatch(model, batch))
+    const inProgress = tracked.filter(
+      (model, index) =>
+        phases[index] === 'active' ||
+        (batch.has(model.key) && phases[index] === 'finished')
+    )
+
     const bytes = combinedBytes(inProgress)
     return {
       kind: 'downloading',

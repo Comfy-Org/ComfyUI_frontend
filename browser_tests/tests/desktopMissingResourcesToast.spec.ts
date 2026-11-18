@@ -119,7 +119,7 @@ test.describe('Desktop missing resources toast', { tag: '@desktop' }, () => {
         toast.getByRole('button', { name: 'Hide model downloads' })
       ).toHaveAttribute('aria-expanded', 'true')
       await expect(toast.getByRole('note')).toContainText(
-        'Some models have no download URL or are gated.'
+        "Some models can't be downloaded automatically or need access on Hugging Face."
       )
       await expect(
         toast.getByRole('list', { name: 'Missing models' })
