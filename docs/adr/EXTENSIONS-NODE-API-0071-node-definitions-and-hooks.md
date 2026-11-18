@@ -142,11 +142,14 @@ registered, so `extend` cannot depend on the order.
     collapse toggle, the Vue header button, the selection toolbox and the
     collapse command),
     does nothing, and the canvas menu leaves out Collapse; `resizable: false`
-    is recorded for each node as it is constructed through the edit core's
+    is set on each node as it is constructed through the edit core's
     `chooseResizable` (ADR-EXTENSIONS-NODE-API-0073 decision 8), which sets
-    `LGraphNode.resizable` and puts it back after every pin change, so
-    neither renderer offers a resize handle and the canvas menu leaves out
-    Resize. `'default'` and `true` are the host's own defaults. As in the
+    `LGraphNode.resizable`, so neither renderer offers a resize handle and
+    the canvas menu leaves out Resize. The host's `pin()` sets the flag to
+    `!pinned`, so a node the user pins and unpins becomes resizable until a
+    load or an undo constructs it again; the API keeps the host's behavior
+    and does not put the flag back (ADR-EXTENSIONS-NODE-API-0073 "Core
+    limitations"), and the JSDoc says so. `'default'` and `true` are the host's own defaults. As in the
     host, Vue nodes still show the header's collapse button on a node that
     cannot collapse, and the button does nothing; `comfy.edit.updateNode`'s
     `collapsed` collapses such a node, as the host's own `collapse(true)`
@@ -588,8 +591,8 @@ registered, so `extend` cannot depend on the order.
   is uncoloured.
 - **A defined type's presentation** uses the host's own class fields
   (`title_mode`, `collapsable`) and the edit core's `chooseResizable` for
-  `resizable`, which already keeps the choice through pin changes; nothing
-  new holds it.
+  `resizable`; nothing new holds it, and nothing puts it back after the
+  host's unpin.
 - **Calling a pack callback** goes through `callListener`, the error isolation
   the listener primitive already had, now exported so every callback the API
   calls is reported the same way.

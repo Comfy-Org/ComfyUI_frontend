@@ -1,6 +1,5 @@
 import { clamp } from 'es-toolkit'
 
-import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
@@ -74,31 +73,10 @@ export function fitToConstraints(
   if (fitted[0] !== width || fitted[1] !== height) node.setSize(fitted)
 }
 
-const resizableChoices = new WeakMap<LGraphNode, boolean>()
-let watchingPins = false
-
-/** Records whether a pack lets the user resize `node`; pinning still stops it. */
+/** Sets whether the user may resize `node`. Pinning stops it, and unpinning makes the node resizable again. */
 export function chooseResizable(
   node: LGraphNode,
   { resizable }: { resizable: boolean }
 ): void {
-  watchPins()
-  resizableChoices.set(node, resizable)
-  applyResizable(node)
-}
-
-function applyResizable(node: LGraphNode): void {
-  const choice = resizableChoices.get(node)
-  if (choice !== undefined) node.resizable = choice && !node.pinned
-}
-
-function watchPins(): void {
-  if (watchingPins) return
-  watchingPins = true
-  onGraphIntent((intent) => {
-    if (intent.type !== 'set_node_field' || intent.field !== 'flags.pinned')
-      return
-    const node = intent.graph.getNodeById(intent.nodeId)
-    if (node) applyResizable(node)
-  })
+  node.resizable = resizable && !node.pinned
 }

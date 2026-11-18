@@ -236,7 +236,7 @@ export interface NodePatch {
   readonly size?: Size
   /** Resizes the node to fit them, once. A later resize is not held to them. */
   readonly sizeConstraints?: SizeConstraints
-  /** Not saved. A pinned node cannot be resized; unpinning brings this back. */
+  /** Not saved. A pinned node cannot be resized, and unpinning makes it resizable whatever was chosen. */
   readonly resizable?: boolean
 }
 
@@ -292,7 +292,7 @@ export interface NodeHandleEdits {
   setSize(size: Size): boolean
   setSizeConstraints(constraints: SizeConstraints): boolean
   setResizable(resizable: boolean): boolean
-  /** False while the node is pinned, or after `setResizable(false)`. */
+  /** False while the node is pinned, or after `setResizable(false)` until the node is unpinned. */
   isResizable(): boolean | undefined
   remove(): boolean
   /** The node's state now, frozen. */
@@ -732,7 +732,10 @@ export interface NodeDefinitionOutput extends NodeDefinitionSlot {
 export interface NodePresentation {
   /** `'hidden'` draws the nodes without a title bar. */
   readonly title?: 'default' | 'hidden'
-  /** `false` stops the user resizing the nodes; pinning stops it too. A load or undo keeps it. */
+  /**
+   * `false` stops the user resizing the nodes; pinning stops it too. Unpinning a node makes it
+   * resizable again, as the host does, and a load or undo sets it back to `false`.
+   */
   readonly resizable?: boolean
   /** `false` stops the user collapsing the nodes. `comfy.edit` can still collapse one. */
   readonly collapsible?: boolean

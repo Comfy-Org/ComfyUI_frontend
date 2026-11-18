@@ -9,9 +9,6 @@ import {
   vi
 } from 'vitest'
 
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
-
-import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
@@ -728,18 +725,19 @@ describe('node handle edit methods', () => {
       expect(handle.isResizable()).toBe(true)
     })
 
-    it('keeps a pack’s refusal when the user pins and unpins the node', () => {
+    it('keeps a pack’s refusal while the node is pinned, and the host’s unpin makes the node resizable again', () => {
       const { node, handle } = add()
       handle.setResizable(false)
 
       node.pin(true)
+      expect(handle.isResizable()).toBe(false)
       node.pin(false)
 
-      expect(node.resizable).toBe(false)
-      expect(handle.isResizable()).toBe(false)
+      expect(node.resizable).toBe(true)
+      expect(handle.isResizable()).toBe(true)
     })
 
-    it('makes the node resizable after an unpin when the pack allowed it while pinned', () => {
+    it('keeps a pinned node from being resized when the pack allows it, until the unpin', () => {
       const { node, handle } = add()
       node.pin(true)
 
@@ -752,45 +750,14 @@ describe('node handle edit methods', () => {
       expect(node.resizable).toBe(true)
     })
 
-    it('leaves the pin of a node no pack chose for', () => {
-      const { node: chosen, handle } = add()
-      const { node: other } = add()
-      handle.setResizable(false)
-
-      other.pin(true)
-      other.pin(false)
-
-      expect(other.resizable).toBe(true)
-      expect(chosen.resizable).toBe(false)
-    })
-
-    it('reapplies a choice once for each pin change, however often packs chose', () => {
+    it('keeps a refusal made after the unpin', () => {
       const { node, handle } = add()
-      handle.setResizable(false)
-      handle.setResizable(false)
-      const write = vi.spyOn(node, 'resizable', 'set')
-
       node.pin(true)
+      node.pin(false)
 
-      expect(write.mock.calls).toEqual([[false], [false]])
-    })
-
-    it('ignores a pin change announced for a node the graph does not have', () => {
-      const { node, handle } = add()
       handle.setResizable(false)
-      const write = vi.spyOn(node, 'resizable', 'set')
 
-      emitGraphIntent({
-        type: 'set_node_field',
-        graph,
-        nodeId: toNodeId(999),
-        field: 'flags.pinned',
-        value: true
-      })
-
-      expect(write).not.toHaveBeenCalled()
-      node.pin(true)
-      expect(write).toHaveBeenCalled()
+      expect(node.resizable).toBe(false)
     })
 
     it('is gone with the node', () => {

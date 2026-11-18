@@ -128,11 +128,11 @@ follow-up for a command interface.
    limits after the call needs a host owner that both renderers honour, which
    does not exist (see "Core limitations").
 8. `resizable` is the pack's choice of whether the user may resize the node
-   (A-09). The node's flag is set to the choice unless the node is pinned.
-   LiteGraph's `pin()` overwrites the flag, so the API keeps each choice in a
-   `WeakMap` keyed by the node and, on every pin change it hears through
-   `onGraphIntent` (`set_node_field`, `flags.pinned`), reapplies the choice of
-   that node. The listener is installed the first time a pack sets the field.
+   (A-09). The node's flag is set to the choice unless the node is pinned, as
+   the host keeps a pinned node unresizable. The API keeps no choice of its
+   own: LiteGraph's `pin()` sets the flag to `!pinned`, so pinning a node and
+   unpinning it makes it resizable whatever the pack chose, and the API keeps
+   that host behavior (see "Core limitations"). The JSDoc says so.
    `isResizable()`, which no stored pack calls, exists because A-09 asks that
    the choice can be read back; it reads the node's flag. The choice is not saved, and a node
    that undo or a load rebuilds has none.
@@ -449,7 +449,7 @@ document is no longer open.
 | `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`; `false` refused on a Note, MarkdownNote or PrimitiveNode (decision 25)                | One step; a load gives the type's own value                            | `false`                                |
 | `updateNode` `position`                  | `LGraphNode.pos` setter: a `moveNode` layout operation                                                                | One step                                                               | `false`                                |
 | `updateNode` `size`, `sizeConstraints`   | `LGraphNode.setSize`: a `resizeNode` layout operation, then `onResize`                                                | One step                                                               | `false`                                |
-| `updateNode` `resizable`                 | `LGraphNode.resizable` (node state store); reapplied after pin changes                                                | No step: not saved                                                     | `false`                                |
+| `updateNode` `resizable`                 | `LGraphNode.resizable` (node state store); the host's unpin sets it to `true`                                         | No step: not saved                                                     | `false`                                |
 | `updateNode` with several fields         | All of the above in one transaction                                                                                   | One step for the patch                                                 | `false`                                |
 | `removeNode`                             | `LGraph.remove`: links, stores, selection, `node:removed`, `remove_node` graph intent                                 | One step                                                               | `false`                                |
 | `addNode`                                | `LiteGraph.createNode`, then `LGraph.add`: id, stores, layout, `onNodeAdded`, `add_node` graph intent                 | One step                                                               | `undefined`, nothing added             |
@@ -516,6 +516,12 @@ ADR-EXTENSIONS-NODE-API-0070.
   chaining `node.onResize`. The Vue renderer's resize does not call it, so it
   held the limits under one renderer only, and it put API behaviour on host
   objects.
+- **Putting a resizable choice back after the host's unpin**, with a
+  graph-intent listener that rewrote `LGraphNode.resizable` after each
+  `flags.pinned` change. It made a second writer of a host field, outside the
+  edit runner and the undo step, to work around a host behavior; the API
+  keeps the host's behavior instead, and the fix belongs in `pin()` (see
+  "Core limitations").
 - **Throwing for a deleted entity.** ADR-EXTENSIONS-NODE-API-0070 decision 13 makes a missing
   entity a value, never a throw; an edit returns `false` the way a read returns
   `undefined`.
@@ -624,6 +630,23 @@ ADR-EXTENSIONS-NODE-API-0070.
   onto `node.badges` of a node on screen and call `node.setDirtyCanvas(true)`:
   the classic renderer shows it, Vue nodes do not. _Direction:_ a badge list
   in the node's reactive state, or a revision the composable reads.
+- **Unpinning makes a node resizable.** `LGraphNode.pin()` sets `resizable`
+  to `!pinned`, so unpinning a node makes it resizable whatever an extension
+  or the node's type chose: `updateNode`'s `resizable: false` and
+  `NodeDefinition.presentation`'s `resizable: false` (ADR-EXTENSIONS-NODE-API-0071
+  decision 10) last until the user unpins the node. The API keeps the host's
+  behavior and does not put the choice back. Ticket draft: _Title:_
+  "Unpinning a node makes it resizable even when it was not". _Reproduction:_
+  on frontend 1.61.0, in the browser console, take a node
+  (`const node = app.graph.nodes[0]`) and run
+  `node.resizable = false; node.pin(true); node.pin(false)`: `node.resizable`
+  is `true`, so the user can resize the node again. _Direction:_ leave
+  `resizable` alone in `pin()` and `configure()`, and have the resize paths
+  (`LGraphNode.findResizeDirection`, the canvas menu's Resize, Vue nodes'
+  resize handles) check `pinned` as well. Once it is fixed,
+  `chooseResizable` in `edit/nodeSizing.ts` sets the flag to the choice
+  alone, without reading `pinned`, and the choice lasts through a pin and an
+  unpin.
 - **A resizable choice after undo.** Undo rebuilds nodes from the saved
   workflow, which does not hold the flag, so the choice is lost. Saving it
   would change the workflow format.
@@ -654,6 +677,3 @@ ADR-EXTENSIONS-NODE-API-0070.
   `setPosition` and `setSize` calls on a node do; `batch` is synchronous, so
   a drag across events cannot be one step. The editor's own drag is one
   step, captured when the pointer is released.
-- The first `resizable` choice installs one graph-intent listener for the life
-  of the page, shared by every API instance, so two instances do not apply a
-  choice twice.
