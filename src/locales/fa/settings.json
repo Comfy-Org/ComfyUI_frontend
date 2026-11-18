@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "ویرایش عنوان نود با دوبار کلیک"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "کاهش اندازهٔ پیش‌نمایش تصاویر بزرگ",
+    "tooltip": "در Nodes ۲.۰، برای حفظ پاسخ‌گویی هنگام نمایش تعداد زیادی پیش‌نمایش بزرگ، تصاویر بزرگ را در nodeها به‌صورت یک کپی با حداکثر ۱۰۲۴px در بلندترین ضلع نمایش دهید. برای نمایش همیشگی نسخهٔ اصلی، این گزینه را خاموش کنید."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "ایجاد نود Reroute با کلیک وسط"
   },

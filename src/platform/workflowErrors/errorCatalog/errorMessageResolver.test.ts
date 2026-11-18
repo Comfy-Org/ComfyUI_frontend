@@ -5,6 +5,7 @@ import {
   resolveMissingMediaItemLabel,
   resolveRunErrorMessage
 } from './errorMessageResolver'
+import { withRefusalReason } from './accountPreconditionRouting'
 import type { NodeValidationError } from './types'
 import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
@@ -673,6 +674,76 @@ describe('errorMessageResolver', () => {
       displayTitle: 'Prompt has no outputs',
       displayMessage:
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+    })
+  })
+
+  describe('a run Cloud refused with a served reason', () => {
+    const refusal = {
+      type: 'PAYMENT_REQUIRED',
+      message: 'Subscription or credits required to queue workflows',
+      details: ''
+    }
+
+    it.for([
+      ['manual_block', 'This workspace has been blocked. Contact support.'],
+      [
+        'workspace_cap_exceeded',
+        'This workspace has reached its spending limit.'
+      ],
+      ['project_cap_exceeded', 'This project has reached its spending limit.'],
+      [
+        'user_cap_exceeded',
+        "You've reached your spending limit in this workspace."
+      ]
+    ])('explains the reason %s', ([reason, displayMessage]) => {
+      expect(
+        resolveRunErrorMessage({
+          kind: 'prompt',
+          isCloud: true,
+          error: withRefusalReason(refusal, { reason })
+        })
+      ).toEqual({ displayTitle: "Your workflow didn't run", displayMessage })
+    })
+
+    it.for([
+      [
+        'an unknown reason',
+        withRefusalReason(refusal, { reason: 'something_new' })
+      ],
+      ['no reason', refusal]
+    ] as const)('adds no copy for %s', ([, error]) => {
+      expect(
+        resolveRunErrorMessage({ kind: 'prompt', isCloud: true, error })
+      ).toEqual({})
+    })
+
+    it('falls back to English when the active locale lacks the sentence', () => {
+      const locale = i18n.global.locale.value
+      i18n.global.locale.value = 'fr'
+      try {
+        expect(
+          resolveRunErrorMessage({
+            kind: 'prompt',
+            isCloud: true,
+            error: withRefusalReason(refusal, { reason: 'manual_block' })
+          })
+        ).toEqual({
+          displayTitle: "Your workflow didn't run",
+          displayMessage: 'This workspace has been blocked. Contact support.'
+        })
+      } finally {
+        i18n.global.locale.value = locale
+      }
+    })
+
+    it('adds no copy off Cloud', () => {
+      expect(
+        resolveRunErrorMessage({
+          kind: 'prompt',
+          isCloud: false,
+          error: withRefusalReason(refusal, { reason: 'manual_block' })
+        })
+      ).toEqual({})
     })
   })
 

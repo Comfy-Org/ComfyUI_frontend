@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
+import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { DialogPortal } from 'reka-ui'
@@ -126,6 +126,38 @@ describe('NodeSearchBox', () => {
     expect(useTelemetry()?.trackNodeSearch).toHaveBeenCalledExactlyOnceWith({
       query: 'ksampler'
     })
+  })
+
+  it('shows a node definition registered after the query was searched', async () => {
+    vi.useFakeTimers()
+    renderComponent()
+
+    await fireEvent.update(screen.getByRole('combobox'), 'dragon')
+    await vi.advanceTimersByTimeAsync(100)
+    expect(screen.queryByRole('option', { name: 'Dragon Blueprint' })).toBe(
+      null
+    )
+
+    useNodeDefStore().registerBlueprintNodeDef(
+      new ComfyNodeDefImpl({
+        name: 'SubgraphBlueprint.dragon',
+        display_name: 'Dragon Blueprint',
+        category: 'Subgraph Blueprints',
+        python_module: 'blueprint',
+        description: '',
+        input: {},
+        output: [],
+        output_is_list: [],
+        output_name: [],
+        output_node: false
+      })
+    )
+
+    await nextTick()
+
+    expect(
+      screen.getByRole('option', { name: 'Dragon Blueprint' })
+    ).toBeVisible()
   })
 
   it.for([50, 100])(

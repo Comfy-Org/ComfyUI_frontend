@@ -155,7 +155,9 @@ describe('MediaAssetCard', () => {
     })
 
     it('includes the asset metadata with display_name in the drag payload', () => {
-      const { container } = renderCard()
+      const { container } = renderCard({
+        asset: { ...asset, display_name: 'Display A', tags: ['output'] }
+      })
 
       const { event, add } = dispatchDragStart(container)
 
@@ -283,6 +285,17 @@ describe('MediaAssetCard', () => {
     await user.dblClick(preview)
 
     expect(emitted().zoom).toEqual([[hdrAsset]])
+  })
+
+  it('inspects a video asset on double click', async () => {
+    const user = userEvent.setup()
+    const videoAsset = { ...asset, name: 'clip.mp4' }
+    const { emitted } = renderCard({ loading: false, asset: videoAsset })
+    const video = await screen.findByTestId('media-asset-video')
+
+    await user.dblClick(video)
+
+    expect(emitted().zoom).toEqual([[videoAsset]])
   })
 
   it('selects non-video assets from the preview', async () => {

@@ -105,7 +105,7 @@ async function uploadTemplateInput(
   }
 }
 
-function getTemplateInputFiles(
+function getDeclaredInputFiles(
   inputs: unknown,
   bindings: NonNullable<ReturnType<typeof getInputBinding>>[]
 ) {
@@ -144,16 +144,13 @@ function getTemplateInputFiles(
   return { files, errors }
 }
 
-export async function prepareTemplateInputs(
+export function getTemplateInputPlan(
   workflow: ComfyWorkflowJSON,
   inputs: unknown,
-  signal: AbortSignal,
-  restoreNamed: boolean,
-  onStart?: () => void
-): Promise<PreparationResult> {
+  { restoreNamed }: { restoreNamed: boolean }
+) {
   const errors: unknown[] = []
-  const prepared = structuredClone(workflow)
-  const bindings = prepared.nodes.flatMap((node) => {
+  const bindings = workflow.nodes.flatMap((node) => {
     try {
       const binding = getInputBinding(node, restoreNamed)
       return binding ? [binding] : []
@@ -162,11 +159,24 @@ export async function prepareTemplateInputs(
       return []
     }
   })
-  const { files, errors: declarationErrors } = getTemplateInputFiles(
+  const { files, errors: declarationErrors } = getDeclaredInputFiles(
     inputs,
     bindings
   )
   errors.push(...declarationErrors)
+  return { bindings, files, errors }
+}
+
+export async function prepareTemplateInputs(
+  workflow: ComfyWorkflowJSON,
+  inputs: unknown,
+  signal: AbortSignal,
+  { restoreNamed, onStart }: { restoreNamed: boolean; onStart?: () => void }
+): Promise<PreparationResult> {
+  const prepared = structuredClone(workflow)
+  const { bindings, files, errors } = getTemplateInputPlan(prepared, inputs, {
+    restoreNamed
+  })
   signal.throwIfAborted()
   if (!files.size) return { workflow, uploadedCount: 0, errors }
   onStart?.()

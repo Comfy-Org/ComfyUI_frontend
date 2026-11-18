@@ -134,7 +134,7 @@ describe(noticeMissingNodes, () => {
 
   describe('with the compatibility check on and deployments to check', () => {
     beforeEach(() => {
-      vi.useFakeTimers()
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       vi.mocked(useFeatureFlags().flags).deploymentCompatibilityMarksEnabled =
         true
       listing(true, null, [deployment, stopped])

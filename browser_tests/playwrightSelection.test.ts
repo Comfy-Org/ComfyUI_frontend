@@ -8,7 +8,7 @@ describe('Live billing opt-in', () => {
     {
       name: 'disabled',
       enabled: '0',
-      args: ['tests/liveCloud'],
+      args: [],
       status: 1,
       count: 0,
       hooks: true
@@ -35,7 +35,15 @@ describe('Live billing opt-in', () => {
     ({ enabled, args, status, count, hooks }) => {
       const result = spawnSync(
         'pnpm',
-        ['exec', 'playwright', 'test', ...args, '--list', '--reporter=json'],
+        [
+          'exec',
+          'playwright',
+          'test',
+          'tests/liveCloud/billingSmoke.spec.ts',
+          ...args,
+          '--list',
+          '--reporter=json'
+        ],
         {
           cwd: process.cwd(),
           env: {

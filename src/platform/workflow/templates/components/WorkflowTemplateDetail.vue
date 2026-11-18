@@ -7,7 +7,7 @@ import WorkflowTemplateDetailGroup from '@/platform/workflow/templates/component
 import Button from '@comfyorg/design-system/button/Button'
 import type {
   TemplateDetailGroup,
-  TemplateModelSetup
+  TemplateAssetSetup
 } from '@/platform/workflow/templates/types/templateDetail'
 
 const {
@@ -17,7 +17,7 @@ const {
   cloudUrl,
   isPartnerNode = false,
   openPending = false,
-  modelSetup
+  assetSetup
 } = defineProps<{
   title: string
   description: string
@@ -25,12 +25,12 @@ const {
   cloudUrl?: string
   isPartnerNode?: boolean
   openPending?: boolean
-  modelSetup?: TemplateModelSetup
+  assetSetup?: TemplateAssetSetup
 }>()
 
 const emit = defineEmits<{
   'open-template': []
-  'download-models-and-open': []
+  'download-assets-and-open': []
   'download-model': [rowId: string]
 }>()
 
@@ -39,13 +39,13 @@ const detailRoot = ref<HTMLElement | null>(null)
 const detailId = useId()
 const cloudTitleId = `${detailId}-cloud-title`
 const groupTitleId = (groupId: string) => `${detailId}-group-${groupId}`
-const offerDownloadAndOpen = computed(() => modelSetup !== undefined)
-const downloadModelsAndOpenLabel = computed(() => {
+const offerDownloadAndOpen = computed(() => assetSetup !== undefined)
+const downloadAssetsAndOpenLabel = computed(() => {
   const size =
-    modelSetup?.state === 'startable' ? modelSetup.remainingSize : undefined
+    assetSetup?.state === 'startable' ? assetSetup.remainingSize : undefined
   return size
-    ? t('templateWorkflows.detail.downloadModelsAndOpenWithSize', { size })
-    : t('templateWorkflows.detail.downloadModelsAndOpen')
+    ? t('templateWorkflows.detail.downloadAssetsAndOpenWithSize', { size })
+    : t('templateWorkflows.detail.downloadAssetsAndOpen')
 })
 
 defineExpose({
@@ -147,23 +147,23 @@ defineExpose({
           :aria-disabled="openPending"
           @click="emit('open-template')"
         >
-          {{ t('templateWorkflows.detail.openNow') }}
+          {{ t('templateWorkflows.detail.justOpen') }}
         </Button>
         <Button
           variant="inverted"
           size="lg"
           :loading="openPending"
-          :disabled="modelSetup?.state === 'resolving'"
+          :disabled="assetSetup?.state === 'resolving'"
           @click="
             offerDownloadAndOpen
-              ? emit('download-models-and-open')
+              ? emit('download-assets-and-open')
               : emit('open-template')
           "
         >
           {{
             offerDownloadAndOpen
-              ? downloadModelsAndOpenLabel
-              : t('templateWorkflows.detail.openNow')
+              ? downloadAssetsAndOpenLabel
+              : t('templateWorkflows.detail.open')
           }}
         </Button>
       </div>

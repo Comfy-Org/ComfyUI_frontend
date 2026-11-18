@@ -4,6 +4,7 @@ import { nextTick, ref, shallowRef, effectScope } from 'vue'
 import type { EffectScope, ShallowRef } from 'vue'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 import {
   getLoad3dOutputCache,
@@ -1600,6 +1601,46 @@ describe('useLoad3d', () => {
 
       expect(modelWidget.value).toBe('previous.glb')
     })
+
+    it.for([
+      { outcome: 'loaded', expected: ['uploaded/model.glb'] },
+      { outcome: 'cancelled', expected: [] }
+    ] as const)(
+      'records $expected in the undo history when the dropped model is $outcome',
+      async ({ outcome, expected }) => {
+        const modelWidget = fromPartial<IWidget>({
+          name: 'model_file',
+          value: 'previous.glb',
+          type: 'text'
+        })
+        mockNode.widgets ??= []
+        mockNode.widgets.push(modelWidget)
+        const snapshots: unknown[] = []
+        useWorkflowStore().activeWorkflow = fromPartial({
+          changeTracker: {
+            captureCanvasState: () => snapshots.push(modelWidget.value)
+          }
+        })
+        vi.mocked(Load3dUtils.uploadFile).mockResolvedValue(
+          'uploaded/model.glb'
+        )
+        vi.mocked(Load3dUtils.splitFilePath).mockReturnValue([
+          'uploaded',
+          'model.glb'
+        ])
+        vi.mocked(Load3dUtils.getResourceURL).mockReturnValue(
+          '/api/view/uploaded/model.glb'
+        )
+        assert.exists(mockLoad3d.loadModel)
+        vi.mocked(mockLoad3d.loadModel).mockResolvedValueOnce(outcome)
+
+        const composable = useLoad3d(mockNode)
+        await composable.initializeLoad3d(document.createElement('div'))
+        await composable.handleModelDrop(new File([''], 'model.glb'))
+
+        expect(snapshots).toEqual(expected)
+      }
+    )
 
     it('should use resource folder for upload subfolder', async () => {
       mockNode.properties['Resource Folder'] = 'subfolder'

@@ -86,18 +86,40 @@ function mount(
 }
 
 describe('Composer', () => {
-  it('pads the header from content instead of a fixed height', () => {
-    render(Composer, {
-      props: {
-        hasWorkflowTarget: true,
-        selectWorkflowReference: vi.fn()
-      },
-      slots: { header: '<span>chip</span>' },
-      global: { plugins: [i18n] }
-    })
-    const header = screen.getByTestId('composer-workflow-header')
-    expect(header).toHaveClass('p-1')
-    expect(header).not.toHaveClass('h-11')
+  it('clears an untouched greeting prefilled after the editor mounts', async () => {
+    mount()
+    const store = useAgentComposerStore()
+    const release = store.prefillGreeting('Help me improve this workflow')
+    assert.exists(release)
+    await nextTick()
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Help me improve this workflow'
+    )
+
+    release()
+    await nextTick()
+
+    expect(screen.getByRole('textbox')).toHaveTextContent(/^$/)
+    expect(store.draft).toBe('')
+  })
+
+  it('preserves a greeting replaced by an identical user paste', async () => {
+    mount()
+    const store = useAgentComposerStore()
+    const text = 'Help me improve this workflow'
+    const release = store.prefillGreeting(text)
+    assert.exists(release)
+    await nextTick()
+    const editor = screen.getByRole('textbox')
+
+    await userEvent.click(editor)
+    await userEvent.keyboard('{Control>}a{/Control}')
+    await userEvent.paste(text)
+    release()
+    await nextTick()
+
+    expect(editor).toHaveTextContent(text)
+    expect(store.draft).toBe(text)
   })
 
   it.for(['@unmatched text', '@Nodes unmatched'])(

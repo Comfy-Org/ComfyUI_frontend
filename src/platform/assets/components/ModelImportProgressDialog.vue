@@ -170,7 +170,7 @@ async function cancelDownload(taskId: TaskId) {
                   size="sm"
                   :class="
                     cn(
-                      'w-full justify-start bg-transparent',
+                      'w-full justify-start',
                       activeFilter === option.value && 'bg-muted'
                     )
                   "
