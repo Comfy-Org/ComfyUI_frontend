@@ -36,6 +36,38 @@ interface Press {
 
 const pressCancellers = new Map<number, () => void>()
 
+const activeTouchPointers = new Set<number>()
+let multiTouchGuardInstalled = false
+
+function installMultiTouchGuard() {
+  if (multiTouchGuardInstalled || typeof document === 'undefined') return
+  multiTouchGuardInstalled = true
+
+  const releaseTouch = (event: PointerEvent) => {
+    if (event.pointerType === 'touch')
+      activeTouchPointers.delete(event.pointerId)
+  }
+
+  document.addEventListener(
+    'pointerdown',
+    (event) => {
+      if (event.pointerType !== 'touch') return
+      if (event.isPrimary) activeTouchPointers.clear()
+      activeTouchPointers.add(event.pointerId)
+      if (activeTouchPointers.size < 2) return
+      for (const pointerId of activeTouchPointers)
+        pressCancellers.get(pointerId)?.()
+    },
+    { capture: true }
+  )
+  document.addEventListener('pointerup', releaseTouch, { capture: true })
+  document.addEventListener('pointercancel', releaseTouch, { capture: true })
+}
+
+function isMultiTouch(event: PointerEvent) {
+  return event.pointerType === 'touch' && activeTouchPointers.size > 1
+}
+
 export function useNodePointerInteractions(
   nodeStateRef: MaybeRefOrGetter<NodeState>
 ) {
@@ -44,6 +76,7 @@ export function useNodePointerInteractions(
   const { forwardEventToCanvas, shouldHandleNodePointerEvents } =
     useCanvasInteractions()
   const { bringNodeToFront } = useNodeZIndex()
+  installMultiTouchGuard()
 
   let gesture: GestureState = idleGesture
   let press: Press | null = null
@@ -161,6 +194,7 @@ export function useNodePointerInteractions(
     }
 
     if (event.button !== 0) return
+    if (isMultiTouch(event)) return
     if (press && press.event.pointerId !== event.pointerId) return
     pressCancellers.get(event.pointerId)?.()
 
