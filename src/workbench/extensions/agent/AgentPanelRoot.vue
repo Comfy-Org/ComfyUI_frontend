@@ -942,10 +942,8 @@ function reportWithheldDraft(workflowId: string | undefined): void {
       failure_kind: 'bad_state',
       feature_area: 'agent',
       operation: 'send',
-      // Which edge withheld the draft. Without it every cause collapses into
-      // one unattributable warning, so the schema skew BE-21356 addressed
-      // cannot be told apart from a subscribe that was never acknowledged.
       stale_cause: crdtStatus.value.canvasStaleCause ?? 'unknown',
+      stale_terminal: crdtStatus.value.terminal ?? 'none',
       outcome: 'withheld'
     },
     context: { workflowId }

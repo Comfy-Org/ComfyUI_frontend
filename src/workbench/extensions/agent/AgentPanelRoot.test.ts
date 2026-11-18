@@ -14702,6 +14702,7 @@ describe('AgentPanelRoot workflow binding', () => {
           feature_area: 'agent',
           operation: 'send',
           stale_cause: 'socket_closed',
+          stale_terminal: 'none',
           outcome: 'withheld'
         },
         context: { workflowId: 'wf-42' }

@@ -78,12 +78,6 @@ interface ProjectionFrameId {
   isLive?: boolean
 }
 
-/**
- * The causes that set the SYNC half of the stale flag. `projection_failed` is
- * excluded because it is carried by `projectionFailureFor`, which is per
- * workflow and cleared by a successful retry, so it is derived rather than
- * recorded at an edge.
- */
 type SyncStaleCause = Exclude<AgentCanvasStaleCause, 'projection_failed' | null>
 
 const NOTHING_APPLIED: FrameOutcome = {
@@ -424,15 +418,10 @@ function startAgentCrdtFollower(
   let catchUpAwaitingProjectionFor: string | null = null
   const syncCanvasMayBeStale = ref(false)
   const projectionFailureFor = ref<string | null>(null)
-  // The edge that set `syncCanvasMayBeStale`, kept beside the flag rather than
-  // re-derived later from the outcome counters. See `AgentCanvasStaleCause`.
   const syncStaleCause = ref<SyncStaleCause | null>(null)
   const canvasMayBeStale = computed(
     () => syncCanvasMayBeStale.value || projectionFailureFor.value !== null
   )
-  // Sync staleness wins when both hold: it means frames were MISSED, which no
-  // projection retry can recover, whereas a projection failure is retried on
-  // the next frame.
   const canvasStaleCause = computed<AgentCanvasStaleCause>(() =>
     syncCanvasMayBeStale.value
       ? syncStaleCause.value
@@ -1241,7 +1230,7 @@ function startAgentCrdtFollower(
     if (next !== null) initialBind = false
     if (next !== null && next === previousWorkflowId) {
       if (connected.value || canvasMayBeStale.value)
-        markCanvasStale(syncStaleCause.value ?? 'tab_inactive')
+        markCanvasStale('tab_inactive')
       connected.value = false
       holdOpsForInactiveTab(next)
       return
