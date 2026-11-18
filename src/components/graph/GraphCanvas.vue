@@ -575,6 +575,7 @@ onMounted(async () => {
     await until(() => isSettingsReady.value || !!settingsError.value).toBe(true)
 
     if (settingsError.value) {
+      bootstrapTracer.noteFailure('bootstrap/settings', settingsError.value)
       if (settingsError.value instanceof UnauthorizedError) {
         startupError = { error: settingsError.value }
         localStorage.removeItem('Comfy.userId')

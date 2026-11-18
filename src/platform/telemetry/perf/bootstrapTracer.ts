@@ -252,19 +252,34 @@ export class BootstrapTracer {
    * A phase stopped only on the success path goes unrecorded precisely when
    * startup went wrong, so the surviving sessions are the fast ones and every
    * percentile reads better than reality.
+   *
+   * The first rejection wins attribution. Nested same-error rethrows are
+   * no-ops here since the inner `settle()` already recorded it, so the
+   * innermost phase sticks. For true siblings racing under the same parent,
+   * first-to-reject is also what `Promise.all` propagates, so a second,
+   * later concurrent rejection must not override the one that matters.
    */
   async settle<T>(phase: BootstrapPhase, work: () => Promise<T>): Promise<T> {
     const span = this.startPhase(phase)
     try {
       return await work()
     } catch (error) {
-      if (!this._failure || this._failure.error !== error) {
-        this._failure = { phase, error }
-      }
+      this._failure ??= { phase, error }
       throw error
     } finally {
       span.stop()
     }
+  }
+
+  /**
+   * Record a failure that a caller detected outside any `settle()`-wrapped
+   * promise — e.g. a `useAsyncState` ref that reports failure as data instead
+   * of rejecting. `settle()` never sees that failure, so without this call
+   * `_failureCause` has nothing to attribute it to. Does not throw or stop
+   * the phase; the caller still decides whether and how startup ends.
+   */
+  noteFailure(phase: BootstrapPhase, error: unknown): void {
+    this._failure ??= { phase, error }
   }
 
   /**

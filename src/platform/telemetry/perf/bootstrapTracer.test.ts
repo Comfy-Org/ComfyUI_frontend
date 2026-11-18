@@ -276,6 +276,62 @@ describe('bootstrapTracer', () => {
     ).not.toContain('secret detail')
   })
 
+  it('keeps the first rejection when a sibling phase rejects differently afterward', async () => {
+    const tracer = new BootstrapTracer()
+    const first = new RangeError('core failed')
+    const second = new TypeError('custom failed')
+
+    const core = tracer.settle('bootstrap/extensions-load-core', () =>
+      Promise.reject(first)
+    )
+    await expect(core).rejects.toBe(first)
+
+    const custom = tracer.settle('bootstrap/extensions-load-custom', () =>
+      Promise.reject(second)
+    )
+    await expect(custom).rejects.toBe(second)
+
+    tracer.complete('failed', { error: first })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/extensions-load-core',
+      failure_error: 'RangeError'
+    })
+  })
+
+  it('attributes a failure reported as data instead of a rejection', () => {
+    const tracer = new BootstrapTracer()
+    const error = new TypeError('settings fetch failed')
+
+    tracer.noteFailure('bootstrap/settings', error)
+    tracer.complete('failed', { error })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/settings',
+      failure_error: 'TypeError'
+    })
+  })
+
+  it('does not let a noted failure override an earlier settled rejection', async () => {
+    const tracer = new BootstrapTracer()
+    const rejection = new RangeError('bad defs')
+
+    await expect(
+      tracer.settle('bootstrap/object-info', () => Promise.reject(rejection))
+    ).rejects.toBe(rejection)
+
+    tracer.noteFailure('bootstrap/settings', new TypeError('ignored'))
+    tracer.complete('failed', { error: rejection })
+
+    const [, metadata] = addAction.mock.calls[0]
+    expect(metadata).toMatchObject({
+      failure_phase: 'bootstrap/object-info',
+      failure_error: 'RangeError'
+    })
+  })
+
   it('reports an unrecognized error name as Error', async () => {
     const tracer = new BootstrapTracer()
     const error = new Error('boom')
