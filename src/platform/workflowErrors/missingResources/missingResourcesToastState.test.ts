@@ -5,6 +5,7 @@ import { groupMissingModelCandidates } from '@/platform/workflowErrors/missingMo
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import {
   deriveMissingResourcesToastState,
+  downloadsStillMissing,
   isTrackedModelRelevant,
   nextDownloadBatch,
   startableModels,
@@ -290,6 +291,27 @@ describe('deriveMissingResourcesToastState', () => {
     expect(deriveMissingResourcesToastState(models, unavailable)).toEqual(
       expected
     )
+  })
+})
+
+describe('downloadsStillMissing', () => {
+  it('names only models downloaded here that a rescan reset and still lists as missing', () => {
+    const unsatisfied = tracked({ status: 'idle' }, { downloadedHere: true })
+    const settled = tracked(
+      { status: 'idle' },
+      { downloadedHere: true, stillMissing: false }
+    )
+    const awaitingRescan = tracked({ status: 'done' }, { downloadedHere: true })
+    const neverDownloaded = tracked({ status: 'idle' })
+
+    expect(
+      downloadsStillMissing([
+        unsatisfied,
+        settled,
+        awaitingRescan,
+        neverDownloaded
+      ])
+    ).toEqual([unsatisfied.key])
   })
 })
 

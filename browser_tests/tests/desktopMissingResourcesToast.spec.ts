@@ -61,6 +61,27 @@ test.describe('Desktop missing resources toast', { tag: '@desktop' }, () => {
     ).toBeVisible()
   })
 
+  test('offers a model again when its finished download still leaves it missing', async ({
+    comfyPage,
+    modelDownloadHost
+  }) => {
+    await comfyPage.workflow.loadWorkflow(workflow.workflow)
+    const toast = comfyPage.page.getByTestId(TestIds.toast.panel)
+    await expect(toast).toContainText('This workflow needs 2 models')
+    await modelDownloadHost.emitProgress(canvasDownload(workflow.modelA))
+    await expect(toast).toContainText('Downloading models')
+
+    await modelDownloadHost.emitProgress(
+      canvasDownload(workflow.modelA, { status: 'completed', progress: 1 })
+    )
+
+    await expect(toast).toContainText('This workflow needs 2 models')
+    await toast.getByRole('button', { name: 'Show model downloads' }).click()
+    await expect(
+      toast.getByRole('button', { name: `Download ${workflow.modelA}` })
+    ).toBeVisible()
+  })
+
   test('pauses and cancels a running download from its row', async ({
     comfyPage,
     modelDownloadHost

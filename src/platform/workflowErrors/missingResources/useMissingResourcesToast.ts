@@ -12,6 +12,7 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { getDownloadableModels } from '@/platform/workflowErrors/missingModel/missingModelViewUtils'
 import {
   deriveMissingResourcesToastState,
+  downloadsStillMissing,
   isTrackedModelRelevant,
   nextDownloadBatch,
   startableModels,
@@ -49,6 +50,7 @@ export function useMissingResourcesToast() {
   )
 
   const trackedByKey = shallowRef(new Map<string, ModelWithUrl>())
+  const prefetchedUrls = new Set<string>()
   const downloadedKeys = shallowRef<ReadonlySet<string>>(new Set())
   const reportedTotals = shallowRef<ReadonlyMap<string, number>>(new Map())
   const dismissed = ref(false)
@@ -65,13 +67,12 @@ export function useMissingResourcesToast() {
         dismissed.value = false
         downloadedKeys.value = new Set()
         reportedTotals.value = new Map()
+        prefetchedUrls.clear()
       }
       trackedByKey.value = next
     },
     { immediate: true }
   )
-
-  const prefetchedUrls = new Set<string>()
 
   watch(
     trackedByKey,
@@ -122,10 +123,22 @@ export function useMissingResourcesToast() {
         download,
         stillMissing: missingKeys.value.has(key),
         downloadedHere: downloadedKeys.value.has(key),
-        sizeBytes: fileSizeFor(model.url) ?? reportedTotals.value.get(key),
+        sizeBytes: reportedTotals.value.get(key) ?? fileSizeFor(model.url),
         gatedRepoUrl: trustedGatedRepoUrlFor(model.url)
       }))
       .filter(isTrackedModelRelevant)
+  )
+
+  watch(
+    () => missingModelStore.missingModelCandidates,
+    () => {
+      const unsatisfied = new Set(downloadsStillMissing(trackedModels.value))
+      if (unsatisfied.size > 0)
+        downloadedKeys.value = new Set(
+          [...downloadedKeys.value].filter((key) => !unsatisfied.has(key))
+        )
+    },
+    { flush: 'post' }
   )
 
   const unavailableModels = computed(() =>

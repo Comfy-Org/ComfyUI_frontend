@@ -26,7 +26,7 @@
         </p>
         <ul
           :aria-label="t('missingResourcesToast.missingModels')"
-          class="m-0 flex max-h-80 list-none flex-col gap-1 overflow-y-auto p-0"
+          class="m-0 flex max-h-64 list-none flex-col gap-1 overflow-y-auto p-0"
         >
           <MissingResourcesToastModelRow
             v-for="tracked in trackedModels"

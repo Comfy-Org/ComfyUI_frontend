@@ -61,6 +61,18 @@ export function trackedModelPhase(tracked: TrackedModel): TrackedModelPhase {
   return 'waiting'
 }
 
+/** Keys of models downloaded here that a settled rescan still lists as missing, so the download did not satisfy the workflow. */
+export function downloadsStillMissing(
+  tracked: readonly TrackedModel[]
+): string[] {
+  return tracked
+    .filter(
+      ({ downloadedHere, stillMissing, download }) =>
+        downloadedHere && stillMissing && download.status === 'idle'
+    )
+    .map(({ key }) => key)
+}
+
 /** Whether the toast should keep listing the model: still missing, downloading, or downloaded in this session. */
 export function isTrackedModelRelevant(tracked: TrackedModel): boolean {
   return (
