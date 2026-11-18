@@ -622,6 +622,17 @@ describe('useWorkflowStore', () => {
         expect(workflow.legacyId).toBe('legacy-draft-id')
       })
 
+      it('does not keep a non-string draft id as the legacy id', async () => {
+        const fileId = '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e'
+        const workflow = await loadWithDraft(
+          JSON.stringify({ ...defaultGraph, id: 42 }),
+          JSON.stringify({ ...defaultGraph, id: fileId })
+        )
+
+        expect(workflow.activeState?.id).toBe(fileId)
+        expect(workflow.legacyId).toBeUndefined()
+      })
+
       it('leaves a draft that is not a workflow object unchanged', async () => {
         const workflow = await loadWithDraft(
           '[]',

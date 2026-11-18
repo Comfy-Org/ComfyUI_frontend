@@ -430,8 +430,9 @@ export class ComfyWorkflow extends UserFile {
     )
     if (draft?.state && draft.content) {
       const state = withTabId(draft.state, initialState)
-      if (state !== draft.state)
-        this.legacyId ??= getLegacyWorkflowId(draft.state.id)
+      const draftId: unknown = draft.state.id
+      if (state !== draft.state && typeof draftId === 'string')
+        this.legacyId ??= getLegacyWorkflowId(draftId)
       this.changeTracker.activeState = state
       this.content =
         state === draft.state ? draft.content : JSON.stringify(state)
