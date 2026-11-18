@@ -83,14 +83,24 @@ class ReadRows(unittest.TestCase):
         self.assertEqual([p['pack'] for p in packs], ['ok'])
         self.assertEqual((stubs, missing, unreadable), (0, 0, ['cut.json']))
 
-    def test_a_non_object_row_is_named_as_unreadable_not_a_crash(self):
+    def unreadable_beside_a_pack(self, name, body):
         with rows_dir([row('ok', formProof={'graph': {}})]) as d:
-            for name, body in (('list.json', [1, 2]), ('scalar.json', 3)):
-                with open(os.path.join(d, name), 'w') as fh:
-                    json.dump(body, fh)
+            with open(os.path.join(d, name), 'w') as fh:
+                json.dump(body, fh)
             _, packs, _, _, unreadable = cf.read_rows(d)
-        self.assertEqual([p['pack'] for p in packs], ['ok'])
-        self.assertEqual(unreadable, ['list.json', 'scalar.json'])
+        return [p['pack'] for p in packs], unreadable
+
+    def test_an_array_row_is_named_as_unreadable_not_a_crash(self):
+        self.assertEqual(
+            self.unreadable_beside_a_pack('list.json', [1, 2]),
+            (['ok'], ['list.json']),
+        )
+
+    def test_a_scalar_row_is_named_as_unreadable_not_a_crash(self):
+        self.assertEqual(
+            self.unreadable_beside_a_pack('scalar.json', 3),
+            (['ok'], ['scalar.json']),
+        )
 
     def test_an_unreadable_explicit_baseline_is_named(self):
         with rows_dir([row('ok', formProof={'graph': {}})]) as d:
