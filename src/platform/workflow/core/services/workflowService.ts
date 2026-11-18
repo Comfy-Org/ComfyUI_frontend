@@ -481,16 +481,28 @@ export const useWorkflowService = () => {
       workflow.directory + '/' + appendWorkflowJsonExt(newFilename, isApp)
     const existingWorkflow = workflowStore.getWorkflowByPath(newPath)
 
+    const occupiedByOther =
+      existingWorkflow !== null && toRaw(existingWorkflow) !== toRaw(workflow)
+
+    if (existingWorkflow?.isTemporary && occupiedByOther) {
+      toast.error(t('g.error'), {
+        description: t('workflowService.pathInUse', { path: newPath })
+      })
+      return false
+    }
+
     const isSelfOverwrite =
-      existingWorkflow?.path === workflow.path && !existingWorkflow.isTemporary
+      existingWorkflow !== null &&
+      !occupiedByOther &&
+      !existingWorkflow.isTemporary
 
-    const replacesOther =
-      existingWorkflow !== null && existingWorkflow.path !== workflow.path
-
-    if (existingWorkflow && (!existingWorkflow.isTemporary || replacesOther)) {
+    if (existingWorkflow && !existingWorkflow.isTemporary) {
       if ((await confirmOverwrite(newPath)) !== true) return false
 
       if (!isSelfOverwrite) {
+        const current = workflowStore.getWorkflowByPath(newPath)
+        if (current === null || toRaw(current) !== toRaw(existingWorkflow))
+          return false
         const deleted = await deleteWorkflow(existingWorkflow, true)
         if (!deleted) return false
       }
@@ -537,7 +549,7 @@ export const useWorkflowService = () => {
       workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
     if (workflow.path !== expectedPath) {
       const existing = workflowStore.getWorkflowByPath(expectedPath)
-      if (existing) {
+      if (existing && !existing.isTemporary) {
         if ((await confirmOverwrite(expectedPath)) !== true) {
           await workflowStore.saveWorkflow(workflow)
           return true

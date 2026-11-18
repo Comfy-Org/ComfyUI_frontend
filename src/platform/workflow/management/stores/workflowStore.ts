@@ -546,7 +546,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
     newPath: string
   ): Promise<boolean> => {
     const occupant = getWorkflowByPath(newPath)
-    if (occupant && occupant.path !== workflow.path) return false
+    if (occupant && toRaw(occupant) !== toRaw(workflow)) return false
     isBusy.value = true
     try {
       // Capture all needed values upfront

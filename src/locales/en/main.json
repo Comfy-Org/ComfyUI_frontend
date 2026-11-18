@@ -1368,7 +1368,7 @@
     "exportWorkflow": "Export Workflow",
     "enterFilename": "Enter the filename",
     "enterFilenamePrompt": "Enter the filename:",
-    "pathInUse": "Another open workflow already uses \"{path}\". Choose a different name.",
+    "pathInUse": "\"{path}\" is already in use. Choose a different name.",
     "saveWorkflow": "Save workflow",
     "savedAsApp": "Converted to app workflow",
     "savedAsWorkflow": "Converted to node graph only workflow",
