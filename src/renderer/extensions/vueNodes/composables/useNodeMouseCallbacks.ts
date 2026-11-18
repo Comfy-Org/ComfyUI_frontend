@@ -10,11 +10,24 @@ import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geomet
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
-type MouseCallback =
-  | 'onMouseEnter'
-  | 'onMouseMove'
-  | 'onMouseLeave'
-  | 'onMouseDown'
+type MouseCallbackInvoker = (
+  node: LGraphNode,
+  event: CanvasPointerEvent,
+  pos: Point,
+  canvas: LGraphCanvas
+) => void
+
+const invokers = {
+  onMouseEnter: (node, event) => node.onMouseEnter?.(event),
+  onMouseMove: (node, event, pos, canvas) =>
+    node.onMouseMove?.(event, pos, canvas),
+  onMouseLeave: (node, event) => node.onMouseLeave?.(event),
+  onMouseDown: (node, event, pos, canvas) => {
+    node.onMouseDown?.(event, pos, canvas)
+  }
+} satisfies Record<string, MouseCallbackInvoker>
+
+type MouseCallback = keyof typeof invokers
 
 const reportedFailures = new Set<string>()
 
@@ -75,13 +88,7 @@ export function useNodeMouseCallbacks(
         event.canvasX - node.pos[0],
         event.canvasY - node.pos[1]
       ]
-      if (callback === 'onMouseMove') {
-        node.onMouseMove?.(event, pos, canvas)
-      } else if (callback === 'onMouseDown') {
-        node.onMouseDown?.(event, pos, canvas)
-      } else {
-        node[callback]?.(event)
-      }
+      invokers[callback](node, event, pos, canvas)
     } catch (error) {
       reportMouseCallbackFailure(error, node, callback)
     }
