@@ -4887,27 +4887,29 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(g4b) a turn the socket settles after a reconnect shows the stored row, so a tool call missed in the drop appears', async () => {
-    const getMessages = vi.fn(async (): Promise<AgentMessages> => [
-      historyRow(1, 'user', 'msg-1', 'go'),
-      {
-        ...historyRow(2, 'assistant', 'msg-1', 'Added it.', 'msg-1'),
-        content: {
-          text: 'Added it.',
-          thinking: [
-            { text: 'round one', tool_call_id: 'tool-1' },
-            { text: 'round two' }
-          ],
-          tool_calls: [
-            {
-              id: 'tool-1',
-              tool_call_id: 'tool-1',
-              tool_name: 'add_node',
-              status: 'success'
-            }
-          ]
+    const getMessages = vi.fn(
+      async (): Promise<AgentMessages> => [
+        historyRow(1, 'user', 'msg-1', 'go'),
+        {
+          ...historyRow(2, 'assistant', 'msg-1', 'Added it.', 'msg-1'),
+          content: {
+            text: 'Added it.',
+            thinking: [
+              { text: 'round one', tool_call_id: 'tool-1' },
+              { text: 'round two' }
+            ],
+            tool_calls: [
+              {
+                id: 'tool-1',
+                tool_call_id: 'tool-1',
+                tool_name: 'add_node',
+                status: 'success'
+              }
+            ]
+          }
         }
-      }
-    ])
+      ]
+    )
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({
       rest: fakeRest({ getMessages }),
