@@ -1,19 +1,18 @@
 # Live Open on Cloud E2E
 
-The suite checks the Open on Cloud behavior from ComfyUI Frontend 1.59.4 using a real local ComfyUI backend, Cloud sign-in, and the deployed Cloud feature and compatibility APIs.
+The suite checks the Open on Cloud behavior from a signed-out local editor using a real ComfyUI backend and the deployed Cloud feature and compatibility APIs.
 
 ## Prerequisites
 
 - Start a local single-user ComfyUI backend. Set the local editor's **Use new menu** setting to **Top**.
-- Start the frontend with the Cloud destination set to the deployment under test. Use the same origin for `OPEN_ON_CLOUD_URL` and run without feature overrides.
+- Start a frontend build that fetches the Cloud rollout while signed out. Export `OPEN_ON_CLOUD_URL` with the Cloud deployment to test. The deployment must serve `open_on_cloud_enabled: true` to unauthenticated callers. Run without feature overrides.
 
 ```sh
-VITE_STAGING_CLOUD_BASE_URL=https://testcloud.comfy.org pnpm dev:test --host 127.0.0.1 --port 5173 --strictPort
+VITE_STAGING_CLOUD_BASE_URL="$OPEN_ON_CLOUD_URL" pnpm dev:test --host 127.0.0.1 --port 5173 --strictPort
 ```
 
 - Confirm `http://127.0.0.1:8188/system_stats` and `http://127.0.0.1:5173/` respond.
 - Install the Chromium version required by the repository's Playwright dependency.
-- Supply an existing email/password test account in `OPEN_ON_CLOUD_ENABLED_EMAIL` and `OPEN_ON_CLOUD_ENABLED_PASSWORD`. The selected deployment must serve `open_on_cloud_enabled: true` for that account and `false` for anonymous callers.
 
 ## Run
 
@@ -21,19 +20,15 @@ VITE_STAGING_CLOUD_BASE_URL=https://testcloud.comfy.org pnpm dev:test --host 127
 PLAYWRIGHT_CLOUD_LIVE=1 \
 PLAYWRIGHT_TEST_URL=http://127.0.0.1:5173 \
 PLAYWRIGHT_SETUP_API_URL=http://127.0.0.1:8188 \
-OPEN_ON_CLOUD_URL=https://testcloud.comfy.org \
 pnpm test:browser browser_tests/tests/liveCloud/openOnCloud.spec.ts \
   --project=cloud-live --workers=1 --reporter=line,html
 ```
-
-Add `--grep 'when signed out'` to run the anonymous check without test credentials.
 
 ## Acceptance cases
 
 | Scenario                                             | Expected behavior                                                                                           |
 | ---------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| Signed out                                           | Cloud serves `false` and the toolbar hides the Cloud button.                                                |
-| Sign in with a rollout-enabled account               | Cloud serves `true` and the toolbar shows the Cloud button. Signing out hides it again.                     |
+| Signed out                                           | Cloud serves `true` and the toolbar shows the Cloud button.                                                 |
 | Click Cloud with the VAESave workflow                | Cloud reports VAESave missing. The dialog offers **Deploy with your agent**.                                |
 | Click Cloud with the unavailable checkpoint workflow | Cloud reports `3Guofeng3_v32Light.safetensors` missing and the **Missing 1 model** dialog lists it.         |
 | Click Cloud with the compatible EmptyImage workflow  | Cloud reports no missing nodes or models. The **Run on Comfy Cloud** dialog offers **Open on Comfy Cloud**. |
@@ -46,8 +41,6 @@ The login fixture permits the hosted application's analytics, diagnostics, and I
 
 ## Remaining acceptance work
 
-Authenticated local-to-Cloud import and Cloud execution require an authenticated Cloud browser context and an enabled receiver flag. These are separate from the three compatibility cases and the signed-out login test.
-
 A verified `@comfy.org` employee can use the existing Cloud override `?ff=open_on_cloud_enabled:true` for controlled import acceptance. To carry it automatically into a new browser or Desktop handoff tab, configure the local frontend's `VITE_STAGING_CLOUD_BASE_URL` as `https://fe-pr-22949.testenvs.comfy.org/?ff=open_on_cloud_enabled:true`. The handoff retains configured `ff` parameters; the Cloud receiver still checks the real signed-in employee identity. This changes the rollout configuration without replacing authentication, API responses or the workflow loader.
 
 The Issues panel offers deployment for an out-of-memory error when `open_on_cloud_enabled` is enabled. Its error-catalog routing and dialog action are covered together by the focused integration suite. The live suite does not exhaust GPU memory to produce this condition.
@@ -58,4 +51,4 @@ Local model upload, background progress, cancellation, and sign-in-to-upload rem
 
 Desktop stages a short-lived transfer in the real local userdata API and opens a local relay through its native external browser. The relay consumes that record and carries the compressed workflow in a Cloud URL fragment. Cloud removes the fragment before telemetry, preserves the transfer in tab session storage through sign-in and imports it through the normal validator. Ten-minute expiry and payload limits retain download/manual-import fallback when transport is unavailable.
 
-`browser_tests/tests/liveCloud/desktopWorkflowRelay.spec.ts` covers the real userdata GET/DELETE and hosted login, plus missing and expired records. Run it with the same live-suite environment variables. It proves browser relay transport; authenticated import and native Desktop window acceptance are additional checks.
+`browser_tests/tests/liveCloud/desktopWorkflowRelay.spec.ts` covers the real userdata GET/DELETE and hosted login, plus missing and expired records. Run it with the same live-suite environment variables. These tests exercise the relay in a browser. The native Desktop window can be verified separately.

@@ -65,10 +65,4 @@ export class SignInDialog extends BaseDialog {
     await this.waitForVisible()
     return { result }
   }
-
-  async submitEmailAndPassword(email: string, password: string): Promise<void> {
-    await this.emailInput.fill(email)
-    await this.passwordInput.fill(password)
-    await this.signInButton.click()
-  }
 }
