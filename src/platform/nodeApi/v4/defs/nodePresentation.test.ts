@@ -158,6 +158,13 @@ describe('a defined type’s presentation', () => {
       {
         name: 'a collapsible that is not true or false',
         presentation: { collapsible: 0 }
+      },
+      { name: 'a field Object.prototype has', field: 'constructor' },
+      { name: 'a title that is null', presentation: { title: null } },
+      { name: 'a resizable that is null', presentation: { resizable: null } },
+      {
+        name: 'a collapsible that is null',
+        presentation: { collapsible: null }
       }
     ])('refuses $name and registers nothing', ({ presentation, field }) => {
       const given = field ? { title: 'hidden', [field]: 'none' } : presentation
