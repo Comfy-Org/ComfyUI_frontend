@@ -1058,26 +1058,45 @@ export function createBillingOperationLifecycle(
       return recoverFromPointer(status, pointer, context, includeSettled)
     }
 
-    const pending = pendingFromStatus(status.value.status)
+    return recoverServed(
+      status.value.status,
+      operation,
+      pointer,
+      context,
+      includeSettled
+    )
+  }
+
+  function recoverServed(
+    status: BillingStatusData,
+    operation: BillingRecoverOptions['operation'],
+    pointer: BillingOperationPointer | undefined,
+    context: BillingScopeContext,
+    includeSettled: boolean
+  ): Promise<BillingResult<BillingOperationState | undefined>> {
+    const pending = pendingFromStatus(status)
     if (operation !== undefined && pending?.id !== operation.id) {
       return recoverNamed(
         operation,
-        status.value.status.billing_rail,
+        status.billing_rail,
         pointer,
         context,
         includeSettled
       )
     }
     if (pending !== undefined) {
-      return resumeServerPending(
-        pending,
-        status.value.status.billing_rail,
-        pointer,
-        context,
-        includeSettled
+      return Promise.resolve(
+        resumeServerPending(
+          pending,
+          status.billing_rail,
+          pointer,
+          context,
+          includeSettled
+        )
       )
     }
-    if (pointer === undefined) return { status: 'ok', value: undefined }
+    if (pointer === undefined)
+      return Promise.resolve({ status: 'ok', value: undefined })
     return probePointer(pointer, context, includeSettled)
   }
 
