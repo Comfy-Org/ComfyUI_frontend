@@ -153,7 +153,11 @@ const GET_REPLIES = new Map<string, ScenarioReply>([
         request.authorization !== null && scenario.checkoutUi !== undefined
           ? {
               firebase_config: E2E_FIREBASE_CONFIG,
-              billing_web_checkout_ui: scenario.checkoutUi
+              billing_web_checkout_ui: scenario.checkoutUi,
+              ...(scenario.planChangeCardChoice !== undefined && {
+                billing_web_plan_change_card_choice:
+                  scenario.planChangeCardChoice
+              })
             }
           : { firebase_config: E2E_FIREBASE_CONFIG }
     })

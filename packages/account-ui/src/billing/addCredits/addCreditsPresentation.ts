@@ -88,6 +88,9 @@ export interface AddCreditsFooterCopy {
   readonly detail: string
 }
 
+/** A billing link's URL, or `true` when the host opens billing itself and the link is a button. */
+export type AddCreditsBillingLinkTarget = string | true
+
 export function primaryActionClass(ui: AddCreditsUi): string {
   return cn(
     buttonVariants({ variant: 'inverted', size: 'lg' }),

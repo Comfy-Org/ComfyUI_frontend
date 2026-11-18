@@ -30,7 +30,8 @@
 
     <SanitizedHtml
       v-if="showMarkdown"
-      class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg text-sm"
+      class="comfy-markdown-content size-full min-h-16 overflow-y-auto rounded-lg text-sm contain-size"
+      tabindex="0"
       data-capture-wheel="true"
       role="textarea"
       :aria-label="widget.name"

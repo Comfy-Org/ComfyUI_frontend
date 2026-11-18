@@ -11,14 +11,15 @@
     :plan-line="planLine"
     :auto-top-up="autoTopUpChoice.offer.value"
     :billing-url="autoTopUpChoice.billingUrl.value"
-    :auto-top-up-setup-hidden="!autoTopUpChoice.platformAvailable.value"
+    :host-opens-billing="opensLocalBillingHandoff()"
     :opens-in="handsPopupsToSystemBrowser() ? 'browser' : 'tab'"
     :support-url="billingSupportUrl"
     :locale
     :translate
     :title-as="DialogTitle"
     @close="close"
-    @set-up-auto-top-up="autoTopUpOffer.track"
+    @open-billing="autoTopUpChoice.open"
+    @set-up-auto-top-up="autoTopUpOffer.open"
     @decline-auto-top-up="autoTopUpOffer.trackDeclined"
   >
     <template v-if="isInsufficientCredits" #description>
@@ -157,10 +158,6 @@ async function createHandoffCheckout(
   amountCents: number,
   signal: AbortSignal
 ): ReturnType<AddCreditsPorts['createCheckout']> {
-  if (!opensLocalBillingHandoff()) {
-    void reopenForCurrentFlag()
-    return { status: 'error', refusal: { kind: 'checkout_failed' } }
-  }
   const generation = workspaceIdentity.workspaceTransitionGeneration
   const issued = await issueLocalBillingHandoff(
     { intent: 'top-up', amountCents },
@@ -197,6 +194,10 @@ const ports: AddCreditsPorts = {
       outcome: 'pending',
       payment_intent_source: source
     })
+    if (opensLocalBillingHandoff() !== opensHandoff) {
+      void reopenForCurrentFlag()
+      return { status: 'error', refusal: { kind: 'checkout_failed' } }
+    }
     if (opensHandoff) return createHandoffCheckout(amountCents, signal)
     const returnUrl = topupCheckoutReturnUrl()
     if (!returnUrl) {

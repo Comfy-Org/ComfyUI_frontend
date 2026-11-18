@@ -3,7 +3,7 @@ import { computed, onUnmounted, ref } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
@@ -120,7 +120,7 @@ const _useWorkflowPacks = () => {
    * @returns `undefined` when the root graph does not exist yet.
    */
   const getWorkflowPacks = async () => {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return undefined
 
     const resolvedPacks: WorkflowPack[] = []
@@ -174,7 +174,7 @@ const _useWorkflowPacks = () => {
   // Retry on `configured`, not on `isGraphReady`: `setup()` installs an empty
   // graph before the workflow is configured into it.
   useEventListener(
-    () => (app.isGraphReady ? app.rootGraph.events : undefined),
+    () => (useApp().isGraphReady ? useApp().rootGraph.events : undefined),
     'configured',
     () => {
       if (!fetchDeferredUntilConfigured) return
