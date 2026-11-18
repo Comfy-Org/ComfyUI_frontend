@@ -1,4 +1,3 @@
-# Description: Runs the live Open on Cloud Playwright specs from a signed-out local ComfyUI against a Cloud deployment, signing in with the Open on Cloud smoke account.
 name: 'CI: Tests Open on Cloud live'
 
 on:
@@ -6,7 +5,10 @@ on:
     paths:
       - '.github/workflows/ci-tests-open-on-cloud-live.yaml'
       - 'browser_tests/tests/liveCloud/openOnCloud*.spec.ts'
+      - 'browser_tests/fixtures/components/Actionbar.ts'
+      - 'browser_tests/fixtures/components/OpenOnCloudDialog.ts'
       - 'browser_tests/fixtures/liveOpenOnCloudFixture.ts'
+      - 'browser_tests/fixtures/selectors.ts'
       - 'src/platform/openOnCloud/**'
   workflow_dispatch:
 
@@ -24,7 +26,7 @@ jobs:
     timeout-minutes: 30
     env:
       OPEN_ON_CLOUD_URL: https://pr-19562.testenvs.comfy.org
-      FRONTEND_MERGE_REF: refs/pull/23617/head
+      FRONTEND_MERGE_SHA: dbd0fe9f0bfc1e90100a18596a26e12d6c2bdc07
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -32,10 +34,9 @@ jobs:
           fetch-depth: 0
 
       - name: Merge the frontend rollout under test
-        if: env.FRONTEND_MERGE_REF != ''
         run: |
-          git fetch --no-tags origin "$FRONTEND_MERGE_REF"
-          git -c user.name=ci -c user.email=ci@localhost merge --no-edit FETCH_HEAD
+          git fetch --no-tags origin "$FRONTEND_MERGE_SHA"
+          git -c user.name=ci -c user.email=ci@localhost merge --no-edit "$FRONTEND_MERGE_SHA"
 
       - name: Setup frontend
         uses: ./.github/actions/setup-frontend
@@ -56,11 +57,12 @@ jobs:
           python main.py --cpu --front-end-root ../dist &
           wait-for-it --service 127.0.0.1:8188 -t 600
 
-      - name: Run live Open on Cloud specs
+      - name: Run signed-out Open on Cloud tests
         run: >-
           pnpm exec playwright test
           browser_tests/tests/liveCloud/openOnCloud.spec.ts
           browser_tests/tests/liveCloud/openOnCloudLogin.spec.ts
+          --grep-invert @cloud-authenticated
           --project=cloud-live --workers=1 --reporter=line,json
           --output=${{ runner.temp }}/open-on-cloud-live/test-results
         env:
@@ -68,8 +70,6 @@ jobs:
           PLAYWRIGHT_TEST_URL: http://127.0.0.1:8188
           PLAYWRIGHT_SETUP_API_URL: http://127.0.0.1:8188
           PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/open-on-cloud-live/results.json
-          CLOUD_ACCOUNT_EMAIL: ${{ vars.OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL }}
-          CLOUD_ACCOUNT_PASSWORD: ${{ secrets.OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD }}
 
       - name: Extract screenshots of passing tests
         if: ${{ !cancelled() }}
@@ -77,7 +77,7 @@ jobs:
           RESULTS: ${{ runner.temp }}/open-on-cloud-live/results.json
           SCREENSHOTS: open-on-cloud-live-screenshots
         run: |
-          node --input-type=module -e '
+          node --input-type=module <<'JS'
             import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
             const out = process.env.SCREENSHOTS
             mkdirSync(out, { recursive: true })
@@ -91,7 +91,7 @@ jobs:
               for (const child of suite.suites ?? []) visit(child)
             }
             for (const suite of JSON.parse(readFileSync(process.env.RESULTS, "utf8")).suites) visit(suite)
-          '
+          JS
           ls -1 open-on-cloud-live-screenshots
 
       - name: Upload screenshots

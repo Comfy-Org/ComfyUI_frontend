@@ -78,6 +78,7 @@ test.describe(
       expect(compatibility.missing_models ?? []).toEqual([])
 
       await expect(openOnCloudDialog.runHeading).toBeVisible()
+      await expect(openOnCloudDialog.signInNotice).toBeVisible()
       await expect(openOnCloudDialog.openOnCloudButton).toBeVisible()
       await comfyPage.attachScreenshot('runnable-on-cloud.png', {
         runInCI: true

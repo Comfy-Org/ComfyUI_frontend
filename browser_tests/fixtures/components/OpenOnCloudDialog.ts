@@ -10,6 +10,7 @@ export class OpenOnCloudDialog extends BaseDialog {
   readonly uploadsUnavailableNotice: Locator
   readonly uploadButton: Locator
   readonly runHeading: Locator
+  readonly signInNotice: Locator
   readonly openOnCloudButton: Locator
   private readonly agentOptions: readonly Locator[]
 
@@ -51,6 +52,12 @@ export class OpenOnCloudDialog extends BaseDialog {
       name: 'Run on Comfy Cloud',
       exact: true
     })
+    this.signInNotice = this.root.getByText(
+      'Comfy Cloud will ask you to sign in.',
+      {
+        exact: true
+      }
+    )
     this.openOnCloudButton = this.root.getByRole('button', {
       name: 'Open on Comfy Cloud',
       exact: true
