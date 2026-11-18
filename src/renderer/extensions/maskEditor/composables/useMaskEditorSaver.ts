@@ -15,6 +15,7 @@ import { useApp } from '@/scripts/appInstance'
 import { createImageOutput } from '@comfyorg/mask-editor/imageOutput'
 import { imageLayerFilenamesByTimestamp } from './layerFilenames'
 import { isResultItemType } from '@/utils/typeGuardUtil'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 const CLIPSPACE_SUBFOLDER = 'clipspace'
 
@@ -158,22 +159,16 @@ export function useMaskEditorSaver() {
     if (!node.graph) return
 
     const mainRef = outputData.paintedMaskedImage.ref
+    const savedImage = {
+      filename: mainRef.filename,
+      subfolder: mainRef.subfolder,
+      type: isResultItemType(mainRef.type) ? mainRef.type : 'input'
+    }
 
-    writeImageWidgetValue(
-      node,
-      (mainRef.subfolder ? `${mainRef.subfolder}/` : '') +
-        mainRef.filename +
-        (mainRef.type ? ` [${mainRef.type}]` : '')
-    )
+    writeImageWidgetValue(node, createAnnotatedPath(savedImage))
 
     node.imgs = undefined
-    nodeOutputStore.replaceNodeOutputImages(node, [
-      {
-        filename: mainRef.filename,
-        subfolder: mainRef.subfolder,
-        type: isResultItemType(mainRef.type) ? mainRef.type : 'input'
-      }
-    ])
+    nodeOutputStore.replaceNodeOutputImages(node, [savedImage])
     node.graph.setDirtyCanvas(true)
   }
 

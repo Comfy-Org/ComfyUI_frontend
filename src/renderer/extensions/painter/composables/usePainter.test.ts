@@ -582,12 +582,12 @@ describe('usePainter', () => {
       {
         server: 'a server that keeps the painter subfolder',
         subfolder: 'painter',
-        expected: 'painter/uploaded.png [input]'
+        expected: 'painter/uploaded.png'
       },
       {
         server: 'a server that flattens subfolders',
         subfolder: '',
-        expected: 'uploaded.png [input]'
+        expected: 'uploaded.png'
       }
     ])(
       'uploads the current canvas to the painter subfolder on $server, even if nothing has been painted yet',

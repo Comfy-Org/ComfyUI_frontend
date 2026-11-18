@@ -176,9 +176,9 @@ describe('useMaskEditorSaver', () => {
       useWidgetValueStore().getWidget(
         widgetId('maskeditor-saver-test', toNodeId(42), 'image')
       )?.value
-    ).toBe('clipspace/clipspace-painted-masked-123.png [input]')
+    ).toBe('clipspace/clipspace-painted-masked-123.png')
     expect(mockNode.properties['image']).toBe(
-      'clipspace/clipspace-painted-masked-123.png [input]'
+      'clipspace/clipspace-painted-masked-123.png'
     )
   })
 
@@ -249,7 +249,7 @@ describe('useMaskEditorSaver', () => {
     await useMaskEditorSaver().save()
 
     expect(mockNode.properties['image']).toBe(
-      'clipspace-painted-masked-123.png [input]'
+      'clipspace-painted-masked-123.png'
     )
   })
 
