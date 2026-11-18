@@ -601,6 +601,8 @@ export const useAgentConversationStore = defineStore(
     const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
+    let pendingSendOutcomeAtStart: number | undefined
+    const pendingSendCanvasEvidence: CanvasSyncEvidence[] = []
     const activeTurnId = computed(() => activeSlot.value?.turnId ?? null)
 
     function setTurnTabResolver(resolve: () => TurnTab): void {
@@ -1063,8 +1065,21 @@ export const useAgentConversationStore = defineStore(
         skillReference: parsed.skillReference,
         status: 'sending'
       }
+      if (pendingSendOutcomeAtStart === undefined)
+        pendingSendOutcomeAtStart = canvasSyncOutcomeCount()
       pendingSends.set(record.clientMessageId, record)
       return record
+    }
+
+    function hasAnySendingPendingSend(): boolean {
+      for (const send of pendingSends.values())
+        if (send.status === 'sending') return true
+      return false
+    }
+
+    function clearPendingSendCanvasEvidence(): void {
+      pendingSendCanvasEvidence.length = 0
+      pendingSendOutcomeAtStart = undefined
     }
 
     function failPendingSend(
@@ -1086,6 +1101,7 @@ export const useAgentConversationStore = defineStore(
         status: 'failed',
         failure: normalizedFailure
       })
+      if (!hasAnySendingPendingSend()) clearPendingSendCanvasEvidence()
       return true
     }
 
@@ -1111,6 +1127,8 @@ export const useAgentConversationStore = defineStore(
           pendingSends.set(key, value)
         }
       }
+      if (pendingSendOutcomeAtStart === undefined)
+        pendingSendOutcomeAtStart = canvasSyncOutcomeCount()
       return updated
     }
 
@@ -1182,8 +1200,11 @@ export const useAgentConversationStore = defineStore(
         (snapshot) => publishMessage(input.turnId, snapshot),
         (workflowId) => canvasSyncGate(workflowId),
         () => canvasSyncOutcomeCount(),
-        reportUndeliverableAskData
+        reportUndeliverableAskData,
+        pendingSendOutcomeAtStart
       )
+      for (const evidence of pendingSendCanvasEvidence)
+        transport.notifyCanvasCaughtUp(evidence)
       backgroundTurns.set(input.turnId, {
         threadId: input.threadId,
         messageId: input.turnId,
@@ -1203,19 +1224,23 @@ export const useAgentConversationStore = defineStore(
     function startTurn(turnId: TurnId): void {
       if (activeSlot.value) abortActiveTurn()
       const message = createAssistantMessage(turnId)
+      const transport = createAgentEventTransport(
+        message,
+        (snapshot) => publishMessage(turnId, snapshot),
+        (workflowId) => canvasSyncGate(workflowId),
+        () => canvasSyncOutcomeCount(),
+        reportUndeliverableAskData,
+        pendingSendOutcomeAtStart
+      )
+      for (const evidence of pendingSendCanvasEvidence)
+        transport.notifyCanvasCaughtUp(evidence)
       activeSlot.value = {
         origin: 'local',
         turnId,
         index: messages.value.push(message) - 1,
         threadId: threadId.value,
         message,
-        transport: createAgentEventTransport(
-          message,
-          (snapshot) => publishMessage(turnId, snapshot),
-          (workflowId) => canvasSyncGate(workflowId),
-          () => canvasSyncOutcomeCount(),
-          reportUndeliverableAskData
-        ),
+        transport,
         tab: resolveTurnTab()
       }
     }
@@ -1421,6 +1446,11 @@ export const useAgentConversationStore = defineStore(
     }
 
     function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
+      if (evidence !== undefined && hasAnySendingPendingSend()) {
+        if (pendingSendCanvasEvidence.length >= 256)
+          pendingSendCanvasEvidence.shift()
+        pendingSendCanvasEvidence.push(evidence)
+      }
       activeSlot.value?.transport.notifyCanvasCaughtUp(evidence)
       for (const settledTransport of settledActiveTransports) {
         settledTransport.notifyCanvasCaughtUp(evidence)
@@ -1935,6 +1965,7 @@ export const useAgentConversationStore = defineStore(
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
+      clearPendingSendCanvasEvidence()
       clearActive()
     }
 
@@ -2275,6 +2306,7 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
+      clearPendingSendCanvasEvidence,
       turnUsesSkill,
       historySkillNames,
       settleTurn,

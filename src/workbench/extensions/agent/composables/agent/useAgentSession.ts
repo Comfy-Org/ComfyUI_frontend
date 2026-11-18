@@ -634,6 +634,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return toTurnId(`local-error-${createUuidv4()}`)
   }
 
+  const inFlightSends = new Set<string>()
+  const pendingSendEvents: AgentWsEvent[] = []
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
   let unsubscribeSnapshotSettled: (() => void) | null = null
@@ -1151,6 +1153,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function stop(): void {
     stopped = true
     readyThreadId.value = null
+    inFlightSends.clear()
+    pendingSendEvents.length = 0
+    conversationStore.clearPendingSendCanvasEvidence()
     unsubscribe?.()
     unsubscribeStatus?.()
     unsubscribeSnapshotSettled?.()
@@ -1520,6 +1525,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         adoptWorkflow,
         'agent_workflow_adoption_callback_failed'
       )
+    drainPendingSendEvents(ack.thread_id, turnId)
   }
 
   function acceptBackgroundTurn({
@@ -1582,6 +1588,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     if (stopped !== undefined)
       void rest.cancelMessage(ack.thread_id, turnId).catch(() => undefined)
+    drainPendingSendEvents(ack.thread_id, turnId)
   }
 
   function classifyAdmissionFailure(
@@ -1936,6 +1943,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return true
   }
 
+  function finishInFlightSend(sendId: string): void {
+    inFlightSends.delete(sendId)
+    if (inFlightSends.size === 0) {
+      pendingSendEvents.length = 0
+      conversationStore.clearPendingSendCanvasEvidence()
+    }
+  }
+
   async function performSend({
     sendId,
     origin,
@@ -1974,6 +1989,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const threadSourceAtSend = consumeThreadSource(origin)
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
+    inFlightSends.add(sendId)
     try {
       await prepareWorkflow(clientMessageId)
       const wfContext = workflow?.current(resolved.turnOrigin)
@@ -2037,6 +2053,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         threadAtSend,
         generation
       })
+    } finally {
+      finishInFlightSend(sendId)
     }
   }
 
@@ -2807,8 +2825,72 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  function handleAgentEvent(event: AgentWsEvent): void {
-    if (heldForHydration(event)) return
+  function isLiveUnkeyedActiveTab(event: AgentWsEvent): boolean {
+    if (
+      event.type !== 'agent_active_tab' ||
+      event.data.message_id !== undefined
+    )
+      return false
+    const eventThreadId = event.data.thread_id
+    if (eventThreadId === undefined) return true
+    if (
+      eventThreadId === conversationStore.threadId &&
+      conversationStore.activeTurnId !== null
+    )
+      return true
+    return (
+      conversationStore
+        .liveTurns()
+        .filter((turn) => turn.threadId === eventThreadId).length === 1
+    )
+  }
+
+  function shouldBufferPendingSendEvent(event: AgentWsEvent): boolean {
+    if (inFlightSends.size === 0) return false
+    if (hasRoutableLiveTurn(event.data.thread_id, event.data.message_id))
+      return false
+    if (event.type === 'agent_ask_resolved' || isLiveUnkeyedActiveTab(event))
+      return false
+    return true
+  }
+
+  function heldForPendingSend(event: AgentWsEvent): boolean {
+    if (!shouldBufferPendingSendEvent(event)) return false
+    if (pendingSendEvents.length >= MAX_HYDRATION_EVENTS) {
+      const replace = pendingSendEvents.findIndex(
+        (held) => held.type !== 'agent_message_done'
+      )
+      pendingSendEvents.splice(Math.max(0, replace), 1)
+    }
+    pendingSendEvents.push(event)
+    return true
+  }
+
+  function matchesAcceptedTurn(
+    event: AgentWsEvent,
+    threadId: string,
+    turnId: TurnId
+  ): boolean {
+    if (event.data.thread_id !== threadId) return false
+    if (event.data.message_id !== undefined)
+      return event.data.message_id === turnId
+    return event.type === 'agent_active_tab'
+  }
+
+  function drainPendingSendEvents(threadId: string, turnId: TurnId): void {
+    if (pendingSendEvents.length === 0) return
+    const remaining: AgentWsEvent[] = []
+    const matched: AgentWsEvent[] = []
+    for (const event of pendingSendEvents) {
+      if (matchesAcceptedTurn(event, threadId, turnId)) matched.push(event)
+      else remaining.push(event)
+    }
+    pendingSendEvents.length = 0
+    pendingSendEvents.push(...remaining)
+    for (const event of matched) dispatchAgentEvent(event)
+  }
+
+  function dispatchAgentEvent(event: AgentWsEvent): void {
     observeLiveDelivery(event)
     if (event.type === 'agent_ask_resolved') handleResolvedAsk(event)
     observeSkillEvent(event)
@@ -2821,6 +2903,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     for (const turn of conversationStore.liveTurns()) observeSkillTurn(turn)
     if (event.type === 'agent_active_tab') handleActiveTab(event)
     else if (event.type === 'agent_message_done') handleMessageDone(event)
+  }
+
+  function handleAgentEvent(event: AgentWsEvent): void {
+    if (heldForHydration(event) || heldForPendingSend(event)) return
+    dispatchAgentEvent(event)
   }
 
   function onRaw(raw: unknown): void {

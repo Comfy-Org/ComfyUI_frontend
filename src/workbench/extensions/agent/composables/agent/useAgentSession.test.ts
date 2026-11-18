@@ -10341,4 +10341,296 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
     expect(rest.postMessage).toHaveBeenCalledOnce()
     expect(onBackgroundTurnAccepted).toHaveBeenCalledOnce()
   })
+
+  it('applies socket events including agent_message_done that arrive before postMessage resolves', async () => {
+    let resolvePost: (ack: AgentTurnAccepted) => void = () => {}
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source
+    })
+    session.start()
+
+    const sending = session.sendMessage(
+      'Early events',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-early-1'
+    )
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    emit({
+      type: 'agent_thinking',
+      data: {
+        thread_id: 'th-early-1',
+        message_id: 'msg-early-1',
+        thinking: 'Checking the workflow.'
+      }
+    })
+    emit({
+      type: 'agent_tool_call',
+      data: {
+        thread_id: 'th-early-1',
+        message_id: 'msg-early-1',
+        tool_call_id: 'call-1',
+        tool_name: 'add_node',
+        status: 'success',
+        duration_ms: 42
+      }
+    })
+    emit({
+      type: 'agent_message_delta',
+      data: {
+        thread_id: 'th-early-1',
+        message_id: 'msg-early-1',
+        delta: 'Done.'
+      }
+    })
+    emit({
+      type: 'agent_message_done',
+      data: {
+        thread_id: 'th-early-1',
+        message_id: 'msg-early-1',
+        usage: null
+      }
+    })
+
+    resolvePost({ thread_id: 'th-early-1', message_id: 'msg-early-1' })
+    expect(await sending).toBe(true)
+
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.status.value).toBe('idle')
+    expect(session.entries.value).toHaveLength(2)
+    expect(session.entries.value[1]).toMatchObject({
+      role: 'assistant',
+      streaming: false,
+      parts: [
+        {
+          type: 'tool',
+          callId: 'call-1',
+          name: 'add_node',
+          ok: true
+        },
+        { type: 'text', text: 'Done.' }
+      ]
+    })
+  })
+
+  it('delivers an agent_ask that arrives before postMessage resolves', async () => {
+    let resolvePost: (ack: AgentTurnAccepted) => void = () => {}
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source
+    })
+    session.start()
+
+    const sending = session.sendMessage('Run it')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    emit({
+      type: 'agent_ask',
+      data: {
+        thread_id: 'th-ask-early',
+        message_id: 'msg-ask-early',
+        ask_id: 'ask-early-1',
+        kind: 'run_approval',
+        prompt: 'Run workflow?',
+        options: [
+          { id: 'run', label: 'Run' },
+          { id: 'cancel', label: 'Cancel' }
+        ],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+    })
+
+    resolvePost({ thread_id: 'th-ask-early', message_id: 'msg-ask-early' })
+    expect(await sending).toBe(true)
+
+    expect(session.isStreaming.value).toBe(true)
+    expect(session.entries.value[1]).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'runApproval',
+          askId: 'ask-early-1'
+        }
+      ]
+    })
+  })
+
+  it('applies early completion to a background turn accepted after newChat()', async () => {
+    let resolvePost: (ack: AgentTurnAccepted) => void = () => {}
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const getMessages = vi.fn<AgentRestClient['getMessages']>(async () => [])
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: source
+    })
+    session.start()
+
+    const sending = session.sendMessage('Background early done')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    session.newChat('new_chat_button')
+    emit({
+      type: 'agent_message_delta',
+      data: {
+        thread_id: 'th-bg-early',
+        message_id: 'msg-bg-early',
+        delta: 'Background reply.'
+      }
+    })
+    emit({
+      type: 'agent_message_done',
+      data: {
+        thread_id: 'th-bg-early',
+        message_id: 'msg-bg-early',
+        usage: null
+      }
+    })
+
+    resolvePost({ thread_id: 'th-bg-early', message_id: 'msg-bg-early' })
+    expect(await sending).toBe(true)
+
+    await session.loadThread('th-bg-early')
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value[1]).toMatchObject({
+      role: 'assistant',
+      streaming: false,
+      parts: [{ type: 'text', text: 'Background reply.' }]
+    })
+  })
+
+  it('applies early agent_message_done on a second turn that reuses the same message_id', async () => {
+    const resolvers: Array<(ack: AgentTurnAccepted) => void> = []
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source
+    })
+    session.start()
+
+    const first = session.sendMessage('Turn 1')
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+    resolvers[0]({ thread_id: 'th-reuse', message_id: 'msg-reuse' })
+    expect(await first).toBe(true)
+    emit({
+      type: 'agent_message_done',
+      data: { thread_id: 'th-reuse', message_id: 'msg-reuse', usage: null }
+    })
+    expect(session.isStreaming.value).toBe(false)
+
+    const second = session.sendMessage('Turn 2')
+    await vi.waitFor(() => expect(resolvers).toHaveLength(2))
+    emit({
+      type: 'agent_message_done',
+      data: { thread_id: 'th-reuse', message_id: 'msg-reuse', usage: null }
+    })
+    resolvers[1]({ thread_id: 'th-reuse', message_id: 'msg-reuse' })
+    expect(await second).toBe(true)
+
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.status.value).toBe('idle')
+  })
+
+  it('confirms a canvas-mutating tool call when canvas catch-up arrived before postMessage resolved', async () => {
+    let resolvePost: (ack: AgentTurnAccepted) => void = () => {}
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const conversation = useAgentConversationStore()
+    let outcomeCount = 0
+    conversation.setCanvasSyncGate(
+      () => 'awaiting',
+      () => outcomeCount
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source
+    })
+    session.start()
+
+    const sending = session.sendMessage('Add note early')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    outcomeCount += 1
+    conversation.notifyCanvasCaughtUp({
+      workflowId: 'wf-early',
+      opIds: ['op-early-1'],
+      isLive: true
+    })
+    emit({
+      type: 'agent_tool_call',
+      data: {
+        thread_id: 'th-canvas-early',
+        message_id: 'msg-canvas-early',
+        tool_call_id: 'call-canvas-1',
+        tool_name: 'add_node',
+        status: 'success',
+        duration_ms: 25,
+        workflow_id: 'wf-early',
+        op_ids: ['op-early-1']
+      }
+    })
+    emit({
+      type: 'agent_message_done',
+      data: {
+        thread_id: 'th-canvas-early',
+        message_id: 'msg-canvas-early',
+        usage: null
+      }
+    })
+
+    resolvePost({
+      thread_id: 'th-canvas-early',
+      message_id: 'msg-canvas-early'
+    })
+    expect(await sending).toBe(true)
+
+    expect(session.isStreaming.value).toBe(false)
+    expect(session.entries.value[1]).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool',
+          callId: 'call-canvas-1',
+          state: 'done',
+          canvasConfirmed: true
+        }
+      ]
+    })
+  })
 })
