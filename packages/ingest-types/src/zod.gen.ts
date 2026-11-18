@@ -2468,8 +2468,8 @@ export const zCccWebsiteRootTab = z.object({
   facets: zCccWebsiteCardFacets,
   page: zCccWebsiteRootPageInfo,
   sort_orders: z
-    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
-    .max(4)
+    .array(z.enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc']))
+    .max(5)
 })
 
 export const zCccWebsiteRootTabs = z.object({
@@ -2601,8 +2601,8 @@ export const zCccWebsiteCardsPage = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   sort_orders: z
-    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
-    .max(4),
+    .array(z.enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc']))
+    .max(5),
   total: z.int().gte(0).optional()
 })
 
@@ -8123,7 +8123,7 @@ export const zListCccWebsiteCardsQuery = z.object({
   locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en'),
   q: z.string().max(300).optional(),
   sort: z
-    .enum(['popular', 'name', 'priceAsc', 'priceDesc'])
+    .enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc'])
     .optional()
     .default('popular'),
   category: z.array(z.string().max(200)).max(30).optional(),
