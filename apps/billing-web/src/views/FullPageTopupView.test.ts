@@ -37,7 +37,8 @@ import FullPageTopupView from '@/views/FullPageTopupView.vue'
 
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  PLATFORM_BASE_URL: 'https://testplatform.comfy.org'
 }))
 
 const stripeKey = vi.hoisted(() => ({
@@ -414,7 +415,7 @@ describe('FullPageTopupView', () => {
     { name: 'no amount', query: '' },
     { name: 'an unreadable amount', query: '&amount_cents=12.50' }
   ])(
-    '769-15773: a top-up link with $name is not valid and sends the customer to add credits in settings',
+    '769-15773: a top-up link with $name is not valid and sends the customer to add credits on Platform Billing',
     async ({ query }) => {
       const assign = vi
         .spyOn(window.location, 'assign')
@@ -443,7 +444,7 @@ describe('FullPageTopupView', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
 
       expect(assign).toHaveBeenCalledWith(
-        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+        'https://testplatform.comfy.org/settings/billing?workspace=ws-team'
       )
     }
   )
