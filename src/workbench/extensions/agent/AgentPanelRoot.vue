@@ -1571,7 +1571,10 @@ async function restoreThreadWorkflow(
 }
 
 conversationStore.setTurnTabResolver(turnTab)
-const { clearTurnSignals } = useAgentTabSignals({ onIdentityChange })
+const { clearTurnSignals } = useAgentTabSignals({
+  onIdentityChange,
+  cloudIdFor
+})
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
