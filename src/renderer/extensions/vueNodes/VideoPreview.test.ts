@@ -32,20 +32,11 @@ const i18n = createI18n({
         failedToDownloadVideo: 'Failed to download video',
         calculatingDimensions: 'Calculating dimensions',
         videoFailedToLoad: 'Video failed to load',
-        videoFormatNotSupported: "This video can't be played in the browser.",
         loading: 'Loading'
       }
     }
   }
 })
-
-async function loadVideo(video: HTMLVideoElement, width = 640, height = 480) {
-  Object.defineProperties(video, {
-    videoWidth: { value: width },
-    videoHeight: { value: height }
-  })
-  await fireEvent.loadedData(video)
-}
 
 describe('VideoPreview', () => {
   const defaultProps: ComponentProps<typeof VideoPreview> = {
@@ -98,30 +89,6 @@ describe('VideoPreview', () => {
     })
   })
 
-  describe('video with no picture', () => {
-    it('says the browser cannot play a video that loads with no picture', async () => {
-      renderVideoPreview({
-        imageUrls: ['/api/view?filename=prores-with-audio.mov&type=output']
-      })
-
-      await loadVideo(screen.getByTestId('main-video'), 0, 0)
-
-      expect(
-        screen.getByText("This video can't be played in the browser.")
-      ).toBeInTheDocument()
-      expect(screen.queryByTestId('main-video')).not.toBeInTheDocument()
-    })
-
-    it('shows the size of a video that loads with a picture', async () => {
-      renderVideoPreview()
-
-      await loadVideo(screen.getByTestId('main-video'))
-
-      expect(screen.getByText('640 x 480')).toBeInTheDocument()
-      expect(screen.getByTestId('main-video')).toBeInTheDocument()
-    })
-  })
-
   describe('stalled load', () => {
     const videoRegion = () =>
       screen.getByRole('region', { name: /Video preview/ })
@@ -167,7 +134,7 @@ describe('VideoPreview', () => {
         imageUrls: ['/api/view?filename=fine.mp4&type=output']
       })
 
-      await loadVideo(screen.getByTestId('main-video'))
+      await fireEvent.loadedData(screen.getByTestId('main-video'))
       await nextTick()
       await vi.advanceTimersByTimeAsync(8192 * 2)
 
@@ -288,7 +255,7 @@ describe('VideoPreview', () => {
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video')
       expect(videoEl).not.toBeNull()
-      await loadVideo(videoEl!)
+      await fireEvent.loadedData(videoEl!)
       await nextTick()
       expect(
         // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
@@ -320,7 +287,7 @@ describe('VideoPreview', () => {
       // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const videoEl = container.querySelector('video')
       expect(videoEl).not.toBeNull()
-      await loadVideo(videoEl!)
+      await fireEvent.loadedData(videoEl!)
       await nextTick()
       expect(
         // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
