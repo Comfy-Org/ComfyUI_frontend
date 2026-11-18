@@ -1212,14 +1212,7 @@ export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   prev_workflow_id: string | null
   bind_source: AgentWorkflowBindSource
 }
-/**
- * Why the Agent chat showed "The target workflow is no longer available".
- * - `workflow_deleted`: the user deleted the chat's saved workflow.
- * - `restore_not_listed`: on restore, a complete listing omitted the workflow
- *   and no local tab or file owned it. Covers real deletions and drafts whose
- *   only local copy is gone (closed tab, evicted draft, other browser).
- * - `restore_gone`: on restore, the server returned 404 for the workflow.
- */
+/** Why the Agent chat showed "The target workflow is no longer available". */
 export type AgentTargetUnavailableCause =
   | 'workflow_deleted'
   | 'restore_not_listed'
@@ -1230,13 +1223,7 @@ export interface AgentTargetUnavailableMetadata extends Record<
 > {
   cause: AgentTargetUnavailableCause
   workflow_id: string | null
-  /**
-   * Restore causes only: whether startup had restored the saved tabs when the
-   * decision was made. With `restore_not_listed`, `false` means the startup
-   * tab-restore wait ran out. `restore_gone` can report `false` without
-   * waiting, because a local tab already owned the workflow. `null` for
-   * `workflow_deleted`.
-   */
+  /** Whether startup had restored saved tabs; null for `workflow_deleted`. */
   startup_tabs_restored: boolean | null
 }
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
