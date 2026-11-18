@@ -173,7 +173,7 @@
       </div>
     </template>
 
-    <template v-else-if="showsInactivePlanState">
+    <template v-else-if="showsInactivePlanState && !isBalanceUnavailable">
       <div class="h-px w-full bg-border" />
       <div class="flex flex-col gap-2 text-sm">
         <div class="flex items-center justify-between gap-2">
@@ -292,9 +292,9 @@ const { zeroState = false, inactivePlan } = defineProps<{
 const { locale, t } = useI18n()
 
 const {
-  type: billingType,
   subscription,
   balance,
+  balanceReadFailed,
   canAccessSubscriptionFeatures,
   currentTeamCreditStop,
   subscriptionStatus,
@@ -478,15 +478,9 @@ const monthlyUsageLabel = computed(() =>
   )
 )
 
-// A failed read leaves the balance null. Show it as unknown rather than as
-// 0 credits, and drop the breakdown, whose figures would derive from that 0.
-// Before billing routing is known no read has been made, so nothing failed.
 const isBalanceUnavailable = computed(
   () =>
-    billingType.value !== 'unknown' &&
-    !isLoadingBalance.value &&
-    balance.value == null &&
-    !showsInactivePlanState.value
+    balanceReadFailed.value && !isLoadingBalance.value && balance.value == null
 )
 const isRetryingBalance = ref(false)
 async function retryBalance() {

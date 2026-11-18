@@ -363,13 +363,12 @@ const {
   canAccessSubscriptionFeatures,
   subscription,
   balance,
-  type: billingType,
+  balanceReadFailed,
   isLoading,
   fetchBalance
 } = useBillingContext()
-// Before billing routing is known no read has been made, so nothing failed.
 const isBalanceUnavailable = computed(
-  () => billingType.value !== 'unknown' && !balance.value
+  () => balanceReadFailed.value && !isLoading.value && !balance.value
 )
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)

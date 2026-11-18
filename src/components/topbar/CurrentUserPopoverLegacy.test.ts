@@ -34,8 +34,8 @@ beforeEach(() => {
   billing.balance = computed(() => mockBalance.value)
   billing.isLoading = mockIsLoading
   billing.isTeamPlan = computed(() => mockIsTeamPlan.value)
-  mockBillingType.value = 'workspace'
-  billing.type = computed(() => mockBillingType.value)
+  mockBalanceReadFailed.value = false
+  billing.balanceReadFailed = computed(() => mockBalanceReadFailed.value)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 
   window.open = vi.fn()
@@ -71,7 +71,7 @@ const mockCanAccessSubscriptionFeatures = ref(true)
 const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
-const mockBillingType = ref<'workspace' | 'unknown'>('workspace')
+const mockBalanceReadFailed = ref(false)
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
 
@@ -386,8 +386,9 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('1000')).toBeInTheDocument()
     })
 
-    it('shows an unread balance as unavailable, not as 0 credits', () => {
+    it('shows a failed balance read as unavailable, not as 0 credits', () => {
       mockBalance.value = null
+      mockBalanceReadFailed.value = true
 
       renderComponent()
 
@@ -400,9 +401,8 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.queryByText('0')).not.toBeInTheDocument()
     })
 
-    it('does not report an unread balance before billing routing is known', () => {
+    it('does not report an unread balance as failed before any read failed', () => {
       mockBalance.value = null
-      mockBillingType.value = 'unknown'
 
       renderComponent()
 
@@ -419,9 +419,7 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(
         screen.queryByTestId('credits-balance-unavailable')
       ).not.toBeInTheDocument()
-      expect(formatCreditsFromCents).toHaveBeenCalledWith(
-        expect.objectContaining({ cents: 0 })
-      )
+      expect(screen.getByText('0')).toBeInTheDocument()
     })
   })
   describe('workspace selector (non-cloud)', () => {

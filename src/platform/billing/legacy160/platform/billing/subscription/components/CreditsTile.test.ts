@@ -58,6 +58,7 @@ const state = {
   tier: null as SubscriptionInfo['tier'],
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
+  balanceReadFailed: false,
   type: 'workspace' as 'workspace' | 'unknown',
   telemetryUnavailable: false
 }
@@ -236,6 +237,7 @@ describe('CreditsTile', () => {
     billing.tier = computed(() => state.tier)
     billing.currentTeamCreditStop = computed(() => state.currentTeamCreditStop)
     billing.isLoading = computed(() => state.isLoading)
+    billing.balanceReadFailed = computed(() => state.balanceReadFailed)
     billing.type = computed(() => state.type)
     useSubscription().isYearlySubscription = computed(
       () => state.personalIsYearly
@@ -255,6 +257,7 @@ describe('CreditsTile', () => {
     state.tier = null
     state.currentTeamCreditStop = null
     state.isLoading = false
+    state.balanceReadFailed = false
 
     state.type = 'workspace'
     state.telemetryUnavailable = false
@@ -803,9 +806,10 @@ describe('CreditsTile', () => {
     )
   })
 
-  it('shows an unread balance as unavailable, not as 0 credits', () => {
+  it('shows a failed balance read as unavailable, not as 0 credits', () => {
     activeProSubscription()
     state.balance = null
+    state.balanceReadFailed = true
     renderTile()
     expect(screen.getByTestId('credits-total-unavailable')).toHaveTextContent(
       '—'
@@ -817,44 +821,68 @@ describe('CreditsTile', () => {
     expect(screen.queryByText('Additional credits')).not.toBeInTheDocument()
   })
 
-  it('re-reads the balance from the unavailable state', async () => {
+  it('shows the balance once Try again reads it', async () => {
     activeProSubscription()
-    state.balance = null
+    const loaded = state.balance
+    const readBalance = ref<Balance | null>(null)
+    const readFailed = ref(true)
+    const billing = useBillingContext()
+    billing.balance = computed(() =>
+      readBalance.value ? { currency: 'USD', ...readBalance.value } : null
+    )
+    billing.balanceReadFailed = computed(() => readFailed.value)
     renderTile()
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    vi.mocked(billing.fetchBalance).mockImplementation(async () => {
+      readBalance.value = loaded
+      readFailed.value = false
+    })
+
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
-    expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
+
+    expect(await screen.findByText('1,055')).toBeInTheDocument()
+    expect(
+      screen.queryByText("Couldn't load your balance.")
+    ).not.toBeInTheDocument()
   })
 
-  it('does not report an unread balance before billing routing is known', () => {
+  it('does not report an unread balance as failed before any read failed', () => {
     activeProSubscription()
     state.balance = null
-    state.type = 'unknown'
     renderTile()
     expect(
       screen.queryByTestId('credits-total-unavailable')
     ).not.toBeInTheDocument()
   })
 
-  it('shows an unread balance as unavailable in the zero state too', () => {
+  it('shows a failed balance read as unavailable in the zero state too', () => {
     activeProSubscription()
     state.balance = null
+    state.balanceReadFailed = true
     renderTile({ zeroState: true })
     expect(screen.getByTestId('credits-total-unavailable')).toHaveTextContent(
       '—'
     )
   })
 
+  it('does not tell an inactive plan its credits ended when the read failed', () => {
+    activeProSubscription()
+    state.balance = null
+    state.balanceReadFailed = true
+    renderTile({ inactivePlan: true })
+    expect(screen.getByTestId('credits-total-unavailable')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Reactivate your plan to use these credits')
+    ).not.toBeInTheDocument()
+  })
+
   it('keeps the skeleton, not the unavailable state, while the balance loads', () => {
     activeProSubscription()
     state.balance = null
+    state.balanceReadFailed = true
     state.isLoading = true
     renderTile()
     expect(
       screen.queryByTestId('credits-total-unavailable')
-    ).not.toBeInTheDocument()
-    expect(
-      screen.queryByText("Couldn't load your balance.")
     ).not.toBeInTheDocument()
   })
 

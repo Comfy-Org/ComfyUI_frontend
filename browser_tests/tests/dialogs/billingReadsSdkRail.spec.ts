@@ -146,7 +146,6 @@ interface ReadRoutes {
 interface BootOptions {
   /** Answers the balance with a value outside the safe-integer range. */
   unsafeBalance?: boolean
-  /** Answers the balance with a 503 while this returns true. */
   balanceDown?: () => boolean
 }
 
@@ -332,10 +331,6 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     await expect(content.getByText('9,007,199,254')).toBeHidden()
   })
 
-  /**
-   * FRONT-3164: a balance read that still fails after the shared retry used
-   * to render as 0 credits, the same as an empty account.
-   */
   test(
     'shows a failed balance read as unavailable, then recovers on Try again',
     { tag: '@screenshot' },
