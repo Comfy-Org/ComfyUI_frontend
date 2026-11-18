@@ -101,8 +101,9 @@ export function useCoreCommands(): ComfyCommand[] {
   const { showSubscriptionDialog } = useSubscriptionPaywall()
   const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
 
-  function sendRunToSwitcher(): boolean {
-    return !useCanvasStore().isPickingNodes && openSwitcherInsteadOfRun()
+  async function sendRunToSwitcher(): Promise<boolean> {
+    if (useCanvasStore().isPickingNodes) return false
+    return openSwitcherInsteadOfRun()
   }
 
   async function blockRunWithoutSubscription(): Promise<boolean> {
@@ -552,7 +553,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        if (sendRunToSwitcher()) return
+        if (await sendRunToSwitcher()) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -573,7 +574,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        if (sendRunToSwitcher()) return
+        if (await sendRunToSwitcher()) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -593,7 +594,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        if (sendRunToSwitcher()) return
+        if (await sendRunToSwitcher()) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 

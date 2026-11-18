@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -82,10 +82,60 @@ describe('useUnreadyDeploymentRun', () => {
       const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
       expect(unreadyReason.value).toBe(reason)
-      expect(openSwitcherInsteadOfRun()).toBe(true)
+      expect(await openSwitcherInsteadOfRun()).toBe(true)
       expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore + 1)
     }
   )
+
+  it('lets the original Run go ahead when a fresh listing says the same deployment is ready', async () => {
+    await loadListing(listingWith('stopped'))
+    const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+    const listDeployments = vi
+      .spyOn(workspaceApi, 'listDeployments')
+      .mockResolvedValue(listingWith('ready'))
+    listDeployments.mockClear()
+    const asksBefore = useDeploymentPickStore().switcherOpenAsks
+
+    expect(await openSwitcherInsteadOfRun()).toBe(false)
+
+    expect(listDeployments).toHaveBeenCalledOnce()
+    expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+  })
+
+  it('drops a second Run made while the listing is being read again', async () => {
+    await loadListing(listingWith('stopped'))
+    const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+    const listDeployments = vi
+      .spyOn(workspaceApi, 'listDeployments')
+      .mockResolvedValue(listingWith('ready'))
+    listDeployments.mockClear()
+
+    const firstRun = openSwitcherInsteadOfRun()
+    const secondRun = openSwitcherInsteadOfRun()
+
+    expect(await secondRun).toBe(true)
+    expect(await firstRun).toBe(false)
+    expect(listDeployments).toHaveBeenCalledOnce()
+  })
+
+  it('opens the Run on menu when the fresh listing does not answer in time', async () => {
+    await loadListing(listingWith('stopped'))
+    const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+    vi.spyOn(workspaceApi, 'listDeployments').mockReturnValue(
+      new Promise(() => {})
+    )
+    const asksBefore = useDeploymentPickStore().switcherOpenAsks
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+
+    const run = openSwitcherInsteadOfRun()
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(await run).toBe(true)
+    expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore + 1)
+  })
 
   it.for<{ when: string; arrange: () => Promise<void> }>([
     {
@@ -139,7 +189,7 @@ describe('useUnreadyDeploymentRun', () => {
     const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
     expect(unreadyReason.value).toBeNull()
-    expect(openSwitcherInsteadOfRun()).toBe(false)
+    expect(await openSwitcherInsteadOfRun()).toBe(false)
     expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
   })
 })

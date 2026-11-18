@@ -1,3 +1,4 @@
+import { promiseTimeout } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
@@ -21,6 +22,20 @@ function reasonFor(status: string): UnreadyDeploymentReason | null {
   return status === 'stopped' ? 'stopped' : 'notReady'
 }
 
+const READINESS_RECHECK_LIMIT_MS = 3000
+
+let pendingRecheck: Promise<void> | undefined
+
+function recheckListingOnce(): Promise<void> {
+  pendingRecheck = Promise.race([
+    useDeploymentPickStore().load(),
+    promiseTimeout(READINESS_RECHECK_LIMIT_MS)
+  ]).finally(() => {
+    pendingRecheck = undefined
+  })
+  return pendingRecheck
+}
+
 /** Whether Run would reach a deployment that is not ready while the Run on menu is on screen to open instead. */
 export function useUnreadyDeploymentRun() {
   const isSwitcherOffered = useDeploymentSwitcherOffered()
@@ -39,9 +54,19 @@ export function useUnreadyDeploymentRun() {
     return picked === null ? null : reasonFor(picked.status)
   })
 
-  /** Opens the Run on menu in place of a Run the deployment would refuse; false when Run may go ahead. */
-  function openSwitcherInsteadOfRun(): boolean {
-    if (unreadyReason.value === null) return false
+  function isRunBlocked(): boolean {
+    return unreadyReason.value !== null
+  }
+
+  /**
+   * Opens the Run on menu in place of a Run the deployment would refuse; false when Run may go ahead.
+   * The listing is read again first, and a Run made during that read is dropped.
+   */
+  async function openSwitcherInsteadOfRun(): Promise<boolean> {
+    if (!isRunBlocked()) return false
+    if (pendingRecheck) return true
+    await recheckListingOnce()
+    if (!isRunBlocked()) return false
     useDeploymentPickStore().requestSwitcherOpen()
     return true
   }
