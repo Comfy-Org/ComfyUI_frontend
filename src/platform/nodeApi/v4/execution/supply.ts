@@ -65,6 +65,7 @@ function graphSupplies(
   views: NodeViews
 ): GraphSupplies {
   const candidates = once(() => unconnectedInputs(graph, views))
+  const candidateInputs = once(() => inputsByNode(candidates()))
   const claims = new Map<string, Claim[]>()
   for (const node of graph.nodes.filter(runs)) {
     const view: SupplyView = Object.freeze({
@@ -75,7 +76,7 @@ function graphSupplies(
       const edges = callListener('setSupply', () => {
         const given = supply(view)
         reportIfRejected('setSupply', given)
-        return checkedEdges(given, node, candidates)
+        return checkedEdges(given, node, candidateInputs)
       })
       for (const { key, claim } of edges ?? []) {
         claims.set(key, [...(claims.get(key) ?? []), claim])
@@ -127,12 +128,22 @@ function unconnectedInputsOf(
   )
 }
 
+function inputsByNode(
+  candidates: readonly UnconnectedInput[]
+): ReadonlyMap<string, ReadonlySet<number>> {
+  const byNode = new Map<string, Set<number>>()
+  for (const { nodeId, input } of candidates) {
+    byNode.set(nodeId, (byNode.get(nodeId) ?? new Set<number>()).add(input))
+  }
+  return byNode
+}
+
 const EDGE_FIELDS = new Set(['to', 'from', 'priority'])
 
 function checkedEdges(
   edges: unknown,
   supplier: LGraphNode,
-  candidates: () => readonly UnconnectedInput[]
+  candidateInputs: () => ReadonlyMap<string, ReadonlySet<number>>
 ): readonly { key: string; claim: Claim }[] {
   if (!Array.isArray(edges)) {
     throw invalidArgument('setSupply', 'a list of supplied edges', edges)
@@ -149,7 +160,7 @@ function checkedEdges(
       )
     }
     return {
-      key: targetKey(edge.to, candidates()),
+      key: targetKey(edge.to, candidateInputs()),
       claim: {
         supplier,
         from: checkedSource(edge.from, supplier),
@@ -161,14 +172,14 @@ function checkedEdges(
 
 function targetKey(
   to: unknown,
-  candidates: readonly UnconnectedInput[]
+  candidateInputs: ReadonlyMap<string, ReadonlySet<number>>
 ): string {
   const named =
     isPlainObject(to) &&
     Object.keys(to).length === 2 &&
-    candidates.some(
-      ({ nodeId, input }) => nodeId === to.nodeId && input === to.input
-    )
+    typeof to.nodeId === 'string' &&
+    typeof to.input === 'number' &&
+    candidateInputs.get(to.nodeId)?.has(to.input) === true
   if (!named) {
     throw invalidArgument('setSupply', 'a to of an unconnected input', to)
   }
