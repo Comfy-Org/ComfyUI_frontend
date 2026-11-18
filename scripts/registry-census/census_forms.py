@@ -58,8 +58,12 @@ def read_rows(rows_dir: str, baseline_path: str = ''):
     The baseline is identified by its `pack` field rather than its filename, so
     a run that wrote it elsewhere can be pointed at with `--baseline` and a run
     that wrote it beside the pack rows needs no extra argument.
+
+    A file that is not a JSON object is returned by name in `unreadable`, so a
+    truncated row shortens the denominator visibly rather than silently.
     """
     baseline, packs, stubs, missing = None, [], 0, 0
+    unreadable: list[str] = []
     paths = sorted(glob.glob(os.path.join(rows_dir, '*.json')))
     if baseline_path:
         paths.append(baseline_path)
@@ -67,7 +71,11 @@ def read_rows(rows_dir: str, baseline_path: str = ''):
         try:
             with open(path, encoding='utf-8') as fh:
                 row = json.load(fh)
-        except Exception:
+        except (OSError, ValueError):
+            unreadable.append(os.path.basename(path))
+            continue
+        if not isinstance(row, dict):
+            unreadable.append(os.path.basename(path))
             continue
         if row.get('pack') == BASELINE_PACK:
             baseline = row.get('registryForms')
@@ -79,7 +87,7 @@ def read_rows(rows_dir: str, baseline_path: str = ''):
             missing += 1
             continue
         packs.append(row)
-    return baseline, packs, stubs, missing
+    return baseline, packs, stubs, missing, unreadable
 
 
 def table(title, counter, note=''):
@@ -315,10 +323,16 @@ def main() -> int:
     ap.add_argument('--json', default='', help='also write the summary as JSON')
     args = ap.parse_args()
 
-    baseline, packs, stubs, missing = read_rows(args.rows, args.baseline)
+    baseline, packs, stubs, missing, unreadable = read_rows(
+        args.rows, args.baseline
+    )
     print(f'rows: {len(packs)} packs'
           f'  (stubs {stubs}, missing both channels {missing},'
+          f' unreadable {len(unreadable)},'
           f" baseline {'present' if baseline else 'MISSING'})")
+    if unreadable:
+        print(f'UNREADABLE row files, excluded from every count below:'
+              f' {unreadable[:10]}')
     report_registry(baseline, packs)
     report_pack_local(packs)
     if args.json:
@@ -327,6 +341,7 @@ def main() -> int:
                 {
                     'packs': len(packs),
                     'stubs': stubs,
+                    'unreadable': unreadable,
                     'baseline': baseline,
                     'packDigests': collections.Counter(
                         r['registryForms']['digest']

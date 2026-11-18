@@ -53,7 +53,7 @@ def report(rows):
     with rows_dir(rows) as d:
         out = io.StringIO()
         with contextlib.redirect_stdout(out):
-            b, packs, stubs, missing = cf.read_rows(d)
+            b, packs, stubs, missing, _ = cf.read_rows(d)
             cf.report_registry(b, packs)
             cf.report_pack_local(packs)
         return out.getvalue(), stubs, missing
@@ -64,16 +64,43 @@ class ReadRows(unittest.TestCase):
         rows = [row(cf.BASELINE_PACK, registryForms=baseline()),
                 row('p', registryForms=baseline(), formProof={'graph': {}})]
         with rows_dir(rows) as d:
-            b, packs, stubs, missing = cf.read_rows(d)
+            b, packs, stubs, missing, unreadable = cf.read_rows(d)
         self.assertIsNotNone(b)
         self.assertEqual([p['pack'] for p in packs], ['p'])
-        self.assertEqual((stubs, missing), (0, 0))
+        self.assertEqual((stubs, missing, unreadable), (0, 0, []))
 
     def test_stubs_and_channel_less_rows_are_separated_not_dropped(self):
         rows = [row('hung', incomplete=True), row('old', ops={})]
         with rows_dir(rows) as d:
-            _, packs, stubs, missing = cf.read_rows(d)
+            _, packs, stubs, missing, _ = cf.read_rows(d)
         self.assertEqual((len(packs), stubs, missing), (0, 1, 1))
+
+    def test_a_truncated_row_is_named_as_unreadable_not_dropped(self):
+        with rows_dir([row('ok', formProof={'graph': {}})]) as d:
+            with open(os.path.join(d, 'cut.json'), 'w') as fh:
+                fh.write('{"pack": "cut", "formPro')
+            _, packs, stubs, missing, unreadable = cf.read_rows(d)
+        self.assertEqual([p['pack'] for p in packs], ['ok'])
+        self.assertEqual((stubs, missing, unreadable), (0, 0, ['cut.json']))
+
+    def test_a_non_object_row_is_named_as_unreadable_not_a_crash(self):
+        with rows_dir([row('ok', formProof={'graph': {}})]) as d:
+            for name, body in (('list.json', [1, 2]), ('scalar.json', 3)):
+                with open(os.path.join(d, name), 'w') as fh:
+                    json.dump(body, fh)
+            _, packs, _, _, unreadable = cf.read_rows(d)
+        self.assertEqual([p['pack'] for p in packs], ['ok'])
+        self.assertEqual(unreadable, ['list.json', 'scalar.json'])
+
+    def test_an_unreadable_explicit_baseline_is_named(self):
+        with rows_dir([row('ok', formProof={'graph': {}})]) as d:
+            path = os.path.join(d, 'elsewhere', 'base.json')
+            os.mkdir(os.path.dirname(path))
+            with open(path, 'w') as fh:
+                fh.write('not json')
+            b, _, _, _, unreadable = cf.read_rows(d, path)
+        self.assertIsNone(b)
+        self.assertEqual(unreadable, ['base.json'])
 
 
 class RegistryDelta(unittest.TestCase):
