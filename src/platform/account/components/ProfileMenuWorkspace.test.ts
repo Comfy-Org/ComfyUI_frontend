@@ -51,7 +51,10 @@ const ProfileMenuCreditsFlyoutStub = defineComponent({
   emits: ['openBilling'],
   template: `
     <div data-testid="credits-flyout">
-      <button data-testid="stub-open-billing" @click="$emit('openBilling')" />
+      <button>Add credits</button>
+      <button data-testid="stub-open-billing" @click="$emit('openBilling')">
+        Billing settings
+      </button>
     </div>
   `
 })
@@ -327,6 +330,73 @@ describe('ProfileMenuWorkspace', () => {
         screen.queryByTestId('workspace-switcher-panel')
       ).not.toBeInTheDocument()
       expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+    })
+
+    describe('opened from the keyboard', () => {
+      const flyoutAction = (name: string) =>
+        within(screen.getByTestId('credits-flyout')).getByRole('button', {
+          name
+        })
+
+      it.for(['{Enter}', '{ArrowRight}'])(
+        'moves focus to the first action on %s',
+        async (key) => {
+          const { user, credits } = setup()
+          credits.focus()
+
+          await user.keyboard(key)
+
+          expect(flyoutAction('Add credits')).toHaveFocus()
+        }
+      )
+
+      it('lets Tab reach every action and keeps focus inside the flyout', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+        const addCredits = flyoutAction('Add credits')
+        const billingSettings = flyoutAction('Billing settings')
+
+        await user.tab()
+        expect(billingSettings).toHaveFocus()
+        await user.tab()
+        expect(addCredits).toHaveFocus()
+
+        for (const action of [addCredits, billingSettings]) {
+          expect(action).not.toHaveAttribute('tabindex', '-1')
+        }
+      })
+
+      it('closes on Escape and returns focus to the Credits row', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+        await user.tab()
+        expect(flyoutAction('Billing settings')).toHaveFocus()
+
+        await user.keyboard('{Escape}')
+
+        expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
+        expect(credits).toHaveFocus()
+        expect(credits).toHaveAttribute('aria-expanded', 'false')
+      })
+    })
+
+    it('previews on hover and closes once the pointer moves on', async () => {
+      const { user, credits } = setup()
+
+      await user.hover(credits)
+      await settleHoverTimers()
+      expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+
+      const identity = screen.getByTestId('current-user-identity')
+      await user.pointer([
+        { target: identity, coords: { clientX: 0, clientY: 300 } },
+        { target: identity, coords: { clientX: 0, clientY: 600 } }
+      ])
+      await settleHoverTimers()
+      expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
+      expect(credits).toHaveAttribute('aria-expanded', 'false')
     })
 
     it('opens Settings › Billing from Billing settings and closes the menu', async () => {
