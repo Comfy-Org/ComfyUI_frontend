@@ -74,9 +74,21 @@ This ADR records how the API reaches widgets through those owners.
 7. `setHidden` hides or shows the widget and every widget linked to it, each
    once, as the legacy `hideWidget` helper did, so a seed's
    `control_after_generate` follows the seed.
-8. `setHeight(height)` sets the widget's `computeSize`, which the node's
-   layout reads before anything else, and grows the node to fit with
-   `expandToFitContent()`.
+8. `setHeight(height)` sets the widget's `computeSize`, which the
+   litegraph canvas's node layout reads before anything else, and grows the
+   node to fit with `expandToFitContent()`.
+   - The Vue canvas does not read it for a DOM widget. `WidgetGrid.vue`
+     gives a DOM widget an `auto` row (through `hasLayoutSize`, from
+     `computeLayoutSize`), `WidgetDOM.vue` stretches the element
+     (`*:flex-1`), and only `WidgetLegacy.vue` reads `computeSize`. So on
+     Vue nodes the DOM widgets of a node (a `mount`, a `canvas`, a declared
+     type, a text area) share its free height whatever their height, and
+     `setHeight` and the `height` of decisions 17, 20 and 22 only grow the
+     node; `draw` gets the shared size. Vue nodes are the default on Cloud
+     and Desktop. The API matches the host rather than writing the height
+     onto the element itself: the JSDoc of `setHeight`, `MountDef.height`,
+     `CanvasDef.height` and `WidgetTypeDef.height` says so, and the ticket
+     is under "Core limitation".
 9. `add(def)` adds a widget with `addCustomWidget` from a copy of the
    definition, with `serialize`, `disabled` and `hidden` on it before it is
    added, so the host counts its saved slot correctly when it restores values.
@@ -190,7 +202,8 @@ This ADR records how the API reaches widgets through those owners.
     workflow) defaults to whether `defaultValue` is given, and `sendToPrompt`
     (the widget's `options.serialize`, which `graphToPrompt` reads) to
     `serialize`; a mount without a default is decoration and is neither saved
-    nor sent. `height` fixes the height as `setHeight` does.
+    nor sent. `height` fixes the height as `setHeight` does, so only on the
+    litegraph canvas (decision 8).
 18. A mounted value is any value the workflow can save, as `setValue` takes
     one (decision 4), so a pack holds a number or a boolean as it is. The
     host's DOM widget reads its value through `options.getValue` and
@@ -256,7 +269,7 @@ This ADR records how the API reaches widgets through those owners.
     undo step. A teardown `render`
     returns runs when the host releases the widget. `serialize` (saved and
     sent) defaults to `true`; `minHeight` is returned to the host, which
-    sizes the node with it; `height` fixes the height.
+    sizes the node with it; `height` fixes the height as decision 8 says.
 
 ### Widgets in node definitions
 
@@ -360,6 +373,20 @@ keep the widget's own value. The ticket to file:
   `LGraphNode.ts`, with the context telling a saved file from the copy
   `graphToPrompt` embeds. When it lands, `context` gains `'workflow'` and
   `'embedded'` as a patch.
+
+On Vue nodes a DOM widget's height is not fixed by its `computeSize`
+(decision 8). The ticket to file:
+
+- **Title:** Vue nodes ignore a DOM widget's fixed height.
+- **Reproduction:** on the litegraph canvas, give a node two DOM widgets,
+  one whose `computeSize` returns a height of 150 and one with none: the
+  first is 150 high and the second takes what is left. Turn on Vue nodes:
+  both are the same height, and changing the first's `computeSize` and
+  growing the node grows both.
+- **Suggested direction:** in `WidgetGrid.vue`, give a DOM widget whose
+  `computeSize` returns a height a fixed row of that height, as
+  `WidgetLegacy.vue` already reads it for a canvas-drawn widget, and keep
+  the `auto` row for one without.
 
 A DOM widget's commit runs its `callback` twice, and a load that restores
 its value runs it once (decision 13). The ticket to file:
