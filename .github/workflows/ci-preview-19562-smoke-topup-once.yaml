@@ -1,0 +1,41 @@
+name: 'CI: One-time Cloud preview test top-up'
+
+on:
+  push:
+    branches: [codex/preview-19562-smoke-topup-once]
+
+permissions:
+  contents: read
+  packages: read
+
+concurrency:
+  group: preview-19562-smoke-topup-once
+  cancel-in-progress: false
+
+jobs:
+  stripe-test-topup:
+    if: github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Install Chromium
+        run: pnpm exec playwright install chromium
+
+      - name: Add credits in Stripe test mode and verify the Cloud balance
+        env:
+          SMOKE_ACCOUNT_EMAIL: ${{ vars.OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD }}
+        run: node --import tsx temp/scripts/preview-19562-topup.ts
