@@ -3217,7 +3217,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('expires a live-socket 409 marker without a false uncertainty notice', async () => {
+  it('reports a live-socket 409 marker that expires unconfirmed', async () => {
     vi.useFakeTimers()
     try {
       const answerAsk = vi
@@ -3238,10 +3238,13 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
       await vi.advanceTimersByTimeAsync(15_001)
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
+      )
       status(false)
 
-      expect(reportError).not.toHaveBeenCalled()
-      expect(session.notices.value).toEqual([])
+      expect(reportError).toHaveBeenCalledTimes(1)
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
       expect(
         useAgentConversationStore().messages[0].parts.some(

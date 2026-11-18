@@ -478,12 +478,14 @@ describe('useAgentConversationStore', () => {
       store.hydrate(parkedApprovalTranscript('th-A'))
       store.recordAskAnswer('turn-1:call-1', { selected: ['run'] }, 'th-A')
       store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
-      store.markAskAwaitingResolution('turn-1:call-1', 'accepted')
+      const onExpired = vi.fn()
+      store.markAskAwaitingResolution('turn-1:call-1', 'accepted', onExpired)
 
       vi.advanceTimersByTime(60_000)
 
       expect(store.asksAwaitingResolution()).toEqual([])
       expect(store.isAskRetired('turn-1:call-1', 'th-A')).toBe(true)
+      expect(onExpired).toHaveBeenCalledOnce()
     } finally {
       vi.useRealTimers()
     }
@@ -1529,7 +1531,7 @@ describe('useAgentConversationStore', () => {
     expect(store.isAskRetired('ask-1', 'th')).toBe(false)
   })
 
-  it('clears permanent tombstones when their owning turn settles', () => {
+  it('keeps permanent tombstones after their owning turn settles', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
     store.startTurn(T1)
@@ -1538,7 +1540,7 @@ describe('useAgentConversationStore', () => {
 
     store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
 
-    expect(store.isAskRetired('ask-1', 'th')).toBe(false)
+    expect(store.isAskRetired('ask-1', 'th')).toBe(true)
   })
 
   it('holds the thread id and clears it on reset', () => {
