@@ -26,7 +26,7 @@ const FIELDS = [
 /** A copy of a widget definition from a pack, or a `TypeError` for what it got wrong. */
 export function checkedWidgetDef(def: unknown, member = 'add'): WidgetDef {
   const fields = definitionFields(member, def, FIELDS)
-  const type = requiredName(member, fields.type)
+  const type = requiredName(member, fields.type).toLowerCase()
   return {
     type,
     name: widgetName(member, fields.name),
@@ -57,18 +57,25 @@ function checkedOptions(
   if (!isPlainObject(options)) {
     throw invalidArgument(member, 'options as a plain object', options)
   }
-  const values: unknown = Object.getOwnPropertyDescriptor(
-    options,
-    'values'
-  )?.value
-  if (type === 'combo' && typeof values === 'function') {
+  const values = type === 'combo' ? computedValues(options) : undefined
+  if (values) {
     const others = omit(Object.getOwnPropertyDescriptors(options), ['values'])
     return {
       ...savableOptions(member, Object.defineProperties({}, others)),
-      values: comboValues((): unknown => Reflect.apply(values, undefined, []))
+      values: comboValues(values)
     }
   }
   return listedValues(member, type, savableOptions(member, options))
+}
+
+function computedValues(options: object): (() => unknown) | undefined {
+  const descriptor = Object.getOwnPropertyDescriptor(options, 'values')
+  const getter = descriptor?.get
+  if (getter) return (): unknown => Reflect.apply(getter, options, [])
+  const values: unknown = descriptor?.value
+  return typeof values === 'function'
+    ? (): unknown => Reflect.apply(values, undefined, [])
+    : undefined
 }
 
 function savableOptions<T extends object>(member: string, options: T): T {
