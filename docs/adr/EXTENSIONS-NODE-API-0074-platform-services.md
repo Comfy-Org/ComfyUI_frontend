@@ -301,16 +301,21 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
 28. `monitor()` reads the backend's `/system_stats` through the backend
     client's `getSystemStats`, the route the host's system-stats store reads.
     The store is not used: it keeps the first reading, and a pack polling
-    for a fresh one would get the same values. The route gives the RAM
-    (`ram_total`, `ram_free`) and each device's name and memory; the
-    snapshot keeps the earlier contract's shape with what the route has.
-    `cpu.utilization_percent`, each accelerator's `utilization_percent` and
-    `temperature_c` are `null` and `volumes` is empty, because the backend
-    reports none of them; the earlier contract already gave `null` for a
-    sensor the host lacks. The CPU device is not an accelerator. A device's
+    for a fresh one would get the same values. The snapshot is
+    `{ memory: { total, available }, accelerators: { id, name, memoryTotal,
+    memoryAvailable }[] }`, in bytes: exactly what the route reports (the
+    RAM's `ram_total` and `ram_free`, and each device's `name`, `vram_total`
+    and `vram_free`), named in camelCase as every other member is. The
+    earlier contract's `cpu.utilization_percent`, `volumes`, and each
+    accelerator's `utilization_percent` and `temperature_c` are cut: the
+    backend reports no CPU load, no disks, no device load and no
+    temperature, so they could only ever be `null` or empty, and a field
+    that never holds a value is not part of the contract. The route lists
+    every torch device; the CPU device, which a machine without a GPU
+    reports, is not an accelerator, so such a machine has none. A device's
     id is its name, which the backend makes unique (`cuda:0 ...`). The reply
     is read field by field; a failed request or a reply of another shape
-    resolves `undefined`. The snapshot is frozen.
+    resolves `undefined`. The snapshot and each part of it are frozen.
 
 ### Graph overlays (`ui.mountGraphOverlay`, 3 / 94)
 
@@ -382,9 +387,15 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   sandbox, and threw everywhere else. A pack calls its routes with
   `backend.fetch('/my-pack/route')`.
 - `backend.sessionId` (0 / 0) has no use.
-- CPU load, disk volumes, device load and temperature in
-  `system.monitor` (decision 28): the backend reports none of them. The
-  `/system_monitor` route the earlier contract read is not in ComfyUI.
+- `SystemMonitorSnapshot.cpu` and `volumes`, each accelerator's
+  `utilization_percent` and `temperature_c`, and the `SystemMonitorCpu` and
+  `SystemMonitorVolume` types (decision 28): the backend reports no CPU
+  load, disks, device load or temperature. The `/system_monitor` route the
+  earlier contract read is not in ComfyUI. The census counts `volumes` at
+  1 / 2 and the rest at 0, but its one pack (`Crystools-MonitorOnly`) reads
+  every one of them: it shows CPU, disk, GPU-load and temperature badges,
+  which could only read `null` or nothing, and lists disks in a setting
+  with an `'unavailable'` choice for a machine with none (decision 6).
 - `LocalizationCatalog.phrases` (1 / 1): translations of exact English
   text, used where the host renders a string with no message key. The host
   has no such lookup; every translated string in the app goes through a
@@ -445,6 +456,12 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   overlay slot, as badges are rendered. That is new host UI for two packs;
   the panel element is what a pack appends without the API, now owned and
   removable.
+- Keep the earlier contract's snapshot, with `null` for each sensor and an
+  empty `volumes`, so that a pack's reads still type-check unchanged. A
+  pack would be coding against fields that never hold a value, under
+  snake_case names that the API's own members do not use. The converter
+  rewrites the two kept accelerator fields and drops the reads of the rest
+  (PR 4's conversion table).
 - Give the menu keyboard navigation in the API. `ContextMenu` has none for
   core's menus either; adding it here would make a pack's menu behave unlike
   the canvas's. It belongs in `ContextMenu` (see Consequences).

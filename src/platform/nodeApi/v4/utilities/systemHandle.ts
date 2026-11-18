@@ -35,9 +35,7 @@ function snapshotOf(stats: unknown): SystemMonitorSnapshot | undefined {
     .map(acceleratorOf)
   if (!accelerators.every(isAccelerator)) return undefined
   return Object.freeze({
-    cpu: Object.freeze({ utilization_percent: null }),
     memory: Object.freeze({ total, available }),
-    volumes: Object.freeze([]),
     accelerators: Object.freeze(accelerators)
   })
 }
@@ -57,10 +55,8 @@ function acceleratorOf(device: unknown): SystemMonitorAccelerator | undefined {
   return Object.freeze({
     id: name,
     name,
-    memory_total: total,
-    memory_available: available,
-    utilization_percent: null,
-    temperature_c: null
+    memoryTotal: total,
+    memoryAvailable: available
   })
 }
 
