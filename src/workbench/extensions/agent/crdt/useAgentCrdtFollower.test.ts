@@ -1144,28 +1144,44 @@ describe('useAgentCrdtFollower', () => {
         })
       }
 
-      it('does not end in "This workflow can\'t sync" when the socket credential expired', () => {
-        const { unmount, status } = mountFollower('wf-1')
-        agentSocket.open()
-        let credentialFresh = false
+      function confirmSubscribe(): void {
+        dispatchFrame('doc_subscribed', {
+          ok: true,
+          workflow_id: 'wf-1',
+          seq: 3
+        })
+      }
+
+      function refuseEverySubscribeUntilReconnected(): void {
+        bridge().resubscribe.mockImplementation(() => {
+          refuseCredential()
+          return true
+        })
+        bridge().reconnect.mockImplementation(confirmSubscribe)
         agentSocket.reconnect.mockImplementation(() => {
-          credentialFresh = true
           agentSocket.drop()
           agentSocket.open()
         })
-        const answerSubscribe = () =>
-          credentialFresh
-            ? dispatchFrame('doc_subscribed', {
-                ok: true,
-                workflow_id: 'wf-1',
-                seq: 3
-              })
-            : refuseCredential()
+      }
 
-        for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000, 0]) {
-          answerSubscribe()
+      function reconnectThenExhaustRetries(): void {
+        refuseCredential()
+        agentSocket.drop()
+        agentSocket.open()
+        for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
+          refuseCredential()
           vi.advanceTimersByTime(delay)
         }
+        refuseCredential()
+      }
+
+      it('does not end in "This workflow can\'t sync" when the socket credential expired', () => {
+        const { unmount, status } = mountFollower('wf-1')
+        agentSocket.open()
+        refuseEverySubscribeUntilReconnected()
+
+        refuseCredential()
+        vi.advanceTimersByTime(60_000)
 
         expect(status().terminal).toBeNull()
         expect(status().connected).toBe(true)
@@ -1193,11 +1209,7 @@ describe('useAgentCrdtFollower', () => {
         refuseCredential()
         agentSocket.drop()
         agentSocket.open()
-        dispatchFrame('doc_subscribed', {
-          ok: true,
-          workflow_id: 'wf-1',
-          seq: 3
-        })
+        confirmSubscribe()
 
         expect(bridge().reconnect).toHaveBeenCalled()
         expect(status().terminal).toBeNull()
@@ -1209,14 +1221,7 @@ describe('useAgentCrdtFollower', () => {
         const { unmount, status } = mountFollower('wf-1')
         agentSocket.open()
 
-        refuseCredential()
-        agentSocket.drop()
-        agentSocket.open()
-        for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
-          refuseCredential()
-          vi.advanceTimersByTime(delay)
-        }
-        refuseCredential()
+        reconnectThenExhaustRetries()
 
         expect(agentSocket.reconnect).toHaveBeenCalledOnce()
         expect(status().terminal).toBe('retry_exhausted')
@@ -1226,14 +1231,7 @@ describe('useAgentCrdtFollower', () => {
       it('lets Retry reconnect for a fresh credential again', () => {
         const { unmount, status, retry } = mountFollower('wf-1')
         agentSocket.open()
-        refuseCredential()
-        agentSocket.drop()
-        agentSocket.open()
-        for (const delay of [500, 1_000, 2_000, 4_000, 8_000, 16_000]) {
-          refuseCredential()
-          vi.advanceTimersByTime(delay)
-        }
-        refuseCredential()
+        reconnectThenExhaustRetries()
         expect(status().terminal).toBe('retry_exhausted')
 
         retry()
@@ -1251,11 +1249,7 @@ describe('useAgentCrdtFollower', () => {
         refuseCredential()
         agentSocket.drop()
         agentSocket.open()
-        dispatchFrame('doc_subscribed', {
-          ok: true,
-          workflow_id: 'wf-1',
-          seq: 3
-        })
+        confirmSubscribe()
         refuseCredential()
 
         expect(agentSocket.reconnect).toHaveBeenCalledTimes(2)
