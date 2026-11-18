@@ -1,8 +1,20 @@
 import type { BillingEntry } from '@comfyorg/billing-contract'
 
-const STORAGE_KEY = 'comfy.billing-web.replaced-signup.v1'
+const STORAGE_KEY = 'comfy.billing-web.replaced-signups.v1'
 
 type NamedEntry = Pick<BillingEntry, 'operationId'> | undefined
+
+function parseIds(raw: string | null): string[] {
+  if (raw === null) return []
+  try {
+    const value: unknown = JSON.parse(raw)
+    return Array.isArray(value)
+      ? value.filter((id): id is string => typeof id === 'string')
+      : []
+  } catch {
+    return []
+  }
+}
 
 function withStorage<T>(
   storage: () => Storage,
@@ -28,7 +40,11 @@ export function createNamedSignup(
   function isReplaced(id: string) {
     return (
       replacedHere.has(id) ||
-      withStorage(storage, (store) => store.getItem(STORAGE_KEY) === id, false)
+      withStorage(
+        storage,
+        (store) => parseIds(store.getItem(STORAGE_KEY)).includes(id),
+        false
+      )
     )
   }
 
@@ -43,7 +59,14 @@ export function createNamedSignup(
       const id = entry?.operationId
       if (id === undefined) return
       replacedHere.add(id)
-      withStorage(storage, (store) => store.setItem(STORAGE_KEY, id), undefined)
+      withStorage(
+        storage,
+        (store) => {
+          const ids = new Set(parseIds(store.getItem(STORAGE_KEY))).add(id)
+          store.setItem(STORAGE_KEY, JSON.stringify([...ids]))
+        },
+        undefined
+      )
     }
   }
 }

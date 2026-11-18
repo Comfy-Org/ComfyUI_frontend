@@ -898,6 +898,7 @@ export function useFullPageCheckout() {
     })
     await releasing
     namedSignup.replaced(arrival)
+    generation++
     let result: SubscriptionCommandResult
     try {
       result = await attempts.run(checkoutAttemptOf(quoted, arrival), () =>
