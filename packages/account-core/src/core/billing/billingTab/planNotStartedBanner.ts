@@ -15,7 +15,8 @@ export interface PlanNotStartedFacts {
 
 /** The Billing-tab banner for a served unfinished first plan payment; Cloud only. */
 export function planNotStartedBannerFor(
-  _facts: PlanNotStartedFacts
+  facts: PlanNotStartedFacts
 ): PlanNotStartedBanner | null {
-  return null
+  if (!facts.isCloud || !facts.recovery) return null
+  return { planTier: facts.planTier }
 }

@@ -3902,6 +3902,11 @@
           "title": "Verify your payment"
         }
       },
+      "planNotStarted": {
+        "title": "Your {plan} plan hasn’t started",
+        "titleNoPlan": "Your plan hasn’t started",
+        "body": "Finish paying to start it."
+      },
       "parked": {
         "title": "Something went wrong with a recent payment",
         "body": "Contact support so we can fix it.",

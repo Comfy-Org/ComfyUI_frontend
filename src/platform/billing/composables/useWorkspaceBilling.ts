@@ -297,7 +297,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const subscriptionPaymentRecovery = computed(
     () => billingPlans.subscriptionPaymentRecovery.value
   )
-  const statusPaymentRecovery = computed(() => null)
+  const statusPaymentRecovery = computed(
+    () => statusData.value?.subscription_payment_recovery ?? null
+  )
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
   )

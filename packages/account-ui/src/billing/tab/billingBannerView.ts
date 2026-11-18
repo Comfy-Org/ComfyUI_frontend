@@ -185,6 +185,7 @@ function look(
 const STACK_ORDER: readonly BillingBannerKind[] = [
   'paused',
   'planCheckout',
+  'planNotStarted',
   'topupCheckout',
   'parked',
   'planStatus',
@@ -195,6 +196,7 @@ const STACK_ORDER: readonly BillingBannerKind[] = [
 const CREDIT_SUPPRESSORS: ReadonlySet<BillingBannerKind> = new Set([
   'paused',
   'planCheckout',
+  'planNotStarted',
   'topupCheckout'
 ])
 
@@ -203,20 +205,23 @@ const CREDIT_KINDS: ReadonlySet<BillingBannerKind> = new Set([
   'credit'
 ])
 
-/** Whether a shown paused or checkout banner hides the credit banners. */
+/** Whether a shown paused, checkout or plan-not-started banner hides the credit banners. */
 export function suppressesCreditBanners(
   kinds: readonly BillingBannerKind[]
 ): boolean {
   return kinds.some((kind) => CREDIT_SUPPRESSORS.has(kind))
 }
 
-/** The Billing tab banner stack: fixed order, credit banners hidden behind a paused or checkout banner. */
+/** The Billing tab banner stack: fixed order, credit banners hidden behind a paused or checkout banner, plan-not-started behind a plan checkout. */
 export function selectBillingBanners(
   views: readonly BillingBannerView[]
 ): BillingBannerView[] {
-  const suppressCredit = suppressesCreditBanners(views.map(({ kind }) => kind))
+  const kinds = views.map(({ kind }) => kind)
+  const suppressCredit = suppressesCreditBanners(kinds)
+  const hidePlanNotStarted = kinds.includes('planCheckout')
   return views
     .filter(({ kind }) => !(suppressCredit && CREDIT_KINDS.has(kind)))
+    .filter(({ kind }) => !(hidePlanNotStarted && kind === 'planNotStarted'))
     .toSorted(
       (a, b) => STACK_ORDER.indexOf(a.kind) - STACK_ORDER.indexOf(b.kind)
     )

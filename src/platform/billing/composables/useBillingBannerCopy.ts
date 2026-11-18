@@ -8,6 +8,7 @@ import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 
 const bs = 'workspacePanel.billingStatus'
 const tc = 'workspacePanel.billingTab.topupCheckout'
@@ -16,6 +17,7 @@ const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
 /** The Billing tab banner strings in the app locale, with the paused, parked and plan-not-started views. */
 export function useBillingBannerCopy() {
   const { t, locale } = useI18n()
+  const { formatTierName } = useWorkspaceTierLabel()
 
   function usd(cents: number) {
     return formatUsdFromCents({
@@ -93,12 +95,15 @@ export function useBillingBannerCopy() {
   }))
 
   function planNotStartedView(
-    _planTier: SubscriptionTier | null
+    planTier: SubscriptionTier | null
   ): BillingBannerView {
+    const plan = formatTierName(planTier, false)
     return {
       kind: 'planNotStarted',
-      title: '',
-      body: '',
+      title: plan
+        ? t(`${bs}.planNotStarted.title`, { plan })
+        : t(`${bs}.planNotStarted.titleNoPlan`),
+      body: t(`${bs}.planNotStarted.body`),
       action: 'finishPayment'
     }
   }

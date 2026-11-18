@@ -1,5 +1,9 @@
-import type { SubscriptionTier } from '@comfyorg/ingest-types'
-import { shallowRef, watch } from 'vue'
+import type {
+  SubscriptionPaymentRecovery,
+  SubscriptionTier
+} from '@comfyorg/ingest-types'
+import { computed, shallowRef, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
@@ -12,10 +16,15 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 let stopReturnRefresh: (() => void) | null = null
 
-/** Opens the served payment action for an unpaid initial-signup invoice that holds plan changes. */
-export function useSubscriptionPaymentRecovery() {
-  const { subscriptionPaymentRecovery, fetchPlans, fetchStatus } =
-    useBillingContext()
+/** Opens the served payment action for an unpaid initial-signup invoice; reads the plans-served fact unless given another served source. */
+export function useSubscriptionPaymentRecovery(
+  servedRecovery?: MaybeRefOrGetter<SubscriptionPaymentRecovery | null>
+) {
+  const billing = useBillingContext()
+  const { fetchPlans, fetchStatus } = billing
+  const subscriptionPaymentRecovery = computed(() =>
+    toValue(servedRecovery ?? billing.subscriptionPaymentRecovery)
+  )
   const capabilities = useBillingCapabilities()
   const toast = useToast()
   const isOpeningPayment = shallowRef(false)
