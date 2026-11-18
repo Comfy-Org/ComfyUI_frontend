@@ -227,9 +227,10 @@ function withTabId(
   draft: ComfyWorkflowJSON,
   tab: ComfyWorkflowJSON
 ): ComfyWorkflowJSON {
-  return typeof draft === 'object' &&
-    draft !== null &&
-    !Array.isArray(draft) &&
+  const value: unknown = draft
+  return typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
     !isValidUuid(draft.id) &&
     isValidUuid(tab.id)
     ? { ...draft, id: tab.id }
