@@ -62,6 +62,7 @@ type FollowDeps = {
   forgetOpenChat: (threadId: string) => void
   followsVisibleWorkflow: () => boolean
   userEngaged: () => boolean
+  switchBlocked: () => boolean
   cloudIdFor: (workflow: ComfyWorkflow) => string | undefined
   refreshCloudWorkflowListing: () => Promise<CloudWorkflowRefreshOutcome>
   refreshHistory: (
@@ -182,7 +183,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     const target = deps.selectedTarget()
     const chatTargetsWorkflow =
       !deps.followsVisibleWorkflow() && target?.path === workflow.path
-    return deps.userEngaged() || chatTargetsWorkflow
+    return deps.switchBlocked() || chatTargetsWorkflow
   }
 
   function isCurrent(operation: FollowOperation): boolean {
@@ -344,6 +345,10 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     operation: FollowOperation,
     failedThreadId?: string
   ): Promise<void> {
+    if (!isUntouched(operation)) {
+      retireIfCurrent(operation)
+      return
+    }
     if (isUnsavedTabWithoutBinding(workflow)) {
       dispatch({ type: 'opening_done', generation: operation.generation })
       return

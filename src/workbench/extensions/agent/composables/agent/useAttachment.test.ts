@@ -1615,4 +1615,131 @@ describe('useAttachment', () => {
 
     expect(onUploaded).toHaveBeenCalledOnce()
   })
+
+  describe('per-draft upload concurrency (T1-15)', () => {
+    it('UQ-01 UQ-02: starts a new upload in another draft at once while the left draft holds three in flight', async () => {
+      let currentDraft = 'thread:a'
+      const started: string[] = []
+      const pendingUploads = new Map<string, () => void>()
+      const upload = vi.fn(
+        (file: File) =>
+          new Promise<{ ref: string }>((resolve) => {
+            started.push(file.name)
+            pendingUploads.set(file.name, () => resolve({ ref: file.name }))
+          })
+      )
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload,
+        draftScope: () => currentDraft,
+        ...registry
+      })
+
+      const draftABatch = addFiles([
+        fileOfSize('a1.png', 1),
+        fileOfSize('a2.png', 1),
+        fileOfSize('a3.png', 1)
+      ])
+      await vi.waitFor(() =>
+        expect(started).toEqual(['a1.png', 'a2.png', 'a3.png'])
+      )
+
+      currentDraft = 'blank:tab-b'
+      const draftBBatch = addFiles([fileOfSize('b1.png', 1)])
+      await Promise.resolve()
+
+      expect(started).toEqual(['a1.png', 'a2.png', 'a3.png', 'b1.png'])
+
+      for (const finish of pendingUploads.values()) finish()
+      await Promise.all([draftABatch, draftBBatch])
+    })
+
+    it('UQ-03: caps concurrent uploads within one draft at three', async () => {
+      const started: string[] = []
+      const pendingUploads = new Map<string, () => void>()
+      const upload = vi.fn(
+        (file: File) =>
+          new Promise<{ ref: string }>((resolve) => {
+            started.push(file.name)
+            pendingUploads.set(file.name, () => resolve({ ref: file.name }))
+          })
+      )
+      const registry = chipRegistry()
+      const { addFiles } = useAttachment({
+        upload,
+        draftScope: () => 'thread:a',
+        ...registry
+      })
+
+      const batch = addFiles([
+        fileOfSize('a1.png', 1),
+        fileOfSize('a2.png', 1),
+        fileOfSize('a3.png', 1),
+        fileOfSize('a4.png', 1)
+      ])
+      await vi.waitFor(() => expect(started).toHaveLength(3))
+      await Promise.resolve()
+      expect(started).toEqual(['a1.png', 'a2.png', 'a3.png'])
+
+      pendingUploads.get('a1.png')?.()
+      await vi.waitFor(() => expect(started).toHaveLength(4))
+      expect(started).toEqual(['a1.png', 'a2.png', 'a3.png', 'a4.png'])
+
+      for (const finish of pendingUploads.values()) finish()
+      await batch
+    })
+
+    it('UQ-04: delivers a kept draft upload completion only to its own draft', async () => {
+      const store = useAgentComposerStore()
+      let currentDraft = 'thread:a'
+      const pendingUploads = new Map<string, () => void>()
+      const upload = vi.fn(
+        (file: File) =>
+          new Promise<{ ref: string }>((resolve) => {
+            pendingUploads.set(file.name, () =>
+              resolve({ ref: `uploaded-${file.name}` })
+            )
+          })
+      )
+      const { addFiles } = useAttachment({
+        upload,
+        draftScope: () => currentDraft,
+        staged: () => store.attachments,
+        stage: store.addAttachment,
+        update: store.updateAttachment,
+        remove: store.removeAttachment
+      })
+      store.activateDraft('thread:a')
+      const batchA = addFiles([
+        fileOfSize('a1.png', 1),
+        fileOfSize('a2.png', 1),
+        fileOfSize('a3.png', 1)
+      ])
+      await vi.waitFor(() => expect(pendingUploads.size).toBe(3))
+
+      currentDraft = 'thread:b'
+      store.activateDraft('thread:b')
+      const batchB = addFiles([fileOfSize('b1.png', 1)])
+      await vi.waitFor(() => expect(pendingUploads.size).toBe(4))
+
+      pendingUploads.get('a1.png')?.()
+      pendingUploads.get('a2.png')?.()
+      pendingUploads.get('a3.png')?.()
+      await batchA
+
+      expect(store.attachments.map(({ name }) => name)).toEqual(['b1.png'])
+
+      pendingUploads.get('b1.png')?.()
+      await batchB
+
+      store.activateDraft('thread:a')
+      expect(
+        store.attachments.map(({ ref, uploading }) => ({ ref, uploading }))
+      ).toEqual([
+        { ref: 'uploaded-a1.png', uploading: false },
+        { ref: 'uploaded-a2.png', uploading: false },
+        { ref: 'uploaded-a3.png', uploading: false }
+      ])
+    })
+  })
 })

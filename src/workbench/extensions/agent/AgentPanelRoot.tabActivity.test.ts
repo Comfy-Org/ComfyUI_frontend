@@ -427,7 +427,7 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     expect(useAgentPanelStore().pendingErrorContext).toBeNull()
   })
 
-  it('keeps a draft and does not attach when the chat it belongs to is for another workflow', async () => {
+  it('PD-01: attaches the chip to the new chat of the errored workflow and keeps a draft with the chat it was typed in', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
       { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
@@ -437,18 +437,21 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     useAgentComposerStore().setText('keep this draft')
 
     await useWorkflowService().openWorkflow(other)
-    useAgentPanelStore().pendingErrorContext = {
-      ...errorContext,
-      workflowPath: otherTab
-    }
+    const otherErrorContext = { ...errorContext, workflowPath: otherTab }
+    useAgentPanelStore().pendingErrorContext = otherErrorContext
 
     await vi.waitFor(() =>
-      expect(useToast().toasts.map((toast) => toast.title)).toContain(
-        'Send or clear your current message first, then ask the agent about these errors.'
-      )
+      expect(useAgentComposerStore().errorContext).toEqual(otherErrorContext)
     )
-    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
-    expect(useAgentComposerStore().draft).toBe('keep this draft')
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+    expect(useAgentConversationStore().threadId).toBeNull()
+    expect(useAgentComposerStore().draft).not.toContain('keep this draft')
+
+    await openChat('Running chat', 'th-1')
+
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().draft).toBe('keep this draft')
+    )
     expect(useAgentComposerStore().errorContext).toBeNull()
   })
 

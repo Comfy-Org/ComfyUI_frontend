@@ -40,6 +40,7 @@ function createHarness(
   let threadId: string | null = 'th-a'
   let follows = false
   let engaged = false
+  let blocked = false
   const chats = new Map<string, ChatSession[]>()
   const openChats = new Map<string, string>()
   const showBlankChat = vi.fn(() => {
@@ -73,6 +74,7 @@ function createHarness(
     forgetOpenChat,
     followsVisibleWorkflow: () => follows,
     userEngaged: () => engaged,
+    switchBlocked: () => blocked,
     cloudIdFor: (workflow) =>
       workflow.path === workflowA.path ? 'wf-a' : 'wf-b',
     refreshCloudWorkflowListing,
@@ -114,6 +116,11 @@ function createHarness(
       follows = next
     },
     setEngaged: (next: boolean) => {
+      engaged = next
+      follow.userEngagementChanged(next)
+    },
+    setBlocked: (next: boolean) => {
+      blocked = next
       engaged = next
       follow.userEngagementChanged(next)
     }
@@ -453,10 +460,51 @@ describe('useAgentWorkflowChatFollow', () => {
     expect(h.loadThread).not.toHaveBeenCalled()
   })
 
-  it('holds back the switch when userEngaged is true', async () => {
+  it('PD-01: moves on while the user has typed text because a draft stays with its chat', async () => {
     const h = createHarness()
+    h.chats.set('wf-b', [chat('th-b1', 'wf-b', 100)])
     h.setActive(h.workflowB)
     h.setEngaged(true)
+    const showBlank = vi.fn(() => {
+      h.setThreadId(null)
+      h.setFollows(true)
+      h.setEngaged(false)
+    })
+    h.showBlankChat.mockImplementation(showBlank)
+
+    await h.follow.followTab(h.workflowB)
+
+    expect(showBlank).toHaveBeenCalledOnce()
+    expect(h.loadThread).toHaveBeenCalledWith('th-b1', expect.any(Function), {
+      keepOpenChatUntilLoaded: true
+    })
+  })
+
+  it('PD-17: does not open a remembered or existing chat over text the tab new-chat screen already holds', async () => {
+    const h = createHarness()
+    h.openChats.set('wf-b', 'th-remembered')
+    h.chats.set('wf-b', [
+      chat('th-remembered', 'wf-b', 200),
+      chat('th-older', 'wf-b', 100)
+    ])
+    h.setActive(h.workflowB)
+    h.showBlankChat.mockImplementation(() => {
+      h.setThreadId(null)
+      h.setFollows(true)
+      h.setEngaged(true)
+    })
+
+    await h.follow.followTab(h.workflowB)
+
+    expect(h.showBlankChat).toHaveBeenCalledOnce()
+    expect(h.loadThread).not.toHaveBeenCalled()
+    expect(h.follow.landing.value).toBeNull()
+  })
+
+  it('PD-11: holds back the switch when switchBlocked is true', async () => {
+    const h = createHarness()
+    h.setActive(h.workflowB)
+    h.setBlocked(true)
 
     await h.follow.followTab(h.workflowB)
 

@@ -6361,8 +6361,7 @@ describe('AgentPanelRoot history', () => {
       {
         draft: 'text',
         fill: (composer: Composer) => composer.setText('make it blue'),
-        drafted: (composer: Composer) => composer.draft,
-        clear: (composer: Composer) => composer.setText('')
+        drafted: (composer: Composer) => composer.draft
       },
       {
         draft: 'a workflow reference',
@@ -6371,8 +6370,7 @@ describe('AgentPanelRoot history', () => {
             { id: 'wf-third', name: 'third', textOffset: 0 }
           ]),
         drafted: (composer: Composer) =>
-          composer.workflowReferences.map(({ id }) => id),
-        clear: (composer: Composer) => composer.setWorkflowReferences([])
+          composer.workflowReferences.map(({ id }) => id)
       },
       {
         draft: 'only a scoped skill reference',
@@ -6399,17 +6397,15 @@ describe('AgentPanelRoot history', () => {
           references: composer.prompt.references.map((reference) => ({
             ...reference
           }))
-        }),
-        clear: (composer: Composer) =>
-          composer.restorePrompt({ text: '', references: [] })
+        })
       }
     ])(
-      'keeps the chat, draft and target when the composer holds $draft',
-      async ({ fill, drafted, clear }) => {
+      'PD-01 PD-02: keeps a draft holding $draft with its chat while the user visits another tab',
+      async ({ fill, drafted }) => {
         const first = addTab('workflows/first.json')
         const second = addTab('workflows/second.json')
         workflowStore.activeWorkflow = first
-        const { loadedThreads } = stubWorkflowBoundHistory(
+        stubWorkflowBoundHistory(
           [
             agentThread({
               id: 'th-first',
@@ -6441,24 +6437,26 @@ describe('AgentPanelRoot history', () => {
         const before = drafted(composer)
 
         await activateTabAsUser(second)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-second')
+        )
         await settleFollow()
 
-        expect(loadedThreads).toEqual(['th-first'])
-        expect(useAgentConversationStore().threadId).toBe('th-first')
-        expect(userPrompts()).toEqual(['Prompt in th-first'])
+        expect(drafted(composer)).not.toEqual(before)
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+        await settleFollow()
+
         expect(drafted(composer)).toEqual(before)
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
-        expect(screen.getByRole('note')).toHaveTextContent(
-          i18n.global.t('agent.viewingDifferentWorkflow')
-        )
-
-        clear(composer)
-        await settleFollow()
-        expect(loadedThreads).toEqual(['th-first'])
       }
     )
 
-    it('sends a pinned draft to its original chat and workflow while another tab is active', async () => {
+    it('sends a pinned draft to its original chat and workflow while the app has activated another tab', async () => {
       const firstState = fromPartial<ComfyWorkflowJSON>({
         nodes: [{ id: 17, type: 'FirstWorkflowNode' }],
         links: []
@@ -6504,7 +6502,7 @@ describe('AgentPanelRoot history', () => {
       await userEvent.click(screen.getByRole('textbox'))
       await userEvent.paste('Keep this request on the first workflow')
 
-      await activateTabAsUser(second)
+      await useWorkflowService().openWorkflow(second)
       await settleFollow()
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
@@ -6526,7 +6524,7 @@ describe('AgentPanelRoot history', () => {
       expect(useAgentComposerStore().draft).toBe('')
     })
 
-    it('switches past a whitespace-only draft and clears it', async () => {
+    it('PD-08: clears a whitespace-only draft when switching to another tab', async () => {
       workflowStore.activeWorkflow = addTab('workflows/first.json')
       const second = addTab('workflows/second.json')
       stubWorkflowBoundHistory([
@@ -6635,10 +6633,11 @@ describe('AgentPanelRoot history', () => {
       }
     )
 
-    it('moves the target of a drafted chat that was never sent instead of switching', async () => {
-      workflowStore.activeWorkflow = addTab('workflows/first.json')
+    it('PD-04: opens the only chat of the next tab with its own composer and leaves the draft of a chat that was never sent behind', async () => {
+      const first = addTab('workflows/first.json')
+      workflowStore.activeWorkflow = first
       const second = addTab('workflows/second.json')
-      const { loadedThreads } = stubWorkflowBoundHistory([
+      stubWorkflowBoundHistory([
         agentThread({
           id: 'th-second',
           title: 'Second chat',
@@ -6653,11 +6652,18 @@ describe('AgentPanelRoot history', () => {
       useAgentComposerStore().setText('make it blue')
 
       await activateTabAsUser(second)
+
+      await vi.waitFor(() =>
+        expect(useAgentConversationStore().threadId).toBe('th-second')
+      )
+      await settleFollow()
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+      expect(useAgentComposerStore().draft).toBe('')
+
+      await activateTabAsUser(first)
       await settleFollow()
 
-      expect(loadedThreads).toEqual([])
       expect(useAgentConversationStore().threadId).toBeNull()
-      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
       expect(useAgentComposerStore().draft).toBe('make it blue')
     })
 
@@ -7583,8 +7589,7 @@ describe('AgentPanelRoot history', () => {
       await vi.waitFor(() =>
         expect(userPrompts()).toEqual(['Prompt in th-open'])
       )
-      useAgentComposerStore().setText('keep this note')
-      await activateTabAsUser(second)
+      await useWorkflowService().openWorkflow(second)
 
       await userEvent.click(
         await screen.findByRole('button', {
@@ -7789,11 +7794,8 @@ describe('AgentPanelRoot history', () => {
         expect(userPrompts()).toEqual(['Prompt in th-older'])
       )
 
-      const composer = useAgentComposerStore()
-      composer.setText('keep this note')
-      await activateTabAsUser(second)
+      await useWorkflowService().openWorkflow(second)
       await settleFollow()
-      composer.setText('')
       await activateTabAsUser(first)
       await settleFollow()
 
@@ -7846,6 +7848,383 @@ describe('AgentPanelRoot history', () => {
       await settleFollow()
       expect(useAgentConversationStore().threadId).toBeNull()
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+    })
+
+    describe('a draft stays with its chat', () => {
+      async function typeInComposer(text: string): Promise<void> {
+        await userEvent.click(screen.getByRole('textbox'))
+        await userEvent.paste(text)
+      }
+
+      async function openFromHistory(title: string): Promise<void> {
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(await screen.findByText(title))
+      }
+
+      it.for([
+        {
+          visited: 'a saved tab with no chat',
+          open: () => addTab('workflows/fourth.json')
+        },
+        {
+          visited: 'a new unsaved tab',
+          open: () =>
+            addTab('workflows/Unsaved Workflow.json', { isTemporary: true })
+        }
+      ])(
+        "PD-03 PD-18: keeps what was typed on a tab's new-chat screen while the user visits $visited",
+        async ({ open }) => {
+          const first = addTab('workflows/first.json')
+          workflowStore.activeWorkflow = first
+          stubWorkflowBoundHistory([])
+          renderWithSelectedTarget()
+          await typeInComposer('make it blue')
+          const visited = open()
+
+          await activateTabAsUser(visited)
+          await settleFollow()
+
+          expect(screen.getByRole('textbox')).toHaveTextContent('')
+          expect(useAgentPanelStore().selectedWorkflow?.path).toBe(visited.path)
+
+          await activateTabAsUser(first)
+          await settleFollow()
+
+          expect(screen.getByRole('textbox')).toHaveTextContent('make it blue')
+          expect(useAgentConversationStore().threadId).toBeNull()
+          expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        }
+      )
+
+      it('PD-03 PD-17: keeps the draft on a tab new-chat screen instead of opening its remembered or existing chat over it', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = second
+        const { loadedThreads } = stubWorkflowBoundHistory([cachedSecondThread])
+        renderWithSelectedTarget()
+        await typeInComposer('make it blue')
+        await activateTabAsUser(first)
+        await settleFollow()
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        expect(screen.getByRole('textbox')).toHaveTextContent('make it blue')
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(loadedThreads).toEqual([])
+      })
+
+      it("PD-04: does not carry what was typed on one tab's new-chat screen into a tab whose chat opens", async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        stubWorkflowBoundHistory([cachedSecondThread])
+        renderWithSelectedTarget()
+        await typeInComposer('make it blue')
+
+        await activateTabAsUser(second)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-second')
+        )
+        await settleFollow()
+
+        expect(screen.getByRole('textbox')).toHaveTextContent('')
+
+        await activateTabAsUser(first)
+        await settleFollow()
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(screen.getByRole('textbox')).toHaveTextContent('make it blue')
+      })
+
+      it('PD-05 PD-07: keeps a draft with its chat when another chat is opened from Chat history, and shows it again on return', async () => {
+        await openFirstChatWithHistory([cachedSecondThread])
+        await typeInComposer('make it blue')
+
+        await openFromHistory('Second chat')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-second')
+        )
+        expect(screen.getByRole('textbox')).toHaveTextContent('')
+
+        await typeInComposer('make it red')
+        await openFromHistory('First chat')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+        expect(screen.getByRole('textbox')).toHaveTextContent('make it blue')
+
+        await openFromHistory('Second chat')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-second')
+        )
+        expect(screen.getByRole('textbox')).toHaveTextContent('make it red')
+      })
+
+      it('PD-06: keeps the draft of the chat a new chat leaves, and starts the new chat clean', async () => {
+        await openFirstChatWithHistory([])
+        await typeInComposer('make it blue')
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(screen.getByRole('textbox')).toHaveTextContent('')
+
+        await openFromHistory('First chat')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+        expect(screen.getByRole('textbox')).toHaveTextContent('make it blue')
+      })
+
+      it('PD-06: starts a new chat clean even when its tab already had a draft on its new-chat screen', async () => {
+        const first = addTab('workflows/first.json')
+        workflowStore.activeWorkflow = first
+        stubWorkflowBoundHistory([
+          agentThread({
+            id: 'th-first',
+            title: 'First chat',
+            last_message_at: '2026-09-22T09:00:00Z',
+            workflow_id: 'wf-first'
+          })
+        ])
+        renderWithSelectedTarget()
+        await typeInComposer('typed on the new-chat screen')
+        await openFromHistory('First chat')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(screen.getByRole('textbox')).toHaveTextContent('')
+      })
+
+      it('PD-08: does not carry a whitespace-only draft to the new-chat screen of the next tab', async () => {
+        const { first, second } = await openFirstChatWithHistory([])
+        useAgentComposerStore().setText('   ')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+
+        expect(useAgentComposerStore().hasDraft).toBe(false)
+      })
+
+      it('PD-10: keeps text typed while the first message of a new chat is being accepted', async () => {
+        const first = addTab('workflows/first.json')
+        workflowStore.activeWorkflow = first
+        let accept!: () => void
+        stubWorkflowBoundHistory(
+          [],
+          {},
+          {
+            post: (threadId) =>
+              new Promise<Response>((resolve) => {
+                accept = () =>
+                  resolve(
+                    json(202, { thread_id: threadId, message_id: 'm-first' })
+                  )
+              })
+          }
+        )
+        renderWithSelectedTarget()
+        await sendFromComposer('make it blue')
+        await typeInComposer('and then make it green')
+
+        accept()
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).not.toBeNull()
+        )
+
+        expect(screen.getByRole('textbox')).toHaveTextContent(
+          'and then make it green'
+        )
+      })
+
+      it('PD-11: still holds a tab change while a message is being sent', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        stubWorkflowBoundHistory([], {}, { post: () => new Promise(() => {}) })
+        renderWithSelectedTarget()
+        await sendFromComposer('make it blue')
+        await typeInComposer('and then make it green')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        expect(screen.getByRole('textbox')).toHaveTextContent(
+          'and then make it green'
+        )
+      })
+
+      it('PD-13: does not bring back the draft of a chat that was deleted, and lets go of its files', async () => {
+        const revoke = vi
+          .spyOn(URL, 'revokeObjectURL')
+          .mockImplementation(() => {})
+        const { first, second } = await openFirstChatWithHistory([])
+        await typeInComposer('make it blue')
+        useAgentComposerStore().addAttachment({
+          id: 'a-1',
+          name: 'cat.png',
+          ref: 'cat.png',
+          previewUrl: 'blob:cat'
+        })
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('g.delete')
+          })
+        )
+        await settleFollow()
+        expect(useAgentComposerStore().hasDraft).toBe(false)
+        expect(revoke).toHaveBeenCalledWith('blob:cat')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        await activateTabAsUser(first)
+        await settleFollow()
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(screen.getByRole('textbox')).toHaveTextContent('')
+      })
+
+      it('PD-14: keeps the draft with its chat when the panel opens again on another tab', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        stubWorkflowBoundHistory([])
+        const closed = renderWithSelectedTarget()
+        await typeInComposer('make it blue')
+        closed.unmount()
+        workflowStore.activeWorkflow = second
+
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await settleFollow()
+
+        expect(screen.getByRole('textbox')).toHaveTextContent('')
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+
+        await activateTabAsUser(first)
+        await settleFollow()
+
+        expect(screen.getByRole('textbox')).toHaveTextContent('make it blue')
+      })
+
+      it.for(['new_chat', 'tab_switch'] as const)(
+        'T1-15 UQ-01 UQ-02: starts a new upload after %s while three uploads keep running in the left draft',
+        async (action) => {
+          const { first, second } = await openFirstChatWithHistory([])
+          const pendingUploads = new Map<string, () => void>()
+          const startedUploads: string[] = []
+          const serve = vi.mocked(fetch).getMockImplementation()
+          assert(serve)
+          vi.mocked(fetch).mockImplementation((input, init) => {
+            const url = String(input)
+            if (url.endsWith('/api/upload/image')) {
+              const form = init?.body as FormData
+              const file = form.get('image') as File
+              startedUploads.push(file.name)
+              return new Promise<Response>((resolve) => {
+                pendingUploads.set(file.name, () =>
+                  resolve(
+                    new Response(
+                      JSON.stringify({
+                        name: `uploaded-${file.name}`,
+                        subfolder: '',
+                        type: 'input'
+                      }),
+                      {
+                        status: 200,
+                        headers: { 'Content-Type': 'application/json' }
+                      }
+                    )
+                  )
+                )
+              })
+            }
+            return serve(input, init)
+          })
+
+          const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
+          await userEvent.upload(input, [
+            new File(['1'], 'old-1.png', { type: 'image/png' }),
+            new File(['2'], 'old-2.png', { type: 'image/png' }),
+            new File(['3'], 'old-3.png', { type: 'image/png' })
+          ])
+          await vi.waitFor(() => expect(startedUploads).toHaveLength(3))
+
+          if (action === 'new_chat') {
+            await userEvent.click(
+              screen.getByRole('button', {
+                name: i18n.global.t('agent.newChat')
+              })
+            )
+            expect(useAgentConversationStore().threadId).toBeNull()
+          } else {
+            await activateTabAsUser(second)
+            await settleFollow()
+          }
+          expect(useAgentComposerStore().attachments).toEqual([])
+
+          await userEvent.upload(
+            input,
+            new File(['4'], 'next.png', { type: 'image/png' })
+          )
+          await vi.waitFor(() =>
+            expect(startedUploads).toEqual([
+              'old-1.png',
+              'old-2.png',
+              'old-3.png',
+              'next.png'
+            ])
+          )
+
+          for (const finish of pendingUploads.values()) finish()
+          await vi.waitFor(() =>
+            expect(
+              useAgentComposerStore().attachments.every(
+                (item) => !item.uploading
+              )
+            ).toBe(true)
+          )
+          expect(
+            useAgentComposerStore().attachments.map(({ ref }) => ref)
+          ).toEqual(['uploaded-next.png'])
+
+          if (action === 'new_chat') await openFromHistory('First chat')
+          else await activateTabAsUser(first)
+
+          await vi.waitFor(() =>
+            expect(useAgentConversationStore().threadId).toBe('th-first')
+          )
+          expect(
+            useAgentComposerStore().attachments.map(({ ref }) => ref)
+          ).toEqual([
+            'uploaded-old-1.png',
+            'uploaded-old-2.png',
+            'uploaded-old-3.png'
+          ])
+        }
+      )
     })
     it.for([
       { outcome: 'opens', answer: () => json(200, []) },
@@ -10629,11 +11008,16 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentConversationStore().threadId).toBeNull()
 
     panel.unmount()
+    workflowStore.activeWorkflow = target
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
     await sendFromComposer('retry my target')
     await waitFor(() => expect(bodies).toHaveLength(1))
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
+
+    workflowStore.activeWorkflow = other
+    await nextTick()
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
 
     await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
@@ -12133,12 +12517,15 @@ describe('AgentPanelRoot workflow binding', () => {
       await vi.waitFor(() => expect(selector()).toHaveTextContent('current'))
       await userEvent.click(screen.getByRole('textbox'))
       await userEvent.paste('Keep this draft')
-      workflowStore.activeWorkflow = viewed
+      if (panelState === 'hidden') workflowStore.activeWorkflow = viewed
       first.unmount()
       if (panelState === 'hidden') await workflowStore.closeWorkflow(target)
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       await vi.waitFor(() => expect(reads).toBe(2))
-      if (panelState === 'reopened') await workflowStore.closeWorkflow(target)
+      if (panelState === 'reopened') {
+        await workflowStore.closeWorkflow(target)
+        workflowStore.activeWorkflow = viewed
+      }
       finishHistory()
       await screen.findAllByText('History loaded 2')
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
