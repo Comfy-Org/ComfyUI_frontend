@@ -7,6 +7,7 @@ import type {
   ErrorResponse,
   PreviewSubscribeResponse
 } from '@comfyorg/ingest-types'
+import type { BillingOperationPointer } from '@comfyorg/account-core/billing'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { PendingSubscriptionCheckout } from '@/platform/billing/utils/pendingSubscriptionCheckout'
@@ -151,20 +152,31 @@ async function setupCloudApp(page: Page) {
   await bootCloud(page)
 }
 
-// sessionStorage must be seeded before any app code runs; attemptedAt is
-// stamped in the init script so the entry is always fresher than the 24h cap.
 async function seedPendingCheckout(
   page: Page,
   entry: Omit<PendingSubscriptionCheckout, 'attemptedAt'>
 ) {
+  const sdkPointer = {
+    operationId: entry.operationId,
+    kind: 'subscription',
+    presentation: 'hosted',
+    awaited: true
+  } satisfies Omit<BillingOperationPointer, 'attemptStartedAt'>
   await page.addInitScript(
-    ({ key, seeded }) => {
+    ({ key, seeded, sdkKey, sdkSeeded }) => {
+      const attemptedAt = Date.now() - 60_000
+      sessionStorage.setItem(key, JSON.stringify({ ...seeded, attemptedAt }))
       sessionStorage.setItem(
-        key,
-        JSON.stringify({ ...seeded, attemptedAt: Date.now() - 60_000 })
+        sdkKey,
+        JSON.stringify({ ...sdkSeeded, attemptStartedAt: attemptedAt })
       )
     },
-    { key: PENDING_CHECKOUT_STORAGE_KEY, seeded: entry }
+    {
+      key: PENDING_CHECKOUT_STORAGE_KEY,
+      seeded: entry,
+      sdkKey: `comfy:billing:operation:${entry.ownerUid}:${entry.workspaceId}`,
+      sdkSeeded: sdkPointer
+    }
   )
 }
 
@@ -276,7 +288,7 @@ test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
   test.describe('with billing_new_ux_enabled on', () => {
     test.use({ billingNewUx: true })
 
-    test('links to the Plans page instead of reopening the old checkout when reconciliation fails', async ({
+    test('says the checkout did not finish and links to the Plans page when reconciliation fails', async ({
       page
     }) => {
       await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
@@ -300,7 +312,12 @@ test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
 
       const plansDialog = page.getByTestId('platform-plans-link-dialog')
       await cloudAppExpect(
-        plansDialog.getByText("Plans page didn't open")
+        plansDialog.getByText("Your checkout didn't finish")
+      ).toBeVisible()
+      await expect(
+        plansDialog.getByText(
+          'Open the Plans page to try again. Your browser blocked it from opening on its own.'
+        )
       ).toBeVisible()
       await expect(
         plansDialog.getByRole('link', { name: 'Open Plans page' })

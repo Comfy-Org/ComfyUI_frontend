@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Düzenlemek için düğüm başlığına çift tıkla"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Büyük resim önizlemelerini küçült",
+    "tooltip": "Nodes 2.0'da, çok sayıda büyük önizlemenin akıcı kalması için düğümlerdeki büyük resimleri en uzun kenarı en fazla 1024px olan bir kopya olarak gösterin. Her zaman orijinali göstermek için kapatın."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Orta tıklama yeni bir Yeniden Yönlendirme düğümü oluşturur"
   },

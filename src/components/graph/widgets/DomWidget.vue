@@ -4,6 +4,7 @@
     ref="widgetElement"
     class="dom-widget size-full"
     :class="cn(widget.type === 'customtext' && 'flex flex-col')"
+    :data-widget-id="widget.id"
     :title="tooltip"
     :style="style"
   >

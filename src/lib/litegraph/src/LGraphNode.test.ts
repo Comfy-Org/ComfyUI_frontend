@@ -899,6 +899,29 @@ describe('LGraphNode', () => {
       expect(out[3]).toBe(120 + LiteGraph.NODE_TITLE_HEIGHT)
     })
   })
+
+  describe('arrange() growth', () => {
+    afterEach(() => {
+      LiteGraph.vueNodesMode = false
+    })
+
+    test('grows a canvas node to fit its widgets but leaves a Vue node at the height its DOM reports', () => {
+      const arrangedHeight = (vueNodesMode: boolean) => {
+        const graph = new LGraph()
+        const node = new LGraphNode('Prompt')
+        graph.add(node)
+        for (const name of ['a', 'b', 'c'])
+          node.addWidget('number', name, 0, () => {})
+        node.size = [200, 10]
+        LiteGraph.vueNodesMode = vueNodesMode
+        node.arrange()
+        return node.size[1]
+      }
+
+      expect(arrangedHeight(true)).toBe(10)
+      expect(arrangedHeight(false)).toBeGreaterThan(10)
+    })
+  })
 })
 
 describe('snapToGrid', () => {

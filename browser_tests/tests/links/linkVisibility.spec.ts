@@ -174,6 +174,7 @@ test.describe(
     const firstClipLinkId = '3'
 
     test.beforeEach(async ({ comfyPage, linkVisibility }) => {
+      await comfyPage.page.clock.install()
       await comfyPage.workflow.loadWorkflow('default')
       await linkVisibility.hideLinksFromOutput(checkpointLoaderId, clipSlot)
     })
@@ -196,7 +197,11 @@ test.describe(
       comfyPage,
       linkVisibility
     }) => {
-      await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
+      await linkVisibility.expandOutputBadgeStack(
+        checkpointLoaderId,
+        clipSlot,
+        0
+      )
       await linkVisibility.hoverOutputBadgeRow(checkpointLoaderId, clipSlot, 1)
 
       await expectRegionScreenshot(
@@ -213,7 +218,11 @@ test.describe(
       comfyPage,
       linkVisibility
     }) => {
-      await linkVisibility.clickOutputBadgeRow(checkpointLoaderId, clipSlot, 0)
+      await linkVisibility.expandOutputBadgeStack(
+        checkpointLoaderId,
+        clipSlot,
+        0
+      )
 
       await test.step('Rename the first expanded label', async () => {
         await linkVisibility.openRenamePromptAtOutputBadgeRow(
@@ -278,7 +287,7 @@ test.describe(
       })
 
       await test.step('The stack expands and one label reveals one link', async () => {
-        await linkVisibility.clickOutputBadgeRow(
+        await linkVisibility.expandOutputBadgeStack(
           checkpointLoaderId,
           clipSlot,
           0
@@ -291,6 +300,56 @@ test.describe(
         await region.expectScreenshot(
           'link-stack-same-name-expanded-hover-one.png'
         )
+      })
+    })
+
+    test('double-clicking a stack renames every link in it', async ({
+      comfyPage,
+      linkVisibility
+    }) => {
+      const undoSizeBeforeRename =
+        (await comfyPage.workflow.getUndoQueueSize()) ?? 0
+      const exportedLinkPresentations = async () =>
+        Object.values(
+          (await comfyPage.workflow.getExportedWorkflow()).extra
+            ?.linkPresentation ?? {}
+        )
+
+      await test.step('Name the unlabelled stack', async () => {
+        await linkVisibility.openRenamePromptAtOutputBadgeRow(
+          checkpointLoaderId,
+          clipSlot,
+          0
+        )
+        await expect(linkVisibility.promptInput).toHaveValue('')
+        await comfyPage.nodeOps.fillLegacyWidgetDialog('enc')
+        await expect(linkVisibility.promptInput).toBeHidden()
+        await expect.poll(exportedLinkPresentations).toEqual([
+          { hidden: true, label: 'enc' },
+          { hidden: true, label: 'enc' }
+        ])
+      })
+
+      await test.step('Submitting Rename collapses the renamed stack', async () => {
+        await linkVisibility.parkPointer()
+        await expectRegionScreenshot(
+          comfyPage.page,
+          [
+            await comfyPage.nodeOps.getNodeRefById(checkpointLoaderId),
+            ...(await comfyPage.nodeOps.getNodeRefsByType('CLIPTextEncode'))
+          ],
+          'link-stack-same-name-collapsed.png'
+        )
+      })
+
+      await test.step('One undo removes the name from every link', async () => {
+        await expect
+          .poll(() => comfyPage.workflow.getUndoQueueSize())
+          .toBe(undoSizeBeforeRename + 1)
+        await comfyPage.keyboard.undo()
+        await expect
+          .poll(exportedLinkPresentations)
+          .toEqual([{ hidden: true }, { hidden: true }])
       })
     })
   }

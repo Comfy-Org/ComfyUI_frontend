@@ -6,7 +6,7 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 
 ## Baseline preconditions
 
-- Launch at `http://localhost:5173` with `nvm use 26 && pnpm dev:cloud` (backend: `testcloud.comfy.org`).
+- Launch at `http://localhost:5173` with `nvm use && pnpm dev:cloud` (backend: `testcloud.comfy.org`).
 - Run all four Doctor checks.
 - Sign in with an **email-verified `@comfy.org`** account. Without it `?ff=` overrides are silently ignored. The human signs in; never type someone's password.
 - Have ready: an account with a saved card, one without, a declining card, a 3DS card, and both a personal and a team workspace.
@@ -22,7 +22,7 @@ The current focus is the **billing SDK rail migration** (Milestone 1): every bil
 
 ## The scenario matrix
 
-The billing SDK flags are gone (FRONT-3496). Every billing read and write runs on the SDK rail whenever `unified_cloud_auth` resolves true, which it does for every signed-in Cloud user, so there is one billing scenario: the signed-in default. The legacy rail is reachable only with `unified_cloud_auth` off, and turning that off is an auth rollback too. Do not force it: the dev `ff:unified_cloud_auth` key put the local app into a reload loop on 2026-09-21 (`workflows` 403, subscription status `NOT_AUTHENTICATED`). Resolve `flags.billingSdkRailEnabled` in the page before trusting a run.
+The billing SDK flags (FRONT-3496) and `unified_cloud_auth` (FRONT-3294) are gone. Every billing read and write runs on the SDK rail on the Cloud build, so there is one billing scenario: the signed-in default, and the legacy rail no longer runs on Cloud. Resolve `flags.billingSdkRailEnabled` in the page before trusting a run.
 
 Leave `embedded_checked_enabled` and `hosted_billing_destination` alone. They are separate rollouts with their own gates.
 

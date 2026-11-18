@@ -30,6 +30,7 @@ import type {
   INodeInputSlot,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import type {
@@ -147,7 +148,7 @@ export function getExtraOptionsForWidget(
   if (input) {
     options.unshift({
       content: `${t('contextMenu.RenameWidget')}: ${widget.label ?? widget.name}`,
-      callback: async () => {
+      callback: markNodeMenuCallback(async () => {
         const newLabel = await useDialogService().prompt({
           title: t('g.rename'),
           message: t('g.enterNewNamePrompt'),
@@ -159,7 +160,7 @@ export function getExtraOptionsForWidget(
         input.label = newLabel || undefined
         widget.callback?.(widget.value)
         useCanvasStore().canvas?.setDirty(true)
-      }
+      }, `widget:${node.graph?.id}:${node.id}:${widget.name}:rename`)
     })
   }
 
@@ -169,9 +170,9 @@ export function getExtraOptionsForWidget(
     content: isFavorited
       ? `${t('contextMenu.UnfavoriteWidget')}: ${widget.label ?? widget.name}`
       : `${t('contextMenu.FavoriteWidget')}: ${widget.label ?? widget.name}`,
-    callback: () => {
+    callback: markNodeMenuCallback(() => {
       favoritedWidgetsStore.toggleFavorite(node, widget.name)
-    }
+    }, `widget:${node.graph?.id}:${node.id}:${widget.name}:favorite`)
   })
 
   if (node.graph && !node.graph.isRootGraph) {
@@ -660,46 +661,44 @@ export const useLitegraphService = () => {
     }
   }
 
-  /**
-   * Adds special context menu handling for nodes
-   * e.g. this adds Open Image functionality for nodes that show images
-   * @param {*} node The node to add the menu handler
-   */
   function addNodeContextMenuHandler(node: typeof LGraphNode) {
     function getCopyImageOption(img: HTMLImageElement): IContextMenuValue[] {
       if (typeof window.ClipboardItem === 'undefined') return []
       return [
         {
           content: 'Copy Image',
-          callback: markCoreMediaMenuCallback(async () => {
-            const url = new URL(fullResolutionSrc(img), img.baseURI)
-            url.searchParams.delete('preview')
+          callback: markNodeMenuCallback(
+            markCoreMediaMenuCallback(async () => {
+              const url = new URL(fullResolutionSrc(img), img.baseURI)
+              url.searchParams.delete('preview')
 
-            try {
-              const data = await fetch(url)
-              const blob = await data.blob()
               try {
-                await navigator.clipboard.write([
-                  new ClipboardItem({ [blob.type]: blob })
-                ])
-              } catch (error) {
-                if (blob.type !== 'image/png') {
-                  const pngBlob = await reencodeAsPngBlob(blob)
+                const data = await fetch(url)
+                const blob = await data.blob()
+                try {
                   await navigator.clipboard.write([
-                    new ClipboardItem({ 'image/png': pngBlob })
+                    new ClipboardItem({ [blob.type]: blob })
                   ])
-                  return
+                } catch (error) {
+                  if (blob.type !== 'image/png') {
+                    const pngBlob = await reencodeAsPngBlob(blob)
+                    await navigator.clipboard.write([
+                      new ClipboardItem({ 'image/png': pngBlob })
+                    ])
+                    return
+                  }
+                  throw error
                 }
-                throw error
+              } catch (error) {
+                toast.warning(
+                  t('toastMessages.errorCopyImage', {
+                    error: getErrorMessage(error) ?? t('g.unknownError')
+                  })
+                )
               }
-            } catch (error) {
-              toast.warning(
-                t('toastMessages.errorCopyImage', {
-                  error: getErrorMessage(error) ?? t('g.unknownError')
-                })
-              )
-            }
-          }, 'preview')
+            }, 'preview'),
+            null
+          )
         }
       ]
     }
@@ -716,19 +715,27 @@ export const useLitegraphService = () => {
           options.unshift(
             {
               content: 'Open Image',
-              callback: markCoreMediaMenuCallback(() => {
-                const url = getImageFileUrl(img)
-                void openFileInNewTab(url.toString())
-              }, 'preview')
+              callback: markNodeMenuCallback(
+                markCoreMediaMenuCallback(() => {
+                  const url = getImageFileUrl(img)
+                  void openFileInNewTab(url.toString())
+                }, 'preview'),
+                null
+              )
             },
             ...getCopyImageOption(img),
             {
               content: 'Save Image',
-              callback: markCoreMediaMenuCallback(() => {
-                const url = getImageFileUrl(img)
-                const filename = new URLSearchParams(url.search).get('filename')
-                downloadFile(url.toString(), filename ?? undefined)
-              }, 'preview')
+              callback: markNodeMenuCallback(
+                markCoreMediaMenuCallback(() => {
+                  const url = getImageFileUrl(img)
+                  const filename = new URLSearchParams(url.search).get(
+                    'filename'
+                  )
+                  downloadFile(url.toString(), filename ?? undefined)
+                }, 'preview'),
+                null
+              )
             }
           )
         }
@@ -736,26 +743,29 @@ export const useLitegraphService = () => {
 
       options.push({
         content: 'Bypass',
-        callback: () => {
+        callback: markNodeMenuCallback(() => {
           toggleSelectedNodesMode(LGraphEventMode.BYPASS)
           canvas.setDirty(true, true)
-        }
+        }, null)
       })
 
       if (!clipspace.returnNode) {
         options.push({
           content: 'Copy (Clipspace)',
-          callback: () => {
+          callback: markNodeMenuCallback(() => {
             copyToClipspace(this)
-          }
+          }, null)
         })
 
         if (clipspace.current != null) {
           options.push({
             content: 'Paste (Clipspace)',
-            callback: markCoreMediaMenuCallback(() => {
-              pasteFromClipspace(this)
-            }, 'input')
+            callback: markNodeMenuCallback(
+              markCoreMediaMenuCallback(() => {
+                pasteFromClipspace(this)
+              }, 'input'),
+              'pasteClipspace'
+            )
           })
         }
       }
@@ -763,16 +773,16 @@ export const useLitegraphService = () => {
         options.unshift(
           {
             content: 'Edit Subgraph Widgets',
-            callback: () => {
+            callback: markNodeMenuCallback(() => {
               usePropertiesPanelStore().openPanel('subgraph')
-            }
+            }, 'editSubgraphWidgets')
           },
           {
             content: 'Unpack Subgraph',
-            callback: () => {
+            callback: markNodeMenuCallback(() => {
               const { unpackSubgraph } = useSubgraphOperations()
               unpackSubgraph()
-            }
+            }, null)
           }
         )
       }
@@ -943,7 +953,7 @@ export const useLitegraphService = () => {
       options
     )
 
-    const graph = useWorkflowStore().activeSubgraph ?? useApp().graph
+    const graph = useWorkflowStore().activeSubgraph ?? useApp().rootGraph
     if (!node) return null
 
     graph.add(node, addOptions)
