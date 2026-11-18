@@ -213,6 +213,12 @@ export class AgentPanel {
     await expect(this.scrollAssetsRight).toBeDisabled()
   }
 
+  thinkingShortenedNoticeIn(roundText: string): Locator {
+    return this.activityRows
+      .filter({ hasText: roundText })
+      .getByTestId(TestIds.agent.thinkingShortened)
+  }
+
   activityRow(label: string): Locator {
     return this.activityRows.getByText(label, { exact: true })
   }

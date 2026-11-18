@@ -2,16 +2,13 @@ import { expect } from '@playwright/test'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { PersistedThinkingEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import {
+  cutRound,
+  wholeRound
+} from '@e2e/fixtures/data/agent/agentThinkingShortened'
 
 test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
-
-const cutRound: PersistedThinkingEntry = {
-  text: 'Picking an upscaler, then',
-  truncated: true
-}
-const wholeRound: PersistedThinkingEntry = { text: 'Reading the workflow.' }
 
 test(
   'BE-24672: tells the reader a reloaded reasoning trace was shortened',
@@ -38,10 +35,13 @@ test(
 
     await test.step('names the shortening once, on the round that was cut', async () => {
       await agentPanel.openWorkSummary()
-      await expect(agentPanel.thinkingShortenedNotices).toHaveText([
-        enMessages.agent.thinkingShortened
-      ])
-      await expect(agentPanel.activityRows.last()).toContainText(cutRound.text)
+      await expect(agentPanel.thinkingShortenedNotices).toHaveCount(1)
+      await expect(
+        agentPanel.thinkingShortenedNoticeIn(cutRound.text)
+      ).toHaveText(enMessages.agent.thinkingShortened)
+      await expect(
+        agentPanel.thinkingShortenedNoticeIn(wholeRound.text)
+      ).toHaveCount(0)
     })
   }
 )

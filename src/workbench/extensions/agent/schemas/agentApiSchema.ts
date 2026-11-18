@@ -152,11 +152,8 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
  * anchored to that round's first tool call, `truncated` where it was cut.
  */
 export const zPersistedThinkingEntry = zAgentThinkingEntry
-  .pick({ text: true })
-  .extend({
-    tool_call_id: z.string().nullish(),
-    truncated: z.boolean().nullish()
-  })
+  .pick({ text: true, truncated: true })
+  .extend({ tool_call_id: z.string().nullish() })
 export type PersistedThinkingEntry = z.infer<typeof zPersistedThinkingEntry>
 
 /**
