@@ -1,5 +1,7 @@
 import type { BillingStatus, SubscriptionState } from '@comfyorg/ingest-types'
 
+import { cloudCreditBannersAllowed } from './cloudCreditBanners'
+
 export type BillingStatusBannerKind =
   | 'paused'
   | 'planEnded'
@@ -65,7 +67,7 @@ function showsPastDueOutOfCredits(facts: BillingStatusBannerFacts): boolean {
 
 function cloudCreditBannersOpen(facts: BillingStatusBannerFacts): boolean {
   if (!facts.unifiedBillingSettingsEnabled) return true
-  return facts.isActive
+  return cloudCreditBannersAllowed(facts.subscriptionState, facts.isActive)
 }
 
 function deriveNoticeBanner(
