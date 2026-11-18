@@ -3687,14 +3687,14 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (e.isPrimary) pointer.move(e)
     const startedMoving =
       !wasMoving && (this.isDragging || this.dragging_canvas)
-    const { eDown } = pointer
-    const canvasDelta: Point =
-      startedMoving && eDown
-        ? [x - eDown.canvasX, y - eDown.canvasY]
-        : [
-            (mouse[0] - previousMouse[0]) / this.ds.scale,
-            (mouse[1] - previousMouse[1]) / this.ds.scale
-          ]
+    const moveOrigin = startedMoving ? pointer.eDown : undefined
+    const panDelta: Point = [
+      (mouse[0] - (moveOrigin?.clientX ?? previousMouse[0])) / this.ds.scale,
+      (mouse[1] - (moveOrigin?.clientY ?? previousMouse[1])) / this.ds.scale
+    ]
+    const dragDelta: Point = moveOrigin
+      ? [x - moveOrigin.canvasX, y - moveOrigin.canvasY]
+      : panDelta
 
     /** See {@link state}.{@link LGraphCanvasState.hoveringOver hoveringOver} */
     let underPointer = CanvasItem.Nothing
@@ -3742,8 +3742,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       underPointer |= CanvasItem.Group
       pointer.resizeDirection = 'SE'
     } else if (this.dragging_canvas) {
-      this.ds.offset[0] += canvasDelta[0]
-      this.ds.offset[1] += canvasDelta[1]
+      this.ds.offset[0] += panDelta[0]
+      this.ds.offset[1] += panDelta[1]
       this._dirty()
     } else if (
       (this.allow_interaction || node?.flags.allow_interaction) &&
@@ -3964,7 +3964,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         const allItems = getDraggedItems(selected, e)
 
         for (const item of allItems) {
-          item.move(canvasDelta[0], canvasDelta[1], true)
+          item.move(dragDelta[0], dragDelta[1], true)
         }
 
         this._dirty()

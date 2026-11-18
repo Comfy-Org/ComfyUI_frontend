@@ -866,6 +866,27 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     })
   })
 
+  test('A middle-button pan keeps a wheel scroll made before the drag threshold', async ({
+    comfyPage
+  }) => {
+    await comfyPage.settings.setSetting(
+      'Comfy.Canvas.NavigationMode',
+      'standard'
+    )
+    await comfyPage.page.mouse.move(50, 50)
+    await comfyPage.page.mouse.down({ button: 'middle' })
+    await comfyPage.page.mouse.wheel(0, 120)
+    const afterWheel = await comfyPage.canvasOps.snapshotNavigation()
+
+    await comfyPage.page.mouse.move(187, 133, { steps: 40 })
+    await comfyPage.page.mouse.up({ button: 'middle' })
+    await comfyPage.nextFrame()
+
+    await comfyPage.canvasOps.expectNavigationTransform(afterWheel, {
+      pan: [137, 83]
+    })
+  })
+
   test('Widgets recover after a low-quality zoom round trip', async ({
     comfyPage
   }) => {
