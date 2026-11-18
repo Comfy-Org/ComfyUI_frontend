@@ -1,5 +1,7 @@
+import { cloneDeep, isEqual } from 'es-toolkit'
+
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
-import { withGraphEdit } from '@/lib/litegraph/src/graphEdits'
+import { noteGraphEdit, withGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import { LGraphEventMode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -17,7 +19,13 @@ export function useSelectedNodeActions() {
     withGraphEdit(canvas.graph, () => {
       selectedNodes.forEach((node) => {
         const optimalSize = node.computeSize()
-        node.setSize([optimalSize[0], optimalSize[1]])
+        const properties = cloneDeep(node.properties)
+        try {
+          node.setSize([optimalSize[0], optimalSize[1]])
+        } finally {
+          if (node.graph && !isEqual(properties, node.properties))
+            noteGraphEdit(node.graph)
+        }
       })
 
       canvas.setDirty(true, true)

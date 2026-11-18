@@ -139,6 +139,53 @@ test('blocked collapse does not capture an unrelated pending title', async () =>
   expect(tracker.activeState.nodes[0].title).toBe('First')
 })
 
+test('unchanged-size resize records callback properties but not a repeated no-op', async () => {
+  const { first, second, tracker } = await selectionGraph()
+  first.size = first.computeSize()
+  second.size = second.computeSize()
+  const layout = { resized: false }
+  first.properties.layout = layout
+  tracker.captureCanvasState()
+  const before = tracker.undoQueue.length
+  first.onResize = () => {
+    layout.resized = true
+  }
+
+  useSelectedNodeActions().adjustNodeSize()
+
+  expect(tracker.undoQueue).toHaveLength(before + 1)
+  expect(tracker.activeState.nodes[0].properties.layout).toEqual({
+    resized: true
+  })
+  expect(tracker.undoQueue.at(-1)?.nodes[0].properties.layout).toEqual({
+    resized: false
+  })
+
+  first.title = 'Pending title'
+  useSelectedNodeActions().adjustNodeSize()
+  expect(tracker.undoQueue).toHaveLength(before + 1)
+  expect(tracker.activeState.nodes[0].title).toBe('First')
+})
+
+test('unchanged-size resize retains properties applied by a throwing callback', async () => {
+  const { first, second, tracker } = await selectionGraph()
+  first.size = first.computeSize()
+  second.size = second.computeSize()
+  tracker.captureCanvasState()
+  const before = tracker.undoQueue.length
+  first.onResize = () => {
+    first.properties.resized = true
+    throw new Error('Extension failed')
+  }
+
+  expect(() => useSelectedNodeActions().adjustNodeSize()).toThrow(
+    'Extension failed'
+  )
+
+  expect(tracker.undoQueue).toHaveLength(before + 1)
+  expect(tracker.activeState.nodes[0].properties.resized).toBe(true)
+})
+
 test.for([
   { source: 'local', entries: 1 },
   { source: 'agent-remote', entries: 0 },
