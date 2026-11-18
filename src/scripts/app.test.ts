@@ -2063,6 +2063,60 @@ describe('ComfyApp', () => {
         expect(kept.type).toBe('HandleProbe')
       })
 
+      function showTheRootGraph() {
+        useComfyApiStore().provideCanvas({
+          visibleGraph: () => app.rootGraph,
+          canvas: () => null,
+          followMoves: () => () => {},
+          followDragEnds: () => () => {}
+        })
+      }
+
+      it('reports what a pack changes, not what an undo or redo gives back, and a saved mode or colour the rebuilt node did not start with', async () => {
+        const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        showTheRootGraph()
+        const tracker = historyOfTheOpenWorkflow()
+        const heard: string[] = []
+        comfy.onNodeChanged(({ property, to }) =>
+          heard.push(`${property} ${String(to)}`)
+        )
+        const node = comfy.graph.node('1')
+        assert(node)
+        node.setTitle('Renamed')
+        node.setMode('bypass')
+        node.setColor('#123456')
+
+        expect(heard.splice(0)).toEqual([
+          'title Renamed',
+          'mode bypass',
+          'color #123456'
+        ])
+
+        const heardPerStep: string[][] = []
+        for (const step of ['undo', 'undo', 'undo', 'redo', 'redo', 'redo']) {
+          await (step === 'undo' ? tracker.undo() : tracker.redo())
+          heardPerStep.push(heard.splice(0))
+        }
+
+        expect(node.getTitle()).toBe('Renamed')
+        expect(heardPerStep).toEqual([
+          ['mode bypass'],
+          [],
+          [],
+          [],
+          ['mode bypass'],
+          ['mode bypass', 'color #123456']
+        ])
+
+        await app.loadGraphData(
+          structuredClone(app.rootGraph.serialize()) as ComfyWorkflowJSON,
+          false
+        )
+
+        expect(heard).toEqual(['mode bypass', 'color #123456'])
+      })
+
       it('retires the handle when undo goes back to before the node was added, so the node that takes its id next gets another', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)

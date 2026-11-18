@@ -28,7 +28,10 @@ export interface Comfy {
   readonly defs: DefRegistry
   /** Every change a pack makes to the document. */
   readonly edit: Edits
-  /** A node's title, mode or color changed, by any means, in the graphs `options.scope` names. */
+  /**
+   * A node's title, mode or color was set by the user or a pack, in the graphs `options.scope` names. A load, undo or
+   * redo is not reported, except each saved mode or color unlike a new node's; re-read nodes in `onWorkflowLoaded`.
+   */
   onNodeChanged(
     listener: (event: NodeChangeEvent) => void,
     options?: NodeChangeOptions
