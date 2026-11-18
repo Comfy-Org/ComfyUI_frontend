@@ -1,4 +1,5 @@
 import userEvent from '@testing-library/user-event'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
@@ -36,6 +37,7 @@ vi.mock(
   })
 )
 
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
@@ -115,6 +117,7 @@ describe('Cloud button compatibility checks', () => {
 
     await user.hover(button)
     await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'))
+    expect(useTelemetry()?.trackUiButtonClicked).not.toHaveBeenCalled()
     await user.click(button)
 
     await waitFor(() =>
@@ -123,6 +126,12 @@ describe('Cloud button compatibility checks', () => {
       )
     )
     expect(checkCloudCompatibility).toHaveBeenCalledOnce()
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'run_bar_cloud_clicked',
+      element_group: 'top_menu'
+    })
   })
 
   it('names the dialog after its title', async () => {
