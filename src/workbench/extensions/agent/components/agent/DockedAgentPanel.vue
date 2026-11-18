@@ -13,7 +13,7 @@
             : 'relative h-full'
         )
       "
-      :style="{ width: `${panelWidth}px` }"
+      :style="{ width: `${dockWidth ?? panelWidth}px` }"
     >
       <div
         v-if="!isOverlay"
@@ -138,9 +138,14 @@ function retryMount(): void {
 }
 
 /** Set by the parent that lays out both this panel and its left neighbour. */
-const { hasOpaqueNeighbor = false, handleSide = 'left' } = defineProps<{
+const {
+  hasOpaqueNeighbor = false,
+  handleSide = 'left',
+  dockWidth
+} = defineProps<{
   hasOpaqueNeighbor?: boolean
   handleSide?: 'left' | 'right'
+  dockWidth?: number
 }>()
 
 const agentPanelStore = useAgentPanelStore()

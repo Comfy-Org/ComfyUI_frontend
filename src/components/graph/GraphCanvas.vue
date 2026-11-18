@@ -78,12 +78,16 @@
       <AppBuilder v-if="isBuilderMode" />
       <PropertiesPanel v-else />
     </template>
-    <template v-if="showUI" #agent-panel="{ hasOpaqueNeighbor, handleSide }">
+    <template
+      v-if="showUI"
+      #agent-panel="{ hasOpaqueNeighbor, handleSide, width }"
+    >
       <component
         :is="DockedAgentPanel"
         v-if="agentDocked && !linearMode"
         :has-opaque-neighbor="hasOpaqueNeighbor"
         :handle-side="handleSide"
+        :dock-width="width"
       />
     </template>
     <template #graph-canvas-panel>

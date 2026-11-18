@@ -19,6 +19,10 @@ const COPY = {
   docks: 'Agent docks',
   today: 'Today',
   inside: 'Inside properties',
+  agentTop: 'Agent top (inside)',
+  fullHeight: 'Full height',
+  underRun: 'Under run toolbar',
+  maximize: 'Agent maximized',
   panels: 'Panels',
   properties: 'Properties',
   agent: 'Agent',
@@ -34,6 +38,7 @@ const properties = usePropertiesPanelStore()
 const agent = useAgentPanelStore()
 const { isOpen: propertiesOpen } = storeToRefs(properties)
 const agentOpen = computed(() => agent.isVisible)
+const agentMaximized = computed(() => agent.isMaximized)
 const side = computed(() => settings.get('Comfy.Sidebar.Location'))
 
 function toggleAgent(): void {
@@ -82,6 +87,29 @@ function toggleAgent(): void {
         </div>
       </section>
       <section class="flex flex-col gap-1">
+        <span class="text-muted-foreground">{{ COPY.agentTop }}</span>
+        <div class="flex flex-wrap gap-1">
+          <Button
+            size="sm"
+            :variant="
+              options.agentTop === 'full-height' ? 'inverted' : 'secondary'
+            "
+            data-option="agentTop:full-height"
+            @click="options = { ...options, agentTop: 'full-height' }"
+            >{{ COPY.fullHeight }}</Button
+          >
+          <Button
+            size="sm"
+            :variant="
+              options.agentTop === 'under-run' ? 'inverted' : 'secondary'
+            "
+            data-option="agentTop:under-run"
+            @click="options = { ...options, agentTop: 'under-run' }"
+            >{{ COPY.underRun }}</Button
+          >
+        </div>
+      </section>
+      <section class="flex flex-col gap-1">
         <span class="text-muted-foreground">{{ COPY.panels }}</span>
         <div class="flex flex-wrap gap-1">
           <Button
@@ -97,6 +125,13 @@ function toggleAgent(): void {
             :data-on="agentOpen"
             @click="toggleAgent"
             >{{ COPY.agent }}</Button
+          >
+          <Button
+            size="sm"
+            :variant="agentMaximized ? 'inverted' : 'secondary'"
+            :data-on="agentMaximized"
+            @click="agent.toggleMaximize()"
+            >{{ COPY.maximize }}</Button
           >
         </div>
       </section>

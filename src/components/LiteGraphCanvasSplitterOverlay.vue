@@ -80,85 +80,103 @@
 
             <SplitterPanel
               id="main-panel"
+              ref="mainPanelRef"
               :order="2"
               :min-size="isSelectMode ? 0 : centerMinSize"
               :default-size="centerPanelDefaultSize"
-              class="flex flex-col"
+              :class="
+                cn(
+                  'flex',
+                  agentFullHeight &&
+                    sidebarLocation === 'right' &&
+                    'flex-row-reverse'
+                )
+              "
             >
-              <div
-                ref="topMenuRef"
-                :class="
-                  cn(
-                    !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)',
-                    agentInside && 'relative z-1'
-                  )
-                "
-              >
-                <slot name="topmenu" :sidebar-panel-visible />
-              </div>
-              <div
-                :class="
-                  cn(
-                    'pointer-events-none flex min-h-0 flex-1',
-                    sidebarLocation === 'right' && 'flex-row-reverse'
-                  )
-                "
-              >
-                <SplitterGroup
-                  data-testid="graph-canvas-gutter"
+              <div ref="mainContentRef" class="flex min-w-0 flex-1 flex-col">
+                <div
+                  ref="topMenuRef"
                   :class="
                     cn(
-                      'pointer-events-none mb-(--comfy-canvas-gutter) ml-(--comfy-canvas-gutter) h-auto flex-1 border-none bg-transparent',
-                      !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)'
+                      !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)',
+                      agentUnderRun && 'relative z-1'
                     )
                   "
-                  direction="vertical"
-                  style="width: auto"
-                  @layout="saveBottomPanelLayout"
                 >
-                  <SplitterPanel
-                    id="graph-canvas-panel"
-                    :order="1"
-                    :default-size="bottomPanelDefaultSizes[0]"
-                    class="graph-canvas-panel relative overflow-visible [anchor-name:--graph-canvas-panel]"
-                  >
-                    <slot name="graph-canvas-panel" />
-                  </SplitterPanel>
-                  <SplitterResizeHandle
-                    :disabled="!bottomPanelRendered"
-                    :tabindex="bottomPanelRendered ? 0 : -1"
+                  <slot name="topmenu" :sidebar-panel-visible />
+                </div>
+                <div
+                  :class="
+                    cn(
+                      'pointer-events-none flex min-h-0 flex-1',
+                      sidebarLocation === 'right' && 'flex-row-reverse'
+                    )
+                  "
+                >
+                  <SplitterGroup
+                    data-testid="graph-canvas-gutter"
                     :class="
                       cn(
-                        'pointer-events-auto translate-y-1 rounded-t-lg',
-                        !bottomPanelRendered && 'hidden'
+                        'pointer-events-none mb-(--comfy-canvas-gutter) ml-(--comfy-canvas-gutter) h-auto flex-1 border-none bg-transparent',
+                        !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)'
                       )
                     "
-                    @dragging="!$event && flushLayouts()"
-                  />
-                  <SplitterPanel
-                    v-show="bottomPanelRendered"
-                    id="bottom-panel"
-                    :order="2"
-                    :default-size="bottomPanelDefaultSizes[1]"
-                    class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border bg-background focus-visible:outline-hidden"
+                    direction="vertical"
+                    style="width: auto"
+                    @layout="saveBottomPanelLayout"
                   >
-                    <slot name="bottom-panel" />
-                  </SplitterPanel>
-                </SplitterGroup>
-                <div
-                  v-if="agentInside"
-                  class="flex"
-                  :style="{ marginTop: `${agentLift}px` }"
-                >
-                  <slot
-                    name="agent-panel"
-                    :has-opaque-neighbor="false"
-                    :handle-side="
-                      sidebarLocation === 'right' ? 'right' : 'left'
-                    "
-                  />
+                    <SplitterPanel
+                      id="graph-canvas-panel"
+                      :order="1"
+                      :default-size="bottomPanelDefaultSizes[0]"
+                      class="graph-canvas-panel relative overflow-visible [anchor-name:--graph-canvas-panel]"
+                    >
+                      <slot name="graph-canvas-panel" />
+                    </SplitterPanel>
+                    <SplitterResizeHandle
+                      :disabled="!bottomPanelRendered"
+                      :tabindex="bottomPanelRendered ? 0 : -1"
+                      :class="
+                        cn(
+                          'pointer-events-auto translate-y-1 rounded-t-lg',
+                          !bottomPanelRendered && 'hidden'
+                        )
+                      "
+                      @dragging="!$event && flushLayouts()"
+                    />
+                    <SplitterPanel
+                      v-show="bottomPanelRendered"
+                      id="bottom-panel"
+                      :order="2"
+                      :default-size="bottomPanelDefaultSizes[1]"
+                      class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border bg-background focus-visible:outline-hidden"
+                    >
+                      <slot name="bottom-panel" />
+                    </SplitterPanel>
+                  </SplitterGroup>
+                  <div
+                    v-if="agentUnderRun"
+                    class="flex"
+                    :style="{ marginTop: `${agentLift}px` }"
+                  >
+                    <slot
+                      name="agent-panel"
+                      :has-opaque-neighbor="false"
+                      :handle-side="
+                        sidebarLocation === 'right' ? 'right' : 'left'
+                      "
+                      :width="agentWidth"
+                    />
+                  </div>
                 </div>
               </div>
+              <slot
+                v-if="agentFullHeight"
+                name="agent-panel"
+                :has-opaque-neighbor="false"
+                :handle-side="sidebarLocation === 'right' ? 'right' : 'left'"
+                :width="agentWidth"
+              />
             </SplitterPanel>
 
             <SplitterResizeHandle
@@ -216,6 +234,7 @@
         name="agent-panel"
         :has-opaque-neighbor="agentPanelHasOpaqueNeighbor"
         handle-side="left"
+        :width="undefined"
       />
     </div>
   </div>
@@ -313,7 +332,8 @@ const graphMeetsAgentPanel = computed(
   () =>
     agentPanelOpen.value &&
     !agentPanelHasOpaqueNeighbor.value &&
-    !agentInside.value
+    (!agentInside.value ||
+      (agentFullHeight.value && sidebarLocation.value === 'left'))
 )
 
 const agentInside = computed(
@@ -321,6 +341,12 @@ const agentInside = computed(
     protoOptions.value.dock === 'inside' &&
     oppositeSidePanelVisible.value &&
     !focusMode.value
+)
+const agentFullHeight = computed(
+  () => agentInside.value && protoOptions.value.agentTop === 'full-height'
+)
+const agentUnderRun = computed(
+  () => agentInside.value && protoOptions.value.agentTop === 'under-run'
 )
 
 const topMenuRef = ref<HTMLElement>()
@@ -336,6 +362,28 @@ const agentLift = computed(() =>
   actionBarCard.value
     ? Math.min(0, actionBarBottom.value + 4 - topMenuBottom.value)
     : 0
+)
+
+const mainPanelRef = ref<{ $el: HTMLElement }>()
+const mainContentRef = ref<HTMLElement>()
+const { width: mainPanelWidth } = useElementSize(() => mainPanelRef.value?.$el)
+const canvasGutters = computed(() => {
+  const canvas = mainContentRef.value?.querySelector<HTMLElement>(
+    '[data-testid="graph-canvas-gutter"]'
+  )
+  if (!canvas) return 0
+  const style = getComputedStyle(canvas)
+  return (
+    Number.parseFloat(style.marginLeft) + Number.parseFloat(style.marginRight)
+  )
+})
+const freeForAgent = computed(() =>
+  agentFullHeight.value
+    ? mainPanelWidth.value
+    : mainPanelWidth.value - canvasGutters.value
+)
+const agentWidth = computed(() =>
+  Math.min(agentPanelStore.width, Math.max(0, freeForAgent.value))
 )
 
 const sidebarPanelVisible = computed(
