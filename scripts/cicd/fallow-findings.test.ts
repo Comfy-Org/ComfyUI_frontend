@@ -100,6 +100,17 @@ describe('fallow findings renderer', () => {
   it('omits findings the audit attributes to the base', () => {
     const md = renderReport({
       verdict: 'fail',
+      duplication: {
+        clone_groups: [
+          {
+            introduced: false,
+            instances: [
+              { file: 'src/inheritedCloneA.ts', start_line: 10, end_line: 30 },
+              { file: 'src/inheritedCloneB.ts', start_line: 40, end_line: 60 }
+            ]
+          }
+        ]
+      },
       complexity: {
         findings: [
           {
@@ -134,6 +145,8 @@ describe('fallow findings renderer', () => {
 
     expect(md).toContain('`newExport`')
     expect(md).toContain('src/touched.ts:3113')
+    expect(md).not.toContain('inheritedCloneA')
+    expect(md).not.toContain('inheritedCloneB')
     expect(md).not.toContain('inheritedComplexity')
     expect(md).not.toContain('inheritedFile')
     expect(md).not.toContain('inheritedExport')
