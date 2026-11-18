@@ -277,8 +277,6 @@ function onApprovalRoute(): boolean {
   return activeRouter?.currentRoute.value.name === 'cloud-desktop-login'
 }
 
-// An outcome reached with no approval visit watching belongs to nobody; its
-// toast already reported it, so a later visit must not show it.
 function reportSettledStatus(status: DesktopLoginRedemptionStatus): void {
   if (statusClaimed || onApprovalRoute()) {
     desktopLoginRedemptionStatus.value = status

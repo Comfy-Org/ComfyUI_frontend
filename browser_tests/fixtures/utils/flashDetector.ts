@@ -87,6 +87,7 @@ export async function trackDialogFlash(
         for (const el of document.querySelectorAll('[role="dialog"]')) {
           if (
             accessibleName(el) === dialogName &&
+            el.checkVisibility() &&
             !document.documentElement.hasAttribute(attribute)
           ) {
             document.documentElement.setAttribute(attribute, 'true')
@@ -101,8 +102,11 @@ export async function trackDialogFlash(
   )
 
   return {
-    hasFlashed: async () =>
-      flashedInEarlierDocument ||
-      (await page.locator('html').getAttribute(flagAttribute)) === 'true'
+    hasFlashed: async () => {
+      if (flashedInEarlierDocument) return true
+      const flaggedInCurrentDocument =
+        (await page.locator('html').getAttribute(flagAttribute)) === 'true'
+      return flaggedInCurrentDocument || flashedInEarlierDocument
+    }
   }
 }
