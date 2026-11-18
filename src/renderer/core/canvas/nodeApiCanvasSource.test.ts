@@ -8,6 +8,7 @@ import { useNodeApiCanvasSource } from '@/renderer/core/canvas/nodeApiCanvasSour
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'
+import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 afterEach(() => {
@@ -131,5 +132,65 @@ describe('the canvas the node API reads', () => {
     await nextTick()
 
     expect(ended).not.toHaveBeenCalled()
+  })
+})
+
+describe("onViewportChanged beside the canvas store's scale sync", () => {
+  function viewportListener() {
+    const { graph, canvas, source } = canvasWithNodes()
+    const { comfy } = createComfyApi({
+      getGraph: () => graph,
+      canvas: () => source
+    })
+    const changed = vi.fn()
+    const pan = () => {
+      canvas.ds.offset[0] += 10
+      canvas.ds.computeVisibleArea(canvas.viewport)
+    }
+    return { comfy, changed, pan }
+  }
+
+  it('goes silent when the canvas menu unmounts after the pack subscribed, and stays silent when it mounts again', () => {
+    const { comfy, changed, pan } = viewportListener()
+    const canvasStore = useCanvasStore()
+    canvasStore.initScaleSync()
+    comfy.onViewportChanged(changed)
+
+    pan()
+
+    expect(changed).toHaveBeenCalledOnce()
+
+    canvasStore.cleanupScaleSync()
+    pan()
+    canvasStore.initScaleSync()
+    pan()
+
+    expect(changed).toHaveBeenCalledOnce()
+  })
+
+  it('keeps hearing when the pack subscribed before the canvas menu mounted', () => {
+    const { comfy, changed, pan } = viewportListener()
+    const canvasStore = useCanvasStore()
+    comfy.onViewportChanged(changed)
+    canvasStore.initScaleSync()
+
+    canvasStore.cleanupScaleSync()
+    pan()
+
+    expect(changed).toHaveBeenCalledOnce()
+  })
+
+  it('hears again once every listener has left and one subscribes', () => {
+    const { comfy, changed, pan } = viewportListener()
+    const canvasStore = useCanvasStore()
+    canvasStore.initScaleSync()
+    const stop = comfy.onViewportChanged(vi.fn())
+    canvasStore.cleanupScaleSync()
+
+    stop()
+    comfy.onViewportChanged(changed)
+    pan()
+
+    expect(changed).toHaveBeenCalledOnce()
   })
 })

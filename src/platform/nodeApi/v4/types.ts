@@ -52,7 +52,10 @@ export interface Comfy {
   onNodeDragEnd(listener: () => void): Unsubscribe
   /** True while the user drags a link, resizes a node or drags a widget. */
   isInteracting(): boolean
-  /** The view on the graph panned or zoomed. */
+  /**
+   * The view on the graph panned or zoomed. Hiding the canvas menu or entering builder mode after the first
+   * listener subscribed silences it until every listener has left and one subscribes again.
+   */
   onViewportChanged(listener: () => void): Unsubscribe
   /** The nodes selected in the graph on screen changed. Passes them in the graph's order. */
   onSelectionChanged(

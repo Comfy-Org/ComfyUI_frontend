@@ -112,6 +112,22 @@ review finding requires it. The counts below are packs, then call sites.
    its handler stays in their chain and stops passing anything on. A
    viewport change event in core would remove the chaining; see
    "Consequences".
+   - The canvas store does not follow that rule. `GraphCanvasMenu` calls
+     `initScaleSync` when it mounts, which saves the slot's handler and
+     chains its own, and `cleanupScaleSync` when it unmounts, which writes
+     the saved handler back without checking that the slot still holds the
+     store's. The menu is mounted only while the `Comfy.Graph.CanvasMenu`
+     setting is on and builder mode is off. So when the first listener
+     subscribes while the menu is mounted, the API's handler sits above
+     the store's; hiding the menu or entering builder mode drops it from
+     the slot, and the menu mounting again chains below it. Every listener
+     is then silent until they have all left and one subscribes again,
+     which chains anew. When the first listener subscribed before the menu
+     mounted, the store's handler sits above the API's, and the API keeps
+     hearing. The API matches the host here rather than writing around it:
+     the `onViewportChanged` JSDoc says so, and
+     `nodeApiCanvasSource.test.ts` pins all three cases through the real
+     canvas store. The ticket is under "Core limitations".
 9. `onSelectionChanged(listener)` (1 pack, 1 site) passes the selected
    nodes of the graph on screen, frozen and in the graph's own order,
    whenever that set changes. It and `graph.selection()` (decision 23) read
@@ -447,6 +463,14 @@ the API reports, recorded here with the change that would lift it.
   the canvas, the canvas store and now the API chain onto. A typed
   `viewport-changed` event on the canvas would let each listen without
   chaining; `onViewportChanged` would then listen to it.
+- **The canvas store drops handlers chained after its own.**
+  `cleanupScaleSync` restores the handler `initScaleSync` saved without
+  checking that the slot still holds the store's own handler, so a handler
+  chained after the store is dropped when the canvas menu unmounts
+  (decision 8). Restoring only while the store's handler is still in the
+  slot, and keeping the saved handler in the closure of the handler it
+  installed, would keep later chains; the viewport event above would
+  remove the problem.
 - **A batch layout update does not say which positions changed.**
   `batchUpdateBounds` records the nodes whose size changed but not those
   whose position did, so `onNodeMoved` treats every entry whose size did
