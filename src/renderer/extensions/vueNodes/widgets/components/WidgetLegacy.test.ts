@@ -56,12 +56,12 @@ const heightCases: HeightCase[] = [
     expectedCanvasHeight: 64
   },
   {
-    name: 'layout minimum before legacy size',
+    name: 'legacy size before layout minimum',
     widget: {
       computeLayoutSize: () => ({ minWidth: 0, minHeight: 30 }),
       computeSize: () => [0, -4]
     },
-    expectedCanvasHeight: 64
+    expectedCanvasHeight: 0
   },
   {
     name: 'positive legacy size',
@@ -106,6 +106,64 @@ describe('WidgetLegacy canvas sizing', () => {
       expect(canvases.at(-1)?.height).toBe(expectedCanvasHeight)
     }
   )
+
+  it('draws a growable widget at its row height instead of the canvas layout height', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Legacy')
+    const widget = node.addWidget('text', 'comparer', '', () => {})
+    graph.add(node)
+    widget.computeLayoutSize = () => ({ minWidth: 0, minHeight: 20 })
+    widget.computedHeight = 500
+    const drawnHeights: number[] = []
+    widget.draw = (_ctx, _node, _width, _y, height) => {
+      drawnHeights.push(height)
+    }
+    useCanvasStore().canvas = fromPartial({ graph })
+    await nextTick()
+
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(300)
+    stubCanvasGetContext()
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widget: { name: 'comparer', type: 'text', value: undefined }
+      }
+    })
+
+    const canvas = screen.getByTestId<HTMLCanvasElement>('legacy-widget-canvas')
+    expect(canvas.height).toBe(604)
+    expect(drawnHeights.at(-1)).toBe(300)
+    expect(widget.computedHeight).toBe(300)
+  })
+
+  it('draws a fixed widget stretched by its row where classic layout would place it at the bottom of the node', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Legacy')
+    node.size = [400, 420]
+    const widget = node.addWidget('text', 'comparer', '', () => {})
+    graph.add(node)
+    widget.computedHeight = undefined
+    widget.computeSize = () => [400, 20]
+    const draws: { y: number; height: number }[] = []
+    widget.draw = (_ctx, _node, _width, y, height) => {
+      draws.push({ y, height })
+    }
+    useCanvasStore().canvas = fromPartial({ graph })
+    await nextTick()
+
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(364)
+    stubCanvasGetContext()
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widget: { name: 'comparer', type: 'text', value: undefined }
+      }
+    })
+
+    const canvas = screen.getByTestId<HTMLCanvasElement>('legacy-widget-canvas')
+    expect(canvas.height).toBe(732)
+    expect(draws.at(-1)).toEqual({ y: 56, height: 20 })
+  })
 })
 
 describe('WidgetLegacy canvas width', () => {
@@ -260,5 +318,56 @@ describe('WidgetLegacy pointer events', () => {
     ])
 
     expect(mouse.mock.calls.map(([, pos]) => pos)).toEqual(expectedPositions)
+  })
+})
+
+describe('WidgetLegacy growable pointer events', () => {
+  it('passes presses below the minimum height of a growable widget to mouse', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Legacy')
+    node.pos = [100, 200]
+    const mouse = vi.fn<NonNullable<IBaseWidget['mouse']>>(() => true)
+    node.addCustomWidget(
+      fromPartial<IBaseWidget>({
+        name: 'comparer',
+        type: 'custom',
+        value: undefined,
+        y: 0,
+        options: {},
+        computeLayoutSize: () => ({ minWidth: 0, minHeight: 20 }),
+        mouse,
+        draw: () => {}
+      })
+    )
+    graph.add(node)
+    const canvasElement = document.createElement('canvas')
+    canvasElement.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
+    useCanvasStore().canvas = new LGraphCanvas(canvasElement, graph, {
+      skip_render: true,
+      skip_events: true
+    })
+    await nextTick()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(300)
+
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widget: { name: 'comparer', type: 'custom', value: undefined }
+      }
+    })
+    const target = screen.getByTestId('legacy-widget-canvas')
+    const coords = { offsetX: 28, offsetY: 150 }
+    await userEvent.pointer([
+      { keys: '[MouseLeft>]', target, coords },
+      { keys: '[/MouseLeft]', target, coords }
+    ])
+
+    expect(mouse.mock.calls.map(([, pos]) => pos)).toEqual([
+      [28, 150],
+      [28, 150]
+    ])
   })
 })

@@ -172,6 +172,49 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       tabByWorkflow.value[workflowId] = { ...record, confirmedAt: Date.now() }
     }
 
+    function followRenamedTabs(open: OpenTab[], previous: OpenTab[]): void {
+      const moves = open.flatMap(({ tab, path }) => {
+        const before = previous.find((entry) => entry.tab === tab)
+        if (before === undefined || before.path === path) return []
+        const workflowId = recordIdFor(before.path)
+        if (workflowId === undefined || !isVerifiedOwner(workflowId, tab))
+          return []
+        const record = tabByWorkflow.value[workflowId]
+        const graphId = graphIdOf(tab)
+        const sameDocument =
+          graphId === undefined ||
+          record.graphId === null ||
+          areWorkflowIdsEquivalent(graphId, record.graphId, tab.legacyId)
+        if (sameDocument) return [{ workflowId, tab, path, record }]
+        boundInstances.delete(workflowId)
+        refusedInstances.set(workflowId, toRaw(tab))
+        return []
+      })
+      if (moves.length === 0) return
+      const moving = new Set(moves.map(({ workflowId }) => workflowId))
+      const next = Object.fromEntries(
+        Object.entries(tabByWorkflow.value).filter(
+          ([workflowId, record]) =>
+            moving.has(workflowId) ||
+            !moves.some(({ path }) => path === record.tabPath)
+        )
+      )
+      for (const workflowId of Object.keys(tabByWorkflow.value)) {
+        if (Object.hasOwn(next, workflowId)) continue
+        boundInstances.delete(workflowId)
+        refusedInstances.delete(workflowId)
+      }
+      for (const { workflowId, tab, path, record } of moves) {
+        boundInstances.set(workflowId, toRaw(tab))
+        next[workflowId] = {
+          tabPath: path,
+          graphId: graphIdOf(tab) ?? record.graphId,
+          confirmedAt: Date.now()
+        }
+      }
+      tabByWorkflow.value = next
+    }
+
     watch(
       (): OpenTab[] =>
         workflows.openWorkflows.map((tab) => ({ tab, path: tab.path })),
@@ -179,6 +222,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         previous
           .filter(({ tab }) => !open.some((entry) => entry.tab === tab))
           .forEach(releaseClosedTab)
+        followRenamedTabs(open, previous)
         open.forEach(adoptOpenTab)
       },
       { immediate: true }

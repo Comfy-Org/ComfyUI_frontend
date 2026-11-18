@@ -969,6 +969,7 @@ export const zAutoReloadPreview = z.object({
  *
  */
 export const zAutoReloadSettings = z.object({
+  auto_top_up_conflict: z.boolean(),
   card_expiring_soon: z.boolean().nullish(),
   card_expiry: zAutoReloadCardExpiry.nullable(),
   configured: z.boolean(),
@@ -1258,6 +1259,8 @@ export const zBillingCapabilities = z.object({
   can_reactivate: z.boolean(),
   can_revert_scheduled_change: z.boolean(),
   can_run_workflows: z.boolean(),
+  can_set_budgets: z.boolean(),
+  can_set_hard_caps: z.boolean(),
   can_subscribe_self_serve: z.boolean(),
   can_top_up: z.boolean(),
   can_upgrade: z.boolean(),
@@ -1443,6 +1446,31 @@ export const zBillingCapabilityDenials = z.object({
       'free_tier_exhausted'
     ])
     .optional(),
+  can_set_budgets: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'no_subscription',
+      'free_plan',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized'
+    ])
+    .optional(),
+  can_set_hard_caps: z
+    .enum([
+      'not_a_member',
+      'not_workspace_owner',
+      'creator_only_provisioning',
+      'no_subscription',
+      'free_plan',
+      'subscription_ended',
+      'subscription_not_started',
+      'subscription_status_unrecognized',
+      'plan_not_enterprise'
+    ])
+    .optional(),
   can_subscribe_self_serve: z
     .enum([
       'not_a_member',
@@ -1575,10 +1603,69 @@ export const zBillingEventsResponse = z.object({
 })
 
 /**
+ * The plan a Platform billing tab continues to checkout with. Selections only; checkout prices them.
+ */
+export const zBillingHandoffCheckoutRequest = z.object({
+  plan_slug: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9_-]+$/),
+  team_credit_stop_id: z
+    .string()
+    .min(1)
+    .max(128)
+    .regex(/^[A-Za-z0-9_-]+$/)
+    .optional()
+})
+
+/**
+ * Turns auto top-up on after this purchase's payment succeeds; the server does it, so never follow with PUT /api/billing/auto-reload. Absent leaves auto top-up unchanged. Owner who may manage auto top-up only. Hosted checkout shows a $0.00 "Auto top-up" line and consent covering future top-ups.
+ * PUT /api/billing/auto-reload's enabled-save rules apply before anything is charged (400 INVALID_AUTO_TOP_UP); 400 AUTO_TOP_UP_NOT_ELIGIBLE when setup is unavailable or frozen except for a missing default card; 400 AUTO_TOP_UP_NOT_AVAILABLE when first enrollment is outside the rollout.
+ * Auto top-up charges the default card. With none, the paid card is saved off-session and becomes the default; an existing default is kept and a new card is not saved. On the interactive route a new card's confirmation token must use setup_future_usage off_session exactly when there is no default card.
+ * A replay with other settings is refused. The outcome is auto_top_up_activation on the checkout read (hosted) or GET /api/billing/ops/{id} (interactive).
+ *
+ */
+export const zTopupAutoTopUpSettings = z.object({
+  monthly_budget_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .nullish(),
+  target_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  threshold_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+})
+
+/**
  * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
  */
 export const zBillingHandoffCreateRequest = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .gte(BigInt(500))
+    .lte(BigInt(250000))
+    .optional(),
+  auto_top_up: zTopupAutoTopUpSettings.optional(),
   client_version: z.string().max(64),
+  intent: z.enum(['top-up', 'subscription']).optional(),
   receiver: z.enum(['billing_web', 'platform']),
   surface: z.enum(['local_web', 'desktop']),
   workspace_id: z.string().min(1)
@@ -1634,6 +1721,13 @@ export const zBillingOpCancelResponse = z.object({
 })
 
 /**
+ * How a billing operation ended, for a billing handoff tab whose scoped session has ended.
+ */
+export const zBillingOpOutcomeResponse = z.object({
+  status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed'])
+})
+
+/**
  * Payment lifecycle status
  */
 export const zBillingStatus = z.enum([
@@ -1677,6 +1771,167 @@ export const zBillingCompanyDetailsUpdateRequest = z.object({
   address: zBillingAddress.optional(),
   company_name: z.string().optional(),
   tax_id: zBillingTaxId.optional()
+})
+
+export const zBudgetAlert = z.object({
+  percent: z.int(),
+  sent_at: z.iso.datetime(),
+  status: z.string()
+})
+
+export const zBudgetChange = z.object({
+  action: z.enum(['created', 'updated', 'archived', 'downgraded']),
+  actor_user_id: z.string(),
+  after: z.record(z.string(), z.unknown()).nullable(),
+  before: z.record(z.string(), z.unknown()).nullable(),
+  changed_at: z.iso.datetime()
+})
+
+export const zBudgetHistory = z.object({
+  changes: z.array(zBudgetChange)
+})
+
+/**
+ * `soft` alerts at its thresholds and never refuses spend. `hard` also refuses spend once the limit is reached; Enterprise plans only.
+ *
+ */
+export const zBudgetMode = z.enum(['hard', 'soft'])
+
+/**
+ * How long a budget applies. `current_period`: until the current billing period ends. `until`: through the period holding `ends_at`. `indefinitely`: every period, with no end.
+ *
+ */
+export const zBudgetRepeat = z.enum(['current_period', 'until', 'indefinitely'])
+
+/**
+ * What a budget limits.
+ */
+export const zBudgetScopeKind = z.enum([
+  'workspace',
+  'member',
+  'api_key',
+  'deployment'
+])
+
+/**
+ * A budget with its spend in the workspace's current billing period. Amounts come in credits and in micro-USD; a client shows credits as received and never converts.
+ *
+ */
+export const zBudget = z.object({
+  alert_percents: z.array(z.int()),
+  alerts: z.array(zBudgetAlert),
+  created_by: z.string(),
+  ends_at: z.iso.datetime().nullable(),
+  id: z.string(),
+  limit_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  limit_micro_usd: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  mode: zBudgetMode,
+  percent_used: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  repeat: zBudgetRepeat,
+  resets_at: z.iso.datetime().nullable(),
+  scope_id: z.string(),
+  scope_kind: zBudgetScopeKind,
+  spend_updated_at: z.iso.datetime().nullable(),
+  spent_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  spent_micro_usd: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  updated_by: z.string()
+})
+
+export const zBudgetCreateRequest = z.object({
+  alert_percents: z.array(z.int().gte(1).lte(100)).min(1).max(5).optional(),
+  ends_at: z.iso.datetime().optional(),
+  limit_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  limit_micro_usd: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  mode: zBudgetMode,
+  repeat: zBudgetRepeat.optional(),
+  scope_id: z.string(),
+  scope_kind: zBudgetScopeKind
+})
+
+export const zBudgetList = z.object({
+  auto_top_up_conflict: z.boolean(),
+  budgets: z.array(zBudget)
+})
+
+export const zBudgetUpdateRequest = z.object({
+  alert_percents: z.array(z.int().gte(1).lte(100)).min(1).max(5).optional(),
+  ends_at: z.iso.datetime().optional(),
+  limit_credits: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  limit_micro_usd: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  mode: zBudgetMode.optional(),
+  repeat: zBudgetRepeat.optional()
+})
+
+export const zBudgetWriteResult = z.object({
+  auto_top_up_conflict: z.boolean(),
+  budget: zBudget
 })
 
 /**
@@ -1980,6 +2235,7 @@ export const zCccPageRow = z.object({
   has_live: z.boolean(),
   held_until_start: z.boolean(),
   is_deleted: z.boolean(),
+  on_desktop: z.boolean(),
   on_hub: z.boolean(),
   presentation: zCccPagePresentation,
   revision_uid: z.uuid(),
@@ -2248,8 +2504,8 @@ export const zCccWebsiteRootTab = z.object({
   facets: zCccWebsiteCardFacets,
   page: zCccWebsiteRootPageInfo,
   sort_orders: z
-    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
-    .max(4)
+    .array(z.enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc']))
+    .max(5)
 })
 
 export const zCccWebsiteRootTabs = z.object({
@@ -2381,8 +2637,8 @@ export const zCccWebsiteCardsPage = z.object({
       error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
     }),
   sort_orders: z
-    .array(z.enum(['popular', 'name', 'priceAsc', 'priceDesc']))
-    .max(4),
+    .array(z.enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc']))
+    .max(5),
   total: z.int().gte(0).optional()
 })
 
@@ -3828,7 +4084,7 @@ export const zOAuthConsentChallengeWorkspace = z.object({
 /**
  * The platform this authorization code will be delivered to, when the
  * request's validated redirect_uri is one of a known platform's own OAuth
- * callbacks (ChatGPT, Claude). Derived server-side ONLY from the
+ * callbacks (ChatGPT, Claude, Cursor). Derived server-side ONLY from the
  * redirect_uri this request was byte-matched against at GET time —
  * never from the registrant-supplied client_name — against a
  * version-controlled registry of exact callbacks and anchored callback
@@ -3836,14 +4092,16 @@ export const zOAuthConsentChallengeWorkspace = z.object({
  * clients; omitted for first-party clients and for any redirect that is
  * not a registered platform callback. It verifies the destination
  * platform, NOT that the registrant is that platform's own app (any
- * connector on the platform can hold such a callback), so consumers
- * should label it by `display_name` and still show the redirect host.
+ * connector on the platform can hold such a callback, and any local
+ * process can listen on Cursor's loopback callback or claim its
+ * `cursor://` scheme), so consumers should label it by `display_name`
+ * and still show the redirect host.
  * `client_display_name` is unchanged and remains registrant-supplied.
  *
  */
 export const zOAuthConsentVerifiedClient = z.object({
   display_name: z.string(),
-  platform: z.enum(['chatgpt', 'claude'])
+  platform: z.enum(['chatgpt', 'claude', 'cursor'])
 })
 
 /**
@@ -4172,6 +4430,47 @@ export const zPromptInfo = z.object({
       queue_remaining: z.int().optional()
     })
     .optional()
+})
+
+/**
+ * One validation error as ComfyUI reports it, with tracebacks and every other field removed. type, message and details are each present only when ComfyUI sent them as strings.
+ */
+export const zPromptOutputsSkippedValidationError = z.object({
+  details: z.string().optional(),
+  extra_info: z
+    .object({
+      input_name: z.union([z.string(), z.number(), z.boolean()]).optional(),
+      received_type: z.union([z.string(), z.number(), z.boolean()]).optional(),
+      received_value: z.union([z.string(), z.number(), z.boolean()]).optional()
+    })
+    .optional(),
+  message: z.string().optional(),
+  type: z.string().optional()
+})
+
+/**
+ * One rejected node in a prompt_outputs_skipped event.
+ */
+export const zPromptOutputsSkippedNodeError = z.object({
+  class_type: z.string(),
+  dependent_outputs: z.array(z.string()),
+  errors: z.array(z.union([z.string(), zPromptOutputsSkippedValidationError]))
+})
+
+/**
+ * The `data` of a prompt_outputs_skipped WebSocket event. Sent when ComfyUI accepts a Cloud job's prompt but rejects some nodes: ComfyUI skips the outputs that depend on them and runs the rest, and the job keeps running. The inference server sends it to the user's channel (services/inference/server/services/joborchestrator/prompt_validation.go). Every string taken from ComfyUI has its lists of allowed values or file names replaced ("is not a valid value", "[list omitted]") and is capped at 512 characters.
+ */
+export const zPromptOutputsSkippedData = z.object({
+  node_errors: z.record(z.string(), zPromptOutputsSkippedNodeError),
+  prompt_id: z.string()
+})
+
+/**
+ * Server-to-client prompt_outputs_skipped frame on /ws. ComfyUI skipped some of a Cloud job's outputs because nodes failed validation.
+ */
+export const zPromptOutputsSkippedFrame = z.object({
+  data: zPromptOutputsSkippedData,
+  type: z.enum(['prompt_outputs_skipped'])
 })
 
 /**
@@ -5167,7 +5466,9 @@ export const zBillingStatusResponse = z.object({
   subscription_state: zSubscriptionState.optional(),
   subscription_status: z.enum(['active', 'ended', 'canceled']).optional(),
   subscription_tier: zSubscriptionTier.optional(),
-  team_credit_stop: zTeamCreditStopSummary.nullable()
+  team_credit_stop: zTeamCreditStopSummary.nullable(),
+  usage_period_end: z.iso.datetime().optional(),
+  usage_period_start: z.iso.datetime().optional()
 })
 
 /**
@@ -5339,41 +5640,6 @@ export const zBillingOpStatusResponse = z.object({
   started_at: z.iso.datetime(),
   status: z.enum(['pending', 'succeeded', 'failed', 'reconciliation_needed']),
   topup_purchase_amount: zTopUpPurchaseAmount.optional()
-})
-
-/**
- * Turns auto top-up on after this purchase's payment succeeds; the server does it, so never follow with PUT /api/billing/auto-reload. Absent leaves auto top-up unchanged. Owner who may manage auto top-up only. Hosted checkout shows a $0.00 "Auto top-up" line and consent covering future top-ups.
- * PUT /api/billing/auto-reload's enabled-save rules apply before anything is charged (400 INVALID_AUTO_TOP_UP); 400 AUTO_TOP_UP_NOT_ELIGIBLE when setup is unavailable or frozen except for a missing default card; 400 AUTO_TOP_UP_NOT_AVAILABLE when first enrollment is outside the rollout.
- * Auto top-up charges the default card. With none, the paid card is saved off-session and becomes the default; an existing default is kept and a new card is not saved. On the interactive route a new card's confirmation token must use setup_future_usage off_session exactly when there is no default card.
- * A replay with other settings is refused. The outcome is auto_top_up_activation on the checkout read (hosted) or GET /api/billing/ops/{id} (interactive).
- *
- */
-export const zTopupAutoTopUpSettings = z.object({
-  monthly_budget_cents: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
-    .nullish(),
-  target_credits: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    }),
-  threshold_credits: z.coerce
-    .bigint()
-    .min(BigInt('-9223372036854775808'), {
-      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
-    })
-    .max(BigInt('9223372036854775807'), {
-      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
-    })
 })
 
 /**
@@ -5627,6 +5893,13 @@ export const zAssetMetadataResponse = z.object({
   preview_image: z.string().optional(),
   tags: z.array(z.string()).optional(),
   validation: zValidationResult.optional()
+})
+
+/**
+ * The signed link `GET /api/view?redirect=false` answers with: the same link the 302 sends in `Location`, so it expires like that one.
+ */
+export const zViewFileUrlResponse = z.object({
+  url: z.string()
 })
 
 /**
@@ -6349,7 +6622,9 @@ export const zListAssetsQuery = z.object({
   include_public: z.boolean().optional().default(true),
   workspace_library: z.boolean().optional().default(false),
   hash: z.string().optional(),
-  after: z.string().optional()
+  after: z.string().optional(),
+  capped_total: z.boolean().optional().default(true),
+  include_total: z.boolean().optional().default(true)
 })
 
 /**
@@ -6670,6 +6945,14 @@ export const zCreateBillingHandoffBody = zBillingHandoffCreateRequest
  */
 export const zCreateBillingHandoffResponse = zBillingHandoffCreateResponse
 
+export const zCreateBillingHandoffCheckoutBody = zBillingHandoffCheckoutRequest
+
+/**
+ * Handoff issued. `entry_url` is billing-web's handoff page with `intent=checkout`, `plan` and `team_credit_stop_id` (if any) in the query and the token in the fragment.
+ */
+export const zCreateBillingHandoffCheckoutResponse =
+  zBillingHandoffCreateResponse
+
 export const zExchangeBillingHandoffBody = zBillingHandoffExchangeRequest
 
 /**
@@ -6769,6 +7052,47 @@ export const zGetBillingAutoReloadPreviewResponse = zAutoReloadPreview
 export const zGetBillingBalanceResponse = zBillingBalanceResponse
 
 /**
+ * Success
+ */
+export const zListBillingBudgetsResponse = zBudgetList
+
+export const zCreateBillingBudgetBody = zBudgetCreateRequest
+
+/**
+ * The new budget
+ */
+export const zCreateBillingBudgetResponse = zBudgetWriteResult
+
+export const zDeleteBillingBudgetPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Archived
+ */
+export const zDeleteBillingBudgetResponse = z.void()
+
+export const zUpdateBillingBudgetBody = zBudgetUpdateRequest
+
+export const zUpdateBillingBudgetPath = z.object({
+  id: z.string()
+})
+
+/**
+ * The budget after the change
+ */
+export const zUpdateBillingBudgetResponse = zBudgetWriteResult
+
+export const zGetBillingBudgetHistoryPath = z.object({
+  id: z.string()
+})
+
+/**
+ * Success
+ */
+export const zGetBillingBudgetHistoryResponse = zBudgetHistory
+
+/**
  * Effective billing capabilities
  */
 export const zGetBillingCapabilitiesResponse = zBillingCapabilitiesResponse
@@ -6825,6 +7149,15 @@ export const zCancelBillingOpPath = z.object({
  * Canceled; nothing was charged. Also returned for an operation already discarded or expired without authentication, so a repeat is safe.
  */
 export const zCancelBillingOpResponse = zBillingOpCancelResponse
+
+export const zGetBillingOpOutcomePath = z.object({
+  id: z.string()
+})
+
+/**
+ * Billing operation outcome
+ */
+export const zGetBillingOpOutcomeResponse = zBillingOpOutcomeResponse
 
 /**
  * Saved payment methods
@@ -7088,6 +7421,7 @@ export const zGetFeaturesResponse = z.object({
   model_upload_folders: z.array(z.string()).optional(),
   new_free_tier_subscriptions: z.boolean().optional(),
   open_on_cloud_enabled: z.boolean().optional(),
+  open_on_cloud_use_local_agent_enabled: z.boolean().optional(),
   private_workflow_links_enabled: z.boolean().optional(),
   sso_enabled: z.boolean().optional(),
   stripe_publishable_key: z.string().optional(),
@@ -7343,7 +7677,8 @@ export const zListJobsQuery = z.object({
   sort_order: z.enum(['asc', 'desc']).optional().default('desc'),
   after: z.string().optional(),
   offset: z.int().gte(0).optional().default(0),
-  limit: z.int().gte(1).lte(1000).optional().default(100)
+  limit: z.int().gte(1).lte(1000).optional().default(100),
+  capped_total: z.boolean().optional().default(true)
 })
 
 /**
@@ -7769,7 +8104,7 @@ export const zGetCccActivityQuery = z.object({
 export const zGetCccActivityResponse = zCccActivityPage
 
 /**
- * Editing instructions from this deployed catalog API build
+ * Editing instructions from this deployed catalog API build; private no-store
  */
 export const zGetCatalogAgentInstructionsResponse = z.string()
 
@@ -7789,7 +8124,7 @@ export const zListCccWebsiteCardsQuery = z.object({
   locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en'),
   q: z.string().max(300).optional(),
   sort: z
-    .enum(['popular', 'name', 'priceAsc', 'priceDesc'])
+    .enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc'])
     .optional()
     .default('popular'),
   category: z.array(z.string().max(200)).max(30).optional(),
@@ -7824,11 +8159,6 @@ export const zGetCccCreatorPath = z.object({
  * Public creator profile
  */
 export const zGetCccCreatorResponse = zCccCreatorProfile
-
-/**
- * Build-coupled catalog instructions, permissions and endpoint contracts
- */
-export const zGetCatalogDocsResponse = z.string()
 
 export const zBatchCccItemsBody = z.object({
   expected_draft_rev: z.coerce
@@ -8192,7 +8522,7 @@ export const zListCccWebsiteModelDirectoryQuery = z.object({
 export const zListCccWebsiteModelDirectoryResponse = zCccWebsiteModelDirectory
 
 /**
- * Catalog OpenAPI with contract fingerprint and environment
+ * Catalog OpenAPI with contract fingerprint and environment; private no-store
  */
 export const zGetCatalogOpenApiResponse = zCccjson
 
@@ -8439,13 +8769,14 @@ export const zViewFileQuery = z.object({
   timestamp: z.int().optional(),
   channel: z.string().optional(),
   res: z.int().gte(64).lte(1024).optional(),
+  redirect: z.string().optional(),
   workspace_id: z.string().optional()
 })
 
 /**
- * Resized JPEG thumbnail (returned when res parameter is used)
+ * Success - File content returned (used when channel or res parameter is present), or, with `redirect=false`, the signed link as JSON with `Cache-Control: no-store`.
  */
-export const zViewFileResponse = z.string()
+export const zViewFileResponse = zViewFileUrlResponse
 
 export const zGetLegacyViewMetadataPath = z.object({
   folder_name: z.string()

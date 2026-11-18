@@ -39,9 +39,7 @@ function isRetryableCheckoutRefusal(error: unknown): boolean {
  */
 export function useTopupOperation() {
   const { flags } = useFeatureFlags()
-  const sdkStore = flags.billingSdkTopupRailEnabled
-    ? useBillingSdkStore()
-    : null
+  const sdkStore = flags.billingSdkRailEnabled ? useBillingSdkStore() : null
   const operationStore = useBillingOperationStore()
   const billingContext = useBillingContext()
   const billingClient: BillingClient = sdkStore ? 'sdk' : 'legacy'

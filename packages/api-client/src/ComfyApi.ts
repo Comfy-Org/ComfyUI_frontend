@@ -4,7 +4,8 @@ import type {
   GetI18nResponse,
   ModelDownloadData,
   ModelFile,
-  PostAssetsFromWorkflowResponse
+  PostAssetsFromWorkflowResponse,
+  PromptOutputsSkippedData
 } from '@comfyorg/ingest-types'
 import {
   zGetEmbeddingsResponse,
@@ -23,6 +24,7 @@ import type { ApiAuthProvider } from './apiAuthProvider'
 import { anonymousApiAuthProvider } from './apiAuthProvider'
 import { authCredentialOf, notifyAuthCredential } from './authCredential'
 import { scopeMediaRoute } from './sessionMediaUrl'
+import { socketReconnectDelayMs } from './socketReconnectDelay'
 import { webSessionRequests } from './webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from './apiTimeouts'
 import { addBreadcrumb } from '@sentry/vue'
@@ -205,6 +207,7 @@ interface BackendApiCalls {
   execution_error: ExecutionErrorWsMessage
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
+  prompt_outputs_skipped: PromptOutputsSkippedData
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
@@ -1015,7 +1018,9 @@ export class ComfyApi extends EventTarget {
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
       const recoverSession = sessionRequests && !opened
-      const delayMs = recoverSession ? this.socketRetryDelayMs : 300
+      const delayMs = recoverSession
+        ? this.socketRetryDelayMs
+        : socketReconnectDelayMs({ isCloud: this.ports.isCloud, opened })
       if (recoverSession) {
         this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
       }
@@ -1147,6 +1152,7 @@ export class ComfyApi extends EventTarget {
             case 'execution_interrupted':
             case 'execution_cached':
             case 'execution_success':
+            case 'prompt_outputs_skipped':
             case 'progress':
             case 'progress_state':
             case 'executed':

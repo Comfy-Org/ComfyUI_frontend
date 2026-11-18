@@ -15,6 +15,7 @@ import type { ISerialisedNode } from '@comfyorg/graph-model/serialisation'
 import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type { TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { t } from '@/i18n'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -28,8 +29,10 @@ import {
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app, sanitizeNodeName } from '@/scripts/app'
+import { sanitizeNodeName } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
+import { useWidgetComponents } from '@/stores/widgetComponents'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -211,7 +214,11 @@ function assignMappedInputs(
       widget.value = value as TWidgetValue
       assigned.push({ name, value: widget.value })
     } catch (error) {
-      console.error(`Failed to set widget ${name}`, error)
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_assigning_replacement_widget_value',
+        tags: { node_type: replacement.new_node_id, widget_name: name }
+      })
     }
   }
   const inputMaps = [...(replacement.input_mapping ?? [])].sort(
@@ -393,12 +400,15 @@ function replaceWithMapping(
   } catch (error) {
     console.error(`Failed to remove replaced node ${node.id}`, error)
   }
+  const components = useWidgetComponents()
+  components.writeNode(scope.rootGraphId, node.id, newNode.properties)
   clearNodeOwnedStoreState(node)
 
   nodeGraph._nodes[idx] = newNode
   newNode.graph = nodeGraph
   node.graph = null
   nodeGraph._nodes_by_id[newNode.id] = newNode
+  components.adoptNode(scope.rootGraphId, newNode.id, newNode.properties)
 
   for (const { name, value } of assignedWidgets) {
     const widget = newNode.widgets?.find((w) => w.name === name)
@@ -407,7 +417,11 @@ function replaceWithMapping(
       if (widget.value !== value) widget.value = value
       widget.callback?.(value)
     } catch (error) {
-      console.error(`Failed to set widget ${name}`, error)
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_invoking_replacement_widget_callback',
+        tags: { node_type: replacement.new_node_id, widget_name: name }
+      })
     }
   }
   for (const widget of newNode.widgets ?? []) {
@@ -432,7 +446,11 @@ function replaceWithMapping(
         input
       )
     } catch (error) {
-      console.error(`Failed to notify connected link ${link.id}`, error)
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_notifying_replacement_input_connection',
+        tags: { node_type: replacement.new_node_id, input_name: input.name }
+      })
     }
   }
 
@@ -499,7 +517,7 @@ export function useNodeReplacement() {
     const failedTypes = new Set<string>()
     let replacementFailed: true | undefined
     let anyNodeReplaced = false
-    const graph = app.rootGraph
+    const graph = useApp().rootGraph
     const recordReplacementFailure = (type: string) => {
       replacementFailed = true
       failedTypes.add(type)

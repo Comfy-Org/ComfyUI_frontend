@@ -248,11 +248,15 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it.for([
-    { flag: true, component: AddCreditsDialogContent },
-    { flag: false, component: TopUpCreditsDialogContentWorkspace }
+    { flag: true, component: AddCreditsDialogContent, growsDown: true },
+    {
+      flag: false,
+      component: TopUpCreditsDialogContentWorkspace,
+      growsDown: false
+    }
   ])(
     'opens the purchase dialog billing_new_ux_enabled=$flag picks, even while routing is unknown',
-    async ({ flag, component }) => {
+    async ({ flag, component, growsDown }) => {
       vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = flag
       useBillingContext().type = computed(() => 'unknown')
 
@@ -263,6 +267,7 @@ describe('showTopUpCreditsDialog', () => {
 
       const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
       expect(args.component).toBe(component)
+      expect(args.dialogComponentProps?.growsDown).toBe(growsDown)
     }
   )
 
