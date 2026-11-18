@@ -355,6 +355,10 @@ const autoTopUpMemberCopy = useAutoTopUpMemberBlockCopy()
 const autoTopUpMemberView = computed(
   () => capabilities.autoTopUpMemberView.value
 )
+const salesVariant = computed(() =>
+  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
+)
+
 const addCreditsVariant = computed(() =>
   addCreditsEmphasis({
     availableCents:
@@ -367,16 +371,14 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
+      action.value === 'subscribe' ||
+      (action.value === 'choosePlan' && isCloud) ||
+      (action.value === 'contactSales' && salesVariant.value === 'inverted')
   })
 )
 
 const creditBannerAddCreditsVariant = computed(() =>
   planRow.value.kind === 'ended' ? 'secondary' : addCreditsVariant.value
-)
-
-const salesVariant = computed(() =>
-  billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
 const { button: plansButton, open: openPlans } = usePlatformPlansLink()

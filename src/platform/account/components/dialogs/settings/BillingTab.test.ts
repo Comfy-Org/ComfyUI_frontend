@@ -1754,6 +1754,21 @@ describe('BillingTab', () => {
       expect(addCreditsVariants()).toEqual(['secondary'])
     })
 
+    it('keeps Contact sales the one white plan action on an ended Enterprise plan at 0', () => {
+      arrange({
+        planKind: 'sales_managed',
+        canTopUp: true,
+        balance: zeroBalance,
+        subscriptionStatus: 'ended',
+        subscription: { ...activeSubscription, isActive: false }
+      })
+
+      expect(
+        screen.getByRole('link', { name: 'Contact sales' })
+      ).toHaveAttribute('data-variant', 'inverted')
+      expect(addCreditsVariants()).not.toContain('inverted')
+    })
+
     it.for([
       {
         surface: 'Cloud',
