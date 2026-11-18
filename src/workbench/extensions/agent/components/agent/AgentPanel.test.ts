@@ -80,25 +80,6 @@ function mountHistory(
   })
 }
 
-function mount(isMaximized = false) {
-  return render(AgentPanel, {
-    props: {
-      entries: [],
-      historyGroups: createHistoryGroups(),
-      isMaximized,
-      activeTab: { path: 'workflows/portrait.json', name: 'portrait' }
-    },
-    global: {
-      plugins: [i18n],
-      stubs: {
-        Composer: true,
-        EmptyState: true,
-        PanelHeader: true
-      }
-    }
-  })
-}
-
 function mountTargetlessPanel() {
   const pinia = getActivePinia()
   assert.exists(pinia)
@@ -633,50 +614,41 @@ describe('AgentPanel', () => {
     expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
   })
 
-  it('passes the editable workflow into the minimized run notice', () => {
-    mount()
+  it.for([false, true])(
+    'P7-01: shows no edit notice naming the bound workflow for isMaximized=%s even after composer focus',
+    async (isMaximized) => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const pinia = getActivePinia()
+      assert.exists(pinia)
+      render(AgentPanel, {
+        props: {
+          entries: [],
+          historyGroups: createHistoryGroups(),
+          isMaximized,
+          activeTab: { path: 'workflows/portrait.json', name: 'portrait' }
+        },
+        global: {
+          plugins: [pinia, i18n],
+          directives: { tooltip: {} }
+        }
+      })
 
-    expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit portrait. It works on 1 workflow at a time.'
-    )
-    expect(
-      screen.getByRole('button', { name: 'Share feedback' })
-    ).toBeInTheDocument()
-  })
+      expect(screen.queryByRole('note')).toBeNull()
+      expect(screen.queryByText(/The agent can now edit/i)).toBeNull()
 
-  it('passes the editable workflow into the expanded run notice', () => {
-    mount(true)
+      await user.click(screen.getByRole('textbox'))
+      await vi.advanceTimersByTimeAsync(500)
 
-    expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit portrait. It works on 1 workflow at a time.'
-    )
-    expect(
-      screen.getByRole('button', { name: 'Share feedback' })
-    ).toBeInTheDocument()
-  })
-
-  it('hides the edit notice while following the visible tab and shows it once following stops', async () => {
-    const { rerender } = render(AgentPanel, {
-      props: {
-        entries: [],
-        historyGroups: createHistoryGroups(),
-        activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
-        followsVisibleWorkflow: true
-      },
-      global: {
-        plugins: [i18n],
-        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
-      }
-    })
-
-    expect(screen.queryByRole('note')).toBeNull()
-
-    await rerender({ followsVisibleWorkflow: false })
-
-    const note = screen.getByRole('note')
-    expect(note).toBeVisible()
-    expect(note).toHaveTextContent('portrait')
-  })
+      expect(screen.queryByRole('note')).toBeNull()
+      expect(
+        localStorage.getItem('Comfy.AgentPanel.runNoticeDismissed')
+      ).toBeNull()
+      expect(
+        screen.getByRole('button', { name: 'Share feedback' })
+      ).toBeInTheDocument()
+    }
+  )
 
   it('does not render a workflow selector chip and still attaches @ workflow references', async () => {
     const pinia = getActivePinia()
@@ -1395,16 +1367,21 @@ describe('AgentPanel', () => {
 })
 
 it('restores the intro once the greeting is no longer visible even if its prop remains', async () => {
+  vi.useFakeTimers({ shouldAdvanceTime: false })
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
   const view = render(AgentPanel, {
     props: {
       entries: [],
       historyGroups: createHistoryGroups(),
-      activeTab: { path: 'portrait.json', name: 'portrait' },
+      workflowDetached: true,
       greeting: { variant: 'B', canvas: 'workflow' }
     },
     global: { plugins: [i18n] }
   })
+  await user.click(screen.getByRole('textbox'))
+  await vi.advanceTimersByTimeAsync(500)
   expect(screen.queryByRole('note')).not.toBeInTheDocument()
+
   await view.rerender({
     entries: [{ id: toTurnId('sent-message'), role: 'user', text: 'Help me' }]
   })
@@ -1412,6 +1389,6 @@ it('restores the intro once the greeting is no longer visible even if its prop r
     screen.queryByRole('heading', { name: 'A little help to get you started!' })
   ).not.toBeInTheDocument()
   expect(screen.getByRole('note')).toHaveTextContent(
-    'The agent can now edit portrait.'
+    i18n.global.t('agent.runNotice')
   )
 })

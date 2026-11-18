@@ -9,21 +9,26 @@ import RunNoticeAction from './RunNoticeAction.vue'
 const {
   expanded = false,
   workflowName,
-  followsVisibleWorkflow = false,
+  hasWorkflowTarget = false,
   genericNoticeReady = false,
   hideIntro = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  followsVisibleWorkflow?: boolean
+  hasWorkflowTarget?: boolean
   genericNoticeReady?: boolean
   hideIntro?: boolean
   context?: 'mismatch' | 'unavailable' | 'emptyCanvas'
 }>()
 
 const emit = defineEmits<{ showTarget: []; newChat: [] }>()
-const dismissed = useStorage('Comfy.AgentPanel.runNoticeDismissed', false)
+const dismissed = useStorage(
+  'Comfy.AgentPanel.runNoticeDismissed',
+  false,
+  localStorage,
+  { writeDefaults: false }
+)
 const contextMessages = {
   mismatch: 'agent.viewingDifferentWorkflow',
   unavailable: 'agent.targetWorkflowUnavailable',
@@ -32,16 +37,12 @@ const contextMessages = {
 const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
-const followsNamedWorkflow = computed(
-  () => followsVisibleWorkflow && Boolean(workflowName)
+const canShowGenericNotice = computed(
+  () => !context && !hasWorkflowTarget && !hideIntro && genericNoticeReady
 )
+
 const visible = computed(
-  () =>
-    Boolean(context) ||
-    (!hideIntro &&
-      !dismissed.value &&
-      !followsNamedWorkflow.value &&
-      Boolean(workflowName || genericNoticeReady))
+  () => Boolean(context) || (canShowGenericNotice.value && !dismissed.value)
 )
 const liveness = computed(() => (context ? 'polite' : undefined))
 const contextAction = computed(() => {
@@ -87,15 +88,6 @@ const contextAction = computed(() => {
           @run="contextAction.run"
         />
       </template>
-      <i18n-t
-        v-else-if="workflowName"
-        keypath="agent.workflowEditNotice"
-        tag="span"
-      >
-        <template #workflow>
-          <span class="underline decoration-solid">{{ workflowName }}</span>
-        </template>
-      </i18n-t>
       <template v-else>
         {{ $t(defaultNotice) }}
       </template>

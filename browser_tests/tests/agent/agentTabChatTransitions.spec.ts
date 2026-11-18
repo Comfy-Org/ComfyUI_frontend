@@ -32,9 +32,7 @@ test.describe(
         await expect(
           tabChats.tab(0).and(tabChats.topbar.getActiveTab())
         ).toBeVisible()
-        await expect(tabChats.panel.root.getByRole('note')).toContainText(
-          'Portrait'
-        )
+        await expect(tabChats.panel.root.getByRole('note')).toHaveCount(0)
         await expect(tabChats.panel.composer).toBeEditable()
         await expect(
           tabChats.panel.root.getByRole('button', {

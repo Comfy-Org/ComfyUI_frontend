@@ -61,7 +61,6 @@ const {
   editableWorkflowId,
   activeTab = null,
   visibleTabPath = null,
-  followsVisibleWorkflow = false,
   workflowDetached = false,
   targetRestoring = false,
   targetUnavailable = false,
@@ -102,7 +101,6 @@ const {
   editableWorkflowId?: string
   activeTab?: ActiveTab | null
   visibleTabPath?: string | null
-  followsVisibleWorkflow?: boolean
   workflowDetached?: boolean
   targetRestoring?: boolean
   targetUnavailable?: boolean
@@ -311,9 +309,6 @@ function onComposerFocus(): void {
 }
 
 const footerInert = computed(() => openingChat.value || blocked)
-const runNoticeWorkflowName = computed(() =>
-  workflowDetached ? undefined : activeTab?.name
-)
 
 function addAttachment(attachment: ComposerAttachment): boolean {
   return composerRef.value?.addAttachment(attachment) ?? false
@@ -462,8 +457,10 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <RunNoticeBanner
             :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
-            :workflow-name="runNoticeWorkflowName"
-            :follows-visible-workflow
+            :has-workflow-target="!workflowDetached && activeTab !== null"
+            :workflow-name="
+              targetNotice === 'mismatch' ? activeTab?.name : undefined
+            "
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"
