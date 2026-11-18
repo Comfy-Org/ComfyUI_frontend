@@ -110,7 +110,7 @@
           target="_blank"
           :rel="platformLinkRel()"
           data-testid="custom-deployment-platform"
-          @click="emit('done')"
+          @click="createOnPlatform"
         >
           {{ pitch.platformLabel }}
           <i
@@ -136,8 +136,12 @@ import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDia
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
 import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable.vue'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
-import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
+import {
+  createHandoffNonce,
+  openPlatformWithWorkflow,
+  workflowHandoffUrl
+} from '@/platform/workspace/platformWorkflowHandoff'
 import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const {
@@ -159,7 +163,14 @@ defineOptions({ inheritAttrs: false })
 
 const { isCopying, copied, copy } = useBriefCopy()
 
+const handoffNonce = createHandoffNonce()
 const createDeploymentUrl = computed(() =>
-  customDeploymentCreateUrl('custom-deployment-card')
+  workflowHandoffUrl(handoffNonce, 'custom-deployment-card')
 )
+
+function createOnPlatform(event: MouseEvent) {
+  if (openPlatformWithWorkflow(createDeploymentUrl.value, handoffNonce))
+    event.preventDefault()
+  emit('done')
+}
 </script>

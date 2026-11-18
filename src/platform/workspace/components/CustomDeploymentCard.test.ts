@@ -72,17 +72,21 @@ describe('CustomDeploymentCard', () => {
     ).toEqual(['Deploy your node packs', 'Work on the GPU you choose'])
   })
 
-  it('creates it on the platform in a new tab that sends no referrer from a local build, and reports done', async () => {
+  it('opens the platform wizard from a click with this tab as its opener, keeps a plain link that has none, and reports done', async () => {
+    const open = vi
+      .spyOn(window, 'open')
+      .mockReturnValue(fromPartial<Window>({ closed: true }))
     const { onDone, user } = renderCard()
     const link = screen.getByRole('link', { name: 'Deploy on Platform' })
+    const href = link.getAttribute('href')
 
-    expect(link).toHaveAttribute(
-      'href',
-      'https://platform.comfy.org/profile/builds?utm_source=comfyui&utm_medium=app&utm_content=custom-deployment-card'
+    expect(href).toMatch(
+      /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=[A-Za-z0-9_-]{16,64}&utm_source=comfyui&utm_medium=app&utm_content=custom-deployment-card$/
     )
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
     await user.click(link)
+    expect(open).toHaveBeenCalledExactlyOnceWith(href, '_blank')
     expect(onDone).toHaveBeenCalledOnce()
   })
 
