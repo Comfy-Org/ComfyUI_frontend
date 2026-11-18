@@ -310,7 +310,10 @@ const agentPanelHasOpaqueNeighbor = computed(
  * two and a second one reads as a gap.
  */
 const graphMeetsAgentPanel = computed(
-  () => agentPanelOpen.value && !agentPanelHasOpaqueNeighbor.value
+  () =>
+    agentPanelOpen.value &&
+    !agentPanelHasOpaqueNeighbor.value &&
+    !agentInside.value
 )
 
 const agentInside = computed(
