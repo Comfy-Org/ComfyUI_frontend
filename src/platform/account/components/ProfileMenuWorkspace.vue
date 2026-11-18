@@ -86,6 +86,7 @@
             @click="pinCredits"
             @keydown.arrow-right.prevent="pinCredits"
             @blur="previewHeldBack = false"
+            @pointerenter="previewHeldBack = false"
             @pointerleave="previewHeldBack = false"
           >
             <i class="icon-[lucide--coins] text-muted-foreground" />
