@@ -1492,6 +1492,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
 
+  function turnInProgressNotice(): string {
+    return i18n.global.t(
+      conversationStore.awaitsRunApproval
+        ? 'agent.sendAwaitingRunApproval'
+        : 'agent.sendTurnInProgress'
+    )
+  }
+
   function recordSendError(
     error: unknown,
     text: string,
@@ -1523,7 +1531,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       nextLocalErrorId(),
       text,
       reattached
-        ? i18n.global.t('agent.sendTurnInProgress')
+        ? turnInProgressNotice()
         : `${i18n.global.t('agent.sendFailed')}: ${message}`
     )
     const turnAccepted = accepted || isUnreadableAckFailure(error)
