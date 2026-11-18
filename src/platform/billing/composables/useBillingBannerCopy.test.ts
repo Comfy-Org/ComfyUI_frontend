@@ -42,7 +42,10 @@ function renderBanner(banner: PlanCheckoutBanner) {
   return { onDismiss }
 }
 
-function renderPlanNotStarted(banner: PlanNotStartedBanner) {
+function renderPlanNotStarted(
+  banner: PlanNotStartedBanner,
+  canOpenPlans = true
+) {
   const onAction = vi.fn()
   render(
     {
@@ -50,7 +53,7 @@ function renderPlanNotStarted(banner: PlanNotStartedBanner) {
         const { copy, planNotStartedView } = useBillingBannerCopy()
         return () =>
           h(BillingBanner, {
-            view: planNotStartedView(banner),
+            view: planNotStartedView(banner, canOpenPlans),
             copy: copy.value,
             onAction
           })
@@ -198,5 +201,18 @@ describe('useBillingBannerCopy plan not started banner', () => {
     await userEvent.click(screen.getByRole('button', { name: 'View on Plans' }))
 
     expect(onAction).toHaveBeenCalledWith('viewPlans')
+  })
+
+  it('offers no View on Plans when the server does not let this person open Plans', () => {
+    renderPlanNotStarted(
+      { planTier: null, paymentPage: { kind: 'unavailable' } },
+      false
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan starts once the payment goes through.'
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 })
