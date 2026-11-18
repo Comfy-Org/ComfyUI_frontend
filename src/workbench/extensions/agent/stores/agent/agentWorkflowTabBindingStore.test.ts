@@ -279,6 +279,11 @@ describe('agentWorkflowTabBindingStore', () => {
 
     expect(reloaded.tabPathFor('wf-draft')).toBe(savedPath)
     expect(reloaded.matchesWorkflow('wf-draft', draft)).toBe(true)
+
+    await workflows.closeWorkflow(workflows.getWorkflowByPath(savedPath)!)
+    await nextTick()
+
+    expect(storedBindings()).not.toHaveProperty('wf-draft')
   })
 
   it('leaves a binding in place when a tab that does not own it is renamed', async () => {
