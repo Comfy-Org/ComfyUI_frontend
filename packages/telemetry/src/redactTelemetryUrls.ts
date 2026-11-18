@@ -50,7 +50,7 @@ function redactUrlToken(token: string): string {
     redacted += token.slice(separator, nextUrl)
     tokenStart = nextUrl
   }
-  return redacted.replace(/\/\/[^/\s"'<>]*@/gi, '//')
+  return redacted.replace(/(?<![A-Z0-9._~%-])\/\/[^/\s"'<>]*@/gi, '//')
 }
 
 function redactSingleUrlToken(token: string): string {

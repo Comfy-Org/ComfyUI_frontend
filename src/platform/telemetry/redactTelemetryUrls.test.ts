@@ -211,6 +211,13 @@ describe('redactTelemetryUrls', () => {
     expect(redacted).toBe("['a/b','c/d']")
   })
 
+  it('preserves a path segment that merely contains //...@ after a safe authority', () => {
+    const redacted = redactTelemetryUrls(
+      'https://safe.example//path@user.com?token=secret'
+    )
+    expect(redacted).toBe('https://safe.example//path@user.com')
+  })
+
   describe.for([
     {
       kind: 'a single-quoted URL',
