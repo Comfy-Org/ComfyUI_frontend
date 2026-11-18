@@ -2,8 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
@@ -55,6 +54,7 @@ async function openOverlay() {
 
 describe(useCloseOverlayCoveredByToast, () => {
   beforeEach(() => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
     seedMissingModel()
   })
 
@@ -168,26 +168,12 @@ describe(useCloseOverlayCoveredByToast, () => {
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
   })
 
-  it('does not reopen an overlay the user closed after it opened again', async () => {
-    const toastKind = watchOverlay()
-    await openOverlay()
-    toastKind.value = 'hidden'
-    await openOverlay()
-
-    useExecutionErrorStore().dismissErrorOverlay()
-    seedMissingMedia()
-    await nextTick()
-
-    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
-  })
-
-  it('does not reopen an overlay it closed for the previous workflow', async () => {
+  it('forgets the closed overlay once the covered models resolve', async () => {
     watchOverlay()
     await openOverlay()
 
-    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
-      path: 'workflows/other.json'
-    })
+    useMissingModelStore().setMissingModels([])
+    await nextTick()
     seedMissingMedia()
     await nextTick()
 
