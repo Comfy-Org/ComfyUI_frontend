@@ -10,7 +10,7 @@ import type {
 } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { api } from '@/scripts/api'
 
@@ -31,7 +31,7 @@ vi.mock(import('@/platform/openOnCloud/serializeRootGraph'), () => ({
   serializeRootGraph: vi.fn(() => structuredClone(defaultGraph))
 }))
 
-const cloudOrigin = new URL(getComfyCloudBaseUrl()).origin
+const cloudOrigin = () => new URL(getComfyCloudBaseUrl()).origin
 const PREPARE_FAILED_TOAST = expect.objectContaining({
   kind: 'error',
   title: "Couldn't prepare this workflow for Comfy Cloud"
@@ -57,7 +57,7 @@ function openedNonce(tabs: ReturnType<typeof fakeTabs>['tabs']): string {
 
 function sendFromTab(
   data: unknown,
-  { origin = cloudOrigin, fromTab = true } = {}
+  { origin = cloudOrigin(), fromTab = true } = {}
 ) {
   window.dispatchEvent(
     new MessageEvent('message', {
@@ -75,7 +75,7 @@ describe('openWorkflowOnCloud in a browser', () => {
     await openWorkflowOnCloud(tabs)
 
     const url = new URL(tabs.open.mock.calls[0][0])
-    expect(url.origin).toBe(cloudOrigin)
+    expect(url.origin).toBe(cloudOrigin())
     expect(url.searchParams.get('from_local')).toMatch(/^[\w-]{24}$/)
     expect(tabs.openDisowned).not.toHaveBeenCalled()
     expect(useToast().toasts).not.toContainEqual(PREPARE_FAILED_TOAST)
@@ -100,7 +100,7 @@ describe('openWorkflowOnCloud in a browser', () => {
           ])
         })
       },
-      cloudOrigin
+      cloudOrigin()
     )
   })
 
@@ -121,7 +121,7 @@ describe('openWorkflowOnCloud in a browser', () => {
 
   it.for([
     { name: 'another origin', origin: 'https://evil.example', fromTab: true },
-    { name: 'another window', origin: cloudOrigin, fromTab: false }
+    { name: 'another window', origin: undefined, fromTab: false }
   ])('ignores a ready message from $name', async ({ origin, fromTab }) => {
     const { tab, tabs } = fakeTabs()
     await openWorkflowOnCloud(tabs)
@@ -177,11 +177,7 @@ describe('openWorkflowOnCloud in a browser', () => {
 
 describe('openWorkflowOnCloud on Desktop', () => {
   beforeEach(() => {
-    const previous = remoteConfig.value
-    remoteConfig.value = { open_on_cloud_enabled: true }
-    onTestFinished(() => {
-      remoteConfig.value = previous
-    })
+    useRemoteConfigStore().acceptConfig({ open_on_cloud_enabled: true }, false)
   })
 
   it('uses the native host relay when Desktop hosts a localhost distribution', async () => {

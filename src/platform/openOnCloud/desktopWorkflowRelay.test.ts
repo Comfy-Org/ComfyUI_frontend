@@ -15,7 +15,7 @@ import {
   handleDesktopWorkflowHandoff,
   stageDesktopWorkflowHandoff
 } from '@/platform/openOnCloud/desktopWorkflowRelay'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
@@ -63,14 +63,7 @@ describe(handleDesktopWorkflowHandoff, () => {
     openAt('http://127.0.0.1:8000/')
     api.user = 'desktop-user'
     vi.mocked(fetch).mockImplementation(async () => Response.json({}))
-    const previousConfig = remoteConfig.value
-    const previousWindowConfig = window.__CONFIG__
-    remoteConfig.value = { open_on_cloud_enabled: true }
-    window.__CONFIG__ = {}
-    onTestFinished(() => {
-      remoteConfig.value = previousConfig
-      window.__CONFIG__ = previousWindowConfig
-    })
+    useRemoteConfigStore().acceptConfig({ open_on_cloud_enabled: true }, false)
   })
 
   it('lets the editor boot when the URL carries no relay', async () => {
@@ -149,7 +142,7 @@ describe(handleDesktopWorkflowHandoff, () => {
 
   it('forwards an already staged transfer from a signed-out browser', async () => {
     const { relay, record } = await stagedRelay()
-    remoteConfig.value = {}
+    useRemoteConfigStore().acceptConfig({}, false)
     openAt(relay)
     const replace = relayed()
 
@@ -163,7 +156,7 @@ describe(handleDesktopWorkflowHandoff, () => {
   })
 
   it('does not stage a transfer when the toolbar is disabled', async () => {
-    remoteConfig.value = { open_on_cloud_enabled: false }
+    useRemoteConfigStore().acceptConfig({ open_on_cloud_enabled: false }, false)
 
     await expect(
       stageDesktopWorkflowHandoff('portrait', defaultGraph)
@@ -177,12 +170,12 @@ describe(handleDesktopWorkflowHandoff, () => {
       comfy_cloud_base_url: 'https://custom-cloud.example.com',
       open_on_cloud_enabled: true
     }
-    remoteConfig.value = features
+    useRemoteConfigStore().acceptConfig(features, false)
     const { relay, record } = await stagedRelay()
     expect(new URL(record.destination).origin).toBe(
       features.comfy_cloud_base_url
     )
-    remoteConfig.value = {}
+    useRemoteConfigStore().acceptConfig({}, false)
     openAt(relay)
     vi.mocked(fetch).mockResolvedValue(Response.json(features))
     const replace = relayed()

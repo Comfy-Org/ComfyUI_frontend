@@ -194,8 +194,8 @@ import { useSocialSignIn } from '@/platform/auth/social/useSocialSignIn'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,
-  remoteConfig
-} from '@/platform/remoteConfig/remoteConfig'
+  useRemoteConfigStore
+} from '@/platform/remoteConfig/remoteConfigStore'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
 import {
   desktopHostReportsSignInFailures,
@@ -240,9 +240,10 @@ const signInWithDesktopHost = async () => {
   }
   toast.error(t('auth.desktopHost.signInFailed'), { duration: 6000 })
 }
+const remoteConfigStore = useRemoteConfigStore()
 const comfyPlatformBaseUrl = computed(() =>
   configValueOrDefault(
-    remoteConfig.value,
+    remoteConfigStore.config,
     'comfy_platform_base_url',
     getComfyPlatformBaseUrl()
   )

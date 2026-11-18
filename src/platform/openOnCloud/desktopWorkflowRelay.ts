@@ -13,7 +13,7 @@ import {
   cloudOrigin,
   isLocalOrigin
 } from '@/platform/openOnCloud/localHandoffProtocol'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
@@ -108,7 +108,8 @@ async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false }).catch(() => undefined)
-  if (remoteConfig.value.open_on_cloud_enabled === false) return false
+  if (useRemoteConfigStore().config.open_on_cloud_enabled === false)
+    return false
   const relayed = await relayWorkflow(url).catch(() => false)
   if (!relayed) {
     const splash = document.getElementById('splash-loader')

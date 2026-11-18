@@ -4,7 +4,7 @@ import { ref } from 'vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 import { startLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { useRemoteConfigStore } from '@/platform/remoteConfig/remoteConfigStore'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))
@@ -29,11 +29,10 @@ function start() {
   vi.mocked(api.getServerFeature).mockImplementation(
     (_path, defaultValue) => defaultValue
   )
-  const previousConfig = remoteConfig.value
-  remoteConfig.value = { comfy_cloud_base_url: 'https://runtime.example.com' }
-  onTestFinished(() => {
-    remoteConfig.value = previousConfig
-  })
+  useRemoteConfigStore().acceptConfig(
+    { comfy_cloud_base_url: 'https://runtime.example.com' },
+    false
+  )
   const { flags } = useFeatureFlags()
   return {
     userId,
