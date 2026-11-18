@@ -127,6 +127,7 @@ import type {
   TurnOrigin,
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
+import { useAgentTabSignals } from './composables/agent/useAgentTabSignals'
 import type { CoachStep } from './composables/agent/useOnboarding'
 import { useBillingIdentity } from './composables/useBillingIdentity'
 import { useAgentConsent } from './composables/agent/useAgentConsent'
@@ -1319,12 +1320,7 @@ async function restoreThreadWorkflow(
 }
 
 conversationStore.setTurnTabResolver(turnTab)
-conversationStore.onTurnCompleted((path) => tabActivity.markModified(path))
-watch(
-  () => conversationStore.turnTabs,
-  (tabs) => tabActivity.setAgentTurnTabs(tabs),
-  { immediate: true, flush: 'sync' }
-)
+const { clearTurnSignals } = useAgentTabSignals()
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1718,7 +1714,7 @@ onBeforeUnmount(() => {
       ++activeTabGeneration
     },
     clearAgentTurnTabs: () => {
-      tabActivity.setAgentTurnTabs([])
+      clearTurnSignals()
     },
     resetTurnTabResolver: () => {
       conversationStore.setTurnTabResolver(() => ({ status: 'unknown' }))
