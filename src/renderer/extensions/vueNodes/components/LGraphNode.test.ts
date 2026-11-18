@@ -39,16 +39,24 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import type { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
+import type { NodePreviewPart } from '@/systems/nodePreviewSystem'
 
 type ResizeCallback = (
   result: ResizeCallbackPayload,
   element: HTMLElement
 ) => void
 
+type PromotedPreviews = ReturnType<
+  typeof usePromotedPreviews
+>['promotedPreviews']['value']
+
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
   mockLgraphNode: null as Record<string, unknown> | null,
-  resizeCallback: null as ResizeCallback | null
+  resizeCallback: null as ResizeCallback | null,
+  livePreviewUrl: '',
+  promotedPreviews: [] as PromotedPreviews
 }))
 const mockNodeEventHandlers = vi.hoisted(
   (): ReturnType<typeof useNodeEventHandlers> => ({
@@ -124,11 +132,17 @@ vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/preview/useNodePreviewState'),
   () => ({
     useNodePreviewState: vi.fn(() => ({
-      latestPreviewUrl: computed(() => ''),
-      shouldShowPreviewImg: computed(() => false)
+      latestPreviewUrl: computed(() => mockData.livePreviewUrl),
+      shouldShowPreviewImg: computed(() => !!mockData.livePreviewUrl)
     }))
   })
 )
+
+vi.mock(import('@/composables/node/usePromotedPreviews'), () => ({
+  usePromotedPreviews: vi.fn(() => ({
+    promotedPreviews: computed(() => mockData.promotedPreviews)
+  }))
+}))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'),
@@ -250,12 +264,14 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.mocked(getNodeByLocatorId).mockImplementation(() =>
       fromAny<LiteGraphNode, unknown>(
-        mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+        mockData.mockLgraphNode ?? { isSubgraphNode: () => false, inputs: [] }
       )
     )
     mockData.mockExecuting = false
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
+    mockData.livePreviewUrl = ''
+    mockData.promotedPreviews = []
     app.dragOverNode = null
     layoutStore.isDraggingVueNodes.value = false
 
@@ -428,7 +444,7 @@ describe('LGraphNode', () => {
       subgraphs: new Map()
     }
     fakeRootGraph.rootGraph = fakeRootGraph
-    mockData.mockLgraphNode = { isSubgraphNode: () => false }
+    mockData.mockLgraphNode = { isSubgraphNode: () => false, inputs: [] }
     useCanvasStore().currentGraph = fromAny(fakeRootGraph)
     useWidgetValueStore().registerWidget(
       widgetId('graph-test', mockNodeData.id, 'prompt'),
@@ -521,7 +537,7 @@ describe('LGraphNode', () => {
     expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
   })
 
-  it('limits a generic image preview to the images output bucket', () => {
+  it('shows images and a video from one run as separate previews', () => {
     const outputs = seedNodeOutputs([
       { filename: 'output.png', type: 'output' }
     ])
@@ -532,9 +548,9 @@ describe('LGraphNode', () => {
 
     renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(screen.getByTestId('node-content')).toHaveTextContent(
-      /^output\.png$/
-    )
+    expect(
+      screen.getAllByTestId('node-content').map((el) => el.textContent)
+    ).toEqual(['output.png', 'output.webm'])
   })
 
   it('keeps legacy video files without adding text outputs to the preview', () => {
@@ -594,6 +610,7 @@ describe('LGraphNode', () => {
       mockData.mockLgraphNode = {
         id: nodeId,
         graph: fakeRootGraph,
+        inputs: [],
         isSubgraphNode: () => false
       }
       useNodeOutputStore().nodeOutputs[createNodeLocatorId(null, nodeId)] = {
@@ -607,6 +624,75 @@ describe('LGraphNode', () => {
       expect(screen.getByTestId('node-content')).toHaveTextContent('output.png')
     }
   )
+
+  describe('a subgraph node during a run', () => {
+    const exposure = {
+      name: '$$canvas-image-preview',
+      sourceNodeId: toNodeId(10),
+      sourceWidgetName: '$$canvas-image-preview'
+    }
+    const exposedImage: NodePreviewPart = {
+      kind: 'media',
+      type: 'image',
+      items: [
+        {
+          filename: 'exposed.png',
+          mediaType: 'images',
+          nodeId: '10',
+          subfolder: ''
+        }
+      ]
+    }
+
+    it.for<{
+      shows: string
+      promotedPreviews: PromotedPreviews
+      urls: string[]
+    }>([
+      {
+        shows: 'one live preview per interior source running in parallel',
+        promotedPreviews: [],
+        urls: ['blob:ten', 'blob:eleven']
+      },
+      {
+        shows: 'the live previews inside below an exposed final output',
+        promotedPreviews: [{ ...exposure, parts: [exposedImage] }],
+        urls: ['blob:ten', 'blob:eleven']
+      },
+      {
+        shows: 'an exposed source once, in its exposure',
+        promotedPreviews: [
+          {
+            ...exposure,
+            parts: [{ kind: 'live', source: '5:10', url: 'blob:ten' }]
+          }
+        ],
+        urls: ['blob:ten', 'blob:eleven']
+      }
+    ])('shows $shows', ({ promotedPreviews, urls }) => {
+      const rootGraph: Record<string, unknown> = { id: 'graph-test' }
+      rootGraph.rootGraph = rootGraph
+      mockData.mockLgraphNode = {
+        id: toNodeId(5),
+        graph: rootGraph,
+        inputs: [],
+        isSubgraphNode: () => true
+      }
+      mockData.promotedPreviews = promotedPreviews
+      vi.mocked(useNodeOutputStore().getPreviewImagesInside).mockReturnValue([
+        { executionId: '5:10', urls: ['blob:ten'] },
+        { executionId: '5:11', urls: ['blob:eleven'] }
+      ])
+
+      renderLGraphNode({ nodeData: mockNodeData })
+
+      expect(
+        screen
+          .getAllByRole('img', { name: 'g.liveSamplingPreview' })
+          .map((img) => img.getAttribute('src'))
+      ).toEqual(urls)
+    })
+  })
 
   it('restores only the core LoadAudio input player on disconnect', async () => {
     const isAudioLinked = ref(true)
