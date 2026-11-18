@@ -13,7 +13,7 @@
             : 'relative h-full'
         )
       "
-      :style="{ width: `${dockWidth ?? panelWidth}px` }"
+      :style="{ width: `${panelWidth}px` }"
     >
       <div
         v-if="!isOverlay"
@@ -37,14 +37,7 @@
           )
         "
       >
-        <div
-          :class="
-            cn(
-              'size-full overflow-hidden rounded-lg border',
-              floating && 'bg-background shadow-lg'
-            )
-          "
-        >
+        <div class="size-full overflow-hidden rounded-lg border">
           <AgentPanelLoadError v-if="mountFailed" :on-retry="retryMount" />
           <AgentPanelRoot v-else :key="mountAttempt" />
         </div>
@@ -145,16 +138,9 @@ function retryMount(): void {
 }
 
 /** Set by the parent that lays out both this panel and its left neighbour. */
-const {
-  hasOpaqueNeighbor = false,
-  handleSide = 'left',
-  dockWidth,
-  floating = false
-} = defineProps<{
+const { hasOpaqueNeighbor = false, handleSide = 'left' } = defineProps<{
   hasOpaqueNeighbor?: boolean
   handleSide?: 'left' | 'right'
-  dockWidth?: number
-  floating?: boolean
 }>()
 
 const agentPanelStore = useAgentPanelStore()
