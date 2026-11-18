@@ -146,9 +146,12 @@ describe('WorkflowNeedsDeploymentCard', () => {
 
     expect(
       screen.getByRole('heading', {
-        name: 'Run this workflow on a custom deployment'
+        name: 'Install your missing custom nodes'
       })
     ).toBeInTheDocument()
+    expect(
+      screen.getByText(/^Deploy a custom Build to add the custom nodes/)
+    ).toBeVisible()
     expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
       [
         '4 missing node packs',
@@ -163,7 +166,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
       screen.queryByTestId('custom-deployment-missing')
     ).not.toHaveTextContent('comfyui-old')
     expect(
-      screen.getByRole('link', { name: /Create on Platform/ })
+      screen.getByRole('link', { name: /Build on Platform/ })
     ).toBeInTheDocument()
     expect(
       screen.queryByTestId('custom-deployment-video')

@@ -92,6 +92,10 @@ const missing = computed<MissingItemsRow[]>(() => [
 
 const pitch = computed<CustomDeploymentPitch>(() => ({
   ...customDeploymentPitch(),
+  body: t('deploymentSwitcher.workflowNeedsDeployment.installBody'),
+  platformLabel: t(
+    'deploymentSwitcher.workflowNeedsDeployment.buildOnPlatform'
+  ),
   brief: workflowDeploymentBrief(packs, models.value, workflowFileName),
   workflowFileName,
   missing: missing.value,
@@ -100,6 +104,6 @@ const pitch = computed<CustomDeploymentPitch>(() => ({
         title: t('deploymentSwitcher.workflowNeedsDeployment.titleNoneRunIt'),
         note: t('deploymentSwitcher.workflowNeedsDeployment.noneRunIt')
       }
-    : { title: t('deploymentSwitcher.workflowNeedsDeployment.title') })
+    : { title: t('deploymentSwitcher.workflowNeedsDeployment.installTitle') })
 }))
 </script>
