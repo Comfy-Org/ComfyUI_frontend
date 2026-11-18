@@ -109,6 +109,10 @@ test.describe(
   'Workflow whose stored content is null',
   { tag: '@workflow' },
   () => {
+    test.afterEach(async ({ comfyPage }) => {
+      await comfyPage.workflow.setupWorkflowsDirectory({})
+    })
+
     test('reusing it by name does not leave the app throwing on every edit and load', async ({
       comfyPage
     }) => {
