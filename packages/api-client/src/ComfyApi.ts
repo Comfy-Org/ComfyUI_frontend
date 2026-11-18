@@ -24,6 +24,7 @@ import type { ApiAuthProvider } from './apiAuthProvider'
 import { anonymousApiAuthProvider } from './apiAuthProvider'
 import { authCredentialOf, notifyAuthCredential } from './authCredential'
 import { scopeMediaRoute } from './sessionMediaUrl'
+import { socketReconnectDelayMs } from './socketReconnectDelay'
 import { webSessionRequests } from './webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from './apiTimeouts'
 import { addBreadcrumb } from '@sentry/vue'
@@ -1017,7 +1018,9 @@ export class ComfyApi extends EventTarget {
       this.serverFeatureFlagsSettled.value = true
       clearTimeout(settleTimer)
       const recoverSession = sessionRequests && !opened
-      const delayMs = recoverSession ? this.socketRetryDelayMs : 300
+      const delayMs = recoverSession
+        ? this.socketRetryDelayMs
+        : socketReconnectDelayMs({ isCloud: this.ports.isCloud, opened })
       if (recoverSession) {
         this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
       }

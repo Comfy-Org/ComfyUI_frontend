@@ -5,6 +5,7 @@ import type { SkillReferenceMetadata } from './skillReference'
 export interface PromptEditor {
   insertionPoint?: () => ComposerInsertionPoint
   focus: () => void
+  focusAtEnd?: () => void
   selection: () => { start: number; end: number }
   insertText: (text: string) => void
   replaceText: (from: number, to: number, text: string) => void

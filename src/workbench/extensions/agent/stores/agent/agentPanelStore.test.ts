@@ -128,7 +128,6 @@ describe('agentPanelStore engagement telemetry', () => {
     const store = useConsentedAgentPanelStore()
     store.enabled = true
     await nextTick()
-    store.reportedFreeUseExposure = true
     store.reportedFreeUseImpression = true
 
     store.enabled = false
@@ -140,7 +139,6 @@ describe('agentPanelStore engagement telemetry', () => {
       source: 'restored'
     })
     expect(store.isOpen).toBe(true)
-    expect(store.reportedFreeUseExposure).toBe(false)
     expect(store.reportedFreeUseImpression).toBe(false)
   })
 

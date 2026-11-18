@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Remove o fundo de uma imagem usando Bria RMBG 2.0.",
+    "description": "Remova o fundo de uma imagem usando Bria RMBG 2.0 ou RMBG 3.0.",
     "display_name": "Bria Remover Fundo da Imagem",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "imagem"
       },
+      "model": {
+        "name": "model"
+      },
       "moderation": {
         "name": "moderação",
         "tooltip": "Configurações de moderação"
       },
       "seed": {
         "name": "semente",
-        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+        "tooltip": "A seed controla se o nó deve ser executado novamente; a mesma imagem sempre produz o mesmo resultado, independentemente da seed."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Crie um camera_info. O modo 'orbit' mira com guinada/inclinação/distância ao redor do alvo; 'look_at' posiciona a câmera na posição do mundo. As coordenadas pertencem ao espaço do mundo do visualizador (destro, Y para cima).",
+    "description": "Crie uma camera_info. O modo 'orbit' aponta usando yaw/pitch/distance ao redor do alvo; 'look_at' posiciona a câmera na posição do mundo. As coordenadas correspondem ao espaço do mundo do visualizador (destro, Y para cima) ou, com uma mesh conectada, ao referencial dessa mesh; assim, as mesmas configurações enquadram qualquer mesh.",
     "display_name": "Criar Informações da Câmera",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "Campo de visão vertical em graus."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "Enquadre esta mesh: as posições, o alvo e a distância são contados a partir do centro da caixa delimitadora, em unidades do diâmetro da esfera delimitadora, para que as mesmas configurações enquadrem qualquer mesh."
       },
       "mode": {
         "name": "modo",
@@ -19341,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "Gere respostas de texto através do OpenRouter. Direciona para um conjunto selecionado de modelos populares da xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
+    "description": "Gere respostas de texto por meio do OpenRouter. Encaminha para um conjunto selecionado de modelos populares da Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30312,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Consistência temporal segundo Bonneel et al. 2015, com um termo de fidelidade contra desvio: cada quadro mantém seus próprios detalhes enquanto segue os quadros vizinhos ao longo do fluxo óptico do vídeo-guia.",
+    "display_name": "Anticintilação de Vídeo",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "bidirectional calcula a média de uma passagem para frente e outra para trás, o que evita ficar atrás do movimento, ao custo de duas vezes mais tempo."
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "Quadros de origem estáveis cujo movimento deve ser seguido, em qualquer resolução. Por padrão, usa images, o que remove menos cintilação."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Quadros com cintilação, por exemplo, um vídeo ampliado ou processado quadro a quadro."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "A intensidade com que cada quadro segue os quadros vizinhos. Valores maiores removem mais cintilação e suavizam mais os detalhes finos."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "Alterações maiores que este valor entre um quadro e seu vizinho compensado pelo movimento são consideradas reais e são menos suavizadas. 0 suaviza todas as alterações da mesma forma."
       }
     },
     "outputs": {

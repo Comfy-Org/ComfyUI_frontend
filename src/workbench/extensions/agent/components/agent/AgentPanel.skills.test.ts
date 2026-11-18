@@ -156,8 +156,8 @@ describe('AgentPanel skills screen', () => {
     ).toBeVisible()
   })
 
-  it('hides the top free-use banner until the chat is back', async () => {
-    mount({ freeUsePlacement: 'top-banner' })
+  it('hides the Local free-use notice until the chat is back', async () => {
+    mount({ freeUsePlacement: 'near-composer' })
 
     expect(screen.queryByRole('note', { name: 'Free use notice' })).toBeNull()
 

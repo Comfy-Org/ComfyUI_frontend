@@ -47,6 +47,12 @@ function addGroup(graph: LGraph, bounds: Rect): LGraphGroup {
   return group
 }
 
+function toolboxOffset(toolbox: HTMLElement) {
+  const [x, y] =
+    toolbox.style.transform.match(/-?\d+(?:\.\d+)?(?=px)/g)?.map(Number) ?? []
+  return { x, y }
+}
+
 describe('useSelectionToolboxPosition', () => {
   let graph: LGraph
   let canvas: LGraphCanvas
@@ -82,7 +88,7 @@ describe('useSelectionToolboxPosition', () => {
 
     const { toolbox, unmount } = renderToolbox()
 
-    expect(toolbox.style.getPropertyValue('--tb-y')).toBe('190px')
+    expect(toolboxOffset(toolbox).y).toBe(190)
     unmount()
   })
 
@@ -91,9 +97,7 @@ describe('useSelectionToolboxPosition', () => {
 
     const { toolbox, unmount } = renderToolbox()
 
-    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-      `${190 - LiteGraph.NODE_TITLE_HEIGHT}px`
-    )
+    expect(toolboxOffset(toolbox).y).toBe(190 - LiteGraph.NODE_TITLE_HEIGHT)
     unmount()
   })
 
@@ -116,27 +120,25 @@ describe('useSelectionToolboxPosition', () => {
     const node = addNode(graph, 100, 200)
     canvas.select(node)
     const { toolbox, unmount } = renderToolbox()
-    const initialY = toolbox.style.getPropertyValue('--tb-y')
+    const initialY = toolboxOffset(toolbox).y
 
     node.pos = [100, 400]
     await nextTick()
 
-    expect(toolbox.style.getPropertyValue('--tb-y')).toBe(
-      `${390 - LiteGraph.NODE_TITLE_HEIGHT}px`
-    )
-    expect(toolbox.style.getPropertyValue('--tb-y')).not.toBe(initialY)
+    expect(toolboxOffset(toolbox).y).toBe(390 - LiteGraph.NODE_TITLE_HEIGHT)
+    expect(toolboxOffset(toolbox).y).not.toBe(initialY)
     unmount()
   })
 
   it('follows the canvas transform on each presented frame', () => {
     canvas.select(addNode(graph, 100, 200))
     const { toolbox, unmount } = renderToolbox()
-    const initialX = parseFloat(toolbox.style.getPropertyValue('--tb-x'))
+    const initialX = toolboxOffset(toolbox).x
 
     canvas.ds.offset[0] += 50
     runCanvasFramePhase(canvas, 'present')
 
-    expect(toolbox.style.getPropertyValue('--tb-x')).toBe(`${initialX + 50}px`)
+    expect(toolboxOffset(toolbox).x).toBe(initialX + 50)
     unmount()
   })
 

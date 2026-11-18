@@ -270,6 +270,12 @@ describe('TopMenuSection', () => {
           screen.queryByTestId('current-user-button')
         ).not.toBeInTheDocument()
       })
+
+      it('moves LoginButton out of the top bar while billing_new_ux_enabled is on', () => {
+        Object.assign(useFeatureFlags().flags, { billingNewUxEnabled: true })
+        createLegacyTabBarWrapper()
+        expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
+      })
     })
   })
 

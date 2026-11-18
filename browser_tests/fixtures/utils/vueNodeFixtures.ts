@@ -76,7 +76,9 @@ export class VueNodeFixture {
     await expect
       .poll(() =>
         image.evaluate((img: HTMLImageElement) => ({
-          filename: new URL(img.src).searchParams.get('filename'),
+          filename: new URL(img.src, document.baseURI).searchParams.get(
+            'filename'
+          ),
           loaded: img.complete && img.naturalWidth > 0
         }))
       )
@@ -129,6 +131,35 @@ export class VueNodeFixture {
     return this.root.locator(`[data-corner="${corner}"]`)
   }
 
+  /** Locator for the widget row whose control is labelled `name`. */
+  widgetRow(name: string): Locator {
+    return this.root.getByTestId('node-widget').filter({
+      has: this.locator.page().getByLabel(name, { exact: true })
+    })
+  }
+
+  /** Pixels between the height of widget `name`'s textarea and exactly `lines` lines of its text. */
+  textareaLineFitError(name: string, lines: number): Promise<number> {
+    return this.widgetRow(name)
+      .getByRole('textbox')
+      .evaluate((textarea, lines) => {
+        const style = getComputedStyle(textarea)
+        const padding =
+          Number.parseFloat(style.paddingTop) +
+          Number.parseFloat(style.paddingBottom)
+        return Math.abs(
+          textarea.clientHeight -
+            padding -
+            lines * Number.parseFloat(style.lineHeight)
+        )
+      }, lines)
+  }
+
+  /** Locator for the bottom-edge resize handle inside `region`, or this node's only one. */
+  growableRegionHandle(region: Locator = this.root): Locator {
+    return region.getByTestId('growable-region-handle')
+  }
+
   /**
    * Drag the resize handle at `corner` by (deltaX, deltaY) viewport pixels.
    * Uses `hover()` to land the pointer on the handle with Playwright's
@@ -140,13 +171,19 @@ export class VueNodeFixture {
     deltaX: number,
     deltaY: number
   ): Promise<void> {
-    const handle = this.getResizeHandle(corner)
+    await this.dragHandle(this.getResizeHandle(corner), deltaX, deltaY)
+  }
+
+  /** Drag `handle` by (deltaX, deltaY) viewport pixels. */
+  async dragHandle(
+    handle: Locator,
+    deltaX: number,
+    deltaY: number
+  ): Promise<void> {
     await handle.hover()
     const box = await handle.boundingBox()
     if (!box) {
-      throw new Error(
-        `Resize handle for corner "${corner}" has no bounding box`
-      )
+      throw new Error('Resize handle has no bounding box')
     }
 
     const page = this.locator.page()

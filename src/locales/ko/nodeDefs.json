@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Bria RMBG 2.0을 사용하여 이미지에서 배경을 제거합니다.",
+    "description": "Bria RMBG 2.0 또는 RMBG 3.0을 사용하여 이미지에서 배경을 제거합니다.",
     "display_name": "Bria 이미지 배경 제거",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "image"
       },
+      "model": {
+        "name": "모델"
+      },
       "moderation": {
         "name": "moderation",
         "tooltip": "모더레이션 설정"
       },
       "seed": {
         "name": "seed",
-        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 동일한 이미지는 항상 동일한 결과를 제공합니다."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_duration": {
         "name": "duration"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "모델",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_duration": {
         "name": "duration"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "camera_info를 생성합니다. 'orbit' 모드는 대상 주위에서 yaw/pitch/distance로 조준하며, 'look_at' 모드는 월드 위치에 카메라를 배치합니다. 좌표는 뷰어의 월드 공간입니다(right-handed,Y-up).",
+    "description": "camera_info를 생성합니다. 'orbit' 모드는 대상 주위에서 yaw/pitch/distance로 조준하며, 'look_at'은 카메라를 월드 위치에 배치합니다. 좌표는 뷰어의 월드 공간(오른손 좌표계, Y-up)을 기준으로 하며, mesh가 연결된 경우 해당 mesh의 프레임을 기준으로 하므로 동일한 설정으로 모든 mesh를 프레이밍할 수 있습니다.",
     "display_name": "카메라 정보 생성",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "수직 시야각(도 단위)."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "이 mesh를 프레이밍합니다. 위치, 대상 및 거리는 경계 구의 지름을 단위로 하여 경계 상자의 중심에서 계산되므로, 동일한 설정으로 모든 mesh를 프레이밍할 수 있습니다."
       },
       "mode": {
         "name": "mode",
@@ -19341,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. xAI, DeepSeek, Qwen, Mistral, Z.AI(GLM), Moonshot(Kimi), Perplexity Sonar 등에서 엄선된 인기 모델로 라우팅됩니다.",
+    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), Perplexity Sonar의 엄선된 인기 모델 모음으로 라우팅합니다.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30312,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Bonneel et al. 2015에 따른 시간적 일관성 처리로, 드리프트에 대한 충실도 항을 포함합니다. 각 프레임은 가이드 동영상의 optical flow를 따라 인접 프레임을 따르면서도 자체 세부 사항을 유지합니다.",
+    "display_name": "동영상 깜빡임 제거",
+    "inputs": {
+      "direction": {
+        "name": "방향",
+        "tooltip": "bidirectional은 정방향 및 역방향 패스를 평균내므로, 두 배의 시간으로 움직임을 뒤따르는 현상을 방지합니다."
+      },
+      "guide": {
+        "name": "가이드",
+        "tooltip": "움직임을 따를 안정적인 소스 프레임이며, 해상도는 관계없습니다. 기본값은 images이며, 이 경우 깜빡임 제거 효과가 더 적습니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "프레임별로 업스케일하거나 처리한 동영상처럼 깜빡임이 있는 프레임입니다."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "각 프레임이 인접 프레임을 따르는 정도입니다. 값이 높을수록 깜빡임이 더 많이 제거되고 미세한 세부 사항은 더 부드러워집니다."
+      },
+      "threshold": {
+        "name": "임계값",
+        "tooltip": "프레임과 모션 보정된 인접 프레임 간의 변화가 이 값보다 크면 실제 변화로 간주되어 덜 부드럽게 처리됩니다. 0이면 모든 변화가 동일하게 부드럽게 처리됩니다."
       }
     },
     "outputs": {
