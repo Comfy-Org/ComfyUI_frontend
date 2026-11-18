@@ -87,7 +87,12 @@ route change creates a new view during startup, such as a login redirect,
 purpose, so most slow `total_ms` rows end in a hidden tab (364 of 456 over
 45 s in 2026-11-16..18 stable). Latency alerts should read `visible_ms` rather
 than drop rows with hidden time: a user who waits and then switches tabs
-still counts for the time they watched. Custom timings cannot express `outcome` or `pending`,
+still counts for the time they watched. Known bias: hidden time from before
+the tracer is constructed is only seen where the browser buffers
+`visibility-state` entries (Chromium). On Firefox and Safari a tab hidden
+during the initial download and shown again before the tracer starts counts
+that time as visible, so `visible_ms` can read high there; split by browser
+when that matters. Custom timings cannot express `outcome` or `pending`,
 and per-phase events cannot be percentiled without a multi-row join. This row
 is what makes "how many users hit a slow load" a single query.
 

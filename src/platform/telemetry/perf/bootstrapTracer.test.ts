@@ -1,6 +1,6 @@
 import type { DatadogRum } from '@datadog/browser-rum'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 import { useTelemetry as sharedUseTelemetry } from '@comfyorg/telemetry'
@@ -244,7 +244,7 @@ describe('bootstrapTracer', () => {
 
   it('reports visible time for a timed-out startup that is still hidden', async () => {
     const telemetry = sharedUseTelemetry()
-    if (!telemetry) throw new Error('Expected telemetry mock')
+    assert.exists(telemetry)
     const visibility = vi
       .spyOn(document, 'visibilityState', 'get')
       .mockReturnValue('visible')
