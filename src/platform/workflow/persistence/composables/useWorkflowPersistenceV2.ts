@@ -46,8 +46,6 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { isValidUuid } from '@/utils/formatUtil'
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -446,34 +444,12 @@ export function useWorkflowPersistenceV2() {
     }
   }
 
-  /**
-   * A restored tab is created at reload time, so its first load would treat
-   * its own draft as stale and delete it. Stamp the tab with the draft's time.
-   * A draft without a valid id first gets the id createTemporary minted for
-   * the tab, so the draft that load() applies matches the tab.
-   */
-  const keepDraftForRestoredTab = (
+  const stampWithDraftTime = (
     restored: ComfyWorkflow,
     draftPath: string,
-    draftData: ComfyWorkflowJSON,
-    draft: { name: string; updatedAt: number }
+    draftUpdatedAt: number
   ) => {
-    if (restored.path !== draftPath) return
-    if (isValidUuid(draftData.id)) {
-      restored.lastModified = draft.updatedAt
-      return
-    }
-    const normalized = restored.originalContent
-    if (
-      typeof normalized !== 'string' ||
-      !draftStore.saveDraft(draftPath, normalized, {
-        name: draft.name,
-        isTemporary: true
-      })
-    )
-      return
-    const rewritten = draftStore.getDraft(draftPath)
-    if (rewritten) restored.lastModified = rewritten.updatedAt
+    if (restored.path === draftPath) restored.lastModified = draftUpdatedAt
   }
 
   const restoreSavedTabs = async () => {
@@ -510,7 +486,7 @@ export function useWorkflowPersistenceV2() {
       try {
         const workflowData = JSON.parse(draft.data)
         const restored = workflowStore.createTemporary(draft.name, workflowData)
-        keepDraftForRestoredTab(restored, path, workflowData, draft)
+        stampWithDraftTime(restored, path, draft.updatedAt)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',

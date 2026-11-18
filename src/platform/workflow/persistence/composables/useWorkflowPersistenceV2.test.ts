@@ -17,6 +17,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
+import { isValidUuid } from '@/utils/formatUtil'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -641,12 +642,13 @@ describe('useWorkflowPersistenceV2', () => {
 
         await background!.load()
 
-        const kept = draftStore.getDraft(draftPath)
-        expect(kept).toBeDefined()
-        const keptGraph = JSON.parse(kept!.data)
-        expect(keptGraph.extra).toEqual({ a: 1 })
-        expect(keptGraph.id).toBe(background!.initialState?.id)
-        expect(background!.activeState?.id).toBe(background!.initialState?.id)
+        expect(JSON.parse(draftStore.getDraft(draftPath)!.data).extra).toEqual({
+          a: 1
+        })
+        expect(background!.activeState?.extra).toEqual({ a: 1 })
+        const tabId = background!.initialState?.id
+        expect(isValidUuid(tabId)).toBe(true)
+        expect(background!.activeState?.id).toBe(tabId)
       }
     )
 
