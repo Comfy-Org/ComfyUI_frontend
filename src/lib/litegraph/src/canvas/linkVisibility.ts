@@ -12,6 +12,7 @@ import type { LinkId } from '@comfyorg/graph-model/linkId'
 
 import { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import { cancelPendingLinkBadgeStackExpansion } from './linkBadges'
 import {
   cancelLinkHideTransition,
   startLinkHideTransitions
@@ -151,6 +152,7 @@ export function promptRenameLinkBadge(
   event: CanvasPointerEvent,
   onRename?: (value: string) => void
 ): void {
+  cancelPendingLinkBadgeStackExpansion(host)
   host.prompt(
     t('contextMenu.Rename'),
     useLinkPresentationStore().getPresentation(scope, linkIds[0])?.label ?? '',

@@ -125,6 +125,7 @@ import {
   userHeightTrack
 } from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
+import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -203,7 +204,27 @@ const {
 
 useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
 const canvasStore = useCanvasStore()
-const renderedRows = computed(() =>
+const renderedRows = computed(() => fillWithLastLegacyRow(rawRows.value))
+
+function fillWithLastLegacyRow(rows: typeof rawRows.value) {
+  const last = rows.at(-1)
+  if (
+    !last?.showsControl ||
+    last.widget.vueComponent !== WidgetLegacy ||
+    rows.some(({ growable }) => growable)
+  )
+    return rows
+  return [
+    ...rows.slice(0, -1),
+    {
+      ...last,
+      flexClass: 'grow shrink-0',
+      controlClass: 'grid min-w-0 grid-cols-1'
+    }
+  ]
+}
+
+const rawRows = computed(() =>
   processedWidgets.flatMap((widget) => {
     const isConverted = isConvertedWidgetType(widget.simplified.type)
     const showsControl = !isConverted && widget.visible

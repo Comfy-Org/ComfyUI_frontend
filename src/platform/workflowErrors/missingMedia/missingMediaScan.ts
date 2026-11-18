@@ -88,7 +88,8 @@ function resolveMediaMissingState(
   const options = resolveComboValues(widget)
   const { filepath, rootFolder } = parseAnnotatedPath(value)
   if (rootFolder !== 'input') return options.includes(value) ? false : undefined
-  return !options.includes(value) && !options.includes(filepath)
+  if (options.includes(value) || options.includes(filepath)) return false
+  return filepath.includes('/') ? undefined : true
 }
 
 /** Scan media; includeTemp is only for known deletions, not verification. */

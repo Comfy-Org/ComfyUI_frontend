@@ -1,13 +1,11 @@
 <template>
   <div
-    ref="root"
     :class="
       cn(
         'flex max-h-[calc(100dvh-2rem)] min-h-0 w-[min(400px,95vw)] flex-col rounded-2xl border bg-background text-sm text-foreground shadow-md',
         ui.root
       )
     "
-    :style="{ transform: `translateY(${growth / 2}px)` }"
     data-testid="add-credits-dialog"
     :data-step="state.step"
   >
@@ -147,9 +145,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, watch } from 'vue'
 import type { Component } from 'vue'
-import { useResizeObserver, useWindowSize } from '@vueuse/core'
 
 import type {
   AddCreditsAutoTopUpOffer,
@@ -308,21 +305,6 @@ watch(
 )
 
 const format = computed(() => addCreditsFormat(locale))
-
-const VIEWPORT_GUTTER_PX = 16
-const root = useTemplateRef('root')
-const defaultHeight = ref<number>()
-const height = ref(0)
-const { height: viewportHeight } = useWindowSize()
-useResizeObserver(root, ([entry]) => {
-  height.value = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height
-  defaultHeight.value ??= height.value
-})
-const growth = computed(() => {
-  if (defaultHeight.value === undefined) return 0
-  const room = viewportHeight.value - 2 * VIEWPORT_GUTTER_PX - height.value
-  return Math.max(0, Math.min(height.value - defaultHeight.value, room))
-})
 
 const blockedUrl = computed(() => {
   const current = state.value

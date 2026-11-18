@@ -4,7 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { PlanCheckoutBanner } from '@comfyorg/account-core/billing'
+import type {
+  PlanCheckoutBanner,
+  PlanNotStartedBanner
+} from '@comfyorg/account-core/billing'
 import {
   BillingBanner,
   planCheckoutBannerView
@@ -13,6 +16,12 @@ import {
 import enMessages from '@/locales/en/main.json'
 
 import { useBillingBannerCopy } from './useBillingBannerCopy'
+
+const i18nPlugin = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 function renderBanner(banner: PlanCheckoutBanner) {
   const onDismiss = vi.fn()
@@ -28,19 +37,31 @@ function renderBanner(banner: PlanCheckoutBanner) {
           })
       }
     },
-    {
-      global: {
-        plugins: [
-          createI18n({
-            legacy: false,
-            locale: 'en',
-            messages: { en: enMessages }
-          })
-        ]
-      }
-    }
+    { global: { plugins: [i18nPlugin] } }
   )
   return { onDismiss }
+}
+
+function renderPlanNotStarted(
+  banner: PlanNotStartedBanner,
+  canOpenPlans = true
+) {
+  const onAction = vi.fn()
+  render(
+    {
+      setup() {
+        const { copy, planNotStartedView } = useBillingBannerCopy()
+        return () =>
+          h(BillingBanner, {
+            view: planNotStartedView(banner, canOpenPlans),
+            copy: copy.value,
+            onAction
+          })
+      }
+    },
+    { global: { plugins: [i18nPlugin] } }
+  )
+  return { onAction }
 }
 
 describe('useBillingBannerCopy plan checkout banner', () => {
@@ -120,5 +141,78 @@ describe('useBillingBannerCopy plan checkout banner', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
 
     expect(onDismiss).toHaveBeenCalledOnce()
+  })
+})
+
+const CHECKOUT_URL =
+  'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly'
+
+describe('useBillingBannerCopy plan not started banner', () => {
+  it('names the served plan and offers a white Finish payment with no Dismiss', async () => {
+    const { onAction } = renderPlanNotStarted({
+      planTier: 'CREATOR',
+      paymentPage: { kind: 'hostedPage' }
+    })
+
+    const banner = screen.getByRole('status')
+    expect(banner).toHaveTextContent('Your Creator plan hasn’t started')
+    expect(banner).toHaveTextContent('Finish paying to start it.')
+    const action = screen.getByRole('button', { name: 'Finish payment' })
+    expect(action).toHaveAttribute('data-variant', 'inverted')
+    expect(
+      screen.queryByRole('button', { name: 'Dismiss' })
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(action)
+
+    expect(onAction).toHaveBeenCalledWith('finishPayment')
+  })
+
+  it('links Complete verification to billing-web checkout when the operation serves only a client secret', () => {
+    renderPlanNotStarted({
+      planTier: 'CREATOR',
+      paymentPage: { kind: 'clientSecretOnly', checkoutUrl: CHECKOUT_URL }
+    })
+
+    const banner = screen.getByRole('status')
+    expect(banner).toHaveTextContent('Your Creator plan hasn’t started')
+    expect(banner).toHaveTextContent('Finish paying to start it.')
+    expect(
+      screen.getByRole('link', { name: 'Complete verification' })
+    ).toHaveAttribute('href', CHECKOUT_URL)
+    expect(
+      screen.queryByRole('button', { name: 'Finish payment' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('says the plan starts once the payment goes through and offers View on Plans when no way to pay loaded', async () => {
+    const { onAction } = renderPlanNotStarted({
+      planTier: null,
+      paymentPage: { kind: 'unavailable' }
+    })
+
+    const banner = screen.getByRole('status')
+    expect(banner).toHaveTextContent('Your plan hasn’t started')
+    expect(banner).toHaveTextContent(
+      'Your plan starts once the payment goes through.'
+    )
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'View on Plans' }))
+
+    expect(onAction).toHaveBeenCalledWith('viewPlans')
+  })
+
+  it('offers no View on Plans when the server does not let this person open Plans', () => {
+    renderPlanNotStarted(
+      { planTier: null, paymentPage: { kind: 'unavailable' } },
+      false
+    )
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan starts once the payment goes through.'
+    )
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })
 })

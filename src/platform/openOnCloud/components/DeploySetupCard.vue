@@ -65,7 +65,8 @@
           :href="platformUrl"
           target="_blank"
           :rel="platformLinkRel()"
-          @click="emit('done')"
+          @click="openPlatform"
+          @auxclick.middle="trackPlatformClick"
         >
           {{ $t('deployToComfyApi.deployOnPlatform') }}
           <i
@@ -87,6 +88,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useTelemetry } from '@comfyorg/telemetry'
 import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
@@ -117,4 +119,16 @@ const points = [
   t('openOnCloud.deploySetupDialog.pointGpu'),
   t('openOnCloud.deploySetupDialog.pointPricing')
 ]
+
+function trackPlatformClick() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_on_cloud_platform_clicked',
+    element_group: 'run_on_cloud'
+  })
+}
+
+function openPlatform() {
+  trackPlatformClick()
+  emit('done')
+}
 </script>

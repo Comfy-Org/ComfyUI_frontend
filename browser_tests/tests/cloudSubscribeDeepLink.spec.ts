@@ -11,6 +11,7 @@ import {
   DEFAULT_TEAM_MEMBERS,
   INACTIVE_TEAM_BILLING_STATUS,
   PERSONAL_BILLING_STATUS,
+  TEAM_BILLING_STATUS,
   TEAM_MEMBER_WORKSPACE,
   TEAM_WORKSPACE
 } from '@e2e/fixtures/data/cloudWorkspace'
@@ -124,6 +125,46 @@ test.describe('Cloud subscribe deep link', { tag: '@cloud' }, () => {
 
       await expect(page.getByText('Subscribe to Standard')).toBeHidden()
       expect(new URL(page.url()).pathname).toBe('/')
+    })
+
+    test('takes an owner of a workspace with an active plan to the Plans page in the same tab', async ({
+      page
+    }) => {
+      await new CloudWorkspaceMockHelper(page).setup(
+        DEFAULT_TEAM_MEMBERS,
+        TEAM_WORKSPACE,
+        TEAM_BILLING_STATUS
+      )
+      await serveNewBillingUi(page)
+      await serveAppShellForDeepLink(page)
+      await serveCapabilitiesAfterBillingStatus(page)
+
+      await page.goto(`${APP_URL}/cloud/subscribe?tier=standard&cycle=monthly`)
+
+      await expect
+        .poll(() => new URL(page.url()).pathname, { timeout: 45_000 })
+        .toBe(PLATFORM_PLANS_PATH)
+    })
+
+    test('moves a member of a workspace with an active plan to the app with no inactive notice', async ({
+      page
+    }) => {
+      await new CloudWorkspaceMockHelper(page).setup(
+        DEFAULT_TEAM_MEMBERS,
+        TEAM_MEMBER_WORKSPACE,
+        TEAM_BILLING_STATUS
+      )
+      await serveNewBillingUi(page)
+      await serveAppShellForDeepLink(page)
+      await serveCapabilitiesAfterBillingStatus(page)
+
+      await page.goto(`${APP_URL}/cloud/subscribe?tier=standard&cycle=monthly`)
+
+      await expect
+        .poll(() => new URL(page.url()).pathname, { timeout: 45_000 })
+        .toBe('/')
+      await expect(page.getByText('Subscribe to Standard')).toBeHidden()
+      await expect(page.getByTestId('member-resubscribe-message')).toBeHidden()
     })
   })
 

@@ -283,6 +283,13 @@
       }
     },
     {
+      "files": ["src/**/*.{ts,vue}"],
+      "excludeFiles": ["src/**/*.{test,stories}.ts", "src/**/__mocks__/**"],
+      "rules": {
+        "comfy/no-app-singleton-import": "error"
+      }
+    },
+    {
       "files": [
         "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
@@ -367,7 +374,8 @@
       "excludeFiles": [
         "**/*.test.ts",
         "**/*.spec.ts",
-        "src/renderer/core/layout/transform/useCompositedTransform.ts"
+        "src/renderer/core/layout/transform/useCompositedTransform.ts",
+        "src/renderer/core/canvas/workflowImage/rasterizeElement.ts"
       ],
       "rules": {
         "comfy/no-direct-transform-write": "error"
