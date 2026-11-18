@@ -18,7 +18,6 @@
         <div class="flex w-full items-start gap-2 pr-8">
           <i
             aria-hidden="true"
-            data-testid="error-overlay-icon"
             :class="
               cn(
                 'mt-0.5 size-5',
