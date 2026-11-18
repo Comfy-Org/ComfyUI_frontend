@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -5,9 +6,10 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock(import('@comfyorg/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@comfyorg/telemetry'))
+const trackAgentTargetUnavailable = vi.mocked(
+  useTelemetry()!.trackAgentTargetUnavailable
+)
 
 async function setup() {
   const workflows = useWorkflowStore()
@@ -218,6 +220,13 @@ describe('Agent target deletion', () => {
 
       expect(context.panel.targetUnavailable).toBe(unavailable)
       expect(context.panel.selectedWorkflow?.path).toBe(selected)
+      if (unavailable)
+        expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+          cause: 'workflow_deleted',
+          workflow_id: null,
+          startup_tabs_restored: null
+        })
+      else expect(trackAgentTargetUnavailable).not.toHaveBeenCalled()
     }
   )
 
@@ -321,7 +330,11 @@ describe('Agent target tracking policy', () => {
   ])('clears an unavailable target after $event', async ({ act, selected }) => {
     const { workflows, panel, target, other } = await setup()
     workflows.activeWorkflow = target
-    panel.markWorkflowTargetUnavailable()
+    panel.markWorkflowTargetUnavailable({
+      cause: 'restore_not_listed',
+      workflow_id: 'wf-target',
+      startup_tabs_restored: true
+    })
     expect(panel.targetUnavailable).toBe(true)
     expect(panel.selectedWorkflow).toBeNull()
 

@@ -5,7 +5,10 @@ import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { AgentWorkflowBindSource } from '@comfyorg/telemetry/types'
+import type {
+  AgentTargetUnavailableCause,
+  AgentWorkflowBindSource
+} from '@comfyorg/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -24,7 +27,10 @@ import type {
 
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow | null }
-  | { outcome: 'deleted' }
+  | {
+      outcome: 'deleted'
+      cause: Exclude<AgentTargetUnavailableCause, 'workflow_deleted'>
+    }
   | { outcome: 'superseded' }
 
 interface WorkflowRestoration {
@@ -49,7 +55,7 @@ function restorationOutcomeFor(
 ): RestorationOutcome {
   switch (lifecycle) {
     case 'gone':
-      return { outcome: 'deleted' }
+      return { outcome: 'deleted', cause: 'restore_gone' }
     case 'live':
     case 'unknown':
       return { outcome: 'open', target }
@@ -276,7 +282,8 @@ export function useAgentWorkflowSelection({
     }
     if (!listed || !cloudListingOmits(workflowId))
       return { outcome: 'open', target }
-    if (target === null) return { outcome: 'deleted' }
+    if (target === null)
+      return { outcome: 'deleted', cause: 'restore_not_listed' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
     return restorationOutcomeFor(lifecycle, localOwnerFor(workflowId))
@@ -317,7 +324,11 @@ export function useAgentWorkflowSelection({
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
     if (resolved.outcome === 'superseded') return RESTORE_ABANDONED
     if (resolved.outcome === 'deleted') {
-      panelStore.markWorkflowTargetUnavailable()
+      panelStore.markWorkflowTargetUnavailable({
+        cause: resolved.cause,
+        workflow_id: workflowId,
+        startup_tabs_restored: workflowStore.tabsRestored
+      })
       return NOT_RESTORED
     }
     return openRestoredWorkflow(resolved.target, workflowId, isCurrent)

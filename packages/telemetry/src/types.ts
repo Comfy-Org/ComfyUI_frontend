@@ -1212,6 +1212,31 @@ export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   prev_workflow_id: string | null
   bind_source: AgentWorkflowBindSource
 }
+/**
+ * Why the Agent chat showed "The target workflow is no longer available".
+ * - `workflow_deleted`: the user deleted the chat's saved workflow.
+ * - `restore_not_listed`: on restore, a complete listing omitted the workflow
+ *   and no local tab or file owned it. Covers real deletions and drafts whose
+ *   only local copy is gone (closed tab, evicted draft, other browser).
+ * - `restore_gone`: on restore, the server returned 404 for the workflow.
+ */
+export type AgentTargetUnavailableCause =
+  | 'workflow_deleted'
+  | 'restore_not_listed'
+  | 'restore_gone'
+export interface AgentTargetUnavailableMetadata extends Record<
+  string,
+  unknown
+> {
+  cause: AgentTargetUnavailableCause
+  workflow_id: string | null
+  /**
+   * Restore causes only: whether startup had restored the saved tabs when the
+   * decision was made. `false` means the startup tab-restore wait ran out.
+   * `null` for `workflow_deleted`.
+   */
+  startup_tabs_restored: boolean | null
+}
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
   turn_id: string
   workflow_id: string | null
@@ -1737,6 +1762,7 @@ export interface TelemetryProvider {
   trackAgentError?(metadata: AgentErrorMetadata): void
   trackAgentStopClicked?(metadata: AgentStopClickedMetadata): void
   trackAgentWorkflowBound?(metadata: AgentWorkflowBoundMetadata): void
+  trackAgentTargetUnavailable?(metadata: AgentTargetUnavailableMetadata): void
   trackAgentRunApprovalShown?(metadata: AgentRunApprovalShownMetadata): void
   trackAgentRunApprovalResolved?(
     metadata: AgentRunApprovalResolvedMetadata
@@ -1928,6 +1954,7 @@ export const TelemetryEvents = {
   AGENT_ERROR: 'app:agent_error',
   AGENT_STOP_CLICKED: 'app:agent_stop_clicked',
   AGENT_WORKFLOW_BOUND: 'app:agent_workflow_bound',
+  AGENT_TARGET_UNAVAILABLE: 'app:agent_target_unavailable',
   AGENT_RUN_APPROVAL_SHOWN: 'app:agent_run_approval_shown',
   AGENT_RUN_APPROVAL_RESOLVED: 'app:agent_run_approval_resolved',
   AGENT_RUN_MODE_CHANGED: 'app:agent_run_mode_changed',
