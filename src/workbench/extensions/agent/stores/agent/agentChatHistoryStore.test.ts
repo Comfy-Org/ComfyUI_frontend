@@ -265,4 +265,85 @@ describe('useAgentChatHistoryStore', () => {
     store.rememberSession(session('th-new', 100))
     expect(store.sessions.map(({ id }) => id)).toEqual(['th-old'])
   })
+
+  it('P2-01 P2-03: hides optimistically on beginDelete without tombstoning and restores on failure', () => {
+    const store = useAgentChatHistoryStore()
+    const target = session('a', 10)
+    store.replaceAll([target, session('b', 20)])
+    store.rename('a', 'Custom title')
+    store.setActive('a')
+
+    const snapshot = store.beginDelete('a')
+
+    expect(store.sessions.map(({ id }) => id)).toEqual(['b'])
+    expect(store.activeId).toBeNull()
+    expect(
+      JSON.parse(
+        localStorage.getItem(StorageKeys.agentDeletedThreads('personal')) ??
+          '[]'
+      )
+    ).toEqual([])
+
+    store.replaceAll([target, session('b', 20)])
+    expect(store.sessions.map(({ id }) => id)).toEqual(['b'])
+
+    store.restoreDelete('a', snapshot)
+
+    expect(store.sessions.map(({ id }) => id)).toEqual(['a', 'b'])
+    expect(store.grouped.earlier.map(({ id }) => id)).toEqual(['b', 'a'])
+    expect(store.titleFor('a')).toBe('Custom title')
+    expect(
+      JSON.parse(
+        localStorage.getItem(StorageKeys.agentDeletedThreads('personal')) ??
+          '[]'
+      )
+    ).toEqual([])
+  })
+
+  it('P2-01 P2-04: commitDelete writes a tombstone only when requested', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1), session('b', 2)])
+
+    store.beginDelete('a')
+    store.commitDelete('a')
+    expect(
+      JSON.parse(
+        localStorage.getItem(StorageKeys.agentDeletedThreads('personal')) ??
+          '[]'
+      )
+    ).toEqual([])
+
+    store.beginDelete('b')
+    store.commitDelete('b', { tombstone: true })
+    store.replaceAll([session('b', 2)])
+    expect(store.sessions).toEqual([])
+    expect(
+      JSON.parse(
+        localStorage.getItem(StorageKeys.agentDeletedThreads('personal')) ??
+          '[]'
+      )
+    ).toEqual(['b'])
+  })
+
+  it('P2-06: dropByWorkflow removes all chats bound to that workflow without tombstoning', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([
+      { ...session('a', 1), workflowId: 'wf-deleted' },
+      { ...session('b', 2), workflowId: 'wf-deleted' },
+      { ...session('c', 3), workflowId: 'wf-keep' }
+    ])
+    store.rename('a', 'Custom A')
+
+    const dropped = store.dropByWorkflow('wf-deleted')
+
+    expect(dropped.map(({ id }) => id)).toEqual(['a', 'b'])
+    expect(store.sessions.map(({ id }) => id)).toEqual(['c'])
+    expect(store.titleFor('a')).toBeUndefined()
+    expect(
+      JSON.parse(
+        localStorage.getItem(StorageKeys.agentDeletedThreads('personal')) ??
+          '[]'
+      )
+    ).toEqual([])
+  })
 })

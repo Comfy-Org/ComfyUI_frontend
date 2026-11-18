@@ -18,6 +18,12 @@ export interface ChatSession {
   lastActivityAt?: number
 }
 
+export interface ChatDeleteSnapshot {
+  session?: ChatSession
+  customTitle?: string
+  pending?: boolean
+}
+
 export interface HistoryGroups {
   current: ChatSession[]
   today: ChatSession[]
@@ -63,21 +69,25 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
 
   clearLegacyAgentStorage()
 
-  // The server owns thread titles but has no rename or delete endpoint yet
-  // (BE-3130), so renames live in a local overlay applied over the server
-  // titles and deletes in a local tombstone set filtered out of every refresh.
+  // The server owns thread titles but has no rename endpoint yet (BE-3130),
+  // so renames live in a local overlay applied over the server titles. Deletes
+  // go to the server; the local tombstone set only hides chats the server
+  // could not delete for this browser (no endpoint yet, or already gone).
   const customTitles = useLocalStorage<Partial<Record<string, string>>>(
     StorageKeys.agentChatTitles(workspaceId),
     {}
   )
   const deletedIds = useLocalStorage<string[]>(
     StorageKeys.agentDeletedThreads(workspaceId),
-    []
+    [],
+    { flush: 'sync' }
   )
+  const pendingDeletes = new Set<string>()
+  const committedDeletes = new Set<string>()
 
   const sessions = computed(() =>
     [...pendingServerSessions.value, ...serverSessions.value].filter(
-      (session) => !deletedIds.value.includes(session.id)
+      (session) => !isDeleted(session.id)
     )
   )
 
@@ -110,27 +120,105 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     customTitles.value = { ...customTitles.value, [id]: trimmed }
   }
 
-  function remove(id: string): void {
+  function dropSessionFromMemory(id: string): void {
     serverSessions.value = serverSessions.value.filter((item) => item.id !== id)
     pendingServerSessions.value = pendingServerSessions.value.filter(
       (item) => item.id !== id
     )
     const { [id]: _removed, ...rest } = customTitles.value
     customTitles.value = rest
-    if (!deletedIds.value.includes(id))
-      deletedIds.value = [...deletedIds.value, id]
     if (activeId.value === id) activeId.value = null
   }
 
-  function replaceAll(next: ChatSession[]): void {
-    const filtered = next.filter(
-      (session) => !deletedIds.value.includes(session.id)
+  function remove(id: string): void {
+    pendingDeletes.delete(id)
+    committedDeletes.delete(id)
+    dropSessionFromMemory(id)
+    if (!deletedIds.value.includes(id))
+      deletedIds.value = [...deletedIds.value, id]
+  }
+
+  function beginDelete(id: string): ChatDeleteSnapshot {
+    const pendingSession = pendingServerSessions.value.find(
+      (item) => item.id === id
     )
+    const snapshot: ChatDeleteSnapshot = {
+      session:
+        pendingSession ?? serverSessions.value.find((item) => item.id === id),
+      customTitle: customTitles.value[id],
+      pending: pendingSession !== undefined
+    }
+    pendingDeletes.add(id)
+    dropSessionFromMemory(id)
+    return snapshot
+  }
+
+  function commitDelete(
+    id: string,
+    { tombstone = false }: { tombstone?: boolean } = {}
+  ): void {
+    pendingDeletes.delete(id)
+    if (tombstone) {
+      committedDeletes.delete(id)
+      if (!deletedIds.value.includes(id))
+        deletedIds.value = [...deletedIds.value, id]
+      return
+    }
+    committedDeletes.add(id)
+  }
+
+  function restoreDelete(id: string, snapshot: ChatDeleteSnapshot): void {
+    pendingDeletes.delete(id)
+    if (snapshot.customTitle !== undefined) {
+      customTitles.value = {
+        ...customTitles.value,
+        [id]: snapshot.customTitle
+      }
+    }
+    if (
+      snapshot.session !== undefined &&
+      !serverSessions.value.some((item) => item.id === id) &&
+      !pendingServerSessions.value.some((item) => item.id === id) &&
+      !isDeleted(id)
+    ) {
+      if (snapshot.pending) {
+        pendingServerSessions.value = [
+          snapshot.session,
+          ...pendingServerSessions.value
+        ]
+      } else {
+        serverSessions.value = [snapshot.session, ...serverSessions.value]
+      }
+    }
+  }
+
+  function dropByWorkflow(workflowId: string): ChatSession[] {
+    const dropped = sessions.value.filter(
+      (session) => session.workflowId === workflowId
+    )
+    if (dropped.length === 0) return []
+    const droppedIds = new Set(dropped.map(({ id }) => id))
+    for (const id of droppedIds) committedDeletes.add(id)
+    serverSessions.value = serverSessions.value.filter(
+      (item) => !droppedIds.has(item.id)
+    )
+    pendingServerSessions.value = pendingServerSessions.value.filter(
+      (item) => !droppedIds.has(item.id)
+    )
+    const remainingTitles: Partial<Record<string, string>> = {}
+    for (const [id, title] of Object.entries(customTitles.value)) {
+      if (!droppedIds.has(id)) remainingTitles[id] = title
+    }
+    customTitles.value = remainingTitles
+    return dropped
+  }
+
+  function replaceAll(next: ChatSession[]): void {
+    const filtered = next.filter((session) => !isDeleted(session.id))
     const listedIds = new Set(filtered.map((session) => session.id))
     serverSessions.value = filtered
     pendingServerSessions.value = pendingServerSessions.value.filter(
-      (session) =>
-        !deletedIds.value.includes(session.id) && !listedIds.has(session.id)
+      (session) => !isDeleted(session.id) && !listedIds.has(session.id)
     )
   }
 
@@ -139,7 +227,11 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   }
 
   function isDeleted(id: string): boolean {
-    return deletedIds.value.includes(id)
+    return (
+      deletedIds.value.includes(id) ||
+      pendingDeletes.has(id) ||
+      committedDeletes.has(id)
+    )
   }
 
   function rememberSession(session: ChatSession): void {
@@ -160,6 +252,10 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     sessionsFor,
     rename,
     remove,
+    beginDelete,
+    commitDelete,
+    restoreDelete,
+    dropByWorkflow,
     replaceAll,
     setActive,
     isDeleted,

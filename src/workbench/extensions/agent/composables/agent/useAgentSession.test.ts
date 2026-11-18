@@ -111,6 +111,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       status: 'answered',
       selected: []
     })),
+    deleteThread: vi.fn(async () => undefined),
     refreshCredential: vi.fn(async () => {}),
     uploadImage: vi.fn(async (): Promise<UploadImageResponse> => ({
       name: 'n',
