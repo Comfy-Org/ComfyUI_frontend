@@ -19,6 +19,8 @@ const sizeSetting: SettingDef = {
   attrs: { min: 1, max: 9, step: 0.5 }
 }
 
+const INHERITED_IDS = ['__proto__', 'constructor', 'toString', 'hasOwnProperty']
+
 function savedRequests() {
   return vi
     .mocked(fetch)
@@ -314,6 +316,14 @@ describe('reading a setting', () => {
 
     expect(() => Reflect.apply(settings.get, settings, [id])).toThrow(TypeError)
   })
+
+  it.for(INHERITED_IDS)('refuses %s, an id every object inherits', (id) => {
+    expect(() => settingsApi().get(id)).toThrow(
+      new TypeError(
+        `settings.get needs a setting id no object inherits, not '${id}'.`
+      )
+    )
+  })
 })
 
 describe('changing a setting', () => {
@@ -374,9 +384,30 @@ describe('changing a setting', () => {
     const settings = settingsApi()
 
     expect(() => Reflect.apply(settings.set, settings, [5, 1])).toThrow(
-      new TypeError('settings.set needs a setting id, not 5.')
+      new TypeError(
+        'settings.set needs a setting id no object inherits, not 5.'
+      )
     )
   })
+
+  it.for(INHERITED_IDS)(
+    'refuses %s, an id every object inherits, and leaves the store and the server as they were',
+    (id) => {
+      const settings = settingsApi()
+      const values = useSettingStore().settingValues
+      const prototype = Object.getPrototypeOf(values)
+
+      expect(() => settings.set(id, { 'MyPack.unset': 'changed' })).toThrow(
+        new TypeError(
+          `settings.set needs a setting id no object inherits, not '${id}'.`
+        )
+      )
+      expect(Object.getPrototypeOf(values)).toBe(prototype)
+      expect(Object.hasOwn(values, id)).toBe(false)
+      expect(settings.get('MyPack.unset')).toBeUndefined()
+      expect(savedRequests()).toEqual([])
+    }
+  )
 })
 
 describe('watching a setting', () => {
@@ -511,6 +542,14 @@ describe('watching a setting', () => {
     expect(() =>
       Reflect.apply(settings.onChange, settings, [id, listener])
     ).toThrow(TypeError)
+  })
+
+  it.for(INHERITED_IDS)('refuses %s, an id every object inherits', (id) => {
+    expect(() => settingsApi().onChange(id, () => {})).toThrow(
+      new TypeError(
+        `settings.onChange needs a setting id no object inherits, not '${id}'.`
+      )
+    )
   })
 })
 
