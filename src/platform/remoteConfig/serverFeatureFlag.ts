@@ -1,3 +1,6 @@
+export const OPEN_ON_CLOUD_FEATURES_ACCEPT =
+  'application/json;profile=comfy-open-on-cloud'
+
 /**
  * Known server feature flags (top-level, not extensions)
  */

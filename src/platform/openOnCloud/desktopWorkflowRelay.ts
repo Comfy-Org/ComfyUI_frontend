@@ -108,10 +108,7 @@ async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false }).catch(() => undefined)
-  const { open_on_cloud_public_enabled, open_on_cloud_enabled } =
-    remoteConfig.value
-  if ((open_on_cloud_public_enabled ?? open_on_cloud_enabled) === false)
-    return false
+  if (remoteConfig.value.open_on_cloud_enabled === false) return false
   const relayed = await relayWorkflow(url).catch(() => false)
   if (!relayed) {
     const splash = document.getElementById('splash-loader')

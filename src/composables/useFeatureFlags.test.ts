@@ -524,8 +524,8 @@ describe('useFeatureFlags', () => {
       (enabled) => {
         vi.mocked(distributionTypes).isCloud = true
         remoteConfig.value = {
-          open_on_cloud_public_enabled: enabled,
-          open_on_cloud_enabled: !enabled
+          agent_consent_ingest_enabled: !enabled,
+          open_on_cloud_enabled: enabled
         }
 
         const { flags } = useFeatureFlags()

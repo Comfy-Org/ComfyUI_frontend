@@ -5,6 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 import { startLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { OPEN_ON_CLOUD_FEATURES_ACCEPT } from '@/platform/remoteConfig/serverFeatureFlag'
 import { api } from '@/scripts/api'
 
 vi.mock(import('@/scripts/api'))
@@ -47,21 +48,24 @@ function start() {
 
 it('offers Open on Cloud to a signed-out user without granting account flags', async () => {
   vi.mocked(fetch).mockResolvedValueOnce(
-    Response.json({ ...allowed, open_on_cloud_public_enabled: true })
+    Response.json({ ...allowed, agent_consent_ingest_enabled: false })
   )
   const { visible } = start()
 
   await vi.waitFor(() => expect(visible()).toEqual([true, false, false]))
   expect(fetch).toHaveBeenCalledExactlyOnceWith(
     new URL('/api/features', getBuildTimeComfyCloudBaseUrl()),
-    expect.objectContaining({ credentials: 'omit', headers: undefined })
+    expect.objectContaining({
+      credentials: 'omit',
+      headers: { Accept: OPEN_ON_CLOUD_FEATURES_ACCEPT }
+    })
   )
 })
 
 it('renders both served flags for the current account and clears them on identity changes', async () => {
   const denies = deferredResponse()
   vi.mocked(fetch)
-    .mockResolvedValueOnce(Response.json({}))
+    .mockResolvedValueOnce(Response.json(allowed))
     .mockResolvedValueOnce(Response.json(allowed))
     .mockReturnValueOnce(denies.promise)
     .mockResolvedValueOnce(Response.json({}))
@@ -75,7 +79,10 @@ it('renders both served flags for the current account and clears them on identit
   expect(fetch).toHaveBeenLastCalledWith(
     new URL('/api/features', getBuildTimeComfyCloudBaseUrl()),
     expect.objectContaining({
-      headers: { Authorization: 'Bearer employee-token' },
+      headers: {
+        Accept: OPEN_ON_CLOUD_FEATURES_ACCEPT,
+        Authorization: 'Bearer employee-token'
+      },
       redirect: 'error'
     })
   )
@@ -99,16 +106,22 @@ it('ignores a grant returned after sign-out and renders a denied account as off'
   const grant = deferredResponse()
   vi.mocked(fetch)
     .mockResolvedValueOnce(
-      Response.json({ open_on_cloud_public_enabled: true })
+      Response.json({
+        open_on_cloud_enabled: true,
+        agent_consent_ingest_enabled: false
+      })
     )
     .mockReturnValueOnce(grant.promise)
     .mockResolvedValueOnce(
-      Response.json({ open_on_cloud_public_enabled: true })
+      Response.json({
+        open_on_cloud_enabled: true,
+        agent_consent_ingest_enabled: false
+      })
     )
     .mockResolvedValueOnce(
       Response.json({
-        open_on_cloud_public_enabled: false,
         open_on_cloud_enabled: false,
+        agent_consent_ingest_enabled: false,
         open_on_cloud_use_local_agent_enabled: false
       })
     )

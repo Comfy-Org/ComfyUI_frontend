@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import * as distribution from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 
 import {
@@ -18,8 +19,12 @@ import {
   sessionAgentGrantValidUntil,
   useRemoteConfigCache
 } from './remoteConfig'
+import { OPEN_ON_CLOUD_FEATURES_ACCEPT } from './serverFeatureFlag'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: false
+}))
 
 const { cachedBillingControlEnabled, cachedV1PaymentRecovery } =
   useRemoteConfigCache()
@@ -56,6 +61,7 @@ describe('refreshRemoteConfig', () => {
   }
 
   beforeEach(() => {
+    vi.mocked(distribution).isCloud = false
     vi.mocked(api.apiURL).mockImplementation(
       (route: string) => `/ComfyUI/api${route}`
     )
@@ -69,6 +75,21 @@ describe('refreshRemoteConfig', () => {
     sessionAgentGrant.value = undefined
     sessionAgentGrantValidUntil.value = undefined
     window.__CONFIG__ = {}
+  })
+
+  it('requests the public Open on Cloud contract before and after Cloud sign-in', async () => {
+    vi.mocked(distribution).isCloud = true
+    vi.mocked(global.fetch).mockResolvedValue(mockSuccessResponse())
+    mockAuthenticatedFetch(mockSuccessResponse())
+
+    await refreshRemoteConfig({ useAuth: false })
+    await refreshRemoteConfig({ useAuth: true })
+
+    const request = expect.objectContaining({
+      headers: { Accept: OPEN_ON_CLOUD_FEATURES_ACCEPT }
+    })
+    expect(global.fetch).toHaveBeenCalledWith('/ComfyUI/api/features', request)
+    expect(api.fetchApi).toHaveBeenCalledWith('/features', request)
   })
 
   it('retains base URLs while invalidating identity-specific config', () => {

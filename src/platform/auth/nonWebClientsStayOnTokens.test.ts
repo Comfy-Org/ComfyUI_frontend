@@ -20,6 +20,7 @@ import * as distributionTypes from '@/platform/distribution/types'
 import { capturePreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { OPEN_ON_CLOUD_FEATURES_ACCEPT } from '@/platform/remoteConfig/serverFeatureFlag'
 import { api } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
@@ -249,7 +250,10 @@ const apiCalls = (auth: Record<string, string>): RecordedRequest[] => [
 ]
 
 const API_KEY_GOLDEN: RecordedRequest[] = [
-  FEATURES_BOOTSTRAP,
+  {
+    ...FEATURES_BOOTSTRAP,
+    headers: { accept: OPEN_ON_CLOUD_FEATURES_ACCEPT }
+  },
   {
     method: 'POST',
     path: `${getComfyApiBaseUrl()}/customers`,

@@ -1,5 +1,7 @@
 import { expect } from '@playwright/test'
 
+import { OPEN_ON_CLOUD_FEATURES_ACCEPT } from '@/platform/remoteConfig/serverFeatureFlag'
+
 import { ComfyPage, comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import {
@@ -24,7 +26,10 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
         (route) =>
           route.fulfill({
             headers: { 'access-control-allow-origin': '*' },
-            json: { open_on_cloud_public_enabled: false }
+            json: {
+              open_on_cloud_enabled: false,
+              agent_consent_ingest_enabled: false
+            }
           })
       )
     })
@@ -89,11 +94,18 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
     test.beforeEach(async ({ page }) => {
       await page.route(
         (url) => url.protocol === 'https:' && url.pathname === '/api/features',
-        (route) =>
-          route.fulfill({
+        (route) => {
+          expect(route.request().headers().accept).toBe(
+            OPEN_ON_CLOUD_FEATURES_ACCEPT
+          )
+          return route.fulfill({
             headers: { 'access-control-allow-origin': '*' },
-            json: { open_on_cloud_public_enabled: true }
+            json: {
+              open_on_cloud_enabled: true,
+              agent_consent_ingest_enabled: false
+            }
           })
+        }
       )
     })
 

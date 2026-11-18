@@ -1,6 +1,7 @@
 import { delay } from 'es-toolkit'
 
 import { hasServerFirebaseConfig } from '@/config/firebase'
+import { isCloud } from '@/platform/distribution/types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { isLoopbackHost } from '@/utils/hostWhitelist'
 
@@ -14,6 +15,7 @@ import {
   sessionAgentGrantValidUntil,
   useRemoteConfigCache
 } from './remoteConfig'
+import { OPEN_ON_CLOUD_FEATURES_ACCEPT } from './serverFeatureFlag'
 
 // Cap the bootstrap fetch so a wedged /features endpoint can never block app.mount indefinitely.
 // A same-origin GET against the local comfyui server should resolve in well under a second;
@@ -78,10 +80,14 @@ async function fetchRemoteConfig(
   signal?: AbortSignal
 ): Promise<{ response: Response; authenticated: boolean }> {
   const { api } = await import('@/scripts/api')
+  const headers = isCloud
+    ? { Accept: OPEN_ON_CLOUD_FEATURES_ACCEPT }
+    : undefined
   if (!useAuth) {
     return {
       response: await fetch(api.apiURL('/features'), {
         cache: 'no-store',
+        headers,
         signal
       }),
       authenticated: false
@@ -90,6 +96,7 @@ async function fetchRemoteConfig(
   let authenticated = false
   const response = await api.fetchApi('/features', {
     cache: 'no-store',
+    headers,
     signal,
     onAuthHeader: (attached) => {
       authenticated = attached
