@@ -17,6 +17,7 @@ import { longDate } from '@/checkout/longDate'
 import { supportLinkWithCode } from '@/checkout/payVerdict'
 import type { SuccessBreakdown } from '@/checkout/successBreakdown'
 import { namedPlan } from '@/checkout/summaryLedger'
+import EndingAutoTopUpNote from '@/components/fullPage/EndingAutoTopUpNote.vue'
 import EndingCodeCard from '@/components/fullPage/EndingCodeCard.vue'
 import EndingFrame from '@/components/fullPage/EndingFrame.vue'
 import type { EndingPlan } from '@/components/fullPage/EndingPlanCard.vue'
@@ -227,13 +228,10 @@ function act() {
           </strong>
         </template>
       </i18n-t>
-      <p
-        v-if="autoTopUpNote"
-        class="m-0 text-sm/5 text-muted-foreground"
-        data-testid="checkout-ending-auto-top-up"
-      >
-        {{ t(`checkout.fullPage.ending.autoTopUp.${autoTopUpNote}`) }}
-      </p>
+      <EndingAutoTopUpNote
+        :activation="autoTopUpNote"
+        @open-billing="emit('addCredits')"
+      />
     </template>
 
     <EndingPlanCard
@@ -294,19 +292,6 @@ function act() {
         @click="act"
       >
         {{ t(`checkout.fullPage.ending.actions.${primary}`) }}
-      </button>
-      <button
-        v-if="autoTopUpNote === 'failed'"
-        type="button"
-        :class="
-          cn(
-            buttonVariants({ variant: 'textonly', size: 'lg' }),
-            'w-full font-semibold'
-          )
-        "
-        @click="emit('addCredits')"
-      >
-        {{ t('checkout.fullPage.ending.autoTopUp.openBilling') }}
       </button>
       <SuccessCloseFooter
         v-if="ending.closeFooter"
