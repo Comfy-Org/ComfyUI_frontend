@@ -121,6 +121,52 @@ describe('ComboWidget', () => {
 
       expect(widget._displayValue).toBe('0')
     })
+
+    // Custom nodes can set these; a non-string here used to stop the canvas
+    // render loop inside the text truncation (substring is not a function).
+    it.for([
+      { case: 'null value', value: null, values: ['a'], expected: '' },
+      { case: 'boolean value', value: true, values: ['a'], expected: 'true' },
+      {
+        case: 'object values mapping to a number',
+        value: 'two',
+        values: { two: 2 },
+        expected: '2'
+      },
+      {
+        case: 'object values missing the key',
+        value: 'gone',
+        values: { two: 2 },
+        expected: ''
+      }
+    ])('returns display text for $case', ({ value, values, expected }) => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'mode',
+          value: value as unknown as string,
+          options: { values: values as unknown as string[] }
+        }),
+        node
+      )
+
+      expect(widget._displayValue).toBe(expected)
+    })
+
+    it('returns display text when an option label formatter returns a non-string', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'mode',
+          value: 'a',
+          options: {
+            values: ['a'],
+            getOptionLabel: () => 7 as unknown as string
+          }
+        }),
+        node
+      )
+
+      expect(widget._displayValue).toBe('7')
+    })
   })
 
   describe('canIncrement / canDecrement', () => {
@@ -191,6 +237,20 @@ describe('ComboWidget', () => {
       )
 
       expect(widget.canIncrement()).toBe(true)
+      expect(widget.canDecrement()).toBe(false)
+    })
+
+    it('returns false instead of throwing when values are missing', () => {
+      widget = new ComboWidget(
+        createMockWidgetConfig({
+          name: 'mode',
+          value: 'a',
+          options: { values: undefined as unknown as string[] }
+        }),
+        node
+      )
+
+      expect(widget.canIncrement()).toBe(false)
       expect(widget.canDecrement()).toBe(false)
     })
 

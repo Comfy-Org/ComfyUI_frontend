@@ -224,8 +224,9 @@ export function parseToRgb(color: string): RGB {
   }
 }
 
-const identifyColorFormat = (color: string): ColorFormatInternal | null => {
-  if (!color) return null
+const identifyColorFormat = (color: unknown): ColorFormatInternal | null => {
+  // Extensions can assign a non-string node color; treat it as unsupported.
+  if (typeof color !== 'string' || !color) return null
   if (
     color.startsWith('#') &&
     (color.length === 4 ||

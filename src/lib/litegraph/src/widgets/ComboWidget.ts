@@ -29,8 +29,14 @@ type Values =
     >
   | ((widget?: ComboWidget, node?: LGraphNode) => (string | number)[])
 
-function toArray(values: Values): (string | number)[] {
+function toArray(values: Values | null | undefined): (string | number)[] {
+  if (values == null) return []
   return Array.isArray(values) ? values : Object.keys(values)
+}
+
+/** Extensions can set a combo value or option label to a non-string. */
+function toDisplayText(value: unknown): string {
+  return value == null ? '' : String(value)
 }
 
 function toContextMenuValue(
@@ -52,10 +58,10 @@ export class ComboWidget
       const stringValue =
         typeof this.value === 'number' ? String(this.value) : this.value
       try {
-        return getOptionLabel(stringValue || null)
+        return toDisplayText(getOptionLabel(stringValue || null))
       } catch (e) {
         console.error('Failed to map value:', e)
-        return extensionValue(stringValue) ?? ''
+        return toDisplayText(extensionValue(stringValue))
       }
     }
 
@@ -66,10 +72,10 @@ export class ComboWidget
       )
 
       if (values && !Array.isArray(values)) {
-        return values[this.value]
+        return toDisplayText(values[this.value])
       }
     }
-    return typeof this.value === 'number' ? String(this.value) : this.value
+    return toDisplayText(this.value)
   }
 
   private getValues(node: LGraphNode): Values {
