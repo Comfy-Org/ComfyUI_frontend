@@ -62,10 +62,7 @@ export function createOverlaySurface(
     const view = canvas.canvas.parentElement
     if (attached?.canvas === canvas || !view) return
     detach()
-    view.insertBefore(
-      element,
-      view.querySelector(':scope > [data-viewport-panel]')
-    )
+    view.insertBefore(element, firstPanel(view))
     const release = routeOverlayInput(
       element,
       view,
@@ -88,6 +85,10 @@ export function createOverlaySurface(
       if (visible) requestDraw()
     }
   }
+}
+
+function firstPanel(view: HTMLElement): Element | null {
+  return view.querySelector(':scope > [data-viewport-panel]')
 }
 
 function paint(

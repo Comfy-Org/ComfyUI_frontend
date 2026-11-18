@@ -14,18 +14,6 @@ export function createBackendHandle(): BackendHandle {
   const copyOfPayload = payloadCopier()
   const messagesByEvent = new Map<string, BackendMessages>()
 
-  function messagesOf(event: string): BackendMessages {
-    const known = messagesByEvent.get(event)
-    if (known) return known
-    const messages = createHostEvent<[unknown]>('backend.on', (emit) => {
-      const deliver = (message: CustomEvent<unknown>) => emit(message.detail)
-      api.addCustomEventListener(event, deliver)
-      return () => api.removeCustomEventListener(event, deliver)
-    })
-    messagesByEvent.set(event, messages)
-    return messages
-  }
-
   const backend: BackendHandle = {
     url: (route) => api.apiURL(sameOriginRoute('backend.url', route)),
 
@@ -48,12 +36,28 @@ export function createBackendHandle(): BackendHandle {
       if (!isCallback(listener)) {
         throw invalidArgument('backend.on', 'a function to call', listener)
       }
-      return messagesOf(event)((detail) =>
-        listener(copyOfPayload(event, detail))
-      )
+      return messagesOf(
+        messagesByEvent,
+        event
+      )((detail) => listener(copyOfPayload(event, detail)))
     }
   }
   return Object.freeze(backend)
+}
+
+function messagesOf(
+  messagesByEvent: Map<string, BackendMessages>,
+  event: string
+): BackendMessages {
+  const known = messagesByEvent.get(event)
+  if (known) return known
+  const messages = createHostEvent<[unknown]>('backend.on', (emit) => {
+    const deliver = (message: CustomEvent<unknown>) => emit(message.detail)
+    api.addCustomEventListener(event, deliver)
+    return () => api.removeCustomEventListener(event, deliver)
+  })
+  messagesByEvent.set(event, messages)
+  return messages
 }
 
 function sameOriginRoute(member: string, route: unknown): string {
