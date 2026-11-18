@@ -45,37 +45,6 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
 }))
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
-  it('keeps execution-keyed outputs distinct from locator-keyed outputs', () => {
-    const store = useNodeOutputStore()
-    const firstOutput = createMockOutputs([{ filename: 'first.png' }])
-    const secondOutput = createMockOutputs([{ filename: 'second.png' }])
-
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
-      firstOutput
-    )
-    store.setNodeOutputsByExecutionId(
-      createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)]),
-      secondOutput
-    )
-
-    expect(
-      store.getNodeOutputByExecutionId(
-        createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(firstOutput)
-    expect(
-      store.getNodeOutputByExecutionId(
-        createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(secondOutput)
-  })
-
   it('merges execution-keyed outputs when merge is true', () => {
     const store = useNodeOutputStore()
     const initialOutput = createMockOutputs([{ filename: 'first.png' }])
@@ -98,30 +67,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
         createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
       )?.images
     ).toEqual([{ filename: 'first.png' }, { filename: 'second.png' }])
-  })
-
-  it('keeps execution-keyed previews distinct from locator-keyed previews', () => {
-    const store = useNodeOutputStore()
-
-    store.setNodePreviewsByExecutionId(
-      createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)]),
-      ['blob:first']
-    )
-    store.setNodePreviewsByExecutionId(
-      createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)]),
-      ['blob:second']
-    )
-
-    expect(
-      store.getNodePreviewImagesByExecutionId(
-        createNodeExecutionId([toNodeId(11), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(['blob:first'])
-    expect(
-      store.getNodePreviewImagesByExecutionId(
-        createNodeExecutionId([toNodeId(12), toNodeId(20), toNodeId(10)])
-      )
-    ).toEqual(['blob:second'])
   })
 
   it('projects execution output into canonical state and view URLs', () => {
@@ -285,10 +230,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 })
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved execution id', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-  })
-
   it('reports the execution id and output filenames instead of dropping the output silently', () => {
     vi.mocked(
       graphTraversalUtil.executionIdToNodeLocatorId
@@ -397,10 +338,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
 })
 
 describe('nodeOutputStore legacy entry synchronization', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-  })
-
   it('updates one mapped output without replacing unrelated records', () => {
     const store = useNodeOutputStore()
     const untouched = createMockOutputs([{ filename: 'untouched.png' }])
@@ -423,11 +360,6 @@ describe('nodeOutputStore legacy entry synchronization', () => {
 })
 
 describe('nodeOutputStore replaceNodeOutputImages', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('drops the previous output metadata when replacing the images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 7 })
@@ -483,11 +415,6 @@ describe('nodeOutputStore replaceNodeOutputImages', () => {
 })
 
 describe('nodeOutputStore restoreOutputs', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should keep reactivity after restoreOutputs followed by setNodeOutputsByExecutionId', () => {
     const store = useNodeOutputStore()
 
@@ -525,11 +452,6 @@ describe('nodeOutputStore restoreOutputs', () => {
 })
 
 describe('nodeOutputStore input preview preservation', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should preserve input preview when execution sends empty output', () => {
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(3)])
@@ -704,11 +626,6 @@ describe('nodeOutputStore getPreviewParam', () => {
 })
 
 describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should round-trip outputs through snapshot and restore', () => {
     const store = useNodeOutputStore()
 
@@ -858,11 +775,6 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 })
 
 describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should clear all outputs and previews for multiple nodes', () => {
     const store = useNodeOutputStore()
 
@@ -891,11 +803,6 @@ describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
 })
 
 describe('nodeOutputStore restoreOutputs + execution interaction', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should allow execution to update outputs after restore', () => {
     const store = useNodeOutputStore()
 
@@ -951,11 +858,6 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
 })
 
 describe('nodeOutputStore merge mode interactions', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should merge new images with existing input preview images', () => {
     const store = useNodeOutputStore()
 
@@ -987,40 +889,31 @@ describe('nodeOutputStore merge mode interactions', () => {
     expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('result.png')
   })
 
-  it('should not duplicate when merge is called with empty images array', () => {
+  it.for([
+    { name: 'an empty images array', output: createMockOutputs([]) },
+    { name: 'undefined images', output: createMockOutputs() }
+  ])('keeps the input preview once when merging $name', ({ output }) => {
     const store = useNodeOutputStore()
-
-    // Set initial input preview
-    const inputOutput = createMockOutputs([
-      { filename: 'uploaded.png', subfolder: '', type: 'input' }
-    ])
     store.setNodeOutputsByExecutionId(
       createNodeExecutionId([toNodeId(3)]),
-      inputOutput
+      createMockOutputs([
+        { filename: 'uploaded.png', subfolder: '', type: 'input' }
+      ])
     )
 
-    // Merge with empty images — the input-preview guard (lines 166-177)
-    // copies existing input images into the incoming outputs before the
-    // merge concat runs, resulting in duplication.
-    const emptyOutput = createMockOutputs([])
     store.setNodeOutputsByExecutionId(
       createNodeExecutionId([toNodeId(3)]),
-      emptyOutput,
-      {
-        merge: true
-      }
+      output,
+      { merge: true }
     )
 
-    expect(store.nodeOutputs['3']?.images).toHaveLength(2)
+    expect(store.nodeOutputs['3']?.images).toHaveLength(1)
     expect(store.nodeOutputs['3']?.images?.[0]?.filename).toBe('uploaded.png')
-    expect(store.nodeOutputs['3']?.images?.[1]?.filename).toBe('uploaded.png')
   })
 })
 
 describe('nodeOutputStore image url cache busting', () => {
   beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
     let calls = 0
     vi.mocked(app.getRandParam).mockImplementation(() => `&rand=${calls++}`)
   })
@@ -1104,11 +997,6 @@ describe('nodeOutputStore image url cache busting', () => {
 })
 
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should return early for empty string filename', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })

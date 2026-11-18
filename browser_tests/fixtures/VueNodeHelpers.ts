@@ -130,6 +130,25 @@ export class VueNodeHelpers {
     )
   }
 
+  /** Image sources inside each node's body, keyed by node ID, read at once. */
+  async getBodyImageSources(
+    nodeIds: string[]
+  ): Promise<Record<string, (string | null)[]>> {
+    return await this.page.evaluate(
+      (ids) =>
+        Object.fromEntries(
+          ids.map((id) => [
+            id,
+            Array.from(
+              document.querySelectorAll(`[data-testid="node-body-${id}"] img`),
+              (image) => image.getAttribute('src')
+            )
+          ])
+        ),
+      nodeIds
+    )
+  }
+
   async expectGraphSizeGrowth(nodeId: string, label: string): Promise<void> {
     const node = this.getNodeLocator(nodeId)
     const before = await node.boundingBox()
