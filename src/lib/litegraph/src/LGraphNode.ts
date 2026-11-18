@@ -4121,11 +4121,11 @@ export class LGraphNode
       widget.computedHeight = row.height
     }
 
-    if (!this.graph) throw new NullGraphError()
-
+    // A node can still be drawn for a frame after it leaves its graph;
+    // throwing here would stop the canvas render loop.
     if (!LiteGraph.vueNodesMode && layout.contentHeight > bodyHeight) {
       this.setSize([this.size[0], layout.contentHeight])
-      this.graph.setDirtyCanvas(false, true)
+      this.graph?.setDirtyCanvas(false, true)
     }
   }
 
