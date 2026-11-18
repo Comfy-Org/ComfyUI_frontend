@@ -268,6 +268,50 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       }
     })
 
+    test('keeps a clicked flyout open after the pointer leaves until Escape, without opening Settings', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      const credits = page.getByTestId('credits-menu-item')
+      const flyout = page.getByTestId('credits-flyout')
+      await credits.click()
+      await expect(flyout).toBeVisible()
+      await expect(credits).toHaveAttribute('aria-expanded', 'true')
+
+      await test.step('the flyout stays after the pointer leaves', async () => {
+        await page.getByTestId('logout-menu-item').hover()
+        await page.mouse.move(1, 1)
+        await expect(flyout).toBeVisible()
+        await expect(comfyPage.settingDialog.root).toBeHidden()
+      })
+
+      await test.step('Escape closes the flyout only', async () => {
+        await page.keyboard.press('Escape')
+        await expect(flyout).toBeHidden()
+        await expect(credits).toHaveAttribute('aria-expanded', 'false')
+        await expect(page.getByTestId('current-user-popover')).toBeVisible()
+      })
+    })
+
+    test('closes a clicked flyout on a click elsewhere in the menu', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      await page.getByTestId('credits-menu-item').click()
+      const flyout = page.getByTestId('credits-flyout')
+      await expect(flyout).toBeVisible()
+
+      await page.getByTestId('current-user-identity').click()
+
+      await expect(flyout).toBeHidden()
+    })
+
     test('keeps a flyout taller than the space below the Credits row inside the menu', async ({
       comfyPage
     }) => {
