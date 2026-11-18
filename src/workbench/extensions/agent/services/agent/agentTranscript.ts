@@ -353,8 +353,9 @@ function insertThinking(
       state: 'done'
     }
     if (parsed.data.truncated) part.truncated = true
-    unplaced.push(part)
     const anchor = parsed.data.tool_call_id
+    if (anchor) part.toolCallId = anchor
+    unplaced.push(part)
     const index = anchor
       ? next.findIndex(
           (existing) => existing.type === 'tool' && existing.callId === anchor

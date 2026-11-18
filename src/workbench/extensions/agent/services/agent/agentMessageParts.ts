@@ -53,6 +53,14 @@ export interface ThinkingPart {
   durationMs?: number
   /** The stored reasoning stops being whole here. */
   truncated?: boolean
+  /**
+   * The round's first tool call, set only on thinking restored from a stored
+   * row. A page reloaded mid-turn restores the finished rounds and can still
+   * receive the same round's live `agent_thinking` frames, which name this
+   * id, so the transport drops them instead of showing the round twice
+   * (FRONT-3723).
+   */
+  toolCallId?: string
 }
 
 export interface NoticePart {

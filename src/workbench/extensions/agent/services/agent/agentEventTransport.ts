@@ -404,9 +404,25 @@ export function createAgentEventTransport(
     return true
   }
 
+  /** Whether the stored row already gave this message the round's thinking.
+   * Only thinking restored from a stored row carries `toolCallId`, so a live
+   * round's later frames are never mistaken for it. */
+  function roundWasRestored(toolCallId: string | undefined): boolean {
+    if (!toolCallId) return false
+    return message.parts.some(
+      (part) => part.type === 'thinking' && part.toolCallId === toolCallId
+    )
+  }
+
   /** Applies one `agent_thinking` frame: appends its delta to the open
-   * thinking part, opening one first if none is open. */
+   * thinking part, opening one first if none is open. A frame for a round
+   * the stored row already restored (a reload mid-turn, FRONT-3723) is
+   * dropped, along with that round's draft. */
   function handleThinkingEvent(data: AgentThinkingEvent['data']): void {
+    if (roundWasRestored(data.tool_call_id)) {
+      dropThinkingDraft()
+      return
+    }
     closeOpenText()
     adoptThinkingDraft()
     message.thinking = true
