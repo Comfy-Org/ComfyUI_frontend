@@ -88,7 +88,7 @@ export interface PendingSendEntryState {
   paywallResolved?: boolean
 }
 
-export interface PendingSendStop {
+interface PendingSendStop {
   method?: AgentStopMethod
 }
 
@@ -100,7 +100,7 @@ export interface PendingSentAttachment {
   mediaKind?: MediaKind
 }
 
-export interface PendingSentTag {
+interface PendingSentTag {
   id: string
   title: string
 }
