@@ -79,8 +79,6 @@ test.describe(
       await expect(after).toBeVisible()
     })
 
-    // PM-916 / PM-938. The composer remains editable while a turn is active,
-    // but Enter must keep the next draft instead of sending or stopping.
     test('preserves a new draft when Enter is pressed during an active turn', async ({
       turnLock
     }) => {

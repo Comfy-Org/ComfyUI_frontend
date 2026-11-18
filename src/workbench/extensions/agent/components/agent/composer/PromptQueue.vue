@@ -25,9 +25,12 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
+const laterRowActionClass =
+  'opacity-0 group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100'
+
 function statusIcon(status: PromptQueueRowStatus): string {
   if (status === 'running') return 'icon-[lucide--loader-circle] animate-spin'
-  return 'icon-[lucide--circle-dashed]'
+  return 'icon-[svg-spinners--3-dots-bounce]'
 }
 </script>
 
@@ -37,9 +40,11 @@ function statusIcon(status: PromptQueueRowStatus): string {
     data-testid="agent-prompt-queue"
     class="flex flex-col overflow-hidden rounded-lg border border-border/50 bg-background"
   >
-    <button
+    <Button
       type="button"
-      class="flex h-7 w-full items-center gap-2 rounded-t-lg px-2 text-xs text-foreground hover:bg-accent"
+      variant="textonly"
+      size="unset"
+      class="h-7 w-full justify-start rounded-none rounded-t-lg px-2 text-xs font-normal"
       :aria-expanded="expanded"
       :aria-label="
         expanded ? t('agent.queue.collapse') : t('agent.queue.expand')
@@ -61,13 +66,13 @@ function statusIcon(status: PromptQueueRowStatus): string {
           )
         "
       />
-    </button>
+    </Button>
     <div v-if="expanded" class="flex flex-col">
       <div
-        v-for="item in items"
+        v-for="(item, index) in items"
         :key="item.id"
         :data-status="item.status"
-        class="flex h-7 items-center gap-2 px-2"
+        class="group flex h-7 items-center gap-2 px-2"
       >
         <i
           aria-hidden="true"
@@ -90,6 +95,7 @@ function statusIcon(status: PromptQueueRowStatus): string {
           :tooltip="t('agent.queue.edit')"
           :aria-label="t('agent.queue.edit')"
           :disabled="item.status === 'running'"
+          :class="index > 0 && laterRowActionClass"
           @click="emit('edit', item.id)"
         >
           <i aria-hidden="true" class="icon-[lucide--pencil] size-3.5" />
@@ -101,6 +107,7 @@ function statusIcon(status: PromptQueueRowStatus): string {
           :tooltip="t('agent.queue.delete')"
           :aria-label="t('agent.queue.delete')"
           :disabled="item.status === 'running'"
+          :class="index > 0 && laterRowActionClass"
           @click="emit('delete', item.id)"
         >
           <i aria-hidden="true" class="icon-[lucide--trash-2] size-3.5" />

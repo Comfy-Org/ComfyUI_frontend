@@ -1,3 +1,5 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useAgentPromptQueueStore } from '@/workbench/extensions/agent/stores/agent/agentPromptQueueStore'
 import type { PromptQueueItem } from '@/workbench/extensions/agent/stores/agent/promptQueueState'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
@@ -22,7 +24,17 @@ export function useAgentPromptQueue(options: {
     id: string,
     submitted: QueueSendResult
   ): Promise<void> {
-    const sent = await submitted
+    let sent: void | boolean
+    try {
+      sent = await submitted
+    } catch (error) {
+      if (queue.runningId === id) queue.finish(id)
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_send_message_failed'
+      })
+      return
+    }
     if (sent === false && queue.runningId === id) {
       queue.finish(id)
       if (options.isBusy()) queue.clearComposerDraft()

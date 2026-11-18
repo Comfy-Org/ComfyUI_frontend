@@ -18,9 +18,8 @@ describe('PromptQueue', () => {
       global: { plugins: [i18n] }
     })
 
-    const queue = screen.getByTestId('agent-prompt-queue')
-    expect(queue).toBeVisible()
-    expect(queue).toHaveClass('rounded-lg', 'border', 'bg-background')
+    expect(screen.getByTestId('agent-prompt-queue')).toBeVisible()
+    expect(screen.getByText(waiting.text)).toBeVisible()
   })
 
   it('hides when there are no queued messages', () => {

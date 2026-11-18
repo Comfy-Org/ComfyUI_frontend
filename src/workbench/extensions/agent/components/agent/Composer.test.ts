@@ -106,6 +106,27 @@ describe('Composer', () => {
     expect(screen.getByTestId('composer-input-box')).toBeVisible()
   })
 
+  it('lists only waiting messages, not the one the agent is working on', async () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    composer.setText('first')
+    queue.enqueueFromComposer('first', [], [])
+    queue.begin(queue.items[0].id)
+    composer.clearDraft()
+    mount()
+
+    expect(screen.queryByTestId('agent-prompt-queue')).toBeNull()
+
+    composer.setText('second')
+    queue.enqueueFromComposer('second', [], [])
+    composer.clearDraft()
+    await nextTick()
+
+    const queued = screen.getByTestId('agent-prompt-queue')
+    expect(within(queued).getByText('second')).toBeVisible()
+    expect(within(queued).queryByText('first')).toBeNull()
+  })
+
   it('clears an untouched greeting prefilled after the editor mounts', async () => {
     mount()
     const store = useAgentComposerStore()
@@ -182,6 +203,17 @@ describe('Composer', () => {
     await userEvent.keyboard('{Enter}')
     expect(useAgentComposerStore().draft).toBe('Next draft')
     expect(emitted().send).toBeUndefined()
+  })
+
+  it('sends a Send click while a previous send is still submitting, so it can be queued', async () => {
+    useAgentComposerStore().setText('Next draft')
+    const { emitted } = mount({ submitting: true })
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.send') })
+    )
+
+    expect(emitted().send).toHaveLength(1)
   })
 
   it('preserves new input on Enter without stopping an active run', async () => {

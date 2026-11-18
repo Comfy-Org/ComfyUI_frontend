@@ -12,12 +12,6 @@ const waiting: PromptQueueRow = {
   status: 'waiting'
 }
 
-const running: PromptQueueRow = {
-  id: 'running',
-  text: 'Prompt message number 1',
-  status: 'running'
-}
-
 const later: PromptQueueRow = {
   id: 'later',
   text: 'Prompt message number 3',
@@ -50,20 +44,16 @@ export const Empty: Story = {
 }
 
 export const OneQueued: Story = {
-  args: { items: [running] }
+  args: { items: [waiting] }
 }
 
 export const ManyQueued: Story = {
-  args: { items: [running, waiting, later] }
+  args: { items: [waiting, later] }
 }
 
 export const Collapsed: Story = {
   args: {
-    items: [running, waiting, later],
+    items: [waiting, later],
     expanded: false
   }
-}
-
-export const Editing: Story = {
-  args: { items: [running, waiting] }
 }

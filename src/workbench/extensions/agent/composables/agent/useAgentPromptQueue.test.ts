@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
+const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({ reportError }))
+
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentPromptQueueStore } from '@/workbench/extensions/agent/stores/agent/agentPromptQueueStore'
 import type { PromptQueueItem } from '@/workbench/extensions/agent/stores/agent/promptQueueState'
@@ -108,6 +111,21 @@ describe('useAgentPromptQueue', () => {
     busy.value = false
     await settleActiveAndPump()
     expect(sent).toEqual(['one', 'three', 'two revised'])
+  })
+
+  it('drops the running item when its send throws', async () => {
+    const { handleComposerSend, queue, composer, submitDraft } = setup()
+    const failure = new Error('send failed')
+    submitDraft.mockImplementationOnce(() => Promise.reject(failure))
+    composer.setText('one')
+    handleComposerSend('one', [])
+
+    await vi.waitFor(() => expect(queue.runningId).toBeNull())
+    expect(queue.count).toBe(0)
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      surface: 'agent',
+      errorType: 'agent_send_message_failed'
+    })
   })
 
   it('drops the running item when the first send fails so a retry can send', async () => {

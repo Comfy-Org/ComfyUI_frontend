@@ -105,19 +105,18 @@ const running = computed(() => streaming || submitting)
 const promptQueue = useAgentPromptQueueStore()
 const editing = computed(() => promptQueue.editingId !== null)
 const queueRows = computed(() =>
-  promptQueue.items.map((item) => ({
-    id: item.id,
-    text: item.text,
-    status:
-      item.id === promptQueue.runningId
-        ? ('running' as const)
-        : ('waiting' as const)
-  }))
+  promptQueue.items
+    .filter((item) => item.id !== promptQueue.runningId)
+    .map((item) => ({
+      id: item.id,
+      text: item.text,
+      status: 'waiting' as const
+    }))
 )
 
 const composer = useComposer({
   onSend: (_text, attachments) => {
-    if (workflowSelecting || submitting) return
+    if (workflowSelecting) return
     if (!hasWorkflowTarget) {
       emit('workflowTargetRequired')
       return

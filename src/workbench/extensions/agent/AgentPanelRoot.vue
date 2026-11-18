@@ -2219,7 +2219,8 @@ async function sendTurn(
   attachments: ComposerAttachment[],
   nodes: SelectedNode[],
   references: WorkflowReference[],
-  meta: SubmissionMeta
+  meta: SubmissionMeta,
+  isCurrent: () => boolean = () => true
 ): Promise<boolean> {
   const submissionId = composerStore.submission?.id
   if (
@@ -2227,10 +2228,12 @@ async function sendTurn(
     !(await consentAllowsSubmission(submissionId, meta.clientMessageId))
   )
     return false
+  if (!isCurrent()) return false
   if (!hasAgentCredential()) {
     const identityBeforeSignIn = consentIdentity.value
     if (!(await ensureSignedIn())) return false
     if (
+      !isCurrent() ||
       composerStore.submission?.id !== submissionId ||
       !consentAccepted.value ||
       consentIdentity.value !== identityBeforeSignIn
@@ -2296,11 +2299,18 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
   isBusy: () => isStreaming.value || isSending.value,
   submitDraft,
   sendItem: (item) =>
-    sendTurn(item.text, item.attachments, item.nodes, item.references, {
-      clientMessageId: uuidv4(),
-      inputMethod: 'typed',
-      starterPrompt: null
-    }),
+    sendTurn(
+      item.text,
+      item.attachments,
+      item.nodes,
+      item.references,
+      {
+        clientMessageId: uuidv4(),
+        inputMethod: 'typed',
+        starterPrompt: null
+      },
+      () => promptQueueStore.runningId === item.id
+    ),
   deferCapture: () => {
     canvasStore.stopNodePicking()
     consumeSelection()
