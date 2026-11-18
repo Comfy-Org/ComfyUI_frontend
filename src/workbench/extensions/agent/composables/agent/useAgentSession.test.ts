@@ -1355,8 +1355,7 @@ describe('useAgentSession (v1 composition root)', () => {
           status: 'failed',
           failure: {
             kind: 'turn_in_progress',
-            message:
-              'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+            message: 'A reply was still running in this chat.'
           }
         }
       })
@@ -7905,7 +7904,9 @@ describe('useAgentSession (v1 composition root)', () => {
         status: 'failed',
         failure: {
           kind: scenario.released ? 'disowned' : 'request',
-          message: `Message failed to send: ${scenario.refusal}`
+          message: scenario.released
+            ? 'This workflow is no longer available.'
+            : `Message failed to send: ${scenario.refusal}`
         }
       }
     })

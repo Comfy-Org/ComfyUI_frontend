@@ -297,7 +297,9 @@ export function useAgentConsent() {
   }
 
   function heldDraftText(): string {
-    return conversationStore.pendingSendingText()
+    const heldId = composerStore.gateHold?.clientMessageId
+    if (heldId === undefined) return ''
+    return conversationStore.getPendingSend(heldId)?.text.trim() ?? ''
   }
 
   async function acceptAfterSignIn(

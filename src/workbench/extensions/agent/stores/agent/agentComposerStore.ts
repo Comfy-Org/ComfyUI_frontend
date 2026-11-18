@@ -1,4 +1,8 @@
-import { StorageSerializers, useLocalStorage } from '@vueuse/core'
+import {
+  StorageSerializers,
+  createEventHook,
+  useLocalStorage
+} from '@vueuse/core'
 import { defineStore } from 'pinia'
 import {
   computed,
@@ -37,7 +41,6 @@ import { insertComposerReference } from '@/workbench/extensions/agent/utils/comp
 import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
 import { createVideoThumbnail } from '@/workbench/extensions/agent/utils/videoThumbnail'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
-import { useAgentConversationStore } from './agentConversationStore'
 
 interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]
@@ -73,10 +76,20 @@ const zSavedDraft = z.object({
   )
 })
 
-interface GateHold {
+export interface GateHoldSnapshot {
+  prompt: ComposerPrompt
+  attachments: ComposerAttachment[]
+  nodes: SelectedNode[]
+  targetPath: string | null
+  promptOrigin: AgentInputMethod
+  starterPrompt: AgentStarterPromptSource | null
+}
+
+export interface GateHold {
   id: number
   clientMessageId: string
   revision: number
+  snapshot: GateHoldSnapshot
 }
 
 export const useAgentComposerStore = defineStore('agentComposer', () => {
@@ -132,7 +145,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   })
   const pendingCaret = shallowRef<ComposerInsertionPoint | null>(null)
   const retiredAssets = new Set<string>()
-  const heldAssetIds = ref<string[]>([])
   const thumbnailJobs = new Map<
     string,
     { source: string; controller: AbortController }
@@ -176,6 +188,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     })
   }
   const gateHold = shallowRef<GateHold | null>(null)
+  const retainedByOwner = new Map<string, Set<string>>()
+  const assetPreviewUpdated = createEventHook<{
+    id: string
+    previewUrl: string
+  }>()
   const rejectedDraft = shallowRef<{
     prompt: ComposerPrompt
     attachmentIds: string[]
@@ -583,10 +600,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     revokePreview(previous, attachment)
     assetsById.set(id, attachment)
     if (patch.previewUrl)
-      useAgentConversationStore().updatePendingAttachmentPreview(
-        id,
-        patch.previewUrl
-      )
+      void assetPreviewUpdated.trigger({ id, previewUrl: patch.previewUrl })
     ensureThumbnail(attachment)
     if (
       prompt.value.references.some(
@@ -604,7 +618,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function removeAttachment(id: string): void {
-    if (!heldAssetIds.value.includes(id)) {
+    if (!isAssetRetained(id)) {
       cancelThumbnail(id)
       const attachment = assetsById.get(id)
       if (attachment) revokePreview(attachment)
@@ -618,15 +632,39 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     removeReference(`asset:${id}`)
   }
 
+  function isAssetRetained(id: string): boolean {
+    for (const ownerIds of retainedByOwner.values())
+      if (ownerIds.has(id)) return true
+    return false
+  }
+
   function holdAssets(ids: readonly string[]): void {
-    heldAssetIds.value = [...ids]
+    retainAssets('promptQueue', ids)
+  }
+
+  function retainAssets(ownerKey: string, ids: readonly string[]): void {
+    if (ids.length === 0) retainedByOwner.delete(ownerKey)
+    else retainedByOwner.set(ownerKey, new Set(ids))
+  }
+
+  function transferRetainedAssets(
+    fromOwnerKey: string,
+    toOwnerKey: string
+  ): void {
+    const ids = retainedByOwner.get(fromOwnerKey)
+    retainedByOwner.delete(fromOwnerKey)
+    if (ids && ids.size > 0) retainedByOwner.set(toOwnerKey, ids)
+  }
+
+  function releaseRetainedAssets(ownerKey: string): void {
+    if (!retainedByOwner.delete(ownerKey)) return
+    releaseUnusedAssets()
   }
 
   function releaseUnusedAssets(): void {
     const retained = new Set(attachments.value.map(({ id }) => id))
-    for (const id of useAgentConversationStore().pendingAttachmentIds())
-      retained.add(id)
-    for (const id of heldAssetIds.value) retained.add(id)
+    for (const ownerIds of retainedByOwner.values())
+      for (const id of ownerIds) retained.add(id)
     for (const [id, attachment] of assetsById)
       if (!retained.has(id)) {
         cancelThumbnail(id)
@@ -636,10 +674,20 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       }
   }
 
-  function startGateHold(clientMessageId: string): number {
+  function startGateHold(
+    clientMessageId: string,
+    snapshot: GateHoldSnapshot = {
+      prompt: prompt.value,
+      attachments: [...attachments.value],
+      nodes: [...nodes.value],
+      targetPath: null,
+      promptOrigin: promptOrigin.value,
+      starterPrompt: starterPrompt.value
+    }
+  ): number {
     clearDraft()
     const id = ++nextGateHoldId
-    gateHold.value = { id, clientMessageId, revision: revision.value }
+    gateHold.value = { id, clientMessageId, revision: revision.value, snapshot }
     return id
   }
 
@@ -649,11 +697,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     releaseUnusedAssets()
   }
 
-  function cancelGateHold(): string | null {
+  function cancelGateHold(): GateHold | null {
     const held = gateHold.value
     if (!held) return null
     gateHold.value = null
-    return held.clientMessageId
+    return held
   }
 
   function restoreSubmissionMeta(
@@ -761,6 +809,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     referenceAttachment,
     updateAttachment,
     removeAttachment,
+    retainAssets,
+    transferRetainedAssets,
+    releaseRetainedAssets,
+    onAssetPreviewUpdated: assetPreviewUpdated.on,
     releaseUnusedAssets,
     startGateHold,
     releaseGateHold,

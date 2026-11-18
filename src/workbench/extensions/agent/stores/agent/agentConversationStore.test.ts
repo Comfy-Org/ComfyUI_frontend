@@ -4059,13 +4059,7 @@ describe('useAgentConversationStore', () => {
         text: 'hello blank',
         attachments: [],
         tags: [],
-        workflowReferences: [],
-        prompt: { text: 'hello blank', references: [] },
-        composerAttachments: [],
-        composerNodes: [],
-        target: null,
-        promptOrigin: 'typed',
-        starterPrompt: null
+        workflowReferences: []
       })
 
       expect(store.hasSendingPendingSend).toBe(true)
@@ -4140,6 +4134,57 @@ describe('useAgentConversationStore', () => {
         store.entries.filter((entry) => entry.role === 'user')
       ).toHaveLength(1)
       expect(store.activeTurnId).toBe(turnId)
+    })
+
+    it('retries a failed pending send in place without moving it to the end and marks paywall pending sends resolved', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-1')
+      store.startPendingSend({
+        clientMessageId: 'cm-1',
+        text: 'first',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-2',
+        text: 'second',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-1', { kind: 'paywall', message: 'no credits' })
+      store.failPendingSend('cm-2', {
+        kind: 'retry_after',
+        message: 'wait',
+        retryAfterSeconds: 10
+      })
+
+      expect(store.entries[0]).toMatchObject({
+        id: 'cm-1',
+        pending: { paywallResolved: false }
+      })
+      expect(store.getPendingSend('cm-2')?.failure?.retryAtMs).toEqual(
+        expect.any(Number)
+      )
+
+      store.resolvePaywalls()
+      expect(store.entries[0]).toMatchObject({
+        id: 'cm-1',
+        pending: { paywallResolved: true }
+      })
+
+      const retried = store.retryPendingSend('cm-1', 'cm-1-retry')
+      expect(retried).toMatchObject({
+        clientMessageId: 'cm-1-retry',
+        status: 'sending'
+      })
+      expect(retried?.failure).toBeUndefined()
+      expect(store.getPendingSend('cm-1')).toBeUndefined()
+      expect(store.entries.map((entry) => entry.id)).toEqual([
+        'cm-1-retry',
+        'cm-2'
+      ])
     })
   })
 })

@@ -6,9 +6,13 @@ import type {
 } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
+import type { GateHoldSnapshot } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
-import type { UserAttachment } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type {
+  PendingSentAttachment,
+  UserAttachment
+} from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
@@ -46,6 +50,22 @@ export interface SubmissionMeta {
   starterPrompt: AgentStarterPromptSource | null
 }
 
+export function pendingAssetOwnerKey(clientMessageId: string): string {
+  return `pending:${clientMessageId}`
+}
+
+function toSentAttachments(
+  attachments: readonly ComposerAttachment[]
+): PendingSentAttachment[] {
+  return attachments.map(({ ref, name, previewUrl, mediaUrl, mediaKind }) => ({
+    ref,
+    name,
+    previewUrl,
+    mediaUrl,
+    mediaKind
+  }))
+}
+
 function toUserAttachments(
   attachments: readonly ComposerAttachment[]
 ): UserAttachment[] {
@@ -69,28 +89,34 @@ export function useAgentDraftSubmission(
 
   function withdrawSubmission(
     clientMessageId: string,
+    snapshot?: GateHoldSnapshot,
     expectedRevision?: number
   ): void {
     const pending = conversation.takePendingSend(clientMessageId)
-    if (!pending) return
+    if (!pending) {
+      composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+      return
+    }
     if (
+      !snapshot ||
       (expectedRevision !== undefined &&
         composer.draftRevision !== expectedRevision) ||
       selection.staged.value.length > 0
     ) {
-      composer.releaseUnusedAssets()
+      composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
       return
     }
+    const targetPath = options.target()?.path ?? null
     composer.restorePrompt(
       {
-        text: pending.prompt.text,
-        references: pending.prompt.references.filter((reference) => {
+        text: snapshot.prompt.text,
+        references: snapshot.prompt.references.filter((reference) => {
           if (reference.kind === 'workflow')
             return reference.id !== options.editableWorkflowId()
           if (reference.kind === 'node')
             return (
-              options.target() === pending.target &&
-              pending.composerNodes.some(
+              targetPath === snapshot.targetPath &&
+              snapshot.nodes.some(
                 (node) =>
                   selectedNodeKey(node) === selectedNodeKey(reference.node)
               )
@@ -98,12 +124,15 @@ export function useAgentDraftSubmission(
           return true
         })
       },
-      pending.composerAttachments
+      snapshot.attachments
     )
-    composer.restoreSubmissionMeta(pending.promptOrigin, pending.starterPrompt)
-    if (options.target() === pending.target)
-      selection.replace(pending.composerNodes)
+    composer.restoreSubmissionMeta(
+      snapshot.promptOrigin,
+      snapshot.starterPrompt
+    )
+    if (targetPath === snapshot.targetPath) selection.replace(snapshot.nodes)
     composer.markRejectedDraft()
+    composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
   }
 
   async function submit(
@@ -135,20 +164,31 @@ export function useAgentDraftSubmission(
 
     selection.consume()
     const clientMessageId = uuidv4()
+    const assetIds = sentAttachments.map(({ id }) => id)
+    composer.retainAssets(pendingAssetOwnerKey(clientMessageId), assetIds)
     conversation.startPendingSend({
       clientMessageId,
+      rawText: text,
       text,
       attachments: toUserAttachments(sentAttachments),
+      sentAttachments: toSentAttachments(sentAttachments),
+      sentTags: nodes,
       tags: nodes.map((tag) => `${tag.title} #${tag.id}`),
       workflowReferences: sentReferences,
-      prompt,
-      composerAttachments: sentAttachments,
-      composerNodes: nodes,
-      target,
-      promptOrigin: inputMethod,
+      assetIds,
+      targetTabPath: target.path,
+      inputMethod,
       starterPrompt
     })
-    const gateId = composer.startGateHold(clientMessageId)
+    const snapshot: GateHoldSnapshot = {
+      prompt,
+      attachments: sentAttachments,
+      nodes,
+      targetPath: target.path,
+      promptOrigin: inputMethod,
+      starterPrompt
+    }
+    const gateId = composer.startGateHold(clientMessageId, snapshot)
     const gateRevision = composer.draftRevision
 
     let outcome: DraftSendOutcome = 'failed'
@@ -164,7 +204,9 @@ export function useAgentDraftSubmission(
     } finally {
       composer.releaseGateHold(gateId)
       if (outcome === 'withdrawn')
-        withdrawSubmission(clientMessageId, gateRevision)
+        withdrawSubmission(clientMessageId, snapshot, gateRevision)
+      else if (!conversation.getPendingSend(clientMessageId))
+        composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
       else composer.releaseUnusedAssets()
     }
     return outcome === 'sent'

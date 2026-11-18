@@ -440,22 +440,181 @@ describe('UserMessage', () => {
     ).toBeVisible()
   })
 
-  it('shows the failure explanation and no spinner when a pending send fails (O0-04)', () => {
-    renderMessage({
+  it('shows the failure explanation and no spinner when a pending send fails (O0-04)', async () => {
+    const view = renderMessage({
+      text: 'failed prompt',
+      pending: {
+        clientMessageId: 'cm-2',
+        status: 'sending'
+      }
+    })
+
+    await view.rerender({
       text: 'failed prompt',
       pending: {
         clientMessageId: 'cm-2',
         status: 'failed',
         failure: {
           kind: 'network',
-          message: 'Message failed to send: offline'
+          message:
+            "Message didn't reach the server. Check your connection and try again."
         }
       }
     })
 
-    expect(screen.queryByRole('status')).toBeNull()
-    expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
-      'Message failed to send: offline'
+    expect(
+      screen.queryByRole('status', { name: t('agent.sendingMessage') })
+    ).toBeNull()
+    const status = screen.getByTestId('pending-send-error')
+    expect(status).toHaveAttribute('role', 'alert')
+    expect(status).toHaveTextContent(
+      "Message didn't reach the server. Check your connection and try again."
     )
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+  })
+
+  it('uses status role when already failed on mount and emits Retry and Delete', async () => {
+    const { emitted } = renderMessage({
+      text: 'failed prompt',
+      pending: {
+        clientMessageId: 'cm-2',
+        status: 'failed',
+        failure: {
+          kind: 'request',
+          message: 'Message failed to send: server exploded'
+        }
+      }
+    })
+
+    expect(screen.getByTestId('pending-send-error')).toHaveAttribute(
+      'role',
+      'status'
+    )
+    await userEvent.click(screen.getByRole('button', { name: t('g.retry') }))
+    await userEvent.click(screen.getByRole('button', { name: t('g.delete') }))
+    expect(emitted().retryPending).toEqual([['cm-2']])
+    expect(emitted().deletePending).toEqual([['cm-2']])
+  })
+
+  it.for(['admission', 'request', 'turn_in_progress'] as const)(
+    'shows failure copy with Retry and Delete for %s',
+    (kind) => {
+      const message = `Failure for ${kind}`
+      renderMessage({
+        text: 'prompt',
+        pending: {
+          clientMessageId: `cm-${kind}`,
+          status: 'failed',
+          failure: { kind, message }
+        }
+      })
+
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        message
+      )
+      expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+      expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+    }
+  )
+
+  it('disables Retry until retry_after elapses and keeps Delete enabled (O0-04)', async () => {
+    vi.useFakeTimers()
+    try {
+      renderMessage({
+        text: 'rate limited',
+        pending: {
+          clientMessageId: 'cm-ra',
+          status: 'failed',
+          failure: {
+            kind: 'retry_after',
+            message: 'Billing status is temporarily unavailable; please retry.',
+            retryAfterSeconds: 5,
+            retryAtMs: Date.now() + 5000
+          }
+        }
+      })
+
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        'You can try again in 5s.'
+      )
+      const retry = screen.getByRole('button', { name: t('g.retry') })
+      expect(retry).toBeDisabled()
+      expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(retry).toBeEnabled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it.for(['disowned', 'target_unavailable'] as const)(
+    'offers New chat and Delete instead of Retry for %s (O0-04)',
+    async (kind) => {
+      const { emitted } = renderMessage({
+        text: 'lost workflow',
+        pending: {
+          clientMessageId: `cm-${kind}`,
+          status: 'failed',
+          failure: { kind, message: 'This workflow is no longer available.' }
+        }
+      })
+
+      expect(screen.queryByRole('button', { name: t('g.retry') })).toBeNull()
+      await userEvent.click(
+        screen.getByRole('button', { name: t('agent.newChat') })
+      )
+      await userEvent.click(screen.getByRole('button', { name: t('g.delete') }))
+      expect(emitted().newChat).toEqual([[]])
+      expect(emitted().deletePending).toEqual([[`cm-${kind}`]])
+    }
+  )
+
+  it('renders AgentPaywallCard for paywall failures and hides it when paywallResolved (O0-04)', async () => {
+    const view = renderMessage({
+      text: 'needs credits',
+      paywallPresentation: { kind: 'local' },
+      pending: {
+        clientMessageId: 'cm-pay',
+        status: 'failed',
+        failure: {
+          kind: 'paywall',
+          message: "You're out of credits."
+        },
+        paywallResolved: false
+      }
+    })
+
+    expect(
+      screen.getByRole('button', { name: t('agent.paywall.addCredits') })
+    ).toBeVisible()
+    await userEvent.click(
+      screen.getByRole('button', { name: t('agent.paywall.addCredits') })
+    )
+    expect(view.emitted().paywallAction).toEqual([
+      ['addCredits', 'refused_send']
+    ])
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+
+    await view.rerender({
+      text: 'needs credits',
+      paywallPresentation: { kind: 'local' },
+      pending: {
+        clientMessageId: 'cm-pay',
+        status: 'failed',
+        failure: {
+          kind: 'paywall',
+          message: "You're out of credits."
+        },
+        paywallResolved: true
+      }
+    })
+
+    expect(
+      screen.queryByRole('button', { name: t('agent.paywall.addCredits') })
+    ).toBeNull()
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
   })
 })

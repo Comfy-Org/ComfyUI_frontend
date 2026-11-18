@@ -1219,13 +1219,7 @@ describe('useAgentConsent', () => {
         text,
         attachments: [],
         tags: [],
-        workflowReferences: [],
-        prompt: { text, references: [] },
-        composerAttachments: [],
-        composerNodes: [],
-        target: {} as ComfyWorkflow,
-        promptOrigin: 'typed',
-        starterPrompt: null
+        workflowReferences: []
       })
       useAgentComposerStore().startGateHold(`cm-${text}`)
     }
@@ -1724,6 +1718,32 @@ describe('useAgentConsent', () => {
       expect(onSend).toHaveBeenCalledOnce()
       expect(useDialogStore().dialogStack).toHaveLength(0)
       expect(useAgentComposerStore().draft).toBe('')
+    })
+
+    it('reads only the send held by the composer gate, ignoring pending sends in other chats', async () => {
+      signedOut()
+      useAgentConversationStore().startPendingSend({
+        clientMessageId: 'cm-other-chat',
+        origin: { kind: 'thread', threadId: 'th-other' },
+        text: 'other chat message',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      holdDraft('this gate message')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
+        new Promise(() => {})
+      )
+
+      void useAgentConsent().withConsent('first_message', vi.fn())
+      await startConsent()
+      await vi.waitFor(() =>
+        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+      )
+
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+        draft: 'this gate message'
+      })
     })
   })
 })

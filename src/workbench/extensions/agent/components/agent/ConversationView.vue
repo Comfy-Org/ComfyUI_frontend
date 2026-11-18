@@ -48,6 +48,9 @@ const emit = defineEmits<{
   approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
+  retryPending: [clientMessageId: string]
+  deletePending: [clientMessageId: string]
+  newChat: []
 }>()
 
 const { t } = useI18n()
@@ -240,11 +243,18 @@ watch(
               :workflow-references="entry.workflowReferences"
               :skill-reference="entry.skillReference"
               :pending="entry.pending"
+              :paywall-presentation
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"
               @open-reference-workflow="
                 (workflowId: string, workflowName: string) =>
                   emit('openReferenceWorkflow', workflowId, workflowName)
+              "
+              @retry-pending="emit('retryPending', $event)"
+              @delete-pending="emit('deletePending', $event)"
+              @new-chat="emit('newChat')"
+              @paywall-action="
+                (action, surface) => emit('paywallAction', action, surface)
               "
             />
             <AgentMessage

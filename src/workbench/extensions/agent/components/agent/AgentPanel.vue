@@ -153,6 +153,8 @@ const emit = defineEmits<{
   removeWorkflowReference: [id: string]
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
+  retryPending: [clientMessageId: string]
+  deletePending: [clientMessageId: string]
   standingPaywallShown: []
   newChat: [source: 'new_chat_button' | 'history_back']
   startTour: []
@@ -572,6 +574,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           @paywall-action="
             (action, surface) => emit('paywallAction', action, surface)
           "
+          @retry-pending="emit('retryPending', $event)"
+          @delete-pending="emit('deletePending', $event)"
+          @new-chat="emit('newChat', 'new_chat_button')"
         />
         <div
           v-if="showChatLoading"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
+import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import { useClipboard, useClipboardItems } from '@vueuse/core'
-import { computed, useTemplateRef } from 'vue'
+import { computed, onBeforeUnmount, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -27,7 +28,13 @@ import { isReplyAssetKind } from '@/workbench/extensions/agent/utils/replyAssets
 import { agentMessageText } from '@/workbench/extensions/agent/utils/agentMessageText'
 import { promptReferenceParts } from '@/workbench/extensions/agent/utils/promptReferenceParts'
 import type { SkillReference as SkillReferenceData } from '@/workbench/extensions/agent/types/skillReference'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import CatalogSkillReference from '@/workbench/extensions/agent/components/agent/CatalogSkillReference.vue'
+import AgentPaywallCard from './AgentPaywallCard.vue'
 import ReplyAssetGroup from './ReplyAssetGroup.vue'
 import {
   selectedUserMessageClipboard,
@@ -41,6 +48,7 @@ const {
   workflowReferences = [],
   skillReference,
   pending,
+  paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editable = false
 } = defineProps<{
   text: string
@@ -49,14 +57,76 @@ const {
   workflowReferences?: WorkflowReference[]
   skillReference?: SkillReferenceData
   pending?: PendingSendEntryState
+  paywallPresentation?: AgentPaywallPresentation
   editable?: boolean
 }>()
 const emit = defineEmits<{
   edit: [prompt: PromptSnapshot]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
+  retryPending: [clientMessageId: string]
+  deletePending: [clientMessageId: string]
+  newChat: []
+  paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 
 const { t } = useI18n()
+const justFailed = ref(false)
+watch(
+  () => pending?.status,
+  (current, previous) => {
+    if (previous === 'sending' && current === 'failed') justFailed.value = true
+    else if (current !== 'failed') justFailed.value = false
+  }
+)
+
+const retryLocked = ref(false)
+let retryTimer: ReturnType<typeof setTimeout> | undefined
+function clearRetryTimer(): void {
+  if (retryTimer !== undefined) {
+    clearTimeout(retryTimer)
+    retryTimer = undefined
+  }
+}
+watch(
+  () => pending,
+  (current) => {
+    clearRetryTimer()
+    const failure = current?.status === 'failed' ? current.failure : undefined
+    if (failure?.kind !== 'retry_after') {
+      retryLocked.value = false
+      return
+    }
+    const targetMs =
+      failure.retryAtMs ??
+      (failure.retryAfterSeconds !== undefined
+        ? Date.now() + failure.retryAfterSeconds * 1000
+        : 0)
+    const remainingMs = Math.max(0, targetMs - Date.now())
+    retryLocked.value = remainingMs > 0
+    if (remainingMs > 0) {
+      retryTimer = setTimeout(() => {
+        retryTimer = undefined
+        retryLocked.value = false
+      }, remainingMs)
+    }
+  },
+  { immediate: true }
+)
+onBeforeUnmount(clearRetryTimer)
+
+const isGoneWorkflow = computed(
+  () =>
+    pending?.failure?.kind === 'disowned' ||
+    pending?.failure?.kind === 'target_unavailable'
+)
+const failedStatusText = computed(() => {
+  const failure = pending?.failure
+  if (!failure) return ''
+  if (failure.kind === 'paywall') return t('agent.sendFailed')
+  if (failure.kind === 'retry_after' && failure.retryAfterSeconds !== undefined)
+    return `${failure.message} ${t('agent.retryAfterSeconds', { seconds: failure.retryAfterSeconds })}`
+  return failure.message
+})
 const promptParts = computed(() =>
   promptReferenceParts(text, workflowReferences, skillReference)
 )
@@ -286,12 +356,51 @@ function attachmentUrl(
     </div>
     <div
       v-if="pending?.status === 'failed' && pending.failure"
-      role="alert"
-      data-testid="pending-send-error"
-      class="flex items-center justify-end gap-1.5 text-xs text-destructive"
+      class="flex w-full flex-col items-end gap-2"
     >
-      <i aria-hidden="true" class="icon-[lucide--circle-alert] size-3.5" />
-      <span>{{ pending.failure.message }}</span>
+      <div
+        :role="justFailed ? 'alert' : 'status'"
+        data-testid="pending-send-error"
+        class="flex items-center justify-end gap-1.5 text-xs text-destructive"
+      >
+        <i aria-hidden="true" class="icon-[lucide--circle-alert] size-3.5" />
+        <span>{{ failedStatusText }}</span>
+      </div>
+      <div class="flex items-center justify-end gap-1.5">
+        <Button
+          v-if="isGoneWorkflow"
+          type="button"
+          variant="secondary"
+          size="sm"
+          @click="emit('newChat')"
+        >
+          {{ t('agent.newChat') }}
+        </Button>
+        <Button
+          v-else
+          type="button"
+          variant="secondary"
+          size="sm"
+          :disabled="retryLocked"
+          @click="emit('retryPending', pending.clientMessageId)"
+        >
+          {{ t('g.retry') }}
+        </Button>
+        <Button
+          type="button"
+          variant="muted-textonly"
+          size="sm"
+          @click="emit('deletePending', pending.clientMessageId)"
+        >
+          {{ t('g.delete') }}
+        </Button>
+      </div>
+      <AgentPaywallCard
+        v-if="pending.failure.kind === 'paywall' && !pending.paywallResolved"
+        :presentation="paywallPresentation"
+        :message="pending.failure.message"
+        @paywall-action="emit('paywallAction', $event, 'refused_send')"
+      />
     </div>
     <div
       v-if="readableText"

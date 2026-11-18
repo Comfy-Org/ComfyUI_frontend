@@ -8,12 +8,16 @@ import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
+import type { GateHoldSnapshot } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type {
   DraftSendOutcome,
   SubmissionMeta
 } from './useAgentDraftSubmission'
-import { useAgentDraftSubmission } from './useAgentDraftSubmission'
+import {
+  pendingAssetOwnerKey,
+  useAgentDraftSubmission
+} from './useAgentDraftSubmission'
 import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
@@ -127,8 +131,16 @@ function setup() {
           composer.workflowReferences
         )
       },
-      withdrawSubmission(clientMessageId: string, expectedRevision?: number) {
-        submission.withdrawSubmission(clientMessageId, expectedRevision)
+      withdrawSubmission(
+        clientMessageId: string,
+        snapshot?: GateHoldSnapshot,
+        expectedRevision?: number
+      ) {
+        submission.withdrawSubmission(
+          clientMessageId,
+          snapshot,
+          expectedRevision
+        )
       }
     }
   })
@@ -330,7 +342,9 @@ describe('Agent draft submission', () => {
     await nextTick()
     expect(revoke).not.toHaveBeenCalled()
     conversation.takePendingSend(send.mock.calls[0][4].clientMessageId)
-    composer.releaseUnusedAssets()
+    composer.releaseRetainedAssets(
+      pendingAssetOwnerKey(send.mock.calls[0][4].clientMessageId)
+    )
     expect(revoke.mock.calls).toEqual([['blob:cat'], ['blob:video']])
   })
 
@@ -451,8 +465,12 @@ describe('Agent draft submission', () => {
       setup()
     const first = submit()
     remount()
-    const firstId = composer.cancelGateHold()
-    if (firstId !== null) withdrawSubmission(firstId)
+    const firstCancelled = composer.cancelGateHold()
+    if (firstCancelled !== null)
+      withdrawSubmission(
+        firstCancelled.clientMessageId,
+        firstCancelled.snapshot
+      )
     composer.setText('New chat draft')
     let resolveNext: (sent: DraftSendOutcome) => void = () => {}
     const next = new Promise<DraftSendOutcome>((resolve) => {

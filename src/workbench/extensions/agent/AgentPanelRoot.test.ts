@@ -17722,6 +17722,146 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
       expect(useAgentConversationStore().liveTurns()).toHaveLength(2)
     )
   })
+
+  it('O0-04 paywall: renders AgentPaywallCard under a 402 failed send, hides it once funds return, and allows Retry/Delete', async () => {
+    paywallHasFunds.value = false
+    bindTab('wf-42')
+    let attempt = 0
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        attempt += 1
+        if (attempt === 1) {
+          return json(402, {
+            error: {
+              type: 'PAYMENT_REQUIRED',
+              reason: 'no_funds',
+              message:
+                "You're out of credits. Add credits to keep running the agent."
+            }
+          })
+        }
+        return json(202, ack('wf-42', 'm-retried'))
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Out of credits send')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await findInlinePaywallButton(i18n.global.t('agent.paywall.addCredits'))
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Delete' })).toBeVisible()
+
+    paywallHasFunds.value = true
+    await vi.waitFor(() =>
+      expect(
+        queryInlinePaywallButton(i18n.global.t('agent.paywall.addCredits'))
+      ).toBeNull()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await vi.waitFor(() => expect(attempt).toBe(2))
+    await vi.waitFor(() =>
+      expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    )
+    expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+  })
+
+  it('O0-04 retry and delete: Retry sends once in place with a new client_message_id and Delete removes the message and releases its assets', async () => {
+    bindTab('wf-42')
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const postBodies: Record<string, unknown>[] = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        const body = JSON.parse(String(init.body)) as Record<string, unknown>
+        postBodies.push(body)
+        if (postBodies.length <= 2)
+          return Promise.reject(new TypeError('offline'))
+        return json(202, ack('wf-42', 'm-retry-ok'))
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    const composer = useAgentComposerStore()
+    composer.addAttachment({
+      id: 'att-1',
+      name: 'cat.png',
+      ref: 'uploaded_cat.png',
+      previewUrl: 'blob:cat-preview'
+    })
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('First failed')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByText(i18n.global.t('agent.sendFailedNetwork'))
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Second failed')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() =>
+      expect(screen.getAllByRole('button', { name: 'Retry' })).toHaveLength(2)
+    )
+    expect(revoke).not.toHaveBeenCalled()
+
+    await userEvent.click(screen.getAllByRole('button', { name: 'Delete' })[1])
+    await vi.waitFor(() =>
+      expect(screen.getAllByRole('button', { name: 'Retry' })).toHaveLength(1)
+    )
+    expect(revoke).not.toHaveBeenCalledWith('blob:cat-preview')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await vi.waitFor(() => expect(postBodies).toHaveLength(3))
+    expect(postBodies[2].client_message_id).not.toBe(
+      postBodies[0].client_message_id
+    )
+    expect(postBodies[2]).toMatchObject({
+      content: 'First failed',
+      attachments: ['uploaded_cat.png']
+    })
+    await vi.waitFor(() =>
+      expect(revoke).toHaveBeenCalledWith('blob:cat-preview')
+    )
+    expect(screen.getAllByTestId('user-message-bubble')).toHaveLength(1)
+  })
+
+  it('O0-04 gone workflow: offers New chat instead of Retry on 403 disowned workflow and starts a new chat', async () => {
+    bindTab('wf-42')
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST')
+        return json(403, { error: 'workflow not found or access denied' })
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Lost workflow send')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByText(i18n.global.t('agent.sendFailedDisownedWorkflow'))
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+    const conversation = within(screen.getByTestId('agent-conversation'))
+    await userEvent.click(
+      conversation.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+    )
+  })
 })
 
 describe('AgentPanelRoot proactive qualification', () => {

@@ -4,6 +4,7 @@ import { isEqual } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { computed, ref, shallowReactive, shallowRef } from 'vue'
 
+import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { AgentTurnTab } from '@/stores/workflowTabActivityStore'
 
@@ -45,14 +46,10 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import type { SkillReference } from '@/workbench/extensions/agent/types/skillReference'
-import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
-import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
-import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type {
   AgentInputMethod,
   AgentStopMethod
 } from '@comfyorg/telemetry/types'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { parseSkillReferenceText } from '@/workbench/extensions/agent/utils/skillReferenceText'
 
@@ -80,32 +77,48 @@ export interface PendingSendFailure {
   kind: PendingSendFailureKind
   message: string
   retryAfterSeconds?: number
+  retryAtMs?: number
 }
 
 export interface PendingSendEntryState {
   clientMessageId: string
   status: PendingSendStatus
   failure?: PendingSendFailure
+  paywallResolved?: boolean
 }
 
 export interface PendingSendStop {
   method?: AgentStopMethod
 }
 
+export interface PendingSentAttachment {
+  ref: string
+  name: string
+  previewUrl?: string
+  mediaUrl?: string
+  mediaKind?: MediaKind
+}
+
+export interface PendingSentTag {
+  id: string
+  title: string
+}
+
 export interface PendingSend {
   clientMessageId: string
   origin: PendingSendOrigin
+  rawText: string
   text: string
   attachments: UserAttachment[]
+  sentAttachments: PendingSentAttachment[]
+  sentTags: PendingSentTag[]
   tags: string[]
   workflowReferences: WorkflowReference[]
   skillReference?: SkillReference
-  prompt: ComposerPrompt
-  composerAttachments: ComposerAttachment[]
-  composerNodes: SelectedNode[]
-  target: ComfyWorkflow | null
-  promptOrigin: AgentInputMethod
-  starterPrompt: AgentStarterPromptSource | null
+  assetIds?: readonly string[]
+  targetTabPath?: string | null
+  inputMethod?: AgentInputMethod
+  starterPrompt?: AgentStarterPromptSource | null
   status: PendingSendStatus
   failure?: PendingSendFailure
   stopRequested?: PendingSendStop
@@ -775,6 +788,11 @@ export const useAgentConversationStore = defineStore(
           resolved.add(message.id)
         }
       }
+      for (const send of pendingSends.values()) {
+        if (send.failure?.kind === 'paywall') {
+          resolved.add(toTurnId(send.clientMessageId))
+        }
+      }
       resolvedPaywallIds.value = resolved
     }
 
@@ -1014,39 +1032,30 @@ export const useAgentConversationStore = defineStore(
       return false
     }
 
-    function pendingSendingText(): string {
-      const current = [...pendingSendsForCurrentChat.value]
-        .reverse()
-        .find((send) => send.status === 'sending')
-      if (current) return current.text.trim()
-      const any = [...pendingSends.values()]
-        .reverse()
-        .find((send) => send.status === 'sending')
-      return any ? any.text.trim() : ''
-    }
-
-    function pendingAttachmentIds(): Set<string> {
-      const ids = new Set<string>()
-      for (const send of pendingSends.values())
-        for (const attachment of send.composerAttachments)
-          ids.add(attachment.id)
-      return ids
-    }
-
-    function startPendingSend(
-      input: Omit<
-        PendingSend,
-        'origin' | 'status' | 'skillReference' | 'failure'
-      > & {
-        origin?: PendingSendOrigin
-      }
-    ): PendingSend {
+    function startPendingSend(input: {
+      clientMessageId: string
+      origin?: PendingSendOrigin
+      rawText?: string
+      text: string
+      attachments: UserAttachment[]
+      sentAttachments?: PendingSentAttachment[]
+      sentTags?: PendingSentTag[]
+      tags: string[]
+      workflowReferences: WorkflowReference[]
+      assetIds?: readonly string[]
+      targetTabPath?: string | null
+      inputMethod?: AgentInputMethod
+      starterPrompt?: AgentStarterPromptSource | null
+    }): PendingSend {
       const parsed = parseSkillReferenceText(
         input.text,
         input.workflowReferences
       )
       const record: PendingSend = {
         ...input,
+        rawText: input.rawText ?? input.text,
+        sentAttachments: input.sentAttachments ?? [],
+        sentTags: input.sentTags ?? [],
         origin: input.origin ?? currentOrigin(),
         text: parsed.text,
         workflowReferences: parsed.workflowReferences,
@@ -1063,12 +1072,45 @@ export const useAgentConversationStore = defineStore(
     ): boolean {
       const existing = pendingSends.get(clientMessageId)
       if (!existing) return false
+      const normalizedFailure: PendingSendFailure =
+        failure.retryAfterSeconds !== undefined &&
+        failure.retryAtMs === undefined
+          ? {
+              ...failure,
+              retryAtMs: Date.now() + failure.retryAfterSeconds * 1000
+            }
+          : failure
       pendingSends.set(clientMessageId, {
         ...existing,
         status: 'failed',
-        failure
+        failure: normalizedFailure
       })
       return true
+    }
+
+    function retryPendingSend(
+      oldClientMessageId: string,
+      newClientMessageId: string
+    ): PendingSend | undefined {
+      const existing = pendingSends.get(oldClientMessageId)
+      if (!existing) return undefined
+      const updated: PendingSend = {
+        ...existing,
+        clientMessageId: newClientMessageId,
+        status: 'sending',
+        failure: undefined,
+        stopRequested: undefined
+      }
+      const entriesInOrder = [...pendingSends.entries()]
+      pendingSends.clear()
+      for (const [key, value] of entriesInOrder) {
+        if (key === oldClientMessageId) {
+          pendingSends.set(newClientMessageId, updated)
+        } else {
+          pendingSends.set(key, value)
+        }
+      }
+      return updated
     }
 
     function markPendingSendStopped(
@@ -1096,25 +1138,19 @@ export const useAgentConversationStore = defineStore(
       return pendingSends.get(clientMessageId)
     }
 
-    function clearPendingSends(): void {
-      pendingSends.clear()
-    }
-
     function updatePendingAttachmentPreview(
       id: string,
       previewUrl: string
     ): void {
       for (const [sendId, send] of pendingSends) {
-        if (!send.composerAttachments.some((item) => item.id === id)) continue
+        if (!send.assetIds?.includes(id)) continue
         pendingSends.set(sendId, {
           ...send,
-          composerAttachments: send.composerAttachments.map((item) =>
-            item.id === id ? { ...item, previewUrl } : item
+          sentAttachments: send.sentAttachments.map((item, index) =>
+            send.assetIds?.[index] === id ? { ...item, previewUrl } : item
           ),
           attachments: send.attachments.map((item, index) =>
-            send.composerAttachments[index]?.id === id
-              ? { ...item, previewUrl }
-              : item
+            send.assetIds?.[index] === id ? { ...item, previewUrl } : item
           )
         })
       }
@@ -2068,7 +2104,14 @@ export const useAgentConversationStore = defineStore(
         pending: {
           clientMessageId: send.clientMessageId,
           status: send.status,
-          failure: send.failure
+          failure: send.failure,
+          ...(send.failure?.kind === 'paywall'
+            ? {
+                paywallResolved: resolvedPaywallIds.value.has(
+                  toTurnId(send.clientMessageId)
+                )
+              }
+            : {})
         }
       }))
     ])
@@ -2180,19 +2223,16 @@ export const useAgentConversationStore = defineStore(
       moveTurnToTab,
       adoptThreadTab,
       threadId,
-      activeBlankChatId,
       currentOrigin,
       isOriginOnScreen,
       hasSendingPendingSend,
       hasSendingForOrigin,
-      pendingSendingText,
-      pendingAttachmentIds,
       startPendingSend,
       failPendingSend,
+      retryPendingSend,
       markPendingSendStopped,
       takePendingSend,
       getPendingSend,
-      clearPendingSends,
       updatePendingAttachmentPreview,
       startBackgroundTurn,
       isStreaming,

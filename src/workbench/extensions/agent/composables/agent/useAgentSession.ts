@@ -1604,7 +1604,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (disownsWorkflow(error)) {
       return {
         kind: 'disowned',
-        message: `${i18n.global.t('agent.sendFailed')}: ${message}`
+        message: i18n.global.t('agent.sendFailedDisownedWorkflow')
       }
     }
     if (error instanceof AgentApiError) {
@@ -1616,7 +1616,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     return {
       kind: 'network',
-      message: `${i18n.global.t('agent.sendFailed')}: ${message}`
+      message: i18n.global.t('agent.sendFailedNetwork')
     }
   }
 
@@ -1729,7 +1729,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       } else {
         conversationStore.failPendingSend(sendId, {
           kind: 'turn_in_progress',
-          message: i18n.global.t('agent.sendTurnInProgress')
+          message: i18n.global.t('agent.sendFailedTurnInProgress')
         })
       }
       reportRejectedSend(error, accepted)
@@ -1749,7 +1749,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences,
     selectionWorkflowId,
     clientMessageId,
-    onAccepted
+    onAccepted,
+    targetTabPath
   }: {
     sendId: string
     origin: PendingSendOrigin
@@ -1760,13 +1761,40 @@ export function useAgentSession(deps: AgentSessionDeps) {
     selectionWorkflowId?: () => string | undefined
     clientMessageId?: string
     onAccepted?: () => void
+    targetTabPath?: string | null
   }): Promise<boolean> {
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
     const threadAtSend = origin.kind === 'thread' ? origin.threadId : 'new'
-    const originContext = workflow?.current()
+    const explicitTurnOrigin: TurnOrigin | undefined =
+      targetTabPath === undefined
+        ? undefined
+        : targetTabPath === null
+          ? null
+          : { tabPath: targetTabPath }
+    const originContext =
+      explicitTurnOrigin !== undefined
+        ? workflow?.current(explicitTurnOrigin)
+        : workflow?.current()
+    if (
+      targetTabPath !== undefined &&
+      targetTabPath !== null &&
+      originContext === undefined
+    ) {
+      failTargetUnavailable(
+        sendId,
+        origin,
+        clientMessageId,
+        'agent.targetNavigationUnavailable'
+      )
+      return false
+    }
     const turnOrigin: TurnOrigin =
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
+      explicitTurnOrigin !== undefined
+        ? explicitTurnOrigin
+        : originContext === undefined
+          ? null
+          : { tabPath: originContext.tabPath }
     const canvasNodeIds = workflow?.canvasSelection?.()
     const boundAtSend = boundWorkflowId.value
     const threadSourceAtSend =
@@ -1881,7 +1909,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
-    onAccepted?: () => void
+    onAccepted?: () => void,
+    targetTabPath?: string | null
   ): Promise<boolean> {
     const sendId = clientMessageId ?? createUuidv4()
     const existingPending = conversationStore.getPendingSend(sendId)
@@ -1900,13 +1929,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           text,
           attachments: toUserAttachments(attachments),
           tags: toTagStrings(tags),
-          workflowReferences: workflowReferences ?? [],
-          prompt: { text, references: [] },
-          composerAttachments: [],
-          composerNodes: [],
-          target: null,
-          promptOrigin: 'typed',
-          starterPrompt: null
+          workflowReferences: workflowReferences ?? []
         })
         conversationStore.failPendingSend(sendId, {
           kind: 'request',
@@ -1922,13 +1945,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         text,
         attachments: toUserAttachments(attachments),
         tags: toTagStrings(tags),
-        workflowReferences: workflowReferences ?? [],
-        prompt: { text, references: [] },
-        composerAttachments: [],
-        composerNodes: [],
-        target: null,
-        promptOrigin: 'typed',
-        starterPrompt: null
+        workflowReferences: workflowReferences ?? []
       })
     }
     promptEditState.value = { phase: 'idle' }
@@ -1943,7 +1960,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         selectionWorkflowId,
         clientMessageId,
-        onAccepted
+        onAccepted,
+        targetTabPath
       })
     } finally {
       releaseSendGate()

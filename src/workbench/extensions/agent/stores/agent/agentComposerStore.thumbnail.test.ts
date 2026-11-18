@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
-
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import * as videoThumbnail from '@/workbench/extensions/agent/utils/videoThumbnail'
-import { useAgentConversationStore } from './agentConversationStore'
 import { useAgentComposerStore } from './agentComposerStore'
 
 const video: ComposerAttachment = {
@@ -35,34 +32,24 @@ beforeEach(() => {
 })
 
 describe('composer shared video thumbnail lifetime', () => {
-  function recordPendingVideo(
+  function retainPendingVideo(
     clientMessageId: string,
     composer: ComposerStore
   ): void {
-    useAgentConversationStore().startPendingSend({
-      clientMessageId,
-      text: composer.draft,
-      attachments: [],
-      tags: [],
-      workflowReferences: [],
-      prompt: composer.prompt,
-      composerAttachments: [...composer.attachments],
-      composerNodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' }),
-      promptOrigin: 'typed',
-      starterPrompt: null
-    })
+    composer.retainAssets(
+      `pending:${clientMessageId}`,
+      composer.attachments.map(({ id }) => id)
+    )
   }
 
   it('cancels a removed pending send capture and rejects its late poster while a new draft remains usable', async () => {
     const obsolete = pendingThumbnail()
     const current = pendingThumbnail()
     const store = useAgentComposerStore()
-    const conversation = useAgentConversationStore()
     store.addAttachment({ ...video, mediaUrl: 'blob:old-video' })
     const obsoleteSignal = vi.mocked(videoThumbnail.createVideoThumbnail).mock
       .calls[0][1]
-    recordPendingVideo('cm-1', store)
+    retainPendingVideo('cm-1', store)
     const gateId = store.startGateHold('cm-1')
     store.addAttachment({
       ...video,
@@ -72,7 +59,7 @@ describe('composer shared video thumbnail lifetime', () => {
     const currentSignal = vi.mocked(videoThumbnail.createVideoThumbnail).mock
       .calls[1][1]
     store.setText('New chat draft')
-    conversation.takePendingSend('cm-1')
+    store.releaseRetainedAssets('pending:cm-1')
     store.releaseGateHold(gateId)
     expect(obsoleteSignal.aborted).toBe(true)
     expect(currentSignal.aborted).toBe(false)
@@ -95,13 +82,12 @@ describe('composer shared video thumbnail lifetime', () => {
   it('releases the current poster completed during a settled pending send exactly once', async () => {
     const result = pendingThumbnail()
     const store = useAgentComposerStore()
-    const conversation = useAgentConversationStore()
     store.addAttachment({ ...video, mediaUrl: 'blob:video' })
-    recordPendingVideo('cm-1', store)
+    retainPendingVideo('cm-1', store)
     const gateId = store.startGateHold('cm-1')
     result.resolve('blob:completed-poster')
     await result.promise
-    conversation.takePendingSend('cm-1')
+    store.releaseRetainedAssets('pending:cm-1')
     store.releaseGateHold(gateId)
     expect(URL.revokeObjectURL).toHaveBeenCalledTimes(2)
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:video')
@@ -112,19 +98,22 @@ describe('composer shared video thumbnail lifetime', () => {
   it('keeps a pending asset and decoder retained through gate withdrawal and a repeated send', async () => {
     const result = pendingThumbnail()
     const store = useAgentComposerStore()
-    const conversation = useAgentConversationStore()
     store.addAttachment({ ...video, mediaUrl: 'blob:retained-video' })
     store.referenceAttachment(video.id)
     const snapshot = {
       prompt: store.prompt,
-      attachments: [...store.attachments]
+      attachments: [...store.attachments],
+      nodes: [],
+      targetPath: null,
+      promptOrigin: store.promptOrigin,
+      starterPrompt: store.starterPrompt
     }
-    recordPendingVideo('cm-1', store)
-    const gateId = store.startGateHold('cm-1')
-    const taken = conversation.takePendingSend('cm-1')
-    store.cancelGateHold()
+    retainPendingVideo('cm-1', store)
+    const gateId = store.startGateHold('cm-1', snapshot)
+    const cancelled = store.cancelGateHold()
     store.releaseGateHold(gateId)
-    store.restorePrompt(snapshot.prompt, taken?.composerAttachments ?? [])
+    store.restorePrompt(snapshot.prompt, cancelled?.snapshot.attachments ?? [])
+    store.releaseRetainedAssets('pending:cm-1')
     expect(
       vi.mocked(videoThumbnail.createVideoThumbnail).mock.calls[0][1].aborted
     ).toBe(false)
@@ -132,16 +121,11 @@ describe('composer shared video thumbnail lifetime', () => {
     await result.promise
     expect(store.attachments[0].previewUrl).toBe('blob:retained-poster')
     expect(URL.revokeObjectURL).not.toHaveBeenCalled()
-    recordPendingVideo('cm-2', store)
+    retainPendingVideo('cm-2', store)
     const secondGate = store.startGateHold('cm-2')
     store.releaseGateHold(secondGate)
     expect(URL.revokeObjectURL).not.toHaveBeenCalled()
     expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
-    const failed = conversation.getPendingSend('cm-2')
-    expect(failed?.composerAttachments[0].previewUrl).toBe(
-      'blob:retained-poster'
-    )
-    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
   })
 
   it('generates once for the included asset and shares the result with every occurrence', async () => {
@@ -289,12 +273,10 @@ describe('composer shared video thumbnail lifetime', () => {
       }
     },
     {
-      outcome:
-        'retains the poster when a failed send stays in the conversation',
+      outcome: 'retains the poster while retained by a failed send owner',
       sent: false,
-      assertOutcome: () => {
-        const failed = useAgentConversationStore().getPendingSend('cm-1')
-        expect(failed?.composerAttachments[0].previewUrl).toBe('blob:poster')
+      assertOutcome: (_store: ComposerStore, previews: string[]) => {
+        expect(previews).toEqual(['blob:poster'])
         expect(URL.revokeObjectURL).not.toHaveBeenCalled()
         expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
       }
@@ -304,21 +286,17 @@ describe('composer shared video thumbnail lifetime', () => {
     async ({ sent, assertOutcome }) => {
       const result = pendingThumbnail()
       const store = useAgentComposerStore()
-      const conversation = useAgentConversationStore()
+      const previews: string[] = []
+      store.onAssetPreviewUpdated(({ previewUrl }) => previews.push(previewUrl))
       store.addAttachment(video)
       store.referenceAttachment(video.id)
-      recordPendingVideo('cm-1', store)
+      retainPendingVideo('cm-1', store)
       const gateId = store.startGateHold('cm-1')
       result.resolve('blob:poster')
       await result.promise
-      if (sent) conversation.takePendingSend('cm-1')
-      else
-        conversation.failPendingSend('cm-1', {
-          kind: 'network',
-          message: 'failed'
-        })
+      if (sent) store.releaseRetainedAssets('pending:cm-1')
       store.releaseGateHold(gateId)
-      assertOutcome(store)
+      assertOutcome(store, previews)
     }
   )
 })
