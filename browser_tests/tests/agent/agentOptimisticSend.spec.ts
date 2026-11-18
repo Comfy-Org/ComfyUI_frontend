@@ -324,5 +324,67 @@ test.describe(
       await Promise.all([chatOneAccepted, chatTwoAccepted])
       await expect.poll(() => postedMessages).toHaveLength(1)
     })
+
+    test('O0-13 + O0-14: offers Show toast when a first message fails off screen and reopens it with Retry', async ({
+      agentPanel,
+      page,
+      postedMessages
+    }) => {
+      let rejectPost: (() => void) | undefined
+      let failNextPost = true
+      await page.route('**/api/agent/threads/*/messages', async (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        if (failNextPost) {
+          await new Promise<void>((resolve) => {
+            rejectPost = resolve
+          })
+          return route.abort('failed')
+        }
+        return route.fallback()
+      })
+
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+
+      await agentPanel.sendMessage('Offscreen first message')
+      await expect.poll(() => rejectPost).toBeDefined()
+
+      await agentPanel.newChatButton.click()
+      await expect(agentPanel.userMessageBubbles).toHaveCount(0)
+      await agentPanel.composer.fill('Draft in second chat')
+
+      failNextPost = false
+      rejectPost?.()
+
+      const toast = page
+        .getByTestId('toast')
+        .filter({ hasText: enMessages.agent.sendFailedOffscreen })
+      await expect(toast).toBeVisible()
+      await expect(agentPanel.composer).toHaveText('Draft in second chat')
+      await expect(agentPanel.userMessageBubbles).toHaveCount(0)
+
+      await toast
+        .getByRole('button', {
+          name: enMessages.agent.sendFailedOffscreenShow,
+          exact: true
+        })
+        .click()
+
+      await expect(toast).toHaveCount(0)
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Offscreen first message'
+      ])
+      await expect(agentPanel.pendingSendError).toContainText(
+        enMessages.agent.sendFailedNetwork
+      )
+      await expect(agentPanel.retryPendingButton).toBeEnabled()
+
+      await agentPanel.retryPendingButton.click()
+      await expect.poll(() => postedMessages).toHaveLength(1)
+      await expect(agentPanel.pendingSendError).toHaveCount(0)
+      await expect(agentPanel.userMessageBubbles).toHaveText([
+        'Offscreen first message'
+      ])
+    })
   }
 )

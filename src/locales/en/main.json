@@ -6529,6 +6529,8 @@
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
+    "sendFailedOffscreen": "Your message couldn't be sent",
+    "sendFailedOffscreenShow": "Show",
     "sendFailedNetwork": "Message didn't reach the server. Check your connection and try again.",
     "sendFailedDisownedWorkflow": "This workflow is no longer available.",
     "sendFailedTurnInProgress": "A reply was still running in this chat.",

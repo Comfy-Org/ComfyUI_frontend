@@ -130,11 +130,17 @@ export type AgentSessionThreadStartSource = Exclude<
   'history_select'
 >
 
+export interface OffscreenBlankSendFailure {
+  clientMessageId: string
+  blankChatId: string
+}
+
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
   onBackgroundTurnAccepted?: (ack: AgentTurnAccepted, text: string) => void
+  onOffscreenBlankSendFailed?: (failure: OffscreenBlankSendFailure) => void
   isDeletedThread?: (threadId: string) => boolean
   onAgentEvent?: (event: AgentWsEvent) => void
   onThreadActivated?: (threadId: string | null) => void
@@ -500,6 +506,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     events,
     onThreadStarted,
     onBackgroundTurnAccepted,
+    onOffscreenBlankSendFailed,
     isDeletedThread,
     onAgentEvent,
     onThreadActivated,
@@ -1206,6 +1213,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
+  function recordFailedPendingSend(
+    sendId: string,
+    origin: PendingSendOrigin,
+    failure: PendingSendFailure
+  ): void {
+    const failed = conversationStore.failPendingSend(sendId, failure)
+    if (
+      failed &&
+      origin.kind === 'blank' &&
+      !conversationStore.isOriginOnScreen(origin) &&
+      !(stopped && ownedGeneration === sessionGeneration)
+    ) {
+      onOffscreenBlankSendFailed?.({
+        clientMessageId: sendId,
+        blankChatId: origin.blankChatId
+      })
+    }
+  }
+
   function failTargetUnavailable(
     sendId: string,
     origin: PendingSendOrigin,
@@ -1213,7 +1239,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     noticeKey: string
   ): void {
     trackSendRefused('target_unavailable', clientMessageId, origin)
-    conversationStore.failPendingSend(sendId, {
+    recordFailedPendingSend(sendId, origin, {
       kind: 'target_unavailable',
       message: i18n.global.t(noticeKey)
     })
@@ -1750,7 +1776,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
       if (pending?.stopRequested) void stopTurn(pending.stopRequested.method)
     } else {
-      conversationStore.failPendingSend(sendId, {
+      recordFailedPendingSend(sendId, origin, {
         kind: 'turn_in_progress',
         message: i18n.global.t('agent.sendFailedTurnInProgress')
       })
@@ -1790,7 +1816,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         generation
       }))
     ) {
-      conversationStore.failPendingSend(sendId, classifySendFailure(error))
+      recordFailedPendingSend(sendId, origin, classifySendFailure(error))
     }
     reportRejectedSend(error, accepted)
     return false
@@ -2080,12 +2106,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const origin = existingPending?.origin ?? conversationStore.currentOrigin()
     if (conversationStore.hasSendingForOrigin(origin, sendId)) {
       trackSendRefused('send_busy', clientMessageId, origin)
-      if (existingPending) {
-        conversationStore.failPendingSend(sendId, {
-          kind: 'request',
-          message: i18n.global.t('agent.sendBusy')
-        })
-      } else {
+      if (!existingPending) {
         conversationStore.startPendingSend({
           clientMessageId: sendId,
           origin,
@@ -2094,11 +2115,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
           tags: toTagStrings(tags),
           workflowReferences: workflowReferences ?? []
         })
-        conversationStore.failPendingSend(sendId, {
-          kind: 'request',
-          message: i18n.global.t('agent.sendBusy')
-        })
       }
+      recordFailedPendingSend(sendId, origin, {
+        kind: 'request',
+        message: i18n.global.t('agent.sendBusy')
+      })
       return false
     }
     if (!existingPending) {
@@ -2606,13 +2627,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let refusedTurnReattachGeneration = 0
 
   function newChat(
-    source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
+    source?: Exclude<AgentSessionThreadStartSource, 'first_open'>,
+    blankChatId?: string
   ): void {
     readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
-    conversationStore.reset()
+    conversationStore.reset(blankChatId)
     pruneSkillTurns()
     onThreadActivated?.(null)
     forgetBinding()
@@ -2620,6 +2642,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     malformedStreamReports.clear()
     localStorage.removeItem(threadStorageKey)
     pendingThreadSource.value = source ?? null
+  }
+
+  function openBlankChat(blankChatId: string): boolean {
+    if (!conversationStore.hasPendingSendForBlankChat(blankChatId)) return false
+    newChat(undefined, blankChatId)
+    return true
   }
 
   async function loadThread(
@@ -3535,6 +3563,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answerAsk,
     answeringAskIds: computed(() => answeringAskIds.value),
     newChat,
+    openBlankChat,
     loadThread,
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),

@@ -1157,6 +1157,17 @@ export const useAgentConversationStore = defineStore(
       return pendingSends.get(clientMessageId)
     }
 
+    function hasPendingSendForBlankChat(blankChatId: string): boolean {
+      for (const send of pendingSends.values()) {
+        if (
+          send.origin.kind === 'blank' &&
+          send.origin.blankChatId === blankChatId
+        )
+          return true
+      }
+      return false
+    }
+
     function updatePendingAttachmentPreview(
       id: string,
       previewUrl: string
@@ -1940,7 +1951,7 @@ export const useAgentConversationStore = defineStore(
       userAttachments.value = new Map()
     }
 
-    function reset(): void {
+    function reset(blankChatId?: string): void {
       unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
       discardDetachedAskState()
@@ -1955,7 +1966,7 @@ export const useAgentConversationStore = defineStore(
       dropAttachmentPreviews()
       attachmentNamesByThread.clear()
       threadId.value = null
-      activeBlankChatId.value = nextBlankChatId()
+      activeBlankChatId.value = blankChatId ?? nextBlankChatId()
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedTurnIds = new Map()
@@ -2267,6 +2278,7 @@ export const useAgentConversationStore = defineStore(
       markPendingSendStopped,
       takePendingSend,
       getPendingSend,
+      hasPendingSendForBlankChat,
       updatePendingAttachmentPreview,
       startBackgroundTurn,
       isStreaming,

@@ -10674,4 +10674,125 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
       expect.objectContaining({ workflow_id: 'wf-9', name: 'Video test' })
     )
   })
+
+  it('notifies once per failed off-screen blank send and reopens that blank chat cleanly (O0-13, O0-14, O0-16, O0-17, O0-18)', async () => {
+    const deferredPosts: Array<{
+      resolve: (ack: AgentTurnAccepted) => void
+      reject: (error: unknown) => void
+    }> = []
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve, reject) => {
+          deferredPosts.push({ resolve, reject })
+        })
+    )
+    const onOffscreenBlankSendFailed = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      onOffscreenBlankSendFailed
+    })
+    session.start()
+
+    const blankOne = session.sendMessage(
+      'Blank one',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-b1'
+    )
+    await vi.waitFor(() => expect(deferredPosts).toHaveLength(1))
+
+    session.newChat('new_chat_button')
+    const blankTwo = session.sendMessage(
+      'Blank two',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-b2'
+    )
+    await vi.waitFor(() => expect(deferredPosts).toHaveLength(2))
+
+    session.newChat('new_chat_button')
+    const onScreen = session.sendMessage(
+      'Blank three',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-b3'
+    )
+    await vi.waitFor(() => expect(deferredPosts).toHaveLength(3))
+
+    deferredPosts[2].reject(new TypeError('Failed to fetch'))
+    expect(await onScreen).toBe(false)
+    expect(onOffscreenBlankSendFailed).not.toHaveBeenCalled()
+
+    deferredPosts[0].reject(new TypeError('Failed to fetch'))
+    expect(await blankOne).toBe(false)
+    deferredPosts[1].reject(new TypeError('Failed to fetch'))
+    expect(await blankTwo).toBe(false)
+
+    expect(onOffscreenBlankSendFailed).toHaveBeenCalledTimes(2)
+    const first = onOffscreenBlankSendFailed.mock.calls[0][0]
+    const second = onOffscreenBlankSendFailed.mock.calls[1][0]
+    expect(first.clientMessageId).toBe('cm-b1')
+    expect(second.clientMessageId).toBe('cm-b2')
+    expect(first.blankChatId).not.toBe(second.blankChatId)
+
+    expect(session.openBlankChat(first.blankChatId)).toBe(true)
+    expect(session.entries.value).toMatchObject([
+      {
+        id: 'cm-b1',
+        role: 'user',
+        text: 'Blank one',
+        pending: { status: 'failed' }
+      }
+    ])
+
+    expect(session.openBlankChat(second.blankChatId)).toBe(true)
+    expect(session.entries.value).toMatchObject([
+      {
+        id: 'cm-b2',
+        role: 'user',
+        text: 'Blank two',
+        pending: { status: 'failed' }
+      }
+    ])
+
+    useAgentConversationStore().takePendingSend('cm-b1')
+    expect(session.openBlankChat(first.blankChatId)).toBe(false)
+
+    session.newChat('new_chat_button')
+    const threadSend = session.sendMessage(
+      'Thread starter',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-th-1'
+    )
+    await vi.waitFor(() => expect(deferredPosts).toHaveLength(4))
+    deferredPosts[3].resolve({
+      thread_id: 'th-existing',
+      message_id: 'msg-th-1'
+    })
+    expect(await threadSend).toBe(true)
+
+    const threadFollowUp = session.sendMessage(
+      'Thread follow-up',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-th-2'
+    )
+    await vi.waitFor(() => expect(deferredPosts).toHaveLength(5))
+    session.newChat('new_chat_button')
+    deferredPosts[4].reject(new TypeError('Failed to fetch'))
+    expect(await threadFollowUp).toBe(false)
+    expect(onOffscreenBlankSendFailed).toHaveBeenCalledTimes(2)
+  })
 })

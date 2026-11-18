@@ -81,6 +81,8 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { createToastId } from '@/types/toastId'
+import type { ToastId } from '@/types/toastId'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   toOwningGraphId,
@@ -139,6 +141,7 @@ import type {
 } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
+  OffscreenBlankSendFailure,
   TurnOrigin,
   WorkflowTurnContext
 } from './composables/agent/useAgentSession'
@@ -1175,6 +1178,7 @@ const {
   isSending: sessionIsSending,
   isTranscriptReady,
   newChat,
+  openBlankChat,
   start,
   stop,
   entries,
@@ -1208,6 +1212,7 @@ const {
     })
     void refreshHistory('none')
   },
+  onOffscreenBlankSendFailed: notifyOffscreenBlankSendFailed,
   isDeletedThread: history.isDeleted,
   onAgentEvent: observeAgentEvent,
   onThreadActivated: (id) => history.setActive(id),
@@ -2608,15 +2613,7 @@ function onDeleteHistory(id: string): void {
   if (isCurrent) onNewChat('history_delete')
 }
 
-function onNewChat(
-  source: 'new_chat_button' | 'history_back' | 'history_delete'
-): void {
-  retireFollow()
-  if (source === 'history_back') {
-    newChat()
-    agentPanelStore.startFollowingVisibleWorkflow()
-    return
-  }
+function resetComposerForChatSwitch(): void {
   provisionalTitle.value = undefined
   promptQueueStore.clear()
   const cancelled = composerStore.cancelGateHold()
@@ -2629,6 +2626,43 @@ function onNewChat(
   dismissedSelectionSignature.value = null
   errorAttachRun++
   composerStore.clearDraft()
+}
+
+function showOffscreenBlankSend(blankChatId: string, toastId: ToastId): void {
+  toast.dismiss(toastId)
+  if (!conversationStore.hasPendingSendForBlankChat(blankChatId)) return
+  agentPanelStore.view = { screen: 'chat' }
+  retireFollow()
+  resetComposerForChatSwitch()
+  if (openBlankChat(blankChatId)) {
+    void proactive.refresh()
+    agentPanelStore.startFollowingVisibleWorkflow()
+  }
+}
+
+function notifyOffscreenBlankSendFailed({
+  blankChatId
+}: OffscreenBlankSendFailure): void {
+  const toastId = createToastId()
+  toast.error(t('agent.sendFailedOffscreen'), {
+    id: toastId,
+    action: {
+      label: t('agent.sendFailedOffscreenShow'),
+      onClick: () => showOffscreenBlankSend(blankChatId, toastId)
+    }
+  })
+}
+
+function onNewChat(
+  source: 'new_chat_button' | 'history_back' | 'history_delete'
+): void {
+  retireFollow()
+  if (source === 'history_back') {
+    newChat()
+    agentPanelStore.startFollowingVisibleWorkflow()
+    return
+  }
+  resetComposerForChatSwitch()
   newChat(source)
   void proactive.refresh()
   agentPanelStore.startFollowingVisibleWorkflow()

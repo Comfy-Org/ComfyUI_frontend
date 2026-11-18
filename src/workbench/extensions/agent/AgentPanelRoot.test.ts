@@ -17993,6 +17993,191 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
       expect(reportError).not.toHaveBeenCalled()
     }
   )
+
+  function setupDeferredPostMock(onPost?: (url: string) => Response | null) {
+    const pendingPosts: Array<{
+      resolve: (res: Response) => void
+      reject: (error: unknown) => void
+      url: string
+    }> = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        const immediate = onPost?.(url)
+        if (immediate) return immediate
+        return await new Promise<Response>((resolve, reject) => {
+          pendingPosts.push({ resolve, reject, url })
+        })
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+    return pendingPosts
+  }
+
+  it('O0-13/14/15/18: shows one persistent Show toast per failed off-screen first message, keeps current draft untouched, and Show reopens and retries', async () => {
+    bindTab('wf-42')
+    let allowRetry = false
+    const pendingPosts = setupDeferredPostMock(() =>
+      allowRetry ? json(202, ack('wf-42', 'm-retried-offscreen')) : null
+    )
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('First offscreen prompt')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(1))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Second offscreen prompt')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(2))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Draft in third chat')
+
+    pendingPosts[0].reject(new TypeError('Failed to fetch'))
+    pendingPosts[1].reject(new TypeError('Failed to fetch'))
+
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(2))
+    const toasts = useToast().toasts
+    expect(toasts[0]).toMatchObject({
+      title: "Your message couldn't be sent",
+      duration: Number.POSITIVE_INFINITY
+    })
+    expect(toasts[0].actions[0]?.label).toBe('Show')
+    expect(toasts[1].actions[0]?.label).toBe('Show')
+    expect(screen.getByRole('textbox')).toHaveTextContent('Draft in third chat')
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+
+    toasts[0].actions[0].onClick()
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'First offscreen prompt'
+    )
+    expect(screen.getByTestId('pending-send-error')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeVisible()
+
+    allowRetry = true
+    await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('pending-send-error')).toBeNull()
+    )
+
+    useToast().toasts[0].actions[0].onClick()
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(0))
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Second offscreen prompt'
+    )
+  })
+
+  function setupOffscreenThreadFailureMock() {
+    const pendingPosts: Array<{
+      resolve: (res: Response) => void
+      reject: (error: unknown) => void
+    }> = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        return await new Promise<Response>((resolve, reject) => {
+          pendingPosts.push({ resolve, reject })
+        })
+      }
+      if (url.includes('/messages'))
+        return json(200, [
+          {
+            id: 'r-other-1',
+            thread_id: 'th-second',
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: 'turn-other',
+            workflow_id: 'wf-42',
+            content: { text: 'Other prompt' }
+          }
+        ] satisfies AgentMessages)
+      if (url.includes('/agent/threads'))
+        return json(
+          200,
+          agentThreadList([
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-42'
+            })
+          ])
+        )
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+    return pendingPosts
+  }
+
+  it('O0-16/17: emits no toast when blank send fails on screen or thread send fails off screen, and Show no-ops if gone', async () => {
+    bindTab('wf-42')
+    const pendingPosts = setupOffscreenThreadFailureMock()
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Onscreen fail')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(1))
+    pendingPosts[0].reject(new TypeError('Failed to fetch'))
+    expect(await screen.findByTestId('pending-send-error')).toBeVisible()
+    expect(useToast().toasts).toHaveLength(0)
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findByText('Other prompt')
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Thread offscreen fail')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(2))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    pendingPosts[1].reject(new TypeError('Failed to fetch'))
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().entries).toHaveLength(0)
+    )
+    expect(useToast().toasts).toHaveLength(0)
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Gone before show')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(3))
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Current draft')
+    pendingPosts[2].reject(new TypeError('Failed to fetch'))
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+    const sentIds = vi
+      .mocked(fetch)
+      .mock.calls.map(([, init]) => init?.body)
+      .filter(Boolean)
+      .map((b) => JSON.parse(String(b)).client_message_id as string)
+    useAgentConversationStore().takePendingSend(sentIds.at(-1)!)
+
+    useToast().toasts[0].actions[0].onClick()
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(0))
+    expect(screen.getByRole('textbox')).toHaveTextContent('Current draft')
+  })
 })
 
 describe('AgentPanelRoot proactive qualification', () => {
