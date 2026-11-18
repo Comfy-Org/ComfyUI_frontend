@@ -597,4 +597,19 @@ describe('redactTelemetryValues', () => {
     expect(redacted.message).toBe(REDACTION_SENTINEL)
     expect(getter).not.toHaveBeenCalled()
   })
+
+  it('still fails closed for a name accessor inherited from the prototype', () => {
+    const getter = vi.fn(() => 'secret')
+    class HostileNameError extends Error {
+      override get name() {
+        return getter()
+      }
+    }
+    const error = new HostileNameError('plain message')
+
+    const redacted = redactTelemetryError(error)
+
+    expect(redacted.stack).toBe(REDACTION_SENTINEL)
+    expect(getter).not.toHaveBeenCalled()
+  })
 })

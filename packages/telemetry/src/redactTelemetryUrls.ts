@@ -408,9 +408,14 @@ function readErrorString(
   }
 }
 
-function hasOwnAccessor(value: object, key: string): boolean {
-  const descriptor = Object.getOwnPropertyDescriptor(value, key)
-  return !!descriptor && !('value' in descriptor)
+function hasAccessorInChain(value: object, key: string): boolean {
+  let current: object | null = value
+  while (current) {
+    const descriptor = Object.getOwnPropertyDescriptor(current, key)
+    if (descriptor) return !('value' in descriptor)
+    current = Object.getPrototypeOf(current)
+  }
+  return false
 }
 
 function readOwnAccessor(
@@ -421,7 +426,10 @@ function readOwnAccessor(
   if (key !== 'stack' || typeof descriptor.get !== 'function') {
     return REDACTION_SENTINEL
   }
-  if (hasOwnAccessor(source, 'message') || hasOwnAccessor(source, 'name')) {
+  if (
+    hasAccessorInChain(source, 'message') ||
+    hasAccessorInChain(source, 'name')
+  ) {
     return REDACTION_SENTINEL
   }
   const stack = descriptor.get.call(source)
