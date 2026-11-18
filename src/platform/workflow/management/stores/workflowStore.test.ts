@@ -910,7 +910,7 @@ describe('useWorkflowStore', () => {
       const second = store.createTemporary('Second.json')
       store.openWorkflowsInBackground({ right: [first.path, second.path] })
 
-      await expect(store.renameWorkflow(first, second.path)).rejects.toThrow()
+      expect(await store.renameWorkflow(first, second.path)).toBe(false)
 
       expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
         'workflows/First.json',
