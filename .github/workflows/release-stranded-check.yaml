@@ -37,7 +37,6 @@ jobs:
       - name: Check consumed release lines
         id: check
         env:
-          # Empty on the daily cron; set on `release: published` runs.
           RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -o pipefail
