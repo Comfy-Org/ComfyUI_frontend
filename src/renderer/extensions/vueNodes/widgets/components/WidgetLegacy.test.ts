@@ -135,6 +135,35 @@ describe('WidgetLegacy canvas sizing', () => {
     expect(drawnHeights.at(-1)).toBe(300)
     expect(widget.computedHeight).toBe(300)
   })
+
+  it('draws a fixed widget stretched by its row where classic layout would place it at the bottom of the node', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Legacy')
+    node.size = [400, 420]
+    const widget = node.addWidget('text', 'comparer', '', () => {})
+    graph.add(node)
+    widget.computedHeight = undefined
+    widget.computeSize = () => [400, 20]
+    const draws: { y: number; height: number }[] = []
+    widget.draw = (_ctx, _node, _width, y, height) => {
+      draws.push({ y, height })
+    }
+    useCanvasStore().canvas = fromPartial({ graph })
+    await nextTick()
+
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(364)
+    stubCanvasGetContext()
+    render(WidgetLegacy, {
+      props: {
+        nodeId: node.id,
+        widget: { name: 'comparer', type: 'text', value: undefined }
+      }
+    })
+
+    const canvas = screen.getByTestId<HTMLCanvasElement>('legacy-widget-canvas')
+    expect(canvas.height).toBe(732)
+    expect(draws.at(-1)).toEqual({ y: 56, height: 20 })
+  })
 })
 
 describe('WidgetLegacy canvas width', () => {
