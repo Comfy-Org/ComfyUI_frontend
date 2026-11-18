@@ -400,7 +400,7 @@ describe('attachDocOpMinter', () => {
         .mocked(reportError)
         .mock.calls.filter(
           ([, meta]) =>
-            meta?.errorType === 'agent_wire_positional_values_dropped'
+            meta.errorType === 'agent_wire_positional_values_dropped'
         )
     }
 
