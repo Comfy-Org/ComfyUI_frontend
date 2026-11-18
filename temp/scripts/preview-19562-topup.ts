@@ -42,13 +42,28 @@ let phase = 'credential and preview checks'
 
 class TopUpError extends Error {}
 
+async function captureStripeForm(page: Page, name: string) {
+  await page
+    .screenshot({
+      path: `temp/preview-checkout-evidence/${name}.png`,
+      mask: page
+        .frames()
+        .flatMap((frame) => [
+          frame.locator('input'),
+          frame.getByText(account, { exact: true })
+        ]),
+      timeout: 5000
+    })
+    .catch(() => undefined)
+}
+
 const cardNumberSelector =
   'input#cardNumber, input[name="cardnumber"], input[name="number"], input[autocomplete="cc-number"], input[placeholder="1234 1234 1234 1234"]'
 const cardChoiceLabel =
   /^(?:Card|Credit or debit card|Credit card|Debit card|Pay by card|Pay with card|Use a card|Pay without Link|Continue as guest)(?:\b|$)/i
 
 async function findCardFrame(page: Page): Promise<Frame> {
-  const deadline = Date.now() + 20_000
+  const deadline = Date.now() + 35_000
   const openedChoices = new Set<string>()
   while (Date.now() < deadline) {
     for (const frame of page.frames()) {
@@ -118,6 +133,7 @@ async function findCardFrame(page: Page): Promise<Frame> {
       )
   }))
   const frameOrigins = page.frames().map((frame) => new URL(frame.url()).origin)
+  await captureStripeForm(page, 'stripe-form-before-payment')
   throw new TopUpError(
     `Stripe card form unavailable ${JSON.stringify({ ...layout, frameOrigins })}`
   )
@@ -336,6 +352,7 @@ async function main() {
 
     phase = 'Stripe test form'
     const payment = await context.newPage()
+    await payment.bringToFront()
     const stripePage = await payment.goto(destination.href, {
       waitUntil: 'domcontentloaded'
     })
@@ -437,7 +454,12 @@ async function main() {
           })
           .filter({ visible: true })
       )
-    await submit.click({ trial: true, timeout: 8_000 })
+    try {
+      await submit.click({ trial: true, timeout: 8_000 })
+    } catch {
+      await captureStripeForm(payment, 'stripe-submit-before-payment')
+      throw new TopUpError('The Stripe Pay button was not actionable')
+    }
     payment.on('response', async (confirmation) => {
       const url = new URL(confirmation.url())
       if (

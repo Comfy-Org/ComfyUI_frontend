@@ -39,3 +39,12 @@ jobs:
           SMOKE_ACCOUNT_EMAIL: ${{ vars.OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL }}
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD }}
         run: node --import tsx temp/scripts/preview-19562-topup.ts
+
+      - name: Upload the sandbox form diagnostic on failure
+        if: failure()
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: stripe-sandbox-form-diagnostic
+          path: temp/preview-checkout-evidence/
+          retention-days: 1
+          if-no-files-found: ignore
