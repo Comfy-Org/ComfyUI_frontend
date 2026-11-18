@@ -178,6 +178,11 @@ export interface BillingRecoverOptions {
    * `retainSettledPointer` keeps one.
    */
   readonly includeSettled?: boolean
+  /** Recover this operation instead of whatever the status reports pending. */
+  readonly operation?: {
+    readonly id: string
+    readonly kind: BillingOperationKind
+  }
 }
 
 export interface BillingOperationLifecycle {
@@ -997,8 +1002,48 @@ export function createBillingOperationLifecycle(
       : undefined
   }
 
+  async function recoverNamed(
+    named: NonNullable<BillingRecoverOptions['operation']>,
+    rail: BillingStatusData['billing_rail'],
+    pointer: BillingOperationPointer | undefined,
+    context: BillingScopeContext,
+    includeSettled: boolean
+  ): Promise<BillingResult<BillingOperationState | undefined>> {
+    const read = await readOperation(named.id)
+    if (!isLive(context)) return SUPERSEDED
+    if (read.status === 'error') {
+      return read.code === 'NOT_FOUND'
+        ? { status: 'ok', value: undefined }
+        : read
+    }
+    const served = continuationOf({
+      actionUrl: read.value.data.action_url,
+      clientSecret: read.value.data.payment_intent_client_secret
+    })
+    const known = pointer?.operationId === named.id ? pointer : undefined
+    const record = adopt(
+      {
+        ...named,
+        context,
+        ...served,
+        initialStatus: read.value.data,
+        ...(known === undefined
+          ? {
+              presentation: routeFor(rail, served),
+              attemptStartedAt: now(),
+              resumed: true,
+              awaitedHere: false
+            }
+          : resumedFrom(known))
+      },
+      includeSettled
+    )
+    return { status: 'ok', value: record.state }
+  }
+
   async function recover({
-    includeSettled = false
+    includeSettled = false,
+    operation
   }: BillingRecoverOptions = {}): Promise<
     BillingResult<BillingOperationState | undefined>
   > {
@@ -1014,6 +1059,15 @@ export function createBillingOperationLifecycle(
     }
 
     const pending = pendingFromStatus(status.value.status)
+    if (operation !== undefined && pending?.id !== operation.id) {
+      return recoverNamed(
+        operation,
+        status.value.status.billing_rail,
+        pointer,
+        context,
+        includeSettled
+      )
+    }
     if (pending !== undefined) {
       return resumeServerPending(
         pending,

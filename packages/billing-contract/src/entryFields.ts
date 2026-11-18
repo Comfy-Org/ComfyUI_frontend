@@ -20,6 +20,7 @@ export type OptionalEntryKey =
   | 'workspaceId'
   | 'teamCreditStopId'
   | 'promotionCode'
+  | 'operationId'
 
 export type InvalidIdentifierCode =
   | 'INVALID_PLAN'
@@ -27,6 +28,7 @@ export type InvalidIdentifierCode =
   | 'INVALID_WORKSPACE_ID'
   | 'INVALID_TEAM_CREDIT_STOP_ID'
   | 'INVALID_PROMOTION_CODE'
+  | 'INVALID_OPERATION_ID'
 
 interface OptionalEntryField {
   readonly key: OptionalEntryKey
@@ -52,7 +54,9 @@ export const OPTIONAL_ENTRY_FIELDS: readonly OptionalEntryField[] = [
     code: 'INVALID_TEAM_CREDIT_STOP_ID'
   },
   /** Prefills checkout's promo field; billing applies it only on the customer's Apply. */
-  { key: 'promotionCode', param: 'promo', code: 'INVALID_PROMOTION_CODE' }
+  { key: 'promotionCode', param: 'promo', code: 'INVALID_PROMOTION_CODE' },
+  /** An unfinished operation checkout resumes instead of whatever the status reports pending. */
+  { key: 'operationId', param: 'operation', code: 'INVALID_OPERATION_ID' }
 ]
 
 export type OptionalEntryValues = {

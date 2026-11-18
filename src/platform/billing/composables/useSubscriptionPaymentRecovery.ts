@@ -23,7 +23,7 @@ type BillingOperation = Awaited<
 type OperationRead =
   | { kind: 'loading' }
   | { kind: 'failed' }
-  | { kind: 'read'; operation: BillingOperation }
+  | { kind: 'read'; opId: string; operation: BillingOperation }
 
 let pendingPaymentRefresh: {
   readonly source: RecoverySource
@@ -58,7 +58,10 @@ export function useSubscriptionPaymentRecovery(
   const { flags } = useFeatureFlags()
   const workspace = useWorkspaceIdentity()
 
-  function paymentPageOf(operation: BillingOperation): RecoveryPaymentPage {
+  function paymentPageOf(
+    opId: string,
+    operation: BillingOperation
+  ): RecoveryPaymentPage {
     if (operation.action_url) return { kind: 'hostedPage' }
     if (!operation.payment_intent_client_secret || !operation.plan) {
       return { kind: 'unavailable' }
@@ -69,6 +72,7 @@ export function useSubscriptionPaymentRecovery(
       {
         plan: operation.plan.slug,
         teamCreditStopId: operation.plan.team_credit_stop_id,
+        operationId: opId,
         workspaceId: workspace.activeWorkspaceId ?? undefined
       }
     )
@@ -90,7 +94,7 @@ export function useSubscriptionPaymentRecovery(
   )
   const recoveryPaymentPage = computed<RecoveryPaymentPage>(() => {
     const read = operationRead.value
-    if (read.kind === 'read') return paymentPageOf(read.operation)
+    if (read.kind === 'read') return paymentPageOf(read.opId, read.operation)
     return read.kind === 'loading'
       ? { kind: 'loading' }
       : { kind: 'unavailable' }
@@ -107,7 +111,7 @@ export function useSubscriptionPaymentRecovery(
       try {
         const operation = await billingApi.getBillingOpStatus(opId)
         if (!isServedRecovery(opId)) return
-        operationRead.value = { kind: 'read', operation }
+        operationRead.value = { kind: 'read', opId, operation }
       } catch (error) {
         if (isServedRecovery(opId)) {
           operationRead.value = { kind: 'failed' }

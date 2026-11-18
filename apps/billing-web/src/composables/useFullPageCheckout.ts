@@ -280,7 +280,13 @@ export function useFullPageCheckout() {
 
   async function reconcileOnce(): Promise<void> {
     const mine = ++generation
-    const recovered = await lifecycle.recover({ includeSettled: true })
+    const operationId = entry.value?.operationId
+    const recovered = await lifecycle.recover({
+      includeSettled: true,
+      ...(operationId === undefined
+        ? {}
+        : { operation: { id: operationId, kind: 'subscription' } })
+    })
     if (mine !== generation) return
     dispatch(reconciledEvent(recovered))
   }
