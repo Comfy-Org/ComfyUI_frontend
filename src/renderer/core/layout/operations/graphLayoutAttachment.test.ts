@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   attachNodeLayout,

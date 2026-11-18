@@ -13,7 +13,7 @@ vi.mock<unknown>(import('@/scripts/widgets'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/schemas/nodeDefSchema'), () => ({
+vi.mock<unknown>(import('@comfyorg/object-info-parser'), () => ({
   getInputSpecType: (spec: unknown[]) => spec[0]
 }))
 

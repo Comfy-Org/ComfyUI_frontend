@@ -4,14 +4,19 @@ import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import {
+  getWidgetSizing,
+  minRowHeight
+} from '@/lib/litegraph/src/utils/widgetLayout'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
-import type { NodeId } from '@/types/nodeId'
+import { useThemeStore } from '@/platform/theme/themeStore'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 const props = defineProps<{
@@ -65,8 +70,8 @@ onMounted(() => {
   canvasEl.value.width *= scaleFactor
   bindWidget()
   if (!widgetInstance) return
-  useResizeObserver(canvasEl, draw)
-  watch(() => useColorPaletteStore().activePaletteId, draw)
+  useResizeObserver(canvasEl.value.parentElement, draw)
+  watch(() => useThemeStore().activePresetId, draw)
   pointer = new CanvasPointer(canvasEl.value)
 })
 onBeforeUnmount(() => {
@@ -76,30 +81,35 @@ onBeforeUnmount(() => {
 whenever(() => !canvasStore.linearMode, bindWidget)
 watch(() => canvasStore.currentGraph, bindWidget)
 
-function getWidgetHeight(
+function getRowHeights(
   widget: IBaseWidget,
   node: LGraphNode,
-  width: number
-): number {
-  return Math.max(
+  row: HTMLElement
+): { minHeight: number; height: number; grows: boolean } {
+  const sizing = getWidgetSizing(widget, node, row.clientWidth)
+  if (sizing?.kind === 'growable') {
+    const minHeight = Math.max(0, sizing.minHeight)
+    const height = Math.max(minHeight, row.clientHeight)
+    return { minHeight, height, grows: true }
+  }
+  const height = Math.max(
     0,
-    widget.computedHeight ??
-      widget.computeLayoutSize?.(node).minHeight ??
-      widget.computeSize?.(width)[1] ??
-      20
+    widget.computedHeight ?? (sizing ? minRowHeight(sizing) : 20)
   )
+  return { minHeight: height, height, grows: false }
 }
 
 function draw() {
   if (!widgetInstance || !node) return
-  const width =
-    canvasEl.value.parentElement.clientWidth ||
-    canvasEl.value.getBoundingClientRect().width
-  const height = getWidgetHeight(widgetInstance, node, width)
-  containerHeight.value = height
+  const row = canvasEl.value.parentElement
+  const width = row.clientWidth
+  const { minHeight, height, grows } = getRowHeights(widgetInstance, node, row)
+  containerHeight.value = minHeight
   node.canvasHeight = height
   widgetInstance.y = 0
+  widgetInstance.last_y = 0
   widgetInstance.width = width
+  if (grows) widgetInstance.computedHeight = height
   canvasEl.value.height = height === 0 ? 0 : (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
   const ctx = canvasEl.value.getContext('2d')
@@ -107,36 +117,48 @@ function draw() {
   ctx.scale(scaleFactor, scaleFactor)
   widgetInstance.draw?.(ctx, node, width, 1, height)
 }
-//See LGraphCanvas.processWidgetClick
-function handleDown(e: PointerEvent) {
-  if (!node || !widgetInstance || !pointer) return
+function augmentToWidgetPointerEvent(
+  e: PointerEvent,
+  node: LGraphNode
+): asserts e is CanvasPointerEvent {
   augmentToCanvasPointerEvent(e, node, canvas)
+  Object.assign(e, {
+    canvasX: canvas.graph_mouse[0],
+    canvasY: canvas.graph_mouse[1]
+  })
+}
+function handleDown(e: PointerEvent) {
+  if (!node || !widgetInstance || !pointer || e.button !== 0) return
+  augmentToWidgetPointerEvent(e, node)
   pointer.down(e)
   if (widgetInstance.mouse)
     pointer.onDrag = (e) =>
       widgetInstance!.mouse?.(e, [e.offsetX, e.offsetY], node!)
-  //NOTE: a mouseUp event is already registed under pointer.finally
   canvas.processWidgetClick(e, node, widgetInstance, pointer)
+  canvas.setDirty(true)
 }
 function handleUp(e: PointerEvent) {
   if (!pointer || !node) return
-  augmentToCanvasPointerEvent(e, node, canvas)
+  augmentToWidgetPointerEvent(e, node)
   e.click_time = e.timeStamp - (pointer.eDown?.timeStamp ?? 0)
   pointer.up(e)
+  canvas.setDirty(true)
 }
 function handleMove(e: PointerEvent) {
   if (!pointer || !node) return
-  augmentToCanvasPointerEvent(e, node, canvas)
+  augmentToWidgetPointerEvent(e, node)
   pointer.move(e)
+  if (e.buttons) canvas.setDirty(true)
 }
 </script>
 <template>
   <div
-    class="relative -mx-3 w-full min-w-0"
+    class="relative -mx-3 min-w-0"
     :style="{ minHeight: `${containerHeight}px` }"
   >
     <canvas
       ref="canvasEl"
+      data-testid="legacy-widget-canvas"
       class="absolute w-full cursor-crosshair"
       @pointerdown.stop="handleDown"
       @pointerup.stop="handleUp"

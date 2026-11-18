@@ -5,13 +5,21 @@
  */
 
 import { downloadBlob } from '@/scripts/utils'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogService } from '@/services/dialogService'
+import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 import { appendJsonExt } from '@/utils/formatUtil'
 import { t } from '@/i18n'
+
+/** Outcome of opening a workflow; `handled` means the loader already showed the failure. */
+export interface WorkflowOpenResult {
+  success: boolean
+  error?: string
+  errorPresentation?: 'handled'
+}
 
 /**
  * Provides shared workflow actions
@@ -96,23 +104,24 @@ export function useWorkflowActionsService() {
   const openWorkflowAction = async (
     workflow: ComfyWorkflowJSON | null,
     filename: string
-  ): Promise<{
-    success: boolean
-    error?: string
-  }> => {
+  ): Promise<WorkflowOpenResult> => {
     if (!workflow) {
       return { success: false, error: 'No workflow data available' }
     }
 
     try {
       const temp = workflowStore.createTemporary(filename, workflow)
-      await workflowService.openWorkflow(temp)
-      return { success: true }
+      const opened = await workflowService.openWorkflow(temp)
+      if (opened) return { success: true }
+      return { success: false, errorPresentation: 'handled' }
     } catch (error) {
       return {
         success: false,
         error:
-          error instanceof Error ? error.message : 'Failed to open workflow'
+          error instanceof Error ? error.message : 'Failed to open workflow',
+        errorPresentation: isGraphLoadFailurePresented(error)
+          ? 'handled'
+          : undefined
       }
     }
   }

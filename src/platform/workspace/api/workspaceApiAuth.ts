@@ -1,12 +1,19 @@
-import { attachUnifiedRemintInterceptor } from '@/platform/auth/unified/remintRetry'
-import { setWorkspaceApiAuth } from '@/platform/workspace/api/workspaceApi'
+import {
+  attachUnifiedRemintInterceptor,
+  cloudRetryPolicy
+} from '@/platform/auth/unified/remintRetry'
+import { setIngestApiAuth } from '@/platform/remote/ingest/ingestApi'
 import { useAuthStore } from '@/stores/authStore'
+import { attachRetryableStatusRetry } from '@/utils/axiosRetryableStatus'
 
 export function installWorkspaceApiAuth(): void {
-  setWorkspaceApiAuth({
+  setIngestApiAuth({
     getWorkspaceAuthHeader: () =>
       useAuthStore().getWorkspaceAuthHeaderOrThrow(),
     getFirebaseAuthHeader: () => useAuthStore().getFirebaseAuthHeaderOrThrow(),
-    attachRetryInterceptor: attachUnifiedRemintInterceptor
+    attachRetryInterceptor: (client) => {
+      attachRetryableStatusRetry(client, { policy: cloudRetryPolicy() })
+      attachUnifiedRemintInterceptor(client)
+    }
   })
 }

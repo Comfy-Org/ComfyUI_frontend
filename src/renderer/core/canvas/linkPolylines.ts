@@ -1,5 +1,5 @@
-import type { LinkSegment } from '@/lib/litegraph/src/interfaces'
-import type { Point } from '@/renderer/core/layout/types'
+import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 
 interface LazyPolyline {
   compute: () => readonly Point[]

@@ -1,8 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { parseAssetInfo } from '@/platform/assets/schemas/mediaAssetSchema'
 import { api } from '@/scripts/api'
+import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { getDroppedAsset } from '@/utils/eventUtils'
 
 import { startAssetDrag } from './assetDragUtil'
@@ -112,4 +114,112 @@ describe('asset drag media sources', () => {
       })
     }
   )
+})
+
+describe('asset drag identity', () => {
+  it.for([
+    ['a subfolder', { subfolder: 'previews' }, 'previews/flat_temp.png [temp]'],
+    ['no subfolder', undefined, 'flat_temp.png [temp]'],
+    ['a non-string subfolder', { subfolder: 7 }, 'flat_temp.png [temp]']
+  ] as const)(
+    'drops a temp asset with no job and metadata naming %s at its own root and folder',
+    ([, user_metadata, written]) => {
+      const dataTransfer = new DataTransfer()
+      const event = new DragEvent('dragstart', { cancelable: true })
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+
+      startAssetDrag(event, {
+        id: 'flat-temp-asset',
+        name: 'flat_temp.png',
+        tags: ['output', 'temp'],
+        created_at: '2026-10-21T00:00:00Z',
+        updated_at: '2026-10-21T00:00:00Z',
+        user_metadata
+      } satisfies AssetItem)
+      const dropped = parseAssetInfo(dataTransfer)
+
+      assert.exists(dropped)
+      expect(createAnnotatedPath(dropped)).toBe(written)
+    }
+  )
+})
+
+describe('asset drag root for non-output assets tagged temp', () => {
+  it.for([
+    ['an input asset', ['input', 'temp'], undefined, 'flat_temp.png'],
+    [
+      'an input asset whose preview URL says input',
+      ['input', 'temp'],
+      '/api/view?filename=flat_temp.png&type=input',
+      'flat_temp.png'
+    ],
+    ['a model asset', ['models', 'temp'], undefined, 'flat_temp.png'],
+    [
+      'an output whose preview URL says input',
+      ['output', 'temp'],
+      '/api/view?filename=flat_temp.png&type=input',
+      'flat_temp.png [output]'
+    ],
+    [
+      'a generated output',
+      ['output', 'temp'],
+      undefined,
+      'flat_temp.png [temp]'
+    ]
+  ] as const)(
+    'drops %s tagged temp at its prior root',
+    ([, tags, preview_url, written]) => {
+      const dataTransfer = new DataTransfer()
+      const event = new DragEvent('dragstart', { cancelable: true })
+      Object.defineProperty(event, 'dataTransfer', { value: dataTransfer })
+
+      startAssetDrag(event, {
+        id: 'flat-temp-asset',
+        name: 'flat_temp.png',
+        tags: [...tags],
+        preview_url,
+        created_at: '2026-10-21T00:00:00Z',
+        updated_at: '2026-10-21T00:00:00Z'
+      } satisfies AssetItem)
+      const dropped = parseAssetInfo(dataTransfer)
+
+      assert.exists(dropped)
+      expect(createAnnotatedPath(dropped)).toBe(written)
+    }
+  )
+})
+
+describe('asset drag on browsers without URL.parse or URL.canParse', () => {
+  it('still resolves the drag media sources', () => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+    vi.mocked(api.apiURL).mockImplementation(
+      (path) => `http://localhost:8188/api${path}`
+    )
+    vi.stubGlobal(
+      'URL',
+      Object.assign(class extends URL {}, {
+        parse: undefined,
+        canParse: undefined
+      })
+    )
+
+    expect(
+      drag({
+        id: 'video-id',
+        name: 'clip.mp4',
+        display_name: 'My clip',
+        tags: ['input'],
+        created_at: '2026-10-05T00:00:00Z',
+        updated_at: '2026-10-05T00:00:00Z',
+        thumbnail_url: '/view?filename=poster.png',
+        preview_url: '/view?filename=clip.mp4'
+      })
+    ).toMatchObject({
+      kind: 'video',
+      uri: 'http://localhost:8188/api/assets/video-id/content',
+      mediaUrl:
+        'http://localhost:8188/api/assets/video-id/content?disposition=inline',
+      previewUrl: 'http://localhost:8188/api/view?filename=poster.png'
+    })
+  })
 })

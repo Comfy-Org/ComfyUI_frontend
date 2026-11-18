@@ -13,9 +13,11 @@ import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCa
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockWebSessionServer } from '@e2e/fixtures/utils/webSessionMocks'
 import {
+  mockWorkspaceList,
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
@@ -31,8 +33,8 @@ import {
  * unit-tested but had never been exercised against a rendered surface.
  *
  * Both rails GET the same six routes, so the URL cannot separate them. The
- * transport can: the SDK runs on `fetch`, the legacy workspace client on axios'
- * XHR adapter — the same discriminator the write-rail specs use.
+ * client that sent each read can, through `billingClient`, the same
+ * discriminator the write-rail specs use.
  */
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 
@@ -62,8 +64,10 @@ const ACTIVE_STATUS: BillingStatusResponse = {
   billing_status: 'paid',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 }
@@ -141,18 +145,11 @@ interface ReadRoutes {
 interface BootOptions {
   /** Answers the balance with a value outside the safe-integer range. */
   unsafeBalance?: boolean
-  /**
-   * Serves `billing_sdk_topup_enabled: true` on `/api/features`, the channel
-   * the staged rollout publishes on. Boot awaits that response
-   * (`main.ts:56`), so unlike the websocket handshake it is readable before
-   * the billing gate issues its first reads.
-   */
-  readRailOnFeatures?: boolean
 }
 
 async function mockCloudBoot(
   page: Page,
-  { unsafeBalance = false, readRailOnFeatures = false }: BootOptions = {}
+  { unsafeBalance = false }: BootOptions = {}
 ): Promise<ReadRoutes> {
   const reads: Request[] = []
   const eventPages: (string | null)[] = []
@@ -163,14 +160,7 @@ async function mockCloudBoot(
     }
   }
 
-  await page.route('**/api/features', (r) =>
-    r.fulfill(
-      jsonRoute({
-        unified_cloud_auth: true,
-        ...(readRailOnFeatures ? { billing_sdk_topup_enabled: true } : {})
-      })
-    )
-  )
+  await page.route('**/api/features', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/system_stats', (r) =>
     r.fulfill(jsonRoute(mockSystemStats))
   )
@@ -183,8 +173,6 @@ async function mockCloudBoot(
       })
     )
   )
-  // TutorialCompleted suppresses the new-user template browser, whose modal
-  // overlay would otherwise intercept clicks on the settings dialog.
   await page.route('**/api/settings', (r) =>
     r.fulfill(jsonRoute({ 'Comfy.TutorialCompleted': true }))
   )
@@ -193,14 +181,10 @@ async function mockCloudBoot(
   await page.route('**/api/object_info', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/global_subgraphs', (r) => r.fulfill(jsonRoute({})))
   await page.route('**/api/i18n', (r) => r.fulfill(jsonRoute({})))
-  await page.route('**/api/auth/session', (r) =>
-    r.fulfill(jsonRoute({ token: 'mock-workspace-token' }))
-  )
+  await mockWebSessionServer(page)
   await page.route('**/releases**', (r) => r.fulfill(jsonRoute([])))
   await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
-  await page.route('**/api/workspaces', (r) =>
-    r.fulfill(jsonRoute({ workspaces: [workspace('personal', 'owner')] }))
-  )
+  await mockWorkspaceList(page, [workspace('personal', 'owner')])
 
   await page.route('**/api/billing/status', (r) => {
     record(r.request())
@@ -238,7 +222,6 @@ async function mockCloudBoot(
     eventPages.push(requested)
     return r.fulfill(jsonRoute(eventsPage(Number(requested ?? 1))))
   })
-  await page.route('**/customers/balance', (r) => r.fulfill(jsonRoute(BALANCE)))
 
   return { reads, eventPages }
 }
@@ -280,11 +263,6 @@ async function openActivity(content: Locator) {
   return content
 }
 
-/** Which transport issued the request, and so which rail served it. */
-function transport(request: Request): string {
-  return request.resourceType()
-}
-
 function routesRead(reads: Request[]): Set<string> {
   return new Set(
     READ_ROUTES.filter((route) =>
@@ -293,21 +271,8 @@ function routesRead(reads: Request[]): Set<string> {
   )
 }
 
-/**
- * The websocket half of the flag, paired with `readRailOnFeatures` so the two
- * channels agree. Answered on the handshake rather than set after boot: the
- * billing gate issues its first reads while resolving auth and workspace,
- * before `GraphCanvas`'s `onMounted` assigns `window.app`, so a flag set any
- * later would miss them.
- */
-async function enableReadRail(page: Page) {
-  await new FeatureFlagHelper(page).serveServerFlagsOnHandshake({
-    billing_sdk_topup_enabled: true
-  })
-}
-
 test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
-  test('serves every read on the legacy client while the rail is off', async ({
+  test('serves reads on the SDK transport while the rail is on, rendering the same values', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -325,54 +290,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     await expect
       .poll(() => routesRead(routes.reads).size)
       .toBe(READ_ROUTES.length)
-    expect(routes.reads.map(transport)).not.toContain('fetch')
-  })
-
-  /**
-   * `not.toContain('xhr')`: with the flag on `/api/features` there is no race
-   * left to tolerate.
-   *
-   * This row used to assert only `toContain('fetch')`, because the flag was
-   * reachable solely on the websocket `feature_flags` handshake
-   * (`api.ts:1012`), which nothing awaits — `createSocket()` does not open the
-   * socket until the cloud auth token resolves, so the billing gate's status,
-   * balance, plans and capabilities reads went out first and CI recorded the
-   * split on one load:
-   *
-   *     ["xhr", "xhr", "xhr", "xhr", "fetch", "fetch", "fetch"]
-   *
-   * #18141 moved these flags onto `/api/features` as their primary channel,
-   * and boot awaits that response at `main.ts:56`. So the flag is readable
-   * before the first billing read rather than 145ms after it, and every read
-   * — boot included — belongs on the rail. `mockCloudBoot` now serves it
-   * there; the handshake is seeded as well so neither channel alone is what
-   * the assertion rests on.
-   *
-   * If this row goes red on `xhr`, that is a finding about the ordering of
-   * `refreshRemoteConfig` against the billing gate, not a flake to loosen.
-   */
-  test('serves reads on the SDK transport while the rail is on, rendering the same values', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    const routes = await mockCloudBoot(page, { readRailOnFeatures: true })
-    await enableReadRail(page)
-    await bootApp(page)
-
-    const content = await openPlanAndCredits(page)
-
-    // Identical to the legacy row above: the int64 projections must not move
-    // a rendered number.
-    await expect(content.getByText('Total credits')).toBeVisible()
-    await expect(content.getByText('12,660')).toBeVisible()
-
-    await openActivity(content)
-
-    await expect(content.getByText('node-on-page-1')).toBeVisible()
-    await expect
-      .poll(() => routesRead(routes.reads).size)
-      .toBe(READ_ROUTES.length)
-    expect(routes.reads.map(transport)).not.toContain('xhr')
+    expect(routes.reads.map(billingClient)).not.toContain('legacy')
   })
 
   /**
@@ -385,29 +303,22 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
     const routes = await mockCloudBoot(page, {
-      unsafeBalance: true,
-      readRailOnFeatures: true
+      unsafeBalance: true
     })
-    await enableReadRail(page)
     await bootApp(page)
 
     const content = await openPlanAndCredits(page)
 
     await expect(content.getByText('Total credits')).toBeVisible()
 
-    // The absence below only means anything if the SDK reader is what asked:
-    // a balance never requested, or requested on the legacy client, would
-    // render nothing here for reasons that have nothing to do with int64.
     await expect
       .poll(() =>
         routes.reads
           .filter((request) => request.url().includes('/api/billing/balance'))
-          .map(transport)
+          .map(billingClient)
       )
-      .toContain('fetch')
+      .toContain('sdk')
 
-    // 9007199254740993 micros rounds to ...992 through a double. Neither that
-    // nor its dollar rendering may appear.
     await expect(content.getByText('9,007,199,254')).toBeHidden()
   })
 
@@ -415,8 +326,7 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     page
   }) => {
     test.setTimeout(60_000)
-    const routes = await mockCloudBoot(page, { readRailOnFeatures: true })
-    await enableReadRail(page)
+    const routes = await mockCloudBoot(page)
     await bootApp(page)
 
     const content = await openActivity(await openPlanAndCredits(page))
@@ -424,16 +334,9 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
 
     await content.getByRole('button', { name: 'Next', exact: true }).click()
 
-    // The reader is scoped and paged: page 2 must not be served page 1's
-    // in-flight answer.
     await expect(content.getByText('node-on-page-2')).toBeVisible()
     await expect.poll(() => routes.eventPages).toContain('2')
 
-    // Page 2 is fetched by the *same* rail, not just fetched. Both rails serve
-    // this fixture identically, so the rendered row and the recorded page
-    // number above are both satisfied by a legacy paging request — the
-    // transport is the only thing that separates them, and the boot-time
-    // assertion cannot speak for a request made after a click.
     await expect
       .poll(() =>
         routes.reads
@@ -442,8 +345,8 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
               request.url().includes('/api/billing/events') &&
               new URL(request.url()).searchParams.get('page') === '2'
           )
-          .map(transport)
+          .map(billingClient)
       )
-      .toEqual(['fetch'])
+      .toEqual(['sdk'])
   })
 })

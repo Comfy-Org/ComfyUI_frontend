@@ -9,7 +9,7 @@ import type {
   Subgraph,
   TWidgetType
 } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { createPromotedMultilineWidget } from '@/renderer/extensions/vueNodes/widgets/utils/multilineTextarea'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
@@ -33,11 +33,11 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import type { WidgetState } from '@/types/widgetState'
-import { widgetId } from '@/types/widgetId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { graphToPrompt } from '@/utils/executionUtil'
 
 import {
@@ -1394,6 +1394,47 @@ describe('SubgraphWidgetPromotion', () => {
             String(hostNode.id)
           )
         ).toEqual([{ name: 'preview', ...exposure12 }])
+      })
+
+      it('addresses legacy video and animation previews by the canvas preview name once per source, keeping nested host exposure names', () => {
+        const subgraph = createTestSubgraph()
+        const nestedHost = createTestSubgraphNode(createTestSubgraph(), {
+          id: 13
+        })
+        subgraph.add(nestedHost)
+        const hostNode = createTestSubgraphNode(subgraph)
+        hostNode.properties.previewExposures = [
+          {
+            name: 'video-preview',
+            sourceNodeId: '12',
+            sourcePreviewName: 'video-preview'
+          },
+          { name: CANVAS, sourceNodeId: '12', sourcePreviewName: CANVAS },
+          {
+            name: 'animation',
+            sourceNodeId: '14',
+            sourcePreviewName: '$$comfy_animation_preview'
+          },
+          {
+            name: 'nested',
+            sourceNodeId: '13',
+            sourcePreviewName: 'video-preview'
+          }
+        ]
+        hostNode._internalConfigureAfterSlots()
+
+        expect(
+          usePreviewExposureStore()
+            .getExposures(hostNode.rootGraph.id, String(hostNode.id))
+            .map(({ sourceNodeId, sourcePreviewName }) => [
+              sourceNodeId,
+              sourcePreviewName
+            ])
+        ).toEqual([
+          ['12', CANVAS],
+          ['14', CANVAS],
+          ['13', 'video-preview']
+        ])
       })
 
       it('moves a nested host raw-ID entry to its owner-scoped locator', () => {

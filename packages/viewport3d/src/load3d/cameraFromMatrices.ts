@@ -1,25 +1,4 @@
-/**
- * Compute a three.js camera pose (position, target, vertical FOV) from a
- * pair of OpenCV-convention camera matrices as produced by SHARP / COLMAP /
- * other SfM pipelines.
- *
- * Extrinsics: 4x4 world-to-camera matrix E = [R | t; 0 0 0 1]
- *   - R is the 3x3 rotation block
- *   - t is the 3x1 translation block (rightmost column, top three rows)
- * Intrinsics: 3x3 camera matrix K = [[fx, 0, cx], [0, fy, cy], [0, 0, 1]]
- *
- * OpenCV convention: X right, Y down, Z forward.
- * three.js convention: X right, Y up, Z backward.
- *
- * Camera position in world space = -R^T * t
- * Forward ray in world space = third row of R (camera's +Z axis)
- * Vertical FOV (radians) = 2 * atan(cy / fy)
- *
- * The whole world is rotated 180° around X to align OpenCV Y-down/Z-forward
- * with three.js Y-up/Z-back (same rotation applied to splats at load time
- * via SplatMesh.quaternion.set(1, 0, 0, 0)). That rotation flips both Y and Z.
- */
-type Vec3 = [number, number, number]
+import type { Vector3Tuple as Vec3 } from '@comfyorg/shared-frontend-utils/geometry'
 
 interface CameraFromMatricesResult {
   position: Vec3

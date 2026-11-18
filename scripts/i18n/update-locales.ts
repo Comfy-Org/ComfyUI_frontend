@@ -286,23 +286,29 @@ function loadStates(
     plans.map((plan) => {
       const outputFile = join(outputDir, locale.code, plan.filename)
       const existing = readCatalog(outputFile)
+      const leafCorrupted = (
+        source: LocaleTrackedLeaf,
+        target: LocaleTrackedLeaf
+      ) =>
+        leafTokensDiffer(source, target, {
+          strict: config.strictProtectedTokens,
+          localeCode: locale.code
+        })
       const retention = partitionLocale({
         sourceLeaves: plan.sourceLeaves,
         previousEnglish: plan.previous,
         existing,
         modifiedKeys: plan.modified,
         policy: config.existingCopy,
-        excludedKeys: plan.excluded
+        excludedKeys: plan.excluded,
+        pluralFormCount: locale.pluralFormCount,
+        leafCorrupted
       })
       const pendingLeaves = collectPendingLeaves(
         plan.source,
         existing,
         plan.invalidated,
-        (source, target) =>
-          leafTokensDiffer(source, target, {
-            strict: config.strictProtectedTokens,
-            localeCode: locale.code
-          })
+        leafCorrupted
       ).filter(
         (leaf) =>
           !retention.retained.has(pathKey(leaf.path)) &&
@@ -412,10 +418,8 @@ export function parseOptions(argv: readonly string[]) {
     }
   })
   const name = values.target
-  if (name !== 'app' && name !== 'website')
-    throw new Error(
-      `Unknown translation target "${name}"; expected app or website.`
-    )
+  if (name !== 'app')
+    throw new Error(`Unknown translation target "${name}"; expected app.`)
   return { config: translationTargets[name], check: values.check }
 }
 

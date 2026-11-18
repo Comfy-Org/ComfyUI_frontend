@@ -14,7 +14,7 @@ const gateState = vi.hoisted(() => ({
 }))
 
 vi.mock<unknown>(
-  import('@/composables/billing/usePartnerNodesRunGate'),
+  import('@/platform/auth/partnerNode/usePartnerNodesRunGate'),
   async () => {
     const { ref } = await import('vue')
     gateState.gate = ref<'sign-in' | 'none'>('none')

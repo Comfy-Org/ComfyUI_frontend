@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useElementHover } from '@vueuse/core'
-import { PopoverAnchor } from 'reka-ui'
+import { useElementHover, useEventListener } from '@vueuse/core'
+import { PopoverAnchor, PopoverRoot } from 'reka-ui'
 import { computed, onBeforeUnmount, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentInstance } from 'vue'
@@ -9,8 +9,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import AssetMediaPreview from './AssetMediaPreview.vue'
 
-import Popover from '@/components/ui/popover/Popover.vue'
-import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
+import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import type { AssetPreviewMode } from '@/workbench/extensions/agent/types/assetPreview'
 
@@ -97,10 +96,21 @@ function onInteractOutside(event: Event): void {
   if (event.target instanceof Node && trigger.value?.contains(event.target))
     event.preventDefault()
 }
+
+function dismissOnEscape(event: KeyboardEvent): void {
+  if (!open.value || event.key !== 'Escape') return
+  if (event.defaultPrevented || event.isComposing) return
+  event.preventDefault()
+  event.stopPropagation()
+  onEscape()
+  onOpenChange(false)
+}
+
+useEventListener(document, 'keydown', dismissOnEscape, { capture: true })
 </script>
 
 <template>
-  <Popover :open @update:open="onOpenChange">
+  <PopoverRoot :open @update:open="onOpenChange">
     <PopoverAnchor as-child>
       <button
         ref="trigger"
@@ -124,7 +134,7 @@ function onInteractOutside(event: Event): void {
       :collision-padding="16"
       :class="
         cn(
-          'z-overlay max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border/50 bg-secondary p-0',
+          'max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border/50 bg-secondary p-0',
           playableKind === 'audio' ? 'w-86' : 'w-80'
         )
       "
@@ -155,5 +165,5 @@ function onInteractOutside(event: Event): void {
         </div>
       </div>
     </PopoverContent>
-  </Popover>
+  </PopoverRoot>
 </template>

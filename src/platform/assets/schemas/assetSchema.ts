@@ -104,6 +104,10 @@ export type AssetId = string
 
 // Export types derived from Zod schemas
 export type AssetItem = z.infer<typeof zAsset>
+export type ModelBrowserAsset = AssetItem & {
+  isWorkspaceLibrary?: boolean
+  browserCategories?: string[]
+}
 export type AssetResponse = z.infer<typeof zAssetResponse>
 export type AssetMetadata = z.infer<typeof zAssetMetadata>
 export type AsyncUploadResponse = z.infer<typeof zAsyncUploadResponse>
@@ -133,15 +137,3 @@ export const tagsOperationResultSchema = z.object({
 })
 
 export type TagsOperationResult = z.infer<typeof tagsOperationResultSchema>
-
-// Legacy interface for backward compatibility (now aligned with Zod schema)
-export interface ModelFolderInfo {
-  name: string
-  folders: string[]
-  /**
-   * The folder's raw registered extension allowlist from
-   * `/experiment/models`. An empty array means match-all; absent on older
-   * backends.
-   */
-  extensions?: string[]
-}

@@ -1,3 +1,4 @@
+import type { Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 import type { ChannelData, GroupData, NodeBase, SceneNode } from './node'
 
 export interface DocGuide {
@@ -5,10 +6,8 @@ export interface DocGuide {
   pos: number
 }
 
-export interface Document {
+export interface Document extends Size2D {
   version: 2
-  width: number
-  height: number
   root: GroupData
   channels: ChannelData[]
   selectionId?: string

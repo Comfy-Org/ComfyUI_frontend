@@ -3,8 +3,8 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Loader from '@/components/loader/Loader.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import type { AssetDownload } from '@/stores/assetDownloadStore'
 import { isDownloadCancelled } from '@/stores/assetDownloadStore'
@@ -36,7 +36,7 @@ const isCancelled = computed(() => isDownloadCancelled(job.status))
 
     <div class="flex shrink-0 items-center gap-2">
       <template v-if="isFailed">
-        <i class="icon-[lucide--circle-alert] size-4 text-destructive" />
+        <i class="icon-[lucide--circle-alert] text-destructive" />
         <Badge variant="label" severity="danger">
           {{ t('progressToast.failed') }}
         </Badge>

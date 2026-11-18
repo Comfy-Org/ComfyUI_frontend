@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
@@ -8,9 +9,9 @@ import {
   setupComplexPromotionFixture
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { computeProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
@@ -21,13 +22,16 @@ import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
-import type { WidgetId } from '@/types/widgetId'
+} from '@comfyorg/graph-model/nodeIdentification'
+import {
+  toOwningGraphId,
+  toRootGraphId
+} from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 
 const GRAPH_ID = 'graph-test'
 
@@ -480,6 +484,76 @@ describe('promoted subgraph widgets', () => {
     )
   })
 
+  it('derives promoted sizing from the current concrete source without re-registering the host', () => {
+    const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+    const sourceNode = subgraph.getNodeById(INTERIOR_ID)
+    const sourceWidget = sourceNode?.widgets?.find(
+      (widget) => widget.name === 'string_a'
+    )
+    assert.exists(sourceNode)
+    assert.exists(sourceWidget)
+    sourceWidget.computeLayoutSize = (node) => ({
+      minHeight: node.size[0] / 3,
+      minWidth: 0
+    })
+    sourceNode.size = [183, 100]
+    const processed = processHostWidget(graph, hostNode)
+
+    expect(processed.sizing).toMatchObject({
+      kind: 'growable',
+      minHeight: 61
+    })
+
+    sourceNode.size = [249, 100]
+
+    expect(processed.sizing).toMatchObject({
+      kind: 'growable',
+      minHeight: 83
+    })
+  })
+
+  it.for(['computeSize', 'computeLayoutSize'] as const)(
+    'drops the sizing when %s throws, reports it once, and recovers without re-registration',
+    (callback) => {
+      const { graph, subgraph, hostNode } = setupComplexPromotionFixture()
+      const sourceWidget = subgraph
+        .getNodeById(INTERIOR_ID)
+        ?.widgets?.find((widget) => widget.name === 'string_a')
+      assert.exists(sourceWidget)
+      const value = sourceWidget.value
+      sourceWidget.type = `throws-in-${callback}`
+      sourceWidget.computeSize = undefined
+      const cause = new Error('Extension sizing failed')
+      sourceWidget[callback] = () => {
+        throw cause
+      }
+      const processed = processHostWidget(graph, hostNode)
+
+      expect([processed.sizing, processed.sizing]).toEqual([
+        undefined,
+        undefined
+      ])
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        cause,
+        expect.objectContaining({
+          errorType: 'error_measuring_widget',
+          surface: 'graph',
+          tags: { outcome: 'degraded' }
+        })
+      )
+
+      sourceWidget.computeSize = undefined
+      sourceWidget.computeLayoutSize = () => ({ minWidth: 0, minHeight: 67 })
+
+      expect(processed.sizing).toEqual({
+        kind: 'growable',
+        minWidth: 0,
+        minHeight: 67
+      })
+      expect(sourceWidget.value).toEqual(value)
+    }
+  )
+
   it.for([
     ['shows on the node canvas', { advanced: true }, false, true],
     ['shows when selected in App Mode', { advanced: true }, true, true],
@@ -682,7 +756,6 @@ describe('computeProcessedWidgets', () => {
         options: { advanced: true }
       },
       {
-        hasLayoutSize: true,
         isDOMWidget: true,
         tooltip: 'Choose checkpoint'
       }
@@ -695,13 +768,13 @@ describe('computeProcessedWidgets', () => {
     })
 
     expect(result[0]).toMatchObject({
-      hasLayoutSize: true,
       simplified: {
         name: 'display_slot',
         borderStyle: 'ring ring-primary'
       }
     })
     expect(result[0].vueComponent).toBe(WidgetDOM)
+    expect(result[0].sizing).toBeUndefined()
   })
 
   it('treats explicit isDOMWidget false as authoritative', () => {

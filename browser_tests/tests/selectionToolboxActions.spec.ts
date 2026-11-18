@@ -1,6 +1,6 @@
 import type { Locator } from '@playwright/test'
 
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
+import type { PromptResponse } from '@comfyorg/api-client/types'
 
 import {
   comfyExpect as expect,
@@ -45,7 +45,10 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       () => window.app!.graph._nodes.length
     )
 
-    const deleteButton = comfyPage.page.getByTestId('delete-button')
+    const deleteButton = comfyPage.selectionToolbox.getByRole('button', {
+      name: 'Delete Selected Items',
+      exact: true
+    })
     await expect(deleteButton).toBeVisible()
     await deleteButton.click()
     await comfyPage.nextFrame()
@@ -68,7 +71,10 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await selectNodeWithPan(comfyPage, nodeRef)
     await expect(comfyPage.menu.propertiesPanel.root).toBeHidden()
 
-    const infoButton = comfyPage.page.getByTestId('info-button')
+    const infoButton = comfyPage.selectionToolbox.getByRole('button', {
+      name: 'Node Info',
+      exact: true
+    })
     await expect(infoButton).toBeVisible()
     await infoButton.click()
 
@@ -93,7 +99,10 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
     await expect(comfyPage.selectionToolbox).toBeVisible()
     await expect(
-      comfyPage.selectionToolbox.getByTestId('info-button')
+      comfyPage.selectionToolbox.getByRole('button', {
+        name: 'Node Info',
+        exact: true
+      })
     ).toBeHidden()
   })
 
@@ -106,7 +115,10 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nextFrame()
 
     await expect(
-      comfyPage.page.getByTestId('convert-to-subgraph-button')
+      comfyPage.selectionToolbox.getByRole('button', {
+        name: 'Convert Selection to Subgraph',
+        exact: true
+      })
     ).toBeVisible()
   })
 
@@ -122,7 +134,10 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       () => window.app!.graph._nodes.length
     )
 
-    const deleteButton = comfyPage.page.getByTestId('delete-button')
+    const deleteButton = comfyPage.selectionToolbox.getByRole('button', {
+      name: 'Delete Selected Items',
+      exact: true
+    })
     await expect(deleteButton).toBeVisible()
     await deleteButton.click()
     await comfyPage.nextFrame()
@@ -147,7 +162,10 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
 
       await expect.poll(() => nodeRef.isBypassed()).toBe(false)
 
-      const bypassButton = comfyPage.page.getByTestId('bypass-button')
+      const bypassButton = comfyPage.selectionToolbox.getByRole('button', {
+        name: 'Bypass/Unbypass Selected Nodes',
+        exact: true
+      })
       await expect(bypassButton).toBeVisible()
       await bypassButton.click()
       await comfyPage.nextFrame()
@@ -173,14 +191,14 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     const nodeRef = (await comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))[0]
     await selectNodeWithPan(comfyPage, nodeRef)
 
-    const convertButton = comfyPage.page.getByTestId(
-      'convert-to-subgraph-button'
-    )
+    const convertButton = comfyPage.selectionToolbox.getByRole('button', {
+      name: 'Convert Selection to Subgraph',
+      exact: true
+    })
     await expect(convertButton).toBeVisible()
     await convertButton.click()
     await comfyPage.nextFrame()
 
-    // KSampler should be gone, replaced by a subgraph node
     await expect
       .poll(() => comfyPage.nodeOps.getNodeRefsByTitle('KSampler'))
       .toHaveLength(0)
@@ -200,9 +218,10 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.nodeOps.selectNodes(['KSampler', 'Empty Latent Image'])
     await comfyPage.nextFrame()
 
-    const convertButton = comfyPage.page.getByTestId(
-      'convert-to-subgraph-button'
-    )
+    const convertButton = comfyPage.selectionToolbox.getByRole('button', {
+      name: 'Convert Selection to Subgraph',
+      exact: true
+    })
     await expect(convertButton).toBeVisible()
     await convertButton.click()
     await comfyPage.nextFrame()
@@ -211,9 +230,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
       .poll(() => comfyPage.nodeOps.getNodeRefsByTitle('New Subgraph'))
       .toHaveLength(1)
 
-    await expect
-      .poll(() => comfyPage.nodeOps.getGraphNodesCount())
-      .toBe(initialCount - 1)
+    await comfyPage.expectNodeCount(initialCount - 1)
   })
 
   test('frame nodes button creates group from multiple selected nodes', async ({

@@ -14,11 +14,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useWorkflowTemplateSelectorDialog } from '@/composables/useWorkflowTemplateSelectorDialog'
+import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import SidebarIcon from './SidebarIcon.vue'
 

@@ -1,4 +1,4 @@
-import { reportError } from './reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 const MAX_REDACTION_DEPTH = 12
 const DEPTH_LIMIT_REDACTED = '[redacted at depth limit]'
 const SECRET_KEY_PATTERN =

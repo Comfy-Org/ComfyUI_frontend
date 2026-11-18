@@ -25,17 +25,17 @@ test.describe(
       const vueNode = await comfyPage.vueNodes.getFixtureByTitle(API_NODE_TITLE)
 
       await test.step('show pricing initially', async () => {
-        await expect(vueNode.priceBadge.required).toBeVisible()
+        await expect(vueNode.priceBadge).toBeVisible()
       })
 
       await test.step('hide pricing through Settings', async () => {
         await toggleApiPricing(comfyPage)
-        await expect(vueNode.priceBadge.required).toBeHidden()
+        await expect(vueNode.priceBadge).toBeHidden()
       })
 
       await test.step('restore pricing through Settings', async () => {
         await toggleApiPricing(comfyPage)
-        await expect(vueNode.priceBadge.required).toBeVisible()
+        await expect(vueNode.priceBadge).toBeVisible()
       })
     })
   }

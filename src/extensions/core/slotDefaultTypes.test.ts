@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { collectRegistrableSlotTypes } from '@/extensions/core/slotDefaultTypes'
-import type { ComfyNodeDef, ComfyInputsSpec } from '@/schemas/nodeDefSchema'
+import type {
+  ComfyNodeDef,
+  ComfyInputsSpec
+} from '@comfyorg/object-info-parser'
 
 function nodeDef(
   input: ComfyInputsSpec,

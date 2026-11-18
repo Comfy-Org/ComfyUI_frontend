@@ -7,8 +7,8 @@ import type {
   GraphOrSubgraph,
   Subgraph,
   SubgraphInput
-} from '@/lib/litegraph/src/types/entityRegistry'
-import { once } from 'es-toolkit'
+} from '@comfyorg/graph-model/entityRegistry'
+import { once, uniqBy } from 'es-toolkit'
 import cloneDeep from 'es-toolkit/compat/cloneDeep'
 
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
@@ -19,38 +19,36 @@ import { LLink } from '@/lib/litegraph/src/LLink'
 
 import { NullGraphError } from '@/lib/litegraph/src/infrastructure/NullGraphError'
 import { RecursionError } from '@/lib/litegraph/src/infrastructure/RecursionError'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 import type {
   ISubgraphInput,
   INodeInputSlot
-} from '@/lib/litegraph/src/types/slots'
+} from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type {
   ExportedSubgraphInstance,
   ISerialisedNode
-} from '@/lib/litegraph/src/types/serialisation'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/serialisation'
+import { NodeSlotType } from '@comfyorg/graph-model/globalEnums'
 import type {
   IBaseWidget,
   IWidgetLocator,
   TWidgetValue
-} from '@/lib/litegraph/src/types/widgets'
-import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
+import { isWidgetValue } from '@comfyorg/graph-model/widgets'
 import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
-import {
-  coerceRestoredWidgetValue,
-  deriveWidgetRenderState
-} from '@/lib/litegraph/src/utils/widget'
+import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
 import { toConcreteWidget } from '@/lib/litegraph/src/widgets/widgetMap'
 import type { WidgetTypeMap } from '@/lib/litegraph/src/widgets/widgetMap'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import { parsePreviewExposures } from '@/core/schemas/previewExposureSchema'
+import { previewSourceName } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { parseProxyWidgetErrorQuarantine } from '@/core/schemas/proxyWidgetQuarantineSchema'
 import {
   getPreviewExposureHostLocator,
@@ -58,10 +56,10 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import type { NodeState } from '@/types/nodeState'
-import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
 
 import { ExecutableNodeDTO } from './ExecutableNodeDTO'
@@ -512,12 +510,8 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const value = quarantineValuesByInputName.has(input.name)
         ? quarantineValuesByInputName.get(input.name)
         : widgetValues?.[valueIndex]
-      const state = useWidgetValueStore().getWidget(input.widgetId)
-      if (value !== undefined && state) {
-        useWidgetValueStore().setValue(
-          input.widgetId,
-          coerceRestoredWidgetValue(state, value)
-        )
+      if (value !== undefined) {
+        useWidgetValueStore().restoreValue(input.widgetId, value)
       }
       valueIndex += 1
     }
@@ -566,7 +560,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const rootGraphId = this.rootGraph.id
     const rawProperty = this.properties.previewExposures
     const hasExplicitProperty = Array.isArray(rawProperty)
-    const fromProperty = parsePreviewExposures(rawProperty)
+    const fromProperty = uniqBy(
+      parsePreviewExposures(rawProperty).map((exposure) => ({
+        ...exposure,
+        sourcePreviewName: previewSourceName(
+          this.subgraph.getNodeById(exposure.sourceNodeId) ?? undefined,
+          exposure.sourcePreviewName
+        )
+      })),
+      ({ sourceNodeId, sourcePreviewName }) =>
+        `${sourceNodeId}:${sourcePreviewName}`
+    )
     if (fromProperty.length || hasExplicitProperty) {
       const hostLocator = tryGetPreviewExposureHostLocator(this)
       if (hostLocator)
@@ -1081,6 +1085,6 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
 type RegisteredSubgraphNode = SubgraphNode
 
-declare module '../types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface SubgraphNode extends RegisteredSubgraphNode {}
 }

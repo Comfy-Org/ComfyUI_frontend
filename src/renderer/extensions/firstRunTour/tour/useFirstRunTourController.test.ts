@@ -1,5 +1,5 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useSubscriptionPaywall } from '@/composables/billing/useSubscriptionPaywall'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscriptionPaywall'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -18,7 +18,7 @@ import type {
   CoachStep,
   SpotlightStep
 } from '@/platform/onboarding/onboardingTours'
-import type { OnboardingTourSkipReason } from '@/platform/telemetry/types'
+import type { OnboardingTourSkipReason } from '@comfyorg/telemetry/types'
 
 const TOUR_WORKFLOW = fromPartial<
   NonNullable<ReturnType<typeof useWorkflowStore>['activeWorkflow']>
@@ -41,9 +41,9 @@ const mocks = vi.hoisted(() => {
   }
 })
 
-vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
-vi.mock(import('@/composables/billing/useSubscriptionPaywall'))
+vi.mock(import('@/platform/billing/composables/useSubscriptionPaywall'))
 
 vi.mock<unknown>(import('./firstRunTourDefinition'), () => ({
   firstRunTourSteps: (_templateId: string, runState: Ref<string>) => {

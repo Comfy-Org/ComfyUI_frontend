@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "ノードタイトルをダブルクリックして編集"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "大きな画像プレビューを縮小",
+    "tooltip": "Nodes 2.0では、多数の大きなプレビューを表示しても応答性を維持できるよう、ノード上の大きな画像を最長辺が最大1024pxのコピーとして表示します。無効にすると、常に元の画像を表示します。"
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "ミドルクリックで新しいリルートノードを作成"
   },

@@ -19,11 +19,11 @@
       <span v-if="freeRunsSuffix">{{ ' ' + freeRunsSuffix }}</span>
     </p>
 
-    <Message v-if="!isSecureContext" severity="warning" class="mt-4 w-full">
+    <Message v-if="!isSecureContext" severity="warning" class="mt-4">
       {{ t('auth.login.insecureContextWarning') }}
     </Message>
 
-    <Message v-if="ssoErrorKey" severity="error" class="mt-4 w-full">
+    <Message v-if="ssoErrorKey" severity="error" class="mt-4">
       {{ t(ssoErrorKey) }}
     </Message>
 
@@ -99,8 +99,8 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { readSsoError } from '@comfyorg/account-core/sso'
 import { ssoFailureReason } from '@comfyorg/account-core/telemetry'
 
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Message from '@comfyorg/design-system/message/Message'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { trackSsoSignInFailed } from '@/platform/auth/sso/ssoTelemetry'

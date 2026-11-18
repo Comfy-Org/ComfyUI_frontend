@@ -16,7 +16,7 @@ const { reportError, writeText } = vi.hoisted(() => ({
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: (text) => writeText(text) })
 }))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 import CrdtDevPanel from './CrdtDevPanel.vue'

@@ -19,26 +19,15 @@ import {
 } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL } from '@e2e/fixtures/utils/cloudAppSetup'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * What a page load, a sign-out, and a backgrounded tab do to the billing
- * reads and the operation poller once both SDK rails are on.
- *
- * Both rails GET the same routes, so the URL cannot separate them. The
- * transport can: the SDK runs on `fetch`, the legacy workspace client on
- * axios' XHR adapter. The SDK sends `Idempotency-Key` only on writes, so these
- * reads carry none on either rail and the transport is the whole signal.
- */
 const RAILS_ON = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true,
-  billing_sdk_topup_enabled: true,
-  billing_sdk_subscription_enabled: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const PENDING_OPERATION_ID = 'op-e2e-idle-tab'
@@ -52,8 +41,10 @@ const ACTIVE_STATUS = {
   billing_status: 'paid',
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   plan_slug: 'pro-monthly',
   renewal_date: '2099-02-20T10:00:00Z'
 } satisfies BillingStatusResponse
@@ -89,9 +80,6 @@ const PENDING_TOPUP = {
   status: 'pending',
   started_at: '2026-09-20T00:00:00Z'
 } satisfies BillingOpStatusResponse
-
-/** The legacy personal balance read, which a rail-on load must not issue. */
-const LEGACY_BALANCE_ROUTE = '/customers/balance'
 
 interface BillingServer {
   status: BillingStatusResponse
@@ -144,7 +132,6 @@ async function bootWithRailsOn(
     return route.fulfill(jsonRoute(server.balance))
   }
   await page.route('**/api/billing/balance', answerBalance)
-  await page.route(`**${LEGACY_BALANCE_ROUTE}`, answerBalance)
   await page.route(
     `**/api/billing/ops/${PENDING_OPERATION_ID}`,
     async (route) => {
@@ -166,10 +153,6 @@ async function bootWithRailsOn(
   await new FeatureFlagHelper(page).serveServerFlagsOnHandshake(RAILS_ON)
   await bootCloud(page)
   return { reads, polls }
-}
-
-function transports(requests: Request[]): string[] {
-  return requests.map((request) => request.resourceType())
 }
 
 function readsOf(reads: Request[], route: string): Request[] {
@@ -320,16 +303,13 @@ test.describe('Billing SDK rails across a session', { tag: '@cloud' }, () => {
       .poll(() => readsOf(wire.reads, '/api/billing/balance').length)
       .toBeGreaterThan(0)
 
-    // The first of each, not just some: a legacy read that lands before the
-    // rail resolves is exactly the ordering defect this row guards.
     expect(
-      transports([
+      [
         readsOf(wire.reads, '/api/billing/status')[0],
         readsOf(wire.reads, '/api/billing/balance')[0]
-      ])
-    ).toEqual(['fetch', 'fetch'])
-    expect(transports(wire.reads)).not.toContain('xhr')
-    expect(readsOf(wire.reads, LEGACY_BALANCE_ROUTE)).toEqual([])
+      ].map(billingClient)
+    ).toEqual(['sdk', 'sdk'])
+    expect(wire.reads.map(billingClient)).not.toContain('legacy')
   })
 
   test('never shows the balance as 0 or blank across five reloads', async ({
@@ -348,8 +328,6 @@ test.describe('Billing SDK rails across a session', { tag: '@cloud' }, () => {
 
     for (let load = 1; load <= 5; load++) {
       await test.step(`load ${load}`, async () => {
-        // Held so the tile mounts before the balance lands: the window where
-        // a defaulted "0" would render.
         const releaseBalance = holdBalance(server)
         await page.reload()
         await waitForCloudApp(page)
@@ -367,7 +345,7 @@ test.describe('Billing SDK rails across a session', { tag: '@cloud' }, () => {
         expect(states.at(-1)).toBe(FIRST_SESSION_TOTAL)
       })
     }
-    expect(transports(wire.reads)).not.toContain('xhr')
+    expect(wire.reads.map(billingClient)).not.toContain('legacy')
   })
 
   test('reads the new session on the SDK transport after signing out and back in', async ({
@@ -394,7 +372,6 @@ test.describe('Billing SDK rails across a session', { tag: '@cloud' }, () => {
     server.balance = SECOND_SESSION_BALANCE
     const readsBeforeSignIn = wire.reads.length
     const statesBeforeSignIn = (await totalCreditStates(page)).length
-    // Held so a first-session balance still in memory would be what shows.
     const releaseBalance = holdBalance(server)
     await signInWithEmail(page)
 
@@ -412,7 +389,7 @@ test.describe('Billing SDK rails across a session', { tag: '@cloud' }, () => {
     const readsAfterSignIn = wire.reads.slice(readsBeforeSignIn)
     expect(readsOf(readsAfterSignIn, '/api/billing/status')).not.toEqual([])
     expect(readsOf(readsAfterSignIn, '/api/billing/balance')).not.toEqual([])
-    expect(transports(readsAfterSignIn)).not.toContain('xhr')
+    expect(readsAfterSignIn.map(billingClient)).not.toContain('legacy')
   })
 
   test('keeps one poller for a pending operation while the tab idles hidden', async ({
@@ -437,7 +414,6 @@ test.describe('Billing SDK rails across a session', { tag: '@cloud' }, () => {
       await test.step(`hide and return ${cycle}`, async () => {
         await setTabVisibility(page, 'hidden')
         const pollsWhenHidden = wire.polls.length
-        // Idle until the poller's own timer fires once more while hidden.
         await cloudAppExpect
           .poll(() => wire.polls.length)
           .toBeGreaterThan(pollsWhenHidden)
@@ -450,13 +426,11 @@ test.describe('Billing SDK rails across a session', { tag: '@cloud' }, () => {
       })
     }
 
-    // A second poller would start on a return or a status re-read, at the
-    // same moment as the first one's wake poll, and so overlap a held poll.
     expect(wire.polls.map((poll) => poll.inFlightAtStart)).toEqual(
       wire.polls.map(() => 0)
     )
-    expect(transports(wire.polls.map((poll) => poll.request))).not.toContain(
-      'xhr'
-    )
+    expect(
+      wire.polls.map((poll) => poll.request).map(billingClient)
+    ).not.toContain('legacy')
   })
 })
