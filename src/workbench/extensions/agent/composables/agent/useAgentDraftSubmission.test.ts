@@ -11,7 +11,7 @@ import type { SubmissionMeta } from './useAgentDraftSubmission'
 import { useAgentDraftSubmission } from './useAgentDraftSubmission'
 import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'
-import type { AgentComposerDropReason } from './useAgentSendGates'
+import type { ComposerRejectReason } from './useAgentSendGates'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 type ComposerStore = ReturnType<typeof useAgentComposerStore>
@@ -76,7 +76,7 @@ function setup() {
     })
     const pending = { promise, resolve: resolveSend }
     const send = vi.fn<Send>(() => pending.promise)
-    const onRejected = vi.fn<(reason: AgentComposerDropReason) => void>()
+    const onRejected = vi.fn<(reason: ComposerRejectReason) => void>()
     const options = {
       canSubmit: () => canSubmit.value,
       onSubmit: vi.fn(),
