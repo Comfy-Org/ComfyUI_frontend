@@ -660,10 +660,6 @@ jobs:
             if [ "${BACKPORT_PRS}" -ne 0 ]; then
               continue
             fi
-            # A backport made by hand from a branch the bot did not create,
-            # matched like the backport job's hand-made rule, over the same
-            # 300 most recent PRs. Open ones count too, as for bot branches.
-            # A failed lookup counts as none, so the warning still posts.
             MANUAL_PRS=$(
               for page in 1 2 3; do
                 gh api "repos/${GH_REPO}/pulls?state=all&base=${label}&per_page=100&page=${page}"
