@@ -101,7 +101,7 @@ function handleTransientFailure(
   }
   // Budget spent: drop the code and tell the user instead of failing silently.
   settle(code, state)
-  desktopLoginRedemptionStatus.value = 'failed'
+  reportSettledStatus('failed')
   useToast().error(t('desktopLogin.failedSummary'), {
     description: t('desktopLogin.failedDetail'),
     duration: 6000
@@ -133,7 +133,7 @@ function settledForSsoSession(
   const auth = useAuthStore()
   if (auth.currentUser !== null || !auth.signedInWithSso) return false
   settle(code, state)
-  desktopLoginRedemptionStatus.value = 'sso_unavailable'
+  reportSettledStatus('sso_unavailable')
   useToast().warning(t('desktopLogin.ssoUnavailableSummary'), {
     description: t('desktopLogin.ssoUnavailableDetail'),
     duration: 8000
@@ -164,7 +164,7 @@ async function redeemCode(code: string): Promise<void> {
   if (!(await confirmRedemption(state, user.uid))) {
     // Declined/dismissed: drop the code without an error.
     settle(code, state)
-    desktopLoginRedemptionStatus.value = 'declined'
+    reportSettledStatus('declined')
     return
   }
 
@@ -216,7 +216,7 @@ async function redeemCode(code: string): Promise<void> {
 
   if (response.ok) {
     settle(code, state)
-    desktopLoginRedemptionStatus.value = 'redeemed'
+    reportSettledStatus('redeemed')
     useToast().success(t('desktopLogin.successSummary'), {
       description: t('desktopLogin.successDetail'),
       duration: 4000
@@ -226,7 +226,7 @@ async function redeemCode(code: string): Promise<void> {
 
   if (TERMINAL_REDEEM_STATUSES.has(response.status)) {
     settle(code, state)
-    desktopLoginRedemptionStatus.value = 'expired'
+    reportSettledStatus('expired')
     useToast().error(t('desktopLogin.expiredSummary'), {
       description: t('desktopLogin.expiredDetail'),
       duration: 6000
@@ -271,18 +271,32 @@ function cancelStatusRelease(): void {
   pendingStatusRelease = null
 }
 
-/**
- * Binds the shown outcome to the approval-page visit that is watching it.
- * Releasing forgets a settled outcome now, or an in-flight one the moment it
- * settles, so a later visit never shows a result it did not start; claiming
- * (a new visit) keeps an in-flight outcome visible again.
- */
+let statusClaimed = false
+
+function onApprovalRoute(): boolean {
+  return activeRouter?.currentRoute.value.name === 'cloud-desktop-login'
+}
+
+// An outcome reached with no approval visit watching belongs to nobody; its
+// toast already reported it, so a later visit must not show it.
+function reportSettledStatus(status: DesktopLoginRedemptionStatus): void {
+  if (statusClaimed || onApprovalRoute()) {
+    desktopLoginRedemptionStatus.value = status
+    return
+  }
+  cancelStatusRelease()
+  desktopLoginRedemptionStatus.value = 'idle'
+}
+
+/** Shows the redemption outcome on the current approval-page visit. */
 export function claimDesktopLoginRedemptionStatus(): void {
   cancelStatusRelease()
+  statusClaimed = true
 }
 
 export function releaseDesktopLoginRedemptionStatus(): void {
   cancelStatusRelease()
+  statusClaimed = false
   if (isDesktopLoginRedemptionSettled(desktopLoginRedemptionStatus.value)) {
     desktopLoginRedemptionStatus.value = 'idle'
     return
@@ -330,7 +344,7 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
   } catch (error) {
     console.error('[DesktopLoginRedemption] Redemption failed:', error)
     clearPreservedQuery(NAMESPACE)
-    desktopLoginRedemptionStatus.value = 'failed'
+    reportSettledStatus('failed')
   } finally {
     draining = false
   }

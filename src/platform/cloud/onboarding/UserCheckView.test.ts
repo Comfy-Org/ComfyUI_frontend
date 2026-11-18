@@ -60,7 +60,9 @@ describe('UserCheckView', () => {
       vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(true)
       const location = { href: '' }
       vi.stubGlobal('location', location)
-      useRoute().query.inviteToken = 'invite-1'
+      vi.mocked(useRoute).mockReturnValueOnce(
+        fromPartial({ query: { inviteToken: 'invite-1' }, hash: '#section' })
+      )
 
       renderView()
 
@@ -68,7 +70,8 @@ describe('UserCheckView', () => {
         expect(useRouter().replace).toHaveBeenCalledWith(
           expect.objectContaining({
             name: 'cloud-desktop-login',
-            query: { inviteToken: 'invite-1' }
+            query: { inviteToken: 'invite-1' },
+            hash: '#section'
           })
         )
       )

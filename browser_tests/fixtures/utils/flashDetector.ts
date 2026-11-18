@@ -53,19 +53,28 @@ export async function hasElementFlashed(
   )
 }
 
-/**
- * Like {@link trackElementFlash}, but matches a `role="dialog"` by its
- * accessible name (`aria-label`, else the text its `aria-labelledby` points
- * at), for dialogs that carry no test id.
- */
+/** Like {@link trackElementFlash}, for a `role="dialog"` matched by its accessible name. */
 export async function trackDialogFlash(
   page: Page,
   name: string
 ): Promise<{ hasFlashed: () => Promise<boolean> }> {
   const flagAttribute = flagAttributeFor(`dialog:${name}`)
+  const reportBinding = flagAttribute.replaceAll('-', '_')
+  let flashedInEarlierDocument = false
+  await page.exposeFunction(reportBinding, () => {
+    flashedInEarlierDocument = true
+  })
 
   await page.addInitScript(
-    ({ dialogName, attribute }: { dialogName: string; attribute: string }) => {
+    ({
+      dialogName,
+      attribute,
+      binding
+    }: {
+      dialogName: string
+      attribute: string
+      binding: string
+    }) => {
       const accessibleName = (el: Element) =>
         el.getAttribute('aria-label')?.trim() ||
         (el.getAttribute('aria-labelledby') ?? '')
@@ -73,20 +82,27 @@ export async function trackDialogFlash(
           .map((id) => document.getElementById(id)?.textContent ?? '')
           .join(' ')
           .trim()
+      const report = Reflect.get(window, binding)
       const sample = () => {
         for (const el of document.querySelectorAll('[role="dialog"]')) {
-          if (accessibleName(el) === dialogName)
+          if (
+            accessibleName(el) === dialogName &&
+            !document.documentElement.hasAttribute(attribute)
+          ) {
             document.documentElement.setAttribute(attribute, 'true')
+            if (typeof report === 'function') void report()
+          }
         }
         requestAnimationFrame(sample)
       }
       requestAnimationFrame(sample)
     },
-    { dialogName: name, attribute: flagAttribute }
+    { dialogName: name, attribute: flagAttribute, binding: reportBinding }
   )
 
   return {
     hasFlashed: async () =>
+      flashedInEarlierDocument ||
       (await page.locator('html').getAttribute(flagAttribute)) === 'true'
   }
 }

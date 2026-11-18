@@ -123,29 +123,37 @@ describe('CloudDesktopLoginView', () => {
     )
   })
 
-  it.for([
-    { statusWhenLeft: 'redeemed', lateResult: undefined },
-    { statusWhenLeft: 'redeeming', lateResult: 'redeemed' }
-  ] as const)(
-    'sends a later visit with nothing to approve to the workspace after leaving while $statusWhenLeft',
-    ({ statusWhenLeft, lateResult }) => {
-      vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
-      desktopLoginRedemptionStatus.value = statusWhenLeft
+  function expectSentToWorkspace(
+    replace: ReturnType<typeof renderView>['replace']
+  ) {
+    expect(replace).toHaveBeenCalledWith(expect.objectContaining({ path: '/' }))
+    expect(
+      screen.queryByRole('heading', {
+        name: enMessages.desktopLogin.successSummary
+      })
+    ).toBeNull()
+  }
 
-      renderView().unmount()
-      if (lateResult) desktopLoginRedemptionStatus.value = lateResult
-      const { replace } = renderView()
+  it('sends a later visit with nothing to approve to the workspace after leaving a finished sign-in', () => {
+    vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
+    desktopLoginRedemptionStatus.value = 'redeemed'
 
-      expect(replace).toHaveBeenCalledWith(
-        expect.objectContaining({ path: '/' })
-      )
-      expect(
-        screen.queryByRole('heading', {
-          name: enMessages.desktopLogin.successSummary
-        })
-      ).toBeNull()
-    }
-  )
+    renderView().unmount()
+    const { replace } = renderView()
+
+    expectSentToWorkspace(replace)
+  })
+
+  it('sends a later visit with nothing to approve to the workspace after leaving before the sign-in finished', () => {
+    vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
+    desktopLoginRedemptionStatus.value = 'redeeming'
+
+    renderView().unmount()
+    desktopLoginRedemptionStatus.value = 'redeemed'
+    const { replace } = renderView()
+
+    expectSentToWorkspace(replace)
+  })
 
   it('keeps showing a redemption that is still running when the page is revisited', async () => {
     vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
