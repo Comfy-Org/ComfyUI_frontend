@@ -42,7 +42,7 @@ test.describe('Viewport-centered dialog maximize', { tag: '@ui' }, () => {
         key: 'viewport-center-maximize',
         title: 'Viewport center',
         component: { render: () => null },
-        dialogComponentProps: { centerOnViewport: true, maximizable: true }
+        dialogComponentProps: { maximizable: true }
       })
     })
 
