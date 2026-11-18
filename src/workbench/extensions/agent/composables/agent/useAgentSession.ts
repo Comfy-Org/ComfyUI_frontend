@@ -1899,7 +1899,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         askKind,
         askMessageId
       )
-      conversationStore.markAskAwaitingResolution(askId, 'accepted')
+      conversationStore.markAskAwaitingResolution(askId, 'accepted', () =>
+        reportAcceptedRecoveredAnswer(askId, true)
+      )
     }
     return !supersededAnswerReports.has(askId)
   }
@@ -2057,7 +2059,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
           askKind,
           askMessageId
         )
-        conversationStore.markAskAwaitingResolution(askId, 'conflict')
+        conversationStore.markAskAwaitingResolution(askId, 'conflict', () =>
+          reportUnconfirmedConflict(askId)
+        )
       }
       return
     }
@@ -2757,6 +2761,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     snapshotConfirmed: boolean
   ): pendingAsk is PendingAsk {
     if (!pendingAsk) return false
+    if (!snapshotConfirmed && deliveredAsks.has(pendingAsk.ask_id)) return false
     if (conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined)
       return false
     if (answeringAskIds.value.has(pendingAsk.ask_id)) return false
