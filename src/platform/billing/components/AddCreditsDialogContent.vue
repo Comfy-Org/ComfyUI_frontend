@@ -46,6 +46,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 import { centsToCredits } from '@/base/credits/comfyCredits'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   addCreditsPendingTopup,
   topupCheckoutFailure
@@ -107,6 +108,7 @@ const translate: AddCreditsTranslate = (key, params = {}) =>
   t(`addCreditsDialog.${key}`, params)
 
 const dialogStore = useDialogStore()
+const { flags } = useFeatureFlags()
 const telemetry = useTelemetry()
 const workspaceIdentity = useWorkspaceIdentity()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
@@ -182,6 +184,59 @@ async function createHandoffCheckout(
   return { status: 'ok', url: issued.url }
 }
 
+function billingWebCheckout(
+  amountCents: number,
+  autoTopUp: AutoTopUpActivation | undefined
+): Awaited<ReturnType<AddCreditsPorts['createCheckout']>> | undefined {
+  const url =
+    flags.unifiedBillingSettingsEnabled &&
+    billingWebTopupUrl(
+      amountCents,
+      autoTopUp,
+      workspaceIdentity.activeWorkspaceId ?? undefined
+    )
+  if (!url) return undefined
+  ownedCheckout = {
+    generation: workspaceIdentity.workspaceTransitionGeneration
+  }
+  return { status: 'ok', url }
+}
+
+async function createHostedTopupCheckout(
+  amountCents: number,
+  signal: AbortSignal,
+  autoTopUp: AutoTopUpActivation | undefined
+): ReturnType<AddCreditsPorts['createCheckout']> {
+  const returnUrl = topupCheckoutReturnUrl()
+  if (!returnUrl) {
+    return { status: 'error', refusal: { kind: 'checkout_failed' } }
+  }
+  const generation = workspaceIdentity.workspaceTransitionGeneration
+  try {
+    if (!balance.value) await Promise.allSettled([fetchBalance()])
+    const { url, sessionId } = await createHostedCheckout(
+      amountCents,
+      returnUrl,
+      signal,
+      autoTopUp
+    )
+    const checkout = {
+      generation,
+      activationSessionId: autoTopUp && sessionId
+    }
+    if (!ownsCheckout(checkout)) {
+      return { status: 'error', refusal: { kind: 'checkout_failed' } }
+    }
+    ownedCheckout = checkout
+    return { status: 'ok', url }
+  } catch (error) {
+    return {
+      status: 'error',
+      refusal: addCreditsRefusalFor(topupCheckoutFailure(error))
+    }
+  }
+}
+
 const ports: AddCreditsPorts = {
   async quote(amountCents, signal) {
     const credits = await quoteTopup(amountCents, signal)
@@ -204,47 +259,10 @@ const ports: AddCreditsPorts = {
     }
     if (opensHandoff)
       return createHandoffCheckout(amountCents, signal, autoTopUp)
-    const onBillingWeb =
-      flags.unifiedBillingSettingsEnabled &&
-      billingWebTopupUrl(
-        amountCents,
-        autoTopUp,
-        workspaceIdentity.activeWorkspaceId ?? undefined
-      )
-    if (onBillingWeb) {
-      ownedCheckout = {
-        generation: workspaceIdentity.workspaceTransitionGeneration
-      }
-      return { status: 'ok', url: onBillingWeb }
-    }
-    const returnUrl = topupCheckoutReturnUrl()
-    if (!returnUrl) {
-      return { status: 'error', refusal: { kind: 'checkout_failed' } }
-    }
-    const generation = workspaceIdentity.workspaceTransitionGeneration
-    try {
-      if (!balance.value) await Promise.allSettled([fetchBalance()])
-      const { url, sessionId } = await createHostedCheckout(
-        amountCents,
-        returnUrl,
-        signal,
-        autoTopUp
-      )
-      const checkout = {
-        generation,
-        activationSessionId: autoTopUp && sessionId
-      }
-      if (!ownsCheckout(checkout)) {
-        return { status: 'error', refusal: { kind: 'checkout_failed' } }
-      }
-      ownedCheckout = checkout
-      return { status: 'ok', url }
-    } catch (error) {
-      return {
-        status: 'error',
-        refusal: addCreditsRefusalFor(topupCheckoutFailure(error))
-      }
-    }
+    return (
+      billingWebCheckout(amountCents, autoTopUp) ??
+      createHostedTopupCheckout(amountCents, signal, autoTopUp)
+    )
   },
   reserveTab: opensHandoff ? reserveBillingHandoffTab : reserveBillingTab,
   watchPayment(landed) {
