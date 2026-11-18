@@ -378,6 +378,10 @@ describe('ProfileMenuWorkspace', () => {
         credits.focus()
         await user.keyboard('{Enter}')
         credits.focus()
+        await settleHoverTimers()
+        expect(
+          screen.getByRole('dialog', { name: 'Credits' })
+        ).toBeInTheDocument()
 
         await user.keyboard('{Enter}')
 

@@ -342,7 +342,9 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       })
 
       await test.step('Escape closes the flyout and focuses Credits', async () => {
+        await page.clock.install()
         await page.keyboard.press('Escape')
+        await page.clock.runFor(1000)
         await expect(flyout).toBeHidden()
         await expect(credits).toBeFocused()
         await expect(page.getByTestId('current-user-popover')).toBeVisible()
