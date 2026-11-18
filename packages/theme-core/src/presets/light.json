@@ -81,7 +81,7 @@
       "destructive": "#f75951",
       "border": "#b4b4b4",
       "ring": "#8a8a8a",
-      "node-foreground": "#444444",
+      "node-foreground": "#606060",
       "warning": "#c77700",
       "shadow-color": "rgb(0 0 0 / 0.15)"
     }

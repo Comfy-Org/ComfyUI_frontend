@@ -810,7 +810,7 @@ describe('mounted and canvas widgets', () => {
   })
 
   describe('canvas', () => {
-    beforeEach(stubCanvasGetContext)
+    beforeEach(() => stubCanvasGetContext())
 
     it('draws on mount and hands back the 2d context', () => {
       const draw = vi.fn()

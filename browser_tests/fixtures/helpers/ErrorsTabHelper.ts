@@ -3,7 +3,7 @@ import { expect } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 /** Dismiss the error overlay (the floating dialog with the dismiss button). */
 export async function dismissErrorOverlay(comfyPage: ComfyPage): Promise<void> {
@@ -41,7 +41,7 @@ export async function queueWorkflowAndOpenExecutionErrors(
 }
 
 export async function openErrorsTab(comfyPage: ComfyPage) {
-  const panel = new PropertiesPanelHelper(comfyPage.page)
+  const panel = new PropertiesPanel(comfyPage.page)
   await panel.open(comfyPage.actionbar.propertiesButton)
 
   const errorsTab = comfyPage.page.getByTestId(
@@ -53,7 +53,7 @@ export async function openErrorsTab(comfyPage: ComfyPage) {
 
 export async function expectNoErrorUiAfterVerification(
   comfyPage: ComfyPage,
-  panel: PropertiesPanelHelper,
+  panel: PropertiesPanel,
   verificationResponse?: Promise<Response>,
   observationMs = 2_000
 ): Promise<void> {

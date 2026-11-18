@@ -1,6 +1,6 @@
 <template>
   <section
-    v-if="setup?.state !== 'unavailable'"
+    v-if="!isAutoTopUpNotAvailable(setup)"
     :class="cn('flex flex-col', classes?.root)"
     data-testid="billing-auto-top-up-card"
   >
@@ -68,22 +68,13 @@
             {{ copy.status[view.status] }}
           </span>
         </h3>
-        <p
-          v-for="line in view.lines"
-          :key="line.text"
-          :class="
-            cn(
-              'm-0 flex items-center gap-1 text-sm text-muted-foreground',
-              classes?.line
-            )
-          "
-          data-testid="billing-auto-top-up-line"
-        >
-          {{ line.text }}
-          <BillingInfoTip v-if="line.tooltip" :text="line.tooltip" />
-        </p>
+        <BillingAutoTopUpLines
+          :lines="view.lines"
+          :line-class="classes?.line"
+        />
       </div>
       <slot
+        v-if="!actionHidden"
         name="action"
         :action="view.action"
         :label="copy.actions[view.actionLabel]"
@@ -114,13 +105,14 @@ import type {
   AutoTopUpOffView,
   AutoTopUpOffViewFacts
 } from '@comfyorg/account-core/billing'
+import { isAutoTopUpNotAvailable } from '@comfyorg/account-core/billing'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import CheckoutButton from '#/billing/checkout/CheckoutButton.vue'
 import BillingBannerActionButton from './BillingBannerActionButton.vue'
-import BillingInfoTip from './BillingInfoTip.vue'
+import BillingAutoTopUpLines from './BillingAutoTopUpLines.vue'
 import { autoTopUpCardView } from './autoTopUpCardView'
 import type { AutoTopUpCardCopy, AutoTopUpViewKey } from './autoTopUpCardView'
 
@@ -162,6 +154,7 @@ const {
   copy,
   locale,
   actionHref = null,
+  actionHidden = false,
   variants,
   classes
 } = defineProps<{
@@ -171,6 +164,7 @@ const {
   copy: AutoTopUpCardCopy
   locale: string
   actionHref?: string | null
+  actionHidden?: boolean
   variants?: Partial<Record<AutoTopUpViewKey, ActionVariant>>
   classes?: Partial<
     Record<

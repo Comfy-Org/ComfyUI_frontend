@@ -1016,7 +1016,7 @@ async function openCheckoutInReservedTab(): Promise<
   loading.value = true
   try {
     if (!balance.value) await Promise.allSettled([fetchBalance()])
-    const checkoutUrl = await createHostedCheckout(
+    const { url: checkoutUrl } = await createHostedCheckout(
       payAmount.value * 100,
       returnUrl,
       scope.signal

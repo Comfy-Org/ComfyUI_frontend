@@ -21,6 +21,7 @@ import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/componen
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
+import { growableRegionsKey } from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -175,6 +176,71 @@ describe('WidgetGrid', () => {
     })
     useCanvasStore().linearMode = false
     layoutStore.resetForTests()
+  })
+
+  it('names the resize handle of a growable row after its label without escaping it', () => {
+    render(WidgetGrid, {
+      props: {
+        nodeId: toNodeId(1),
+        nodeType: 'TestNode',
+        syncLayout: false,
+        processedWidgets: [
+          {
+            ...widget('size', 'unknown', 0),
+            simplified: {
+              name: 'size',
+              label: 'Width & "Height"',
+              type: 'unknown',
+              value: 0
+            },
+            sizing: { kind: 'growable', minHeight: 60, minWidth: 0 }
+          }
+        ]
+      },
+      global: {
+        plugins: [testI18n],
+        provide: {
+          [growableRegionsKey]: {
+            heightOf: () => undefined,
+            handle: computed(() => ({ start: vi.fn(), reset: vi.fn() }))
+          }
+        },
+        stubs: { AppInput: AppInputStub }
+      }
+    })
+
+    expect(
+      screen.getByRole('separator', { name: 'Resize Width & "Height" height' })
+    ).toBeInTheDocument()
+  })
+
+  it('derives row sizing from live requirements without rebuilding the widget list', async () => {
+    const minHeight = ref(60)
+    renderGrid([
+      {
+        ...widget('seed', 'textarea', 0),
+        sizing: { kind: 'fixed', height: 23 }
+      },
+      {
+        ...widget('text', 'unknown', 1),
+        get sizing() {
+          return {
+            kind: 'growable' as const,
+            minHeight: minHeight.value,
+            minWidth: 0
+          }
+        }
+      }
+    ])
+
+    const [fixedRow, declaredRow] = screen.getAllByTestId('node-widget')
+    expect(fixedRow.style.minHeight).toBe('23px')
+    expect(declaredRow.style.minHeight).toBe('60px')
+
+    minHeight.value = 87
+    await nextTick()
+
+    expect(declaredRow.style.minHeight).toBe('87px')
   })
 
   it('resyncs slot offsets when a connected row swaps its control for a label', async () => {

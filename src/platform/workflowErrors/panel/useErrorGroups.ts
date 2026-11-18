@@ -9,7 +9,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { isCloud } from '@/platform/distribution/types'
 import { useBootDeploymentLabel } from '@/platform/workspace/composables/useDeploymentLabels'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
@@ -108,7 +108,7 @@ type CataloguedErrorItem = ErrorItem & ResolvedCatalogErrorMessage
 
 /** Resolve display info for a node by its execution ID. */
 function resolveNodeInfo(nodeId: NodeExecutionId) {
-  const rootGraph = app.rootGraphOrUndefined
+  const rootGraph = useApp().rootGraphOrUndefined
   const graphNode = rootGraph ? getNodeByExecutionId(rootGraph, nodeId) : null
 
   return {
@@ -276,7 +276,7 @@ export function useErrorGroups(
   const deploymentLabel = isCloud ? useBootDeploymentLabel() : undefined
 
   const selectedNodeInfo = computed(() => {
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     const items = toValue(selectedItems)
     const nodeIds = new Set<string>()
     const containerExecutionIds = new Set<NodeExecutionId>()
@@ -316,7 +316,7 @@ export function useErrorGroups(
 
   const errorNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return map
     for (const execId of executionErrorStore.allErrorExecutionIds) {
       const node = getNodeByExecutionId(rootGraph, execId)
@@ -327,7 +327,7 @@ export function useErrorGroups(
 
   const missingNodeCache = computed(() => {
     const map = new Map<string, LGraphNode>()
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     if (!rootGraph) return map
     const nodeTypes =
       missingNodesStore.visibleMissingNodesError?.nodeTypes ?? []
@@ -822,7 +822,7 @@ export function useErrorGroups(
     if (cachedNode && nodeIds.has(String(cachedNode.id))) return true
 
     // Resolve from graph for model/media candidates
-    const rootGraph = app.rootGraphOrUndefined
+    const rootGraph = useApp().rootGraphOrUndefined
     const graphNode = rootGraph
       ? getNodeByExecutionId(rootGraph, executionNodeId)
       : null
