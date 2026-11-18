@@ -19,7 +19,10 @@ import {
 import { useAddCreditsAutoTopUpOffer } from '@/platform/billing/composables/useAddCreditsAutoTopUpOffer'
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
-import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
+import {
+  setLocalAutoTopUpAtCheckoutEnabled,
+  setLocalBillingWebEnabled
+} from '@/platform/billing/localBillingWebEnabled'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
@@ -116,12 +119,19 @@ describe('useAddCreditsAutoTopUpOffer', () => {
     await vi.waitFor(() => expect(offer.value.kind).toBe('hidden'))
   })
 
-  it('offers the checkbox through the local billing handoff with auto top-up at checkout off, reading saved cards on the local client', async () => {
+  it('offers the checkbox through the local web handoff when Cloud serves auto top-up at checkout to the local account, reading saved cards on the local client', async () => {
     setLocalBillingWebEnabled(true)
-    onTestFinished(() => setLocalBillingWebEnabled(false))
+    setLocalAutoTopUpAtCheckoutEnabled(true)
+    onTestFinished(() => {
+      setLocalBillingWebEnabled(false)
+      setLocalAutoTopUpAtCheckoutEnabled(false)
+    })
     vi.spyOn(billingApi, 'listSavedPaymentMethods').mockResolvedValue([visa])
 
-    const { offer } = offerFor({ status: 'off', atCheckout: false })
+    const { offer, activatesAtCheckout } = offerFor({
+      status: 'off',
+      atCheckout: false
+    })
 
     await vi.waitFor(() =>
       expect(offer.value).toMatchObject({
@@ -129,7 +139,23 @@ describe('useAddCreditsAutoTopUpOffer', () => {
         defaultCard: { brand: 'visa', last4: '4242' }
       })
     )
+    expect(activatesAtCheckout()).toBe(true)
     expect(useBillingSdkStore().readPaymentMethods).not.toHaveBeenCalled()
+  })
+
+  it('hides the checkbox through the local handoff when Cloud does not serve auto top-up at checkout, whatever the Cloud flag says', async () => {
+    setLocalBillingWebEnabled(true)
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    vi.spyOn(billingApi, 'listSavedPaymentMethods').mockResolvedValue([visa])
+
+    const { offer, activatesAtCheckout } = offerFor({
+      status: 'off',
+      atCheckout: true
+    })
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(offer.value.kind).toBe('hidden')
+    expect(activatesAtCheckout()).toBe(false)
   })
 
   it('shows nothing when the auto top-up rollout is off', () => {

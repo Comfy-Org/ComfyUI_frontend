@@ -1169,7 +1169,10 @@ function autoTopUpReader(): AutoTopUpReader {
 
 function renderAutoTopUp(
   path: string,
-  paymentMethods: readonly SavedPaymentMethod[] = [],
+  paymentMethods: BillingResult<readonly SavedPaymentMethod[]> = {
+    status: 'ok',
+    value: []
+  },
   topupQuote: TopupQuoteResult = QUOTED
 ) {
   recordBillingEntry(parseBillingEntry(path))
@@ -1177,7 +1180,7 @@ function renderAutoTopUp(
     capabilities: { can_top_up: true },
     topupQuote,
     topup: SUCCEEDED,
-    paymentMethods: { status: 'ok', value: paymentMethods }
+    paymentMethods
   })
   const createHostedTopupCheckout = vi
     .spyOn(fake.client.topup, 'createHostedTopupCheckout')
@@ -1185,7 +1188,7 @@ function renderAutoTopUp(
       status: 'ok',
       url: 'https://checkout.stripe.com/c/pay/cs_test_1'
     })
-  render(FullPageTopupView, {
+  const { unmount } = render(FullPageTopupView, {
     global: {
       plugins: [createBillingI18n()],
       provide: {
@@ -1194,7 +1197,7 @@ function renderAutoTopUp(
       }
     }
   })
-  return { fake, createHostedTopupCheckout }
+  return { fake, createHostedTopupCheckout, unmount }
 }
 
 describe('FullPageTopupView with auto top-up from the link', () => {
@@ -1204,7 +1207,7 @@ describe('FullPageTopupView with auto top-up from the link', () => {
       .mockImplementation(() => {})
     const { fake, createHostedTopupCheckout } = renderAutoTopUp(
       `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
-      [{ ...VISA, is_default: true }]
+      { status: 'ok', value: [{ ...VISA, is_default: true }] }
     )
 
     expect(
@@ -1259,6 +1262,53 @@ describe('FullPageTopupView with auto top-up from the link', () => {
     )
   })
 
+  it.for([
+    { payment: 'hosted', topupQuote: QUOTED },
+    { payment: 'in-page', topupQuote: PAYS_ONCE }
+  ])(
+    'names neither card as certain when the saved cards cannot be read on the $payment payment, since an existing default card is kept',
+    async ({ topupQuote }) => {
+      renderAutoTopUp(
+        `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
+        { status: 'error', code: 'REQUEST_FAILED' },
+        topupQuote
+      )
+
+      expect(
+        await screen.findByTestId('checkout-auto-top-up-consent')
+      ).toHaveTextContent(
+        'Top-ups are charged to your default card, or to the card you pay with if you have none, up to $50.00 a month.'
+      )
+    }
+  )
+
+  it('does not leave for a hosted checkout that answers after the page is gone', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const { createHostedTopupCheckout, unmount } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`
+    )
+    let resolve!: (
+      result: Awaited<ReturnType<typeof createHostedTopupCheckout>>
+    ) => void
+    const promise = new Promise<
+      Awaited<ReturnType<typeof createHostedTopupCheckout>>
+    >((settle) => {
+      resolve = settle
+    })
+    createHostedTopupCheckout.mockReturnValue(promise)
+    await screen.findByTestId('checkout-auto-top-up-consent')
+    await userEvent.click(payButton())
+    await waitFor(() => expect(createHostedTopupCheckout).toHaveBeenCalled())
+
+    unmount()
+    resolve({ status: 'ok', url: 'https://checkout.stripe.com/c/pay/cs_late' })
+    await promise
+
+    expect(assign).not.toHaveBeenCalled()
+  })
+
   it('keeps the page and shows the refusal when the hosted checkout is refused', async () => {
     const assign = vi
       .spyOn(window.location, 'assign')
@@ -1285,7 +1335,7 @@ describe('FullPageTopupView with auto top-up from the link', () => {
   it('pays a quote with a payment configuration in the page, the consent above Saved or Add new, and sends the settings with that payment', async () => {
     const { fake, createHostedTopupCheckout } = renderAutoTopUp(
       `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
-      [{ ...VISA, is_default: true }, MASTERCARD],
+      { status: 'ok', value: [{ ...VISA, is_default: true }, MASTERCARD] },
       PAYS_ONCE
     )
 

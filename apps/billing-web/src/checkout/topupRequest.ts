@@ -24,31 +24,48 @@ interface AutoTopUpDefaultCard {
 }
 
 /** What a top-up link's auto top-up consent names: the rule, the monthly limit, and the card it charges. */
+/** The card future top-ups charge: the default card, none (the paid card becomes it), or unknown until the saved-cards read shows it. */
+type AutoTopUpConsentCard =
+  | { readonly kind: 'default'; readonly card: AutoTopUpDefaultCard }
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unknown' }
+
 export interface AutoTopUpConsent {
   readonly thresholdCredits: number
   readonly targetCredits: number
   /** The customer's own limit, else the ceiling served for no limit; undefined until that read lands. */
   readonly monthlyLimitCents: number | undefined
-  readonly defaultCard: AutoTopUpDefaultCard | undefined
+  readonly card: AutoTopUpConsentCard
 }
 
 const upperFirst = (word: string) =>
   word.charAt(0).toUpperCase() + word.slice(1)
 
+function consentCardOf(
+  methods: readonly SavedPaymentMethod[] | undefined
+): AutoTopUpConsentCard {
+  if (methods === undefined) return { kind: 'unknown' }
+  const card = methods.find((method) => method.is_default)
+  if (card === undefined) return { kind: 'none' }
+  return card.brand && card.last4
+    ? {
+        kind: 'default',
+        card: { brand: upperFirst(card.brand), last4: card.last4 }
+      }
+    : { kind: 'unknown' }
+}
+
+/** `methods` is undefined until a saved-cards read succeeds. */
 export function autoTopUpConsentOf(
   choice: EntryAutoTopUp,
   ceilingCents: number | undefined,
-  methods: readonly SavedPaymentMethod[]
+  methods: readonly SavedPaymentMethod[] | undefined
 ): AutoTopUpConsent {
-  const card = methods.find((method) => method.is_default)
   return {
     thresholdCredits: choice.thresholdCredits,
     targetCredits: choice.targetCredits,
     monthlyLimitCents: choice.monthlyBudgetCents ?? ceilingCents,
-    defaultCard:
-      card?.brand && card.last4
-        ? { brand: upperFirst(card.brand), last4: card.last4 }
-        : undefined
+    card: consentCardOf(methods)
   }
 }
 

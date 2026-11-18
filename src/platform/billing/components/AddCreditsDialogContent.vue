@@ -46,7 +46,6 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 import { centsToCredits } from '@/base/credits/comfyCredits'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   addCreditsPendingTopup,
   topupCheckoutFailure
@@ -108,7 +107,6 @@ const translate: AddCreditsTranslate = (key, params = {}) =>
   t(`addCreditsDialog.${key}`, params)
 
 const dialogStore = useDialogStore()
-const { flags } = useFeatureFlags()
 const telemetry = useTelemetry()
 const workspaceIdentity = useWorkspaceIdentity()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
@@ -137,6 +135,7 @@ const readingActivation = shallowRef(false)
 interface OwnedCheckout {
   readonly generation: number
   readonly activationSessionId?: string
+  readonly activationUnreadable?: boolean
 }
 let ownedCheckout: OwnedCheckout | undefined
 function ownsCheckout(
@@ -179,7 +178,7 @@ async function createHandoffCheckout(
       }
     }
   }
-  ownedCheckout = { generation }
+  ownedCheckout = { generation, activationUnreadable: autoTopUp !== undefined }
   return { status: 'ok', url: issued.url }
 }
 
@@ -189,7 +188,7 @@ const ports: AddCreditsPorts = {
     return credits === null ? { status: 'error' } : { status: 'ok', credits }
   },
   get activatesAutoTopUp() {
-    return opensHandoff || flags.billingAutoTopUpAtCheckoutEnabled
+    return autoTopUpChoice.activatesAtCheckout()
   },
   singleUseCheckout: opensHandoff,
   async createCheckout(amountCents, signal, autoTopUp) {
@@ -262,7 +261,12 @@ const ports: AddCreditsPorts = {
         const checkout = ownedCheckout
         if (!ownsCheckout(checkout)) return
         const { activationSessionId } = checkout
-        if (activationSessionId === undefined) return landed()
+        if (activationSessionId === undefined)
+          return landed(
+            checkout.activationUnreadable
+              ? { status: 'unconfirmed' }
+              : undefined
+          )
         readingActivation.value = true
         const activation = await readAutoTopUpActivation(
           (signal) => billingApi.getTopupCheckout(activationSessionId, signal),
