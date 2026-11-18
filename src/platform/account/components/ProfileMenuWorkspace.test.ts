@@ -375,6 +375,7 @@ describe('ProfileMenuWorkspace', () => {
         expect(flyoutAction('Billing settings')).toHaveFocus()
 
         await user.keyboard('{Escape}')
+        await settleHoverTimers()
 
         expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
         expect(credits).toHaveFocus()
