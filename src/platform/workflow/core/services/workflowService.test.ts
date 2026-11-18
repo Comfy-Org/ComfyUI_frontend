@@ -4023,67 +4023,55 @@ describe('useWorkflowService', () => {
 
   describe('bookmarks of a renamed or deleted workflow', () => {
     function serveBookmarkIndexRefusingWrites(favorites: string[]) {
-      let index: unknown = { favorites }
-      let refuseWrites = true
       vi.spyOn(api, 'getUserData').mockImplementation(
-        async () => new Response(JSON.stringify(index), { status: 200 })
+        async () => new Response(JSON.stringify({ favorites }), { status: 200 })
       )
-      vi.spyOn(api, 'storeUserData').mockImplementation(async (_file, data) => {
-        if (refuseWrites) return new Response(null, { status: 500 })
-        index = data
-        return new Response(null, { status: 200 })
-      })
-      return {
-        index: () => index,
-        acceptWrites: () => {
-          refuseWrites = false
-        }
-      }
+      vi.spyOn(api, 'storeUserData').mockImplementation(
+        async () => new Response(null, { status: 500 })
+      )
     }
 
     it.for([
       {
         name: 'renamed',
-        operation: 'renameWorkflow' as const,
+        operation: 'renameWorkflow',
         act: (workflow: ComfyWorkflow) =>
           useWorkflowService().renameWorkflow(
             workflow,
             'workflows/renamed.json'
           ),
-        favoritesAfterRetry: ['workflows/renamed.json']
+        pathsAfter: ['workflows/renamed.json'],
+        warning: 'sideToolbar.workflowTab.renamedButBookmarksNotUpdated'
       },
       {
         name: 'deleted',
-        operation: 'deleteWorkflow' as const,
+        operation: 'deleteWorkflow',
         act: (workflow: ComfyWorkflow) =>
           useWorkflowService().deleteWorkflow(workflow),
-        favoritesAfterRetry: []
+        pathsAfter: [],
+        warning: 'sideToolbar.workflowTab.deletedButBookmarksNotUpdated'
       }
-    ])(
-      'warns when a $name workflow keeps its old bookmark and retries only the bookmark',
-      async ({ operation, act, favoritesAfterRetry }) => {
-        const server = serveBookmarkIndexRefusingWrites([
-          'workflows/draft.json'
-        ])
+    ] as const)(
+      'completes a $name workflow and warns once, with no action, that its bookmark was not updated',
+      async ({ operation, act, pathsAfter, warning }) => {
+        serveBookmarkIndexRefusingWrites(['workflows/draft.json'])
         vi.mocked(useDialogService().confirm).mockResolvedValue(true)
         const workflowStore = useWorkflowStore()
         const workflow = workflowStore.createTemporary('draft.json')
-        const fileOperation = vi.spyOn(workflowStore, operation)
 
         await act(workflow)
 
-        expect(server.index()).toEqual({ favorites: ['workflows/draft.json'] })
+        expect(workflowStore.workflows.map(({ path }) => path)).toEqual(
+          pathsAfter
+        )
         expect(useToast().toasts).toEqual([
-          expect.objectContaining({ kind: 'warning' })
+          expect.objectContaining({
+            kind: 'warning',
+            title: t(warning),
+            actions: []
+          })
         ])
-        const retry = useToast().toasts[0]?.actions[0]
-        assert(retry)
-        server.acceptWrites()
-        await retry.onClick()
-
-        expect(server.index()).toEqual({ favorites: favoritesAfterRetry })
-        expect(useToast().toasts).toEqual([])
-        expect(fileOperation).toHaveBeenCalledTimes(1)
+        expect(workflowStore[operation]).toHaveBeenCalledTimes(1)
       }
     )
   })
