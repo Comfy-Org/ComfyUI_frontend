@@ -12,13 +12,16 @@ import { useCopy } from './useCopy'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   copyToCanvasClipboard,
-  forgetCanvasCopy
+  discardCanvasCopy,
+  forgetCanvasCopy,
+  isCurrentCanvasCopy
 } from '@/core/graph/clipboard/canvasClipboard'
 import { serializeItems } from '@/core/graph/clipboard/graphTransfer'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   CANVAS_CLIPBOARD_ID_KEY,
-  CANVAS_CLIPBOARD_KEY
+  CANVAS_CLIPBOARD_KEY,
+  readClipboardStorage
 } from '@/core/graph/clipboard/clipboardStorage'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
@@ -136,6 +139,33 @@ describe('useCopy', () => {
     }
   )
 
+  it('reports serialization refusal without replacing either clipboard', () => {
+    const graph = createTestRootGraph()
+    const node = createTestNode(graph)
+    const canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
+    onTestFinished(() => canvas.unbindEvents())
+    canvas.selectItems([node])
+    useCanvasStore().canvas = canvas
+    node.onSerialize = () => {
+      throw new Error('Extension serializer failed')
+    }
+    localStorage.setItem(CANVAS_CLIPBOARD_KEY, '{"nodes":[]}')
+    const data = new DataTransfer()
+    data.setData('text/plain', 'previous clipboard')
+
+    document.dispatchEvent(new ClipboardEvent('copy', { clipboardData: data }))
+
+    expect(data.getData('text/plain')).toBe('previous clipboard')
+    expect(data.getData('text/html')).toBe('')
+    expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe('{"nodes":[]}')
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Failed to copy to clipboard'
+      })
+    )
+  })
+
   it('keeps a cache-only copy successful when system clipboard data is missing', () => {
     document.dispatchEvent(new ClipboardEvent('copy'))
 
@@ -162,7 +192,7 @@ describe('useCopy', () => {
 
     const dataTransfer = copySerializedData(serializedData)
 
-    expect(readClipboardPayload(dataTransfer)).toEqual(
+    expect(readClipboardPayload(dataTransfer)).toMatchObject(
       JSON.parse(serializedData)
     )
   })
@@ -238,46 +268,49 @@ describe('useCopy', () => {
     it.for([
       {
         slot: 'a keyboard node copy',
-        writeSlot: [copyNodeWithKeyboard],
+        writeSlot: copyNodeWithKeyboard,
         selection: 'selected document text',
         selectedCharacters: 'Transcript'.length,
         slotAfter: null
       },
       {
         slot: 'a keyboard node copy',
-        writeSlot: [copyNodeWithKeyboard],
+        writeSlot: copyNodeWithKeyboard,
         selection: 'a collapsed caret',
         selectedCharacters: 0,
-        slotAfter: keyboardNode
+        slotAfter: expect.objectContaining({ nodes: [{ type: 'LoadImage' }] })
       },
       {
         slot: 'a context-menu copy',
-        writeSlot: [copyNodeFromContextMenu],
+        writeSlot: () => copyNodeFromContextMenu(),
         selection: 'selected document text',
         selectedCharacters: 'Transcript'.length,
-        slotAfter: contextMenuNode
+        slotAfter: { nodes: [{ type: 'SaveImage' }] }
       },
       {
         slot: 'a context-menu copy after a keyboard node copy',
-        writeSlot: [copyNodeWithKeyboard, copyNodeFromContextMenu],
+        writeSlot: () => {
+          copyNodeWithKeyboard()
+          copyNodeFromContextMenu()
+        },
         selection: 'selected document text',
         selectedCharacters: 'Transcript'.length,
-        slotAfter: contextMenuNode
+        slotAfter: { nodes: [{ type: 'SaveImage' }] }
       },
       {
         slot: 'an equal context-menu copy after a keyboard node copy',
-        writeSlot: [
-          copyNodeWithKeyboard,
-          () => copyNodeFromContextMenu(keyboardNode)
-        ],
+        writeSlot: () => {
+          copyNodeWithKeyboard()
+          copyNodeFromContextMenu(keyboardNode)
+        },
         selection: 'selected document text',
         selectedCharacters: 'Transcript'.length,
-        slotAfter: keyboardNode
+        slotAfter: expect.objectContaining({ nodes: [{ type: 'LoadImage' }] })
       }
     ])(
       'with $selection after $slot leaves the canvas clipboard slot as $slotAfter',
       ({ writeSlot, selectedCharacters, slotAfter }) => {
-        for (const write of writeSlot) write()
+        writeSlot()
         vi.mocked(serializeItems).mockClear()
         selectDocumentText(selectedCharacters)
         const textarea = document.createElement('textarea')
@@ -286,7 +319,7 @@ describe('useCopy', () => {
 
         const dataTransfer = dispatchCopy(textarea)
 
-        expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(slotAfter)
+        expect(JSON.parse(readClipboardStorage() ?? 'null')).toEqual(slotAfter)
         expect(dataTransfer.getData('text/html')).toBe('')
         expect(serializeItems).not.toHaveBeenCalled()
       }
@@ -305,23 +338,23 @@ describe('useCopy', () => {
           assert.exists(canvas)
           copyToCanvasClipboard(canvas)
         },
-        slotAfter: keyboardNode
+        slotAfter: expect.objectContaining({ nodes: [{ type: 'LoadImage' }] })
       },
       {
         name: 'a later unstamped copy from another tab',
         laterCopy: () => {
           localStorage.setItem(CANVAS_CLIPBOARD_KEY, contextMenuNode)
         },
-        slotAfter: contextMenuNode
+        slotAfter: { nodes: [{ type: 'SaveImage' }] }
       }
     ])(
-      'keeps ownership of $name when stamp writes fail',
+      'keeps ownership of $name when invalidation writes fail',
       ({ laterCopy, slotAfter }) => {
         const setItem = localStorage.setItem.bind(localStorage)
         const storageSpy = vi
           .spyOn(localStorage, 'setItem')
           .mockImplementation((key, value) => {
-            if (key === CANVAS_CLIPBOARD_ID_KEY)
+            if (key.startsWith(`${CANVAS_CLIPBOARD_KEY}:invalid:`))
               throw new DOMException('Storage full', 'QuotaExceededError')
             setItem(key, value)
           })
@@ -336,29 +369,89 @@ describe('useCopy', () => {
 
         dispatchCopy(input)
 
-        expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(slotAfter)
+        expect(JSON.parse(readClipboardStorage() ?? 'null')).toEqual(slotAfter)
       }
     )
 
-    it('preserves another tab copy written before the keyboard writer returns', () => {
+    it('preserves another tab copy interleaved with the payload write', () => {
       const setItem = localStorage.setItem.bind(localStorage)
+      let interleaved = false
       vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
         setItem(key, value)
-        if (key === CANVAS_CLIPBOARD_ID_KEY) {
+        if (key === CANVAS_CLIPBOARD_KEY && !interleaved) {
+          interleaved = true
           setItem(CANVAS_CLIPBOARD_KEY, contextMenuNode)
           setItem(CANVAS_CLIPBOARD_ID_KEY, 'other-tab-copy')
         }
       })
-      copyNodeWithKeyboard()
-      const input = document.createElement('textarea')
-      input.value = 'selected text'
-      document.body.append(input)
-      onTestFinished(() => input.remove())
-      input.setSelectionRange(0, 'selected'.length)
+      const canvas = useCanvasStore().canvas
+      assert.exists(canvas)
+      vi.mocked(serializeItems).mockReturnValue(JSON.parse(keyboardNode))
+      const copy = copyToCanvasClipboard(canvas)
 
-      dispatchCopy(input)
+      discardCanvasCopy(copy)
 
-      expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBe(contextMenuNode)
+      expect(isCurrentCanvasCopy(contextMenuNode)).toBe(true)
+    })
+
+    it('preserves another tab copy arriving during invalidation', () => {
+      const canvas = useCanvasStore().canvas
+      assert.exists(canvas)
+      vi.mocked(serializeItems).mockReturnValue(JSON.parse(keyboardNode))
+      const copy = copyToCanvasClipboard(canvas)
+      const getItem = localStorage.getItem.bind(localStorage)
+      const setItem = localStorage.setItem.bind(localStorage)
+      let interleaved = false
+      vi.spyOn(localStorage, 'getItem').mockImplementation((key) => {
+        const value = getItem(key)
+        if (
+          !interleaved &&
+          (key === CANVAS_CLIPBOARD_KEY || key === CANVAS_CLIPBOARD_ID_KEY)
+        ) {
+          interleaved = true
+          setItem(CANVAS_CLIPBOARD_KEY, contextMenuNode)
+          setItem(CANVAS_CLIPBOARD_ID_KEY, 'other-tab-copy')
+        }
+        return value
+      })
+
+      vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+        setItem(key, value)
+        if (!interleaved) {
+          interleaved = true
+          setItem(CANVAS_CLIPBOARD_KEY, contextMenuNode)
+          setItem(CANVAS_CLIPBOARD_ID_KEY, 'other-tab-copy')
+        }
+      })
+
+      discardCanvasCopy(copy)
+
+      expect(isCurrentCanvasCopy(contextMenuNode)).toBe(true)
+    })
+
+    it('recognizes another tab copy arriving during failed-write cleanup', () => {
+      const canvas = useCanvasStore().canvas
+      assert.exists(canvas)
+      const removeItem = localStorage.removeItem.bind(localStorage)
+      const setItem = localStorage.setItem.bind(localStorage)
+      localStorage.setItem(CANVAS_CLIPBOARD_KEY, '{"groups":[]}')
+      vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+        if (key === CANVAS_CLIPBOARD_KEY)
+          throw new DOMException('Storage full', 'QuotaExceededError')
+        setItem(key, value)
+        setItem(CANVAS_CLIPBOARD_KEY, contextMenuNode)
+      })
+      vi.spyOn(localStorage, 'removeItem').mockImplementation((key) => {
+        removeItem(key)
+        if (key === CANVAS_CLIPBOARD_KEY)
+          setItem(CANVAS_CLIPBOARD_KEY, contextMenuNode)
+      })
+      vi.mocked(serializeItems).mockReturnValue(JSON.parse(keyboardNode))
+
+      copyToCanvasClipboard(canvas)
+
+      expect(isCurrentCanvasCopy(contextMenuNode)).toBe(true)
+      expect(isCurrentCanvasCopy(keyboardNode)).toBe(false)
     })
 
     it.for([
@@ -379,7 +472,7 @@ describe('useCopy', () => {
 
         dispatchCopy(input)
 
-        expect(localStorage.getItem(CANVAS_CLIPBOARD_KEY)).toBeNull()
+        expect(readClipboardStorage()).toBeNull()
       }
     )
   })

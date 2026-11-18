@@ -46,8 +46,15 @@ export const useCopy = () => {
     }
     const canvas = canvasStore.canvas
     if (canvas?.selectedItems) {
-      keyboardCopy = copyToCanvasClipboard(canvas)
-      const { serialized, stored } = keyboardCopy
+      const copy = copyToCanvasClipboard(canvas)
+      const { serialized, stored } = copy
+      if (serialized === undefined) {
+        useToast().error(t('g.error'), {
+          description: t('clipboard.errorMessage')
+        })
+        return
+      }
+      keyboardCopy = copy
       const metadataWritten = writeClipboardMetadata(
         e.clipboardData,
         serialized

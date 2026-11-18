@@ -4403,7 +4403,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   }
 
   copyToClipboard(items?: Iterable<Positionable>): string {
-    return copyToCanvasClipboard(this, items).serialized
+    return copyToCanvasClipboard(this, items).serialized ?? ''
   }
 
   emitEvent(detail: LGraphCanvasEventMap['litegraph:canvas']): void {

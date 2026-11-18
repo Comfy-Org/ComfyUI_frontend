@@ -138,6 +138,7 @@ export function insertItems(
 
   const { graph } = canvas
   if (!graph) throw new NullGraphError()
+  const previousSelection = [...canvas.selectedItems]
   graph.beforeChange()
   canvas.emitBeforeChange()
 
@@ -210,6 +211,7 @@ export function insertItems(
     operationFailed = true
     operationError = error
     if (result) rollbackClipboardPaste(graph, result)
+    if (canvas.graph === graph) canvas.selectItems(previousSelection)
   }
 
   const closingErrors: unknown[] = []
@@ -217,7 +219,10 @@ export function insertItems(
     graph.afterChange()
   } catch (error) {
     closingErrors.push(error)
-    if (!operationFailed && result) rollbackClipboardPaste(graph, result)
+    if (!operationFailed && result) {
+      rollbackClipboardPaste(graph, result)
+      if (canvas.graph === graph) canvas.selectItems(previousSelection)
+    }
   }
 
   try {

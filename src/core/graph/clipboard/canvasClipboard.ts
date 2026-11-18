@@ -4,10 +4,11 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 
+import { createUuidv4 } from '@/utils/uuid'
+
 import {
-  CANVAS_CLIPBOARD_KEY,
   discardClipboardStorage,
-  readClipboardId,
+  readClipboardStorage,
   writeClipboardStorage
 } from './clipboardStorage'
 import { insertItems, serializeItems } from './graphTransfer'
@@ -17,8 +18,6 @@ let currentCopy:
   | {
       serialized: string
       stored: boolean
-      id: string | null
-      cachedSerialized: string | null
     }
   | undefined
 
@@ -26,76 +25,53 @@ export function forgetCanvasCopy(): void {
   currentCopy = undefined
 }
 
-function readCachedSerialized(): string | null | undefined {
-  try {
-    return localStorage.getItem(CANVAS_CLIPBOARD_KEY)
-  } catch {
-    return undefined
-  }
-}
-
 export function isCurrentCanvasCopy(serialized: string): boolean {
-  if (currentCopy && !currentCopy.stored) {
-    const cached = readCachedSerialized()
-    if (cached !== undefined && cached !== currentCopy.cachedSerialized) {
-      forgetCanvasCopy()
-      return serialized === cached
-    }
-    return serialized === currentCopy.serialized
+  const cached = readClipboardStorage()
+  if (cached !== undefined && cached !== null) {
+    if (cached !== currentCopy?.serialized) forgetCanvasCopy()
+    return serialized === cached
   }
-  try {
-    return serialized === localStorage.getItem(CANVAS_CLIPBOARD_KEY)
-  } catch {
+  if (cached === undefined || !currentCopy?.stored)
     return serialized === currentCopy?.serialized
-  }
+  return false
 }
 
 export function copyToCanvasClipboard(
   canvas: LGraphCanvas,
   items?: Iterable<Positionable>
-): { serialized: string; stored: boolean } {
-  const serialized = JSON.stringify(serializeItems(canvas, items))
-  const { stored, id } = writeClipboardStorage(serialized)
-  currentCopy = {
-    serialized,
-    stored,
-    id,
-    cachedSerialized: stored ? serialized : (readCachedSerialized() ?? null)
+):
+  | { serialized: string; stored: boolean }
+  | { serialized: undefined; stored: false } {
+  let serialized: string
+  try {
+    serialized = JSON.stringify({
+      ...serializeItems(canvas, items),
+      clipboardId: createUuidv4()
+    })
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_serializing_clipboard_items',
+      surface: 'graph'
+    })
+    return { serialized: undefined, stored: false }
   }
-  return currentCopy
+  const copy = { serialized, stored: writeClipboardStorage(serialized) }
+  currentCopy = copy
+  return copy
 }
 
 export function discardCanvasCopy(
   copy: ReturnType<typeof copyToCanvasClipboard> | undefined
 ): void {
-  if (
-    currentCopy &&
-    currentCopy === copy &&
-    currentCopy.stored &&
-    readClipboardId() === currentCopy.id &&
-    (currentCopy.id !== null ||
-      readCachedSerialized() === currentCopy.serialized)
-  ) {
-    discardClipboardStorage()
-  }
+  if (copy?.serialized !== undefined && copy.stored)
+    discardClipboardStorage(copy.serialized)
 }
 
 export function pasteFromCanvasClipboard(
   canvas: LGraphCanvas,
   options: InsertOptions = {}
 ): InsertResult | undefined {
-  let serialized: string | null
-  try {
-    serialized = localStorage.getItem(CANVAS_CLIPBOARD_KEY)
-  } catch (error) {
-    if (!(error instanceof DOMException && error.name === 'SecurityError')) {
-      reportError(error, {
-        errorType: 'error_reading_clipboard_storage',
-        surface: 'graph'
-      })
-    }
-    return
-  }
+  const serialized = readClipboardStorage()
   if (!serialized) return
 
   let payload: unknown
