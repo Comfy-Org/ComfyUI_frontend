@@ -1,5 +1,7 @@
 const FIXED_RECONNECT_DELAY_MS = 300
-const CLOUD_RECONNECT_WINDOW_MS = 5_000
+// Under the 2 s before the Reconnecting toast shows, leaving room for the
+// reconnect itself, so a spread-out reconnect does not show the toast.
+const CLOUD_RECONNECT_WINDOW_MS = 1_500
 
 interface ClosedSocket {
   readonly isCloud: boolean
@@ -7,7 +9,7 @@ interface ClosedSocket {
 }
 
 /**
- * Delay before reopening a closed socket: random within five seconds for an
+ * Delay before reopening a closed socket: random within 1.5 seconds for an
  * opened Cloud socket, otherwise 300 ms.
  */
 export function socketReconnectDelayMs(
