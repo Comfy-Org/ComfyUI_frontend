@@ -188,6 +188,7 @@ import {
   createAgentRestClient,
   isLoopbackOnlyRefusal
 } from './services/agent/agentRestClient'
+import { useAgentChatDeletion } from './composables/agent/useAgentChatDeletion'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import {
   draftKeyForOrigin,
@@ -652,6 +653,7 @@ const {
   forgetCloudWorkflowId,
   cloudIdFor,
   authoritativeCloudIdFor,
+  persistedCloudIdFor,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
   openWorkflowFor,
@@ -1294,6 +1296,7 @@ const {
   loadThread,
   isThreadDeleted,
   forgetChat,
+  discardThread,
   boundWorkflowId,
   bindWorkflow,
   reportWorkflowBound,
@@ -3040,17 +3043,87 @@ function onRenameHistory(id: string, title: string): void {
   history.rename(id, title)
 }
 
-function onDeleteHistory(id: string): void {
-  const isCurrent =
-    id === history.activeId ||
-    (history.activeId === null && id === threadId.value)
-  history.remove(id)
-  forgetChat(id)
-  openChats.forget(id)
-  chatDrafts.discardChatDraft(id)
-  // Deleting the open chat also ends it; a dead thread must not stay editable.
-  if (isCurrent) onNewChat('history_delete')
+const { deleteChat } = useAgentChatDeletion({
+  deleteThread: (id) => rest.deleteThread(id),
+  history,
+  onOptimisticDelete: (id) => {
+    const isCurrent =
+      id === history.activeId ||
+      (history.activeId === null && id === threadId.value)
+    forgetChat(id)
+    discardThread(id)
+    openChats.forget(id)
+    chatDrafts.discardChatDraft(id)
+    // Deleting the open chat also ends it; a dead thread must not stay editable.
+    if (isCurrent) onNewChat('history_delete')
+  },
+  onRestoreDelete: () => {},
+  onDeleteFailed: (_id, retry, error) => {
+    const diagnostics = describeAgentRequestFailure(error)
+    reportError(error, {
+      surface: 'agent',
+      errorType: 'agent_thread_delete_failed',
+      tags: diagnostics,
+      fingerprint: agentRequestFailureFingerprint(
+        'agent_thread_delete_failed',
+        diagnostics
+      )
+    })
+    notifyDeleteChatFailed(retry)
+  },
+  onFallbackRefresh: () => {
+    void refreshHistory('none')
+  }
+})
+
+function notifyDeleteChatFailed(retry: () => void): void {
+  const toastId = createToastId()
+  toast.error(t('agent.deleteFailed'), {
+    id: toastId,
+    action: {
+      label: t('g.retry'),
+      onClick: () => {
+        toast.dismiss(toastId)
+        retry()
+      }
+    }
+  })
 }
+
+function onDeleteHistory(id: string): void {
+  void deleteChat(id)
+}
+
+onBeforeUnmount(
+  workflowStore.$onAction(({ name, args, after }) => {
+    if (name !== 'deleteWorkflow') return
+    const [workflow] = args
+    if (workflow.isTemporary) return
+    const deletedWorkflowId =
+      persistedCloudIdFor(workflow) ??
+      (agentPanelStore.isRetainedTarget(workflow)
+        ? (boundWorkflowId.value ?? undefined)
+        : undefined)
+    if (deletedWorkflowId === undefined) return
+    after(() => {
+      forgetCloudWorkflowId(deletedWorkflowId)
+      bindingStore.unbindWorkflow(deletedWorkflowId)
+      for (const session of history.dropByWorkflow(deletedWorkflowId)) {
+        forgetChat(session.id)
+        openChats.forget(session.id)
+        chatDrafts.discardChatDraft(session.id)
+        if (session.id !== threadId.value) discardThread(session.id)
+      }
+      const remembered = openChats.recall(deletedWorkflowId)
+      if (remembered !== undefined) {
+        forgetChat(remembered)
+        openChats.forget(remembered)
+        chatDrafts.discardChatDraft(remembered)
+        if (remembered !== threadId.value) discardThread(remembered)
+      }
+    })
+  })
+)
 
 function resetComposerForChatSwitch(): void {
   if (

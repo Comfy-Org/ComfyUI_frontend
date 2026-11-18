@@ -2154,6 +2154,46 @@ export const useAgentConversationStore = defineStore(
         revokeUnownedBlobPreviews(entry.attachments, owned)
     }
 
+    function dropBackgroundTurnsForThread(targetThreadId: string): void {
+      for (const [turnId, entry] of backgroundTurns) {
+        if (entry.threadId !== targetThreadId) continue
+        rememberDepartedTurn(
+          entry.threadId,
+          entry.messageId,
+          entry.settled ? 'settled-turn' : 'no-live-turn'
+        )
+        entry.transport.settle()
+        entry.transport.dispose()
+        backgroundTurns.delete(turnId)
+      }
+    }
+
+    function dropPendingSendsForThread(targetThreadId: string): void {
+      for (const [sendId, send] of pendingSends) {
+        if (
+          send.origin.kind === 'thread' &&
+          send.origin.threadId === targetThreadId
+        )
+          pendingSends.delete(sendId)
+      }
+    }
+
+    function dropAsksForThread(targetThreadId: string): void {
+      retiredAsks.delete(targetThreadId)
+      provisionalRetiredAsks.delete(targetThreadId)
+      for (const [askId, submitted] of submittedAskAnswers) {
+        if (submitted.owner === targetThreadId)
+          submittedAskAnswers.delete(askId)
+      }
+    }
+
+    function dropTurnsForThread(targetThreadId: string): void {
+      if (activeSlot.value?.threadId === targetThreadId) abortActiveTurn()
+      dropBackgroundTurnsForThread(targetThreadId)
+      dropPendingSendsForThread(targetThreadId)
+      dropAsksForThread(targetThreadId)
+    }
+
     function liveTurns(): LiveTurn[] {
       const background = Array.from(backgroundTurns.values())
         .filter((entry) => !entry.settled)
@@ -3539,6 +3579,7 @@ export const useAgentConversationStore = defineStore(
       resumeBackgroundTurn,
       settleBackgroundTurn,
       dropBackgroundTurns,
+      dropTurnsForThread,
       liveTurns,
       liveTurnMessageId,
       turnUsesSkill,

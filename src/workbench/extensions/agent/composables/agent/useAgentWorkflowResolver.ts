@@ -170,6 +170,14 @@ export function useAgentWorkflowResolver({
     return boundCloudIdFor(workflow)
   }
 
+  function persistedCloudIdFor(workflow: ComfyWorkflow): string | undefined {
+    const direct = cloudIdFor(workflow)
+    if (direct !== undefined) return direct
+    return workflow.isTemporary
+      ? undefined
+      : cloudIdsByName.value.get(cloudWorkflowName(workflow))
+  }
+
   function indexedNameFor(workflowId: string): string | undefined {
     return cloudIndex.value.find(({ id }) => id === workflowId)?.name
   }
@@ -378,6 +386,7 @@ export function useAgentWorkflowResolver({
     forgetCloudWorkflowId,
     cloudIdFor,
     authoritativeCloudIdFor,
+    persistedCloudIdFor,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,

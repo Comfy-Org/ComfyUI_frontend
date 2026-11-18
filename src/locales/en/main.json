@@ -6741,6 +6741,7 @@
     "noNodesToMention": "No nodes in this workflow",
     "friend": "there",
     "sendFailed": "Message failed to send",
+    "deleteFailed": "Couldn't delete the chat",
     "sendFailedOffscreen": "Your message couldn't be sent",
     "sendFailedOffscreenShow": "Show",
     "sendFailedNetwork": "Message didn't reach the server. Check your connection and try again.",

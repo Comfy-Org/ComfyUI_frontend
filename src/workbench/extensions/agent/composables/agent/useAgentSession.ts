@@ -4983,6 +4983,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function discardThread(targetThreadId: string): void {
+    for (const [key, running] of recoveringTurns) {
+      if (!key.startsWith(`${targetThreadId}\u0000`)) continue
+      running.controller.abort()
+      recoveringTurns.delete(key)
+    }
+    for (const key of recoveryPendingAskObservations.keys()) {
+      if (key.startsWith(`${targetThreadId}\u0000`))
+        recoveryPendingAskObservations.delete(key)
+    }
+    for (const key of recoveryThreadMissingCounts.keys()) {
+      if (key.startsWith(`${targetThreadId}\u0000`))
+        recoveryThreadMissingCounts.delete(key)
+    }
+    clearLateAskReports(targetThreadId)
+    conversationStore.dropTurnsForThread(targetThreadId)
+    pruneSkillTurns()
+  }
+
   function forgetDeletedThread(turn: LiveTurn): void {
     invalidateChat(turn.threadId)
     deletedThreads.add(turn.threadId)
@@ -5049,6 +5068,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     loadThread,
     isThreadDeleted: (id: string) => deletedThreads.has(id),
     forgetChat,
+    discardThread,
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),
