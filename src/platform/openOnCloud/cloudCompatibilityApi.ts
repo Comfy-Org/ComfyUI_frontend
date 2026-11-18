@@ -12,7 +12,7 @@ import {
   ExecutableNodeDTO,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useAuthStore } from '@/stores/authStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -232,7 +232,7 @@ function giveUp(cause: unknown): null {
 export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResult> {
   let body: unknown
   try {
-    const nodes = checkedNodes(app.rootGraph)
+    const nodes = checkedNodes(useApp().rootGraph)
     const unreadableLoader = nodes.find((node) => node.hasUnreadableModels)
     if (unreadableLoader)
       return {

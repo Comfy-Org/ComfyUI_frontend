@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Node-Titel per Doppelklick bearbeiten"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Große Bildvorschauen verkleinern",
+    "tooltip": "In Nodes 2.0 werden große Bilder auf Nodes als Kopie mit maximal 1024 px an der längsten Seite angezeigt, damit viele große Vorschauen reaktionsschnell bleiben. Deaktivieren Sie dies, um immer das Original anzuzeigen."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Mittelklick erstellt einen neuen Reroute-Node"
   },

@@ -6,7 +6,10 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
 
-import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import type {
+  PointTuple as Point,
+  ReadOnlyRect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   LGraph,
@@ -40,6 +43,20 @@ export const useTitleEditorStore = defineStore('titleEditor', () => {
     titleEditorTarget
   }
 })
+
+/** Screen pixels reserved at the top of the canvas for the node-selection-mode banner. */
+export const NODE_PICKING_BANNER_CLEARANCE = 96
+
+function belowNodePickingBanner(viewport: ReadOnlyRect): ReadOnlyRect {
+  const [x, y, width, height] = viewport
+  if (height <= NODE_PICKING_BANNER_CLEARANCE * 2) return viewport
+  return [
+    x,
+    y + NODE_PICKING_BANNER_CLEARANCE,
+    width,
+    height - NODE_PICKING_BANNER_CLEARANCE
+  ]
+}
 
 export const useCanvasStore = defineStore('canvas', () => {
   /**
@@ -134,7 +151,7 @@ export const useCanvasStore = defineStore('canvas', () => {
     )
     if (bounds) {
       currentCanvas.animateToBounds(bounds, {
-        viewport: visibleCanvasViewport(currentCanvas)
+        viewport: belowNodePickingBanner(visibleCanvasViewport(currentCanvas))
       })
     }
   }

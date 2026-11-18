@@ -98,7 +98,8 @@ const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
   modelValue: stringModelValue,
   uploadFolder: () => props.uploadFolder,
   uploadSubfolder: () => props.uploadSubfolder,
-  widget: () => props.widget
+  widget: () => props.widget,
+  videoOnly: () => props.assetKind === 'video'
 })
 
 const placeholder = computed(() => {

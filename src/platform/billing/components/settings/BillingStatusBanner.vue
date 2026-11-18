@@ -1,5 +1,5 @@
 <template>
-  <div v-if="banner" class="@container">
+  <div v-if="banner" v-bind="$attrs" class="@container">
     <div
       role="status"
       class="flex flex-col gap-3 rounded-xl border border-border bg-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
@@ -43,7 +43,7 @@
           variant="secondary"
           size="lg"
           :loading="isResubscribing"
-          @click="handleResubscribe"
+          @click="openResumeConfirm"
         >
           {{ $t('workspacePanel.billingStatus.ending.reactivate') }}
         </Button>
@@ -60,7 +60,7 @@
         </Button>
         <Button
           v-else-if="banner.action === 'contactSales'"
-          variant="secondary"
+          :variant="contactSalesVariant"
           size="lg"
           @click="handleContactSales"
         >
@@ -78,28 +78,36 @@
       </div>
     </div>
   </div>
+  <BillingPlanConfirmDialog v-model="resumeConfirm" :run="handleResubscribe" />
 </template>
 
 <script setup lang="ts">
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
-import { computed } from 'vue'
+import { computed, shallowRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useLongDate } from '@/platform/billing/composables/useLongDate'
 
 import Button from '@comfyorg/design-system/button/Button'
+import {
+  PLAN_CONFIRM_CLOSED,
+  reducePlanConfirm,
+  isMemberTopUpDenial
+} from '@comfyorg/account-core/billing'
+import type {
+  PlanConfirmState,
+  BillingStatusBannerAudience,
+  BillingStatusBannerKind,
+  CapabilityDenialReason
+} from '@comfyorg/account-core/billing'
+import BillingPlanConfirmDialog from '@/platform/billing/components/billingTab/BillingPlanConfirmDialog.vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { ENTERPRISE_URL } from '@/platform/billing/subscription/constants/tierPricing'
 import { useBillingBanner } from '@/platform/billing/composables/useBillingBanner'
-import type {
-  BillingStatusBannerAudience,
-  BillingStatusBannerKind
-} from '@comfyorg/account-core/billing'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { isMemberTopUpDenial } from '@comfyorg/account-core/billing'
 import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
 import { usePlanEnded } from '@/platform/billing/composables/usePlanEnded'
 import { useResubscribe } from '@/platform/billing/composables/useResubscribe'
@@ -116,6 +124,8 @@ type BannerAction =
   | 'contactSales'
   | 'updatePayment'
 
+defineOptions({ inheritAttrs: false })
+
 const { section } = defineProps<{
   section?: 'planCredits' | 'members' | 'allowlist' | 'billing'
 }>()
@@ -130,6 +140,7 @@ const {
   hasResolvedCapabilities,
   canManageBilling,
   canOpenPlans,
+  openPlansDenial,
   planKind,
   runDeniedPaymentPastDue
 } = useBillingCapabilities()
@@ -144,9 +155,10 @@ const kind = computed(() =>
 )
 const { formatTierName } = useWorkspaceTierLabel()
 const { isResubscribing, handleResubscribe } = useResubscribe()
+const resumeConfirm = shallowRef<PlanConfirmState>(PLAN_CONFIRM_CLOSED)
 const {
   scheduledChange,
-  planName: scheduledPlanName,
+  planNameWithPeriod: scheduledPlanName,
   isDisplayable: canShowScheduledChange
 } = useScheduledPlanChange()
 const { showTopUpCreditsDialog } = useBillingDialogs()
@@ -156,6 +168,9 @@ const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
 
 const canManage = computed(() => permissions.value.canManageSubscription)
+const contactSalesVariant = computed(() =>
+  kind.value === 'planEnded' ? 'inverted' : 'secondary'
+)
 // Strictly ENTERPRISE: an unrecognized tier must not borrow Enterprise copy
 // (isUnknownTier's contract) nor lose its Reactivate path.
 const isEnterprisePlan = computed(
@@ -223,8 +238,8 @@ const isHiddenOnSection = computed(() => {
   )
 })
 
-// Sales-managed plans (Enterprise, and unrecognized tiers, which fail closed
-// to sales) return through sales; only a strict ENTERPRISE tier is named.
+const PLANS_CREATOR_ONLY = 'not_original_owner' satisfies CapabilityDenialReason
+
 function planEndedCopy(): {
   title: string
   ownerBody: string
@@ -247,7 +262,10 @@ function planEndedCopy(): {
       title: date
         ? t(`${bs}.planEnded.teamTitle`, { date })
         : t('workspacePanel.members.endedTeamTitle'),
-      ownerBody: t(`${bs}.planEnded.teamBody`),
+      ownerBody:
+        openPlansDenial.value === PLANS_CREATOR_ONLY
+          ? t(`${bs}.planEnded.teamNotCreatorBody`)
+          : t(`${bs}.planEnded.teamBody`),
       memberBody: t(`${bs}.planEnded.teamMemberBody`)
     }
   }
@@ -417,6 +435,14 @@ const banner = computed<BannerView | null>(() => {
 
 function handleAddCredits() {
   void showTopUpCreditsDialog()
+}
+function openResumeConfirm() {
+  const endDate = subscription.value?.endDate
+  if (!endDate) return
+  resumeConfirm.value = reducePlanConfirm(resumeConfirm.value, {
+    type: 'opened',
+    intent: { kind: 'resume', planName: planName.value, renewsAt: endDate }
+  })
 }
 function handleContactSales() {
   window.open(ENTERPRISE_URL, '_blank', 'noopener,noreferrer')

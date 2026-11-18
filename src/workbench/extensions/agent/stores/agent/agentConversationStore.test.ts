@@ -3518,6 +3518,45 @@ describe('useAgentConversationStore', () => {
       }
     )
 
+    it.for([false, true])(
+      'lists pending asks, including one being answered, until retired (stashed: %s)',
+      (stashed) => {
+        openTab('workflows/a.json')
+        const store = storeWithTurnOn(knownTab('workflows/a.json'), stashed)
+
+        store.ingest(runApproval('t1', 'ask-1'))
+        expect(store.pendingAskIds).toEqual(['ask-1'])
+
+        store.setAskAnswering('ask-1', true)
+        expect(store.pendingAskIds).toEqual(['ask-1'])
+
+        store.setAskAnswering('ask-1', false)
+        store.retireAsk('ask-1', { status: 'retired' }, 'th')
+        expect(store.pendingAskIds).toEqual([])
+      }
+    )
+
+    it('lists a background question again when recovery confirms it is still pending', () => {
+      openTab('workflows/a.json')
+      const store = storeWithTurnOn(knownTab('workflows/a.json'), true)
+      store.ingest(
+        runApproval('t1', 'ask-1', {
+          kind: 'ask_user',
+          prompt: 'Allow network access to github.com?',
+          options: [
+            { id: 'allow', label: 'Allow' },
+            { id: 'deny', label: 'Deny' }
+          ]
+        })
+      )
+      store.retireAsk('ask-1', { status: 'retired' }, 'th', false)
+      expect(store.pendingAskIds).toEqual([])
+
+      store.confirmAskPending('ask-1', 'th')
+
+      expect(store.pendingAskIds).toEqual(['ask-1'])
+    })
+
     const pendingAsks = [
       {
         kind: 'ask_user',
