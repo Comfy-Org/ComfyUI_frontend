@@ -2719,15 +2719,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     cause: RecoveryCause,
     snapshotConfirmed: boolean
   ): void {
-    if (!pendingAsk) return
-    if (!snapshotConfirmed && deliveredAsks.has(pendingAsk.ask_id)) return
-    if (
-      conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined ||
-      answeringAskIds.value.has(pendingAsk.ask_id)
-    )
-      return
-    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)) return
-    if (conversationStore.isAskShown(turn, pendingAsk.ask_id)) return
+    if (!shouldRestoreApproval(turn, pendingAsk, snapshotConfirmed)) return
     const wasDeliveredBefore = observedDeliveredAsks.has(pendingAsk.ask_id)
     conversationStore.ingest({
       type: 'agent_ask',
@@ -2741,6 +2733,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
     recordDeliveredAsk(pendingAsk.ask_id)
     if (!wasDeliveredBefore)
       reportRestoredApproval(turn, pendingAsk.ask_id, cause)
+  }
+
+  function shouldRestoreApproval(
+    turn: LiveTurn,
+    pendingAsk: PendingAsk | undefined,
+    snapshotConfirmed: boolean
+  ): pendingAsk is PendingAsk {
+    if (!pendingAsk) return false
+    if (!snapshotConfirmed && deliveredAsks.has(pendingAsk.ask_id)) return false
+    if (conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined)
+      return false
+    if (answeringAskIds.value.has(pendingAsk.ask_id)) return false
+    if (conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId))
+      return false
+    return !conversationStore.isAskShown(turn, pendingAsk.ask_id)
   }
 
   function reportRestoredApproval(
