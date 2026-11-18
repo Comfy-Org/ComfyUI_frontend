@@ -13,7 +13,11 @@ import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import type { ComfyApp, ComfyExtension } from '@/types/comfy'
+import type {
+  ComfyApp,
+  ComfyExtension,
+  GraphConfigureContext
+} from '@/types/comfy'
 import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import { useApp } from '@/scripts/appInstance'
 import { provideExtensionService } from '@/platform/extensions/services/extensionServiceAccess'
@@ -40,6 +44,21 @@ const graphLoadEntrypoints = [
   'loadGraphData',
   'loadApiJson'
 ] satisfies (keyof ComfyApp)[]
+
+const graphConfigureHooks = new Set<string>([
+  'beforeConfigureGraph',
+  'afterConfigureGraph'
+])
+
+function argsWithApp(
+  method: string,
+  args: readonly unknown[],
+  app: ComfyApp
+): unknown[] {
+  return graphConfigureHooks.has(method)
+    ? [...args.slice(0, -1), app, ...args.slice(-1)]
+    : [...args, app]
+}
 
 const graphLoadHookOrigin = Symbol('graphLoadHookOrigin')
 
@@ -269,7 +288,11 @@ export const useExtensionService = () => {
     ...args: [...infer Rest, ComfyApp]
   ) => infer R
     ? (...args: Rest) => R
-    : T
+    : T extends (
+          ...args: [...infer Rest, ComfyApp, GraphConfigureContext]
+        ) => infer R
+      ? (...args: [...Rest, GraphConfigureContext]) => R
+      : T
 
   type KnownExtensionMethods = Exclude<keyof ComfyExtension, number | symbol>
 
@@ -296,7 +319,7 @@ export const useExtensionService = () => {
         try {
           const fn = ext[method]
           if (typeof fn === 'function') {
-            results.push(fn.call(ext, ...args, useApp()))
+            results.push(fn.call(ext, ...argsWithApp(method, args, useApp())))
           }
         } catch (error) {
           console.error(
@@ -357,7 +380,7 @@ export const useExtensionService = () => {
           useApp(),
           ext,
           method,
-          () => fn.call(ext, ...args, app)
+          () => fn.call(ext, ...argsWithApp(method, args, app))
         )
         pending.push(
           isPromiseLike(result)

@@ -12,6 +12,7 @@ import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
+import { LGraph } from '@/lib/litegraph/src/litegraph'
 import { useApp } from '@/scripts/appInstance'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -162,6 +163,23 @@ describe('invokeExtensionsAsync', () => {
     expect(hook.mock.calls[0]).toHaveLength(2)
     expect(hook.mock.calls[0][0]).toBe(defs)
     expect(hook.mock.contexts[0]).toBe(useExtensionStore().extensions[0])
+  })
+
+  it('passes a configure hook the configured graph context after the app', async () => {
+    const hook = vi.fn()
+    register({ name: 'a', afterConfigureGraph: hook })
+    const context = { graph: new LGraph(), workflow: null }
+
+    await useExtensionService().invokeExtensionsAsync(
+      'afterConfigureGraph',
+      [],
+      context
+    )
+
+    const [missingNodeTypes, app, received] = hook.mock.calls[0]
+    expect(missingNodeTypes).toEqual([])
+    expect(app).toHaveProperty('loadGraphData')
+    expect(received).toBe(context)
   })
 
   type HookApp = ReturnType<typeof useApp>

@@ -702,7 +702,7 @@ describe('ComfyApp', () => {
         workflowState: 'active',
         isActive: true,
         failWith: (error: Error) => {
-          vi.spyOn(LGraph.prototype, 'configure').mockImplementation(() => {
+          vi.spyOn(LGraph.prototype, 'configure').mockImplementationOnce(() => {
             throw error
           })
         }
@@ -715,6 +715,7 @@ describe('ComfyApp', () => {
           vi.when(mockExtensionService.invokeExtensionsAsync)
             .calledWith(
               'beforeConfigureGraph',
+              expect.anything(),
               expect.anything(),
               expect.anything()
             )
@@ -732,7 +733,8 @@ describe('ComfyApp', () => {
             size: 0
           })
         )
-        const graph = new LGraph()
+        const graph = createTestRootGraph()
+        graph.add(new LGraphNode('existing'))
         workflow.adoptGraph(graph)
         useWorkflowStore().attachWorkflow(workflow)
         Reflect.set(app, 'rootGraphInternal', graph)
@@ -746,6 +748,7 @@ describe('ComfyApp', () => {
 
         expect(workflow.graph).toBe(graph)
         expect(app.rootGraph).toBe(graph)
+        expect(graph.nodes.map((node) => node.title)).toEqual(['existing'])
         expect(graphsAwaitingNodeTypes.has(graph)).toBe(true)
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
           'onGraphLoadError',
@@ -818,6 +821,35 @@ describe('ComfyApp', () => {
       expect(app.rootGraph).toBe(active)
     })
 
+    it('hands both configure hooks the restored workflow and its graph during a background restore', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/background-restore.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const owned = new LGraph()
+      workflow.adoptGraph(owned)
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+
+      await app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+
+      const target = { graph: owned, workflow }
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'beforeConfigureGraph',
+        expect.anything(),
+        [],
+        target
+      )
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'afterConfigureGraph',
+        [],
+        target
+      )
+    })
+
     it('reuses a successfully reconfigured waiting graph on the next workflow switch', async () => {
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       app.canvas = mockCanvas
@@ -874,6 +906,7 @@ describe('ComfyApp', () => {
           vi.when(mockExtensionService.invokeExtensionsAsync)
             .calledWith(
               'beforeConfigureGraph',
+              expect.anything(),
               expect.anything(),
               expect.anything()
             )
@@ -1060,6 +1093,7 @@ describe('ComfyApp', () => {
         .calledWith(
           'beforeConfigureGraph',
           expect.anything(),
+          expect.anything(),
           expect.anything()
         )
         .thenRejectOnce(error)
@@ -1098,7 +1132,11 @@ describe('ComfyApp', () => {
       )
       expect(
         mockExtensionService.invokeExtensionsAsync
-      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+      ).not.toHaveBeenCalledWith(
+        'afterConfigureGraph',
+        expect.anything(),
+        expect.anything()
+      )
     })
 
     it('does not configure or activate a graph whose load stopped being current during beforeConfigureGraph', async () => {
@@ -1113,6 +1151,7 @@ describe('ComfyApp', () => {
         .calledWith(
           'beforeConfigureGraph',
           expect.anything(),
+          expect.anything(),
           expect.anything()
         )
         .thenReturnOnce(hookHeld)
@@ -1126,6 +1165,7 @@ describe('ComfyApp', () => {
       await vi.waitFor(() =>
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
           'beforeConfigureGraph',
+          expect.anything(),
           expect.anything(),
           expect.anything()
         )
@@ -1143,7 +1183,11 @@ describe('ComfyApp', () => {
       )
       expect(
         mockExtensionService.invokeExtensionsAsync
-      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+      ).not.toHaveBeenCalledWith(
+        'afterConfigureGraph',
+        expect.anything(),
+        expect.anything()
+      )
     })
 
     it('does not activate a graph whose load stopped being current during afterConfigureGraph', async () => {
@@ -1155,7 +1199,7 @@ describe('ComfyApp', () => {
         releaseHook = resolve
       })
       vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith('afterConfigureGraph', expect.anything())
+        .calledWith('afterConfigureGraph', expect.anything(), expect.anything())
         .thenReturnOnce(hookHeld)
       const load = app.loadGraphData(
         createWorkflowGraphData(),
@@ -1170,6 +1214,7 @@ describe('ComfyApp', () => {
       await vi.waitFor(() =>
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
           'afterConfigureGraph',
+          expect.anything(),
           expect.anything()
         )
       )
@@ -1228,7 +1273,11 @@ describe('ComfyApp', () => {
       expect(isGraphLoading(app.rootGraph)).toBe(false)
       expect(
         mockExtensionService.invokeExtensionsAsync
-      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+      ).not.toHaveBeenCalledWith(
+        'afterConfigureGraph',
+        expect.anything(),
+        expect.anything()
+      )
     })
 
     it('resolves false and notifies onGraphLoadError when workflow validation rejects', async () => {
@@ -1264,7 +1313,11 @@ describe('ComfyApp', () => {
       )
       expect(
         mockExtensionService.invokeExtensionsAsync
-      ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+      ).not.toHaveBeenCalledWith(
+        'afterConfigureGraph',
+        expect.anything(),
+        expect.anything()
+      )
 
       // A second, successful load proves the depth counter this rejection
       // could otherwise have leaked open (see agentPanel.ts) is actually
@@ -1276,6 +1329,7 @@ describe('ComfyApp', () => {
       ).resolves.toBe(true)
       expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
         'afterConfigureGraph',
+        expect.anything(),
         expect.anything()
       )
     })
@@ -1495,7 +1549,7 @@ describe('ComfyApp', () => {
         releasePending = resolve
       })
       vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith('afterConfigureGraph', expect.anything())
+        .calledWith('afterConfigureGraph', expect.anything(), expect.anything())
         .thenReturnOnce(pending)
 
       const undoLoad = app.loadGraphData(saved, false, false, firstWorkflow, {
@@ -1504,6 +1558,7 @@ describe('ComfyApp', () => {
       await vi.waitFor(() =>
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
           'afterConfigureGraph',
+          expect.anything(),
           expect.anything()
         )
       )
@@ -1905,7 +1960,7 @@ describe('ComfyApp', () => {
         releaseFirst = resolve
       })
       vi.when(mockExtensionService.invokeExtensionsAsync)
-        .calledWith('afterConfigureGraph', expect.anything())
+        .calledWith('afterConfigureGraph', expect.anything(), expect.anything())
         .thenReturnOnce(firstPending)
       const firstLoad = app.loadGraphData(graph, false, false, null, {
         skipAssetScans: true
@@ -1913,6 +1968,7 @@ describe('ComfyApp', () => {
       await vi.waitFor(() =>
         expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
           'afterConfigureGraph',
+          expect.anything(),
           expect.anything()
         )
       )
@@ -1951,6 +2007,7 @@ describe('ComfyApp', () => {
         .calledWith(
           'beforeConfigureGraph',
           expect.objectContaining({ extra: { marker: 'newer' } }),
+          expect.anything(),
           expect.anything()
         )
         .thenReject(new Error('newer load failed'))

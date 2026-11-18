@@ -146,7 +146,10 @@ async function loadLazyExtensionFresh() {
         app
       ),
     configureGraph: (graphData: ComfyWorkflowJSON) =>
-      load3dLazyExtension.beforeConfigureGraph!(graphData, [], app),
+      load3dLazyExtension.beforeConfigureGraph!(graphData, [], app, {
+        graph: app.rootGraph,
+        workflow: null
+      }),
     createNode: (node: LGraphNode) =>
       load3dLazyExtension.nodeCreated!(node, app)
   }

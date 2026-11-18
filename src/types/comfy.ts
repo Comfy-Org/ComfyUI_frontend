@@ -299,6 +299,12 @@ export interface ActionBarButton {
   onClick: () => void
 }
 
+/** The graph a configure hook runs for and the workflow that owns it, if any. */
+export interface GraphConfigureContext {
+  graph: LGraph
+  workflow: ComfyWorkflow | null
+}
+
 export interface ComfyExtension {
   /**
    * The name of the extension
@@ -439,21 +445,25 @@ export interface ComfyExtension {
    * @param graphData The graph data
    * @param missingNodeTypes The missing node types
    * @param app The app instance
+   * @param context The graph being configured, which may not be `app.rootGraph`
    */
   beforeConfigureGraph?(
     graphData: ComfyWorkflowJSON,
     missingNodeTypes: MissingNodeType[],
-    app: ComfyApp
+    app: ComfyApp,
+    context: GraphConfigureContext
   ): Promise<void> | void
 
   /**
    * Allows the extension to run code after the graph is configured.
    * @param missingNodeTypes The missing node types
    * @param app The app instance
+   * @param context The graph that was configured, which may not be `app.rootGraph`
    */
   afterConfigureGraph?(
     missingNodeTypes: MissingNodeType[],
-    app: ComfyApp
+    app: ComfyApp,
+    context: GraphConfigureContext
   ): Promise<void> | void
 
   /**

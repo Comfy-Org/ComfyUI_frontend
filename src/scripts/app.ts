@@ -1339,10 +1339,24 @@ export class ComfyApp implements IComfyApp {
       )
       return { loaded: false }
     }
-    const graph = this.rootGraphForLoad(
-      workflow instanceof ComfyWorkflow ? workflow : null,
-      clean
-    )
+    const targetWorkflow = workflow instanceof ComfyWorkflow ? workflow : null
+    const graph = this.rootGraphForLoad(targetWorkflow, clean)
+    const configureContext = { graph, workflow: targetWorkflow }
+    const contentsBeforeReload =
+      clean && targetWorkflow?.graph === graph ? graph.serialize() : undefined
+    const restoreContentsBeforeReload = () => {
+      if (!contentsBeforeReload) return
+      try {
+        withGraphIntentSource('load', () =>
+          graph.configure(contentsBeforeReload)
+        )
+      } catch (error) {
+        reportError(error, {
+          surface: 'graph',
+          errorType: 'failure_restoring_graph_after_reload'
+        })
+      }
+    }
     try {
       beginGraphLoad(graph)
       let reset_invalid_values = false
@@ -1422,7 +1436,8 @@ export class ComfyApp implements IComfyApp {
         await useExtensionService().invokeExtensionsAsync(
           'beforeConfigureGraph',
           graphData,
-          missingNodeTypes
+          missingNodeTypes,
+          configureContext
         )
 
         const nodeReplacementStore = useNodeReplacementStore()
@@ -1494,6 +1509,7 @@ export class ComfyApp implements IComfyApp {
           }
         }
       } catch (error) {
+        restoreContentsBeforeReload()
         try {
           if (clean) graphsAwaitingNodeTypes.add(graph)
           await this.reportGraphLoadFailure(error, {
@@ -1515,6 +1531,7 @@ export class ComfyApp implements IComfyApp {
           new DOMException('Workflow load was replaced', 'AbortError')
         )
       if (isCurrent?.() === false) {
+        restoreContentsBeforeReload()
         endGraphLoad(graph)
         await cancelReplacedLoad()
         void useSubgraphNavigationStore().updateHash(
@@ -1597,6 +1614,7 @@ export class ComfyApp implements IComfyApp {
             }
           }
         } catch (error) {
+          restoreContentsBeforeReload()
           if (clean) graphsAwaitingNodeTypes.add(graph)
           await this.reportGraphLoadFailure(error, {
             notifyExtensions: !backgroundRestore
@@ -1667,7 +1685,8 @@ export class ComfyApp implements IComfyApp {
         await withGraphIntentSource('load', () =>
           useExtensionService().invokeExtensionsAsync(
             'afterConfigureGraph',
-            missingNodeTypes
+            missingNodeTypes,
+            configureContext
           )
         )
         if (isCurrent?.() === false) {
@@ -2416,7 +2435,8 @@ export class ComfyApp implements IComfyApp {
           await withGraphIntentSource('load', () =>
             useExtensionService().invokeExtensionsAsync(
               'afterConfigureGraph',
-              []
+              [],
+              { graph, workflow: null }
             )
           )
           await useWorkflowService().afterLoadNewGraph(
@@ -2779,7 +2799,8 @@ export class ComfyApp implements IComfyApp {
       await withGraphIntentSource('load', () =>
         useExtensionService().invokeExtensionsAsync(
           'afterConfigureGraph',
-          missingNodeTypes
+          missingNodeTypes,
+          { graph, workflow: null }
         )
       )
       await useWorkflowService().afterLoadNewGraph(

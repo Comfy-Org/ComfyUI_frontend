@@ -63,6 +63,17 @@ change of the visible graph; `beforeConfigureGraph`, `afterConfigureGraph`,
 and `loadedGraphNode` do not fire, because the nodes were not rebuilt.
 `openWorkflow({ force: true })` and undo/redo keep the configure path.
 
+Undo/redo can finish after its tab has been switched away, so it may configure
+a background graph while another one is visible. `beforeConfigureGraph` and
+`afterConfigureGraph` therefore receive a trailing `{ graph, workflow }`
+argument after `app`, naming the graph being configured; extensions act on
+that graph, not on `app.rootGraph`. In-tree consumers (group-node migration and
+the agent restore minter) read it; the minter holds the operations of a
+background restore of the Agent-bound workflow until its document resubscribes.
+A forced reload that fails reconfigures the
+owned graph from a snapshot taken before it was cleared, so the workflow keeps
+its contents and its root id.
+
 A workflow releases its graph when it is unloaded (remote metadata change,
 close of a persisted workflow) or when a temporary workflow is closed. Release
 is `graph.clear()`, so the per-root store rows go with it.
