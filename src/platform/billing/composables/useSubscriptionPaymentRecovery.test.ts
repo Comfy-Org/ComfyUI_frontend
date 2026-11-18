@@ -108,6 +108,19 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(stopRefresh).toHaveBeenCalledOnce()
   })
 
+  it('keeps one surface armed when another surface serves no recovery', async () => {
+    serveRecovery(true)
+    vi.mocked(reserveBillingTab).mockReturnValue(trackedTab())
+    const stopRefresh = vi.fn()
+    vi.mocked(registerRefreshOnReturn).mockReturnValue(stopRefresh)
+
+    await useSubscriptionPaymentRecovery().finishPayment()
+    useSubscriptionPaymentRecovery(() => null)
+    await nextTick()
+
+    expect(stopRefresh).not.toHaveBeenCalled()
+  })
+
   it('keeps the return refresh armed after the pricing dialog closes', async () => {
     const context = serveRecovery(true)
     vi.mocked(reserveBillingTab).mockReturnValue(trackedTab())
