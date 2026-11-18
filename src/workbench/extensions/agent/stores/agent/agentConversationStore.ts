@@ -398,6 +398,15 @@ interface LocalPartAlignment {
   toolCountOf: (liveToolCount: number) => number
 }
 
+function finishActiveTurn(
+  slot: Pick<ActiveTurnSlot, 'origin' | 'message'>,
+  persistedParts: AssistantMessage['parts'] | undefined
+): void {
+  if (slot.origin === 'snapshot' && persistedParts !== undefined)
+    finishSnapshotTurn(slot.message, persistedParts)
+  else finishWithPersistedParts(slot.message, persistedParts)
+}
+
 function finishWithPersistedParts(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts'] | undefined,
@@ -1444,7 +1453,7 @@ export const useAgentConversationStore = defineStore(
         turn.messageId === slot.turnId
       if (isActive) {
         clearSettledAskState(turn.threadId)
-        finishWithPersistedParts(slot.message, persistedParts)
+        finishActiveTurn(slot, persistedParts)
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()

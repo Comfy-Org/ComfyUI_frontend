@@ -3,7 +3,7 @@ import { installFakeStripe } from './fixtures/stripe'
 import { expect, test } from './fixtures/test'
 
 const TOPUP_LANDING =
-  /\/v1\/top-up\?product=comfyui&return_to=comfyui_credits&amount_cents=2500$/
+  /\/v1\/top-up\?product=comfyui&return_to=platform_billing&amount_cents=2500$/
 
 test.beforeEach(async ({ context, cloud }) => {
   await installFakeStripe(context)

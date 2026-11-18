@@ -21,7 +21,7 @@ import {
   resolveReturnTarget
 } from '@comfyorg/billing-contract'
 
-import { pricingTableUrl } from '@/checkout/cloudLinks'
+import { platformPlansUrl } from '@/checkout/platformLinks'
 import { awaitCheckoutUiVariant } from '@/config/checkoutUi'
 import { BILLING_WEB_ENV } from '@/config/env'
 import { recordBillingEntry } from '@/entry/billingEntry'
@@ -113,7 +113,7 @@ const routes: RouteRecordRaw[] = [
 
 export type BillingWebSessionPhase = SessionSnapshot['phase']
 
-const HANDOFF_ENTRY = { product: 'comfyui', return_to: 'comfyui_credits' }
+const HANDOFF_ENTRY = { product: 'comfyui', return_to: 'platform_billing' }
 
 function handoffEntryPath(
   intent: BillingIntent,
@@ -185,7 +185,7 @@ function returnHref(
 }
 
 const CHECKOUT_PATH = billingIntentPath('checkout')
-const CHECKOUT_FALLBACK_RETURN: ReturnTarget = 'comfyui_credits'
+const CHECKOUT_FALLBACK_RETURN: ReturnTarget = 'platform_billing'
 
 const linkUrl = (fullPath: string) =>
   new URL(fullPath, 'https://billing.invalid')
@@ -198,11 +198,6 @@ function followsLinkReturn(url: URL): boolean {
   )
 }
 
-/**
- * A checkout's `return_to` is optional. One that is missing, outside the
- * registry, or without a destination in this family is ignored, never
- * followed, and the checkout returns to Plan & Credits instead.
- */
 function withCheckoutReturn(fullPath: string): string {
   const url = linkUrl(fullPath)
   if (url.pathname !== CHECKOUT_PATH || followsLinkReturn(url)) return fullPath
@@ -210,21 +205,13 @@ function withCheckoutReturn(fullPath: string): string {
   return `${url.pathname}${url.search}`
 }
 
-/**
- * Where a checkout that names no plan goes to have one picked. Platform has
- * no pricing table, so its link goes back to its own `return_to`, or to
- * Platform's billing page when that is not one billing may follow.
- */
 function planPicker(
   entry: BillingEntry,
   followsReturn: boolean
 ): HostDestination {
   if (entry.product !== 'platform')
     return {
-      href: pricingTableUrl(
-        entry.teamCreditStopId === undefined ? 'default' : 'team',
-        entry.workspaceId
-      ),
+      href: platformPlansUrl(entry, entry.workspaceId),
       to: 'pricing_table'
     }
   const to = followsReturn ? entry.returnTo : 'platform_billing'
