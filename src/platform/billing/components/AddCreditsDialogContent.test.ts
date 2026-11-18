@@ -602,8 +602,9 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
 
   it('offers no checkbox on local when Cloud does not serve auto top-up at checkout, even with the flag on for Cloud', async () => {
     renderDialog({ atCheckout: true })
-    await new Promise((resolve) => setTimeout(resolve))
+    await nextTick()
 
+    expect(billingApi.listSavedPaymentMethods).not.toHaveBeenCalled()
     expect(checkbox()).toBeNull()
   })
 
