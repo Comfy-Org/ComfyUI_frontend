@@ -27,6 +27,10 @@ export type {
   AutoTopUpCardAction,
   PlatformHandoffDestination
 } from './platformHandoffEvent'
+export type {
+  LocalHandoffLaunchResult,
+  LocalHandoffSurface
+} from './localHandoffEvent'
 export type { BillingPortalTarget } from './portalEvent'
 export type { SubscriptionCheckoutUi } from './subscriptionCheckoutEvent'
 export type {

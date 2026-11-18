@@ -67,9 +67,7 @@ test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   test('hides mask and download buttons when image is missing', async ({
     comfyPage
   }) => {
-    await comfyPage.workflow.loadWorkflow(
-      'widgets/load_image_widget_missing_file'
-    )
+    await comfyPage.workflow.loadWorkflow('missing/missing_media_single')
 
     const { imagePreview } =
       await comfyPage.vueNodes.getFixtureByTitle('Load Image')

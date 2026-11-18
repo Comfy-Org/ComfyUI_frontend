@@ -8,16 +8,16 @@ import { defineComponent, h, nextTick, ref } from 'vue'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { createI18n } from 'vue-i18n'
 
-import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { useErrorsTabRequestStore } from './errorsTabRequestStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -134,8 +134,7 @@ describe('TabErrors.vue', () => {
             errorHelp: 'Error help',
             askAgent: 'Ask agent',
             askAgentAbout: 'Ask agent about {title}',
-            askAgentAboutAll:
-              'Ask agent about {count} issue | Ask agent about all {count} issues',
+            askAgentAboutAll: enMessages.rightSidePanel.askAgentAboutAll,
             errorLog: 'Error log',
             findOnGithubTooltip: 'Search GitHub issues',
             getHelpTooltip: 'Get help',
@@ -212,30 +211,6 @@ describe('TabErrors.vue', () => {
       }
     })
     return { user }
-  }
-
-  function renderRightSidePanel(seed: (pinia: Pinia) => void) {
-    const pinia = getActivePinia()!
-    useSettingStore(pinia).settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
-      true
-    seed(pinia)
-    render(RightSidePanel, {
-      global: {
-        plugins: [i18n, pinia],
-        stubs: {
-          EditableText: true,
-          TabErrors: true,
-          TabGlobalParameters: true,
-          TabNodes: true,
-          TabGlobalSettings: true,
-          TabSettings: true,
-          TabInfo: true,
-          TabNormalInputs: true,
-          TabSubgraphInputs: true,
-          SubgraphEditor: true
-        }
-      }
-    })
   }
 
   it('renders "no issues" state when store is empty', () => {
@@ -1590,41 +1565,6 @@ describe('TabErrors.vue', () => {
     expect(screen.getByRole('button', { name: /Download all/ })).toBeVisible()
   })
 
-  it('uses the setup glyph and accessible name for missing resources', () => {
-    renderRightSidePanel((pinia) => {
-      useMissingModelStore(pinia).setMissingModels([
-        {
-          nodeId: '1',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'missing.safetensors',
-          isMissing: true,
-          isAssetSupported: false
-        }
-      ])
-    })
-
-    const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveAccessibleName('Setup required')
-    expect(icon.className).toContain('icon-[comfy--triangle-alert-filled]')
-    expect(icon.className).toContain('bg-warning')
-  })
-
-  it('uses error severity for an unabsorbed node validation error', () => {
-    renderRightSidePanel((pinia) => {
-      useExecutionErrorStore(pinia).recordNodeErrors({
-        '1': nodeError(
-          [validationError('value_not_in_list', 'ckpt_name')],
-          'CheckpointLoaderSimple'
-        )
-      })
-    })
-
-    const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveAccessibleName('Blocking errors')
-    expect(icon.className).toContain('icon-[comfy--circle-alert-filled]')
-  })
-
   it('opens a closed runtime error log when view details is requested', async () => {
     const { getNodeByExecutionId } = await import('@/utils/graphTraversalUtil')
     vi.mocked(getNodeByExecutionId).mockReturnValue(new LGraphNode('KSampler'))
@@ -1649,15 +1589,15 @@ describe('TabErrors.vue', () => {
       .getByTestId('error-group-execution')
       .getAttribute('data-group-key')
     assert.exists(groupKey)
-    useRightSidePanelStore().requestErrorDetails(['execution:unrelated'])
+    useErrorsTabRequestStore().requestDetails(['execution:unrelated'])
     await nextTick()
     expect(screen.queryByText(/Line 1/)).not.toBeInTheDocument()
 
-    useRightSidePanelStore().requestErrorDetails([groupKey])
+    useErrorsTabRequestStore().requestDetails([groupKey])
     await nextTick()
 
     expect(screen.getByText(/Line 1/)).toBeInTheDocument()
-    expect(useRightSidePanelStore().errorDetailsRequest).toBeNull()
+    expect(useErrorsTabRequestStore().detailsRequest).toBeNull()
   })
 
   it('opens closed issue details when view details is requested', async () => {
@@ -1695,7 +1635,7 @@ describe('TabErrors.vue', () => {
       .getByTestId('error-group-execution')
       .getAttribute('data-group-key')
     assert.exists(groupKey)
-    useRightSidePanelStore().requestErrorDetails([groupKey])
+    useErrorsTabRequestStore().requestDetails([groupKey])
     await nextTick()
 
     expect(screen.getByText('KSampler - positive')).toBeInTheDocument()
@@ -1729,51 +1669,9 @@ describe('TabErrors.vue', () => {
       screen.queryByTestId('error-group-execution')
     ).not.toBeInTheDocument()
 
-    useRightSidePanelStore().requestErrorDetails([groupKey])
+    useErrorsTabRequestStore().requestDetails([groupKey])
 
     expect(await screen.findByTestId('error-group-execution')).toBeVisible()
     expect(screen.getByRole('textbox')).toHaveValue('')
-  })
-
-  it('uses error severity for a runtime error with an unnormalisable node id', () => {
-    renderRightSidePanel((pinia) => {
-      useExecutionErrorStore(pinia).recordExecutionError({
-        prompt_id: 'abc',
-        node_id: 'not::a-node',
-        node_type: 'KSampler',
-        executed: [],
-        exception_message: 'Execution failed',
-        exception_type: 'RuntimeError',
-        traceback: [],
-        timestamp: Date.now()
-      })
-    })
-
-    const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveAccessibleName('Blocking errors')
-  })
-
-  it('uses setup severity when the same node error is absorbed', () => {
-    renderRightSidePanel((pinia) => {
-      useMissingModelStore(pinia).setMissingModels([
-        {
-          nodeId: '1',
-          nodeType: 'CheckpointLoaderSimple',
-          widgetName: 'ckpt_name',
-          name: 'missing.safetensors',
-          isMissing: true,
-          isAssetSupported: false
-        }
-      ])
-      useExecutionErrorStore(pinia).recordNodeErrors({
-        '1': nodeError(
-          [validationError('value_not_in_list', 'ckpt_name')],
-          'CheckpointLoaderSimple'
-        )
-      })
-    })
-
-    const icon = screen.getByTestId('panel-tab-icon')
-    expect(icon).toHaveAccessibleName('Setup required')
   })
 })

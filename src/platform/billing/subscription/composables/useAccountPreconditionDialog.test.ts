@@ -2,7 +2,7 @@ import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { describe, expect, it, vi } from 'vitest'
 
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import { useAccountPreconditionDialog } from './useAccountPreconditionDialog'
 
@@ -55,6 +55,19 @@ describe('useAccountPreconditionDialog', () => {
       reason: 'subscription_required',
       creditsLocked: true,
       refusalType: 'CLOUD_SUBSCRIPTION_REQUIRED'
+    })
+  })
+
+  it('marks a refused run so the subscription dialog explains it instead of opening a tab', async () => {
+    await useAccountPreconditionDialog().open('subscription', {
+      runRefused: true
+    })
+
+    expect(
+      useBillingDialogs().showSubscriptionRequiredDialog
+    ).toHaveBeenCalledExactlyOnceWith({
+      reason: 'subscription_required',
+      runRefused: true
     })
   })
 

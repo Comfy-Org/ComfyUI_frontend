@@ -27,6 +27,7 @@ import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useLiveGraphNode } from '@/composables/useLiveGraphNode'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { api } from '@/scripts/api'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { WidgetHistoryScope } from '@/stores/widgetHistoryStore'
@@ -85,6 +86,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   let pendingMaskImage: HTMLImageElement | null = null
 
   const cursorVisible = ref(false)
+  const { setTransform: setCursorTransform } = useCompositedTransform(cursorEl)
 
   let isDrawing = false
   let strokeProcessor: StrokeProcessor | null = null
@@ -607,10 +609,10 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
   }
 
   function updateCursorPos(e: PointerEvent) {
-    const el = cursorEl.value
-    if (!el) return
     const size = displayBrushSize.value
-    el.style.transform = `translate(${e.offsetX - size / 2}px, ${e.offsetY - size / 2}px)`
+    setCursorTransform(
+      `translate(${e.offsetX - size / 2}px, ${e.offsetY - size / 2}px)`
+    )
   }
 
   function handlePointerDown(e: PointerEvent) {

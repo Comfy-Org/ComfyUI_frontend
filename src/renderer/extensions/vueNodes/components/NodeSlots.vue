@@ -5,7 +5,13 @@
   <div
     v-else
     ref="slots"
-    :class="cn('flex min-w-0 justify-between', unifiedWrapperClass)"
+    :class="
+      cn(
+        'flex min-w-0 justify-between',
+        unified &&
+          'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
+      )
+    "
   >
     <div
       v-if="filteredInputs.length"
@@ -150,12 +156,6 @@ function inputHasError(input: INodeSlot): boolean {
   return executionErrorStore.slotHasError(locatorId, input.name)
 }
 
-const unifiedWrapperClass = computed((): string =>
-  cn(
-    unified &&
-      'pointer-events-none absolute inset-0 z-30 items-center opacity-0'
-  )
-)
 const unifiedDotsClass = computed((): string =>
   cn(
     unified &&

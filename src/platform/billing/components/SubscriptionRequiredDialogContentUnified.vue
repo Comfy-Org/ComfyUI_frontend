@@ -71,7 +71,6 @@
         :team-plan="isTeamPreview ? selectedTeamStop : null"
         :is-loading="isPreviewLoading"
         :action-url="activeCheckoutActionUrl"
-        :force-reactivation="reactivationRequired"
         :authentication-state
         :payment-cancelable
         :canceling-payment="isCancelingPayment"
@@ -165,7 +164,6 @@ const {
   outstandingPaymentRefusals,
   isResubscribing,
   previewData,
-  reactivationRequired,
   selectedTierKey,
   selectedTeamStop,
   selectedBillingCycle,

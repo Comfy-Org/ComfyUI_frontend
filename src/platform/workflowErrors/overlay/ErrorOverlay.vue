@@ -63,6 +63,10 @@
                 : t('errorOverlay.viewDetails')
             }}
           </Button>
+          <ErrorOverlayDownloadAllModels
+            :missing-model-groups="downloadableMissingModelGroups"
+            @downloaded="emit('viewErrors', overlayGroupKeys)"
+          />
           <Button
             v-if="canAskAgent && askAgentContext"
             variant="secondary"
@@ -98,6 +102,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import ErrorOverlayDeploymentOffer from '@/platform/workspace/components/ErrorOverlayDeploymentOffer.vue'
 import { useAskAgentPort } from '@/platform/workflowErrors/askAgentPort'
+import ErrorOverlayDownloadAllModels from '@/platform/workflowErrors/overlay/ErrorOverlayDownloadAllModels.vue'
 
 const { appMode = false } = defineProps<{ appMode?: boolean }>()
 
@@ -110,6 +115,7 @@ const { canAskAgent, askAgentAboutIssues } = useAskAgentPort()
 const {
   hasError,
   hasMissingNodes,
+  downloadableMissingModelGroups,
   isVisible,
   overlayMessage,
   overlayTitle,

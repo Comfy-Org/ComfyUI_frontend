@@ -84,8 +84,9 @@ export function formatAgentErrorContext(
       context.count === 1 ? 'issue' : 'issues'
     } (${SCOPE_NOTES[context.scope]}).`
   ]
-  if (context.workflowName?.trim())
-    header.push(`Workflow: ${singleLine(context.workflowName)}`)
+  const workflowLine = context.workflowName?.trim()
+    ? [`Workflow: ${singleLine(context.workflowName)}`]
+    : []
 
   const listed = context.problems.slice(0, MAX_LISTED_PROBLEMS)
   const omitted = context.problems.length - listed.length
@@ -94,6 +95,7 @@ export function formatAgentErrorContext(
     '',
     'Problems:',
     FENCE,
+    ...workflowLine,
     ...listed.map(formatProblem),
     ...(omitted > 0 ? [`${omitted} more problems not listed`] : []),
     FENCE,
