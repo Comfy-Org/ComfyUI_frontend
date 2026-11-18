@@ -285,10 +285,11 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
     isRefreshingMissingModels.value = true
     try {
-      await useApp().refreshMissingModels({
+      const { surfaced } = await useApp().refreshMissingModels({
         silent: true,
         reloadDefs: options.reloadDefs
       })
+      await surfaced
     } catch (error) {
       if (isAbortError(error)) return
 

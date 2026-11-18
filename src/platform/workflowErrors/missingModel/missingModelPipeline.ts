@@ -154,7 +154,7 @@ export async function runMissingModelPipeline({
   if (!enrichedCandidates.length) {
     clearMissingModels(activeWf, silent)
     onVerified?.([])
-    return { missingModels, confirmedCandidates }
+    return { missingModels, confirmedCandidates, surfaced: Promise.resolve() }
   }
 
   // Re-check at surface time: the user may have bypassed a container or
@@ -197,24 +197,27 @@ export async function runMissingModelPipeline({
   }
 
   if (isCloud) {
-    void verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
+    const surfaced = verifyAssetSupportedCandidates(
+      enrichedCandidates,
+      controller.signal
+    )
       .then(() => {
         if (controller.signal.aborted) return
         surfaceActiveCandidates()
       })
       .catch(reportVerificationFailure)
-    return { missingModels, confirmedCandidates }
+    return { missingModels, confirmedCandidates, surfaced }
   }
 
   if (!confirmedCandidates.length && !hasDeferredCandidates) {
     surfaceActiveCandidates()
-    return { missingModels, confirmedCandidates }
+    return { missingModels, confirmedCandidates, surfaced: Promise.resolve() }
   }
 
   const verification = hasDeferredCandidates
     ? verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
     : Promise.resolve()
-  void verification
+  const surfaced = verification
     .then(async () => {
       if (controller.signal.aborted) return
       const hasActiveMissing = enrichedCandidates.some((c) =>
@@ -258,7 +261,7 @@ export async function runMissingModelPipeline({
     })
     .catch(reportVerificationFailure)
 
-  return { missingModels, confirmedCandidates }
+  return { missingModels, confirmedCandidates, surfaced }
 }
 
 export async function refreshMissingModelPipeline({

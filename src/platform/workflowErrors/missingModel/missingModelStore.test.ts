@@ -1,5 +1,6 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { watch } from 'vue'
 
 import { st, t } from '@/i18n'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -123,7 +124,8 @@ describe('missingModelStore', () => {
         .spyOn(app, 'refreshMissingModels')
         .mockResolvedValue({
           missingModels: [],
-          confirmedCandidates: []
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
         })
 
       await store.refreshMissingModels()
@@ -138,7 +140,8 @@ describe('missingModelStore', () => {
         .spyOn(app, 'refreshMissingModels')
         .mockResolvedValue({
           missingModels: [],
-          confirmedCandidates: []
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
         })
 
       await store.refreshMissingModels({ reloadDefs: false })
@@ -156,7 +159,11 @@ describe('missingModelStore', () => {
       const refreshSpy = vi.spyOn(app, 'refreshMissingModels').mockReturnValue(
         new Promise((resolve) => {
           resolveRefresh = () =>
-            resolve({ missingModels: [], confirmedCandidates: [] })
+            resolve({
+              missingModels: [],
+              confirmedCandidates: [],
+              surfaced: Promise.resolve()
+            })
         })
       )
 
@@ -167,6 +174,30 @@ describe('missingModelStore', () => {
 
       expect(refreshSpy).toHaveBeenCalledTimes(1)
       expect(store.isRefreshingMissingModels).toBe(false)
+    })
+
+    it('stays refreshing until the verified candidates reach the store', async () => {
+      const store = useMissingModelStore()
+      const events: string[] = []
+      watch(
+        () => store.isRefreshingMissingModels,
+        (refreshing) => events.push(refreshing ? 'refreshing' : 'settled'),
+        { flush: 'sync' }
+      )
+      vi.spyOn(app, 'refreshMissingModels').mockResolvedValue({
+        missingModels: [],
+        confirmedCandidates: [],
+        surfaced: new Promise((resolve) =>
+          setTimeout(() => {
+            events.push('surfaced')
+            resolve()
+          })
+        )
+      })
+
+      await store.refreshMissingModels()
+
+      expect(events).toEqual(['refreshing', 'surfaced', 'settled'])
     })
 
     it('shows a toast when the refresh pipeline fails', async () => {

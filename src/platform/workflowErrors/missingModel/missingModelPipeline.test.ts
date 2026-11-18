@@ -654,6 +654,40 @@ describe('missingModelPipeline', () => {
       })
     })
 
+    it('settles surfaced only after the verified candidates reach the store', async () => {
+      const confirmedCandidate = {
+        nodeType: 'CheckpointLoaderSimple',
+        widgetName: 'ckpt_name',
+        name: 'missing.safetensors',
+        isMissing: true,
+        isAssetSupported: false
+      } satisfies MissingModelCandidate
+      mockHandles.state.enrichedCandidates = [confirmedCandidate]
+      let resolveFolderPaths: (paths: Record<string, string[]>) => void = () =>
+        undefined
+      vi.mocked(api.getFolderPaths).mockReturnValueOnce(
+        new Promise((resolve) => {
+          resolveFolderPaths = resolve
+        })
+      )
+
+      const { surfaced } = await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: useMissingModelStore()
+      })
+      const surfacedBeforeFolderPaths = vi.mocked(
+        useExecutionErrorStore().surfaceMissingModels
+      ).mock.calls.length
+      resolveFolderPaths({})
+      await surfaced
+
+      expect(surfacedBeforeFolderPaths).toBe(0)
+      expect(
+        useExecutionErrorStore().surfaceMissingModels
+      ).toHaveBeenLastCalledWith([confirmedCandidate], { silent: false })
+    })
+
     it('drops a candidate whose selection changed while folder paths were loading', async () => {
       const confirmedCandidate = {
         nodeId: '7',
@@ -860,7 +894,8 @@ describe('missingModelPipeline', () => {
             hash_type: undefined
           }
         ],
-        confirmedCandidates: [confirmedCandidate]
+        confirmedCandidates: [confirmedCandidate],
+        surfaced: expect.any(Promise)
       })
       expect(activeWorkflow.pendingWarnings).toEqual({
         missingNodeTypes: ['MissingCustomNode'],
@@ -888,7 +923,8 @@ describe('missingModelPipeline', () => {
 
       expect(result).toEqual({
         missingModels: [],
-        confirmedCandidates: [confirmedCandidate]
+        confirmedCandidates: [confirmedCandidate],
+        surfaced: expect.any(Promise)
       })
     })
 
