@@ -39,23 +39,6 @@ pnpm test:browser browser_tests/tests/liveCloud/openOnCloud.spec.ts \
 
 The login fixture permits the hosted application's analytics, diagnostics, and Impact marketing attribution requests, including `www.ojrq.net`. It does not replace responses or suppress the marketing script. Marketing attribution is outside this suite's acceptance assertions. Follow the execution environment's authorization requirements before running it.
 
-## Authenticated Desktop relay smoke test
-
-`browser_tests/tests/liveCloud/openOnCloudSmoke.spec.ts` follows a Desktop relay through hosted email sign-in, verifies the imported Empty Image → Save Image workflow, and runs it once. It requires a completed job with one image output and an unchanged Cloud credit balance.
-
-Use an HTTP `localhost` editor and a non-production Cloud deployment with the receiver flag enabled for the smoke account and a worker that can run the workflow. Inject `SMOKE_ACCOUNT_EMAIL` and `SMOKE_ACCOUNT_PASSWORD` through the approved secret store or job environment.
-
-The draft PR CI workflow reads the `dreamboothy-dev` test account from the `OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL` repository variable and the `OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD` repository secret. It checks the preview's Firebase project before signing in.
-
-```sh
-PLAYWRIGHT_CLOUD_LIVE=1 \
-PLAYWRIGHT_CLOUD_SMOKE=1 \
-PLAYWRIGHT_TEST_URL=http://localhost:5173 \
-PLAYWRIGHT_SETUP_API_URL=http://localhost:8188 \
-pnpm test:browser browser_tests/tests/liveCloud/openOnCloudSmoke.spec.ts \
-  --project=cloud-live --workers=1 --reporter=line
-```
-
 ## Remaining acceptance work
 
 A verified `@comfy.org` employee can use the existing Cloud override `?ff=open_on_cloud_enabled:true` for controlled import acceptance. To carry it automatically into a new browser or Desktop handoff tab, configure the local frontend's `VITE_STAGING_CLOUD_BASE_URL` as `https://fe-pr-22949.testenvs.comfy.org/?ff=open_on_cloud_enabled:true`. The handoff retains configured `ff` parameters; the Cloud receiver still checks the real signed-in employee identity. This changes the rollout configuration without replacing authentication, API responses or the workflow loader.
