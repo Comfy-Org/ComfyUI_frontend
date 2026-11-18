@@ -567,7 +567,7 @@ describe('node definitions', () => {
           { type: 'T', outputs: [{ name: 'o', type: '*', shape: 'star' }] }
         ])
       ).toThrow(
-        /^define needs shape of default, optional, list, directional, not 'star'/
+        /^define needs outputs.shape of default, optional, list, directional, not 'star'/
       )
     })
 

@@ -8034,14 +8034,15 @@ describe('ComfyApp', () => {
           adjustMouseEvent: vi.fn(),
           graph: fromPartial<LGraph>({ getNodeOnPos: () => node })
         })
+        const delivered = vi.spyOn(node, 'onDragDrop')
         addScopedDropHandler()
         canvasElement.dispatchEvent(new DragEvent('dragover'))
 
         const drop = new DragEvent('drop')
         document.dispatchEvent(drop)
 
-        await vi.waitFor(() => expect(dropped).toHaveLength(1))
-        await new Promise((resolve) => setTimeout(resolve))
+        await vi.waitFor(() => expect(delivered).toHaveBeenCalledOnce())
+        await delivered.mock.results[0].value
         expect(dropped).toEqual([[String(node.id), drop]])
         expect(extractFilesFromDragEvent).toHaveBeenCalledTimes(
           editorReadsFiles

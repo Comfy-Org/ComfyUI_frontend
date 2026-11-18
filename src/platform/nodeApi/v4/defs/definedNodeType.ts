@@ -224,7 +224,9 @@ function checkedSlots(
     const shape =
       slot.shape === undefined
         ? undefined
-        : SLOT_SHAPES[checkedChoice('define', 'shape', slot.shape, SLOT_SHAPES)]
+        : SLOT_SHAPES[
+            checkedChoice('define', `${field}.shape`, slot.shape, SLOT_SHAPES)
+          ]
     return Object.freeze({ name: slot.name, type: slot.type, shape })
   })
 }
