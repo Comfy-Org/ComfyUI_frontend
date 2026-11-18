@@ -6435,6 +6435,13 @@ describe('ComfyApp', () => {
         resolves: true
       },
       {
+        outcome: 'fails before the backend answers',
+        respond: async () => {
+          throw new TypeError('Failed to fetch')
+        },
+        resolves: true
+      },
+      {
         outcome: 'is accepted with node errors',
         respond: async () => ({ prompt_id: 'job-1', node_errors: NODE_ERRORS }),
         resolves: false

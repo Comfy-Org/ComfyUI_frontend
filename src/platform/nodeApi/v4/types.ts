@@ -49,7 +49,10 @@ export interface Comfy {
     listener: (event: NodeChangeEvent) => void,
     options?: NodeChangeOptions
   ): Unsubscribe
-  /** A node was moved, under either renderer. A pack sees its own moves too. */
+  /**
+   * A node was moved, under either renderer. A pack sees its own moves too, and a load, undo or redo reports each
+   * node it places, first at its saved x and y 10, then at its saved position.
+   */
   onNodeMoved(listener: (event: NodeMoveEvent) => void): Unsubscribe
   /** A drag of nodes or other canvas items ended. */
   onNodeDragEnd(listener: () => void): Unsubscribe
@@ -1069,8 +1072,8 @@ export interface NodeMoveEvent {
 /** One open workflow: an editing session, from opening it until closing it. */
 export interface DocumentHandle {
   /**
-   * The same through undo, redo and tab switches; a reopened workflow gets a
-   * new one. It means nothing after a page reload, so do not save it.
+   * The same through undo, redo and tab switches; a reopened workflow, or one
+   * reloaded from disk, gets a new one. It means nothing after a page reload, so do not save it.
    */
   readonly id: string
   /** True once the document is closed, and every other read is `undefined`. */
@@ -1103,7 +1106,10 @@ export interface WorkflowHandle {
   registerImporter(importer: WorkflowImporter): Unsubscribe
   /** A frozen copy of `key` in the `extra` the document's workflow saves; `undefined` if absent or closed. */
   getExtra(document: DocumentHandle | undefined, key: string): unknown
-  /** Writes `key` in the on-screen document's `extra` as one undo step; `undefined` deletes it. False for any other document. */
+  /**
+   * Writes `key` in the on-screen document's `extra` as one undo step; `undefined` deletes it. False for any
+   * other document, and inside `onWorkflowLoaded`, while the host is still finishing the load.
+   */
   setExtra(
     document: DocumentHandle | undefined,
     key: string,
@@ -1149,7 +1155,7 @@ export interface RunOptions {
 
 export interface RunSubmission {
   readonly promptId: string
-  /** How many backend nodes the prompt runs. */
+  /** How many backend nodes the prompt holds; a partial run executes only those its targets need. */
   readonly nodeCount: number
 }
 
@@ -1162,8 +1168,8 @@ export interface RunSubmittedEvent {
 /** An argument a member cannot use throws a `TypeError`; `run` rejects with one. */
 export interface QueueHandle {
   /**
-   * Queues the workflow as Run does: `true` once this call's prompts are submitted. `false` if a node it names
-   * is gone, or the call was folded into a run in progress, refused, given node errors, or stopped before sending.
+   * Queues the workflow as Run does: `true` once this call's prompts are submitted, and when a request fails with
+   * no answer from the backend. `false` if a node it names is gone, or the call was folded into a run, refused, given node errors or stopped.
    */
   run(options?: RunOptions): Promise<boolean>
   /** Called as each run starts, before its prompt is built. A function it returns is called once that run is sent or refused. */
