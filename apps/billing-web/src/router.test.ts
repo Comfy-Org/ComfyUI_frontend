@@ -466,6 +466,12 @@ describe('a billing handoff tab', () => {
         '/v1/top-up?product=comfyui&return_to=platform_billing&amount_cents=5000'
     },
     {
+      query:
+        'intent=top-up&amount_cents=2500&auto_top_up_threshold_credits=1055&auto_top_up_target_credits=11605&auto_top_up_monthly_budget_cents=5000',
+      fullPath:
+        '/v1/top-up?product=comfyui&return_to=platform_billing&amount_cents=2500&auto_top_up_threshold_credits=1055&auto_top_up_target_credits=11605&auto_top_up_monthly_budget_cents=5000'
+    },
+    {
       query: 'intent=subscription',
       fullPath: '/v1/subscription?product=comfyui&return_to=platform_billing'
     },
@@ -496,6 +502,21 @@ describe('a billing handoff tab', () => {
 
       expect(router.currentRoute.value.path).toBe('/v1/top-up')
       expect(useBillingEntry().error.value).toBe('INVALID_AMOUNT')
+    }
+  )
+
+  it.for([
+    'intent=top-up&amount_cents=2500&auto_top_up_threshold_credits=1055',
+    'intent=top-up&amount_cents=2500&auto_top_up_threshold_credits=1055&auto_top_up_threshold_credits=9&auto_top_up_target_credits=11605'
+  ])(
+    'leaves the unreadable handoff auto top-up in /handoff?%s for the top-up page to explain',
+    async (query) => {
+      handoffTab.value = liveHandoff
+
+      const router = await arriveAt(`/handoff?${query}`)
+
+      expect(router.currentRoute.value.path).toBe('/v1/top-up')
+      expect(useBillingEntry().error.value).toBe('INVALID_AUTO_TOP_UP')
     }
   )
 

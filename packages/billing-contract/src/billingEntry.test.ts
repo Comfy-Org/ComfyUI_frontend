@@ -173,6 +173,62 @@ describe('parseBillingEntry', () => {
     }
   )
 
+  it.for([
+    [{ thresholdCredits: 1055, targetCredits: 11605 }, ''],
+    [
+      {
+        thresholdCredits: 1055,
+        targetCredits: 11605,
+        monthlyBudgetCents: 5000
+      },
+      '&auto_top_up_monthly_budget_cents=5000'
+    ]
+  ] as const)(
+    'round-trips the auto top-up %j beside a top-up amount',
+    ([autoTopUp, budgetParam]) => {
+      const url = entryUrl({
+        ...BASE_INPUT,
+        intent: 'top-up',
+        amountCents: 2500,
+        autoTopUp
+      })
+
+      expect(url.search).toBe(
+        `?product=platform&return_to=platform_account&amount_cents=2500&auto_top_up_threshold_credits=1055&auto_top_up_target_credits=11605${budgetParam}`
+      )
+      expect(parseBillingEntry(url)).toMatchObject({
+        status: 'ok',
+        entry: { amountCents: 2500, autoTopUp }
+      })
+    }
+  )
+
+  it.for([
+    'auto_top_up_threshold_credits=1055',
+    'auto_top_up_target_credits=11605',
+    'auto_top_up_monthly_budget_cents=5000',
+    'auto_top_up_threshold_credits=0&auto_top_up_target_credits=11605',
+    'auto_top_up_threshold_credits=1055&auto_top_up_target_credits=1e4',
+    'auto_top_up_threshold_credits=1055&auto_top_up_target_credits=11605&auto_top_up_monthly_budget_cents=-1'
+  ])('refuses the partial or unreadable auto top-up %s', (params) => {
+    expect(
+      parseBillingEntry(
+        `/v1/top-up?product=platform&return_to=platform_account&amount_cents=2500&${params}`
+      )
+    ).toEqual({ status: 'error', code: 'INVALID_AUTO_TOP_UP' })
+  })
+
+  it('refuses to write an auto top-up with a count that is not whole', () => {
+    expect(
+      errorCode({
+        ...BASE_INPUT,
+        intent: 'top-up',
+        amountCents: 2500,
+        autoTopUp: { thresholdCredits: 10.5, targetCredits: 11605 }
+      })
+    ).toBe('INVALID_AUTO_TOP_UP')
+  })
+
   it('ignores a query parameter the contract does not name', () => {
     expect(
       parseBillingEntry(

@@ -144,6 +144,26 @@ describe('issueLocalBillingHandoff', () => {
     })
   })
 
+  it.for([
+    {
+      name: 'the auto top-up the user ticked',
+      autoTopUp: {
+        threshold_credits: 1000,
+        target_credits: 11_550,
+        monthly_budget_cents: 5000
+      }
+    },
+    { name: 'no auto top-up when none was ticked', autoTopUp: undefined }
+  ])('sends $name with the top-up', async ({ autoTopUp }) => {
+    respondToFetch(HANDOFFS, issued)
+
+    await issueLocalBillingHandoff({ ...TOP_UP, autoTopUp }, live)
+
+    const body = JSON.parse(String(fetchRequests(HANDOFFS)[0].body))
+    expect(body.amount_cents).toBe(2500)
+    expect(body.auto_top_up).toEqual(autoTopUp)
+  })
+
   it('sends no amount for a subscription', async () => {
     respondToFetch(HANDOFFS, issued)
 

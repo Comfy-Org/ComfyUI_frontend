@@ -34,7 +34,10 @@
 import { computed, nextTick, onMounted, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { AddCreditsTranslate } from '@comfyorg/account-core/billing'
+import type {
+  AddCreditsTranslate,
+  AutoTopUpActivation
+} from '@comfyorg/account-core/billing'
 import { addCreditsRefusalFor } from '@comfyorg/account-core/billing'
 import type { AddCreditsPorts } from '@comfyorg/account-ui/billing'
 import { AddCreditsDialog } from '@comfyorg/account-ui/billing'
@@ -43,7 +46,6 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
 
 import { centsToCredits } from '@/base/credits/comfyCredits'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   addCreditsPendingTopup,
   topupCheckoutFailure
@@ -101,7 +103,6 @@ const translate: AddCreditsTranslate = (key, params = {}) =>
   t(`addCreditsDialog.${key}`, params)
 
 const dialogStore = useDialogStore()
-const { flags } = useFeatureFlags()
 const telemetry = useTelemetry()
 const workspaceIdentity = useWorkspaceIdentity()
 const { balance, fetchBalance, fetchStatus } = useBillingContext()
@@ -130,6 +131,7 @@ const readingActivation = shallowRef(false)
 interface OwnedCheckout {
   readonly generation: number
   readonly activationSessionId?: string
+  readonly activationUnreadable?: boolean
 }
 let ownedCheckout: OwnedCheckout | undefined
 function ownsCheckout(
@@ -153,11 +155,12 @@ async function reopenForCurrentFlag(): Promise<void> {
 
 async function createHandoffCheckout(
   amountCents: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  autoTopUp: AutoTopUpActivation | undefined
 ): ReturnType<AddCreditsPorts['createCheckout']> {
   const generation = workspaceIdentity.workspaceTransitionGeneration
   const issued = await issueLocalBillingHandoff(
-    { intent: 'top-up', amountCents },
+    { intent: 'top-up', amountCents, autoTopUp },
     signal
   )
   if (issued.status === 'error') {
@@ -171,7 +174,7 @@ async function createHandoffCheckout(
       }
     }
   }
-  ownedCheckout = { generation }
+  ownedCheckout = { generation, activationUnreadable: autoTopUp !== undefined }
   return { status: 'ok', url: issued.url }
 }
 
@@ -181,7 +184,7 @@ const ports: AddCreditsPorts = {
     return credits === null ? { status: 'error' } : { status: 'ok', credits }
   },
   get activatesAutoTopUp() {
-    return !opensHandoff && flags.billingAutoTopUpAtCheckoutEnabled
+    return autoTopUpChoice.activatesAtCheckout()
   },
   singleUseCheckout: opensHandoff,
   async createCheckout(amountCents, signal, autoTopUp) {
@@ -195,7 +198,8 @@ const ports: AddCreditsPorts = {
       void reopenForCurrentFlag()
       return { status: 'error', refusal: { kind: 'checkout_failed' } }
     }
-    if (opensHandoff) return createHandoffCheckout(amountCents, signal)
+    if (opensHandoff)
+      return createHandoffCheckout(amountCents, signal, autoTopUp)
     const returnUrl = topupCheckoutReturnUrl()
     if (!returnUrl) {
       return { status: 'error', refusal: { kind: 'checkout_failed' } }
@@ -240,7 +244,12 @@ const ports: AddCreditsPorts = {
         const checkout = ownedCheckout
         if (!ownsCheckout(checkout)) return
         const { activationSessionId } = checkout
-        if (activationSessionId === undefined) return landed()
+        if (activationSessionId === undefined)
+          return landed(
+            checkout.activationUnreadable
+              ? { status: 'unconfirmed' }
+              : undefined
+          )
         readingActivation.value = true
         const activation = await readAutoTopUpActivation(
           (signal) => billingApi.getTopupCheckout(activationSessionId, signal),
