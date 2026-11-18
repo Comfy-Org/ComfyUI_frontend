@@ -60,6 +60,34 @@ describe('VideoPreview', () => {
   }
 
   describe('load failure telemetry', () => {
+    it('reports the media error code from the video element', async () => {
+      resetImageFailureProbesForTest()
+      vi.mocked(fetch).mockImplementation(
+        async () => new Response(null, { status: 200 })
+      )
+      renderVideoPreview({
+        imageUrls: ['/api/view?filename=prores.mov&type=output']
+      })
+      const video = screen.getByTestId('main-video')
+      Object.defineProperty(video, 'error', {
+        configurable: true,
+        get: () => ({ code: 4 })
+      })
+
+      await fireEvent.error(video)
+
+      await vi.waitFor(() =>
+        expect(
+          useTelemetry()?.trackImageLoadFailed
+        ).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            source: 'node_video_preview',
+            media_error_code: 4
+          })
+        )
+      )
+    })
+
     it('reports a failed video load once, attributed to the Vue node preview', async () => {
       resetImageFailureProbesForTest()
       vi.mocked(fetch).mockImplementation(
