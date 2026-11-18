@@ -922,6 +922,23 @@ describe('useWorkflowStore', () => {
       expect(store.getWorkflowByPath('workflows/First.json')).not.toBeNull()
     })
 
+    it('lets a tab take a path whose holder is already moving away', async () => {
+      const first = store.createTemporary('First.json')
+      const second = store.createTemporary('Second.json')
+      store.openWorkflowsInBackground({ right: [first.path, second.path] })
+
+      const results = await Promise.all([
+        store.renameWorkflow(second, 'workflows/Third.json'),
+        store.renameWorkflow(first, 'workflows/Second.json')
+      ])
+
+      expect(results).toEqual([true, true])
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        'workflows/Second.json',
+        'workflows/Third.json'
+      ])
+    })
+
     it('should move V2 draft when renaming workflow', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path
