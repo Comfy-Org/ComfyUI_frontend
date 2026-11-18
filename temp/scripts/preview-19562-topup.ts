@@ -46,6 +46,7 @@ async function captureStripeForm(page: Page, name: string) {
   await page
     .screenshot({
       path: `temp/preview-checkout-evidence/${name}.png`,
+      fullPage: true,
       mask: page
         .frames()
         .flatMap((frame) => [
@@ -389,6 +390,25 @@ async function main() {
       .locator('input#cardCvc, input[name="cvc"], input[autocomplete="cc-csc"]')
       .first()
       .fill('123', { timeout: 8_000 })
+    const saveInformation = payment.getByRole('checkbox', {
+      name: 'Save my information for faster checkout',
+      exact: true
+    })
+    if (await saveInformation.isVisible()) {
+      await saveInformation.uncheck({ timeout: 8000 })
+    } else {
+      const linkOptIn = payment.getByText(
+        'Save my information for faster checkout',
+        { exact: true }
+      )
+      const linkPhone = payment.getByText('Mobile number', { exact: true })
+      if ((await linkOptIn.isVisible()) && (await linkPhone.isVisible())) {
+        await linkOptIn.click({ timeout: 8000 })
+      }
+    }
+    await payment
+      .getByText('Mobile number', { exact: true })
+      .waitFor({ state: 'hidden', timeout: 8000 })
     const billingName = payment.locator('input#billingName')
     if (await billingName.isVisible())
       await billingName.fill('Cloud Preview Smoke')
