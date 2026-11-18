@@ -708,6 +708,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
     const body = new FormData()
     body.append('image', blob, name)
     body.append('type', 'input')
+    body.append('subfolder', 'painter')
 
     let resp: Response
     try {
@@ -753,7 +754,7 @@ export function usePainter(nodeId: NodeId, options: UsePainterOptions) {
       )
     }
 
-    const result = `${data.name} [input]`
+    const result = `${data.subfolder ? `${data.subfolder}/` : ''}${data.name} [input]`
     canvasMask = result
     modelValue.value = result
     isDirty.value = false

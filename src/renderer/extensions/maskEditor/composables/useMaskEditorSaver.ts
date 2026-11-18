@@ -16,6 +16,8 @@ import { createImageOutput } from '@comfyorg/mask-editor/imageOutput'
 import { imageLayerFilenamesByTimestamp } from './layerFilenames'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 
+const CLIPSPACE_SUBFOLDER = 'clipspace'
+
 export function useMaskEditorSaver() {
   const dataStore = useMaskEditorDataStore()
   const editorStore = useMaskEditorStore()
@@ -97,6 +99,7 @@ export function useMaskEditorSaver() {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
     formData.append('type', 'input')
+    formData.append('subfolder', CLIPSPACE_SUBFOLDER)
 
     const response = await api.fetchApi('/upload/image', {
       method: 'POST',
@@ -158,7 +161,9 @@ export function useMaskEditorSaver() {
 
     writeImageWidgetValue(
       node,
-      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+      (mainRef.subfolder ? `${mainRef.subfolder}/` : '') +
+        mainRef.filename +
+        (mainRef.type ? ` [${mainRef.type}]` : '')
     )
 
     node.imgs = undefined
@@ -190,7 +195,7 @@ export function useMaskEditorSaver() {
   function createFileRef(filename: string): ImageRef {
     return {
       filename,
-      subfolder: 'clipspace',
+      subfolder: CLIPSPACE_SUBFOLDER,
       type: 'input'
     }
   }
