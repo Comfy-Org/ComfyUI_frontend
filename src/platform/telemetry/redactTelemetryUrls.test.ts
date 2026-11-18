@@ -180,7 +180,6 @@ describe('redactTelemetryUrls', () => {
     const redacted = redactTelemetryUrls(
       "https://h/api/search?q=o'brien&token=SECRET"
     )
-    expect(redacted).not.toContain('SECRET')
     expect(redacted).toBe('https://h/api/search')
   })
 
