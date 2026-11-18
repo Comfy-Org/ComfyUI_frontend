@@ -81,27 +81,35 @@ onBeforeUnmount(() => {
 whenever(() => !canvasStore.linearMode, bindWidget)
 watch(() => canvasStore.currentGraph, bindWidget)
 
-function getWidgetHeight(
+function getRowHeights(
   widget: IBaseWidget,
   node: LGraphNode,
-  width: number
-): number {
-  if (widget.computedHeight !== undefined) {
-    return Math.max(0, widget.computedHeight)
+  row: HTMLElement
+): { minHeight: number; height: number; grows: boolean } {
+  const sizing = getWidgetSizing(widget, node, row.clientWidth)
+  if (sizing?.kind === 'growable') {
+    const minHeight = Math.max(0, sizing.minHeight)
+    const height = Math.max(minHeight, row.clientHeight)
+    return { minHeight, height, grows: true }
   }
-  const sizing = getWidgetSizing(widget, node, width)
-  return Math.max(0, sizing ? minRowHeight(sizing) : 20)
+  const height = Math.max(
+    0,
+    widget.computedHeight ?? (sizing ? minRowHeight(sizing) : 20)
+  )
+  return { minHeight: height, height, grows: false }
 }
 
 function draw() {
   if (!widgetInstance || !node) return
-  const width = canvasEl.value.parentElement.clientWidth
-  const height = getWidgetHeight(widgetInstance, node, width)
-  containerHeight.value = height
+  const row = canvasEl.value.parentElement
+  const width = row.clientWidth
+  const { minHeight, height, grows } = getRowHeights(widgetInstance, node, row)
+  containerHeight.value = minHeight
   node.canvasHeight = height
   widgetInstance.y = 0
   widgetInstance.last_y = 0
   widgetInstance.width = width
+  if (grows) widgetInstance.computedHeight = height
   canvasEl.value.height = height === 0 ? 0 : (height + 2) * scaleFactor
   canvasEl.value.width = width * scaleFactor
   const ctx = canvasEl.value.getContext('2d')
