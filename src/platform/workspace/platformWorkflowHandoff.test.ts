@@ -186,27 +186,32 @@ describe('openPlatformWithWorkflow', () => {
   })
 
   function openWorkflow() {
-    const prepareForSave = vi.fn()
-    useWorkflowStore().activeWorkflow = fromPartial({
+    const saved = { nodes: [{ id: 1, type: 'BiRefNet' }] }
+    const workflow = {
       filename: 'portrait',
-      activeState: WORKFLOW,
-      changeTracker: { prepareForSave }
-    })
-    return prepareForSave
+      activeState: { nodes: [{ id: 1, type: 'Stale' }] },
+      changeTracker: {
+        prepareForSave: () => {
+          workflow.activeState = saved
+        }
+      }
+    }
+    useWorkflowStore().activeWorkflow = fromPartial(workflow)
+    return saved
   }
 
-  it('opens the wizard with this tab as its opener and hands it the saved state of the open workflow', () => {
-    const prepareForSave = openWorkflow()
+  it('opens the wizard with this tab as its opener and hands it the open workflow as saved at the click', () => {
+    const saved = openWorkflow()
     const { wizard, postMessage, close } = openedWindow()
     const open = vi.spyOn(window, 'open').mockReturnValue(wizard)
 
     expect(openPlatformWithWorkflow(URL_WITH_NONCE, NONCE)).toBe(true)
+    saved.nodes[0].type = 'EditedAfterTheClick'
     receive(READY, wizard)
     close()
     vi.advanceTimersByTime(1000)
 
     expect(open).toHaveBeenCalledExactlyOnceWith(URL_WITH_NONCE, '_blank')
-    expect(prepareForSave).toHaveBeenCalledOnce()
     expect(postMessage).toHaveBeenCalledExactlyOnceWith(
       {
         type: 'comfy-build-handoff:workflow',

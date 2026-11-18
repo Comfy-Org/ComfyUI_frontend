@@ -22,7 +22,9 @@ interface WorkflowHandoff extends HandedWorkflow {
 
 /** A nonce Platform's build wizard accepts for one handoff. */
 export function createHandoffNonce(): string {
-  return crypto.randomUUID()
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+    byte.toString(16).padStart(2, '0')
+  ).join('')
 }
 
 /** Platform's build wizard at its import step, asking its opener for the workflow under `nonce`. */
