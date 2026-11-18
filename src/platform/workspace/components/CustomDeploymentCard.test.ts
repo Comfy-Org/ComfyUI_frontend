@@ -1,14 +1,25 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
+import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 
 import CustomDeploymentCard from './CustomDeploymentCard.vue'
+
+vi.mock(import('@/base/common/downloadUtil'), () => ({
+  downloadBlob: vi.fn()
+}))
+
+vi.mock(import('@/platform/workflow/deploy/utils/agentApps'), () => ({
+  openAgentApp: vi.fn()
+}))
 
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
@@ -31,7 +42,7 @@ function renderCard(
   pitch: Partial<CustomDeploymentPitch> = {},
   videoSources: { src: string; type: string }[] = []
 ) {
-  const user = userEvent.setup()
+  const user = userEvent.setup({ pointerEventsCheck: 0 })
   const onDone = vi.fn()
   const onDismiss = vi.fn()
   render(CustomDeploymentCard, {
@@ -51,6 +62,11 @@ function renderCard(
     global: { plugins: [i18n] }
   })
   return { onDone, onDismiss, user }
+}
+
+async function pickRow(user: ReturnType<typeof userEvent.setup>, name: string) {
+  await user.click(screen.getByTestId('custom-deployment-agent'))
+  await user.click(await screen.findByRole('menuitem', { name }))
 }
 
 describe('CustomDeploymentCard', () => {
@@ -116,30 +132,89 @@ describe('CustomDeploymentCard', () => {
     )
   })
 
+  it('keeps its label on a menu that offers Claude, Codex and a copy', async () => {
+    const { user } = renderCard()
+    const trigger = screen.getByTestId('custom-deployment-agent')
+
+    expect(trigger).toHaveTextContent('Build with your agent')
+    await user.click(trigger)
+
+    expect(
+      (await screen.findAllByRole('menuitem')).map((item) =>
+        item.textContent.trim()
+      )
+    ).toEqual(['Open in Claude desktop', 'Open in Codex', 'Copy prompt'])
+  })
+
+  it.for([
+    { row: 'Open in Claude desktop', app: 'claude' },
+    { row: 'Open in Codex', app: 'codex' }
+  ])(
+    '$row starts the app with the brief and stays open',
+    async ({ row, app }) => {
+      const { onDone, user } = renderCard()
+
+      await pickRow(user, row)
+
+      expect(openAgentApp).toHaveBeenCalledWith(app, '# The brief for an agent')
+      expect(downloadBlob).not.toHaveBeenCalled()
+      expect(onDone).not.toHaveBeenCalled()
+    }
+  )
+
   it('copies the brief for an agent, then says so and stays open', async () => {
     const { onDone, user } = renderCard()
 
-    await user.click(screen.getByTestId('custom-deployment-agent'))
+    await pickRow(user, 'Copy prompt')
 
+    await waitFor(() =>
+      expect(screen.getByTestId('custom-deployment-agent')).toHaveTextContent(
+        /^Copied/
+      )
+    )
     expect(await navigator.clipboard.readText()).toBe(
       '# The brief for an agent'
     )
-    expect(screen.getByTestId('custom-deployment-agent')).toHaveTextContent(
-      /^Copied/
-    )
+    expect(downloadBlob).not.toHaveBeenCalled()
     expect(onDone).not.toHaveBeenCalled()
   })
 
-  it('keeps the original label when the brief did not reach the clipboard', async () => {
-    const { user } = renderCard()
+  it('keeps the original label and downloads nothing when the brief did not reach the clipboard', async () => {
+    const { user } = renderCard({ workflowFileName: 'portrait.json' })
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValueOnce(
       new Error('Clipboard permission denied')
     )
 
-    await user.click(screen.getByTestId('custom-deployment-agent'))
+    await pickRow(user, 'Copy prompt')
 
+    await waitFor(() =>
+      expect(screen.getByTestId('custom-deployment-agent')).not.toHaveAttribute(
+        'data-state',
+        'open'
+      )
+    )
     expect(screen.getByTestId('custom-deployment-agent')).toHaveTextContent(
       'Build with your agent'
+    )
+    expect(downloadBlob).not.toHaveBeenCalled()
+  })
+
+  it('downloads the open workflow when it opens an app with a brief that names one', async () => {
+    const activeState = { nodes: [{ id: 1, type: 'BiRefNet' }] }
+    useWorkflowStore().activeWorkflow = fromPartial({
+      activeState,
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const { user } = renderCard({ workflowFileName: 'portrait.json' })
+
+    await pickRow(user, 'Open in Claude desktop')
+
+    const [fileName, blob] = vi.mocked(downloadBlob).mock.calls[0]
+    expect(fileName).toBe('portrait.json')
+    expect(JSON.parse(await blob.text())).toEqual(activeState)
+    expect(openAgentApp).toHaveBeenCalledWith(
+      'claude',
+      '# The brief for an agent'
     )
   })
 

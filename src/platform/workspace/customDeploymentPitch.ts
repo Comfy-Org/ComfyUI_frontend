@@ -16,6 +16,8 @@ export interface CustomDeploymentPitch {
   points: readonly string[]
   platformLabel: string
   brief: string
+  /** The name the brief gives the open workflow, downloaded with the brief. */
+  workflowFileName?: string
   missing?: readonly MissingItemsRow[]
   note?: string
 }

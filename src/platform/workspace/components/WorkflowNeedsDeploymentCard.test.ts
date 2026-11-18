@@ -1,11 +1,13 @@
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { downloadBlob } from '@/base/common/downloadUtil'
 import type { useExternalLink } from '@/composables/useExternalLink'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -45,6 +47,10 @@ vi.mock(import('@/platform/workspace/openWorkflowForCheck'), () => ({
     )
     return { nodeTypes: [...missingNodeTypes, 'SaveImage'], missingNodeTypes }
   }
+}))
+
+vi.mock(import('@/base/common/downloadUtil'), () => ({
+  downloadBlob: vi.fn()
 }))
 
 vi.mock(import('@/config/comfyApi'), () => ({
@@ -117,11 +123,21 @@ function renderCard({
   )
   useMissingNodesErrorStore(pinia).surfaceMissingNodes(nodeTypes)
   useMissingModelStore(pinia).setMissingModels(models)
-  const user = userEvent.setup()
+  const user = userEvent.setup({ pointerEventsCheck: 0 })
   render(WorkflowNeedsDeploymentCard, {
     global: { plugins: [pinia, testI18n] }
   })
   return user
+}
+
+async function copyPrompt(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByTestId('custom-deployment-agent'))
+  await user.click(await screen.findByRole('menuitem', { name: 'Copy prompt' }))
+  await waitFor(() =>
+    expect(screen.getByTestId('custom-deployment-agent')).toHaveTextContent(
+      /^Copied/
+    )
+  )
 }
 
 describe('WorkflowNeedsDeploymentCard', () => {
@@ -221,7 +237,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
       ]
     })
 
-    await user.click(screen.getByTestId('custom-deployment-agent'))
+    await copyPrompt(user)
 
     const brief = await navigator.clipboard.readText()
     expect(brief).toContain('- Pack `comfyui-kjnodes`: `KJ`')
@@ -230,6 +246,25 @@ describe('WorkflowNeedsDeploymentCard', () => {
       '- `sd_xl_base_1.0.safetensors` in `models/checkpoints`'
     )
     expect(brief).not.toContain('OldSampler')
+  })
+
+  it('downloads the open workflow under the file name the brief gives the agent', async () => {
+    const activeState = { nodes: [{ id: 1, type: 'KJ' }] }
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait upscale.json',
+      activeState,
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const user = renderCard()
+
+    await copyPrompt(user)
+
+    expect(await navigator.clipboard.readText()).toContain(
+      'The browser downloaded the workflow as `portrait upscale.json`'
+    )
+    const [fileName, blob] = vi.mocked(downloadBlob).mock.calls[0]
+    expect(fileName).toBe('portrait upscale.json')
+    expect(JSON.parse(await blob.text())).toEqual(activeState)
   })
 
   it('lists and briefs a model Comfy Cloud finds missing after the dialog opens', async () => {
@@ -246,7 +281,7 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(screen.getByTestId('custom-deployment-missing')).toHaveTextContent(
       '1 missing modelsd_xl_base_1.0.safetensors'
     )
-    await user.click(screen.getByTestId('custom-deployment-agent'))
+    await copyPrompt(user)
     expect(await navigator.clipboard.readText()).toContain(
       '- `sd_xl_base_1.0.safetensors` in `models/checkpoints`'
     )

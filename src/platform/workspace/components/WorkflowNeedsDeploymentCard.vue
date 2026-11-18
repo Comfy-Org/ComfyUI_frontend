@@ -11,6 +11,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import CustomDeploymentCard from '@/platform/workspace/components/CustomDeploymentCard.vue'
@@ -43,6 +45,11 @@ const missingNodes = nodesNeedingDeployment(
 const packs = missingPacksOf(missingNodes)
 const models = computed(() =>
   missingModelsOf(missingModelStore.visibleMissingModelCandidates ?? [])
+)
+
+const workflowFileName = handoffFileName(
+  useWorkflowStore().activeWorkflow?.filename.replace(/\.json$/i, '') ||
+    'workflow'
 )
 
 const offer = workflowDeploymentOffer(
@@ -85,7 +92,8 @@ const missing = computed<MissingItemsRow[]>(() => [
 
 const pitch = computed<CustomDeploymentPitch>(() => ({
   ...customDeploymentPitch(),
-  brief: workflowDeploymentBrief(packs, models.value),
+  brief: workflowDeploymentBrief(packs, models.value, workflowFileName),
+  workflowFileName,
   missing: missing.value,
   ...(offer.kind === 'noneRunIt'
     ? {
