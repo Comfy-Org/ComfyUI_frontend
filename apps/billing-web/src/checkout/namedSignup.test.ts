@@ -76,10 +76,9 @@ describe('createNamedSignup', () => {
     expect(reloaded.recoverOptions({ operationId: 'op_other' })).toEqual({})
   })
 
-  it('remembers the replacement for the page when storage is refused', () => {
-    const named = createNamedSignup(() => refusingStorage())
-    named.replaced(SIGNUP)
-
-    expect(named.recoverOptions(SIGNUP)).toEqual({})
+  it('names nothing when storage is refused, so no reload can revive the linked signup', () => {
+    expect(
+      createNamedSignup(() => refusingStorage()).recoverOptions(SIGNUP)
+    ).toEqual({})
   })
 })
