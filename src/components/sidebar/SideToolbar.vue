@@ -65,6 +65,11 @@
           :side="sidebarLocation === 'left' ? 'right' : 'left'"
           class="flex w-full shrink-0 justify-center pb-1"
         />
+        <LoginButton
+          v-else-if="showLoginButton"
+          :side="sidebarLocation === 'left' ? 'right' : 'left'"
+          class="mb-1 shrink-0"
+        />
       </div>
     </div>
     <HelpCenterPopups :is-small />
@@ -94,6 +99,7 @@ import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPa
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
@@ -137,6 +143,9 @@ const { isLoggedIn } = useCurrentUser()
 const { flags } = useFeatureFlags()
 const showProfileButton = computed(
   () => flags.billingNewUxEnabled && isLoggedIn.value
+)
+const showLoginButton = computed(
+  () => flags.billingNewUxEnabled && !isLoggedIn.value && !isCloud
 )
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
@@ -272,7 +281,7 @@ onMounted(() => {
   )
 
   checkOverflow()
-  watch(showProfileButton, checkOverflow)
+  watch([showProfileButton, showLoginButton], checkOverflow)
 
   onBeforeUnmount(() => {
     overflowObserver.stop()
