@@ -11,7 +11,7 @@ import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscr
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { LGraphNode,LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
