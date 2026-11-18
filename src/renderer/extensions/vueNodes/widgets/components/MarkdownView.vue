@@ -3,8 +3,7 @@
     class="comfy-markdown-content size-full min-h-16 overflow-y-auto rounded-lg contain-size"
     tabindex="0"
     data-capture-wheel="true"
-    role="textarea"
-    aria-readonly="true"
+    role="region"
     :html
   />
 </template>
