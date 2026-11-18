@@ -1485,6 +1485,7 @@ describe('attachDocOpMinter', () => {
       expect(docInputs(doc, resize.id, catalog)).toEqual([
         { name: 'resize_type.multiplier', link: null },
         { name: 'resize_type', link: null },
+        { name: 'images', link: null },
         {
           name: 'images.image_1',
           link: resize.inputs[resize.findInputSlot('images.image_1')].link
