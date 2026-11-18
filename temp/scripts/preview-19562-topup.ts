@@ -97,6 +97,7 @@ async function findCardFrame(page: Page): Promise<Frame> {
       const cardChoice = frame
         .getByRole('radio', { name: cardChoiceLabel })
         .or(frame.getByRole('button', { name: cardChoiceLabel }))
+        .or(frame.getByText('Card', { exact: true }))
         .or(
           frame.getByRole('link', {
             name: /^(?:Pay without Link|Continue as guest)$/i
