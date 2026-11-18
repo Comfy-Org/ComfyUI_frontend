@@ -2822,6 +2822,10 @@ describe('useAgentSession (v1 composition root)', () => {
       [
         'a null selection',
         { error: 'already answered', status: 'answered', selected: null }
+      ],
+      [
+        'a statusless selection',
+        { error: 'already answered', selected: ['flux'] }
       ]
     ] as const)(
       'does not report a 409 with %s as another answer winning',
@@ -3213,30 +3217,40 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('retires a live-socket 409 without a false uncertainty notice', async () => {
-    const answerAsk = vi
-      .fn<AgentRestClient['answerAsk']>()
-      .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
-    const { source, emit, status } = fakeEvents()
-    const session = useAgentSession({
-      rest: fakeRest({ answerAsk }),
-      events: source
-    })
-    session.start()
-    status(true)
-    await session.sendMessage('build it')
-    emit(runApproval('msg-1'))
+  it('expires a live-socket 409 marker without a false uncertainty notice', async () => {
+    vi.useFakeTimers()
+    try {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockRejectedValue(
+          new AgentApiError('already answered', 409, undefined)
+        )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it')
+      emit(runApproval('msg-1'))
 
-    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
+      await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
-    expect(reportError).not.toHaveBeenCalled()
-    expect(session.notices.value).toEqual([])
-    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
-    expect(
-      useAgentConversationStore().messages[0].parts.some(
-        (part) => part.type === 'runApproval'
-      )
-    ).toBe(false)
+      await vi.advanceTimersByTimeAsync(15_001)
+      status(false)
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(session.notices.value).toEqual([])
+      expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
+      expect(
+        useAgentConversationStore().messages[0].parts.some(
+          (part) => part.type === 'runApproval'
+        )
+      ).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   // A 500 here is ambiguous, not a clean miss: `asks.go` CASes the answer onto
@@ -3583,7 +3597,7 @@ describe('useAgentSession (v1 composition root)', () => {
     it('treats an empty approval receipt as status-only for object answers', async () => {
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
-        .mockResolvedValue({ status: 'answered', selected: [] })
+        .mockResolvedValue({ status: 'answered', selected: [], other_text: '' })
       const events = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
@@ -6444,8 +6458,14 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(3_001)
       expect(approvalParts(session)).toHaveLength(0)
+      expect(
+        useAgentConversationStore().isAskPermanentlyRetired(
+          'turn-1:call-1',
+          'th-1'
+        )
+      ).toBe(true)
 
       emit(runApproval('msg-1'))
       expect(approvalParts(session)).toHaveLength(0)
@@ -6561,7 +6581,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g45) recovery reads the newest ask-bearing open row', async () => {
+  it('(g45) recovery does not fall back to an older ask-bearing row', async () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
@@ -6585,9 +6605,7 @@ describe('useAgentSession (v1 composition root)', () => {
       status(true)
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(approvalParts(session).map((part) => part.askId)).toEqual([
-        'turn-1:call-1'
-      ])
+      expect(approvalParts(session)).toEqual([])
     } finally {
       vi.useRealTimers()
     }

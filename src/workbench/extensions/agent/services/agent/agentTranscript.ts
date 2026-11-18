@@ -557,21 +557,11 @@ function keepAuthoritativeAsk(
   isAskRetired: (askId: string) => boolean
 ): void {
   const rowAsk = row.status === 'streaming' ? row.pending_ask : undefined
-  const priorAvailableAskId = message.parts.findLast((part) => {
-    const askId = askIdOf(part)
-    return (
-      isOpenAskPart(part) &&
-      askId !== undefined &&
-      askId !== rowAsk?.ask_id &&
-      !isAskUnavailable(askId)
-    )
-  })
   const authoritativeAskId =
-    rowAsk !== undefined && !isAskRetired(rowAsk.ask_id)
+    rowAsk !== undefined &&
+    (!isAskUnavailable(rowAsk.ask_id) || isAskRetired(rowAsk.ask_id))
       ? rowAsk.ask_id
-      : ((priorAvailableAskId === undefined
-          ? undefined
-          : askIdOf(priorAvailableAskId)) ?? rowAsk?.ask_id)
+      : undefined
   message.parts = message.parts.filter((part) => {
     if (!isOpenAskPart(part)) return true
     const askId = askIdOf(part)
