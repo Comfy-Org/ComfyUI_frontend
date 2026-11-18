@@ -2550,6 +2550,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function retainedSettledOutcomeAtDeadline(
+    signal: AbortSignal,
+    deadlineReason: Error,
+    outcome: TurnOutcome | undefined
+  ): TurnOutcome | undefined {
+    if (signal.reason !== deadlineReason) return undefined
+    return outcome?.kind === 'error' || outcome?.kind === 'turn-missing'
+      ? outcome
+      : undefined
+  }
+
   async function fetchSettledTurnOutcome(
     turn: LiveTurn,
     generation: number,
@@ -2570,11 +2581,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return outcome
     } catch (error) {
-      if (
-        signal.reason === deadlineReason &&
-        (outcome?.kind === 'error' || outcome?.kind === 'turn-missing')
+      const retained = retainedSettledOutcomeAtDeadline(
+        signal,
+        deadlineReason,
+        outcome
       )
-        return outcome
+      if (retained) return retained
       throw error
     }
   }
