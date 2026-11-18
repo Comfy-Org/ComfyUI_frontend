@@ -6,6 +6,7 @@ import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillin
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 import { loadLiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 import {
+  getBlockedWriteViolation,
   getLiveCloudDestinationViolation,
   isLiveCloudMutationAllowed
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
@@ -15,6 +16,7 @@ export async function installLiveCloudBillingRouting(
   networkPolicy: NetworkPolicy,
   config: LiveCloudBillingConfig
 ) {
+  let testEnded = false
   await context.route('**/*', async (route) => {
     const request = route.request()
     const url = new URL(request.url())
@@ -28,8 +30,13 @@ export async function installLiveCloudBillingRouting(
       await route.abort('blockedbyclient')
       return
     }
+    // A local frontend reaches Cloud through this rewrite. A deployed frontend
+    // is already on the Cloud origin, so its API requests leave the browser
+    // unchanged: Cloud refuses a session read that lacks the browser's
+    // Sec-Fetch-Site header, which a re-sent copy does not carry.
     const isCloudProxyRequest =
       url.origin === config.PLAYWRIGHT_TEST_URL &&
+      config.PLAYWRIGHT_TEST_URL !== config.PLAYWRIGHT_SETUP_API_URL &&
       /^\/(api|internal)(\/|$)/.test(url.pathname)
     const targetUrl = isCloudProxyRequest
       ? new URL(url.pathname + url.search, config.PLAYWRIGHT_SETUP_API_URL)
@@ -39,7 +46,11 @@ export async function installLiveCloudBillingRouting(
       !isLiveCloudMutationAllowed(targetUrl, request.method(), config)
     ) {
       networkPolicy.unexpected.add(
-        `Mutation ${request.method()} ${url.origin}${url.pathname}`
+        getBlockedWriteViolation(
+          url,
+          request.method(),
+          config.PLAYWRIGHT_TEST_URL
+        )
       )
       await route.abort('blockedbyclient')
       return
@@ -52,12 +63,17 @@ export async function installLiveCloudBillingRouting(
         })
         await route.fulfill({ response })
       } catch {
+        // A request still in flight when the test ends dies with the context.
+        if (testEnded) return
         throw new Error(`Cloud proxy request failed: ${url.pathname}`)
       }
       return
     }
     await route.fallback()
   })
+  return () => {
+    testEnded = true
+  }
 }
 
 export async function signInToLiveCloud(page: Page) {

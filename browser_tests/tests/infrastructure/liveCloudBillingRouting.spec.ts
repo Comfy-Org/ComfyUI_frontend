@@ -13,6 +13,11 @@ import { expect } from '@playwright/test'
 import { liveCloudBillingFixture } from '@e2e/fixtures/liveCloudBillingFixture'
 import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
+// The sandbox never answers this path, so the request outlives the test.
+const PENDING_PATH = '/api/pending'
+// The sandbox drops the connection for this path.
+const FAILING_PATH = '/api/failing'
+
 const test = liveCloudBillingFixture.extend<{
   sandboxProxy: { server: string; requests: string[] }
 }>({
@@ -54,9 +59,18 @@ const test = liveCloudBillingFixture.extend<{
       (request, response) => {
         const destination = `${request.method} https://${request.headers.host}${request.url}`
         requests.push(destination)
+        if (request.url === PENDING_PATH) return
+        if (request.url === FAILING_PATH) {
+          request.socket.destroy()
+          return
+        }
         response.setHeader(
           'Access-Control-Allow-Origin',
           liveCloudBillingConfig.PLAYWRIGHT_TEST_URL
+        )
+        response.setHeader(
+          'X-Sandbox-Fetch-Site',
+          request.headers['sec-fetch-site'] ?? 'none'
         )
         response.end(destination)
       }
@@ -111,6 +125,13 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
     ).toBe('POST https://testcloud.comfy.org/api/auth/token')
     expect(
       await page.evaluate(() =>
+        fetch('/api/auth/sso/discover', { method: 'POST' }).then((response) =>
+          response.text()
+        )
+      )
+    ).toBe('POST https://testcloud.comfy.org/api/auth/sso/discover')
+    expect(
+      await page.evaluate(() =>
         fetch('https://testapi.comfy.org/customers', { method: 'POST' }).then(
           (response) => response.text()
         )
@@ -118,6 +139,7 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
     ).toBe('POST https://testapi.comfy.org/customers')
     expect(sandboxProxy.requests).toEqual([
       'POST https://testcloud.comfy.org/api/auth/token',
+      'POST https://testcloud.comfy.org/api/auth/sso/discover',
       'POST https://testapi.comfy.org/customers'
     ])
   })
@@ -147,6 +169,68 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
       test.fail(true, 'The recorded mutation must fail fixture teardown')
     })
   }
+
+  test('blocks background POSTs without failing the run', async ({
+    page,
+    networkPolicy,
+    sandboxProxy
+  }) => {
+    await page.route('http://localhost:5173/', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+    )
+    await page.goto('http://localhost:5173/')
+    for (const url of ['/reslyf/settings', 'https://mp.comfy.org/track/']) {
+      expect(
+        await page.evaluate(
+          (url) =>
+            fetch(url, { method: 'POST' }).then(
+              () => 'sent',
+              () => 'blocked'
+            ),
+          url
+        )
+      ).toBe('blocked')
+    }
+    expect([...networkPolicy.unexpected]).toEqual([
+      'Background POST http://localhost:5173/reslyf/settings',
+      'Background POST https://mp.comfy.org/track/'
+    ])
+    expect(sandboxProxy.requests).toEqual([])
+  })
+
+  test('fails when a proxied request fails during the test', async ({
+    page,
+    sandboxProxy
+  }) => {
+    test.fail(true, 'A Cloud proxy failure during the test must fail it')
+    await page.route('http://localhost:5173/', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+    )
+    await page.goto('http://localhost:5173/')
+    await page.evaluate((path) => {
+      void fetch(path)
+    }, FAILING_PATH)
+    await expect
+      .poll(() => sandboxProxy.requests)
+      .toEqual([`GET https://testcloud.comfy.org${FAILING_PATH}`])
+    await page.waitForEvent('close')
+  })
+
+  test('ignores a proxied request still in flight when the test ends', async ({
+    page,
+    sandboxProxy
+  }) => {
+    await page.route('http://localhost:5173/', (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+    )
+    await page.goto('http://localhost:5173/')
+    await page.evaluate((path) => {
+      void fetch(path)
+    }, PENDING_PATH)
+    await expect
+      .poll(() => sandboxProxy.requests)
+      .toEqual([`GET https://testcloud.comfy.org${PENDING_PATH}`])
+  })
 
   for (const client of ['request', 'context.request'] as const) {
     test(`${client} retains the API origin and mutation guards`, async ({
@@ -213,3 +297,61 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
     test.fail(true, 'The recorded WebSocket must fail fixture teardown')
   })
 })
+
+test.describe(
+  'Live Cloud network boundary on a deployed frontend',
+  { tag: '@smoke' },
+  () => {
+    test.use({
+      liveCloudBillingConfig: liveCloudBillingConfigSchema.parse({
+        PLAYWRIGHT_TEST_URL: 'https://testcloud.comfy.org',
+        PLAYWRIGHT_SETUP_API_URL: 'https://testcloud.comfy.org',
+        CLOUD_ACCOUNT_EMAIL: 'routing@example.com',
+        CLOUD_ACCOUNT_PASSWORD: 'unused'
+      })
+    })
+
+    test.beforeEach(async ({ page }) => {
+      await page.route('https://testcloud.comfy.org/', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+      )
+      await page.goto('https://testcloud.comfy.org/')
+    })
+
+    test('sends API requests from the browser itself', async ({
+      page,
+      sandboxProxy
+    }) => {
+      expect(
+        await page.evaluate(() =>
+          fetch('/api/auth/session').then((response) =>
+            response.headers.get('X-Sandbox-Fetch-Site')
+          )
+        )
+      ).toBe('same-origin')
+      expect(sandboxProxy.requests).toEqual([
+        'GET https://testcloud.comfy.org/api/auth/session'
+      ])
+    })
+
+    test('blocks POST /api/billing/subscribe and fails even when the app catches it', async ({
+      page,
+      networkPolicy,
+      sandboxProxy
+    }) => {
+      expect(
+        await page.evaluate(() =>
+          fetch('/api/billing/subscribe', { method: 'POST' }).then(
+            () => 'sent',
+            () => 'blocked'
+          )
+        )
+      ).toBe('blocked')
+      expect([...networkPolicy.unexpected]).toEqual([
+        'Mutation POST https://testcloud.comfy.org/api/billing/subscribe'
+      ])
+      expect(sandboxProxy.requests).toEqual([])
+      test.fail(true, 'The recorded mutation must fail fixture teardown')
+    })
+  }
+)
