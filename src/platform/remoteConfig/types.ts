@@ -118,7 +118,6 @@ export type RemoteConfig = Partial<GetFeaturesResponses[200]> & {
   /** Offers Start on a stopped deployment in the Run bar's deployment menu. */
   deployment_start_enabled?: boolean
   user_secrets_enabled?: boolean
-  agent_consent_ingest_enabled?: boolean
   node_library_essentials_enabled?: boolean
   supports_model_type_tags?: boolean
   free_tier_credits?: number

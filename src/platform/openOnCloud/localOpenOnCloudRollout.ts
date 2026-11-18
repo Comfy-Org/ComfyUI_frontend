@@ -4,19 +4,13 @@ import { readonly, shallowRef, watch } from 'vue'
 import { z } from 'zod'
 
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
-import { OPEN_ON_CLOUD_FEATURES_ACCEPT } from '@/platform/remoteConfig/serverFeatureFlag'
 
 const zOpenOnCloudRollout = z.object({
   open_on_cloud_enabled: z.boolean().optional(),
-  agent_consent_ingest_enabled: z.boolean().optional(),
   open_on_cloud_use_local_agent_enabled: z.boolean().optional()
 })
 
-type OpenOnCloudRollout = {
-  publicEnabled?: boolean
-  accountEnabled?: boolean
-  localAgentEnabled?: boolean
-}
+type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
 
 const rollout = shallowRef<OpenOnCloudRollout>()
 
@@ -29,24 +23,6 @@ function reportRolloutReadFailure(cause: unknown): void {
     level: 'warning',
     tags: { outcome: 'degraded' }
   })
-}
-
-function rolloutFromFeatures(
-  features: z.infer<typeof zOpenOnCloudRollout>,
-  authenticated: boolean
-): OpenOnCloudRollout {
-  const {
-    open_on_cloud_enabled: enabled,
-    agent_consent_ingest_enabled: consentIngestEnabled,
-    open_on_cloud_use_local_agent_enabled: localAgentEnabled
-  } = features
-  return {
-    publicEnabled: consentIngestEnabled === undefined ? undefined : enabled,
-    accountEnabled: authenticated
-      ? (consentIngestEnabled ?? enabled)
-      : undefined,
-    localAgentEnabled: authenticated ? localAgentEnabled : undefined
-  }
 }
 
 async function readRollout(
@@ -62,10 +38,7 @@ async function readRollout(
     const response = await fetch(endpoint, {
       cache: 'no-store',
       credentials: 'omit',
-      headers: {
-        Accept: OPEN_ON_CLOUD_FEATURES_ACCEPT,
-        ...(token && { Authorization: `Bearer ${token}` })
-      },
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       redirect: 'error',
       signal: combineAbortSignals([signal, AbortSignal.timeout(5_000)])
     })
@@ -77,11 +50,8 @@ async function readRollout(
     }
     const served = zOpenOnCloudRollout.safeParse(await response.json())
     signal.throwIfAborted()
-    if (!served.success) {
-      reportRolloutReadFailure(new Error('Invalid Cloud rollout response'))
-      return
-    }
-    rollout.value = rolloutFromFeatures(served.data, Boolean(token))
+    if (served.success) rollout.value = served.data
+    else reportRolloutReadFailure(new Error('Invalid Cloud rollout response'))
   } catch (error) {
     if (!signal.aborted) reportRolloutReadFailure(error)
   }
@@ -96,7 +66,7 @@ export function startLocalOpenOnCloudRollout(
     (userId, _, onCleanup) => {
       const controller = new AbortController()
       onCleanup(() => controller.abort())
-      rollout.value = { publicEnabled: rollout.value?.publicEnabled }
+      rollout.value = undefined
       void readRollout(userId ? getToken : undefined, controller.signal)
     },
     { immediate: true, flush: 'sync' }

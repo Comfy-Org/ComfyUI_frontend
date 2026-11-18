@@ -1,7 +1,5 @@
 import { expect } from '@playwright/test'
 
-import { OPEN_ON_CLOUD_FEATURES_ACCEPT } from '@/platform/remoteConfig/serverFeatureFlag'
-
 import { ComfyPage, comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import {
@@ -26,10 +24,7 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
         (route) =>
           route.fulfill({
             headers: { 'access-control-allow-origin': '*' },
-            json: {
-              open_on_cloud_enabled: false,
-              agent_consent_ingest_enabled: false
-            }
+            json: { open_on_cloud_enabled: false }
           })
       )
     })
@@ -95,21 +90,16 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
       await page.route(
         (url) => url.protocol === 'https:' && url.pathname === '/api/features',
         (route) => {
-          expect(route.request().headers().accept).toBe(
-            OPEN_ON_CLOUD_FEATURES_ACCEPT
-          )
+          expect(route.request().headers().authorization).toBeUndefined()
           return route.fulfill({
             headers: { 'access-control-allow-origin': '*' },
-            json: {
-              open_on_cloud_enabled: true,
-              agent_consent_ingest_enabled: false
-            }
+            json: { open_on_cloud_enabled: true }
           })
         }
       )
     })
 
-    test('shows the Cloud button before sign-in when Cloud enables the public rollout', async ({
+    test('shows the Cloud button before sign-in when Cloud returns the existing flag', async ({
       comfyPage
     }) => {
       await expect(comfyPage.page.getByTestId('cloud-button')).toBeVisible()

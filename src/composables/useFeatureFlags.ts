@@ -222,19 +222,7 @@ export function useFeatureFlags() {
     get openOnCloudEnabled() {
       const served = isCloud
         ? remoteConfig.value.open_on_cloud_enabled
-        : (localOpenOnCloudRollout.value?.publicEnabled ??
-          localOpenOnCloudRollout.value?.accountEnabled ??
-          remoteConfig.value.open_on_cloud_enabled)
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
-        served
-      )
-    },
-    get openOnCloudAccountEnabled() {
-      const served = isCloud
-        ? (remoteConfig.value.agent_consent_ingest_enabled ??
-          remoteConfig.value.open_on_cloud_enabled)
-        : (localOpenOnCloudRollout.value?.accountEnabled ??
+        : (localOpenOnCloudRollout.value?.open_on_cloud_enabled ??
           remoteConfig.value.open_on_cloud_enabled)
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_ENABLED,
@@ -244,7 +232,8 @@ export function useFeatureFlags() {
     get openOnCloudUseLocalAgentEnabled() {
       const served = isCloud
         ? remoteConfig.value.open_on_cloud_use_local_agent_enabled
-        : (localOpenOnCloudRollout.value?.localAgentEnabled ??
+        : (localOpenOnCloudRollout.value
+            ?.open_on_cloud_use_local_agent_enabled ??
           remoteConfig.value.open_on_cloud_use_local_agent_enabled)
       return resolveStrictBooleanFlag(
         ServerFeatureFlag.OPEN_ON_CLOUD_USE_LOCAL_AGENT_ENABLED,

@@ -49,28 +49,17 @@ describe('Global Settings transport', () => {
   })
 
   const hosts = [
-    { cloud: true, openOnCloudAccountEnabled: false, host: '' },
-    { cloud: true, openOnCloudAccountEnabled: true, host: '' },
-    {
-      cloud: false,
-      openOnCloudAccountEnabled: false,
-      host: 'https://api.comfy.test'
-    },
-    {
-      cloud: false,
-      openOnCloudAccountEnabled: true,
-      host: 'https://cloud.comfy.test'
-    }
+    { cloud: true, openOnCloudEnabled: false, host: '' },
+    { cloud: true, openOnCloudEnabled: true, host: '' },
+    { cloud: false, openOnCloudEnabled: false, host: 'https://api.comfy.test' },
+    { cloud: false, openOnCloudEnabled: true, host: 'https://cloud.comfy.test' }
   ]
 
   it.for(hosts)(
-    'reads with the credential it is handed (Cloud=$cloud, account rollout=$openOnCloudAccountEnabled)',
-    async ({ cloud, openOnCloudAccountEnabled, host }) => {
+    'reads with the credential it is handed (Cloud=$cloud, Open on Cloud=$openOnCloudEnabled)',
+    async ({ cloud, openOnCloudEnabled, host }) => {
       distribution.isCloud = cloud
-      Object.assign(useFeatureFlags().flags, {
-        openOnCloudAccountEnabled,
-        openOnCloudEnabled: !openOnCloudAccountEnabled
-      })
+      Object.assign(useFeatureFlags().flags, { openOnCloudEnabled })
       respondWith(stored)
 
       await expect(getGlobalSetting(key, authHeader)).resolves.toEqual(stored)
@@ -84,13 +73,10 @@ describe('Global Settings transport', () => {
   )
 
   it.for(hosts)(
-    'posts a typed value to the collection (Cloud=$cloud, account rollout=$openOnCloudAccountEnabled)',
-    async ({ cloud, openOnCloudAccountEnabled, host }) => {
+    'posts a typed value to the collection (Cloud=$cloud, Open on Cloud=$openOnCloudEnabled)',
+    async ({ cloud, openOnCloudEnabled, host }) => {
       distribution.isCloud = cloud
-      Object.assign(useFeatureFlags().flags, {
-        openOnCloudAccountEnabled,
-        openOnCloudEnabled: !openOnCloudAccountEnabled
-      })
+      Object.assign(useFeatureFlags().flags, { openOnCloudEnabled })
       respondWith(stored)
 
       await expect(

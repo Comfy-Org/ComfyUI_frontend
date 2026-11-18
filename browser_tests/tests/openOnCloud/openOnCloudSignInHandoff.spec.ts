@@ -59,10 +59,7 @@ async function openSignedOutCloudTab(opener: Page): Promise<Page> {
     })
   ])
   await mockCloudBoot(cloudTab, {
-    features: {
-      open_on_cloud_enabled: true,
-      agent_consent_ingest_enabled: false
-    }
+    features: { open_on_cloud_enabled: true }
   })
   await preselectCloudUser(cloudTab)
   await cloudTab.route('**/customers', (route) => {
