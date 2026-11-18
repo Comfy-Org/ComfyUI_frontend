@@ -1054,8 +1054,10 @@ describe('useAgentCrdtFollower', () => {
 
       expect(projectionState.retryFailed).toHaveBeenLastCalledWith('wf-1')
       expect(status().canvasMayBeStale).toBe(true)
+      expect(status().canvasStaleCause).toBe('projection_failed')
 
       agentSocket.drop()
+      expect(status().canvasStaleCause).toBe('socket_closed')
       agentSocket.open()
       projectionState.retryFailed.mockReturnValueOnce(projectionState.applied())
       dispatchFrame('doc_subscribed', {
