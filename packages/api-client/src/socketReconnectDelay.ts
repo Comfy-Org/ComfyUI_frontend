@@ -1,6 +1,4 @@
 const FIXED_RECONNECT_DELAY_MS = 300
-// Under the 2 s before the Reconnecting toast shows, leaving room for the
-// reconnect itself, so a spread-out reconnect does not show the toast.
 const CLOUD_RECONNECT_WINDOW_MS = 1_500
 
 interface ClosedSocket {
