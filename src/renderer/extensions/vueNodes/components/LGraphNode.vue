@@ -14,7 +14,7 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        isTransparentHeaderless ? 'drop-shadow-lg' : ['shadow-xl', shapeClass],
+        isTransparentHeaderless ? 'drop-shadow-lg' : ['shadow-sm', shapeClass],
         'outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
