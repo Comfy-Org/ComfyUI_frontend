@@ -1,9 +1,6 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { processDynamicPrompt } from '@/utils/formatUtil'
+import { bindDynamicPromptSerializer } from '@/core/graph/widgets/dynamicPromptSerializer'
 import type { ComfyExtension } from '@/types/comfy'
-
-// Allows for simple dynamic prompt replacement
-// Inputs in the format {a|b} will have a random value of a or b chosen when the prompt is queued.
 
 export const dynamicPromptsExtension: ComfyExtension = {
   name: 'Comfy.DynamicPrompts',
@@ -11,11 +8,7 @@ export const dynamicPromptsExtension: ComfyExtension = {
     if (node.widgets) {
       const widgets = node.widgets.filter((w) => w.dynamicPrompts)
       for (const widget of widgets) {
-        widget.serializeValue = () => {
-          if (typeof widget.value !== 'string') return widget.value
-
-          return processDynamicPrompt(widget.value)
-        }
+        bindDynamicPromptSerializer(widget)
       }
     }
   }
