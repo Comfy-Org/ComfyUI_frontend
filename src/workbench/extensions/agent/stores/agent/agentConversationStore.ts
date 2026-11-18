@@ -356,29 +356,41 @@ function finishSnapshotTurn(
   const offset = liveToolOffset(message.parts, persistedParts)
   finishWithPersistedParts(message, persistedParts, {
     canvasOffset: offset,
-    toolCountOf: (toolCount) => toolCount + offset
+    toolCountOf: behindLiveCallId(message.parts, persistedParts, offset)
   })
 }
 
 /**
  * A reconnected turn streamed from its start, so its live tools line up with
  * the stored row from index 0, but tools missed in the drop can sit anywhere.
- * Each local part is re-anchored behind the live tool it followed.
  */
 function finishReconnectedTurn(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts']
 ): void {
-  const liveCallIds = toolCallIdsOf(message.parts)
-  const persistedCallIds = toolCallIdsOf(persistedParts)
   finishWithPersistedParts(message, persistedParts, {
     canvasOffset: 0,
-    toolCountOf: (toolCount) => {
-      if (toolCount === 0) return 0
-      const at = persistedCallIds.indexOf(liveCallIds[toolCount - 1])
-      return at < 0 ? toolCount : at + 1
-    }
+    toolCountOf: behindLiveCallId(message.parts, persistedParts, 0)
   })
+}
+
+/**
+ * Re-anchors a local part behind the stored copy of the live tool it followed,
+ * so a tool missed between two live ones does not shift it; `offset` places
+ * parts that came before any live tool.
+ */
+function behindLiveCallId(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  offset: number
+): (liveToolCount: number) => number {
+  const liveCallIds = toolCallIdsOf(liveParts)
+  const persistedCallIds = toolCallIdsOf(persistedParts)
+  return (toolCount) => {
+    if (toolCount === 0) return offset
+    const at = persistedCallIds.indexOf(liveCallIds[toolCount - 1])
+    return at < 0 ? toolCount + offset : at + 1
+  }
 }
 
 interface LocalPartAlignment {

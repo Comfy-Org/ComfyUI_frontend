@@ -2329,6 +2329,50 @@ describe('useAgentConversationStore', () => {
       ])
     })
 
+    it('keeps a post-reload tab link behind the live tool it followed when a later tool was missed', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'save', 'success'))
+      store.ingest(toolCall(SNAPSHOT_ROW_ID, 'run', 'success'))
+      store.ingest(activeTab('wf-1', SNAPSHOT_ROW_ID))
+      store.ingest(done(SNAPSHOT_ROW_ID))
+
+      store.reconcileSettledTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        [
+          storedTool(),
+          {
+            type: 'tool',
+            callId: 'call-save',
+            name: 'save',
+            state: 'done',
+            ok: true
+          },
+          {
+            type: 'tool',
+            callId: 'call-connect',
+            name: 'connect',
+            state: 'done',
+            ok: true
+          },
+          {
+            type: 'tool',
+            callId: 'call-run',
+            name: 'run',
+            state: 'done',
+            ok: true
+          }
+        ]
+      )
+
+      expect(
+        reconciledParts(store)?.map((part) =>
+          part.type === 'tool' ? part.name : part.type
+        )
+      ).toEqual(['add_node', 'save', 'connect', 'run', 'tabLink'])
+    })
+
     it('keeps a live canvas confirmation for a call the stored row keys by row id', () => {
       const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
       const store = useAgentConversationStore()
