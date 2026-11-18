@@ -1369,6 +1369,31 @@ describe('FullPageTopupView with auto top-up from the link', () => {
     expect(createHostedTopupCheckout).not.toHaveBeenCalled()
   })
 
+  it('pays a new card on the hosted checkout with the settings when the saved-card read failed, so the card is never confirmed under a guessed saving policy', async () => {
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      AUTO_TOP_UP_PATH,
+      { status: 'error', code: 'REQUEST_FAILED' },
+      PAYS_ONCE
+    )
+    await userEvent.click(
+      await screen.findByRole('tab', { name: 'Add new payment' })
+    )
+    readyCardForm()
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    await waitFor(() =>
+      expect(createHostedTopupCheckout).toHaveBeenCalledExactlyOnceWith({
+        amountCents: 2500,
+        returnUrl: `${window.location.origin}/return/topup`,
+        autoTopUp: { threshold_credits: 1055, target_credits: 11605 }
+      })
+    )
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
   it.for([
     { name: 'no default card', methods: [VISA], saves: true },
     {

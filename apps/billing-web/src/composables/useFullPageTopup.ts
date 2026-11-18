@@ -407,7 +407,10 @@ export function useFullPageTopup() {
 
   async function pay(choice: PayChoice) {
     if (!canPay.value || amountCents === undefined) return
-    if (autoTopUp !== undefined && autoTopUpPaysHosted.value)
+    if (
+      autoTopUp !== undefined &&
+      (autoTopUpPaysHosted.value || !savedMethodsRead.value)
+    )
       return payWithAutoTopUp(amountCents, autoTopUp)
     const run = sendFor(choice, amountCents)
     if (run === undefined) return
