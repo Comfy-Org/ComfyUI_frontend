@@ -65,6 +65,17 @@ describe('createNamedSignup', () => {
     })
   })
 
+  it('keeps every signup this tab replaced, across a reload', () => {
+    const storage = memoryStorage()
+    const named = createNamedSignup(() => storage)
+    named.replaced(SIGNUP)
+    named.replaced({ operationId: 'op_other' })
+
+    const reloaded = createNamedSignup(() => storage)
+    expect(reloaded.recoverOptions(SIGNUP)).toEqual({})
+    expect(reloaded.recoverOptions({ operationId: 'op_other' })).toEqual({})
+  })
+
   it('remembers the replacement for the page when storage is refused', () => {
     const named = createNamedSignup(() => refusingStorage())
     named.replaced(SIGNUP)
