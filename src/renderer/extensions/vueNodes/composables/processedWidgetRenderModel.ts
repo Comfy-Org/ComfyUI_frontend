@@ -32,6 +32,7 @@ import type {
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
+import type { WidgetState } from '@comfyorg/graph-model/widgetState'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import { isWidgetVisibleOnSurface } from '@/types/widgetVisibility'
@@ -360,15 +361,46 @@ interface WidgetProcessingContext {
 
 function resolveWidgetComponent(
   type: string,
-  renderState: WidgetRenderState | undefined,
+  renderState: WidgetRenderState = {},
   widget: IBaseWidget | undefined
 ): ProcessedWidget['vueComponent'] {
-  if (renderState?.useDOMElement) return WidgetDOM
-  if (!renderState?.isDOMWidget && typeof widget?.draw === 'function')
+  if (renderState.useDOMElement) return WidgetDOM
+  if (!renderState.isDOMWidget && typeof widget?.draw === 'function')
     return WidgetLegacy
   return (
-    getComponent(type) || (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy)
+    getComponent(type) || (renderState.isDOMWidget ? WidgetDOM : WidgetLegacy)
   )
+}
+
+function resolveWidgetPresentation(
+  widgetState: WidgetState,
+  visibility: WidgetVisibilityComponent | undefined,
+  slotInfo: WidgetSlotMetadata | undefined,
+  showAdvanced: boolean
+) {
+  const { linked, promoted, originNodeId, originOutputName } = slotInfo ?? {}
+  const options: IWidgetOptions = { ...widgetState.options }
+  const advanced = visibility
+    ? visibility.surfaces.vueNode === 'advanced'
+    : (options.advanced ?? false)
+  const isDisabled = linked || widgetState.disabled
+  const linkedUpstream: LinkedUpstreamInfo | undefined =
+    linked && originNodeId
+      ? { nodeId: originNodeId, outputName: originOutputName }
+      : undefined
+
+  return {
+    visible: isWidgetVisible(visibility, showAdvanced, linked || promoted),
+    advanced,
+    widgetOptions: isDisabled ? { ...options, disabled: true } : options,
+    linkedUpstream
+  }
+}
+
+function widgetTooltipFullValue(type: string, value: WidgetValue) {
+  return isTooltipValueType(type) && String(value).length > 10
+    ? String(value)
+    : undefined
 }
 
 function processWidget(
@@ -383,28 +415,20 @@ function processWidget(
   const renderState = ctx.widgetValueStore.getWidgetRenderState(id)
   const visibility = ctx.widgetValueStore.getWidgetVisibility(id)
   if (!type) return null
-  const options: IWidgetOptions = { ...widgetState.options }
 
   const { live, errorTarget, controlWidget, sourceExecutionId } =
     resolveLiveWidgetContext(ctx.rootGraph, ctx.hostNode, liveWidget)
 
   const slotInfo = ctx.slotMetadata.get(widgetState.name)
-  const visible = isWidgetVisible(
-    visibility,
-    ctx.showAdvanced,
-    slotInfo?.linked || slotInfo?.promoted
-  )
-  const advanced = visibility
-    ? visibility.surfaces.vueNode === 'advanced'
-    : (options.advanced ?? false)
-  const isDisabled = slotInfo?.linked || widgetState.disabled
-  const widgetOptions = isDisabled ? { ...options, disabled: true } : options
+  const { visible, advanced, widgetOptions, linkedUpstream } =
+    resolveWidgetPresentation(
+      widgetState,
+      visibility,
+      slotInfo,
+      ctx.showAdvanced
+    )
   const value = normalizeWidgetValue(widgetState.value)
   const bareWidgetId = stripGraphPrefix(widgetState.nodeId)
-  const linkedUpstream: LinkedUpstreamInfo | undefined =
-    slotInfo?.linked && slotInfo.originNodeId
-      ? { nodeId: slotInfo.originNodeId, outputName: slotInfo.originOutputName }
-      : undefined
 
   const updateHandler = createWidgetUpdateHandler({
     id,
@@ -433,13 +457,9 @@ function processWidget(
       : undefined
   }
 
-  const fullValue =
-    isTooltipValueType(type) && String(value).length > 10
-      ? String(value)
-      : undefined
   const tooltipText = ctx.ui.getTooltipText(
     { name: widgetState.name, tooltip: renderState?.tooltip },
-    fullValue
+    widgetTooltipFullValue(type, value)
   )
   const handleContextMenu = (e: PointerEvent) => {
     e.preventDefault()
