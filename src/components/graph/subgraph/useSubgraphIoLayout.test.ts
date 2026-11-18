@@ -8,6 +8,7 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 
 function reportPanel(
@@ -16,11 +17,17 @@ function reportPanel(
   height: number,
   portCenters: [number, number][] = []
 ) {
-  node.renderedLayout = {
-    width,
-    height,
-    ports: portCenters.map(([x, y]) => [x - 12, y - 12, 24, 24])
-  }
+  layoutStore.reportContentSize(node.subgraph.id, node.id, { width, height })
+  layoutStore.updateNodeSlotOffsets(
+    node.subgraph.id,
+    node.id,
+    portCenters.map(([x, y], index) => ({
+      index,
+      type: node.slotDirection,
+      bounds: { x: x - 12, y: y - 12, width: 24, height: 24 }
+    })),
+    'expanded'
+  )
 }
 
 describe('subgraph IO renderer measurements', () => {
