@@ -23,13 +23,12 @@ interface AutoTopUpDefaultCard {
   readonly last4: string
 }
 
-/** What a top-up link's auto top-up consent names: the rule, the monthly limit, and the card it charges. */
-/** The card future top-ups charge: the default card, none (the paid card becomes it), or unknown until the saved-cards read shows it. */
 type AutoTopUpConsentCard =
   | { readonly kind: 'default'; readonly card: AutoTopUpDefaultCard }
   | { readonly kind: 'none' }
   | { readonly kind: 'unknown' }
 
+/** What a top-up link's auto top-up consent names: the rule, the monthly limit, and the card it charges. */
 export interface AutoTopUpConsent {
   readonly thresholdCredits: number
   readonly targetCredits: number
