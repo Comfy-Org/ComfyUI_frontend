@@ -467,6 +467,18 @@
           "zeroDue": "You won't be charged today. Your payment method renews the plan at {amount} on {date}.",
           "zeroDueUndated": "You won't be charged today. Your payment method renews the plan at {amount}."
         }
+      },
+      "autoTopUp": {
+        "title": "Auto top-up turns on with this payment",
+        "rule": "When your balance drops below {threshold} credits, we buy enough to bring it back to {target} credits.",
+        "consentDefaultCard": "Top-ups are charged to your default card, {card}, up to {max} a month. Turn this off anytime in Billing.",
+        "consentNoCard": "Top-ups are charged to the card you pay with, up to {max} a month. Turn this off anytime in Billing.",
+        "consentDefaultCardNoLimit": "Top-ups are charged to your default card, {card}, up to the monthly maximum. Turn this off anytime in Billing.",
+        "consentNoCardNoLimit": "Top-ups are charged to the card you pay with, up to the monthly maximum. Turn this off anytime in Billing.",
+        "consentEitherCard": "Top-ups are charged to your default card, or to the card you pay with if you have none, up to {max} a month. Turn this off anytime in Billing.",
+        "consentEitherCardNoLimit": "Top-ups are charged to your default card, or to the card you pay with if you have none, up to the monthly maximum. Turn this off anytime in Billing.",
+        "card": "{brand} ···· {last4}",
+        "hostedNote": "You'll pay on Stripe's secure checkout next."
       }
     },
     "invite": {
@@ -516,7 +528,8 @@
       "INVALID_CORRELATION_ID": "That link carries a reference we can't read.",
       "INVALID_WORKSPACE_ID": "That link names a workspace we can't read.",
       "INVALID_TEAM_CREDIT_STOP_ID": "That link names a credit amount we can't read.",
-      "INVALID_PROMOTION_CODE": "That link carries a promo code we can't read."
+      "INVALID_PROMOTION_CODE": "That link carries a promo code we can't read.",
+      "INVALID_OPERATION_ID": "That link names a payment we can't read."
     },
     "failure": {
       "unknown": "Something went wrong. Please try again.",
@@ -534,7 +547,6 @@
       "REACTIVATION_CONFIRMATION_REQUIRED": "Confirm the reactivation charge before continuing.",
       "CONFLICTING_PAYMENT_METHOD": "That request named two payment methods; choose one.",
       "MISSING_PAYMENT_METHOD_URL": "The billing service asked for a payment step but didn't say where.",
-      "OPERATION_ALREADY_PENDING": "A payment you started earlier is still going through. It has to finish before you can choose a different plan.",
       "QUOTE_STALE": "Your quote changed. Review the updated amount and try again.",
       "QUOTE_REFRESH_FAILED": "Your quote expired and couldn't be refreshed. Choose your plan again.",
       "CARD_REQUIRED": "Credits can only be paid for with a card. Enter a card or choose a saved one."

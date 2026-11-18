@@ -120,7 +120,10 @@ describe('SwitchDeploymentCard', () => {
     )
     expect(
       screen.getByRole('link', { name: /Create on Platform/ })
-    ).toHaveAttribute('href', 'https://platform.comfy.org/profile/builds')
+    ).toHaveAttribute(
+      'href',
+      'https://platform.comfy.org/profile/builds?utm_source=comfyui&utm_medium=app&utm_content=switch-deployment-card'
+    )
   })
 
   it('switches to the chosen deployment once unsaved work is settled', async () => {

@@ -16,7 +16,8 @@ import type {
   AgentStopClickedMetadata,
   AgentStopMethod,
   AgentThreadStartSource,
-  AgentWorkflowBindSource
+  AgentWorkflowBindSource,
+  AgentWorkflowSyncErrorCode
 } from '@comfyorg/telemetry/types'
 import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
@@ -335,10 +336,14 @@ export function trackAgentError(
      * rather than deriving it twice and risking them disagreeing.
      */
     diagnostics?: AgentRequestFailureDiagnostics
+    syncErrorCode?: AgentWorkflowSyncErrorCode
   } = {}
 ): void {
   useTelemetry()?.trackAgentError({
     ...overrides.diagnostics,
+    ...(overrides.syncErrorCode !== undefined && {
+      sync_error_code: overrides.syncErrorCode
+    }),
     error_class: errorClass,
     failure_stage: stage,
     retryable: overrides.retryable ?? stage === 'pre_acceptance',
@@ -2512,8 +2517,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     const firstLive = connection === 'initial'
     connection = 'live'
-    if (reconnected) reconcileLiveTurns('reconnect')
-    else if (firstLive) reconcileLiveTurns('hydrate')
+    if (reconnected) {
+      conversationStore.markActiveTurnMissedFrames()
+      reconcileLiveTurns('reconnect')
+    } else if (firstLive) reconcileLiveTurns('hydrate')
   }
 
   function reconcileLiveTurns(cause: RecoveryCause): void {
