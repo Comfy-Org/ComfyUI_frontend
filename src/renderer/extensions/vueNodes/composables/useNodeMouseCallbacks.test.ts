@@ -8,7 +8,7 @@ import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 
-import { useNodeHoverCallbacks } from './useNodeHoverCallbacks'
+import { useNodeMouseCallbacks } from './useNodeMouseCallbacks'
 
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
@@ -29,7 +29,7 @@ function createCanvas(graph: LGraph) {
 async function renderHoverHost(nodeId: NodeId) {
   const Host = defineComponent(() => {
     const root = useTemplateRef<HTMLElement>('root')
-    useNodeHoverCallbacks(nodeId, root)
+    useNodeMouseCallbacks(nodeId, root)
     return () =>
       h('div', { ref: 'root', 'data-testid': 'node' }, [
         h('canvas', {
@@ -58,7 +58,18 @@ async function renderHoverHost(nodeId: NodeId) {
     leave: () =>
       nodeEl.dispatchEvent(
         new PointerEvent('pointerleave', { clientX: 600, clientY: 245 })
-      )
+      ),
+    down: () =>
+      widgetEl.dispatchEvent(
+        new PointerEvent('pointerdown', {
+          clientX: 130,
+          clientY: 245,
+          button: 0,
+          bubbles: true
+        })
+      ),
+    release: () =>
+      window.dispatchEvent(new PointerEvent('pointerup', { button: 0 }))
   }
 }
 
@@ -68,7 +79,7 @@ function recordHover(node: LGraphNode, calls: [string, number[]?][]) {
   node.onMouseLeave = () => calls.push(['leave'])
 }
 
-describe('useNodeHoverCallbacks', () => {
+describe('useNodeMouseCallbacks', () => {
   let throwingNodeTypes = 0
 
   it('calls the node hover callbacks with node-relative positions, even when a widget stops propagation', async () => {
@@ -87,6 +98,29 @@ describe('useNodeHoverCallbacks', () => {
     pointer.leave()
 
     expect(calls).toEqual([['enter'], ['move', [30, 45]], ['leave']])
+  })
+
+  it('calls onMouseDown with a node-relative position and reports the canvas pointer down until release', async () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Comparer')
+    node.pos = [100, 200]
+    graph.add(node)
+    const canvas = createCanvas(graph)
+    const downs: { pos: number[]; pointerIsDown: boolean }[] = []
+    node.onMouseDown = (_e, pos, eventCanvas) => {
+      downs.push({ pos: [...pos], pointerIsDown: eventCanvas.pointer_is_down })
+      return false
+    }
+    await nextTick()
+
+    const pointer = await renderHoverHost(node.id)
+    pointer.down()
+    const heldDuringPress = canvas.pointer_is_down
+    pointer.release()
+
+    expect(downs).toEqual([{ pos: [30, 45], pointerIsDown: true }])
+    expect(heldDuringPress).toBe(true)
+    expect(canvas.pointer_is_down).toBe(false)
   })
 
   it('delivers the leave to the node that received the enter after the graph changes', async () => {
@@ -136,7 +170,7 @@ describe('useNodeHoverCallbacks', () => {
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'failure_invoking_node_hover_callback'
+        errorType: 'failure_invoking_node_mouse_callback'
       })
     )
   })
