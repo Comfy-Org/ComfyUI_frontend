@@ -2214,33 +2214,33 @@ async function consentAllowsSubmission(
   )
 }
 
-async function sendTurn(
-  text: string,
-  attachments: ComposerAttachment[],
-  nodes: SelectedNode[],
-  references: WorkflowReference[],
-  meta: SubmissionMeta,
-  isCurrent: () => boolean = () => true
+async function ensureSendAllowed(
+  submissionId: number | undefined,
+  clientMessageId: string,
+  isCurrent: () => boolean
 ): Promise<boolean> {
-  const submissionId = composerStore.submission?.id
   if (
     !consentAccepted.value &&
-    !(await consentAllowsSubmission(submissionId, meta.clientMessageId))
+    !(await consentAllowsSubmission(submissionId, clientMessageId))
   )
     return false
   if (!isCurrent()) return false
-  if (!hasAgentCredential()) {
-    const identityBeforeSignIn = consentIdentity.value
-    if (!(await ensureSignedIn())) return false
-    if (
-      !isCurrent() ||
-      composerStore.submission?.id !== submissionId ||
-      !consentAccepted.value ||
-      consentIdentity.value !== identityBeforeSignIn
-    )
-      return false
-  }
+  if (hasAgentCredential()) return true
+  const identityBeforeSignIn = consentIdentity.value
+  if (!(await ensureSignedIn())) return false
+  return (
+    isCurrent() &&
+    composerStore.submission?.id === submissionId &&
+    consentAccepted.value &&
+    consentIdentity.value === identityBeforeSignIn
+  )
+}
 
+function armPendingSend(
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[],
+  meta: SubmissionMeta
+): void {
   const originContext = targetWorkflowTurnContext()
   pendingSend = {
     metadata: {
@@ -2256,6 +2256,20 @@ async function sendTurn(
     origin:
       originContext === undefined ? null : { tabPath: originContext.tabPath }
   }
+}
+
+async function sendTurn(
+  text: string,
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[],
+  references: WorkflowReference[],
+  meta: SubmissionMeta,
+  isCurrent: () => boolean = () => true
+): Promise<boolean> {
+  const submissionId = composerStore.submission?.id
+  if (!(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent)))
+    return false
+  armPendingSend(attachments, nodes, meta)
   const selectionWorkflow = selectedTarget.value
   const sentUsageScope = proactive.scope.value
   try {
