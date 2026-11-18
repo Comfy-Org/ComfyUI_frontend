@@ -15,6 +15,24 @@
       @dismiss="planCheckout.dismiss"
     />
     <BillingBanner
+      v-if="planNotStarted"
+      :view="planNotStartedView(planNotStarted)"
+      :copy="bannerCopy"
+    >
+      <template #action="{ label, variant }">
+        <Button
+          :variant
+          size="md"
+          class="shrink-0"
+          :loading="signupPayment.isOpeningPayment.value"
+          @click="signupPayment.finishPayment"
+        >
+          {{ label }}
+          <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
+        </Button>
+      </template>
+    </BillingBanner>
+    <BillingBanner
       v-if="topupCheckout.banner.value"
       :view="
         topupCheckoutBannerView(
@@ -199,6 +217,7 @@ import {
   CONTACT_SALES_URL,
   deriveAutoTopUpSection,
   deriveBillingTabLoad,
+  planNotStartedBannerFor,
   planRowAction
 } from '@comfyorg/account-core/billing'
 import type { PlanRowAction } from '@comfyorg/account-core/billing'
@@ -229,6 +248,7 @@ import { useAutoTopUpMemberBlockCopy } from '@/platform/billing/composables/useA
 import { useBillingBannerCopy } from '@/platform/billing/composables/useBillingBannerCopy'
 import { useCreditBanner } from '@/platform/billing/composables/useCreditBanner'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const billing = useBillingContext()
@@ -239,10 +259,22 @@ const planCheckout = usePlanCheckoutBanner()
 const topupCheckout = useTopupCheckoutBanner(
   () => capabilities.canManageBilling.value
 )
+const signupPayment = useSubscriptionPaymentRecovery('status')
+const planNotStarted = computed(() =>
+  planCheckout.banner.value
+    ? null
+    : planNotStartedBannerFor({
+        isCloud,
+        recovery: billing.statusPaymentRecovery.value,
+        planTier: signupPayment.recoveryPlanTier.value,
+        paymentPage: signupPayment.recoveryPaymentPage.value
+      })
+)
 const suppressCreditBanner = computed(() =>
   suppressesCreditBanners([
     ...(isPaused.value ? (['paused'] as const) : []),
     ...(planCheckout.banner.value ? (['planCheckout'] as const) : []),
+    ...(planNotStarted.value ? (['planNotStarted'] as const) : []),
     ...(topupCheckout.banner.value ? (['topupCheckout'] as const) : [])
   ])
 )
@@ -250,7 +282,8 @@ const {
   copy: bannerCopy,
   topupCopy: topupBannerCopy,
   pausedView,
-  parkedView
+  parkedView,
+  planNotStartedView
 } = useBillingBannerCopy()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const {

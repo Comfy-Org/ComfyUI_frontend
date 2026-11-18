@@ -82,6 +82,7 @@ vi.mock<unknown>(
         () => state.canAccessSubscriptionFeatures
       ),
       isTeamPlan: computed(() => state.isTeamPlan),
+      subscriptionState: computed(() => null),
       billingStatus: computed(
         () => state.billingStatus as BillingStatus | null
       ),
