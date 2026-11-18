@@ -1392,7 +1392,7 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
-  it('reset discards foreground ask recovery state', () => {
+  it('reset preserves foreground ask recovery state for a reload', () => {
     const store = useAgentConversationStore()
     store.setThreadId('foreground')
     store.recordAskAnswer('ask-1', { selected: ['run'] })
@@ -1400,8 +1400,8 @@ describe('useAgentConversationStore', () => {
 
     store.reset()
 
-    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
-    expect(store.isAskRetired('ask-2', 'foreground')).toBe(false)
+    expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    expect(store.isAskRetired('ask-2', 'foreground')).toBe(true)
   })
 
   it('reset preserves ask recovery state owned by a background turn', () => {
@@ -1438,11 +1438,22 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
     store.startTurn(T1)
+    store.ingest(runApproval(T1, 'ask-2'))
     store.retireAsk('ask-2', { status: 'retired' }, 'th', false)
 
     store.settleTurn({ threadId: 'th', messageId: T1 }, undefined)
 
     expect(store.isAskRetired('ask-2', 'th')).toBe(false)
+  })
+
+  it('bounds retired ask tombstones per thread', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    for (let index = 0; index < 65; index++)
+      store.retireAsk(`ask-${index}`, { status: 'retired' }, 'th')
+
+    expect(store.isAskRetired('ask-0', 'th')).toBe(false)
+    expect(store.isAskRetired('ask-64', 'th')).toBe(true)
   })
 
   it('holds the thread id and clears it on reset', () => {
