@@ -87,6 +87,19 @@ export interface LoadGraphDataOptions {
   silentAssetErrors?: boolean
   workflowNavigationId?: number
   isCurrent?: () => boolean
+  /**
+   * Checked once, when the load reaches the front of the graph-load queue.
+   * Returning false skips the load. Unlike {@link isCurrent} it is not
+   * rechecked while the graph loads.
+   */
+  isReady?: () => boolean
+  /**
+   * Produces the graph to load when the load reaches the front of the queue,
+   * replacing `graphData`. Lets a reload snapshot the canvas after loads queued
+   * ahead of it have run, so edits made while it waited are kept. Returning
+   * undefined skips the load.
+   */
+  resolveGraphData?: () => ComfyWorkflowJSON | undefined
 }
 
 /**

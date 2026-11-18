@@ -172,7 +172,8 @@ function resetAndRestoreTracker(
 
 async function keepingSavedBaseline<T>(
   workflow: ComfyWorkflow,
-  load: () => Promise<T>
+  load: () => Promise<T>,
+  wasModified: () => boolean = () => true
 ): Promise<T> {
   const savedState = workflow.changeTracker?.initialState
   const savedContent = workflow.originalContent
@@ -181,6 +182,7 @@ async function keepingSavedBaseline<T>(
   } finally {
     const tracker = workflow.changeTracker
     if (
+      wasModified() &&
       tracker &&
       savedState &&
       tracker.initialState !== savedState &&
@@ -613,28 +615,47 @@ export const useWorkflowService = () => {
       keepSavedBaseline?: boolean
       loadFromRemote: boolean
       navigationIntentId: number
-    }
+    },
+    attempt: { skipped: boolean }
   ) {
-    workflow.changeTracker?.prepareForSave()
-    const graphLoadIsCurrent = workflowStore.isActive(workflow)
-      ? undefined
-      : isCurrent
+    const reloadsCanvas = workflowStore.isActive(workflow)
+    // Whether the graph had unsaved edits when it was snapshotted. A reload of
+    // the canvas snapshots at its turn in the graph-load queue, so this is
+    // read then, not now.
+    let modifiedAtSnapshot = false
+    const snapshot = () => {
+      workflow.changeTracker?.prepareForSave()
+      modifiedAtSnapshot = workflow.isModified
+      return toRaw(workflow.activeState) as ComfyWorkflowJSON | undefined
+    }
+    const queued = snapshot()
     const load = () =>
-      useApp().loadGraphData(
-        toRaw(workflow.activeState) as ComfyWorkflowJSON,
-        true,
-        true,
-        workflow,
-        {
-          checkForRerouteMigration: false,
-          deferWarnings: true,
-          skipAssetScans: !loadFromRemote && !force,
-          workflowNavigationId: navigationIntentId,
-          isCurrent: graphLoadIsCurrent
-        }
-      )
-    return keepSavedBaseline && workflow.isModified
-      ? keepingSavedBaseline(workflow, load)
+      useApp().loadGraphData(queued, true, true, workflow, {
+        checkForRerouteMigration: false,
+        deferWarnings: true,
+        skipAssetScans: !loadFromRemote && !force,
+        workflowNavigationId: navigationIntentId,
+        isCurrent: reloadsCanvas ? undefined : isCurrent,
+        // Reloading the graph on the canvas: check readiness and take the
+        // snapshot when the load reaches the front of the graph-load queue, so
+        // an edit made while loads queued directly on the app (paste,
+        // templates, shared links) ran ahead of it is kept, not overwritten.
+        ...(reloadsCanvas && {
+          isReady: () => {
+            const ready =
+              workflowStore.isActive(workflow) && isCurrent?.() !== false
+            if (!ready) attempt.skipped = true
+            return ready
+          },
+          resolveGraphData: () => {
+            const data = snapshot()
+            if (!data) attempt.skipped = true
+            return data
+          }
+        })
+      })
+    return keepSavedBaseline
+      ? keepingSavedBaseline(workflow, load, () => modifiedAtSnapshot)
       : load()
   }
 
@@ -683,16 +704,19 @@ export const useWorkflowService = () => {
           return false
         }
 
-        const loaded = await loadOpenedGraph(workflow, {
-          ...options,
-          loadFromRemote,
-          navigationIntentId
-        })
+        const attempt = { skipped: false }
+        const loaded = await loadOpenedGraph(
+          workflow,
+          { ...options, loadFromRemote, navigationIntentId },
+          attempt
+        )
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           if (loadFromRemote && options.isCurrent?.() === false)
             discardSupersededLoad(workflow, wasModified)
-          await restoreRetainedWorkflow(workflow)
+          // A reload skipped at its turn left the canvas to whatever is there
+          // now; only a load that failed has a canvas to put back.
+          if (!attempt.skipped) await restoreRetainedWorkflow(workflow)
           return false
         }
         dismissUnreadableWorkflowToast(workflow)

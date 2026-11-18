@@ -789,6 +789,91 @@ describe('ComfyApp', () => {
       )
     })
 
+    describe('a load that resolves its graph when it reaches the front of the queue', () => {
+      function holdFirstLoad() {
+        let release = () => {}
+        const held = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        let calls = 0
+        vi.mocked(
+          mockExtensionService.invokeExtensionsAsync
+        ).mockImplementation(async (hook: string) => {
+          if (hook === 'beforeLoadGraph' && calls++ === 0) await held
+        })
+        const first = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { skipAssetScans: true }
+        )
+        return { first, release: () => release() }
+      }
+
+      beforeEach(() => {
+        app.canvasElRef.value = document.createElement('canvas')
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+      })
+
+      it('loads the graph produced at its turn, not the one it was queued with', async () => {
+        const { first, release } = holdFirstLoad()
+        let current = { ...createWorkflowGraphData(), extra: { at: 'queued' } }
+        const reload = app.loadGraphData(current, false, true, null, {
+          skipAssetScans: true,
+          resolveGraphData: () => current
+        })
+        current = { ...createWorkflowGraphData(), extra: { at: 'its turn' } }
+
+        release()
+        await first
+        await reload
+
+        expect(app.rootGraph.extra.at).toBe('its turn')
+      })
+
+      it('skips without touching the canvas when it is not ready at its turn', async () => {
+        const { first, release } = holdFirstLoad()
+        let ready = true
+        const reload = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { skipAssetScans: true, isReady: () => ready }
+        )
+        ready = false
+
+        release()
+        await first
+
+        await expect(reload).resolves.toBe(false)
+        expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+        expect(
+          vi
+            .mocked(mockExtensionService.invokeExtensionsAsync)
+            .mock.calls.filter(([hook]) => hook === 'beforeLoadGraph')
+        ).toHaveLength(1)
+      })
+
+      it('skips instead of loading the default workflow when the resolver has nothing to load', async () => {
+        const { first, release } = holdFirstLoad()
+        const reload = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { skipAssetScans: true, resolveGraphData: () => undefined }
+        )
+
+        release()
+        await first
+
+        await expect(reload).resolves.toBe(false)
+        expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      })
+    })
+
     it('leaves the canvas untouched for a load that stopped being current while it waited its turn', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())

@@ -1210,17 +1210,17 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    return this.enqueueGraphLoad(async () =>
-      options.isCurrent?.() === false
-        ? false
-        : this.loadGraphDataNow(
-            graphData,
-            clean,
-            restore_view,
-            workflow,
-            options
-          )
-    )
+    return this.enqueueGraphLoad(async () => {
+      if (options.isCurrent?.() === false || options.isReady?.() === false)
+        return false
+      const data = options.resolveGraphData
+        ? options.resolveGraphData()
+        : graphData
+      // A resolver with nothing to load skips, rather than loading the
+      // default workflow over the canvas.
+      if (options.resolveGraphData && !data) return false
+      return this.loadGraphDataNow(data, clean, restore_view, workflow, options)
+    })
   }
 
   private async loadGraphDataNow(
