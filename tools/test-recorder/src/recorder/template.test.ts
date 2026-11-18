@@ -369,7 +369,11 @@ describe('recording template', () => {
     let stateDir: string
 
     beforeEach(() => {
-      stateDir = mkdtempSync(join(tmpdir(), 'storage-state-'))
+      stateDir = mkdtempSync(join(browserTestsDir, 'storage-state-'))
+    })
+
+    afterEach(() => {
+      rmSync(stateDir, { recursive: true, force: true })
     })
 
     function seed(name: string, ageDays: number): string {
