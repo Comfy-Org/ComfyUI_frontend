@@ -1,6 +1,5 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-import { watch } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { st, t } from '@/i18n'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -176,41 +175,24 @@ describe('missingModelStore', () => {
       expect(store.isRefreshingMissingModels).toBe(false)
     })
 
-    it('stays refreshing until the verified candidates reach the store', async () => {
+    it('returns once the scan starts and stays refreshing until the verified candidates reach the store', async () => {
       const store = useMissingModelStore()
-      const events: string[] = []
-      watch(
-        () => store.isRefreshingMissingModels,
-        (refreshing) => events.push(refreshing ? 'refreshing' : 'settled'),
-        { flush: 'sync' }
-      )
       let surface: () => void = () => undefined
-      const pipelineReturned = vi
-        .spyOn(app, 'refreshMissingModels')
-        .mockResolvedValue({
-          missingModels: [],
-          confirmedCandidates: [],
-          surfaced: new Promise((resolve) => {
-            surface = () => {
-              events.push('surfaced')
-              resolve()
-            }
-          })
+      vi.spyOn(app, 'refreshMissingModels').mockResolvedValue({
+        missingModels: [],
+        confirmedCandidates: [],
+        surfaced: new Promise((resolve) => {
+          surface = resolve
         })
-
-      vi.useFakeTimers()
-      onTestFinished(() => {
-        vi.useRealTimers()
       })
 
-      const refresh = store.refreshMissingModels()
-      await vi.runAllTimersAsync()
-      expect(pipelineReturned).toHaveBeenCalledOnce()
+      await store.refreshMissingModels()
       expect(store.isRefreshingMissingModels).toBe(true)
-      surface()
-      await refresh
 
-      expect(events).toEqual(['refreshing', 'surfaced', 'settled'])
+      surface()
+      await vi.waitFor(() =>
+        expect(store.isRefreshingMissingModels).toBe(false)
+      )
     })
 
     it('shows a toast when the refresh pipeline fails', async () => {

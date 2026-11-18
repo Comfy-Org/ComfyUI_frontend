@@ -184,7 +184,12 @@ export const useMissingModelDownloadStore = defineStore(
     }
 
     function flushRefresh() {
-      if (!refreshPending || missingModelStore.isRefreshingMissingModels) return
+      if (
+        !refreshPending ||
+        missingModelStore.isRefreshingMissingModels ||
+        missingModelStore.missingModelCandidates === null
+      )
+        return
       refreshPending = false
       void missingModelStore.refreshMissingModels()
     }
@@ -212,6 +217,7 @@ export const useMissingModelDownloadStore = defineStore(
     function reopenStillMissing(
       candidates: readonly { name: string; directory?: string }[] | null
     ) {
+      flushRefresh()
       if (refreshPending || missingModelStore.isRefreshingMissingModels) return
       reopenFinished(candidates ?? [])
     }
