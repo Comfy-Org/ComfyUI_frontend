@@ -694,6 +694,34 @@ describe('connection, property and pointer hooks', () => {
     )
   })
 
+  describe('in app mode', () => {
+    it('asks no hook when the methods run on app mode’s copy of the node, though the node itself asks them', async () => {
+      const over = vi.fn(() => true)
+      const dropped = vi.fn(() => true)
+      extend((builder) => {
+        builder.onDragOver(over)
+        builder.onDrop(dropped)
+      })
+      const node = probe()
+      const copy = {
+        ...node._state,
+        onDragOver: node.onDragOver,
+        onDragDrop: node.onDragDrop
+      }
+      const event = new DragEvent('drop')
+
+      expect(copy.onDragOver?.(event)).toBe(false)
+      await expect(copy.onDragDrop?.(event)).resolves.toBe(false)
+      expect(over).not.toHaveBeenCalled()
+      expect(dropped).not.toHaveBeenCalled()
+
+      expect(node.onDragOver?.(event)).toBe(true)
+      await expect(node.onDragDrop?.(event)).resolves.toBe(true)
+      expect(over).toHaveBeenCalledOnce()
+      expect(dropped).toHaveBeenCalledOnce()
+    })
+  })
+
   describe('a defined type', () => {
     it('runs the connection and property hooks its definition declares', () => {
       const onConnectionsChanged = vi.fn()
