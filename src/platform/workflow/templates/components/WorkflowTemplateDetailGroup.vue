@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import WorkflowTemplateModelStatus from '@/platform/workflow/templates/components/WorkflowTemplateModelStatus.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
 const { group, titleId } = defineProps<{
@@ -63,8 +63,8 @@ const emit = defineEmits<{ 'download-model': [rowId: string] }>()
             aria-hidden="true"
             :class="
               row.kind === 'input'
-                ? 'icon-[lucide--file-input] size-4'
-                : 'icon-[comfy--ai-model] size-4'
+                ? 'icon-[lucide--file-input]'
+                : 'icon-[comfy--ai-model]'
             "
           />
         </span>

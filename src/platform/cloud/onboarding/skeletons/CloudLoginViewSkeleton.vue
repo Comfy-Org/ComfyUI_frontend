@@ -43,5 +43,5 @@
 </template>
 
 <script setup lang="ts">
-import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
 </script>

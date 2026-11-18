@@ -33,8 +33,9 @@ on:
         required: true
 
 concurrency:
-  group: publish-design-system-${{ inputs.version }}
+  group: publish-design-system
   cancel-in-progress: false
+  queue: max
 
 jobs:
   publish_design_system:
@@ -69,7 +70,7 @@ jobs:
           persist-credentials: false
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -141,10 +142,31 @@ jobs:
             fi
           fi
 
+      - name: Build components
+        if: steps.check_npm.outputs.exists == 'false'
+        run: pnpm -C packages/design-system build
+
+      - name: Verify compiled imports are declared dependencies
+        if: steps.check_npm.outputs.exists == 'false'
+        run: pnpm exec tsx scripts/cicd/check-design-system-imports.ts
+
+      - name: Check an isolated packed consumer
+        if: steps.check_npm.outputs.exists == 'false'
+        run: scripts/cicd/check-design-system-consumer.sh
+
+      - name: Resolve dist-tag
+        id: dist_tag
+        if: steps.check_npm.outputs.exists == 'false'
+        env:
+          NAME: ${{ steps.pkg.outputs.name }}
+          VERSION: ${{ steps.pkg.outputs.version }}
+          DIST_TAG: ${{ inputs.dist_tag }}
+        run: pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts
+
       - name: Publish package
         if: steps.check_npm.outputs.exists == 'false'
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          DIST_TAG: ${{ inputs.dist_tag }}
+          DIST_TAG: ${{ steps.dist_tag.outputs.tag }}
         run: pnpm publish --access public --tag "$DIST_TAG" --no-git-checks --ignore-scripts
         working-directory: packages/design-system

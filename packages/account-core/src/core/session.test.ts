@@ -198,26 +198,48 @@ describe('ensureFresh', () => {
       async () => {
         throw new TypeError('failed to fetch')
       },
+      undefined,
       undefined
     ],
     [
       'a non-JSON body',
       async () => new Response('<html>', { status: 200 }),
-      200
+      200,
+      { reason: 'body_unreadable' }
     ],
     [
       'an unparseable expires_at',
       async () => jsonResponse(200, mintBody({ expires_at: 'soon' })),
-      200
+      200,
+      { reason: 'schema_mismatch', detail: 'expires_at' }
     ],
     [
       'a missing token',
       async () => jsonResponse(200, mintBody({ token: undefined })),
-      200
+      200,
+      { reason: 'schema_mismatch', detail: 'token' }
+    ],
+    [
+      'an empty token',
+      async () => jsonResponse(200, mintBody({ token: '' })),
+      200,
+      { reason: 'empty_token' }
+    ],
+    [
+      'a token already expired on the local clock',
+      async () =>
+        jsonResponse(
+          200,
+          mintBody({
+            expires_at: new Date(Date.now() - 3_600_000).toISOString()
+          })
+        ),
+      200,
+      { reason: 'expired_on_arrival' }
     ]
   ] as const)(
     'collapses %s into TOKEN_EXCHANGE_FAILED and caches nothing',
-    async ([, respond, httpStatus]) => {
+    async ([, respond, httpStatus, diagnosis]) => {
       const { client, storage } = makeClient({
         fetchImpl: vi.fn<typeof fetch>(respond)
       })
@@ -228,9 +250,36 @@ describe('ensureFresh', () => {
       if (result?.status !== 'error') return
       expect(result.code).toBe('TOKEN_EXCHANGE_FAILED')
       expect(result.httpStatus).toBe(httpStatus)
+      expect(
+        result.reason,
+        'the 2xx failure reason is what tells a skewed clock from a contract drift'
+      ).toBe(diagnosis?.reason)
+      if (diagnosis && 'detail' in diagnosis) {
+        expect(result.detail).toBe(diagnosis.detail)
+      }
       expect(storage.raw()).toBeNull()
     }
   )
+
+  it('reports how far past expiry a token arrived on the local clock', async () => {
+    const now = Date.parse('2026-11-05T12:00:00.000Z')
+    const { client } = makeClient({
+      fetchImpl: vi.fn<typeof fetch>(async () =>
+        jsonResponse(200, mintBody({ expires_at: '2026-11-05T10:30:00.000Z' }))
+      ),
+      now: () => now
+    })
+
+    const result = await client.ensureFresh(testUser(), {})
+
+    expect(result).toMatchObject({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED',
+      httpStatus: 200,
+      reason: 'expired_on_arrival',
+      detail: 'expires_in_ms=-5400000'
+    })
+  })
 
   it('shares one in-flight mint between concurrent callers', async () => {
     let release!: (response: Response) => void
@@ -279,7 +328,8 @@ describe('ensureFresh', () => {
     ).toEqual({
       status: 'error',
       code: 'TOKEN_EXCHANGE_FAILED',
-      httpStatus: 200
+      httpStatus: 200,
+      reason: 'body_aborted'
     })
     expect(storage.raw()).toBeNull()
   })
@@ -923,7 +973,9 @@ describe('exchange response contract', () => {
     expect(await client.ensureFresh(testUser())).toEqual({
       status: 'error',
       code: 'TOKEN_EXCHANGE_FAILED',
-      httpStatus: 200
+      httpStatus: 200,
+      reason: 'schema_mismatch',
+      detail: 'expires_at'
     })
   })
 })

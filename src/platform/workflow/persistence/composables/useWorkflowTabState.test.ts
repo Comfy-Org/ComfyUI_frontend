@@ -110,4 +110,54 @@ describe('useWorkflowTabState', () => {
       expect(result!.paths).toEqual(['workflows/test.json'])
     })
   })
+
+  it('restores pointers after a browser restart before the websocket assigns a client id', async () => {
+    const { useWorkflowTabState } = await import('./useWorkflowTabState')
+    const writer = useWorkflowTabState()
+    writer.setActivePath('workflows/b.json')
+    writer.setOpenPaths(['workflows/a.json', 'workflows/b.json'], 1)
+
+    sessionStorage.clear()
+    vi.resetModules()
+    const { api } = await import('@/scripts/api')
+    api.clientId = undefined
+    api.initialClientId = null
+    const { useWorkflowTabState: useRestartedTabState } =
+      await import('./useWorkflowTabState')
+    const reader = useRestartedTabState()
+
+    expect(reader.getActivePath()).toBe('workflows/b.json')
+    expect(reader.getOpenPaths()).toEqual({
+      paths: ['workflows/a.json', 'workflows/b.json'],
+      activeIndex: 1
+    })
+  })
+
+  it('restores the previous page load’s tabs when Cloud assigns a new client id', async () => {
+    sessionStorage.setItem(
+      'Comfy.Workflow.OpenPaths:older-load',
+      JSON.stringify({
+        workspaceId: 'personal',
+        paths: ['workflows/a.json', 'workflows/b.json'],
+        activeIndex: 0
+      })
+    )
+    sessionStorage.setItem(
+      'Comfy.Workflow.OpenPaths:previous-load',
+      JSON.stringify({
+        workspaceId: 'personal',
+        paths: ['workflows/b.json'],
+        activeIndex: 0
+      })
+    )
+    const { api } = await import('@/scripts/api')
+    api.clientId = 'this-load'
+    api.initialClientId = 'previous-load'
+    const { useWorkflowTabState } = await import('./useWorkflowTabState')
+
+    expect(useWorkflowTabState().getOpenPaths()).toEqual({
+      paths: ['workflows/b.json'],
+      activeIndex: 0
+    })
+  })
 })

@@ -5,7 +5,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates/composables/useWorkflowTemplateSelectorDialog'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import OpenSharedWorkflowDialogContent from '@/platform/workflow/sharing/components/OpenSharedWorkflowDialogContent.vue'
 import type { SharedWorkflowPayload } from '@/platform/workflow/sharing/types/shareTypes'
 import {
@@ -16,7 +16,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import { isValidShareId } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -175,7 +175,7 @@ export function useSharedWorkflowUrlLoader() {
       }
 
       try {
-        await app.loadGraphData(
+        await useApp().loadGraphData(
           payload.workflowJson,
           true,
           true,

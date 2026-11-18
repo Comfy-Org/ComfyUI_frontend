@@ -2,65 +2,37 @@
 import { cn } from '@comfyorg/tailwind-utils'
 
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
-import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
+import type { NodeBadgeGroup } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 
 defineProps<{
-  hasComfyBadge: boolean
-  hasComfyCloudBadge?: boolean
-  core: NodeBadgeProps[]
-  extension: NodeBadgeProps[]
+  groups: NodeBadgeGroup[]
 }>()
 </script>
 <template>
   <div
-    v-if="hasComfyBadge || core.length || extension.length"
-    class="flex h-5 w-full gap-2 px-2 text-muted-foreground"
+    v-if="groups.length"
+    data-testid="node-badges"
+    class="pointer-events-none flex w-max items-center gap-2 text-muted-foreground"
   >
     <div
-      v-if="core.length"
-      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-input"
+      v-for="group in groups"
+      :key="group.kind"
+      :data-testid="`node-badge-group-${group.kind}`"
+      class="flex h-5 items-center justify-center gap-1 overflow-clip rounded-md bg-input"
     >
-      <template v-for="(badge, index) of core" :key="badge.text">
-        <div
-          v-if="index !== 0"
-          class="mr-0.5 h-4 border-r border-muted-foreground pr-0.5"
-        />
-        <NodeBadge
-          bg-color="transparent"
-          v-bind="badge"
-          class="h-6 first:pl-2 last:pr-2"
-        />
-      </template>
-    </div>
-    <div
-      v-if="hasComfyBadge"
-      data-testid="comfy-badge"
-      class="flex size-6 items-center justify-center rounded-full bg-input"
-    >
-      <i
+      <NodeBadge
+        v-for="badge of group.badges"
+        :key="badge.text"
+        bg-color="transparent"
+        v-bind="badge"
         :class="
           cn(
-            'icon-[comfy--comfy-c] size-3',
-            hasComfyCloudBadge && 'text-brand-yellow'
+            'relative h-4 rounded-none py-0 not-last:after:absolute not-last:after:inset-y-0 not-last:after:-right-0.5 not-last:after:w-px not-last:after:bg-muted-foreground first:pl-2 last:pr-2',
+            !badge.text && 'px-1 first:pl-1 last:pr-1',
+            badge.onClick && 'pointer-events-auto'
           )
         "
       />
-    </div>
-    <div
-      v-if="extension.length"
-      class="flex h-6 items-center justify-center overflow-clip rounded-full bg-input"
-    >
-      <template v-for="(badge, index) of extension" :key="badge.text">
-        <div
-          v-if="index !== 0"
-          class="mr-0.5 h-4 border-r border-muted-foreground pr-0.5"
-        />
-        <NodeBadge
-          bg-color="transparent"
-          v-bind="badge"
-          class="h-6 first:pl-2 last:pr-2"
-        />
-      </template>
     </div>
   </div>
 </template>

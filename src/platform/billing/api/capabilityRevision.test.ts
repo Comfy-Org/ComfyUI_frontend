@@ -9,7 +9,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   attachCapabilityRevisionInterceptor,
   onCapabilityRevision
-} from './capabilityRevision'
+} from '@/platform/remote/ingest/capabilityRevision'
 
 const unsubscribes: Array<() => void> = []
 

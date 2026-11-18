@@ -1,22 +1,22 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
+import { useTimeout, useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
-  AgentStarterPromptAssignment,
   AgentStopMethod
-} from '@/platform/telemetry/types'
+} from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 import type {
   WorkflowReference,
@@ -38,6 +38,7 @@ import type { AgentPanelView } from '@/workbench/extensions/agent/stores/agent/a
 import { deriveSessionTitle } from '@/workbench/extensions/agent/utils/sessionTitle'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
+import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
@@ -57,6 +58,7 @@ const {
   canOpenAssets = false,
   isMaximized = false,
   selectionTags = [],
+  hasNodeSelectionModeAddition = false,
   nodeReferenceDisabledReason,
   availableWorkflows = [],
   selectWorkflowReference,
@@ -77,13 +79,15 @@ const {
   sessionId = null,
   currentChatReady = false,
   customTitle,
+  openingWorkflowName,
   historyGroups,
   selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
-  starterPromptAssignment = 'control',
-  attributeStarterPromptExperiment = false
+  syncRetryAvailable = false,
+  greeting,
+  blocked = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -93,6 +97,7 @@ const {
   canOpenAssets?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
+  hasNodeSelectionModeAddition?: boolean
   nodeReferenceDisabledReason?: string
   availableWorkflows?: WorkflowReferenceOption[]
   selectWorkflowReference?: (
@@ -120,13 +125,15 @@ const {
   sessionId?: string | null
   currentChatReady?: boolean
   customTitle?: string
+  openingWorkflowName?: string
   historyGroups: HistoryGroups
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
-  starterPromptAssignment?: AgentStarterPromptAssignment
-  attributeStarterPromptExperiment?: boolean
+  syncRetryAvailable?: boolean
+  greeting?: AgentGreeting
+  blocked?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -147,7 +154,7 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
   standingPaywallShown: []
-  newChat: []
+  newChat: [source: 'new_chat_button' | 'history_back']
   startTour: []
   toggleSize: []
   close: []
@@ -162,10 +169,29 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
-  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
+  retrySync: []
 }>()
 
+const openingChat = computed(() => openingWorkflowName !== undefined)
+const {
+  ready: loadingDelayReady,
+  start: startLoadingDelay,
+  stop: stopLoadingDelay
+} = useTimeout(120, { controls: true, immediate: false })
+watch(
+  openingChat,
+  (opening) => {
+    if (opening) startLoadingDelay()
+    else stopLoadingDelay()
+  },
+  { immediate: true, flush: 'sync' }
+)
+const showChatLoading = computed(
+  () => openingChat.value && loadingDelayReady.value
+)
+
 const targetNotice = computed(() => {
+  if (openingChat.value) return undefined
   if (canvasEmptyAfterTurn) return 'emptyCanvas'
   if (targetUnavailable) return 'unavailable'
   if (workflowDetached || activeTab === null) return undefined
@@ -197,9 +223,11 @@ watch(
   { immediate: true }
 )
 
-function onNewChat(): void {
+function onNewChat(
+  source: 'new_chat_button' | 'history_back' = 'new_chat_button'
+): void {
   view.value = { screen: 'chat' }
-  emit('newChat')
+  emit('newChat', source)
 }
 function onOpenHistory(): void {
   view.value = {
@@ -209,7 +237,10 @@ function onOpenHistory(): void {
   }
   emit('openHistory')
 }
-async function onSelectHistory(id: string): Promise<void> {
+async function openHistoryChat(
+  id: string,
+  onFailure: 'stay' | 'leave'
+): Promise<void> {
   if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
   const opening: AgentPanelView = {
     ...view.value,
@@ -222,10 +253,15 @@ async function onSelectHistory(id: string): Promise<void> {
     opened = await selectHistory(id, isCurrent)
   } finally {
     if (isCurrent())
-      view.value = opened
-        ? { screen: 'chat' }
-        : { ...opening, selection: { status: 'failed', id } }
+      view.value =
+        opened || onFailure === 'leave'
+          ? { screen: 'chat' }
+          : { ...opening, selection: { status: 'failed', id } }
   }
+}
+
+function onSelectHistory(id: string): Promise<void> {
+  return openHistoryChat(id, 'stay')
 }
 
 function onBackFromHistory(): void {
@@ -235,8 +271,8 @@ function onBackFromHistory(): void {
     (view.value.selection.status === 'idle' || currentChatReady)
   )
     view.value = { screen: 'chat' }
-  else if (view.value.previousThreadId === null) onNewChat()
-  else void onSelectHistory(view.value.previousThreadId)
+  else if (view.value.previousThreadId === null) onNewChat('history_back')
+  else void openHistoryChat(view.value.previousThreadId, 'leave')
 }
 
 function onDeleteHistory(id: string): void {
@@ -275,6 +311,14 @@ function onClose(): void {
   emit('close')
 }
 
+const visibleGreeting = computed(() =>
+  !entries.length && !openingChat.value ? greeting : undefined
+)
+const greetingReplacesIntro = computed(
+  () =>
+    visibleGreeting.value !== undefined && visibleGreeting.value.variant !== 'A'
+)
+
 const composerRef = ref<InstanceType<typeof Composer>>()
 const runNoticeReady = ref(false)
 const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
@@ -301,6 +345,9 @@ function onWorkflowTargetRequired(): void {
 const { t } = useI18n()
 
 const sessionTitle = computed(() => customTitle || deriveSessionTitle(entries))
+const displayTitle = computed(
+  () => sessionTitle.value || t('agent.newChatTitle')
+)
 
 const renaming = ref(false)
 const renameDraft = ref('')
@@ -360,6 +407,13 @@ function removeAttachment(id: string): void {
   composerRef.value?.removeAttachment(id)
 }
 
+async function onGreetingPrefilled(delayMs: number): Promise<void> {
+  const current = visibleGreeting.value
+  await nextTick()
+  if (current !== visibleGreeting.value) return
+  await composerRef.value?.focusPrefill(delayMs)
+}
+
 function onComposerSend(
   text: string,
   attachments: ComposerAttachment[],
@@ -384,14 +438,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @close="onClose"
     />
 
-    <FreeUseNotice
-      v-if="!showHistory && freeUsePlacement === 'top-banner'"
-      placement="top-banner"
-      @notice="emit('freeUseNotice', $event)"
-    />
+    <slot name="panelNotice" />
 
     <template v-if="showHistory">
       <ChatHistoryScreen
+        :inert="blocked"
         :groups="historyGroups"
         :loading-id="loadingHistoryId"
         :failed-id="failedHistoryId"
@@ -405,7 +456,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-else>
-      <div class="flex h-10 shrink-0 items-center px-2">
+      <div
+        data-testid="agent-panel-chat-controls"
+        :inert="blocked"
+        class="flex h-10 shrink-0 items-center px-2"
+      >
         <Button
           id="agent-chat-history"
           :tooltip="t('agent.showChatHistory')"
@@ -417,7 +472,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           class="size-6 shrink-0 data-coach-hover:bg-accent"
           @click="onOpenHistory"
         >
-          <span class="icon-[lucide--history] size-4 shrink-0" />
+          <i aria-hidden="true" class="icon-[lucide--history]" />
         </Button>
         <template v-if="renaming">
           <Input
@@ -444,9 +499,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             class="min-w-0 justify-start text-left"
             @click="startRename"
           >
-            <span class="min-w-0 truncate">{{
-              sessionTitle || t('agent.newChatTitle')
-            }}</span>
+            <span class="min-w-0 truncate">{{ displayTitle }}</span>
           </Button>
           <Menu
             v-if="sessionId"
@@ -465,20 +518,25 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :aria-label="t('agent.chatOptions')"
                 class="size-6 shrink-0"
               >
-                <span class="icon-[lucide--chevron-down] size-3" />
+                <i
+                  aria-hidden="true"
+                  class="icon-[lucide--chevron-down] size-3"
+                />
               </Button>
             </template>
           </Menu>
         </div>
       </div>
 
-      <div class="min-h-0 flex-1">
+      <div :inert="blocked" class="relative min-h-0 flex-1">
         <EmptyState
           v-if="!entries.length"
+          :aria-busy="openingChat"
+          :inert="openingChat"
           :user-name
-          :assignment="starterPromptAssignment"
-          :attribute-experiment="attributeStarterPromptExperiment"
-          @rendered="emit('starterPromptRendered', $event)"
+          :greeting="visibleGreeting"
+          :has-selection="hasNodeSelectionModeAddition"
+          @prefilled="onGreetingPrefilled"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
@@ -487,6 +545,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         />
         <ConversationView
           v-else
+          :aria-busy="openingChat"
+          :inert="openingChat"
           :entries
           :conversation-id="sessionId"
           :editable-turn-id
@@ -509,18 +569,47 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openReferenceWorkflow', workflowId, workflowName)
           "
-          @paywall-action="emit('paywallAction', $event, 'refused_send')"
+          @paywall-action="
+            (action, surface) => emit('paywallAction', action, surface)
+          "
         />
+        <div
+          v-if="showChatLoading"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+          :aria-label="
+            t('agent.openingWorkflowChat', {
+              workflowName: openingWorkflowName
+            })
+          "
+          class="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-background/80 px-6 text-center text-sm"
+        >
+          <i
+            aria-hidden="true"
+            class="icon-[lucide--loader-circle] motion-safe:animate-spin"
+          />
+          {{
+            t('agent.openingWorkflowChat', {
+              workflowName: openingWorkflowName
+            })
+          }}
+        </div>
       </div>
-    </template>
-
-    <template v-if="!showHistory">
       <slot name="instrument" />
-      <footer data-testid="agent-panel-footer" class="shrink-0 py-3">
+      <footer
+        data-testid="agent-panel-footer"
+        :inert="openingChat || blocked"
+        class="shrink-0 py-3 inert:opacity-50"
+      >
         <div
           data-testid="agent-composer-stack"
           class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4"
         >
+          <AgentSyncRetryAlert
+            :visible="syncRetryAvailable"
+            @retry="emit('retrySync')"
+          />
           <slot name="composerNotice" />
           <AgentPaywallCard
             v-if="creditsExhausted"
@@ -529,6 +618,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
           <RunNoticeBanner
+            :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
@@ -537,13 +627,13 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           />
           <FreeUseNotice
             v-if="freeUsePlacement === 'near-composer'"
-            placement="near-composer"
             @notice="emit('freeUseNotice', $event)"
           />
           <Composer
             ref="composerRef"
             :streaming
             :submitting
+            :opening-chat
             :can-attach
             :can-open-assets
             :selection-tags
@@ -582,20 +672,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
-              />
-            </template>
-            <template #aboveInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'above-input'"
-                placement="above-input"
-                @notice="emit('freeUseNotice', $event)"
-              />
-            </template>
-            <template #insideInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'inside-input'"
-                placement="inside-input"
-                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>

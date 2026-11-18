@@ -18,7 +18,7 @@ import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 import SidebarIcon from './SidebarIcon.vue'
 

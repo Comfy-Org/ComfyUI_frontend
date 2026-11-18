@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="800" viewBox="0 0 1040 800" role="img" aria-labelledby="title description" lang="en">
+  <title id="title">Layers order owners. Descendants stay inside their owner.</title>
+  <desc id="description">Front to back: application blocker, toasts and their popups, tours, dialogs and help overlays, Getting Started, education, nonmodal panels and previews, workspace. Within an owner, later positioned siblings paint above earlier ones. A popup in dialog A cannot escape above a newer dialog B. Reopening A must reinsert its owner after B. Select portals remain mounted to register options.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <rect width="1040" height="800" fill="#f8fafc"/>
+  <g font-family="system-ui, -apple-system, sans-serif" fill="#172033">
+    <text x="40" y="49" font-size="25" font-weight="600">Layers order owners.</text>
+    <text x="40" y="80" font-size="25" font-weight="600">Descendants stay inside their owner.</text>
+    <text x="40" y="113" font-size="16" fill="#526176">Use isolation and paint order before adding another z-index.</text>
+    <line x1="40" y1="139" x2="1000" y2="139" stroke="#cbd5e1"/>
+
+    <text x="40" y="177" font-size="18" font-weight="600">Document layers</text>
+    <text x="40" y="202" font-size="14" fill="#526176">Front to back · conceptual order, not numeric scale</text>
+    <path d="M 54 634 V 231" fill="none" stroke="#64748b" stroke-width="1.5" marker-end="url(#arrow)"/>
+    <g font-size="16">
+      <rect x="78" y="224" width="370" height="44" fill="#e2e8f0" stroke="#cbd5e1"/>
+      <text x="94" y="252">Application blocker</text>
+      <rect x="78" y="278" width="370" height="44" fill="#eef2ff" stroke="#818cf8"/>
+      <text x="94" y="306">Toasts + their descendant popups</text>
+      <rect x="78" y="332" width="370" height="44" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="94" y="360">Tours</text>
+      <rect x="78" y="386" width="370" height="44" fill="#eef2ff" stroke="#818cf8"/>
+      <text x="94" y="414">Dialogs, help + standalone overlays</text>
+      <rect x="78" y="440" width="370" height="44" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="94" y="468">Getting Started</text>
+      <rect x="78" y="494" width="370" height="44" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="94" y="522">Education</text>
+      <rect x="78" y="548" width="370" height="44" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="94" y="576">Nonmodal panels + node previews</text>
+      <rect x="78" y="602" width="370" height="44" fill="#e2e8f0" stroke="#cbd5e1"/>
+      <text x="94" y="630">Workspace</text>
+    </g>
+
+    <text x="496" y="177" font-size="18" font-weight="600">One owner contains the whole stack</text>
+    <text x="496" y="202" font-size="14" fill="#526176">A descendant cannot outpaint a higher owner.</text>
+    <rect x="496" y="224" width="504" height="94" fill="#eef2ff" stroke="#818cf8"/>
+    <text x="514" y="252" font-size="16" font-weight="600">Dialog B · opened after A</text>
+    <text x="514" y="280" font-size="14" fill="#526176">Its scrim and content cover all of A, including A's popups.</text>
+    <rect x="496" y="334" width="504" height="184" fill="#ffffff" stroke="#818cf8"/>
+    <text x="514" y="362" font-size="16" font-weight="600">Dialog A · isolated owner</text>
+    <text x="514" y="388" font-size="14" fill="#526176">Local paint order, back to front</text>
+    <g font-size="14" text-anchor="middle">
+      <rect x="514" y="406" width="102" height="42" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="565" y="432">Scrim</text>
+      <path d="M 622 427 H 645" stroke="#64748b" marker-end="url(#arrow)"/>
+      <rect x="652" y="406" width="120" height="42" fill="#f1f5f9" stroke="#cbd5e1"/>
+      <text x="712" y="432">Content</text>
+      <path d="M 778 427 H 801" stroke="#64748b" marker-end="url(#arrow)"/>
+      <rect x="808" y="406" width="174" height="42" fill="#eef2ff" stroke="#818cf8"/>
+      <text x="895" y="432">Owned popup target</text>
+    </g>
+    <text x="514" y="478" font-size="14" fill="#526176">Portal target stays outside animated / scrolling content.</text>
+    <text x="514" y="500" font-size="14" fill="#526176">Menus and selects remain within A's boundary.</text>
+
+    <text x="496" y="552" font-size="18" font-weight="600">Reopen means reinsert</text>
+    <text x="496" y="577" font-size="14" fill="#526176">Equal layers use DOM order, not the last open event.</text>
+    <g font-size="15" text-anchor="middle">
+      <rect x="496" y="596" width="182" height="48" fill="#ffffff" stroke="#cbd5e1"/>
+      <text x="587" y="626">A → B</text>
+      <path d="M 691 620 H 741" stroke="#64748b" marker-end="url(#arrow)"/>
+      <rect x="754" y="596" width="246" height="48" fill="#eef2ff" stroke="#818cf8"/>
+      <text x="877" y="626">B → A reopened</text>
+    </g>
+    <text x="496" y="670" font-size="14" fill="#526176">Back → front. Remount the owner / keyed popup portal.</text>
+
+    <line x1="40" y1="697" x2="1000" y2="697" stroke="#cbd5e1"/>
+    <text x="40" y="727" font-size="15" font-weight="600">Inside the workspace: canvas context → controls. Inside the mask editor: image planes → UI.</text>
+    <text x="40" y="754" font-size="14" fill="#526176">Keep local offsets only for deliberate overlap. Keep Select portals mounted for option registration.</text>
+    <text x="40" y="777" font-size="14" fill="#526176">Legacy extension menus and the pre-Vue splash retain separate contracts.</text>
+  </g>
+</svg>

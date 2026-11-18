@@ -128,7 +128,7 @@ Utility composables for common patterns:
 ### Manager
 
 Composables for ComfyUI Manager integration (located in
-`@/workbench/extensions/manager/composables`):
+`@/platform/customNodes/manager/composables`):
 
 | Composable                   | Description                                 |
 | ---------------------------- | ------------------------------------------- |
@@ -143,7 +143,7 @@ Composables for ComfyUI Manager integration (located in
 #### Node Pack
 
 Node package helpers live under
-`@/workbench/extensions/manager/composables/nodePack`:
+`@/platform/customNodes/manager/composables/nodePack`:
 
 | Composable                | Description                               |
 | ------------------------- | ----------------------------------------- |

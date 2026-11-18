@@ -1,6 +1,6 @@
 import { shallowRef, triggerRef } from 'vue'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { isCrdtDebugEnabled } from './crdtDebugGate'
 import type { CrdtLogLevel } from './crdtDebugGate'
@@ -39,6 +39,7 @@ export const DEV_EVENT_KINDS = [
   'subscribe_retry',
   'subscribe_ack_timeout',
   'subscribe_refused_permanent',
+  'subscribe_credential_reconnect',
   'doc_reseed_sent',
   'doc_reseed_result',
   'stale_probe',
@@ -48,7 +49,8 @@ export const DEV_EVENT_KINDS = [
   'doc_stale',
   'frame_send_failed',
   'agent_node_adapters_materialized',
-  'local_widget_write_held'
+  'local_widget_write_held',
+  'agent_write_overwritten'
 ] as const
 
 export type DevEventKind = (typeof DEV_EVENT_KINDS)[number]

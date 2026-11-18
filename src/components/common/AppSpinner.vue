@@ -2,9 +2,9 @@
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Spinner from '@/components/ui/spinner/Spinner.vue'
+import Spinner from '@comfyorg/design-system/spinner/Spinner'
 
-import DotSpinner from './DotSpinner.vue'
+import DotSpinner from '@comfyorg/design-system/common/DotSpinner'
 
 defineOptions({ inheritAttrs: false })
 

@@ -1,11 +1,11 @@
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
-import { authCredentialOf } from '@/platform/auth/authCredential'
+import { authCredentialOf } from '@comfyorg/api-client/authCredential'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthHeader } from '@/types/authTypes'
+import type { AuthHeader } from '@comfyorg/api-client/authTypes'
 
 type AgentRequestInit = NonNullable<Parameters<typeof api.fetchApi>[1]>
 
@@ -31,6 +31,16 @@ async function agentAuthHeader(): Promise<AuthHeader | null> {
   if (!authStore.isAuthenticated) return null
   return {
     Authorization: `Bearer ${await authStore.getWorkspaceAuthTokenOrThrow()}`
+  }
+}
+
+/** Returns the credential for Agent-owned Global Settings rows. */
+export async function agentSettingsAuthHeader(): Promise<AuthHeader | null> {
+  try {
+    if (isCloud) return await useAuthStore().getWorkspaceAuthHeader()
+    return await agentAuthHeader()
+  } catch {
+    return null
   }
 }
 

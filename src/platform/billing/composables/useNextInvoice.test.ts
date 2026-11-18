@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
-import type {
-  Plan,
-  TeamCreditStops
-} from '@/platform/workspace/api/workspaceApi'
+import type { Plan, TeamCreditStops } from '@comfyorg/billing-core'
 
 import type { NextInvoiceInputs } from './useNextInvoice'
 import { deriveNextInvoice } from './useNextInvoice'
@@ -58,12 +55,14 @@ const teamCreditStops: TeamCreditStops = {
       monthly: {
         action: 'subscribe',
         list_price_cents: 32000,
-        price_cents: 30400
+        price_cents: 30400,
+        period_charge_cents: 30400
       },
       yearly: {
         action: 'subscribe',
         list_price_cents: 32000,
-        price_cents: 28800
+        price_cents: 28800,
+        period_charge_cents: 345600
       }
     },
     {
@@ -72,12 +71,14 @@ const teamCreditStops: TeamCreditStops = {
       monthly: {
         action: 'subscribe',
         list_price_cents: 64000,
-        price_cents: 60800
+        price_cents: 60800,
+        period_charge_cents: 60800
       },
       yearly: {
         action: 'subscribe',
         list_price_cents: 64000,
-        price_cents: 57600
+        price_cents: 57600,
+        period_charge_cents: 691200
       }
     }
   ]

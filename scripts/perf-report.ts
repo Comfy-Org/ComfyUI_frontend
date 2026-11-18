@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
+import { renderPrReportSection } from './cicd/pr-report-section'
 import type { MetricStats } from './perf-stats'
 import {
   classifyChange,
@@ -133,7 +134,7 @@ function getHistoricalStats(
     const group = groupByName(r.measurements)
     const samples = group.get(testName)
     if (samples) {
-      const mean = meanMetric(samples, metric)
+      const mean = reportedMean(samples, metric)
       if (mean !== null) values.push(mean)
     }
   }
@@ -153,9 +154,8 @@ function getHistoricalTimeSeries(
     const group = groupByName(r.measurements)
     const samples = group.get(testName)
     if (samples) {
-      values.push(
-        samples.reduce((sum, s) => sum + s[metric], 0) / samples.length
-      )
+      const mean = reportedMean(samples, metric)
+      if (mean !== null) values.push(mean)
     }
   }
   return values
@@ -218,43 +218,149 @@ function frameTimeToFps(ms: number): number {
   return ms > 0 ? 1000 / ms : 0
 }
 
-function renderHeadlineSummary(
+type FrameMetricKey = 'frameDurationMs' | 'p95FrameDurationMs'
+
+function isFrameMetric(key: MetricKey): key is FrameMetricKey {
+  return key === 'frameDurationMs' || key === 'p95FrameDurationMs'
+}
+
+function frameSampled(
+  samples: PerfMeasurement[],
+  key: FrameMetricKey
+): PerfMeasurement[] {
+  return samples.filter((s) => (getMetricValue(s, key) ?? 0) > 0)
+}
+
+function sampledFrameMetric(
+  samples: PerfMeasurement[],
+  key: FrameMetricKey
+): number | null {
+  return medianMetric(frameSampled(samples, key), key)
+}
+
+function reportedMedian(
+  samples: PerfMeasurement[],
+  key: MetricKey
+): number | null {
+  return isFrameMetric(key)
+    ? sampledFrameMetric(samples, key)
+    : medianMetric(samples, key)
+}
+
+function reportedMean(
+  samples: PerfMeasurement[],
+  key: MetricKey
+): number | null {
+  return meanMetric(
+    isFrameMetric(key) ? frameSampled(samples, key) : samples,
+    key
+  )
+}
+
+interface FpsTargetTally {
+  below: number
+  sampled: number
+  unsampled: number
+}
+
+function tallyFpsTarget(
   prGroups: Map<string, PerfMeasurement[]>
-): string[] {
-  const lines: string[] = []
-  const summaries: string[] = []
-  let belowTarget = 0
-
-  for (const [testName, prSamples] of prGroups) {
-    const avgFrame = medianMetric(prSamples, 'frameDurationMs')
-    const p95Frame = medianMetric(prSamples, 'p95FrameDurationMs')
-    const tbt = medianMetric(prSamples, 'totalBlockingTimeMs')
-    const heap = medianMetric(prSamples, 'heapUsedBytes')
-
-    const avgFps = avgFrame !== null ? frameTimeToFps(avgFrame) : null
-    const p5Fps = p95Frame !== null ? frameTimeToFps(p95Frame) : null
-
-    const parts: string[] = [`**${testName}**:`]
-    if (avgFps !== null) parts.push(`${avgFps.toFixed(1)} avg FPS`)
-    if (p5Fps !== null) {
-      const pass = p5Fps >= TARGET_P5_FPS
-      if (!pass) belowTarget++
-      parts.push(
-        `${p5Fps.toFixed(1)} P5 FPS ${pass ? '✅' : '❌'} (target: ≥${TARGET_P5_FPS})`
-      )
+): FpsTargetTally {
+  const tally: FpsTargetTally = { below: 0, sampled: 0, unsampled: 0 }
+  for (const prSamples of prGroups.values()) {
+    const p95Frame = sampledFrameMetric(prSamples, 'p95FrameDurationMs')
+    if (p95Frame === null) {
+      if (medianMetric(prSamples, 'p95FrameDurationMs') !== null)
+        tally.unsampled++
+      continue
     }
-    if (tbt !== null) parts.push(`${tbt.toFixed(0)}ms TBT`)
-    if (heap !== null) parts.push(`${formatBytes(heap)} heap`)
-
-    if (parts.length > 1) summaries.push(parts.join(' · '))
+    tally.sampled++
+    if (frameTimeToFps(p95Frame) < TARGET_P5_FPS) tally.below++
   }
+  return tally
+}
 
-  if (belowTarget > 0) {
-    lines.push(
-      `> ❌ **${belowTarget} scenario${belowTarget === 1 ? '' : 's'} below the ≥${TARGET_P5_FPS} P5 FPS target.** Expand the scenario timings below and profile the affected scenarios before merging.`,
+function plural(count: number, noun: string): string {
+  return `${count} ${noun}${count === 1 ? '' : 's'}`
+}
+
+function percentDelta(prVal: number, baseVal: number): number | null {
+  if (baseVal === 0) return prVal === 0 ? 0 : null
+  return ((prVal - baseVal) / baseVal) * 100
+}
+
+function baselineMedian(
+  baseSamples: PerfMeasurement[] | undefined,
+  key: MetricKey
+): number | null {
+  return baseSamples?.length ? reportedMedian(baseSamples, key) : null
+}
+
+function formatIfPresent(
+  value: number | null,
+  format: (value: number) => string
+): string | null {
+  return value === null ? null : format(value)
+}
+
+function p5FpsPart(p95Frame: number): string {
+  const p5Fps = frameTimeToFps(p95Frame)
+  const verdict = p5Fps >= TARGET_P5_FPS ? '✅' : '❌'
+  return `${p5Fps.toFixed(1)} P5 FPS ${verdict} (target: ≥${TARGET_P5_FPS})`
+}
+
+function scenarioSummary(
+  testName: string,
+  prSamples: PerfMeasurement[]
+): string | null {
+  const parts = [
+    formatIfPresent(
+      sampledFrameMetric(prSamples, 'frameDurationMs'),
+      (ms) => `${frameTimeToFps(ms).toFixed(1)} avg FPS`
+    ),
+    formatIfPresent(
+      sampledFrameMetric(prSamples, 'p95FrameDurationMs'),
+      p5FpsPart
+    ),
+    formatIfPresent(
+      medianMetric(prSamples, 'totalBlockingTimeMs'),
+      (ms) => `${ms.toFixed(0)}ms TBT`
+    ),
+    formatIfPresent(
+      medianMetric(prSamples, 'heapUsedBytes'),
+      (bytes) => `${formatBytes(bytes)} heap`
+    )
+  ].filter((part): part is string => part !== null)
+
+  return parts.length > 0 ? `**${testName}**: ${parts.join(' · ')}` : null
+}
+
+function fpsTargetNotice({ below, unsampled }: FpsTargetTally): string[] {
+  const notice: string[] = []
+  if (below > 0) {
+    notice.push(
+      `> ❌ **${plural(below, 'scenario')} below the ≥${TARGET_P5_FPS} P5 FPS target.** Expand the scenario timings below and profile the affected scenarios before merging.`,
       ''
     )
   }
+  if (unsampled > 0) {
+    notice.push(
+      `> ⚠️ ${plural(unsampled, 'scenario')} recorded no frame samples, so ${unsampled === 1 ? 'its' : 'their'} FPS could not be checked against the target. Check the perf test logs for a frame sampling timeout.`,
+      ''
+    )
+  }
+  return notice
+}
+
+function renderHeadlineSummary(prGroups: Map<string, PerfMeasurement[]>): {
+  notice: string[]
+  lines: string[]
+} {
+  const notice = fpsTargetNotice(tallyFpsTarget(prGroups))
+  const lines: string[] = []
+  const summaries = [...prGroups]
+    .map(([testName, prSamples]) => scenarioSummary(testName, prSamples))
+    .filter((summary): summary is string => summary !== null)
 
   if (summaries.length > 0) {
     lines.push(
@@ -267,14 +373,63 @@ function renderHeadlineSummary(
     )
   }
 
-  return lines
+  return { notice, lines }
+}
+
+interface RenderedReport {
+  status: string
+  notice?: string[]
+  lines: string[]
+}
+
+interface ComparedRow {
+  row: string
+  flagged: boolean
+}
+
+function compareMetric(
+  testName: string,
+  metric: MetricDef,
+  prSamples: PerfMeasurement[],
+  baseSamples: PerfMeasurement[] | undefined,
+  historical: PerfReport[]
+): ComparedRow | null {
+  const { key, label, unit, minAbsDelta } = metric
+  const prVal = reportedMedian(prSamples, key)
+  if (prVal === null) return null
+
+  const baseVal = baselineMedian(baseSamples, key)
+  if (baseVal === null) {
+    return {
+      row: `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`,
+      flagged: false
+    }
+  }
+
+  const histStats = getHistoricalStats(historical, testName, key)
+  const z = zScore(prVal, histStats)
+  const sig = classifyChange(
+    z,
+    computeCV(histStats),
+    prVal - baseVal,
+    minAbsDelta
+  )
+
+  return {
+    row: `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(percentDelta(prVal, baseVal))} | ${formatSignificance(sig, z)} |`,
+    flagged: isNoteworthy(sig)
+  }
+}
+
+function regressionVerdict(count: number): string {
+  return `${count} regression${count > 1 ? 's' : ''} detected`
 }
 
 function renderFullReport(
   prGroups: Map<string, PerfMeasurement[]>,
   baseline: PerfReport,
   historical: PerfReport[]
-): string[] {
+): RenderedReport {
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   const tableHeader = [
@@ -282,54 +437,34 @@ function renderFullReport(
     '|--------|----------|----------|---|-----|'
   ]
 
-  const flaggedRows: string[] = []
-  const allRows: string[] = []
+  const compared = [...prGroups].flatMap(([testName, prSamples]) =>
+    REPORTED_METRICS.map((metric) =>
+      compareMetric(
+        testName,
+        metric,
+        prSamples,
+        baselineGroups.get(testName),
+        historical
+      )
+    ).filter((row): row is ComparedRow => row !== null)
+  )
+  const allRows = compared.map(({ row }) => row)
+  const flaggedRows = compared
+    .filter(({ flagged }) => flagged)
+    .map(({ row }) => row)
 
-  for (const [testName, prSamples] of prGroups) {
-    const baseSamples = baselineGroups.get(testName)
+  const status =
+    flaggedRows.length > 0
+      ? `⚠️ ${regressionVerdict(flaggedRows.length)}`
+      : '✅ No regressions detected'
 
-    for (const { key, label, unit, minAbsDelta } of REPORTED_METRICS) {
-      const prVal = medianMetric(prSamples, key)
-      if (prVal === null) continue
-      const histStats = getHistoricalStats(historical, testName, key)
-      const cv = computeCV(histStats)
-
-      if (!baseSamples?.length) {
-        allRows.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
-        )
-        continue
-      }
-
-      const baseVal = medianMetric(baseSamples, key)
-      if (baseVal === null) {
-        allRows.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new | — |`
-        )
-        continue
-      }
-      const absDelta = prVal - baseVal
-      const deltaPct =
-        baseVal === 0
-          ? prVal === 0
-            ? 0
-            : null
-          : ((prVal - baseVal) / baseVal) * 100
-      const z = zScore(prVal, histStats)
-      const sig = classifyChange(z, cv, absDelta, minAbsDelta)
-
-      const row = `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} | ${formatSignificance(sig, z)} |`
-      allRows.push(row)
-      if (isNoteworthy(sig)) {
-        flaggedRows.push(row)
-      }
-    }
-  }
-
+  const notice: string[] = []
   if (flaggedRows.length > 0) {
+    notice.push(
+      `⚠️ **${regressionVerdict(flaggedRows.length)}**. Review the regressions below and profile the affected scenarios before merging.`,
+      ''
+    )
     lines.push(
-      `⚠️ **${flaggedRows.length} regression${flaggedRows.length > 1 ? 's' : ''} detected**. Review the regressions below and profile the affected scenarios before merging.`,
-      '',
       '<details><summary>Show regressions</summary>',
       '',
       ...tableHeader,
@@ -338,8 +473,6 @@ function renderFullReport(
       '</details>',
       ''
     )
-  } else {
-    lines.push('✅ No regressions detected.', '')
   }
 
   lines.push(
@@ -353,11 +486,23 @@ function renderFullReport(
   )
 
   lines.push(
-    `<details><summary>Historical variance (last ${historical.length} runs)</summary>`,
+    ...renderHistoricalVariance(prGroups, historical),
+    ...renderTrend(prGroups, historical)
+  )
+
+  return { status, notice, lines }
+}
+
+function renderHistoricalVariance(
+  prGroups: Map<string, PerfMeasurement[]>,
+  historical: PerfReport[]
+): string[] {
+  const lines = [
+    `<details><summary>Historical variance (up to ${historical.length} runs per metric)</summary>`,
     '',
     '| Metric | μ | σ | CV |',
     '|--------|---|---|-----|'
-  )
+  ]
   for (const [testName] of prGroups) {
     for (const { key, label, unit } of REPORTED_METRICS) {
       const stats = getHistoricalStats(historical, testName, key)
@@ -369,47 +514,47 @@ function renderFullReport(
     }
   }
   lines.push('', '</details>')
+  return lines
+}
 
+function renderTrend(
+  prGroups: Map<string, PerfMeasurement[]>,
+  historical: PerfReport[]
+): string[] {
   const trendRows: string[] = []
   for (const [testName] of prGroups) {
     for (const { key, label, unit } of REPORTED_METRICS) {
       const series = getHistoricalTimeSeries(historical, testName, key)
       if (series.length < 3) continue
-      const dir = trendDirection(series)
-      const arrow = trendArrow(dir)
-      const spark = sparkline(series)
+      const arrow = trendArrow(trendDirection(series))
       const last = series[series.length - 1]
       trendRows.push(
-        `| ${testName}: ${label} | ${spark} | ${arrow} | ${formatValue(last, unit)} |`
+        `| ${testName}: ${label} | ${sparkline(series)} | ${arrow} | ${formatValue(last, unit)} |`
       )
     }
   }
-
-  if (trendRows.length > 0) {
-    lines.push(
-      '',
-      `<details><summary>Trend (last ${historical.length} commits on main)</summary>`,
-      '',
-      '| Metric | Trend | Dir | Latest |',
-      '|--------|-------|-----|--------|',
-      ...trendRows,
-      '',
-      '</details>'
-    )
-  }
-
-  return lines
+  if (trendRows.length === 0) return []
+  return [
+    '',
+    `<details><summary>Trend (up to ${historical.length} commits on main per metric)</summary>`,
+    '',
+    '| Metric | Trend | Dir | Latest |',
+    '|--------|-------|-----|--------|',
+    ...trendRows,
+    '',
+    '</details>'
+  ]
 }
 
 function renderColdStartReport(
   prGroups: Map<string, PerfMeasurement[]>,
   baseline: PerfReport,
   historicalCount: number
-): string[] {
+): RenderedReport {
   const lines: string[] = []
   const baselineGroups = groupByName(baseline.measurements)
   lines.push(
-    `> ℹ️ Collecting baseline variance data (${historicalCount}/15 runs). Significance will appear after 2 main branch runs.`,
+    '> Significance will appear after 2 main branch runs.',
     '',
     '<details><summary>All metrics (cold start)</summary>',
     '',
@@ -421,46 +566,30 @@ function renderColdStartReport(
     const baseSamples = baselineGroups.get(testName)
 
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const prVal = medianMetric(prSamples, key)
+      const prVal = reportedMedian(prSamples, key)
       if (prVal === null) continue
 
-      if (!baseSamples?.length) {
-        lines.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
-        )
-        continue
-      }
-
-      const baseVal = medianMetric(baseSamples, key)
-      if (baseVal === null) {
-        lines.push(
-          `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
-        )
-        continue
-      }
-      const deltaPct =
-        baseVal === 0
-          ? prVal === 0
-            ? 0
-            : null
-          : ((prVal - baseVal) / baseVal) * 100
+      const baseVal = baselineMedian(baseSamples, key)
       lines.push(
-        `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(deltaPct)} |`
+        baseVal === null
+          ? `| ${testName}: ${label} | — | ${formatValue(prVal, unit)} | new |`
+          : `| ${testName}: ${label} | ${formatValue(baseVal, unit)} | ${formatValue(prVal, unit)} | ${formatDelta(percentDelta(prVal, baseVal))} |`
       )
     }
   }
 
   lines.push('', '</details>')
-  return lines
+  return {
+    status: `ℹ️ Collecting baseline variance (${historicalCount}/15 runs)`,
+    lines
+  }
 }
 
 function renderNoBaselineReport(
   prGroups: Map<string, PerfMeasurement[]>
-): string[] {
+): RenderedReport {
   const lines: string[] = []
   lines.push(
-    '> ℹ️ No baseline found — significance unavailable.',
-    '',
     '<details><summary>Absolute values</summary>',
     '',
     '| Metric | Value |',
@@ -468,57 +597,89 @@ function renderNoBaselineReport(
   )
   for (const [testName, prSamples] of prGroups) {
     for (const { key, label, unit } of REPORTED_METRICS) {
-      const prVal = medianMetric(prSamples, key)
+      const prVal = reportedMedian(prSamples, key)
       if (prVal === null) continue
       lines.push(`| ${testName}: ${label} | ${formatValue(prVal, unit)} |`)
     }
   }
   lines.push('', '</details>')
-  return lines
+  return { status: 'ℹ️ No baseline — significance unavailable', lines }
 }
 
-function main() {
-  if (!existsSync(CURRENT_PATH)) {
-    process.stdout.write(
-      '## ⚡ Performance Report\n\nNo perf metrics found. Perf tests may not have run.\n'
-    )
-    process.exit(0)
-  }
-
-  const current: PerfReport = JSON.parse(readFileSync(CURRENT_PATH, 'utf-8'))
-
-  const baseline: PerfReport | null = existsSync(BASELINE_PATH)
-    ? JSON.parse(readFileSync(BASELINE_PATH, 'utf-8'))
-    : null
-
+function renderComparison(
+  prGroups: Map<string, PerfMeasurement[]>
+): RenderedReport {
+  if (!existsSync(BASELINE_PATH)) return renderNoBaselineReport(prGroups)
+  const baseline: PerfReport = JSON.parse(readFileSync(BASELINE_PATH, 'utf-8'))
   const historical = loadHistoricalReports()
-  const prGroups = groupByName(current.measurements)
+  return historical.length >= 2
+    ? renderFullReport(prGroups, baseline, historical)
+    : renderColdStartReport(prGroups, baseline, historical.length)
+}
 
-  const lines: string[] = []
-  lines.push('## ⚡ Performance Report\n')
-  lines.push(...renderHeadlineSummary(prGroups))
-
-  if (baseline && historical.length >= 2) {
-    lines.push(...renderFullReport(prGroups, baseline, historical))
-  } else if (baseline) {
-    lines.push(...renderColdStartReport(prGroups, baseline, historical.length))
-  } else {
-    lines.push(...renderNoBaselineReport(prGroups))
-  }
-
+function renderRawData(current: PerfReport): string[] {
   const rawData = {
     ...current,
     measurements: current.measurements.map(
       ({ allFrameDurationsMs: _, ...rest }) => rest
     )
   }
-  lines.push('\n<details><summary>Raw data</summary>\n')
-  lines.push('```json')
-  lines.push(JSON.stringify(rawData, null, 2))
-  lines.push('```')
-  lines.push('\n</details>')
+  return [
+    '',
+    '<details><summary>Raw data</summary>',
+    '',
+    '```json',
+    JSON.stringify(rawData, null, 2),
+    '```',
+    '',
+    '</details>'
+  ]
+}
 
-  process.stdout.write(lines.join('\n') + '\n')
+function perfHeadingStatus(
+  current: PerfReport,
+  prGroups: Map<string, PerfMeasurement[]>,
+  reportStatus: string
+): string {
+  if (current.measurements.length === 0)
+    return '⚠️ No measurements recorded — check the perf test logs'
+  const fps = tallyFpsTarget(prGroups)
+  if (fps.below > 0)
+    return `❌ ${fps.below} below ${TARGET_P5_FPS} FPS target · ${reportStatus}`
+  if (fps.unsampled > 0 && fps.sampled === 0)
+    return `⚠️ No frame samples — FPS target not checked · ${reportStatus}`
+  return reportStatus
+}
+
+function main() {
+  if (!existsSync(CURRENT_PATH)) {
+    process.stdout.write(
+      renderPrReportSection({
+        icon: '⚡',
+        title: 'Performance',
+        status: '⏭️ No metrics found — perf tests may not have run'
+      }) + '\n'
+    )
+    process.exit(0)
+  }
+
+  const current: PerfReport = JSON.parse(readFileSync(CURRENT_PATH, 'utf-8'))
+  const prGroups = groupByName(current.measurements)
+  const report = renderComparison(prGroups)
+
+  const headline = renderHeadlineSummary(prGroups)
+  const body = [...headline.lines, ...report.lines, ...renderRawData(current)]
+  const status = perfHeadingStatus(current, prGroups, report.status)
+
+  process.stdout.write(
+    renderPrReportSection({
+      icon: '⚡',
+      title: 'Performance',
+      status,
+      notice: [...headline.notice, ...(report.notice ?? [])].join('\n'),
+      body: body.join('\n')
+    }) + '\n'
+  )
 }
 
 main()

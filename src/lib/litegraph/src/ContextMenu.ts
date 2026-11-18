@@ -441,7 +441,7 @@ export class ContextMenu<TValue = unknown> {
 
 type RegisteredContextMenu<TValue = unknown> = ContextMenu<TValue>
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface ContextMenu<
     _TValue = unknown
   > extends RegisteredContextMenu<_TValue> {}

@@ -91,8 +91,8 @@ test.describe(
         await expect(node).not.toHaveClass(/pointer-events-none/)
 
         await agentConversation.vueNodes.selectNode(nodeId)
-        await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
-        await expect(node).toHaveClass(/outline-foreground/)
+        await expect(agentConversation.vueNodes.emphasizedNodes).toHaveCount(1)
+        await expect(node).toHaveAttribute('data-emphasized', 'true')
       })
     })
 
@@ -162,8 +162,8 @@ test.describe(
         await expect(node).not.toHaveClass(/pointer-events-none/)
 
         await agentConversation.vueNodes.selectNode(replacementId)
-        await expect(agentConversation.vueNodes.selectedNodes).toHaveCount(1)
-        await expect(node).toHaveClass(/outline-foreground/)
+        await expect(agentConversation.vueNodes.emphasizedNodes).toHaveCount(1)
+        await expect(node).toHaveAttribute('data-emphasized', 'true')
       })
     })
   }

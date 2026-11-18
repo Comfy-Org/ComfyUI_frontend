@@ -176,6 +176,7 @@ export function useCheckoutCopy() {
           yearly: teamPlan.discountedUsd
         },
         monthlyCredits: teamPlan.credits,
+        yearlyChargeUsd: teamPlan.periodChargeUsd?.yearly,
         pricedByQuote: false
       }
     }

@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Clique duplo no título do nó para editar"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Reduzir a resolução das pré-visualizações de imagens grandes",
+    "tooltip": "No Nodes 2.0, exiba imagens grandes nos nós como uma cópia com no máximo 1024 px no lado mais longo, para que muitas pré-visualizações grandes continuem responsivas. Desative para sempre exibir a imagem original."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Clique do meio cria um novo nó de redirecionamento"
   },

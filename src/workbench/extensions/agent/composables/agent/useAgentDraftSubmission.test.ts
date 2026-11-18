@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick, ref, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 
+import type { AgentComposerDropReason } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
@@ -75,9 +76,11 @@ function setup() {
     })
     const pending = { promise, resolve: resolveSend }
     const send = vi.fn<Send>(() => pending.promise)
+    const onRejected = vi.fn<(reason: AgentComposerDropReason) => void>()
     const options = {
       canSubmit: () => canSubmit.value,
       onSubmit: vi.fn(),
+      onRejected,
       target: () => target.value,
       editableWorkflowId: () => editableWorkflowId.value,
       selection: {
@@ -99,6 +102,7 @@ function setup() {
       canSubmit,
       pending,
       send,
+      onRejected,
       unmount() {
         mountedScope.stop()
       },
@@ -147,6 +151,23 @@ describe('Agent draft submission', () => {
     expect(composer.prompt).toEqual(prompt)
   })
 
+  it('restores an attached error reference and its origin after a failed send', async () => {
+    const { composer, submit, pending } = setup()
+    composer.setErrorContext({
+      scope: 'card',
+      count: 1,
+      label: 'Execution failed',
+      severity: 'error',
+      problems: [{ category: 'execution_failure', message: 'boom' }]
+    })
+    const prompt = composer.prompt
+    const sending = submit()
+    pending.resolve(false)
+    await sending
+    expect(composer.prompt).toEqual(prompt)
+    expect(composer.promptOrigin).toBe('error_context')
+  })
+
   it('clears the complete draft before sending its snapshot and preserves subsequent typing on success', async () => {
     const { composer, selection, original, submit, send, pending } = setup()
     send.mockImplementation(() => {
@@ -174,12 +195,25 @@ describe('Agent draft submission', () => {
     expect(composer.draft).toBe('Next prompt')
   })
 
-  it.for(['blocked', 'no-target', 'empty', 'uploading'])(
-    'preserves the draft when final admission rejects it: %s',
+  it.for([
+    'cannot_submit',
+    'no_target',
+    'empty',
+    'attachment_uploading'
+  ] as const)(
+    'preserves the draft and reports why when final admission rejects it: %s',
     async (reason) => {
-      const { composer, selection, target, canSubmit, submit, send } = setup()
-      if (reason === 'blocked') canSubmit.value = false
-      if (reason === 'no-target') target.value = null
+      const {
+        composer,
+        selection,
+        target,
+        canSubmit,
+        submit,
+        send,
+        onRejected
+      } = setup()
+      if (reason === 'cannot_submit') canSubmit.value = false
+      if (reason === 'no_target') target.value = null
       if (reason === 'empty') {
         composer.replaceDraft({
           text: ' ',
@@ -187,7 +221,7 @@ describe('Agent draft submission', () => {
           workflowReferences: composer.workflowReferences
         })
       }
-      if (reason === 'uploading')
+      if (reason === 'attachment_uploading')
         composer.updateAttachment('upload-1', { uploading: true })
       const draft = composer.draft
       const attachments = [...composer.attachments]
@@ -197,6 +231,7 @@ describe('Agent draft submission', () => {
       await submit()
 
       expect(send).not.toHaveBeenCalled()
+      expect(onRejected).toHaveBeenCalledExactlyOnceWith(reason)
       expect(composer.draft).toBe(draft)
       expect(composer.attachments).toEqual(attachments)
       expect(composer.workflowReferences).toEqual(references)
@@ -337,12 +372,13 @@ describe('Agent draft submission', () => {
   })
 
   it('does not submit twice while the original request is pending after reopening', async () => {
-    const { composer, submit, send, pending, remount } = setup()
+    const { composer, submit, send, onRejected, pending, remount } = setup()
     const sending = submit()
     remount()
     composer.setText('Next prompt')
     await submit()
     expect(send).toHaveBeenCalledOnce()
+    expect(onRejected).toHaveBeenCalledExactlyOnceWith('submission_pending')
     pending.resolve(true)
     await sending
 

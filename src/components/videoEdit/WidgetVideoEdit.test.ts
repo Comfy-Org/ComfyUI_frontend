@@ -10,10 +10,10 @@ import type { FilmstripError } from '@/composables/video/useVideoFilmstrip'
 import type {
   VideoEditFeature,
   VideoEditValue
-} from '@/lib/litegraph/src/types/widgets'
+} from '@comfyorg/graph-model/widgets'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { Bounds } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 

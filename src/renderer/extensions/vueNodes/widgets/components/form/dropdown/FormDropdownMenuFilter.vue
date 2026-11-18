@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import { useModelUpload } from '@/platform/assets/composables/useModelUpload'
 import type { FilterOption } from '@/platform/assets/types/filterTypes'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -20,11 +20,8 @@ const { isUploadButtonEnabled, showUploadDialog } = useModelUpload()
 
 const singleFilterOption = computed(() => filterOptions.length === 1)
 
-const uploadButtonStyle = cn(
-  'ml-auto h-8 rounded-lg bg-foreground text-background',
-  'flex items-center justify-center gap-2 p-2',
-  'transition-all duration-150 hover:bg-foreground/90 active:scale-95'
-)
+const uploadButtonStyle =
+  'ml-auto flex transition-all duration-150 hover:bg-foreground/90 active:scale-95'
 </script>
 
 <template>
@@ -50,7 +47,7 @@ const uploadButtonStyle = cn(
     </button>
     <Button
       v-if="isUploadButtonEnabled && singleFilterOption"
-      variant="textonly"
+      variant="inverted"
       size="md"
       :class="uploadButtonStyle"
       @click="showUploadDialog"
@@ -61,12 +58,12 @@ const uploadButtonStyle = cn(
     <Button
       v-else-if="uploadable"
       :title="$t('g.upload')"
-      variant="textonly"
+      variant="inverted"
       size="md"
       :class="uploadButtonStyle"
       @click="emit('show-picker')"
     >
-      <i class="icon-[lucide--folder-search] size-4" />
+      <i class="icon-[lucide--folder-search]" />
       <span>{{ $t('g.upload') }}</span>
     </Button>
   </div>

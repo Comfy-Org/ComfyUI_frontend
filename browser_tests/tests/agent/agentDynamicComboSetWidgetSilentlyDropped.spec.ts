@@ -2,8 +2,8 @@ import { expect } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type {
   AgentRunModePreference,

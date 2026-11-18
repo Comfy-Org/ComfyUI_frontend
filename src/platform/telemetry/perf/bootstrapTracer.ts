@@ -57,13 +57,10 @@
  *
  *   await bootstrapTracer.settle('bootstrap/object-info', () => this.getNodeDefs())
  */
-// oxlint-disable-next-line no-restricted-imports -- startup telemetry must publish before the registry exists
-import { datadogRum } from '@datadog/browser-rum'
-
-import { isCloud } from '@/platform/distribution/types'
-import { useTelemetry } from '@/platform/telemetry'
-import { TelemetryEvents } from '@/platform/telemetry/types'
-import type { BootstrapCompleteMetadata } from '@/platform/telemetry/types'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { getDatadogRum } from '@comfyorg/telemetry/rumContext'
+import { TelemetryEvents } from '@comfyorg/telemetry/types'
+import type { BootstrapCompleteMetadata } from '@comfyorg/telemetry/types'
 
 import { perfMark, perfMeasureSinceOrigin, perfPoint } from './perfMark'
 import type { PerfSpan } from './perfMark'
@@ -89,7 +86,13 @@ const BOOTSTRAP_PHASES = {
     'router',
     'sentry-init'
   ],
-  'auth-gate': ['initialized', 'user-store', 'needs-login'],
+  'auth-gate': [
+    'initialized',
+    'identity',
+    'sign-in',
+    'user-store',
+    'needs-login'
+  ],
   bootstrap: [
     'settings',
     'workflows',
@@ -116,7 +119,9 @@ type BootstrapSubphase<Namespace extends BootstrapPhaseNamespace> =
   (typeof BOOTSTRAP_PHASES)[Namespace][number]
 
 export type BootstrapPhase = {
-  [Namespace in BootstrapPhaseNamespace]: `${Namespace}/${BootstrapSubphase<Namespace>}`
+  [
+    Namespace in BootstrapPhaseNamespace
+  ]: `${Namespace}/${BootstrapSubphase<Namespace>}`
 }[BootstrapPhaseNamespace]
 
 function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
@@ -130,6 +135,47 @@ function untracedMs(rows: BootstrapPhaseTiming[], totalMs: number): number {
   return totalMs - tracedMs
 }
 
+class HiddenTimeMeter {
+  private _hiddenMs = 0
+  private _hiddenSince: number | undefined
+  private _listening = new AbortController()
+
+  constructor() {
+    if (typeof document === 'undefined') return
+    const buffered = performance.getEntriesByType('visibility-state')
+    if (buffered.length > 0) {
+      for (const entry of buffered)
+        this._record(entry.name === 'hidden', entry.startTime)
+    } else if (document.visibilityState === 'hidden') {
+      this._hiddenSince = 0
+    }
+    document.addEventListener(
+      'visibilitychange',
+      () =>
+        this._record(document.visibilityState === 'hidden', performance.now()),
+      { signal: this._listening.signal }
+    )
+  }
+
+  private _record(hidden: boolean, atMs: number): void {
+    if (hidden) {
+      this._hiddenSince ??= atMs
+    } else if (this._hiddenSince !== undefined) {
+      this._hiddenMs += atMs - this._hiddenSince
+      this._hiddenSince = undefined
+    }
+  }
+
+  stop(): void {
+    this._listening.abort()
+  }
+
+  hiddenMsUntil(nowMs: number): number {
+    const open = this._hiddenSince === undefined ? 0 : nowMs - this._hiddenSince
+    return Math.round(this._hiddenMs + Math.max(0, open))
+  }
+}
+
 export interface BootstrapPhaseTiming {
   name: BootstrapPhase
   startMs: number
@@ -140,8 +186,10 @@ export class BootstrapTracer {
   private _spans = new Map<BootstrapPhase, PerfSpan>()
   private _timings: BootstrapPhaseTiming[] = []
   private _completed = false
+  private _outcome: 'completed' | 'failed' | undefined
   private _timeoutReported = false
   private _watchdog: ReturnType<typeof setTimeout> | undefined
+  private _hidden = new HiddenTimeMeter()
 
   /**
    * Start timing a phase. Returns a handle; call `.stop()` when complete.
@@ -212,7 +260,7 @@ export class BootstrapTracer {
   }
 
   private _publishRumTiming(name: string): void {
-    if (isCloud) datadogRum.addTiming(toRumTimingName(name))
+    getDatadogRum()?.addTiming(toRumTimingName(name))
   }
 
   /**
@@ -227,6 +275,14 @@ export class BootstrapTracer {
   }
 
   /**
+   * `timed_out` is not terminal: startup can still finish after the watchdog
+   * fires, and the outcome then becomes `completed` or `failed`.
+   */
+  get outcome(): 'completed' | 'failed' | 'timed_out' | 'pending' {
+    return this._outcome ?? (this._timeoutReported ? 'timed_out' : 'pending')
+  }
+
+  /**
    * Close out startup: stop any phase still open, emit one aggregate event
    * carrying total wall-clock and the per-phase breakdown, and log the trace
    * locally. Idempotent — only the first call reports.
@@ -234,9 +290,11 @@ export class BootstrapTracer {
   complete(outcome: 'completed' | 'failed' = 'completed'): void {
     if (this._completed) return
     this._completed = true
+    this._outcome = outcome
     clearTimeout(this._watchdog)
     for (const phase of Array.from(this._spans.keys())) this._stopPhase(phase)
     this._report(outcome)
+    this._hidden.stop()
   }
 
   /**
@@ -278,14 +336,13 @@ export class BootstrapTracer {
         outcome,
         phase_count: rows.length,
         untraced_ms: untracedMs(rows, totalMs),
+        hidden_ms: this._hidden.hiddenMsUntil(totalMs),
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }
-      if (isCloud) {
-        datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
-      }
+      getDatadogRum()?.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
       useTelemetry()?.trackBootstrapComplete(metadata)
-      if (isCloud && outcome === 'completed') datadogRum.setViewLoadingTime()
+      if (outcome === 'completed') getDatadogRum()?.setViewLoadingTime()
       this._logSummary(rows, totalMs)
     } catch {
       return

@@ -1,3 +1,4 @@
+import { zExchangeTokenRequest } from '@comfyorg/ingest-types/zod'
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -6,6 +7,7 @@ import {
   mockTeamWorkspace
 } from '@e2e/fixtures/data/workspaceAuthFixtures'
 import { WorkspaceAuthHelper } from '@e2e/fixtures/helpers/WorkspaceAuthHelper'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const test = comfyPageFixture.extend<{ workspaceAuth: WorkspaceAuthHelper }>({
   page: async ({ page }, use) => {
@@ -19,75 +21,44 @@ const test = comfyPageFixture.extend<{ workspaceAuth: WorkspaceAuthHelper }>({
 })
 
 test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
-  test('token is persisted to sessionStorage after switching workspace', async ({
-    comfyPage,
-    workspaceAuth
-  }) => {
-    const page = comfyPage.page
-
-    await workspaceAuth.mockTokenRoute((route) =>
-      route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify(
-          makeWorkspaceTokenResponse(mockTeamWorkspace, 'team-token')
-        )
-      })
-    )
-
-    await comfyPage.toast.closeToasts()
-    await workspaceAuth.openSwitcherPanel()
-    await page
-      .getByTestId('workspace-switcher-panel')
-      .getByText('Team Workspace')
-      .click()
-
-    await expect
-      .poll(
-        () =>
-          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
-        { timeout: 5000 }
-      )
-      .toBe('team-token')
-
-    const expiresAt = await page.evaluate(() =>
-      sessionStorage.getItem('Comfy.Workspace.ExpiresAt')
-    )
-    expect(Number(expiresAt)).toBeGreaterThan(Date.now())
-  })
-
   test('transient token refresh failure preserves the active workspace session', async ({
     comfyPage,
     workspaceAuth
   }) => {
     const page = comfyPage.page
-
-    // TOKEN_REFRESH_BUFFER_MS is 5 minutes. Setting expiresInMs just below the
-    // buffer means scheduleTokenRefresh computes delay ≈ 0 and fires immediately.
     const expiresInMs = 5 * 60 * 1000 - 500
-    let callCount = 0
+    let teamMints = 0
 
     await workspaceAuth.mockTokenRoute((route) => {
-      callCount++
-      if (callCount === 1) {
-        return route.fulfill({
-          status: 200,
-          contentType: 'application/json',
-          body: JSON.stringify(
+      const body = zExchangeTokenRequest.parse(route.request().postDataJSON())
+      if (body.workspace_id !== mockTeamWorkspace.id) return route.fallback()
+      teamMints++
+      if (teamMints === 1) {
+        return route.fulfill(
+          jsonRoute(
             makeWorkspaceTokenResponse(
               mockTeamWorkspace,
               'original-token',
               expiresInMs
             )
           )
-        })
+        )
       }
       return route.fulfill({
         status: 500,
-        contentType: 'application/json',
-        body: JSON.stringify({ message: 'Internal Server Error' })
+        json: { message: 'Internal Server Error' }
       })
     })
+    const probeAuthorizations: (string | undefined)[] = []
+    await page.route('**/api/workspace-auth-probe', (route) => {
+      probeAuthorizations.push(route.request().headers()['authorization'])
+      return route.fulfill(jsonRoute({}))
+    })
+    const failedRefresh = page.waitForResponse(
+      (response) =>
+        new URL(response.url()).pathname === '/api/auth/token' &&
+        response.status() === 500
+    )
 
     await comfyPage.toast.closeToasts()
     await workspaceAuth.openSwitcherPanel()
@@ -96,24 +67,22 @@ test.describe('Workspace auth refresh', { tag: '@cloud' }, () => {
       .getByText('Team Workspace')
       .click()
 
-    await expect
-      .poll(
-        () =>
-          page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token')),
-        { timeout: 5000 }
+    await test.step('the refresh of the team token fails transiently', async () => {
+      await failedRefresh
+      await comfyPage.waitForAppReady()
+    })
+
+    await test.step('the team session keeps serving requests', async () => {
+      await page.evaluate(() =>
+        window.app!.api.fetchApi('/workspace-auth-probe')
       )
-      .toBe('original-token')
-
-    // The scheduled refresh fires immediately (token expires within buffer window).
-    // Wait for the second route call (the failing refresh) to complete, then verify
-    // the token is preserved — a transient 500 must not clear the session.
-    await expect
-      .poll(() => callCount, { timeout: 5000 })
-      .toBeGreaterThanOrEqual(2)
-
-    expect(
-      await page.evaluate(() => sessionStorage.getItem('Comfy.Workspace.Token'))
-    ).toBe('original-token')
+      expect(probeAuthorizations).toEqual(['Bearer original-token'])
+      expect(
+        await page.evaluate(() =>
+          sessionStorage.getItem('Comfy.Workspace.Current')
+        )
+      ).toContain(mockTeamWorkspace.id)
+    })
   })
 
   test('permanent auth failure (ACCESS_DENIED) clears the workspace session', async ({

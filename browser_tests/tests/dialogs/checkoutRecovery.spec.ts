@@ -7,6 +7,7 @@ import type {
   ErrorResponse,
   PreviewSubscribeResponse
 } from '@comfyorg/ingest-types'
+import type { BillingOperationPointer } from '@comfyorg/account-core/billing'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { PendingSubscriptionCheckout } from '@/platform/billing/utils/pendingSubscriptionCheckout'
@@ -64,7 +65,7 @@ const CREATOR_ANNUAL_PLAN = createPlan({
   maxSeats: 5
 })
 
-const LEGACY_ACTIVE_STANDARD_STATUS = {
+const ACTIVE_STANDARD_STATUS = {
   is_active: true,
   subscription_status: 'active',
   subscription_tier: 'STANDARD',
@@ -73,12 +74,13 @@ const LEGACY_ACTIVE_STANDARD_STATUS = {
   billing_status: 'paid',
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
+  ended_at: null,
   team_credit_stop: null,
   scheduled_change: null,
+  next_charge: null,
   max_seats: 1,
-  occupied_seats: 1,
-  billing_rail: 'legacy_stripe'
-} satisfies BillingStatusResponse & { billing_rail: 'legacy_stripe' }
+  occupied_seats: 1
+} satisfies BillingStatusResponse
 
 const NEW_CREATOR_SUBSCRIPTION = {
   allowed: true,
@@ -150,21 +152,38 @@ async function setupCloudApp(page: Page) {
   await bootCloud(page)
 }
 
-// sessionStorage must be seeded before any app code runs; attemptedAt is
-// stamped in the init script so the entry is always fresher than the 24h cap.
 async function seedPendingCheckout(
   page: Page,
   entry: Omit<PendingSubscriptionCheckout, 'attemptedAt'>
 ) {
+  const sdkPointer = {
+    operationId: entry.operationId,
+    kind: 'subscription',
+    presentation: 'hosted',
+    awaited: true
+  } satisfies Omit<BillingOperationPointer, 'attemptStartedAt'>
   await page.addInitScript(
-    ({ key, seeded }) => {
+    ({ key, seeded, sdkKey, sdkSeeded }) => {
+      const attemptedAt = Date.now() - 60_000
+      sessionStorage.setItem(key, JSON.stringify({ ...seeded, attemptedAt }))
       sessionStorage.setItem(
-        key,
-        JSON.stringify({ ...seeded, attemptedAt: Date.now() - 60_000 })
+        sdkKey,
+        JSON.stringify({ ...sdkSeeded, attemptStartedAt: attemptedAt })
       )
     },
-    { key: PENDING_CHECKOUT_STORAGE_KEY, seeded: entry }
+    {
+      key: PENDING_CHECKOUT_STORAGE_KEY,
+      seeded: entry,
+      sdkKey: `comfy:billing:operation:${entry.ownerUid}:${entry.workspaceId}`,
+      sdkSeeded: sdkPointer
+    }
   )
+}
+
+function refuseNewTabs(page: Page) {
+  return page.addInitScript(() => {
+    window.open = () => null
+  })
 }
 
 function readPendingCheckout(page: Page) {
@@ -209,54 +228,103 @@ function graphReadyHeartbeatSeen(page: Page) {
 }
 
 test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
-  test('reopens checkout for the attempted plan when reconciliation fails', async ({
-    page
-  }) => {
-    const subscribeRequests: Request[] = []
-    const operationPollRequests: Request[] = []
-    await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
-    await setupCloudApp(page)
-    await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(LEGACY_ACTIVE_STANDARD_STATUS))
-    )
-    await page.route('**/api/billing/plans', (route) =>
-      route.fulfill(
-        jsonRoute({
-          plans: [CREATOR_ANNUAL_PLAN]
-        } satisfies BillingPlansResponse)
+  test.describe('with billing_new_ux_enabled off', () => {
+    test.use({ billingNewUx: false })
+
+    test('reopens checkout for the attempted plan when reconciliation fails', async ({
+      page
+    }) => {
+      const subscribeRequests: Request[] = []
+      const operationPollRequests: Request[] = []
+      await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
+      await setupCloudApp(page)
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
       )
-    )
-    await page.route('**/api/billing/preview-subscribe', (route) =>
-      route.fulfill(jsonRoute(NEW_CREATOR_SUBSCRIPTION))
-    )
-    await page.route('**/api/billing/subscribe', (route) => {
-      subscribeRequests.push(route.request())
-      return route.fulfill({
-        ...jsonRoute({
-          code: 'unexpected_subscribe',
-          message: 'Recovered checkouts must not auto-subscribe'
-        } satisfies ErrorResponse),
-        status: 500
+      await page.route('**/api/billing/plans', (route) =>
+        route.fulfill(
+          jsonRoute({
+            plans: [CREATOR_ANNUAL_PLAN]
+          } satisfies BillingPlansResponse)
+        )
+      )
+      await page.route('**/api/billing/preview-subscribe', (route) =>
+        route.fulfill(jsonRoute(NEW_CREATOR_SUBSCRIPTION))
+      )
+      await page.route('**/api/billing/subscribe', (route) => {
+        subscribeRequests.push(route.request())
+        return route.fulfill({
+          ...jsonRoute({
+            code: 'unexpected_subscribe',
+            message: 'Recovered checkouts must not auto-subscribe'
+          } satisfies ErrorResponse),
+          status: 500
+        })
       })
-    })
-    await page.route(`**/api/billing/ops/${RECOVERY_OPERATION_ID}`, (route) => {
-      operationPollRequests.push(route.request())
-      return route.fulfill(jsonRoute(FAILED_RECOVERY_OPERATION))
-    })
+      await page.route(
+        `**/api/billing/ops/${RECOVERY_OPERATION_ID}`,
+        (route) => {
+          operationPollRequests.push(route.request())
+          return route.fulfill(jsonRoute(FAILED_RECOVERY_OPERATION))
+        }
+      )
 
-    await page.goto(APP_URL)
+      await page.goto(APP_URL)
 
-    await cloudAppExpect(confirmPaymentHeading(page)).toBeVisible()
-    const checkoutDialog = page.getByRole('dialog')
-    await expect(
-      checkoutDialog.getByRole('button', { name: 'Subscribe to Creator' })
-    ).toBeVisible()
-    await expect(
-      checkoutDialog.getByText('$336 Billed yearly').filter({ visible: true })
-    ).toBeVisible()
-    expect(operationPollRequests.length).toBeGreaterThan(0)
-    expect(subscribeRequests).toHaveLength(0)
-    await expect.poll(() => readPendingCheckout(page)).toBeNull()
+      await cloudAppExpect(confirmPaymentHeading(page)).toBeVisible()
+      const checkoutDialog = page.getByRole('dialog')
+      await expect(
+        checkoutDialog.getByRole('button', { name: 'Subscribe to Creator' })
+      ).toBeVisible()
+      await expect(
+        checkoutDialog.getByText('$336 Billed yearly').filter({ visible: true })
+      ).toBeVisible()
+      expect(operationPollRequests.length).toBeGreaterThan(0)
+      expect(subscribeRequests).toHaveLength(0)
+      await expect.poll(() => readPendingCheckout(page)).toBeNull()
+    })
+  })
+
+  test.describe('with billing_new_ux_enabled on', () => {
+    test.use({ billingNewUx: true })
+
+    test('says the checkout did not finish and links to the Plans page when reconciliation fails', async ({
+      page
+    }) => {
+      await seedPendingCheckout(page, PENDING_CREATOR_CHECKOUT)
+      await refuseNewTabs(page)
+      await setupCloudApp(page)
+      await page.route('**/api/billing/status', (route) =>
+        route.fulfill(jsonRoute(ACTIVE_STANDARD_STATUS))
+      )
+      await page.route('**/api/billing/plans', (route) =>
+        route.fulfill(
+          jsonRoute({
+            plans: [CREATOR_ANNUAL_PLAN]
+          } satisfies BillingPlansResponse)
+        )
+      )
+      await page.route(`**/api/billing/ops/${RECOVERY_OPERATION_ID}`, (route) =>
+        route.fulfill(jsonRoute(FAILED_RECOVERY_OPERATION))
+      )
+
+      await page.goto(APP_URL)
+
+      const plansDialog = page.getByTestId('platform-plans-link-dialog')
+      await cloudAppExpect(
+        plansDialog.getByText("Your checkout didn't finish")
+      ).toBeVisible()
+      await expect(
+        plansDialog.getByText(
+          'Open the Plans page to try again. Your browser blocked it from opening on its own.'
+        )
+      ).toBeVisible()
+      await expect(
+        plansDialog.getByRole('link', { name: 'Open Plans page' })
+      ).toHaveAttribute('href', /\/profile\/billing\/plans/)
+      await expect(confirmPaymentHeading(page)).toBeHidden()
+      await expect.poll(() => readPendingCheckout(page)).toBeNull()
+    })
   })
 
   test('stays silent when reconciliation succeeds', async ({ page }) => {

@@ -30,14 +30,15 @@
       />
     </div>
 
-    <ContextMenu ref="jobContextMenuRef" :model="jobMenuEntries" />
+    <Menu v-bind="jobMenuProps" :items="jobMenuEntries" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import { usePointMenu } from '@comfyorg/design-system/lib/menu/usePointMenu'
 import type {
   JobGroup,
   JobListItem,
@@ -74,7 +75,11 @@ const emit = defineEmits<{
 }>()
 
 const currentMenuItem = ref<JobListItem | null>(null)
-const jobContextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null)
+const {
+  menuProps: jobMenuProps,
+  show: showJobMenu,
+  toggle: toggleJobMenu
+} = usePointMenu()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
 const { jobMenuEntries } = useJobMenu(
@@ -95,10 +100,9 @@ const onUpdateSelectedJobTab = (value: JobTab) => {
 }
 
 const onMenuItem = (item: JobListItem, event: Event) => {
-  const isSameClickTarget =
-    event.type === 'click' && currentMenuItem.value?.id === item.id
+  const isSameJob = currentMenuItem.value?.id === item.id
   currentMenuItem.value = item
-  if (isSameClickTarget) jobContextMenuRef.value?.toggle(event)
-  else jobContextMenuRef.value?.show(event)
+  if (event.type === 'click' && isSameJob) toggleJobMenu(event)
+  else showJobMenu(event)
 }
 </script>

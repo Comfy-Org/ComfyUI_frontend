@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "לחיצה כפולה על כותרת הצומת לעריכה"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "הקטנת תצוגות מקדימות גדולות של תמונות",
+    "tooltip": "ב-Nodes 2.0, הצג תמונות גדולות בצמתים כעותק בגודל מרבי של 1024px בצלע הארוכה ביותר, כדי שתצוגות מקדימות גדולות רבות יישארו מגיבות. השבת אפשרות זו כדי להציג תמיד את המקור."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "לחיצה אמצעית יוצרת צומת ניתוב (Reroute) חדש"
   },

@@ -66,6 +66,22 @@ describe('installPreservedQueryTracker', () => {
     )
   })
 
+  it('completes navigation and keeps the stash in memory when sessionStorage is blocked', async () => {
+    vi.spyOn(globalThis, 'sessionStorage', 'get').mockImplementation(() => {
+      throw new DOMException('Access is denied', 'SecurityError')
+    })
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [strippedDefinition, plainDefinition])
+
+    await router.push('/?one_time_code=otc_abc123&plain_code=alpha')
+
+    expect(router.currentRoute.value.fullPath).toBe('/?plain_code=alpha')
+    expect(getPreservedQueryParam(STRIPPED_NAMESPACE, 'one_time_code')).toBe(
+      'otc_abc123'
+    )
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')).toBe('alpha')
+  })
+
   it('keeps params of non-strip namespaces in the URL and still captures them', async () => {
     const router = createTestRouter()
     installPreservedQueryTracker(router, [plainDefinition])
@@ -281,6 +297,44 @@ describe('installPreservedQueryTracker', () => {
     expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
       ',ws-team'
     )
+  })
+
+  it('clears a stale rejectRepeated value when the URL supplies an empty value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [rejectRepeatedDefinition])
+
+    await router.push('/?workspace=ws-team')
+    await router.push('/?workspace=')
+
+    expect(router.currentRoute.value.fullPath).toBe('/?workspace=')
+    expect(
+      getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')
+    ).toBeUndefined()
+  })
+
+  it('stashes an empty markEmpty value as a bare comma in place of a stale value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [
+      { ...rejectRepeatedDefinition, markEmpty: true }
+    ])
+
+    await router.push('/?workspace=ws-team')
+    await router.push('/?workspace=')
+
+    expect(router.currentRoute.value.fullPath).toBe('/?workspace=')
+    expect(getPreservedQueryParam(REJECT_REPEATED_NAMESPACE, 'workspace')).toBe(
+      ','
+    )
+  })
+
+  it('keeps a plain namespace stash when the URL supplies an empty value', async () => {
+    const router = createTestRouter()
+    installPreservedQueryTracker(router, [plainDefinition])
+
+    await router.push('/?plain_code=abc')
+    await router.push('/?plain_code=')
+
+    expect(getPreservedQueryParam(PLAIN_NAMESPACE, 'plain_code')).toBe('abc')
   })
 
   it('drops a bare param of a non-rejectRepeated namespace like any empty value', async () => {

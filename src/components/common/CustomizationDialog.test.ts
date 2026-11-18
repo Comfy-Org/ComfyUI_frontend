@@ -8,23 +8,29 @@ import CustomizationDialog from './CustomizationDialog.vue'
 const DEFAULT_ICON = 'pi-bookmark-fill'
 const DEFAULT_COLOR = '#a1a1aa'
 
-vi.mock<unknown>(import('@/components/ui/dialog/Dialog.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/Dialog'), () => ({
   default: { name: 'Dialog', template: '<div><slot /></div>' }
 }))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogPortal.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogPortal'), () => ({
   default: { name: 'DialogPortal', template: '<div><slot /></div>' }
 }))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogOverlay.vue'), () => ({
-  default: { name: 'DialogOverlay', template: '<div />' }
-}))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogContent.vue'), () => ({
-  default: { name: 'DialogContent', template: '<div><slot /></div>' }
-}))
+vi.mock<unknown>(
+  import('@comfyorg/design-system/dialog/DialogOverlay'),
+  () => ({
+    default: { name: 'DialogOverlay', template: '<div />' }
+  })
+)
+vi.mock<unknown>(
+  import('@comfyorg/design-system/dialog/DialogContent'),
+  () => ({
+    default: { name: 'DialogContent', template: '<div><slot /></div>' }
+  })
+)
 
-vi.mock<unknown>(import('@/components/ui/dialog/DialogTitle.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogTitle'), () => ({
   default: { name: 'DialogTitle', template: '<div><slot /></div>' }
 }))
-vi.mock<unknown>(import('@/components/ui/dialog/DialogClose.vue'), () => ({
+vi.mock<unknown>(import('@comfyorg/design-system/dialog/DialogClose'), () => ({
   default: { name: 'DialogClose', template: '<button />' }
 }))
 

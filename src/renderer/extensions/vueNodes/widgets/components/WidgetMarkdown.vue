@@ -1,7 +1,7 @@
 <template>
   <div class="widget-markdown relative w-full" @dblclick="startEditing">
     <SanitizedHtml
-      class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg"
+      class="comfy-markdown-content size-full min-h-[60px] overflow-y-auto rounded-lg contain-size"
       :class="isEditing ? 'invisible' : 'visible'"
       tabindex="0"
       data-capture-wheel="true"
@@ -31,8 +31,8 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 
-import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
