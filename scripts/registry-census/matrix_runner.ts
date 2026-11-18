@@ -97,10 +97,13 @@ const HARNESS_VERDICT = {
   uncreatable: '!createNode_null'
 } as const
 
-function coreIsLastWriter(node: LGraphNode, base: typeof LGraphNode): boolean {
+function coreIsLastWriter(
+  node: LGraphNode,
+  pristine: PristineSerialization
+): boolean {
   return (
-    node.serializeFromStoreState === base.prototype.serializeFromStoreState &&
-    node.serialize === base.prototype.serialize
+    node.serializeFromStoreState === pristine.serializeFromStoreState &&
+    node.serialize === pristine.serialize
   )
 }
 
@@ -114,15 +117,21 @@ function captureSerialization(node: LGraphNode): Capture | null {
   const descriptor = Object.getOwnPropertyDescriptor(node, 'onSerialize')
   const inherited = node.onSerialize
   let produced: unknown = NOT_CAPTURED
+  let before: unknown[] | null = null
   node.onSerialize = function (serialised: ISerialisedNode) {
     produced = serialised.widgets_values
+    before = Array.isArray(produced) ? [...produced] : null
     inherited?.call(this, serialised)
   }
   try {
     const serialised = node.serialize()
     return {
       serialised,
-      produced: produced === NOT_CAPTURED ? undefined : produced,
+      produced: rewrittenInPlace(produced, before)
+        ? before
+        : produced === NOT_CAPTURED
+          ? undefined
+          : produced,
       captured: produced !== NOT_CAPTURED
     }
   } catch {
@@ -131,6 +140,17 @@ function captureSerialization(node: LGraphNode): Capture | null {
     if (descriptor) Object.defineProperty(node, 'onSerialize', descriptor)
     else Reflect.deleteProperty(node, 'onSerialize')
   }
+}
+
+function rewrittenInPlace(
+  produced: unknown,
+  before: unknown[] | null
+): boolean {
+  if (!before || !Array.isArray(produced)) return false
+  return (
+    produced.length !== before.length ||
+    produced.some((value, index) => !Object.is(value, before[index]))
+  )
 }
 
 function verdictOf(
@@ -156,7 +176,7 @@ function verdictOf(
 
 function proveNodeForm(
   node: LGraphNode,
-  base: typeof LGraphNode
+  pristine: PristineSerialization
 ): { verdict: FormVerdict; needsForm: boolean } {
   const capture = captureSerialization(node)
   if (!capture) return { verdict: HARNESS_VERDICT.threw, needsForm: false }
@@ -167,7 +187,7 @@ function proveNodeForm(
     {
       serializeWidgets: node.serialize_widgets,
       replayed: !capture.captured && !!node.last_serialization,
-      lastWriter: coreIsLastWriter(node, base)
+      lastWriter: coreIsLastWriter(node, pristine)
     }
   )
   return { verdict, needsForm: needsFormButHasNone(capture.serialised) }
@@ -177,17 +197,17 @@ function proveFreshNode(
   graph: LGraph,
   type: string,
   createNode: (type: string) => LGraphNode | null,
-  base: typeof LGraphNode
+  pristine: PristineSerialization
 ): { verdict: FormVerdict; needsForm: boolean } {
   try {
     const node = createNode(type)
     if (!node) return { verdict: HARNESS_VERDICT.uncreatable, needsForm: false }
     node.pos = [1400, 100]
-    graph.add(node)
     try {
-      return proveNodeForm(node, base)
+      graph.add(node)
+      return proveNodeForm(node, pristine)
     } finally {
-      graph.remove(node)
+      if (graph._nodes.includes(node)) graph.remove(node)
     }
   } catch {
     return { verdict: HARNESS_VERDICT.threw, needsForm: false }
@@ -198,13 +218,13 @@ function measureFormProof(
   graph: LGraph,
   packTypes: string[],
   createNode: (type: string) => LGraphNode | null,
-  base: typeof LGraphNode
+  pristine: PristineSerialization
 ): FormProof {
   const agreement: FormProof = { graph: {}, driven: {}, needsForm: [] }
   try {
     for (const node of graph._nodes) {
       const key = `${node.type}#${String(node.id)}`
-      const { verdict, needsForm } = proveNodeForm(node, base)
+      const { verdict, needsForm } = proveNodeForm(node, pristine)
       agreement.graph[key] = verdict
       if (needsForm) agreement.needsForm.push(key)
     }
@@ -213,7 +233,7 @@ function measureFormProof(
         graph,
         type,
         createNode,
-        base
+        pristine
       )
       agreement.driven[type] = verdict
       if (needsForm) agreement.needsForm.push(type)
@@ -408,6 +428,7 @@ async function buildSubgraphHost(
 async function probeSubgraphForm(
   lg: { LGraph: typeof LGraph; LGraphNode: typeof LGraphNode },
   createNode: (type: string) => LGraphNode | null,
+  pristine: PristineSerialization,
   scenario: string,
   dress: (host: LGraphNode) => void
 ): Promise<SubgraphFormProbe> {
@@ -423,7 +444,7 @@ async function probeSubgraphForm(
     const produced = capture.captured ? capture.produced : undefined
     const actual = verdictOf(host.widgets, capture.serialised, produced, {
       ...shared,
-      lastWriter: coreIsLastWriter(host, lg.LGraphNode)
+      lastWriter: coreIsLastWriter(host, pristine)
     })
     const atReturn = verdictOf(host.widgets, capture.serialised, produced, {
       ...shared,
@@ -439,7 +460,7 @@ async function probeSubgraphForm(
       scenario,
       verdict: actual.verdict,
       needsForm: needsFormButHasNone(capture.serialised),
-      coreIsLastWriter: coreIsLastWriter(host, lg.LGraphNode),
+      coreIsLastWriter: coreIsLastWriter(host, pristine),
       widgets: host.widgets?.length ?? 0,
       ifAssumedFinal: atReturn.verdict,
       ifAssumedFinalAtHookSite: atHook.verdict,
@@ -528,7 +549,7 @@ export async function censusRegistryForms(options: {
         graph,
         name,
         createNode,
-        lg.LGraphNode
+        pristine
       )
       recordVerdict(
         census,
@@ -545,7 +566,7 @@ export async function censusRegistryForms(options: {
       .digest('hex')
     for (const { scenario, dress } of SUBGRAPH_SCENARIOS) {
       census.subgraph.push(
-        await probeSubgraphForm(lg, createNode, scenario, dress)
+        await probeSubgraphForm(lg, createNode, pristine, scenario, dress)
       )
     }
     census.prototypePatched = {
@@ -1234,7 +1255,7 @@ export async function runPack(
     graph,
     selectedTypes,
     (t) => LiteGraph.createNode(t),
-    lg.LGraphNode
+    pristine
   )
   if (process.env.MATRIX_REGISTRY_FORMS === '1') {
     row.registryForms = await censusRegistryForms({

@@ -571,6 +571,48 @@ describe('form proof', () => {
   )
 })
 
+describe('form proof, hooks that rewrite in place', () => {
+  it(
+    'refuses a hook that reorders the core array in place',
+    { timeout: 60_000 },
+    async () => {
+      const { formProof } = await rowFor(
+        'form-reversed',
+        serializingPack('form-reversed', function (data) {
+          data.widgets_values?.reverse()
+        })
+      )
+
+      expect(verdictFor(formProof, 'KSampler')).toBe('values_replaced')
+    }
+  )
+
+  it(
+    'refuses a class whose prototype serialize a pack replaced, even in place',
+    { timeout: 60_000 },
+    async () => {
+      const { formProof, registryForms } = await rowFor(
+        'census-patcher-in-place',
+        () => {
+          const base = LGraphNode.prototype.serialize
+          LGraphNode.prototype.serialize = function (this: LGraphNode) {
+            const serialised = base.call(this)
+            serialised.widgets_values?.reverse()
+            return serialised
+          }
+        }
+      )
+
+      expect(verdictFor(formProof, 'KSampler')).toBe(
+        'class_may_rewrite_payload'
+      )
+      expect(registryForms.histogram).toEqual({
+        class_may_rewrite_payload: registryForms.classes
+      })
+    }
+  )
+})
+
 describe('form proof, shapes nothing can describe', () => {
   it(
     'refuses an object-shaped payload and counts it as needing a form',
@@ -700,10 +742,9 @@ describe('registry form census', () => {
       })
 
       expect(registryForms.prototypePatched.serialize).toBe(true)
-      expect(Object.values(registryForms.histogram)).not.toContain(
-        registryForms.classes
-      )
-      expect(Object.values(registryForms.refusals)).toContain('values_replaced')
+      expect(registryForms.histogram).toEqual({
+        class_may_rewrite_payload: registryForms.classes
+      })
     }
   )
 })
