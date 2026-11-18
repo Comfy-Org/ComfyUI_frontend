@@ -95,10 +95,10 @@ export function useBillingBannerCopy() {
     href: CONTACT_SUPPORT_URL
   }))
 
-  function planNotStartedView({
-    planTier,
-    paymentPage
-  }: PlanNotStartedBanner): BillingBannerView {
+  function planNotStartedView(
+    { planTier, paymentPage }: PlanNotStartedBanner,
+    canOpenPlans: boolean
+  ): BillingBannerView {
     const plan = formatTierName(planTier, false)
     const title = plan
       ? t(`${bs}.planNotStarted.title`, { plan })
@@ -125,7 +125,7 @@ export function useBillingBannerCopy() {
           kind: 'planNotStarted',
           title,
           body: t(`${bs}.planNotStarted.bodyUnavailable`),
-          action: 'viewPlans',
+          action: canOpenPlans ? 'viewPlans' : null,
           href: null
         }
     }

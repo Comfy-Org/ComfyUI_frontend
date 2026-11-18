@@ -37,7 +37,7 @@ export type BillingBannerView = BillingBannerText &
       }
     | {
         readonly kind: 'planNotStarted'
-        readonly action: 'finishPayment' | 'verifyPayment' | 'viewPlans'
+        readonly action: 'finishPayment' | 'verifyPayment' | 'viewPlans' | null
         readonly href: string | null
       }
     | {

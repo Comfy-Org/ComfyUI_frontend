@@ -16,7 +16,9 @@
     />
     <BillingBanner
       v-if="planNotStarted"
-      :view="planNotStartedView(planNotStarted)"
+      :view="
+        planNotStartedView(planNotStarted, capabilities.canOpenPlans.value)
+      "
       :copy="bannerCopy"
     >
       <template #action="{ action: shown, href, label, variant }">
