@@ -1210,15 +1210,17 @@ export class ComfyApp implements IComfyApp {
     workflow: string | null | ComfyWorkflow = null,
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
-    return this.enqueueGraphLoad(async () => {
-      if (options.isCurrent?.() === false || options.isReady?.() === false)
-        return false
-      const data = options.resolveGraphData
-        ? options.resolveGraphData()
-        : graphData
-      if (options.resolveGraphData && !data) return false
-      return this.loadGraphDataNow(data, clean, restore_view, workflow, options)
-    })
+    return this.enqueueGraphLoad(async () =>
+      options.isCurrent?.() === false || options.isReady?.() === false
+        ? false
+        : this.loadGraphDataNow(
+            graphData,
+            clean,
+            restore_view,
+            workflow,
+            options
+          )
+    )
   }
 
   private async loadGraphDataNow(
@@ -1239,9 +1241,29 @@ export class ComfyApp implements IComfyApp {
       skipAssetScans = false,
       silentAssetErrors = false,
       workflowNavigationId,
-      isCurrent
+      isCurrent,
+      isReady,
+      resolveGraphData
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    const resolved =
+      isReady?.() === false
+        ? undefined
+        : resolveGraphData
+          ? resolveGraphData()
+          : graphData
+    if (!resolved && (isReady || resolveGraphData)) {
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Workflow load was replaced', 'AbortError')
+      )
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
+      return false
+    }
+    graphData = resolved
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
