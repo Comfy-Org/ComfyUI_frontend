@@ -89,7 +89,6 @@ export class ExecutableNodeDTO implements ExecutableLGraphNode {
     return this.node.comfyClass
   }
 
-  // fallow-ignore-next-line unused-class-member
   get properties() {
     return this.node.properties
   }

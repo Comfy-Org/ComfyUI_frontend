@@ -159,10 +159,13 @@ export interface AgentSessionDeps {
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
+    /** Node ids selected on the target canvas, outside node selection mode. */
+    canvasSelection?(): string[]
   }
 }
 
 const PREPARE_TIMEOUT_MS = 3000
+const MAX_CANVAS_SELECTION_IDS = 20
 const RECONCILE_TIMEOUT_MS = 5000
 
 interface HydrationBuffer {
@@ -1242,7 +1245,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    canvasNodeIds?: string[]
   ): PostMessageInput {
     const tabs = workflow?.tabs?.(origin)
     const unboundTarget = isUnboundTarget(
@@ -1260,6 +1264,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         wfContext?.id
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
+      canvasSelection: plainCanvasSelection(
+        canvasNodeIds,
+        tags,
+        selectedWorkflowId
+      ),
       attachments: attachments?.map((attachment) => attachment.ref),
       clientMessageId,
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
@@ -1285,6 +1294,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (tags === undefined || tags.length === 0) return undefined
     return {
       node_ids: tags.map((tag) => tag.id),
+      ...(selectedWorkflowId !== undefined
+        ? { workflow_id: selectedWorkflowId }
+        : {})
+    }
+  }
+
+  function plainCanvasSelection(
+    canvasNodeIds: string[] | undefined,
+    tags: SentTag[] | undefined,
+    selectedWorkflowId: string | undefined
+  ) {
+    const tagged = new Set((tags ?? []).map((tag) => tag.id))
+    const nodeIds = (canvasNodeIds ?? []).filter((id) => !tagged.has(id))
+    if (nodeIds.length === 0) return undefined
+    return {
+      node_ids: nodeIds.slice(0, MAX_CANVAS_SELECTION_IDS),
+      ...(nodeIds.length > MAX_CANVAS_SELECTION_IDS
+        ? { total_selected: nodeIds.length }
+        : {}),
       ...(selectedWorkflowId !== undefined
         ? { workflow_id: selectedWorkflowId }
         : {})
@@ -1613,6 +1641,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const originContext = workflow?.current()
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
+    const canvasNodeIds = workflow?.canvasSelection?.()
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
     try {
@@ -1633,7 +1662,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags,
         workflowReferences,
         selectionWorkflowId,
-        clientMessageId
+        clientMessageId,
+        canvasNodeIds
       )
       const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true

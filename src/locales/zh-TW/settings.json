@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "雙擊節點標題以編輯"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "縮小大型圖片預覽",
+    "tooltip": "在節點 2.0 中，將節點上的大型圖片顯示為最長邊最多 1024px 的複本，讓多個大型預覽仍能保持順暢。關閉此選項即可一律顯示原始圖片。"
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "中鍵點擊建立新的重導節點"
   },
