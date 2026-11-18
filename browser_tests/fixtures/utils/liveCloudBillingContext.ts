@@ -1,5 +1,5 @@
 import { zBillingStatusResponse } from '@comfyorg/ingest-types/zod'
-import type { BrowserContext, Page } from '@playwright/test'
+import type { BrowserContext, Page, Route } from '@playwright/test'
 
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import type { LiveCloudBillingConfig } from '@e2e/fixtures/utils/liveCloudBillingConfig'
@@ -10,6 +10,36 @@ import {
   getLiveCloudDestinationViolation,
   isLiveCloudMutationAllowed
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
+
+// A local frontend reaches Cloud through a rewrite. A deployed frontend is
+// already on the Cloud origin, so its API requests leave the browser unchanged:
+// Cloud refuses a session read that lacks the browser's Sec-Fetch-Site header,
+// which a re-sent copy does not carry.
+function needsCloudRewrite(url: URL, config: LiveCloudBillingConfig): boolean {
+  return (
+    url.origin === config.PLAYWRIGHT_TEST_URL &&
+    config.PLAYWRIGHT_TEST_URL !== config.PLAYWRIGHT_SETUP_API_URL &&
+    /^\/(api|internal)(\/|$)/.test(url.pathname)
+  )
+}
+
+async function resendToCloud(
+  route: Route,
+  targetUrl: URL,
+  hasTestEnded: () => boolean
+) {
+  try {
+    const response = await route.fetch({
+      url: targetUrl.href,
+      maxRedirects: 0
+    })
+    await route.fulfill({ response })
+  } catch {
+    // A request still in flight when the test ends dies with the context.
+    if (hasTestEnded()) return
+    throw new Error(`Cloud proxy request failed: ${targetUrl.pathname}`)
+  }
+}
 
 export async function installLiveCloudBillingRouting(
   context: BrowserContext,
@@ -30,14 +60,7 @@ export async function installLiveCloudBillingRouting(
       await route.abort('blockedbyclient')
       return
     }
-    // A local frontend reaches Cloud through this rewrite. A deployed frontend
-    // is already on the Cloud origin, so its API requests leave the browser
-    // unchanged: Cloud refuses a session read that lacks the browser's
-    // Sec-Fetch-Site header, which a re-sent copy does not carry.
-    const isCloudProxyRequest =
-      url.origin === config.PLAYWRIGHT_TEST_URL &&
-      config.PLAYWRIGHT_TEST_URL !== config.PLAYWRIGHT_SETUP_API_URL &&
-      /^\/(api|internal)(\/|$)/.test(url.pathname)
+    const isCloudProxyRequest = needsCloudRewrite(url, config)
     const targetUrl = isCloudProxyRequest
       ? new URL(url.pathname + url.search, config.PLAYWRIGHT_SETUP_API_URL)
       : url
@@ -56,17 +79,7 @@ export async function installLiveCloudBillingRouting(
       return
     }
     if (isCloudProxyRequest) {
-      try {
-        const response = await route.fetch({
-          url: targetUrl.href,
-          maxRedirects: 0
-        })
-        await route.fulfill({ response })
-      } catch {
-        // A request still in flight when the test ends dies with the context.
-        if (testEnded) return
-        throw new Error(`Cloud proxy request failed: ${url.pathname}`)
-      }
+      await resendToCloud(route, targetUrl, () => testEnded)
       return
     }
     await route.fallback()
