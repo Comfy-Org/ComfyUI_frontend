@@ -367,6 +367,9 @@ describe('ProfileMenuWorkspace', () => {
         const { user, credits } = setup()
         credits.focus()
         await user.keyboard('{Enter}')
+        expect(
+          screen.getByRole('dialog', { name: 'Credits' })
+        ).toBeInTheDocument()
         await user.keyboard('{Escape}')
         await settleHoverTimers()
         expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
@@ -375,6 +378,9 @@ describe('ProfileMenuWorkspace', () => {
         await settleHoverTimers()
 
         expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+        expect(
+          screen.queryByRole('dialog', { name: 'Credits' })
+        ).not.toBeInTheDocument()
       })
 
       it('names the pinned flyout Credits for assistive technology', async () => {
