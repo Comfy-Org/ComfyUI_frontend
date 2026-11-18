@@ -124,6 +124,18 @@ describe('collectCrdtDebugReport', () => {
     getLogs.mockResolvedValue('backend log line')
     getSettings.mockResolvedValue({ 'Comfy.Setting': true })
   })
+  it('keeps the report available when system stats omit system', async () => {
+    getSystemStats.mockResolvedValue({ devices: [] })
+
+    const report = await collectCrdtDebugReport({
+      crdt: SNAPSHOT,
+      sources: ALL_SOURCES,
+      events: []
+    })
+
+    expect(report).toContain('**Deploy environment:** unknown')
+    expect(report).toContain('## CRDT')
+  })
   it('gathers backend, frontend and CRDT context into one artifact', async () => {
     const report = await collectCrdtDebugReport({
       crdt: SNAPSHOT,

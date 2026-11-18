@@ -512,6 +512,10 @@ function formatSource<T>(
   }
 }
 function frontendSection(): string {
+  const system: unknown = useSystemStatsStore().systemStats?.system
+  const deployEnvironment = isRecord(system)
+    ? (system.deploy_environment ?? 'unknown')
+    : 'unknown'
   const extensionNames = (() => {
     try {
       return useExtensionStore().extensions.map((extension) => extension.name)
@@ -523,7 +527,7 @@ function frontendSection(): string {
     `- **Frontend version:** ${__COMFYUI_FRONTEND_VERSION__}`,
     `- **Frontend commit:** ${__COMFYUI_FRONTEND_COMMIT__}`,
     `- **Distribution:** ${DISTRIBUTION}`,
-    `- **Deploy environment:** ${useSystemStatsStore().systemStats?.system.deploy_environment ?? 'unknown'}`,
+    `- **Deploy environment:** ${deployEnvironment}`,
     `- **User agent:** ${navigator.userAgent}`,
     `- **Viewport:** ${window.innerWidth}×${window.innerHeight}`,
     `- **Extensions (${extensionNames.length}):** ${extensionNames.join(', ') || 'none'}`
