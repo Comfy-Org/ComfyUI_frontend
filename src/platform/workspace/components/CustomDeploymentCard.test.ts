@@ -6,10 +6,13 @@ import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 
 import CustomDeploymentCard from './CustomDeploymentCard.vue'
 
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
@@ -53,6 +56,14 @@ function renderCard(
   return { onDone, onDismiss, user }
 }
 
+function openWorkflow() {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    filename: 'portrait',
+    activeState: { nodes: [] },
+    changeTracker: { prepareForSave: vi.fn() }
+  })
+}
+
 function linkFollowedOnNextClick(): () => boolean {
   const clicks: MouseEvent[] = []
   document.addEventListener('click', (event) => clicks.push(event), {
@@ -80,37 +91,57 @@ describe('CustomDeploymentCard', () => {
     ).toEqual(['Deploy your node packs', 'Work on the GPU you choose'])
   })
 
-  it('opens the platform wizard from a click with this tab as its opener, keeps a plain link that has none, and reports done', async () => {
-    const open = vi
-      .spyOn(window, 'open')
-      .mockReturnValue(fromPartial<Window>({ closed: true }))
+  it('links to the platform in a new tab that sends no referrer from a local build, and reports done', async () => {
     const { onDone, user } = renderCard()
     const link = screen.getByRole('link', { name: 'Deploy on Platform' })
-    const href = link.getAttribute('href')
 
-    expect(href).toMatch(
-      /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=[A-Za-z0-9_-]{16,64}&utm_source=comfyui&utm_medium=app&utm_content=custom-deployment-card$/
+    expect(link).toHaveAttribute(
+      'href',
+      'https://platform.comfy.org/profile/builds?utm_source=comfyui&utm_medium=app&utm_content=custom-deployment-card'
     )
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
     const followsLink = linkFollowedOnNextClick()
     await user.click(link)
-    expect(open).toHaveBeenCalledExactlyOnceWith(href, '_blank')
+    expect(followsLink()).toBe(true)
+    expect(onDone).toHaveBeenCalledOnce()
+  })
+
+  it('opens the build wizard itself, in place of the link, when a workflow is open', async () => {
+    openWorkflow()
+    const open = vi
+      .spyOn(window, 'open')
+      .mockReturnValue(fromPartial<Window>({ closed: true }))
+    const { onDone, user } = renderCard()
+
+    const followsLink = linkFollowedOnNextClick()
+    await user.click(screen.getByRole('link', { name: 'Deploy on Platform' }))
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      expect.stringMatching(
+        /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=[A-Za-z0-9_-]{16,64}&utm_source=comfyui&utm_medium=app&utm_content=custom-deployment-card$/
+      ),
+      '_blank'
+    )
     expect(followsLink()).toBe(false)
     expect(onDone).toHaveBeenCalledOnce()
   })
 
-  it('leaves the click to the plain link when the browser blocks the new tab', async () => {
-    vi.spyOn(window, 'open').mockReturnValue(null)
-    const { onDone, user } = renderCard()
-    const link = screen.getByRole('link', { name: 'Deploy on Platform' })
+  it.for(['Meta', 'Control', 'Shift', 'Alt'])(
+    'leaves a %s click to the link',
+    async (key) => {
+      openWorkflow()
+      const open = vi.spyOn(window, 'open')
+      const { user } = renderCard()
 
-    const followsLink = linkFollowedOnNextClick()
-    await user.click(link)
+      const followsLink = linkFollowedOnNextClick()
+      await user.keyboard(`{${key}>}`)
+      await user.click(screen.getByRole('link', { name: 'Deploy on Platform' }))
 
-    expect(followsLink()).toBe(true)
-    expect(onDone).toHaveBeenCalledOnce()
-  })
+      expect(open).not.toHaveBeenCalled()
+      expect(followsLink()).toBe(true)
+    }
+  )
 
   it.for([
     {

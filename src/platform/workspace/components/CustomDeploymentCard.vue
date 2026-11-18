@@ -136,12 +136,9 @@ import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDia
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
 import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable.vue'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
+import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
-import {
-  createHandoffNonce,
-  openPlatformWithWorkflow,
-  workflowHandoffUrl
-} from '@/platform/workspace/platformWorkflowHandoff'
+import { openPlatformWithWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
 import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const {
@@ -163,13 +160,19 @@ defineOptions({ inheritAttrs: false })
 
 const { isCopying, copied, copy } = useBriefCopy()
 
-const handoffNonce = createHandoffNonce()
 const createDeploymentUrl = computed(() =>
-  workflowHandoffUrl(handoffNonce, 'custom-deployment-card')
+  customDeploymentCreateUrl('custom-deployment-card')
 )
 
+function asksForItsOwnTab(event: MouseEvent): boolean {
+  return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+}
+
 function createOnPlatform(event: MouseEvent) {
-  if (openPlatformWithWorkflow(createDeploymentUrl.value, handoffNonce))
+  if (
+    !asksForItsOwnTab(event) &&
+    openPlatformWithWorkflow('custom-deployment-card')
+  )
     event.preventDefault()
   emit('done')
 }

@@ -1,16 +1,19 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import {
   answerWorkflowHandoff,
-  createHandoffNonce,
-  openPlatformWithWorkflow,
-  workflowHandoffUrl
+  openPlatformWithWorkflow
 } from './platformWorkflowHandoff'
 
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/config/comfyApi'), () => ({
@@ -164,80 +167,125 @@ describe('answerWorkflowHandoff', () => {
   })
 })
 
-describe('workflowHandoffUrl', () => {
-  it('opens the wizard at its import step with the nonce, the tags and the active workspace, and nothing else', () => {
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-123' })
-
-    expect(workflowHandoffUrl(NONCE, 'custom-deployment-card')).toBe(
-      `${PLATFORM}/profile/builds/new?step=import&handoff=${NONCE}&utm_source=comfyui&utm_medium=app&utm_content=custom-deployment-card&workspace=ws-123`
-    )
-  })
-
-  it('makes a nonce the wizard accepts', () => {
-    expect(createHandoffNonce()).toMatch(/^[A-Za-z0-9_-]{16,64}$/)
-  })
-})
-
 describe('openPlatformWithWorkflow', () => {
-  const URL_WITH_NONCE = `${PLATFORM}/profile/builds/new?step=import&handoff=${NONCE}`
+  const WIZARD_URL =
+    /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=([A-Za-z0-9_-]{16,64})&utm_source=comfyui&utm_medium=app&utm_content=custom-deployment-card&workspace=ws-123$/
 
   beforeEach(() => {
     vi.useFakeTimers()
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-123' })
+    useWorkflowStore().activeWorkflow = null
   })
 
-  function openWorkflow() {
+  function openWorkflow(prepareForSave?: () => void) {
     const saved = { nodes: [{ id: 1, type: 'BiRefNet' }] }
     const workflow = {
       filename: 'portrait',
       activeState: { nodes: [{ id: 1, type: 'Stale' }] },
       changeTracker: {
-        prepareForSave: () => {
-          workflow.activeState = saved
-        }
+        prepareForSave:
+          prepareForSave ??
+          (() => {
+            workflow.activeState = saved
+          })
       }
     }
     useWorkflowStore().activeWorkflow = fromPartial(workflow)
     return saved
   }
 
-  it('opens the wizard with this tab as its opener and hands it the open workflow as saved at the click', () => {
+  it('opens the wizard at its import step with a fresh nonce, the tags and the workspace, and hands it the open workflow as saved at the click', () => {
     const saved = openWorkflow()
     const { wizard, postMessage, close } = openedWindow()
     const open = vi.spyOn(window, 'open').mockReturnValue(wizard)
 
-    expect(openPlatformWithWorkflow(URL_WITH_NONCE, NONCE)).toBe(true)
+    expect(openPlatformWithWorkflow('custom-deployment-card')).toBe(true)
+    const [url, target] = open.mock.calls[0]
+    const nonce = WIZARD_URL.exec(String(url))?.[1]
     saved.nodes[0].type = 'EditedAfterTheClick'
-    receive(READY, wizard)
+    receive({ ...READY, nonce }, wizard)
     close()
     vi.advanceTimersByTime(1000)
 
-    expect(open).toHaveBeenCalledExactlyOnceWith(URL_WITH_NONCE, '_blank')
+    expect(target).toBe('_blank')
+    expect(open.mock.calls[0]).toHaveLength(2)
     expect(postMessage).toHaveBeenCalledExactlyOnceWith(
       {
         type: 'comfy-build-handoff:workflow',
-        nonce: NONCE,
+        nonce,
         filename: 'portrait.json',
         workflow: WORKFLOW
       },
       PLATFORM
     )
+    expect(vi.getTimerCount()).toBe(0)
   })
 
-  it('reports a blocked tab and listens for nothing', () => {
+  it('makes a new nonce for each click', () => {
     openWorkflow()
-    vi.spyOn(window, 'open').mockReturnValue(null)
-    const addListener = vi.spyOn(window, 'addEventListener')
+    const open = vi
+      .spyOn(window, 'open')
+      .mockReturnValue(fromPartial<Window>({ closed: true }))
 
-    expect(openPlatformWithWorkflow(URL_WITH_NONCE, NONCE)).toBe(false)
-    expect(addListener).not.toHaveBeenCalledWith('message', expect.anything())
+    openPlatformWithWorkflow('custom-deployment-card')
+    openPlatformWithWorkflow('custom-deployment-card')
+    vi.advanceTimersByTime(1000)
+
+    const [first, second] = open.mock.calls.map(([url]) => String(url))
+    expect(first).toMatch(WIZARD_URL)
+    expect(second).toMatch(WIZARD_URL)
+    expect(first).not.toBe(second)
   })
 
-  it('opens nothing on Desktop, which hands new tabs to the system browser', () => {
-    openWorkflow()
-    vi.stubGlobal('__comfyDesktop2', {})
+  it.for([
+    {
+      when: 'the browser blocks the tab',
+      arrange: () => {
+        openWorkflow()
+        vi.spyOn(window, 'open').mockReturnValue(null)
+      },
+      opens: 1
+    },
+    {
+      when: 'no workflow is open',
+      arrange: () => {
+        vi.spyOn(window, 'open')
+      },
+      opens: 0
+    },
+    {
+      when: 'Desktop hands new tabs to the system browser',
+      arrange: () => {
+        openWorkflow()
+        vi.stubGlobal('__comfyDesktop2', {})
+        vi.spyOn(window, 'open')
+      },
+      opens: 0
+    }
+  ])(
+    'leaves the opening to the link and listens for nothing when $when',
+    ({ arrange, opens }) => {
+      arrange()
+      const addListener = vi.spyOn(window, 'addEventListener')
+
+      expect(openPlatformWithWorkflow('custom-deployment-card')).toBe(false)
+      expect(window.open).toHaveBeenCalledTimes(opens)
+      expect(addListener).not.toHaveBeenCalledWith('message', expect.anything())
+    }
+  )
+
+  it('reports a workflow that cannot be captured and leaves the opening to the link', () => {
+    const failure = new Error('A custom node failed to serialize')
+    openWorkflow(() => {
+      throw failure
+    })
     const open = vi.spyOn(window, 'open')
 
-    expect(openPlatformWithWorkflow(URL_WITH_NONCE, NONCE)).toBe(false)
+    expect(openPlatformWithWorkflow('custom-deployment-card')).toBe(false)
     expect(open).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(failure, {
+      errorType: 'error_capturing_workflow_for_platform',
+      surface: 'platform'
+    })
   })
 })

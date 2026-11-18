@@ -1,9 +1,12 @@
+import { reportError } from '@comfyorg/telemetry/reportError'
+
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
 import type { PlatformLinkSurface } from '@/platform/workspace/utils/platformLink'
+import { createUuidv4 } from '@/utils/uuid'
 
 const HANDOFF_READY = 'comfy-build-handoff:ready'
 const HANDOFF_WORKFLOW = 'comfy-build-handoff:workflow'
@@ -20,15 +23,8 @@ interface WorkflowHandoff extends HandedWorkflow {
   platformOrigin: string
 }
 
-/** A nonce Platform's build wizard accepts for one handoff. */
-export function createHandoffNonce(): string {
-  return Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
-    byte.toString(16).padStart(2, '0')
-  ).join('')
-}
-
 /** Platform's build wizard at its import step, asking its opener for the workflow under `nonce`. */
-export function workflowHandoffUrl(
+function workflowHandoffUrl(
   nonce: string,
   surface: PlatformLinkSurface
 ): string {
@@ -79,28 +75,38 @@ export function answerWorkflowHandoff({
 
 function captureOpenWorkflow(): HandedWorkflow | null {
   const open = useWorkflowStore().activeWorkflow
-  open?.changeTracker.prepareForSave()
-  if (!open?.activeState) return null
-  const workflow: unknown = JSON.parse(JSON.stringify(open.activeState))
-  return {
-    filename: handoffFileName(open.filename.replace(/\.json$/i, '')),
-    workflow
+  try {
+    open?.changeTracker.prepareForSave()
+    if (!open?.activeState) return null
+    const workflow: unknown = JSON.parse(JSON.stringify(open.activeState))
+    return {
+      filename: handoffFileName(open.filename.replace(/\.json$/i, '')),
+      workflow
+    }
+  } catch (error) {
+    reportError(error, {
+      errorType: 'error_capturing_workflow_for_platform',
+      surface: 'platform'
+    })
+    return null
   }
 }
 
-/** Opens the wizard at `url` with this tab as its opener and hands it the open workflow; false when no tab opened, as on Desktop or when the browser blocked it. */
-export function openPlatformWithWorkflow(url: string, nonce: string): boolean {
+/** Opens Platform's build wizard with this tab as its opener and hands it the open workflow; false when it opened nothing, so the caller's plain link must do the opening. */
+export function openPlatformWithWorkflow(
+  surface: PlatformLinkSurface
+): boolean {
   if (handsPopupsToSystemBrowser()) return false
   const handed = captureOpenWorkflow()
-  const wizard = window.open(url, '_blank')
+  if (!handed) return false
+  const nonce = createUuidv4()
+  const wizard = window.open(workflowHandoffUrl(nonce, surface), '_blank')
   if (!wizard) return false
-  if (handed) {
-    answerWorkflowHandoff({
-      ...handed,
-      nonce,
-      wizard,
-      platformOrigin: new URL(getComfyPlatformBaseUrl()).origin
-    })
-  }
+  answerWorkflowHandoff({
+    ...handed,
+    nonce,
+    wizard,
+    platformOrigin: new URL(getComfyPlatformBaseUrl()).origin
+  })
   return true
 }
