@@ -36,8 +36,9 @@ stop()
 - Hooks are listeners, not overrides. They run after the method the node's
   class already had, in the order the extensions were made, and can change
   the outcome only where their contract says: `onBeforeConnect` returns
-  `false` to refuse, `onSerialize` returns fields to add, and a property
-  event's `setValue` and `reject`.
+  `false` to refuse, `onSerialize` returns fields to add, a property event's
+  `setValue` and `reject`, and `onDragOver` and `onDrop` return `true` to
+  take a drop.
 - A hook reaches a node that joined a graph after the `extend` call, from the
   moment it joins. **A late `extend` reaches only nodes that join afterwards**:
   it never reaches a node already in a graph, and `onCreated` is not replayed

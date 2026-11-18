@@ -47,7 +47,7 @@ import { comfy } from '/comfy/api/v4.js'
 comfy.onWorkflowLoaded((document) => console.info('loaded', document?.name))
 
 comfy.workflow.registerImporter({
-  id: 'MyPack.yamlWorkflow',
+  id: 'MyPack.mpwWorkflow',
   extensions: ['.mpw'],
   maxBytes: 1_000_000,
   parse(bytes) {

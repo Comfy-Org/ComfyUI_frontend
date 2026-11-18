@@ -9,14 +9,16 @@ object that names the entity and reads it live each time it is asked.
   object. A handle is a stable `Map` or `WeakMap` key, and
   `comfy.sameEntity(a, b)` gives the same answer as `a === b`.
 - A handle belongs to the document it came from and to its own graph, and
-  stops resolving when another document loads. A node, widget, group or graph
-  handle survives undo and redo; a slot handle does not, because undo and
-  redo rebuild slots.
+  stops resolving whenever a workflow loads: another document, a return to
+  this document's tab, or a reload of it. Take a fresh handle when the
+  document is shown again. A node, widget, group or graph handle survives
+  undo and redo; a slot handle does not, because undo and redo rebuild slots.
 - Once its entity is gone, a handle still gives its identity (`id`, and
   `graphId` for a node) and reports `isDeleted`. Every other read returns
   `undefined`, a list included, and an edit through it changes nothing.
-- A node that undo brings back is the same handle again, unless another undo
-  or redo finished while it was gone.
+- A node that an undo or redo brings back is the same handle again, however
+  many undos and redos ran while it was gone, unless one of them went back to
+  before the node was added; then take a new one.
 
 ```ts
 import type { v4 } from '@comfyorg/comfyui-frontend-types'
@@ -76,5 +78,5 @@ console.info(workflow ? Object.keys(workflow) : 'no document yet')
 ```
 
 `onWorkflowLoaded` fires after every load, undo and redo, with the open
-document. A handle taken before a load of another document reports
-`isDeleted` from then on.
+document. A handle taken before any other load, of this document or
+another, reports `isDeleted` from then on.

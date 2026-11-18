@@ -8,7 +8,9 @@ change those without breaking the pack.
 
 The design and the reasons for it are in the ADRs
 [0070](../../adr/EXTENSIONS-NODE-API-0070-versioned-node-api-with-document-scoped-handles.md)
-to [0076](../../adr/EXTENSIONS-NODE-API-0076-frontend-execution.md).
+to [0076](../../adr/EXTENSIONS-NODE-API-0076-frontend-execution.md), and
+how these guides and the published types are kept in step in
+[0077](../../adr/EXTENSIONS-NODE-API-0077-author-guides-and-published-types.md).
 
 ## Guides
 
@@ -37,7 +39,8 @@ comfy.onReady(() => {
 ```
 
 `onReady` runs once the app is set up, before the first workflow loads, so the
-graph is still empty there. Use `onWorkflowLoaded` to act on each loaded
+graph is usually still empty there; for a pack the editor loads late, a
+workflow may already be open. Use `onWorkflowLoaded` to act on each loaded
 workflow.
 
 ### Versions
@@ -99,10 +102,17 @@ in these guides against the published types.
 - An argument a member cannot use throws a `TypeError` that names the member,
   what it needs and what it got, before anything changes.
 - A failure the pack cannot prevent, such as a server that does not answer, is
-  a value (`false`, `undefined`, `{ ok: false }`), not a throw.
-  `backend.fetch` is the exception: it rejects as `fetch` does.
-- Every registration returns a function that removes only that registration
-  and is safe to call twice.
+  a value (`false`, `undefined`, `{ ok: false }`), not a throw. Three calls
+  reject instead: `backend.fetch`, as `fetch` does; `settings.set`, when the
+  server cannot be reached; and `defs.refresh`, when fetching the definitions
+  fails.
+- A listener or hook registration (`on…`, `extend`, `define`,
+  `registerImporter`, `addBadge`, `addSidebarTab`) returns a function that
+  removes only that registration and is safe to call twice. A badge, button,
+  panel or overlay in `comfy.ui` returns a handle whose `remove()` is safe to
+  call twice. `settings.declare`, `commands.register` and
+  `localization.registerCatalog` last for the page. A builder's methods add
+  to the extension, which its own disposer removes.
 - A callback the pack gives that throws is reported, and neither the editor
   nor another pack stops.
 - A value the API returns is a frozen copy, a handle, or a browser value such

@@ -1,7 +1,9 @@
 # Reading and editing the graph
 
-`comfy.graph` reads and `comfy.edit` writes. Every edit goes through
-`comfy.edit`, so the editor's undo, modified state and rendering stay right.
+`comfy.graph` reads and `comfy.edit` writes. Every edit of a node, slot, link
+or group goes through `comfy.edit`, so the editor's undo, modified state and
+rendering stay right. Widget values and the workflow's `extra` have their own
+members ([Widgets](./widgets.md), `workflow.setExtra`).
 The edit methods on handles (`node.setTitle`, `slot.modify`,
 `node.inputs.add`) are one-line calls into `comfy.edit`.
 
@@ -87,11 +89,13 @@ if (source && target) {
 }
 ```
 
-A load, undo or redo rebuilds the slots a node's type makes: their type,
-shape, translated name, widget and place come back from the type, a removed one
-comes back, and a renamed backend input comes back under its own name beside
-the renamed one. Labels, colors, positions, directions and every edit
-of a slot the pack added are kept. A subgraph
+A load, undo or redo rebuilds the slots a node's type makes. For a backend
+type, their type, shape, translated name, widget and place come back from the
+type, a removed one comes back, and a renamed input comes back under its own
+name beside the renamed one. For any other type, such as one `define` makes,
+the saved slots are merged into the type's by position, and a removed one
+comes back after the others. Labels, colors, positions, directions and every
+edit of a slot the pack added are kept. A subgraph
 node's slots follow its subgraph, so only `inputs.reorder` works on them, and
 only while the subgraph is placed once. A reorder of inputs leaves floating
 links (links detached onto a reroute) at their slot index, as the host does
