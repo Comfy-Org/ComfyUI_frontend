@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { effectScope, ref, watchSyncEffect } from 'vue'
 
 import { useKeyedMembership } from '@/platform/workflowErrors/keyedMembership'
@@ -7,6 +7,7 @@ describe('useKeyedMembership', () => {
   function setup(initial: string[]) {
     const keys = ref(new Set(initial))
     const scope = effectScope()
+    onTestFinished(() => scope.stop())
     const has = scope.run(() => useKeyedMembership(() => keys.value))!
     return { keys, has, scope }
   }
