@@ -331,6 +331,23 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(recoveryPaymentPage.value).toEqual({ kind: 'unavailable' })
   })
 
+  it('links billing-web checkout once billing-web becomes the hosted destination for the same client-secret-only operation', async () => {
+    serveRecovery(true)
+    vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+      SECRET_ONLY_SIGNUP_OPERATION
+    )
+
+    const { recoveryPlanTier, recoveryPaymentPage } =
+      useSubscriptionPaymentRecovery()
+    await vi.waitFor(() => expect(recoveryPlanTier.value).toBe('CREATOR'))
+    serveBillingWebDestination()
+
+    expect(recoveryPaymentPage.value).toMatchObject({
+      kind: 'clientSecretOnly'
+    })
+    expect(billingApi.getBillingOpStatus).toHaveBeenCalledOnce()
+  })
+
   it('leaves the plan unnamed and the payment page unavailable when the operation read fails', async () => {
     serveRecovery(true)
     const failure = new Error('network down')
