@@ -4138,6 +4138,9 @@
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
     "failedToSwitch": "Failed to switch workspace"
   },
+  "profileMenu": {
+    "balanceUnavailable": "Couldn't load your balance."
+  },
   "deploymentSwitcher": {
     "runOn": "Run on",
     "runningOn": "Running on",
