@@ -59,6 +59,15 @@ it.for([
   )
 })
 
+it.for(['comment-on-pr-start', 'deploy-and-comment'])(
+  '%s does not write the PR report after its run is cancelled',
+  (job) => {
+    const condition = pipeline.jobs[job].if ?? ''
+    expect(condition).toMatch(/!cancelled\(\)/)
+    expect(condition).not.toMatch(/\balways\(\)/)
+  }
+)
+
 function lockfileWithPlaywright(catalogVersion: string, rootVersion: string) {
   return [
     'catalogs:',
@@ -158,14 +167,22 @@ describe('merge-reports Playwright version', () => {
     )
   })
 
-  it('merges the HTML and JSON reports with the locked version', () => {
-    const step = pipeline.jobs['merge-reports'].steps?.find((candidate) =>
+  it.for([
+    ['merge-reports', 'dlx @playwright/test@1.3.0', './all-blob-reports'],
+    ['playwright-tests', 'exec playwright', './blob-report']
+  ])('merges both reports once for %s', ([job, command, blobs]) => {
+    const step = pipeline.jobs[job].steps?.find((candidate) =>
       candidate.run?.includes('merge-reports')
     )
     if (!step?.run) throw new Error('Missing merge-reports step')
-    expect(step.env).toEqual({
-      PLAYWRIGHT_VERSION: '${{ steps.playwright-version.outputs.version }}'
-    })
+    expect(step.env).toEqual(
+      job === 'merge-reports'
+        ? {
+            PLAYWRIGHT_VERSION:
+              '${{ steps.playwright-version.outputs.version }}'
+          }
+        : undefined
+    )
     const dir = mkdtempSync(join(tmpdir(), 'merge-reports-'))
     try {
       const calls = join(dir, 'calls')
@@ -188,11 +205,7 @@ describe('merge-reports Playwright version', () => {
       )
       expect(result.status).toBe(0)
       expect(readFileSync(calls, 'utf8')).toBe(
-        [
-          ' dlx @playwright/test@1.3.0 merge-reports --reporter=html ./all-blob-reports',
-          'playwright-report/report.json dlx @playwright/test@1.3.0 merge-reports --reporter=json ./all-blob-reports',
-          ''
-        ].join('\n')
+        `playwright-report/report.json ${command} merge-reports --reporter=html,json ${blobs}\n`
       )
     } finally {
       rmSync(dir, { recursive: true, force: true })

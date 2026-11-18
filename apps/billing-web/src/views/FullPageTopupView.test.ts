@@ -37,7 +37,8 @@ import FullPageTopupView from '@/views/FullPageTopupView.vue'
 
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  PLATFORM_BASE_URL: 'https://testplatform.comfy.org'
 }))
 
 const stripeKey = vi.hoisted(() => ({
@@ -414,7 +415,7 @@ describe('FullPageTopupView', () => {
     { name: 'no amount', query: '' },
     { name: 'an unreadable amount', query: '&amount_cents=12.50' }
   ])(
-    '769-15773: a top-up link with $name is not valid and sends the customer to add credits in settings',
+    '769-15773: a top-up link with $name is not valid and sends the customer to add credits on Platform Billing',
     async ({ query }) => {
       const assign = vi
         .spyOn(window.location, 'assign')
@@ -443,7 +444,7 @@ describe('FullPageTopupView', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
 
       expect(assign).toHaveBeenCalledWith(
-        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+        'https://testplatform.comfy.org/settings/billing?workspace=ws-team'
       )
     }
   )
@@ -964,6 +965,36 @@ describe('FullPageTopupView paying once', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(payButton()).toBeDisabled()
     expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the Payment not verified card on the same form while the lifecycle goes on reading the refused challenge as pending', async () => {
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA] }
+    })
+    fake.createInteractiveTopup.mockImplementation(() => new Promise(() => {}))
+    await screen.findByText('Add credits · Acme Team')
+    const refused: PendingBillingOperation = {
+      ...topupInFlight({ authenticationState: 'failed_retryable' }),
+      awaitedHere: true,
+      challenge: { clientSecret: 'cs', status: 'failed' }
+    }
+
+    await userEvent.click(payButton())
+    fake.publishOperation(refused)
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment not verified'
+    )
+    const mounts = form.mounts
+
+    fake.publishOperation({ ...refused, observedAt: refused.observedAt + 1 })
+    fake.publishOperation({ ...refused, observedAt: refused.observedAt + 2 })
+
+    await new Promise((resolve) => setTimeout(resolve))
+
+    expect(screen.getByRole('alert')).toHaveTextContent('Payment not verified')
+    expect(form.mounts).toBe(mounts)
+    expect(fake.quoteTopup).toHaveBeenCalledOnce()
   })
 
   it('keeps an unanswered purchase on its key when the pending operation recovery found is declined, since nothing ties that operation to this Pay', async () => {

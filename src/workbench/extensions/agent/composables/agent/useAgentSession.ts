@@ -12,10 +12,12 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import type {
   AgentErrorClass,
   AgentErrorMetadata,
+  AgentSessionRefusalReason,
   AgentStopClickedMetadata,
   AgentStopMethod,
   AgentThreadStartSource,
-  AgentWorkflowBindSource
+  AgentWorkflowBindSource,
+  AgentWorkflowSyncErrorCode
 } from '@comfyorg/telemetry/types'
 import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
@@ -23,6 +25,7 @@ import {
   StorageKeys
 } from '@/platform/workflow/persistence/base/storageKeys'
 import { createUuidv4 } from '@/utils/uuid'
+import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 import type {
   AgentActiveTabData,
   AgentAnswerReceipt,
@@ -157,10 +160,13 @@ export interface AgentSessionDeps {
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
+    /** Node ids selected on the target canvas, outside node selection mode. */
+    canvasSelection?(): string[]
   }
 }
 
 const PREPARE_TIMEOUT_MS = 3000
+const MAX_CANVAS_SELECTION_IDS = 20
 const RECONCILE_TIMEOUT_MS = 5000
 
 interface HydrationBuffer {
@@ -330,10 +336,14 @@ export function trackAgentError(
      * rather than deriving it twice and risking them disagreeing.
      */
     diagnostics?: AgentRequestFailureDiagnostics
+    syncErrorCode?: AgentWorkflowSyncErrorCode
   } = {}
 ): void {
   useTelemetry()?.trackAgentError({
     ...overrides.diagnostics,
+    ...(overrides.syncErrorCode !== undefined && {
+      sync_error_code: overrides.syncErrorCode
+    }),
     error_class: errorClass,
     failure_stage: stage,
     retryable: overrides.retryable ?? stage === 'pre_acceptance',
@@ -1173,11 +1183,31 @@ export function useAgentSession(deps: AgentSessionDeps) {
     ])
   }
 
-  function recordUnavailableTarget(text: string): void {
+  function trackSendRefused(
+    reason: AgentSessionRefusalReason,
+    clientMessageId: string | undefined
+  ): void {
+    useTelemetry()?.trackAgentSendGated({
+      gate: 'composer',
+      outcome: 'dropped',
+      reason,
+      client_message_id: clientMessageId ?? null,
+      held_ms: null,
+      thread_id: conversationStore.threadId,
+      client_session_id: agentClientSessionId()
+    })
+  }
+
+  function recordRefusedSend(
+    text: string,
+    clientMessageId: string | undefined,
+    noticeKey: string
+  ): void {
+    trackSendRefused('target_unavailable', clientMessageId)
     conversationStore.recordFailedSend(
       nextLocalErrorId(),
       text,
-      i18n.global.t('agent.targetNavigationUnavailable')
+      i18n.global.t(noticeKey)
     )
   }
 
@@ -1185,13 +1215,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     originContext: WorkflowTurnContext | undefined,
     wfContext: WorkflowTurnContext | undefined,
-    draft: DraftSnapshot | undefined
+    draft: DraftSnapshot | undefined,
+    clientMessageId: string | undefined
   ): boolean {
-    const refused =
-      workflowTargetChanged(originContext, wfContext) ||
-      lacksCanvasForRemint(wfContext, draft)
-    if (refused) recordUnavailableTarget(text)
-    return refused
+    if (workflowTargetChanged(originContext, wfContext)) {
+      recordRefusedSend(
+        text,
+        clientMessageId,
+        'agent.targetNavigationUnavailable'
+      )
+      return true
+    }
+    if (!lacksCanvasForRemint(wfContext, draft)) return false
+    recordRefusedSend(text, clientMessageId, 'agent.canvasNotReadyForSend')
+    return true
   }
 
   function postTurn(
@@ -1213,7 +1250,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    canvasNodeIds?: string[]
   ): PostMessageInput {
     const tabs = workflow?.tabs?.(origin)
     const unboundTarget = isUnboundTarget(
@@ -1231,6 +1269,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         wfContext?.id
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
+      canvasSelection: plainCanvasSelection(
+        canvasNodeIds,
+        tags,
+        selectedWorkflowId
+      ),
       attachments: attachments?.map((attachment) => attachment.ref),
       clientMessageId,
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
@@ -1256,6 +1299,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (tags === undefined || tags.length === 0) return undefined
     return {
       node_ids: tags.map((tag) => tag.id),
+      ...(selectedWorkflowId !== undefined
+        ? { workflow_id: selectedWorkflowId }
+        : {})
+    }
+  }
+
+  function plainCanvasSelection(
+    canvasNodeIds: string[] | undefined,
+    tags: SentTag[] | undefined,
+    selectedWorkflowId: string | undefined
+  ) {
+    const tagged = new Set((tags ?? []).map((tag) => tag.id))
+    const nodeIds = (canvasNodeIds ?? []).filter((id) => !tagged.has(id))
+    if (nodeIds.length === 0) return undefined
+    return {
+      node_ids: nodeIds.slice(0, MAX_CANVAS_SELECTION_IDS),
+      ...(nodeIds.length > MAX_CANVAS_SELECTION_IDS
+        ? { total_selected: nodeIds.length }
+        : {}),
       ...(selectedWorkflowId !== undefined
         ? { workflow_id: selectedWorkflowId }
         : {})
@@ -1584,6 +1646,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const originContext = workflow?.current()
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
+    const canvasNodeIds = workflow?.canvasSelection?.()
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
     try {
@@ -1591,7 +1654,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (generation !== loadGeneration) return false
       const wfContext = workflow?.current(origin)
       const draft = workflow?.draft?.(origin)
-      if (refusesTarget(text, originContext, wfContext, draft)) return false
+      if (refusesTarget(text, originContext, wfContext, draft, clientMessageId))
+        return false
       sentContext = wfContext
       const input = buildPostInput(
         threadAtSend,
@@ -1603,11 +1667,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags,
         workflowReferences,
         selectionWorkflowId,
-        clientMessageId
+        clientMessageId,
+        canvasNodeIds
       )
       const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
-      if (!observeAcceptedTurn(generation, onAccepted)) return false
+      if (!observeAcceptedTurn(generation, ack, threadAtSend, onAccepted))
+        return false
       acceptTurn(
         ack,
         text,
@@ -1633,13 +1699,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function observeAcceptedTurn(
     generation: number,
+    ack: AgentTurnAccepted,
+    threadAtSend: string,
     onAccepted?: () => void
   ): boolean {
     runAcceptedTurnSideEffect(
       () => onAccepted?.(),
       'agent_turn_accepted_callback_failed'
     )
-    return generation === loadGeneration
+    const isCurrent = generation === loadGeneration
+    if (!isCurrent) {
+      reportError(
+        new Error('agent turn accepted after the send generation moved on'),
+        {
+          surface: 'agent',
+          errorType: 'failure_tracking_agent_accepted_turn_generation_change',
+          context: {
+            threadAtSend,
+            ackThreadId: ack.thread_id,
+            turnId: toTurnId(ack.message_id)
+          }
+        }
+      )
+    }
+    return isCurrent
   }
 
   function workflowTargetChanged(
@@ -1660,6 +1743,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAccepted?: () => void
   ): Promise<boolean> {
     if (sending.value) {
+      trackSendRefused('send_busy', clientMessageId)
       conversationStore.recordFailedSend(
         nextLocalErrorId(),
         text,
@@ -2494,19 +2578,67 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function isRetryableSettledRead(outcome: TurnOutcome): boolean {
+    if (outcome.kind === 'streaming') return true
+    return (
+      outcome.kind === 'error' &&
+      isRetryableRequestFailure(outcome.cause, false)
+    )
+  }
+
   async function fetchSettledTurnOutcome(
     turn: LiveTurn,
     generation: number,
-    signal: AbortSignal
+    signal: AbortSignal,
+    deadlineReason: Error
   ): Promise<TurnOutcome> {
-    let outcome = await fetchTurnOutcome(turn, signal)
-    for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
-      if (outcome.kind !== 'streaming' || generation !== sessionGeneration)
-        return outcome
-      await delay(ms, { signal })
+    let outcome: TurnOutcome | undefined
+    try {
       outcome = await fetchTurnOutcome(turn, signal)
+      for (const ms of TURN_RECOVERY_DELAYS_MS.slice(1)) {
+        if (
+          !isRetryableSettledRead(outcome) ||
+          generation !== sessionGeneration
+        )
+          return outcome
+        await delay(ms, { signal })
+        outcome = await fetchTurnOutcome(turn, signal)
+      }
+      return outcome
+    } catch (error) {
+      if (signal.reason === deadlineReason && outcome?.kind === 'error')
+        return outcome
+      throw error
     }
-    return outcome
+  }
+
+  function reportSettledReadFailure(cause: unknown): void {
+    reportError(cause, {
+      surface: 'agent',
+      errorType: 'failure_recovering_agent_turn'
+    })
+  }
+
+  function applySettledRead(turn: LiveTurn, outcome: TurnOutcome): void {
+    if (outcome.kind === 'error') reportSettledReadFailure(outcome.cause)
+    else if (outcome.kind === 'terminal')
+      conversationStore.reconcileSettledTurn(turn, outcome.parts)
+  }
+
+  function releaseSettledRead(
+    key: string,
+    recovery: AbortController,
+    state: RunningRecovery,
+    turn: LiveTurn,
+    generation: number
+  ): void {
+    const ownsKey = recoveringTurns.get(key) === state
+    if (ownsKey && generation === sessionGeneration)
+      conversationStore.reconcileSettledTurn(turn, undefined)
+    finishRecovery(key, recovery, state, turn)
+    if (!ownsKey) return
+    recoveryPendingAskObservations.delete(key)
+    recoveryThreadMissingCounts.delete(key)
   }
 
   async function reconcileSettledSnapshotTurn(turn: LiveTurn): Promise<void> {
@@ -2522,42 +2654,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
       automaticRerun: false
     }
     recoveringTurns.set(key, state)
+    const deadlineReason = new Error('settled read deadline')
     const deadline = setTimeout(
-      () => recovery.abort(),
+      () => recovery.abort(deadlineReason),
       TURN_RECOVERY_DEADLINE_MS
     )
     try {
       const outcome = await fetchSettledTurnOutcome(
         turn,
         generation,
-        recovery.signal
+        recovery.signal,
+        deadlineReason
       )
-      if (generation !== sessionGeneration) return
-      if (outcome.kind === 'error') {
-        reportError(outcome.cause, {
-          surface: 'agent',
-          errorType: 'failure_recovering_agent_turn'
-        })
-        return
-      }
-      if (outcome.kind !== 'terminal') return
-      conversationStore.reconcileSettledTurn(turn, outcome.parts)
-    } catch (error) {
-      if (!recovery.signal.aborted)
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'failure_recovering_agent_turn'
-        })
-    } finally {
-      clearTimeout(deadline)
       if (
         generation === sessionGeneration &&
         recoveringTurns.get(key) === state
       )
-        conversationStore.reconcileSettledTurn(turn, undefined)
-      finishRecovery(key, recovery, state, turn)
-      recoveryPendingAskObservations.delete(key)
-      recoveryThreadMissingCounts.delete(key)
+        applySettledRead(turn, outcome)
+    } catch (error) {
+      if (!recovery.signal.aborted) reportSettledReadFailure(error)
+    } finally {
+      clearTimeout(deadline)
+      releaseSettledRead(key, recovery, state, turn, generation)
     }
   }
 

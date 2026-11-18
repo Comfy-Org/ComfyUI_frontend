@@ -30,7 +30,7 @@
         class="size-full cursor-pointer object-cover"
       />
 
-      <AssetBadgeGroup :badges="asset.badges" />
+      <AssetBadgeGroup :badges="badges" />
       <IconGroup
         :class="
           cn(
@@ -177,6 +177,12 @@ const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
 
+const badges = computed<AssetDisplayItem['badges']>(() =>
+  asset.isWorkspaceLibrary
+    ? [{ label: t('assetBrowser.library'), type: 'type' }, ...asset.badges]
+    : asset.badges
+)
+
 const assetMenuOpen = ref(false)
 
 const titleId = useId()
@@ -226,9 +232,8 @@ function confirmDeletion() {
     footerProps: {
       cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
-      // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
-        'bg-destructive text-foreground ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
+        'bg-destructive ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
       ),
       optionsDisabled,
       onCancel: () => {
@@ -244,7 +249,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.complete', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
           emit('deleted', asset)
         } catch (err: unknown) {
@@ -252,7 +256,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.failed', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 3_000))
         } finally {
           closeDialog(confirmDialog)

@@ -73,6 +73,32 @@ So when your `onConnectionsChange` callback fires during load, every peer
 node already exists and its link is already registered, so `graph.getNodeById()`
 and link lookups from inside that callback resolve correctly.
 
+## Unresolvable subgraph links are pruned on load (tested)
+
+When a subgraph definition loads, links inside it that can never resolve are
+deleted: the origin or target node is missing, a subgraph boundary slot is
+out of range, or a node dropped the serialized input the link targeted. Each
+deleted link fires `onConnectionsChange(type, slot, false, link, slot)` on
+every endpoint node that still exists. A new `false` notification during load
+means the link was pruned, not that a user disconnected it.
+
+- **Timing.** Pruning runs when the subgraph definition is configured, after
+  its nodes and their `configure()` calls, and before any `onGraphConfigured`
+  or `onAfterGraphConfigured` hook runs. Nodes that define either hook are not
+  judged as having dropped an input, because they may add inputs from those
+  hooks; nested subgraph nodes are the exception.
+- **State inside the callback.** Every pruned link is already removed from the
+  subgraph, and stale ids are cleared from the subgraph's boundary input and
+  output slots, before the first callback fires. Links that still resolve are
+  untouched.
+- **Failure isolation.** Each endpoint callback runs in its own `try`. A throw
+  is reported as a warning and does not skip the other endpoint, the remaining
+  pruned links, or the rest of the load.
+
+Handlers that treat a load-time disconnect as a user action (for example,
+removing a dynamic input) should check `app.configuringGraph`, which is true
+while a workflow loads.
+
 ## API prompt import does not reconnect resolved inputs
 
 `app.loadApiJson()` connects each resolvable input without running a second

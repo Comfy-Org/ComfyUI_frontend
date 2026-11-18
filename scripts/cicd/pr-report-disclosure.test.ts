@@ -28,7 +28,14 @@ function fixture() {
 
 function runExplainCheck(
   workspace: string,
-  inputs: { slug: string; status: string }
+  inputs: {
+    slug: string
+    status: string
+    headline?: string
+    detailsFile?: string
+    reproduce?: string
+    docs?: string
+  }
 ) {
   const actionFile = parseDocument(
     readFileSync(
@@ -51,10 +58,10 @@ function runExplainCheck(
       INPUT_TITLE: 'Test check',
       INPUT_ICON: '',
       INPUT_STATUS: inputs.status,
-      INPUT_HEADLINE: 'Check summary.',
-      INPUT_DETAILS_FILE: details,
-      INPUT_REPRODUCE: 'pnpm check',
-      INPUT_DOCS: 'docs/check.md',
+      INPUT_HEADLINE: inputs.headline ?? 'Check summary.',
+      INPUT_DETAILS_FILE: inputs.detailsFile ?? details,
+      INPUT_REPRODUCE: inputs.reproduce ?? 'pnpm check',
+      INPUT_DOCS: inputs.docs ?? 'docs/check.md',
       GITHUB_WORKSPACE: workspace,
       GITHUB_OUTPUT: join(workspace, 'output'),
       GITHUB_STEP_SUMMARY: join(workspace, 'summary'),
@@ -80,15 +87,48 @@ describe('shared PR report disclosure', () => {
       expect(result.status).toBe(0)
       const output = readFileSync(join(dir.root, 'summary'), 'utf8')
       const visible = output.split('<details>')[0]
-      expect(visible).toContain('Check summary.')
       expect(visible).toContain(action)
+      expect(visible).not.toContain('Check summary.')
+      expect(visible).not.toContain('docs/check.md')
       expect(visible).not.toContain('| Finding |')
       expect(output).toMatch(
-        /<summary>Findings and check details<\/summary>\n\n\| Finding[\s\S]*\n\n<\/details>/
+        /<summary>Findings and check details<\/summary>\n\nCheck summary\.\n\n\| Finding[\s\S]*\n\nFull docs: docs\/check\.md\n\n<\/details>/
       )
       expect(output).not.toContain('<details open')
     }
   )
+
+  it('collapses a headline when the check has no findings', () => {
+    using dir = fixture()
+    const result = runExplainCheck(dir.root, {
+      slug: 'test',
+      status: 'pass',
+      detailsFile: '',
+      reproduce: '',
+      docs: ''
+    })
+
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(dir.root, 'summary'), 'utf8')).toBe(
+      '##  Test check: ✅ Passed\n\n<details>\n<summary>Findings and check details</summary>\n\nCheck summary.\n\n</details>\n'
+    )
+  })
+
+  it('collapses a docs link when the check has no headline or findings', () => {
+    using dir = fixture()
+    const result = runExplainCheck(dir.root, {
+      slug: 'test',
+      status: 'pass',
+      headline: '',
+      detailsFile: '',
+      reproduce: ''
+    })
+
+    expect(result.status).toBe(0)
+    expect(readFileSync(join(dir.root, 'summary'), 'utf8')).toBe(
+      '##  Test check: ✅ Passed\n\n<details>\n<summary>Findings and check details</summary>\n\nFull docs: docs/check.md\n\n</details>\n'
+    )
+  })
 
   it.for(['../escape', 'Upper', 'a/b', '', 'a;b', 'a\nb'])(
     'rejects slug %j before writing any report file',

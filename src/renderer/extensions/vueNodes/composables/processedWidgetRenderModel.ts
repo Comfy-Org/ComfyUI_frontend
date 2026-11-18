@@ -12,7 +12,7 @@ import type {
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -49,6 +49,7 @@ import {
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
+import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'
 function isTooltipValueType(val: unknown): val is TooltipValueType {
@@ -70,7 +71,6 @@ interface WidgetErrorTarget {
 export interface ProcessedWidget extends WidgetGridItem {
   handleContextMenu: (e: PointerEvent) => void
   hasError: boolean
-  hasLayoutSize: boolean
   tooltipText: string
   updateHandler: (value: WidgetValue) => void
   widgetId: WidgetId
@@ -231,7 +231,7 @@ function createWidgetUpdateHandler({
     if (live) {
       const normalized = normalizeWidgetValue(newValue)
       live.widget.value = normalized
-      live.widget.callback?.(normalized, app.canvas, live.node)
+      live.widget.callback?.(normalized, useApp().canvas, live.node)
       live.node.widgets?.forEach((w) => w.triggerDraw?.())
     }
 
@@ -439,7 +439,9 @@ function processWidget(
 
   return {
     handleContextMenu,
-    hasLayoutSize: renderState?.hasLayoutSize ?? false,
+    get sizing() {
+      return live ? getWidgetSizing(live.widget, live.node) : undefined
+    },
     hasError: hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,

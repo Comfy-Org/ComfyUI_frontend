@@ -291,7 +291,7 @@ describe('AgentPanel', () => {
   })
 
   it('locks immediately but only shows the conversation veil for a slow opening', async () => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     const { rerender } = render(AgentPanel, {
       props: {
         entries: [],
@@ -491,7 +491,7 @@ describe('AgentPanel', () => {
     await pending
     await nextTick()
 
-    expect(emitted().newChat).toEqual([[]])
+    expect(emitted().newChat).toEqual([['new_chat_button']])
     expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
     expect(
@@ -559,7 +559,7 @@ describe('AgentPanel', () => {
     await nextTick()
 
     expect(select.mock.calls.map(([id]) => id)).toEqual(['first'])
-    expect(emitted().newChat).toEqual([[]])
+    expect(emitted().newChat).toEqual([['history_back']])
     expect(
       screen.getByRole('button', { name: 'Show chat history' })
     ).toBeVisible()
@@ -1175,4 +1175,26 @@ describe('AgentPanel', () => {
     expect(draftCalls.replaceDraft).toEqual([[editedPrompt]])
     expect(draftCalls.insert).toEqual([])
   })
+})
+
+it('restores the intro once the greeting is no longer visible even if its prop remains', async () => {
+  const view = render(AgentPanel, {
+    props: {
+      entries: [],
+      historyGroups: createHistoryGroups(),
+      activeTab: { path: 'portrait.json', name: 'portrait' },
+      greeting: { variant: 'B', canvas: 'workflow' }
+    },
+    global: { plugins: [i18n] }
+  })
+  expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  await view.rerender({
+    entries: [{ id: toTurnId('sent-message'), role: 'user', text: 'Help me' }]
+  })
+  expect(
+    screen.queryByRole('heading', { name: 'A little help to get you started!' })
+  ).not.toBeInTheDocument()
+  expect(screen.getByRole('note')).toHaveTextContent(
+    'The agent can now edit portrait.'
+  )
 })

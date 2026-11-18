@@ -6,7 +6,7 @@ import {
 } from '@/lib/litegraph/src/utils/widget'
 
 import { BaseSteppedWidget } from './BaseSteppedWidget'
-import type { WidgetEventOptions } from './BaseWidget'
+import type { WidgetEventOptions, WidgetValueOptions } from './BaseWidget'
 
 export class NumberWidget
   extends BaseSteppedWidget<INumericWidget>
@@ -38,7 +38,7 @@ export class NumberWidget
     this.setValue(this.value - getWidgetStep(this.options), options)
   }
 
-  override setValue(value: number, options: WidgetEventOptions) {
+  override setValue(value: number, options?: WidgetValueOptions) {
     let newValue = value
     if (this.options.min != null && newValue < this.options.min) {
       newValue = this.options.min

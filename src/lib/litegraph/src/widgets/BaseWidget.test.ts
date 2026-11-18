@@ -737,3 +737,36 @@ describe('BaseWidget store integration', () => {
     })
   })
 })
+
+describe('BaseWidget.setValue', () => {
+  let node: LGraphNode
+
+  beforeEach(() => {
+    const graph = new LGraph()
+    node = new LGraphNode('TestNode')
+    node.id = toNodeId(1)
+    graph.add(node)
+  })
+
+  it('accepts a call without options, as extension wrappers make it', () => {
+    const widget = createTestWidget(node)
+    const callbackValues: unknown[] = []
+    widget.callback = (value) => callbackValues.push(value)
+
+    widget.setValue(7)
+
+    expect(widget.value).toBe(7)
+    expect(callbackValues).toEqual([7])
+  })
+
+  it('keeps the value and skips the callback when a number widget receives NaN', () => {
+    const widget = createTestWidget(node)
+    const callbackValues: unknown[] = []
+    widget.callback = (value) => callbackValues.push(value)
+
+    widget.setValue(Number.NaN, { node })
+
+    expect(widget.value).toBe(42)
+    expect(callbackValues).toEqual([])
+  })
+})

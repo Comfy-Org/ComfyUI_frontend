@@ -36,10 +36,6 @@ vi.mock(import('@/extensions/core/load3d/Load3DConfiguration'), () => ({
   )
 }))
 
-vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
-  createExportMenuItems: vi.fn(() => [])
-}))
-
 vi.mock(import('@/extensions/core/load3d/components/Load3D.vue'), () => ({
   default: defineComponent({ render: () => null })
 }))

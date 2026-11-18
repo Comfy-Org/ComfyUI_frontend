@@ -22,7 +22,8 @@ import type {
 import { createAgentEventTransport } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
   AskUserResolution,
-  AssistantMessage
+  AssistantMessage,
+  ToolPart
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import {
   askIdOf,
@@ -111,6 +112,15 @@ function isLoadSkillPart(part: AssistantMessage['parts'][number]): boolean {
 function pendingAskIdsOf(message: AssistantMessage): string[] {
   return message.parts.flatMap((part) =>
     isPendingAskPart(part) ? [part.askId] : []
+  )
+}
+
+function reopenAsk(message: AssistantMessage, askId: string): void {
+  message.parts = message.parts.map((part) =>
+    (part.type === 'askUser' || part.type === 'deleteApproval') &&
+    askIdOf(part) === askId
+      ? { ...part, resolution: undefined }
+      : part
   )
 }
 
@@ -292,41 +302,60 @@ function storedCallIdOf(
   }
 }
 
-function preserveCanvasConfirmation(
+function preserveCanvasVerdicts(
   liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts'],
-  storedCallId: (callId: string) => string
+  persistedParts: AssistantMessage['parts']
 ): AssistantMessage['parts'] {
-  const confirmedCallIds = new Set(
-    liveParts.flatMap((part) =>
-      part.type === 'tool' && part.canvasConfirmed === true
-        ? [storedCallId(part.callId)]
-        : []
+  const offset = liveToolOffset(liveParts, persistedParts)
+  const storedCallId = storedCallIdOf(liveParts, persistedParts, offset)
+  const liveTools = toolPartsOf(liveParts)
+  const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
+  const liveCounts = toolNameCounts(liveTools)
+  const alignedCounts = toolNameCounts(
+    toolPartsOf(persistedParts).slice(offset, offset + liveTools.length)
+  )
+  const liveByStoredCallId = new Map<string, ToolPart>()
+  for (const part of liveTools) {
+    if (
+      !persistedCallIds.has(part.callId) &&
+      liveCounts.get(part.name) !== alignedCounts.get(part.name)
     )
-  )
-  return persistedParts.map((part) =>
-    part.type === 'tool' &&
-    part.ok === true &&
-    confirmedCallIds.has(part.callId)
-      ? { ...part, canvasConfirmed: true }
-      : part
-  )
+      continue
+    liveByStoredCallId.set(storedCallId(part.callId), part)
+  }
+  return persistedParts.map((part) => {
+    if (part.type !== 'tool' || part.ok !== true) return part
+    const live = liveByStoredCallId.get(part.callId)
+    if (live?.name !== part.name) return part
+    const canvasConfirmed = liveCanvasVerdict(live)
+    return canvasConfirmed === undefined ? part : { ...part, canvasConfirmed }
+  })
+}
+
+function toolPartsOf(parts: AssistantMessage['parts']): ToolPart[] {
+  return parts.filter((part): part is ToolPart => part.type === 'tool')
+}
+
+function toolNameCounts(tools: ToolPart[]): Map<string, number> {
+  const counts = new Map<string, number>()
+  for (const tool of tools)
+    counts.set(tool.name, (counts.get(tool.name) ?? 0) + 1)
+  return counts
+}
+
+function liveCanvasVerdict(part: ToolPart): boolean | undefined {
+  if (part.canvasConfirmed !== undefined) return part.canvasConfirmed
+  return part.ok === true && part.state === 'streaming' ? false : undefined
 }
 
 function finishSnapshotTurn(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts']
 ): void {
-  const liveParts = message.parts
-  const offset = liveToolOffset(liveParts, persistedParts)
   finishWithPersistedParts(
     message,
-    preserveCanvasConfirmation(
-      liveParts,
-      persistedParts,
-      storedCallIdOf(liveParts, persistedParts, offset)
-    ),
-    offset
+    persistedParts,
+    liveToolOffset(message.parts, persistedParts)
   )
 }
 
@@ -339,13 +368,7 @@ function finishWithPersistedParts(
     message.parts = message.parts.filter((part) => !isOpenAskPart(part))
     for (const part of message.parts) {
       if (!('state' in part) || part.state !== 'streaming') continue
-      if (part.type === 'tool') {
-        // A successful tool can still be waiting for canvas catch-up. Keep
-        // that transport-owned state live; only clamp calls that never
-        // received an outcome.
-        if (part.ok !== undefined) continue
-        part.ok = false
-      }
+      if (part.type === 'tool' && part.ok !== undefined) continue
       part.state = 'done'
     }
     return
@@ -354,7 +377,10 @@ function finishWithPersistedParts(
     (part) => part.type === 'thinking'
   )
   message.parts = interleaveLocalParts(
-    preserveLiveToolStartTimes(persistedParts, message.parts),
+    preserveLiveToolStartTimes(
+      preserveCanvasVerdicts(message.parts, persistedParts),
+      message.parts
+    ),
     anchorLocalParts(message.parts)
       .filter(({ part }) => !persistedHasThinking || part.type !== 'thinking')
       .map((anchor) => ({
@@ -451,6 +477,12 @@ export const useAgentConversationStore = defineStore(
     function announceCompletion(tab: TurnTab): void {
       const path = openPathOf(tab)
       if (path !== null) void turnCompleted.trigger(path)
+    }
+
+    function refreshBackgroundAskIds(entry: BackgroundTurn): void {
+      const pendingAskIds = pendingAskIdsOf(entry.message)
+      if (!isEqual(pendingAskIds, entry.pendingAskIds))
+        updateBackgroundTurn(entry.messageId, { pendingAskIds })
     }
 
     function updateBackgroundTurn(
@@ -689,17 +721,17 @@ export const useAgentConversationStore = defineStore(
       if (provisional?.delete(askId) !== true) return
       if (provisional.size === 0) provisionalRetiredAsks.delete(key)
       if (retiredAsks.get(key)?.has(askId) === true) return
-      const reopen = (message: AssistantMessage): void => {
-        message.parts = message.parts.map((part) =>
-          (part.type === 'askUser' || part.type === 'deleteApproval') &&
-          askIdOf(part) === askId
-            ? { ...part, resolution: undefined }
-            : part
-        )
-      }
+      reopenAskInThread(key, askId)
+    }
+
+    function reopenAskInThread(key: string, askId: string): void {
+      const reopen = (message: AssistantMessage) => reopenAsk(message, askId)
       if (activeSlot.value?.threadId === key) reopen(activeSlot.value.message)
       for (const entry of backgroundTurns.values())
-        if (entry.threadId === key) reopen(entry.message)
+        if (entry.threadId === key) {
+          reopen(entry.message)
+          refreshBackgroundAskIds(entry)
+        }
       if (key === threadKey()) messages.value.forEach(reopen)
     }
 
@@ -969,7 +1001,7 @@ export const useAgentConversationStore = defineStore(
       persistedParts: AssistantMessage['parts'] | undefined
     ): void {
       const unreconciled = unreconciledSnapshotTurns.get(turn.messageId)
-      if (unreconciled === undefined) return
+      if (unreconciled === undefined || !unreconciled.announced) return
       unreconciledSnapshotTurns.delete(turn.messageId)
       if (persistedParts === undefined || threadId.value !== turn.threadId)
         return
@@ -1746,6 +1778,14 @@ export const useAgentConversationStore = defineStore(
             !settled && awaitsAnswer(pendingAskIds)
         )
     )
+    const pendingAskIds = computed<readonly string[]>(() => [
+      ...(isStreaming.value && activeMessage.value
+        ? pendingAskIdsOf(activeMessage.value)
+        : []),
+      ...[...backgroundTurns.values()].flatMap(({ settled, pendingAskIds }) =>
+        settled ? [] : pendingAskIds
+      )
+    ])
     const turnTabs = computed<AgentTurnTab[]>(() => {
       const activePath = activeTurnTabPath.value
       const background = [...backgroundTurns.values()].flatMap(
@@ -1780,6 +1820,7 @@ export const useAgentConversationStore = defineStore(
       activeTurnTabPath,
       turnTabs,
       awaitingApproval,
+      pendingAskIds,
       onTurnCompleted: turnCompleted.on,
       onSnapshotTurnSettled: snapshotTurnSettled.on,
       setTurnTabResolver,

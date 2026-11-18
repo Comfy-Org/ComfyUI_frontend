@@ -24,7 +24,8 @@ const [
   messageDone,
   activeTab,
   ask,
-  askResolved
+  askResolved,
+  extensionChanged
 ] = zAgentWsEvent.options
 
 export const zRecordedWsEvent = z.discriminatedUnion('type', [
@@ -36,7 +37,10 @@ export const zRecordedWsEvent = z.discriminatedUnion('type', [
   messageDone.extend({ data: messageDone.shape.data.omit(mintedIds) }),
   activeTab.extend({ data: activeTab.shape.data.omit(mintedIds) }),
   ask.extend({ data: ask.shape.data.omit(mintedIds) }),
-  askResolved.extend({ data: askResolved.shape.data.omit(mintedIds) })
+  askResolved.extend({ data: askResolved.shape.data.omit(mintedIds) }),
+  extensionChanged.extend({
+    data: extensionChanged.shape.data.omit(mintedIds)
+  })
 ])
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 
