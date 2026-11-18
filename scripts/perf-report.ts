@@ -349,7 +349,7 @@ function performanceNotice(
     )
   } else if (below > 0) {
     notice.push(
-      `> ${fpsMiss}. Expand the scenario timings below and profile the affected scenarios before merging.`,
+      `> ❌ **${plural(below, 'scenario')} below the ≥${TARGET_P5_FPS} P5 FPS target.** Expand the scenario timings below and profile the affected scenarios before merging.`,
       ''
     )
   } else if (regressions > 0) {
