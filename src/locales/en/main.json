@@ -3389,6 +3389,8 @@
       "blockedTitle": "Plans page didn't open",
       "blockedBody": "Your browser blocked the new tab. Open the Plans page to choose a plan.",
       "openPlansPage": "Open Plans page",
+      "checkoutUnfinishedTitle": "Your checkout didn't finish",
+      "checkoutUnfinishedBody": "Open the Plans page to try again. Your browser blocked it from opening on its own.",
       "runRefusedTitle": "Your workflow didn't run",
       "runRefusedNoPlan": "Running workflows on Cloud needs a plan.",
       "runRefusedEnded": "Your plan has ended. Resubscribe to keep running workflows on Cloud.",
