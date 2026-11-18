@@ -67,10 +67,20 @@
                 @update:progress-target="updateProgressTarget"
               />
               <CurrentUserButton
-                v-if="isLoggedIn && !isIntegratedTabBar"
+                v-if="
+                  isLoggedIn &&
+                  !isIntegratedTabBar &&
+                  !flags.billingNewUxEnabled
+                "
                 class="shrink-0"
               />
-              <LoginButton v-else-if="!isIntegratedTabBar" />
+              <LoginButton
+                v-else-if="
+                  !isLoggedIn &&
+                  !isIntegratedTabBar &&
+                  !flags.billingNewUxEnabled
+                "
+              />
               <Button
                 v-if="managerState.shouldShowExtensionsButton.value"
                 :tooltip="t('menu.manageExtensions')"
@@ -212,16 +222,15 @@ import { DEPLOYMENT_LISTING_EXTENSIONS_WAIT_MS } from '@/platform/workspace/api/
 import { waitForDeploymentListing } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { openDeployCustomNodesDialog } from '@/platform/workspace/openCustomDeploymentDialog'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useActionBarButtonStore } from '@/stores/actionBarButtonStore'
 import { useQueueUIStore } from '@/stores/queueStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
-import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import { isCloud } from '@/platform/distribution/types'
-import CloudButton from '@/platform/openOnCloud/components/CloudButton.vue'
+import CloudButton from '@/components/CloudButton.vue'
 import { canHandOffToCloud } from '@/platform/openOnCloud/localHandoffProtocol'
 import { openDeployToComfyApiDialog } from '@/platform/workflow/deploy/composables/lazyDeployToComfyApiDialog'
 import {
@@ -248,11 +257,7 @@ const { t } = useI18n()
 const { toastErrorHandler } = useErrorHandling()
 const { flags } = useFeatureFlags()
 const isCloudButtonShown = computed(
-  () =>
-    !isCloud &&
-    !handsPopupsToSystemBrowser() &&
-    flags.openOnCloudEnabled &&
-    canHandOffToCloud()
+  () => !isCloud && flags.openOnCloudEnabled && canHandOffToCloud()
 )
 const isDeployButtonShown = computed(() => flags.deployToCloud)
 function openDeployInstallationDialog() {
@@ -381,8 +386,8 @@ useMutationObserver(
 onMounted(() => {
   const container = legacyCommandsContainerRef.value
   if (!container) return
-  app.menu.element.style.width = 'fit-content'
-  container.appendChild(app.menu.element)
+  useApp().menu.element.style.width = 'fit-content'
+  container.appendChild(useApp().menu.element)
   checkLegacyContent()
 })
 

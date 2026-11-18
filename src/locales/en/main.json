@@ -72,6 +72,7 @@
     "terminal": "Terminal",
     "logs": "Logs",
     "videoFailedToLoad": "Video failed to load",
+    "videoFormatNotSupported": "This video can't be played in the browser.",
     "audioFailedToLoad": "Audio failed to load",
     "textFailedToLoad": "Text failed to load",
     "liveSamplingPreview": "Live sampling preview",
@@ -130,6 +131,9 @@
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
     "resizeFromTopLeft": "Resize from top-left corner",
+    "resizePreviewHeight": "Resize preview height",
+    "resizeNumberedPreviewHeight": "Resize preview {index} height",
+    "resizeWidgetHeight": "Resize {name} height",
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
@@ -720,6 +724,8 @@
     "Paste Image": "Paste Image",
     "Save Image": "Save Image",
     "Download Images": "Download Images",
+    "Show Full Resolution": "Show Full Resolution",
+    "Show Downscaled Preview": "Show Downscaled Preview",
     "Rename": "Rename",
     "RenameWidget": "Rename Widget",
     "FavoriteWidget": "Favorite Widget",
@@ -1635,6 +1641,7 @@
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
+    "Export (Workflow Image)": "Export (Workflow Image)",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
     "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Exit Subgraph": "Exit Subgraph",
@@ -2158,9 +2165,7 @@
     "LOAD3D_MODEL_INFO": "LOAD3D_MODEL_INFO",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
-    "LUMA_CONCEPTS": "LUMA_CONCEPTS",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -2637,6 +2642,7 @@
     "linkedWorkflowNotOpened": "Couldn't open this workflow",
     "linkedWorkflowLoadFailed": "Couldn't open this workflow. Please try again.",
     "failedToSaveDraft": "Failed to save workflow draft",
+    "failedToExportWorkflowImage": "Failed to export workflow image",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
@@ -2739,12 +2745,15 @@
       "unverifiedBadge": "Name not verified",
       "unverifiedNotice": "This name was provided by whoever registered this app. After you continue, your browser will be sent to {host} — make sure you recognize it.",
       "unverifiedNoticeNoHost": "This name was provided by whoever registered this app and has not been verified by Comfy.",
+      "verifiedNotice": "Name not verified · Verified destination: {platform} · you'll return to {host}",
       "errorExpired": "This consent request has expired or has already been used. Please restart from the client app.",
       "errorOriginRefused": "We couldn't approve this from this page. Reopen the sign-in from the app.",
       "errorScopeBroadening": "The previously approved permissions don't cover this request. You'll need to re-authorize with the new permissions.",
       "errorUnavailable": "This feature isn't available right now. Please contact support if the problem persists.",
       "sessionError": "Failed to establish session. Please try again.",
       "sessionErrorToastSummary": "Couldn't continue OAuth sign-in",
+      "loginRequired": "Sign in to continue.",
+      "signInAgain": "Sign in again",
       "signedInAs": "Signed in as",
       "notYou": "Not you?",
       "switchAccount": "Switch account"
@@ -2944,7 +2953,7 @@
       "auth/weak-password": "Password is too weak. Please use a stronger password with at least 6 characters.",
       "auth/too-many-requests": "Too many login attempts. Please wait a moment and try again.",
       "auth/operation-not-allowed": "This sign-in method is not currently supported.",
-      "auth/invalid-credential": "Invalid login credentials. Please check your email and password.",
+      "auth/invalid-credential": "Invalid login credentials. Please check your email and password. If you have signed in with Google or GitHub before, use that instead.",
       "auth/network-request-failed": "Network error. Please check your connection and try again.",
       "auth/popup-closed-by-user": "The sign-in window closed before sign-in finished. Please try again.",
       "auth/cancelled-popup-request": "Another sign-in window was already open, so this one was cancelled. Please try again.",
@@ -2964,7 +2973,8 @@
     },
     "loginButton": {
       "tooltipHelp": "Login to be able to use \"API Nodes\"",
-      "tooltipLearnMore": "Learn more..."
+      "tooltipLearnMore": "Learn more...",
+      "signInToUsePartnerNodes": "Sign in to use Partner Nodes"
     }
   },
   "desktopLogin": {
@@ -3048,6 +3058,7 @@
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
       "planRequiredFreeRuns": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
+      "planRequiredContactSales": "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
       "planRequiredResubscribe": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
       "planRequiredSubscribe": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
@@ -3300,6 +3311,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "unknownTierName": "Current plan",
+    "planWithPeriod": {
+      "monthly": "{plan} monthly",
+      "annual": "{plan} yearly"
+    },
     "salesManagedRunBlockedTitle": "Plan inactive",
     "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
@@ -3376,10 +3391,16 @@
       "blockedTitle": "Plans page didn't open",
       "blockedBody": "Your browser blocked the new tab. Open the Plans page to choose a plan.",
       "openPlansPage": "Open Plans page",
+      "checkoutUnfinishedTitle": "Your checkout didn't finish",
+      "checkoutUnfinishedBody": "Open the Plans page to try again. Your browser blocked it from opening on its own.",
       "runRefusedTitle": "Your workflow didn't run",
       "runRefusedNoPlan": "Running workflows on Cloud needs a plan.",
       "runRefusedEnded": "Your plan has ended. Resubscribe to keep running workflows on Cloud.",
       "runRefusedFreeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows on Cloud.",
+      "runRefusedManualBlock": "This workspace has been blocked. Contact support.",
+      "runRefusedWorkspaceCap": "This workspace has reached its spending limit.",
+      "runRefusedProjectCap": "This project has reached its spending limit.",
+      "runRefusedUserCap": "You've reached your spending limit in this workspace.",
       "choosePlan": "Choose a plan"
     },
     "paymentRecovery": {
@@ -3757,6 +3778,7 @@
         }
       },
       "loadError": "We couldn't load your plan.",
+      "localLoadError": "We couldn't load your billing details. Check your connection, then try again.",
       "plan": {
         "actions": {
           "choosePlan": "Choose a plan",
@@ -3780,6 +3802,7 @@
           "freeRunsLeft": "You have {remaining} of {total} free runs left. Subscribe to keep running workflows after that.",
           "freeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows.",
           "line": "Subscribe to run workflows on Cloud.",
+          "localLine": "Subscribe for monthly credits. You can also add credits any time.",
           "title": "This workspace has no active plan"
         },
         "paused": "Paused. The renewal payment didn't go through.",
@@ -3892,6 +3915,7 @@
         "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "teamNotCreatorBody": "This workspace's plan has ended. Ask the workspace's creator to resubscribe.",
         "personalTitle": "Your {plan} plan ended on {date}",
         "personalTitleNoDate": "Your {plan} plan has ended",
         "personalBody": "Resubscribe to run workflows and get credits again.",
@@ -4172,13 +4196,23 @@
     "maxWorkspacesReached": "You can only own {max} workspace. Delete it to create a new one. | You can only own {max} workspaces. Delete one to create a new one.",
     "managedByOrganization": "Your organization manages your workspaces, so you can't create one.",
     "cannotCreateWorkspace": "You can't create a workspace on this account right now.",
-    "failedToSwitch": "Failed to switch workspace"
+    "failedToSwitch": "Failed to switch workspace",
+    "createWorkspaceAction": "Create workspace",
+    "ownedLimit": "You can own up to {max}.",
+    "searchPlaceholder": "Search workspace...",
+    "noResults": "No workspaces match “{query}”.",
+    "loadFailed": "Couldn’t load your workspaces.",
+    "tryAgain": "Try again"
   },
   "profileMenu": {
     "switchWorkspace": "Switch workspace",
     "credits": "Credits",
     "balanceUnavailable": "Couldn't load your balance.",
     "billingSettings": "Billing settings",
+    "planCredits": "Plan credits",
+    "topUpCredits": "Top-up credits",
+    "paymentProcessing": "Payment processing…",
+    "purchasesStopped": "Buying credits isn't available right now",
     "planStatus": {
       "noPlan": "No plan",
       "paused": "Paused",
@@ -4303,10 +4337,11 @@
     "deploySetup": "Deploy your setup to Comfy Cloud",
     "deployWithAgent": "Deploy with your agent",
     "deploySetupDialog": {
-      "body": "This creates a deployment of your setup on Comfy Cloud. You manage it from Comfy Platform.",
-      "pointGpu": "Work in ComfyUI on the GPU you choose",
-      "pointApi": "Call it from your product as an autoscaling API",
-      "pointNodes": "Bring your custom nodes and models"
+      "title": "Run your workflows on Comfy Cloud",
+      "body": "Deploy your local setup to Comfy Cloud as a Build, then use it in ComfyUI or call it as an autoscaling API.",
+      "pointNodes": "Bring your custom nodes and models",
+      "pointGpu": "Run on powerful cloud GPUs",
+      "pointPricing": "Pay only while your GPU workers are up, plus storage"
     },
     "openedFromLocal": "Opened from ComfyUI on your computer",
     "openedFromLocalDetail": "Comfy Cloud has every node and model this workflow uses. Press Run when you're ready.",
@@ -4332,13 +4367,16 @@
     "agentMenu": {
       "openInClaude": "Open in Claude desktop",
       "openInCodex": "Open in Codex",
-      "copyPrompt": "Copy prompt"
+      "copyPrompt": "Copy prompt",
+      "useLocalAgent": "Use local agent",
+      "saveFirst": "Save this workflow before sending it to an agent."
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
       "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
     },
-    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again."
+    "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
+    "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."
   },
   "selectionToolbox": {
     "executeButton": {
@@ -4367,6 +4405,8 @@
     "node2only": "Node 2.0 only",
     "selectModel": "Select model",
     "precisionLimit": "Increment/decrement disabled: value exceeds JavaScript precision limit (±2^53)",
+    "selectFolder": "Folder: {name}",
+    "backFromFolder": "Back: {name}",
     "uploadSelect": {
       "placeholder": "Select...",
       "placeholderImage": "Select image...",
@@ -6165,6 +6205,7 @@
     "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "openVideo": "Open video: {name}",
+    "assetLoadFailed": "Couldn't load {name}",
     "diagnosticReport": {
       "retry": "Retry copy report",
       "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",
@@ -6563,6 +6604,7 @@
     "planLine": {
       "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "ended_sales_managed": "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
       "free_runs": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
     },
     "credits": "{credits} credits",
@@ -6673,12 +6715,10 @@
     }
   },
   "billingHandoff": {
-    "failed": "Could not open billing. Try again.",
     "superseded": "Your account or workspace changed while billing was opening. Try again.",
     "signInAgain": "Sign in again to open billing.",
-    "popupBlocked": "Your browser blocked the billing tab.",
-    "openBilling": "Open billing",
     "opening": "Opening checkout…",
-    "openingDetail": "This takes a few seconds."
+    "openingDetail": "This takes a few seconds.",
+    "openingTabTitle": "Opening checkout · Comfy"
   }
 }

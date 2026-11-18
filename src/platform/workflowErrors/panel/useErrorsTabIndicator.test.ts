@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import {
+  createTestSubgraph,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
 import '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -90,6 +96,55 @@ describe('useErrorsTabIndicator', () => {
 
     expect(indicator.hasRelevantErrors.value).toBe(true)
     expect(indicator.hasBlockingError.value).toBe(false)
+  })
+
+  it.for([
+    {
+      issue: 'missing node type',
+      surface: (nodeId: string) =>
+        useMissingNodesErrorStore().setMissingNodeTypes([
+          { type: 'UnknownPackNode', nodeId }
+        ])
+    },
+    {
+      issue: 'missing media file',
+      surface: (nodeId: string) =>
+        useMissingMediaStore().setMissingMedia([
+          {
+            nodeId,
+            nodeType: 'LoadImage',
+            widgetName: 'image',
+            mediaType: 'image',
+            name: 'missing.png',
+            isMissing: true
+          }
+        ])
+    }
+  ])('reports a $issue only when it is on a selected node', ({ surface }) => {
+    const selected = addNode(1)
+    const unselected = addNode(2)
+    surface('1')
+
+    expect(indicatorFor([selected]).hasRelevantErrors.value).toBe(true)
+    expect(indicatorFor([unselected]).hasRelevantErrors.value).toBe(false)
+  })
+
+  it('reports an error inside a selected subgraph node', () => {
+    const subgraph = createTestSubgraph({ rootGraph: app.rootGraph })
+    const container = createTestSubgraphNode(subgraph, { id: 5 })
+    app.rootGraph.add(container)
+    const inner = new LGraphNode('KSampler')
+    subgraph.add(inner)
+    const sibling = addNode(9)
+    useExecutionErrorStore().recordNodeErrors({
+      [`5:${inner.id}`]: nodeError(
+        [validationError('value_not_in_list', 'sampler_name')],
+        'KSampler'
+      )
+    })
+
+    expect(indicatorFor([container]).hasRelevantErrors.value).toBe(true)
+    expect(indicatorFor([sibling]).hasRelevantErrors.value).toBe(false)
   })
 
   it('treats a node error absorbed by a missing model as setup', () => {

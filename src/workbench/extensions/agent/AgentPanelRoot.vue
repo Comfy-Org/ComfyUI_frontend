@@ -66,7 +66,7 @@ import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorat
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -855,7 +855,11 @@ let nodeReferenceWorkflow = selectionTags.value.length
 
 function viewedGraphNodes() {
   return (
-    (canvasStore.currentGraph ?? app.canvas?.graph ?? app.graph)?.nodes ?? []
+    (
+      canvasStore.currentGraph ??
+      useApp().canvas?.graph ??
+      useApp().rootGraphOrUndefined
+    )?.nodes ?? []
   )
 }
 
@@ -1135,7 +1139,9 @@ const {
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
-    draft: targetWorkflowDraft
+    draft: targetWorkflowDraft,
+    canvasSelection: () =>
+      canReferenceNodes.value ? selectedNodes.value.map((node) => node.id) : []
   }
 })
 
@@ -1192,15 +1198,15 @@ const {
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
   getGraph: () =>
-    canvasStore.canvas && app.isGraphReady ? app.rootGraph : null,
+    canvasStore.canvas && useApp().isGraphReady ? useApp().rootGraph : null,
   events: {
     onAppliedUpdate({ workflowId, opIds, isLive }) {
       conversationStore.notifyCanvasCaughtUp({ workflowId, opIds, isLive })
     },
     onMaterialized({ workflowId, nodeIds }) {
-      if (app.isGraphReady) {
+      if (useApp().isGraphReady) {
         graphActivity.recordMaterialized(
-          { workflowId, rootGraphId: toRootGraphId(app.rootGraph.id) },
+          { workflowId, rootGraphId: toRootGraphId(useApp().rootGraph.id) },
           nodeIds,
           conversationTurnId.value
         )
@@ -1218,7 +1224,7 @@ const {
       })
   },
   applierDeps: {
-    getCanvas: () => app.canvas,
+    getCanvas: () => useApp().canvas,
     withRemoteActor: (actor, fn) => layoutStore.withActor(actor, fn),
     viewportBounds() {
       const canvas = canvasStore.canvas
@@ -1261,7 +1267,7 @@ const docOpMinter = attachDocOpMinter({
   onUnboundLocalIntent: noteUnboundLocalIntent,
   onUnboundVisibleIntent: noteUnboundVisibleIntent,
   enqueue: enqueueHumanOperations,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
   boundRootGraphId,
   docInputNames,
   docWidgetValue,
@@ -1276,7 +1282,7 @@ const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
   enqueue: enqueueHumanOperations,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
   docInputNames: (nodeId) => {
     const parsed = parseNodeId(nodeId)
     return parsed === null ? null : docInputNames(parsed)
@@ -1775,8 +1781,6 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-// DES-1221. Read while the panel is on screen, so the experiment's denominator
-// is the panel openers the hypothesis is about.
 const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
   useFreeUsePlacement(isCloud)
 
@@ -2312,13 +2316,25 @@ watch(threadId, composerStore.trackDraftThread, {
   flush: 'sync'
 })
 
+watch(
+  () => agentPanelStore.pendingCloudHandoff,
+  (prompt) => {
+    if (!prompt) return
+    composerStore.setText(
+      [composerStore.draft, prompt].filter(Boolean).join('\n\n')
+    )
+    agentPanelStore.pendingCloudHandoff = null
+  },
+  { immediate: true }
+)
+
 watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
   flush: 'sync'
 })
 
 function onSelectNodes(): void {
   if (!canReferenceNodes.value || canvasStore.isPickingNodes) return
-  const canvas = app.canvas
+  const canvas = useApp().canvas
   if (!canvas) return
 
   const merged = new Map<string, LGraphNode>(
@@ -2328,7 +2344,7 @@ function onSelectNodes(): void {
   )
   for (const tag of selectionTags.value) {
     const key = selectedNodeKey(tag)
-    const node = getNodeByLocatorId(app.rootGraph, key)
+    const node = getNodeByLocatorId(useApp().rootGraph, key)
     if (node) merged.set(key, node)
   }
   if (merged.size) {

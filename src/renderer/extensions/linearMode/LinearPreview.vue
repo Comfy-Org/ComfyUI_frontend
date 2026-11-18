@@ -19,7 +19,7 @@ import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPrev
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
 import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -92,10 +92,11 @@ async function loadWorkflow(item: AssetItem | undefined) {
   const { workflow } = await extractWorkflowFromAsset(item)
   if (!workflow) return
 
-  if (workflow.id !== app.rootGraph.id) return app.loadGraphData(workflow)
+  if (workflow.id !== useApp().rootGraph.id)
+    return useApp().loadGraphData(workflow)
   //update graph to new version, set old to top of undo queue
   const changeTracker = useWorkflowStore().activeWorkflow?.changeTracker
-  if (!changeTracker) return app.loadGraphData(workflow)
+  if (!changeTracker) return useApp().loadGraphData(workflow)
   changeTracker.redoQueue = []
   await changeTracker.updateState([workflow], changeTracker.undoQueue)
 }

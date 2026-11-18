@@ -287,6 +287,17 @@ describe('MediaAssetCard', () => {
     expect(emitted().zoom).toEqual([[hdrAsset]])
   })
 
+  it('inspects a video asset on double click', async () => {
+    const user = userEvent.setup()
+    const videoAsset = { ...asset, name: 'clip.mp4' }
+    const { emitted } = renderCard({ loading: false, asset: videoAsset })
+    const video = await screen.findByTestId('media-asset-video')
+
+    await user.dblClick(video)
+
+    expect(emitted().zoom).toEqual([[videoAsset]])
+  })
+
   it('selects non-video assets from the preview', async () => {
     const user = userEvent.setup()
     const { container, emitted } = renderCard({

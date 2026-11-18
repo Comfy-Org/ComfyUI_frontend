@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
@@ -14,15 +15,19 @@ import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/
 import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { mockDeploymentListing } from '@/platform/workspace/__fixtures__/deploymentListing'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { runWhenGlobalIdle } from '@/base/common/async'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { api as apiMock } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 beforeEach(() => {
@@ -192,6 +197,7 @@ vi.mock(import('@/services/autoQueueService'), () => ({
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
     registerCoreKeybindings: vi.fn(),
+    registerUserKeybindings: vi.fn(),
     keybindHandler: vi.fn()
   })
 }))
@@ -205,7 +211,11 @@ vi.mock<unknown>(
   })
 )
 vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => ({
-  default: { template: '<div data-testid="graph-canvas-stub" />' }
+  default: {
+    emits: ['ready'],
+    template:
+      '<div data-testid="graph-canvas-stub"><button type="button" @click="$emit(\'ready\')">Graph ready</button></div>'
+  }
 }))
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
 vi.mock<unknown>(
@@ -482,6 +492,27 @@ describe('GraphView - output assets refresh', () => {
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
   })
+
+  it('reloads the queue and output assets once on the status sent after a reconnect, not when the socket drops', async () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+    const loadNew = vi
+      .spyOn(useAssetsStore().outputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+    const updateQueue = vi
+      .spyOn(useQueueStore(), 'update')
+      .mockResolvedValue(undefined)
+
+    apiMock.dispatchCustomEvent('status', null)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(updateQueue).not.toHaveBeenCalled()
+    expect(loadNew).not.toHaveBeenCalled()
+
+    apiMock.dispatchCustomEvent('status', {
+      exec_info: { queue_remaining: 0 }
+    })
+    await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
+    expect(updateQueue).toHaveBeenCalledTimes(1)
+  })
 })
 
 describe('GraphView - partner nodes education card', () => {
@@ -565,4 +596,37 @@ describe('GraphView - missing nodes notice', () => {
     expect(noticeMissingNodes).not.toHaveBeenCalled()
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
+})
+
+describe('GraphView - shell layout telemetry', () => {
+  afterEach(() => {
+    distribution.isCloud = false
+  })
+
+  it.for([{ open: true }, { open: false }])(
+    'reports the properties panel as open=$open once the graph is ready on Cloud',
+    async ({ open }) => {
+      distribution.isCloud = true
+      vi.mocked(runWhenGlobalIdle).mockImplementation((callback) => {
+        callback({ didTimeout: false, timeRemaining: () => 50 })
+        return { dispose: () => {} }
+      })
+      useSettingStore().$patch({
+        settingValues: {
+          'Comfy.UseNewMenu': 'Top',
+          'Comfy.RightSidePanel.IsOpen': open,
+          'Comfy.Server.ServerConfigValues': {}
+        }
+      })
+      render(GraphView, { global: { plugins: [i18n] } })
+
+      await userEvent.click(screen.getByRole('button', { name: 'Graph ready' }))
+
+      await waitFor(() =>
+        expect(useTelemetry()?.trackShellLayout).toHaveBeenCalledWith(
+          expect.objectContaining({ right_side_panel_open: open })
+        )
+      )
+    }
+  )
 })

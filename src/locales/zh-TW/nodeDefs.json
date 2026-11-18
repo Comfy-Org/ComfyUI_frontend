@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "使用 Bria RMBG 2.0 移除影像的背景。",
+    "description": "使用 Bria RMBG 2.0 或 RMBG 3.0 移除影像背景。",
     "display_name": "Bria 移除影像背景",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "影像"
       },
+      "model": {
+        "name": "模型"
+      },
       "moderation": {
         "name": "審核",
         "tooltip": "審核設定"
       },
       "seed": {
         "name": "種子",
-        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+        "tooltip": "Seed 控制節點是否應重新執行；無論 Seed 為何，相同影像一律會得到相同結果。"
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 及 mp4/mov 輸出；Seedance 2.5 Draft 可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 針對速度最佳化；Mini 則可最快、以最低成本生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 及 mp4/mov 輸出；Seedance 2.5 Draft 可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 針對速度最佳化；Mini 則可最快、以最低成本生成。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 及 mp4/mov 輸出；Seedance 2.5 Draft 可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 針對速度最佳化；Mini 則可最快、以最低成本生成。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 及 mp4/mov 輸出；Seedance 2.5 Draft 可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 針對速度最佳化；Mini 則可最快、以最低成本生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "建立 camera_info。模式「orbit」會以環繞目標的偏航／俯仰／距離進行瞄準；「look_at」會將相機放置於世界座標位置。座標為檢視器的世界空間（右手座標系，Y 軸向上）。",
+    "description": "建立 camera_info。模式「orbit」會以目標為中心，依偏航／俯仰／距離設定相機；「look_at」則將相機置於世界座標位置。座標採用檢視者的世界空間（右手座標系、Y 軸向上）；若已連接網格，則採用該網格的座標框架，因此相同設定可框取任何網格。",
     "display_name": "建立相機資訊",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "視野",
         "tooltip": "垂直視野角度（度）。"
+      },
+      "mesh": {
+        "name": "網格",
+        "tooltip": "框取此網格：位置、目標與距離皆從其邊界方塊中心起算，單位為其包圍球直徑，因此相同設定可框取任何網格。"
       },
       "mode": {
         "name": "模式",
@@ -8548,6 +8555,9 @@
       "model": {
         "name": "模型"
       },
+      "model_auto_duration": {
+        "name": "自動時長"
+      },
       "model_duration": {
         "name": "時長"
       },
@@ -8568,7 +8578,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "使用 HeyGen Video 1.0 根據文字提示詞生成具有同步對話與聲音的影片。可選擇連接最多 12 張參考圖像、影片和音訊片段，並在提示詞中以 {'@'}Image1、{'@'}Video1、{'@'}Audio1 提及它們。",
+    "description": "使用 HeyGen Video 1.0，根據文字提示詞產生具有同步對話與音效的影片。您也可以選擇連接最多 15 張參考圖片、影片和音訊片段，並在提示詞中以 {'@'}Image1、{'@'}Video1、{'@'}Audio1 提及它們。",
     "display_name": "HeyGen Video 1.0 參考資料轉影片",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8589,9 @@
       },
       "model_aspect_ratio": {
         "name": "長寬比"
+      },
+      "model_auto_duration": {
+        "name": "自動時長"
       },
       "model_duration": {
         "name": "時長"
@@ -13723,34 +13736,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "包含一個或多個相機概念，可用於 Luma 文字轉影片與 Luma 圖片轉影片節點。",
-    "display_name": "Luma 概念",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "可選的相機概念，將會加入到此處選擇的概念中。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "使用 Luma UNI-1 模型，透過文字提示編輯現有圖像。",
     "display_name": "Luma UNI-1 圖像編輯",
@@ -13787,82 +13772,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "根據提示詞與長寬比同步修改影像。",
-    "display_name": "Luma 影像轉換",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "image_weight": {
-        "name": "影像權重",
-        "tooltip": "影像的權重；越接近 1.0，影像修改幅度越小。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影像生成的提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "決定此節點是否重新執行的種子值；實際結果無論種子值為何都不具決定性。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "根據提示詞與長寬比同步生成圖像。",
-    "display_name": "Luma 文字轉圖像",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比"
-      },
-      "character_image": {
-        "name": "角色參考圖",
-        "tooltip": "角色參考圖像；可為多張批次圖像，最多可考慮 4 張圖像。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image_luma_ref": {
-        "name": "Luma 參考圖",
-        "tooltip": "Luma 參考節點連接，可用輸入圖像影響生成；最多可考慮 4 張圖像。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於圖像生成的提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子值如何都不具決定性。"
-      },
-      "style_image": {
-        "name": "風格參考圖",
-        "tooltip": "風格參考圖像；僅會使用 1 張圖像。"
-      },
-      "style_image_weight": {
-        "name": "風格圖權重",
-        "tooltip": "風格圖像的權重。如果未提供風格圖像則忽略。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "使用 Luma UNI-1 模型，根據文字生成圖像。",
     "display_name": "Luma UNI-1 圖像",
@@ -13890,52 +13799,6 @@
       "seed": {
         "name": "種子",
         "tooltip": "種子控制此節點是否重新執行；無論種子如何，結果皆為非確定性。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "根據提示詞、輸入圖片與輸出尺寸同步產生影片。",
-    "display_name": "Luma 圖像轉影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "first_image": {
-        "name": "第一張圖片",
-        "tooltip": "生成影片的第一幀。"
-      },
-      "last_image": {
-        "name": "最後一張圖片",
-        "tooltip": "生成影片的最後一幀。"
-      },
-      "loop": {
-        "name": "循環"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "（選填）透過 Luma Concepts 節點指定相機運動的相機概念。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影片生成的提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "決定此節點是否重新執行的種子值；實際結果無論種子值如何都不具決定性。"
       }
     },
     "outputs": {
@@ -14165,7 +14028,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "更改現有影片的長寬比，使用 Luma Ray 3.2 填補新顯露的畫布區域。來源影片最長 30 秒。依輸出秒數計費。",
+    "description": "變更現有影片的長寬比，並使用 Luma Ray 3.2 填補新露出的畫布區域。來源影片最長 10 秒。依輸出秒數計費。",
     "display_name": "Luma Ray 3.2 影片重構比例",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14050,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "要重構比例的來源影片。最長 30 秒。"
+        "tooltip": "要重新取景的來源影片。最長 10 秒。"
       }
     },
     "outputs": {
@@ -14196,70 +14059,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "保存一張圖片及其權重，供 Luma 生成圖片節點使用。",
-    "display_name": "Luma 參考",
-    "inputs": {
-      "image": {
-        "name": "影像",
-        "tooltip": "用作參考的圖片。"
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "權重",
-        "tooltip": "圖片參考的權重。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "根據提示詞與輸出尺寸同步產生影片。",
-    "display_name": "Luma 文字轉影片",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "loop": {
-        "name": "循環"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "（選填）透過 Luma Concepts 節點指定相機運動的相機概念。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影片生成的提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -19549,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "透過OpenRouter產生文字回應。路由至xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar等熱門模型。",
+    "description": "透過 OpenRouter 產生文字回應。可路由至 Anthropic（Claude）、OpenAI（GPT）、Google（Gemini）、xAI（Grok）、Meta（Muse）、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）及 Perplexity Sonar 精選的熱門模型。",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -24987,6 +24786,9 @@
       "format_bit_depth": {
         "name": "位元深度"
       },
+      "format_channels": {
+        "name": "通道"
+      },
       "format_input_color_space": {
         "name": "輸入色彩空間"
       },
@@ -25977,6 +25779,33 @@
       },
       "1": {
         "name": "右聲道",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "將影像分離為紅色、綠色和藍色影像，以及 alpha 遮罩。",
+    "display_name": "分離影像通道",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "紅色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "綠色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "藍色",
+        "tooltip": null
+      },
+      "3": {
+        "name": "alpha",
         "tooltip": null
       }
     }
@@ -30483,6 +30312,40 @@
       },
       "video": {
         "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "採用 Bonneel 等人於 2015 年提出的時間一致性方法，並加入對抗漂移的保真項：每個影格在沿著引導影片的光流追隨相鄰影格時，仍保留自身細節。",
+    "display_name": "影片去閃爍",
+    "inputs": {
+      "direction": {
+        "name": "方向",
+        "tooltip": "雙向會平均向前與向後各一次的處理結果，可避免運動出現拖影，但需要兩倍時間。"
+      },
+      "guide": {
+        "name": "引導",
+        "tooltip": "用於追隨運動的穩定來源影格，可為任何解析度。預設為影像，其去閃爍效果較弱。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "會閃爍的影格，例如逐格放大或處理過的影片。"
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "各影格追隨相鄰影格的強度。數值越高，去除的閃爍越多，但也會柔化更多細節。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "影格與其經運動補償的相鄰影格之間，大於此值的變化會視為真實變化，因而較少被平滑。0 會以相同方式平滑所有變化。"
       }
     },
     "outputs": {

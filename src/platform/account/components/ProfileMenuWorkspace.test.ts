@@ -1,8 +1,17 @@
 import type { WorkspacePlanSummary } from '@comfyorg/ingest-types'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import type { UserEvent } from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -28,12 +37,21 @@ vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 vi.mock(import('@/platform/account/composables/useWorkspaceDialogs'))
 vi.mock(import('@comfyorg/telemetry'))
 
-const WorkspaceSwitcherPopoverStub = defineComponent({
+const WorkspaceSwitcherFlyoutStub = defineComponent({
   emits: ['select', 'create'],
   template: `
     <div>
       <button data-testid="stub-select-workspace" @click="$emit('select')" />
       <button data-testid="stub-create-workspace" @click="$emit('create')" />
+    </div>
+  `
+})
+
+const ProfileMenuCreditsFlyoutStub = defineComponent({
+  emits: ['openBilling'],
+  template: `
+    <div data-testid="credits-flyout">
+      <button data-testid="stub-open-billing" @click="$emit('openBilling')" />
     </div>
   `
 })
@@ -89,7 +107,8 @@ function renderMenu(served: Partial<Served> = {}) {
     global: {
       plugins: [getActivePinia()!, i18n],
       stubs: {
-        WorkspaceSwitcherPopover: WorkspaceSwitcherPopoverStub,
+        WorkspaceSwitcherFlyout: WorkspaceSwitcherFlyoutStub,
+        ProfileMenuCreditsFlyout: ProfileMenuCreditsFlyoutStub,
         WorkspaceProfilePic: true
       }
     }
@@ -186,21 +205,139 @@ describe('ProfileMenuWorkspace', () => {
       ).not.toBeInTheDocument()
     })
 
-    it.for([
-      { name: 'Credits', testId: 'credits-menu-item' },
-      { name: 'Workspace settings', testId: 'workspace-settings-menu-item' }
+    it('opens Settings › Billing from Workspace settings and closes the menu', async () => {
+      const user = userEvent.setup()
+      const { closed } = renderMenu()
+
+      await user.click(screen.getByTestId('workspace-settings-menu-item'))
+
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
+      expect(closed).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('the credits flyout opened from the Credits row', () => {
+    beforeEach(() => {
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+    })
+
+    const settleHoverTimers = () => vi.advanceTimersByTimeAsync(1000)
+
+    function setup() {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const menu = renderMenu()
+      const credits = screen.getByTestId('credits-menu-item')
+      async function leaveCredits() {
+        await user.unhover(credits)
+        credits.blur()
+        await settleHoverTimers()
+      }
+      return { user, credits, leaveCredits, ...menu }
+    }
+
+    it.for<{
+      name: string
+      open: (user: UserEvent, row: HTMLElement) => Promise<void>
+    }>([
+      { name: 'a click', open: (user, row) => user.click(row) },
+      {
+        name: 'Enter',
+        open: async (user, row) => {
+          row.focus()
+          await user.keyboard('{Enter}')
+        }
+      },
+      {
+        name: 'ArrowRight',
+        open: async (user, row) => {
+          row.focus()
+          await user.keyboard('{ArrowRight}')
+        }
+      }
     ])(
-      'opens Settings › Billing from $name and closes the menu',
-      async ({ testId }) => {
-        const user = userEvent.setup()
-        const { closed } = renderMenu()
+      'opens on $name and stays open after the pointer and focus leave',
+      async ({ open }) => {
+        const { user, credits, leaveCredits, closed } = setup()
 
-        await user.click(screen.getByTestId(testId))
+        await open(user, credits)
+        await leaveCredits()
 
-        expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
-        expect(closed).toHaveBeenCalledOnce()
+        expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+        expect(credits).toHaveAttribute('aria-expanded', 'true')
+        expect(useSettingsDialog().show).not.toHaveBeenCalled()
+        expect(closed).not.toHaveBeenCalled()
       }
     )
+
+    it.for<{ name: string; dismiss: (user: UserEvent) => Promise<void> }>([
+      { name: 'Escape', dismiss: (user) => user.keyboard('{Escape}') },
+      {
+        name: 'a click outside it',
+        dismiss: (user) =>
+          user.click(screen.getByTestId('current-user-identity'))
+      }
+    ])('closes on $name', async ({ dismiss }) => {
+      const { user, credits } = setup()
+      await user.click(credits)
+      await settleHoverTimers()
+
+      await dismiss(user)
+
+      expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
+      expect(credits).toHaveAttribute('aria-expanded', 'false')
+    })
+
+    it('stays open when the Credits row is clicked again', async () => {
+      const { user, credits, leaveCredits } = setup()
+      await user.click(credits)
+      await settleHoverTimers()
+
+      await user.click(credits)
+      await leaveCredits()
+
+      expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+    })
+
+    it('closes when the workspace switcher opens, and stays closed after it closes', async () => {
+      const { user, credits, leaveCredits } = setup()
+      await user.click(credits)
+      await settleHoverTimers()
+      const switcher = screen.getByTestId('workspace-switcher-trigger')
+
+      await user.click(switcher)
+      expect(screen.getByTestId('workspace-switcher-panel')).toBeInTheDocument()
+      expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
+
+      await user.click(switcher)
+      await leaveCredits()
+      expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
+    })
+
+    it('closes the workspace switcher when it opens', async () => {
+      const { user, credits } = setup()
+      await user.click(screen.getByTestId('workspace-switcher-trigger'))
+      await settleHoverTimers()
+
+      await user.click(credits)
+
+      expect(
+        screen.queryByTestId('workspace-switcher-panel')
+      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+    })
+
+    it('opens Settings › Billing from Billing settings and closes the menu', async () => {
+      const { user, credits, closed } = setup()
+      await user.click(credits)
+
+      await user.click(screen.getByTestId('stub-open-billing'))
+
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
+      expect(closed).toHaveBeenCalledOnce()
+    })
   })
 
   it('drops the actions the redesign removes', () => {
@@ -239,6 +376,45 @@ describe('ProfileMenuWorkspace', () => {
     expect(
       screen.queryByTestId('workspace-switcher-panel')
     ).not.toBeInTheDocument()
+  })
+
+  it('opens the credits flyout on hover', async () => {
+    const user = userEvent.setup()
+    renderMenu()
+
+    await user.hover(screen.getByTestId('credits-menu-item'))
+
+    expect(await screen.findByTestId('credits-flyout')).toBeInTheDocument()
+  })
+
+  it('opens the credits flyout at once when ArrowRight is pressed on the Credits row', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderMenu()
+    screen.getByTestId('credits-menu-item').focus()
+
+    await user.keyboard('{ArrowRight}')
+
+    expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+  })
+
+  it('keeps the credits flyout closed while the workspace switcher is open', async () => {
+    vi.useFakeTimers()
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    renderMenu()
+    await user.click(screen.getByTestId('workspace-switcher-trigger'))
+
+    await user.hover(screen.getByTestId('credits-menu-item'))
+    await vi.advanceTimersByTimeAsync(1000)
+
+    expect(screen.getByTestId('workspace-switcher-panel')).toBeInTheDocument()
+    expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
   })
 
   it('opens the create-workspace dialog and closes the menu on create', async () => {

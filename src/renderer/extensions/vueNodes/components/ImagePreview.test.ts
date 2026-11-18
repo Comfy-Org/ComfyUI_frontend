@@ -13,6 +13,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { downloadFile } from '@/base/common/downloadUtil'
 import type { ResultItem } from '@comfyorg/api-client/executionTypes'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 import { useImagePreviewStore } from '@/renderer/extensions/vueNodes/stores/imagePreviewStore'
@@ -95,6 +96,7 @@ describe('ImagePreview', () => {
     vi.mocked(useImagePreviewStore().getDisplayImage).mockImplementation(
       async (source) => ({ source })
     )
+    useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] = true
     setZoom(0.5)
   })
 
@@ -151,6 +153,96 @@ describe('ImagePreview', () => {
     expect(revoke).toHaveBeenCalledWith('blob:display-copy')
   })
 
+  it('shows the original of a lone image when full resolution is requested', async () => {
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({
+      source: viewUrl('large.png'),
+      blob: new Blob(['display pixels'])
+    })
+    renderImagePreview({
+      items: [outputItem('large.png')],
+      fullResolution: true
+    })
+
+    const image = await screen.findByTestId('main-image')
+    expect(image).toHaveAttribute('src', viewUrl('large.png'))
+    expect(image).not.toHaveAttribute('data-full-src')
+  })
+
+  it('recovers with the downscaled copy after the full-resolution image fails', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({
+      source: viewUrl('large.png'),
+      blob: new Blob(['display pixels'])
+    })
+    const { rerender } = renderImagePreview({
+      items: [outputItem('large.png')],
+      fullResolution: true
+    })
+    await fireEvent.error(await screen.findByTestId('main-image'))
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+
+    await rerender({ items: [outputItem('large.png')], fullResolution: false })
+
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute(
+        'src',
+        'blob:display-copy'
+      )
+    )
+  })
+
+  it('shows no loader when full resolution keeps the image already shown', async () => {
+    const items = [outputItem('small.png')]
+    const { rerender } = renderImagePreview({ items })
+    const image = await screen.findByTestId('main-image')
+    await vi.waitFor(() =>
+      expect(image).toHaveAttribute('src', viewUrl('small.png'))
+    )
+    await fireEvent.load(image)
+
+    await rerender({ items, fullResolution: true })
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(screen.getByTestId('main-image')).toBe(image)
+    expect(
+      screen.queryByRole('status', { name: 'Loading' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps downscaling a gallery of several images when full resolution is requested', async () => {
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:display-copy')
+    vi.mocked(useImagePreviewStore().getDisplayImage).mockResolvedValue({
+      source: defaultUrls[0],
+      blob: new Blob(['display pixels'])
+    })
+    renderImagePreview({ fullResolution: true })
+    await switchToGallery(userEvent.setup())
+
+    const image = screen.getByTestId('main-image')
+    await vi.waitFor(() =>
+      expect(image).toHaveAttribute('src', 'blob:display-copy')
+    )
+    expect(image).toHaveAttribute('data-full-src', defaultUrls[0])
+  })
+
+  it('shows originals of every gallery image when downscaling is turned off', async () => {
+    useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] = false
+    setZoom(2)
+    const { getDisplayImage } = useImagePreviewStore()
+    vi.mocked(getDisplayImage).mockResolvedValue({
+      source: defaultUrls[0],
+      blob: new Blob(['display pixels'])
+    })
+    renderImagePreview()
+    await switchToGallery(userEvent.setup())
+
+    const image = screen.getByTestId('main-image')
+    await vi.waitFor(() => expect(image).toHaveAttribute('src', defaultUrls[0]))
+    expect(image).not.toHaveAttribute('data-full-src')
+    expect(getDisplayImage).not.toHaveBeenCalled()
+  })
+
   it('clears the previous copy while the next gallery image is pending', async () => {
     const { getDisplayImage } = useImagePreviewStore()
     let nextCopy = 0
@@ -191,6 +283,8 @@ describe('ImagePreview', () => {
     expect(screen.getByTestId('main-image')).not.toHaveAttribute(
       'data-full-src'
     )
+    await fireEvent.error(screen.getByTestId('main-image'))
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
     expect(revoke).toHaveBeenCalledWith('blob:copy-0')
     resolveNext({
       source: defaultUrls[1],
@@ -397,6 +491,9 @@ describe('ImagePreview', () => {
       screen.getByRole('button', { name: 'Download image' })
     ).toBeInTheDocument()
 
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('main-image')).toHaveAttribute('src')
+    )
     await fireEvent.error(screen.getByTestId('main-image'))
     await nextTick()
 

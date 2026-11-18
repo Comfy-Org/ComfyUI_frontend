@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="menu"
     data-testid="current-user-popover"
     class="current-user-popover flex flex-col p-1"
   >
@@ -21,13 +22,16 @@
           >
         </div>
       </div>
-      <PopoverRoot v-else v-slot="{ close }">
+      <PopoverRoot v-else v-slot="{ close }" v-model:open="switcherOpen">
         <PopoverTrigger as-child>
           <Button
             variant="textonly"
             size="unset"
             :class="
-              cn(menuRowClass, 'justify-start data-[state=open]:bg-accent')
+              cn(
+                profileMenuRowClass,
+                'justify-start data-[state=open]:bg-accent'
+              )
             "
             :title="workspaceName"
             :aria-label="$t('profileMenu.switchWorkspace')"
@@ -36,6 +40,7 @@
             <WorkspaceProfilePic
               class="size-8 shrink-0 text-sm"
               :workspace-name
+              :subscription-tier="activeSummary?.subscriptionTier"
             />
             <div class="flex min-w-0 flex-1 flex-col">
               <span class="truncate text-foreground">{{ workspaceName }}</span>
@@ -49,28 +54,37 @@
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          side="left"
+          :side="flyoutSide"
           align="start"
-          :side-offset="8"
+          :side-offset="flyoutGap"
+          :align-offset="-menuInset"
+          :align-flip="false"
           prioritize-position
           dismiss-on-viewport-change
-          class="w-auto overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0"
+          class="w-64 overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0 data-[state=open]:data-[side=right]:slide-in-from-left-0"
           data-testid="workspace-switcher-panel"
         >
-          <WorkspaceSwitcherPopover
+          <WorkspaceSwitcherFlyout
             @select="close"
             @create="(close(), handleCreateWorkspace())"
           />
         </PopoverContent>
       </PopoverRoot>
 
-      <HoverCard :open-delay="120">
+      <HoverCard
+        :open="creditsOpen"
+        :open-delay="120"
+        @update:open="previewCredits"
+      >
         <HoverCardTrigger as-child>
           <button
+            ref="creditsRow"
             type="button"
-            :class="menuRowClass"
+            :class="profileMenuRowClass"
+            :aria-expanded="creditsOpen"
             data-testid="credits-menu-item"
-            @click="openSettings('workspace')"
+            @click="pinCredits"
+            @keydown.arrow-right.prevent="pinCredits"
           >
             <i class="icon-[lucide--coins] text-muted-foreground" />
             <span class="flex-1 text-foreground">{{
@@ -98,10 +112,16 @@
           </button>
         </HoverCardTrigger>
         <HoverCardContent
-          side="left"
+          :side="flyoutSide"
           align="start"
-          :side-offset="12"
-          class="rounded-xl p-2"
+          :side-offset="flyoutGap"
+          :align-offset="creditsFlyoutAlignOffset"
+          :collision-boundary="menu"
+          :side-flip="false"
+          :align-flip="false"
+          class="w-64 rounded-xl border-border bg-background p-0"
+          @escape-key-down="closeCredits"
+          @pointer-down-outside="closeCreditsUnlessOnRow"
         >
           <ProfileMenuCreditsFlyout
             @open-billing="openSettings('workspace')"
@@ -112,7 +132,7 @@
 
       <button
         type="button"
-        :class="menuRowClass"
+        :class="profileMenuRowClass"
         data-testid="workspace-settings-menu-item"
         @click="openSettings('workspace')"
       >
@@ -146,7 +166,7 @@
 
     <button
       type="button"
-      :class="menuRowClass"
+      :class="profileMenuRowClass"
       data-testid="user-settings-menu-item"
       @click="openSettings('user')"
     >
@@ -158,7 +178,7 @@
 
     <button
       type="button"
-      :class="menuRowClass"
+      :class="profileMenuRowClass"
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
@@ -174,8 +194,9 @@
 import type { SettingPanelType } from '@comfyorg/settings-core/types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import type { PointerDownOutsideEvent } from 'reka-ui'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -190,7 +211,8 @@ import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import ProfileMenuCreditsFlyout from '@/platform/account/components/ProfileMenuCreditsFlyout.vue'
-import WorkspaceSwitcherPopover from '@/platform/account/components/WorkspaceSwitcherPopover.vue'
+import WorkspaceSwitcherFlyout from '@/platform/account/components/WorkspaceSwitcherFlyout.vue'
+import { profileMenuRowClass } from '@/platform/account/components/profileMenuRow'
 import {
   PROFILE_MENU_ROLE_KEY,
   profileMenuPlanLabel
@@ -202,23 +224,41 @@ import {
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { refreshBalanceInBackground } from '@/platform/billing/refreshBalanceInBackground'
+import { useWorkspaceBillingStateStore } from '@/platform/billing/stores/workspaceBillingStateStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-const { accountActionsOnly = false } = defineProps<{
+const { accountActionsOnly = false, flyoutSide = 'left' } = defineProps<{
   accountActionsOnly?: boolean
+  flyoutSide?: 'left' | 'right'
 }>()
+
+const menuInset = 5
+const flyoutGap = menuInset + 8
+const creditsFlyoutAlignOffset = -11
 
 const emit = defineEmits<{
   close: []
 }>()
 
-const menuRowClass =
-  'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none'
-
 const { t, locale } = useI18n()
 const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
+const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
+const menu = useTemplateRef<HTMLElement>('menu')
+const creditsRow = useTemplateRef<HTMLElement>('creditsRow')
+type MenuFlyout = 'none' | 'switcher' | 'creditsPreview' | 'creditsPinned'
+const flyout = ref<MenuFlyout>('none')
+const creditsOpen = computed(
+  () => flyout.value === 'creditsPreview' || flyout.value === 'creditsPinned'
+)
+const switcherOpen = computed({
+  get: () => flyout.value === 'switcher',
+  set: (open) => {
+    if (open) flyout.value = 'switcher'
+    else if (flyout.value === 'switcher') flyout.value = 'none'
+  }
+})
 const { userDisplayName, userEmail, handleSignOut, isApiKeyLogin } =
   useCurrentUser()
 const { balance, isLoading, fetchBalance } = useBillingContext()
@@ -249,6 +289,28 @@ const displayedCredits = computed(() =>
 const monogram = computed(() =>
   (userDisplayName.value || userEmail.value || '').trim().charAt(0)
 )
+
+function previewCredits(open: boolean) {
+  if (open && flyout.value === 'none') flyout.value = 'creditsPreview'
+  if (!open && flyout.value === 'creditsPreview') flyout.value = 'none'
+}
+
+function pinCredits() {
+  flyout.value = 'creditsPinned'
+}
+
+function closeCredits() {
+  if (creditsOpen.value) flyout.value = 'none'
+}
+
+function closeCreditsUnlessOnRow(event: PointerDownOutsideEvent) {
+  const target = event.detail.originalEvent.target
+  if (target instanceof Node && creditsRow.value?.contains(target)) {
+    event.preventDefault()
+    return
+  }
+  closeCredits()
+}
 
 function openSettings(panel: SettingPanelType) {
   settingsDialog.show(panel)

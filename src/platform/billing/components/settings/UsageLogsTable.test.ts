@@ -9,7 +9,7 @@ import { testI18n } from '@/utils/__tests__/testI18n'
 import {
   EventType,
   useCustomerEventsService
-} from '@/services/customerEventsService'
+} from '@/platform/billing/api/customerEventsService'
 
 import { useBillingRouting } from '@/platform/billing/composables/useBillingRouting'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -22,7 +22,7 @@ import type { WorkspaceIdentityAccess } from '@/platform/workspace/ports/workspa
 
 import UsageLogsTable from './UsageLogsTable.vue'
 
-vi.mock(import('@/services/customerEventsService'))
+vi.mock(import('@/platform/billing/api/customerEventsService'))
 vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@comfyorg/telemetry'))
