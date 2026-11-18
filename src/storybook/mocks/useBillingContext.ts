@@ -64,6 +64,7 @@ export function useBillingContext(): BillingContext {
     occupiedSeats: computed(() => state.value.occupiedSeats),
     isLoading: ref(false),
     error: ref<string | null>(null),
+    balanceReadFailed: computed(() => false),
     canAccessSubscriptionFeatures: computed(
       () => state.value.canAccessSubscriptionFeatures
     ),
