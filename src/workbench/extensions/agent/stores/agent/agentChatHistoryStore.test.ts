@@ -265,4 +265,20 @@ describe('useAgentChatHistoryStore', () => {
     store.rememberSession(session('th-new', 100))
     expect(store.sessions.map(({ id }) => id)).toEqual(['th-old'])
   })
+
+  it('TS-15 tracks workflowIdsWithChats across replaceAll, rememberSession, and remove', () => {
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([
+      { ...session('a', 1), workflowId: 'wf-a' },
+      { ...session('b', 2), workflowId: 'wf-b' },
+      session('no-wf', 3)
+    ])
+    expect(store.workflowIdsWithChats).toEqual(new Set(['wf-a', 'wf-b']))
+
+    store.rememberSession({ ...session('c', 4), workflowId: 'wf-c' })
+    expect(store.workflowIdsWithChats.has('wf-c')).toBe(true)
+
+    store.remove('b')
+    expect(store.workflowIdsWithChats).toEqual(new Set(['wf-a', 'wf-c']))
+  })
 })

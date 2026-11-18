@@ -57,4 +57,76 @@ describe('useWorkflowTabActivityStore', () => {
     expect(store.unseenModifiedPaths.has('workflows/closed.json')).toBe(false)
     expect(store.unseenModifiedPaths.has('workflows/open.json')).toBe(true)
   })
+
+  describe('chat status of a tab', () => {
+    const path = 'workflows/a.json'
+
+    it('TS-01 is nothing for a tab without a chat', () => {
+      expect(useWorkflowTabActivityStore().chatStatusFor(path)).toBeUndefined()
+    })
+
+    it('TS-02 is "seen" for a tab that has a chat and nothing going on', () => {
+      const store = useWorkflowTabActivityStore()
+      store.setChatPaths([path])
+
+      expect(store.chatStatusFor(path)).toBe('seen')
+      expect(store.chatStatusFor('workflows/b.json')).toBeUndefined()
+    })
+
+    it('TS-05 is "unseen" once a turn finished in the background, and "seen" again after the tab is seen', () => {
+      const store = useWorkflowTabActivityStore()
+      store.setChatPaths([path])
+      store.markModified(path)
+      expect(store.chatStatusFor(path)).toBe('unseen')
+
+      store.markSeen(path)
+      expect(store.chatStatusFor(path)).toBe('seen')
+    })
+
+    it('TS-03/TS-04 is "in-progress" while a turn runs and "waiting" while it needs an answer', () => {
+      const store = useWorkflowTabActivityStore()
+      store.setAgentTurnTabs([{ path, awaitingApproval: false }])
+      expect(store.chatStatusFor(path)).toBe('in-progress')
+
+      store.setAgentTurnTabs([{ path, awaitingApproval: true }])
+      expect(store.chatStatusFor(path)).toBe('waiting')
+    })
+
+    it('TS-07 reports the most urgent state: waiting, then in progress, then unseen, then seen', () => {
+      const store = useWorkflowTabActivityStore()
+      store.setChatPaths([path])
+      store.markModified(path)
+      store.setAgentTurnTabs([{ path, awaitingApproval: true }])
+      expect(store.chatStatusFor(path)).toBe('waiting')
+
+      store.setAgentTurnTabs([{ path, awaitingApproval: false }])
+      expect(store.chatStatusFor(path)).toBe('in-progress')
+
+      store.setAgentTurnTabs([])
+      expect(store.chatStatusFor(path)).toBe('unseen')
+
+      store.markSeen(path)
+      expect(store.chatStatusFor(path)).toBe('seen')
+    })
+
+    it('TS-15 replaces the set of tabs with a chat and drops closed tabs', () => {
+      const store = useWorkflowTabActivityStore()
+      store.setChatPaths([path, 'workflows/open.json'])
+      store.setChatPaths(['workflows/open.json', 'workflows/closed.json'])
+      expect(store.chatStatusFor(path)).toBeUndefined()
+
+      store.pruneClosed(['workflows/open.json'])
+      expect(store.chatStatusFor('workflows/closed.json')).toBeUndefined()
+      expect(store.chatStatusFor('workflows/open.json')).toBe('seen')
+    })
+
+    it('TS-14 clears chat paths together with the rest of the agent activity', () => {
+      const store = useWorkflowTabActivityStore()
+      store.setChatPaths([path])
+
+      store.clearAgentActivity()
+
+      expect(store.chatStatusFor(path)).toBeUndefined()
+    })
+  })
 })
