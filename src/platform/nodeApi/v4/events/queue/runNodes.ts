@@ -37,7 +37,9 @@ export function executionIdsToRun(
   for (const locate of locators) {
     const live = locate()
     if (!live) return null
-    byGraph.set(live.graph, [...(byGraph.get(live.graph) ?? []), live.node])
+    const inGraph = byGraph.get(live.graph) ?? []
+    inGraph.push(live.node)
+    byGraph.set(live.graph, inGraph)
   }
   return executionIds(byGraph)
 }

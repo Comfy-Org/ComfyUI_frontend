@@ -111,6 +111,15 @@ review finding requires it. The counts below are packs, then call sites.
    nodes by root graph id; the move is named in the graph on screen first,
    then the root graph and the subgraphs, and a move in another document is
    not reported.
+   - A load, an undo or a redo places every node it builds, and the layout
+     store records each placement twice: first at the saved x with y 10
+     (the default `pos`), then at the saved position. So `onNodeMoved`
+     reports every node of the document twice, though none moved; this was
+     seen in the built app under both renderers after the undo of a title
+     change. The API passes on what the layout store records rather than
+     filtering it, and the JSDoc says so; the ticket is under "Core
+     limitations". A pack that keeps positions re-reads them in
+     `onWorkflowLoaded`.
 6. `onNodeDragEnd(listener)` (1 pack, 2 sites) fires when a drag ends under
    either renderer: the Vue node drag flag falls, or the canvas reports that
    it stopped dragging items. The old listener received the dragged nodes;
@@ -239,8 +248,12 @@ review finding requires it. The counts below are packs, then call sites.
       and saves it, and undo and redo restore `extra` with the rest of the
       graph, as the host's own app-mode selections are kept in `extra`.
       It returns `true` once written and `false` for a background, closed
-      or missing document, or while a graph loads: the change tracker can
-      only capture the graph on the canvas. A key that is not a string, the
+      or missing document, or while a graph loads, which includes an
+      `onWorkflowLoaded` listener (the host calls it before it clears
+      `ChangeTracker.isLoadingGraph`): the change tracker can only capture
+      the graph on the canvas. On the A1111 import path the host suppresses
+      capture instead of setting that flag, so a write there returns `true`
+      and makes no undo step of its own. A key that is not a string, the
       key `__proto__` (which would replace the object's prototype), a value
       the workflow cannot save (`savableCopy`, the check `setProperty`
       uses) and a value that is not a document handle are refused with a
@@ -310,7 +323,10 @@ review finding requires it. The counts below are packs, then call sites.
     use in the stored packs. Adding an event argument later is a patch.
 21. `run(options?)` (8 packs, 15 sites) calls the host's `queuePrompt`, as
     the Run button does. It resolves `true` once this call's prompts are
-    submitted, not run. It resolves `false` in every case `queuePrompt`
+    submitted, not run, and also when a request fails without an answer
+    from the backend (a network error): `queuePrompt` reports the error and
+    returns what its node errors say, as it does for the Run button.
+    `app.test.ts` pins that case. It resolves `false` in every case `queuePrompt`
     does (B-08): the call was folded into a run already in progress, the
     backend refused a prompt or reported node errors, or the run stopped
     before sending (a workspace switch failed, sign-in is missing, the
@@ -502,6 +518,10 @@ the API reports, recorded here with the change that would lift it.
   so the default is off for a canvas that does not start at the page's
   top-left. `setZoom` passes the centre in client coordinates instead; the
   default should be the rectangle's centre in client coordinates.
+- **A load commits each node's layout twice.** Configuring a graph records
+  each node at its saved x and the default y, then at its saved position,
+  so `onNodeMoved` reports both (decision 5). Committing the saved position
+  once would make a load report one placement per node.
 - **No session uid.** ADR-GRAPH-DOCUMENT-0026 Phase 1; decision 11 says
   what replaces it until then.
 - **No write to a background document's history.** The change tracker

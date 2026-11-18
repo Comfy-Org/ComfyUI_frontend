@@ -6,7 +6,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 
-/** The canvas, its selection and its layout, as the V4 node API reads them. */
+/** The graph on screen, the canvas, its node moves and drags, as the V4 node API reads them. */
 export function useNodeApiCanvasSource(): CanvasSource {
   const canvasStore = useCanvasStore()
 
