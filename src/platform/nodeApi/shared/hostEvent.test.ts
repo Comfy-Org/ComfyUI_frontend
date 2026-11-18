@@ -1,4 +1,5 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { effectScope, shallowRef, watch } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createHostEvent } from './hostEvent'
@@ -83,5 +84,22 @@ describe('host events', () => {
       "onChange needs a function to call, not 'listener'."
     )
     expect(follow).not.toHaveBeenCalled()
+  })
+
+  it('keeps following the host after the scope the first listener subscribed in ends', () => {
+    const value = shallowRef(0)
+    const onChange = createHostEvent<[number]>('onChange', (emit) =>
+      watch(value, (next) => emit(next), { flush: 'sync' })
+    )
+    const packComponent = effectScope()
+    packComponent.run(() => onChange(vi.fn()))
+    const otherPack = vi.fn()
+    onChange(otherPack)
+
+    value.value = 1
+    packComponent.stop()
+    value.value = 2
+
+    expect(otherPack.mock.calls).toEqual([[1], [2]])
   })
 })

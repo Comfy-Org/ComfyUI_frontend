@@ -1,4 +1,4 @@
-import { nextTick } from 'vue'
+import { createApp, defineComponent, h, nextTick, onBeforeUnmount } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
@@ -137,6 +137,28 @@ describe('onSelectionChanged', () => {
     await nextTick()
 
     expect(changed).not.toHaveBeenCalled()
+  })
+
+  it('keeps telling another pack after the component that subscribed first unmounts', async () => {
+    const { first, comfy, select } = graphWithNodes()
+    const PackPanel = defineComponent({
+      setup() {
+        onBeforeUnmount(comfy.onSelectionChanged(vi.fn()))
+        return () => h('div')
+      }
+    })
+    const panel = createApp(PackPanel)
+    panel.mount(document.createElement('div'))
+    const otherPack = vi.fn()
+    comfy.onSelectionChanged(otherPack)
+
+    panel.unmount()
+    select(first.id)
+    await nextTick()
+
+    expect(otherPack).toHaveBeenCalledExactlyOnceWith([
+      comfy.graph.node(first.id)
+    ])
   })
 
   it('hears nothing before the renderer supplies a canvas', () => {
