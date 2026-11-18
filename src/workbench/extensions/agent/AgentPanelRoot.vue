@@ -3671,7 +3671,6 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :editable-workflow-id="editableWorkflowId"
       :active-tab="selectedTargetTab"
       :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
-      :follows-visible-workflow="agentPanelStore.followsVisibleWorkflow"
       :workflow-detached="workflowDetached"
       :target-restoring="
         agentPanelStore.canRestoreWorkflow ||

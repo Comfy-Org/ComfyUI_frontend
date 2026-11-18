@@ -223,7 +223,7 @@ test.describe(
           'a bound tab is not an unbound tab'
         ).toBeUndefined()
         await finishTurn(THIRD_MESSAGE_ID, 1, SAVED_THREAD_ID)
-        await expect(panel.getByRole('note')).toContainText(SAVED_TAB)
+        await expect(panel.getByRole('note')).toHaveCount(0)
       })
     })
   }
