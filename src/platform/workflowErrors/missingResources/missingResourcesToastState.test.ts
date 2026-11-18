@@ -5,10 +5,8 @@ import { groupMissingModelCandidates } from '@/platform/workflowErrors/missingMo
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import {
   deriveMissingResourcesToastState,
-  downloadsStillMissing,
   isTrackedModelRelevant,
   nextDownloadBatch,
-  startableModels,
   toUnavailableModels
 } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 import type { TrackedModel } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
@@ -31,7 +29,6 @@ function tracked(
     },
     download,
     stillMissing: true,
-    downloadedHere: false,
     sizeBytes: 100,
     gatedRepoUrl: undefined,
     ...overrides
@@ -294,27 +291,6 @@ describe('deriveMissingResourcesToastState', () => {
   })
 })
 
-describe('downloadsStillMissing', () => {
-  it('names only models downloaded here that a rescan reset and still lists as missing', () => {
-    const unsatisfied = tracked({ status: 'idle' }, { downloadedHere: true })
-    const settled = tracked(
-      { status: 'idle' },
-      { downloadedHere: true, stillMissing: false }
-    )
-    const awaitingRescan = tracked({ status: 'done' }, { downloadedHere: true })
-    const neverDownloaded = tracked({ status: 'idle' })
-
-    expect(
-      downloadsStillMissing([
-        unsatisfied,
-        settled,
-        awaitingRescan,
-        neverDownloaded
-      ])
-    ).toEqual([unsatisfied.key])
-  })
-})
-
 describe('isTrackedModelRelevant', () => {
   it.for([
     {
@@ -324,10 +300,7 @@ describe('isTrackedModelRelevant', () => {
     },
     {
       name: 'a model downloaded in this session',
-      model: tracked(
-        { status: 'idle' },
-        { stillMissing: false, downloadedHere: true }
-      ),
+      model: tracked({ status: 'done' }, { stillMissing: false }),
       expected: true
     },
     {
@@ -369,21 +342,15 @@ describe('nextDownloadBatch', () => {
     ])
   })
 
-  it('keeps a finished model through the refresh that briefly reports it missing again', () => {
+  it('keeps a finished model in the batch once the rescan no longer lists it', () => {
     const running = tracked(downloading(0.5))
     const first = tracked(downloading(0.9))
-    const done = {
-      ...first,
-      download: { status: 'done' as const },
-      downloadedHere: true
-    }
-    const reopened = { ...done, download: { status: 'idle' as const } }
-    const settled = { ...reopened, stillMissing: false }
+    const done = { ...first, download: { status: 'done' as const } }
+    const settled = { ...done, stillMissing: false }
 
     const batch = runBatch(
       [first, running],
       [done, running],
-      [reopened, running],
       [settled, running]
     )
 
@@ -391,35 +358,6 @@ describe('nextDownloadBatch', () => {
     expect(
       deriveMissingResourcesToastState([settled, running], 0, batch)
     ).toMatchObject({ kind: 'downloading', finished: 1, total: 2 })
-  })
-
-  it('counts a model downloaded here that a rescan briefly reopens as finished, not as one to start again', () => {
-    const reopened = tracked({ status: 'idle' }, { downloadedHere: true })
-    const running = tracked(downloading(0.5))
-    const batch = new Map([
-      [reopened.key, 'finished' as const],
-      [running.key, 'active' as const]
-    ])
-
-    expect(startableModels([reopened, running])).toEqual([])
-    expect(
-      deriveMissingResourcesToastState([reopened, running], 0, batch)
-    ).toMatchObject({
-      kind: 'downloading',
-      finished: 1,
-      total: 2,
-      fraction: 0.75,
-      bytes: { received: 150, total: 200 },
-      startable: 0
-    })
-  })
-
-  it('stays ready when the only model downloaded here is briefly reopened after its batch ended', () => {
-    const reopened = tracked({ status: 'idle' }, { downloadedHere: true })
-
-    expect(deriveMissingResourcesToastState([reopened], 0)).toEqual({
-      kind: 'ready'
-    })
   })
 
   it.for([

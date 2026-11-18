@@ -10,7 +10,6 @@ export interface TrackedModel {
   model: ModelWithUrl
   download: MissingModelDownloadState
   stillMissing: boolean
-  downloadedHere: boolean
   sizeBytes: number | undefined
   gatedRepoUrl: string | undefined
 }
@@ -57,27 +56,15 @@ export function trackedModelPhase(tracked: TrackedModel): TrackedModelPhase {
   if (isActiveDownload(download)) return 'active'
   if (!tracked.stillMissing) return 'finished'
   if (download.status === 'failed') return 'failed'
-  if (download.status === 'done' || tracked.downloadedHere) return 'finished'
+  if (download.status === 'done') return 'finished'
   return 'waiting'
-}
-
-/** Keys of models downloaded here that a settled rescan still lists as missing, so the download did not satisfy the workflow. */
-export function downloadsStillMissing(
-  tracked: readonly TrackedModel[]
-): string[] {
-  return tracked
-    .filter(
-      ({ downloadedHere, stillMissing, download }) =>
-        downloadedHere && stillMissing && download.status === 'idle'
-    )
-    .map(({ key }) => key)
 }
 
 /** Whether the toast should keep listing the model: still missing, downloading, or downloaded in this session. */
 export function isTrackedModelRelevant(tracked: TrackedModel): boolean {
   return (
     tracked.stillMissing ||
-    tracked.downloadedHere ||
+    tracked.download.status === 'done' ||
     isActiveDownload(tracked.download)
   )
 }
