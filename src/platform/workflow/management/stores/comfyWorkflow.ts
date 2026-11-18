@@ -11,7 +11,8 @@ import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { AppMode } from '@/utils/appMode'
 import type { WidgetId } from '@/types/widgetId'
-import { generateUUID } from '@/utils/formatUtil'
+import { getLegacyWorkflowId } from '@/platform/workflow/core/utils/workflowId'
+import { generateUUID, isValidUuid } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {
   height?: number
@@ -221,6 +222,20 @@ function readUsableDraft(
   }
 }
 
+function withTabId(
+  draft: ComfyWorkflowJSON,
+  tab: ComfyWorkflowJSON
+): ComfyWorkflowJSON {
+  const value: unknown = draft
+  return typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    !isValidUuid(draft.id) &&
+    isValidUuid(tab.id)
+    ? { ...draft, id: tab.id }
+    : draft
+}
+
 function draftMatchesSavedFile(
   runtime: WorkflowRuntime,
   saved: ComfyWorkflowJSON,
@@ -377,13 +392,14 @@ export class ComfyWorkflow extends UserFile {
       runtime.createChangeTracker(this, initialState)
     )
     if (draft?.state && draft.content) {
-      this.changeTracker.activeState = draft.state
-      this.content = draft.content
-      this._isModified = !draftMatchesSavedFile(
-        runtime,
-        initialState,
-        draft.state
-      )
+      const state = withTabId(draft.state, initialState)
+      const draftId: unknown = draft.state.id
+      if (state !== draft.state && typeof draftId === 'string')
+        this.legacyId ??= getLegacyWorkflowId(draftId)
+      this.changeTracker.activeState = state
+      this.content =
+        state === draft.state ? draft.content : JSON.stringify(state)
+      this._isModified = !draftMatchesSavedFile(runtime, initialState, state)
       runtime.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow
