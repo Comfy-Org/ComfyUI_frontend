@@ -199,10 +199,6 @@ type MissingSlotGrowth = NonNullable<ReturnType<typeof growForMissingSlot>>
  * other named-value node gets a declared `widgets_values_form` when one can
  * be proven (schema A24); otherwise it keeps the positional snapshot rather
  * than shipping an undeclared name-keyed record (KA-12).
- *
- * `onPositionalDropped` fires when a pack hook left more positional values
- * than named ones and the snapshot sends the named values, so the extras never
- * reach a peer.
  */
 export function wireNodeSnapshot(
   node: LGraphNode,
