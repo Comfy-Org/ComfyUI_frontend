@@ -6152,9 +6152,10 @@ describe('AgentPanelRoot history', () => {
       stubWorkflowBoundHistory([])
       renderWithSelectedTarget()
       await sendFromComposer('make it blue')
-      await vi.waitFor(() =>
-        expect(useAgentComposerStore().submission).toBeNull()
-      )
+      await vi.waitFor(() => {
+        expect(useAgentComposerStore().gateHold).toBeNull()
+        expect(useAgentConversationStore().hasSendingPendingSend).toBe(false)
+      })
       expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
 
       await activateTabAsUser(second)
@@ -7440,35 +7441,6 @@ describe('AgentPanelRoot history', () => {
       expect(useAgentConversationStore().threadId).toBe('new')
     })
 
-    it('holds the follow back while a message is still being sent', async () => {
-      const first = addTab('workflows/first.json')
-      const second = addTab('workflows/second.json')
-      workflowStore.activeWorkflow = first
-      const { loadedThreads } = stubWorkflowBoundHistory(
-        [
-          agentThread({
-            id: 'th-second',
-            title: 'Second chat',
-            last_message_at: '2026-09-22T10:00:00Z',
-            workflow_id: 'wf-second'
-          })
-        ],
-        {},
-        { post: () => new Promise<Response>(() => {}) }
-      )
-      renderWithSelectedTarget()
-      await vi.waitFor(() =>
-        expect(useAgentChatHistoryStore().sessions).toHaveLength(1)
-      )
-      await sendFromComposer('make it blue')
-
-      await activateTabAsUser(second)
-      await settleFollow()
-
-      expect(loadedThreads).toEqual([])
-      expect(useAgentConversationStore().hasSendingPendingSend).toBe(true)
-    })
-
     it('follows while a sent message runs once the server has accepted it', async () => {
       const first = addTab('workflows/first.json')
       const second = addTab('workflows/second.json')
@@ -8054,21 +8026,325 @@ describe('AgentPanelRoot history', () => {
         )
       })
 
-      it('PD-11: still holds a tab change while a message is being sent', async () => {
+      it('T1-13: switches immediately from an existing chat X while its send is pending, keeps B clean and able to send, and shows X accepted turn on return', async () => {
         const first = addTab('workflows/first.json')
         const second = addTab('workflows/second.json')
         workflowStore.activeWorkflow = first
-        stubWorkflowBoundHistory([], {}, { post: () => new Promise(() => {}) })
+        let resolveFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first',
+              title: 'First chat',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-second',
+              title: 'Second chat',
+              last_message_at: '2026-09-22T10:00:00Z',
+              workflow_id: 'wf-second'
+            })
+          ],
+          {
+            'th-first': { workflowId: 'wf-first' },
+            'th-second': { workflowId: 'wf-second' }
+          },
+          {
+            post: (threadId) =>
+              threadId === 'th-first'
+                ? new Promise<Response>((resolve) => {
+                    resolveFirstPost = () =>
+                      resolve(
+                        json(202, {
+                          thread_id: 'th-first',
+                          message_id: 'm-first-bg',
+                          workflow_id: 'wf-first'
+                        })
+                      )
+                  })
+                : Promise.resolve(
+                    json(202, {
+                      thread_id: 'th-second',
+                      message_id: 'm-second-fg',
+                      workflow_id: 'wf-second'
+                    })
+                  )
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+
+        useAgentComposerStore().addAttachment({
+          id: 'att-x',
+          name: 'x.png',
+          ref: 'assets/x.png',
+          uploading: false
+        })
+        await sendFromComposer('pending on x')
+        await typeInComposer('followup on x')
+
+        await activateTabAsUser(second)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-second')
+        )
+
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+        expect(screen.getByRole('textbox')).toHaveTextContent('')
+        expect(useAgentComposerStore().attachments).toEqual([])
+        expect(useAgentComposerStore().workflowReferences).toEqual([])
+        expect(userPrompts()).not.toContain('pending on x')
+
+        await sendFromComposer('send on b')
+        expect(userPrompts()).toContain('send on b')
+
+        resolveFirstPost()
+        await vi.waitFor(() =>
+          expect(
+            useAgentConversationStore()
+              .liveTurns()
+              .some((turn) => turn.threadId === 'th-first')
+          ).toBe(true)
+        )
+
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first')
+        )
+
+        expect(userPrompts()).toContain('pending on x')
+        expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
+        expect(screen.getByRole('textbox')).toHaveTextContent('followup on x')
+      })
+
+      it('T1-13: switches immediately from a blank tab A while its first send is pending, rekeys its kept draft on acceptance, and opens A new thread on return', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let resolveFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [],
+          {},
+          {
+            post: () =>
+              new Promise<Response>((resolve) => {
+                resolveFirstPost = () =>
+                  resolve(
+                    json(202, {
+                      thread_id: 'th-first-new',
+                      message_id: 'm-first-new',
+                      workflow_id: 'wf-first'
+                    })
+                  )
+              })
+          }
+        )
         renderWithSelectedTarget()
-        await sendFromComposer('make it blue')
-        await typeInComposer('and then make it green')
+        await sendFromComposer('first on a')
+        await typeInComposer('kept after first send')
 
         await activateTabAsUser(second)
         await settleFollow()
 
-        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(screen.getByRole('textbox')).toHaveTextContent('')
+        expect(userPrompts()).toEqual([])
+
+        resolveFirstPost()
+        await vi.waitFor(() =>
+          expect(
+            useAgentConversationStore()
+              .liveTurns()
+              .some((turn) => turn.threadId === 'th-first-new')
+          ).toBe(true)
+        )
+
+        vi.mocked(fetch).mockImplementation(
+          async (input: RequestInfo | URL) => {
+            const url = String(input)
+            if (url.includes('/api/agent/threads/th-first-new/messages'))
+              return json(200, [
+                {
+                  id: 'u-first-new',
+                  thread_id: 'th-first-new',
+                  turn_id: 'm-first-new',
+                  seq: 1,
+                  role: 'user',
+                  status: 'complete',
+                  workflow_id: 'wf-first',
+                  content: { text: 'first on a' }
+                },
+                {
+                  id: 'm-first-new',
+                  thread_id: 'th-first-new',
+                  turn_id: 'm-first-new',
+                  seq: 2,
+                  role: 'assistant',
+                  status: 'streaming',
+                  workflow_id: 'wf-first',
+                  content: { text: '' }
+                }
+              ])
+            if (threadListRoute.test(url)) return json(200, agentThreadList([]))
+            if (url.includes('/api/workflows'))
+              return json(200, {
+                data: [
+                  { id: 'wf-first', name: 'first' },
+                  { id: 'wf-second', name: 'second' }
+                ],
+                pagination: { offset: 0, limit: 100, total: 2, has_more: false }
+              })
+            return json(200, { data: [], pagination: { has_more: false } })
+          }
+        )
+
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-new')
+        )
+
+        expect(userPrompts()).toEqual(['first on a'])
+        expect(screen.getByRole('button', { name: 'Stop' })).toBeVisible()
         expect(screen.getByRole('textbox')).toHaveTextContent(
-          'and then make it green'
+          'kept after first send'
+        )
+      })
+
+      it('T1-13: shows a failed background send on A new-chat screen when A returns, without showing it on B', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let failFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first-old',
+              title: 'Older chat',
+              last_message_at: '2026-09-22T08:00:00Z',
+              workflow_id: 'wf-first'
+            })
+          ],
+          { 'th-first-old': { workflowId: 'wf-first' } },
+          {
+            post: () =>
+              new Promise<Response>((_, reject) => {
+                failFirstPost = () => reject(new Error('network down'))
+              })
+          }
+        )
+        renderWithSelectedTarget()
+        await sendFromComposer('will fail on a')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+        expect(userPrompts()).toEqual([])
+
+        failFirstPost()
+        await vi.waitFor(() =>
+          expect(
+            useAgentConversationStore().hasPendingSendForOrigin({
+              kind: 'blank',
+              blankChatId: `blank:${first.instanceId}`
+            })
+          ).toBe(true)
+        )
+        expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
+        expect(userPrompts()).toEqual([])
+
+        await activateTabAsUser(first)
+        await settleFollow()
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(userPrompts()).toEqual(['will fail on a'])
+        expect(
+          await screen.findByRole('button', { name: 'Retry' })
+        ).toBeVisible()
+      })
+
+      it('T1-13: routes a workflow reference saved across a tab switch into X kept draft instead of B composer', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        const scratch = addTab('workflows/scratch.json', { isTemporary: true })
+        workflowStore.activeWorkflow = first
+        stubWorkflowBoundHistory([])
+        let resolveSave!: () => void
+        vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
+          () =>
+            new Promise<boolean>((resolve) => {
+              resolveSave = () => {
+                Object.assign(scratch, { isTemporary: false })
+                vi.mocked(fetch).mockImplementation(
+                  async (input: RequestInfo | URL) => {
+                    const url = String(input)
+                    if (url.includes('/api/workflows'))
+                      return json(200, {
+                        data: [
+                          { id: 'wf-first', name: 'first' },
+                          { id: 'wf-second', name: 'second' },
+                          { id: 'wf-scratch', name: 'scratch' }
+                        ],
+                        pagination: {
+                          offset: 0,
+                          limit: 100,
+                          total: 3,
+                          has_more: false
+                        }
+                      })
+                    if (threadListRoute.test(url))
+                      return json(200, agentThreadList([]))
+                    return json(200, {
+                      data: [],
+                      pagination: { has_more: false }
+                    })
+                  }
+                )
+                resolve(true)
+              }
+            })
+        )
+        renderWithSelectedTarget()
+
+        const textbox = screen.getByRole('textbox')
+        await userEvent.click(textbox)
+        await userEvent.paste('Compare @')
+        await userEvent.click(
+          screen.getByRole('menuitem', { name: 'Workflows' })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
+        )
+        await vi.waitFor(() =>
+          expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledOnce()
+        )
+
+        await activateTabAsUser(second)
+        await settleFollow()
+        expect(useAgentPanelStore().selectedWorkflow?.path).toBe(second.path)
+        expect(screen.getByRole('textbox')).toHaveTextContent('')
+        expect(useAgentComposerStore().workflowReferences).toEqual([])
+
+        await typeInComposer('draft on b')
+        expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
+
+        resolveSave()
+        await settleFollow()
+
+        expect(useAgentComposerStore().workflowReferences).toEqual([])
+        expect(screen.getByRole('textbox')).toHaveTextContent('draft on b')
+
+        await activateTabAsUser(first)
+        await settleFollow()
+
+        expect(useAgentComposerStore().workflowReferences).toMatchObject([
+          { id: 'wf-scratch', name: 'scratch' }
+        ])
+        expect(screen.getByTestId('workflow-reference-chip')).toHaveTextContent(
+          'scratch'
         )
       })
 

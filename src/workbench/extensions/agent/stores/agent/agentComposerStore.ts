@@ -35,7 +35,8 @@ import type {
 import { composerReferenceKey } from '@/workbench/extensions/agent/types/composerPrompt'
 import type {
   PromptSnapshot,
-  WorkflowReference
+  WorkflowReference,
+  WorkflowReferenceMetadata
 } from '@/workbench/extensions/agent/types/workflowReference'
 import {
   composerPromptForSubmission,
@@ -126,6 +127,53 @@ interface KeptDraft {
   starterPrompt: AgentStarterPromptSource | null
 }
 
+export interface CapturedReferenceInsertion {
+  draftKey: string | null
+  activationCount: number
+  from?: number
+  to?: number
+  insertionPoint: ComposerInsertionPoint
+}
+
+function applyWorkflowReferenceToPrompt(
+  current: ComposerPrompt,
+  reference: WorkflowReferenceMetadata,
+  captured: Pick<CapturedReferenceInsertion, 'from' | 'to' | 'insertionPoint'>
+): ComposerPrompt {
+  if (captured.from !== undefined && captured.to !== undefined) {
+    const start = Math.min(current.text.length, Math.max(0, captured.from))
+    const end = Math.min(current.text.length, Math.max(start, captured.to))
+    const removed = end - start
+    const text = current.text.slice(0, start) + current.text.slice(end)
+    const references = current.references.map((item) => ({
+      ...item,
+      textOffset:
+        item.textOffset >= end
+          ? item.textOffset - removed
+          : item.textOffset > start
+            ? start
+            : item.textOffset
+    }))
+    const referenceIndex = references.filter(
+      (item) => item.textOffset <= start
+    ).length
+    return insertComposerReference(
+      { text, references },
+      { kind: 'workflow', ...reference, textOffset: start },
+      { textOffset: start, referenceIndex }
+    ).prompt
+  }
+  return insertComposerReference(
+    current,
+    {
+      kind: 'workflow',
+      ...reference,
+      textOffset: captured.insertionPoint.textOffset
+    },
+    captured.insertionPoint
+  ).prompt
+}
+
 const MAX_KEPT_DRAFTS = 20
 
 function emptyKeptDraft(): KeptDraft {
@@ -140,6 +188,7 @@ function emptyKeptDraft(): KeptDraft {
 export const useAgentComposerStore = defineStore('agentComposer', () => {
   const keptDrafts = new Map<string, KeptDraft>()
   let activeDraftKey: string | null = null
+  let draftActivationCount = 0
   const draftState = shallowRef<ComposerPrompt>({ text: '', references: [] })
   const prompt = computed(() => draftState.value)
   const draft = computed(() => prompt.value.text)
@@ -823,6 +872,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function activateDraft(key: string): void {
     if (key === activeDraftKey) return
+    draftActivationCount += 1
     const adoptsCurrentContent = activeDraftKey === null
     keepActiveDraft()
     activeDraftKey = key
@@ -833,7 +883,88 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function rekeyDraft(from: string, to: string): void {
-    if (activeDraftKey === from) activeDraftKey = to
+    if (activeDraftKey === from) {
+      activeDraftKey = to
+      return
+    }
+    const kept = keptDrafts.get(from)
+    if (!kept) return
+    keptDrafts.delete(from)
+    keptDrafts.set(to, kept)
+  }
+
+  function trimKeptDrafts(): void {
+    for (const key of keptDrafts.keys()) {
+      if (keptDrafts.size <= MAX_KEPT_DRAFTS) break
+      keptDrafts.delete(key)
+    }
+  }
+
+  function restoreKeptDraftSnapshot(
+    key: string,
+    snapshot: GateHoldSnapshot
+  ): void {
+    const references = snapshot.prompt.references.filter(
+      (item) => item.kind !== 'node'
+    )
+    const text = resetTextWhenReferencesCleared(
+      snapshot.prompt.text,
+      references
+    )
+    keptDrafts.delete(key)
+    keptDrafts.set(key, {
+      prompt: { text, references },
+      attachmentIds: snapshot.attachments.map(({ id }) => id),
+      origin: snapshot.promptOrigin,
+      starterPrompt: snapshot.starterPrompt
+    })
+    trimKeptDrafts()
+  }
+
+  function captureReferenceInsertion(
+    from?: number,
+    to?: number,
+    point?: ComposerInsertionPoint
+  ): CapturedReferenceInsertion {
+    return {
+      draftKey: activeDraftKey,
+      activationCount: draftActivationCount,
+      from,
+      to,
+      insertionPoint: point ?? { ...insertionPoint.value }
+    }
+  }
+
+  function isCapturedInsertionLive(
+    captured: CapturedReferenceInsertion
+  ): boolean {
+    return (
+      captured.draftKey === activeDraftKey &&
+      captured.activationCount === draftActivationCount
+    )
+  }
+
+  function insertWorkflowReferenceInDraft(
+    captured: CapturedReferenceInsertion,
+    reference: WorkflowReferenceMetadata
+  ): void {
+    if (
+      activeDraftKey === captured.draftKey &&
+      captured.activationCount === draftActivationCount
+    ) {
+      updateDraft(
+        applyWorkflowReferenceToPrompt(prompt.value, reference, captured)
+      )
+      return
+    }
+    if (captured.draftKey === null) return
+    const kept = keptDrafts.get(captured.draftKey) ?? emptyKeptDraft()
+    keptDrafts.delete(captured.draftKey)
+    keptDrafts.set(captured.draftKey, {
+      ...kept,
+      prompt: applyWorkflowReferenceToPrompt(kept.prompt, reference, captured)
+    })
+    trimKeptDrafts()
   }
 
   function discardDraft(key: string): void {
@@ -1096,6 +1227,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     reconcilePendingSendDraft,
     activateDraft,
     rekeyDraft,
+    restoreKeptDraftSnapshot,
+    captureReferenceInsertion,
+    isCapturedInsertionLive,
+    insertWorkflowReferenceInDraft,
     discardDraft,
     trackDraftThread
   }

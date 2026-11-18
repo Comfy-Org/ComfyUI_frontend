@@ -615,6 +615,50 @@ function liveTranscriptTurn(
   return liveTurn === undefined ? undefined : pendingByTurn.get(liveTurn)
 }
 
+function recordTranscriptRow(
+  row: AgentMessages[number],
+  state: {
+    turnOrder: TurnId[]
+    seenTurns: Set<TurnId>
+    rowIds: Set<string>
+    userTexts: Map<TurnId, string>
+    userAttachments: Map<TurnId, UserAttachment[]>
+    userWorkflowReferences: Map<TurnId, WorkflowReference[]>
+    userSkillReferences: Map<TurnId, SkillReference>
+    assistants: Map<TurnId, AssistantMessage>
+    pendingByTurn: Map<TurnId, NormalizedAgentTranscript['pending']>
+    isAskUnavailable: (askId: string) => boolean
+    isAskRetired: (askId: string) => boolean
+  }
+): string | undefined {
+  const turnId = row.turn_id as TurnId
+  state.rowIds.add(row.id)
+  recordTurnOrder(turnId, state.seenTurns, state.turnOrder)
+  const text = typeof row.content?.text === 'string' ? row.content.text : ''
+  if (row.role === 'user')
+    return recordUserRow(
+      row,
+      turnId,
+      text,
+      state.userTexts,
+      state.userAttachments,
+      state.userWorkflowReferences,
+      state.userSkillReferences
+    )
+  if (row.role !== 'assistant') return undefined
+  const pending = recordAssistantRow(row, turnId, text, state.assistants)
+  const message = state.assistants.get(turnId)
+  if (message)
+    keepAuthoritativeAsk(
+      message,
+      row,
+      state.isAskUnavailable,
+      state.isAskRetired
+    )
+  state.pendingByTurn.set(turnId, pending)
+  return row.workflow_id ?? undefined
+}
+
 export function normalizeAgentTranscript(
   history: AgentMessages,
   isAskUnavailable: (askId: string) => boolean = () => false,
@@ -631,31 +675,23 @@ export function normalizeAgentTranscript(
   const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
   let latestWorkflowId: string | undefined
 
+  const state = {
+    turnOrder,
+    seenTurns,
+    rowIds,
+    userTexts,
+    userAttachments,
+    userWorkflowReferences,
+    userSkillReferences,
+    assistants,
+    pendingByTurn,
+    isAskUnavailable,
+    isAskRetired
+  }
+
   for (const row of [...history].sort((a, b) => a.seq - b.seq)) {
-    const turnId = row.turn_id as TurnId
-    rowIds.add(row.id)
-    recordTurnOrder(turnId, seenTurns, turnOrder)
-    const text = typeof row.content?.text === 'string' ? row.content.text : ''
-    if (row.role === 'user') {
-      const workflowId = recordUserRow(
-        row,
-        turnId,
-        text,
-        userTexts,
-        userAttachments,
-        userWorkflowReferences,
-        userSkillReferences
-      )
-      if (workflowId) latestWorkflowId = workflowId
-    }
-    if (row.role === 'assistant') {
-      const pending = recordAssistantRow(row, turnId, text, assistants)
-      const message = assistants.get(turnId)
-      if (message)
-        keepAuthoritativeAsk(message, row, isAskUnavailable, isAskRetired)
-      pendingByTurn.set(turnId, pending)
-      if (row.workflow_id) latestWorkflowId = row.workflow_id
-    }
+    const workflowId = recordTranscriptRow(row, state)
+    if (workflowId) latestWorkflowId = workflowId
   }
 
   const live = liveTranscriptTurn(pendingByTurn, assistants)

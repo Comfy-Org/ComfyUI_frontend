@@ -2,9 +2,7 @@ import { computed, watch } from 'vue'
 import type { Ref } from 'vue'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-const BLANK_CHAT_PREFIX = 'blank:'
 const THREAD_PREFIX = 'thread:'
 
 function threadDraftKey(threadId: string): string {
@@ -14,35 +12,31 @@ function threadDraftKey(threadId: string): string {
 /** Keeps the composer draft with the chat it was typed in. */
 export function useAgentChatDrafts(options: {
   threadId: Readonly<Ref<string | null>>
-  isSending: Readonly<Ref<boolean>>
+  activeBlankChatId: Readonly<Ref<string>>
 }) {
   const composerStore = useAgentComposerStore()
-  const panelStore = useAgentPanelStore()
 
   const draftKey = computed(() =>
     options.threadId.value === null
-      ? `${BLANK_CHAT_PREFIX}${panelStore.blankChatTab ?? ''}`
+      ? options.activeBlankChatId.value
       : threadDraftKey(options.threadId.value)
   )
 
   watch(
     draftKey,
-    (key, previous) => {
-      if (
-        previous !== undefined &&
-        previous.startsWith(BLANK_CHAT_PREFIX) &&
-        key.startsWith(THREAD_PREFIX) &&
-        options.isSending.value
-      )
-        composerStore.rekeyDraft(previous, key)
+    (key) => {
       composerStore.activateDraft(key)
     },
     { immediate: true, flush: 'sync' }
   )
 
+  function rekeyBlankDraft(blankChatId: string, threadId: string): void {
+    composerStore.rekeyDraft(blankChatId, threadDraftKey(threadId))
+  }
+
   function discardChatDraft(threadId: string): void {
     composerStore.discardDraft(threadDraftKey(threadId))
   }
 
-  return { draftKey, discardChatDraft }
+  return { draftKey, rekeyBlankDraft, discardChatDraft }
 }

@@ -107,6 +107,7 @@ interface SentTag {
 export interface WorkflowTurnContext {
   id?: string
   tabPath: string
+  canMint?: boolean
 }
 
 /**
@@ -140,7 +141,13 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
-  onBackgroundTurnAccepted?: (ack: AgentTurnAccepted, text: string) => void
+  onBlankSendAccepted?: (blankChatId: string, threadId: string) => void
+  onBackgroundTurnAccepted?: (
+    ack: AgentTurnAccepted,
+    text: string,
+    origin: PendingSendOrigin,
+    workflowId?: string
+  ) => void
   onBlankTurnAccepted?: (ack: AgentTurnAccepted, blankChatId: string) => void
   onOffscreenBlankSendFailed?: (failure: OffscreenBlankSendFailure) => void
   isDeletedThread?: (threadId: string) => boolean
@@ -524,6 +531,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rest,
     events,
     onThreadStarted,
+    onBlankSendAccepted,
     onBackgroundTurnAccepted,
     onBlankTurnAccepted,
     onOffscreenBlankSendFailed,
@@ -1428,7 +1436,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     draft: DraftSnapshot | undefined,
     tabs: OpenTabsSnapshot | undefined
   ): boolean {
-    if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (
+      wfContext === undefined ||
+      wfContext.id !== undefined ||
+      wfContext.canMint === false
+    )
+      return false
     if (mintAlreadyRequested(wfContext.tabPath, boundWorkflowId)) return false
     if (boundWorkflowId === null) return true
     if (draft === undefined) return false
@@ -1478,7 +1491,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     draft: DraftSnapshot | undefined,
     boundAtSend: string | null
   ): boolean {
-    if (wfContext === undefined || wfContext.id !== undefined) return false
+    if (
+      wfContext === undefined ||
+      wfContext.id !== undefined ||
+      wfContext.canMint === false
+    )
+      return false
     if (boundAtSend === null) return false
     return workflow?.draft !== undefined && draft === undefined
   }
@@ -1547,6 +1565,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     wfContext: WorkflowTurnContext | undefined,
     boundBeforeAck: string | null
   ): boolean {
+    if (wfContext?.canMint === false) return false
     return (
       wfContext?.id !== undefined ||
       (workflowId !== boundBeforeAck &&
@@ -1637,6 +1656,43 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
+  function resolveAcceptedTabWorkflowId(
+    ack: AgentTurnAccepted,
+    wfContext: WorkflowTurnContext | undefined
+  ): string | undefined {
+    if (wfContext?.id !== undefined) return wfContext.id
+    if (
+      ack.workflow_id !== undefined &&
+      wfContext?.tabPath !== undefined &&
+      bindingStore.tabPathFor(ack.workflow_id) === wfContext.tabPath
+    )
+      return ack.workflow_id
+    return undefined
+  }
+
+  function adoptBackgroundWorkflow(
+    workflowId: string | undefined,
+    wfContext: WorkflowTurnContext | undefined,
+    boundAtSend: string | null
+  ): void {
+    if (
+      workflowId !== undefined &&
+      shouldAdoptWorkflow(workflowId, wfContext, boundAtSend)
+    )
+      runAcceptedTurnSideEffect(
+        () => workflow?.adopted(workflowId, wfContext, boundAtSend),
+        'agent_workflow_adoption_callback_failed'
+      )
+  }
+
+  function notifyBlankSendAccepted(
+    origin: PendingSendOrigin,
+    threadId: string
+  ): void {
+    if (origin.kind === 'blank')
+      onBlankSendAccepted?.(origin.blankChatId, threadId)
+  }
+
   function acceptBackgroundTurn({
     ack,
     origin,
@@ -1673,15 +1729,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }): void {
     const turnId = toTurnId(ack.message_id)
     const workflowId = ack.workflow_id
-    if (
-      workflowId !== undefined &&
-      shouldAdoptWorkflow(workflowId, wfContext, boundAtSend)
-    ) {
-      runAcceptedTurnSideEffect(
-        () => workflow?.adopted(workflowId, wfContext, boundAtSend),
-        'agent_workflow_adoption_callback_failed'
-      )
-    }
+    adoptBackgroundWorkflow(workflowId, wfContext, boundAtSend)
+    const tabWorkflowId = resolveAcceptedTabWorkflowId(ack, wfContext)
+    notifyBlankSendAccepted(origin, ack.thread_id)
     conversationStore.startBackgroundTurn({
       threadId: ack.thread_id,
       turnId,
@@ -1696,7 +1746,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     consumeThreadSource(origin)
     recordTurnStarted(turnId, origin.kind === 'blank', threadSourceAtSend)
     runAcceptedTurnSideEffect(() => {
-      onBackgroundTurnAccepted?.(ack, text)
+      onBackgroundTurnAccepted?.(ack, text, origin, tabWorkflowId)
       if (origin.kind === 'blank')
         onBlankTurnAccepted?.(ack, origin.blankChatId)
     }, 'agent_thread_activated_callback_failed')
@@ -2037,6 +2087,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         'agent_workflow_adoption_callback_failed'
       )
     }
+    const tabWorkflowId = resolveAcceptedTabWorkflowId(ack, wfContext)
+    if (origin.kind === 'blank')
+      onBlankSendAccepted?.(origin.blankChatId, ack.thread_id)
     rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
     consumeThreadSource(origin)
     recordTurnStarted(
@@ -2045,7 +2098,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadSourceAtSend
     )
     runAcceptedTurnSideEffect(() => {
-      onBackgroundTurnAccepted?.(ack, text)
+      onBackgroundTurnAccepted?.(ack, text, origin, tabWorkflowId)
       if (origin.kind === 'blank')
         onBlankTurnAccepted?.(ack, origin.blankChatId)
     }, 'agent_thread_activated_callback_failed')
@@ -2133,6 +2186,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     const missedCause = inFlightSends.get(sendId)?.missedCause ?? null
     if (onScreen && !isHydratingThreadForLoad(ack.thread_id)) {
+      notifyBlankSendAccepted(origin, ack.thread_id)
       acceptTurn(
         ack,
         origin,

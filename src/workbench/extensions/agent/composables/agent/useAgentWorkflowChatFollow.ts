@@ -62,7 +62,7 @@ type FollowDeps = {
   forgetOpenChat: (threadId: string) => void
   followsVisibleWorkflow: () => boolean
   userEngaged: () => boolean
-  switchBlocked: () => boolean
+  hasBlankPendingSend?: (workflow: ComfyWorkflow) => boolean
   cloudIdFor: (workflow: ComfyWorkflow) => string | undefined
   refreshCloudWorkflowListing: () => Promise<CloudWorkflowRefreshOutcome>
   refreshHistory: (
@@ -181,9 +181,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
 
   function heldBack(workflow: ComfyWorkflow): boolean {
     const target = deps.selectedTarget()
-    const chatTargetsWorkflow =
-      !deps.followsVisibleWorkflow() && target?.path === workflow.path
-    return deps.switchBlocked() || chatTargetsWorkflow
+    return !deps.followsVisibleWorkflow() && target?.path === workflow.path
   }
 
   function isCurrent(operation: FollowOperation): boolean {
@@ -340,6 +338,23 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     await openLatestChat(operation, workflowId, candidate.id)
   }
 
+  function hasImmediateBlankLanding(workflow: ComfyWorkflow): boolean {
+    return (
+      isUnsavedTabWithoutBinding(workflow) ||
+      Boolean(deps.hasBlankPendingSend?.(workflow))
+    )
+  }
+
+  async function landAfterLookup(
+    operation: FollowOperation,
+    workflowId: string,
+    failedThreadId?: string
+  ): Promise<void> {
+    if (deps.chatsFor(workflowId).length > 0)
+      return landOnKnownChats(operation, workflowId, failedThreadId)
+    await landOnFreshChats(operation, workflowId, failedThreadId)
+  }
+
   async function showLanding(
     workflow: ComfyWorkflow,
     operation: FollowOperation,
@@ -349,7 +364,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       retireIfCurrent(operation)
       return
     }
-    if (isUnsavedTabWithoutBinding(workflow)) {
+    if (hasImmediateBlankLanding(workflow)) {
       dispatch({ type: 'opening_done', generation: operation.generation })
       return
     }
@@ -364,9 +379,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       return
     }
     if (lookup.status === 'unknown') return showList(operation, null, 'failed')
-    if (deps.chatsFor(lookup.workflowId).length > 0)
-      return landOnKnownChats(operation, lookup.workflowId, failedThreadId)
-    await landOnFreshChats(operation, lookup.workflowId, failedThreadId)
+    await landAfterLookup(operation, lookup.workflowId, failedThreadId)
   }
 
   async function followTab(workflow: ComfyWorkflow): Promise<void> {

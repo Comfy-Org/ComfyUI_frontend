@@ -2,28 +2,27 @@ import { ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { useAgentChatDrafts } from './useAgentChatDrafts'
 
 describe('useAgentChatDrafts', () => {
-  it('PD-10: rekeys a blank draft to the newly accepted thread only while sending', () => {
-    const panelStore = useAgentPanelStore()
+  it('PD-10: rekeys a blank draft to the newly accepted thread', () => {
     const composer = useAgentComposerStore()
-    panelStore.blankChatTab = 'tab-a'
+    const activeBlankChatId = ref('blank:tab-a')
     const threadId = ref<string | null>(null)
-    const isSending = ref(false)
-    useAgentChatDrafts({ threadId, isSending })
+    const { rekeyBlankDraft } = useAgentChatDrafts({
+      threadId,
+      activeBlankChatId
+    })
 
     expect(composer.draft).toBe('')
     composer.setText('typed during first send')
-    isSending.value = true
+    rekeyBlankDraft('blank:tab-a', 'th-new')
     threadId.value = 'th-new'
-    isSending.value = false
 
     expect(composer.draft).toBe('typed during first send')
 
-    panelStore.blankChatTab = 'tab-a'
+    activeBlankChatId.value = 'blank:tab-a'
     threadId.value = null
     expect(composer.draft).toBe('')
 
@@ -31,13 +30,32 @@ describe('useAgentChatDrafts', () => {
     expect(composer.draft).toBe('typed during first send')
   })
 
-  it('PD-13: discards a kept thread draft by thread id', () => {
-    const panelStore = useAgentPanelStore()
+  it('T1-13: rekeys a kept blank draft to its accepted thread while another tab is active', () => {
     const composer = useAgentComposerStore()
-    panelStore.blankChatTab = 'tab-a'
+    const activeBlankChatId = ref('blank:tab-a')
+    const threadId = ref<string | null>(null)
+    const { rekeyBlankDraft } = useAgentChatDrafts({
+      threadId,
+      activeBlankChatId
+    })
+
+    composer.setText('typed on tab a after send')
+    activeBlankChatId.value = 'blank:tab-b'
+    expect(composer.draft).toBe('')
+
+    rekeyBlankDraft('blank:tab-a', 'th-a')
+    threadId.value = 'th-a'
+    expect(composer.draft).toBe('typed on tab a after send')
+  })
+
+  it('PD-13: discards a kept thread draft by thread id', () => {
+    const composer = useAgentComposerStore()
+    const activeBlankChatId = ref('blank:tab-a')
     const threadId = ref<string | null>('th-a')
-    const isSending = ref(false)
-    const { discardChatDraft } = useAgentChatDrafts({ threadId, isSending })
+    const { discardChatDraft } = useAgentChatDrafts({
+      threadId,
+      activeBlankChatId
+    })
 
     composer.setText('keep on th-a')
     threadId.value = 'th-b'

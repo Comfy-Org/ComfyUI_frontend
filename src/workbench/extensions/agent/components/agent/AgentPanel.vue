@@ -3,7 +3,6 @@ import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import type {
   AgentFreeUseNoticeMetadata,
@@ -304,8 +303,6 @@ function onComposerFocus(): void {
   if (runNoticeTimerPending.value || runNoticeReady.value) return
   startRunNoticeTimer()
 }
-
-const { t } = useI18n()
 
 const footerInert = computed(() => openingChat.value || blocked)
 

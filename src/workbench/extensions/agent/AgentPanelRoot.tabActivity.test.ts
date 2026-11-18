@@ -477,11 +477,29 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     expect(useAgentComposerStore().errorContext).toBeNull()
   })
 
-  it('keeps an attached chip with its workflow when the user switches tabs before sending', async () => {
+  it('moves to B with an empty composer and keeps the attached chip on A while A runs', async () => {
+    const running = workflowStore.activeWorkflow!
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
       { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
     ])
+    const postedToOther: unknown[] = []
+    respondToFetch({ method: 'POST', url: /\/messages/ }, (_url, init) => {
+      const body = JSON.parse(String(init?.body)) as { workflow_id?: string }
+      if (body.workflow_id === 'wf-other') {
+        postedToOther.push(body)
+        return json(202, {
+          thread_id: 'th-other-new',
+          message_id: 'm-other-new',
+          workflow_id: 'wf-other'
+        })
+      }
+      return json(202, {
+        thread_id: 'th-1',
+        message_id: 'm-1',
+        workflow_id: 'wf-42'
+      })
+    })
     renderPanel()
     await send('add an upscaler')
     useAgentPanelStore().pendingErrorContext = {
@@ -495,21 +513,59 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     await useWorkflowService().openWorkflow(other, { initiator: 'user' })
 
     await vi.waitFor(() =>
-      expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+    )
+    expect(useAgentComposerStore().errorContext).toBeNull()
+    expect(useAgentComposerStore().draft).toBe('')
+
+    await send('fix other workflow')
+    await vi.waitFor(() => expect(postedToOther).toHaveLength(1))
+    expect(postedToOther[0]).toMatchObject({
+      content: 'fix other workflow',
+      workflow_id: 'wf-other'
+    })
+
+    await useWorkflowService().openWorkflow(running, { initiator: 'user' })
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-1')
     )
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
-    expect(useAgentComposerStore().errorContext).not.toBeNull()
+    expect(useAgentComposerStore().errorContext?.workflowPath).toBe(runningTab)
   })
 
-  it('keeps an attached chip with its workflow across a tab switch when no reply is running', async () => {
+  it('PD-01: moves to B with an empty composer when idle, keeps the chip on A, and sends nothing of it to B', async () => {
+    const running = workflowStore.activeWorkflow!
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([
       { id: 'th-1', title: 'Current chat', workflowId: 'wf-42' },
       { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
     ])
-    respondToFetch('/api/agent/threads/th-2/messages', () =>
-      json(200, liveOtherThread('wf-other'))
-    )
+    const postedToB: unknown[] = []
+    respondToFetch('/api/agent/threads/th-2/messages', (_url, init) => {
+      if (init?.method === 'POST') {
+        postedToB.push(JSON.parse(String(init.body)))
+        return json(202, {
+          thread_id: 'th-2',
+          message_id: 'm-2-new',
+          workflow_id: 'wf-other'
+        })
+      }
+      return json(
+        200,
+        zAgentMessages.parse([
+          userRow('th-2', 'wf-other'),
+          {
+            id: 'm-2',
+            thread_id: 'th-2',
+            seq: 2,
+            role: 'assistant',
+            status: 'complete',
+            turn_id: 'turn-th-2',
+            content: { text: 'done' }
+          }
+        ])
+      )
+    })
     renderPanel()
     useAgentPanelStore().pendingErrorContext = {
       ...errorContext,
@@ -518,28 +574,28 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     await vi.waitFor(() =>
       expect(useAgentComposerStore().errorContext).not.toBeNull()
     )
-    const chatBeforeSwitch = useAgentChatHistoryStore().activeId
-    const activationHandled = new Promise<void>((resolve) =>
-      workflowStore.onUserActivation(() => resolve())
-    )
 
     await useWorkflowService().openWorkflow(other, { initiator: 'user' })
-    await activationHandled
-    await nextTick()
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().activeId).toBe('th-2')
+    )
 
     expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
-    expect(
-      screen.queryByRole('status', {
-        name: i18n.global.t('agent.openingWorkflowChat', {
-          workflowName: 'other'
-        })
-      })
-    ).toBeNull()
-    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
-      'inert'
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(otherTab)
+    expect(useAgentComposerStore().errorContext).toBeNull()
+    expect(useAgentComposerStore().draft).toBe('')
+
+    await send('hello on other')
+    await vi.waitFor(() => expect(postedToB).toHaveLength(1))
+    expect(postedToB[0]).toMatchObject({
+      content: 'hello on other',
+      workflow_id: 'wf-other'
+    })
+
+    await useWorkflowService().openWorkflow(running, { initiator: 'user' })
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
     )
-    expect(useAgentChatHistoryStore().activeId).toBe(chatBeforeSwitch)
-    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
     expect(useAgentComposerStore().errorContext?.workflowPath).toBe(runningTab)
   })
 

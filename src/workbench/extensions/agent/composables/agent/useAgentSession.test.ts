@@ -10297,7 +10297,9 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
     expect(conversation.hasSendingPendingSend).toBe(false)
     expect(onBackgroundTurnAccepted).toHaveBeenCalledWith(
       { thread_id: 'th-stopped', message_id: 'msg-stopped' },
-      'Late unmount reply'
+      'Late unmount reply',
+      { kind: 'blank', blankChatId: expect.any(String) },
+      undefined
     )
   })
 

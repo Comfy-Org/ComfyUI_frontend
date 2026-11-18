@@ -40,7 +40,6 @@ function createHarness(
   let threadId: string | null = 'th-a'
   let follows = false
   let engaged = false
-  let blocked = false
   const chats = new Map<string, ChatSession[]>()
   const openChats = new Map<string, string>()
   const showBlankChat = vi.fn(() => {
@@ -74,7 +73,6 @@ function createHarness(
     forgetOpenChat,
     followsVisibleWorkflow: () => follows,
     userEngaged: () => engaged,
-    switchBlocked: () => blocked,
     cloudIdFor: (workflow) =>
       workflow.path === workflowA.path ? 'wf-a' : 'wf-b',
     refreshCloudWorkflowListing,
@@ -116,11 +114,6 @@ function createHarness(
       follows = next
     },
     setEngaged: (next: boolean) => {
-      engaged = next
-      follow.userEngagementChanged(next)
-    },
-    setBlocked: (next: boolean) => {
-      blocked = next
       engaged = next
       follow.userEngagementChanged(next)
     }
@@ -501,14 +494,18 @@ describe('useAgentWorkflowChatFollow', () => {
     expect(h.follow.landing.value).toBeNull()
   })
 
-  it('PD-11: holds back the switch when switchBlocked is true', async () => {
-    const h = createHarness()
+  it('T1-13: switches immediately even when userEngaged is true, and lands on a blank tab with a pending send instead of older history', async () => {
+    const h = createHarness({
+      hasBlankPendingSend: (workflow) => workflow.path === 'workflows/beta.json'
+    })
+    h.chats.set('wf-b', [chat('th-b-old', 'wf-b', 100)])
+    h.setEngaged(true)
     h.setActive(h.workflowB)
-    h.setBlocked(true)
 
     await h.follow.followTab(h.workflowB)
 
-    expect(h.showBlankChat).not.toHaveBeenCalled()
-    expect(h.getThreadId()).toBe('th-a')
+    expect(h.showBlankChat).toHaveBeenCalledOnce()
+    expect(h.loadThread).not.toHaveBeenCalled()
+    expect(h.follow.landing.value).toBeNull()
   })
 })

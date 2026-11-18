@@ -1225,6 +1225,50 @@ export const useAgentConversationStore = defineStore(
       return removed
     }
 
+    const tabBlankChatIds = new Map<string, string>()
+    let hasAssignedBlankTab = false
+
+    function setActiveBlankChatId(blankChatId: string): void {
+      activeBlankChatId.value = blankChatId
+      hasAssignedBlankTab = true
+    }
+
+    function adoptInitialBlankTab(tabKey: string | null): void {
+      if (hasAssignedBlankTab || threadId.value !== null) return
+      if (hasPendingSendForOrigin(currentOrigin())) return
+      if (tabKey === null) return
+      activeBlankChatId.value = blankChatIdForTab(tabKey)
+      hasAssignedBlankTab = true
+    }
+
+    function blankChatIdForTab(tabKey: string | null): string {
+      const key = tabKey ?? ''
+      return tabBlankChatIds.get(key) ?? `blank:${key}`
+    }
+
+    function advanceBlankChatIdForTab(tabKey: string | null): string {
+      const next = nextBlankChatId()
+      tabBlankChatIds.set(tabKey ?? '', next)
+      return next
+    }
+
+    function hasPendingSendForOrigin(origin: PendingSendOrigin): boolean {
+      for (const send of pendingSends.values()) {
+        if (originsEqual(send.origin, origin)) return true
+      }
+      return false
+    }
+
+    function discardFailedPendingSends(origin: PendingSendOrigin): string[] {
+      const discardedIds: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (send.status === 'failed' && originsEqual(send.origin, origin)) {
+          pendingSends.delete(id)
+          discardedIds.push(id)
+        }
+      }
+      return discardedIds
+    }
     function updatePendingAttachmentPreview(
       id: string,
       previewUrl: string
@@ -2057,6 +2101,7 @@ export const useAgentConversationStore = defineStore(
       attachmentNamesByThread.clear()
       threadId.value = null
       activeBlankChatId.value = blankChatId ?? nextBlankChatId()
+      hasAssignedBlankTab = true
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedTurnIds = new Map()
@@ -2435,12 +2480,18 @@ export const useAgentConversationStore = defineStore(
       moveTurnToTab,
       adoptThreadTab,
       threadId,
-      activeBlankChatId,
+      activeBlankChatId: computed(() => activeBlankChatId.value),
+      setActiveBlankChatId,
+      adoptInitialBlankTab,
+      blankChatIdForTab,
+      advanceBlankChatIdForTab,
       currentOrigin,
       isOriginOnScreen,
       hasSendingPendingSend,
       hasSendingForOrigin,
       isOriginBusy,
+      hasPendingSendForOrigin,
+      discardFailedPendingSends,
       startPendingSend,
       capturePendingSendCanvasBaseline,
       failPendingSend,

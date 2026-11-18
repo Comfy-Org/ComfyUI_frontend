@@ -307,28 +307,54 @@ export function useAttachment(options: UseAttachmentOptions) {
     uploadGeneration += 1
   }
 
+  function waitForUploadSlot(queue: {
+    active: number
+    waiting: Array<() => void>
+  }): Promise<void> {
+    return new Promise((resolve) => queue.waiting.push(resolve))
+  }
+
+  function releaseUploadSlot(scope: string): void {
+    const queue = queueFor(scope)
+    const next = queue.waiting.shift()
+    if (next) {
+      next()
+      return
+    }
+    queue.active -= 1
+    if (queue.active === 0 && queue.waiting.length === 0)
+      uploadQueues.delete(scope)
+  }
+
+  async function validateStagedFile(
+    id: string,
+    file: File,
+    validate: NonNullable<UseAttachmentOptions['validate']>
+  ): Promise<'ok' | 'cancelled' | 'failed'> {
+    const valid = await validate(file)
+    if (cancelled.has(id)) return 'cancelled'
+    if (valid) return 'ok'
+    options.update(id, {
+      name: file.name,
+      uploading: false,
+      validationError: 'invalid-video'
+    })
+    return 'failed'
+  }
+
   async function uploadStagedFile(
     id: string,
     file: File,
     scope: string
   ): Promise<UploadFileResult> {
     const queue = queueFor(scope)
-    if (queue.active === MAX_CONCURRENT_UPLOADS)
-      await new Promise<void>((resolve) => queue.waiting.push(resolve))
+    if (queue.active === MAX_CONCURRENT_UPLOADS) await waitForUploadSlot(queue)
     else queue.active += 1
     try {
       if (cancelled.has(id)) return 'cancelled'
       if (options.validate) {
-        const valid = await options.validate(file)
-        if (cancelled.has(id)) return 'cancelled'
-        if (!valid) {
-          options.update(id, {
-            name: file.name,
-            uploading: false,
-            validationError: 'invalid-video'
-          })
-          return 'failed'
-        }
+        const status = await validateStagedFile(id, file, options.validate)
+        if (status !== 'ok') return status
       }
       const mediaKind = attachmentMediaKind(file)
       options.update(id, {
@@ -350,13 +376,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'failed'
     } finally {
       settle(id)
-      const next = queue.waiting.shift()
-      if (next) next()
-      else {
-        queue.active -= 1
-        if (queue.active === 0 && queue.waiting.length === 0)
-          uploadQueues.delete(scope)
-      }
+      releaseUploadSlot(scope)
     }
   }
 

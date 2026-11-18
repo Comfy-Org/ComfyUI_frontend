@@ -82,12 +82,46 @@ function toUserAttachments(
   }))
 }
 
+function draftKeyForOrigin(
+  origin: ReturnType<
+    ReturnType<typeof useAgentConversationStore>['currentOrigin']
+  >
+): string {
+  return origin.kind === 'blank'
+    ? origin.blankChatId
+    : `thread:${origin.threadId}`
+}
+
 export function useAgentDraftSubmission(
   options: UseAgentDraftSubmissionOptions
 ) {
   const composer = useAgentComposerStore()
   const conversation = useAgentConversationStore()
   const { selection } = options
+
+  function keepWithdrawnReference(
+    reference: GateHoldSnapshot['prompt']['references'][number],
+    targetInstanceId: string | null,
+    snapshot: GateHoldSnapshot
+  ): boolean {
+    if (reference.kind === 'workflow')
+      return reference.id !== options.editableWorkflowId()
+    if (reference.kind === 'node')
+      return (
+        targetInstanceId === snapshot.targetInstanceId &&
+        snapshot.nodes.some(
+          (node) => selectedNodeKey(node) === selectedNodeKey(reference.node)
+        )
+      )
+    return true
+  }
+
+  function canRestoreOnScreen(expectedRevision: number | undefined): boolean {
+    const revisionMatches =
+      expectedRevision === undefined ||
+      composer.draftRevision === expectedRevision
+    return revisionMatches && selection.staged.value.length === 0
+  }
 
   function withdrawSubmission(
     clientMessageId: string,
@@ -96,16 +130,19 @@ export function useAgentDraftSubmission(
   ): void {
     const pending = conversation.takePendingSend(clientMessageId)
     composer.clearPendingSendDraft(clientMessageId)
-    if (!pending) {
+    if (!pending || !snapshot) {
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
       return
     }
-    if (
-      !snapshot ||
-      (expectedRevision !== undefined &&
-        composer.draftRevision !== expectedRevision) ||
-      selection.staged.value.length > 0
-    ) {
+    if (!conversation.isOriginOnScreen(pending.origin)) {
+      composer.restoreKeptDraftSnapshot(
+        draftKeyForOrigin(pending.origin),
+        snapshot
+      )
+      composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+      return
+    }
+    if (!canRestoreOnScreen(expectedRevision)) {
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
       return
     }
@@ -113,19 +150,9 @@ export function useAgentDraftSubmission(
     composer.restorePrompt(
       {
         text: snapshot.prompt.text,
-        references: snapshot.prompt.references.filter((reference) => {
-          if (reference.kind === 'workflow')
-            return reference.id !== options.editableWorkflowId()
-          if (reference.kind === 'node')
-            return (
-              targetInstanceId === snapshot.targetInstanceId &&
-              snapshot.nodes.some(
-                (node) =>
-                  selectedNodeKey(node) === selectedNodeKey(reference.node)
-              )
-            )
-          return true
-        })
+        references: snapshot.prompt.references.filter((reference) =>
+          keepWithdrawnReference(reference, targetInstanceId, snapshot)
+        )
       },
       snapshot.attachments
     )

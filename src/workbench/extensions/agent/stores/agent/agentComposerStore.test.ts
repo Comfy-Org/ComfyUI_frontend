@@ -619,18 +619,46 @@ describe('composer drafts per chat', () => {
     const store = useAgentComposerStore()
     store.activateDraft('thread:a')
     store.setText('make it blue')
-    const id = store.startSubmission({
+    const id = store.startGateHold('cm-1', {
       prompt: store.prompt,
       attachments: [],
       nodes: [],
-      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+      targetPath: 'workflows/target.json',
+      promptOrigin: 'typed',
+      starterPrompt: null
     })
-    store.settleSubmission(id, true)
+    store.releaseGateHold(id)
 
     store.activateDraft('thread:b')
     store.activateDraft('thread:a')
 
     expect(store.hasDraft).toBe(false)
+  })
+
+  it('T1-13: rekeys a kept draft and inserts a saved workflow reference into the origin draft after switching away', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('blank:tab-a')
+    store.setText('Use @ after')
+    const captured = store.captureReferenceInsertion(4, 5)
+    expect(store.isCapturedInsertionLive(captured)).toBe(true)
+
+    store.activateDraft('thread:b')
+    store.setText('on b')
+    expect(store.isCapturedInsertionLive(captured)).toBe(false)
+
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-ref',
+      name: 'Ref workflow'
+    })
+    expect(store.draft).toBe('on b')
+    expect(store.workflowReferences).toEqual([])
+
+    store.rekeyDraft('blank:tab-a', 'thread:a')
+    store.activateDraft('thread:a')
+    expect(store.draft).toBe('Use  after')
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-ref', name: 'Ref workflow', textOffset: 4 }
+    ])
   })
 
   it('keeps how a draft started, so a chip stays a chip', () => {

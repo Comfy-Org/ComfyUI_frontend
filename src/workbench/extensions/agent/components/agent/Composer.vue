@@ -32,6 +32,7 @@ import type {
 import type { MentionSection } from '@/workbench/extensions/agent/composables/agent/mentionPickerState'
 import { useComposer } from '@/workbench/extensions/agent/composables/agent/useComposer'
 import { useAgentPromptQueueStore } from '@/workbench/extensions/agent/stores/agent/agentPromptQueueStore'
+import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type {
   PromptSnapshot,
@@ -179,13 +180,24 @@ const uploadingAttachmentCount = computed(
   () => composer.attachments.value.filter((item) => item.uploading).length
 )
 
+const composerStore = useAgentComposerStore()
 const { eligibleWorkflows, selectWorkflow } = useWorkflowReferencePicker({
   editor: () => editorRef.value,
   references: () => workflowReferences.value,
   workflows: () => availableWorkflows,
   editableWorkflowId: () => editableWorkflowId,
   selecting: () => workflowSelecting,
-  resolve: (workflow) => selectWorkflowReference(workflow)
+  resolve: (workflow) => selectWorkflowReference(workflow),
+  captureInsertion: (from, to) =>
+    composerStore.captureReferenceInsertion(
+      from,
+      to,
+      editorRef.value?.insertionPoint()
+    ),
+  isInsertionLive: (captured) =>
+    composerStore.isCapturedInsertionLive(captured),
+  insertInBackground: (captured, reference) =>
+    composerStore.insertWorkflowReferenceInDraft(captured, reference)
 })
 
 const {

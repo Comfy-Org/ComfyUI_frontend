@@ -8,6 +8,7 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import {
   agentThreadPage,
   agentThreadSummary,
@@ -60,8 +61,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill('Optimistic message')
       await agentPanel.sendButton.click()
 
@@ -150,8 +151,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
       await agentPanel.composer.fill(prompt)
       await agentPanel.sendButton.click()
       await postEntered
@@ -218,8 +219,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await agentPanel.sendMessage('First failed')
       await expect(agentPanel.pendingSendError).toHaveText(
@@ -303,8 +304,8 @@ test.describe(
         return route.fallback()
       })
 
+      await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
       await agentPanel.open()
-      await agentPanel.selectWorkflow()
 
       await agentPanel.sendMessage('Chat one pending')
       await expect.poll(() => resolvers).toHaveLength(1)
