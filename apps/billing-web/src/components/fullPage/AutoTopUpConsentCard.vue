@@ -21,21 +21,34 @@ const rule = computed(() =>
   })
 )
 
+const CONSENT_KEYS = {
+  default: {
+    limit: 'checkout.fullPage.autoTopUp.consentDefaultCard',
+    noLimit: 'checkout.fullPage.autoTopUp.consentDefaultCardNoLimit'
+  },
+  none: {
+    limit: 'checkout.fullPage.autoTopUp.consentNoCard',
+    noLimit: 'checkout.fullPage.autoTopUp.consentNoCardNoLimit'
+  },
+  unknown: {
+    limit: 'checkout.fullPage.autoTopUp.consentEitherCard',
+    noLimit: 'checkout.fullPage.autoTopUp.consentEitherCardNoLimit'
+  }
+} as const
+
 const consentLine = computed(() => {
-  const { monthlyLimitCents, defaultCard } = consent
-  const max =
-    monthlyLimitCents === undefined
-      ? undefined
-      : formatQuoteMoney(monthlyLimitCents, 'usd', locale.value)
-  const card =
-    defaultCard && t('checkout.fullPage.autoTopUp.card', { ...defaultCard })
-  if (card === undefined)
-    return max === undefined
-      ? t('checkout.fullPage.autoTopUp.consentNoCardNoLimit')
-      : t('checkout.fullPage.autoTopUp.consentNoCard', { max })
-  return max === undefined
-    ? t('checkout.fullPage.autoTopUp.consentDefaultCardNoLimit', { card })
-    : t('checkout.fullPage.autoTopUp.consentDefaultCard', { card, max })
+  const { monthlyLimitCents, card } = consent
+  const keys = CONSENT_KEYS[card.kind]
+  const named =
+    card.kind === 'default'
+      ? { card: t('checkout.fullPage.autoTopUp.card', { ...card.card }) }
+      : {}
+  return monthlyLimitCents === undefined
+    ? t(keys.noLimit, named)
+    : t(keys.limit, {
+        ...named,
+        max: formatQuoteMoney(monthlyLimitCents, 'usd', locale.value)
+      })
 })
 </script>
 

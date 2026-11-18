@@ -9,7 +9,9 @@ import {
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import {
+  offersAutoTopUpAtLocalCheckout,
   opensLocalBillingHandoff,
+  setLocalAutoTopUpAtCheckoutEnabled,
   setLocalBillingNewUxEnabled,
   setLocalBillingWebEnabled,
   showsCloudBillingNewUxOnLocal
@@ -200,6 +202,76 @@ describe('showsCloudBillingNewUxOnLocal', () => {
       setLocalBillingNewUxEnabled(newUx)
 
       expect(showsCloudBillingNewUxOnLocal()).toBe(expected)
+    }
+  )
+})
+
+describe('offersAutoTopUpAtLocalCheckout', () => {
+  beforeEach(() => {
+    Object.assign(distribution, { isCloud: false, isDesktop: false })
+  })
+
+  afterEach(() => {
+    stopDesktopHostSession()
+    setLocalBillingWebEnabled(false)
+    setLocalAutoTopUpAtCheckoutEnabled(false)
+  })
+
+  it.for<{
+    name: string
+    handoffFlag: boolean
+    atCheckout: boolean
+    isCloud?: boolean
+    isDesktop?: boolean
+    expected: boolean
+  }>([
+    {
+      name: 'local web with the handoff and auto top-up at checkout served',
+      handoffFlag: true,
+      atCheckout: true,
+      expected: true
+    },
+    {
+      name: 'local web with auto top-up at checkout not served',
+      handoffFlag: true,
+      atCheckout: false,
+      expected: false
+    },
+    {
+      name: 'local web with the handoff off',
+      handoffFlag: false,
+      atCheckout: true,
+      expected: false
+    },
+    {
+      name: 'Desktop, whose handoff bridge carries no auto top-up settings',
+      handoffFlag: true,
+      atCheckout: true,
+      isDesktop: true,
+      expected: false
+    },
+    {
+      name: 'Cloud',
+      handoffFlag: true,
+      atCheckout: true,
+      isCloud: true,
+      expected: false
+    }
+  ])(
+    'is $expected on $name',
+    async ({
+      handoffFlag,
+      atCheckout,
+      isCloud = false,
+      isDesktop = false,
+      expected
+    }) => {
+      Object.assign(distribution, { isCloud, isDesktop })
+      if (isDesktop) await startHost('signed_in', true)
+      setLocalBillingWebEnabled(handoffFlag)
+      setLocalAutoTopUpAtCheckoutEnabled(atCheckout)
+
+      expect(offersAutoTopUpAtLocalCheckout()).toBe(expected)
     }
   )
 })

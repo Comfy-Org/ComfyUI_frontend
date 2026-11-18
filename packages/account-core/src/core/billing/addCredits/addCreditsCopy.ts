@@ -107,7 +107,9 @@ export const ADD_CREDITS_COPY = {
   'autoTopUpOn.done': 'Done',
   'autoTopUpFailed.title': "Auto top-up didn't turn on",
   'autoTopUpFailed.body':
-    'Your credits were added. Set up auto top-up in Billing to try again.'
+    'Your credits were added. Set up auto top-up in Billing to try again.',
+  'autoTopUpUnconfirmed.title': 'Credits added',
+  'autoTopUpUnconfirmed.body': 'Open Billing to check that auto top-up is on.'
 } as const satisfies Record<string, string>
 
 export type AddCreditsCopyKey = keyof typeof ADD_CREDITS_COPY

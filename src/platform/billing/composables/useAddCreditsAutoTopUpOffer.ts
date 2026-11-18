@@ -3,11 +3,9 @@ import { computed, watch } from 'vue'
 
 import type {
   AddCreditsAutoTopUpOffer,
-  AutoTopUpDefaultCard,
-  BillingResult
+  AutoTopUpDefaultCard
 } from '@comfyorg/account-core/billing'
 import { addCreditsAutoTopUpOffer } from '@comfyorg/account-core/billing'
-import type { SavedPaymentMethod } from '@comfyorg/billing-core'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -18,7 +16,10 @@ import {
   openPlatformBilling,
   usePlatformHandoff
 } from '@/platform/billing/composables/usePlatformHandoff'
-import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
+import {
+  offersAutoTopUpAtLocalCheckout,
+  opensLocalBillingHandoff
+} from '@/platform/billing/localBillingWebEnabled'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
 type DefaultCardRead =
@@ -26,9 +27,11 @@ type DefaultCardRead =
   | { readonly kind: 'unknown' }
   | { readonly kind: 'loaded'; readonly card: AutoTopUpDefaultCard | null }
 
-async function readSavedMethods(): Promise<
-  BillingResult<readonly SavedPaymentMethod[]>
-> {
+type SavedMethodsRead = ReturnType<
+  ReturnType<typeof useBillingSdkStore>['readPaymentMethods']
+>
+
+async function readSavedMethods(): SavedMethodsRead {
   if (!opensLocalBillingHandoff())
     return useBillingSdkStore().readPaymentMethods()
   return billingApi.listSavedPaymentMethods().then(
@@ -57,11 +60,13 @@ async function readDefaultCard(): Promise<DefaultCardRead> {
     : { kind: 'unknown' }
 }
 
-/** The Add credits dialog's auto top-up offer from served facts: the checkbox only with `billing_auto_top_up_at_checkout_enabled` or the local billing handoff, and a settled saved-cards read, else just the already-on line. */
+/** The Add credits dialog's auto top-up offer from served facts: the checkbox only with `billing_auto_top_up_at_checkout_enabled`, served to Cloud or to a local web handoff, and a settled saved-cards read, else just the already-on line. */
 export function useAddCreditsAutoTopUpOffer() {
   const { flags } = useFeatureFlags()
   const offersCheckbox = () =>
-    flags.billingAutoTopUpAtCheckoutEnabled || opensLocalBillingHandoff()
+    opensLocalBillingHandoff()
+      ? offersAutoTopUpAtLocalCheckout()
+      : flags.billingAutoTopUpAtCheckoutEnabled
   const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
     useBillingCapabilities()
   const { state, ensureRead } = useBillingAutoTopUpCard()
@@ -102,5 +107,10 @@ export function useAddCreditsAutoTopUpOffer() {
       : served
   })
 
-  return { offer, billingUrl: href, open: () => openPlatformBilling(track) }
+  return {
+    offer,
+    activatesAtCheckout: offersCheckbox,
+    billingUrl: href,
+    open: () => openPlatformBilling(track)
+  }
 }

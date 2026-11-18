@@ -81,8 +81,8 @@ test.describe('Local web billing handoff', () => {
       )
     })
 
-    test.describe('with auto top-up offered in Add credits', () => {
-      test.use({ autoTopUpOffered: true })
+    test.describe('with auto top-up at checkout served to the local account', () => {
+      test.use({ autoTopUpOffered: true, cloudAutoTopUpAtCheckout: true })
 
       test('Continue carries the ticked auto top-up to billing-web through the handoff', async ({
         comfyPage,

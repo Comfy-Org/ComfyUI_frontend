@@ -475,6 +475,8 @@
         "consentNoCard": "Top-ups are charged to the card you pay with, up to {max} a month. Turn this off anytime in Billing.",
         "consentDefaultCardNoLimit": "Top-ups are charged to your default card, {card}, up to the monthly maximum. Turn this off anytime in Billing.",
         "consentNoCardNoLimit": "Top-ups are charged to the card you pay with, up to the monthly maximum. Turn this off anytime in Billing.",
+        "consentEitherCard": "Top-ups are charged to your default card, or to the card you pay with if you have none, up to {max} a month. Turn this off anytime in Billing.",
+        "consentEitherCardNoLimit": "Top-ups are charged to your default card, or to the card you pay with if you have none, up to the monthly maximum. Turn this off anytime in Billing.",
         "card": "{brand} ···· {last4}",
         "hostedNote": "You'll pay on Stripe's secure checkout next."
       }
