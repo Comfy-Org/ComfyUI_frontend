@@ -118,6 +118,28 @@ describe('useUnreadyDeploymentRun', () => {
     expect(listDeployments).toHaveBeenCalledOnce()
   })
 
+  it('drops a second Run when another refresh turns the deployment ready while the first Run still waits', async () => {
+    await loadListing(listingWith('stopped'))
+    const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+    let answerFirstRead: () => void = () => {}
+    vi.spyOn(workspaceApi, 'listDeployments')
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            answerFirstRead = () => resolve(listingWith('ready'))
+          })
+      )
+      .mockResolvedValue(listingWith('ready'))
+
+    const firstRun = openSwitcherInsteadOfRun()
+    await useDeploymentPickStore().load()
+    const secondRun = openSwitcherInsteadOfRun()
+    answerFirstRead()
+
+    expect(await secondRun).toBe(true)
+    expect(await firstRun).toBe(false)
+  })
+
   it('opens the Run on menu when the fresh listing does not answer in time', async () => {
     await loadListing(listingWith('stopped'))
     const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()

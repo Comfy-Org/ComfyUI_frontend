@@ -63,8 +63,8 @@ export function useUnreadyDeploymentRun() {
    * The listing is read again first, and a Run made during that read is dropped.
    */
   async function openSwitcherInsteadOfRun(): Promise<boolean> {
-    if (!isRunBlocked()) return false
     if (pendingRecheck) return true
+    if (!isRunBlocked()) return false
     await recheckListingOnce()
     if (!isRunBlocked()) return false
     useDeploymentPickStore().requestSwitcherOpen()
