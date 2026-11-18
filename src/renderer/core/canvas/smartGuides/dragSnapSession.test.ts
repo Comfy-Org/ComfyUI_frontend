@@ -4,7 +4,11 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import { createTestLink } from '@/utils/__tests__/litegraphTestUtils'
 
-import { smartGuidesProvider } from './dragSnapSession'
+import {
+  nodePlacement,
+  positionFor,
+  smartGuidesProvider
+} from './dragSnapSession'
 
 function routedGraph() {
   const graph = new LGraph()
@@ -44,5 +48,25 @@ describe('smartGuidesProvider.move', () => {
     const { canvas, source, reroute } = routedGraph()
     const snap = smartGuidesProvider.move(canvas, [source, reroute])
     expect(snap.offset({ x: 0, y: 5 }, { suspended: false }).y).toBe(5)
+  })
+})
+
+describe('positionFor', () => {
+  it('keeps the offset an onBounding hook adds between position and box', () => {
+    const node = new LGraphNode('Padded')
+    node.pos = [100, 200]
+    node.size = [150, 60]
+    node.onBounding = (bounds) => {
+      bounds[0] -= 10
+    }
+    node.updateArea()
+    const placement = nodePlacement(node)
+
+    const moved = {
+      ...placement.box,
+      x: placement.box.x + 30,
+      y: placement.box.y + 5
+    }
+    expect(positionFor(placement, moved)).toEqual({ x: 130, y: 205 })
   })
 })
