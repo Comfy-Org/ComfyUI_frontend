@@ -10,7 +10,10 @@ import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { createListeners } from '@/platform/nodeApi/shared/listeners'
+import {
+  createListeners,
+  reportIfRejected
+} from '@/platform/nodeApi/shared/listeners'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type {
   QueueHandle,
@@ -47,7 +50,10 @@ export function createQueue(nodes: NodeHandles): {
     const cleanups = createListeners('queue.onBeforeRun')
     const stop = runStarting(() => {
       const cleanup: unknown = listener()
-      if (typeof cleanup !== 'function') return
+      if (typeof cleanup !== 'function') {
+        reportIfRejected('queue.onBeforeRun', cleanup)
+        return
+      }
       cleanups.add(() => Reflect.apply(cleanup, undefined, []))
       awaitingCleanup.add(cleanups)
     })

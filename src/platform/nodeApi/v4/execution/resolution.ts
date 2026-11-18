@@ -5,7 +5,10 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { callListener } from '@/platform/nodeApi/shared/listeners'
+import {
+  callListener,
+  reportIfRejected
+} from '@/platform/nodeApi/shared/listeners'
 import type {
   ResolveView,
   Resolver,
@@ -47,9 +50,11 @@ export function createResolutions(views: NodeViews): Resolutions {
     const known = answers.get(node)
     if (known) return known
     const answer =
-      callListener('resolve', () =>
-        checkedAnswer(graph, node, resolve(resolveView(graph, node, views)))
-      ) ?? new Map<number, CheckedResolution>()
+      callListener('resolve', () => {
+        const given = resolve(resolveView(graph, node, views))
+        reportIfRejected('resolve', given)
+        return checkedAnswer(graph, node, given)
+      }) ?? new Map<number, CheckedResolution>()
     answers.set(node, answer)
     return answer
   }

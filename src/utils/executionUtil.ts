@@ -62,6 +62,7 @@ export interface FrontendExecution {
  * @param graph The graph to convert.
  * @param options The options for the conversion.
  *  - `sortNodes`: Whether to sort the nodes by execution order.
+ *  - `frontendExecution`: The node API's resolvers, suppliers and prompt hooks.
  * @returns The workflow and node links
  */
 export const graphToPrompt = async (

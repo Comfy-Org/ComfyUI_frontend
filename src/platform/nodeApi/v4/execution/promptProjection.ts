@@ -4,6 +4,7 @@ import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
 import type { ExecutableLGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { reportIfRejected } from '@/platform/nodeApi/shared/listeners'
 import type { NodeHookSource } from '@/platform/nodeApi/v4/defs/dispatchContext'
 
 /** The inputs the `onPromptSerialize` hooks of a node's type leave out of its prompt entry. */
@@ -20,7 +21,11 @@ export function omittedInputs(
   const answers = nodeHooks.deliverTo(
     node.node,
     'onPromptSerialize',
-    (callback, handle) => checkedOmissions(callback(handle))
+    (callback, handle) => {
+      const given = callback(handle)
+      reportIfRejected('onPromptSerialize', given)
+      return checkedOmissions(given)
+    }
   )
   return answers.flatMap((names) => names ?? [])
 }

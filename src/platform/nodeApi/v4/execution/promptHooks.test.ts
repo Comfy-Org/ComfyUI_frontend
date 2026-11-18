@@ -180,6 +180,31 @@ describe('prompt and preview hooks', () => {
       )
     })
 
+    it('reports the rejection of an async hook as well as the refusal of its promise, and leaves nothing out', async () => {
+      const rejected = new Error('later')
+      extend((builder) =>
+        Reflect.apply(builder.onPromptSerialize, builder, [
+          async () => {
+            throw rejected
+          }
+        ])
+      )
+      const stash = addStash()
+
+      const { output } = await promptOf()
+
+      expect(output[String(stash.id)].inputs).toEqual({
+        seed: 3,
+        text: 'typed'
+      })
+      await Promise.resolve()
+      expect(reportError).toHaveBeenCalledTimes(2)
+      expect(reportError).toHaveBeenCalledWith(
+        rejected,
+        expect.objectContaining({ tags: { event: 'onPromptSerialize' } })
+      )
+    })
+
     it.for([
       { name: 'an answer that is not an object', answer: 'text' },
       { name: 'a list of names', answer: ['text'] },
