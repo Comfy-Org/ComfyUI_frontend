@@ -345,6 +345,7 @@ describe('useAgentCrdtFollower', () => {
       enabled: false,
       connected: false,
       canvasMayBeStale: false,
+      canvasStaleCause: null,
       workflowId: null,
       updatesApplied: 0
     })
@@ -375,6 +376,7 @@ describe('useAgentCrdtFollower', () => {
       enabled: false,
       connected: false,
       canvasMayBeStale: false,
+      canvasStaleCause: null,
       workflowId: null
     })
 
@@ -626,6 +628,76 @@ describe('useAgentCrdtFollower', () => {
       expect(status().connected).toBe(false)
       expect(status().canvasMayBeStale).toBe(true)
       expect(status().terminal).toBeNull()
+      unmount()
+    })
+
+    it('names the socket drop that made the canvas stale', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+      expect(status().canvasStaleCause).toBeNull()
+
+      agentSocket.drop()
+
+      expect(status().canvasMayBeStale).toBe(true)
+      expect(status().canvasStaleCause).toBe('socket_closed')
+      unmount()
+    })
+
+    it('names a sequence gap rather than the socket', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      dispatchFrame('doc_gap', { workflowId: 'wf-1', expected: 3, received: 5 })
+
+      expect(status().canvasStaleCause).toBe('doc_gap')
+      unmount()
+    })
+
+    it('names a lineage reset rather than the socket', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 43 })
+
+      expect(status().canvasStaleCause).toBe('doc_reset')
+      unmount()
+    })
+
+    it('names the schema read-gate failure rather than the socket', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+
+      dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+      expect(status().canvasStaleCause).toBe('schema_error')
+      unmount()
+    })
+
+    it('drops the cause when the catch-up clears the staleness', () => {
+      const { unmount, status } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+      agentSocket.drop()
+      agentSocket.open()
+      expect(status().canvasStaleCause).toBe('socket_closed')
+
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 0 })
+
+      expect(status().canvasMayBeStale).toBe(false)
+      expect(status().canvasStaleCause).toBeNull()
+      unmount()
+    })
+
+    it('names the tab switch when it is the latest edge, even after a socket drop', async () => {
+      const { unmount, status, isTargetActive } = mountFollower('wf-1')
+      dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
+      agentSocket.drop()
+      expect(status().canvasStaleCause).toBe('socket_closed')
+
+      isTargetActive.value = false
+      await nextTick()
+
+      expect(status().canvasMayBeStale).toBe(true)
+      expect(status().canvasStaleCause).toBe('tab_inactive')
       unmount()
     })
 
@@ -982,8 +1054,10 @@ describe('useAgentCrdtFollower', () => {
 
       expect(projectionState.retryFailed).toHaveBeenLastCalledWith('wf-1')
       expect(status().canvasMayBeStale).toBe(true)
+      expect(status().canvasStaleCause).toBe('projection_failed')
 
       agentSocket.drop()
+      expect(status().canvasStaleCause).toBe('socket_closed')
       agentSocket.open()
       projectionState.retryFailed.mockReturnValueOnce(projectionState.applied())
       dispatchFrame('doc_subscribed', {
@@ -2858,7 +2932,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it.fails('keeps ops the host skipped when it refuses another op in the batch', async () => {
+  it('keeps ops the host skipped when it refuses another op in the batch', async () => {
     const readyGraph = fromPartial<LGraph>({})
     const { unmount, enqueue } = mountFollower('wf-1', true, () => readyGraph)
     enqueue([

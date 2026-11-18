@@ -209,6 +209,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const lastBalanceReadFailed = ref(false)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
   const statusReadAuthoritative = ref(true)
@@ -421,9 +422,11 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         !isStaleBillingRead('balance', requestId, workspaceId)
       ) {
         balanceData.value = balance
+        lastBalanceReadFailed.value = false
       }
     } catch (err) {
       if (isStaleBillingRead('balance', requestId, workspaceId)) return
+      lastBalanceReadFailed.value = true
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch balance'
       throw err
@@ -867,6 +870,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     occupiedSeats,
     isLoading,
     error,
+    balanceReadFailed: computed(() => lastBalanceReadFailed.value),
     canAccessSubscriptionFeatures,
     isFreeTier,
     billingStatus,
