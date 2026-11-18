@@ -1,5 +1,6 @@
 <template>
   <div
+    ref="menu"
     data-testid="current-user-popover"
     class="current-user-popover flex flex-col p-1"
   >
@@ -27,7 +28,10 @@
             variant="textonly"
             size="unset"
             :class="
-              cn(menuRowClass, 'justify-start data-[state=open]:bg-accent')
+              cn(
+                profileMenuRowClass,
+                'justify-start data-[state=open]:bg-accent'
+              )
             "
             :title="workspaceName"
             :aria-label="$t('profileMenu.switchWorkspace')"
@@ -54,9 +58,10 @@
           align="start"
           :side-offset="flyoutGap"
           :align-offset="-menuInset"
+          :align-flip="false"
           prioritize-position
           dismiss-on-viewport-change
-          class="w-auto overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0 data-[state=open]:data-[side=right]:slide-in-from-left-0"
+          class="w-64 overflow-visible rounded-xl p-2 data-[state=open]:data-[side=left]:slide-in-from-right-0 data-[state=open]:data-[side=right]:slide-in-from-left-0"
           data-testid="workspace-switcher-panel"
         >
           <WorkspaceSwitcherFlyout
@@ -67,16 +72,22 @@
       </PopoverRoot>
 
       <HoverCard
-        :open="creditsOpen && !switcherOpen"
+        :open="flyout === 'creditsPreview'"
         :open-delay="120"
-        @update:open="creditsOpen = $event"
+        @update:open="previewCredits"
       >
         <HoverCardTrigger as-child>
           <button
+            ref="creditsRow"
             type="button"
-            :class="menuRowClass"
+            :class="profileMenuRowClass"
+            :aria-expanded="creditsOpen"
             data-testid="credits-menu-item"
-            @click="openSettings('workspace')"
+            @click="pinCredits"
+            @keydown.arrow-right.prevent="pinCredits"
+            @blur="previewHeldBack = false"
+            @pointerenter="previewHeldBack = false"
+            @pointerleave="previewHeldBack = false"
           >
             <i class="icon-[lucide--coins] text-muted-foreground" />
             <span class="flex-1 text-foreground">{{
@@ -104,10 +115,8 @@
           </button>
         </HoverCardTrigger>
         <HoverCardContent
-          :side="flyoutSide"
-          align="start"
-          :side-offset="flyoutGap"
-          class="rounded-xl p-2"
+          v-bind="creditsFlyoutPlacement"
+          :class="creditsFlyoutClass"
         >
           <ProfileMenuCreditsFlyout
             @open-billing="openSettings('workspace')"
@@ -115,10 +124,35 @@
           />
         </HoverCardContent>
       </HoverCard>
+      <PopoverRoot
+        :open="flyout === 'creditsPinned'"
+        @update:open="unpinCredits"
+      >
+        <PopoverContent
+          v-bind="creditsFlyoutPlacement"
+          :reference="creditsRow ?? undefined"
+          :class="
+            cn(
+              creditsFlyoutClass,
+              'max-h-none max-w-none overflow-visible data-[state=closed]:animate-none data-[state=open]:animate-none'
+            )
+          "
+          :aria-label="$t('profileMenu.credits')"
+          @escape-key-down="returnFocusToCreditsRow"
+          @interact-outside="keepPinnedOnCreditsRow"
+        >
+          <div ref="pinnedCredits">
+            <ProfileMenuCreditsFlyout
+              @open-billing="openSettings('workspace')"
+              @close="emit('close')"
+            />
+          </div>
+        </PopoverContent>
+      </PopoverRoot>
 
       <button
         type="button"
-        :class="menuRowClass"
+        :class="profileMenuRowClass"
         data-testid="workspace-settings-menu-item"
         @click="openSettings('workspace')"
       >
@@ -152,7 +186,7 @@
 
     <button
       type="button"
-      :class="menuRowClass"
+      :class="profileMenuRowClass"
       data-testid="user-settings-menu-item"
       @click="openSettings('user')"
     >
@@ -164,7 +198,7 @@
 
     <button
       type="button"
-      :class="menuRowClass"
+      :class="profileMenuRowClass"
       data-testid="logout-menu-item"
       @click="handleLogout"
     >
@@ -180,8 +214,9 @@
 import type { SettingPanelType } from '@comfyorg/settings-core/types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import { storeToRefs } from 'pinia'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -197,6 +232,7 @@ import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import ProfileMenuCreditsFlyout from '@/platform/account/components/ProfileMenuCreditsFlyout.vue'
 import WorkspaceSwitcherFlyout from '@/platform/account/components/WorkspaceSwitcherFlyout.vue'
+import { profileMenuRowClass } from '@/platform/account/components/profileMenuRow'
 import {
   PROFILE_MENU_ROLE_KEY,
   profileMenuPlanLabel
@@ -225,14 +261,34 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const menuRowClass =
-  'flex w-full cursor-pointer items-center gap-2 rounded-lg border-none bg-transparent p-2 text-left text-sm hover:bg-accent focus-visible:bg-accent focus-visible:outline-none'
-
 const { t, locale } = useI18n()
 const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
 const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
-const switcherOpen = ref(false)
-const creditsOpen = ref(false)
+const menu = useTemplateRef<HTMLElement>('menu')
+const creditsRow = useTemplateRef<HTMLElement>('creditsRow')
+const creditsFlyoutClass = 'w-64 rounded-xl border-border bg-background p-0'
+const creditsFlyoutPlacement = computed(() => ({
+  side: flyoutSide,
+  align: 'start' as const,
+  sideOffset: flyoutGap,
+  alignOffset: -11,
+  collisionBoundary: menu.value,
+  collisionPadding: 0,
+  sideFlip: false,
+  alignFlip: false
+}))
+type MenuFlyout = 'none' | 'switcher' | 'creditsPreview' | 'creditsPinned'
+const flyout = ref<MenuFlyout>('none')
+const creditsOpen = computed(
+  () => flyout.value === 'creditsPreview' || flyout.value === 'creditsPinned'
+)
+const switcherOpen = computed({
+  get: () => flyout.value === 'switcher',
+  set: (open) => {
+    if (open) flyout.value = 'switcher'
+    else if (flyout.value === 'switcher') flyout.value = 'none'
+  }
+})
 const { userDisplayName, userEmail, handleSignOut, isApiKeyLogin } =
   useCurrentUser()
 const { balance, isLoading, fetchBalance } = useBillingContext()
@@ -263,6 +319,43 @@ const displayedCredits = computed(() =>
 const monogram = computed(() =>
   (userDisplayName.value || userEmail.value || '').trim().charAt(0)
 )
+
+const previewHeldBack = ref(false)
+
+function returnFocusToCreditsRow() {
+  previewHeldBack.value = true
+  creditsRow.value?.focus()
+}
+
+function previewCredits(open: boolean) {
+  if (open && flyout.value === 'none' && !previewHeldBack.value)
+    flyout.value = 'creditsPreview'
+  if (!open && flyout.value === 'creditsPreview') flyout.value = 'none'
+}
+
+const pinnedCredits = useTemplateRef<HTMLElement>('pinnedCredits')
+
+function pinCredits() {
+  if (flyout.value === 'creditsPinned') {
+    pinnedCredits.value
+      ?.querySelector<HTMLElement>('button:not([disabled]), a[href]')
+      ?.focus()
+    return
+  }
+  flyout.value = 'creditsPinned'
+}
+
+function unpinCredits(open: boolean) {
+  if (!open && flyout.value === 'creditsPinned') flyout.value = 'none'
+}
+
+function keepPinnedOnCreditsRow(
+  event: PointerDownOutsideEvent | FocusOutsideEvent
+) {
+  const target = event.detail.originalEvent.target
+  if (target instanceof Node && creditsRow.value?.contains(target))
+    event.preventDefault()
+}
 
 function openSettings(panel: SettingPanelType) {
   settingsDialog.show(panel)

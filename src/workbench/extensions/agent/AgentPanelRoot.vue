@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import './agentPanel.css'
+import type { AgentGreetingAssignment } from './types/proactiveGreeting'
+import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useClipboard, useEventListener } from '@vueuse/core'
@@ -201,6 +203,10 @@ import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
 )
+
+const { proactiveAssignment } = defineProps<{
+  proactiveAssignment?: AgentGreetingAssignment
+}>()
 
 const { t } = useI18n()
 const toast = useToast()
@@ -1139,7 +1145,9 @@ const {
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
-    draft: targetWorkflowDraft
+    draft: targetWorkflowDraft,
+    canvasSelection: () =>
+      canReferenceNodes.value ? selectedNodes.value.map((node) => node.id) : []
   }
 })
 
@@ -1366,7 +1374,7 @@ async function restoreThreadWorkflow(
 }
 
 conversationStore.setTurnTabResolver(turnTab)
-const { clearTurnSignals } = useAgentTabSignals()
+const { clearTurnSignals } = useAgentTabSignals({ onIdentityChange })
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1385,6 +1393,33 @@ useEventListener(
       boundCanvasNodeCount.value = event.detail.nodes?.length ?? 0
   }
 )
+
+const greetingCanvasHasNodes = ref(false)
+function refreshGreetingCanvas(): void {
+  greetingCanvasHasNodes.value =
+    (workflowStore.activeWorkflow?.activeState?.nodes?.length ?? 0) > 0
+}
+watch(() => workflowStore.activeWorkflow, refreshGreetingCanvas, {
+  immediate: true
+})
+useEventListener(
+  api,
+  'graphChanged',
+  (event: CustomEvent<ComfyWorkflowJSON>) => {
+    greetingCanvasHasNodes.value = (event.detail.nodes?.length ?? 0) > 0
+  }
+)
+const proactive = useProactiveGreeting({
+  assignment: () => (isCloud ? proactiveAssignment : undefined),
+  identity: () => ({
+    userId: authStore.userId ?? null,
+    workspaceId: teamWorkspaceStore.activeWorkspaceId ?? null
+  }),
+  active: () =>
+    agentPanelStore.isOpen && agentPanelStore.view.screen === 'chat',
+  canvas: () => (greetingCanvasHasNodes.value ? 'workflow' : 'empty'),
+  getUsageStatus: (options) => rest.getUsageStatus(options)
+})
 
 const completedTurnClaimedCanvasContent = ref(false)
 function completedTurnCanClaimCanvasContent(): boolean {
@@ -1779,8 +1814,6 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-// DES-1221. Read while the panel is on screen, so the experiment's denominator
-// is the panel openers the hypothesis is about.
 const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
   useFreeUsePlacement(isCloud)
 
@@ -2216,6 +2249,7 @@ const { submit: onSend } = useAgentDraftSubmission({
         originContext === undefined ? null : { tabPath: originContext.tabPath }
     }
     const selectionWorkflow = selectedTarget.value
+    const sentUsageScope = proactive.scope.value
     try {
       return await sendWithFundsRecheck((onAccepted) =>
         sendMessage(
@@ -2225,10 +2259,14 @@ const { submit: onSend } = useAgentDraftSubmission({
           references,
           () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
           meta.clientMessageId,
-          onAccepted
+          () => {
+            proactive.accepted(sentUsageScope)
+            onAccepted()
+          }
         )
       )
     } finally {
+      if (proactive.scope.value === sentUsageScope) void proactive.refresh()
       reportPendingSend()
     }
   }
@@ -2277,6 +2315,7 @@ function onNewChat(
   errorAttachRun++
   composerStore.clearDraft()
   newChat(source)
+  void proactive.refresh()
   agentPanelStore.startFollowingVisibleWorkflow()
 }
 
@@ -2616,6 +2655,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @change="onFilesPicked"
     />
     <AgentPanel
+      :greeting="proactive.greeting.value"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"

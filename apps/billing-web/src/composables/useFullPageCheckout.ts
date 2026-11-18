@@ -50,6 +50,7 @@ import {
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
+import { createNamedSignup } from '@/checkout/namedSignup'
 import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
 import { pricingTableUrl } from '@/checkout/cloudLinks'
@@ -277,10 +278,14 @@ export function useFullPageCheckout() {
 
   let generation = 0
   let latest: Promise<void> = Promise.resolve()
+  const namedSignup = createNamedSignup()
 
   async function reconcileOnce(): Promise<void> {
     const mine = ++generation
-    const recovered = await lifecycle.recover({ includeSettled: true })
+    const recovered = await lifecycle.recover({
+      includeSettled: true,
+      ...namedSignup.recoverOptions(entry.value)
+    })
     if (mine !== generation) return
     dispatch(reconciledEvent(recovered))
   }
@@ -892,6 +897,8 @@ export function useFullPageCheckout() {
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
     await releasing
+    namedSignup.replaced(arrival)
+    generation++
     let result: SubscriptionCommandResult
     try {
       result = await attempts.run(checkoutAttemptOf(quoted, arrival), () =>

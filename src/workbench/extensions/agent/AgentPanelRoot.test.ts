@@ -780,7 +780,7 @@ describe('AgentPanelRoot first-use experience', () => {
     paywallAgentScopedHasFundsAuthoritative.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({
-        variant: ref('top-banner'),
+        variant: ref('near-composer'),
         reportNotice: reportFreeUseNotice
       })
     )
@@ -790,7 +790,7 @@ describe('AgentPanelRoot first-use experience', () => {
     return screen.findByRole('note', { name: 'Free use notice' })
   }
 
-  it('forwards free-use notice interactions to the experiment', async () => {
+  it('forwards Local free-use notice interactions to telemetry', async () => {
     placeFundedFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -799,8 +799,8 @@ describe('AgentPanelRoot first-use experience', () => {
     )
 
     expect(reportFreeUseNotice.mock.calls).toEqual([
-      [{ action: 'shown', placement: 'top-banner' }],
-      [{ action: 'dismissed', placement: 'top-banner' }]
+      [{ action: 'shown', placement: 'near-composer' }],
+      [{ action: 'dismissed', placement: 'near-composer' }]
     ])
   })
 
@@ -17107,3 +17107,71 @@ describe('AgentPanelRoot agent socket identity', () => {
 function dispatchApiEvent(type: string, detail: unknown): void {
   ws.emit(type, detail)
 }
+
+describe('AgentPanelRoot proactive qualification', () => {
+  const assignment = {
+    userId: 'account-a',
+    workspaceId: 'workspace-proactive',
+    variant: 'B' as const
+  }
+
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: assignment.workspaceId
+    })
+    Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-proactive',
+      'true'
+    )
+    mockMessagesEndpoint('wf-proactive')
+  })
+
+  it('makes no usage request when the experiment is unconfigured', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await settleFollow()
+    expect(fetchRequests('/api/agent/usage-status')).toHaveLength(0)
+    expect(
+      screen.getByRole('heading', { name: 'What do you want to make?' })
+    ).toBeVisible()
+  })
+
+  it('shows the assigned greeting only after qualification and retires it at the accepted send', async () => {
+    const target = addTab('workflows/proactive.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: 'wf-proactive',
+        nodes: []
+      })
+    })
+    workflowStore.activeWorkflow = target
+    useAgentWorkflowTabBindingStore().bind('wf-proactive', target.path)
+    useAgentPanelStore().setWorkflowTarget(target)
+    const delegate = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      String(input).includes('/agent/usage-status')
+        ? Promise.resolve(json(200, { has_used_agent: false }))
+        : delegate(input, init)
+    )
+    render(AgentPanelRoot, {
+      props: { proactiveAssignment: assignment },
+      global: { plugins: [i18n] }
+    })
+    expect(
+      await screen.findByRole('heading', {
+        name: 'A little help to get you started!'
+      })
+    ).toBeVisible()
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'What can you help me with?'
+    )
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus())
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(
+      await screen.findByRole('heading', { name: 'What do you want to make?' })
+    ).toBeVisible()
+    expect(fetchRequests('/api/agent/usage-status')).toHaveLength(1)
+  })
+})

@@ -51,6 +51,7 @@ import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
+import { renderWorkflowImage } from '@/renderer/core/canvas/workflowImage/renderWorkflowImage'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -280,6 +281,17 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Export (API)',
       function: async () => {
         await workflowService.exportWorkflow('workflow_api', 'output')
+      }
+    },
+    {
+      id: 'Comfy.ExportWorkflowImage',
+      icon: 'icon-[lucide--image-down]',
+      label: 'Export Workflow Image',
+      menubarLabel: 'Export (Workflow Image)',
+      function: async () => {
+        await workflowService.exportWorkflowImage('workflow', () =>
+          renderWorkflowImage(useApp().canvas)
+        )
       }
     },
     {

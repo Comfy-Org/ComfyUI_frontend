@@ -1,3 +1,4 @@
+import type { PlanNotStartedBanner } from '@comfyorg/account-core/billing'
 import type {
   BillingBannerCopy,
   BillingBannerView
@@ -7,14 +8,16 @@ import { useI18n } from 'vue-i18n'
 
 import { formatUsdFromCents } from '@/base/credits/comfyCredits'
 import { pausedBannerCopy } from '@/platform/billing/composables/usePausedBanner'
+import { useWorkspaceTierLabel } from '@/platform/billing/composables/useWorkspaceTierLabel'
 
 const bs = 'workspacePanel.billingStatus'
 const tc = 'workspacePanel.billingTab.topupCheckout'
 const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
 
-/** The Billing tab banner strings in the app locale, with the paused and parked views. */
+/** The Billing tab banner strings in the app locale, with the paused, parked and plan-not-started views. */
 export function useBillingBannerCopy() {
   const { t, locale } = useI18n()
+  const { formatTierName } = useWorkspaceTierLabel()
 
   function usd(cents: number) {
     return formatUsdFromCents({
@@ -37,7 +40,9 @@ export function useBillingBannerCopy() {
       contactSupport: t(`${bs}.parked.contactSupport`),
       resumePlan: t(`${bs}.ending.reactivate`),
       choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
-      contactSales: t(`${bs}.ending.contactSales`)
+      contactSales: t(`${bs}.ending.contactSales`),
+      finishPayment: t('subscription.signupPaymentRecovery.finishPayment'),
+      viewPlans: t(`${bs}.planNotStarted.viewPlans`)
     },
     planCheckout: {
       verifyPayment: {
@@ -90,5 +95,41 @@ export function useBillingBannerCopy() {
     href: CONTACT_SUPPORT_URL
   }))
 
-  return { copy, topupCopy, pausedView, parkedView }
+  function planNotStartedView(
+    { planTier, paymentPage }: PlanNotStartedBanner,
+    canOpenPlans: boolean
+  ): BillingBannerView {
+    const plan = formatTierName(planTier, false)
+    const title = plan
+      ? t(`${bs}.planNotStarted.title`, { plan })
+      : t(`${bs}.planNotStarted.titleNoPlan`)
+    switch (paymentPage.kind) {
+      case 'hostedPage':
+        return {
+          kind: 'planNotStarted',
+          title,
+          body: t(`${bs}.planNotStarted.body`),
+          action: 'finishPayment',
+          href: null
+        }
+      case 'clientSecretOnly':
+        return {
+          kind: 'planNotStarted',
+          title,
+          body: t(`${bs}.planNotStarted.body`),
+          action: 'verifyPayment',
+          href: paymentPage.checkoutUrl
+        }
+      case 'unavailable':
+        return {
+          kind: 'planNotStarted',
+          title,
+          body: t(`${bs}.planNotStarted.bodyUnavailable`),
+          action: canOpenPlans ? 'viewPlans' : null,
+          href: null
+        }
+    }
+  }
+
+  return { copy, topupCopy, pausedView, parkedView, planNotStartedView }
 }
