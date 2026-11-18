@@ -364,7 +364,17 @@ registered, so `extend` cannot depend on the order.
     `LGraphNode.vue` makes any node the pointer drops on the target, whether
     it accepted the drag or not, unless something under it already handled
     the drop. The API asks the hooks whenever the host asks the node, and
-    the JSDoc says so. The host's own drag handling for upload widgets
+    the JSDoc says so. App mode does not ask the node: `AppModeWidgetList.vue`
+    copies the node's `onDragOver` and `onDragDrop` into its widget data and
+    calls them on that copy, and `DropZone.vue` calls them through its props,
+    so the node is not `this`. The dispatchers then find no node that joined
+    after the extension and answer `false` without asking a hook, so
+    `onDragOver` and `onDrop` are not asked in app mode; the JSDoc says so.
+    For a type with both methods, app mode also wraps the selected widgets
+    of its nodes in a `DropZone`, which stops a drop on them from reaching
+    the editor's own drop handling, as it does for a V1 extension that sets
+    both methods. The API keeps the host's behavior; the ticket draft is
+    under "Consequences". The host's own drag handling for upload widgets
     (`useNodeDragAndDrop`, on image, audio and 3D upload nodes) assigns
     `onDragOver` and `onDragDrop` on the node itself, which replaces the
     dispatchers for that node as any assignment does (decision 17), so the
@@ -552,12 +562,25 @@ registered, so `extend` cannot depend on the order.
   cancelable `link-unplaced` event that `LinkConnector` dispatches when a link
   dropped on a node finds no slot, carrying the node, the link, the side and
   the pointer event. Nothing in this API works around its absence.
+- `onDragOver` and `onDrop` are not asked in app mode (decision 28), and the
+  API does not work around it. Ticket draft: _Title:_ "App mode calls a
+  node's drag methods without the node". _Reproduction:_ on frontend 1.61.0,
+  give a node type `onDragOver` and `onDragDrop` methods that read `this`
+  (for example `return this.type === 'LoadImage'`), select one of its
+  widgets in app mode and drop a file on it: both methods run with `this`
+  set to app mode's copy of the node's state (in `AppModeWidgetList.vue`'s
+  drop handler) or to `DropZone.vue`'s props, never to the node, so a
+  method that reads its node answers `false`. _Direction:_ have
+  `AppModeWidgetList.vue`'s `nodeToNodeData` pass functions that call the
+  method on the node (`onDragOver: (e) => node.onDragOver?.(e)`, and the
+  same for `onDragDrop`).
 - The type colours are global, as the host's table is: a pack's colour for a
   type shows in every document.
 - Host changes: `useComfyApiStore().publish()` registers the extension;
   `themeService.setActiveTheme` calls `useComfyApiStore().reapplyTypeColors()`
   after it applies a palette; the extension store lists the extension as
-  always enabled.
+  always enabled, reading its name from `defs/nodeTypeHooksName.ts`, the host's
+  only runtime import from the API's folder besides `comfyApiStore.ts`.
 
 ## What this feature replaces or duplicates, and why
 
