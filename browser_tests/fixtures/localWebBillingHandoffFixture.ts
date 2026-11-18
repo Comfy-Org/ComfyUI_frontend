@@ -59,6 +59,7 @@ export const OWNER_ONLY: HandoffReply = {
 export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
   localBillingWeb: boolean
   cloudBillingNewUx: boolean
+  cloudAutoTopUpAtCheckout: boolean
   autoTopUpOffered: boolean
   handoffReply: HandoffReply
   handoffRequests: Request[]
@@ -68,6 +69,7 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
 }>({
   localBillingWeb: [false, { option: true }],
   cloudBillingNewUx: [false, { option: true }],
+  cloudAutoTopUpAtCheckout: [false, { option: true }],
   autoTopUpOffered: [false, { option: true }],
   handoffReply: [ISSUED, { option: true }],
   handoffRequests: async ({ browserName: _browserName }, use) => {
@@ -100,6 +102,7 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
       page,
       localBillingWeb,
       cloudBillingNewUx,
+      cloudAutoTopUpAtCheckout,
       autoTopUpOffered,
       handoffReply,
       handoffRequests,
@@ -136,7 +139,8 @@ export const localWebBillingHandoffTest = workspaceSwitcherTest.extend<{
       await route.fulfill(
         jsonRoute({
           local_billing_web: localBillingWeb,
-          billing_new_ux_enabled: cloudBillingNewUx
+          billing_new_ux_enabled: cloudBillingNewUx,
+          billing_auto_top_up_at_checkout_enabled: cloudAutoTopUpAtCheckout
         })
       )
       cloudFlagReads.push(route.request())

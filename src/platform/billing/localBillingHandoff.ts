@@ -1,8 +1,5 @@
 import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
-import type {
-  BillingHandoffCreateRequest,
-  TopupAutoTopUpSettings
-} from '@comfyorg/ingest-types'
+import type { BillingHandoffCreateRequest } from '@comfyorg/ingest-types'
 import {
   zBillingHandoffCreateResponse,
   zErrorResponse
@@ -34,7 +31,7 @@ export type BillingHandoffRequest =
   | {
       readonly intent: 'top-up'
       readonly amountCents: number
-      readonly autoTopUp?: TopupAutoTopUpSettings
+      readonly autoTopUp?: BillingHandoffCreateRequest['auto_top_up']
     }
   | { readonly intent: 'subscription' }
   | { readonly receiver: 'platform' }
