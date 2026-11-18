@@ -55,9 +55,14 @@ test.describe(
   () => {
     test.describe('in a workflow whose subgraph exposes no preview', () => {
       test.beforeEach(async ({ comfyPage }) => {
-        await comfyPage.workflow.loadWorkflow(
-          'subgraphs/subgraph-sampler-without-exposures'
-        )
+        await comfyPage.workflow.loadWorkflow('subgraphs/basic-subgraph', {
+          nodes: {
+            [HOST_ID]: {
+              properties: { previewExposures: [] },
+              size: [320, 300]
+            }
+          }
+        })
       })
 
       test(
