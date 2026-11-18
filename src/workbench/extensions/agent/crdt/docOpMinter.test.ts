@@ -383,6 +383,88 @@ describe('attachDocOpMinter', () => {
     )
   })
 
+  describe('FRONT-3756: positional values a pack hook appends', () => {
+    function packNode(type: string, appendPositional: boolean): LGraphNode {
+      const node = new LGraphNode(type)
+      node.type = type
+      node.serialize_widgets = true
+      node.addWidget('text', 'prompt', 'a', () => {})
+      if (appendPositional)
+        node.onSerialize = (data: ISerialisedNode) => {
+          data.widgets_values = [...(data.widgets_values ?? []), 'pack-private']
+        }
+      return node
+    }
+
+    function droppedReports() {
+      return vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, meta]) =>
+            meta.errorType === 'agent_wire_positional_values_dropped'
+        )
+    }
+
+    it('reports each dropping node type once per session, across flushes', async () => {
+      graph.add(packNode('PositionalPack', true))
+      await afterFlush()
+      graph.add(packNode('OtherPositionalPack', true))
+      await afterFlush()
+      graph.add(packNode('PositionalPack', true))
+      graph.add(packNode('OtherPositionalPack', true))
+      await afterFlush()
+
+      expect(minted.length).toBeGreaterThan(0)
+      expect(droppedReports()).toEqual(
+        ['PositionalPack', 'OtherPositionalPack'].map((nodeType) => [
+          new Error('agent_wire_positional_values_dropped'),
+          expect.objectContaining({
+            surface: 'agent',
+            context: { nodeType, positional: 2, named: 1 }
+          })
+        ])
+      )
+    })
+
+    it('stays silent when positional and named values line up', async () => {
+      graph.add(packNode('PlainPack', false))
+      await afterFlush()
+
+      expect(droppedReports()).toEqual([])
+    })
+
+    it.for([
+      {
+        case: 'a virtual node with duplicate widget names',
+        build: () => {
+          const note = new TestNote()
+          note.addWidget('text', 'text', 'b', () => {})
+          return note
+        }
+      },
+      {
+        case: 'a subgraph host',
+        build: () => seedPromotedHost().host
+      }
+    ])(
+      'keeps the positional payload and stays silent for $case',
+      ({ build }) => {
+        const node = build()
+        node.onSerialize = (data: ISerialisedNode) => {
+          data.widgets_values = [...(data.widgets_values ?? []), 'pack-private']
+        }
+        const dropped = vi.fn()
+
+        const snapshot = wireNodeSnapshot(node, dropped)
+
+        expect(dropped).not.toHaveBeenCalled()
+        expect(snapshot?.widgets_values).toEqual(
+          node.serialize().widgets_values
+        )
+      }
+    )
+  })
+
   describe('mints one op per graph command', () => {
     it.for([
       {

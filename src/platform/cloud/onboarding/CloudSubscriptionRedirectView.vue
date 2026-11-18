@@ -69,7 +69,12 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
 const { flags } = useFeatureFlags()
 const { permissions } = useBillingUI()
-const { initialize: initializeCapabilities } = useBillingCapabilities()
+const {
+  canOpenPlans,
+  hasResolvedCapabilities,
+  initialize: initializeCapabilities,
+  refresh: refreshCapabilities
+} = useBillingCapabilities()
 
 const {
   canAccessSubscriptionFeatures,
@@ -135,9 +140,20 @@ async function teamPricingOptions(
   }
 }
 
-async function leaveForAppUnlessPlansCanOpen(): Promise<void> {
+async function leftWithoutPlans(): Promise<boolean> {
+  if (!flags.billingNewUxEnabled) {
+    if (!canAccessSubscriptionFeatures.value) return false
+    await manageSubscription()
+    return true
+  }
   await initializeCapabilities()
-  if (!permissions.value.canManageSubscription) await router.replace('/')
+  if (!hasResolvedCapabilities.value) await refreshCapabilities()
+  if (canOpenPlans.value) return false
+  await router.replace('/')
+  return (
+    canAccessSubscriptionFeatures.value ||
+    permissions.value.canManageSubscription
+  )
 }
 
 const runRedirect = wrapWithErrorHandlingAsync(async () => {
@@ -154,12 +170,7 @@ const runRedirect = wrapWithErrorHandlingAsync(async () => {
     await initialize()
   }
 
-  if (canAccessSubscriptionFeatures.value) {
-    await manageSubscription()
-    return
-  }
-
-  if (flags.billingNewUxEnabled) await leaveForAppUnlessPlansCanOpen()
+  if (await leftWithoutPlans()) return
 
   showPricingTable(
     link.tierKey === 'team'

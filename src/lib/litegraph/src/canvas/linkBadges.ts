@@ -71,9 +71,9 @@ interface BadgeEndpoint {
 const endpointsByHost = new WeakMap<object, BadgeEndpoint[]>()
 const expandedStacksByHost = new WeakMap<object, Set<string>>()
 const drawnStackKeysByHost = new WeakMap<object, Set<string>>()
-const lastStackToggleByHost = new WeakMap<
+const pendingExpansionsByHost = new WeakMap<
   object,
-  { stackKey: string; timeStamp: number }
+  Map<string, ReturnType<typeof setTimeout>>
 >()
 
 export function clearLinkBadgeHitAreas(host: object): void {
@@ -105,49 +105,75 @@ export function queryLinkBadgeAtPoint(
   return hit && !hit.stackKey ? hit.linkIds[0] : undefined
 }
 
-/** Expands or collapses a stack, remembering the press at `timeStamp` that did it. */
-export function toggleLinkBadgeStack(
-  host: object,
-  stackKey: string,
-  timeStamp = -Infinity
-): void {
+export function toggleLinkBadgeStack(host: object, stackKey: string): void {
   const expanded = expandedStacksByHost.get(host) ?? new Set<string>()
   if (!expanded.delete(stackKey)) expanded.add(stackKey)
   expandedStacksByHost.set(host, expanded)
-  lastStackToggleByHost.set(host, { stackKey, timeStamp })
 }
 
-/** The hit area of the stack that the press at `timeStamp` expanded or collapsed. */
-export function queryLinkBadgeStackToggledAt(
+export function cancelPendingLinkBadgeStackExpansion(
   host: object,
-  timeStamp: number | undefined
-): Readonly<BadgeHitArea> | undefined {
-  const last = lastStackToggleByHost.get(host)
-  if (timeStamp === undefined || last?.timeStamp !== timeStamp) return
-  return endpointsByHost
-    .get(host)
-    ?.find(({ hitArea }) => hitArea.stackKey === last.stackKey)?.hitArea
+  stackKey?: string
+): void {
+  const pending = pendingExpansionsByHost.get(host)
+  if (!pending) return
+  for (const [key, timer] of pending) {
+    if (stackKey !== undefined && key !== stackKey) continue
+    clearTimeout(timer)
+    pending.delete(key)
+  }
 }
 
-/** Keeps a stack expanded under the key its links get when they all take `label`. */
-export function relabelExpandedLinkBadgeStack(
+export function requestLinkBadgeStackToggle(
+  host: object,
+  stackKey: string,
+  { delay, onChange }: { delay: number; onChange: () => void }
+): void {
+  cancelPendingLinkBadgeStackExpansion(host, stackKey)
+  if (expandedStacksByHost.get(host)?.has(stackKey)) {
+    toggleLinkBadgeStack(host, stackKey)
+    onChange()
+    return
+  }
+  const pending =
+    pendingExpansionsByHost.get(host) ??
+    new Map<string, ReturnType<typeof setTimeout>>()
+  pending.set(
+    stackKey,
+    setTimeout(() => {
+      pending.delete(stackKey)
+      if (
+        !endpointsByHost
+          .get(host)
+          ?.some(({ hitArea }) => hitArea.stackKey === stackKey)
+      )
+        return
+      toggleLinkBadgeStack(host, stackKey)
+      onChange()
+    }, delay)
+  )
+  pendingExpansionsByHost.set(host, pending)
+}
+
+export function collapseRenamedLinkBadgeStack(
   host: object,
   stackKey: string,
   label: string
 ): void {
   const expanded = expandedStacksByHost.get(host)
+  expanded?.delete(stackKey)
   const head = endpointsByHost
     .get(host)
     ?.find(({ hitArea }) => hitArea.stackKey === stackKey)
-  if (!head || !expanded?.delete(stackKey)) return
-  expanded.add(labelledStackKey(head.socketKey, label.trim()))
+  if (head) expanded?.delete(labelledStackKey(head.socketKey, label.trim()))
 }
 
 /** Collapses every expanded stack on the host; returns whether one was on screen. */
 export function collapseLinkBadgeStacks(host: object): boolean {
+  cancelPendingLinkBadgeStackExpansion(host)
+  pendingExpansionsByHost.delete(host)
   const expanded = expandedStacksByHost.get(host)
   expandedStacksByHost.delete(host)
-  lastStackToggleByHost.delete(host)
   const drawn = drawnStackKeysByHost.get(host)
   return [...(expanded ?? [])].some((stackKey) => drawn?.has(stackKey))
 }
@@ -300,7 +326,9 @@ function createBadgeEndpoint(
   const layers = spec.layers ?? 0
   const badge = makeBadge(text, color)
   const width = badge.getWidth(ctx)
-  const layerExtent = layers * STACK_LAYER_OFFSET
+  const layerExtent =
+    (stackKey ? Math.min(linkIds.length - 1, MAX_STACK_LAYERS) : layers) *
+    STACK_LAYER_OFFSET
   const isOutput = side === 'output'
   const left = isOutput
     ? socket[0] + BADGE_GAP

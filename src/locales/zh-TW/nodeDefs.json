@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "使用 Bria RMBG 2.0 移除影像的背景。",
+    "description": "使用 Bria RMBG 2.0 或 RMBG 3.0 移除影像背景。",
     "display_name": "Bria 移除影像背景",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "影像"
       },
+      "model": {
+        "name": "模型"
+      },
       "moderation": {
         "name": "審核",
         "tooltip": "審核設定"
       },
       "seed": {
         "name": "種子",
-        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+        "tooltip": "Seed 控制節點是否應重新執行；無論 Seed 為何，相同影像一律會得到相同結果。"
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 及 mp4/mov 輸出；Seedance 2.5 Draft 可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 針對速度最佳化；Mini 則可最快、以最低成本生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 及 mp4/mov 輸出；Seedance 2.5 Draft 可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 針對速度最佳化；Mini 則可最快、以最低成本生成。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 及 mp4/mov 輸出；Seedance 2.5 Draft 可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 針對速度最佳化；Mini 則可最快、以最低成本生成。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中算繪 1080p 或 4k 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
+        "tooltip": "Seedance 2.5 為最新模型，支援最長 30 秒的影片、4k 及 mp4/mov 輸出；Seedance 2.5 Draft 可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終成品；Seedance 2.5 Flash 支援最長 30 秒的 480p 與 720p 影片；Seedance 2.0 提供最高品質與 4k；Fast 針對速度最佳化；Mini 則可最快、以最低成本生成。"
       },
       "model_duration": {
         "name": "時長"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "建立 camera_info。模式「orbit」會以環繞目標的偏航／俯仰／距離進行瞄準；「look_at」會將相機放置於世界座標位置。座標為檢視器的世界空間（右手座標系，Y 軸向上）。",
+    "description": "建立 camera_info。模式「orbit」會以目標為中心，依偏航／俯仰／距離設定相機；「look_at」則將相機置於世界座標位置。座標採用檢視者的世界空間（右手座標系、Y 軸向上）；若已連接網格，則採用該網格的座標框架，因此相同設定可框取任何網格。",
     "display_name": "建立相機資訊",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "視野",
         "tooltip": "垂直視野角度（度）。"
+      },
+      "mesh": {
+        "name": "網格",
+        "tooltip": "框取此網格：位置、目標與距離皆從其邊界方塊中心起算，單位為其包圍球直徑，因此相同設定可框取任何網格。"
       },
       "mode": {
         "name": "模式",
@@ -19341,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "透過OpenRouter產生文字回應。路由至xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar等熱門模型。",
+    "description": "透過 OpenRouter 產生文字回應。可路由至 Anthropic（Claude）、OpenAI（GPT）、Google（Gemini）、xAI（Grok）、Meta（Muse）、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）及 Perplexity Sonar 精選的熱門模型。",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30312,40 @@
       },
       "video": {
         "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "採用 Bonneel 等人於 2015 年提出的時間一致性方法，並加入對抗漂移的保真項：每個影格在沿著引導影片的光流追隨相鄰影格時，仍保留自身細節。",
+    "display_name": "影片去閃爍",
+    "inputs": {
+      "direction": {
+        "name": "方向",
+        "tooltip": "雙向會平均向前與向後各一次的處理結果，可避免運動出現拖影，但需要兩倍時間。"
+      },
+      "guide": {
+        "name": "引導",
+        "tooltip": "用於追隨運動的穩定來源影格，可為任何解析度。預設為影像，其去閃爍效果較弱。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "會閃爍的影格，例如逐格放大或處理過的影片。"
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "各影格追隨相鄰影格的強度。數值越高，去除的閃爍越多，但也會柔化更多細節。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "影格與其經運動補償的相鄰影格之間，大於此值的變化會視為真實變化，因而較少被平滑。0 會以相同方式平滑所有變化。"
       }
     },
     "outputs": {

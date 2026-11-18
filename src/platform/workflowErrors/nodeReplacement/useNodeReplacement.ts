@@ -28,7 +28,8 @@ import {
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { app, sanitizeNodeName } from '@/scripts/app'
+import { sanitizeNodeName } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
 import { useWidgetComponents } from '@/stores/widgetComponents'
 import type { EndpointPatch, EndpointUpdate } from '@/stores/linkStore'
@@ -491,7 +492,7 @@ export function useNodeReplacement() {
     const failedTypes = new Set<string>()
     let replacementFailed: true | undefined
     let anyNodeReplaced = false
-    const graph = app.rootGraph
+    const graph = useApp().rootGraph
     const recordReplacementFailure = (type: string) => {
       replacementFailed = true
       failedTypes.add(type)

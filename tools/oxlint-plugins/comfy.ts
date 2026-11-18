@@ -12,6 +12,7 @@ import {
   noRestrictedPaths,
   noUselessPathSegments
 } from './importPaths.ts'
+import { noAppSingletonImport } from './noAppSingletonImport.ts'
 import { noNewErrorThrow } from './noNewErrorThrow.ts'
 import { noReexports } from './noReexports.ts'
 import { noThrowInExpectPoll } from './playwrightPoll.ts'
@@ -50,6 +51,7 @@ import { noRenderInWatchEffect } from './watchEffectRendering.ts'
 export default {
   meta: { name: 'comfy' },
   rules: {
+    'no-app-singleton-import': noAppSingletonImport,
     'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-deprecated-api-schema': noDeprecatedApiSchema,
     'no-direct-selection-write': noDirectSelectionWrite,

@@ -9,6 +9,7 @@ import type { Page } from '@playwright/test'
 import { E2E_USER } from './fixtures/env'
 import {
   PRO_MONTHLY_OP_PLAN,
+  declinedOperation,
   pendingOperation,
   processingOperation,
   succeededOperation
@@ -102,6 +103,81 @@ test('a reload while a payment is in flight renders the waiting state on its own
   expect(subscribeRequests(cloud)).toHaveLength(0)
 })
 
+test('a checkout link naming an unfinished signup follows that operation, not another one the server reports pending', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.status = {
+    ...cloud.scenario.status,
+    pending_billing_op_id: 'op_topup',
+    pending_billing_op_type: 'topup'
+  }
+  cloud.scenario.operations.op_topup = processingOperation('op_topup')
+  cloud.scenario.operations.op_signup = {
+    ...processingOperation('op_signup'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  await signIn(
+    entryPath('checkout', { plan: 'pro_monthly', operation: 'op_signup' })
+  )
+
+  await expect(waiting(page)).toHaveText(WAITING)
+  cloud.scenario.operations.op_signup = succeededOperation('op_signup')
+
+  await expect(page.getByTestId('checkout-ending-code')).toHaveText('op_signup')
+  expect(subscribeRequests(cloud)).toHaveLength(0)
+})
+
+for (const storage of ['kept', 'refusing writes'] as const) {
+  test(`after paying again in place of the linked signup, a reload follows the new payment, not the linked one (storage ${storage})`, async ({
+    page,
+    cloud,
+    signIn
+  }) => {
+    if (storage === 'refusing writes') {
+      await page.addInitScript(() => {
+        const setItem = Storage.prototype.setItem
+        Storage.prototype.setItem = function (key: string, value: string) {
+          if (key.startsWith('comfy.billing-web.replaced-signups'))
+            throw new DOMException('full', 'QuotaExceededError')
+          setItem.call(this, key, value)
+        }
+      })
+    }
+    cloud.scenario.paymentMethods = []
+    cloud.scenario.operations.op_signup = {
+      ...declinedOperation('op_signup'),
+      plan: PRO_MONTHLY_OP_PLAN
+    }
+    await signIn(
+      entryPath('checkout', { plan: 'pro_monthly', operation: 'op_signup' })
+    )
+    cloud.scenario.operations.op_subscribe = {
+      ...processingOperation('op_subscribe'),
+      plan: PRO_MONTHLY_OP_PLAN
+    }
+    cloud.reply('POST', '/billing/subscribe', () => {
+      markPending(cloud, 'op_subscribe')
+      return {
+        body: { billing_op_id: 'op_subscribe', status: 'pending_payment' }
+      }
+    })
+
+    await payButton(page).click()
+    await expect.poll(() => subscribeRequests(cloud)).toHaveLength(1)
+    await page.reload()
+
+    await expect(waiting(page)).toHaveText(WAITING)
+    cloud.scenario.operations.op_subscribe = succeededOperation('op_subscribe')
+    await expect(
+      page.getByRole('heading', { name: "You're all set" })
+    ).toBeVisible()
+    expect(subscribeRequests(cloud)).toHaveLength(1)
+  })
+}
+
 test('an operation parked on a payment method renders capture, and Pay resubmits it', async ({
   page,
   cloud,
@@ -174,6 +250,12 @@ const BILLING_READS = [
   '/billing/payment-methods'
 ]
 
+function refuseSession(cloud: MockCloud, extraReads: readonly string[] = []) {
+  cloud.reply('POST', '/auth/token', () => REFUSED)
+  for (const path of [...BILLING_READS, ...extraReads])
+    cloud.reply('GET', path, () => REFUSED)
+}
+
 for (const { name, pending, lands } of [
   { name: 'money in flight', pending: true, lands: 'waiting' },
   { name: 'nothing pending', pending: false, lands: 'capture' }
@@ -187,8 +269,7 @@ for (const { name, pending, lands } of [
     await signIn(CHECKOUT)
     await expect(payButton(page)).toBeEnabled()
 
-    cloud.reply('POST', '/auth/token', () => REFUSED)
-    for (const path of BILLING_READS) cloud.reply('GET', path, () => REFUSED)
+    refuseSession(cloud)
     await payButton(page).click()
 
     await expect(page).toHaveURL(
@@ -243,3 +324,46 @@ for (const { name, pending, lands } of [
     expect(subscribeRequests(cloud)).toHaveLength(0)
   })
 }
+
+test('a session that expires after paying in place of the linked signup returns from sign-in to the address without it, storage refusing writes', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await page.addInitScript(() => {
+    const setItem = Storage.prototype.setItem
+    Storage.prototype.setItem = function (key: string, value: string) {
+      if (key.startsWith('comfy.billing-web.replaced-signups'))
+        throw new DOMException('full', 'QuotaExceededError')
+      setItem.call(this, key, value)
+    }
+  })
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.operations.op_signup = {
+    ...declinedOperation('op_signup'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  await signIn(
+    entryPath('checkout', { plan: 'pro_monthly', operation: 'op_signup' })
+  )
+  cloud.scenario.operations.op_subscribe = {
+    ...processingOperation('op_subscribe'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  cloud.reply('POST', '/billing/subscribe', () => {
+    markPending(cloud, 'op_subscribe')
+    return {
+      body: { billing_op_id: 'op_subscribe', status: 'pending_payment' }
+    }
+  })
+  await payButton(page).click()
+  await expect.poll(() => subscribeRequests(cloud)).toHaveLength(1)
+
+  refuseSession(cloud, ['/billing/ops/op_subscribe'])
+
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === '/sign-in' &&
+      url.searchParams.get('returnTo') === CHECKOUT
+  )
+})

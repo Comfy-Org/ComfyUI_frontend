@@ -509,6 +509,70 @@ describe('hidden link badge stacks', () => {
   })
 
   it.for([
+    {
+      side: 'output',
+      stackKey: 'output:4:0',
+      expectedRect: [114, 91, 68, 24],
+      corner: [182, 115]
+    },
+    {
+      side: 'input',
+      stackKey: 'input:4:0',
+      expectedRect: [318, 91, 68, 24],
+      corner: [386, 115]
+    }
+  ] satisfies {
+    side: 'input' | 'output'
+    stackKey: string
+    expectedRect: ReadOnlyRect
+    corner: Point
+  }[])(
+    'keeps the $side head rectangle and corner hit stable through expansion and collapse',
+    ({ side, stackKey, expectedRect, corner: [x, y] }) => {
+      const host = {}
+      const ctx = createContext()
+      const badges = fanOut([undefined, undefined, undefined]).map(
+        (badge, index) =>
+          side === 'output'
+            ? badge
+            : {
+                ...badge,
+                link: new LLink(
+                  toLinkId(index + 1),
+                  'MODEL',
+                  10 + index,
+                  0,
+                  4,
+                  0
+                ),
+                startPos: [100, 100 + index * 100] satisfies Point,
+                endPos: [400, 100] satisfies Point
+              }
+      )
+      layoutHiddenLinkBadges(host, ctx, badges)
+      expect(queryLinkBadgeHitAtPoint(host, x, y)).toMatchObject({
+        stackKey,
+        boundingRect: expectedRect
+      })
+
+      toggleLinkBadgeStack(host, stackKey)
+      const expanded = layoutHiddenLinkBadges(host, ctx, badges)
+      expect(queryLinkBadgeHitAtPoint(host, x, y)).toMatchObject({
+        stackKey,
+        boundingRect: expectedRect
+      })
+      expect(expanded.get(toLinkId(1))?.[side].tip[1]).toBe(128)
+
+      toggleLinkBadgeStack(host, stackKey)
+      layoutHiddenLinkBadges(host, ctx, badges)
+      expect(queryLinkBadgeHitAtPoint(host, x, y)).toMatchObject({
+        stackKey,
+        boundingRect: expectedRect
+      })
+    }
+  )
+
+  it.for([
     { name: 'a single hidden link', labels: [undefined] },
     {
       name: 'one unlabelled link beside a labelled one',
@@ -627,14 +691,14 @@ describe('hidden link badge stacks', () => {
       linkIds: [toLinkId(1), toLinkId(2)],
       stackKey: 'output:4:0="A"'
     })
-    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(1))
-    expect(queryLinkBadgeAtPoint(host, 120, 144)).toBe(toLinkId(2))
-    expect(queryLinkBadgeHitAtPoint(host, 120, 166)).toMatchObject({
+    expect(queryLinkBadgeAtPoint(host, 120, 125)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 120, 147)).toBe(toLinkId(2))
+    expect(queryLinkBadgeHitAtPoint(host, 120, 169)).toMatchObject({
       linkIds: [toLinkId(3), toLinkId(4)],
       stackKey: 'output:4:0="B"'
     })
     expect(ctx.fillText).toHaveBeenCalledWith('A ×2', 120, 104)
-    expect(ctx.fillText).toHaveBeenCalledWith('A', 120, 126)
+    expect(ctx.fillText).toHaveBeenCalledWith('A', 120, 129)
   })
 
   it('expands to a head followed by one badge per link, and collapses back', () => {
@@ -645,18 +709,18 @@ describe('hidden link badge stacks', () => {
     expect(queryLinkBadgeHitAtPoint(host, 120, 100)?.stackKey).toBe(
       'output:4:0'
     )
-    expect(layouts.get(toLinkId(1))?.output.tip[1]).toBe(122)
-    expect(layouts.get(toLinkId(2))?.output.tip[1]).toBe(144)
-    expect(layouts.get(toLinkId(3))?.output.tip[1]).toBe(166)
-    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(1))
-    expect(queryLinkBadgeAtPoint(host, 120, 144)).toBe(toLinkId(2))
-    expect(queryLinkBadgeAtPoint(host, 120, 166)).toBe(toLinkId(3))
+    expect(layouts.get(toLinkId(1))?.output.tip[1]).toBe(125)
+    expect(layouts.get(toLinkId(2))?.output.tip[1]).toBe(147)
+    expect(layouts.get(toLinkId(3))?.output.tip[1]).toBe(169)
+    expect(queryLinkBadgeAtPoint(host, 120, 125)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 120, 147)).toBe(toLinkId(2))
+    expect(queryLinkBadgeAtPoint(host, 120, 169)).toBe(toLinkId(3))
 
     expect(collapseLinkBadgeStacks(host)).toBe(true)
     expect(collapseLinkBadgeStacks(host)).toBe(false)
     layoutFanOut(host, [undefined, undefined, 'Named'])
     expect(queryLinkBadgeHitAtPoint(host, 120, 100)?.linkIds).toHaveLength(2)
-    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(3))
+    expect(queryLinkBadgeAtPoint(host, 120, 125)).toBe(toLinkId(3))
   })
 
   it('toggles an expanded stack closed from its head', () => {

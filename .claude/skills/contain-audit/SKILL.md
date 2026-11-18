@@ -9,7 +9,7 @@ Automatically finds DOM elements where adding `contain: layout style` would redu
 
 ## What It Does
 
-1. Loads a large workflow (245 nodes) in a real browser
+1. Loads a large workflow in a real browser
 2. Walks the DOM tree and scores every element as a containment candidate
 3. For each high-scoring candidate, applies `contain: layout style` via JavaScript
 4. Measures rendering performance (style recalcs, layouts, task duration) before and after
@@ -25,14 +25,10 @@ Automatically finds DOM elements where adding `contain: layout style` would redu
 
 ## How to Run
 
+Start the backend and dev server as described in `browser_tests/README.md`, then run the audit and open its report. The audit uses the `@audit` tag and is excluded from normal CI runs.
+
 ```bash
-# Start the dev server first
-pnpm dev &
-
-# Run the audit (uses the @audit tag, not included in normal CI runs)
 pnpm exec playwright test browser_tests/tests/containAudit.spec.ts --project=audit
-
-# View the HTML report
 pnpm exec playwright show-report
 ```
 
@@ -82,11 +78,11 @@ Elements that should NOT get containment:
 
 This PR added `contain-layout contain-style` to the node inner wrapper div in `LGraphNode.vue`. The audit tool would have flagged this element as a high-scoring candidate because:
 
-- **Large subtree** (18+ descendants: header, slots, widgets, content, badges)
+- **Large subtree** (header, slots, widgets, content, badges)
 - **Externally constrained size** (`w-(--node-width)`, `flex-1` — dimensions set by CSS variables and flex parent)
 - **Natural isolation boundary** between frequently-changing content (widgets) and infrequently-changing overlays (selection outlines, borders)
 
-The actual change was a single line: adding `'contain-layout contain-style'` to the inner wrapper's class list at `src/renderer/extensions/vueNodes/components/LGraphNode.vue:79`.
+The actual change was a single line: adding `'contain-layout contain-style'` to the inner wrapper's class list in `src/renderer/extensions/vueNodes/components/LGraphNode.vue`.
 
 ## Reference
 
