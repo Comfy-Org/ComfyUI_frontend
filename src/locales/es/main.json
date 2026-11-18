@@ -34,6 +34,7 @@
       "unconfirmed": "No pudimos confirmar que tu respuesta haya llegado al agente."
     },
     "assetFetchFailed": "No se pudo recuperar {name}",
+    "assetLoadFailed": "No se pudo cargar {name}",
     "assetNotAttachable": "Se pueden adjuntar imágenes, vídeo, audio, modelos 3D y archivos de texto",
     "attach": "Adjuntar un archivo",
     "attachFiles": "Sube imágenes o archivos",
@@ -54,14 +55,13 @@
     "chooseWorkflowForChat": "Elige un flujo de trabajo para este chat",
     "close": "Cerrar",
     "coachBody": "Describe tus ideas y pídele que cree y ejecute flujos de trabajo. Puede ver tu lienzo y tus archivos.",
-    "coachGraphBody": "Puedes seguir editando el grafo o cambiar de pestaña mientras el agente trabaja.",
-    "coachGraphTitle": "Deja que el agente se ejecute mientras editas",
     "coachHistoryBody": "Los chats anteriores se guardan aquí. Abre uno para revisarlo o seguir trabajando con el agente.",
     "coachHistoryTitle": "Retoma donde lo dejaste",
+    "coachHoldNotice": "Tu mensaje se enviará cuando termines u omitas el recorrido.",
     "coachProgress": "{current} de {total}",
     "coachTitle": "Conoce a tu agente de Comfy",
-    "coachWorkflowBody": "Cambia con tus pestañas hasta que envías un mensaje, eliges un flujo de trabajo o añades una referencia a un nodo.",
-    "coachWorkflowTitle": "Tu agente edita el flujo de trabajo que estás viendo",
+    "coachWorkflowBody": "El flujo de trabajo que está editando se llama como se indica encima del cuadro de mensaje. Al cambiar de pestaña, se muestra el chat más reciente de ese flujo de trabajo, si lo tiene.",
+    "coachWorkflowTitle": "Cada chat funciona con un solo flujo de trabajo",
     "consent": {
       "accept": "Empezar a usar Comfy Agent",
       "agreeAndContinue": "Aceptar y continuar",
@@ -131,6 +131,7 @@
     "feedbackCaption": "Comparte tus comentarios",
     "focusNode": "Mostrar en el lienzo",
     "focusNodeLabel": "Mostrar {node} en el lienzo",
+    "followedChatOpenFailed": "No se pudo abrir el chat para {workflowName}.",
     "freeUseNotice": "¡Prueba tu primer chat gratis!",
     "freeUseNoticeLabel": "Aviso de uso gratuito",
     "friend": "amigo",
@@ -168,6 +169,8 @@
     "nodesAdded": "El agente añadió 1 nodo al grafo | El agente añadió {count} nodos al grafo",
     "notHelpful": "No útil",
     "openWorkflowTab": "Abrir {name}",
+    "openingChat": "Abriendo el chat…",
+    "openingWorkflowChat": "Abriendo el chat para {workflowName}…",
     "otherOpenWorkflows": "Otros flujos de trabajo abiertos",
     "paywall": {
       "addCredits": "Añadir créditos",
@@ -193,13 +196,14 @@
     "removeNodeLabel": "Eliminar la referencia a {node}",
     "removeWorkflowReference": "Eliminar referencia a {name}",
     "retryAfterSeconds": "Puedes volver a intentarlo en {seconds}s.",
+    "retryFollowedChat": "Reintentar abrir el chat para {workflowName}",
     "runApproval": {
       "answerFailed": "No se pudo enviar tu respuesta. Recarga la página e inténtalo de nuevo.",
       "answerSuperseded": "Esto ya se respondió en otro lugar, por lo que se usó esa respuesta en lugar de la tuya.",
       "answerUncertain": "No se pudo confirmar que tu respuesta llegara al agente. Es posible que se haya aplicado de todos modos; recarga la página para ver cuál es el estado.",
       "cancel": "Cancelar",
-      "lead": "Esta herramienta quiere ejecutar el flujo de trabajo:",
-      "leadBound": "Esta herramienta quiere ejecutar este flujo de trabajo.",
+      "lead": "Comfy Agent quiere ejecutar el flujo de trabajo:",
+      "leadBound": "Comfy Agent quiere ejecutar este flujo de trabajo.",
       "question": "¿Lo apruebas?",
       "run": "Ejecutar",
       "thisWorkflow": "este flujo de trabajo"
@@ -309,7 +313,8 @@
     "workflowReferenceUnavailableReason": "Este flujo de trabajo referenciado ya no está disponible o no tienes acceso a él.",
     "workflowSyncFailedDetail": "Este flujo de trabajo se creó con una versión de documento incompatible. Tu lienzo no se ha modificado.",
     "workflowSyncFailedDetailCatalogMismatch": "Un nodo de este flujo de trabajo ha cambiado desde la última vez que el agente lo vio. Tu lienzo no se ha modificado. Tu próximo mensaje enviará tu lienzo para que el agente pueda reconstruir su copia del flujo de trabajo.",
-    "workflowSyncFailedDetailStaleClient": "Esta página no está actualizada, por lo que no se pueden mostrar los cambios del agente. Recarga la página para verlos.",
+    "workflowSyncFailedDetailStaleClient": "Esta página no puede mostrar la versión actual de este documento, por lo que los cambios del agente no se pueden mostrar aquí. Se conservan. Recargar puede solucionarlo; si no es así, la actualización aún no ha llegado a tu aplicación.",
+    "workflowSyncFailedDetailStaleHost": "Esta página está más avanzada que el servicio del agente, por lo que los cambios del agente aún no se pueden mostrar aquí. Recarga la página cuando el servicio termine de actualizarse para verlos.",
     "workflowSyncFailedTitle": "Este flujo de trabajo no se puede sincronizar",
     "workflows": "Flujos de trabajo",
     "working": "Trabajando..."
@@ -543,6 +548,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "Termina de iniciar sesión en tu navegador",
+      "popupBlocked": "Permite las ventanas emergentes para esta página para iniciar sesión.",
       "signInFailed": "No se completó el inicio de sesión. Inténtalo de nuevo.",
       "signOutFailed": "Comfy Desktop sigue con la sesión iniciada. Finaliza o cancela cualquier instalación en curso y, después, vuelve a cerrar sesión."
     },
@@ -1194,8 +1200,8 @@
     "api": "API",
     "apiPricing": "Precios de la API",
     "charge": "Cobro",
+    "creditUnit": "Crédito | Créditos",
     "credits": "Créditos",
-    "creditUnit": "Créditos",
     "creditsAvailable": "Créditos disponibles",
     "details": "Detalles",
     "eventType": "Tipo de evento",
@@ -1215,6 +1221,7 @@
     },
     "invoiceHistory": "Historial de facturas",
     "lastUpdated": "Última actualización",
+    "lessThanOne": "<1",
     "loadEventsError": "No se pudo cargar la actividad. Por favor, inténtalo de nuevo.",
     "loadEventsUnknownError": "Algo salió mal al cargar la actividad. Por favor, actualiza la página e inténtalo de nuevo.",
     "messageSupport": "Contactar soporte",
@@ -1226,6 +1233,10 @@
       "addMoreCredits": "Agregar más créditos",
       "addMoreCreditsToRun": "Agrega más créditos para ejecutar",
       "amountToPayLabel": "Cantidad a pagar en dólares",
+      "autoTopUp": {
+        "prompt": "¿Te quedan pocos créditos? Activa la recarga automática.",
+        "setUp": "Configurar"
+      },
       "awaitingBankApprovalBody": "Tu banco debe aprobar este pago antes de que se añadan tus créditos. Puedes completarlo desde la aplicación de tu banco o el enlace de pago de esta compra. No se puede iniciar una nueva recarga hasta que esta se complete o caduque.",
       "buy": "Comprar",
       "buyCredits": "Continuar al pago",
@@ -1260,6 +1271,13 @@
       "openCheckout": "Abrir página de pago",
       "openPaymentPage": "Abrir página de pago",
       "payAmount": "Pagar {amount}",
+      "paymentProcessingBody": "No necesitas pagar de nuevo.",
+      "paymentProcessingFlyout": "Procesando el pago. No necesitas pagar de nuevo.",
+      "paymentProcessingTitle": "Un pago de {amount} aún se está procesando",
+      "paymentProcessingTitleNoAmount": "Un pago aún se está procesando",
+      "planRequiredFreeRuns": "Comprar créditos no inicia un plan de Cloud. Suscríbete para seguir ejecutando flujos de trabajo cuando se agoten tus ejecuciones gratuitas.",
+      "planRequiredResubscribe": "Comprar créditos no reinicia tu plan de Cloud. Vuelve a suscribirte para ejecutar flujos de trabajo en Cloud.",
+      "planRequiredSubscribe": "Comprar créditos no inicia un plan de Cloud. Suscríbete para ejecutar flujos de trabajo en Cloud.",
       "purchaseError": "Compra fallida",
       "purchaseErrorDetail": "No se pudo comprar créditos: {error}",
       "purchaseSuccess": "¡Créditos añadidos correctamente!",
@@ -1303,6 +1321,7 @@
     "BOOLEAN": "BOOLEANO",
     "BOUNDING_BOX": "CUADRO DELIMITADOR",
     "BOUNDING_BOXES": "CUADROS DELIMITADORES",
+    "BREEZE_VOICE": "BREEZE_VOICE",
     "CAMERA_INFO_STATE": "CAMERA_INFO_STATE",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -1362,9 +1381,7 @@
     "LOAD_3D": "CARGAR_3D",
     "LORA_MODEL": "MODELO_LORA",
     "LOSS_MAP": "MAPA_PÉRDIDAS",
-    "LUMA_CONCEPTS": "CONCEPTOS LUMA",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "REFERENCIA LUMA",
     "MASK": "MASK",
     "MESH": "MALLA",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -1451,15 +1468,18 @@
     "lookupUnavailable": "No se pudo comprobar en qué implementación se ejecuta este editor.",
     "lookupUnavailableDetail": "Los modelos mostrados son los de Comfy Cloud. Recarga para intentarlo de nuevo.",
     "membersStartOn": "Los miembros sin una selección propia comienzan en",
+    "missingNodes": "Falta {count} nodo | Faltan {count} nodos",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "Este espacio de trabajo aún no tiene implementaciones.",
+    "notChecked": "No comprobado",
     "notReadyTooltip": "Ejecutándose en {deployment}. No está listo, por lo que los trabajos no se ejecutarán hasta que lo esté.",
     "pickGone": "La implementación que elegiste ya no existe.",
     "pickGoneDetail": "Este navegador ahora se ejecuta en Comfy Cloud. Vuelve a elegir una implementación para usar una.",
     "releaseChanged": "Esta implementación ahora ejecuta una versión diferente. Recarga para obtener sus nodos.",
     "reload": "Recargar",
     "runOn": "Ejecutar en",
+    "runsThisWorkflow": "Ejecuta este flujo de trabajo",
     "status": {
       "notReady": "No está listo",
       "provisioning": "Iniciando",
@@ -1473,6 +1493,13 @@
     "triggerLabel": "Se está ejecutando en {deployment}. Elige dónde se ejecuta este editor",
     "triggerLabelNotReady": "{status} Elige dónde se ejecuta este editor",
     "unnamedDeployment": "Implementación {id}",
+    "unsaved": {
+      "message": "Cambiar a {deployment} recarga la pestaña. Estos flujos de trabajo tienen cambios que aún no se han guardado.",
+      "saveAndSwitch": "Guardar y cambiar",
+      "switchWithoutSaving": "Cambiar sin guardar",
+      "tabsReturn": "Tus pestañas abiertas volverán después de la recarga de todos modos.",
+      "title": "¿Guardar tus flujos de trabajo antes de cambiar?"
+    },
     "workspaceDefault": "Valor predeterminado del espacio de trabajo"
   },
   "desktopLogin": {
@@ -1961,8 +1988,11 @@
     "missingMedia": "A algunos nodos les faltan entradas requeridas",
     "missingModels": "Falta {count} modelo requerido | Faltan {count} modelos requeridos",
     "missingNodes": "Faltan algunos nodos y necesitan ser instalados",
+    "moreDeployments": "{count} más",
     "multipleIssueCount": "Se encontró {count} problema | Se encontraron {count} problemas",
     "multipleIssuesMessage": "Resuelve estos problemas antes de ejecutar el flujo de trabajo.",
+    "runsOn": "Se ejecuta en {deployment}",
+    "switchDeployment": "Cambiar",
     "viewDetails": "Ver detalles"
   },
   "errorPanelSurvey": {
@@ -2031,7 +2061,9 @@
     "addNewKeybinding": "Agregar nueva combinación de teclas",
     "addNode": "Agregar un nodo...",
     "addNodeFilterCondition": "Agregar condición de filtro de nodo",
+    "agentCreated": "Creado por el agente",
     "agentModified": "El agente actualizó este flujo de trabajo",
+    "agentNeedsApproval": "El agente necesita tu aprobación",
     "agentWorking": "El agente está trabajando en este flujo de trabajo",
     "all": "Todo",
     "allKeybindingsReset": "Todas las combinaciones de teclas se restablecieron a los valores predeterminados",
@@ -2045,6 +2077,7 @@
     "arrangeVertically": "Organizar verticalmente",
     "asset": "{count} recurso | {count} recursos",
     "audioFailedToLoad": "No se pudo cargar el audio",
+    "audioPlaybackFailed": "No se pudo reproducir este audio. Inténtalo de nuevo o descárgalo para reproducirlo en otra aplicación.",
     "audioProgress": "Progreso de audio",
     "author": "Autor",
     "back": "Atrás",
@@ -2096,6 +2129,7 @@
     "copyToClipboard": "Copiar al portapapeles",
     "copyURL": "Copiar URL",
     "core": "Núcleo",
+    "createdByAgent": "Creado por el agente",
     "currentUser": "Usuario actual",
     "custom": "Personalizado",
     "customBackground": "Fondo personalizado",
@@ -2111,6 +2145,7 @@
     "details": "Detalles",
     "devOnly": "DEV",
     "devices": "Dispositivos",
+    "disableAgentCreated": "Desactivar todos los creados por el agente",
     "disableAll": "Deshabilitar todo",
     "disableSelected": "Deshabilitar seleccionados",
     "disableThirdParty": "Deshabilitar terceros",
@@ -2696,6 +2731,19 @@
   },
   "issueReport": {
     "helpFix": "Ayuda a Solucionar Esto"
+  },
+  "lateCustomNodes": {
+    "failed": "Algunos nodos personalizados no se iniciaron",
+    "failedDetail": "Recarga la página para activar: {packs}",
+    "ready": "Los nodos personalizados están listos",
+    "reload": "Recargar",
+    "starting": "Los nodos personalizados se están iniciando... {seconds} s",
+    "startingDetail": "Normalmente, unos 20 s. Sus botones y menús aparecerán aquí automáticamente.",
+    "stepBuilding": "Compilando el servidor para tus nodos personalizados.\nConfiguración inicial para esta versión; tarda unos minutos.",
+    "stepCreating": "Creando el servidor para tus nodos personalizados.\nConfiguración inicial.",
+    "stepStarting": "Cargando nodos personalizados.\nNormalmente tarda menos de medio minuto.",
+    "waitingBadge": "Esperando su paquete",
+    "waitingFor": "Esperando a: {packs}"
   },
   "layerEditor": {
     "alignBottom": "Alinear abajo",
@@ -3432,7 +3480,6 @@
     "Node Library": "Biblioteca de Nodos",
     "Node Links": "Enlaces de nodos",
     "Open": "Abrir",
-    "Open 3D Viewer (Beta) for Selected Node": "Abrir visor 3D (Beta) para el nodo seleccionado",
     "Open Color Picker in MaskEditor": "Abrir selector de color en MaskEditor",
     "Open Custom Nodes Folder": "Abrir carpeta de nodos personalizados",
     "Open DevTools": "Abrir herramientas de desarrollo",
@@ -3556,6 +3603,7 @@
     "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Beeble": "Beeble",
+    "Breeze": "Breeze",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
@@ -3578,6 +3626,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",
@@ -3625,6 +3674,7 @@
     "debug": "depurar",
     "detection": "detección",
     "experimental": "experimental",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "filtros",
     "flux": "flux",
@@ -3936,6 +3986,51 @@
     "failedDetail": "No se pudo restablecer tu estado de incorporación. Inténtalo de nuevo.",
     "failedSummary": "No se pudo repetir la incorporación"
   },
+  "openOnCloud": {
+    "agentMenu": {
+      "copyPrompt": "Copiar prompt",
+      "openInClaude": "Abrir en Claude desktop",
+      "openInCodex": "Abrir en Codex",
+      "saveFirst": "Guarda este flujo de trabajo antes de enviarlo a un agente.",
+      "useLocalAgent": "Usar agente local"
+    },
+    "checkFailed": "No se pudo comprobar este flujo de trabajo en Comfy Cloud. Inténtalo de nuevo.",
+    "cloudButton": {
+      "checking": "Comprobando Comfy Cloud…",
+      "tooltip": "Ejecutar en Comfy Cloud"
+    },
+    "deploySetup": "Implementa tu configuración en Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "Implementa tu configuración local en Comfy Cloud y úsala en ComfyUI o llámala como una API con escalado automático.",
+      "pointGpu": "Ejecuta en potentes GPU en la nube",
+      "pointNodes": "Lleva tus nodos y modelos personalizados",
+      "pointPricing": "Paga solo por los segundos de GPU que usen tus trabajos y por el almacenamiento de tu compilación",
+      "title": "Ejecuta tus flujos de trabajo en Comfy Cloud"
+    },
+    "deployWithAgent": "Implementa con tu agente",
+    "desktopTransferFailed": "No se pudo transferir tu flujo de trabajo. Haz clic de nuevo en Abrir en Comfy Cloud en Desktop.",
+    "downloaded": "Flujo de trabajo descargado",
+    "downloadedDetail": "Arrástralo a Comfy Cloud en tu navegador para abrirlo allí.",
+    "handoffFailed": "No se pudo abrir el flujo de trabajo desde ComfyUI en tu equipo",
+    "handoffMissing": "Tu flujo de trabajo no llegó",
+    "handoffMissingDetail": "ComfyUI deja de esperar después de 10 minutos. Haz clic de nuevo en Abrir en Comfy Cloud en ComfyUI.",
+    "missingLocalModelLoader": "No se pudo leer la configuración del modelo para {nodeType}. Instala el paquete de nodos que lo proporciona y vuelve a intentarlo.",
+    "missingModels": {
+      "title": "Falta {count} modelo | Faltan {count} modelos",
+      "unavailable": "Añade estos modelos a Comfy Cloud para ejecutar este flujo de trabajo. Las cargas desde este ComfyUI no están disponibles actualmente."
+    },
+    "openedFromLocal": "Abierto desde ComfyUI en tu computadora",
+    "openedFromLocalDetail": "Comfy Cloud tiene todos los nodos y modelos que usa este flujo de trabajo. Pulsa Ejecutar cuando estés listo.",
+    "popupBlocked": "Tu navegador bloqueó la pestaña de Comfy Cloud. Permite las ventanas emergentes para esta página e inténtalo de nuevo.",
+    "prepareFailed": "No se pudo preparar este flujo de trabajo para Comfy Cloud",
+    "prepareFailedDetail": "Revisa si hay errores en el flujo de trabajo, guárdalo e inténtalo de nuevo.",
+    "runDialog": {
+      "asksToSignIn": "Comfy Cloud te pedirá que inicies sesión.",
+      "openOnCloud": "Abrir en Comfy Cloud",
+      "ready": "Comfy Cloud tiene todos los nodos y modelos que usa este flujo de trabajo. Se abre en una pestaña nueva, listo para ejecutarse.",
+      "title": "Ejecutar en Comfy Cloud"
+    }
+  },
   "openSharedWorkflow": {
     "author": "Autor:",
     "copyAssetsAndOpen": "Importar recursos y abrir flujo de trabajo",
@@ -4155,13 +4250,16 @@
       "unknownCategory": "Desconocido"
     },
     "missingNodePacks": {
+      "andMore": "y {count} más",
       "applyChanges": "Aplicar cambios",
       "collapse": "Colapsar",
       "expand": "Expandir",
       "installAll": "Instalar todo",
       "installed": "Instalado",
       "installing": "Instalando...",
+      "noDeploymentRunsIt": "Ningún despliegue en este espacio de trabajo tiene todos estos nodos.",
       "ossManagerDisabledHint": "Para instalar los nodos que faltan, primero ejecuta {pipCmd} en tu entorno de Python para instalar Node Manager, luego reinicia ComfyUI con la bandera {flag}.",
+      "runsOn": "Se ejecuta en:",
       "title": "Paquetes de nodos faltantes",
       "unknownPack": "Paquete desconocido",
       "unsupportedTitle": "Paquetes de nodos no compatibles",
@@ -4982,6 +5080,8 @@
     "partnerNodesCredits": "Créditos de Nodos de Socio",
     "partnerNodesDescription": "Para ejecutar modelos comerciales/propietarios",
     "partnerNodesPricingTable": "Tabla de precios de Partner Nodes",
+    "pastDueNoticeMember": "Este espacio de trabajo tiene un pago pendiente; pide al propietario del espacio de trabajo que actualice el método de pago.",
+    "pastDueNoticeOwner": "Tienes un pago pendiente; actualiza tu método de pago para cambiar de plan.",
     "paymentRecovery": {
       "memberCta": "Entendido",
       "memberDescription": "Pide al propietario de tu espacio de trabajo que restaure la suscripción.",
@@ -5128,6 +5228,7 @@
     "pricingBlurbSeeDetails": "ver detalles",
     "reactivatePlan": "Reanudar suscripción",
     "reactivateToUseCredits": "Reactiva tu plan para usar estos créditos",
+    "refillsAfterPayment": "Se recarga cuando se procesa el pago",
     "refillsDate": "Recargas {date}",
     "refillsNextCycle": "Recargas en el próximo ciclo",
     "refreshCredits": "Actualizar créditos",
@@ -5188,6 +5289,14 @@
     "saveYearly": "Ahorra 20%",
     "saveYearlyUpTo": "Ahorra hasta un 20%",
     "scheduledChangeNotice": "Tu plan cambia a {plan} el {date}.",
+    "signupPaymentRecovery": {
+      "body": "Completa el pago para iniciar tu plan.",
+      "contactSupport": "Contactar con soporte",
+      "finishPayment": "Completar el pago",
+      "title": "No se pudo procesar el pago de tu plan {plan}.",
+      "titleNoPlan": "No se pudo procesar el pago de tu plan.",
+      "unavailable": "No pudimos abrir la página de pago. Inténtalo de nuevo o contacta con soporte."
+    },
     "soloUseOnly": "Solo para uso individual",
     "subscribe": "Suscribirse",
     "subscribeFailed": "No se pudo suscribir",
@@ -5689,7 +5798,9 @@
     "exportWorkflow": "Exportar flujo de trabajo",
     "saveWorkflow": "Guardar flujo de trabajo",
     "savedAsApp": "Convertido a flujo de trabajo de aplicación",
-    "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos"
+    "savedAsWorkflow": "Convertido a flujo de trabajo solo de grafo de nodos",
+    "unsavedChangesLost": "Los cambios sin guardar de {name} ya no estaban disponibles, por lo que el archivo guardado se dejó tal como estaba.",
+    "unsavedChangesLostTitle": "No se guardaron los cambios sin guardar"
   },
   "workspace": {
     "addedToNamedWorkspace": "Se te ha añadido a {workspaceName}",
@@ -5731,7 +5842,7 @@
         "title": "La recarga automática falló"
       },
       "autoTopUpOff": {
-        "body": "Tu tarjeta fue rechazada 3 veces seguidas. Actualiza tu método de pago y luego vuelve a activar la recarga automática.",
+        "body": "Tu método de pago fue rechazado 3 veces seguidas. Actualiza tu método de pago y luego vuelve a activar la recarga automática.",
         "title": "Recarga automática desactivada"
       },
       "ending": {
@@ -5746,7 +5857,10 @@
         "title": "Tu plan Team termina el {date}"
       },
       "lowCredits": {
-        "localBody": "Te quedan {credits} créditos. Añade créditos para seguir ejecutando nodos asociados.",
+        "localBody": "Te queda {credits} crédito. Añade créditos para seguir ejecutando nodos asociados. | Te quedan {credits} créditos. Añade créditos para seguir ejecutando nodos asociados.",
+        "memberBody": "A este espacio de trabajo le queda {credits} crédito. Pide al propietario del espacio de trabajo que añada créditos antes de que se acaben. | A este espacio de trabajo le quedan {credits} créditos. Pide al propietario del espacio de trabajo que añada créditos antes de que se acaben.",
+        "ownerBody": "A este espacio de trabajo le queda {credits} crédito. Añade créditos antes de que se acaben. | A este espacio de trabajo le quedan {credits} créditos. Añade créditos antes de que se acaben.",
+        "personalBody": "Te queda {credits} crédito. Añade créditos antes de que se te acaben. | Te quedan {credits} créditos. Añade créditos antes de que se te acaben.",
         "title": "Quedan pocos créditos"
       },
       "outOfCredits": {
@@ -5763,6 +5877,11 @@
         "personalBodyNoDate": "Has usado todos tus créditos. Añade más créditos.",
         "title": "Sin créditos"
       },
+      "parked": {
+        "body": "Contacta con soporte para que podamos solucionarlo.",
+        "contactSupport": "Contactar con soporte",
+        "title": "Algo salió mal con un pago reciente"
+      },
       "paused": {
         "body": "La suscripción de este espacio de trabajo está pausada. Actualiza el pago para reanudar."
       },
@@ -5777,7 +5896,7 @@
           "title": "Pago recibido"
         },
         "verifyPayment": {
-          "action": "Verifica tu pago",
+          "action": "Completar la verificación",
           "body": "Tu banco requiere una verificación adicional para completar este pago.",
           "title": "Verifica tu pago"
         }
@@ -5812,8 +5931,10 @@
         "onHold": "No hay un método de pago predeterminado. Configura uno para reanudar la recarga automática.",
         "paused": "Se alcanzó el límite mensual. Se reanuda el {date}.",
         "pausedNoDate": "Se alcanzó el límite mensual.",
+        "rule": "Recarga hasta {target} créditos cuando el saldo baja de {threshold} créditos.",
         "status": {
           "failed": "Error",
+          "limitReached": "Límite alcanzado",
           "off": "Desactivada",
           "on": "Activada",
           "onHold": "En espera",
@@ -5826,19 +5947,23 @@
       "credits": {
         "addCredits": "Añadir créditos",
         "available": "Disponibles",
+        "availableUntil": "Disponible hasta {date}",
         "inUse": "En uso ahora",
         "overdrawn": "Tus ejecuciones usaron {count} crédito más del que tenías. | Tus ejecuciones usaron {count} créditos más de los que tenías.",
         "plan": "Plan",
         "planOfPool": "{remaining} de {total}",
         "planTooltip": "Créditos incluidos con tu plan. Se reponen en cada período de facturación.",
+        "planUsed": "{percent}% usado",
         "rateInfo": "Acerca de los créditos",
         "rateTooltip": "Los créditos pagan las ejecuciones. {credits} créditos = $1.",
-        "resubscribe": "Vuelve a suscribirte para usar créditos en Cloud.",
-        "subscribe": "Suscríbete para usar créditos en Cloud.",
         "title": "Créditos",
         "topUp": "Recarga",
         "topUpTooltip": "Créditos que añadiste. Se usan una vez que se agotan los créditos del plan.",
         "unavailable": "No se pudo cargar tu saldo."
+      },
+      "footer": {
+        "messageSupport": "Enviar un mensaje a soporte",
+        "partnerNodesPricing": "Precios de los nodos asociados"
       },
       "handoff": {
         "member": {
@@ -5847,13 +5972,16 @@
         },
         "owner": {
           "action": "Abrir facturación",
-          "label": "Métodos de pago, facturas y uso"
+          "label": "Métodos de pago, facturas y uso",
+          "line": "Gestiona todo lo demás relacionado con la facturación en {platform}",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "No pudimos cargar tu plan.",
       "plan": {
         "actions": {
           "choosePlan": "Elegir un plan",
+          "contactSales": "Contactar con ventas",
           "manage": "Gestionar",
           "resume": "Reanudar plan",
           "stay": "Mantener {plan}",
@@ -5874,16 +6002,39 @@
           "line": "Suscríbete para ejecutar flujos de trabajo en Cloud.",
           "title": "Este espacio de trabajo no tiene un plan activo"
         },
+        "paused": "En pausa. No se pudo procesar el pago de renovación.",
         "resumeConfirm": {
           "body": "Tu plan se renovará el {date}. Puedes cancelarlo de nuevo en cualquier momento.",
           "title": "¿Reanudar tu plan {plan}?"
         },
+        "salesManaged": {
+          "line": "Facturado por contrato.",
+          "renews": "Facturado por contrato. Se renueva el {date}.",
+          "title": "Empresa"
+        },
         "scheduledChange": "Cambia a {plan} el {date}.",
         "stayConfirm": {
+          "bodyNoAmount": "Seguirás con {current}. Puedes programar otro cambio en cualquier momento.",
           "title": "¿Cancelar el cambio a {plan}?"
         },
         "unknown": {
           "title": "Tu plan"
+        }
+      },
+      "topupCheckout": {
+        "creditsApplying": {
+          "body": "Se están añadiendo tus créditos. No se te volverá a cobrar.",
+          "title": "Pago recibido"
+        },
+        "dismiss": "Descartar",
+        "failed": {
+          "body": "No se añadieron créditos. Inténtalo de nuevo o usa otro método de pago.",
+          "title": "No se pudo procesar tu recarga de {amount}",
+          "titleNoAmount": "No se pudo procesar tu recarga"
+        },
+        "processing": {
+          "body": "Tu banco está confirmando el pago. Los créditos se añaden una vez que se procesa, así que no necesitas pagar de nuevo.",
+          "title": "Procesando el pago"
         }
       },
       "tryAgain": "Intentar de nuevo"

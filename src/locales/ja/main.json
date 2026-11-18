@@ -34,6 +34,7 @@
       "unconfirmed": "回答がエージェントに届いたことを確認できませんでした。"
     },
     "assetFetchFailed": "{name}を取得できませんでした",
+    "assetLoadFailed": "{name} を読み込めませんでした",
     "assetNotAttachable": "画像、動画、音声、3Dモデル、テキストファイルを添付できます",
     "attach": "ファイルを添付",
     "attachFiles": "画像またはファイルをアップロード",
@@ -54,14 +55,13 @@
     "chooseWorkflowForChat": "このチャット用のワークフローを選択",
     "close": "閉じる",
     "coachBody": "アイデアを説明し、ワークフローの作成と実行を依頼できます。エージェントはキャンバスとファイルを確認できます。",
-    "coachGraphBody": "エージェントの作業中も、グラフを編集したりタブを切り替えたりできます。",
-    "coachGraphTitle": "編集しながらエージェントを実行",
     "coachHistoryBody": "以前のチャットはここに保存されます。開いて確認するか、エージェントとの作業を続けられます。",
     "coachHistoryTitle": "前回の続きから再開",
+    "coachHoldNotice": "ツアーを完了またはスキップすると、メッセージが送信されます。",
     "coachProgress": "{total}件中{current}件",
     "coachTitle": "Comfy Agentの紹介",
-    "coachWorkflowBody": "メッセージを送信するか、ワークフローを選択するか、ノード参照を追加するまで、タブの切り替えに合わせて切り替わります。",
-    "coachWorkflowTitle": "エージェントは表示中のワークフローを編集します",
+    "coachWorkflowBody": "編集中のワークフロー名はメッセージボックスの上に表示されます。タブを切り替えると、そのワークフローの最新のチャットがある場合は表示されます。",
+    "coachWorkflowTitle": "各チャットは1つのワークフローに対応しています",
     "consent": {
       "accept": "Comfy Agent を使い始める",
       "agreeAndContinue": "同意して続行",
@@ -131,6 +131,7 @@
     "feedbackCaption": "フィードバックを共有",
     "focusNode": "キャンバスに表示",
     "focusNodeLabel": "キャンバスに {node} を表示",
+    "followedChatOpenFailed": "{workflowName} のチャットを開けませんでした。",
     "freeUseNotice": "最初のチャットは無料でお試しいただけます！",
     "freeUseNoticeLabel": "無料利用のお知らせ",
     "friend": "あなた",
@@ -168,6 +169,8 @@
     "nodesAdded": "エージェントがグラフに1個のノードを追加しました | エージェントがグラフに{count}個のノードを追加しました",
     "notHelpful": "役に立たなかった",
     "openWorkflowTab": "{name} を開く",
+    "openingChat": "チャットを開いています…",
+    "openingWorkflowChat": "{workflowName} のチャットを開いています…",
     "otherOpenWorkflows": "他の開いているワークフロー",
     "paywall": {
       "addCredits": "クレジットを追加",
@@ -193,13 +196,14 @@
     "removeNodeLabel": "{node} の参照を削除",
     "removeWorkflowReference": "{name}の参照を削除",
     "retryAfterSeconds": "{seconds}秒後に再試行できます。",
+    "retryFollowedChat": "{workflowName} のチャットを再度開く",
     "runApproval": {
       "answerFailed": "回答を送信できませんでした。ページを再読み込みして、もう一度お試しください。",
       "answerSuperseded": "これはすでに別の場所で回答されているため、あなたの回答ではなくそちらの回答が使用されました。",
       "answerUncertain": "回答がエージェントに届いたことを確認できませんでした。適用されている可能性があります。ページを再読み込みして状況を確認してください。",
       "cancel": "キャンセル",
-      "lead": "このツールはワークフローを実行しようとしています：",
-      "leadBound": "このツールはこのワークフローを実行しようとしています。",
+      "lead": "Comfy Agentが次のワークフローを実行しようとしています:",
+      "leadBound": "Comfy Agentがこのワークフローを実行しようとしています。",
       "question": "承認しますか？",
       "run": "実行",
       "thisWorkflow": "このワークフロー"
@@ -309,7 +313,8 @@
     "workflowReferenceUnavailableReason": "参照されているこのワークフローは利用できなくなったか、アクセス権がありません。",
     "workflowSyncFailedDetail": "このワークフローは互換性のないドキュメントバージョンで作成されています。キャンバスは変更されていません。",
     "workflowSyncFailedDetailCatalogMismatch": "このワークフロー内のノードが、エージェントが最後に確認して以降に変更されています。キャンバスは変更されていません。次のメッセージでキャンバスが送信されるため、エージェントはワークフローのコピーを再構築できます。",
-    "workflowSyncFailedDetailStaleClient": "このページは最新ではないため、エージェントの変更を表示できません。表示するにはページを再読み込みしてください。",
+    "workflowSyncFailedDetailStaleClient": "このページではこのドキュメントの現在のバージョンを表示できないため、エージェントによる変更はここに表示できません。変更は保持されています。再読み込みすると解決する場合があります。解決しない場合、更新がまだアプリに届いていません。",
+    "workflowSyncFailedDetailStaleHost": "このページはエージェントサービスより先行しているため、エージェントによる変更はまだここに表示できません。変更を確認するには、サービスの更新が完了してからページを再読み込みしてください。",
     "workflowSyncFailedTitle": "このワークフローは同期できません",
     "workflows": "ワークフロー",
     "working": "処理中..."
@@ -543,6 +548,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "ブラウザでサインインを完了してください",
+      "popupBlocked": "サインインするには、このページのポップアップを許可してください。",
       "signInFailed": "サインインが完了しませんでした。もう一度お試しください。",
       "signOutFailed": "Comfy Desktopはまだサインイン中です。実行中のインストールを完了またはキャンセルしてから、もう一度サインアウトしてください。"
     },
@@ -1194,8 +1200,8 @@
     "api": "API",
     "apiPricing": "API料金",
     "charge": "請求",
+    "creditUnit": "クレジット | クレジット",
     "credits": "クレジット",
-    "creditUnit": "クレジット",
     "creditsAvailable": "利用可能なクレジット",
     "details": "詳細",
     "eventType": "イベントタイプ",
@@ -1215,6 +1221,7 @@
     },
     "invoiceHistory": "請求履歴",
     "lastUpdated": "最終更新",
+    "lessThanOne": "<1",
     "loadEventsError": "アクティビティの読み込みに失敗しました。もう一度お試しください。",
     "loadEventsUnknownError": "アクティビティの読み込み中に問題が発生しました。ページを更新して再度お試しください。",
     "messageSupport": "サポートにメッセージ",
@@ -1226,6 +1233,10 @@
       "addMoreCredits": "クレジットを追加",
       "addMoreCreditsToRun": "実行するためにクレジットを追加",
       "amountToPayLabel": "支払う金額（ドル）",
+      "autoTopUp": {
+        "prompt": "クレジットが少なくなっていますか？自動チャージをオンにしてください。",
+        "setUp": "設定"
+      },
       "awaitingBankApprovalBody": "クレジットが追加される前に、この支払いを銀行が承認する必要があります。銀行のアプリまたはこの購入の支払いリンクから完了できます。この支払いが完了または期限切れになるまで、新しいチャージは開始できません。",
       "buy": "購入",
       "buyCredits": "支払いに進む",
@@ -1260,6 +1271,13 @@
       "openCheckout": "チェックアウトを開く",
       "openPaymentPage": "支払いページを開く",
       "payAmount": "{amount} を支払う",
+      "paymentProcessingBody": "再度支払う必要はありません。",
+      "paymentProcessingFlyout": "支払いを処理中です。再度支払う必要はありません。",
+      "paymentProcessingTitle": "{amount} の支払いはまだ処理中です",
+      "paymentProcessingTitleNoAmount": "支払いはまだ処理中です",
+      "planRequiredFreeRuns": "クレジットを購入してもCloudプランは開始されません。無料実行回数を使い切った後もワークフローを実行するには、登録してください。",
+      "planRequiredResubscribe": "クレジットを購入してもCloudプランは再開されません。Cloudでワークフローを実行するには、再登録してください。",
+      "planRequiredSubscribe": "クレジットを購入してもCloudプランは開始されません。Cloudでワークフローを実行するには、登録してください。",
       "purchaseError": "購入に失敗しました",
       "purchaseErrorDetail": "クレジットの購入に失敗しました: {error}",
       "purchaseSuccess": "クレジットが正常に追加されました！",
@@ -1303,6 +1321,7 @@
     "BOOLEAN": "ブール",
     "BOUNDING_BOX": "バウンディングボックス",
     "BOUNDING_BOXES": "バウンディングボックス",
+    "BREEZE_VOICE": "BREEZE_VOICE",
     "CAMERA_INFO_STATE": "CAMERA_INFO_STATE",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP_VISION",
@@ -1362,9 +1381,7 @@
     "LOAD_3D": "3Dをロード",
     "LORA_MODEL": "LoRAモデル",
     "LOSS_MAP": "損失マップ",
-    "LUMA_CONCEPTS": "Lumaコンセプト",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "Luma参照",
     "MASK": "マスク",
     "MESH": "メッシュ",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -1451,15 +1468,18 @@
     "lookupUnavailable": "このエディタがどのデプロイメントで実行されているか確認できませんでした。",
     "lookupUnavailableDetail": "表示されているモデルは Comfy Cloud のものです。再読み込みしてもう一度試してください。",
     "membersStartOn": "独自の選択がないメンバーの開始先",
+    "missingNodes": "{count}個のノードが見つかりません | {count}個のノードが見つかりません",
     "nameWithVersion": "{name} · v{version}",
     "namedDeployment": "{name}",
     "noDeployments": "このワークスペースにはまだデプロイメントがありません。",
+    "notChecked": "未確認",
     "notReadyTooltip": "{deployment} で実行中です。準備ができていないため、準備が整うまでジョブは実行されません。",
     "pickGone": "選択したデプロイメントはすでに存在しません。",
     "pickGoneDetail": "このブラウザは現在 Comfy Cloud で実行されています。使用するには、もう一度デプロイメントを選択してください。",
     "releaseChanged": "このデプロイメントは現在、別のリリースで実行されています。ノードを取得するには再読み込みしてください。",
     "reload": "再読み込み",
     "runOn": "実行先",
+    "runsThisWorkflow": "このワークフローを実行",
     "status": {
       "notReady": "準備未完了",
       "provisioning": "起動中",
@@ -1473,6 +1493,13 @@
     "triggerLabel": "{deployment} で実行中。このエディターの実行先を選択",
     "triggerLabelNotReady": "{status} このエディターの実行先を選択",
     "unnamedDeployment": "デプロイメント {id}",
+    "unsaved": {
+      "message": "{deployment}に切り替えるとタブが再読み込みされます。これらのワークフローには未保存の変更があります。",
+      "saveAndSwitch": "保存して切り替える",
+      "switchWithoutSaving": "保存せずに切り替える",
+      "tabsReturn": "どちらを選んでも、再読み込み後に開いていたタブは元に戻ります。",
+      "title": "切り替える前にワークフローを保存しますか？"
+    },
     "workspaceDefault": "ワークスペースのデフォルト"
   },
   "desktopLogin": {
@@ -1961,8 +1988,11 @@
     "missingMedia": "いくつかのノードに必要な入力が不足しています",
     "missingModels": "{count} 個の必要なモデルが不足しています",
     "missingNodes": "いくつかのノードが不足しており、インストールが必要です",
+    "moreDeployments": "ほか {count} 件",
     "multipleIssueCount": "{count} 件の問題が見つかりました | {count} 件の問題が見つかりました",
     "multipleIssuesMessage": "ワークフローを実行する前に、これらの問題を解決してください。",
+    "runsOn": "{deployment} で実行",
+    "switchDeployment": "切り替え",
     "viewDetails": "詳細を表示"
   },
   "errorPanelSurvey": {
@@ -2031,7 +2061,9 @@
     "addNewKeybinding": "新しいキーバインドを追加",
     "addNode": "ノードを追加...",
     "addNodeFilterCondition": "ノードフィルター条件を追加",
+    "agentCreated": "エージェント作成",
     "agentModified": "エージェントがこのワークフローを更新しました",
+    "agentNeedsApproval": "エージェントがあなたの承認を必要としています",
     "agentWorking": "エージェントがこのワークフローを処理中です",
     "all": "すべて",
     "allKeybindingsReset": "すべてのキーバインドがデフォルトにリセットされました",
@@ -2045,6 +2077,7 @@
     "arrangeVertically": "縦に配置",
     "asset": "{count} 個のアセット | {count} 個のアセット",
     "audioFailedToLoad": "オーディオの読み込みに失敗しました",
+    "audioPlaybackFailed": "この音声を再生できませんでした。もう一度試すか、ダウンロードして別のアプリで再生してください。",
     "audioProgress": "オーディオの進捗",
     "author": "作者",
     "back": "戻る",
@@ -2096,6 +2129,7 @@
     "copyToClipboard": "クリップボードにコピー",
     "copyURL": "URLをコピー",
     "core": "コア",
+    "createdByAgent": "エージェントが作成",
     "currentUser": "現在のユーザー",
     "custom": "カスタム",
     "customBackground": "カスタム背景",
@@ -2111,6 +2145,7 @@
     "details": "詳細",
     "devOnly": "DEV",
     "devices": "デバイス",
+    "disableAgentCreated": "エージェント作成の項目をすべて無効化",
     "disableAll": "すべて無効にする",
     "disableSelected": "選択したものを無効化",
     "disableThirdParty": "サードパーティを無効化",
@@ -2696,6 +2731,19 @@
   },
   "issueReport": {
     "helpFix": "これを修正するのを助ける"
+  },
+  "lateCustomNodes": {
+    "failed": "一部のカスタムノードを起動できませんでした",
+    "failedDetail": "有効にするにはページを再読み込みしてください: {packs}",
+    "ready": "カスタムノードの準備ができました",
+    "reload": "再読み込み",
+    "starting": "カスタムノードを起動しています... {seconds} 秒",
+    "startingDetail": "通常は約20秒かかります。ボタンやメニューは自動的にここに表示されます。",
+    "stepBuilding": "カスタムノード用のサーバーをビルドしています。\nこのバージョンでは初回セットアップのため、数分かかります。",
+    "stepCreating": "カスタムノード用のサーバーを作成しています。\n初回セットアップです。",
+    "stepStarting": "カスタムノードを読み込んでいます。\n通常は30秒未満で完了します。",
+    "waitingBadge": "パックを待機中",
+    "waitingFor": "待機中: {packs}"
   },
   "layerEditor": {
     "alignBottom": "下揃え",
@@ -3432,7 +3480,6 @@
     "Node Library": "ノードライブラリ",
     "Node Links": "ノードリンク",
     "Open": "開く",
-    "Open 3D Viewer (Beta) for Selected Node": "選択したノードの3Dビューアー（ベータ）を開く",
     "Open Color Picker in MaskEditor": "MaskEditorでカラーピッカーを開く",
     "Open Custom Nodes Folder": "カスタムノードフォルダーを開く",
     "Open DevTools": "開発者ツールを開く",
@@ -3556,6 +3603,7 @@
     "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Beeble": "Beeble",
+    "Breeze": "Breeze",
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
@@ -3578,6 +3626,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",
@@ -3625,6 +3674,7 @@
     "debug": "デバッグ",
     "detection": "検出",
     "experimental": "実験的",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "フィルター",
     "flux": "flux",
@@ -3936,6 +3986,51 @@
     "failedDetail": "オンボーディングの状態をリセットできませんでした。もう一度お試しください。",
     "failedSummary": "オンボーディングを再実行できませんでした"
   },
+  "openOnCloud": {
+    "agentMenu": {
+      "copyPrompt": "プロンプトをコピー",
+      "openInClaude": "Claude desktopで開く",
+      "openInCodex": "Codexで開く",
+      "saveFirst": "エージェントに送信する前に、このワークフローを保存してください。",
+      "useLocalAgent": "ローカルエージェントを使用"
+    },
+    "checkFailed": "Comfy Cloudでこのワークフローを確認できませんでした。もう一度お試しください。",
+    "cloudButton": {
+      "checking": "Comfy Cloudを確認中…",
+      "tooltip": "Comfy Cloudで実行"
+    },
+    "deploySetup": "セットアップをComfy Cloudにデプロイ",
+    "deploySetupDialog": {
+      "body": "ローカルのセットアップをComfy Cloudにデプロイして、ComfyUIで使用するか、自動スケーリングAPIとして呼び出せます。",
+      "pointGpu": "高性能クラウドGPUで実行",
+      "pointNodes": "カスタムノードとモデルを持ち込む",
+      "pointPricing": "ジョブで使用したGPU秒数とビルドのストレージ分だけ支払う",
+      "title": "Comfy Cloudでワークフローを実行"
+    },
+    "deployWithAgent": "エージェントでデプロイ",
+    "desktopTransferFailed": "ワークフローを転送できませんでした。Desktopでもう一度「Comfy Cloudで開く」をクリックしてください。",
+    "downloaded": "ワークフローをダウンロードしました",
+    "downloadedDetail": "ブラウザーでComfy Cloudにドラッグ＆ドロップして開いてください。",
+    "handoffFailed": "お使いのコンピューターのComfyUIからワークフローを開けませんでした",
+    "handoffMissing": "ワークフローが届きませんでした",
+    "handoffMissingDetail": "ComfyUIは10分後に待機を停止します。ComfyUIでもう一度「Comfy Cloudで開く」をクリックしてください。",
+    "missingLocalModelLoader": "{nodeType} のモデル設定を読み取れませんでした。これを提供するノードパックをインストールしてから、もう一度お試しください。",
+    "missingModels": {
+      "title": "不足しているモデル {count} 個 | 不足しているモデル {count} 個",
+      "unavailable": "このワークフローを実行するには、これらのモデルをComfy Cloudに追加してください。このComfyUIからのアップロードは現在利用できません。"
+    },
+    "openedFromLocal": "お使いのコンピューターのComfyUIから開きました",
+    "openedFromLocalDetail": "Comfy Cloudには、このワークフローで使用するすべてのノードとモデルがあります。準備ができたら「実行」を押してください。",
+    "popupBlocked": "ブラウザーがComfy Cloudのタブをブロックしました。このページのポップアップを許可して、もう一度お試しください。",
+    "prepareFailed": "このワークフローをComfy Cloud用に準備できませんでした",
+    "prepareFailedDetail": "ワークフローにエラーがないか確認し、保存してからもう一度お試しください。",
+    "runDialog": {
+      "asksToSignIn": "Comfy Cloudでサインインを求められます。",
+      "openOnCloud": "Comfy Cloudで開く",
+      "ready": "Comfy Cloudには、このワークフローで使用されるすべてのノードとモデルがあります。新しいタブで開き、すぐに実行できます。",
+      "title": "Comfy Cloudで実行"
+    }
+  },
   "openSharedWorkflow": {
     "author": "作成者：",
     "copyAssetsAndOpen": "アセットをインポートしてワークフローを開く",
@@ -4155,13 +4250,16 @@
       "unknownCategory": "不明"
     },
     "missingNodePacks": {
+      "andMore": "ほか {count} 件",
       "applyChanges": "変更を適用",
       "collapse": "折りたたむ",
       "expand": "展開",
       "installAll": "すべてインストール",
       "installed": "インストール済み",
       "installing": "インストール中...",
+      "noDeploymentRunsIt": "このワークスペースには、これらすべてのノードを備えたデプロイメントがありません。",
       "ossManagerDisabledHint": "不足しているノードをインストールするには、まずPython環境で {pipCmd} を実行してNode Managerをインストールし、{flag} フラグを付けてComfyUIを再起動してください。",
+      "runsOn": "実行先:",
       "title": "不足しているノードパック",
       "unknownPack": "不明なパック",
       "unsupportedTitle": "サポートされていないノードパック",
@@ -4982,6 +5080,8 @@
     "partnerNodesCredits": "パートナーノードクレジット",
     "partnerNodesDescription": "商用/独自モデルの実行用",
     "partnerNodesPricingTable": "パートナーノードの料金表",
+    "pastDueNoticeMember": "このワークスペースには未払いの支払いがあります。ワークスペースの所有者に支払い方法の更新を依頼してください。",
+    "pastDueNoticeOwner": "未払いの支払いがあります。プランを変更するには、支払い方法を更新してください。",
     "paymentRecovery": {
       "memberCta": "了解しました",
       "memberDescription": "ワークスペースのオーナーにサブスクリプションの復元を依頼してください。",
@@ -5128,6 +5228,7 @@
     "pricingBlurbSeeDetails": "詳細を見る",
     "reactivatePlan": "サブスクリプションを再開",
     "reactivateToUseCredits": "これらのクレジットを使用するにはプランを再有効化してください",
+    "refillsAfterPayment": "支払いが完了すると補充されます",
     "refillsDate": "{date}に補充",
     "refillsNextCycle": "次のサイクルで補充",
     "refreshCredits": "クレジットを更新",
@@ -5188,6 +5289,14 @@
     "saveYearly": "20%お得",
     "saveYearlyUpTo": "最大20%お得",
     "scheduledChangeNotice": "プランは{date}に{plan}へ変更されます。",
+    "signupPaymentRecovery": {
+      "body": "プランを開始するには、支払いを完了してください。",
+      "contactSupport": "サポートに連絡",
+      "finishPayment": "支払いを完了",
+      "title": "{plan} の支払いが完了しませんでした。",
+      "titleNoPlan": "プランの支払いが完了しませんでした。",
+      "unavailable": "支払いページを開けませんでした。もう一度試すか、サポートに連絡してください。"
+    },
     "soloUseOnly": "個人利用のみ",
     "subscribe": "購読する",
     "subscribeFailed": "購読に失敗しました",
@@ -5689,7 +5798,9 @@
     "exportWorkflow": "ワークフローをエクスポート",
     "saveWorkflow": "ワークフローを保存",
     "savedAsApp": "アプリワークフローに変換されました",
-    "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました"
+    "savedAsWorkflow": "ノードグラフのみのワークフローに変換されました",
+    "unsavedChangesLost": "{name} に対する未保存の変更は利用できなくなったため、保存済みのファイルはそのままになりました。",
+    "unsavedChangesLostTitle": "未保存の変更は保存されませんでした"
   },
   "workspace": {
     "addedToNamedWorkspace": "{workspaceName}に追加されました",
@@ -5731,7 +5842,7 @@
         "title": "自動チャージに失敗しました"
       },
       "autoTopUpOff": {
-        "body": "カードが3回連続で拒否されました。支払い方法を更新してから、自動チャージを再度オンにしてください。",
+        "body": "支払い方法が3回連続で拒否されました。支払い方法を更新してから、自動チャージを再度オンにしてください。",
         "title": "自動チャージがオフになりました"
       },
       "ending": {
@@ -5746,7 +5857,10 @@
         "title": "Team プランは {date} に終了します"
       },
       "lowCredits": {
-        "localBody": "残りのクレジットは {credits} です。Partner Nodes を引き続き実行するには、クレジットを追加してください。",
+        "localBody": "クレジットが{credits}残っています。Partner Nodesを使い続けるには、クレジットを追加してください。 | クレジットが{credits}残っています。Partner Nodesを使い続けるには、クレジットを追加してください。",
+        "memberBody": "このワークスペースにはクレジットが{credits}残っています。なくなる前に、ワークスペースのオーナーにクレジットの追加を依頼してください。 | このワークスペースにはクレジットが{credits}残っています。なくなる前に、ワークスペースのオーナーにクレジットの追加を依頼してください。",
+        "ownerBody": "このワークスペースにはクレジットが{credits}残っています。なくなる前にクレジットを追加してください。 | このワークスペースにはクレジットが{credits}残っています。なくなる前にクレジットを追加してください。",
+        "personalBody": "クレジットが{credits}残っています。なくなる前にクレジットを追加してください。 | クレジットが{credits}残っています。なくなる前にクレジットを追加してください。",
         "title": "クレジット残高が少なくなっています"
       },
       "outOfCredits": {
@@ -5763,6 +5877,11 @@
         "personalBodyNoDate": "すべてのクレジットを使い切りました。クレジットを追加してください。",
         "title": "クレジットが不足しています"
       },
+      "parked": {
+        "body": "問題を解決できるよう、サポートにお問い合わせください。",
+        "contactSupport": "サポートに問い合わせ",
+        "title": "最近の支払いで問題が発生しました"
+      },
       "paused": {
         "body": "このワークスペースのサブスクリプションは一時停止されています。お支払い方法を更新して再開してください。"
       },
@@ -5777,7 +5896,7 @@
           "title": "支払いを受け付けました"
         },
         "verifyPayment": {
-          "action": "支払いを確認",
+          "action": "本人確認を完了",
           "body": "この支払いを完了するには、銀行による追加の確認が必要です。",
           "title": "支払いを確認"
         }
@@ -5812,8 +5931,10 @@
         "onHold": "デフォルトの支払い方法がありません。設定して自動チャージを再開してください。",
         "paused": "月間上限に達しました。{date} に再開します。",
         "pausedNoDate": "月間上限に達しました。",
+        "rule": "{threshold} クレジットを下回ると、{target} クレジットまでチャージします。",
         "status": {
           "failed": "失敗",
+          "limitReached": "上限に達しました",
           "off": "オフ",
           "on": "オン",
           "onHold": "保留中",
@@ -5826,19 +5947,23 @@
       "credits": {
         "addCredits": "クレジットを追加",
         "available": "利用可能",
+        "availableUntil": "{date} まで利用可能",
         "inUse": "現在使用中",
         "overdrawn": "実行により、所持クレジットを{count}クレジット超過しました。 | 実行により、所持クレジットを{count}クレジット超過しました。",
         "plan": "プラン",
         "planOfPool": "{total}中{remaining}",
         "planTooltip": "プランに含まれるクレジットです。各請求期間に補充されます。",
+        "planUsed": "{percent}% 使用済み",
         "rateInfo": "クレジットについて",
         "rateTooltip": "クレジットは実行に使用されます。{credits}クレジット = $1。",
-        "resubscribe": "Cloudでクレジットを使用するには、再登録してください。",
-        "subscribe": "Cloudでクレジットを使用するには、登録してください。",
         "title": "クレジット",
         "topUp": "チャージ",
         "topUpTooltip": "追加したクレジットです。プランのクレジットを使い切った後に使用されます。",
         "unavailable": "残高を読み込めませんでした。"
+      },
+      "footer": {
+        "messageSupport": "サポートにメッセージ",
+        "partnerNodesPricing": "パートナーノードの料金"
       },
       "handoff": {
         "member": {
@@ -5847,13 +5972,16 @@
         },
         "owner": {
           "action": "請求を開く",
-          "label": "支払い方法、請求書、使用状況"
+          "label": "支払い方法、請求書、使用状況",
+          "line": "請求に関するその他すべての管理は {platform} で行います",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "プランを読み込めませんでした。",
       "plan": {
         "actions": {
           "choosePlan": "プランを選択",
+          "contactSales": "営業部門に問い合わせ",
           "manage": "管理",
           "resume": "プランを再開",
           "stay": "{plan}を継続",
@@ -5874,16 +6002,39 @@
           "line": "Cloudでワークフローを実行するには登録してください。",
           "title": "このワークスペースには有効なプランがありません"
         },
+        "paused": "一時停止中。更新の支払いが完了しませんでした。",
         "resumeConfirm": {
           "body": "プランは{date}に更新されます。いつでも再度キャンセルできます。",
           "title": "{plan}プランを再開しますか？"
         },
+        "salesManaged": {
+          "line": "契約に基づき請求されます。",
+          "renews": "契約に基づき請求されます。{date}に更新されます。",
+          "title": "エンタープライズ"
+        },
         "scheduledChange": "{date}に{plan}へ変更されます。",
         "stayConfirm": {
+          "bodyNoAmount": "{current}を継続します。変更はいつでも再度予約できます。",
           "title": "{plan} への変更をキャンセルしますか？"
         },
         "unknown": {
           "title": "現在のプラン"
+        }
+      },
+      "topupCheckout": {
+        "creditsApplying": {
+          "body": "クレジットを追加しています。再度請求されることはありません。",
+          "title": "支払いを受け付けました"
+        },
+        "dismiss": "閉じる",
+        "failed": {
+          "body": "クレジットは追加されませんでした。もう一度試すか、別の支払い方法を使用してください。",
+          "title": "{amount}のチャージを完了できませんでした",
+          "titleNoAmount": "チャージを完了できませんでした"
+        },
+        "processing": {
+          "body": "銀行が支払いを確認中です。決済が完了するとクレジットが追加されるため、再度支払う必要はありません。",
+          "title": "支払いを処理中"
         }
       },
       "tryAgain": "再試行"
