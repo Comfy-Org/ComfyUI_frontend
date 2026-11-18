@@ -17,8 +17,9 @@ import type {
   CanvasColour
 } from '@comfyorg/graph-model/interfaces'
 import type {
+  Bounds,
   PointTuple as Point,
-  ReadOnlyRect
+  Size2D
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SlotDirection } from '@comfyorg/graph-model/slotId'
 import type {
@@ -41,6 +42,7 @@ import {
   setNodePosition,
   setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import { snapPoint } from '@/lib/litegraph/src/measure'
 import { CanvasItem } from '@comfyorg/graph-model/globalEnums'
@@ -51,14 +53,6 @@ import type {
 
 import type { EmptySubgraphInput } from './EmptySubgraphInput'
 import type { EmptySubgraphOutput } from './EmptySubgraphOutput'
-
-/** Geometry of an IO node drawn outside the canvas, in canvas units relative to its bounding rect. */
-export interface SubgraphIORenderedLayout {
-  readonly width: number
-  readonly height: number
-  /** The hit area of each slot's port, in {@link SubgraphIONodeBase.allSlots} order. */
-  readonly ports: readonly ReadOnlyRect[]
-}
 
 export abstract class SubgraphIONodeBase<
   TSlot extends SubgraphInput | SubgraphOutput
@@ -72,10 +66,11 @@ export abstract class SubgraphIONodeBase<
   abstract readonly id: NodeId
   abstract readonly slotDirection: SlotDirection
 
-  /** Set by the renderer that draws this node in place of the canvas. */
-  renderedLayout: SubgraphIORenderedLayout | undefined
-
   private fitted: Point | undefined
+
+  private get measuredSize(): Size2D | undefined {
+    return layoutStore.contentSizeOf(this.subgraph.id, this.id)
+  }
 
   private get layoutRect(): Rectangle {
     refreshNodeGeometry(this)
@@ -87,16 +82,16 @@ export abstract class SubgraphIONodeBase<
   }
 
   get boundingRect(): Rectangle {
-    const { renderedLayout, layoutRect } = this
-    if (!renderedLayout) return layoutRect
+    const { measuredSize, layoutRect } = this
+    if (!measuredSize) return layoutRect
     const [x, y, width] = layoutRect
     const offsetX =
-      this.slotDirection === 'output' ? width - renderedLayout.width : 0
+      this.slotDirection === 'output' ? width - measuredSize.width : 0
     return new Rectangle(
       x + offsetX,
       y,
-      renderedLayout.width,
-      renderedLayout.height
+      measuredSize.width,
+      measuredSize.height
     )
   }
 
@@ -397,8 +392,8 @@ export abstract class SubgraphIONodeBase<
   arrange(): void {
     const { minWidth, roundedRadius } = SubgraphIONodeBase
     const [x, y] = this.boundingRect
-    const { renderedLayout } = this
-    const anchorSide = this.slotDirection === 'output' ? 1 : -1
+    const { measuredSize, slotDirection } = this
+    const anchorSide = slotDirection === 'output' ? 1 : -1
 
     let maxWidth = minWidth
     let anchorX = this.slotAnchorX
@@ -406,11 +401,16 @@ export abstract class SubgraphIONodeBase<
 
     for (const [index, slot] of this.allSlots.entries()) {
       const [slotWidth, slotHeight] = slot.measure()
-      const port = renderedLayout?.ports[index]
+      const port = layoutStore.getSlotBounds(
+        this.subgraph.id,
+        this.id,
+        index,
+        slotDirection,
+        'expanded'
+      )
       if (port) {
-        const [portX, portY, portWidth, portHeight] = port
-        anchorX = x + portX + (portWidth + anchorSide * slotHeight) / 2
-        currentY = y + portY + (portHeight - slotHeight) / 2
+        anchorX = x + port.x + (port.width + anchorSide * slotHeight) / 2
+        currentY = y + port.y + (port.height - slotHeight) / 2
       }
       slot.arrange([anchorX, currentY, slotWidth, slotHeight])
       if (port) includePort(slot.boundingRect, x, y, port)
@@ -419,7 +419,7 @@ export abstract class SubgraphIONodeBase<
       if (slotWidth > maxWidth) maxWidth = slotWidth
     }
 
-    if (!renderedLayout)
+    if (!measuredSize)
       this.fitted = [maxWidth + 2 * roundedRadius, currentY - y + roundedRadius]
   }
 
@@ -437,7 +437,7 @@ export abstract class SubgraphIONodeBase<
       | SubgraphOutput,
     editorAlpha?: number
   ): void {
-    if (this.renderedLayout) return
+    if (this.measuredSize) return
     const { lineWidth, strokeStyle, fillStyle, font, textBaseline } = ctx
     this.drawProtected(ctx, colorContext, fromSlot, editorAlpha)
     Object.assign(ctx, {
@@ -500,7 +500,7 @@ function includePort(
   rect: Rectangle,
   originX: number,
   originY: number,
-  [x, y, width, height]: ReadOnlyRect
+  { x, y, width, height }: Bounds
 ): void {
   const left = originX + x
   const top = originY + y
