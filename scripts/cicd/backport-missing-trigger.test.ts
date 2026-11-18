@@ -77,7 +77,9 @@ case "$method $endpoint" in
     jq -nc --arg body "$body" '{user: {login: "comfy-pr-bot"}, body: $body}' >> "$FAKE_COMMENTS" ;;
   *"/labels") jq -r "$filter" "$FAKE_LABELS" ;;
   *"/comments") cat "$FAKE_COMMENTS" | jq -rs "$filter" ;;
-  *"/pulls?"*state=closed*)
+  *"/pulls?"*state=all*page=*)
+    [ -z "\${FAKE_MANUAL_FAIL:-}" ] || { echo 'HTTP 502' >&2; exit 1; }
+    case "$endpoint" in *page=1) ;; *) echo '[]'; exit 0 ;; esac
     base="\${endpoint#*base=}" base="\${base%%&*}"
     jq --arg b "$base" 'map(select(.base.ref == $b))' "$FAKE_MANUAL" | jq -r "$filter" ;;
   *"/pulls?"*)
@@ -95,13 +97,14 @@ interface ManualBackport {
   head: string
   title: string
   body?: string
-  merged?: boolean
+  state?: 'open' | 'closed' | 'merged'
   fork?: boolean
 }
 
 interface PrSetup {
   labels: string[]
   manualBackports?: ManualBackport[]
+  manualLookupFails?: boolean
   backports?: Array<{
     base: string
     head: string
@@ -116,6 +119,7 @@ function createPr({
   labels,
   backports = [],
   manualBackports = [],
+  manualLookupFails = false,
   comments: existingComments = [],
   locked = false,
   sharedTokenExhausted = false
@@ -141,7 +145,7 @@ function createPr({
     join(directory, 'manual.json'),
     JSON.stringify(
       manualBackports.map(
-        ({ base, head, title, body = '', merged = true, fork = false }) => ({
+        ({ base, head, title, body = '', state = 'merged', fork = false }) => ({
           number: 30000,
           title,
           body,
@@ -154,7 +158,8 @@ function createPr({
                 : 'Comfy-Org/ComfyUI_frontend'
             }
           },
-          merged_at: merged ? '2026-10-01T00:00:00Z' : null
+          state: state === 'open' ? 'open' : 'closed',
+          merged_at: state === 'merged' ? '2026-10-01T00:00:00Z' : null
         })
       )
     )
@@ -191,6 +196,7 @@ function createPr({
           FAKE_LABELS: join(directory, 'labels.json'),
           FAKE_LOCKED: locked ? '1' : '',
           FAKE_MANUAL: join(directory, 'manual.json'),
+          FAKE_MANUAL_FAIL: manualLookupFails ? '1' : '',
           FAKE_SHARED_TOKEN_EXHAUSTED: sharedTokenExhausted ? '1' : '',
           GH_REPO: 'Comfy-Org/ComfyUI_frontend',
           PATH: `${directory}:${process.env.PATH}`,
@@ -276,6 +282,39 @@ describe('backport warning for release labels without needs-backport', () => {
     expect(comment).not.toContain('`core/1.58`')
   })
 
+  it('leaves out a target whose hand-made backport is still open', () => {
+    const pr = createPr({
+      labels: ['core/1.57'],
+      manualBackports: [
+        {
+          base: 'core/1.57',
+          head: 'fix/onboarding-port',
+          title: '[backport core/1.57] fix(agent): persist onboarding tour',
+          body: 'Backport of #21241 to core/1.57',
+          state: 'open'
+        }
+      ]
+    })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(pr.postedComments()).toHaveLength(0)
+  })
+
+  it('still warns when the hand-made backport lookup fails', () => {
+    const pr = createPr({
+      labels: ['core/1.57'],
+      manualLookupFails: true
+    })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(pr.postedComments()).toHaveLength(1)
+    expect(pr.postedComments()[0]).toContain('`core/1.57`')
+  })
+
   it.for<[string, ManualBackport]>([
     [
       'it was closed without merging',
@@ -283,7 +322,7 @@ describe('backport warning for release labels without needs-backport', () => {
         base: 'core/1.57',
         head: 'backport-21241-to-core-1.57-port',
         title: '[backport core/1.57] fix (#21241)',
-        merged: false
+        state: 'closed'
       }
     ],
     [

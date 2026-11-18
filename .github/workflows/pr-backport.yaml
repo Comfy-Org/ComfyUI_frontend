@@ -660,15 +660,19 @@ jobs:
             if [ "${BACKPORT_PRS}" -ne 0 ]; then
               continue
             fi
-            # Same rule the backport job uses to recognise a merged backport
-            # made by hand from a branch the bot did not create.
-            MANUAL_PRS=$(gh api --paginate \
-              "repos/${GH_REPO}/pulls?state=closed&base=${label}&per_page=100" |
+            # A backport made by hand from a branch the bot did not create,
+            # matched like the backport job's hand-made rule, over the same
+            # 300 most recent PRs. Open ones count too, as for bot branches.
+            # A failed lookup counts as none, so the warning still posts.
+            MANUAL_PRS=$(
+              for page in 1 2 3; do
+                gh api "repos/${GH_REPO}/pulls?state=all&base=${label}&per_page=100&page=${page}"
+              done |
               jq -rs --arg target "${label}" --arg pr "${PR_NUMBER}" --arg repo "${GH_REPO}" '
                 "([^0-9]|$)" as $end |
                 ($target | ascii_downcase) as $t |
                 [.[][] | select(
-                  .merged_at != null and
+                  (.state == "open" or .merged_at != null) and
                   .head.repo.full_name == $repo and
                   (.head.ref | test("^backport-[0-9]+-to-") and (test("^backport-\($pr)-to-") | not) | not) and
                   (.title | ascii_downcase |
@@ -681,8 +685,9 @@ jobs:
                     ((.body // "") | test(
                       "(^|\n)[ \t]*backport of (#|https://github[.]com/Comfy-Org/ComfyUI_frontend/pull/)\($pr)\($end)";
                       "i")))
-                )] | length')
-            if [ "${MANUAL_PRS}" -eq 0 ]; then
+                )] | length'
+            ) || MANUAL_PRS=0
+            if [ "${MANUAL_PRS:-0}" -eq 0 ]; then
               PENDING+=("${label}")
             fi
           done <<<"${LABELS}"
