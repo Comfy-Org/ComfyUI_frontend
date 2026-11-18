@@ -36,8 +36,12 @@ export function platformLinkWindowFeatures(): string {
   return platformLinkRel().replace(' ', ',')
 }
 
+function runningBuild(): Distribution {
+  return window.__comfyDesktop2 === undefined ? __DISTRIBUTION__ : 'desktop'
+}
+
 function tagged(url: URL, surface?: PlatformLinkSurface): URL {
-  url.searchParams.set('utm_source', PLATFORM_LINK_SOURCE[__DISTRIBUTION__])
+  url.searchParams.set('utm_source', PLATFORM_LINK_SOURCE[runningBuild()])
   url.searchParams.set('utm_medium', 'app')
   if (surface) url.searchParams.set('utm_content', surface)
   return url

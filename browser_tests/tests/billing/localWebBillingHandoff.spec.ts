@@ -7,17 +7,10 @@ import {
   OWNER_ONLY,
   OWNER_ONLY_MESSAGE,
   WORKSPACE_ID,
-  localWebBillingHandoffTest as test
+  localWebBillingHandoffTest as test,
+  taggedEntryUrl
 } from '@e2e/fixtures/localWebBillingHandoffFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
-
-function taggedEntryUrl(view?: string): string {
-  const url = new URL(ENTRY_URL)
-  url.searchParams.set('utm_source', 'comfyui')
-  url.searchParams.set('utm_medium', 'app')
-  if (view) url.searchParams.set('view', view)
-  return url.href
-}
 
 test.describe('Local web billing handoff', () => {
   test.describe.configure({ timeout: 60_000 })

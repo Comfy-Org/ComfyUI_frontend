@@ -490,7 +490,10 @@ describe('issueLocalBillingHandoff', () => {
         undefined,
         undefined
       )
-      expect(open).toHaveBeenCalledExactlyOnceWith(TAGGED_ENTRY_URL, '_blank')
+      expect(open).toHaveBeenCalledExactlyOnceWith(
+        TAGGED_ENTRY_URL.replace('comfyui', 'comfy_desktop'),
+        '_blank'
+      )
       expect(fetchRequests(HANDOFFS)).toHaveLength(0)
     })
 

@@ -51,6 +51,12 @@ describe('platformLink', () => {
     }
   )
 
+  it('names Desktop when a local build runs inside the Desktop host', () => {
+    vi.stubGlobal('__comfyDesktop2', {})
+
+    expect(platformLink('/profile/usage')).toContain('utm_source=comfy_desktop')
+  })
+
   it('names the surface the link sits on and never sets a campaign', () => {
     const url = new URL(
       platformSurfaceLink('/profile/builds', 'deployment-switcher')

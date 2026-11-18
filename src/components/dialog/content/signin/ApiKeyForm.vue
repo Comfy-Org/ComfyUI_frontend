@@ -32,7 +32,7 @@
           />
           <FieldDescription>
             {{ t('auth.apiKey.helpText') }}
-            <a :href="apiKeysUrl" target="_blank">
+            <a :href="apiKeysUrl" target="_blank" :rel="platformLinkRel()">
               {{ t('auth.apiKey.generateKey') }}
             </a>
             <span class="mx-1">•</span>
@@ -75,7 +75,10 @@ import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
 import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
-import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
+import {
+  platformLinkRel,
+  platformSurfaceLink
+} from '@/platform/workspace/utils/platformLink'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'

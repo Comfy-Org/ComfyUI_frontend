@@ -132,6 +132,7 @@
             <a
               :href="apiKeysUrl"
               target="_blank"
+              :rel="platformLinkRel()"
               class="cursor-pointer text-blue-500"
             >
               {{ t('auth.apiKey.generateKey') }}
@@ -198,7 +199,10 @@ import {
   requestDesktopHostSignIn
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
-import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
+import {
+  platformLinkRel,
+  platformSurfaceLink
+} from '@/platform/workspace/utils/platformLink'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
