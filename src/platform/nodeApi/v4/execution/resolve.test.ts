@@ -667,8 +667,10 @@ describe('a frontend node type with a resolver', () => {
         { index: 0, name: 'out', label: 'Sortie', type: 'STRING' },
         { index: 1, name: 'second', label: 'second', type: 'STRING' }
       ])
+      expect(Object.isFrozen(view.self.inputs)).toBe(true)
       expect(Object.isFrozen(view.self.inputs[0])).toBe(true)
       expect(Object.isFrozen(view.self.outputs)).toBe(true)
+      expect(Object.isFrozen(view.self.outputs[0])).toBe(true)
     })
 
     it('gives a frozen copy of the properties, not the objects the node holds', async () => {
@@ -729,6 +731,11 @@ describe('a frontend node type with a resolver', () => {
       const { view, wire } = await viewSeenBy()
       const ref = { nodeId: String(wire.id), input: 1 }
 
+      expect(view.self.input(0)).toEqual({ nodeId: String(wire.id), input: 0 })
+      expect(view.self.input('in')).toEqual({
+        nodeId: String(wire.id),
+        input: 0
+      })
       expect(view.self.input(1)).toEqual(ref)
       expect(view.self.input('other')).toEqual(ref)
       expect(Object.isFrozen(view.self.input(1))).toBe(true)

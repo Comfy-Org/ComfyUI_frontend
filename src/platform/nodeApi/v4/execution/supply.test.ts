@@ -316,6 +316,18 @@ describe('a supplier', () => {
 
       expect(await inputsOf(consumer)).toEqual({})
     })
+
+    it('feeds nothing when one supplier claims an input from two of its outputs', async () => {
+      const claimTwoOutputs: Supplier = (view) => [
+        ...everythingTo({ output: 0 })(view),
+        ...everythingTo({ output: 1 })(view)
+      ]
+      supplyWith(claimTwoOutputs)
+      addEverywhere().addOutput('second', 'STRING')
+      const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+
+      expect(await inputsOf(consumer)).toEqual({})
+    })
   })
 
   describe('when it is asked', () => {
@@ -329,6 +341,25 @@ describe('a supplier', () => {
 
       expect(supply).toHaveBeenCalledOnce()
       expect(supply.mock.calls[0][0].self.id).toBe(String(supplier.id))
+      expect(Object.isFrozen(supply.mock.calls[0][0])).toBe(true)
+    })
+
+    it('is not asked for a node that joined before its extension was made, and is for one that joins after', async () => {
+      comfy.defs.extend(EVERYWHERE, (builder) => builder.onCreated(() => {}))
+      addEverywhere()
+      const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+      const supply = vi.fn(everythingTo({ output: 0 }))
+      supplyWith(supply)
+
+      expect(await inputsOf(consumer)).toEqual({})
+      expect(supply).not.toHaveBeenCalled()
+
+      const late = addEverywhere()
+
+      expect(await inputsOf(consumer)).toEqual({ x: [String(late.id), 0] })
+      expect(supply.mock.calls.map(([view]) => view.self.id)).toEqual([
+        String(late.id)
+      ])
     })
 
     it('is not asked for a node of a class registered over the type it extends', async () => {
@@ -699,7 +730,9 @@ describe('a supplier', () => {
         answering.connect(0, supplier, 0)
         addBackendNode(graph, 'Consumer', { inputs: ['x'] })
 
-        expect(comfy.graph.resolvedSupplies()?.[0].from).toEqual({ kind })
+        const from = comfy.graph.resolvedSupplies()?.[0].from
+        expect(from).toEqual({ kind })
+        expect(Object.isFrozen(from)).toBe(true)
       }
     )
 
@@ -771,6 +804,18 @@ describe('a supplier', () => {
         }
       ])
       expect(comfy.graph.resolvedSupplies()).toEqual([])
+    })
+
+    it('reports a supplier that reads properties a workflow cannot save, and drops its answer', () => {
+      supplyWith((view) => {
+        void view.self.properties
+        return everythingTo({ output: 0 })(view)
+      })
+      Reflect.set(addEverywhere().properties, 'big', 1n)
+      addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+
+      expect(comfy.graph.resolvedSupplies()).toEqual([])
+      expect(reportError).toHaveBeenCalledOnce()
     })
 
     it('asks the suppliers again on each read', () => {
