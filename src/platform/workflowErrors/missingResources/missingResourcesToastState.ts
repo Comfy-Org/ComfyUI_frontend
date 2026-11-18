@@ -1,7 +1,8 @@
 import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import { isActiveDownload } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
-import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
+import { isActiveDownload } from '@/platform/workflowErrors/missingModel/missingModelDownloadState'
+import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadState'
 import { toDownloadableModel } from '@/platform/workflowErrors/missingModel/missingModelViewUtils'
+import { isModelUrlAllowlisted } from '@/platform/workflowErrors/missingModel/modelUrlAllowlist'
 import type { MissingModelGroup } from '@/platform/workflowErrors/missingModel/types'
 
 export interface TrackedModel {
@@ -9,6 +10,7 @@ export interface TrackedModel {
   model: ModelWithUrl
   download: MissingModelDownloadState
   stillMissing: boolean
+  downloadedHere: boolean
   sizeBytes: number | undefined
   gatedRepoUrl: string | undefined
 }
@@ -18,7 +20,7 @@ export interface UnavailableModel {
   key: string
   name: string
   directory: string | null
-  reason: 'noUrl' | 'unsupportedSource'
+  reason: 'noUrl' | 'unsupportedSource' | 'unsupportedFile'
 }
 
 export type MissingResourcesToastState =
@@ -53,9 +55,26 @@ export type TrackedModelPhase = 'waiting' | 'active' | 'failed' | 'finished'
 export function trackedModelPhase(tracked: TrackedModel): TrackedModelPhase {
   const { download } = tracked
   if (isActiveDownload(download)) return 'active'
+  if (!tracked.stillMissing) return 'finished'
   if (download.status === 'failed') return 'failed'
-  if (download.status === 'done' || !tracked.stillMissing) return 'finished'
+  if (download.status === 'done') return 'finished'
   return 'waiting'
+}
+
+/** Whether the toast should keep listing the model: still missing, downloading, or downloaded in this session. */
+export function isTrackedModelRelevant(tracked: TrackedModel): boolean {
+  return (
+    tracked.stillMissing ||
+    tracked.downloadedHere ||
+    isActiveDownload(tracked.download)
+  )
+}
+
+function unavailableReason(
+  url: string | undefined
+): UnavailableModel['reason'] {
+  if (!url) return 'noUrl'
+  return isModelUrlAllowlisted(url) ? 'unsupportedFile' : 'unsupportedSource'
 }
 
 /** Missing models in the groups that have no URL the editor may download from. */
@@ -71,7 +90,7 @@ export function toUnavailableModels(
               key: `${group.directory ?? ''}:${model.name}`,
               name: model.name,
               directory: group.directory,
-              reason: model.representative.url ? 'unsupportedSource' : 'noUrl'
+              reason: unavailableReason(model.representative.url)
             }
           ]
     )
@@ -170,6 +189,27 @@ export function nextDownloadBatch(
   )
 }
 
+function batchAwarePhase(
+  tracked: TrackedModel,
+  batch: DownloadBatch
+): TrackedModelPhase {
+  const phase = trackedModelPhase(tracked)
+  return phase === 'waiting' && batch.get(tracked.key) === 'finished'
+    ? 'finished'
+    : phase
+}
+
+/** Models a download-all click would start: waiting or failed, excluding ones the running batch already finished. */
+export function startableModels(
+  tracked: readonly TrackedModel[],
+  batch: DownloadBatch = EMPTY_BATCH
+): TrackedModel[] {
+  return tracked.filter((model) => {
+    const phase = batchAwarePhase(model, batch)
+    return phase === 'waiting' || phase === 'failed'
+  })
+}
+
 /** Picks the single state the missing resources toast shows; `unavailable` counts missing models without a usable download URL. */
 export function deriveMissingResourcesToastState(
   tracked: readonly TrackedModel[],
@@ -178,11 +218,9 @@ export function deriveMissingResourcesToastState(
 ): MissingResourcesToastState {
   if (tracked.length === 0 && unavailable === 0) return { kind: 'hidden' }
 
-  const phases = tracked.map(trackedModelPhase)
-  const isStartable = (index: number) =>
-    phases[index] === 'waiting' || phases[index] === 'failed'
+  const phases = tracked.map((model) => batchAwarePhase(model, batch))
   const active = tracked.filter((_, index) => phases[index] === 'active')
-  const startable = tracked.filter((_, index) => isStartable(index))
+  const startable = startableModels(tracked, batch)
   const failed = startable.filter(
     ({ download }) => download.status === 'failed'
   ).length

@@ -89,53 +89,58 @@ test.describe('Desktop missing resources toast', { tag: '@desktop' }, () => {
       ])
   })
 
-  test('opens expanded with a notice when models are gated or have no download URL', async ({
-    comfyPage,
-    modelDownloadHost
-  }) => {
-    await comfyPage.page
-      .context()
-      .route('https://huggingface.co/**', async (route) =>
-        route.fulfill({
-          status: 403,
-          headers: {
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Expose-Headers': 'X-Error-Code',
-            'X-Error-Code': 'GatedRepo'
-          }
-        })
+  test.describe('with gated and URL-less models', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.page
+        .context()
+        .route('https://huggingface.co/**', async (route) =>
+          route.fulfill({
+            status: 403,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Expose-Headers': 'X-Error-Code',
+              'X-Error-Code': 'GatedRepo'
+            }
+          })
+        )
+    })
+
+    test('opens expanded with a notice when models are gated or have no download URL', async ({
+      comfyPage,
+      modelDownloadHost
+    }) => {
+      await comfyPage.workflow.loadWorkflow(
+        'missing/missing_models_gated_and_unlisted'
       )
-    await comfyPage.workflow.loadWorkflow(
-      'missing/missing_models_gated_and_unlisted'
-    )
-    const toast = comfyPage.page.getByTestId(TestIds.toast.panel)
+      const toast = comfyPage.page.getByTestId(TestIds.toast.panel)
 
-    await expect(
-      toast.getByRole('button', { name: 'Hide model downloads' })
-    ).toHaveAttribute('aria-expanded', 'true')
-    await expect(toast.getByRole('note')).toContainText(
-      'Some models have no download URL or are gated.'
-    )
-    await expect(
-      toast.getByRole('list', { name: 'Missing models' })
-    ).toContainText('No download URL')
-    await expect(
-      toast.getByRole('button', {
-        name: /^Open Hugging Face repository for gated_model\.safetensors/
-      })
-    ).toBeVisible()
+      await expect(
+        toast.getByRole('button', { name: 'Hide model downloads' })
+      ).toHaveAttribute('aria-expanded', 'true')
+      await expect(toast.getByRole('note')).toContainText(
+        'Some models have no download URL or are gated.'
+      )
+      await expect(
+        toast.getByRole('list', { name: 'Missing models' })
+      ).toContainText('No download URL')
+      await expect(
+        toast.getByRole('button', {
+          name: /^Open Hugging Face repository for gated_model\.safetensors/
+        })
+      ).toBeVisible()
 
-    await toast.getByRole('button', { name: /^Download all/ }).click()
+      await toast.getByRole('button', { name: /^Download all/ }).click()
 
-    await expect
-      .poll(() => modelDownloadHost.downloads())
-      .toEqual([
-        {
-          url: GATED_MODEL_URL,
-          filename: 'gated_model.safetensors',
-          directory: 'checkpoints'
-        }
-      ])
+      await expect
+        .poll(() => modelDownloadHost.downloads())
+        .toEqual([
+          {
+            url: GATED_MODEL_URL,
+            filename: 'gated_model.safetensors',
+            directory: 'checkpoints'
+          }
+        ])
+    })
   })
 })
 
@@ -157,3 +162,42 @@ comfyPageFixture.describe('Missing resources toast outside Desktop', () => {
     }
   )
 })
+
+const untrackedDesktopHost = comfyPageFixture.extend({
+  page: async ({ page }, use) => {
+    await page.addInitScript(() => {
+      Object.assign(window, {
+        __comfyDesktop2: {
+          isRemote: () => false,
+          downloadModel: async () => true
+        }
+      })
+    })
+    await use(page)
+  }
+})
+
+untrackedDesktopHost.describe(
+  'Missing resources toast on a Desktop host that does not report download progress',
+  { tag: '@desktop' },
+  () => {
+    untrackedDesktopHost.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
+    untrackedDesktopHost(
+      'leaves missing models to the error overlay',
+      async ({ comfyPage }) => {
+        await cleanupFakeModel(comfyPage)
+        await comfyPage.workflow.loadWorkflow(workflow.workflow)
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+        ).toBeVisible()
+
+        await expect(
+          comfyPage.page.getByTestId(TestIds.toast.panel)
+        ).toBeHidden()
+      }
+    )
+  }
+)

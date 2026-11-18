@@ -5882,6 +5882,7 @@
     "needsAttentionHint": "Some models have no download URL or are gated.",
     "noDownloadUrl": "No download URL",
     "unsupportedSource": "Unsupported source",
+    "unsupportedFile": "Unsupported file",
     "downloadAll": "Download all",
     "downloadAllWithSize": "Download all ({size})",
     "downloadMore": "Download {count} more | Download {count} more",

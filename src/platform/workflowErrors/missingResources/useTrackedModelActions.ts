@@ -3,10 +3,8 @@ import type { MaybeRefOrGetter } from 'vue'
 
 import { useMissingModelDownload } from '@/platform/workflowErrors/missingModel/composables/useMissingModelDownload'
 import type { ModelWithUrl } from '@/platform/workflowErrors/missingModel/missingModelDownload'
-import {
-  isActiveDownload,
-  useMissingModelDownloadStore
-} from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
+import { isActiveDownload } from '@/platform/workflowErrors/missingModel/missingModelDownloadState'
+import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { trackedModelPhase } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 import type { TrackedModel } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 

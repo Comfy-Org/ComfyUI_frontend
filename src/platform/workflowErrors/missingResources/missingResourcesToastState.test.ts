@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
+import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadState'
 import { groupMissingModelCandidates } from '@/platform/workflowErrors/missingModel/missingModelGrouping'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import {
   deriveMissingResourcesToastState,
+  isTrackedModelRelevant,
   nextDownloadBatch,
+  startableModels,
   toUnavailableModels
 } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 import type { TrackedModel } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
@@ -28,6 +30,7 @@ function tracked(
     },
     download,
     stillMissing: true,
+    downloadedHere: false,
     sizeBytes: 100,
     gatedRepoUrl: undefined,
     ...overrides
@@ -266,6 +269,15 @@ describe('deriveMissingResourcesToastState', () => {
       expected: { kind: 'needsAttention', count: 2 }
     },
     {
+      name: 'is ready when a model that failed is no longer needed',
+      models: [
+        tracked({ status: 'done' }),
+        tracked({ status: 'failed' }, { stillMissing: false })
+      ],
+      unavailable: 0,
+      expected: { kind: 'ready' }
+    },
+    {
       name: 'is ready once every model has finished',
       models: [
         tracked({ status: 'done' }),
@@ -278,6 +290,41 @@ describe('deriveMissingResourcesToastState', () => {
     expect(deriveMissingResourcesToastState(models, unavailable)).toEqual(
       expected
     )
+  })
+})
+
+describe('isTrackedModelRelevant', () => {
+  it.for([
+    {
+      name: 'a model still missing',
+      model: tracked({ status: 'idle' }),
+      expected: true
+    },
+    {
+      name: 'a model downloaded in this session',
+      model: tracked(
+        { status: 'idle' },
+        { stillMissing: false, downloadedHere: true }
+      ),
+      expected: true
+    },
+    {
+      name: 'a download still running after the model left the workflow',
+      model: tracked(downloading(0.5), { stillMissing: false }),
+      expected: true
+    },
+    {
+      name: 'a model the workflow no longer needs that was never downloaded',
+      model: tracked({ status: 'idle' }, { stillMissing: false }),
+      expected: false
+    },
+    {
+      name: 'a failed download the workflow no longer needs',
+      model: tracked({ status: 'failed' }, { stillMissing: false }),
+      expected: false
+    }
+  ])('keeps listing $name: $expected', ({ model, expected }) => {
+    expect(isTrackedModelRelevant(model)).toBe(expected)
   })
 })
 
@@ -318,6 +365,25 @@ describe('nextDownloadBatch', () => {
     expect(
       deriveMissingResourcesToastState([settled, running], 0, batch)
     ).toMatchObject({ kind: 'downloading', finished: 1, total: 2 })
+  })
+
+  it('counts a batch model that a rescan briefly reopens as finished, not as one to start again', () => {
+    const reopened = tracked({ status: 'idle' })
+    const running = tracked(downloading(0.5))
+    const batch = new Map([
+      [reopened.key, 'finished' as const],
+      [running.key, 'active' as const]
+    ])
+
+    expect(startableModels([reopened, running], batch)).toEqual([])
+    expect(
+      deriveMissingResourcesToastState([reopened, running], 0, batch)
+    ).toMatchObject({
+      kind: 'downloading',
+      finished: 1,
+      total: 2,
+      startable: 0
+    })
   })
 
   it.for([
@@ -370,6 +436,11 @@ describe('toUnavailableModels', () => {
           name: 'elsewhere.safetensors',
           directory: 'loras',
           url: 'https://example.com/elsewhere.safetensors'
+        }),
+        candidate({
+          name: 'notes.txt',
+          directory: 'loras',
+          url: 'https://huggingface.co/org/repo/resolve/main/notes.txt'
         })
       ],
       false
@@ -392,9 +463,14 @@ describe('toUnavailableModels', () => {
           name: 'elsewhere.safetensors',
           directory: 'loras',
           reason: 'unsupportedSource'
+        },
+        {
+          name: 'notes.txt',
+          directory: 'loras',
+          reason: 'unsupportedFile'
         }
       ])
     )
-    expect(toUnavailableModels(groups)).toHaveLength(2)
+    expect(toUnavailableModels(groups)).toHaveLength(3)
   })
 })

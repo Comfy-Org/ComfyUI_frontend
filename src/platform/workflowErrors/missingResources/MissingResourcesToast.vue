@@ -53,11 +53,7 @@
               </span>
             </span>
             <span class="shrink-0 text-2xs/tight text-warning">
-              {{
-                model.reason === 'noUrl'
-                  ? t('missingResourcesToast.noDownloadUrl')
-                  : t('missingResourcesToast.unsupportedSource')
-              }}
+              {{ unavailableReasonLabels[model.reason] }}
             </span>
           </li>
         </ul>
@@ -152,6 +148,7 @@ import ToastPanel from '@comfyorg/design-system/toast/ToastPanel'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import MissingResourcesToastModelRow from '@/platform/workflowErrors/missingResources/MissingResourcesToastModelRow.vue'
+import type { UnavailableModel } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 import { useMissingResourcesToast } from '@/platform/workflowErrors/missingResources/useMissingResourcesToast'
 import { formatSize } from '@/utils/formatUtil'
 
@@ -167,6 +164,14 @@ const {
 } = useMissingResourcesToast()
 
 const isExpanded = ref(false)
+
+const unavailableReasonLabels = computed<
+  Record<UnavailableModel['reason'], string>
+>(() => ({
+  noUrl: t('missingResourcesToast.noDownloadUrl'),
+  unsupportedSource: t('missingResourcesToast.unsupportedSource'),
+  unsupportedFile: t('missingResourcesToast.unsupportedFile')
+}))
 const detailsId = useId()
 
 watch(

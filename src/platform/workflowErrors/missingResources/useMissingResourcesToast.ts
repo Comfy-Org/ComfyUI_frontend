@@ -12,9 +12,10 @@ import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/mis
 import { getDownloadableModels } from '@/platform/workflowErrors/missingModel/missingModelViewUtils'
 import {
   deriveMissingResourcesToastState,
+  isTrackedModelRelevant,
   nextDownloadBatch,
-  toUnavailableModels,
-  trackedModelPhase
+  startableModels,
+  toUnavailableModels
 } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 import type {
   DownloadBatch,
@@ -48,17 +49,23 @@ export function useMissingResourcesToast() {
   )
 
   const trackedByKey = shallowRef(new Map<string, ModelWithUrl>())
+  const downloadedKeys = shallowRef<ReadonlySet<string>>(new Set())
+  const reportedTotals = shallowRef<ReadonlyMap<string, number>>(new Map())
   const dismissed = ref(false)
 
   watch(
-    [() => workflowStore.activeWorkflow?.path, missingDownloadable],
-    ([path, models], [previousPath]) => {
-      const next =
-        path === previousPath
-          ? new Map(trackedByKey.value)
-          : new Map<string, ModelWithUrl>()
+    [() => workflowStore.activeWorkflow, missingDownloadable],
+    ([workflow, models], [previousWorkflow]) => {
+      const sameWorkflow = workflow === previousWorkflow
+      const next = sameWorkflow
+        ? new Map(trackedByKey.value)
+        : new Map<string, ModelWithUrl>()
       for (const model of models) next.set(getModelFileKey(model), model)
-      if (path !== previousPath) dismissed.value = false
+      if (!sameWorkflow) {
+        dismissed.value = false
+        downloadedKeys.value = new Set()
+        reportedTotals.value = new Map()
+      }
       trackedByKey.value = next
     },
     { immediate: true }
@@ -73,15 +80,47 @@ export function useMissingResourcesToast() {
     { immediate: true }
   )
 
-  const trackedModels = computed<TrackedModel[]>(() =>
+  const downloads = computed(() =>
     [...trackedByKey.value].map(([key, model]) => ({
       key,
       model,
-      download: downloadStore.stateFor(model),
-      stillMissing: missingKeys.value.has(key),
-      sizeBytes: fileSizeFor(model.url),
-      gatedRepoUrl: trustedGatedRepoUrlFor(model.url)
+      download: downloadStore.stateFor(model)
     }))
+  )
+
+  watch(downloads, (entries) => {
+    const finished = entries.filter(
+      ({ key, download }) =>
+        download.status === 'done' && !downloadedKeys.value.has(key)
+    )
+    if (finished.length > 0)
+      downloadedKeys.value = new Set([
+        ...downloadedKeys.value,
+        ...finished.map(({ key }) => key)
+      ])
+    const totals = entries.flatMap(({ key, download }) =>
+      download.status === 'downloading' &&
+      download.totalBytes &&
+      reportedTotals.value.get(key) !== download.totalBytes
+        ? [[key, download.totalBytes] as const]
+        : []
+    )
+    if (totals.length > 0)
+      reportedTotals.value = new Map([...reportedTotals.value, ...totals])
+  })
+
+  const trackedModels = computed<TrackedModel[]>(() =>
+    downloads.value
+      .map(({ key, model, download }) => ({
+        key,
+        model,
+        download,
+        stillMissing: missingKeys.value.has(key),
+        downloadedHere: downloadedKeys.value.has(key),
+        sizeBytes: fileSizeFor(model.url) ?? reportedTotals.value.get(key),
+        gatedRepoUrl: trustedGatedRepoUrlFor(model.url)
+      }))
+      .filter(isTrackedModelRelevant)
   )
 
   const unavailableModels = computed(() =>
@@ -120,31 +159,46 @@ export function useMissingResourcesToast() {
     )
   )
 
+  const readyShownLongEnough = ref(false)
+
   const visible = computed(
-    () => !dismissed.value && state.value.kind !== 'hidden'
+    () =>
+      downloadStore.tracksHostProgress() &&
+      !dismissed.value &&
+      !readyShownLongEnough.value &&
+      state.value.kind !== 'hidden'
   )
 
   function dismiss() {
     dismissed.value = true
   }
 
-  const { start: dismissSoon, stop: keepOpen } = useTimeoutFn(
-    dismiss,
+  const { start: hideWhenReady, stop: cancelReadyHide } = useTimeoutFn(
+    () => {
+      readyShownLongEnough.value = true
+    },
     READY_DISMISS_DELAY_MS,
     { immediate: false }
   )
 
   watch(
     () => state.value.kind === 'ready',
-    (isReady) => (isReady ? dismissSoon() : keepOpen())
+    (isReady) => {
+      if (isReady) {
+        hideWhenReady()
+        return
+      }
+      cancelReadyHide()
+      readyShownLongEnough.value = false
+    }
   )
 
   function startDownloads() {
-    for (const tracked of trackedModels.value) {
-      const phase = trackedModelPhase(tracked)
-      if (phase === 'waiting' || phase === 'failed')
-        startModelDownload(tracked.model)
-    }
+    for (const tracked of startableModels(
+      trackedModels.value,
+      downloadBatch.value
+    ))
+      startModelDownload(tracked.model)
   }
 
   return {
