@@ -3,6 +3,7 @@ import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import { useTelemetry } from '@comfyorg/telemetry'
+import type { PlatformHandoffView } from '@/platform/billing/localBillingHandoff'
 import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { opensLocalBillingHandoff } from '@/platform/billing/localBillingWebEnabled'
 import { createJourneyId } from '@/platform/billing/utils/checkoutJourney'
@@ -36,19 +37,23 @@ export function usePlatformHandoff(
   return { href, track, available }
 }
 
-/** Reports a Platform billing link's click and, where billing opens through a local handoff, opens Platform billing through one. */
-export function openPlatformBilling(track: () => void): void {
+/** Reports a Platform billing link's click and, where billing opens through a local handoff, opens Platform billing, or the page `view` names, through one. */
+export function openPlatformBilling(
+  track: () => void,
+  view?: PlatformHandoffView
+): void {
   track()
-  if (opensLocalBillingHandoff()) void openPlatformBillingHandoff()
+  if (opensLocalBillingHandoff()) void openPlatformBillingHandoff(view)
 }
 
 /**
- * A link to Platform's billing page: `button` is the props for a design-system
- * `Button`, and `open` runs on every click.
+ * A link to Platform's billing page, or the page `view` names: `button` is the
+ * props for a design-system `Button`, and `open` runs on every click.
  */
 export function usePlatformBillingLink(
   path: MaybeRefOrGetter<`/${string}`>,
-  destination: MaybeRefOrGetter<PlatformHandoffDestination>
+  destination: MaybeRefOrGetter<PlatformHandoffDestination>,
+  view?: PlatformHandoffView
 ) {
   const { href: platformHref, track } = usePlatformHandoff(path, destination)
   const href = computed(() =>
@@ -59,5 +64,14 @@ export function usePlatformBillingLink(
       ? { as: 'a', href: href.value, target: '_blank', rel: 'noopener' }
       : { as: 'button' }
   )
-  return { href, button, open: () => openPlatformBilling(track) }
+  return { href, button, open: () => openPlatformBilling(track, view) }
+}
+
+/** A link to Platform's Plans page, shaped as `usePlatformBillingLink`'s; through a local handoff it opens Plans signed in as the local account. */
+export function usePlatformPlansLink() {
+  return usePlatformBillingLink(
+    '/profile/billing/plans',
+    { target: 'plans' },
+    'plans'
+  )
 }

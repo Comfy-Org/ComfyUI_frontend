@@ -422,13 +422,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
 
     <slot name="panelNotice" />
 
-    <FreeUseNotice
-      v-if="!showHistory && freeUsePlacement === 'top-banner'"
-      :inert="blocked"
-      placement="top-banner"
-      @notice="emit('freeUseNotice', $event)"
-    />
-
     <template v-if="showHistory">
       <ChatHistoryScreen
         :inert="blocked"
@@ -613,7 +606,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           />
           <FreeUseNotice
             v-if="freeUsePlacement === 'near-composer'"
-            placement="near-composer"
             @notice="emit('freeUseNotice', $event)"
           />
           <Composer
@@ -659,20 +651,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
-              />
-            </template>
-            <template #aboveInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'above-input'"
-                placement="above-input"
-                @notice="emit('freeUseNotice', $event)"
-              />
-            </template>
-            <template #insideInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'inside-input'"
-                placement="inside-input"
-                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>

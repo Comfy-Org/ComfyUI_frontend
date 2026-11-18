@@ -62,7 +62,10 @@ interface OutputSlotProps {
 const props = defineProps<OutputSlotProps>()
 
 const hasNoLabel = computed(
-  () => !props.slotData.localized_name && props.slotData.name === ''
+  () =>
+    !props.slotData.label &&
+    !props.slotData.localized_name &&
+    props.slotData.name === ''
 )
 const effectiveDotOnly = computed(() => props.dotOnly || hasNoLabel.value)
 // Error boundary implementation

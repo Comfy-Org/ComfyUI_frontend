@@ -4,6 +4,7 @@
   </div>
   <div
     v-else
+    ref="nodeRef"
     tabindex="0"
     :data-node-id="nodeData.id"
     :data-collapsed="isCollapsed || undefined"
@@ -28,7 +29,7 @@
     :style="{
       ...nodeSizeStyle,
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
-      transform: `translate(${position.x ?? 0}px, ${(position.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`,
+      transform: nodeTransform,
       zIndex: zIndex,
       opacity: nodeOpacity
     }"
@@ -72,7 +73,7 @@
         cn(
           'relative flex flex-1 flex-col',
           !isCollapsed &&
-            '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
+            '[contain-intrinsic-size:auto_var(--node-width)_auto_var(--node-height)] group-data-measured/node:transform-[translate(0)] group-data-measured/node:[content-visibility:auto] group-data-measured/node:[overflow-clip-margin:16px]'
         )
       "
     >
@@ -172,7 +173,7 @@
             />
 
             <div
-              v-for="region in mediaRegions"
+              v-for="(region, index) in mediaRegions"
               :key="region.name"
               :class="
                 cn(
@@ -198,7 +199,14 @@
                 />
                 <NodeContent v-else :node-data :media="region.media" />
               </div>
-              <GrowableRegionHandle :name="region.name" />
+              <GrowableRegionHandle
+                :name="region.name"
+                :label="
+                  mediaRegions.length > 1
+                    ? t('g.resizeNumberedPreviewHeight', { index: index + 1 })
+                    : t('g.resizePreviewHeight')
+                "
+              />
             </div>
             <LivePreview
               v-if="shouldShowPreviewImg && !lgraphNode?.isSubgraphNode()"
@@ -271,7 +279,14 @@
 
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
-import { computed, onErrorCaptured, provide, ref } from 'vue'
+import {
+  computed,
+  onErrorCaptured,
+  provide,
+  ref,
+  useTemplateRef,
+  watch
+} from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
@@ -290,6 +305,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
 import { usePromotedPreviews } from '@/composables/node/usePromotedPreviews'
 import NodeBadges from '@/renderer/extensions/vueNodes/components/NodeBadges.vue'
@@ -298,6 +314,7 @@ import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil
 import AppOutput from '@/renderer/extensions/linearMode/AppOutput.vue'
 import SlotConnectionDot from '@/renderer/extensions/vueNodes/components/SlotConnectionDot.vue'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodeHoverCallbacks } from '@/renderer/extensions/vueNodes/composables/useNodeHoverCallbacks'
 import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
@@ -321,7 +338,7 @@ import {
   applyLightThemeColor,
   shapeVariantClass
 } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isVideoResult } from '@/utils/resultItem'
 import {
@@ -331,7 +348,7 @@ import {
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { isNodeEmphasized } from '@/systems/nodeEmphasisSystem'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
-import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { isWidgetId, widgetId } from '@comfyorg/graph-model/widgetId'
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 import { isVideoOutput } from '@/utils/litegraphUtil'
 import {
@@ -436,13 +453,28 @@ onErrorCaptured((error) => {
 
 const { position, size, zIndex } = useNodeLayout(() => nodeData.id)
 
+const nodeRef = useTemplateRef<HTMLElement>('nodeRef')
+const nodeTransform = computed(
+  () =>
+    `translate(${position.value.x ?? 0}px, ${(position.value.y ?? 0) - LiteGraph.NODE_TITLE_HEIGHT}px)`
+)
+const { setTransform: setDraggedTransform, releaseTransform } =
+  useCompositedTransform(nodeRef)
+
+watch(nodeTransform, (transform) => {
+  if (layoutStore.isDraggingVueNodes.value) setDraggedTransform(transform)
+})
+watch(layoutStore.isDraggingVueNodes, (isDragging) => {
+  if (!isDragging) releaseTransform()
+})
+
 const growable = useGrowableRegions({
   regionId: (name) => {
     const graphId = canvasStore.rootGraphId
     const bareNodeId = stripGraphPrefix(nodeData.id)
-    return graphId && bareNodeId && name !== soleGrowableWidget.value
-      ? widgetId(graphId, bareNodeId, name)
-      : undefined
+    if (!graphId || !bareNodeId || name === soleGrowableWidget.value) return
+    const id = widgetId(graphId, bareNodeId, name)
+    return isWidgetId(id) ? id : undefined
   },
   resizeNode: resizeNodeTo,
   onCommit: () =>
@@ -473,6 +505,7 @@ const nodeSizeStyle = computed(() =>
 )
 
 const { pointerHandlers } = useNodePointerInteractions(() => nodeData)
+useNodeHoverCallbacks(() => nodeData.id, nodeRef)
 const badges = usePartitionedBadges(nodeData)
 
 // Handle right-click context menu
@@ -488,7 +521,7 @@ const handleContextMenu = (event: MouseEvent) => {
 }
 
 const baseResizeHandleClasses =
-  'absolute h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
+  'absolute z-30 h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
 
 function resizeNodeTo(
   height: number,
@@ -673,7 +706,7 @@ const handleEnterSubgraph = () => {
     button_id: 'graph_node_open_subgraph_clicked',
     element_group: 'graph_node'
   })
-  const graph = app.rootGraph
+  const graph = useApp().rootGraph
   if (!graph) {
     console.warn('LGraphNode: No graph available for subgraph navigation')
     return
@@ -689,7 +722,7 @@ const handleEnterSubgraph = () => {
     return
   }
 
-  const canvas = app.canvas
+  const canvas = useApp().canvas
   if (!canvas || typeof canvas.openSubgraph !== 'function') {
     console.warn('LGraphNode: Canvas or openSubgraph method not available')
     return
@@ -704,7 +737,7 @@ function resolveLGraphNode() {
   const locatorId = nodeLocatorId.value
   if (!locatorId) return null
 
-  return getNodeByLocatorId(app.rootGraph, locatorId)
+  return getNodeByLocatorId(useApp().rootGraph, locatorId)
 }
 
 const lgraphNode = computed(resolveLGraphNode)
@@ -858,6 +891,6 @@ function handleDragLeave() {
 
 function handleDrop(event: DragEvent) {
   isDraggingOver.value = false
-  app.dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
+  useApp().dragOverNode = event.defaultPrevented ? null : resolveLGraphNode()
 }
 </script>

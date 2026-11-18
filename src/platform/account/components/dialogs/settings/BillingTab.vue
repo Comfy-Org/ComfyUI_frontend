@@ -15,6 +15,24 @@
       @dismiss="planCheckout.dismiss"
     />
     <BillingBanner
+      v-if="planNotStarted"
+      :view="planNotStartedView(planNotStarted)"
+      :copy="bannerCopy"
+    >
+      <template #action="{ label, variant }">
+        <Button
+          :variant
+          size="md"
+          class="shrink-0"
+          :loading="signupPayment.isOpeningPayment.value"
+          @click="signupPayment.finishPayment"
+        >
+          {{ label }}
+          <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
+        </Button>
+      </template>
+    </BillingBanner>
+    <BillingBanner
       v-if="topupCheckout.banner.value"
       :view="
         topupCheckoutBannerView(
@@ -77,7 +95,7 @@
       <BillingPlanRow
         v-else
         :state="planRow"
-        :action="shownPlanAction"
+        :action="action"
         :copy="planRowCopy"
         :locale
         :sales-variant="salesVariant"
@@ -89,14 +107,11 @@
         </template>
         <template #action="{ action: shown, label, variant }">
           <Button
-            as="a"
-            :href="planActionHref(shown)"
-            target="_blank"
-            rel="noopener"
+            v-bind="planActionButton(shown)"
             :variant
             size="md"
             class="shrink-0 no-underline"
-            @click="trackPlanAction(shown)"
+            @click="followPlanAction(shown)"
           >
             {{ label }}
             <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -184,6 +199,7 @@ import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
+import { refreshBilling } from '@/platform/billing/billingRefresh'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
 import { isCloud } from '@/platform/distribution/types'
@@ -201,6 +217,7 @@ import {
   CONTACT_SALES_URL,
   deriveAutoTopUpSection,
   deriveBillingTabLoad,
+  planNotStartedBannerFor,
   planRowAction
 } from '@comfyorg/account-core/billing'
 import type { PlanRowAction } from '@comfyorg/account-core/billing'
@@ -222,7 +239,7 @@ import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRef
 import { useTopUpPlanCreditCopy } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/composables/useTopupCheckoutBanner'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformPlansLink } from '@/platform/billing/composables/usePlatformHandoff'
 import BillingPlatformHandoffCard from '@/platform/billing/components/settings/BillingPlatformHandoffCard.vue'
 import { usePlanRowCopy } from '@/platform/billing/composables/usePlanRowCopy'
 import { useCreditsCardCopy } from '@/platform/billing/composables/useCreditsCardCopy'
@@ -231,6 +248,7 @@ import { useAutoTopUpMemberBlockCopy } from '@/platform/billing/composables/useA
 import { useBillingBannerCopy } from '@/platform/billing/composables/useBillingBannerCopy'
 import { useCreditBanner } from '@/platform/billing/composables/useCreditBanner'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
+import { useSubscriptionPaymentRecovery } from '@/platform/billing/composables/useSubscriptionPaymentRecovery'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const billing = useBillingContext()
@@ -241,10 +259,22 @@ const planCheckout = usePlanCheckoutBanner()
 const topupCheckout = useTopupCheckoutBanner(
   () => capabilities.canManageBilling.value
 )
+const signupPayment = useSubscriptionPaymentRecovery('status')
+const planNotStarted = computed(() =>
+  planCheckout.banner.value
+    ? null
+    : planNotStartedBannerFor({
+        isCloud,
+        recovery: billing.statusPaymentRecovery.value,
+        planTier: signupPayment.recoveryPlanTier.value,
+        paymentPage: signupPayment.recoveryPaymentPage.value
+      })
+)
 const suppressCreditBanner = computed(() =>
   suppressesCreditBanners([
     ...(isPaused.value ? (['paused'] as const) : []),
     ...(planCheckout.banner.value ? (['planCheckout'] as const) : []),
+    ...(planNotStarted.value ? (['planNotStarted'] as const) : []),
     ...(topupCheckout.banner.value ? (['topupCheckout'] as const) : [])
   ])
 )
@@ -252,7 +282,8 @@ const {
   copy: bannerCopy,
   topupCopy: topupBannerCopy,
   pausedView,
-  parkedView
+  parkedView,
+  planNotStartedView
 } = useBillingBannerCopy()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
 const {
@@ -300,10 +331,6 @@ const action = computed(() =>
   })
 )
 
-const shownPlanAction = computed(() =>
-  action.value === 'contactSales' || plansAvailable.value ? action.value : null
-)
-
 const { state: autoTopUp } = useBillingAutoTopUpCard()
 const autoTopUpSection = computed(() =>
   deriveAutoTopUpSection({
@@ -340,8 +367,7 @@ const addCreditsVariant = computed(() =>
         ? autoTopUp.value.settings.status
         : null,
     planActionIsPrimary:
-      shownPlanAction.value === 'subscribe' ||
-      (shownPlanAction.value === 'choosePlan' && isCloud)
+      action.value === 'subscribe' || (action.value === 'choosePlan' && isCloud)
   })
 )
 
@@ -353,18 +379,21 @@ const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
-const {
-  href: plansHref,
-  track: trackPlans,
-  available: plansAvailable
-} = usePlatformHandoff('/profile/billing/plans', { target: 'plans' })
+const { button: plansButton, open: openPlans } = usePlatformPlansLink()
 
-function planActionHref(shown: PlanRowAction) {
-  return shown === 'contactSales' ? CONTACT_SALES_URL : plansHref.value
+const CONTACT_SALES_BUTTON = {
+  as: 'a',
+  href: CONTACT_SALES_URL,
+  target: '_blank',
+  rel: 'noopener'
+} as const
+
+function planActionButton(shown: PlanRowAction) {
+  return shown === 'contactSales' ? CONTACT_SALES_BUTTON : plansButton.value
 }
 
-function trackPlanAction(shown: PlanRowAction) {
-  if (shown !== 'contactSales') trackPlans()
+function followPlanAction(shown: PlanRowAction) {
+  if (shown !== 'contactSales') openPlans()
 }
 
 async function retryBalance() {
@@ -386,11 +415,13 @@ async function retry() {
 }
 
 onMounted(() => {
-  if (!billing.isInitialized.value && !billing.isLoading.value) {
+  if (billing.isInitialized.value) {
+    void refreshBilling('account')
+  } else if (!billing.isLoading.value) {
     void billing.initialize().catch(() => undefined)
   }
   void capabilities.initialize()
 })
 
-useRefreshBillingOnReturn()
+useRefreshBillingOnReturn({ includeCloud: true })
 </script>

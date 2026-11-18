@@ -76,7 +76,7 @@ function renderNode({
   })
 
   for (const [name, height] of Object.entries(widgetHeights ?? {}))
-    useWidgetHeightStore().setHeight(regionId(name), height)
+    useWidgetHeightStore().set(regionId(name), { height })
   const resizeNode = vi.fn()
   const onCommit = vi.fn()
   const growable = useGrowableRegions({ regionId, resizeNode, onCommit })
@@ -164,14 +164,17 @@ describe('useGrowableRegions', () => {
     }
   )
 
-  it('ignores pointer moves after the handle loses pointer capture', () => {
-    const { growable, handle, drag } = renderNode()
+  it('records the drag once and ignores pointer moves after the handle loses pointer capture', () => {
+    const { growable, handle, drag, onCommit } = renderNode()
     drag(10)
+    expect(onCommit).not.toHaveBeenCalled()
 
     handle.dispatchEvent(new PointerEvent('lostpointercapture'))
     handle.dispatchEvent(new PointerEvent('pointermove', { clientY: 400 }))
+    handle.dispatchEvent(new PointerEvent('lostpointercapture'))
 
     expect(growable.heightOf('prompt')).toBe(110)
+    expect(onCommit).toHaveBeenCalledTimes(1)
   })
 
   it('shrinks the node to its content and records the change', () => {

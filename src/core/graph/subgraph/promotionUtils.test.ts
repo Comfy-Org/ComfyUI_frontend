@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -10,7 +10,9 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { useLinkStore } from '@/stores/linkStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetHeightStore } from '@/stores/widgetHeightStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -397,6 +399,33 @@ describe('autoExposeKnownPreviewNodes', () => {
     ).toHaveLength(1)
   })
 
+  it('auto-exposes the preview of an interior node that has video output but has not drawn a preview widget', () => {
+    const subgraph = createTestSubgraph()
+    const subgraphNode = createTestSubgraphNode(subgraph)
+    const saveVideo = new LGraphNode('SaveVideo', 'SaveVideo')
+    subgraph.add(saveVideo)
+    useNodeOutputStore().setNodeOutputs(saveVideo, 'clip.mp4', {
+      folder: 'output',
+      isAnimated: true
+    })
+
+    autoExposeKnownPreviewNodes(subgraphNode)
+
+    expect(
+      usePreviewExposureStore()
+        .getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
+        .map(({ sourceNodeId, sourcePreviewName }) => ({
+          sourceNodeId,
+          sourcePreviewName
+        }))
+    ).toEqual([
+      {
+        sourceNodeId: String(saveVideo.id),
+        sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
+      }
+    ])
+  })
+
   it('does not auto-expose when host has empty persisted previewExposures (user cleared)', () => {
     const subgraph = createTestSubgraph()
     const subgraphNode = createTestSubgraphNode(subgraph)
@@ -436,6 +465,41 @@ describe('autoExposeKnownPreviewNodes', () => {
         .getExposures(subgraphNode.rootGraph.id, String(subgraphNode.id))
         .map((e) => e.sourceNodeId)
     ).not.toContain(String(glslNode.id))
+  })
+})
+
+describe('demoting a preview', () => {
+  it('forgets its saved height so the next preview exposed under its name starts unsized', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const first = new LGraphNode('GLSLShader', 'GLSLShader')
+    subgraph.add(first)
+    const second = new LGraphNode('GLSLShader', 'GLSLShader')
+    subgraph.add(second)
+    const preview = (node: LGraphNode) => {
+      const widget = getPromotableWidgets(node).at(-1)
+      assert.exists(widget)
+      return widget
+    }
+    promoteWidget(first, preview(first), [host])
+    const heightId = widgetId(
+      host.rootGraph.id,
+      host.id,
+      CANVAS_IMAGE_PREVIEW_WIDGET
+    )
+    useWidgetHeightStore().set(heightId, { height: 320 })
+
+    demoteWidget(first, preview(first), [host])
+    promoteWidget(second, preview(second), [host])
+
+    expect(
+      usePreviewExposureStore()
+        .getExposures(host.rootGraph.id, String(host.id))
+        .map(({ name, sourceNodeId }) => ({ name, sourceNodeId }))
+    ).toEqual([
+      { name: CANVAS_IMAGE_PREVIEW_WIDGET, sourceNodeId: String(second.id) }
+    ])
+    expect(useWidgetHeightStore().get(heightId)).toBeUndefined()
   })
 })
 

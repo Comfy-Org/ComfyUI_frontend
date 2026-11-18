@@ -1,9 +1,5 @@
 <template>
-  <div
-    ref="toolboxRef"
-    style="transform: translate(var(--tb-x), var(--tb-y))"
-    class="pointer-events-none fixed top-0 left-0 z-40"
-  >
+  <div ref="toolboxRef" class="pointer-events-none fixed top-0 left-0 z-40">
     <Transition name="slide-up">
       <div
         v-if="visible"

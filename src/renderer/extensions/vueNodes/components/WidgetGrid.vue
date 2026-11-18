@@ -2,16 +2,19 @@
   <div
     ref="grid"
     data-testid="node-widgets"
-    class="lg-node-widgets contents text-xs text-node-foreground [&>:first-child>:first-child]:mt-0 [&>:last-child>:last-child]:mb-0"
+    class="lg-node-widgets contents text-xs text-node-foreground"
   >
     <div
-      v-for="section in sections"
+      v-for="(section, sectionIndex) in sections"
       :key="section.key"
       :role="section.role"
       :aria-label="section.label"
       class="contents"
     >
-      <template v-for="row in section.rows" :key="row.widget.renderKey">
+      <template
+        v-for="(row, rowIndex) in section.rows"
+        :key="row.widget.renderKey"
+      >
         <div
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
@@ -20,7 +23,8 @@
             cn(
               'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
               row.flexClass,
-              rowSpacingClass(row.showsControl)
+              rowSpacingClass(row.showsControl),
+              rowEdgeClass(sectionIndex, rowIndex)
             )
           "
         >
@@ -77,6 +81,16 @@
           <GrowableRegionHandle
             v-if="row.growable"
             :name="row.widget.simplified.name"
+            :label="
+              $t(
+                'g.resizeWidgetHeight',
+                {
+                  name:
+                    row.widget.simplified.label || row.widget.simplified.name
+                },
+                { escapeParameter: false }
+              )
+            "
             :max-height="row.maxHeight"
           />
         </div>
@@ -127,8 +141,18 @@ const growableRegions = inject(growableRegionsKey, undefined)
 
 function rowSpacingClass(showsControl: boolean) {
   return showsControl
-    ? 'lg-node-widget my-[calc(var(--node-widget-gap)/2-0.125rem)]'
+    ? 'lg-node-widget my-[calc((var(--node-widget-gap)-var(--spacing))/2)]'
     : '-my-0.5'
+}
+
+function rowEdgeClass(sectionIndex: number, rowIndex: number) {
+  const lastSection = sections.value.length - 1
+  return cn(
+    sectionIndex === 0 && rowIndex === 0 && 'mt-0',
+    sectionIndex === lastSection &&
+      rowIndex === sections.value[lastSection].rows.length - 1 &&
+      'mb-0'
+  )
 }
 
 function rowSizing(

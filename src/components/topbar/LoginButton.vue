@@ -4,14 +4,25 @@
     data-testid="login-button"
     variant="textonly"
     size="icon"
-    :class="cn('group rounded-full p-0', className)"
+    :class="
+      cn(
+        'group p-0',
+        side === 'bottom' ? 'rounded-full' : 'h-10 w-full hover:bg-transparent',
+        className
+      )
+    "
     :aria-label="t('auth.loginButton.signInToUsePartnerNodes')"
     :tooltip="t('auth.loginButton.signInToUsePartnerNodes')"
-    tooltip-side="right"
+    :tooltip-side="side === 'bottom' ? 'right' : side"
     @click="handleSignIn()"
   >
     <span
-      class="flex size-full items-center justify-center rounded-full bg-secondary transition-colors group-hover:bg-transparent"
+      :class="
+        cn(
+          'flex items-center justify-center rounded-full bg-secondary transition-colors group-hover:bg-transparent',
+          side === 'bottom' ? 'size-full' : 'size-6'
+        )
+      "
     >
       <i class="icon-[lucide--user]" />
     </span>
@@ -75,8 +86,9 @@ import { useExternalLink } from '@/composables/useExternalLink'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { class: className } = defineProps<{
+const { class: className, side = 'bottom' } = defineProps<{
   class?: HTMLAttributes['class']
+  side?: 'bottom' | 'left' | 'right'
 }>()
 
 const { t } = useI18n()

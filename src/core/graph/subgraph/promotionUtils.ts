@@ -4,6 +4,7 @@ import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetT
 import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { markNodeMenuCallback } from '@/lib/litegraph/src/types/nodeMenu'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@comfyorg/graph-model/linkId'
 import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
@@ -468,6 +469,14 @@ function demotePromotedInput(
   return true
 }
 
+/** Removes the exposed preview entity and its components. */
+export function removePreviewExposure(host: SubgraphNode, name: string): void {
+  const hostLocator = getPreviewExposureHostLocator(host)
+  if (!hostLocator) return
+  usePreviewExposureStore().removeExposure(host.rootGraph.id, hostLocator, name)
+  useWidgetValueStore().deleteWidget(widgetId(host.rootGraph.id, host.id, name))
+}
+
 export function demoteWidget(
   node: PartialNode,
   widget: IBaseWidget,
@@ -489,11 +498,7 @@ export function demoteWidget(
             entry.sourcePreviewName === exposedPreviewName(parent, source)
         )
       if (exposure) {
-        previewStore.removeExposure(
-          parent.rootGraph.id,
-          hostLocator,
-          exposure.name
-        )
+        removePreviewExposure(parent, exposure.name)
         continue
       }
     }
@@ -537,20 +542,20 @@ export function addWidgetPromotionOptions(
       content: t('subgraphStore.promoteWidget', {
         name: widget.label ?? widget.name
       }),
-      callback: () => {
+      callback: markNodeMenuCallback(() => {
         promoteWidget(node, widget, promotableParents)
         widget.callback?.(widget.value)
-      }
+      }, `widget:${node.graph?.id}:${node.id}:${widget.name}:promote`)
     })
   else {
     options.unshift({
       content: t('subgraphStore.unpromoteWidget', {
         name: widget.label ?? widget.name
       }),
-      callback: () => {
+      callback: markNodeMenuCallback(() => {
         demoteWidget(node, widget, parents)
         widget.callback?.(widget.value)
-      }
+      }, `widget:${node.graph?.id}:${node.id}:${widget.name}:promote`)
     })
   }
 }
@@ -630,9 +635,7 @@ export function autoExposeKnownPreviewNodes(subgraphNode: SubgraphNode): void {
     node.updateComputedDisabled()
     const preview =
       node.widgets?.find(isPreviewPseudoWidget)?.name ??
-      (supportsVirtualCanvasImagePreview(node)
-        ? CANVAS_IMAGE_PREVIEW_WIDGET
-        : undefined)
+      (hasMediaPreview(node) ? CANVAS_IMAGE_PREVIEW_WIDGET : undefined)
     if (preview) promotePreviewViaExposure(subgraphNode, node, preview)
   }
 }

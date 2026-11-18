@@ -12,7 +12,7 @@ import type {
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -21,6 +21,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
+import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
@@ -231,7 +232,7 @@ function createWidgetUpdateHandler({
     if (live) {
       const normalized = normalizeWidgetValue(newValue)
       live.widget.value = normalized
-      live.widget.callback?.(normalized, app.canvas, live.node)
+      live.widget.callback?.(normalized, useApp().canvas, live.node)
       live.node.widgets?.forEach((w) => w.triggerDraw?.())
     }
 
@@ -357,6 +358,19 @@ interface WidgetProcessingContext {
   ui: WidgetUiCallbacks
 }
 
+function resolveWidgetComponent(
+  type: string,
+  renderState: WidgetRenderState | undefined,
+  widget: IBaseWidget | undefined
+): ProcessedWidget['vueComponent'] {
+  if (renderState?.useDOMElement) return WidgetDOM
+  if (!renderState?.isDOMWidget && typeof widget?.draw === 'function')
+    return WidgetLegacy
+  return (
+    getComponent(type) || (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy)
+  )
+}
+
 function processWidget(
   id: WidgetId,
   ctx: WidgetProcessingContext
@@ -452,12 +466,7 @@ function processWidget(
     ),
     widgetId: id,
     renderKey: `${id}:${type}`,
-    vueComponent: renderState?.useDOMElement
-      ? WidgetDOM
-      : !renderState?.isDOMWidget && typeof liveWidget?.draw === 'function'
-        ? WidgetLegacy
-        : getComponent(type) ||
-          (renderState?.isDOMWidget ? WidgetDOM : WidgetLegacy),
+    vueComponent: resolveWidgetComponent(type, renderState, liveWidget),
     simplified,
     visible,
     suppressedByConnection: visibility?.suppression.byConnection ?? false,

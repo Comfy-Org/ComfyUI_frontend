@@ -653,6 +653,24 @@ describe('postMessage wire body', () => {
     expect(contentType(init)).toBe('application/json')
   })
 
+  it('sends a plain canvas selection as canvas_selection, apart from selection', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'what is this',
+      canvasSelection: { node_ids: ['7'], workflow_id: 'wf-9' }
+    })
+
+    const parsed = JSON.parse(String(lastCall().init.body)) as Record<
+      string,
+      unknown
+    >
+    expect(parsed.canvas_selection).toEqual({
+      node_ids: ['7'],
+      workflow_id: 'wf-9'
+    })
+    expect(parsed).not.toHaveProperty('selection')
+  })
+
   it('sends current_tab_unbound when the turn comes from a tab with no workflow', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
