@@ -5,7 +5,7 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { savedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { EditRunner } from '@/platform/nodeApi/v4/edit/editRunner'
-import type { LiveNode as LiveNodeOnGraph } from '@/platform/nodeApi/v4/nodeHandle'
+import type { LiveNode } from '@/platform/nodeApi/v4/nodeHandle'
 import type { WidgetsOf } from './widgetsOf'
 import type {
   WidgetCollection,
@@ -13,7 +13,7 @@ import type {
 } from '@/platform/nodeApi/v4/types'
 import { checkedCanvasDef } from './canvasWidget'
 import { nodeAccess } from './nodeAccess'
-import type { LiveNode, NodeAccess } from './nodeAccess'
+import type { NodeWithWidgets, NodeAccess } from './nodeAccess'
 import {
   checkedMountDef,
   createMountedWidget,
@@ -54,7 +54,7 @@ interface CollectionServices {
 }
 
 function widgetCollection(
-  locate: () => LiveNodeOnGraph | undefined,
+  locate: () => LiveNode | undefined,
   services: CollectionServices
 ): WidgetCollection {
   const access = nodeAccess(locate)
@@ -76,7 +76,7 @@ function readMembers(
   access: NodeAccess,
   handleFor: WidgetHandleFor
 ): Pick<WidgetCollection, 'get' | 'at' | 'all' | 'names'> {
-  function handles({ graph, node, widgets }: LiveNode): WidgetHandle[] {
+  function handles({ graph, node, widgets }: NodeWithWidgets): WidgetHandle[] {
     return widgets.map((widget) => handleFor(graph, node, widget.name))
   }
   return {
@@ -136,7 +136,7 @@ function refuseTakenName(member: string, node: LGraphNode, name: string): void {
 }
 
 function mountOn(
-  { graph, node }: LiveNode,
+  { graph, node }: NodeWithWidgets,
   spec: MountSpec,
   { handleFor, edits, copyOfSaved }: CollectionServices
 ): WidgetHandle | undefined {
