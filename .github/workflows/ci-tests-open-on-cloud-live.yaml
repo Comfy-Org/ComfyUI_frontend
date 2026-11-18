@@ -61,22 +61,44 @@ jobs:
           pnpm exec playwright test
           browser_tests/tests/liveCloud/openOnCloud.spec.ts
           browser_tests/tests/liveCloud/openOnCloudLogin.spec.ts
-          --project=cloud-live --workers=1 --reporter=line,json,html
-          --output=open-on-cloud-live/test-results
+          --project=cloud-live --workers=1 --reporter=line,json
+          --output=${{ runner.temp }}/open-on-cloud-live/test-results
         env:
           PLAYWRIGHT_CLOUD_LIVE: '1'
           PLAYWRIGHT_TEST_URL: http://127.0.0.1:8188
           PLAYWRIGHT_SETUP_API_URL: http://127.0.0.1:8188
-          PLAYWRIGHT_JSON_OUTPUT_NAME: open-on-cloud-live/results.json
-          PLAYWRIGHT_HTML_OUTPUT_DIR: open-on-cloud-live/report
-          PLAYWRIGHT_HTML_OPEN: never
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ runner.temp }}/open-on-cloud-live/results.json
           CLOUD_ACCOUNT_EMAIL: ${{ vars.OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL }}
           CLOUD_ACCOUNT_PASSWORD: ${{ secrets.OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD }}
 
-      - name: Upload results and screenshots
+      - name: Extract screenshots of passing tests
+        if: ${{ !cancelled() }}
+        env:
+          RESULTS: ${{ runner.temp }}/open-on-cloud-live/results.json
+          SCREENSHOTS: open-on-cloud-live-screenshots
+        run: |
+          node --input-type=module -e '
+            import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+            const out = process.env.SCREENSHOTS
+            mkdirSync(out, { recursive: true })
+            const visit = (suite) => {
+              for (const spec of suite.specs ?? [])
+                for (const test of spec.tests)
+                  for (const result of test.results)
+                    for (const attachment of result.attachments)
+                      if (result.status === "passed" && attachment.contentType === "image/png" && attachment.body)
+                        writeFileSync(`${out}/${attachment.name}`, Buffer.from(attachment.body, "base64"))
+              for (const child of suite.suites ?? []) visit(child)
+            }
+            for (const suite of JSON.parse(readFileSync(process.env.RESULTS, "utf8")).suites) visit(suite)
+          '
+          ls -1 open-on-cloud-live-screenshots
+
+      - name: Upload screenshots
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
-          name: open-on-cloud-live
-          path: open-on-cloud-live/
+          name: open-on-cloud-live-screenshots
+          path: open-on-cloud-live-screenshots/
+          if-no-files-found: ignore
           retention-days: 14

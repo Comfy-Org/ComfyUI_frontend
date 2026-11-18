@@ -7,6 +7,7 @@ import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { LoginButton } from '@e2e/fixtures/components/LoginButton'
 import { OpenOnCloudDialog } from '@e2e/fixtures/components/OpenOnCloudDialog'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import { getLiveCloudCustomerOrigin } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
 const cloudOriginSchema = z
   .url()
@@ -68,9 +69,16 @@ const liveOpenOnCloudFixture = base.extend<{
 })
 
 export const liveOpenOnCloudLoginFixture = liveOpenOnCloudFixture.extend({
-  liveNetworkOrigins: async ({ liveNetworkOrigins }, use) => {
+  liveNetworkOrigins: async ({ liveNetworkOrigins, cloudOrigin }, use) => {
+    const customerOrigin = getLiveCloudCustomerOrigin(
+      cloudOriginSchema.parse(cloudOrigin)
+    )
     await use([
       ...liveNetworkOrigins,
+      ...(customerOrigin ? [customerOrigin] : []),
+      'https://mp.comfy.org',
+      'https://consumer.cloud.gist.build',
+      'https://e2.sy-d.io',
       'https://browser-intake-us5-datadoghq.com',
       'https://utt.impactcdn.com',
       'https://comfyui.sjv.io',
