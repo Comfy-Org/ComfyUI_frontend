@@ -39,6 +39,7 @@ export const DEV_EVENT_KINDS = [
   'subscribe_retry',
   'subscribe_ack_timeout',
   'subscribe_refused_permanent',
+  'subscribe_credential_reconnect',
   'doc_reseed_sent',
   'doc_reseed_result',
   'stale_probe',
