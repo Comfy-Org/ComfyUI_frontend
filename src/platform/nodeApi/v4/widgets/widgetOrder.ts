@@ -2,7 +2,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { WidgetCollection } from '@/platform/nodeApi/v4/types'
-import type { LiveNode, NodeAccess } from './nodeAccess'
+import type { NodeWithWidgets, NodeAccess } from './nodeAccess'
 import type { WidgetEdits } from './widgetEdits'
 import { nameList, widgetNamed } from './widgetHandle'
 
@@ -40,7 +40,10 @@ export function orderMembers(
   }
 }
 
-function ordered(found: LiveNode, names: readonly string[]): IBaseWidget[] {
+function ordered(
+  found: NodeWithWidgets,
+  names: readonly string[]
+): IBaseWidget[] {
   const named = names.flatMap((name) =>
     found.widgets.filter((widget) => widget.name === name)
   )
@@ -54,7 +57,11 @@ function ordered(found: LiveNode, names: readonly string[]): IBaseWidget[] {
   return [...named, ...unaddressable(found)]
 }
 
-function moved(found: LiveNode, name: string, index: number): IBaseWidget[] {
+function moved(
+  found: NodeWithWidgets,
+  name: string,
+  index: number
+): IBaseWidget[] {
   const widget = found.widgets.find((candidate) => candidate.name === name)
   if (!widget) {
     throw invalidArgument('move', 'the name of a widget on this node', name)
@@ -69,7 +76,7 @@ function moved(found: LiveNode, name: string, index: number): IBaseWidget[] {
   ]
 }
 
-function unaddressable({ node, widgets }: LiveNode): IBaseWidget[] {
+function unaddressable({ node, widgets }: NodeWithWidgets): IBaseWidget[] {
   const addressable = new Set<IBaseWidget>(widgets)
   return (node.widgets ?? []).filter((widget) => !addressable.has(widget))
 }
