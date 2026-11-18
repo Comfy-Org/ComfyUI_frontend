@@ -645,7 +645,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
       `${enMessages.agent.sendFailed}: Unreadable agent response body`
     )
     await expect(agentPanel.composer).toHaveText('')
-    await expect(agentPanel.retryPendingButton).toBeEnabled()
+    await expect(agentPanel.retryPendingButton).toHaveCount(0)
     await expect(agentPanel.deletePendingButton).toBeEnabled()
     expect(postCount).toBe(1)
   })
@@ -678,6 +678,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         await expect(
           agentPanel.root.getByTestId('user-message-bubble')
         ).toHaveText('private diagnostic prompt')
+        await expect(agentPanel.sendingSpinner).toHaveCount(0)
         const ws = await getAgentSocket()
         pushEvent(ws, THINKING_EVENT)
         await expect(

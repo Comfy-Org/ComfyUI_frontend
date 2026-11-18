@@ -2465,7 +2465,12 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
   const pending = conversationStore.getPendingSend(clientMessageId)
   if (!pending || pending.status !== 'failed') return
   const kind = pending.failure?.kind
-  if (kind === 'disowned' || kind === 'target_unavailable') return
+  if (
+    kind === 'disowned' ||
+    kind === 'target_unavailable' ||
+    pending.failure?.retryable === false
+  )
+    return
   if (
     kind === 'retry_after' &&
     pending.failure?.retryAtMs !== undefined &&

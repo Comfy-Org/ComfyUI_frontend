@@ -119,7 +119,10 @@ test.describe(
         }
         if (request.url().includes(`/threads/${createdThreadId}/messages`)) {
           const rows: AgentMessage[] = [
-            ...agentUserTranscript(createdThreadId, WORKFLOW_ID, prompt),
+            {
+              ...agentUserTranscript(createdThreadId, WORKFLOW_ID, prompt)[0],
+              turn_id: createdTurnId
+            },
             {
               id: createdTurnId,
               thread_id: createdThreadId,

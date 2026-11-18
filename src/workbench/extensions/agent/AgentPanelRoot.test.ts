@@ -17862,6 +17862,108 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
       expect(screen.queryByTestId('user-message-bubble')).toBeNull()
     )
   })
+
+  it.for([
+    { scenario: 'unbound temporary tab', boundId: null },
+    { scenario: 'previously bound temporary tab', boundId: 'wf-prev' }
+  ])(
+    'guard (7): sends once with draft when New chat interrupts held /workflows preparation ($scenario)',
+    async ({ boundId }) => {
+      const tab = addTab('workflows/Unsaved Workflow.json', {
+        isTemporary: true,
+        activeState: fromPartial<ComfyWorkflowJSON>({
+          id: 'temp-draft',
+          nodes: [{ id: 1 }]
+        })
+      })
+      workflowStore.activeWorkflow = tab
+      if (boundId !== null)
+        useAgentWorkflowTabBindingStore().bind(boundId, tab.path)
+      useAgentPanelStore().setWorkflowTarget(tab)
+
+      const bodies: Record<string, unknown>[] = []
+      let workflowCalls = 0
+      let releaseWorkflows = () => {}
+      const workflowsHeld = new Promise<void>((resolve) => {
+        releaseWorkflows = resolve
+      })
+      vi.mocked(fetch).mockImplementation(async (input, init) => {
+        const url = String(input)
+        if (url.includes('/messages') && init?.method === 'POST') {
+          bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>)
+          return json(202, {
+            thread_id: 'th-guard-7',
+            message_id: 'msg-guard-7',
+            workflow_id: boundId ?? 'wf-minted'
+          })
+        }
+        if (url.includes('/messages')) return json(200, [])
+        if (url.includes('/agent/threads'))
+          return json(
+            200,
+            agentThreadList(
+              bodies.length > 0
+                ? [
+                    agentThread({
+                      id: 'th-guard-7',
+                      title: 'Guard prompt',
+                      last_message_at: '2026-11-18T00:00:00Z',
+                      workflow_id: boundId ?? 'wf-minted'
+                    })
+                  ]
+                : []
+            )
+          )
+        if (url.includes('/workflows')) {
+          workflowCalls += 1
+          if (workflowCalls === 2) await workflowsHeld
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        }
+        return json(200, {})
+      })
+
+      vi.mocked(reportError).mockClear()
+      renderWithSelectedTarget()
+      await vi.waitFor(() => expect(workflowCalls).toBe(1))
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+      await userEvent.click(screen.getByRole('textbox'))
+      await userEvent.paste('Guard prompt')
+      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+      await vi.waitFor(() => expect(workflowCalls).toBe(2))
+
+      await userEvent.click(
+        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+      )
+      releaseWorkflows()
+
+      await vi.waitFor(() => expect(bodies).toHaveLength(1))
+      if (boundId === null) {
+        expect(bodies[0]).toMatchObject({
+          current_tab_unbound: true,
+          draft: { content: { id: 'temp-draft' } }
+        })
+      } else {
+        expect(bodies[0]).toMatchObject({
+          workflow_id: boundId,
+          draft: { content: { id: 'temp-draft' } }
+        })
+      }
+      await vi.waitFor(() =>
+        expect(
+          useAgentChatHistoryStore().sessions.some(
+            ({ id }) => id === 'th-guard-7'
+          )
+        ).toBe(true)
+      )
+      expect(reportError).not.toHaveBeenCalled()
+    }
+  )
 })
 
 describe('AgentPanelRoot proactive qualification', () => {

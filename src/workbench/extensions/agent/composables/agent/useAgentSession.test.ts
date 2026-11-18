@@ -10199,4 +10199,146 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
       ])
     )
   })
+
+  it('O0-04 unreadable ack: classifies AgentResponseUnreadableError as non-retryable request failure', async () => {
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockRejectedValue(
+        new AgentResponseUnreadableError(new SyntaxError('bad json'))
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(
+      await session.sendMessage(
+        'Unreadable ack',
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        'cm-unreadable'
+      )
+    ).toBe(false)
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      text: 'Unreadable ack',
+      pending: {
+        status: 'failed',
+        failure: {
+          kind: 'request',
+          message: 'Message failed to send: Unreadable agent response body',
+          retryable: false
+        }
+      }
+    })
+  })
+
+  it('clears the pending send record and notifies History when an accepted POST resolves after session.stop()', async () => {
+    let resolvePost: (ack: AgentTurnAccepted) => void = () => {}
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const onBackgroundTurnAccepted = vi.fn()
+    const conversation = useAgentConversationStore()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      onBackgroundTurnAccepted
+    })
+    session.start()
+
+    const sendPromise = session.sendMessage(
+      'Late unmount reply',
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      'cm-stopped'
+    )
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    session.stop()
+    resolvePost({ thread_id: 'th-stopped', message_id: 'msg-stopped' })
+
+    expect(await sendPromise).toBe(false)
+    expect(conversation.getPendingSend('cm-stopped')).toBeUndefined()
+    expect(conversation.hasSendingPendingSend).toBe(false)
+    expect(onBackgroundTurnAccepted).toHaveBeenCalledWith(
+      { thread_id: 'th-stopped', message_id: 'msg-stopped' },
+      'Late unmount reply'
+    )
+  })
+
+  it('preserves a second new_chat_button thread source when an earlier send accepts after New chat', async () => {
+    const resolvers: Array<(ack: AgentTurnAccepted) => void> = []
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvers.push(resolve)
+        })
+    )
+    const onThreadStarted = vi.fn()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      onThreadStarted
+    })
+    session.start()
+
+    session.newChat('new_chat_button')
+    const first = session.sendMessage('First new chat')
+    await vi.waitFor(() => expect(resolvers).toHaveLength(1))
+
+    session.newChat('new_chat_button')
+    resolvers[0]({ thread_id: 'th-1', message_id: 'msg-1' })
+    expect(await first).toBe(true)
+
+    const second = session.sendMessage('Second new chat')
+    await vi.waitFor(() => expect(resolvers).toHaveLength(2))
+    resolvers[1]({ thread_id: 'th-2', message_id: 'msg-2' })
+    expect(await second).toBe(true)
+
+    expect(onThreadStarted.mock.calls).toEqual([
+      ['new_chat_button'],
+      ['new_chat_button']
+    ])
+  })
+
+  it('guard (7c): posts once and notifies onBackgroundTurnAccepted once when newChat() interrupts workflow.prepare', async () => {
+    let releasePrepare = () => {}
+    const prepare = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          releasePrepare = resolve
+        })
+    )
+    const rest = fakeRest()
+    const onBackgroundTurnAccepted = vi.fn()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      onBackgroundTurnAccepted,
+      workflow: {
+        current: () => ({ id: 'wf-a', tabPath: 'workflows/a.json' }),
+        adopted: vi.fn(),
+        prepare
+      }
+    })
+    session.start()
+
+    const sending = session.sendMessage('Guard prepare')
+    await vi.waitFor(() => expect(prepare).toHaveBeenCalledOnce())
+    session.newChat('new_chat_button')
+    releasePrepare()
+
+    expect(await sending).toBe(true)
+    expect(rest.postMessage).toHaveBeenCalledOnce()
+    expect(onBackgroundTurnAccepted).toHaveBeenCalledOnce()
+  })
 })

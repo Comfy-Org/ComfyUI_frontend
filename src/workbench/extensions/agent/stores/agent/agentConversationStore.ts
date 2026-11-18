@@ -78,6 +78,7 @@ export interface PendingSendFailure {
   message: string
   retryAfterSeconds?: number
   retryAtMs?: number
+  retryable?: boolean
 }
 
 export interface PendingSendEntryState {
@@ -1509,9 +1510,12 @@ export const useAgentConversationStore = defineStore(
       // identity, not by shared user text, is what stops a repeated prompt from
       // colliding with an unrelated turn.
       const persistedMessageId = hydratedTurnIds.get(entry.messageId)
+      const demotedSnapshotId = demotedSnapshotByStash.get(entry.messageId)
       const kept = messages.value.filter(
         (message) =>
-          message.id !== entry.message.id && message.id !== unmatchedSnapshotId
+          (message.id !== entry.message.id ||
+            message.id === demotedSnapshotId) &&
+          message.id !== unmatchedSnapshotId
       )
       // Called before the branch, not inside it: it pops the duplicate row and
       // its user text whether or not this entry turns out to be settled.

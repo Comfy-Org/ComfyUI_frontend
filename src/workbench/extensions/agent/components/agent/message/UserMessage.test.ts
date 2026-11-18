@@ -617,4 +617,25 @@ describe('UserMessage', () => {
     ).toBeNull()
     expect(screen.getByRole('button', { name: t('g.retry') })).toBeEnabled()
   })
+
+  it('hides Retry when failure.retryable is false while keeping Delete (O0-04 unreadable ack)', () => {
+    renderMessage({
+      text: 'unreadable response',
+      pending: {
+        clientMessageId: 'cm-unreadable',
+        status: 'failed',
+        failure: {
+          kind: 'request',
+          message: 'Message failed to send: Unreadable agent response body',
+          retryable: false
+        }
+      }
+    })
+
+    expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+      'Message failed to send: Unreadable agent response body'
+    )
+    expect(screen.queryByRole('button', { name: t('g.retry') })).toBeNull()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
+  })
 })

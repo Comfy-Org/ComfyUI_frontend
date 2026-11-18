@@ -179,10 +179,7 @@ export class AgentPanel {
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
     })
-    this.sendingSpinner = this.root.getByRole('status', {
-      name: enMessages.agent.sendingMessage,
-      exact: true
-    })
+    this.sendingSpinner = this.root.getByTestId('pending-send-spinner')
     this.serverLogsSwitch = this.root.getByRole('switch', {
       name: 'Server logs'
     })

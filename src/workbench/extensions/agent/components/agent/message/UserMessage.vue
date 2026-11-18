@@ -286,6 +286,7 @@ function attachmentUrl(
       <div
         v-if="pending?.status === 'sending'"
         role="status"
+        data-testid="pending-send-spinner"
         :aria-label="t('agent.sendingMessage')"
         class="flex shrink-0 items-center text-muted-foreground"
       >
@@ -346,6 +347,7 @@ function attachmentUrl(
     <div
       v-else-if="pending?.status === 'sending'"
       role="status"
+      data-testid="pending-send-spinner"
       :aria-label="t('agent.sendingMessage')"
       class="flex items-center text-muted-foreground"
     >
@@ -377,7 +379,7 @@ function attachmentUrl(
           {{ t('agent.newChat') }}
         </Button>
         <Button
-          v-else
+          v-else-if="pending.failure.retryable !== false"
           type="button"
           variant="secondary"
           size="sm"

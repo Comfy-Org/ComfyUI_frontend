@@ -4186,5 +4186,39 @@ describe('useAgentConversationStore', () => {
         'cm-2'
       ])
     })
+
+    it('restores a settled background turn reply when hydrate returns an empty streaming row sharing turnId (O0-07)', () => {
+      const store = useAgentConversationStore()
+      const turnId = toTurnId('msg-bg')
+      store.startBackgroundTurn({
+        threadId: 'th',
+        turnId,
+        text: 'Background prompt',
+        tab: { status: 'unknown' }
+      })
+      store.ingest(delta('msg-bg', 'Background reply'))
+      store.ingest(done('msg-bg'))
+
+      store.setThreadId('th')
+      store.hydrate([
+        historyRow(1, 'user', 'msg-bg', 'Background prompt', 'u-bg'),
+        {
+          ...historyRow(2, 'assistant', 'msg-bg', '', 'msg-bg'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      store.resumeBackgroundTurn()
+
+      expect(store.entries).toMatchObject([
+        { role: 'user', text: 'Background prompt' },
+        {
+          role: 'assistant',
+          id: 'msg-bg',
+          streaming: false,
+          parts: [{ type: 'text', text: 'Background reply', state: 'done' }]
+        }
+      ])
+    })
   })
 })

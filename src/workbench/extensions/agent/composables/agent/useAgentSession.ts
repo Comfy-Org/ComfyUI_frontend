@@ -1425,7 +1425,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     turnStartedAt.set(turnId, Date.now())
     if (startsThread && source !== null) {
-      if (pendingThreadSource.value === source) pendingThreadSource.value = null
       runAcceptedTurnSideEffect(
         () => onThreadStarted?.(source),
         'agent_thread_started_callback_failed'
@@ -1605,6 +1604,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return {
         kind: 'disowned',
         message: i18n.global.t('agent.sendFailedDisownedWorkflow')
+      }
+    }
+    if (isUnreadableAckFailure(error)) {
+      return {
+        kind: 'request',
+        message: `${i18n.global.t('agent.sendFailed')}: ${message}`,
+        retryable: false
       }
     }
     if (error instanceof AgentApiError) {
@@ -1839,7 +1845,36 @@ export function useAgentSession(deps: AgentSessionDeps) {
         () => onAccepted?.(),
         'agent_turn_accepted_callback_failed'
       )
-      if (stopped && ownedGeneration === sessionGeneration) return false
+      if (stopped && ownedGeneration === sessionGeneration) {
+        const pending = conversationStore.takePendingSend(sendId)
+        if (pending?.stopRequested)
+          void rest
+            .cancelMessage(ack.thread_id, toTurnId(ack.message_id))
+            .catch(() => undefined)
+        if (!isDeletedThread?.(ack.thread_id)) {
+          const workflowId = ack.workflow_id
+          if (
+            workflowId !== undefined &&
+            shouldAdoptWorkflow(workflowId, wfContext, boundAtSend)
+          ) {
+            runAcceptedTurnSideEffect(
+              () => workflow?.adopted(workflowId, wfContext, boundAtSend),
+              'agent_workflow_adoption_callback_failed'
+            )
+          }
+          rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
+          recordTurnStarted(
+            toTurnId(ack.message_id),
+            origin.kind === 'blank',
+            threadSourceAtSend
+          )
+          runAcceptedTurnSideEffect(
+            () => onBackgroundTurnAccepted?.(ack, text),
+            'agent_thread_activated_callback_failed'
+          )
+        }
+        return false
+      }
       if (
         (origin.kind === 'thread' && deletedThreads.has(origin.threadId)) ||
         deletedThreads.has(ack.thread_id)
