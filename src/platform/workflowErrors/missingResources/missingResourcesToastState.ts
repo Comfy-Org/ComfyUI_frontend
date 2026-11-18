@@ -256,3 +256,24 @@ export function deriveMissingResourcesToastState(
 
   return { kind: 'ready' }
 }
+
+interface MissingModelsToastCoverageInput {
+  toastActive: boolean
+  missingModels: boolean
+  missingNodes: boolean
+  missingMedia: boolean
+  runErrors: boolean
+}
+
+/** Whether the missing resources toast already lists every issue, so the error overlay would only repeat it. */
+export function isCoveredByMissingModelsToast(
+  input: MissingModelsToastCoverageInput
+): boolean {
+  return (
+    input.toastActive &&
+    input.missingModels &&
+    !input.missingNodes &&
+    !input.missingMedia &&
+    !input.runErrors
+  )
+}

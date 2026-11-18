@@ -5,6 +5,7 @@ import { storeToRefs } from 'pinia'
 import { isIssuesTabEnabled } from '@/platform/settings/missingWarningVisibility'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useErrorGroups } from '@/platform/workflowErrors/panel/useErrorGroups'
+import { useMissingModelsToastCoverage } from '@/platform/workflowErrors/missingResources/useMissingModelsToastCoverage'
 import type {
   MissingPackGroup,
   SwapNodeGroup
@@ -151,6 +152,7 @@ export function useErrorOverlayState() {
     missingMediaGroups,
     swapNodeGroups
   } = useErrorGroups('')
+  const { coveredByToast } = useMissingModelsToastCoverage()
 
   const hasError = computed(() =>
     allErrorGroups.value.some((group) => group.severity === 'error')
@@ -236,6 +238,7 @@ export function useErrorOverlayState() {
   const isVisible = computed(
     () =>
       isErrorOverlayOpen.value &&
+      !coveredByToast.value &&
       isIssuesTabEnabled() &&
       totalErrorCount.value > 0 &&
       overlayMessage.value.trim().length > 0
