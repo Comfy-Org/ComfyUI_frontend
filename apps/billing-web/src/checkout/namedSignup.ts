@@ -1,4 +1,5 @@
 import type { BillingEntry } from '@comfyorg/billing-contract'
+import { ENTRY_PARAM_OPERATION } from '@comfyorg/billing-contract'
 
 const STORAGE_KEY = 'comfy.billing-web.replaced-signups.v1'
 
@@ -28,12 +29,25 @@ function withStorage<T>(
   }
 }
 
+interface Address {
+  readonly location: { readonly href: string }
+  readonly history: Pick<History, 'state' | 'replaceState'>
+}
+
+function dropOperationFromAddress(page: Address) {
+  const address = new URL(page.location.href)
+  if (!address.searchParams.has(ENTRY_PARAM_OPERATION)) return
+  address.searchParams.delete(ENTRY_PARAM_OPERATION)
+  page.history.replaceState(page.history.state, '', address)
+}
+
 /**
  * The unfinished signup a checkout link names, followed until this tab pays
  * in its place, and only where the tab can remember that it did.
  */
 export function createNamedSignup(
-  storage: () => Storage = () => globalThis.sessionStorage
+  storage: () => Storage = () => globalThis.sessionStorage,
+  page: Address = globalThis.window
 ) {
   const replacedHere = new Set<string>()
 
@@ -59,6 +73,7 @@ export function createNamedSignup(
       const id = entry?.operationId
       if (id === undefined) return
       replacedHere.add(id)
+      dropOperationFromAddress(page)
       withStorage(
         storage,
         (store) => {

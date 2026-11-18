@@ -76,6 +76,29 @@ describe('createNamedSignup', () => {
     expect(reloaded.recoverOptions({ operationId: 'op_other' })).toEqual({})
   })
 
+  it('takes the linked signup off the address, keeping the rest of the link', () => {
+    const replaced: string[] = []
+    const page = {
+      location: {
+        href: 'https://billing.example/v1/checkout?product=comfyui&plan=pro_monthly&operation=op_signup'
+      },
+      history: {
+        state: null,
+        replaceState: (
+          _state: unknown,
+          _title: string,
+          url?: string | URL | null
+        ) => void replaced.push(String(url))
+      }
+    }
+
+    createNamedSignup(() => refusingStorage(), page).replaced(SIGNUP)
+
+    expect(replaced).toEqual([
+      'https://billing.example/v1/checkout?product=comfyui&plan=pro_monthly'
+    ])
+  })
+
   it('names nothing when storage is refused, so no reload can revive the linked signup', () => {
     expect(
       createNamedSignup(() => refusingStorage()).recoverOptions(SIGNUP)
