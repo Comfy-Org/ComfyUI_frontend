@@ -746,7 +746,7 @@ export interface NodeDefinition {
   onSerialize?(node: NodeHandle): Readonly<Record<string, unknown>> | void
   onConnectionsChanged?(node: NodeHandle, event: ConnectionChangeEvent): void
   onPropertyChanged?(node: NodeHandle, event: PropertyChangeEvent): void
-  /** Widgets each node of the type gets as it is made, after its inputs. */
+  /** Widgets each node of the type gets as it is made, after its inputs. Saved only with `setSerializeWidgets(true)`. */
   readonly widgets?: readonly WidgetDef[]
   /**
    * With `execution: 'frontend'`, says what each output stands for when a prompt is built.
@@ -836,9 +836,12 @@ export interface WidgetHandle {
   setHidden(hidden: boolean): void
   isDisabled(): boolean | undefined
   setDisabled(disabled: boolean): void
-  /** True if the value is saved in the workflow. */
+  /** False if the widget is kept out of its node's saved values; a node saves none unless `isSerializingWidgets()`. */
   isSerialized(): boolean | undefined
-  /** Fixes the height the widget takes on its node, in graph units. */
+  /**
+   * Fixes the height the widget takes on its node, in graph units. On Vue nodes a DOM widget (a mount, canvas,
+   * declared type or text area) keeps sharing the free height, and only the node grows.
+   */
   setHeight(height: number): void
   /** The widgets linked to this one, such as a seed's control. */
   linked(): readonly WidgetHandle[] | undefined
@@ -936,7 +939,10 @@ export interface MountDef {
   render(container: HTMLElement, value: MountedValue): void
   /** Called once when the host releases the widget. A throw is reported. */
   destroy?(): void
-  /** The height the widget takes on its node, in graph units. Omit to share the free space. */
+  /**
+   * The height the widget takes on its node on the litegraph canvas, in graph units; omit to share the free space.
+   * On Vue nodes the widget shares the free space either way, and the height only grows the node.
+   */
   readonly height?: number
   /** Defaults to `true`: a placeholder is drawn instead at low zoom. */
   readonly hideOnZoom?: boolean
@@ -976,7 +982,7 @@ export interface CanvasDef {
   /** The pointer moved, during a drag or not. */
   onPointerMove?(event: CanvasPointerEvent): void
   onPointerUp?(event: CanvasPointerEvent): void
-  /** The canvas's height in graph units. Omit to share the node's free space. */
+  /** As for `MountDef`: the canvas's height on the litegraph canvas, in graph units; Vue nodes share the space. */
   readonly height?: number
   /** As for `MountDef`. `draw` receives the value only when this is given. */
   readonly defaultValue?: MountedData
@@ -1020,7 +1026,7 @@ export interface WidgetTypeDef {
   ): Unsubscribe | void
   /** Used when the input's declaration gives no default it can hold. */
   readonly defaultValue?: MountedData
-  /** The height the widget takes on its node, in graph units. */
+  /** As for `MountDef`: the widget's height on the litegraph canvas, in graph units; Vue nodes share the space. */
   readonly height?: number
   /** The least height the node gives the widget, in graph units. */
   readonly minHeight?: number
