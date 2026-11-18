@@ -1,13 +1,14 @@
 import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { readonly, shallowRef, watch } from 'vue'
-import { z } from 'zod'
+import type { z } from 'zod'
 
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 
-const zOpenOnCloudRollout = z.object({
-  open_on_cloud_enabled: z.boolean().optional(),
-  open_on_cloud_use_local_agent_enabled: z.boolean().optional()
+const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
+  open_on_cloud_enabled: true,
+  open_on_cloud_use_local_agent_enabled: true
 })
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
