@@ -90,16 +90,22 @@
                 :class="
                   cn(
                     !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)',
-                    agentInside && 'relative z-1'
+                    agentInside && 'relative z-1',
+                    '**:data-[testid=error-overlay]:translate-x-(--error-card-x) **:data-[testid=error-overlay]:translate-y-(--error-card-y)'
                   )
                 "
+                :style="{
+                  '--error-card-x': `${errorCardShift.x}px`,
+                  '--error-card-y': `${errorCardShift.y}px`
+                }"
               >
                 <slot name="topmenu" :sidebar-panel-visible />
               </div>
               <div
+                ref="agentRowRef"
                 :class="
                   cn(
-                    'pointer-events-none flex min-h-0 flex-1',
+                    'pointer-events-none relative flex min-h-0 flex-1',
                     sidebarLocation === 'right' && 'flex-row-reverse'
                   )
                 "
@@ -147,8 +153,19 @@
                 </SplitterGroup>
                 <div
                   v-if="agentInside"
-                  class="flex"
-                  :style="{ marginTop: `${agentLift}px` }"
+                  :class="
+                    cn(
+                      'flex',
+                      agentFloating && 'absolute bottom-0 z-1',
+                      agentFloating &&
+                        (sidebarLocation === 'right' ? 'left-0' : 'right-0')
+                    )
+                  "
+                  :style="
+                    agentFloating
+                      ? { top: `${agentLift}px` }
+                      : { marginTop: `${agentLift}px` }
+                  "
                 >
                   <slot
                     name="agent-panel"
@@ -156,6 +173,8 @@
                     :handle-side="
                       sidebarLocation === 'right' ? 'right' : 'left'
                     "
+                    :width="agentWidth"
+                    :floating="agentFloating"
                   />
                 </div>
               </div>
@@ -216,6 +235,8 @@
         name="agent-panel"
         :has-opaque-neighbor="agentPanelHasOpaqueNeighbor"
         handle-side="left"
+        :width="undefined"
+        :floating="false"
       />
     </div>
   </div>
@@ -263,7 +284,11 @@ import {
 } from '@/utils/splitterPersistence'
 import { savedPanelPercent } from '@/utils/splitterWidthUtil'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { options as protoOptions } from '@/components/proto/des1355'
+import {
+  AGENT_HEADER_HEIGHT,
+  MIN_CANVAS_WIDTH,
+  options as protoOptions
+} from '@/components/proto/des1355'
 
 const workspaceStore = useWorkspaceStore()
 const settingStore = useSettingStore()
@@ -338,6 +363,62 @@ const agentLift = computed(() =>
     : 0
 )
 
+const agentRowRef = ref<HTMLElement>()
+const { width: freeWidth } = useElementSize(agentRowRef)
+const floatsWhenMaximized = computed(
+  () => protoOptions.value.maximize === 'overlay' && agentPanelStore.isMaximized
+)
+const canvasGutters = computed(() => {
+  const canvas = agentRowRef.value?.querySelector<HTMLElement>(
+    '[data-testid="graph-canvas-gutter"]'
+  )
+  if (!canvas) return 0
+  const style = getComputedStyle(canvas)
+  return (
+    Number.parseFloat(style.marginLeft) + Number.parseFloat(style.marginRight)
+  )
+})
+const roomForAgent = computed(() =>
+  Math.max(0, freeWidth.value - canvasGutters.value)
+)
+const floatsToSaveCanvas = computed(
+  () =>
+    protoOptions.value.overlayCheck === 'include-properties' &&
+    roomForAgent.value - agentPanelStore.width < MIN_CANVAS_WIDTH
+)
+const agentFloating = computed(
+  () => floatsWhenMaximized.value || floatsToSaveCanvas.value
+)
+const agentWidth = computed(() =>
+  floatsWhenMaximized.value
+    ? freeWidth.value
+    : Math.min(
+        agentPanelStore.width,
+        agentFloating.value ? freeWidth.value : roomForAgent.value
+      )
+)
+
+const propertiesPanel = computed(() => {
+  if (!oppositeSidePanelVisible.value) return null
+  return document.getElementById(
+    sidebarLocation.value === 'left' ? 'last-side-panel' : 'first-side-panel'
+  )
+})
+const { width: propertiesWidth } = useElementSize(propertiesPanel)
+
+const errorCardShift = computed(() => {
+  const agentOnCardSide =
+    agentInside.value &&
+    agentPanelOpen.value &&
+    sidebarLocation.value === 'left'
+  if (!agentOnCardSide) return { x: 0, y: 0 }
+  if (protoOptions.value.issuesCard === 'shift-left')
+    return { x: -agentWidth.value, y: 0 }
+  if (protoOptions.value.issuesCard === 'below-header')
+    return { x: 0, y: AGENT_HEADER_HEIGHT }
+  return { x: 0, y: 0 }
+})
+
 const sidebarPanelVisible = computed(
   () => activeSidebarTab.value !== null && !isBuilderMode.value
 )
@@ -349,6 +430,11 @@ watchEffect(() => {
       !focusMode.value &&
       !agentNodeSelectionActive.value
         ? SIDEBAR_MIN_WIDTH
+        : 0) +
+      (protoOptions.value.overlayCheck === 'include-properties' &&
+      !agentInside.value
+        ? MIN_CANVAS_WIDTH +
+          (oppositeSidePanelVisible.value ? propertiesWidth.value : 0)
         : 0)
   )
 })
