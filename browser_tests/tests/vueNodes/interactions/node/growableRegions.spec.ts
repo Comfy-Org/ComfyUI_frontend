@@ -383,7 +383,8 @@ test.describe(
         await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
-        execution.executed('', '1', {
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', {
           images: [{ filename, subfolder: '', type: 'output' }],
           animated: [true]
         })
@@ -458,7 +459,8 @@ test.describe(
         await comfyPage.searchBoxV2.addNode('Preview Image')
         const node = await comfyPage.vueNodes.getFixtureByTitle('Preview Image')
         const file = { filename: 'example.png', type: 'input' }
-        execution.executed('', '1', { images: [file, file, file, file] })
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', { images: [file, file, file, file] })
         await expect(node.imageGrid.locator('img')).toHaveCount(4)
         const getGridHeight = () => heightOf(node.imageGrid)
 
