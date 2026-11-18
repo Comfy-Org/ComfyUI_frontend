@@ -832,6 +832,37 @@ describe('ComfyApp', () => {
         expect(app.rootGraph.extra.at).toBe('its turn')
       })
 
+      it('loads an edit made while its own beforeLoadGraph hooks ran', async () => {
+        let release = () => {}
+        const hookHeld = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        vi.mocked(
+          mockExtensionService.invokeExtensionsAsync
+        ).mockImplementation(async (hook: string) => {
+          if (hook === 'beforeLoadGraph') await hookHeld
+        })
+        let current = { ...createWorkflowGraphData(), extra: { at: 'queued' } }
+        const reload = app.loadGraphData(undefined, false, true, null, {
+          skipAssetScans: true,
+          isReady: () => true,
+          resolveGraphData: () => current
+        })
+        await vi.waitFor(() =>
+          expect(
+            mockExtensionService.invokeExtensionsAsync
+          ).toHaveBeenCalledWith('beforeLoadGraph')
+        )
+        current = {
+          ...createWorkflowGraphData(),
+          extra: { at: 'during hooks' }
+        }
+        release()
+        await reload
+
+        expect(app.rootGraph.extra.at).toBe('during hooks')
+      })
+
       it('resolves its graph after the beforeLoadGraph hooks, and skips if no longer ready', async () => {
         let release = () => {}
         const hookHeld = new Promise<void>((resolve) => {
