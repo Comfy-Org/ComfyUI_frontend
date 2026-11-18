@@ -5946,6 +5946,7 @@
   },
   "agent": {
     "previewAsset": "Preview {name}",
+    "assetLoadFailed": "Couldn't load {name}",
     "title": "Comfy Agent",
     "diagnosticReport": {
       "retry": "Retry copy report",

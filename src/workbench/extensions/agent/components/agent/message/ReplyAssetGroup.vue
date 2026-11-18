@@ -2,8 +2,10 @@
 import {
   computed,
   defineAsyncComponent,
+  nextTick,
   onBeforeUnmount,
   ref,
+  useTemplateRef,
   watch
 } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -62,13 +64,47 @@ const gridColsClass = computed(() => {
   return 'grid-cols-4'
 })
 
+/* PM-2224: a reply can link an output file that was never written. */
+const unavailableUrls = ref(new Set<string>())
+
+function markUnavailable(asset: ReplyAsset): void {
+  unavailableUrls.value = new Set(unavailableUrls.value).add(asset.url)
+}
+
+function unavailableLabel(asset: ReplyAsset): string {
+  return t(
+    'agent.assetLoadFailed',
+    { name: asset.label ?? asset.filename },
+    { escapeParameter: false }
+  )
+}
+
 const galleryAssets = computed(() =>
-  visual.value.filter((asset) => asset.kind !== '3D')
+  visual.value.filter(
+    (asset) => asset.kind !== '3D' && !unavailableUrls.value.has(asset.url)
+  )
 )
 const galleryItems = computed(() =>
   galleryAssets.value.map(replyAssetResultItem)
 )
-const galleryIndex = ref(-1)
+const galleryUrl = ref<string | null>(null)
+const galleryIndex = computed(() =>
+  galleryUrl.value === null
+    ? -1
+    : galleryAssets.value.findIndex((asset) => asset.url === galleryUrl.value)
+)
+
+function setGalleryIndex(index: number): void {
+  galleryUrl.value = galleryAssets.value[index]?.url ?? null
+}
+
+const groupRoot = useTemplateRef<HTMLElement>('groupRoot')
+
+watch(galleryIndex, (index) => {
+  if (index !== -1 || galleryUrl.value === null) return
+  galleryUrl.value = null
+  void nextTick(() => groupRoot.value?.focus())
+})
 
 const modelThumbnails = ref<Record<string, string>>({})
 const assetNames = ref<Record<string, string>>({})
@@ -182,7 +218,7 @@ function inspect(asset: ReplyAsset): void {
     })
     return
   }
-  galleryIndex.value = galleryAssets.value.indexOf(asset)
+  galleryUrl.value = asset.url
 }
 
 function playPreview(event: Event): void {
@@ -197,29 +233,59 @@ function stopPreview(event: Event): void {
 </script>
 
 <template>
-  <div data-testid="reply-asset-group" class="my-4 flex flex-col gap-2">
+  <div
+    ref="groupRoot"
+    data-testid="reply-asset-group"
+    tabindex="-1"
+    class="my-4 flex flex-col gap-2 outline-none"
+  >
     <div v-if="visibleVisual.length" :class="cn('grid gap-1', gridColsClass)">
       <button
         v-for="asset in visibleVisual"
         :key="asset.url"
         type="button"
-        :aria-label="asset.label ?? asset.filename"
+        :aria-label="
+          unavailableUrls.has(asset.url)
+            ? unavailableLabel(asset)
+            : (asset.label ?? asset.filename)
+        "
+        :disabled="unavailableUrls.has(asset.url)"
         :class="
           cn(
-            'relative cursor-pointer overflow-hidden rounded-lg border-none p-0',
+            'relative cursor-pointer overflow-hidden rounded-lg border-none p-0 disabled:cursor-default',
             multi && 'aspect-square bg-accent',
             !multi && asset.kind === '3D' && 'justify-self-end'
           )
         "
         @click="inspect(asset)"
       >
+        <span
+          v-if="unavailableUrls.has(asset.url)"
+          data-testid="reply-asset-unavailable"
+          :class="
+            cn(
+              'flex items-center gap-2 bg-accent text-muted-foreground',
+              multi
+                ? 'size-full flex-col justify-center p-2 text-xs'
+                : 'px-3 py-2 text-sm'
+            )
+          "
+        >
+          <i aria-hidden="true" class="icon-[lucide--image-off]" />
+          <span
+            :class="multi ? 'line-clamp-3 text-center break-all' : 'break-all'"
+          >
+            {{ unavailableLabel(asset) }}
+          </span>
+        </span>
         <img
-          v-if="asset.kind === 'image'"
+          v-else-if="asset.kind === 'image'"
           :src="asset.url"
           :alt="asset.label ?? asset.filename"
           data-testid="reply-image-preview"
           loading="lazy"
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
+          @error="markUnavailable(asset)"
         />
         <video
           v-else-if="asset.kind === 'video'"
@@ -232,6 +298,7 @@ function stopPreview(event: Event): void {
           :class="multi ? 'size-full object-cover' : 'block h-auto max-w-full'"
           @mouseenter="playPreview"
           @mouseleave="stopPreview"
+          @error="markUnavailable(asset)"
         />
         <img
           v-else-if="modelThumbnails[asset.url]"
@@ -252,7 +319,7 @@ function stopPreview(event: Event): void {
           <span class="icon-[lucide--box] size-6 text-muted-foreground" />
         </span>
         <span
-          v-if="asset.kind === 'video'"
+          v-if="asset.kind === 'video' && !unavailableUrls.has(asset.url)"
           data-testid="reply-video-affordance"
           aria-hidden="true"
           class="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -313,7 +380,7 @@ function stopPreview(event: Event): void {
       v-if="galleryIndex !== -1"
       :all-gallery-items="galleryItems"
       :active-index="galleryIndex"
-      @update:active-index="galleryIndex = $event"
+      @update:active-index="setGalleryIndex"
     />
   </div>
 </template>

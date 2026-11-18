@@ -1,4 +1,10 @@
-import { render, screen, waitFor, within } from '@testing-library/vue'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -395,5 +401,81 @@ describe('ReplyAssetGroup', () => {
     await userEvent.click(toggle()!)
     expect(thumbs()).toHaveLength(12)
     expect(toggle()).toHaveTextContent('Show more')
+  })
+  it('PM-2224 says a video that failed to load could not be loaded instead of a blank player', async () => {
+    renderGroup([video])
+
+    await fireEvent.error(screen.getByTestId('reply-video-preview'))
+
+    const tile = screen.getByRole('button', { name: "Couldn't load clip.mp4" })
+    expect(tile).toBeDisabled()
+    expect(
+      within(tile).getByTestId('reply-asset-unavailable')
+    ).toHaveTextContent("Couldn't load clip.mp4")
+    expect(screen.queryByTestId('reply-video-preview')).toBeNull()
+    expect(screen.queryByTestId('reply-video-affordance')).toBeNull()
+    await userEvent.click(tile)
+    expect(screen.queryByTestId('lightbox')).toBeNull()
+  })
+
+  it('PM-2224 says an image that failed to load could not be loaded', async () => {
+    renderGroup([image(1)])
+
+    await fireEvent.error(screen.getByRole('img', { name: 'i1.png' }))
+
+    expect(
+      screen.getByRole('button', { name: "Couldn't load i1.png" })
+    ).toBeDisabled()
+    expect(screen.queryByRole('img', { name: 'i1.png' })).toBeNull()
+  })
+
+  it('PM-2224 leaves a media file that failed to load out of the lightbox gallery', async () => {
+    renderGroup([image(1), video, image(2)])
+
+    await fireEvent.error(screen.getByTestId('reply-video-preview'))
+    await userEvent.click(screen.getByRole('button', { name: 'i2.png' }))
+
+    const lightbox = screen.getByTestId('lightbox')
+    expect(lightbox.dataset.count).toBe('2')
+    expect(lightbox.dataset.active).toBe('1')
+  })
+
+  it('PM-2224 keeps the lightbox on the open asset when an earlier one fails to load', async () => {
+    renderGroup([video, image(1), image(2)])
+
+    await userEvent.click(screen.getByRole('button', { name: 'i2.png' }))
+    expect(screen.getByTestId('lightbox').dataset.active).toBe('2')
+
+    await fireEvent.error(screen.getByTestId('reply-video-preview'))
+
+    const lightbox = screen.getByTestId('lightbox')
+    expect(lightbox.dataset.count).toBe('2')
+    expect(lightbox.dataset.active).toBe('1')
+  })
+
+  it('PM-2224 closes the lightbox when the open asset fails to load', async () => {
+    renderGroup([image(1), video])
+
+    await userEvent.click(screen.getByRole('button', { name: 'clip.mp4' }))
+    await fireEvent.error(screen.getByTestId('reply-video-preview'))
+
+    expect(screen.queryByTestId('lightbox')).toBeNull()
+    await waitFor(() =>
+      expect(screen.getByTestId('reply-asset-group')).toHaveFocus()
+    )
+  })
+
+  it('PM-2224 keeps a failed tile unavailable after collapsing and expanding', async () => {
+    const assets = Array.from({ length: 13 }, (_, n) => image(n + 1))
+    renderGroup(assets)
+
+    await userEvent.click(toggle()!)
+    await fireEvent.error(screen.getByRole('img', { name: 'i13.png' }))
+    await userEvent.click(toggle()!)
+    await userEvent.click(toggle()!)
+
+    expect(
+      screen.getByRole('button', { name: "Couldn't load i13.png" })
+    ).toBeDisabled()
   })
 })
