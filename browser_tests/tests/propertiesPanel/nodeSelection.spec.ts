@@ -1,13 +1,13 @@
 import { expect } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 test.describe('Properties panel - Node selection', () => {
-  let panel: PropertiesPanelHelper
+  let panel: PropertiesPanel
 
   test.beforeEach(async ({ comfyPage }) => {
-    panel = new PropertiesPanelHelper(comfyPage.page)
+    panel = new PropertiesPanel(comfyPage.page)
     await comfyPage.actionbar.propertiesButton.click()
   })
 
@@ -33,6 +33,32 @@ test.describe('Properties panel - Node selection', () => {
     test('should display node widgets in Parameters tab', async () => {
       await expect(panel.contentArea.getByText('seed')).toBeVisible()
       await expect(panel.contentArea.getByText('steps')).toBeVisible()
+    })
+
+    test('renders a legacy widget with no type', async ({ comfyPage }) => {
+      await comfyPage.page.evaluate(() => {
+        const node = window.app!.graph.nodes.find(
+          (candidate) => candidate.type === 'KSampler'
+        )
+        if (!node) throw new Error('KSampler node not found')
+        const widget = {
+          name: 'typeless_legacy',
+          type: 'legacy_test',
+          value: 0,
+          options: {},
+          y: 0,
+          draw() {}
+        }
+        Reflect.deleteProperty(widget, 'type')
+        node.addCustomWidget(widget)
+      })
+
+      await panel.getTab('Info').click()
+      await panel.getTab('Parameters').click()
+      await panel.searchWidgets('typeless_legacy')
+      await expect(
+        panel.contentArea.getByText('typeless_legacy', { exact: true })
+      ).toBeVisible()
     })
 
     test(
@@ -147,7 +173,10 @@ test.describe('Properties panel - Node selection', () => {
       'a linked widget is suppressed while its slot remains connected',
       { tag: '@vue-nodes' },
       async ({ comfyPage }) => {
-        const seed = panel.contentArea.getByLabel('seed').locator('input')
+        const seed = panel.contentArea.getByRole('spinbutton', {
+          name: 'seed',
+          exact: true
+        })
         await comfyPage.searchBoxV2.addNode('Int')
         const intNode = await comfyPage.vueNodes.getFixtureByTitle(/Int/)
         const ksampler = await comfyPage.vueNodes.getFixtureByTitle('KSampler')
@@ -195,6 +224,25 @@ test.describe('Properties panel - Node selection', () => {
         'CLIP Text Encode (Prompt)'
       ])
       await expect(panel.getTab('Info')).toBeHidden()
+    })
+
+    test('should toggle all sections with Expand all and Collapse all', async ({
+      comfyPage
+    }) => {
+      await comfyPage.nodeOps.selectNodes([
+        'KSampler',
+        'CLIP Text Encode (Prompt)'
+      ])
+      await expect(panel.expandAllButton).toBeVisible()
+      await expect(panel.sectionWidgetsLists).toHaveCount(0)
+
+      await panel.expandAllButton.click()
+      await expect(panel.collapseAllButton).toBeVisible()
+      await expect(panel.sectionWidgetsLists).toHaveCount(3)
+
+      await panel.collapseAllButton.click()
+      await expect(panel.expandAllButton).toBeVisible()
+      await expect(panel.sectionWidgetsLists).toHaveCount(0)
     })
   })
 

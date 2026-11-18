@@ -1,4 +1,4 @@
-import type { Settings } from '@/platform/settings/types'
+import type { Settings } from '@comfyorg/settings-core/types'
 
 export type CrdtLogLevel = Settings['Comfy.Agent.CrdtDebug.Level']
 

@@ -1,4 +1,7 @@
-import type { Rect } from './node'
+import type {
+  CompactSize,
+  CompactRect as Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 export interface SnapTargets {
   xs: number[]
   ys: number[]
@@ -36,7 +39,7 @@ function clampNum(v: number, lo: number, hi: number): number {
 
 export function buildSnapTargets(
   otherRects: Rect[],
-  bounds?: { w: number; h: number },
+  bounds?: CompactSize,
   extras?: SnapExtras
 ): SnapTargets {
   const bw = bounds?.w ?? 1

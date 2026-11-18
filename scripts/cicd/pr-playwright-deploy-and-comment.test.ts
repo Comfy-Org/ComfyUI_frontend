@@ -14,6 +14,10 @@ import { describe, expect, it, onTestFinished } from 'vitest'
 import { parse } from 'yaml'
 import { z } from 'zod'
 
+import type { extractTestCounts } from './extract-playwright-counts'
+
+type TestCounts = ReturnType<typeof extractTestCounts>
+
 const script = join(import.meta.dirname, 'pr-playwright-deploy-and-comment.sh')
 
 const e2eWorkflow = z
@@ -42,10 +46,22 @@ const uploadedProjects = [
   )
 ]
 
-function runWithReports(projects: string[]) {
+const passingCounts: TestCounts = {
+  passed: 2,
+  failed: 0,
+  flaky: 0,
+  skipped: 0,
+  total: 2
+}
+
+function runWithReports(
+  projects: string[],
+  countsByProject: Record<string, TestCounts> = {}
+) {
   const root = mkdtempSync(join(tmpdir(), 'playwright-pr-report-'))
   const bin = join(root, 'bin')
   const wranglerLog = join(root, 'wrangler.log')
+  const extractorLog = join(root, 'extractor.log')
   onTestFinished(() => rmSync(root, { recursive: true, force: true }))
   mkdirSync(bin)
   writeFileSync(
@@ -59,15 +75,21 @@ echo "https://abc.$project.pages.dev"
   writeFileSync(
     join(bin, 'tsx'),
     `#!/bin/bash
-echo '{"passed":2,"failed":0,"flaky":0,"skipped":0,"total":2}'
+echo "$*" >> "${extractorLog}"
+echo 'Could not list failed tests: diagnostic' >&2
+cat "$2/counts.json"
 `
   )
   chmodSync(join(bin, 'wrangler'), 0o755)
   chmodSync(join(bin, 'tsx'), 0o755)
-  for (const project of projects)
-    mkdirSync(join(root, 'reports', `playwright-report-${project}`), {
-      recursive: true
-    })
+  for (const project of projects) {
+    const reportDir = join(root, 'reports', `playwright-report-${project}`)
+    mkdirSync(reportDir, { recursive: true })
+    writeFileSync(
+      join(reportDir, 'counts.json'),
+      JSON.stringify(countsByProject[project] ?? passingCounts)
+    )
+  }
 
   const result = spawnSync('bash', [script, '1', 'feature', 'completed'], {
     cwd: root,
@@ -85,7 +107,8 @@ echo '{"passed":2,"failed":0,"flaky":0,"skipped":0,"total":2}'
   return {
     status: result.status,
     summary: readFileSync(join(root, 'summary.md'), 'utf8'),
-    wranglerCalls: readFileSync(wranglerLog, 'utf8')
+    wranglerCalls: readFileSync(wranglerLog, 'utf8'),
+    extractorCalls: readFileSync(extractorLog, 'utf8')
   }
 }
 
@@ -108,6 +131,30 @@ describe('PR Playwright report section', () => {
     expect(wranglerCalls).not.toContain('untrusted')
   })
 
+  it('links a failed test at its path in the repository and in the report', () => {
+    const { summary, extractorCalls } = runWithReports(['chromium'], {
+      chromium: {
+        passed: 0,
+        failed: 1,
+        flaky: 0,
+        skipped: 0,
+        total: 1,
+        failures: [
+          {
+            name: 'saves a workflow',
+            file: 'browser_tests/tests/save.spec.ts',
+            reportUrl: 'https://abc.chromium.pages.dev/#?testId=fail-1'
+          }
+        ]
+      }
+    })
+
+    expect(extractorCalls).toContain('browser_tests')
+    expect(summary).toContain(
+      '- [saves a workflow](https://github.com/Comfy-Org/ComfyUI_frontend/blob/sha/browser_tests/tests/save.spec.ts): [View test report](https://abc.chromium.pages.dev/#?testId=fail-1)'
+    )
+  })
+
   it('fails the headline and lists a project whose report never arrived', () => {
     const { status, summary } = runWithReports(
       uploadedProjects.filter((project) => project !== 'cloud')
@@ -116,5 +163,50 @@ describe('PR Playwright report section', () => {
     expect(status).toBe(0)
     expect(summary).toMatch(/^## 🎭 Playwright: ❌ .*, 1 missing/)
     expect(summary).toContain('- **cloud**: ❌ Report missing')
+  })
+
+  it('lists each named failed test with its report in a collapsed box', () => {
+    const { status, summary } = runWithReports(uploadedProjects, {
+      chromium: {
+        passed: 1,
+        failed: 1,
+        flaky: 0,
+        skipped: 0,
+        total: 2,
+        failures: [
+          {
+            name: 'saves a workflow',
+            file: 'browser_tests/tests/save.spec.ts',
+            reportUrl: 'https://abc.chromium.pages.dev/#?testId=fail-1'
+          }
+        ]
+      }
+    })
+
+    expect(status).toBe(0)
+    expect(summary).toMatch(/^## 🎭 Playwright: ❌ .*, 1 failed/)
+    expect(summary).toContain(
+      `> ❌ 1 test failed. Expand the failed tests below, review their reports and fix the failures before merging.
+
+<details>
+<summary>Failed tests</summary>
+
+- [saves a workflow](https://github.com/Comfy-Org/ComfyUI_frontend/blob/sha/browser_tests/tests/save.spec.ts): [View test report](https://abc.chromium.pages.dev/#?testId=fail-1)
+
+</details>`
+    )
+  })
+
+  it('points to the browser reports when failed tests have no extracted names', () => {
+    const { status, summary } = runWithReports(uploadedProjects, {
+      chromium: { passed: 1, failed: 1, flaky: 0, skipped: 0, total: 2 }
+    })
+
+    expect(status).toBe(0)
+    expect(summary).toMatch(/^## 🎭 Playwright: ❌ .*, 1 failed/)
+    expect(summary).toContain(
+      '> ❌ 1 test failed. Open the browser reports below, review the failed tests and fix the failures before merging.'
+    )
+    expect(summary).not.toContain('Failed tests')
   })
 })

@@ -1,6 +1,9 @@
 import { clamp } from 'es-toolkit/compat'
 
-import type { ReadOnlyRect, Size } from '@/lib/litegraph/src/interfaces'
+import type {
+  ReadOnlyRect,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 /**
  * Basic width and height, with min/max constraints.

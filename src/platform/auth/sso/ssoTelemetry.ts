@@ -11,7 +11,7 @@ import {
   ssoFlowStore
 } from '@comfyorg/account-core/telemetry'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
 /** The attempt that just signed in, until its first workspace opens. */
 let signedInFlow: SsoFlow | undefined

@@ -5,7 +5,7 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { getPseudoPreviewWidgets } from '@e2e/fixtures/utils/promotedWidgets'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 const domPreviewSelector = '.image-preview'
 
@@ -197,7 +197,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
       await comfyPage.contextMenu.clickMenuItemExact('Unpack Subgraph')
     }
 
-    async function reopenRightSidePanel(comfyPage: ComfyPage) {
+    async function reopenPropertiesPanel(comfyPage: ComfyPage) {
       const { propertiesPanel } = comfyPage.menu
       await propertiesPanel.toggleButton.click()
       await expect(propertiesPanel.root).toBeHidden()
@@ -297,7 +297,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
     }) => {
       const nullGraphErrors = await unpackAndCaptureNullGraphErrors(comfyPage, {
         defer: deferSelectionChange,
-        duringWindow: reopenRightSidePanel
+        duringWindow: reopenPropertiesPanel
       })
       expect(
         nullGraphErrors,
@@ -313,7 +313,7 @@ test.describe('Subgraph Lifecycle', { tag: ['@subgraph'] }, () => {
 
       const nullGraphErrors = await unpackAndCaptureNullGraphErrors(comfyPage, {
         defer: deferSelectionChange,
-        duringWindow: reopenRightSidePanel
+        duringWindow: reopenPropertiesPanel
       })
       expect(
         nullGraphErrors,

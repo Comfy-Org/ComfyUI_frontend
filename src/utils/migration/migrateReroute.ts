@@ -5,8 +5,8 @@ import type {
   ComfyNode,
   Reroute,
   WorkflowJSON04
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 type RerouteNode = ComfyNode & {
   type: 'Reroute'

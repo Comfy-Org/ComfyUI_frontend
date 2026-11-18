@@ -6,9 +6,39 @@ import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 
 test.describe('App mode builder selection', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.appMode.enableLinearMode()
-  })
+  test(
+    'keeps selectable inputs beside their sockets',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage }) => {
+      await test.step('Open input selection and center KSampler', async () => {
+        await comfyPage.appMode.enterBuilder()
+        await comfyPage.appMode.steps.goToInputs()
+        const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+        await node.centerOnNode()
+      })
+
+      const row = comfyPage.vueNodes.getWidgetRowByLabel('KSampler', 'seed')
+
+      await test.step('Check input alignment and usable width', async () => {
+        await expect(row).toBeVisible()
+        await expect(async () => {
+          const input = (await row
+            .getByRole('spinbutton', { name: 'seed' })
+            .boundingBox())!
+          const socket = (await row.getByTestId('slot-dot').boundingBox())!
+          expect(
+            Math.abs(input.y + input.height / 2 - socket.y - socket.height / 2)
+          ).toBeLessThan(2)
+          expect(input.width).toBeGreaterThan(80)
+        }).toPass({ timeout: 5000 })
+      })
+
+      await test.step('Select the input in the sidebar', async () => {
+        await comfyPage.appMode.select.selectInputWidget('KSampler', 'seed')
+        await expect(comfyPage.appMode.select.inputItems).toHaveCount(1)
+      })
+    }
+  )
 
   test(
     'Can independently select inputs of same name',

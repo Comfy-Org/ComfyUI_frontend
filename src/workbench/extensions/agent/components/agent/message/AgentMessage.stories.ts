@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { useIntervalFn } from '@vueuse/core'
 import { defineComponent, onMounted, ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 import type { TurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type {
@@ -261,4 +261,20 @@ export const StepsArriving: Story = {
     components: { ArrivingTurn },
     template: '<ArrivingTurn />'
   })
+}
+
+export const MissingOutputFile: Story = {
+  name: 'PM-2224 Reply links an output file that was never written',
+  args: {
+    message: message(
+      [
+        {
+          type: 'text',
+          text: 'Here is your clip:\n\n![your video](/api/view?filename=missing_clip_00001_.mp4&type=output)',
+          state: 'done'
+        }
+      ],
+      false
+    )
+  }
 }

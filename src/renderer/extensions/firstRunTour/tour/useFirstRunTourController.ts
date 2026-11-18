@@ -7,7 +7,7 @@ import {
 import { delay } from 'es-toolkit'
 import { computed, readonly, ref, shallowRef, watch } from 'vue'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -219,7 +219,7 @@ function useFirstRunTourControllerInternal() {
       if (!(event.target instanceof Element)) return
       if (!event.target.closest(RUN_BUTTON_SELECTOR)) return
 
-      if (!billing.canRunWorkflows.value) {
+      if (billing.type.value !== 'unknown' && !billing.canRunWorkflows.value) {
         engine.postpone()
         return
       }

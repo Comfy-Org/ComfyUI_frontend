@@ -25,7 +25,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
@@ -104,6 +104,7 @@ function setupRaceUntilReturn() {
     tab: 'tab-1',
     actor: () => 'human:test-user:tab-1',
     baseVersion: () => frameSeq,
+    observedCounter: () => undefined,
     onBatchSettled: (outcome) => settled.push(outcome)
   })
   const projection = new AgentCrdtProjection(() => graph)

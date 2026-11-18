@@ -108,20 +108,12 @@ test.describe(
         comfyPage.page.getByText('Rename', { exact: true })
       ).toBeVisible()
 
-      await comfyPage.page.evaluate(() => {
-        const btn = document.querySelector(
-          '[data-testid="more-options-button"]'
-        )
-        if (btn) {
-          const event = new MouseEvent('click', {
-            bubbles: true,
-            cancelable: true,
-            view: window,
-            detail: 1
-          })
-          btn.dispatchEvent(event)
-        }
-      })
+      await comfyPage.selectionToolbox
+        .getByRole('button', {
+          name: 'More Options',
+          exact: true
+        })
+        .dispatchEvent('click')
       await comfyPage.nextFrame()
 
       await expect(

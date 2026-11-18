@@ -1,7 +1,10 @@
 // TODO: Fix these tests after migration
 import { test as baseTest } from 'vitest'
 
-import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
+import type {
+  PointTuple as Point,
+  Rect
+} from '@comfyorg/shared-frontend-utils/geometry'
 import {
   addDirectionalOffset,
   containsCentre,
@@ -20,7 +23,7 @@ import {
   rotateLink,
   snapPoint
 } from '@/lib/litegraph/src/measure'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
 const test = baseTest.extend({})
 

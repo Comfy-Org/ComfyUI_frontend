@@ -14,6 +14,7 @@
  * work the others are still waiting on.
  */
 import type {
+  BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
@@ -56,6 +57,13 @@ export function matchesScopedRead<
   )
 }
 
+function readRetryAfterSeconds(
+  response: Pick<BillingHttpResponse, 'header'>
+): number | undefined {
+  const value = response.header('Retry-After')?.trim()
+  return value && /^\d+$/.test(value) ? Number(value) : undefined
+}
+
 export async function readValidatedBillingResponse<T>(
   transport: BillingTransport,
   request: BillingRequest,
@@ -68,12 +76,14 @@ export async function readValidatedBillingResponse<T>(
   if (httpStatus < 200 || httpStatus >= 300) {
     const serverCode = readBillingErrorCode(body)
     const serverMessage = readBillingErrorMessage(body)
+    const retryAfterSeconds = readRetryAfterSeconds(response.value)
     return {
       status: 'error',
       code: codeForHttpStatus(response.value),
       httpStatus,
       ...(serverCode === undefined ? {} : { serverCode }),
-      ...(serverMessage === undefined ? {} : { serverMessage })
+      ...(serverMessage === undefined ? {} : { serverMessage }),
+      ...(retryAfterSeconds === undefined ? {} : { retryAfterSeconds })
     }
   }
 

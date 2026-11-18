@@ -1,10 +1,11 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { toNodeId } from '@/types/nodeId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import {
   WIDGET_HISTORY_LIMIT,
+  asHistoryReference,
   ownsNodeHistory,
   useWidgetHistoryStore
 } from './widgetHistoryStore'
@@ -49,6 +50,7 @@ describe(ownsNodeHistory, () => {
     { type: 'curve', owns: true },
     { type: 'imagecrop', owns: true },
     { type: 'lightinfo', owns: true },
+    { type: 'painter', owns: true },
     { type: 'range', owns: true },
     { type: 'videoedit', owns: true },
     { type: 'number', owns: false },
@@ -70,6 +72,96 @@ describe(useWidgetHistoryStore, () => {
     expect(store.canUndo(scope)).toBe(true)
   })
 
+  describe('latestTraveler', () => {
+    const first = scopeOf('root-a', 1, 'first')
+    const second = scopeOf('root-a', 1, 'second')
+    const onOtherNode = scopeOf('root-a', 2)
+    const node = { rootGraphId: 'root-a', graphId: 'root-a', nodeId: '1' }
+
+    function mount(store: Store, target: typeof scope) {
+      const travel = vi.fn()
+      const unmount = store.registerTraveler({
+        scope: () => target,
+        canTravel: (direction) =>
+          direction === 'undo' ? store.canUndo(target) : store.canRedo(target),
+        travel
+      })
+      return { travel, unmount }
+    }
+
+    async function travelLatest(store: Store, direction: 'undo' | 'redo') {
+      await store.latestTraveler(node, direction)?.travel()
+    }
+
+    it('travels the widget of the node whose step was recorded last', async () => {
+      const store = useWidgetHistoryStore()
+      const older = mount(store, first)
+      const newer = mount(store, second)
+      store.record(first, 'a')
+      store.record(second, 'b')
+
+      await travelLatest(store, 'undo')
+
+      expect(newer.travel).toHaveBeenCalledExactlyOnceWith('undo')
+      expect(older.travel).not.toHaveBeenCalled()
+    })
+
+    it('treats a merged edit as the latest step', async () => {
+      const store = useWidgetHistoryStore()
+      const merged = mount(store, first)
+      const other = mount(store, second)
+      store.record(first, 'a', 'drag')
+      store.record(second, 'b')
+      store.record(first, 'a2', 'drag')
+
+      await travelLatest(store, 'undo')
+
+      expect(merged.travel).toHaveBeenCalledOnce()
+      expect(other.travel).not.toHaveBeenCalled()
+    })
+
+    it('redoes the widget that was undone last', async () => {
+      const store = useWidgetHistoryStore()
+      const undoneFirst = mount(store, second)
+      const undoneLast = mount(store, first)
+      store.record(first, 'a')
+      store.record(second, 'b')
+      store.undo(second, 'b2')
+      store.undo(first, 'a2')
+
+      await travelLatest(store, 'redo')
+
+      expect(undoneLast.travel).toHaveBeenCalledExactlyOnceWith('redo')
+      expect(undoneFirst.travel).not.toHaveBeenCalled()
+    })
+
+    it('ignores a newer step on another node', async () => {
+      const store = useWidgetHistoryStore()
+      const focused = mount(store, first)
+      const other = mount(store, onOtherNode)
+      store.record(first, 'a')
+      store.record(onOtherNode, 'b')
+
+      await travelLatest(store, 'undo')
+
+      expect(focused.travel).toHaveBeenCalledOnce()
+      expect(other.travel).not.toHaveBeenCalled()
+    })
+
+    it('finds nothing without a step, after unmount, or in another workflow', () => {
+      const store = useWidgetHistoryStore()
+      const { unmount } = mount(store, first)
+
+      expect(store.latestTraveler(node, 'undo')).toBeUndefined()
+      store.record(first, 'a')
+      expect(
+        store.latestTraveler({ ...node, rootGraphId: 'root-b' }, 'undo')
+      ).toBeUndefined()
+      unmount()
+      expect(store.latestTraveler(node, 'undo')).toBeUndefined()
+    })
+  })
+
   it('keeps the shared baseline across steps until the widget is forgotten', () => {
     const store = useWidgetHistoryStore()
     store.setBaseline(scope, 'shown')
@@ -79,6 +171,56 @@ describe(useWidgetHistoryStore, () => {
     expect(store.baselineOf(scope)).toEqual({ value: 'shown' })
     store.forget(scope)
     expect(store.baselineOf(scope)).toBeUndefined()
+  })
+
+  it.for([
+    {
+      case: 'a value marked as a history reference by reference',
+      mark: asHistoryReference,
+      same: true
+    },
+    { case: 'a frozen value as a copy', mark: Object.freeze, same: false },
+    {
+      case: 'a plain value as a copy',
+      mark: <T>(value: T) => value,
+      same: false
+    }
+  ])('stores $case', ({ mark, same }) => {
+    const store = useWidgetHistoryStore()
+    const value = mark({ pixels: [1, 2, 3] })
+    store.record(scope, value)
+
+    const step = store.undo(scope, 'after')
+
+    expect(step?.value === value).toBe(same)
+    expect(step?.value).toEqual(value)
+  })
+
+  it('lists the steps it keeps and drops one of them', () => {
+    const store = useWidgetHistoryStore()
+    const other = scopeOf('root-a', 2)
+    store.record(scope, 'first')
+    store.record(scope, 'second')
+    store.undo(scope, 'redone')
+    store.record(other, 'elsewhere')
+
+    store.dropStep(scope, 'first')
+
+    expect(store.storedSteps()).toEqual([
+      { scope, value: 'redone' },
+      { scope: other, value: 'elsewhere' }
+    ])
+  })
+
+  it('peeks at the next step in each direction without taking it', () => {
+    const store = useWidgetHistoryStore()
+    store.record(scope, 'before')
+    store.undo(scope, 'after')
+    store.record(scope, 'other')
+
+    expect(store.peek(scope, 'undo')).toEqual({ value: 'other' })
+    expect(store.peek(scope, 'redo')).toBeUndefined()
+    expect(store.canUndo(scope)).toBe(true)
   })
 
   it.for(['undo', 'redo'] as const)(

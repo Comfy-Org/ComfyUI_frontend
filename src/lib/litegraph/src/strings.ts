@@ -1,4 +1,4 @@
-import type { ISlotType } from './interfaces'
+import type { ISlotType } from '@comfyorg/graph-model/interfaces'
 
 export function parseSlotTypes(type: ISlotType): string[] {
   return type == '' || type == '0'

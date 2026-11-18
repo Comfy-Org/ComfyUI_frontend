@@ -2,9 +2,9 @@ import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
-import SplitterGroup from '@/components/ui/splitter/SplitterGroup.vue'
-import SplitterPanel from '@/components/ui/splitter/SplitterPanel.vue'
-import SplitterResizeHandle from '@/components/ui/splitter/SplitterResizeHandle.vue'
+import SplitterGroup from '@comfyorg/design-system/splitter/SplitterGroup'
+import SplitterPanel from '@comfyorg/design-system/splitter/SplitterPanel'
+import SplitterResizeHandle from '@comfyorg/design-system/splitter/SplitterResizeHandle'
 import { usePanelSizing } from './usePanelSizing'
 
 beforeEach(() => localStorage.clear())

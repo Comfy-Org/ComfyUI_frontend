@@ -7,8 +7,8 @@ import type {
   GestureState
 } from './canvas/reduceGesture'
 import { idleGesture, reduceGesture } from './canvas/reduceGesture'
-import type { CompassCorners } from './interfaces'
-import type { CanvasPointerEvent } from './types/events'
+import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
+import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 
 function positionOf(e: PointerEvent): GesturePoint {
   return { x: e.clientX, y: e.clientY }
@@ -477,4 +477,10 @@ export class CanvasPointer {
       }
     }
   }
+}
+
+type RegisteredCanvasPointer = CanvasPointer
+
+declare module '@comfyorg/graph-model/entityRegistry' {
+  interface CanvasPointer extends RegisteredCanvasPointer {}
 }

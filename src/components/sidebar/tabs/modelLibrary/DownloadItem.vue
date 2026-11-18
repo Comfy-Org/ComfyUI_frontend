@@ -8,7 +8,7 @@
         :remove-label="$t('g.remove')"
         variant="chip"
         severity="danger"
-        class="mt-2 h-6 text-sm font-light"
+        class="mt-2 h-6 font-light"
         removable
         @remove="handleRemoveDownload"
       >
@@ -83,8 +83,8 @@
 import { computed, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Badge from '@comfyorg/design-system/badge/Badge'
+import Button from '@comfyorg/design-system/button/Button'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import type { ElectronDownload } from '@/stores/electronDownloadStore'
 
