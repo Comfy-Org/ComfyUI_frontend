@@ -76,11 +76,7 @@ async function handleInvoiceHistory() {
 }
 
 function handleFullUsageActivity() {
-  window.open(
-    platformLink('/profile/usage', { surface: 'subscription-footer' }),
-    '_blank',
-    'noopener'
-  )
+  window.open(platformLink('/profile/usage'), '_blank', 'noopener')
 }
 
 function handleOpenPartnerNodesInfo() {

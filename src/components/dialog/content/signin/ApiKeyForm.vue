@@ -75,7 +75,7 @@ import FieldDescription from '@comfyorg/design-system/field/FieldDescription'
 import FieldError from '@comfyorg/design-system/field/FieldError'
 import FieldLabel from '@comfyorg/design-system/field/FieldLabel'
 import Input from '@comfyorg/design-system/input/Input'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
 import { apiKeySchema } from '@/schemas/signInSchema'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -84,7 +84,7 @@ const authStore = useAuthStore()
 const apiKeyStore = useApiKeyAuthStore()
 const loading = computed(() => authStore.loading)
 const apiKeysUrl = computed(() =>
-  platformLink('/profile/api-keys', { surface: 'api-key-form' })
+  platformSurfaceLink('/profile/api-keys', 'api-key-form')
 )
 
 const { t } = useI18n()

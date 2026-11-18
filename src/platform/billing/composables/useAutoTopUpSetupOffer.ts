@@ -13,11 +13,10 @@ import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 export function useAutoTopUpSetupOffer() {
   const { autoTopUpEnabled, canManageAutoTopUp, autoTopUpSetup } =
     useBillingCapabilities()
-  const { href, track } = usePlatformHandoff(
-    platformAutoTopUpPath('turn_on'),
-    { target: 'auto_top_up', action: 'turn_on' },
-    'auto-top-up-setup-offer'
-  )
+  const { href, track } = usePlatformHandoff(platformAutoTopUpPath('turn_on'), {
+    target: 'auto_top_up',
+    action: 'turn_on'
+  })
 
   function trackOffer(stage: 'viewed' | 'declined') {
     useTelemetry()?.trackBillingEvent({
@@ -42,7 +41,7 @@ export function useAutoTopUpSetupOffer() {
 
   return {
     setupUrl,
-    open: () => openPlatformBilling(track, 'auto-top-up-setup-offer'),
+    open: () => openPlatformBilling(track),
     trackDeclined: () => trackOffer('declined')
   }
 }

@@ -11,19 +11,12 @@ import {
 } from '@e2e/fixtures/localWebBillingHandoffFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 
-function isTaggedEntryUrl(view?: string) {
-  return (url: URL) => {
-    const entry = new URL(ENTRY_URL)
-    return (
-      url.origin === entry.origin &&
-      url.pathname === entry.pathname &&
-      url.hash === entry.hash &&
-      url.searchParams.get('utm_source') === 'comfyui' &&
-      url.searchParams.get('utm_medium') === 'app' &&
-      Boolean(url.searchParams.get('utm_content')) &&
-      url.searchParams.get('view') === (view ?? null)
-    )
-  }
+function taggedEntryUrl(view?: string): string {
+  const url = new URL(ENTRY_URL)
+  url.searchParams.set('utm_source', 'comfyui')
+  url.searchParams.set('utm_medium', 'app')
+  if (view) url.searchParams.set('view', view)
+  return url.href
 }
 
 test.describe('Local web billing handoff', () => {
@@ -129,7 +122,7 @@ test.describe('Local web billing handoff', () => {
       await planAction.click()
       const popup = await popupOpened
 
-      await expect(popup).toHaveURL(isTaggedEntryUrl('plans'))
+      await expect(popup).toHaveURL(taggedEntryUrl('plans'))
       expect(handoffRequests).toHaveLength(1)
       const body = handoffRequests[0].postDataJSON()
       expect(body).toEqual(
@@ -165,7 +158,7 @@ test.describe('Local web billing handoff', () => {
         await turnOn.click()
         const popup = await popupOpened
 
-        await expect(popup).toHaveURL(isTaggedEntryUrl())
+        await expect(popup).toHaveURL(taggedEntryUrl())
         expect(handoffRequests).toHaveLength(1)
         const body = handoffRequests[0].postDataJSON()
         expect(body).toEqual(

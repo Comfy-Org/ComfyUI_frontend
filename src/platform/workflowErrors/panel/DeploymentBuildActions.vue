@@ -85,7 +85,7 @@ import { deploymentBuildBrief } from '@/platform/workspace/deploymentBuildBrief'
 import { missingNodeTypeName } from '@/platform/workspace/missingForDeployment'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import {
-  platformLink,
+  platformSurfaceLink,
   platformLinkRel
 } from '@/platform/workspace/utils/platformLink'
 
@@ -110,11 +110,11 @@ useEventListener(window, 'focus', () => {
 })
 
 const buildUrl = computed(() =>
-  platformLink(
+  platformSurfaceLink(
     deployment.build_id
       ? `/profile/builds/${encodeURIComponent(deployment.build_id)}`
       : '/profile/builds',
-    { surface: 'deployment-build-actions' }
+    'deployment-build-actions'
   )
 )
 

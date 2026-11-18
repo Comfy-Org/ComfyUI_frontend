@@ -79,8 +79,7 @@ const {
   addCreditsVariant?: 'inverted' | 'secondary'
 }>()
 
-const { button: plansButton, open: openPlans } =
-  usePlatformPlansLink('billing-plan-row')
+const { button: plansButton, open: openPlans } = usePlatformPlansLink()
 
 const { t, locale } = useI18n()
 

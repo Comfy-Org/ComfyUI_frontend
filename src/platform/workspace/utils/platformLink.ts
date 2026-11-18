@@ -16,28 +16,15 @@ const PLATFORM_LINK_SOURCE = {
 
 /** The place in the app a link to Platform sits, sent as `utm_content`. */
 export type PlatformLinkSurface =
-  | 'add-credits-dialog'
   | 'api-key-form'
-  | 'auto-top-up-card'
-  | 'auto-top-up-setup-offer'
-  | 'billing-handoff-card'
-  | 'billing-plan-row'
-  | 'billing-status-banner'
-  | 'billing-tab'
-  | 'credit-banner'
   | 'custom-deployment-card'
   | 'deploy-installation-button'
   | 'deploy-setup-card'
   | 'deploy-to-comfy-api-card'
   | 'deployment-build-actions'
   | 'deployment-switcher'
-  | 'plans-link-dialog'
-  | 'plans-paywall'
   | 'sign-in-dialog'
-  | 'subscription-footer'
-  | 'subscription-usage-history'
   | 'switch-deployment-card'
-  | 'top-up-auto-top-up-card'
 
 /** `rel` for a link to Platform: only the Cloud build sends its origin as the referrer. */
 export function platformLinkRel(): 'noopener' | 'noopener noreferrer' {
@@ -49,33 +36,44 @@ export function platformLinkWindowFeatures(): string {
   return platformLinkRel().replace(' ', ',')
 }
 
-function tagged(url: URL, surface: PlatformLinkSurface): URL {
+function tagged(url: URL, surface?: PlatformLinkSurface): URL {
   url.searchParams.set('utm_source', PLATFORM_LINK_SOURCE[__DISTRIBUTION__])
   url.searchParams.set('utm_medium', 'app')
-  url.searchParams.set('utm_content', surface)
+  if (surface) url.searchParams.set('utm_content', surface)
   return url
 }
 
 /** A Platform URL built elsewhere, tagged with this build and `surface`; returned unchanged when it is not a URL. */
 export function tagPlatformUrl(
   href: string,
-  surface: PlatformLinkSurface
+  surface?: PlatformLinkSurface
 ): string {
   const url = parseUrl(href)
   return url ? tagged(url, surface).href : href
 }
 
-/** A platform URL for `path`, tagged with this build and `surface`, that opens in the cloud app's active workspace, when there is one, and carries `correlationId` when given. */
-export function platformLink(
-  path: `/${string}`,
-  {
-    surface,
-    correlationId
-  }: { surface: PlatformLinkSurface; correlationId?: string }
-): string {
-  const url = tagged(new URL(`${getComfyPlatformBaseUrl()}${path}`), surface)
-  if (correlationId) url.searchParams.set('correlation_id', correlationId)
+function inActiveWorkspace(url: URL): string {
   const workspaceId = useTeamWorkspaceStore().activeWorkspaceId
   if (!workspaceId || !isWorkspaceId(workspaceId)) return url.href
   return withWorkspaceLink(url, workspaceId).href
+}
+
+/** A platform URL for `path`, tagged with this build, that opens in the cloud app's active workspace, when there is one, and carries `correlationId` when given. */
+export function platformLink(
+  path: `/${string}`,
+  correlationId?: string
+): string {
+  const url = tagged(new URL(`${getComfyPlatformBaseUrl()}${path}`))
+  if (correlationId) url.searchParams.set('correlation_id', correlationId)
+  return inActiveWorkspace(url)
+}
+
+/** `platformLink` for a link that sits on `surface`. */
+export function platformSurfaceLink(
+  path: `/${string}`,
+  surface: PlatformLinkSurface
+): string {
+  return inActiveWorkspace(
+    tagged(new URL(`${getComfyPlatformBaseUrl()}${path}`), surface)
+  )
 }

@@ -198,7 +198,7 @@ import {
   requestDesktopHostSignIn
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import { isCloud } from '@/platform/distribution/types'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'
@@ -237,7 +237,7 @@ const signInWithDesktopHost = async () => {
   toast.error(t('auth.desktopHost.signInFailed'), { duration: 6000 })
 }
 const apiKeysUrl = computed(() =>
-  platformLink('/profile/api-keys', { surface: 'sign-in-dialog' })
+  platformSurfaceLink('/profile/api-keys', 'sign-in-dialog')
 )
 
 const toggleState = () => {

@@ -23,7 +23,6 @@ import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { tagPlatformUrl } from '@/platform/workspace/utils/platformLink'
-import type { PlatformLinkSurface } from '@/platform/workspace/utils/platformLink'
 import { useAuthStore } from '@/stores/authStore'
 
 const ISSUE_TIMEOUT_MS = 15_000
@@ -333,9 +332,8 @@ function withPlatformView(
   return url.href
 }
 
-/** Opens Platform billing, or the page `view` names, tagged with `surface`, through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
+/** Opens Platform billing, or the page `view` names, through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
 export async function openPlatformBillingHandoff(
-  surface: PlatformLinkSurface,
   view?: PlatformHandoffView
 ): Promise<void> {
   if (inFlight) return
@@ -350,7 +348,7 @@ export async function openPlatformBillingHandoff(
   )
   const target =
     issued.status === 'ok'
-      ? withPlatformView(tagPlatformUrl(issued.url, surface), view)
+      ? withPlatformView(tagPlatformUrl(issued.url), view)
       : undefined
   if (target !== undefined) return tab.navigate(target)
   tab.close()

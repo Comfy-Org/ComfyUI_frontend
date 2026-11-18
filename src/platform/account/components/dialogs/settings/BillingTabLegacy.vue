@@ -300,8 +300,7 @@ const {
   available: handoffAvailable
 } = usePlatformHandoff(
   () => HANDOFF[handoffAudience.value].path,
-  () => ({ target: HANDOFF[handoffAudience.value].target }),
-  'billing-handoff-card'
+  () => ({ target: HANDOFF[handoffAudience.value].target })
 )
 
 async function retryBalance() {

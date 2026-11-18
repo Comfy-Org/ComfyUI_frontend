@@ -74,7 +74,7 @@ vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionActions')
 )
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string, { correlationId }: { correlationId?: string }) =>
+  platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`
 }))
 
@@ -2247,10 +2247,10 @@ describe('BillingTab', () => {
       )
 
       expect(vi.mocked(openPlatformBillingHandoff).mock.calls).toEqual([
-        ['auto-top-up-card', undefined],
-        ['billing-handoff-card', undefined],
-        ['billing-handoff-card', undefined],
-        ['billing-tab', 'plans']
+        [undefined],
+        [undefined],
+        [undefined],
+        ['plans']
       ])
     })
 

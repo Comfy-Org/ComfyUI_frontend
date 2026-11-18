@@ -114,10 +114,8 @@ vi.mock(import('@/platform/billing/composables/useResubscribe'), () => ({
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 
 vi.mock(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (
-    path: `/${string}`,
-    { correlationId }: { correlationId?: string }
-  ) => `https://platform.test${path}?correlation_id=${correlationId}`
+  platformLink: (path: `/${string}`, correlationId?: string) =>
+    `https://platform.test${path}?correlation_id=${correlationId}`
 }))
 
 function grantOpenPlans(granted: boolean) {

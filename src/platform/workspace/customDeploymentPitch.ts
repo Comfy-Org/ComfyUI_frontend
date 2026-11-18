@@ -1,6 +1,6 @@
 import { t } from '@/i18n'
 import { CUSTOM_DEPLOYMENT_BRIEF } from '@/platform/workspace/customDeploymentBrief'
-import { platformLink } from '@/platform/workspace/utils/platformLink'
+import { platformSurfaceLink } from '@/platform/workspace/utils/platformLink'
 import type { PlatformLinkSurface } from '@/platform/workspace/utils/platformLink'
 
 /** One line of what a workflow lacks: how many of a kind, then their names. */
@@ -24,7 +24,7 @@ export interface CustomDeploymentPitch {
 export function customDeploymentCreateUrl(
   surface: PlatformLinkSurface
 ): string {
-  return platformLink('/profile/builds', { surface })
+  return platformSurfaceLink('/profile/builds', surface)
 }
 
 /** The pitch Run on's Create a custom deployment item shows. */

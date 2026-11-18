@@ -133,7 +133,7 @@ import DeployInstallationButton from '@/platform/workflow/deploy/components/Depl
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 import {
-  platformLink,
+  platformSurfaceLink,
   platformLinkRel
 } from '@/platform/workspace/utils/platformLink'
 
@@ -163,9 +163,10 @@ const { isCopying, copied, copyWith } = useBriefCopy()
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const inputs = captureInputs()
 const platformUrl = computed(() =>
-  platformLink('/profile/deploy?onboarding=comfy_api', {
-    surface: 'deploy-to-comfy-api-card'
-  })
+  platformSurfaceLink(
+    '/profile/deploy?onboarding=comfy_api',
+    'deploy-to-comfy-api-card'
+  )
 )
 
 const summary = computed(() =>

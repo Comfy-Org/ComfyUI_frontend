@@ -125,11 +125,10 @@ const balance = computed(() => billing.balance?.value ?? null)
 const isTeamPlan = computed(() => billing.isTeamPlan?.value ?? false)
 
 const autoTopUp = useAutoTopUpBannerKind()
-const { button, open } = usePlatformBillingLink(
-  '/profile/billing',
-  { target: 'auto_top_up', action: 'update_payment' },
-  'credit-banner'
-)
+const { button, open } = usePlatformBillingLink('/profile/billing', {
+  target: 'auto_top_up',
+  action: 'update_payment'
+})
 
 const kind = computed(() => {
   if (suppressed) return null

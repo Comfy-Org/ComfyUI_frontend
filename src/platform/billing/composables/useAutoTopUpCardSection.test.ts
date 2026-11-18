@@ -39,10 +39,7 @@ vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (
-    path: string,
-    { correlationId }: { correlationId?: string }
-  ) => {
+  platformLink: (path: string, correlationId?: string) => {
     const url = new URL(`https://platform.test${path}`)
     if (correlationId) url.searchParams.set('correlation_id', correlationId)
     return url.href

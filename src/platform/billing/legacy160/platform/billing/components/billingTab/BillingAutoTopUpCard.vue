@@ -421,7 +421,6 @@ const action = computed(() => view.value?.status.action.id ?? 'turn_on')
 
 const { button, open } = usePlatformBillingLink(
   () => platformAutoTopUpPath(action.value),
-  () => ({ target: 'auto_top_up', action: action.value }),
-  'auto-top-up-card'
+  () => ({ target: 'auto_top_up', action: action.value })
 )
 </script>

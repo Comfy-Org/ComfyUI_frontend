@@ -118,7 +118,7 @@ import type { DeploymentRowAction } from '@/platform/workspace/deploymentStartSt
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
 import {
-  platformLink,
+  platformSurfaceLink,
   platformLinkWindowFeatures
 } from '@/platform/workspace/utils/platformLink'
 
@@ -215,9 +215,10 @@ function chooseRow(event: Event, row: DeploymentRow) {
 
 function openDeploymentPage(deploymentId: string) {
   window.open(
-    platformLink(`/profile/deployments/${encodeURIComponent(deploymentId)}`, {
-      surface: 'deployment-switcher'
-    }),
+    platformSurfaceLink(
+      `/profile/deployments/${encodeURIComponent(deploymentId)}`,
+      'deployment-switcher'
+    ),
     '_blank',
     platformLinkWindowFeatures()
   )

@@ -2373,9 +2373,8 @@ describe('useSubscription', () => {
       handleViewUsageHistory()
 
       expect(windowOpenSpy).toHaveBeenCalledWith(
-        'https://stagingplatform.comfy.org/profile/usage?utm_source=comfy_cloud&utm_medium=app&utm_content=subscription-usage-history&workspace=ws-team-1',
-        '_blank',
-        'noopener'
+        'https://stagingplatform.comfy.org/profile/usage?utm_source=comfy_cloud&utm_medium=app&workspace=ws-team-1',
+        '_blank'
       )
 
       windowOpenSpy.mockRestore()

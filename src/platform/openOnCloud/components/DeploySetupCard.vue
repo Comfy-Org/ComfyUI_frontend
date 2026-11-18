@@ -91,7 +91,7 @@ import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupA
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
 import {
-  platformLink,
+  platformSurfaceLink,
   platformLinkRel
 } from '@/platform/workspace/utils/platformLink'
 
@@ -107,9 +107,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const platformUrl = computed(() =>
-  platformLink('/profile/deploy?onboarding=custom_comfy_cloud', {
-    surface: 'deploy-setup-card'
-  })
+  platformSurfaceLink(
+    '/profile/deploy?onboarding=custom_comfy_cloud',
+    'deploy-setup-card'
+  )
 )
 const points = [
   t('openOnCloud.deploySetupDialog.pointNodes'),

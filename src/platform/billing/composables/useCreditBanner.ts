@@ -56,11 +56,10 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   const { subscription, balance, isTeamPlan } = billing
 
   const autoTopUp = useAutoTopUpBannerKind()
-  const { href, open } = usePlatformBillingLink(
-    '/profile/billing',
-    { target: 'auto_top_up', action: 'update_payment' },
-    'credit-banner'
-  )
+  const { href, open } = usePlatformBillingLink('/profile/billing', {
+    target: 'auto_top_up',
+    action: 'update_payment'
+  })
 
   const kind = computed(() => {
     if (toValue(suppressed)) return null

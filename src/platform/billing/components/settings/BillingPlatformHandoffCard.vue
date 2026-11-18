@@ -67,7 +67,6 @@ const HANDOFF = {
 
 const { href, button, open } = usePlatformBillingLink(
   () => HANDOFF[audience].path,
-  () => ({ target: HANDOFF[audience].target }),
-  'billing-handoff-card'
+  () => ({ target: HANDOFF[audience].target })
 )
 </script>

@@ -64,7 +64,7 @@ vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionActions')
 )
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
-  platformLink: (path: string, { correlationId }: { correlationId?: string }) =>
+  platformLink: (path: string, correlationId?: string) =>
     `https://platform.test${path}?workspace=ws_1&correlation_id=${correlationId}`
 }))
 
@@ -661,7 +661,6 @@ describe('BillingTab', () => {
       await userEvent.click(screen.getByRole('button', { name }))
 
       expect(openPlatformBillingHandoff).toHaveBeenCalledExactlyOnceWith(
-        expect.any(String),
         'plans'
       )
     }

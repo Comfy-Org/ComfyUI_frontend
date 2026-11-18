@@ -152,9 +152,7 @@ const {
 } = useScheduledPlanChange()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const { updatePayment, isUpdatingPayment } = usePaymentRecoveryDialog()
-const { button: plansButton, open: openPlans } = usePlatformPlansLink(
-  'billing-status-banner'
-)
+const { button: plansButton, open: openPlans } = usePlatformPlansLink()
 const { isSalesManagedPlan, isEnterprisePlan: isEndedEnterprisePlan } =
   usePlanEnded()
 

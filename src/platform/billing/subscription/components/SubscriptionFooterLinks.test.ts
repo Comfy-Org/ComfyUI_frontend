@@ -144,7 +144,7 @@ describe('SubscriptionFooterLinks', () => {
     )
 
     expect(openSpy).toHaveBeenCalledWith(
-      'https://platform.comfy.org/profile/usage?utm_source=comfyui&utm_medium=app&utm_content=subscription-footer&workspace=ws-team-1',
+      'https://platform.comfy.org/profile/usage?utm_source=comfyui&utm_medium=app&workspace=ws-team-1',
       '_blank',
       'noopener'
     )
