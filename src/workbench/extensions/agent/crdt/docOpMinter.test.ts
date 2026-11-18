@@ -382,6 +382,53 @@ describe('attachDocOpMinter', () => {
     )
   })
 
+  describe('FRONT-3756: positional values a pack hook appends', () => {
+    function packNode(type: string, appendPositional: boolean): LGraphNode {
+      const node = new LGraphNode(type)
+      node.type = type
+      node.serialize_widgets = true
+      node.addWidget('text', 'prompt', 'a', () => {})
+      if (appendPositional)
+        node.onSerialize = (data: ISerialisedNode) => {
+          data.widgets_values = [...(data.widgets_values ?? []), 'pack-private']
+        }
+      return node
+    }
+
+    function droppedReports() {
+      return vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, meta]) =>
+            meta?.errorType === 'agent_wire_positional_values_dropped'
+        )
+    }
+
+    it('reports the node type once when the wire drops appended positional values', async () => {
+      graph.add(packNode('PositionalPack', true))
+      graph.add(packNode('PositionalPack', true))
+      await afterFlush()
+
+      expect(minted.length).toBeGreaterThan(0)
+      expect(droppedReports()).toEqual([
+        [
+          new Error('agent_wire_positional_values_dropped'),
+          expect.objectContaining({
+            surface: 'agent',
+            context: { nodeType: 'PositionalPack', positional: 2, named: 1 }
+          })
+        ]
+      ])
+    })
+
+    it('stays silent when positional and named values line up', async () => {
+      graph.add(packNode('PlainPack', false))
+      await afterFlush()
+
+      expect(droppedReports()).toEqual([])
+    })
+  })
+
   describe('mints one op per graph command', () => {
     it.for([
       {

@@ -199,8 +199,15 @@ type MissingSlotGrowth = NonNullable<ReturnType<typeof growForMissingSlot>>
  * other named-value node gets a declared `widgets_values_form` when one can
  * be proven (schema A24); otherwise it keeps the positional snapshot rather
  * than shipping an undeclared name-keyed record (KA-12).
+ *
+ * `onPositionalDropped` fires when a pack hook left more positional values
+ * than named ones and the snapshot sends the named values, so the extras never
+ * reach a peer.
  */
-export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
+export function wireNodeSnapshot(
+  node: LGraphNode,
+  onPositionalDropped?: (counts: { positional: number; named: number }) => void
+): WorkflowNode | null {
   let serialized: ISerialisedNode
   try {
     serialized = node.serialize()
@@ -219,9 +226,14 @@ export function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
   if (!named || node.isSubgraphNode()) return snapshot
   const values = valueWidgetsOnly(node, named)
   const form = provenWidgetValuesForm(node, values, serialized)
-  if (form)
-    return { ...snapshot, widgets_values: values, widgets_values_form: form }
-  return node.isVirtualNode ? snapshot : { ...snapshot, widgets_values: values }
+  if (!form && node.isVirtualNode) return snapshot
+  const positional = serialized.widgets_values
+  const namedCount = Object.keys(named).length
+  if (Array.isArray(positional) && positional.length > namedCount)
+    onPositionalDropped?.({ positional: positional.length, named: namedCount })
+  return form
+    ? { ...snapshot, widgets_values: values, widgets_values_form: form }
+    : { ...snapshot, widgets_values: values }
 }
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
@@ -625,7 +637,14 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     node: LGraphNode
   ): GraphOperation | null {
     if (node.graph !== graph) return null
-    const snapshot = wireNodeSnapshot(node)
+    const snapshot = wireNodeSnapshot(node, (counts) =>
+      reportOnce(
+        `positional:${node.type}`,
+        'agent_wire_positional_values_dropped',
+        'agent_wire_positional_values_dropped',
+        { nodeType: node.type, ...counts }
+      )
+    )
     if (!snapshot) {
       const key = `snapshot:${nodeKey(graph.id, node.id)}`
       if (reported.has(key)) return null
