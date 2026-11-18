@@ -105,7 +105,7 @@ export interface PendingSentTag {
   title: string
 }
 
-export interface PendingSend {
+interface PendingSend {
   clientMessageId: string
   origin: PendingSendOrigin
   rawText: string

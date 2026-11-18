@@ -85,7 +85,7 @@ export interface GateHoldSnapshot {
   starterPrompt: AgentStarterPromptSource | null
 }
 
-export interface GateHold {
+interface GateHold {
   id: number
   clientMessageId: string
   revision: number
