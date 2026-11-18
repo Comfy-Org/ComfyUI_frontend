@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 
 import {
   isSlowHasSelector,
@@ -11,6 +11,8 @@ describe('isSlowHasSelector', () => {
     ':root:has(.dialog[data-state="open"]) .toolbar',
     'html.dark:has(.panel) .item',
     'body:has(.dragging) .node',
+    'body:not(.compact):has(.dialog)',
+    'html[data-theme="dark"]:not(.compact):has(.dialog) .toolbar',
     '.a, body:has(.b)',
     ':is(body:has(.b) *)'
   ])('flags %s', (selector) => {
@@ -23,6 +25,8 @@ describe('isSlowHasSelector', () => {
     '.group:has(:focus-visible) .target',
     '.target:is(:where(.group):has(:focus-visible) *)',
     '.card:has(.badge)',
+    'body:not(.compact) .card:has(.badge)',
+    'body:is(.a, .b):has(> .dialog)',
     '.body:has(.badge)',
     'tbody:has(.row)',
     'body .card',
@@ -33,14 +37,11 @@ describe('isSlowHasSelector', () => {
 })
 
 describe('warnAboutSlowHasSelectors', () => {
-  afterEach(() => {
-    document.head.querySelectorAll('style').forEach((el) => el.remove())
-  })
-
   function sheetAt(href: string, css: string) {
     const style = document.createElement('style')
     style.textContent = css
     document.head.appendChild(style)
+    onTestFinished(() => style.remove())
     return { href, cssRules: style.sheet!.cssRules } as CSSStyleSheet
   }
 
@@ -73,7 +74,47 @@ describe('warnAboutSlowHasSelectors', () => {
       }
     } as CSSStyleSheet
 
-    expect(() => warnAboutSlowHasSelectors([blocked])).not.toThrow()
-    expect(console.warn).not.toHaveBeenCalled()
+    warnAboutSlowHasSelectors([
+      blocked,
+      sheetAt('/after.css', 'body:has(.dragging) { color: red }')
+    ])
+
+    expect(console.warn).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('/after.css: body:has(.dragging)')
+    )
+  })
+
+  it('scans imported stylesheets and names them', () => {
+    const theme = sheetAt('/theme.css', 'body:has(.dialog) { color: red }')
+    const parent = {
+      href: '/style.css',
+      cssRules: [{ styleSheet: theme }] as unknown as CSSRuleList
+    } as CSSStyleSheet
+
+    warnAboutSlowHasSelectors([parent])
+
+    expect(console.warn).toHaveBeenCalledOnce()
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining('/theme.css: body:has(.dialog)')
+    )
+  })
+
+  it('leaves the query string out of the stylesheet name', () => {
+    warnAboutSlowHasSelectors([
+      sheetAt(
+        'https://cdn.example/style.css?token=secret#x',
+        'body:has(.dialog) { color: red }'
+      )
+    ])
+
+    expect(console.warn).toHaveBeenCalledWith(
+      expect.stringContaining(
+        'https://cdn.example/style.css: body:has(.dialog)'
+      )
+    )
+    expect(console.warn).not.toHaveBeenCalledWith(
+      expect.stringContaining('secret')
+    )
   })
 })
