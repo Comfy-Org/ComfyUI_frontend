@@ -483,10 +483,12 @@ interface MatrixRow {
   incomplete?: boolean
 }
 
+type MeasuredRow = Required<Pick<MatrixRow, 'formProof' | 'registryForms'>>
+
 async function rowFor(
   name: string,
   install?: () => Promise<void> | void
-): Promise<MatrixRow> {
+): Promise<MeasuredRow> {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-form-'))
   outputDirs.push(dir)
   vi.stubEnv('MATRIX_OUT', dir)
@@ -499,14 +501,18 @@ async function rowFor(
     fs.readFileSync(path.join(dir, `${name}.json`), 'utf8')
   ) as MatrixRow
   expect(row.incomplete).toBeUndefined()
-  expect(row.formProof).toBeDefined()
-  expect(row.registryForms).toBeDefined()
-  return row
+  const { formProof, registryForms } = row
+  if (!formProof || !registryForms) {
+    throw new Error(`${name}: row is missing formProof or registryForms`)
+  }
+  return { formProof, registryForms }
 }
 
-const serializingPack =
-  (name: string, serializer: (serialised: ISerialisedNode) => void) =>
-  async () => {
+function serializingPack(
+  name: string,
+  serializer: (serialised: ISerialisedNode) => void
+) {
+  return async () => {
     const { useExtensionService } =
       await import('@/platform/extensions/services/extensionService')
     useExtensionService().registerExtension({
@@ -516,15 +522,19 @@ const serializingPack =
       }
     })
   }
+}
 
-const verdictFor = (proof: FormProofRow, type: string): string => {
+function verdictFor(proof: FormProofRow, type: string): string {
   const keys = Object.keys(proof.graph).filter((k) => k.startsWith(`${type}#`))
   expect(keys).toHaveLength(1)
   return proof.graph[keys[0]]
 }
 
-const keyFor = (proof: FormProofRow, type: string): string =>
-  Object.keys(proof.graph).find((k) => k.startsWith(`${type}#`))!
+function keyFor(proof: FormProofRow, type: string): string {
+  const key = Object.keys(proof.graph).find((k) => k.startsWith(`${type}#`))
+  if (!key) throw new Error(`no graph node of type ${type}`)
+  return key
+}
 
 describe('form proof', () => {
   it(
@@ -532,7 +542,7 @@ describe('form proof', () => {
     { timeout: 60_000 },
     async () => {
       const { formProof } = await rowFor('form-clean')
-      const proof = formProof!
+      const proof = formProof
 
       expect(verdictFor(proof, 'KSampler')).toBe('provable')
       expect(verdictFor(proof, 'VAEDecode')).toBe('widgets_not_serialized')
@@ -554,9 +564,9 @@ describe('form proof', () => {
         })
       )
 
-      expect(verdictFor(formProof!, 'KSampler')).toBe('values_replaced')
+      expect(verdictFor(formProof, 'KSampler')).toBe('values_replaced')
       expect(seen).toContain('rebuilt')
-      expect(formProof!.needsForm).toEqual([])
+      expect(formProof.needsForm).toEqual([])
     }
   )
 })
@@ -572,7 +582,7 @@ describe('form proof, shapes nothing can describe', () => {
           Object.assign(data, { widgets_values: { seed: 1 } })
         })
       )
-      const proof = formProof!
+      const proof = formProof
 
       expect(verdictFor(proof, 'KSampler')).toBe('values_not_positional')
       expect(proof.needsForm).toContain(keyFor(proof, 'KSampler'))
@@ -590,11 +600,11 @@ describe('form proof, shapes nothing can describe', () => {
         })
       )
 
-      expect(new Set(Object.values(formProof!.graph))).toEqual(
+      expect(new Set(Object.values(formProof.graph))).toEqual(
         new Set(['!serialize_threw'])
       )
-      expect(formProof!.err).toBeUndefined()
-      expect(registryForms!.err).toBeUndefined()
+      expect(formProof.err).toBeUndefined()
+      expect(registryForms.err).toBeUndefined()
     }
   )
 })
@@ -624,7 +634,7 @@ describe('registry form census', () => {
     { timeout: 60_000 },
     async () => {
       const { registryForms } = await rowFor('census-clean')
-      const census = registryForms!
+      const census = registryForms
 
       expect(census.err).toBeUndefined()
       expect(census.classes).toBe(7)
@@ -652,7 +662,7 @@ describe('registry form census', () => {
     { timeout: 60_000 },
     async () => {
       const { registryForms } = await rowFor('census-subgraph')
-      const probes = registryForms!.subgraph
+      const probes = registryForms.subgraph
       expect(probes.map((p) => p.scenario)).toEqual([
         'promoted-only',
         'plus-custom-widget'
@@ -689,13 +699,11 @@ describe('registry form census', () => {
         }
       })
 
-      expect(registryForms!.prototypePatched.serialize).toBe(true)
-      expect(Object.values(registryForms!.histogram)).not.toContain(
-        registryForms!.classes
+      expect(registryForms.prototypePatched.serialize).toBe(true)
+      expect(Object.values(registryForms.histogram)).not.toContain(
+        registryForms.classes
       )
-      expect(Object.values(registryForms!.refusals)).toContain(
-        'values_replaced'
-      )
+      expect(Object.values(registryForms.refusals)).toContain('values_replaced')
     }
   )
 })
