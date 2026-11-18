@@ -1,7 +1,7 @@
 import { setTimeout as wait } from 'node:timers/promises'
 
 import { chromium } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Frame, Page } from '@playwright/test'
 import {
   zBillingBalanceResponse,
   zBillingCapabilityDenials,
@@ -40,6 +40,52 @@ const stripeConfirmationSchema = z.object({
 let phase = 'credential and preview checks'
 
 class TopUpError extends Error {}
+
+const cardNumberSelector =
+  'input#cardNumber, input[name="cardnumber"], input[name="number"], input[autocomplete="cc-number"]'
+
+async function findCardFrame(page: Page): Promise<Frame> {
+  const deadline = Date.now() + 20_000
+  const cardChoice = page
+    .getByRole('radio', { name: /^Card(?:\b|$)/i })
+    .or(page.getByRole('button', { name: /^Card$/i }))
+    .filter({ visible: true })
+    .first()
+  let opened = false
+  while (Date.now() < deadline) {
+    for (const frame of page.frames()) {
+      if (await frame.locator(cardNumberSelector).first().isVisible())
+        return frame
+    }
+    if (!opened && (await cardChoice.isVisible())) {
+      await cardChoice.click({ timeout: 3000 })
+      opened = true
+    }
+    await wait(500)
+  }
+  const layout = await page.evaluate(() => ({
+    cardControls: [...document.querySelectorAll('input')]
+      .filter((input) =>
+        /card|address|billing/i.test(`${input.id} ${input.name}`)
+      )
+      .map((input) => `${input.id}:${input.name}`),
+    hasCardChoice: [
+      ...document.querySelectorAll('button, [role="radio"]')
+    ].some((element) => /^Card$/i.test(element.textContent?.trim() ?? '')),
+    hasHumanVerification:
+      /verify (that )?you are human|checking your browser|security check|captcha/i.test(
+        document.body.innerText
+      ),
+    hasCheckoutError:
+      /something went wrong|checkout session has expired|checkout is not available|access denied/i.test(
+        document.body.innerText
+      )
+  }))
+  const frameOrigins = page.frames().map((frame) => new URL(frame.url()).origin)
+  throw new TopUpError(
+    `Stripe card form unavailable ${JSON.stringify({ ...layout, frameOrigins })}`
+  )
+}
 
 async function cloudRequest(
   page: Page,
@@ -184,18 +230,42 @@ async function main() {
 
     phase = 'Stripe test form'
     const payment = await context.newPage()
-    await payment.goto(destination.href, { waitUntil: 'domcontentloaded' })
+    const stripePage = await payment.goto(destination.href, {
+      waitUntil: 'domcontentloaded'
+    })
     if (!stripeCheckoutOrigins.has(new URL(payment.url()).origin)) {
       throw new TopUpError('Checkout left the expected Stripe origin')
     }
-    const cardNumber = payment.locator('input#cardNumber')
-    const cardOption = payment.getByRole('radio', { name: /^card$/i })
-    if (!(await cardNumber.isVisible()) && (await cardOption.isVisible())) {
-      await cardOption.click()
+    if (!stripePage?.ok()) {
+      throw new TopUpError(
+        `Stripe Checkout page returned HTTP ${stripePage?.status() ?? 'unknown'}`
+      )
     }
-    await cardNumber.fill('4242424242424242', { timeout: 25_000 })
-    await payment.locator('input#cardExpiry').fill('1234')
-    await payment.locator('input#cardCvc').fill('123')
+    const cardFrame = await findCardFrame(payment)
+    const cardOrigin = new URL(cardFrame.url()).origin
+    if (
+      !stripeCheckoutOrigins.has(cardOrigin) &&
+      cardOrigin !== 'https://js.stripe.com'
+    ) {
+      throw new TopUpError(
+        'The card form was not hosted by the verified Stripe checkout'
+      )
+    }
+    console.log('The test card form is visible on Stripe.')
+    await cardFrame
+      .locator(cardNumberSelector)
+      .first()
+      .fill('4242424242424242', { timeout: 8_000 })
+    await cardFrame
+      .locator(
+        'input#cardExpiry, input[name="expiry"], input[autocomplete="cc-exp"]'
+      )
+      .first()
+      .fill('1234', { timeout: 8_000 })
+    await cardFrame
+      .locator('input#cardCvc, input[name="cvc"], input[autocomplete="cc-csc"]')
+      .first()
+      .fill('123', { timeout: 8_000 })
     const billingName = payment.locator('input#billingName')
     if (await billingName.isVisible())
       await billingName.fill('Cloud Preview Smoke')
@@ -268,7 +338,7 @@ async function main() {
     }
     if (
       status.state !== 'fulfilled' ||
-      status.payment_amount_cents !== BigInt(amountCents)
+      status.amount_cents !== BigInt(amountCents)
     ) {
       throw new TopUpError(`Cloud checkout ended in state ${status.state}`)
     }
