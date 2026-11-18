@@ -2346,6 +2346,58 @@ describe('useAgentConversationStore', () => {
       expect(reconciledParts(store)).toEqual(storedParts())
     })
 
+    it('places a post-reload tab link after the stored pre-reload tool when the recovery read settles the turn', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(activeTab('wf-1', SNAPSHOT_ROW_ID))
+      store.ingest(thinking(SNAPSHOT_ROW_ID, 'after the reload'))
+
+      store.settleTurn(
+        { threadId: 'th', messageId: SNAPSHOT_ROW_ID },
+        storedParts()
+      )
+
+      expect(reconciledParts(store)?.map((part) => part.type)).toEqual([
+        'thinking',
+        'tool',
+        'thinking',
+        'tabLink',
+        'text'
+      ])
+    })
+
+    it('keeps a live canvas confirmation for a call the stored row keys by row id when the recovery read settles the turn', () => {
+      const workflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.hydrate(liveSnapshot())
+      store.ingest(
+        toolCall(SNAPSHOT_ROW_ID, 'add_node', 'success', {
+          workflow_id: workflowId,
+          op_ids: ['op-add']
+        })
+      )
+      store.notifyCanvasCaughtUp(liveCanvasEvidence(workflowId, ['op-add']))
+
+      store.settleTurn({ threadId: 'th', messageId: SNAPSHOT_ROW_ID }, [
+        {
+          type: 'tool',
+          callId: 'row-fallback-id',
+          name: 'add_node',
+          state: 'done',
+          ok: true,
+          canvasConfirmed: false
+        },
+        { type: 'text', text: 'Added it.', state: 'done' }
+      ])
+
+      expect(
+        reconciledParts(store)?.find((part) => part.type === 'tool')
+      ).toMatchObject({ callId: 'row-fallback-id', canvasConfirmed: true })
+    })
+
     const verdictWorkflowId = 'f2b4c6d8-1a3e-4b5c-9d7e-0f1a2b3c4d5e'
     const verdictTurn = { threadId: 'th', messageId: SNAPSHOT_ROW_ID }
     function settleBySocket(store: ConversationStore) {
