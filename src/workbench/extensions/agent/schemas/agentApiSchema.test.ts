@@ -682,4 +682,35 @@ describe('agentApiSchema contract subtleties', () => {
       }).success
     ).toBe(true)
   })
+
+  it('parses agent_turn_status websocket frames for wait, pause, and fail phases', () => {
+    expect(isAgentEvent('agent_turn_status')).toBe(true)
+    for (const phase of ['wait', 'pause', 'fail'] as const) {
+      const parsed = parseAgentWsEvent({
+        type: 'agent_turn_status',
+        data: {
+          phase,
+          reason: 'turn_queue_position',
+          position: 2,
+          wait_seconds: 5,
+          thread_id: 'th-1',
+          message_id: 'msg-1'
+        }
+      })
+      expect(parsed.success).toBe(true)
+    }
+    expect(
+      parseAgentWsEvent({
+        type: 'agent_turn_status',
+        data: {
+          phase: 'unknown',
+          reason: 'turn_user_full',
+          position: 0,
+          wait_seconds: 0,
+          thread_id: 'th-1',
+          message_id: 'msg-1'
+        }
+      }).success
+    ).toBe(false)
+  })
 })

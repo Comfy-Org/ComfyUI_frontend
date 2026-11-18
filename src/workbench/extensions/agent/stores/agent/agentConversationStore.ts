@@ -504,6 +504,7 @@ function finishWithPersistedParts(
   persistedParts: AssistantMessage['parts'] | undefined,
   alignment: LocalPartAlignment = { toolCountOf: (toolCount) => toolCount }
 ): void {
+  message.waitHint = undefined
   if (persistedParts === undefined) {
     message.parts = message.parts.filter((part) => !isOpenAskPart(part))
     for (const part of message.parts) {

@@ -1230,3 +1230,133 @@ describe('AgentMessage ask the panel cannot render', () => {
     expect(screen.queryByText('Working...')).not.toBeInTheDocument()
   })
 })
+
+describe('AgentMessage turn wait hint (C8-01..C8-04)', () => {
+  it.for([
+    {
+      caseId: 'C8-01',
+      reason: 'turn_user_full',
+      position: 0,
+      expected: 'Waiting for one of your other chats to finish.'
+    },
+    {
+      caseId: 'C8-01',
+      reason: 'user_inflight',
+      position: 0,
+      expected: 'Waiting for one of your other chats to finish.'
+    },
+    {
+      caseId: 'C8-02',
+      reason: 'turn_queue_position',
+      position: 3,
+      expected: 'Waiting in line (3).'
+    },
+    {
+      caseId: 'C8-02',
+      reason: 'queue_position',
+      position: 1,
+      expected: 'Waiting in line (1).'
+    },
+    {
+      caseId: 'C8-02',
+      reason: 'turn_queue_position',
+      position: 0,
+      expected: 'Waiting in line.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'fleet_capacity',
+      position: 4,
+      expected: 'The agent is busy. Your reply will start soon.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'workspace_inflight',
+      position: 0,
+      expected: 'The agent is busy. Your reply will start soon.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'queue_full',
+      position: 5,
+      expected: 'The agent is busy. Your reply will start soon.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'turn_capacity_unavailable',
+      position: 0,
+      expected: 'The agent is busy. Your reply will start soon.'
+    },
+    {
+      caseId: 'C8-03',
+      reason: 'some_new_server_reason',
+      position: 0,
+      expected: 'The agent is busy. Your reply will start soon.'
+    }
+  ])(
+    '$caseId: renders "$expected" under the working indicator for $reason ($position)',
+    ({ reason, position, expected }) => {
+      render(AgentMessage, {
+        props: {
+          message: {
+            ...createAssistantMessage(toTurnId('msg-wait')),
+            waitHint: { reason, position }
+          }
+        },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByText('Thinking...')).toBeVisible()
+      expect(screen.getByTestId('agent-turn-wait-hint')).toHaveTextContent(
+        expected
+      )
+    }
+  )
+
+  it('C8-01: renders the hint under Working... between model rounds', () => {
+    render(AgentMessage, {
+      props: {
+        message: {
+          ...createAssistantMessage(toTurnId('msg-round-wait')),
+          parts: [
+            {
+              type: 'tool',
+              callId: 'c1',
+              name: 'read_graph',
+              state: 'done',
+              ok: true
+            }
+          ],
+          waitHint: { reason: 'user_inflight', position: 0 }
+        }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Working...')).toBeVisible()
+    expect(screen.getByTestId('agent-turn-wait-hint')).toHaveTextContent(
+      'Waiting for one of your other chats to finish.'
+    )
+  })
+
+  it('C8-04: hides the hint once waitHint is cleared or streaming settles', async () => {
+    const waiting = {
+      ...createAssistantMessage(toTurnId('msg-clear')),
+      waitHint: { reason: 'turn_user_full', position: 0 }
+    }
+    const { rerender } = render(AgentMessage, {
+      props: { message: waiting },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByTestId('agent-turn-wait-hint')).toBeVisible()
+
+    await rerender({
+      message: {
+        ...createAssistantMessage(toTurnId('msg-clear')),
+        parts: [{ type: 'text', text: 'Started', state: 'streaming' }]
+      }
+    })
+    expect(screen.queryByTestId('agent-turn-wait-hint')).toBeNull()
+  })
+})

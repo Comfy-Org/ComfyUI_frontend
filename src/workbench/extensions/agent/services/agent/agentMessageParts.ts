@@ -413,6 +413,11 @@ export type MessagePart =
   | PausedPart
   | PaywallPart
 
+interface TurnWaitHint {
+  reason: string
+  position: number
+}
+
 export interface AssistantMessage {
   id: TurnId
   role: 'assistant'
@@ -420,6 +425,7 @@ export interface AssistantMessage {
   streaming: boolean
   thinking: boolean
   thinkingText?: string
+  waitHint?: TurnWaitHint
   creditsUsed?: number
 }
 
@@ -446,5 +452,9 @@ export function createAssistantMessage(id: TurnId): AssistantMessage {
 }
 
 export function snapshotMessage(message: AssistantMessage): AssistantMessage {
-  return { ...message, parts: message.parts.map((part) => ({ ...part })) }
+  return {
+    ...message,
+    ...(message.waitHint ? { waitHint: { ...message.waitHint } } : {}),
+    parts: message.parts.map((part) => ({ ...part }))
+  }
 }

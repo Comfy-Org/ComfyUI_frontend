@@ -38,11 +38,17 @@ export type AgentChatEvent = Extract<
       | 'agent_ask'
       | 'agent_ask_resolved'
       | 'agent_extension_changed'
+      | 'agent_turn_status'
   }
 >
 type AgentNonTerminalEvent = Exclude<
   AgentChatEvent,
   { type: 'agent_message_done' | 'agent_extension_changed' }
+>
+
+type AgentTurnStatusEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_turn_status' }
 >
 
 type AgentToolCallEvent = Extract<AgentChatEvent, { type: 'agent_tool_call' }>
@@ -563,7 +569,19 @@ export function createAgentEventTransport(
     return part
   }
 
-  function applyChatEvent(event: AgentNonTerminalEvent): boolean {
+  function applyTurnStatusEvent(data: AgentTurnStatusEvent['data']): boolean {
+    if (data.phase === 'wait') {
+      message.waitHint = { reason: data.reason, position: data.position }
+      return true
+    }
+    if (message.waitHint === undefined) return false
+    message.waitHint = undefined
+    return true
+  }
+
+  function applyWorkEvent(
+    event: Exclude<AgentNonTerminalEvent, { type: 'agent_turn_status' }>
+  ): boolean {
     switch (event.type) {
       case 'agent_thinking':
         handleThinkingEvent(event.data)
@@ -589,6 +607,14 @@ export function createAgentEventTransport(
     }
   }
 
+  function applyChatEvent(event: AgentNonTerminalEvent): boolean {
+    if (event.type === 'agent_turn_status')
+      return applyTurnStatusEvent(event.data)
+    const changed = applyWorkEvent(event)
+    if (changed) message.waitHint = undefined
+    return changed
+  }
+
   function ingest(event: AgentChatEvent): void {
     if (settled) {
       if (event.type === 'agent_ask')
@@ -603,6 +629,7 @@ export function createAgentEventTransport(
       return
     }
     if (event.type === 'agent_extension_changed') {
+      message.waitHint = undefined
       handleExtensionChangedEvent(event.data)
       emit(snapshotMessage(message))
       return
@@ -619,6 +646,7 @@ export function createAgentEventTransport(
     settleUnresolvedToolParts()
     message.thinking = false
     message.thinkingText = undefined
+    message.waitHint = undefined
     message.streaming = false
     emit(snapshotMessage(message))
   }

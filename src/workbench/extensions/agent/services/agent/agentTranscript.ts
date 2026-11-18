@@ -592,6 +592,7 @@ function keepAuthoritativeAsk(
  */
 export function settleLiveMessage(message: AssistantMessage): void {
   message.streaming = false
+  message.waitHint = undefined
   message.parts = message.parts.filter((part) => !isOpenAskPart(part))
   for (const part of message.parts) {
     if (part.type !== 'tool' || part.state !== 'streaming') continue
