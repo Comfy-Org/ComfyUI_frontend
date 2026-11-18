@@ -78,6 +78,8 @@ export const liveOpenOnCloudLoginFixture = liveOpenOnCloudFixture.extend({
       ...(customerOrigin ? [customerOrigin] : []),
       'https://mp.comfy.org',
       'https://consumer.cloud.gist.build',
+      'https://realtime.cloud.gist.build',
+      'https://ajax.googleapis.com',
       'https://e2.sy-d.io',
       'https://browser-intake-us5-datadoghq.com',
       'https://utt.impactcdn.com',
