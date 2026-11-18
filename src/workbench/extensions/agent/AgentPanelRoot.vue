@@ -7,6 +7,7 @@ import { storeToRefs } from 'pinia'
 import {
   computed,
   defineAsyncComponent,
+  effectScope,
   nextTick,
   onBeforeUnmount,
   onMounted,
@@ -308,6 +309,22 @@ watch(
     agentIdentity.reset()
   }
 )
+
+function onIdentityChange(listener: () => void): () => void {
+  const scope = effectScope(true)
+  scope.run(() =>
+    watch(
+      () =>
+        JSON.stringify([
+          authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
+          teamWorkspaceStore.activeWorkspaceId ?? null,
+          desktopHostUser.value?.workspaceId ?? null
+        ]),
+      () => listener()
+    )
+  )
+  return () => scope.stop()
+}
 
 function onPaywallAction(
   action: AgentPaywallAction,
