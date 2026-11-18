@@ -2676,7 +2676,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     outcome: Extract<TurnOutcome, { kind: 'streaming' }>,
     deliveredDuringPoll: ReadonlySet<string>
   ): void {
-    conversationStore.confirmApprovalSnapshot(turn, outcome.pendingAsk?.ask_id)
+    conversationStore.confirmApprovalSnapshot(
+      turn,
+      outcome.pendingAsk?.ask_id,
+      deliveredDuringPoll
+    )
     if (outcome.pendingAsk)
       conversationStore.confirmAskPending(
         outcome.pendingAsk.ask_id,
