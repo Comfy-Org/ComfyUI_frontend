@@ -564,7 +564,8 @@ registered, so `extend` cannot depend on the order.
   dropped on a node finds no slot, carrying the node, the link, the side and
   the pointer event. Nothing in this API works around its absence.
 - `onDragOver` and `onDrop` are not asked in app mode (decision 28), and the
-  API does not work around it. Ticket draft: _Title:_ "App mode calls a
+  API does not work around it. Filed as
+  [#23732](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23732): "App mode calls a
   node's drag methods without the node". _Reproduction:_ on frontend 1.61.0,
   give a node type `onDragOver` and `onDragDrop` methods that read `this`
   (for example `return this.type === 'LoadImage'`), select one of its
