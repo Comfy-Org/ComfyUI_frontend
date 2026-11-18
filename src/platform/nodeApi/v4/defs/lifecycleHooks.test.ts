@@ -640,11 +640,12 @@ describe('node lifecycle hooks', () => {
     })
 
     it('refuses a hook that is not a function', () => {
-      expectRefusal(
-        () =>
-          Reflect.apply(defs.define, defs, [{ type: 'Defined', onCreated: 5 }]),
-        'define'
-      )
+      expect(() =>
+        Reflect.apply(defs.define, defs, [{ type: 'Defined', onCreated: 5 }])
+      ).toThrow(new TypeError('define needs onCreated as a function, not 5.'))
+      expect(() =>
+        Reflect.apply(defs.define, defs, [{ type: 'Defined', resolve: 5 }])
+      ).toThrow(new TypeError('define needs resolve as a function, not 5.'))
       expect(defs.has('Defined')).toBe(false)
     })
   })

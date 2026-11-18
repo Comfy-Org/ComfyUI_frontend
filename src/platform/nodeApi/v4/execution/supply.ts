@@ -66,11 +66,12 @@ function graphSupplies(
 ): GraphSupplies {
   const candidates = once(() => unconnectedInputs(graph, views))
   const candidateInputs = once(() => inputsByNode(candidates()))
+  const listCandidates = Object.freeze(() => candidates())
   const claims = new Map<string, Claim[]>()
   for (const node of graph.nodes.filter(runs)) {
     const view: SupplyView = Object.freeze({
       self: views.viewOf(graph, node),
-      unconnectedInputs: candidates
+      unconnectedInputs: listCandidates
     })
     for (const supply of suppliersFor(node)) {
       const edges = callListener('setSupply', () => {
