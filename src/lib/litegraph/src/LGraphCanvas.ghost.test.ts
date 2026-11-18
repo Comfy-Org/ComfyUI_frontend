@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { cancelGhostPlacement } from '@/lib/litegraph/src/canvas/ghostPlacement'
 import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
@@ -259,7 +260,7 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
   it('cancelGhostPlacement removes an in-flight ghost node', () => {
     canvas.startGhostPlacement(node)
 
-    canvas.cancelGhostPlacement()
+    cancelGhostPlacement(canvas)
 
     expect(canvas.state.ghostNodeId).toBeNull()
     expect(graph.getNodeById(node.id)).toBeFalsy()
@@ -275,7 +276,7 @@ describe('LGraphCanvas ghost placement cancellation via document keydown', () =>
     canvas.isDragging = true
     canvas['_autoPan'] = autoPan
 
-    canvas.cancelGhostPlacement()
+    cancelGhostPlacement(canvas)
 
     expect(graph.getNodeById(node.id)).toBe(node)
     expect(canvas.state.ghostNodeId).toBeNull()
