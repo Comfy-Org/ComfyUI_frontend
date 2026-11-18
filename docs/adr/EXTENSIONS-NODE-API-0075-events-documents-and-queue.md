@@ -80,7 +80,8 @@ review finding requires it. The counts below are packs, then call sites.
    whether or not it changed, and not for the saved title. An undo that puts a
    title back, or a mode back to `'always'`, is silent; a redo or load of
    a bypassed node reports `'bypass'` again. The event comes from the host's
-   shell state (`setTrackedNodeState`), not from the API, and the API
+   shell state (`setTrackedNodeState`, filed as
+   [#23741](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23741)), not from the API, and the API
    passes it on as it does any other: telling a rebuild's writes from an
    edit would mean diffing the fields across `afterHistoryRestore` and each
    load, which no pack has asked for. A pack that keeps a mirror of these
@@ -498,7 +499,7 @@ the API reports, recorded here with the change that would lift it.
   the canvas, the canvas store and now the API chain onto. A typed
   `viewport-changed` event on the canvas would let each listen without
   chaining; `onViewportChanged` would then listen to it.
-- **The canvas store drops handlers chained after its own.**
+- **The canvas store drops handlers chained after its own. ([#23740](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23740))**
   `cleanupScaleSync` restores the handler `initScaleSync` saved without
   checking that the slot still holds the store's own handler, so a handler
   chained after the store is dropped when the canvas menu unmounts
@@ -506,19 +507,19 @@ the API reports, recorded here with the change that would lift it.
   slot, and keeping the saved handler in the closure of the handler it
   installed, would keep later chains; the viewport event above would
   remove the problem.
-- **A batch layout update does not say which positions changed.**
+- **A batch layout update does not say which positions changed. ([#23746](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23746))**
   `batchUpdateBounds` records the nodes whose size changed but not those
   whose position did, so `onNodeMoved` treats every entry whose size did
   not change as a move, including one rewritten to the same place. A
   `positionChangedNodeIds` list beside `sizeChangedNodeIds` would make it
   exact.
-- **`changeScale` without a centre ignores where the canvas sits.**
+- **`changeScale` without a centre ignores where the canvas sits. ([#23747](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23747))**
   `DragAndScale.changeScale(value)` defaults the centre to half the
   element's width and height and then subtracts the element's page offset,
   so the default is off for a canvas that does not start at the page's
   top-left. `setZoom` passes the centre in client coordinates instead; the
   default should be the rectangle's centre in client coordinates.
-- **A load commits each node's layout twice.** Configuring a graph records
+- **A load commits each node's layout twice. ([#23745](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23745))** Configuring a graph records
   each node at its saved x and the default y, then at its saved position,
   so `onNodeMoved` reports both (decision 5). Committing the saved position
   once would make a load report one placement per node.

@@ -410,7 +410,7 @@ keep the widget's own value. The ticket to file:
   `'embedded'` as a patch.
 
 A node's widgets are restored by position unless the experimental named
-restore is on (decision 5). The ticket to file:
+restore is on (decision 5). Filed as [#23744](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23744):
 
 - **Title:** Undo, redo and reload restore widget values by position, so a
   widget removed or moved after its node is made shifts the values after it.
@@ -424,7 +424,7 @@ restore is on (decision 5). The ticket to file:
   restoring by position for workflows saved without it.
 
 On Vue nodes a DOM widget's height is not fixed by its `computeSize`
-(decision 8). The ticket to file:
+(decision 8). Filed as [#23743](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23743):
 
 - **Title:** Vue nodes ignore a DOM widget's fixed height.
 - **Reproduction:** on the litegraph canvas, give a node two DOM widgets,
@@ -438,7 +438,7 @@ On Vue nodes a DOM widget's height is not fixed by its `computeSize`
   the `auto` row for one without.
 
 A DOM widget's commit runs its `callback` twice, and a load that restores
-its value runs it once (decision 13). The ticket to file:
+its value runs it once (decision 13). Filed as [#23742](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23742):
 
 - **Title:** A DOM widget runs its callback from its value setter.
 - **Reproduction:** give a multiline text widget a `callback` that counts
