@@ -257,8 +257,14 @@ describe('agentWorkflowTabBindingStore', () => {
     workflows.openWorkflowsInBackground({ right: [draft.path] })
     await nextTick()
     bindings.bind('wf-draft', draft.path)
+    await nextTick()
 
-    await workflows.renameWorkflow(draft, savedPath)
+    // Save As renames the store's reactive tab, so the watcher sees the new
+    // path before renameWorkflow re-keys the workflow lookup.
+    await workflows.renameWorkflow(
+      workflows.getWorkflowByPath(draft.path)!,
+      savedPath
+    )
     await nextTick()
 
     expect(bindings.tabPathFor('wf-draft')).toBe(savedPath)

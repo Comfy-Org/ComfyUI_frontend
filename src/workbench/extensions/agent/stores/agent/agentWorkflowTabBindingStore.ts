@@ -179,8 +179,10 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       const before = previous.find((entry) => entry.tab === tab)
       if (before === undefined || before.path === path) return
       const workflowId = recordIdFor(before.path)
+      // Bind the tab in hand: the watcher can run before renameWorkflow
+      // re-keys the lookup, so a path lookup would miss it.
       if (workflowId !== undefined && isVerifiedOwner(workflowId, tab))
-        bind(workflowId, path)
+        bindTab(workflowId, path, tab)
     }
 
     watch(
@@ -204,9 +206,16 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     }
 
     function bind(workflowId: string, tabPath: string): void {
+      bindTab(workflowId, tabPath, workflows.getWorkflowByPath(tabPath))
+    }
+
+    function bindTab(
+      workflowId: string,
+      tabPath: string,
+      workflow: ComfyWorkflow | null
+    ): void {
       unbind(tabPath)
       refusedInstances.delete(workflowId)
-      const workflow = workflows.getWorkflowByPath(tabPath)
       if (workflow) boundInstances.set(workflowId, toRaw(workflow))
       else boundInstances.delete(workflowId)
       tabByWorkflow.value = {
