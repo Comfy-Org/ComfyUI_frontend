@@ -69,7 +69,7 @@ jobs:
       - name: Sign in, import the workflow, and complete a Cloud job
         shell: bash
         env:
-          SMOKE_ACCOUNT_EMAIL: smoke-test+open-on-cloud-preview@comfy.org
+          SMOKE_ACCOUNT_EMAIL: ${{ vars.OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL }}
           SMOKE_ACCOUNT_PASSWORD: ${{ secrets.OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD }}
           PLAYWRIGHT_CLOUD_LIVE: '1'
           PLAYWRIGHT_CLOUD_SMOKE: '1'
@@ -77,6 +77,10 @@ jobs:
           PLAYWRIGHT_SETUP_API_URL: http://localhost:8188
         run: |
           set -euo pipefail
+          if [ -z "$SMOKE_ACCOUNT_EMAIL" ]; then
+            echo "::error::Configure OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL in GitHub Actions."
+            exit 1
+          fi
           if [ -z "$SMOKE_ACCOUNT_PASSWORD" ]; then
             echo "::error::Configure OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD in GitHub Actions."
             exit 1
