@@ -1,4 +1,4 @@
-import type { SubscriptionPaymentRecovery } from '@comfyorg/ingest-types'
+import type { SubscriptionPaymentRecovery } from '@comfyorg/account-core/billing'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import type { Mock } from 'vitest'
@@ -304,6 +304,18 @@ describe('useSubscriptionPaymentRecovery', () => {
           'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly&workspace=ws-signup'
       })
     )
+  })
+
+  it('re-reads plans, status and capabilities when the customer returns from the billing-web verification', async () => {
+    const context = serveRecovery(true)
+
+    useSubscriptionPaymentRecovery().refreshOnVerificationReturn()
+    const [refresh] = vi.mocked(registerRefreshOnReturn).mock.calls[0]
+    await refresh(new Event('focus'))
+
+    expect(context.fetchPlans).toHaveBeenCalledOnce()
+    expect(context.fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
   it('reads the payment page as unavailable when billing-web is not the hosted destination for a client-secret-only operation', async () => {

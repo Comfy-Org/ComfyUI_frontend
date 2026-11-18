@@ -19,13 +19,14 @@
       :view="planNotStartedView(planNotStarted)"
       :copy="bannerCopy"
     >
-      <template #action="{ label, variant }">
+      <template #action="{ action: shown, href, label, variant }">
         <Button
+          v-bind="planNotStartedButton(shown, href)"
           :variant
           size="md"
-          class="shrink-0"
+          class="shrink-0 no-underline"
           :loading="signupPayment.isOpeningPayment.value"
-          @click="signupPayment.finishPayment"
+          @click="followPlanNotStartedAction(shown)"
         >
           {{ label }}
           <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -221,6 +222,7 @@ import {
   planRowAction
 } from '@comfyorg/account-core/billing'
 import type { PlanRowAction } from '@comfyorg/account-core/billing'
+import type { BillingBannerAction } from '@comfyorg/account-ui/billing'
 import {
   BillingAutoTopUpCard,
   BillingAutoTopUpMemberBlock,
@@ -394,6 +396,20 @@ function planActionButton(shown: PlanRowAction) {
 
 function followPlanAction(shown: PlanRowAction) {
   if (shown !== 'contactSales') openPlans()
+}
+
+function planNotStartedButton(shown: BillingBannerAction, href: string | null) {
+  if (shown === 'viewPlans') return plansButton.value
+  return href
+    ? { as: 'a', href, target: '_blank', rel: 'noopener' }
+    : { as: 'button' }
+}
+
+function followPlanNotStartedAction(shown: BillingBannerAction) {
+  if (shown === 'finishPayment') void signupPayment.finishPayment()
+  else if (shown === 'verifyPayment')
+    signupPayment.refreshOnVerificationReturn()
+  else if (shown === 'viewPlans') openPlans()
 }
 
 async function retryBalance() {

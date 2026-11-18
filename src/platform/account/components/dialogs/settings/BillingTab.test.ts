@@ -2387,7 +2387,8 @@ describe('BillingTab banner stack parity with selectBillingBanners', () => {
     planNotStarted: {
       kind: 'planNotStarted',
       ...text,
-      action: 'finishPayment'
+      action: 'finishPayment',
+      href: null
     },
     topupCheckout: {
       kind: 'topupCheckout',

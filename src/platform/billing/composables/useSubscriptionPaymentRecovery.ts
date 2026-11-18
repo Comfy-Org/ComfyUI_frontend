@@ -1,11 +1,16 @@
-import type { RecoveryPaymentPage } from '@comfyorg/account-core/billing'
-import type { SubscriptionTier } from '@comfyorg/ingest-types'
+import type {
+  PlanNotStartedBanner,
+  RecoveryPaymentPage
+} from '@comfyorg/account-core/billing'
 import { shallowRef, watch } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
+import { hostedBillingRoute } from '@/platform/billing/hostedBillingRoutes'
+import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
@@ -43,20 +48,45 @@ export function useSubscriptionPaymentRecovery(
     status: billing.statusPaymentRecovery
   }[source]
   const capabilities = useBillingCapabilities()
+  const { flags } = useFeatureFlags()
+  const workspace = useWorkspaceIdentity()
+
+  function paymentPageOf(
+    operation: Awaited<ReturnType<typeof billingApi.getBillingOpStatus>>
+  ): RecoveryPaymentPage {
+    if (operation.action_url) return { kind: 'hostedPage' }
+    if (!operation.payment_intent_client_secret || !operation.plan) {
+      return { kind: 'unavailable' }
+    }
+    const checkout = hostedBillingRoute(
+      flags.hostedBillingDestination,
+      'checkout',
+      {
+        plan: operation.plan.slug,
+        teamCreditStopId: operation.plan.team_credit_stop_id,
+        workspaceId: workspace.activeWorkspaceId ?? undefined
+      }
+    )
+    return checkout.kind === 'billing_web'
+      ? { kind: 'clientSecretOnly', checkoutUrl: checkout.url.href }
+      : { kind: 'unavailable' }
+  }
 
   function isServedRecovery(opId: string) {
     return subscriptionPaymentRecovery.value?.billing_op_id === opId
   }
   const toast = useToast()
   const isOpeningPayment = shallowRef(false)
-  const recoveryPlanTier = shallowRef<SubscriptionTier | null>(null)
-  const recoveryPaymentPage = shallowRef<RecoveryPaymentPage>('unknown')
+  const recoveryPlanTier = shallowRef<PlanNotStartedBanner['planTier']>(null)
+  const recoveryPaymentPage = shallowRef<RecoveryPaymentPage>({
+    kind: 'loading'
+  })
 
   watch(
     () => subscriptionPaymentRecovery.value?.billing_op_id,
     async (opId) => {
       recoveryPlanTier.value = null
-      recoveryPaymentPage.value = 'unknown'
+      recoveryPaymentPage.value = { kind: 'loading' }
       if (!opId) {
         disarmPendingPaymentRefresh(source)
         return
@@ -65,10 +95,11 @@ export function useSubscriptionPaymentRecovery(
         const operation = await billingApi.getBillingOpStatus(opId)
         if (!isServedRecovery(opId)) return
         recoveryPlanTier.value = operation.plan?.tier ?? null
-        recoveryPaymentPage.value = operation.action_url
-          ? 'hostedPage'
-          : 'noHostedPage'
+        recoveryPaymentPage.value = paymentPageOf(operation)
       } catch (error) {
+        if (isServedRecovery(opId)) {
+          recoveryPaymentPage.value = { kind: 'unavailable' }
+        }
         reportError(error, {
           surface: 'billing',
           errorType: 'error_reading_signup_payment_recovery_plan'
@@ -129,11 +160,16 @@ export function useSubscriptionPaymentRecovery(
     }
   }
 
+  function refreshOnVerificationReturn() {
+    armPendingPaymentRefresh(source, refreshBillingState)
+  }
+
   return {
     subscriptionPaymentRecovery,
     recoveryPlanTier,
     recoveryPaymentPage,
     isOpeningPayment,
-    finishPayment
+    finishPayment,
+    refreshOnVerificationReturn
   }
 }
