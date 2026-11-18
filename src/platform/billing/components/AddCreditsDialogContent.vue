@@ -53,6 +53,7 @@ import {
 } from '@/platform/billing/addCredits/addCreditsFacts'
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import { billingWebTopupUrl } from '@/platform/billing/addCredits/billingWebTopup'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
 import {
   issueLocalBillingHandoff,
@@ -204,6 +205,19 @@ const ports: AddCreditsPorts = {
     }
     if (opensHandoff)
       return createHandoffCheckout(amountCents, signal, autoTopUp)
+    const onBillingWeb =
+      flags.unifiedBillingSettingsEnabled &&
+      billingWebTopupUrl(
+        amountCents,
+        autoTopUp,
+        workspaceIdentity.activeWorkspaceId ?? undefined
+      )
+    if (onBillingWeb) {
+      ownedCheckout = {
+        generation: workspaceIdentity.workspaceTransitionGeneration
+      }
+      return { status: 'ok', url: onBillingWeb }
+    }
     const returnUrl = topupCheckoutReturnUrl()
     if (!returnUrl) {
       return { status: 'error', refusal: { kind: 'checkout_failed' } }

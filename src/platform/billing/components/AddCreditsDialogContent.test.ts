@@ -59,7 +59,16 @@ const hoisted = vi.hoisted(() => ({
   issueHandoff: vi.fn<typeof issueLocalBillingHandoff>(),
   handoffTabs: [] as (BillingTab | null)[],
   openPlatformBilling: vi.fn<() => Promise<void>>(async () => undefined),
-  reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined)
+  reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined),
+  cloudTabNavigate: vi.fn<(url: string) => void>(),
+  billingWebTopupUrl:
+    vi.fn<
+      (
+        amountCents: number,
+        autoTopUp: unknown,
+        workspaceId: string | undefined
+      ) => string | undefined
+    >()
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -136,7 +145,13 @@ vi.mock(import('@/platform/billing/topupCheckoutReturnUrl'), () => ({
   topupCheckoutReturnUrl: () => RETURN_URL
 }))
 vi.mock(import('@/platform/billing/billingTab'), () => ({
-  reserveBillingTab: () => ({ navigate: vi.fn(), close: vi.fn() })
+  reserveBillingTab: () => ({
+    navigate: hoisted.cloudTabNavigate,
+    close: vi.fn()
+  })
+}))
+vi.mock(import('@/platform/billing/addCredits/billingWebTopup'), () => ({
+  billingWebTopupUrl: hoisted.billingWebTopupUrl
 }))
 vi.mock(
   import('@/platform/billing/subscription/composables/billingDialogsAccess'),
@@ -716,5 +731,89 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
     expect(signal.aborted).toBe(true)
     await waitFor(() => expect(tab.close).toHaveBeenCalledOnce())
     expect(tab.navigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () => {
+  const TOPUP_PAGE = 'https://billing.comfy.org/v1/top-up?amount_cents=5000'
+
+  beforeEach(() => {
+    stubFirebaseAuthHarness()
+    hoisted.balanceIncreased = undefined
+    hoisted.setupUrl.mockResolvedValue(null)
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    hoisted.billingWebTopupUrl.mockReturnValue(TOPUP_PAGE)
+  })
+
+  afterEach(() => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = false
+  })
+
+  it.for<{
+    name: string
+    on: boolean
+    page: string | undefined
+    opens: string
+  }>([
+    {
+      name: 'unified_billing_settings on',
+      on: true,
+      page: TOPUP_PAGE,
+      opens: TOPUP_PAGE
+    },
+    {
+      name: 'unified_billing_settings off',
+      on: false,
+      page: TOPUP_PAGE,
+      opens: CHECKOUT_URL
+    },
+    {
+      name: 'unified_billing_settings on but no billing-web entry to build',
+      on: true,
+      page: undefined,
+      opens: CHECKOUT_URL
+    }
+  ])('Continue opens $opens with $name', async ({ on, page, opens }) => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = on
+    hoisted.billingWebTopupUrl.mockReturnValue(page)
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+
+    await waitFor(() =>
+      expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(opens)
+    )
+    expect(hoisted.createHostedCheckout).toHaveBeenCalledTimes(
+      opens === CHECKOUT_URL ? 1 : 0
+    )
+  })
+
+  it('carries the ticked auto top-up to billing-web and watches the balance for the payment', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    const { user } = renderDialog({ atCheckout: true })
+
+    await user.click(
+      await screen.findByRole('checkbox', { name: /Turn on auto top-up/ })
+    )
+    await user.click(continueButton())
+
+    await waitFor(() =>
+      expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(TOPUP_PAGE)
+    )
+    expect(hoisted.billingWebTopupUrl.mock.calls[0].slice(0, 2)).toEqual([
+      5000,
+      {
+        threshold_credits: 1000,
+        target_credits: 11_550,
+        monthly_budget_cents: null
+      }
+    ])
+    expect(hoisted.createHostedCheckout).not.toHaveBeenCalled()
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    await hoisted.balanceIncreased!()
+    expect(billingApi.getTopupCheckout).not.toHaveBeenCalled()
   })
 })
