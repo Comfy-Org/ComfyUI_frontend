@@ -97,6 +97,7 @@ export function useMaskEditorSaver() {
     const formData = new FormData()
     formData.append('image', layer.blob, layer.ref.filename)
     formData.append('type', 'input')
+    formData.append('subfolder', 'clipspace')
 
     const response = await api.fetchApi('/upload/image', {
       method: 'POST',
@@ -158,7 +159,9 @@ export function useMaskEditorSaver() {
 
     writeImageWidgetValue(
       node,
-      mainRef.filename + (mainRef.type ? ` [${mainRef.type}]` : '')
+      (mainRef.subfolder ? `${mainRef.subfolder}/` : '') +
+        mainRef.filename +
+        (mainRef.type ? ` [${mainRef.type}]` : '')
     )
 
     node.imgs = undefined
