@@ -417,7 +417,7 @@ describe('colorUtil - adjustColor', () => {
   ])(
     'returns a non-string color $color unchanged instead of throwing',
     ({ color }) => {
-      const result = adjustColor(color as unknown as string, {
+      const result = adjustColor(color, {
         opacity: targetOpacity
       })
       expect(result).toBe(color)
