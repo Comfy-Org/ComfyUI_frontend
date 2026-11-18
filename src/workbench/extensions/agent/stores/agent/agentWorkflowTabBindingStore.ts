@@ -53,17 +53,19 @@ function liveBindings(
   )
 }
 
-function parseBindings(serialized: string | null): Record<string, unknown> {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function parseBindings(
+  serialized: string | null
+): Record<string, unknown> | undefined {
   if (serialized === null) return {}
   try {
     const parsed: unknown = JSON.parse(serialized)
-    return typeof parsed === 'object' &&
-      parsed !== null &&
-      !Array.isArray(parsed)
-      ? (parsed as Record<string, unknown>)
-      : {}
+    return isRecord(parsed) ? parsed : undefined
   } catch {
-    return {}
+    return undefined
   }
 }
 
@@ -97,22 +99,24 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       }
     )
     tabByWorkflow.value = liveBindings(tabByWorkflow.value, Date.now())
-    useEventListener(window, 'storage', (event: StorageEvent) => {
-      if (
-        !event.isTrusted ||
-        event.storageArea !== localStorage ||
-        event.key !== storageKey
-      )
-        return
-      tabByWorkflow.value = liveBindings(
-        parseBindings(event.newValue),
-        Date.now()
-      )
-    })
-
     const workflows = useWorkflowStore()
     const boundInstances = new Map<string, ComfyWorkflow>()
     const refusedInstances = new Map<string, ComfyWorkflow>()
+
+    function syncFromStorage(event: StorageEvent): void {
+      if (event.storageArea !== localStorage) return
+      if (event.key !== null && event.key !== storageKey) return
+      const stored = parseBindings(localStorage.getItem(storageKey))
+      if (stored === undefined) return
+      const next = liveBindings(stored, Date.now())
+      for (const workflowId of Object.keys(tabByWorkflow.value)) {
+        if (Object.hasOwn(next, workflowId)) continue
+        boundInstances.delete(workflowId)
+        refusedInstances.delete(workflowId)
+      }
+      tabByWorkflow.value = next
+    }
+    useEventListener(window, 'storage', syncFromStorage)
 
     function recordFor(workflowId: string): PersistedBinding | undefined {
       return Object.hasOwn(tabByWorkflow.value, workflowId)

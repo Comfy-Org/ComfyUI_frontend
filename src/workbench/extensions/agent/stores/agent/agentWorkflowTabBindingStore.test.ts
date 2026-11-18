@@ -406,10 +406,59 @@ describe('agentWorkflowTabBindingStore', () => {
 
     expect(storedBindings()).toMatchObject({
       'wf-new': { tabPath: 'workflows/a.json' },
-      'wf-restored': { tabPath: path }
+      'wf-restored': { tabPath: path, confirmedAt: Date.now() }
     })
-    const stored = storedBindings() as Record<string, PersistedBinding>
-    expect(stored['wf-restored'].confirmedAt).toBeGreaterThan(staleConfirmedAt)
+  })
+
+  function storageEvent(key: string | null, newValue: string | null) {
+    window.dispatchEvent(
+      new StorageEvent('storage', { key, newValue, storageArea: localStorage })
+    )
+  }
+
+  it('applies the bindings in storage, not a stale event value, from another tab', async () => {
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+    const record = (tabPath: string) => ({
+      tabPath,
+      graphId: null,
+      confirmedAt: Date.now()
+    })
+    const older = JSON.stringify({ 'wf-other': record('workflows/old.json') })
+    seedBindings({ 'wf-other': record('workflows/new.json') })
+
+    storageEvent(STORAGE_KEY, older)
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-other')).toBe('workflows/new.json')
+    expect(storedBindings()).toMatchObject({
+      'wf-other': { tabPath: 'workflows/new.json' }
+    })
+  })
+
+  it('drops its bindings when another tab clears storage', async () => {
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-1', 'workflows/a.json')
+    await nextTick()
+
+    localStorage.clear()
+    storageEvent(null, null)
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-1')).toBeUndefined()
+    expect(storedBindings()).not.toHaveProperty('wf-1')
+  })
+
+  it('keeps its bindings when another tab writes unreadable data', async () => {
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-1', 'workflows/a.json')
+    await nextTick()
+
+    localStorage.setItem(STORAGE_KEY, '{')
+    storageEvent(STORAGE_KEY, '{')
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-1')).toBe('workflows/a.json')
   })
 
   it('resolves both directions after a bind', () => {
