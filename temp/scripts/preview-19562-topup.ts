@@ -473,9 +473,13 @@ async function main() {
       await field?.fill(value)
     }
     const state = await visibleStripeControl(payment, (frame) =>
-      frame.locator('select#billingAdministrativeArea')
+      frame.locator(
+        'select#billingAdministrativeArea, select[autocomplete~="address-level1"]'
+      )
     )
-    await state?.selectOption('OR')
+    if (!state)
+      throw new TopUpError('Stripe did not show the required US billing state')
+    await state.selectOption({ label: 'Oregon' })
     const emailInput = await visibleStripeControl(payment, (frame) =>
       frame.locator('input#email')
     )
