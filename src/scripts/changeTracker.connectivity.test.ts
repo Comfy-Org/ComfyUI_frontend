@@ -9,9 +9,11 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentSource } from '@/lib/litegraph/src/graphIntents'
+import { noteGraphEdit, withGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
+import { serializeNodeId } from '@comfyorg/graph-model/nodeId'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import { ChangeTracker } from '@/scripts/changeTracker'
@@ -196,19 +198,129 @@ test('closing the workflow during a callback invalidates its owner', async () =>
   expect(tracker.undoQueue).toEqual([])
 })
 
-test('an interrupted edit preserves undo for topology already applied', async () => {
-  const { graph, source, sink, tracker } = await trackedGraph()
-  const failure = new Error('extension callback failed')
-  source.onConnectionsChange = () => {
-    throw failure
+test.for([
+  { node: 'source', callback: 'onConnectionsChange' },
+  { node: 'sink', callback: 'updateComputedDisabled' }
+] as const)(
+  'an interrupted $callback preserves undo for applied topology',
+  async ({ node, callback }) => {
+    const context = await trackedGraph()
+    const { graph, source, sink, tracker } = context
+    const failure = new Error('extension callback failed')
+    context[node][callback] = () => {
+      throw failure
+    }
+
+    expect(() => source.connect(0, sink, 0)).toThrow(failure)
+
+    expect(graph.links.size).toBe(1)
+    expect(tracker.undoQueue).toHaveLength(1)
+    expect(tracker.activeState.links).toHaveLength(1)
+    expect(tracker.changeCount).toBe(0)
   }
+)
 
-  expect(() => source.connect(0, sink, 0)).toThrow(failure)
+test.for(['dropOnNothing', 'disconnectLinks'] as const)(
+  '$0 disconnects multiple moving links in one undo step',
+  async (method) => {
+    const { graph, source, tracker } = await trackedGraph(
+      'workflows/blank-drop.json',
+      true
+    )
+    const connector = new LinkConnector(() => {})
+    const output = source.outputs[0]
+    assert(output)
+    connector.moveOutputLink(graph, source, output)
 
-  expect(graph.links.size).toBe(1)
+    connector[method](createMockCanvasPointerEvent(0, 0))
+
+    expect(graph.links.size).toBe(0)
+    expect(tracker.undoQueue).toHaveLength(1)
+    expect(tracker.undoQueue[0]?.links).toHaveLength(2)
+    expect(tracker.activeState.links).toEqual([])
+  }
+)
+
+test('removing a subgraph output captures the final slots and link indices', async () => {
+  const { graph, sink, tracker } = await trackedGraph()
+  const subgraph = graph.createSubgraph(createTestSubgraphData())
+  const removed = subgraph.addOutput('removed', 'IMAGE')
+  subgraph.addOutput('retained', 'IMAGE')
+  const host = createTestSubgraphNode(subgraph)
+  graph.add(host)
+  host.connect(0, sink, 0)
+  host.connect(1, sink, 1)
+  const initial = await validateComfyWorkflow(graph.serialize())
+  assert(initial)
+  tracker.reset(initial)
+  tracker.undoQueue.length = 0
+
+  subgraph.removeOutput(removed)
+
   expect(tracker.undoQueue).toHaveLength(1)
-  expect(tracker.activeState.links).toHaveLength(1)
-  expect(tracker.changeCount).toBe(0)
+  expect(tracker.activeState.definitions?.subgraphs[0]?.outputs).toEqual([
+    expect.objectContaining({ name: 'retained' })
+  ])
+  expect(tracker.activeState.nodes).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({
+        id: serializeNodeId(host.id),
+        outputs: [expect.objectContaining({ name: 'retained' })]
+      })
+    ])
+  )
+  expect(tracker.activeState.links).toEqual([
+    [2, serializeNodeId(host.id), 0, serializeNodeId(sink.id), 1, 'IMAGE']
+  ])
+})
+
+test('inactive widget-only completion preserves workflow undo and redo', async () => {
+  const first = await trackedGraph('workflows/inactive-widget.json')
+  first.source.serialize_widgets = true
+  const widget = first.source.addWidget(
+    'curve',
+    'curve',
+    {
+      points: [
+        [0, 0],
+        [1, 1]
+      ],
+      interpolation: 'linear'
+    },
+    () => {}
+  )
+  const initial = await validateComfyWorkflow(first.graph.serialize())
+  assert(initial)
+  first.tracker.reset(initial)
+  first.tracker.undoQueue.length = 0
+  first.tracker.redoQueue.push(initial)
+  const second = await trackedGraph('workflows/active-widget.json')
+
+  withGraphEdit(first.graph, () => {
+    widget.value = {
+      points: [
+        [0, 0],
+        [0.5, 0.7],
+        [1, 1]
+      ],
+      interpolation: 'linear'
+    }
+    noteGraphEdit(first.graph)
+  })
+
+  expect(first.tracker.undoQueue).toEqual([])
+  expect(first.tracker.redoQueue).toEqual([initial])
+  expect(first.tracker.activeState.nodes[0]?.widgets_values).toEqual([
+    {
+      points: [
+        [0, 0],
+        [0.5, 0.7],
+        [1, 1]
+      ],
+      interpolation: 'linear'
+    }
+  ])
+  expect(second.tracker.undoQueue).toEqual([])
 })
 
 test('an interrupted subgraph input disconnect preserves the applied topology', async () => {

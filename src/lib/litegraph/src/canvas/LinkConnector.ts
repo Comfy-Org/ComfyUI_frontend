@@ -960,16 +960,22 @@ export class LinkConnector {
   }
 
   dropOnNothing(event: CanvasPointerEvent): void {
-    remove<RenderLinkUnion>(
-      this.renderLinks,
-      (link: RenderLink) => !!link.disconnectOnDrop
-    ).forEach((link) => (link as { disconnect(): void }).disconnect())
-    if (this.renderLinks.length === 0) return
-    // For external event only.
-    const mayContinue = this.events.dispatch('dropped-on-canvas', event)
-    if (!mayContinue) return
+    const node = this.renderLinks.at(0)?.node
+    const graph =
+      node instanceof SubgraphInputNode || node instanceof SubgraphOutputNode
+        ? node.subgraph
+        : node?.graph
+    withGraphEdit(graph, () => {
+      remove<RenderLinkUnion>(
+        this.renderLinks,
+        (link: RenderLink) => !!link.disconnectOnDrop
+      ).forEach((link) => (link as { disconnect(): void }).disconnect())
+      if (this.renderLinks.length === 0) return
+      const mayContinue = this.events.dispatch('dropped-on-canvas', event)
+      if (!mayContinue) return
 
-    this.disconnectLinks()
+      this.disconnectLinks()
+    })
   }
 
   /**
@@ -978,14 +984,21 @@ export class LinkConnector {
    * May be called by consumers to e.g. drag links into a bin / void.
    */
   disconnectLinks(): void {
-    for (const link of this.renderLinks) {
-      if (
-        link instanceof MovingLinkBase ||
-        link instanceof ToInputFromIoNodeLink
-      ) {
-        link.disconnect()
+    const node = this.renderLinks.at(0)?.node
+    const graph =
+      node instanceof SubgraphInputNode || node instanceof SubgraphOutputNode
+        ? node.subgraph
+        : node?.graph
+    withGraphEdit(graph, () => {
+      for (const link of this.renderLinks) {
+        if (
+          link instanceof MovingLinkBase ||
+          link instanceof ToInputFromIoNodeLink
+        ) {
+          link.disconnect()
+        }
       }
-    }
+    })
   }
 
   /**

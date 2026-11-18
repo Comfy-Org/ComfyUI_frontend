@@ -97,14 +97,14 @@ type NodeHistoryWidgets = ReturnType<typeof collectNodeHistoryWidgets>
 function differsOnlyInNodeHistoryWidgets(
   previous: ComfyWorkflowJSON,
   current: ComfyWorkflowJSON,
-  widgets: NodeHistoryWidgets
+  widgets: NodeHistoryWidgets,
+  rootGraphId: LGraph['id']
 ): boolean {
-  const { rootGraph } = useApp()
   return (
     widgets.size > 0 &&
-    nodeHistoryValuesChanged(previous, current, widgets, rootGraph.id) &&
+    nodeHistoryValuesChanged(previous, current, widgets, rootGraphId) &&
     ChangeTracker.graphEqual(
-      withNodeHistoryValuesFrom(previous, current, widgets, rootGraph.id),
+      withNodeHistoryValuesFrom(previous, current, widgets, rootGraphId),
       current
     )
   )
@@ -583,7 +583,8 @@ export class ChangeTracker implements WorkflowChangeTracker {
         !differsOnlyInNodeHistoryWidgets(
           previousState,
           currentState,
-          nodeHistoryWidgets
+          nodeHistoryWidgets,
+          rootGraph.id
         )
       ) {
         this.undoQueue.push(previousState)

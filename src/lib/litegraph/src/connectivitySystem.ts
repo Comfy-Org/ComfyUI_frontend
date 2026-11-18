@@ -247,8 +247,8 @@ export function connectSlots(
     if (replacingLink) graph.afterChange()
     return
   }
-  graph._addLink(link)
   noteGraphEdit(graph)
+  graph._addLink(link)
 
   if (replacingLink) {
     finalizeInputLinkRemoval(

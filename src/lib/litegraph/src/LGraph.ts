@@ -3,6 +3,7 @@ import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
+import { withGraphEdit } from './graphEdits'
 import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import {
@@ -3609,26 +3610,28 @@ export class Subgraph
    * @param output The output slot to remove.
    */
   removeOutput(output: SubgraphOutput): void {
-    const index = this.outputs.indexOf(output)
-    if (index === -1) {
-      console.error('Output not found')
-      return
-    }
+    withGraphEdit(this, () => {
+      const index = this.outputs.indexOf(output)
+      if (index === -1) {
+        console.error('Output not found')
+        return
+      }
 
-    const mayContinue = this.events.dispatch('removing-output', {
-      output,
-      index
+      const mayContinue = this.events.dispatch('removing-output', {
+        output,
+        index
+      })
+      if (!mayContinue) return
+
+      output.disconnect()
+
+      this.outputs.splice(index, 1)
+
+      const { length } = this.outputs
+      for (let i = index; i < length; i++) {
+        this.outputs[i].decrementSlots('outputs')
+      }
     })
-    if (!mayContinue) return
-
-    output.disconnect()
-
-    this.outputs.splice(index, 1)
-
-    const { length } = this.outputs
-    for (let i = index; i < length; i++) {
-      this.outputs[i].decrementSlots('outputs')
-    }
   }
 
   draw(
