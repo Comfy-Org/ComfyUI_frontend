@@ -31,6 +31,7 @@ import {
   getSurveyCompletedStatus,
   getUserCloudStatus
 } from '@/platform/cloud/onboarding/auth'
+import { hasPendingDesktopLoginCode } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 import { useAuthStore } from '@/stores/authStore'
 
 import CloudLoginViewSkeleton from './skeletons/CloudLoginViewSkeleton.vue'
@@ -74,6 +75,13 @@ const {
     if (!surveyStatus) {
       skeletonType.value = 'survey'
       await router.replace({ name: 'cloud-survey' })
+      return
+    }
+
+    // A desktop sign-in handoff stays on its dedicated approval page rather
+    // than hard-reloading into the workspace.
+    if (hasPendingDesktopLoginCode()) {
+      await router.replace({ name: 'cloud-desktop-login' })
       return
     }
 

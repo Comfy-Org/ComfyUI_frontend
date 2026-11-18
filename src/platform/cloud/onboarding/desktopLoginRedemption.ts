@@ -1,4 +1,4 @@
-import { watch } from 'vue'
+import { shallowRef, watch } from 'vue'
 import type { Router } from 'vue-router'
 
 import { t } from '@/i18n'
@@ -100,6 +100,7 @@ function handleTransientFailure(
   }
   // Budget spent: drop the code and tell the user instead of failing silently.
   settle(code, state)
+  desktopLoginRedemptionStatus.value = 'failed'
   useToast().error(t('desktopLogin.failedSummary'), {
     description: t('desktopLogin.failedDetail'),
     duration: 6000
@@ -157,9 +158,11 @@ async function redeemCode(code: string): Promise<void> {
   // the stash and let the reloaded app prompt on a stable route.
   if (onAuthHandoffRoute()) return
 
+  desktopLoginRedemptionStatus.value = 'awaiting_approval'
   if (!(await confirmRedemption(state, user.uid))) {
     // Declined/dismissed: drop the code without an error.
     settle(code, state)
+    desktopLoginRedemptionStatus.value = 'declined'
     return
   }
 
@@ -207,6 +210,7 @@ async function redeemCode(code: string): Promise<void> {
 
   if (response.ok) {
     settle(code, state)
+    desktopLoginRedemptionStatus.value = 'redeemed'
     useToast().success(t('desktopLogin.successSummary'), {
       description: t('desktopLogin.successDetail'),
       duration: 4000
@@ -216,6 +220,7 @@ async function redeemCode(code: string): Promise<void> {
 
   if (TERMINAL_REDEEM_STATUSES.has(response.status)) {
     settle(code, state)
+    desktopLoginRedemptionStatus.value = 'expired'
     useToast().error(t('desktopLogin.expiredSummary'), {
       description: t('desktopLogin.expiredDetail'),
       duration: 6000
@@ -227,6 +232,20 @@ async function redeemCode(code: string): Promise<void> {
   if (response.status === 401) state.forceTokenRefresh = true
   handleTransientFailure(code, state, `status ${response.status}`)
 }
+
+export type DesktopLoginRedemptionStatus =
+  | 'idle'
+  | 'awaiting_approval'
+  | 'redeemed'
+  | 'failed'
+  | 'expired'
+  | 'declined'
+
+// The dedicated Cloud onboarding page (CloudDesktopLoginView) renders the
+// handoff outcome from this shared status, so a desktop sign-in settles on
+// that page instead of falling through to the workspace.
+export const desktopLoginRedemptionStatus =
+  shallowRef<DesktopLoginRedemptionStatus>('idle')
 
 export function hasPendingDesktopLoginCode(): boolean {
   const code = getPreservedQueryParam(NAMESPACE, DESKTOP_LOGIN_CODE_KEY)

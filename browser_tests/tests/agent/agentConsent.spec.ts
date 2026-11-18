@@ -748,8 +748,8 @@ telemetryTest.describe(
     })
 
     telemetryTest(
-      'waits for the approval before offering consent',
-      async ({ comfyPage, agentPanel, consentTelemetry }) => {
+      'approves on the dedicated page without ever offering consent',
+      async ({ comfyPage, agentPanel }) => {
         const page = comfyPage.page
         const approval = page.getByRole('dialog', {
           name: enMessages.desktopLogin.confirmSummary
@@ -757,38 +757,31 @@ telemetryTest.describe(
         const consent = page.getByRole('dialog', {
           name: enMessages.agent.consent.title
         })
+        const success = page.getByText(enMessages.desktopLogin.successSummary)
         const approve = approval.getByRole('button', {
           name: enMessages.g.confirm
         })
 
         await telemetryTest.step(
-          'The approval owns the screen and the offer waits behind it',
+          'The handoff lands on the dedicated approval page, not the workspace',
           async () => {
-            await expect(approval).toBeVisible()
             await expect
-              .poll(
-                () =>
-                  consentTelemetry.some(
-                    ({ event, properties }) =>
-                      event === 'app:agent_consent_not_offered' &&
-                      properties.reason === 'dialog_open'
-                  ),
-                { timeout: 15_000 }
-              )
-              .toBe(true)
-            await approve.click({ trial: true })
+              .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+              .toBe('/cloud/desktop-login')
+            await expect(approval).toBeVisible()
             await expect(consent).toHaveCount(0)
-            await expect(agentPanel.root).toBeVisible()
+            await expect(agentPanel.root).toHaveCount(0)
           }
         )
 
         await telemetryTest.step(
-          'Approving clears the screen, then the card shows over the activated panel',
+          'Approving confirms the sign-in and the page never enters the workspace',
           async () => {
             await approve.click()
             await expect(approval).toHaveCount(0)
-            await expect(consent).toBeVisible()
-            await expect(agentPanel.root).toBeVisible()
+            await expect(success).toBeVisible()
+            await expect(consent).toHaveCount(0)
+            await expect(agentPanel.root).toHaveCount(0)
           }
         )
       }
@@ -800,7 +793,7 @@ telemetryTest.describe(
         agentOnboardingCompleted: false
       })
 
-      test('shows the coach after the approval closes', async ({
+      test('never shows the coach on the approval page', async ({
         comfyPage,
         agentPanel
       }) => {
@@ -808,14 +801,16 @@ telemetryTest.describe(
         const approval = page.getByRole('dialog', {
           name: enMessages.desktopLogin.confirmSummary
         })
+        const success = page.getByText(enMessages.desktopLogin.successSummary)
         const coach = page.getByRole('dialog', {
           name: enMessages.agent.coachTitle
         })
 
+        await expect
+          .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
+          .toBe('/cloud/desktop-login')
         await expect(approval).toBeVisible()
-        await expect(agentPanel.root).toBeVisible()
-        await expect(page.getByTestId('agent-entry-separator')).toHaveCount(1)
-        await expect(page.getByRole('dialog')).toHaveCount(1)
+        await expect(agentPanel.root).toHaveCount(0)
         await expect(coach).toHaveCount(0)
 
         await approval
@@ -823,7 +818,8 @@ telemetryTest.describe(
           .click()
 
         await expect(approval).toHaveCount(0)
-        await expect(coach).toBeVisible()
+        await expect(success).toBeVisible()
+        await expect(coach).toHaveCount(0)
       })
     })
   }

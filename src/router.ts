@@ -354,22 +354,30 @@ function installCloudAuthGuards(router: Router): void {
     }
 
     if (!isDesktop && to.path === '/') {
-      if (!flags.onboardingSurveyEnabled) {
-        return
-      }
-      const { getSurveyCompletedStatus } =
-        await import('@/platform/cloud/onboarding/auth')
-      try {
-        const surveyCompleted = await getSurveyCompletedStatus(
-          useAuthStore().userId
-        )
+      if (flags.onboardingSurveyEnabled) {
+        const { getSurveyCompletedStatus } =
+          await import('@/platform/cloud/onboarding/auth')
+        try {
+          const surveyCompleted = await getSurveyCompletedStatus(
+            useAuthStore().userId
+          )
 
-        if (!surveyCompleted) {
-          return { name: 'cloud-survey' }
+          if (!surveyCompleted) {
+            return { name: 'cloud-survey' }
+          }
+        } catch (error) {
+          console.error('Failed to check user status:', error)
+          return { name: 'cloud-user-check' }
         }
-      } catch (error) {
-        console.error('Failed to check user status:', error)
-        return { name: 'cloud-user-check' }
+      }
+
+      // A desktop sign-in handoff that reaches the workspace entry (a
+      // CloudSignupView default redirect, a reload, or a returning user whose
+      // stash survived) is sent to the dedicated approval page instead. Reached
+      // only when signed in (the `!isLoggedIn` guards above have returned), so a
+      // live Firebase user plus a pending code is the full condition.
+      if (authStore.currentUser !== null && hasPendingDesktopLoginCode()) {
+        return { name: 'cloud-desktop-login' }
       }
     }
 
