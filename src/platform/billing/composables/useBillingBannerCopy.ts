@@ -1,8 +1,8 @@
+import type { PlanNotStartedBanner } from '@comfyorg/account-core/billing'
 import type {
   BillingBannerCopy,
   BillingBannerView
 } from '@comfyorg/account-ui/billing'
-import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -94,9 +94,10 @@ export function useBillingBannerCopy() {
     href: CONTACT_SUPPORT_URL
   }))
 
-  function planNotStartedView(
-    planTier: SubscriptionTier | null
-  ): BillingBannerView {
+  function planNotStartedView({
+    planTier,
+    actionUrl
+  }: PlanNotStartedBanner): BillingBannerView {
     const plan = formatTierName(planTier, false)
     return {
       kind: 'planNotStarted',
@@ -104,7 +105,7 @@ export function useBillingBannerCopy() {
         ? t(`${bs}.planNotStarted.title`, { plan })
         : t(`${bs}.planNotStarted.titleNoPlan`),
       body: t(`${bs}.planNotStarted.body`),
-      action: 'finishPayment'
+      action: actionUrl ? 'finishPayment' : null
     }
   }
 

@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { PlanCheckoutBanner } from '@comfyorg/account-core/billing'
-import type { SubscriptionTier } from '@comfyorg/ingest-types'
+import type {
+  PlanCheckoutBanner,
+  PlanNotStartedBanner
+} from '@comfyorg/account-core/billing'
 import {
   BillingBanner,
   planCheckoutBannerView
@@ -40,7 +42,9 @@ function renderBanner(banner: PlanCheckoutBanner) {
   return { onDismiss }
 }
 
-function renderPlanNotStarted(planTier: SubscriptionTier | null) {
+const PAYMENT_PAGE = 'https://invoice.stripe.example/i/signup'
+
+function renderPlanNotStarted(banner: PlanNotStartedBanner) {
   const onAction = vi.fn()
   render(
     {
@@ -48,7 +52,7 @@ function renderPlanNotStarted(planTier: SubscriptionTier | null) {
         const { copy, planNotStartedView } = useBillingBannerCopy()
         return () =>
           h(BillingBanner, {
-            view: planNotStartedView(planTier),
+            view: planNotStartedView(banner),
             copy: copy.value,
             onAction
           })
@@ -141,7 +145,10 @@ describe('useBillingBannerCopy plan checkout banner', () => {
 
 describe('useBillingBannerCopy plan not started banner', () => {
   it('names the served plan and offers a white Finish payment with no Dismiss', async () => {
-    const { onAction } = renderPlanNotStarted('CREATOR')
+    const { onAction } = renderPlanNotStarted({
+      planTier: 'CREATOR',
+      actionUrl: PAYMENT_PAGE
+    })
 
     const banner = screen.getByRole('status')
     expect(banner).toHaveTextContent('Your Creator plan hasn’t started')
@@ -158,10 +165,21 @@ describe('useBillingBannerCopy plan not started banner', () => {
   })
 
   it('falls back to a generic title when no plan is served', () => {
-    renderPlanNotStarted(null)
+    renderPlanNotStarted({ planTier: null, actionUrl: PAYMENT_PAGE })
 
     expect(screen.getByRole('status')).toHaveTextContent(
       'Your plan hasn’t started'
     )
+  })
+
+  it('offers no Finish payment while the operation serves no payment page', () => {
+    renderPlanNotStarted({ planTier: 'CREATOR', actionUrl: null })
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your Creator plan hasn’t started'
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Finish payment' })
+    ).not.toBeInTheDocument()
   })
 })

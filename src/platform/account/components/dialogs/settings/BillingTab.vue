@@ -16,7 +16,7 @@
     />
     <BillingBanner
       v-if="planNotStarted"
-      :view="planNotStartedView(planNotStarted.planTier)"
+      :view="planNotStartedView(planNotStarted)"
       :copy="bannerCopy"
     >
       <template #action="{ label, variant }">
@@ -268,7 +268,8 @@ const planNotStarted = computed(() =>
     : planNotStartedBannerFor({
         isCloud,
         recovery: billing.statusPaymentRecovery.value,
-        planTier: signupPayment.recoveryPlanTier.value
+        planTier: signupPayment.recoveryPlanTier.value,
+        actionUrl: signupPayment.recoveryActionUrl.value
       })
 )
 const suppressCreditBanner = computed(() =>

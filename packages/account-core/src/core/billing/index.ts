@@ -419,7 +419,8 @@ export type { PlanCheckoutBanner } from './billingTab/planCheckoutBanner'
 export { planCheckoutBannerFor } from './billingTab/planCheckoutBanner'
 export type {
   PlanNotStartedBanner,
-  PlanNotStartedFacts
+  PlanNotStartedFacts,
+  SubscriptionPaymentRecovery
 } from './billingTab/planNotStartedBanner'
 export { planNotStartedBannerFor } from './billingTab/planNotStartedBanner'
 export type {

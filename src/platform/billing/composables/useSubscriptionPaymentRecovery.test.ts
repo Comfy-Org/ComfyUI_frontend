@@ -201,12 +201,38 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(billingApi.getBillingOpStatus).toHaveBeenCalledWith(SIGNUP_OP)
   })
 
-  it('leaves the plan unnamed when the operation read fails', async () => {
+  it('exposes the payment page the bound signup operation serves', async () => {
+    serveRecovery(true)
+
+    const { recoveryActionUrl } = useSubscriptionPaymentRecovery()
+
+    await vi.waitFor(() => expect(recoveryActionUrl.value).toBe(INVOICE_URL))
+  })
+
+  it('exposes no payment page when the operation serves only a client secret', async () => {
+    serveRecovery(true)
+    vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
+      id: SIGNUP_OP,
+      started_at: '2026-11-05T17:15:54Z',
+      status: 'pending',
+      payment_intent_client_secret: 'pi_signup_secret',
+      plan: { slug: 'creator-monthly', duration: 'MONTHLY', tier: 'CREATOR' }
+    })
+
+    const { recoveryPlanTier, recoveryActionUrl } =
+      useSubscriptionPaymentRecovery()
+
+    await vi.waitFor(() => expect(recoveryPlanTier.value).toBe('CREATOR'))
+    expect(recoveryActionUrl.value).toBeNull()
+  })
+
+  it('leaves the plan unnamed and offers no payment page when the operation read fails', async () => {
     serveRecovery(true)
     const failure = new Error('network down')
     vi.mocked(billingApi.getBillingOpStatus).mockRejectedValue(failure)
 
-    const { recoveryPlanTier } = useSubscriptionPaymentRecovery()
+    const { recoveryPlanTier, recoveryActionUrl } =
+      useSubscriptionPaymentRecovery()
 
     await vi.waitFor(() =>
       expect(reportError).toHaveBeenCalledWith(
@@ -217,6 +243,7 @@ describe('useSubscriptionPaymentRecovery', () => {
       )
     )
     expect(recoveryPlanTier.value).toBeNull()
+    expect(recoveryActionUrl.value).toBeNull()
   })
 
   it('does nothing when the server serves no recovery', async () => {

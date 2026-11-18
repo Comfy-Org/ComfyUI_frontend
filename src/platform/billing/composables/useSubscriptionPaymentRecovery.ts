@@ -1,7 +1,5 @@
-import type {
-  SubscriptionPaymentRecovery,
-  SubscriptionTier
-} from '@comfyorg/ingest-types'
+import type { SubscriptionPaymentRecovery } from '@comfyorg/account-core/billing'
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { computed, shallowRef, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
@@ -28,11 +26,13 @@ export function useSubscriptionPaymentRecovery(
   const toast = useToast()
   const isOpeningPayment = shallowRef(false)
   const recoveryPlanTier = shallowRef<SubscriptionTier | null>(null)
+  const recoveryActionUrl = shallowRef<string | null>(null)
 
   watch(
     () => subscriptionPaymentRecovery.value?.billing_op_id,
     async (opId) => {
       recoveryPlanTier.value = null
+      recoveryActionUrl.value = null
       if (!opId) {
         stopReturnRefresh?.()
         stopReturnRefresh = null
@@ -42,6 +42,7 @@ export function useSubscriptionPaymentRecovery(
         const operation = await billingApi.getBillingOpStatus(opId)
         if (subscriptionPaymentRecovery.value?.billing_op_id !== opId) return
         recoveryPlanTier.value = operation.plan?.tier ?? null
+        recoveryActionUrl.value = operation.action_url ?? null
       } catch (error) {
         reportError(error, {
           surface: 'billing',
@@ -107,6 +108,7 @@ export function useSubscriptionPaymentRecovery(
   return {
     subscriptionPaymentRecovery,
     recoveryPlanTier,
+    recoveryActionUrl,
     isOpeningPayment,
     finishPayment
   }

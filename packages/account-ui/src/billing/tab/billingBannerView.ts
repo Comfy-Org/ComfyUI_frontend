@@ -36,7 +36,7 @@ export type BillingBannerView = BillingBannerText &
       }
     | {
         readonly kind: 'planNotStarted'
-        readonly action: 'finishPayment'
+        readonly action: 'finishPayment' | null
       }
     | {
         readonly kind: 'topupCheckout'
