@@ -19,12 +19,17 @@ const test = comfyPageFixture.extend<{ traffic: string[] }>({
 test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
   test.describe('disabled menu', () => {
     test.beforeEach(async ({ page }) => {
-      await new FeatureFlagHelper(page).seedServerFlags({
-        open_on_cloud_enabled: false
-      })
+      await page.route(
+        (url) => url.protocol === 'https:' && url.pathname === '/api/features',
+        (route) =>
+          route.fulfill({
+            headers: { 'access-control-allow-origin': '*' },
+            json: { open_on_cloud_enabled: false }
+          })
+      )
     })
 
-    test('boots, loads and hovers the top menu without any Open on Cloud surface or traffic while the gate is off', async ({
+    test('boots, loads and hovers the top menu without a Cloud button or handoff traffic when Cloud disables it', async ({
       comfyPage,
       traffic
     }) => {

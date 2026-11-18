@@ -168,8 +168,8 @@ export const ChipStates: Story = {
   }
 }
 
-export const FreeUsePlacements: Story = {
-  name: 'DES-1221 a–e / placement arms',
+export const FreeUseNoticeStates: Story = {
+  name: 'Free-use notice terminal states',
   render: (args) => ({
     components: { AgentPanel },
     setup() {

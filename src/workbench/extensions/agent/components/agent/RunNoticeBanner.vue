@@ -11,11 +11,13 @@ const {
   expanded = false,
   workflowName,
   genericNoticeReady = false,
+  hideIntro = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
   genericNoticeReady?: boolean
+  hideIntro?: boolean
   context?:
     | 'following'
     | 'mismatch'
@@ -39,7 +41,9 @@ const defaultNotice = computed(() =>
 const visible = computed(
   () =>
     Boolean(context) ||
-    (!dismissed.value && Boolean(workflowName || genericNoticeReady))
+    (!hideIntro &&
+      !dismissed.value &&
+      Boolean(workflowName || genericNoticeReady))
 )
 const liveness = computed(() => (context ? 'polite' : undefined))
 const contextAction = computed(() => {

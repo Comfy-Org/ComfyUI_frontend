@@ -89,10 +89,34 @@ describe('createBillingStatusReader', () => {
   )
 
   it.for([
+    { name: 'a known', tier: 'TEAM', expected: 'TEAM' },
+    { name: 'an unrecognized', tier: 'FUTURE_TIER', expected: undefined }
+  ])(
+    'keeps the status usable with $name subscription tier',
+    async ({ tier, expected }) => {
+      const { scopeSource } = fakeSession()
+      const { transport } = fakeTransport([
+        httpOk({ ...STATUS, subscription_tier: tier })
+      ])
+      const reader = createBillingStatusReader({ transport, scopeSource })
+
+      const result = await reader.read()
+
+      expect(result).toMatchObject({
+        status: 'ok',
+        value: { status: { is_active: true, has_funds: true } }
+      })
+      expect(reader.getSnapshot()?.status.subscription_tier).toBe(expected)
+    }
+  )
+
+  it.for([
     { name: 'malformed date', body: { ...STATUS, ended_at: 'not-a-date' } },
     { name: 'numeric date', body: { ...STATUS, ended_at: 1730000000 } },
     { name: 'malformed core field', body: { ...STATUS, has_funds: 'true' } },
-    { name: 'missing core field', body: { ...STATUS, is_active: undefined } }
+    { name: 'missing core field', body: { ...STATUS, is_active: undefined } },
+    { name: 'null tier', body: { ...STATUS, subscription_tier: null } },
+    { name: 'numeric tier', body: { ...STATUS, subscription_tier: 3 } }
   ])('rejects a $name without replacing valid status', async ({ body }) => {
     const { scopeSource } = fakeSession()
     const { transport } = fakeTransport([httpOk(STATUS), httpOk(body)])

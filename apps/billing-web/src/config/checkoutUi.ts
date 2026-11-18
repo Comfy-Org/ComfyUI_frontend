@@ -190,3 +190,8 @@ export function awaitCheckoutUiVariant(): Promise<CheckoutUiVariant> {
 export function awaitUnifiedBillingSettings(): Promise<boolean> {
   return awaitFlag('unified_billing_settings', parseBoolean, false)
 }
+
+/** Never rejects; `false` unless Cloud serves `billing_web_plan_change_card_choice: true`. */
+export function awaitPlanChangeCardChoice(): Promise<boolean> {
+  return awaitFlag('billing_web_plan_change_card_choice', parseBoolean, false)
+}

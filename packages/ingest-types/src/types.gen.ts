@@ -3140,6 +3140,20 @@ export type BillingEventsResponse = {
 }
 
 /**
+ * The plan a Platform billing tab continues to checkout with. Selections only; checkout prices them.
+ */
+export type BillingHandoffCheckoutRequest = {
+  /**
+   * Plan the checkout opens with, as GET /api/billing/plans names it. Sent in the entry URL's query as `plan`.
+   */
+  plan_slug: string
+  /**
+   * Team credit stop the checkout opens with, for a per-credit Team plan. Sent in the entry URL's query as `team_credit_stop_id`.
+   */
+  team_credit_stop_id?: string
+}
+
+/**
  * Asks for a one-time handoff that signs a billing receiver tab in as the caller.
  */
 export type BillingHandoffCreateRequest = {
@@ -6820,7 +6834,15 @@ export type ListAssetsResponse = {
    */
   next_cursor?: string
   /**
-   * Total number of assets matching the filters
+   * Number of assets matching the filters, counted up to 10,000 unless
+   * the request sends `capped_total=false`. A capped 10,000 means "at
+   * least 10,000" and must not be read as the exact count or used to
+   * work out the last page. With `include_total=false` no count runs
+   * and `total` is a lower bound: the assets through this page (on an
+   * offset page, the skipped `offset` rows included), plus one when
+   * `has_more` is true, and 0 for an empty page. To page, follow
+   * `has_more` and `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -7516,7 +7538,13 @@ export type PaginationInfo = {
    */
   offset: number
   /**
-   * Total number of items matching filters (may be 0 when using cursor pagination)
+   * Number of items matching the filters (may be 0 when using cursor
+   * pagination). `GET /api/jobs` counts it up to 10,000 unless the
+   * request sends `capped_total=false`, so 10,000 there means "at
+   * least 10,000" and must not be read as the exact count or used to
+   * work out the last page. To page, follow `has_more` and
+   * `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -9718,6 +9746,16 @@ export type ValidationResult = {
 }
 
 /**
+ * The signed link `GET /api/view?redirect=false` answers with: the same link the 302 sends in `Location`, so it expires like that one.
+ */
+export type ViewFileUrlResponse = {
+  /**
+   * Signed Google Cloud Storage link to the file. It needs no other credential, so treat it as a secret until it expires.
+   */
+  url: string
+}
+
+/**
  * The live web session and the user it belongs to
  */
 export type WebSessionResponse = {
@@ -10281,7 +10319,15 @@ export type ListAssetsResponseWritable = {
    */
   next_cursor?: string
   /**
-   * Total number of assets matching the filters
+   * Number of assets matching the filters, counted up to 10,000 unless
+   * the request sends `capped_total=false`. A capped 10,000 means "at
+   * least 10,000" and must not be read as the exact count or used to
+   * work out the last page. With `include_total=false` no count runs
+   * and `total` is a lower bound: the assets through this page (on an
+   * offset page, the skipped `offset` rows included), plus one when
+   * `has_more` is true, and 0 for an empty page. To page, follow
+   * `has_more` and `next_cursor`, which do not depend on the total.
+   *
    */
   total: number
 }
@@ -11664,7 +11710,9 @@ export type ListAssetsData = {
      */
     limit?: number
     /**
-     * Number of assets to skip for pagination
+     * Number of assets to skip for pagination. A negative offset returns
+     * 400 `INVALID_OFFSET`.
+     *
      */
     offset?: number
     /**
@@ -11713,6 +11761,28 @@ export type ListAssetsData = {
      *
      */
     after?: string
+    /**
+     * When true or omitted, `total` counts at most 10,000 matching
+     * assets, so a total of 10,000 means "at least 10,000", not an exact
+     * count. A capped count stops after 10,000 matching assets instead
+     * of reading every one. Send false for the exact count, for example
+     * to work out the last page from the total: `has_more` and
+     * `next_cursor` do not depend on the total either way. Ignored when
+     * `include_total` is false.
+     *
+     */
+    capped_total?: boolean
+    /**
+     * Send false when the caller does not read `total`, for example a
+     * list that pages by `has_more` and `next_cursor`. No count runs,
+     * `capped_total` is ignored, and `total` is a lower bound instead of
+     * a count: the assets through this page (on an offset page, the
+     * skipped `offset` rows included), plus one when `has_more` is true,
+     * and 0 for an empty page. When true or omitted, `total` is counted
+     * as `capped_total` says.
+     *
+     */
+    include_total?: boolean
   }
   url: '/api/assets'
 }
@@ -13186,6 +13256,49 @@ export type CreateBillingHandoffResponses = {
 
 export type CreateBillingHandoffResponse =
   CreateBillingHandoffResponses[keyof CreateBillingHandoffResponses]
+
+export type CreateBillingHandoffCheckoutData = {
+  body: BillingHandoffCheckoutRequest
+  path?: never
+  query?: never
+  url: '/api/auth/handoffs/checkout'
+}
+
+export type CreateBillingHandoffCheckoutErrors = {
+  /**
+   * `INVALID_REQUEST`: plan_slug is missing, or plan_slug or team_credit_stop_id is not 1 to 128 letters, digits, `_` or `-`
+   */
+  400: ErrorResponse
+  /**
+   * `INVALID_CREDENTIAL`: no scoped-session bearer, or the session or its source sign-in has ended
+   */
+  401: ErrorResponse
+  /**
+   * `CREDENTIAL_UNSUPPORTED`: the session is not a Platform billing tab's; `BILLING_FORBIDDEN`: the request did not come from the Platform origin, or the user no longer owns the workspace; `HANDOFF_DISABLED`, or another billing policy refusal
+   */
+  403: ErrorResponse
+  /**
+   * Too many handoffs for this sign-in, client address or user in the last hour
+   */
+  429: ErrorResponse
+  /**
+   * `SERVICE_UNAVAILABLE`: the billing policy could not be checked
+   */
+  503: ErrorResponse
+}
+
+export type CreateBillingHandoffCheckoutError =
+  CreateBillingHandoffCheckoutErrors[keyof CreateBillingHandoffCheckoutErrors]
+
+export type CreateBillingHandoffCheckoutResponses = {
+  /**
+   * Handoff issued. `entry_url` is billing-web's handoff page with `intent=checkout`, `plan` and `team_credit_stop_id` (if any) in the query and the token in the fragment.
+   */
+  201: BillingHandoffCreateResponse
+}
+
+export type CreateBillingHandoffCheckoutResponse =
+  CreateBillingHandoffCheckoutResponses[keyof CreateBillingHandoffCheckoutResponses]
 
 export type ExchangeBillingHandoffData = {
   body: BillingHandoffExchangeRequest
@@ -15869,9 +15982,13 @@ export type GetFeaturesResponses = {
      */
     new_free_tier_subscriptions?: boolean
     /**
-     * Whether the frontend should enable Open on Cloud. True enables the feature and false disables it, overriding the client build default. Optional so older servers or an unconfigured rollout leave the client build default in effect (enabled in development, disabled in production). This is a UI rollout switch, not authorization to access workflows or execute jobs on Cloud.
+     * Whether the frontend should offer Open on Cloud. Requires a signed-in session with a verified email and a matching PostHog rollout. Defaults to false when evaluation is unavailable. Workflow access and execution still require their existing permissions.
      */
     open_on_cloud_enabled?: boolean
+    /**
+     * Whether the frontend should offer the local agent option in Open on Cloud. Requires a verified comfy.org session and a matching PostHog rollout. Defaults to false.
+     */
+    open_on_cloud_use_local_agent_enabled?: boolean
     /**
      * Whether this environment advertises the authenticated private saved-workflow UUID link contract (?workflow=UUID&workspace=ID, with deployment=ID for a custom environment or environment=standard). Absent or false means unsupported. Published only from an explicit boolean FrontendFeatureFlags dynamic-config entry, enabled by an operator after the matching frontend release. This describes URL support, not workflow access or deployment eligibility; those remain authenticated checks. No default configuration enables it.
      */
@@ -17219,6 +17336,20 @@ export type ListJobsData = {
      * Maximum items per page (1-1000)
      */
     limit?: number
+    /**
+     * When true or omitted, `pagination.total` counts at most 10,000
+     * matching jobs, so a total of 10,000 means "at least 10,000", not an
+     * exact count. A capped count stops after 10,000 matching jobs
+     * instead of reading every one. Send false for the exact count, for
+     * example to work out the last page from the total: `has_more` and
+     * `next_cursor` do not depend on the total either way. Under the
+     * default `sort_by=create_time` a request with `after` reports no
+     * total, so this changes nothing there; under
+     * `sort_by=execution_time` `after` is ignored and the total is
+     * counted, capped unless this is false.
+     *
+     */
+    capped_total?: boolean
   }
   url: '/api/jobs'
 }
@@ -17677,7 +17808,7 @@ export type ExecutePromptErrors = {
    */
   401: ErrorResponse
   /**
-   * The account's plan does not allow this submission; nothing was queued and retrying without changing the plan never succeeds. Disambiguated by the body's `error.type`, NOT by parsing `error.message`: `PAYMENT_REQUIRED` (no active subscription, no funds, blocked tier), `CLOUD_SUBSCRIPTION_REQUIRED`, `FREE_TIER_EXHAUSTED`, `PARTNER_NODE_PAYMENT_REQUIRED`, or `MODEL_PAYMENT_REQUIRED`.
+   * The account's plan does not allow this submission; nothing was queued and retrying without changing the plan never succeeds. Disambiguated by the body's `error.type`, NOT by parsing `error.message`: `PAYMENT_REQUIRED` (no active subscription, no funds, blocked tier), `CLOUD_SUBSCRIPTION_REQUIRED`, `FREE_TIER_EXHAUSTED`, `PARTNER_NODE_PAYMENT_REQUIRED`, or `MODEL_PAYMENT_REQUIRED`. A `PAYMENT_REQUIRED` body may also carry `error.reason`, the billing policy's reason for the refusal, e.g. `subscription_inactive`, `no_funds` or `manual_block`; treat an absent or unknown reason as the generic refusal.
    */
   402: PromptErrorResponse
   /**
@@ -21646,6 +21777,18 @@ export type ViewFileData = {
      */
     res?: number
     /**
+     * `false` answers `200` with the signed link as JSON
+     * (`ViewFileURLResponse`) instead of the `302` to it, after the same
+     * sign-in, workspace and visibility checks. For a page on another
+     * site that reads the file with `fetch`: a page cannot read a 302's
+     * `Location`, and the browser sends `Origin: null` to storage after
+     * following the redirect across sites, which storage refuses. Any
+     * other value, or none, answers the `302`. `channel`, and `res` on
+     * a raster image, answer with the image bytes either way.
+     *
+     */
+    redirect?: string
+    /**
      * The workspace a media request reads from, where a media tag cannot send `X-Comfy-Workspace-ID`; see the `MediaWorkspaceID` parameter.
      */
     workspace_id?: string
@@ -21680,9 +21823,9 @@ export type ViewFileError = ViewFileErrors[keyof ViewFileErrors]
 
 export type ViewFileResponses = {
   /**
-   * Resized JPEG thumbnail (returned when res parameter is used)
+   * Success - File content returned (used when channel or res parameter is present), or, with `redirect=false`, the signed link as JSON with `Cache-Control: no-store`.
    */
-  200: Blob | File
+  200: ViewFileUrlResponse
 }
 
 export type ViewFileResponse = ViewFileResponses[keyof ViewFileResponses]

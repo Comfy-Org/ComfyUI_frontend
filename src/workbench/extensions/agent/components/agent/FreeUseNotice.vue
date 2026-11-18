@@ -5,16 +5,13 @@ import { computed, watch } from 'vue'
 import Button from '@comfyorg/design-system/button/Button'
 import Message from '@comfyorg/design-system/message/Message'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import type {
-  AgentFreeUseNoticeMetadata,
-  AgentFreeUsePlacement
-} from '@comfyorg/telemetry/types'
+import type { AgentFreeUseNoticeMetadata } from '@comfyorg/telemetry/types'
 import { AGENT_COST_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
 
 import { freeUseNoticeDismissedKey } from './freeUseNoticeDismissal'
 
-const { placement } = defineProps<{ placement: AgentFreeUsePlacement }>()
 const emit = defineEmits<{ notice: [metadata: AgentFreeUseNoticeMetadata] }>()
+const placement = 'near-composer' as const
 
 const { isAuthInitialized, resolvedUserInfo } = useCurrentUser()
 const dismissed = useLocalStorage(
@@ -47,7 +44,6 @@ function onDismiss(): void {
     aria-live="off"
     :aria-label="$t('agent.freeUseNoticeLabel')"
     :data-placement="placement"
-    :class="placement === 'inside-input' && 'm-3 w-auto'"
   >
     <div class="flex items-start gap-3">
       <p class="my-0 min-w-0 flex-1">

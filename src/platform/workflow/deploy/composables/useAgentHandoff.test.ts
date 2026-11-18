@@ -48,7 +48,7 @@ function setActiveWorkflow(
 describe('useAgentHandoff', () => {
   it('copies the brief for the workflow open at the click, then downloads that same graph under the name the brief gives', async () => {
     setActiveWorkflow('draft.json', { nodes: [] })
-    const handoff = useAgentHandoff()
+    const handoff = useAgentHandoff('cloud')
     setActiveWorkflow()
 
     await expect(handoff.copyBrief()).resolves.toBe(true)
@@ -88,7 +88,7 @@ describe('useAgentHandoff', () => {
       order.push('download')
     })
 
-    await useAgentHandoff().copyBrief()
+    await useAgentHandoff('cloud').copyBrief()
 
     expect(order).toEqual(['copy', 'download'])
   })
@@ -97,7 +97,7 @@ describe('useAgentHandoff', () => {
     {
       distribution: 'localhost',
       path: '## Your path: create from the install, or from the workflow file',
-      downloads: 1
+      downloads: 0
     },
     {
       distribution: 'desktop',
@@ -123,7 +123,9 @@ describe('useAgentHandoff', () => {
   )
 
   it.for([
-    { app: 'claude', distribution: 'localhost', downloads: 1 },
+    { app: 'claude', distribution: 'localhost', downloads: 0 },
+    { app: 'codex', distribution: 'localhost', downloads: 0 },
+    { app: 'claude', distribution: 'cloud', downloads: 1 },
     { app: 'codex', distribution: 'desktop', downloads: 0 }
   ] as const)(
     'opens the brief in the $app desktop app, downloading the workflow $downloads times on $distribution',
@@ -152,7 +154,7 @@ describe('useAgentHandoff', () => {
       order.push('open')
     })
 
-    useAgentHandoff().openBriefIn('claude')
+    useAgentHandoff('cloud').openBriefIn('claude')
 
     expect(order).toEqual(['download', 'open'])
   })
@@ -164,7 +166,7 @@ describe('useAgentHandoff', () => {
       throw downloadError
     })
 
-    useAgentHandoff().openBriefIn('claude')
+    useAgentHandoff('cloud').openBriefIn('claude')
 
     expect(openAgentApp).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledExactlyOnceWith(downloadError, {
@@ -202,7 +204,7 @@ describe('useAgentHandoff', () => {
       ]
     })
 
-    await useAgentHandoff().copyBrief()
+    await useAgentHandoff('cloud').copyBrief()
 
     const brief = String(
       vi.mocked(useCopyToClipboard().copyToClipboard).mock.lastCall?.[0]
@@ -230,7 +232,7 @@ describe('useAgentHandoff', () => {
       ]
     })
 
-    await useAgentHandoff().copyBrief()
+    await useAgentHandoff('cloud').copyBrief()
 
     const brief = String(
       vi.mocked(useCopyToClipboard().copyToClipboard).mock.lastCall?.[0]
@@ -264,7 +266,7 @@ describe('useAgentHandoff', () => {
         nodes: [{ id: 1, type: nodeType, widgets_values: values }]
       })
 
-      expect(useAgentHandoff().captureInputs().models).toEqual([
+      expect(useAgentHandoff('cloud').captureInputs().models).toEqual([
         'A.safetensors',
         'B.safetensors'
       ])
@@ -275,7 +277,7 @@ describe('useAgentHandoff', () => {
     setActiveWorkflow()
     vi.mocked(useCopyToClipboard().copyToClipboard).mockResolvedValueOnce(false)
 
-    await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
+    await expect(useAgentHandoff('cloud').copyBrief()).resolves.toBe(false)
 
     expect(downloadBlob).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
@@ -287,7 +289,7 @@ describe('useAgentHandoff', () => {
   it('reads a malformed workflow as empty instead of failing', async () => {
     setActiveWorkflow('broken.json', { nodes: 5 })
 
-    await expect(useAgentHandoff().copyBrief()).resolves.toBe(true)
+    await expect(useAgentHandoff('cloud').copyBrief()).resolves.toBe(true)
 
     expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledWith(
       expect.stringContaining('No node classes were read from the graph.'),
@@ -306,7 +308,7 @@ describe('useAgentHandoff', () => {
       }
     })
 
-    await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
+    await expect(useAgentHandoff('cloud').copyBrief()).resolves.toBe(false)
 
     expect(useCopyToClipboard().copyToClipboard).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
@@ -329,7 +331,7 @@ describe('useAgentHandoff', () => {
       throw new Error('download blocked')
     })
 
-    await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
+    await expect(useAgentHandoff('cloud').copyBrief()).resolves.toBe(false)
 
     expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
@@ -357,7 +359,7 @@ describe('useAgentHandoff', () => {
     }
     useWorkflowStore().activeWorkflow = fromPartial(workflow)
 
-    await useAgentHandoff().copyBrief()
+    await useAgentHandoff('cloud').copyBrief()
 
     const brief = String(
       vi.mocked(useCopyToClipboard().copyToClipboard).mock.lastCall?.[0]
@@ -371,7 +373,7 @@ describe('useAgentHandoff', () => {
   it('names the downloaded file exactly as the brief does, even for a name with a backtick', async () => {
     setActiveWorkflow('release`v2.json')
 
-    await useAgentHandoff().copyBrief()
+    await useAgentHandoff('cloud').copyBrief()
 
     expect(useCopyToClipboard().copyToClipboard).toHaveBeenCalledWith(
       expect.stringContaining('downloaded the workflow as `releasev2.json`'),
@@ -383,7 +385,7 @@ describe('useAgentHandoff', () => {
   it('names an unsaved workflow "workflow"', () => {
     useWorkflowStore().activeWorkflow = null
 
-    expect(useAgentHandoff().captureInputs()).toEqual({
+    expect(useAgentHandoff('cloud').captureInputs()).toEqual({
       workflowName: 'workflow',
       workflowFileName: 'workflow.json',
       nodeClasses: [],
