@@ -115,11 +115,20 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     function syncFromStorage(event: StorageEvent): void {
       if (event.storageArea !== localStorage) return
       if (event.key !== null && event.key !== storageKey) return
-      const stored = parseBindings(readStoredBindings(storageKey))
+      const serialized = readStoredBindings(storageKey)
+      if (serialized === JSON.stringify(tabByWorkflow.value)) return
+      const stored = parseBindings(serialized)
       if (stored === undefined) return
       const next = liveBindings(stored, Date.now())
-      for (const workflowId of Object.keys(tabByWorkflow.value)) {
-        if (Object.hasOwn(next, workflowId)) continue
+      for (const [workflowId, current] of Object.entries(tabByWorkflow.value)) {
+        const incoming = Object.hasOwn(next, workflowId)
+          ? next[workflowId]
+          : undefined
+        if (
+          incoming?.tabPath === current.tabPath &&
+          incoming.graphId === current.graphId
+        )
+          continue
         boundInstances.delete(workflowId)
         refusedInstances.delete(workflowId)
       }

@@ -484,6 +484,54 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
   })
 
+  it('drops a draft owner when another tab rebinds its workflow to another document', async () => {
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+
+    seedBindings({
+      'wf-draft': {
+        tabPath: draft.path,
+        graphId: OTHER_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(false)
+  })
+
+  it('keeps an open draft bound past the TTL when this tab writes another binding', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+
+    vi.setSystemTime(Date.now() + 31 * DAY_MS)
+    bindings.bind('wf-other', 'workflows/other.json')
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
+  })
+
   it('keeps its bindings when another tab writes unreadable data', async () => {
     const bindings = useAgentWorkflowTabBindingStore()
     bindings.bind('wf-1', 'workflows/a.json')
