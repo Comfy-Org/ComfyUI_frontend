@@ -59,12 +59,6 @@ test.describe(
         release: () => void
       }
 
-      test.use({
-        initialFeatureFlags: {
-          'agent-free-use-message-placement': 'near-composer'
-        }
-      })
-
       test.beforeEach(async ({ agentBilling, comfyPage }) => {
         const { page } = comfyPage
         agentBilling.setFundingState('exhausted')
@@ -86,6 +80,7 @@ test.describe(
       })
 
       test('keeps the card hidden when the first send is admitted on credits granted at admission', async ({
+        agentBilling,
         agentPanel
       }) => {
         const paywall = agentPanel.creditsExhaustedPaywall
@@ -102,9 +97,21 @@ test.describe(
         await expect(paywall).toHaveCount(0)
         admittedRefresh.release()
         await admittedRefresh.completed
+        await agentPanel.root
+          .getByRole('button', { name: enMessages.agent.newChat })
+          .click()
+        await expect(
+          agentPanel.root.getByTestId('user-message-bubble')
+        ).toHaveCount(0)
+        const settledStatusRequests = agentBilling.statusRequestCount
+        await agentPanel.sendMessage('Refine the portrait lighting')
+        await expect(
+          agentPanel.root.getByTestId('user-message-bubble')
+        ).toHaveText(['Refine the portrait lighting'])
+        expect(agentBilling.statusRequestCount).toBe(settledStatusRequests)
         await expect(
           agentPanel.root.getByRole('note', { name: 'Free use notice' })
-        ).toBeVisible()
+        ).toBeHidden()
         await expect(paywall).toHaveCount(0)
       })
     })

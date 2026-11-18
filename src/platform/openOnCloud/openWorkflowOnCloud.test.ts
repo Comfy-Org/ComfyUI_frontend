@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
@@ -10,6 +10,7 @@ import type {
 } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { api } from '@/scripts/api'
 
@@ -175,6 +176,14 @@ describe('openWorkflowOnCloud in a browser', () => {
 })
 
 describe('openWorkflowOnCloud on Desktop', () => {
+  beforeEach(() => {
+    const previous = remoteConfig.value
+    remoteConfig.value = { open_on_cloud_enabled: true }
+    onTestFinished(() => {
+      remoteConfig.value = previous
+    })
+  })
+
   it('uses the native host relay when Desktop hosts a localhost distribution', async () => {
     const previous = window.__comfyDesktop2
     window.__comfyDesktop2 = fromPartial<

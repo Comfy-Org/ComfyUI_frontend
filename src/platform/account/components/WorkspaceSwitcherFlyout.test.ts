@@ -187,6 +187,19 @@ describe('WorkspaceSwitcherFlyout', () => {
     expect(screen.queryByText('Member')).toBeNull()
   })
 
+  it('marks only the current workspace row as current', () => {
+    renderComponent({ activeWorkspaceId: 'ws-team-long' })
+
+    const current = screen.getAllByRole('button', { current: true })
+    expect(current).toHaveLength(1)
+    expect(current[0]).toHaveAccessibleName(
+      expect.stringContaining(LONG_WORKSPACE_NAME)
+    )
+    expect(
+      screen.getByRole('button', { name: /Personal Workspace/ })
+    ).not.toHaveAttribute('aria-current')
+  })
+
   it('hides search at 5 workspaces', () => {
     renderComponent({ activeWorkspaceId: 'ws-0', workspaces: teams(5) })
 

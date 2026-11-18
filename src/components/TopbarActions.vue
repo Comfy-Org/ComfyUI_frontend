@@ -78,10 +78,15 @@ const isIntegratedTabBar = computed(
   () => settingStore.get('Comfy.UI.TabBarLayout') !== 'Legacy'
 )
 const isSignedIn = computed(() => isCloud || isLoggedIn.value)
-const showCurrentUser = computed(
-  () => isSignedIn.value && (!flags.billingNewUxEnabled || isBuilderMode.value)
+const isProfileInTopbar = computed(
+  () => !flags.billingNewUxEnabled || isBuilderMode.value
 )
-const showLoginButton = computed(() => !isSignedIn.value)
+const showCurrentUser = computed(
+  () => isSignedIn.value && isProfileInTopbar.value
+)
+const showLoginButton = computed(
+  () => !isSignedIn.value && isProfileInTopbar.value
+)
 const comfyAgentNotReady = computed(() =>
   agentPanelStore.enabled || agentPanelStore.comfyAgent?.state === 'ready'
     ? undefined

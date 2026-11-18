@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "הסרת הרקע מתמונה באמצעות Bria RMBG 2.0.",
+    "description": "הסרת הרקע מתמונה באמצעות Bria RMBG 2.0 או RMBG 3.0.",
     "display_name": "Bria הסרת רקע מתמונה",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "תמונה"
       },
+      "model": {
+        "name": "model"
+      },
       "moderation": {
         "name": "הגדרות בקרה",
         "tooltip": "הגדרות בקרה"
       },
       "seed": {
         "name": "seed",
-        "tooltip": "ה-seed קובע אם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+        "tooltip": "ה-Seed קובע אם הצומת יופעל מחדש; אותה תמונה תמיד מפיקה אותה תוצאה ללא תלות ב-Seed."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מעבד את התוצאה הסופית ב-1080p או ב-4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast לאופטימיזציית מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "duration"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מעבד את התוצאה הסופית ב-1080p או ב-4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast לאופטימיזציית מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מעבד את התוצאה הסופית ב-1080p או ב-4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast לאופטימיזציית מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "הקטנה אוטומטית"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מעבד את התוצאה הסופית ב-1080p או ב-4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast לאופטימיזציית מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "משך"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "בניית camera_info. המצב 'orbit' מכוון באמצעות yaw/pitch/distance סביב היעד; המצב 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן מרחב העולם של הצופה (right-handed,Y-up).",
+    "description": "בניית camera_info. המצב 'orbit' מכוון באמצעות yaw/pitch/distance סביב היעד; 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן במרחב העולם של הצופה (ימני, ציר Y כלפי מעלה), או, כאשר מחובר mesh, במסגרת של אותו mesh; לכן אותן הגדרות ממסגרות כל mesh.",
     "display_name": "יצירת מידע מצלמה",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "שדה ראייה אנכי במעלות."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "מסגור mesh זה: המיקומים, היעד והמרחק מחושבים ממרכז תיבת התיחום שלו, ביחידות של קוטר ספירת התיחום שלו, כך שאותן הגדרות ממסגרות כל mesh."
       },
       "mode": {
         "name": "מצב",
@@ -8548,6 +8555,9 @@
       "model": {
         "name": "מודל"
       },
+      "model_auto_duration": {
+        "name": "משך אוטומטי"
+      },
       "model_duration": {
         "name": "משך"
       },
@@ -8568,7 +8578,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "יצירת וידאו עם דיאלוג וקול מסונכרנים מפרומפט טקסט באמצעות HeyGen Video 1.0. אפשר לחבר עד 12 תמונות, סרטוני וידאו וקטעי שמע להפניה, ולציין אותם בפרומפט כ-{'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "description": "צרו וידאו עם דיאלוג וקול מסונכרנים מפרומפט טקסט באמצעות HeyGen Video 1.0. ניתן לחבר עד 15 תמונות ייחוס, סרטונים וקטעי שמע, ולהזכיר אותם בפרומפט כ-{'@'}Image1, {'@'}Video1, {'@'}Audio1.",
     "display_name": "HeyGen Video 1.0 הפניה לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8589,9 @@
       },
       "model_aspect_ratio": {
         "name": "יחס_גובה-רוחב"
+      },
+      "model_auto_duration": {
+        "name": "משך אוטומטי"
       },
       "model_duration": {
         "name": "משך"
@@ -13723,34 +13736,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "קונספטים של מצלמה לשימוש עם Luma Text to Video ו-Luma Image to Video צמתים.",
-    "display_name": "Luma Concepts",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "קונספטים של מצלמה נוספים להוספה לאלו שנבחרו כאן (אופציונלי)."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "עריכת תמונה קיימת באמצעות פרומפט טקסטואלי עם מודל Luma UNI-1.",
     "display_name": "Luma UNI-1 עריכת תמונה",
@@ -13787,82 +13772,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "שינוי תמונות באופן סינכרוני לפי פרומפט ויחס ממדים.",
-    "display_name": "Luma תמונה לתמונה",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_weight": {
-        "name": "image_weight",
-        "tooltip": "משקל התמונה; ככל שקרוב ל-1.0, כך התמונה תשתנה פחות."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "יוצר תמונות באופן סינכרוני לפי פרומפט ויחס ממדים.",
-    "display_name": "Luma טקסט לתמונה",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "character_image": {
-        "name": "character_image",
-        "tooltip": "תמונות ייחוס לדמות; ניתן להזין אצווה של מספר תמונות, עד 4 תמונות יילקחו בחשבון."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image_luma_ref": {
-        "name": "image_luma_ref",
-        "tooltip": "חיבור צומת Luma Reference להשפעה על יצירה עם תמונות קלט; ניתן לשקול עד 4 תמונות."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      },
-      "style_image": {
-        "name": "style_image",
-        "tooltip": "תמונת ייחוס לסגנון; רק תמונה אחת תילקח בחשבון."
-      },
-      "style_image_weight": {
-        "name": "style_image_weight",
-        "tooltip": "משקל תמונת הסגנון. מתעלם אם לא סופקה תמונת סגנון."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "יצירת תמונות מטקסט באמצעות מודל Luma UNI-1.",
     "display_name": "Luma UNI-1 תמונה",
@@ -13886,52 +13795,6 @@
       "prompt": {
         "name": "פרומפט",
         "tooltip": "תיאור טקסטואלי של התמונה הרצויה. 1–6000 תווים."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "יוצר וידאו באופן סינכרוני על בסיס פרומפט, תמונות קלט ו-output_size.",
-    "display_name": "Luma תמונה לוידאו",
-    "inputs": {
-      "control_after_generate": {
-        "name": "שליטה לאחר יצירה"
-      },
-      "duration": {
-        "name": "משך"
-      },
-      "first_image": {
-        "name": "תמונה ראשונה",
-        "tooltip": "הפריים הראשון של הוידאו שנוצר."
-      },
-      "last_image": {
-        "name": "תמונה אחרונה",
-        "tooltip": "הפריים האחרון של הוידאו שנוצר."
-      },
-      "loop": {
-        "name": "לולאה"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "קונספטים אופציונליים של מצלמה לשליטה בתנועת המצלמה דרך צומת Luma Concepts."
-      },
-      "model": {
-        "name": "מודל"
-      },
-      "prompt": {
-        "name": "פרומפט",
-        "tooltip": "הנחיה ליצירת הוידאו"
-      },
-      "resolution": {
-        "name": "רזולוציה"
       },
       "seed": {
         "name": "seed",
@@ -14165,7 +14028,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "שינוי יחס הגובה-רוחב של וידאו קיים, תוך שימוש ב-Luma Ray 3.2 למילוי האזורים החדשים בקנבס. וידאו מקור עד 30 שניות. החיוב לפי שניית פלט.",
+    "description": "שנו את יחס הממדים של וידאו קיים באמצעות Luma Ray 3.2 כדי למלא את אזורי הקנבס שנחשפו. וידאו המקור יכול להיות באורך של עד 10 שניות. החיוב הוא לפי שניית פלט.",
     "display_name": "Luma Ray 3.2 שינוי יחס גובה-רוחב לווידאו",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14050,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "וידאו מקור לשינוי יחס גובה-רוחב. עד 30 שניות."
+        "tooltip": "וידאו המקור לשינוי המסגור. עד 10 שניות."
       }
     },
     "outputs": {
@@ -14196,70 +14059,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "שומר תמונה ומשקל לשימוש עם צומת Luma Generate Image.",
-    "display_name": "Luma Reference",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "תמונה לשימוש כהפניה."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "weight",
-        "tooltip": "משקל של הפניית התמונה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "יוצר וידאו באופן סינכרוני על בסיס פרומפט ו-output_size.",
-    "display_name": "Luma Text to Video",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Camera Concepts אופציונלי לשליטה בתנועת מצלמה דרך צומת Luma Concepts."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט ליצירת הווידאו"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -19549,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "יצירת תגובות טקסט דרך OpenRouter. מנתב למודלים פופולריים נבחרים מ-xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), ו-Perplexity Sonar.",
+    "description": "יצירת תגובות טקסט באמצעות OpenRouter. ניתוב לקבוצה נבחרת של מודלים פופולריים מבית Anthropic ‏(Claude), OpenAI ‏(GPT), Google ‏(Gemini), xAI ‏(Grok), Meta ‏(Muse), DeepSeek, Qwen, Mistral, Z.AI ‏(GLM), Moonshot ‏(Kimi) ו-Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -24987,6 +24786,9 @@
       "format_bit_depth": {
         "name": "bit_depth"
       },
+      "format_channels": {
+        "name": "ערוצים"
+      },
       "format_input_color_space": {
         "name": "input_color_space"
       },
@@ -25977,6 +25779,33 @@
       },
       "1": {
         "name": "ימין",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "מפצל תמונה לתמונות אדומה, ירוקה וכחולה ולמסכת אלפא.",
+    "display_name": "פיצול ערוצי תמונה",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "אדום",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ירוק",
+        "tooltip": null
+      },
+      "2": {
+        "name": "כחול",
+        "tooltip": null
+      },
+      "3": {
+        "name": "אלפא",
         "tooltip": null
       }
     }
@@ -30483,6 +30312,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "עקביות לאורך זמן לפי Bonneel ואחרים, 2015, עם איבר נאמנות כנגד סחיפה: כל פריים שומר על הפרטים שלו תוך מעקב אחר הפריימים השכנים לאורך הזרימה האופטית של סרטון ההנחיה.",
+    "display_name": "הסרת הבהובים בווידאו",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "bidirectional מחשב ממוצע של מעבר קדימה ומעבר אחורה, וכך מונע השתהות מאחורי תנועה, במחיר של פי שניים זמן."
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "פריימי מקור יציבים שיש לעקוב אחר תנועתם, בכל רזולוציה. ברירת המחדל היא images, אשר מפחיתה פחות הבהובים."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "פריימים מהבהבים, לדוגמה סרטון ששודרג ברזולוציה או עובד פריים אחר פריים."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "מידת העוצמה שבה כל פריים עוקב אחר שכניו. ערך גבוה יותר מסיר יותר הבהובים ומרכך יותר פרטים עדינים."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "שינויים גדולים מערך זה בין פריים לשכנו המפוצה לפי תנועה נחשבים אמיתיים ומוחלקים פחות. הערך 0 מחליק את כל השינויים באופן אחיד."
       }
     },
     "outputs": {

@@ -16,6 +16,15 @@ const { error } = useBillingEntry()
 const route = useRoute()
 const router = useRouter()
 
+function addressInRouter(): string {
+  const base = import.meta.env.BASE_URL.replace(/\/$/, '')
+  const { pathname, search, hash } = window.location
+  const path = pathname.startsWith(base)
+    ? pathname.slice(base.length)
+    : pathname
+  return `${path}${search}${hash}`
+}
+
 watch(billingWebLivePhase, (next) => {
   if (route.meta.public) return
   if (handoffTab.value !== undefined) {
@@ -26,7 +35,7 @@ watch(billingWebLivePhase, (next) => {
   if (next !== 'error' || route.path === SIGN_IN_PATH) return
   void router.replace({
     path: SIGN_IN_PATH,
-    query: { returnTo: route.fullPath }
+    query: { returnTo: addressInRouter() }
   })
 })
 
@@ -50,6 +59,10 @@ const routeExplainsError = computed(() => {
   )
 })
 
+const leavingEndedHandoff = computed(
+  () => handoffTab.value !== undefined && !isHandoffPath(route.path)
+)
+
 /** A new key is a new scope, so the shell remounts with a fresh client. */
 const scopeKey = computed(() =>
   billedScope.value
@@ -65,5 +78,5 @@ const scopeKey = computed(() =>
   <BillingShell v-else-if="scopeKey" :key="scopeKey">
     <RouterView />
   </BillingShell>
-  <RouterView v-else />
+  <RouterView v-else-if="!leavingEndedHandoff" />
 </template>

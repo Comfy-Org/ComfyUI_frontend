@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Entfernen Sie den Hintergrund eines Bildes mit Bria RMBG 2.0.",
+    "description": "Entfernt den Hintergrund aus einem Bild mit Bria RMBG 2.0 oder RMBG 3.0.",
     "display_name": "Bria Bildhintergrund entfernen",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "Bild"
       },
+      "model": {
+        "name": "Modell"
+      },
       "moderation": {
         "name": "Moderation",
         "tooltip": "Moderationseinstellungen"
       },
       "seed": {
         "name": "Seed",
-        "tooltip": "Der Seed steuert, ob der Node erneut ausgeführt werden soll; die Ergebnisse sind unabhängig vom Seed nicht deterministisch."
+        "tooltip": "Der Seed steuert, ob der Node erneut ausgeführt werden soll; dasselbe Bild liefert unabhängig vom Seed immer dasselbe Ergebnis."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos mit bis zu 30 Sekunden sowie 4k- und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id im Node Seedance 2.5 Draft to Final Video das finale 1080p- oder 4k-Video rendert; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste, kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden sowie 4K- und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das 1080p- oder 4K-Endergebnis im Node Seedance 2.5 Draft to Final Video rendert; Seedance 2.5 Flash für 480p- und 720p-Videos bis zu 30 Sekunden; Seedance 2.0 für maximale Qualität und 4K; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste, kostengünstigste Generierung."
       },
       "model_duration": {
         "name": "Dauer"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos mit bis zu 30 Sekunden sowie 4k- und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id im Node Seedance 2.5 Draft to Final Video das finale 1080p- oder 4k-Video rendert; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste, kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden sowie 4K- und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das 1080p- oder 4K-Endergebnis im Node Seedance 2.5 Draft to Final Video rendert; Seedance 2.5 Flash für 480p- und 720p-Videos bis zu 30 Sekunden; Seedance 2.0 für maximale Qualität und 4K; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste, kostengünstigste Generierung."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos mit bis zu 30 Sekunden sowie 4k- und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id im Node Seedance 2.5 Draft to Final Video das finale 1080p- oder 4k-Video rendert; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste, kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden sowie 4K- und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das 1080p- oder 4K-Endergebnis im Node Seedance 2.5 Draft to Final Video rendert; Seedance 2.5 Flash für 480p- und 720p-Videos bis zu 30 Sekunden; Seedance 2.0 für maximale Qualität und 4K; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste, kostengünstigste Generierung."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Seedance 2.5 für das neueste Modell, Videos mit bis zu 30 Sekunden sowie 4k- und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id im Node Seedance 2.5 Draft to Final Video das finale 1080p- oder 4k-Video rendert; Seedance 2.0 für maximale Qualität und 4k; Fast für Geschwindigkeitsoptimierung; Mini für die schnellste, kostengünstigste Generierung."
+        "tooltip": "Seedance 2.5 für das neueste Modell, Videos bis zu 30 Sekunden sowie 4K- und mp4/mov-Ausgabe; Seedance 2.5 Draft für eine schnelle 480p-Vorschau, deren draft_task_id das 1080p- oder 4K-Endergebnis im Node Seedance 2.5 Draft to Final Video rendert; Seedance 2.5 Flash für 480p- und 720p-Videos bis zu 30 Sekunden; Seedance 2.0 für maximale Qualität und 4K; Fast zur Geschwindigkeitsoptimierung; Mini für die schnellste, kostengünstigste Generierung."
       },
       "model_duration": {
         "name": "Dauer"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Erstellt ein camera_info. Der Modus „orbit“ richtet die Kamera mit Yaw/Pitch/Abstand um das Ziel aus; „look_at“ platziert die Kamera an der Weltposition. Die Koordinaten befinden sich im Weltkoordinatensystem des Betrachters (rechtshändig, Y nach oben).",
+    "description": "Erstellt ein camera_info. Der Modus „orbit“ richtet die Kamera mit Gieren/Neigen/Distanz um das Ziel aus; „look_at“ positioniert die Kamera an einer Weltposition. Die Koordinaten beziehen sich auf den World Space des Betrachters (rechtshändig, Y oben) oder, wenn ein Mesh verbunden ist, auf dessen Koordinatensystem, sodass dieselben Einstellungen für jedes Mesh passen.",
     "display_name": "Kamera-Info erstellen",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "Vertikales Sichtfeld in Grad."
+      },
+      "mesh": {
+        "name": "Mesh",
+        "tooltip": "Richtet dieses Mesh ein: Positionen, Ziel und Distanz werden vom Bounding-Box-Mittelpunkt in Einheiten des Bounding-Sphere-Durchmessers gemessen, sodass dieselben Einstellungen für jedes Mesh passen."
       },
       "mode": {
         "name": "mode",
@@ -8548,6 +8555,9 @@
       "model": {
         "name": "Modell"
       },
+      "model_auto_duration": {
+        "name": "automatische Dauer"
+      },
       "model_duration": {
         "name": "Dauer"
       },
@@ -8568,7 +8578,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "Generiert mithilfe von HeyGen Video 1.0 ein Video mit synchronisierten Dialogen und Ton aus einem Text-Prompt. Optional können Sie bis zu 12 Referenzbilder, Videos und Audioclips verbinden und sie im Prompt als {'@'}Image1, {'@'}Video1, {'@'}Audio1 erwähnen.",
+    "description": "Generieren Sie mit HeyGen Video 1.0 aus einem Text-Prompt ein Video mit synchronisierten Dialogen und Ton. Optional können Sie bis zu 15 Referenzbilder, Videos und Audioclips verbinden und sie im Prompt als {'@'}Image1, {'@'}Video1, {'@'}Audio1 erwähnen.",
     "display_name": "HeyGen Video 1.0 Referenz zu Video",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8589,9 @@
       },
       "model_aspect_ratio": {
         "name": "Seitenverhältnis"
+      },
+      "model_auto_duration": {
+        "name": "automatische Dauer"
       },
       "model_duration": {
         "name": "Dauer"
@@ -13723,34 +13736,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "Kamerakonzepte zur Verwendung mit den Nodes Luma Text to Video und Luma Image to Video.",
-    "display_name": "Luma Concepts",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Optionale Kamerakonzepte, die zu den hier ausgewählten hinzugefügt werden."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "Bearbeitet ein vorhandenes Bild mit einem Text-Prompt unter Verwendung des Modells Luma UNI-1.",
     "display_name": "Luma UNI-1 Image Edit",
@@ -13787,82 +13772,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "Modifiziert Bilder synchron basierend auf Prompt und Seitenverhältnis.",
-    "display_name": "Luma Image to Image",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_weight": {
-        "name": "image_weight",
-        "tooltip": "Gewichtung des Bildes; je näher an 1.0, desto weniger wird das Bild verändert."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt für die Bildgenerierung"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed zur Bestimmung, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "Generiert Bilder synchron basierend auf Prompt und Seitenverhältnis.",
-    "display_name": "Luma Text to Image",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "character_image": {
-        "name": "character_image",
-        "tooltip": "Charakterreferenzbilder; kann ein Batch mit mehreren Bildern sein, bis zu 4 Bilder können berücksichtigt werden."
-      },
-      "control_after_generate": {
-        "name": "Steuerung nach Generierung"
-      },
-      "image_luma_ref": {
-        "name": "image_luma_ref",
-        "tooltip": "Verbindung zum Luma-Referenz-Node, um die Generierung mit Eingabebildern zu beeinflussen; bis zu 4 Bilder können berücksichtigt werden."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt für die Bildgenerierung"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Der Seed bestimmt, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
-      },
-      "style_image": {
-        "name": "style_image",
-        "tooltip": "Stilreferenzbild; es wird nur 1 Bild verwendet."
-      },
-      "style_image_weight": {
-        "name": "style_image_weight",
-        "tooltip": "Gewichtung des Stilbilds. Wird ignoriert, wenn kein style_image bereitgestellt wird."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "Generiert Bilder aus Text mit dem Modell Luma UNI-1.",
     "display_name": "Luma UNI-1 Image",
@@ -13890,52 +13799,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "Der Seed steuert, ob der Node erneut ausgeführt werden soll; die Ergebnisse sind unabhängig vom Seed nicht deterministisch."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "Generiert Videos synchron anhand von Prompt, Eingabebildern und output_size.",
-    "display_name": "Luma Bild zu Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "Steuerung nach Generierung"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "first_image": {
-        "name": "first_image",
-        "tooltip": "Erstes Einzelbild des generierten Videos."
-      },
-      "last_image": {
-        "name": "last_image",
-        "tooltip": "Letztes Frame des generierten Videos."
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Optionale Kamerakonzepte zur Steuerung der Kamerabewegung über den Luma-Concepts-Node."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt für die Videogenerierung"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Der Seed bestimmt, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
       }
     },
     "outputs": {
@@ -14165,7 +14028,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "Ändert das Seitenverhältnis eines bestehenden Videos und verwendet Luma Ray 3.2, um die neu freigelegten Canvas-Bereiche auszufüllen. Quellvideo bis zu 30 Sekunden. Abrechnung pro Sekunde Ausgabe.",
+    "description": "Ändern Sie das Seitenverhältnis eines vorhandenen Videos und verwenden Sie Luma Ray 3.2, um die neu freigelegten Canvas-Bereiche zu füllen. Quellvideo mit bis zu 10 Sekunden. Abrechnung pro Ausgabesekunde.",
     "display_name": "Luma Ray 3.2 Video neu einrahmen",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14050,7 @@
       },
       "video": {
         "name": "Video",
-        "tooltip": "Quellvideo zum Neurahmen. Bis zu 30 Sekunden."
+        "tooltip": "Quellvideo zum Ändern des Bildausschnitts. Bis zu 10 Sekunden."
       }
     },
     "outputs": {
@@ -14196,70 +14059,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "Speichert ein Bild und eine Gewichtung zur Verwendung mit dem Node Luma Generate Image.",
-    "display_name": "Luma-Referenz",
-    "inputs": {
-      "image": {
-        "name": "Bild",
-        "tooltip": "Als Referenz zu verwendendes Bild."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "Gewichtung",
-        "tooltip": "Gewichtung der Bildreferenz."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "Generiert Videos synchron basierend auf Prompt und output_size.",
-    "display_name": "Luma Text zu Video",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "Seitenverhältnis"
-      },
-      "control_after_generate": {
-        "name": "Steuerung nach Generierung"
-      },
-      "duration": {
-        "name": "Dauer"
-      },
-      "loop": {
-        "name": "Schleife"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Optionale Kamerakonzepte zur Steuerung der Kamerabewegung über den Node Luma Concepts."
-      },
-      "model": {
-        "name": "Modell"
-      },
-      "prompt": {
-        "name": "Prompt",
-        "tooltip": "Prompt für die Videogenerierung"
-      },
-      "resolution": {
-        "name": "Auflösung"
-      },
-      "seed": {
-        "name": "Seed",
-        "tooltip": "Seed zur Festlegung, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -19549,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "Generiert Textantworten über OpenRouter. Nutzt eine kuratierte Auswahl beliebter Modelle von Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) und Perplexity Sonar.",
+    "description": "Generieren Sie Textantworten über OpenRouter. Leitet an eine kuratierte Auswahl beliebter Modelle von Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) und Perplexity Sonar weiter.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -24987,6 +24786,9 @@
       "format_bit_depth": {
         "name": "bit_depth"
       },
+      "format_channels": {
+        "name": "Kanäle"
+      },
       "format_input_color_space": {
         "name": "input_color_space"
       },
@@ -25977,6 +25779,33 @@
       },
       "1": {
         "name": "rechts",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "Teilt ein Bild in rote, grüne und blaue Bilder sowie eine Alpha-Maske auf.",
+    "display_name": "Bildkanäle aufteilen",
+    "inputs": {
+      "image": {
+        "name": "Bild"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Rot",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Grün",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Blau",
+        "tooltip": null
+      },
+      "3": {
+        "name": "Alpha",
         "tooltip": null
       }
     }
@@ -30483,6 +30312,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Zeitliche Konsistenz nach Bonneel et al. 2015 mit einem Fidelity-Term gegen Drift: Jeder Frame behält seine eigenen Details bei, während er seinen Nachbarframes entlang des optischen Flusses des Guide-Videos folgt.",
+    "display_name": "Video-Deflicker",
+    "inputs": {
+      "direction": {
+        "name": "Richtung",
+        "tooltip": "bidirectional mittelt einen Vorwärts- und einen Rückwärtsdurchlauf, wodurch Nachziehen hinter Bewegungen bei doppelter Rechenzeit vermieden wird."
+      },
+      "guide": {
+        "name": "Referenz",
+        "tooltip": "Stabile Quellframes, deren Bewegung gefolgt wird, bei beliebiger Auflösung. Standardmäßig werden die Eingabebilder verwendet, wodurch weniger Flimmern entfernt wird."
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Flackernde Frames, z. B. ein Frame für Frame hochskaliertes oder verarbeitetes Video."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "Stärke",
+        "tooltip": "Wie stark jeder Frame seinen Nachbarn folgt. Höhere Werte entfernen mehr Flimmern und glätten mehr feine Details."
+      },
+      "threshold": {
+        "name": "Schwellenwert",
+        "tooltip": "Änderungen zwischen einem Frame und seinem bewegungskompensierten Nachbarframe, die größer als dieser Wert sind, gelten als real und werden weniger geglättet. 0 glättet alle Änderungen gleichermaßen."
       }
     },
     "outputs": {

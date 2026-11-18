@@ -12,6 +12,7 @@ publicHoistPattern:
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
+  '@axe-core/playwright': ^4.14.0
   '@comfyorg/comfyui-desktop-bridge-types': 0.5.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@customerio/cdp-analytics-browser': ^0.5.3

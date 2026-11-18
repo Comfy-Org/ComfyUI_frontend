@@ -50,6 +50,7 @@ import {
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
+import { createNamedSignup } from '@/checkout/namedSignup'
 import { methodKindOf } from '@/checkout/checkoutJourney'
 import { endingOf } from '@/checkout/endingScreen'
 import { pricingTableUrl } from '@/checkout/cloudLinks'
@@ -71,6 +72,7 @@ import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutExit } from '@/composables/useCheckoutExit'
 import { useCheckoutJourney } from '@/composables/useCheckoutJourney'
 import { useCheckoutPromo } from '@/composables/useCheckoutPromo'
+import { awaitPlanChangeCardChoice } from '@/config/checkoutUi'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
 import type { BillingEntryState } from '@/entry/billingEntry'
@@ -178,17 +180,13 @@ function quotedStop(
   return undefined
 }
 
-/**
- * How a quote collects the money: a new subscription on a card form, which
- * arrives failed with no Stripe key to mount on, or a plan change on the
- * method on file, which needs no key.
- */
 function railOf(
   quoted: SubscriptionPreview,
   saved: SavedArrival,
-  stripeKey: string | undefined
+  stripeKey: string | undefined,
+  planChangeCardChoice: boolean
 ) {
-  if (quoted.transition_type !== 'new_subscription')
+  if (quoted.transition_type !== 'new_subscription' && !planChangeCardChoice)
     return { method: 'on_file' } as const
   return {
     method: 'collect',
@@ -234,6 +232,7 @@ export function useFullPageCheckout() {
   const saved = usePaymentMethods({ immediate: false })
   const journey = useCheckoutJourney('full_page')
   journey.enter()
+  const planChangeCardChoice = awaitPlanChangeCardChoice()
 
   const page = shallowRef<CheckoutPage>(
     arrivalPage({ entry, error: unreadableLink })
@@ -279,10 +278,14 @@ export function useFullPageCheckout() {
 
   let generation = 0
   let latest: Promise<void> = Promise.resolve()
+  const namedSignup = createNamedSignup()
 
   async function reconcileOnce(): Promise<void> {
     const mine = ++generation
-    const recovered = await lifecycle.recover({ includeSettled: true })
+    const recovered = await lifecycle.recover({
+      includeSettled: true,
+      ...namedSignup.recoverOptions(entry.value)
+    })
     if (mine !== generation) return
     dispatch(reconciledEvent(recovered))
   }
@@ -402,13 +405,19 @@ export function useFullPageCheckout() {
   async function captureEvent(
     arrival: PlannedEntry
   ): Promise<CheckoutPageEvent> {
-    const [allowed, { requoted: quoted, expiredPromo }, methods, stripeKey] =
-      await Promise.all([
-        capabilities.read(),
-        requoteWithPromo(arrival),
-        saved.refresh(),
-        awaitBillingWebStripeKey()
-      ])
+    const [
+      allowed,
+      { requoted: quoted, expiredPromo },
+      methods,
+      stripeKey,
+      cardChoice
+    ] = await Promise.all([
+      capabilities.read(),
+      requoteWithPromo(arrival),
+      saved.refresh(),
+      awaitBillingWebStripeKey(),
+      planChangeCardChoice
+    ])
     if (expiredPromo !== undefined) promo.expire()
     const stopped = capabilityStop(allowed)
     if (stopped !== undefined) return withScheduledChange(stopped)
@@ -421,7 +430,7 @@ export function useFullPageCheckout() {
     }
     return {
       type: 'quoted',
-      ...railOf(quoted.value, arrivalOf(methods), stripeKey),
+      ...railOf(quoted.value, arrivalOf(methods), stripeKey, cardChoice),
       ...facts
     }
   }
@@ -888,6 +897,8 @@ export function useFullPageCheckout() {
       ...(redirectMethod === undefined ? {} : { redirectMethod })
     })
     await releasing
+    namedSignup.replaced(arrival)
+    generation++
     let result: SubscriptionCommandResult
     try {
       result = await attempts.run(checkoutAttemptOf(quoted, arrival), () =>
