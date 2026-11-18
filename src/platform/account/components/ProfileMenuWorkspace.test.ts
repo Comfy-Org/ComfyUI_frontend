@@ -361,10 +361,27 @@ describe('ProfileMenuWorkspace', () => {
         expect(billingSettings).toHaveFocus()
         await user.tab()
         expect(addCredits).toHaveFocus()
+      })
 
-        for (const action of [addCredits, billingSettings]) {
-          expect(action).not.toHaveAttribute('tabindex', '-1')
-        }
+      it('names the pinned flyout Credits for assistive technology', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+
+        expect(
+          screen.getByRole('dialog', { name: 'Credits' })
+        ).toBeInTheDocument()
+      })
+
+      it('moves focus back into the pinned flyout when Credits is pressed again', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+        credits.focus()
+
+        await user.keyboard('{Enter}')
+
+        expect(flyoutAction('Add credits')).toHaveFocus()
       })
 
       it('closes on Escape and returns focus to the Credits row', async () => {
