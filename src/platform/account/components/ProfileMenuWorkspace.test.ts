@@ -363,6 +363,20 @@ describe('ProfileMenuWorkspace', () => {
         expect(addCredits).toHaveFocus()
       })
 
+      it('opens the preview on the first fresh hover after Escape', async () => {
+        const { user, credits } = setup()
+        credits.focus()
+        await user.keyboard('{Enter}')
+        await user.keyboard('{Escape}')
+        await settleHoverTimers()
+        expect(screen.queryByTestId('credits-flyout')).not.toBeInTheDocument()
+
+        await user.hover(credits)
+        await settleHoverTimers()
+
+        expect(screen.getByTestId('credits-flyout')).toBeInTheDocument()
+      })
+
       it('names the pinned flyout Credits for assistive technology', async () => {
         const { user, credits } = setup()
         credits.focus()
