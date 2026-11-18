@@ -31,14 +31,22 @@ review finding requires it. The counts below are packs, then call sites.
 
 ### Listening
 
-1. Every event a pack subscribes to is built on one shared helper,
+1. Every event that follows the host is built on one shared helper,
    `createHostEvent` in `nodeApi/shared/hostEvent.ts`. It refuses a listener
    that is not a function with a `TypeError` before anything changes, runs
    every listener through the listener primitive of ADR-EXTENSIONS-NODE-API-0070 decision 14,
    and follows the host only while at least one listener is registered: the
    first listener starts the host subscription and the last one to leave
    stops it. Nothing is watched, chained or subscribed for an event no pack
-   listens to.
+   listens to. The host subscription runs in an effect scope of its own,
+   detached from whatever Vue scope is active when the first listener
+   subscribes, so the watches it makes belong to the event and not to the
+   first pack: a pack that subscribes in a component's `setup` and whose
+   component unmounts does not silence another pack's listener.
+   `hostEvent.test.ts` and `selection.test.ts` pin this with a stopped scope
+   and an unmounted component. `onWorkflowLoaded` and `queue.onRejected` are
+   the two events the host pushes (decisions 13 and 20); there is nothing to
+   follow, so they use the listener primitive directly.
 2. Listeners are delivered with the primitive's `notify`, which passes the
    event's arguments to each listener and keeps them. The primitive gains
    one member, `isEmpty`, which `createHostEvent` asks after each
@@ -466,7 +474,9 @@ the API reports, recorded here with the change that would lift it.
 - **Listener isolation.** `createHostEvent` reuses the listener primitive
   of ADR-EXTENSIONS-NODE-API-0070, which isolates each listener through
   `callIsolated`; it adds only the start-on-first and stop-on-last rule
-  that every event here needs, so no event repeats it.
+  that every event here needs, so no event repeats it. The detached scope
+  is Vue's own `effectScope(true)`, with the host subscription's stop as
+  its `onScopeDispose`.
 - **The resolved selection.** The selection store, not the deprecated
   `canvas.selected_nodes`, which logs a deprecation warning on every read.
   Writes go through `LGraphCanvas.selectItems`, never to the store.
