@@ -71,6 +71,15 @@
     >
       <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton v-if="isLoading" class="h-5 w-16" />
+      <span
+        v-else-if="!balance"
+        class="text-base font-semibold text-muted-foreground"
+        data-testid="credits-balance-unavailable"
+        :title="$t('profileMenu.balanceUnavailable')"
+        >—<span class="sr-only">{{
+          $t('profileMenu.balanceUnavailable')
+        }}</span></span
+      >
       <span v-else class="text-base font-semibold text-foreground">{{
         formattedBalance
       }}</span>

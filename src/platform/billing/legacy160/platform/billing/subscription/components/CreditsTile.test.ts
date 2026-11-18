@@ -104,7 +104,11 @@ const i18n = createI18n({
         }
       },
       workspacePanel: {
-        billingStatus: { updatePayment: 'Update payment' }
+        billingStatus: { updatePayment: 'Update payment' },
+        billingTab: { tryAgain: 'Try again' }
+      },
+      profileMenu: {
+        balanceUnavailable: "Couldn't load your balance."
       },
       subscription: {
         totalCredits: 'Total credits',
@@ -797,6 +801,56 @@ describe('CreditsTile', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
       'bg-foreground'
     )
+  })
+
+  it('shows an unread balance as unavailable, not as 0 credits', () => {
+    activeProSubscription()
+    state.balance = null
+    renderTile()
+    expect(screen.getByTestId('credits-total-unavailable')).toHaveTextContent(
+      '—'
+    )
+    expect(screen.getByText("Couldn't load your balance.")).toBeInTheDocument()
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(screen.queryByText(/left of/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Additional credits')).not.toBeInTheDocument()
+  })
+
+  it('re-reads the balance from the unavailable state', async () => {
+    activeProSubscription()
+    state.balance = null
+    renderTile()
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledOnce()
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
+  })
+
+  it('keeps the skeleton, not the unavailable state, while the balance loads', () => {
+    activeProSubscription()
+    state.balance = null
+    state.isLoading = true
+    renderTile()
+    expect(
+      screen.queryByTestId('credits-total-unavailable')
+    ).not.toBeInTheDocument()
+    expect(
+      screen.queryByText("Couldn't load your balance.")
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps a known zero balance as 0', () => {
+    activeProSubscription()
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    renderTile()
+    expect(
+      screen.queryByTestId('credits-total-unavailable')
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0)
   })
 
   it('suppresses the depletion notice until the balance has loaded', () => {

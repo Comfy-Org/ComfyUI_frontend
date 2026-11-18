@@ -1,6 +1,7 @@
 <template>
   <div
     data-billing-release="1.60"
+    data-testid="credits-tile"
     :class="
       cn(
         '@container relative flex flex-col gap-6 rounded-2xl border bg-card px-6 py-5',
@@ -24,6 +25,26 @@
         {{ $t('subscription.totalCredits') }}
       </div>
       <Skeleton v-if="isLoadingBalance" class="h-8 w-32" />
+      <template v-else-if="isBalanceUnavailable">
+        <span
+          class="text-2xl leading-none font-bold text-muted-foreground"
+          data-testid="credits-total-unavailable"
+          >—</span
+        >
+        <span class="flex flex-wrap items-center gap-1 text-sm">
+          <span class="text-muted-foreground">{{
+            $t('profileMenu.balanceUnavailable')
+          }}</span>
+          <Button
+            variant="link"
+            size="link"
+            class="py-0 text-foreground underline"
+            @click="handleRefresh"
+          >
+            {{ $t('workspacePanel.billingTab.tryAgain') }}
+          </Button>
+        </span>
+      </template>
       <div v-else class="flex items-baseline gap-2">
         <i
           :class="
@@ -449,11 +470,22 @@ const monthlyUsageLabel = computed(() =>
   )
 )
 
+// A failed read leaves the balance null. Show it as unknown rather than as
+// 0 credits, and drop the breakdown, whose figures would derive from that 0.
+const isBalanceUnavailable = computed(
+  () =>
+    !isLoadingBalance.value &&
+    balance.value == null &&
+    !zeroState &&
+    !showsInactivePlanState.value
+)
+
 const showBreakdown = computed(
   () =>
     canAccessSubscriptionFeatures.value &&
     !zeroState &&
-    !showsInactivePlanState.value
+    !showsInactivePlanState.value &&
+    !isBalanceUnavailable.value
 )
 // The monthly allowance bar is a Cloud-only presentation; Local/Desktop shows
 // only the total and additional-credit balances.

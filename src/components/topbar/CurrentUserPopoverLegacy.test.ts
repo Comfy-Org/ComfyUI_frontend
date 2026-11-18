@@ -383,20 +383,31 @@ describe('CurrentUserPopoverLegacy', () => {
       expect(screen.getByText('1000')).toBeInTheDocument()
     })
 
-    it('falls back to 0 when the facade reports no balance', () => {
+    it('shows an unread balance as unavailable, not as 0 credits', () => {
       mockBalance.value = null
 
       renderComponent()
 
-      expect(formatCreditsFromCents).toHaveBeenCalledWith({
-        cents: 0,
-        locale: 'en',
-        numberOptions: {
-          minimumFractionDigits: 0,
-          maximumFractionDigits: 2
-        }
-      })
-      expect(screen.getByText('0')).toBeInTheDocument()
+      expect(
+        screen.getByTestId('credits-balance-unavailable')
+      ).toHaveTextContent('—')
+      expect(
+        screen.getByText("Couldn't load your balance.")
+      ).toBeInTheDocument()
+      expect(screen.queryByText('0')).not.toBeInTheDocument()
+    })
+
+    it('keeps a known zero balance as 0', () => {
+      mockBalance.value = { amountMicros: 0, currency: 'usd' }
+
+      renderComponent()
+
+      expect(
+        screen.queryByTestId('credits-balance-unavailable')
+      ).not.toBeInTheDocument()
+      expect(formatCreditsFromCents).toHaveBeenCalledWith(
+        expect.objectContaining({ cents: 0 })
+      )
     })
   })
   describe('workspace selector (non-cloud)', () => {

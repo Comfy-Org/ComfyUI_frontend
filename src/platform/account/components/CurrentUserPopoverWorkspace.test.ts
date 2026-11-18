@@ -279,6 +279,17 @@ describe('CurrentUserPopoverWorkspace', () => {
     expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
+  it('shows an unread balance as unavailable, not as 0 credits', () => {
+    vi.mocked(useBillingContext)().balance = computed(() => null)
+
+    renderComponent()
+
+    expect(screen.getByTestId('credits-balance-unavailable')).toHaveTextContent(
+      '—'
+    )
+    expect(screen.getByText("Couldn't load your balance.")).toBeInTheDocument()
+  })
+
   it('reports a failed balance read once instead of leaving it unhandled', async () => {
     const failure = new Error('Balance temporarily unavailable')
     vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
