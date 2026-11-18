@@ -604,7 +604,6 @@ defineExpose({
 
     <div
       v-if="$slots.header"
-      data-testid="composer-workflow-header"
       class="flex shrink-0 items-center rounded-t-lg bg-background p-1"
     >
       <slot name="header" />

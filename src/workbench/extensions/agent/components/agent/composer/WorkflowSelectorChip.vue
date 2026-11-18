@@ -164,7 +164,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
       >
         <div
           data-testid="workflow-selector-search"
-          class="-mx-1 -mt-1 flex items-center gap-2 border-b border-border px-2 py-1.5"
+          class="-mx-1 -mt-1 flex items-center gap-2 border-b border-border px-2 py-1.5 has-focus-visible:ring-1 has-focus-visible:ring-ring has-focus-visible:ring-inset"
         >
           <i
             aria-hidden="true"
@@ -209,7 +209,7 @@ function onSearchKeydown(event: KeyboardEvent): void {
                     'gap-1 rounded-md px-1.5 text-xs text-foreground',
                     tab.path === current?.path && [
                       selectedMenuButtonClass,
-                      'data-highlighted:bg-muted'
+                      'data-highlighted:bg-muted data-highlighted:ring-1 data-highlighted:ring-ring data-highlighted:ring-inset'
                     ]
                   )
                 "
