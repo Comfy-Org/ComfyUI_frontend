@@ -489,13 +489,55 @@ describe('AgentPanelRoot Ask agent about errors', () => {
       expect(useAgentComposerStore().errorContext).not.toBeNull()
     )
 
-    await useWorkflowService().openWorkflow(other)
+    await useWorkflowService().openWorkflow(other, { initiator: 'user' })
 
     await vi.waitFor(() =>
       expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
     )
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
     expect(useAgentComposerStore().errorContext).not.toBeNull()
+  })
+
+  it('keeps an attached chip with its workflow across a tab switch when no reply is running', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Current chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    renderPanel()
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: runningTab
+    }
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).not.toBeNull()
+    )
+    const chatBeforeSwitch = useAgentChatHistoryStore().activeId
+    const activationHandled = new Promise<void>((resolve) =>
+      workflowStore.onUserActivation(() => resolve())
+    )
+
+    await useWorkflowService().openWorkflow(other, { initiator: 'user' })
+    await activationHandled
+    await nextTick()
+
+    expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
+    expect(
+      screen.queryByRole('status', {
+        name: i18n.global.t('agent.openingWorkflowChat', {
+          workflowName: 'other'
+        })
+      })
+    ).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+    expect(useAgentChatHistoryStore().activeId).toBe(chatBeforeSwitch)
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
+    expect(useAgentComposerStore().errorContext?.workflowPath).toBe(runningTab)
   })
 
   it('starts a new chat on the errored workflow when it has none', async () => {
