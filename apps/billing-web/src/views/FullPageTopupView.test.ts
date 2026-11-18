@@ -1169,12 +1169,14 @@ function autoTopUpReader(): AutoTopUpReader {
 
 function renderAutoTopUp(
   path: string,
-  paymentMethods: readonly SavedPaymentMethod[] = []
+  paymentMethods: readonly SavedPaymentMethod[] = [],
+  topupQuote: TopupQuoteResult = QUOTED
 ) {
   recordBillingEntry(parseBillingEntry(path))
   const fake = createFakeBillingClient({
     capabilities: { can_top_up: true },
-    topupQuote: QUOTED,
+    topupQuote,
+    topup: SUCCEEDED,
     paymentMethods: { status: 'ok', value: paymentMethods }
   })
   const createHostedTopupCheckout = vi
@@ -1278,5 +1280,38 @@ describe('FullPageTopupView with auto top-up from the link', () => {
     expect(createHostedTopupCheckout).toHaveBeenCalledOnce()
     expect(assign).not.toHaveBeenCalled()
     expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
+
+  it('pays a quote with a payment configuration in the page, the consent above Saved or Add new, and sends the settings with that payment', async () => {
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
+      [{ ...VISA, is_default: true }, MASTERCARD],
+      PAYS_ONCE
+    )
+
+    expect(
+      await screen.findByTestId('checkout-auto-top-up-consent')
+    ).toHaveTextContent(
+      'Top-ups are charged to your default card, Visa ···· 3184, up to $50.00 a month.'
+    )
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    expect(tab('Add new payment')).toBeInTheDocument()
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    )
+    expect(fake.createInteractiveTopup.mock.calls[0][0]).toMatchObject({
+      amountCents: 2500,
+      payment: { savedPaymentMethodId: 'pm_mc' },
+      autoTopUp: {
+        threshold_credits: 1055,
+        target_credits: 11605,
+        monthly_budget_cents: 5000
+      }
+    })
+    expect(createHostedTopupCheckout).not.toHaveBeenCalled()
   })
 })

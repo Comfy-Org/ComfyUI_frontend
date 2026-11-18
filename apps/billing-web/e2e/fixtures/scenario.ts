@@ -25,6 +25,8 @@ export interface CloudScenario {
   checkoutUi?: string
   /** `billing_web_plan_change_card_choice`, answered alongside `checkoutUi`. */
   planChangeCardChoice?: boolean
+  /** `unified_billing_settings`, answered alongside `checkoutUi`. */
+  unifiedBillingSettings?: boolean
 }
 
 const HOUR_MS = 60 * 60 * 1000

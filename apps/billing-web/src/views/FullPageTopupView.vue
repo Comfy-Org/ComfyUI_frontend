@@ -6,6 +6,7 @@ import { isLocked } from '@/checkout/checkoutPage'
 import { endingOf } from '@/checkout/endingScreen'
 import { buildTopupLedger } from '@/checkout/topupLedger'
 import AutoTopUpCheckoutColumn from '@/components/fullPage/AutoTopUpCheckoutColumn.vue'
+import AutoTopUpConsentCard from '@/components/fullPage/AutoTopUpConsentCard.vue'
 import CheckoutEnding from '@/components/fullPage/CheckoutEnding.vue'
 import type { CheckoutCharge } from '@/components/fullPage/CheckoutPaymentColumn.vue'
 import CheckoutPaymentColumn from '@/components/fullPage/CheckoutPaymentColumn.vue'
@@ -23,6 +24,7 @@ const {
   quote,
   paysOnce,
   autoTopUpConsent,
+  autoTopUpPaysHosted,
   savedMethods,
   canPay,
   returnLink,
@@ -97,7 +99,9 @@ function openBillingSettings() {
     <div class="flex min-h-full flex-col lg:flex-row">
       <CheckoutSummaryColumn :ledger :locked @back="goBack" />
       <AutoTopUpCheckoutColumn
-        v-if="autoTopUpConsent && page.kind === 'capture'"
+        v-if="
+          autoTopUpConsent && autoTopUpPaysHosted && page.kind === 'capture'
+        "
         :page
         :consent="autoTopUpConsent"
         :can-pay="canPay"
@@ -123,7 +127,11 @@ function openBillingSettings() {
         @retry-column="retryColumn"
         @select-tab="selectTab"
         @continue-verification="continueVerification"
-      />
+      >
+        <template v-if="autoTopUpConsent && page.kind !== 'resolving'" #before>
+          <AutoTopUpConsentCard class="mb-6" :consent="autoTopUpConsent" />
+        </template>
+      </CheckoutPaymentColumn>
     </div>
   </main>
 </template>
