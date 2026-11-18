@@ -2,6 +2,7 @@ import { writeFile } from 'node:fs/promises'
 
 import type { Request } from '@playwright/test'
 import { expect } from '@playwright/test'
+import { z } from 'zod'
 import { zJobDetailResponse, zPromptResponse } from '@comfyorg/ingest-types/zod'
 
 import { desktopWorkflowRelayFixture as test } from '@e2e/fixtures/desktopWorkflowRelayFixture'
@@ -10,6 +11,19 @@ const jobResult = zJobDetailResponse.pick({
   id: true,
   status: true,
   outputs_count: true
+})
+
+const firebaseSignInError = z.object({
+  error: z.object({
+    message: z.enum([
+      'EMAIL_NOT_FOUND',
+      'INVALID_LOGIN_CREDENTIALS',
+      'INVALID_PASSWORD',
+      'OPERATION_NOT_ALLOWED',
+      'TOO_MANY_ATTEMPTS_TRY_LATER',
+      'USER_DISABLED'
+    ])
+  })
 })
 
 async function getJobResult(origin: string, id: string, submission: Request) {
@@ -80,7 +94,15 @@ test.describe(
           }),
           page.getByRole('button', { name: 'Sign in', exact: true }).click()
         ])
-        expect(login.ok(), 'Firebase accepts the smoke account').toBe(true)
+        if (!login.ok()) {
+          const error = firebaseSignInError.safeParse(
+            await login.json().catch(() => undefined)
+          )
+          const code = error.success ? ` ${error.data.error.message}` : ''
+          throw new Error(
+            `Firebase rejected the smoke account (HTTP ${login.status()}${code})`
+          )
+        }
       })
 
       await test.step('Restore the transferred workflow in the authenticated editor', async () => {
