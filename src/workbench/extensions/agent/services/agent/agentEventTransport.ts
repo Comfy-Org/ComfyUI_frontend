@@ -411,8 +411,6 @@ export function createAgentEventTransport(
     )
   }
 
-  /** Applies one `agent_thinking` frame: appends its delta to the open
-   * thinking part, opening one first if none is open. */
   function handleThinkingEvent(data: AgentThinkingEvent['data']): void {
     if (roundWasRestored(data.tool_call_id)) {
       dropThinkingDraft()
