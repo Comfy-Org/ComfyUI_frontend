@@ -15,13 +15,16 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import {
   clearPendingSignInAccept,
   writePendingSignInAccept
 } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import type { PendingSignInAccept } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
@@ -48,6 +51,8 @@ export interface ConsentOfferHooks {
   canShow?: () => boolean
   /** Told when the user turns the card down rather than accepting it. */
   onExit?: (exit: 'declined' | 'dismissed') => void
+  /** Kept with a signed-out Agree so the chip comes back after a sign-in reload. */
+  errorContext?: AgentErrorContext
 }
 
 const CARD_ERROR_TYPE = {
@@ -304,7 +309,10 @@ export function useAgentConsent() {
         return null
       introductionStore.isContinuingSignIn = true
       try {
-        writePendingSignInAccept(heldDraftText())
+        writePendingSignInAccept({
+          draft: heldDraftText(),
+          errorContext: hooks.errorContext
+        })
         let signedIn: boolean
         try {
           signedIn = await showSignInDialog()
@@ -326,12 +334,22 @@ export function useAgentConsent() {
     }
   }
 
-  async function resumeAcceptAfterReload(draft: string): Promise<void> {
+  async function resumeAcceptAfterReload({
+    draft,
+    errorContext
+  }: PendingSignInAccept): Promise<void> {
     introductionStore.isContinuingSignIn = true
+    let saved: string | null
     try {
-      await saveAcceptanceAfterSignIn()
+      saved = await saveAcceptanceAfterSignIn()
     } finally {
       introductionStore.isContinuingSignIn = false
+    }
+    if (errorContext && saved) {
+      const panelStore = useAgentPanelStore()
+      panelStore.view = { screen: 'chat' }
+      panelStore.open('error_context')
+      panelStore.pendingErrorContext = errorContext
     }
     if (
       draft &&

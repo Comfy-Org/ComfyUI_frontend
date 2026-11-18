@@ -2321,13 +2321,54 @@ describe('AgentPanel extension flag gate', () => {
       await loadEntryAndSetup()
       Object.assign(consentStore, { identity: 'account-a/workspace-b' })
       await nextTick()
-      expect(resume()).toHaveBeenCalledExactlyOnceWith('make it blue')
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: 'make it blue'
+      })
       expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
       expect(consentStore.load).not.toHaveBeenCalled()
 
       finishResume()
       await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
       expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('hands the Ask agent error context back with the draft', async () => {
+      const errorContext = {
+        scope: 'single',
+        count: 1,
+        label: 'Missing model',
+        severity: 'error',
+        problems: [{ category: 'missing_model', message: 'model missing' }],
+        workflowPath: 'workflows/errored.json'
+      }
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ draft: '', errorContext, savedAt: Date.now() })
+      )
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: '',
+        errorContext
+      })
+    })
+
+    it('keeps the draft but drops an error context that is not one', async () => {
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({
+          draft: 'make it blue',
+          errorContext: { scope: 'card', problems: 'not a list' },
+          savedAt: Date.now()
+        })
+      )
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: 'make it blue'
+      })
     })
 
     it('is resumed before the Agent is ready', async () => {
