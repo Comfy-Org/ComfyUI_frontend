@@ -47,16 +47,11 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { MissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
+import type { ActiveMissingModelDownloadState } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { formatDownloadedBytes } from '@/platform/workflowErrors/missingModel/missingModelDownloadProgress'
 
-type ActiveDownloadState = Extract<
-  MissingModelDownloadState,
-  { status: 'requested' | 'pending' | 'downloading' }
->
-
 const { state, modelName } = defineProps<{
-  state: ActiveDownloadState
+  state: ActiveMissingModelDownloadState
   modelName: string
 }>()
 

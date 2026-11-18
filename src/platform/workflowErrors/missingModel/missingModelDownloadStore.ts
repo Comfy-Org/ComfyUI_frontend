@@ -84,7 +84,15 @@ function toDownloadState(
   }
 }
 
-function isActive(state: MissingModelDownloadState): boolean {
+export type ActiveMissingModelDownloadState = Extract<
+  MissingModelDownloadState,
+  { status: 'requested' | 'pending' | 'downloading' }
+>
+
+/** Whether the download is requested, starting or transferring, including paused. */
+export function isActiveDownload(
+  state: MissingModelDownloadState
+): state is ActiveMissingModelDownloadState {
   return (
     state.status === 'requested' ||
     state.status === 'pending' ||
@@ -107,7 +115,7 @@ function acceptsEvent(
     return false
   }
   return (
-    !isActive(current.state) ||
+    !isActiveDownload(current.state) ||
     current.state.status === 'requested' ||
     current.url === progress.url
   )
@@ -115,7 +123,8 @@ function acceptsEvent(
 
 function isBusy(download: HostDownload | undefined): boolean {
   return (
-    !!download && (isActive(download.state) || download.state.status === 'done')
+    !!download &&
+    (isActiveDownload(download.state) || download.state.status === 'done')
   )
 }
 
@@ -393,14 +402,14 @@ export const useMissingModelDownloadStore = defineStore(
 
     function controlRef(model: ModelWithUrl): string | undefined {
       const download = downloads.get(getModelFileKey(model))
-      if (!download || !isActive(download.state)) return undefined
+      if (!download || !isActiveDownload(download.state)) return undefined
       if (
         download.jobId !== undefined &&
         !download.endedJobs.has(download.jobId)
       )
         return download.jobId
       const sharingUrl = [...downloads.values()].filter(
-        (other) => other.url === download.url && isActive(other.state)
+        (other) => other.url === download.url && isActiveDownload(other.state)
       )
       return sharingUrl.length === 1 ? download.url : undefined
     }
