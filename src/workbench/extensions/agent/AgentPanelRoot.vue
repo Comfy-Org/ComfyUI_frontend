@@ -1223,8 +1223,6 @@ const {
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
       })
-      // The only signal, on Desktop as on Cloud, that a page and its doc host
-      // disagree; the host's message is never sent, only the code's tag.
       trackAgentError('workflow_sync_failed', 'post_acceptance', 'toast', {
         retryable: false,
         syncErrorCode: workflowSyncErrorTelemetryCode(code)
