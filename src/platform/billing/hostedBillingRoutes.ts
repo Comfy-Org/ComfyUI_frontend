@@ -40,7 +40,12 @@ export type HostedBillingRoute =
 /** The caller-supplied part of the entry, as opposed to the environment the host resolves for itself. */
 export type HostedBillingRouteFields = Pick<
   BillingEntryInput,
-  'plan' | 'workspaceId' | 'teamCreditStopId' | 'correlationId' | 'source'
+  | 'plan'
+  | 'workspaceId'
+  | 'teamCreditStopId'
+  | 'correlationId'
+  | 'source'
+  | 'operationId'
 >
 
 const PROVIDER: HostedBillingRoute = { kind: 'provider' }

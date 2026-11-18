@@ -11,6 +11,7 @@ import {
 import {
   localBillingWebEnabled,
   localSurface,
+  setLocalAutoTopUpAtCheckoutEnabled,
   setLocalBillingNewUxEnabled,
   setLocalBillingWebEnabled
 } from '@/platform/billing/localBillingWebEnabled'
@@ -24,13 +25,21 @@ const READ_TIMEOUT_MS = 10_000
 
 const zLocalBillingWeb = z.object({ local_billing_web: z.literal(true) })
 const zBillingNewUx = z.object({ billing_new_ux_enabled: z.literal(true) })
+const zAutoTopUpAtCheckout = z.object({
+  billing_auto_top_up_at_checkout_enabled: z.literal(true)
+})
 
 interface LocalCloudFlags {
   readonly localBillingWeb: boolean
   readonly billingNewUx: boolean
+  readonly autoTopUpAtCheckout: boolean
 }
 
-const ALL_OFF: LocalCloudFlags = { localBillingWeb: false, billingNewUx: false }
+const ALL_OFF: LocalCloudFlags = {
+  localBillingWeb: false,
+  billingNewUx: false,
+  autoTopUpAtCheckout: false
+}
 
 async function readServedFlags(): Promise<LocalCloudFlags> {
   try {
@@ -51,7 +60,8 @@ async function readServedFlags(): Promise<LocalCloudFlags> {
     const served: unknown = await response.json()
     return {
       localBillingWeb: zLocalBillingWeb.safeParse(served).success,
-      billingNewUx: zBillingNewUx.safeParse(served).success
+      billingNewUx: zBillingNewUx.safeParse(served).success,
+      autoTopUpAtCheckout: zAutoTopUpAtCheckout.safeParse(served).success
     }
   } catch {
     return ALL_OFF
@@ -61,7 +71,7 @@ async function readServedFlags(): Promise<LocalCloudFlags> {
 async function readLocalCloudFlags(): Promise<LocalCloudFlags> {
   const override = getDevOverride<boolean>('local_billing_web')
   if (typeof override === 'boolean')
-    return { localBillingWeb: override, billingNewUx: false }
+    return { ...ALL_OFF, localBillingWeb: override }
   return readServedFlags()
 }
 
@@ -73,6 +83,7 @@ export const useLocalBillingWebFlagStore = defineStore(
     function apply(flags: LocalCloudFlags): void {
       setLocalBillingWebEnabled(flags.localBillingWeb)
       setLocalBillingNewUxEnabled(flags.billingNewUx)
+      setLocalAutoTopUpAtCheckoutEnabled(flags.autoTopUpAtCheckout)
     }
 
     function clear(): void {

@@ -4,6 +4,8 @@ import { assert } from 'vitest'
 import type { VNode } from 'vue'
 
 import type {
+  AutoReloadSettings,
+  AutoTopUpReader,
   BillingOperationReceipt,
   BillingOperationState,
   BillingResult,
@@ -20,6 +22,7 @@ import { parseBillingEntry } from '@comfyorg/billing-contract'
 
 import { provideWebSessionCloudRead } from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
+import { AUTO_TOP_UP_SETTINGS_KEY } from '@/session/autoTopUpSettings'
 import { createBillingI18n } from '@/i18n'
 import type {
   FakeBillingClient,
@@ -37,7 +40,8 @@ import FullPageTopupView from '@/views/FullPageTopupView.vue'
 
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  PLATFORM_BASE_URL: 'https://testplatform.comfy.org'
 }))
 
 const stripeKey = vi.hoisted(() => ({
@@ -414,7 +418,7 @@ describe('FullPageTopupView', () => {
     { name: 'no amount', query: '' },
     { name: 'an unreadable amount', query: '&amount_cents=12.50' }
   ])(
-    '769-15773: a top-up link with $name is not valid and sends the customer to add credits in settings',
+    '769-15773: a top-up link with $name is not valid and sends the customer to add credits on Platform Billing',
     async ({ query }) => {
       const assign = vi
         .spyOn(window.location, 'assign')
@@ -443,7 +447,7 @@ describe('FullPageTopupView', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
 
       expect(assign).toHaveBeenCalledWith(
-        'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws-team'
+        'https://testplatform.comfy.org/settings/billing?workspace=ws-team'
       )
     }
   )
@@ -1117,4 +1121,205 @@ describe('FullPageTopupView paying once', () => {
       expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
     }
   )
+})
+
+const AUTO_TOP_UP_PATH = `${TOPUP_PATH}&auto_top_up_threshold_credits=1055&auto_top_up_target_credits=11605`
+
+const SERVED_SETTINGS: AutoReloadSettings = {
+  auto_top_up_conflict: false,
+  card_expiry: null,
+  configured: false,
+  cycle_resets_at: null,
+  declined_payment_method: null,
+  disabled_reason: null,
+  enabled: false,
+  last_failure_at: null,
+  last_failure_reason: null,
+  max_monthly_budget_cents: 100000,
+  max_reload_credits: 100000,
+  min_reload_credits: 1000,
+  monthly_budget_cents: null,
+  monthly_budget_is_default: true,
+  paused_by_budget: false,
+  paused_by_budget_remainder: false,
+  paused_by_decline: false,
+  reload_amount_cents: null,
+  reload_credits: null,
+  spent_this_cycle_cents: 0,
+  status: 'off',
+  target_credits: null,
+  threshold_credits: null
+}
+
+function autoTopUpReader(): AutoTopUpReader {
+  return {
+    read: vi.fn<AutoTopUpReader['read']>(async () => ({
+      status: 'ok',
+      value: {
+        scope: { userId: 'uid-1', workspaceId: 'ws-team', role: 'owner' },
+        settings: SERVED_SETTINGS,
+        readAt: 0
+      }
+    })),
+    getSnapshot: () => undefined,
+    invalidate: () => {},
+    dispose: () => {}
+  }
+}
+
+function renderAutoTopUp(
+  path: string,
+  paymentMethods: BillingResult<readonly SavedPaymentMethod[]> = {
+    status: 'ok',
+    value: []
+  }
+) {
+  recordBillingEntry(parseBillingEntry(path))
+  const fake = createFakeBillingClient({
+    capabilities: { can_top_up: true },
+    topupQuote: QUOTED,
+    paymentMethods
+  })
+  const createHostedTopupCheckout = vi
+    .spyOn(fake.client.topup, 'createHostedTopupCheckout')
+    .mockResolvedValue({
+      status: 'ok',
+      url: 'https://checkout.stripe.com/c/pay/cs_test_1'
+    })
+  const { unmount } = render(FullPageTopupView, {
+    global: {
+      plugins: [createBillingI18n()],
+      provide: {
+        [BILLING_CLIENT_KEY]: fake.client,
+        [AUTO_TOP_UP_SETTINGS_KEY]: autoTopUpReader()
+      }
+    }
+  })
+  return { fake, createHostedTopupCheckout, unmount }
+}
+
+describe('FullPageTopupView with auto top-up from the link', () => {
+  it('shows the consent with the chosen monthly limit and pays on the hosted checkout with the settings', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
+      { status: 'ok', value: [{ ...VISA, is_default: true }] }
+    )
+
+    expect(
+      await screen.findByTestId('checkout-auto-top-up-consent')
+    ).toHaveTextContent(
+      'Top-ups are charged to your default card, Visa ···· 3184, up to $50.00 a month.'
+    )
+    expect(screen.getByTestId('checkout-auto-top-up')).toHaveTextContent(
+      'When your balance drops below 1,055 credits, we buy enough to bring it back to 11,605 credits.'
+    )
+    expect(form.mounts).toBe(0)
+
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(assign).toHaveBeenCalledWith(
+        'https://checkout.stripe.com/c/pay/cs_test_1'
+      )
+    )
+    expect(createHostedTopupCheckout).toHaveBeenCalledExactlyOnceWith({
+      amountCents: 2500,
+      returnUrl: `${window.location.origin}/return/topup`,
+      autoTopUp: {
+        threshold_credits: 1055,
+        target_credits: 11605,
+        monthly_budget_cents: 5000
+      }
+    })
+    expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('names the served monthly maximum when the link sets no limit, and sends none', async () => {
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    const { createHostedTopupCheckout } = renderAutoTopUp(AUTO_TOP_UP_PATH)
+
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('checkout-auto-top-up-consent')
+      ).toHaveTextContent(
+        'Top-ups are charged to the card you pay with, up to $1,000.00 a month.'
+      )
+    )
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(createHostedTopupCheckout).toHaveBeenCalledWith(
+        expect.objectContaining({
+          autoTopUp: { threshold_credits: 1055, target_credits: 11605 }
+        })
+      )
+    )
+  })
+
+  it('names neither card as certain when the saved cards cannot be read, since an existing default card is kept', async () => {
+    renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
+      { status: 'error', code: 'REQUEST_FAILED' }
+    )
+
+    expect(
+      await screen.findByTestId('checkout-auto-top-up-consent')
+    ).toHaveTextContent(
+      'Top-ups are charged to your default card, or to the card you pay with if you have none, up to $50.00 a month.'
+    )
+  })
+
+  it('does not leave for a hosted checkout that answers after the page is gone', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const { createHostedTopupCheckout, unmount } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`
+    )
+    let resolve!: (
+      result: Awaited<ReturnType<typeof createHostedTopupCheckout>>
+    ) => void
+    const promise = new Promise<
+      Awaited<ReturnType<typeof createHostedTopupCheckout>>
+    >((settle) => {
+      resolve = settle
+    })
+    createHostedTopupCheckout.mockReturnValue(promise)
+    await screen.findByTestId('checkout-auto-top-up-consent')
+    await userEvent.click(payButton())
+    await waitFor(() => expect(createHostedTopupCheckout).toHaveBeenCalled())
+
+    unmount()
+    resolve({ status: 'ok', url: 'https://checkout.stripe.com/c/pay/cs_late' })
+    await promise
+
+    expect(assign).not.toHaveBeenCalled()
+  })
+
+  it('keeps the page and shows the refusal when the hosted checkout is refused', async () => {
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const { createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`
+    )
+    createHostedTopupCheckout.mockResolvedValue({
+      status: 'error',
+      code: 'REQUEST_FAILED',
+      httpStatus: 400,
+      serverMessage: 'Auto top-up is not available for this workspace.'
+    })
+    await screen.findByTestId('checkout-auto-top-up-consent')
+
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    expect(createHostedTopupCheckout).toHaveBeenCalledOnce()
+    expect(assign).not.toHaveBeenCalled()
+    expect(screen.getByRole('alert')).toBeInTheDocument()
+  })
 })

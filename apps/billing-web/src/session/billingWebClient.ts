@@ -18,6 +18,7 @@
  * open one.
  */
 import type {
+  AutoTopUpReader,
   BillingOperationPointerStorage,
   BillingScopeSource,
   BillingSession,
@@ -27,6 +28,7 @@ import type {
   WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
+  createAutoTopUpReader,
   createBillingCommands,
   createCredentialedBillingTransport,
   createBillingEventsReader,
@@ -44,6 +46,7 @@ import {
   toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
+import { disposeBillingClient } from '@comfyorg/account-ui/billing'
 
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
@@ -81,6 +84,13 @@ const resolveUrl = (route: string) => `${CLOUD_BASE_URL}/api${route}`
  */
 export type BillingWebClient = BillingClient & {
   readonly invites: WorkspaceInviteCommands
+  readonly autoTopUp: AutoTopUpReader
+}
+
+/** Ends the client's lifetime, the readers billing-web adds included. */
+export function disposeBillingWebClient(client: BillingWebClient): void {
+  disposeBillingClient(client)
+  client.autoTopUp.dispose()
 }
 
 export function createBillingWebClient(
@@ -237,6 +247,7 @@ function composeBillingWebClient(
     events,
     topup: createTopupCommand({ transport, lifecycle, capabilities, credits }),
     invites: createWorkspaceInviteCommands({ transport }),
+    autoTopUp: createAutoTopUpReader(readerOptions),
     commands: createBillingCommands({
       transport,
       lifecycle,
