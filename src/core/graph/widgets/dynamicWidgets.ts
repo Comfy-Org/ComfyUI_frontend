@@ -810,6 +810,7 @@ function forgetDynamicChildren(node: LGraphNode, groupName: string) {
 
 function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   if (node.comfyDynamic?.autogrow) return
+  node.widgets ??= []
   node.comfyDynamic ??= {}
   const groups: AutogrowNode['comfyDynamic']['autogrow'] = {}
   node.comfyDynamic.autogrow = groups
