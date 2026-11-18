@@ -20,7 +20,9 @@ await comfy.settings.set(
 )
 ```
 
-A declaration lasts for the page, and an id already declared throws. `set`
+A declaration lasts for the page, and an id already declared throws. Every
+settings member throws a `TypeError` for an id every object inherits, such as
+`__proto__`, `constructor` or `toString`, and so does `commands.register`. `set`
 returns the settings store's promise: it rejects when the server cannot be
 reached and resolves when the server answers, even with a refusal, and in both
 cases the value stays applied until the next reload (core issue #23467).
@@ -114,6 +116,34 @@ const button = comfy.ui.addActionBarButton({
 const name = await comfy.ui.prompt({ label: 'Name', value: 'untitled' })
 if (name !== undefined) button.update({ tooltip: `Open ${name}` })
 removeTab()
+```
+
+### Panels and overlays over the graph
+
+`mountViewportPanel` returns its handle at once, also in the module body
+before the app has a graph view. The panel renders once, when it joins the
+graph view, and `destroy` is called only for a panel that rendered. A panel
+sits above every graph overlay, so a press on it does not reach an
+interactive overlay.
+
+```ts
+import { comfy } from '/comfy/api/v4.js'
+
+const panel = comfy.ui.mountViewportPanel({
+  id: 'MyPack.toolbar',
+  ariaLabel: 'My pack tools',
+  anchor: 'top-right',
+  offsetY: 8,
+  render(container) {
+    const button = document.createElement('button')
+    button.textContent = 'Tidy'
+    button.addEventListener('click', () => {
+      void comfy.commands.run('MyPack.tidy')
+    })
+    container.append(button)
+  }
+})
+comfy.onReady(() => console.info(typeof panel.remove))
 ```
 
 Browser features that V2 offered through a guest SDK (`files`, `clipboard`,
