@@ -46,7 +46,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { ref, watch } from 'vue'
+import { onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { SnapBox } from '@/lib/litegraph/src/canvas/gestureSnap'
@@ -159,6 +159,9 @@ function applyBoxes(
   canvas.setDirty(true, true)
 }
 
+let endActiveDrag: (() => void) | undefined
+onBeforeUnmount(() => endActiveDrag?.())
+
 function pointerAlong(event: PointerEvent) {
   return axis.value === 'x' ? event.clientX : event.clientY
 }
@@ -184,10 +187,12 @@ function startDrag(event: PointerEvent, index: number) {
   const startBoxes = nodes.map(nodeBox)
   const startPointer = pointerAlong(event)
   const scale = canvas.ds.scale || 1
+  const { pointerId } = event
   let moved = false
 
   const onMove = (moveEvent: PointerEvent) => {
-    if (!isStillEditable()) return onEnd()
+    if (moveEvent.pointerId !== pointerId) return
+    if (!isStillEditable()) return endDrag()
     const travel = (pointerAlong(moveEvent) - startPointer) / scale
     const gap = gapAfterTravel(startBoxes, axis.value, index, travel)
     applyBoxes(
@@ -198,13 +203,19 @@ function startDrag(event: PointerEvent, index: number) {
     )
     moved = true
   }
-  const onEnd = () => {
+  const endDrag = () => {
     window.removeEventListener('pointermove', onMove)
     window.removeEventListener('pointerup', onEnd)
     window.removeEventListener('pointercancel', onEnd)
+    endActiveDrag = undefined
     if (moved && workflowStore.activeWorkflow === workflow)
       workflow?.changeTracker.captureCanvasState()
   }
+  const onEnd = (endEvent: PointerEvent) => {
+    if (endEvent.pointerId === pointerId) endDrag()
+  }
+  endActiveDrag?.()
+  endActiveDrag = endDrag
   window.addEventListener('pointermove', onMove)
   window.addEventListener('pointerup', onEnd)
   window.addEventListener('pointercancel', onEnd)
