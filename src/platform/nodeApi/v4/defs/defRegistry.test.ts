@@ -548,6 +548,13 @@ describe('node definitions', () => {
         definition: { type: 'T', outputs: [{ name: 'o', type: '*', shape: 7 }] }
       },
       {
+        name: 'an output shape that is null',
+        definition: {
+          type: 'T',
+          outputs: [{ name: 'o', type: '*', shape: null }]
+        }
+      },
+      {
         name: 'an unknown execution',
         definition: { type: 'T', execution: 'worker' }
       }

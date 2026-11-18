@@ -402,6 +402,30 @@ describe('edits and what a load keeps of them', () => {
       expect(sourceFeeding()).toEqual(fedBySources)
     })
 
+    it('refuses to reorder its inputs while its subgraph is placed inside another subgraph', () => {
+      const holder = new LGraphNode('Holder')
+      graph.add(holder)
+      const outer = graph.convertToSubgraph(new Set([holder])).node
+      expect(subgraphHandle.inputs.reorder(['first', 'second'])).toBe(true)
+      const nested = LiteGraph.createNode(subgraphNode.type)
+      assert(nested)
+      outer.subgraph.add(nested)
+
+      expect(() => subgraphHandle.inputs.reorder(['second', 'first'])).toThrow(
+        TypeError
+      )
+      expect(names(subgraphNode.subgraph.inputs)).toEqual(['first', 'second'])
+    })
+
+    it('leaves its inputs and the version alone when the order is unchanged', () => {
+      const version = graph._version
+
+      expect(subgraphHandle.inputs.reorder(['first', 'second'])).toBe(true)
+
+      expect(names(subgraphNode.subgraph.inputs)).toEqual(['first', 'second'])
+      expect(graph._version).toBe(version)
+    })
+
     it('says no and changes nothing when the host cannot reorder its inputs', () => {
       vi.spyOn(useLinkStore(), 'updateEndpoints').mockReturnValue({
         ok: false,

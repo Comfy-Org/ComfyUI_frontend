@@ -509,6 +509,15 @@ describe('connection, property and pointer hooks', () => {
       expect(reportError).toHaveBeenCalledOnce()
     })
 
+    it('does not mark it for an answer that is truthy but not true', () => {
+      extend((builder) =>
+        Reflect.apply(builder.onDragOver, builder, [() => 'yes'])
+      )
+      const node = probe()
+
+      expect(node.onDragOver?.(drag())).toBe(false)
+    })
+
     it('marks it when any hook accepts, whatever the others answer', () => {
       extend((builder) => builder.onDragOver(() => false))
       extend((builder) => builder.onDragOver(() => true))
@@ -639,6 +648,15 @@ describe('connection, property and pointer hooks', () => {
 
       await expect(node.onDragDrop?.(drop())).resolves.toBe(false)
       expect(reportError).toHaveBeenCalledTimes(2)
+    })
+
+    it('leaves the drop to the editor for an answer that is truthy but not true', async () => {
+      extend((builder) =>
+        Reflect.apply(builder.onDrop, builder, [async () => 'yes'])
+      )
+      const node = probe()
+
+      await expect(node.onDragDrop?.(drop())).resolves.toBe(false)
     })
 
     it('claims it when any hook claims it, and asks every hook', async () => {
