@@ -7,8 +7,8 @@ const delayBounds = [
   { attempt: 1, min: 600, max: 749 },
   { attempt: 2, min: 1200, max: 1499 },
   { attempt: 6, min: 19_200, max: 23_999 },
-  { attempt: 7, min: 30_000, max: 37_499 },
-  { attempt: 1000, min: 30_000, max: 37_499 }
+  { attempt: 7, min: 30_000, max: 30_000 },
+  { attempt: 1000, min: 30_000, max: 30_000 }
 ]
 
 describe(reconnectDelayMs, () => {
