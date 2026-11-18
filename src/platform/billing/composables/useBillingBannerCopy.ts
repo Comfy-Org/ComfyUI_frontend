@@ -2,6 +2,7 @@ import type {
   BillingBannerCopy,
   BillingBannerView
 } from '@comfyorg/account-ui/billing'
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -12,7 +13,7 @@ const bs = 'workspacePanel.billingStatus'
 const tc = 'workspacePanel.billingTab.topupCheckout'
 const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
 
-/** The Billing tab banner strings in the app locale, with the paused and parked views. */
+/** The Billing tab banner strings in the app locale, with the paused, parked and plan-not-started views. */
 export function useBillingBannerCopy() {
   const { t, locale } = useI18n()
 
@@ -37,7 +38,8 @@ export function useBillingBannerCopy() {
       contactSupport: t(`${bs}.parked.contactSupport`),
       resumePlan: t(`${bs}.ending.reactivate`),
       choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
-      contactSales: t(`${bs}.ending.contactSales`)
+      contactSales: t(`${bs}.ending.contactSales`),
+      finishPayment: t('subscription.signupPaymentRecovery.finishPayment')
     },
     planCheckout: {
       verifyPayment: {
@@ -90,5 +92,16 @@ export function useBillingBannerCopy() {
     href: CONTACT_SUPPORT_URL
   }))
 
-  return { copy, topupCopy, pausedView, parkedView }
+  function planNotStartedView(
+    _planTier: SubscriptionTier | null
+  ): BillingBannerView {
+    return {
+      kind: 'planNotStarted',
+      title: '',
+      body: '',
+      action: 'finishPayment'
+    }
+  }
+
+  return { copy, topupCopy, pausedView, parkedView, planNotStartedView }
 }

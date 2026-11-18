@@ -418,6 +418,11 @@ export { deriveCreditsFlyout } from './billingTab/creditsFlyout'
 export type { PlanCheckoutBanner } from './billingTab/planCheckoutBanner'
 export { planCheckoutBannerFor } from './billingTab/planCheckoutBanner'
 export type {
+  PlanNotStartedBanner,
+  PlanNotStartedFacts
+} from './billingTab/planNotStartedBanner'
+export { planNotStartedBannerFor } from './billingTab/planNotStartedBanner'
+export type {
   TopupCheckoutBanner,
   TopupCheckoutSnapshot
 } from './billingTab/topupCheckoutBanner'

@@ -5,6 +5,7 @@ import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { PlanCheckoutBanner } from '@comfyorg/account-core/billing'
+import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import {
   BillingBanner,
   planCheckoutBannerView
@@ -13,6 +14,12 @@ import {
 import enMessages from '@/locales/en/main.json'
 
 import { useBillingBannerCopy } from './useBillingBannerCopy'
+
+const i18nPlugin = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: enMessages }
+})
 
 function renderBanner(banner: PlanCheckoutBanner) {
   const onDismiss = vi.fn()
@@ -28,19 +35,28 @@ function renderBanner(banner: PlanCheckoutBanner) {
           })
       }
     },
-    {
-      global: {
-        plugins: [
-          createI18n({
-            legacy: false,
-            locale: 'en',
-            messages: { en: enMessages }
-          })
-        ]
-      }
-    }
+    { global: { plugins: [i18nPlugin] } }
   )
   return { onDismiss }
+}
+
+function renderPlanNotStarted(planTier: SubscriptionTier | null) {
+  const onAction = vi.fn()
+  render(
+    {
+      setup() {
+        const { copy, planNotStartedView } = useBillingBannerCopy()
+        return () =>
+          h(BillingBanner, {
+            view: planNotStartedView(planTier),
+            copy: copy.value,
+            onAction
+          })
+      }
+    },
+    { global: { plugins: [i18nPlugin] } }
+  )
+  return { onAction }
 }
 
 describe('useBillingBannerCopy plan checkout banner', () => {
@@ -120,5 +136,32 @@ describe('useBillingBannerCopy plan checkout banner', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
 
     expect(onDismiss).toHaveBeenCalledOnce()
+  })
+})
+
+describe('useBillingBannerCopy plan not started banner', () => {
+  it('names the served plan and offers a white Finish payment with no Dismiss', async () => {
+    const { onAction } = renderPlanNotStarted('CREATOR')
+
+    const banner = screen.getByRole('status')
+    expect(banner).toHaveTextContent('Your Creator plan hasn’t started')
+    expect(banner).toHaveTextContent('Finish paying to start it.')
+    const action = screen.getByRole('button', { name: 'Finish payment' })
+    expect(action).toHaveAttribute('data-variant', 'inverted')
+    expect(
+      screen.queryByRole('button', { name: 'Dismiss' })
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(action)
+
+    expect(onAction).toHaveBeenCalledWith('finishPayment')
+  })
+
+  it('falls back to a generic title when no plan is served', () => {
+    renderPlanNotStarted(null)
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Your plan hasn’t started'
+    )
   })
 })
