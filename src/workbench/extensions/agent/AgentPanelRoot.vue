@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import './agentPanel.css'
+import type { AgentGreetingAssignment } from './types/proactiveGreeting'
+import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useClipboard, useEventListener } from '@vueuse/core'
@@ -47,9 +50,6 @@ import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { isHdrImageFilename } from '@/utils/hdrFormatUtil'
 import type { DroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
-import { useAuthStore } from '@/stores/authStore'
 import {
   AGENT_ATTACH_ACCEPT,
   agentAttachRefVerdict,
@@ -68,7 +68,7 @@ import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorat
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -88,6 +88,7 @@ import { parseNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { usePlanCreditLine } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -158,11 +159,7 @@ import {
 } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
-import {
-  agentSocketAuthParams,
-  ensureSignedIn,
-  hasAgentCredential
-} from './services/agent/agentAuth'
+import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -175,8 +172,11 @@ import { isCreditsStopPart } from './services/agent/agentMessageParts'
 import type { CanvasConfirmation } from './services/agent/agentEventTransport'
 import { toolCanClaimCanvasContent } from './services/agent/agentToolClassification'
 import { areAgentWorkflowIdsEquivalent } from './services/agent/agentWorkflowId'
-import { createAgentEventSource } from './services/agent/agentEventSource'
 import { resolveAgentIdentity } from './services/agent/agentIdentity'
+import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+import { toSocketIdentity, useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
@@ -199,14 +199,21 @@ import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
-import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 
 const CrdtDevPanel = defineAsyncComponent(
   () => import('./crdt/CrdtDevPanel.vue')
 )
 
+const { proactiveAssignment } = defineProps<{
+  proactiveAssignment?: AgentGreetingAssignment
+}>()
+
 const { t } = useI18n()
 const toast = useToast()
+let errorAttachRun = 0
+onBeforeUnmount(() => {
+  errorAttachRun++
+})
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const {
@@ -236,6 +243,7 @@ const {
   isReady: capabilityReadSettled,
   snapshotAuthoritative
 } = useBillingCapabilities()
+const planCreditLine = usePlanCreditLine()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
     return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -245,7 +253,8 @@ const paywallPresentation = computed(() => {
     role: workspaceRole.value,
     tier: subscriptionTier.value,
     canTopUp: canTopUp.value,
-    canSubscribeSelfServe: canSubscribeSelfServe.value
+    canSubscribeSelfServe: canSubscribeSelfServe.value,
+    planCreditLine: planCreditLine.value
   })
 })
 const sidebarTabStore = useSidebarTabStore()
@@ -260,13 +269,17 @@ onBeforeUnmount(startCrdtDebugGate())
 
 const rest = createAgentRestClient()
 
-const events = createAgentEventSource({
-  endpoint: api.apiURL('/agent/events'),
-  getAuthParams: agentSocketAuthParams
-})
-
-const docTransport = createAgentDocFrameTransport(events)
-onBeforeUnmount(() => docTransport.destroy())
+const authStore = useAuthStore()
+const apiKeyAuthStore = useApiKeyAuthStore()
+const teamWorkspaceStore = useTeamWorkspaceStore()
+const { events, docTransport, onIdentityChange } = useAgentPageSession(() =>
+  toSocketIdentity(
+    authStore.userId,
+    apiKeyAuthStore.currentUser?.id,
+    teamWorkspaceStore.activeWorkspaceId,
+    desktopHostUser.value?.workspaceId
+  )
+)
 
 const agentIdentity = resolveAgentIdentity({
   getIdentity: () => rest.getIdentity(),
@@ -281,37 +294,7 @@ const agentIdentity = resolveAgentIdentity({
 })
 onBeforeUnmount(() => agentIdentity.stop())
 
-const authStore = useAuthStore()
-const apiKeyAuthStore = useApiKeyAuthStore()
-const teamWorkspaceStore = useTeamWorkspaceStore()
-const agentSocketIdentity = computed(() => [
-  authStore.userId ?? apiKeyAuthStore.currentUser?.id ?? null,
-  teamWorkspaceStore.activeWorkspaceId ?? null,
-  desktopHostUser.value?.workspaceId ?? null
-])
-watch(
-  agentSocketIdentity,
-  (
-    [account, workspace, hostWorkspace],
-    [wasAccount, wasWorkspace, wasHostWorkspace]
-  ) => {
-    if (
-      account === wasAccount &&
-      workspace === wasWorkspace &&
-      hostWorkspace === wasHostWorkspace
-    )
-      return
-    if (
-      workspace === null &&
-      account === wasAccount &&
-      account !== null &&
-      hostWorkspace === null
-    )
-      return
-    events.reconnect()
-    agentIdentity.reset()
-  }
-)
+onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -878,7 +861,11 @@ let nodeReferenceWorkflow = selectionTags.value.length
 
 function viewedGraphNodes() {
   return (
-    (canvasStore.currentGraph ?? app.canvas?.graph ?? app.graph)?.nodes ?? []
+    (
+      canvasStore.currentGraph ??
+      useApp().canvas?.graph ??
+      useApp().rootGraphOrUndefined
+    )?.nodes ?? []
   )
 }
 
@@ -1159,7 +1146,9 @@ const {
     disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
-    draft: targetWorkflowDraft
+    draft: targetWorkflowDraft,
+    canvasSelection: () =>
+      canReferenceNodes.value ? selectedNodes.value.map((node) => node.id) : []
   }
 })
 
@@ -1216,15 +1205,15 @@ const {
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
   getGraph: () =>
-    canvasStore.canvas && app.isGraphReady ? app.rootGraph : null,
+    canvasStore.canvas && useApp().isGraphReady ? useApp().rootGraph : null,
   events: {
     onAppliedUpdate({ workflowId, opIds, isLive }) {
       conversationStore.notifyCanvasCaughtUp({ workflowId, opIds, isLive })
     },
     onMaterialized({ workflowId, nodeIds }) {
-      if (app.isGraphReady) {
+      if (useApp().isGraphReady) {
         graphActivity.recordMaterialized(
-          { workflowId, rootGraphId: toRootGraphId(app.rootGraph.id) },
+          { workflowId, rootGraphId: toRootGraphId(useApp().rootGraph.id) },
           nodeIds,
           conversationTurnId.value
         )
@@ -1242,7 +1231,7 @@ const {
       })
   },
   applierDeps: {
-    getCanvas: () => app.canvas,
+    getCanvas: () => useApp().canvas,
     withRemoteActor: (actor, fn) => layoutStore.withActor(actor, fn),
     viewportBounds() {
       const canvas = canvasStore.canvas
@@ -1285,7 +1274,7 @@ const docOpMinter = attachDocOpMinter({
   onUnboundLocalIntent: noteUnboundLocalIntent,
   onUnboundVisibleIntent: noteUnboundVisibleIntent,
   enqueue: enqueueHumanOperations,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
   boundRootGraphId,
   docInputNames,
   docWidgetValue,
@@ -1300,7 +1289,7 @@ const restoreOpMinter = attachRestoreOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: followerCanDeliver,
   enqueue: enqueueHumanOperations,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  getGraph: () => (useApp().isGraphReady ? useApp().rootGraph : null),
   docInputNames: (nodeId) => {
     const parsed = parseNodeId(nodeId)
     return parsed === null ? null : docInputNames(parsed)
@@ -1405,6 +1394,33 @@ useEventListener(
       boundCanvasNodeCount.value = event.detail.nodes?.length ?? 0
   }
 )
+
+const greetingCanvasHasNodes = ref(false)
+function refreshGreetingCanvas(): void {
+  greetingCanvasHasNodes.value =
+    (workflowStore.activeWorkflow?.activeState?.nodes?.length ?? 0) > 0
+}
+watch(() => workflowStore.activeWorkflow, refreshGreetingCanvas, {
+  immediate: true
+})
+useEventListener(
+  api,
+  'graphChanged',
+  (event: CustomEvent<ComfyWorkflowJSON>) => {
+    greetingCanvasHasNodes.value = (event.detail.nodes?.length ?? 0) > 0
+  }
+)
+const proactive = useProactiveGreeting({
+  assignment: () => (isCloud ? proactiveAssignment : undefined),
+  identity: () => ({
+    userId: authStore.userId ?? null,
+    workspaceId: teamWorkspaceStore.activeWorkspaceId ?? null
+  }),
+  active: () =>
+    agentPanelStore.isOpen && agentPanelStore.view.screen === 'chat',
+  canvas: () => (greetingCanvasHasNodes.value ? 'workflow' : 'empty'),
+  getUsageStatus: (options) => rest.getUsageStatus(options)
+})
 
 const completedTurnClaimedCanvasContent = ref(false)
 function completedTurnCanClaimCanvasContent(): boolean {
@@ -1799,8 +1815,6 @@ onBeforeUnmount(() => {
 
 const { copy } = useClipboard({ legacy: true })
 
-// DES-1221. Read while the panel is on screen, so the experiment's denominator
-// is the panel openers the hypothesis is about.
 const { variant: freeUseVariant, reportNotice: onFreeUseNotice } =
   useFreeUsePlacement(isCloud)
 
@@ -1994,6 +2008,8 @@ async function onSelectHistory(
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
   composerStore.invalidateSubmission()
+  errorAttachRun++
+  composerStore.clearErrorContext()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
   canvasStore.stopNodePicking()
@@ -2033,6 +2049,51 @@ if (
   selectedTarget.value.path !== mountedOn.path
 )
   void followTab(mountedOn)
+
+function warnWorkflowChanged(): void {
+  toast.warning(t('agent.errorContext.workflowChanged'), { duration: 5000 })
+}
+
+async function openChatForErroredWorkflow(
+  workflow: ComfyWorkflow,
+  run: number
+): Promise<boolean> {
+  await followTab(workflow)
+  if (run !== errorAttachRun) return false
+  if (workflowStore.activeWorkflow?.path !== workflow.path) {
+    warnWorkflowChanged()
+    return false
+  }
+  if (selectedTarget.value?.path === workflow.path) return true
+  if (composerStore.hasDraft) {
+    toast.warning(t('agent.errorContext.draftBlocked'), { duration: 5000 })
+    return false
+  }
+  onNewChat('new_chat_button')
+  return true
+}
+
+async function attachErrorContext(context: AgentErrorContext): Promise<void> {
+  const run = ++errorAttachRun
+  const workflow = workflowStore.activeWorkflow
+  if (context.workflowPath && workflow?.path !== context.workflowPath) {
+    warnWorkflowChanged()
+    return
+  }
+  if (workflow && !(await openChatForErroredWorkflow(workflow, run))) return
+  agentPanelStore.retainWorkflowTarget()
+  composerStore.setErrorContext(context)
+}
+
+watch(
+  () => agentPanelStore.pendingErrorContext,
+  (context) => {
+    if (!context) return
+    agentPanelStore.pendingErrorContext = null
+    void attachErrorContext(context)
+  },
+  { immediate: true }
+)
 
 function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
   return entries
@@ -2190,6 +2251,7 @@ const { submit: onSend } = useAgentDraftSubmission({
         originContext === undefined ? null : { tabPath: originContext.tabPath }
     }
     const selectionWorkflow = selectedTarget.value
+    const sentUsageScope = proactive.scope.value
     try {
       return await sendWithFundsRecheck((onAccepted) =>
         sendMessage(
@@ -2199,11 +2261,15 @@ const { submit: onSend } = useAgentDraftSubmission({
           references,
           () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
           meta.clientMessageId,
-          onAccepted,
+          () => {
+            proactive.accepted(sentUsageScope)
+            onAccepted()
+          },
           dismissAsk
         )
       )
     } finally {
+      if (proactive.scope.value === sentUsageScope) void proactive.refresh()
       reportPendingSend()
     }
   }
@@ -2249,8 +2315,10 @@ function onNewChat(
   attachment.cancelAllUploads()
   replaceSelectionTags([])
   dismissedSelectionSignature.value = null
+  errorAttachRun++
   composerStore.clearDraft()
   newChat(source)
+  void proactive.refresh()
   agentPanelStore.startFollowingVisibleWorkflow()
 }
 
@@ -2290,13 +2358,25 @@ watch(threadId, composerStore.trackDraftThread, {
   flush: 'sync'
 })
 
+watch(
+  () => agentPanelStore.pendingCloudHandoff,
+  (prompt) => {
+    if (!prompt) return
+    composerStore.setText(
+      [composerStore.draft, prompt].filter(Boolean).join('\n\n')
+    )
+    agentPanelStore.pendingCloudHandoff = null
+  },
+  { immediate: true }
+)
+
 watch(() => canvasStore.currentGraph, canvasStore.stopNodePicking, {
   flush: 'sync'
 })
 
 function onSelectNodes(): void {
   if (!canReferenceNodes.value || canvasStore.isPickingNodes) return
-  const canvas = app.canvas
+  const canvas = useApp().canvas
   if (!canvas) return
 
   const merged = new Map<string, LGraphNode>(
@@ -2306,7 +2386,7 @@ function onSelectNodes(): void {
   )
   for (const tag of selectionTags.value) {
     const key = selectedNodeKey(tag)
-    const node = getNodeByLocatorId(app.rootGraph, key)
+    const node = getNodeByLocatorId(useApp().rootGraph, key)
     if (node) merged.set(key, node)
   }
   if (merged.size) {
@@ -2578,6 +2658,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @change="onFilesPicked"
     />
     <AgentPanel
+      :greeting="proactive.greeting.value"
       :entries
       :editable-turn-id="editableTurnId"
       :answering-ask-ids="answeringAskIds"

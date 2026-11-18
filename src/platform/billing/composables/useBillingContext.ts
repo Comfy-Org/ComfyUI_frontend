@@ -134,6 +134,14 @@ function useBillingContextInternal(): BillingContext {
     toValue(activeContext.value.teamCreditStops)
   )
 
+  const subscriptionPaymentRecovery = computed(() =>
+    toValue(activeContext.value.subscriptionPaymentRecovery)
+  )
+
+  const statusPaymentRecovery = computed(() =>
+    toValue(activeContext.value.statusPaymentRecovery)
+  )
+
   const currentTeamCreditStop = computed(() =>
     toValue(activeContext.value.currentTeamCreditStop)
   )
@@ -465,6 +473,8 @@ function useBillingContextInternal(): BillingContext {
     plans,
     currentPlanSlug,
     teamCreditStops,
+    subscriptionPaymentRecovery,
+    statusPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,

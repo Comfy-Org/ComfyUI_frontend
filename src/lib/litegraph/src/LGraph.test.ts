@@ -28,7 +28,8 @@ import {
   registerDocBoundRootGraphProbe
 } from '@/lib/litegraph/src/docBoundGraphs'
 import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
@@ -922,8 +923,17 @@ describe('Store-driven serialization parity', () => {
   test('falls back safely when a stored node has no live adapter', ({
     expect
   }) => {
-    const graph = createGraph(new DummyNode())
+    const stranded = new DummyNode()
+    const rootGraph = new LGraph()
+    const graph = createTestSubgraph({ rootGraph })
+    graph.add(stranded)
+    const strandedId = stranded.id
+    stranded._state.graphId = 'stored-state-graph-id'
     graph._nodes = []
+
+    expect(
+      new Set([graph.id, rootGraph.id, stranded._state.graphId]).size
+    ).toBe(3)
 
     expect(graph.asSerialisable().nodes).toEqual([])
     expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
@@ -933,9 +943,14 @@ describe('Store-driven serialization parity', () => {
       {
         surface: 'graph',
         errorType: 'graph_serialization_state_mismatch',
+        tags: { outcome: 'degraded' },
         context: {
           graphId: graph.id,
-          mismatch: expect.stringMatching(/stored node .* has no live adapter/)
+          rootGraphId: rootGraph.id,
+          mismatch: `stored node ${strandedId} has no live adapter`,
+          mismatchKind: 'stored_without_live_adapter',
+          nodeId: strandedId,
+          stateGraphId: 'stored-state-graph-id'
         }
       }
     )

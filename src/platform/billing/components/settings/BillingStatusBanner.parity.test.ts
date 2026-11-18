@@ -11,6 +11,8 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
+import { serveBillingNotices } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 interface Subscription {
   hasFunds: boolean
@@ -102,7 +104,8 @@ const copy: Pick<BillingBannerCopy, 'dismiss' | 'actions'> = {
     contactSupport: t(`${bs}.parked.contactSupport`),
     resumePlan: t(`${bs}.ending.reactivate`),
     choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
-    contactSales: t(`${bs}.ending.contactSales`)
+    contactSales: t(`${bs}.ending.contactSales`),
+    finishPayment: t('subscription.signupPaymentRecovery.finishPayment')
   }
 }
 
@@ -157,6 +160,11 @@ describe('BillingBanner parity with the Billing tab plan status banner', () => {
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
+    useBillingCapabilities()
+    serveBillingNotices(() => ({
+      isTeamPlan: state.isTeamPlan,
+      ...state.subscription
+    }))
     state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'

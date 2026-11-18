@@ -53,9 +53,7 @@ const decision = computed(() => {
       )
     "
   >
-    <p
-      class="m-0 text-sm/5 wrap-break-word whitespace-pre-line text-foreground"
-    >
+    <p class="m-0 text-sm/5 wrap-break-word whitespace-pre-line">
       {{ part.prompt }}
     </p>
 

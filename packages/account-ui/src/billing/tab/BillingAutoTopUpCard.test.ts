@@ -18,7 +18,6 @@ import { loaded, notConfiguredSettings } from './__fixtures__/autoTopUpSettings'
 
 const RULE = 'Tops up to 6,275 credits when below 1,000 credits.'
 const OPEN = 'icon-[lucide--arrow-up-right]'
-const EXTERNAL = 'icon-[lucide--external-link]'
 const VARIANT_FILL = {
   inverted: 'bg-foreground',
   secondary: 'bg-secondary'
@@ -89,11 +88,11 @@ describe('BillingAutoTopUpCard', () => {
       case: 'off',
       state: OFF,
       status: 'Off',
-      lines: ['Refills credits when your balance runs low'],
+      lines: ['Refills credits when your balance runs low.'],
       label: 'Turn on',
       action: 'turn_on',
       variant: 'secondary',
-      icon: EXTERNAL
+      icon: OPEN
     },
     {
       case: 'on hold',
@@ -106,7 +105,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Update payment',
       action: 'update_payment',
       variant: 'inverted',
-      icon: EXTERNAL
+      icon: OPEN
     },
     {
       case: 'paused by budget',
@@ -142,7 +141,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Update payment',
       action: 'update_payment',
       variant: 'inverted',
-      icon: EXTERNAL
+      icon: OPEN
     },
     {
       case: 'turned off after consecutive declines',
@@ -157,7 +156,7 @@ describe('BillingAutoTopUpCard', () => {
       label: 'Update payment',
       action: 'update_payment',
       variant: 'inverted',
-      icon: EXTERNAL
+      icon: OPEN
     },
     {
       case: 'maximum reached',
@@ -253,10 +252,12 @@ describe('BillingAutoTopUpCard', () => {
     expect(onRetry).toHaveBeenCalledOnce()
   })
 
-  it('renders nothing when the server marks setup unavailable', () => {
-    renderCard(loaded(), {
-      setup: { state: 'unavailable', reason: 'billing_rail_not_supported' }
-    })
+  it.for([
+    { state: 'unavailable', reason: 'billing_rail_not_supported' },
+    { state: 'frozen', reason: 'billing_paused' },
+    { state: 'frozen', reason: 'payment_past_due' }
+  ] as const)('renders nothing when setup is $state for $reason', (setup) => {
+    renderCard(loaded({ status: 'on' }), { setup })
 
     expect(screen.queryByTestId('billing-auto-top-up-card')).toBeNull()
   })
@@ -284,6 +285,51 @@ describe('BillingAutoTopUpCard', () => {
     expect(screen.getByTestId('billing-auto-top-up-card').className).toContain(
       'host-root'
     )
+  })
+
+  it('keeps the status but no action when the host hides it', () => {
+    render(BillingAutoTopUpCard, {
+      props: {
+        state: loaded({ status: 'failed' }),
+        offView: 'off',
+        setup: null,
+        copy: autoTopUpCardCopy,
+        locale: 'en',
+        actionHref: 'https://billing.test/profile/billing',
+        actionHidden: true
+      }
+    })
+
+    expect(screen.getByTestId('billing-auto-top-up-status')).toBeTruthy()
+    expect(screen.queryByRole('link')).toBeNull()
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('opens the host link in a new tab and reports the action', async () => {
+    const onAction = vi.fn()
+    render(BillingAutoTopUpCard, {
+      props: {
+        state: loaded({ status: 'failed' }),
+        offView: 'off',
+        setup: null,
+        copy: autoTopUpCardCopy,
+        locale: 'en',
+        actionHref: 'https://billing.test/profile/billing',
+        onAction
+      }
+    })
+
+    const link = screen.getByRole('link', { name: 'Update payment' })
+    link.addEventListener('click', (event) => event.preventDefault())
+    await userEvent.click(link)
+
+    expect(link.getAttribute('href')).toBe(
+      'https://billing.test/profile/billing'
+    )
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(link.dataset.variant).toBe('inverted')
+    expect(screen.queryByRole('button', { name: 'Update payment' })).toBeNull()
+    expect(onAction).toHaveBeenCalledWith('update_payment')
   })
 
   it('lets the host replace the retry control', () => {

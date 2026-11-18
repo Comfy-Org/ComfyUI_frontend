@@ -527,8 +527,7 @@ describe('CurrentUserPopoverWorkspace', () => {
   it.for<{ denial: BillingTopUpDenial | undefined; reason: string }>([
     {
       denial: 'topup_purchases_paused',
-      reason:
-        "Buying credits isn't available right now. Try again later, or message support."
+      reason: "Buying credits isn't available right now. Try again later."
     },
     {
       denial: 'payment_past_due',

@@ -158,9 +158,13 @@ const CAPABILITIES = {
     can_view_team_usage: false,
     can_edit_workspace: false,
     can_manage_auto_top_up: false,
+    can_view_auto_top_up: false,
+    can_view_auto_top_up_member_notice: false,
     can_manage_subscription: false,
     can_open_plans: false,
     can_run_workflows: false,
+    can_set_budgets: false,
+    can_set_hard_caps: false,
     can_upgrade: false,
     can_reactivate: true,
     can_revert_scheduled_change: false,
@@ -288,8 +292,7 @@ beforeEach(() => {
     status: 'ok',
     session: CREDENTIAL
   })
-  vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled = true
-  vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
+  vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
   vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
   Object.assign(useTeamWorkspaceStore(), {
     activeWorkspace: PERSONAL_WORKSPACE,

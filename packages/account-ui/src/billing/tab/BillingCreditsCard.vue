@@ -39,20 +39,12 @@
         "
       >
         {{ copy.title }}
-        <TextTooltip :text="copy.rateTooltip">
-          <CheckoutButton
-            :aria-label="copy.rateInfo"
-            variant="muted-textonly"
-            size="icon-sm"
-          >
-            <i class="icon-[lucide--info] size-3.5" aria-hidden="true" />
-          </CheckoutButton>
-        </TextTooltip>
+        <BillingInfoTip :text="copy.rateTooltip" :label="copy.rateInfo" />
       </h3>
 
       <div
         :class="
-          cn('flex flex-col rounded-xl border border-card', classes?.surface)
+          cn('flex flex-col rounded-xl border border-border', classes?.surface)
         "
         data-testid="billing-credits-surface"
       >
@@ -79,7 +71,7 @@
           <ReuseAddCredits v-if="state.kind === 'noPlan' && showAddCredits" />
         </div>
 
-        <div v-if="state.kind === 'plan'" class="flex border-t border-card">
+        <div v-if="state.kind === 'plan'" class="flex border-t border-border">
           <BillingCreditsPlanCell
             :plan="state"
             :copy
@@ -109,12 +101,10 @@ import type {
   AddCreditsAvailability,
   CreditsCardState
 } from '@comfyorg/account-core/billing'
-import TextTooltip from '@comfyorg/design-system/tooltip/TextTooltip'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import CheckoutButton from '#/billing/checkout/CheckoutButton.vue'
-
+import BillingInfoTip from './BillingInfoTip.vue'
 import AddCreditsAction from './AddCreditsAction.vue'
 import BillingCreditsBalance from './BillingCreditsBalance.vue'
 import BillingCreditsPlanCell from './BillingCreditsPlanCell.vue'

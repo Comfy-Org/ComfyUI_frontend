@@ -591,8 +591,7 @@ describe('useSubscription', () => {
         )
         .mockResolvedValueOnce({
           is_active: false,
-          has_funds: false,
-          billing_rail: 'legacy_stripe'
+          has_funds: false
         })
 
       const { subscriptionStatus, fetchStatus } = useSubscriptionWithScope()
@@ -615,8 +614,7 @@ describe('useSubscription', () => {
       expect(mockGetBillingStatus).toHaveBeenCalledTimes(2)
       expect(subscriptionStatus.value).toEqual({
         is_active: false,
-        has_funds: false,
-        billing_rail: 'legacy_stripe'
+        has_funds: false
       })
     })
 

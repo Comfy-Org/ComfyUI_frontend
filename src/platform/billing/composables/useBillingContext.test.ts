@@ -27,6 +27,7 @@ import { useBillingContext as useSharedBillingContext } from './useBillingContex
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/composables/useErrorHandling'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@comfyorg/telemetry/reportError'))
 

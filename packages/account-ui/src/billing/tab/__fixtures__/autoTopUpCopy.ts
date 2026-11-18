@@ -1,5 +1,8 @@
-import type { AutoTopUpMemberBlockCopy } from '#/billing/tab/BillingAutoTopUpMemberBlock.vue'
 import type { AutoTopUpCardCopy } from '#/billing/tab/autoTopUpCardView'
+import type {
+  AutoTopUpMemberBlockCopy,
+  AutoTopUpMemberView
+} from '#/billing/tab/autoTopUpMemberView'
 
 export const autoTopUpCardCopy: AutoTopUpCardCopy = {
   title: 'Auto top-up',
@@ -24,7 +27,7 @@ export const autoTopUpCardCopy: AutoTopUpCardCopy = {
     "Your charge didn't go through. Update your payment method or add credits manually.",
   turnedOff:
     'Turned off after 3 declined charges. Update your payment method, then turn it back on.',
-  off: 'Refills credits when your balance runs low',
+  off: 'Refills credits when your balance runs low.',
   noPaymentMethod: 'Auto top-up needs a payment method. Add one to turn it on.',
   noDefaultPaymentMethod:
     'Auto top-up needs a default payment method. Set one to turn it on.',
@@ -43,7 +46,31 @@ export const autoTopUpCardCopy: AutoTopUpCardCopy = {
   maximumReachedNoDate: 'Monthly maximum reached.'
 }
 
+const CONTACT = 'Contact a workspace owner to manage this.'
+
 export const autoTopUpMemberBlockCopy: AutoTopUpMemberBlockCopy = {
   title: 'Auto top-up',
-  body: 'Credits can top up automatically when they run low. Contact a workspace owner to manage this.'
+  body: `Credits can top up automatically when they run low. ${CONTACT}`,
+  status: autoTopUpCardCopy.status,
+  on: (target, threshold) =>
+    `Tops up to ${target} credits when below ${threshold} credits. ${CONTACT}`,
+  limitReached: (date) => `Monthly limit reached. Resets ${date}. ${CONTACT}`,
+  limitReachedNoDate: `Monthly limit reached. ${CONTACT}`,
+  maximumReached: (date) =>
+    `Monthly maximum reached. Resets ${date}. ${CONTACT}`,
+  maximumReachedNoDate: `Monthly maximum reached. ${CONTACT}`,
+  failed: `The last top-up didn't go through. ${CONTACT}`,
+  turnedOff: `Turned off after 3 declined charges. ${CONTACT}`,
+  onHold: `Needs a default payment method. ${CONTACT}`
 }
+
+export const memberView = (
+  overrides: Partial<AutoTopUpMemberView> = {}
+): AutoTopUpMemberView => ({
+  status: 'on',
+  threshold_credits: 1000,
+  target_credits: 6275,
+  cycle_resets_at: '2026-11-28T00:00:00Z',
+  monthly_budget_is_default: false,
+  ...overrides
+})

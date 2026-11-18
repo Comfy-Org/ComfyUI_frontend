@@ -98,7 +98,8 @@ function deriveRow(
 }
 
 function totalDeclarations(
-  rows: readonly TemplateModelSetupRow[]
+  rows: readonly TemplateModelSetupRow[],
+  sizeOf: (row: TemplateModelSetupRow) => number | null = (row) => row.fileSize
 ): TemplateModelDeclarationTotal {
   const seen = new Set<string>()
   let bytes = 0
@@ -109,26 +110,39 @@ function totalDeclarations(
     if (seen.has(identity)) continue
 
     seen.add(identity)
-    if (row.fileSize === null) {
+    const size = sizeOf(row)
+    if (size === null) {
       isComplete = false
     } else {
-      bytes += row.fileSize
+      bytes += size
     }
   }
 
   return { bytes, isComplete }
 }
 
-/** The state a row's own download is in, as the view's row-downloads reports it. */
-type RowDownloadStatus = { status: string }
+type RowDownloadStatus = {
+  status: string
+  activity?: string
+  receivedBytes?: number | null
+  totalBytes?: number | null
+  fraction?: number | null
+}
 
-/** A row the bulk action would actually start. */
+type RowDownloads = {
+  stateFor: (model: ModelWithUrl) => RowDownloadStatus
+  canResume: (model: ModelWithUrl) => boolean
+}
+
+/** A row the bulk action would actually start or resume. */
 export function isModelDownloadCandidate(
   row: TemplateModelSetupRow,
-  stateFor: (model: ModelWithUrl) => RowDownloadStatus
+  { stateFor, canResume }: RowDownloads
 ): boolean {
   if (row.status !== 'downloadable') return false
   const state = stateFor(row.model)
+  if (state.status === 'downloading' && state.activity === 'paused')
+    return canResume(row.model)
   return state.status === 'idle' || state.status === 'failed'
 }
 
@@ -147,11 +161,23 @@ export function isModelRowComplete(
  */
 export function remainingModelDownloadTotal(
   rows: readonly TemplateModelSetupRow[],
-  stateFor: (model: ModelWithUrl) => RowDownloadStatus
+  downloads: RowDownloads
 ): TemplateModelDeclarationTotal {
   return totalDeclarations(
-    rows.filter((row) => isModelDownloadCandidate(row, stateFor))
+    rows.filter((row) => isModelDownloadCandidate(row, downloads)),
+    (row) => bytesLeft(row, downloads.stateFor(row.model))
   )
+}
+
+function bytesLeft(
+  row: TemplateModelSetupRow,
+  { receivedBytes, totalBytes, fraction }: RowDownloadStatus
+): number | null {
+  const received = receivedBytes ?? 0
+  const size = totalBytes && totalBytes >= received ? totalBytes : row.fileSize
+  if (size === null || received > size) return null
+  const done = receivedBytes ?? (fraction ?? 0) * size
+  return Math.ceil(size - done)
 }
 
 export function deriveTemplateModelSetup(
