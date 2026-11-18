@@ -47,28 +47,58 @@ export function openBillingUrl(url: string): boolean {
   return tab !== null || handsPopupsToSystemBrowser()
 }
 
+function openBlankTab(opening?: OpeningPage): Window | null {
+  const tab = window.open('', '_blank')
+  if (!tab) return null
+  tab.opener = null
+  if (opening) paintOpeningPage(tab.document, opening)
+  return tab
+}
+
+function navigableTab(tab: Window): BillingTab {
+  return {
+    navigate: (url) => {
+      tab.location.href = url
+    },
+    close: () => tab.close()
+  }
+}
+
+function focusedTab(tab: Window): BillingTab {
+  tab.focus()
+  return { navigate: () => tab.focus(), close: () => {} }
+}
+
+const SYSTEM_BROWSER_TAB: BillingTab = {
+  navigate: (url) => {
+    window.open(url, '_blank')
+  },
+  close: () => {}
+}
+
 /**
  * Reserves a billing tab during the click, before its URL is known; `null`
  * when the browser blocked it. On Desktop the open waits for the URL.
  * `opening` is shown in the reserved tab until it navigates.
  */
 export function reserveBillingTab(opening?: OpeningPage): BillingTab | null {
-  if (handsPopupsToSystemBrowser()) {
-    return {
-      navigate: (url) => {
-        window.open(url, '_blank')
-      },
-      close: () => {}
-    }
-  }
-  const tab = window.open('', '_blank')
-  if (!tab) return null
-  tab.opener = null
-  if (opening) paintOpeningPage(tab.document, opening)
-  return {
-    navigate: (url) => {
-      tab.location.href = url
-    },
-    close: () => tab.close()
+  if (handsPopupsToSystemBrowser()) return SYSTEM_BROWSER_TAB
+  const tab = openBlankTab(opening)
+  return tab && navigableTab(tab)
+}
+
+/**
+ * Reserves tabs for one purchase: while `reuses()` holds and the last tab is
+ * still open, the reservation focuses that tab instead of opening a second page.
+ */
+export function reserveSinglePurchaseTab(
+  reuses: () => boolean
+): () => BillingTab | null {
+  let last: Window | null = null
+  return () => {
+    if (handsPopupsToSystemBrowser()) return SYSTEM_BROWSER_TAB
+    if (last !== null && !last.closed && reuses()) return focusedTab(last)
+    last = openBlankTab()
+    return last && navigableTab(last)
   }
 }

@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { assert } from 'vitest'
 import type { VNode } from 'vue'
 
@@ -523,6 +523,16 @@ const SUCCEEDED: TopupResult = {
   creditsReconciled: true
 }
 
+const DECLINED: TopupResult = {
+  status: 'declined',
+  operation: {
+    ...failedOperation('card_declined', 'op_topup'),
+    phase: 'failed',
+    declineReason: 'card_declined',
+    retryable: true
+  }
+}
+
 const NO_ANSWER: TopupResult = {
   status: 'error',
   code: 'REQUEST_FAILED',
@@ -663,47 +673,69 @@ describe('FullPageTopupView paying once', () => {
     expect(fresh.payment).toStrictEqual({ savedPaymentMethodId: 'pm_mc' })
   })
 
-  it('pays the link’s purchase under its key whichever card is chosen, and after a decline under that key’s next attempt, so another page of the purchase replays it', async () => {
-    const fake = renderTopup(
-      {
+  it.for<{
+    name: string
+    first: TopupResult
+    next: 'same card' | 'other card' | 'reload'
+  }>([
+    {
+      name: 'a decline, then the same card',
+      first: DECLINED,
+      next: 'same card'
+    },
+    {
+      name: 'a decline, then another card',
+      first: DECLINED,
+      next: 'other card'
+    },
+    { name: 'a decline, then a reload', first: DECLINED, next: 'reload' },
+    {
+      name: 'an unanswered Pay the re-read found uncharged, then another card',
+      first: NO_ANSWER,
+      next: 'other card'
+    }
+  ])(
+    'after $name, the next Pay is a new purchase under a new key',
+    async ({ first, next }) => {
+      const methods = { status: 'ok' as const, value: [VISA, MASTERCARD] }
+      const fake = renderTopup({
         topupQuote: PAYS_ONCE,
-        paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] }
-      },
-      `${TOPUP_PATH}&purchase_key=pk_dialog_1`
-    )
-    fake.createInteractiveTopup
-      .mockResolvedValueOnce(NO_ANSWER)
-      .mockResolvedValueOnce({
-        status: 'declined',
-        operation: {
-          ...failedOperation('card_declined', 'op_topup'),
-          phase: 'failed',
-          declineReason: 'card_declined',
-          retryable: true
-        }
+        paymentMethods: methods
       })
-      .mockResolvedValueOnce(SUCCEEDED)
-    await screen.findByText('Add credits · Acme Team')
+      fake.createInteractiveTopup.mockResolvedValueOnce(first)
+      await screen.findByText('Add credits · Acme Team')
+      await userEvent.click(payButton())
+      await waitFor(() => expect(payButton()).toBeEnabled())
 
-    await userEvent.click(payButton())
-    await waitFor(() => expect(payButton()).toBeEnabled())
-    await userEvent.click(savedPicker())
-    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
-    await userEvent.click(payButton())
-    await waitFor(() =>
-      expect(screen.getByRole('alert')).toHaveTextContent('Payment declined')
-    )
-    await userEvent.click(payButton())
+      let retried = fake
+      if (next === 'reload') {
+        cleanup()
+        retried = renderTopup({
+          topupQuote: PAYS_ONCE,
+          paymentMethods: methods
+        })
+        await screen.findByText('Add credits · Acme Team')
+      }
+      retried.createInteractiveTopup.mockResolvedValueOnce(SUCCEEDED)
+      if (next === 'other card') {
+        await userEvent.click(savedPicker())
+        await userEvent.click(
+          await screen.findByRole('option', { name: /4402/ })
+        )
+      }
+      await userEvent.click(payButton())
 
-    await waitFor(() =>
-      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(3)
-    )
-    expect(
-      fake.createInteractiveTopup.mock.calls.map(
-        ([request]) => request.idempotencyKey
+      await waitFor(() =>
+        expect(retried.createInteractiveTopup).toHaveBeenCalledTimes(
+          next === 'reload' ? 1 : 2
+        )
       )
-    ).toStrictEqual(['pk_dialog_1', 'pk_dialog_1', 'pk_dialog_1-1'])
-  })
+      const [before] = fake.createInteractiveTopup.mock.calls[0]
+      const after = retried.createInteractiveTopup.mock.lastCall?.[0]
+      expect(after?.idempotencyKey).toEqual(expect.any(String))
+      expect(after?.idempotencyKey).not.toBe(before.idempotencyKey)
+    }
+  )
 
   it.for<{ name: string; answer: TopupResult }>([
     { name: 'a 503', answer: NO_ANSWER },

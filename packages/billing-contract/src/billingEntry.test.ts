@@ -91,8 +91,7 @@ describe('buildBillingEntryUrl', () => {
     [{ workspaceId: '' }, 'INVALID_WORKSPACE_ID'],
     [{ teamCreditStopId: '../escape' }, 'INVALID_TEAM_CREDIT_STOP_ID'],
     [{ promotionCode: 'SAVE 20' }, 'INVALID_PROMOTION_CODE'],
-    [{ operationId: '../escape' }, 'INVALID_OPERATION_ID'],
-    [{ purchaseKey: 'key with spaces' }, 'INVALID_PURCHASE_KEY']
+    [{ operationId: '../escape' }, 'INVALID_OPERATION_ID']
   ] as const)('refuses %o with %s', ([overrides, expected]) => {
     expect(errorCode({ ...BASE_INPUT, ...overrides })).toBe(expected)
   })
@@ -108,8 +107,7 @@ describe('parseBillingEntry', () => {
       workspaceId: 'ws_1',
       teamCreditStopId: 'stop_1',
       promotionCode: 'LAUNCH20',
-      operationId: 'op_signup-1',
-      purchaseKey: 'pk_dialog-1'
+      operationId: 'op_signup-1'
     })
 
     expect(parseBillingEntry(url)).toEqual({
@@ -124,8 +122,7 @@ describe('parseBillingEntry', () => {
         workspaceId: 'ws_1',
         teamCreditStopId: 'stop_1',
         promotionCode: 'LAUNCH20',
-        operationId: 'op_signup-1',
-        purchaseKey: 'pk_dialog-1'
+        operationId: 'op_signup-1'
       }
     })
   })

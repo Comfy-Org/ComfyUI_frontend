@@ -70,8 +70,7 @@ const hoisted = vi.hoisted(() => ({
       (
         amountCents: number,
         autoTopUp: unknown,
-        workspaceId: string | undefined,
-        purchaseKey: string
+        workspaceId: string | undefined
       ) => string | undefined
     >()
 }))
@@ -149,12 +148,6 @@ vi.mock(import('@/platform/billing/composables/topupBalanceRefresh'), () => ({
 vi.mock(import('@/platform/billing/topupCheckoutReturnUrl'), () => ({
   topupCheckoutReturnUrl: () => RETURN_URL
 }))
-vi.mock(import('@/platform/billing/billingTab'), () => ({
-  reserveBillingTab: () => ({
-    navigate: hoisted.cloudTabNavigate,
-    close: vi.fn()
-  })
-}))
 vi.mock(import('@/platform/billing/addCredits/billingWebTopup'), () => ({
   billingWebTopupUrl: hoisted.billingWebTopupUrl
 }))
@@ -176,6 +169,31 @@ vi.mock(import('@/platform/billing/localBillingHandoff'), () => ({
 }))
 
 vi.mock(import('firebase/auth'), { spy: true })
+
+function fakeTab() {
+  return {
+    opener: window as Window | null,
+    closed: false,
+    focus: vi.fn(),
+    close: vi.fn(),
+    location: {
+      set href(url: string) {
+        hoisted.cloudTabNavigate(url)
+      }
+    }
+  }
+}
+
+let openedTabs: ReturnType<typeof fakeTab>[] = []
+
+beforeEach(() => {
+  openedTabs = []
+  vi.spyOn(window, 'open').mockImplementation(() => {
+    const tab = fakeTab()
+    openedTabs.push(tab)
+    return tab as never
+  })
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -857,20 +875,60 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
     )
   })
 
-  it('reopens the same billing-web purchase, so a second page pays under the first page’s key', async () => {
+  it.for([
+    {
+      name: 'billing-web page still open',
+      on: true,
+      closed: false,
+      pages: 1
+    },
+    {
+      name: 'billing-web page the customer closed',
+      on: true,
+      closed: true,
+      pages: 2
+    },
+    {
+      name: 'hosted checkout',
+      on: false,
+      closed: false,
+      pages: 2
+    }
+  ])(
+    'Reopen with the $name leaves $pages payable page(s)',
+    async ({ on, closed, pages }) => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = on
+      const { user } = renderDialog({ atCheckout: false })
+
+      await user.click(continueButton())
+      await waitFor(() => expect(hoisted.cloudTabNavigate).toHaveBeenCalled())
+      openedTabs[0].closed = closed
+      await user.click(
+        await screen.findByRole('button', { name: 'Reopen checkout' })
+      )
+
+      await waitFor(() =>
+        expect(
+          hoisted.billingWebTopupUrl.mock.calls.length +
+            hoisted.createHostedCheckout.mock.calls.length
+        ).toBe(2)
+      )
+      expect(openedTabs).toHaveLength(pages)
+      expect(openedTabs[0].close).not.toHaveBeenCalled()
+      expect(openedTabs[0].focus.mock.calls.length > 0).toBe(pages === 1)
+    }
+  )
+
+  it('keeps the hosted checkout on Desktop, where the browser tab it opens cannot be found again', async () => {
     vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    vi.stubGlobal('__comfyDesktop2', {})
     const { user } = renderDialog({ atCheckout: false })
 
     await user.click(continueButton())
-    await user.click(
-      await screen.findByRole('button', { name: 'Reopen checkout' })
-    )
 
     await waitFor(() =>
-      expect(hoisted.billingWebTopupUrl).toHaveBeenCalledTimes(2)
+      expect(window.open).toHaveBeenCalledWith(CHECKOUT_URL, '_blank')
     )
-    const [first, reopened] = hoisted.billingWebTopupUrl.mock.calls
-    expect(reopened).toStrictEqual(first)
-    expect(first[3]).toEqual(expect.any(String))
+    expect(hoisted.billingWebTopupUrl).not.toHaveBeenCalled()
   })
 })

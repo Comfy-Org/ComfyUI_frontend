@@ -17,12 +17,10 @@ function entryAutoTopUpOf(activation: AutoTopUpActivation): EntryAutoTopUp {
 export function billingWebTopupUrl(
   amountCents: number,
   autoTopUp: AutoTopUpActivation | undefined,
-  workspaceId: string | undefined,
-  purchaseKey: string
+  workspaceId: string | undefined
 ): string | undefined {
   const route = hostedBillingRoute('billing_web', 'top-up', {
     amountCents,
-    purchaseKey,
     ...(workspaceId === undefined ? {} : { workspaceId }),
     ...(autoTopUp === undefined
       ? {}

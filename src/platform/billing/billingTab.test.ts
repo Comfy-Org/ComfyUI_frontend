@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { openBillingUrl, reserveBillingTab } from './billingTab'
+import {
+  openBillingUrl,
+  reserveBillingTab,
+  reserveSinglePurchaseTab
+} from './billingTab'
 
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
 
@@ -137,4 +141,69 @@ describe('openBillingUrl', () => {
     expect(openBillingUrl(checkoutUrl)).toBe(opened)
     expect(open).toHaveBeenCalledWith(checkoutUrl, '_blank')
   })
+})
+
+describe('reserveSinglePurchaseTab', () => {
+  beforeEach(() => {
+    distribution.isDesktop = false
+    vi.stubGlobal('__comfyDesktop2', undefined)
+  })
+
+  function fakeTab() {
+    return {
+      opener: window as Window | null,
+      closed: false,
+      focus: vi.fn(),
+      close: vi.fn(),
+      location: { href: '' }
+    }
+  }
+
+  function stubOpenTabs() {
+    const opened: ReturnType<typeof fakeTab>[] = []
+    vi.spyOn(window, 'open').mockImplementation(() => {
+      const tab = fakeTab()
+      opened.push(tab)
+      return tab as never
+    })
+    return opened
+  }
+
+  it.for([
+    {
+      name: 'the purchase page is still open',
+      closed: false,
+      reuses: true,
+      tabs: 1
+    },
+    {
+      name: 'the purchase page was closed',
+      closed: true,
+      reuses: true,
+      tabs: 2
+    },
+    {
+      name: 'the last page is not one to reuse',
+      closed: false,
+      reuses: false,
+      tabs: 2
+    }
+  ])(
+    'opens $tabs page(s) across two reservations when $name',
+    ({ closed, reuses, tabs }) => {
+      const opened = stubOpenTabs()
+      const reserve = reserveSinglePurchaseTab(() => reuses)
+
+      reserve()?.navigate(checkoutUrl)
+      opened[0].closed = closed
+      const again = reserve()
+      again?.navigate('https://billing.comfy.org/v1/top-up?n=2')
+      again?.close()
+
+      expect(opened).toHaveLength(tabs)
+      expect(opened[0].location.href).toBe(checkoutUrl)
+      expect(opened[0].close).not.toHaveBeenCalled()
+      expect(opened[0].focus.mock.calls.length > 0).toBe(tabs === 1)
+    }
+  )
 })

@@ -54,7 +54,7 @@ import {
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { billingWebTopupUrl } from '@/platform/billing/addCredits/billingWebTopup'
-import { reserveBillingTab } from '@/platform/billing/billingTab'
+import { reserveSinglePurchaseTab } from '@/platform/billing/billingTab'
 import {
   issueLocalBillingHandoff,
   reserveBillingHandoffTab
@@ -181,28 +181,19 @@ async function createHandoffCheckout(
   return { status: 'ok', url: issued.url }
 }
 
-const purchaseKeys = new Map<string, string>()
-
-function purchaseKeyFor(
-  amountCents: number,
-  autoTopUp: AutoTopUpActivation | undefined
-): string {
-  const purchase = JSON.stringify([amountCents, autoTopUp ?? null])
-  const key = purchaseKeys.get(purchase) ?? crypto.randomUUID()
-  purchaseKeys.set(purchase, key)
-  return key
-}
+let billingWebOpened = false
+const reservePurchaseTab = reserveSinglePurchaseTab(() => billingWebOpened)
 
 function billingWebUrl(
   amountCents: number,
   autoTopUp: AutoTopUpActivation | undefined
 ): string | undefined {
-  if (!flags.unifiedBillingSettingsEnabled) return undefined
+  if (!flags.unifiedBillingSettingsEnabled || handsPopupsToSystemBrowser())
+    return undefined
   return billingWebTopupUrl(
     amountCents,
     autoTopUp,
-    workspaceIdentity.activeWorkspaceId ?? undefined,
-    purchaseKeyFor(amountCents, autoTopUp)
+    workspaceIdentity.activeWorkspaceId ?? undefined
   )
 }
 
@@ -219,6 +210,7 @@ async function openBillingWebCheckout(
     return { status: 'error', refusal: { kind: 'checkout_failed' } }
   }
   ownedCheckout = checkout
+  billingWebOpened = true
   return { status: 'ok', url }
 }
 
@@ -284,7 +276,7 @@ const ports: AddCreditsPorts = {
       ? openBillingWebCheckout(billingWeb, autoTopUp)
       : createHostedTopupCheckout(amountCents, signal, autoTopUp)
   },
-  reserveTab: opensHandoff ? reserveBillingHandoffTab : reserveBillingTab,
+  reserveTab: opensHandoff ? reserveBillingHandoffTab : reservePurchaseTab,
   watchPayment(landed) {
     if (!ownsCheckout(ownedCheckout)) return () => {}
     paymentWatched = true

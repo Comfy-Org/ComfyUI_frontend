@@ -23,7 +23,6 @@ export type OptionalEntryKey =
   | 'teamCreditStopId'
   | 'promotionCode'
   | 'operationId'
-  | 'purchaseKey'
 
 export type InvalidIdentifierCode =
   | 'INVALID_PLAN'
@@ -32,7 +31,6 @@ export type InvalidIdentifierCode =
   | 'INVALID_TEAM_CREDIT_STOP_ID'
   | 'INVALID_PROMOTION_CODE'
   | 'INVALID_OPERATION_ID'
-  | 'INVALID_PURCHASE_KEY'
 
 interface OptionalEntryField {
   readonly key: OptionalEntryKey
@@ -64,12 +62,6 @@ export const OPTIONAL_ENTRY_FIELDS: readonly OptionalEntryField[] = [
     key: 'operationId',
     param: ENTRY_PARAM_OPERATION,
     code: 'INVALID_OPERATION_ID'
-  },
-  /** One top-up purchase however many of its pages are open: each page pays under this key. */
-  {
-    key: 'purchaseKey',
-    param: 'purchase_key',
-    code: 'INVALID_PURCHASE_KEY'
   }
 ]
 
