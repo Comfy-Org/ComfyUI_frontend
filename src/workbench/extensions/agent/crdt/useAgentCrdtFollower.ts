@@ -575,8 +575,6 @@ function startAgentCrdtFollower(
     const lostIds = new Set(
       [...lost.overwritten, ...lost.unconfirmed].map((op) => op.op_id)
     )
-    // The host already holds a skipped op (a duplicate op_id), so a refusal
-    // elsewhere in the batch must not roll it back, unless it was lost.
     const accepted = new Set([...result.applied, ...result.skipped])
     const reverted = result.ok
       ? [...lost.overwritten, ...lost.unconfirmed]
