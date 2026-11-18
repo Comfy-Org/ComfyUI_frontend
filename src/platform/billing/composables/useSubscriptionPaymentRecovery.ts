@@ -43,6 +43,10 @@ export function useSubscriptionPaymentRecovery(
     status: billing.statusPaymentRecovery
   }[source]
   const capabilities = useBillingCapabilities()
+
+  function isServedRecovery(opId: string) {
+    return subscriptionPaymentRecovery.value?.billing_op_id === opId
+  }
   const toast = useToast()
   const isOpeningPayment = shallowRef(false)
   const recoveryPlanTier = shallowRef<SubscriptionTier | null>(null)
@@ -59,7 +63,7 @@ export function useSubscriptionPaymentRecovery(
       }
       try {
         const operation = await billingApi.getBillingOpStatus(opId)
-        if (subscriptionPaymentRecovery.value?.billing_op_id !== opId) return
+        if (!isServedRecovery(opId)) return
         recoveryPlanTier.value = operation.plan?.tier ?? null
         recoveryPaymentPage.value = operation.action_url
           ? 'hostedPage'
@@ -102,6 +106,10 @@ export function useSubscriptionPaymentRecovery(
       const operation = await billingApi.getBillingOpStatus(
         recovery.billing_op_id
       )
+      if (!isServedRecovery(recovery.billing_op_id)) {
+        tab.close()
+        return
+      }
       if (!operation.action_url) {
         tab.close()
         reportPaymentUnavailable()
