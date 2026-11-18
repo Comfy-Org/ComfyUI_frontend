@@ -4,29 +4,19 @@
   "description": "Help-center menu, popup state and orchestration, documentation and community links, release-note entry points, and feedback navigation.",
   "modules": [
     {
-      "path": "src/components/helpcenter/**",
-      "role": "presentation"
+      "path": "src/components/helpcenter/**"
     },
     {
-      "path": "src/components/sidebar/SidebarHelpCenterIcon.test.ts",
-      "role": "presentation"
+      "path": "src/components/sidebar/SidebarHelpCenterIcon.vue"
     },
     {
-      "path": "src/components/sidebar/SidebarHelpCenterIcon.vue",
-      "role": "presentation"
+      "path": "src/composables/useHelpCenter.ts"
     },
     {
-      "path": "src/composables/useHelpCenter.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/helpCenterStore.ts",
-      "role": "application"
+      "path": "src/stores/helpCenterStore.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Help center menu lists help links, feedback, and release notes and opens from the side toolbar",

@@ -1,11 +1,26 @@
+import { StorageSerializers, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, onScopeDispose, ref, shallowReactive, shallowRef } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  ref,
+  shallowReactive,
+  shallowRef,
+  watch
+} from 'vue'
+import { v4 as uuidv4 } from 'uuid'
+import { z } from 'zod'
 
+import {
+  getWorkspaceId,
+  StorageKeys
+} from '@/platform/workflow/persistence/base/storageKeys'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { AgentInputMethod } from '@comfyorg/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
@@ -45,6 +60,19 @@ function composerReferencePosition(reference: ComposerReference): string {
   return `${composerReferenceKey(reference)}@${reference.textOffset}`
 }
 
+const zSavedDraft = z.object({
+  threadId: z.string().nullable(),
+  text: z.string(),
+  workflowReferences: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+      unavailable: z.boolean().optional(),
+      textOffset: z.number()
+    })
+  )
+})
+
 interface SubmittedDraft {
   attachments: ComposerAttachment[]
   nodes: SelectedNode[]
@@ -76,6 +104,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       item.kind === 'node' ? [item.node] : []
     )
   )
+  const selectionModeNodeKeys = ref<Set<string>>(new Set())
   const hasDraft = computed(
     () =>
       draft.value.trim() !== '' ||
@@ -85,6 +114,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   const nodeScope = ref<string | null>(null)
   let skillScope: string | null = null
   const promptEpoch = ref(0)
+  const errorContext = computed<AgentErrorContext | null>(() => {
+    const reference = prompt.value.references.find(
+      (item) => item.kind === 'error'
+    )
+    return reference?.kind === 'error' ? reference.context : null
+  })
   // Set by the affordance that supplied the text; read once at submission and
   // reset there, so it describes the message being sent rather than the panel.
   const promptOrigin = ref<AgentInputMethod>('typed')
@@ -96,6 +131,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     textOffset: 0,
     referenceIndex: 0
   })
+  const pendingCaret = shallowRef<ComposerInsertionPoint | null>(null)
   const retiredAssets = new Set<string>()
   const heldAssetIds = ref<string[]>([])
   const thumbnailJobs = new Map<
@@ -178,6 +214,20 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     draftState.value = next
   }
 
+  function prefillGreeting(text: string): (() => void) | undefined {
+    if (draft.value !== '' || hasDraft.value || submission.value) return
+    setText(text)
+    markSuggestedPrompt()
+    const ownedRevision = revision
+    return () => {
+      if (revision !== ownedRevision) return
+      setText('')
+      promptOrigin.value = 'typed'
+      starterPrompt.value = null
+      resetPromptHistory()
+    }
+  }
+
   function setInsertionPoint(point: ComposerInsertionPoint): void {
     insertionPoint.value = point
   }
@@ -233,6 +283,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       promptOrigin.value = 'typed'
       starterPrompt.value = null
     }
+    if (
+      promptOrigin.value === 'error_context' &&
+      !references.some((item) => item.kind === 'error')
+    )
+      promptOrigin.value = 'typed'
     if (metadataOnly) draftState.value = { text: next.text, references }
     else updateDraft({ text: next.text, references })
   }
@@ -259,6 +314,45 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     // Cleared, not left stale, when the affordance did not identify itself: an
     // unattributed insert is not the previous chip's click.
     starterPrompt.value = source ?? null
+  }
+
+  function setErrorContext(context: AgentErrorContext): void {
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'error'
+    )
+    const inserted = insertComposerReference(
+      { text: draft.value, references },
+      { kind: 'error', id: uuidv4(), context, textOffset: 0 },
+      {
+        textOffset: insertionPoint.value.textOffset,
+        referenceIndex: prompt.value.references
+          .slice(0, insertionPoint.value.referenceIndex)
+          .filter((item) => item.kind !== 'error').length
+      }
+    )
+    insertionPoint.value = inserted.insertion
+    promptOrigin.value = 'error_context'
+    starterPrompt.value = null
+    resetPromptHistory()
+    pendingCaret.value = inserted.insertion
+    updateDraft(inserted.prompt)
+  }
+
+  function clearPendingCaret(): void {
+    pendingCaret.value = null
+  }
+
+  function clearErrorContext(): void {
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'error'
+    )
+    if (references.length === prompt.value.references.length) return
+    if (promptOrigin.value === 'error_context') promptOrigin.value = 'typed'
+    resetPromptHistory()
+    updateDraft({
+      text: resetTextWhenReferencesCleared(draft.value, references),
+      references
+    })
   }
 
   function snapshotReferences(next: PromptSnapshot): ComposerReference[] {
@@ -331,9 +425,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({
       text: draft.value,
       references: [
-        ...references.map(
-          (item): ComposerReference => ({ ...item, kind: 'workflow' })
-        ),
+        ...references.map((item): ComposerReference => ({
+          ...item,
+          kind: 'workflow'
+        })),
         ...prompt.value.references.filter((item) => item.kind !== 'workflow')
       ].sort((a, b) => a.textOffset - b.textOffset)
     })
@@ -357,6 +452,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   function setNodeScope(scope: string | null): void {
     if (scope === nodeScope.value) return
     nodeScope.value = scope
+    selectionModeNodeKeys.value = new Set()
     if (nodes.value.length === 0) return
     resetPromptHistory()
     const references = prompt.value.references.filter(
@@ -420,6 +516,13 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       ...result,
       text: resetTextWhenReferencesCleared(result.text, result.references)
     })
+  }
+
+  function setSelectionModeNodeKeys(keys: ReadonlySet<string>): void {
+    const stagedKeys = new Set(nodes.value.map(selectedNodeKey))
+    selectionModeNodeKeys.value = new Set(
+      [...keys].filter((key) => stagedKeys.has(key))
+    )
   }
 
   function setSkillScope(scope: string | null): void {
@@ -594,13 +697,43 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function clearDraft(): void {
     rejectedDraft.value = null
+    resetPromptHistory()
     promptOrigin.value = 'typed'
     starterPrompt.value = null
     attachmentIds.value = []
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
-    resetPromptHistory()
     releaseUnusedAssets()
+  }
+
+  const savedDraft = useLocalStorage<unknown>(
+    StorageKeys.agentComposerDraft(getWorkspaceId()),
+    null,
+    { serializer: StorageSerializers.object }
+  )
+  const draftThreadId = ref<string | null>()
+
+  watch([draftState, draftThreadId], ([state, threadId]) => {
+    if (threadId === undefined) return
+    const references = workflowReferences.value
+    savedDraft.value =
+      state.text.trim() !== '' || references.length > 0
+        ? { threadId, text: state.text, workflowReferences: references }
+        : null
+  })
+
+  function trackDraftThread(threadId: string | null): void {
+    if (draftThreadId.value === undefined) {
+      const saved = zSavedDraft.nullable().safeParse(savedDraft.value)
+      if (!saved.success) savedDraft.value = null
+      else if (saved.data?.threadId === threadId && !hasDraft.value)
+        replaceDraft({
+          text: saved.data.text,
+          workflowReferences: saved.data.workflowReferences,
+          attachments: []
+        })
+    }
+    draftThreadId.value = threadId
   }
 
   return {
@@ -610,16 +743,23 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     workflowReferences,
     prompt,
     nodes,
+    selectionModeNodeKeys,
     hasDraft,
     nodeScope,
     promptEpoch,
     promptOrigin,
     starterPrompt,
+    errorContext,
     insertionPoint,
     submission,
+    pendingCaret,
+    clearPendingCaret,
     rejectedDraftUnchanged,
     markRejectedDraft,
     setText,
+    prefillGreeting,
+    setErrorContext,
+    clearErrorContext,
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,
@@ -634,6 +774,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     setNodeScope,
     setSkillScope,
     setNodes,
+    setSelectionModeNodeKeys,
     addAttachment,
     referenceAttachment,
     updateAttachment,
@@ -644,6 +785,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     takeFailedSubmission,
     invalidateSubmission,
     holdAssets,
-    clearDraft
+    clearDraft,
+    trackDraftThread
   }
 })

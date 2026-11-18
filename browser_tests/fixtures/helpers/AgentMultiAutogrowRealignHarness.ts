@@ -2,8 +2,10 @@ import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { JobsListResponse } from '@comfyorg/ingest-types'
-import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
+import type {
+  ModelFolderInfo,
+  PromptResponse
+} from '@comfyorg/api-client/types'
 import type {
   ComfyApiWorkflow,
   WorkflowJSON04
@@ -127,12 +129,14 @@ export class AgentMultiAutogrowRealignHarness {
     this.sourceNode = this.vueNodes.getNodeLocator(String(SOURCE_NODE_ID))
     this.targetNode = this.vueNodes.getNodeLocator(TARGET_ID)
     this.promptField = this.targetNode.getByRole('textbox', { name: 'prompt' })
-    this.widthInput = this.vueNodes.getInputNumberControls(
-      this.targetNode.getByLabel('width', { exact: true }).first()
-    ).input
-    this.heightInput = this.vueNodes.getInputNumberControls(
-      this.targetNode.getByLabel('height', { exact: true }).first()
-    ).input
+    this.widthInput = this.targetNode.getByRole('spinbutton', {
+      name: 'width',
+      exact: true
+    })
+    this.heightInput = this.targetNode.getByRole('spinbutton', {
+      name: 'height',
+      exact: true
+    })
   }
 
   async setUp(

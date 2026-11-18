@@ -242,7 +242,11 @@ describe('ssoStartUrl', () => {
       returnTo: 'https://evil.example/x',
       expected: '/'
     }
-  ])('$name', ({ returnTo, expected }) => {
+  ])('$name without URL.canParse', ({ returnTo, expected }) => {
+    vi.stubGlobal(
+      'URL',
+      Object.assign(class extends URL {}, { canParse: undefined })
+    )
     const params = new URL(
       ssoStartUrl({
         email: 'a@acme.com',

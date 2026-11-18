@@ -5,8 +5,19 @@ import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { class: className, ...restProps } = defineProps<
-  SelectItemProps & { class?: HTMLAttributes['class'] }
+const {
+  class: className,
+  textClass,
+  reserveIndicator = false,
+  ...restProps
+} = defineProps<
+  SelectItemProps & {
+    class?: HTMLAttributes['class']
+    /** Classes for the item's text, which holds the slot. */
+    textClass?: HTMLAttributes['class']
+    /** Keeps the check's column on unchecked items too, so text that ends at the right lines up. */
+    reserveIndicator?: boolean
+  }
 >()
 </script>
 
@@ -26,12 +37,21 @@ const { class: className, ...restProps } = defineProps<
       )
     "
   >
-    <SelectItemText class="truncate">
+    <SelectItemText :class="cn('truncate', textClass)">
       <slot />
     </SelectItemText>
 
-    <SelectItemIndicator class="flex shrink-0 items-center justify-center">
-      <i class="icon-[lucide--check] text-foreground" aria-hidden="true" />
-    </SelectItemIndicator>
+    <span
+      :class="
+        cn(
+          'flex shrink-0 items-center justify-center',
+          reserveIndicator ? 'w-4' : 'empty:hidden'
+        )
+      "
+    >
+      <SelectItemIndicator class="flex items-center justify-center">
+        <i class="icon-[lucide--check] text-foreground" aria-hidden="true" />
+      </SelectItemIndicator>
+    </span>
   </SelectItem>
 </template>

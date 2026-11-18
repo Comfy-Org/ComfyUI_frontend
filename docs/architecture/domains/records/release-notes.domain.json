@@ -4,29 +4,16 @@
   "description": "Release-note feed client, the release store that compares the feed against the running ComfyUI version, and the release notification toast and What's New popup.",
   "modules": [
     {
-      "path": "src/platform/updates/**",
-      "role": "presentation"
+      "path": "src/platform/updates/**"
     },
     {
-      "path": "src/platform/updates/common/releaseService.test.ts",
-      "role": "infrastructure"
+      "path": "src/platform/updates/common/releaseService.ts"
     },
     {
-      "path": "src/platform/updates/common/releaseService.ts",
-      "role": "infrastructure"
-    },
-    {
-      "path": "src/platform/updates/common/releaseStore.test.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/platform/updates/common/releaseStore.ts",
-      "role": "application"
+      "path": "src/platform/updates/common/releaseStore.ts"
     }
   ],
   "publicEntryPoints": [],
-  "allowedDependencies": ["keybindings"],
-  "allowedConsumers": [],
   "characterizationScenarios": [
     {
       "name": "Release store fetches the feed and decides when to surface new-release UI",
@@ -50,7 +37,7 @@
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "Release seen and dismissed setting ids keep their persisted names.",
-    "releaseStore deferring to the onboarding tour and overlay stores and reading system stats remains visible as cross-domain coupling; classification does not grant dependency exceptions."
+    "releaseStore deferring to the onboarding tour and overlay stores and reading system stats remains untracked cross-domain coupling; classification does not grant dependency exceptions."
   ],
   "deepImports": "inventory"
 }

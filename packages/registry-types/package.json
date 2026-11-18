@@ -9,6 +9,7 @@
   "type": "module",
   "exports": {
     ".": {
+      "@comfyorg/registry-types": "./src/comfyRegistryTypes.ts",
       "types": "./dist-types/comfyRegistryTypes.d.ts",
       "default": "./src/comfyRegistryTypes.ts"
     }

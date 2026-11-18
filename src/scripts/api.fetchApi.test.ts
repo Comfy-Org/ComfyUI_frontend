@@ -9,17 +9,19 @@ import {
   vi
 } from 'vitest'
 
-import type { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { ApiAuthProvider } from '@/platform/auth/apiAuthProvider'
-import { anonymousApiAuthProvider } from '@/platform/auth/apiAuthProvider'
+import type { ApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
+import { anonymousApiAuthProvider } from '@comfyorg/api-client/apiAuthProvider'
 import { installCloudApiAuth } from '@/platform/auth/cloudApiAuthProvider'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useAuthStore } from '@/stores/authStore'
-import { DEFAULT_RETRY_POLICY, NO_RETRY_POLICY } from '@/utils/retryPolicy'
+import {
+  DEFAULT_RETRY_POLICY,
+  NO_RETRY_POLICY
+} from '@comfyorg/api-client/retryPolicy'
 
 const { addBreadcrumb } = vi.hoisted(() => ({
   addBreadcrumb: vi.fn()
@@ -38,14 +40,6 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 // from vitest.setup.ts); their actions are stubbed per-test below via
 // vi.mocked(store.action), not by mocking the store modules themselves.
 vi.mock(import('firebase/auth'))
-
-const mockFeatureFlags = vi.hoisted(() => ({
-  flags: { unifiedCloudAuthEnabled: true }
-}))
-vi.mock(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () =>
-    fromPartial<ReturnType<typeof useFeatureFlags>>(mockFeatureFlags)
-}))
 
 import { api } from '@/scripts/api'
 

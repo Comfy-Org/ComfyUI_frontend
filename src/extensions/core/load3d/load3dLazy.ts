@@ -1,9 +1,9 @@
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { app } from '@/scripts/app'
-import { useExtensionService } from '@/services/extensionService'
-import { useExtensionStore } from '@/stores/extensionStore'
+import { useApp } from '@/scripts/appInstance'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -61,6 +61,7 @@ async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
       cameraAngle.cameraAngleExtension,
       lightInfo.lightInfoExtension
     ]
+    useExtensionStore().markCoreExtensions(extensions)
     const { registerExtension } = useExtensionService()
     for (const extension of extensions)
       disposers.push(registerExtension(extension))
@@ -113,7 +114,7 @@ function containsThreeJsNode(graph: GraphNodeTypes): boolean {
 
 async function replayNodeCreated(extension: ComfyExtension, node: LGraphNode) {
   try {
-    await extension.nodeCreated?.(node, app)
+    await extension.nodeCreated?.(node, useApp())
   } catch (cause) {
     reportError(cause, {
       errorType: 'error_replaying_3d_node_created',

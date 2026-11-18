@@ -6,6 +6,7 @@
     v-else
     v-bind="widgetModel"
     :node-id="nodeData?.id"
+    :node-title="nodeData?.title"
     :class="
       shouldHandleNodePointerEvents
         ? 'pointer-events-auto'

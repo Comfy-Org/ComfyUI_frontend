@@ -18,14 +18,11 @@ export class VueNodeHelpers {
    * Get locator for all Vue node components in the DOM
    */
   public readonly nodes: Locator
-  /**
-   * Get locator for selected Vue node components (using visual selection indicators)
-   */
-  public readonly selectedNodes: Locator
+  public readonly emphasizedNodes: Locator
 
   constructor(private page: Page) {
     this.nodes = page.locator('[data-node-id]')
-    this.selectedNodes = page.locator('[data-node-id].outline-foreground')
+    this.emphasizedNodes = page.locator('[data-node-id][data-emphasized]')
   }
 
   /**
@@ -72,6 +69,36 @@ export class VueNodeHelpers {
     return this.getOutputSlotRow(nodeId, slotIndex).getByTestId(
       TestIds.node.slotConnectionDot
     )
+  }
+
+  async waitForSlotLayout(nodeId: string): Promise<void> {
+    await expect
+      .poll(() =>
+        this.getNodeLocator(nodeId).evaluate((element, id) => {
+          const app = window.app!
+          const node = app.canvas.graph!.getNodeById(id)!
+          const errors = [
+            ...node.inputs.map((_, index) => ({
+              key: `${id}-in-${index}`,
+              position: node.getInputPos(index)
+            })),
+            ...node.outputs.map((_, index) => ({
+              key: `${id}-out-${index}`,
+              position: node.getOutputPos(index)
+            }))
+          ].flatMap(({ key, position }) => {
+            const dot = element.querySelector(`[data-slot-key="${key}"]`)
+            if (!dot) return []
+            const rect = dot.getBoundingClientRect()
+            const [, y] = app.canvasPosToClientPos(position)
+            return [
+              Math.abs(y - rect.top - rect.height / 2) / app.canvas.ds.scale
+            ]
+          })
+          return errors.length ? Math.max(...errors) : Infinity
+        }, toNodeId(nodeId))
+      )
+      .toBeLessThan(0.5)
   }
 
   /**

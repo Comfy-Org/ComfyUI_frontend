@@ -155,4 +155,19 @@ describe('ComfyApi realtime socket reset', () => {
     expect(window.name).toBe('')
     expect(sessionStorage.getItem('clientId')).toBeNull()
   })
+
+  it('reconnects a dropped Cloud socket after a random delay instead of 300 ms', async () => {
+    await api.resetSocket()
+    const dropped = FakeWebSocket.instances[0]
+    dropped.simulateOpen()
+
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.5)
+    dropped.close()
+
+    await vi.advanceTimersByTimeAsync(700)
+    expect(FakeWebSocket.instances).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(50)
+    await vi.waitFor(() => expect(FakeWebSocket.instances).toHaveLength(2))
+  })
 })

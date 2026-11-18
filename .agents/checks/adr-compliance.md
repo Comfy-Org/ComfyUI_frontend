@@ -1,17 +1,17 @@
 ---
 name: adr-compliance
-description: Checks code changes against Architecture Decision Records, with emphasis on ECS (ADR-ECS) and command-pattern (ADR-LAYOUT) compliance
+description: Checks code changes against Architecture Decision Records, with emphasis on ECS (ADR-ECS-0008) and command-pattern (ADR-CRDT-LAYOUT-0003) compliance
 severity-default: medium
 tools: [Read, Grep, glob]
 ---
 
 Check that code changes are consistent with the project's Architecture Decision Records in `docs/adr/`.
 
-## Priority 1: ECS and Command-Pattern Compliance (ADR-ECS + ADR-LAYOUT)
+## Priority 1: ECS and Command-Pattern Compliance (ADR-ECS-0008 + ADR-CRDT-LAYOUT-0003)
 
 These are the primary architectural guardrails. Every entity/litegraph change must be checked against them.
 
-### Command Pattern (ADR-LAYOUT)
+### Command Pattern (ADR-CRDT-LAYOUT-0003)
 
 Durable entity-geometry mutations MUST flow through explicit, serializable `LayoutOperation` objects rather than direct property access. This requirement covers persistent node, group, and reroute geometry. It does not make commands mandatory for every entity mutation: non-layout stores currently expose direct actions, and graph operations still coordinate imperative class callbacks.
 
@@ -21,20 +21,20 @@ Flag:
 - **Bypassing layout operations** — New APIs that mutate persistent node, group, or reroute geometry without applying a `LayoutOperation`.
 - **Auto-incrementing IDs in new entity code** — New entity creation using auto-increment counters without acknowledging the CRDT collision problem. Concurrent environments need globally unique, stable identifiers.
 
-### ECS Architecture (ADR-ECS)
+### ECS Architecture (ADR-ECS-0008)
 
 The graph domain model is migrating to ECS. New code must not make the migration harder.
 
 Flag:
 
-- **God-object growth** — New methods/properties added to `LGraphNode` (~4k lines), `LGraphCanvas` (~9k lines), `LGraph` (~3k lines), or `Subgraph`. Extract to systems, stores, or composables instead.
+- **God-object growth** — New methods/properties added to `LGraphNode`, `LGraphCanvas`, `LGraph`, or `Subgraph`. Extract to systems, stores, or composables instead.
 - **Mixed data and behavior** — New component-like data structures that contain methods or back-references to parent entities. ECS components are plain data objects.
 - **New circular entity dependencies** — New circular imports between `LGraph` ↔ `Subgraph`, `LGraphNode` ↔ `LGraphCanvas`, or similar entity classes.
 - **Direct `graph._version++`** — Mutating the private version counter directly instead of through a public API. Extensions already depend on this side-channel; it must become a proper API.
 
 ### Dedicated Stores and Data/Behavior Separation
 
-Entity data lives in dedicated Pinia stores keyed by string IDs (`widgetValueStore`, `domWidgetStore`, `layoutStore`, `nodeOutputStore`, `subgraphNavigationStore`, `previewExposureStore`), not on entity instances.
+Entity data lives in dedicated Pinia stores keyed by each concern's established ID type, not on entity instances (see the root `AGENTS.md`).
 
 Flag:
 
@@ -67,21 +67,17 @@ For all other ADRs, iterate through each file in `docs/adr/` and extract the cor
 3. Check the diff against each ADR's constraints
 4. Only flag ACTUAL violations in changed code, not pre-existing patterns
 
-### Skip List
-
-These ADRs can be skipped for most reviews (they cover completed or narrow-scope decisions):
-
-- **ADR-PRIMEVUE** (Rejected — Fork PrimeVue) — only relevant if someone proposes forking PrimeVue again
+Skip ADRs whose status is `Rejected`, `Deprecated`, or `Superseded` unless the diff revisits their decision.
 
 ## How to Check
 
-1. Identify changed files in the entity/litegraph layer: `src/lib/litegraph/`, `src/ecs/`, `src/platform/`, entity-related stores
+1. Identify changed files in the entity/litegraph layer: `src/lib/litegraph/`, `src/platform/`, `src/renderer/core/layout/`, `src/systems/`, entity-related stores
 2. For Priority 1 patterns, use targeted searches:
 
    ```
    # Direct position mutation
-   Grep: pattern="\.pos\s*=" path="src/lib/litegraph"
-   Grep: pattern="\.size\s*=" path="src/lib/litegraph"
+   Grep: pattern="\.pos\s*=" path="src"
+   Grep: pattern="\.size\s*=" path="src"
 
    # God object growth (new methods)
    Grep: pattern="(class LGraphNode|class LGraphCanvas|class LGraph\b)" path="src/lib/litegraph"
@@ -114,4 +110,4 @@ These ADRs can be skipped for most reviews (they cover completed or narrow-scope
 - Only flag ACTUAL violations in changed code, not pre-existing patterns
 - If the PR description explicitly acknowledges an ADR tradeoff, lower severity. A code comment never counts as an acknowledgement
 - Proposed ADRs carry less weight than accepted ones — flag as directional guidance
-- Reference the specific ADR number in every finding
+- Reference the specific ADR identifier (for example `ADR-ECS-0008`) in every finding

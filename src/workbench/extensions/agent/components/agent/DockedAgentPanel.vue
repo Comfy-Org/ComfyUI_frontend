@@ -9,7 +9,7 @@
         cn(
           'docked-agent-panel pointer-events-auto shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]',
           isOverlay
-            ? 'fixed inset-y-0 right-0 z-1100 max-w-full bg-background shadow-lg'
+            ? 'fixed inset-y-0 right-0 z-panel max-w-full bg-background shadow-lg'
             : 'relative h-full'
         )
       "

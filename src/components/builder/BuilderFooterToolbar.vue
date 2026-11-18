@@ -1,6 +1,6 @@
 <template>
   <div
-    class="fixed bottom-4 left-1/2 z-1000 flex -translate-x-1/2 flex-col items-center"
+    class="fixed bottom-4 left-1/2 flex -translate-x-1/2 flex-col items-center"
   >
     <!-- "Opens as" attachment tab -->
     <BuilderOpensAsPopover
@@ -153,8 +153,7 @@ const isSaved = computed(
 )
 
 const activeSaveClasses = 'bg-ocean-600 text-white hover:bg-ocean-600/80'
-const disabledSaveClasses =
-  'bg-secondary text-muted-foreground/50 disabled:opacity-100'
+const disabledSaveClasses = 'text-muted-foreground/50 disabled:opacity-100'
 
 const isModified = computed(
   () => workflowStore.activeWorkflow?.isModified === true

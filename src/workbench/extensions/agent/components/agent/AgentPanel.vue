@@ -12,11 +12,11 @@ import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
 import type {
   AgentFreeUseNoticeMetadata,
   AgentPaywallSurface,
-  AgentStarterPromptAssignment,
   AgentStopMethod
 } from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 import type {
   WorkflowReference,
@@ -58,6 +58,7 @@ const {
   canOpenAssets = false,
   isMaximized = false,
   selectionTags = [],
+  hasNodeSelectionModeAddition = false,
   nodeReferenceDisabledReason,
   availableWorkflows = [],
   selectWorkflowReference,
@@ -84,9 +85,9 @@ const {
   editableTurnId = null,
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
-  starterPromptAssignment = 'control',
-  attributeStarterPromptExperiment = false,
-  syncRetryAvailable = false
+  syncRetryAvailable = false,
+  greeting,
+  blocked = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -96,6 +97,7 @@ const {
   canOpenAssets?: boolean
   isMaximized?: boolean
   selectionTags?: SelectedNode[]
+  hasNodeSelectionModeAddition?: boolean
   nodeReferenceDisabledReason?: string
   availableWorkflows?: WorkflowReferenceOption[]
   selectWorkflowReference?: (
@@ -129,9 +131,9 @@ const {
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
-  starterPromptAssignment?: AgentStarterPromptAssignment
-  attributeStarterPromptExperiment?: boolean
   syncRetryAvailable?: boolean
+  greeting?: AgentGreeting
+  blocked?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -152,7 +154,7 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
   standingPaywallShown: []
-  newChat: []
+  newChat: [source: 'new_chat_button' | 'history_back']
   startTour: []
   toggleSize: []
   close: []
@@ -167,7 +169,6 @@ const emit = defineEmits<{
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
-  starterPromptRendered: [assignment: AgentStarterPromptAssignment]
   retrySync: []
 }>()
 
@@ -222,9 +223,11 @@ watch(
   { immediate: true }
 )
 
-function onNewChat(): void {
+function onNewChat(
+  source: 'new_chat_button' | 'history_back' = 'new_chat_button'
+): void {
   view.value = { screen: 'chat' }
-  emit('newChat')
+  emit('newChat', source)
 }
 function onOpenHistory(): void {
   view.value = {
@@ -268,7 +271,7 @@ function onBackFromHistory(): void {
     (view.value.selection.status === 'idle' || currentChatReady)
   )
     view.value = { screen: 'chat' }
-  else if (view.value.previousThreadId === null) onNewChat()
+  else if (view.value.previousThreadId === null) onNewChat('history_back')
   else void openHistoryChat(view.value.previousThreadId, 'leave')
 }
 
@@ -307,6 +310,14 @@ function onClose(): void {
   panelStore.interruptHistorySelection()
   emit('close')
 }
+
+const visibleGreeting = computed(() =>
+  !entries.length && !openingChat.value ? greeting : undefined
+)
+const greetingReplacesIntro = computed(
+  () =>
+    visibleGreeting.value !== undefined && visibleGreeting.value.variant !== 'A'
+)
 
 const composerRef = ref<InstanceType<typeof Composer>>()
 const runNoticeReady = ref(false)
@@ -396,6 +407,13 @@ function removeAttachment(id: string): void {
   composerRef.value?.removeAttachment(id)
 }
 
+async function onGreetingPrefilled(delayMs: number): Promise<void> {
+  const current = visibleGreeting.value
+  await nextTick()
+  if (current !== visibleGreeting.value) return
+  await composerRef.value?.focusPrefill(delayMs)
+}
+
 function onComposerSend(
   text: string,
   attachments: ComposerAttachment[],
@@ -420,14 +438,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       @close="onClose"
     />
 
-    <FreeUseNotice
-      v-if="!showHistory && freeUsePlacement === 'top-banner'"
-      placement="top-banner"
-      @notice="emit('freeUseNotice', $event)"
-    />
+    <slot name="panelNotice" />
 
     <template v-if="showHistory">
       <ChatHistoryScreen
+        :inert="blocked"
         :groups="historyGroups"
         :loading-id="loadingHistoryId"
         :failed-id="failedHistoryId"
@@ -441,7 +456,11 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     </template>
 
     <template v-else>
-      <div class="flex h-10 shrink-0 items-center px-2">
+      <div
+        data-testid="agent-panel-chat-controls"
+        :inert="blocked"
+        class="flex h-10 shrink-0 items-center px-2"
+      >
         <Button
           id="agent-chat-history"
           :tooltip="t('agent.showChatHistory')"
@@ -509,15 +528,15 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
         </div>
       </div>
 
-      <div class="relative min-h-0 flex-1">
+      <div :inert="blocked" class="relative min-h-0 flex-1">
         <EmptyState
           v-if="!entries.length"
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
-          :assignment="starterPromptAssignment"
-          :attribute-experiment="attributeStarterPromptExperiment"
-          @rendered="emit('starterPromptRendered', $event)"
+          :greeting="visibleGreeting"
+          :has-selection="hasNodeSelectionModeAddition"
+          @prefilled="onGreetingPrefilled"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
@@ -550,7 +569,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (workflowId, workflowName) =>
               emit('openReferenceWorkflow', workflowId, workflowName)
           "
-          @paywall-action="emit('paywallAction', $event, 'refused_send')"
+          @paywall-action="
+            (action, surface) => emit('paywallAction', action, surface)
+          "
         />
         <div
           v-if="showChatLoading"
@@ -578,7 +599,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer
         data-testid="agent-panel-footer"
-        :inert="openingChat"
+        :inert="openingChat || blocked"
         class="shrink-0 py-3 inert:opacity-50"
       >
         <div
@@ -597,6 +618,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
           <RunNoticeBanner
+            :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
@@ -605,7 +627,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           />
           <FreeUseNotice
             v-if="freeUsePlacement === 'near-composer'"
-            placement="near-composer"
             @notice="emit('freeUseNotice', $event)"
           />
           <Composer
@@ -651,20 +672,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
-              />
-            </template>
-            <template #aboveInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'above-input'"
-                placement="above-input"
-                @notice="emit('freeUseNotice', $event)"
-              />
-            </template>
-            <template #insideInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'inside-input'"
-                placement="inside-input"
-                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>

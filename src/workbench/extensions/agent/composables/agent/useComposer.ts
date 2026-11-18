@@ -19,8 +19,15 @@ type ComposerSubmitIntent = 'keyboard' | 'explicit'
 
 export function useComposer(options: UseComposerOptions) {
   const store = useAgentComposerStore()
-  const { draft, attachments, prompt, workflowReferences, promptEpoch } =
-    storeToRefs(store)
+  const {
+    draft,
+    attachments,
+    prompt,
+    workflowReferences,
+    promptEpoch,
+    errorContext,
+    pendingCaret
+  } = storeToRefs(store)
   if (getCurrentScope()) onScopeDispose(store.releaseUnusedAssets)
 
   const canSend = computed(
@@ -67,10 +74,7 @@ export function useComposer(options: UseComposerOptions) {
     const clickId = uuidv4()
     store.markSuggestedPrompt({
       id: starterPrompt.promptId,
-      clickId,
-      ...(starterPrompt.assignment
-        ? { assignment: starterPrompt.assignment }
-        : {})
+      clickId
     })
     useTelemetry()?.trackAgentStarterPromptClicked({
       prompt_id: starterPrompt.promptId,
@@ -80,12 +84,7 @@ export function useComposer(options: UseComposerOptions) {
       prompt_text_hash: starterPrompt.promptTextHash,
       locale: starterPrompt.locale,
       click_id: clickId,
-      draft_was_empty: draftWasEmpty,
-      ...(starterPrompt.assignment
-        ? {
-            '$feature/agent-starter-prompt-set': starterPrompt.assignment
-          }
-        : {})
+      draft_was_empty: draftWasEmpty
     })
   }
 
@@ -94,6 +93,11 @@ export function useComposer(options: UseComposerOptions) {
     attachments,
     prompt,
     promptEpoch,
+    errorContext,
+    pendingCaret,
+    clearPendingCaret: store.clearPendingCaret,
+    setErrorContext: store.setErrorContext,
+    clearErrorContext: store.clearErrorContext,
     applyEditorPrompt: store.applyEditorPrompt,
     resolveSkillMetadata: store.resolveSkillMetadata,
     setInsertionPoint: store.setInsertionPoint,

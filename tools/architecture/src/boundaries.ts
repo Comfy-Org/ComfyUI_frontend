@@ -1,17 +1,16 @@
-import { contains, modulesBySpecificity, sameRole } from './records'
-import type { ArchitectureConfiguration, Claim } from './records'
-import { ROLES, ROLE_DEPENDENCIES } from './schema'
-import type { ArchitecturalRole, DomainRecord } from './schema'
+import { contains, modulesBySpecificity } from './records'
+import type { Claim } from './records'
+import type { DomainRecord } from './schema'
 
 export const BOUNDARIES_PATH = 'docs/architecture/domains/boundaries.json'
 const UNCLASSIFIED = 'unclassified'
+const INVENTORY = '_inventory'
 
 interface Zone {
   domain: DomainRecord
   name: string
   patterns: string[]
   isPublic: boolean
-  role: ArchitecturalRole
   layer: number
 }
 
@@ -26,12 +25,6 @@ interface LayeredModule extends Claim {
   layer: number
 }
 
-/**
- * Fallow puts a file in the first zone whose patterns match it. A path that
- * contains another domain's or role's path therefore goes in a later layer,
- * so the more specific path claims the files it names. Records without
- * nested paths keep one layer.
- */
 function moduleLayers(records: DomainRecord[]): LayeredModule[] {
   const layered: LayeredModule[] = []
   for (const outer of modulesBySpecificity(records)) {
@@ -39,60 +32,36 @@ function moduleLayers(records: DomainRecord[]): LayeredModule[] {
       0,
       ...layered
         .filter((inner) => contains(outer.module.path, inner.module.path))
-        .map((inner) => inner.layer + Number(!sameRole(inner, outer)))
+        .map((inner) => inner.layer + Number(inner.record !== outer.record))
     )
     layered.push({ ...outer, layer })
   }
   return layered
 }
 
-function domainZones(
-  domain: DomainRecord,
-  layered: LayeredModule[],
-  claims: ReadonlyMap<string, Claim>
-): Zone[] {
-  return ROLES.flatMap((role) => {
-    const own = layered.filter(
-      ({ record, module }) => record === domain && module.role === role
-    )
-    const entries = domain.publicEntryPoints.filter((entry) =>
-      own.some(({ module }) => module === claims.get(entry)?.module)
-    )
-    const layers = [...new Set(own.map(({ layer }) => layer))]
-    return [
-      {
-        domain,
-        name: `${domain.id}/${role}/public`,
-        patterns: entries,
-        isPublic: true,
-        role,
-        layer: -1
-      },
-      ...layers.map((layer) => ({
-        domain,
-        name: layer
-          ? `${domain.id}/${role}/outer-${layer}`
-          : `${domain.id}/${role}`,
-        patterns: domain.modules
-          .filter((module) =>
-            own.some(
-              (inner) => inner.module === module && inner.layer === layer
-            )
-          )
-          .map(({ path }) => path),
-        isPublic: false,
-        role,
-        layer
-      }))
-    ].filter(({ patterns }) => patterns.length)
-  })
-}
-
-function permits(consumer: DomainRecord, producer: DomainRecord): boolean {
-  return (
-    consumer.allowedDependencies.includes(producer.id) &&
-    producer.allowedConsumers.includes(consumer.id)
-  )
+function domainZones(domain: DomainRecord, layered: LayeredModule[]): Zone[] {
+  const own = layered.filter(({ record }) => record === domain)
+  const prefix = domain.deepImports === 'inventory' ? INVENTORY : domain.id
+  return [
+    {
+      domain,
+      name: `${domain.id}/public`,
+      patterns: domain.publicEntryPoints,
+      isPublic: true,
+      layer: -1
+    },
+    ...[...new Set(own.map(({ layer }) => layer))].map((layer) => ({
+      domain,
+      name: layer ? `${prefix}/outer-${layer}` : prefix,
+      patterns: domain.modules
+        .filter((module) =>
+          own.some((inner) => inner.module === module && inner.layer === layer)
+        )
+        .map(({ path }) => path),
+      isPublic: false,
+      layer
+    }))
+  ].filter(({ patterns }) => patterns.length)
 }
 
 function reachableFromOutside(zone: Zone): boolean {
@@ -100,32 +69,34 @@ function reachableFromOutside(zone: Zone): boolean {
 }
 
 function allowedTargets(source: Zone, zones: Zone[]): string[] {
-  const roles: readonly ArchitecturalRole[] = ROLE_DEPENDENCIES[source.role]
   return zones
     .filter(
       (target) =>
-        roles.includes(target.role) &&
-        (target.domain === source.domain ||
-          (permits(source.domain, target.domain) &&
-            reachableFromOutside(target)))
+        target.domain === source.domain || reachableFromOutside(target)
     )
     .map(({ name }) => name)
 }
 
-export function buildBoundaries({
-  records,
-  claims
-}: Pick<ArchitectureConfiguration, 'records' | 'claims'>): FallowBoundaries {
+export function buildBoundaries(records: DomainRecord[]): FallowBoundaries {
   const layered = moduleLayers(records)
-  const zones = records.flatMap((record) =>
-    domainZones(record, layered, claims)
-  )
-  const ordered = zones.toSorted((a, b) => a.layer - b.layer)
+  const zones = records.flatMap((record) => domainZones(record, layered))
+  const ordered = zones
+    .filter(
+      (zone, index) =>
+        zones.findIndex(({ name }) => name === zone.name) === index
+    )
+    .map((zone) => ({
+      ...zone,
+      patterns: zones
+        .filter(({ name }) => name === zone.name)
+        .flatMap(({ patterns }) => patterns)
+    }))
+    .toSorted((a, b) => a.layer - b.layer)
   return {
     boundaries: {
       zones: [
         ...ordered.map(({ name, patterns }) => ({ name, patterns })),
-        { name: UNCLASSIFIED, patterns: ['src/**'] }
+        { name: UNCLASSIFIED, patterns: ['src/**', 'packages/*/src/**'] }
       ],
       rules: [
         ...ordered.map((zone) => ({

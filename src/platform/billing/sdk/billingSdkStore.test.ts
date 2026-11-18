@@ -205,6 +205,39 @@ describe('useBillingSdkStore', () => {
     expect(toast.toasts).toEqual([])
   })
 
+  it('does not bring back a progress toast the customer closed', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+    toast.close(toast.toasts[0].id)
+    harness.publish(pendingTopup())
+
+    expect(toast.toasts).toEqual([])
+  })
+
+  it('does not treat a teardown of all toasts as the customer closing one', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+    toast.dismissAll()
+    harness.publish(pendingTopup())
+
+    expect(toast.toasts).toEqual([expect.objectContaining({ kind: 'loading' })])
+  })
+
+  it('still shows the verification prompt after the customer closed the processing toast', () => {
+    useBillingSdkStore()
+    const toast = useToast()
+
+    harness.publish(pendingTopup())
+    toast.close(toast.toasts[0].id)
+    harness.publish(pendingTopup({ actionUrl: 'https://verify.example/op-1' }))
+
+    expect(toast.toasts).toEqual([expect.objectContaining({ kind: 'warning' })])
+  })
+
   it('keeps a subscribe in step with its progress toast, as the poller did', () => {
     useBillingSdkStore()
     const toast = useToast()
@@ -677,6 +710,46 @@ describe('useBillingSdkStore subscription commands', () => {
     ])
     expect(store.subscriptionActionUrl).toBe('https://pay.example/op-1')
   })
+
+  it.for([
+    {
+      name: 'opens the payment page the subscribe still owes',
+      atRetry: pendingSubscription({ actionUrl: 'https://pay.example/op-1' }),
+      opened: [['https://pay.example/op-1', '_blank']],
+      reported: [['op-1', 'new_tab']]
+    },
+    {
+      name: 'opens nothing once the subscribe has settled',
+      atRetry: settledOperation('succeeded', 'subscription'),
+      opened: [],
+      reported: []
+    }
+  ])(
+    'retrying a blocked payment page from its warning $name',
+    ({ atRetry, opened, reported }) => {
+      const openPage = vi.spyOn(window, 'open').mockReturnValueOnce(null)
+      useBillingSdkStore()
+      harness.publish(
+        pendingSubscription({ actionUrl: 'https://pay.example/op-1' })
+      )
+      harness.publish(atRetry)
+      const warning = useToast().toasts.find(
+        (shown) =>
+          shown.kind === 'warning' &&
+          shown.description ===
+            "Couldn't open the payment page — please allow popups and try again."
+      )
+      expect(warning?.actions.map(({ label }) => label)).toEqual(['Try again'])
+      openPage.mockClear()
+
+      warning?.actions[0].onClick()
+
+      expect(openPage.mock.calls).toEqual(opened)
+      expect(
+        vi.mocked(harness.sdk.lifecycle.reportHostedStepOpened).mock.calls
+      ).toEqual(reported)
+    }
+  )
 
   it.for([
     { page: 'opened', opened: window, reported: [['op-1', 'new_tab']] },

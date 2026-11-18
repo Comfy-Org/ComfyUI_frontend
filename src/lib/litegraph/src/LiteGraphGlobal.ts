@@ -86,6 +86,7 @@ export class LiteGraphGlobal {
   NODE_TITLE_TEXT_Y = 20
   NODE_SLOT_HEIGHT = 20
   NODE_WIDGET_HEIGHT = 20
+  NODE_WIDGET_GAP = 4
   NODE_WIDTH = 140
   NODE_MIN_WIDTH = 50
   NODE_COLLAPSED_RADIUS = 10
@@ -270,6 +271,7 @@ export class LiteGraphGlobal {
     return this.registeredSlotInTypes
   }
   set registered_slot_in_types(value: Record<string, { nodes: string[] }>) {
+    this.flushSlotTypeTables()
     this.registeredSlotInTypes = value
   }
   /** slot types for nodeclass */
@@ -278,6 +280,7 @@ export class LiteGraphGlobal {
     return this.registeredSlotOutTypes
   }
   set registered_slot_out_types(value: Record<string, { nodes: string[] }>) {
+    this.flushSlotTypeTables()
     this.registeredSlotOutTypes = value
   }
   /** slot types IN */
@@ -288,6 +291,7 @@ export class LiteGraphGlobal {
     return this.slotTypesOut
   }
   set slot_types_out(value: string[]) {
+    this.flushSlotTypeTables()
     this.slotTypesOut = value
   }
   /**
@@ -299,6 +303,7 @@ export class LiteGraphGlobal {
     return this.slotTypesDefaultIn
   }
   set slot_types_default_in(value: Record<string, SlotTypeDefault>) {
+    this.flushSlotTypeTables()
     this.slotTypesDefaultIn = value
   }
   /**
@@ -310,6 +315,7 @@ export class LiteGraphGlobal {
     return this.slotTypesDefaultOut
   }
   set slot_types_default_out(value: Record<string, SlotTypeDefault>) {
+    this.flushSlotTypeTables()
     this.slotTypesDefaultOut = value
   }
 

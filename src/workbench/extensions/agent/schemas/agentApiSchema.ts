@@ -6,6 +6,7 @@ import {
   zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
+  zAgentExtensionChangedData as zGeneratedAgentExtensionChangedData,
   zAgentIdentity as zGeneratedAgentIdentity,
   zAgentMessage as zGeneratedAgentMessage,
   zAgentPendingAskBase,
@@ -14,6 +15,7 @@ import {
   zAgentToolCallData as zGeneratedAgentToolCallData,
   zAgentThinkingEntry,
   zAgentTurnAccepted as zGeneratedAgentTurnAccepted,
+  zAgentTurnUsage as zGeneratedAgentTurnUsage,
   zToolCallSummary,
   zWorkflowListResponse
 } from '@comfyorg/ingest-types/zod'
@@ -62,7 +64,8 @@ export type AgentTurnAccepted = GeneratedAgentTurnAccepted & {
 export const RENDERED_ASK_KINDS = [
   'run_approval',
   'ask_user',
-  'delete_approval'
+  'delete_approval',
+  'paused'
 ] as const satisfies readonly AgentAskKind[]
 export type RenderedAskKind = (typeof RENDERED_ASK_KINDS)[number]
 
@@ -212,6 +215,13 @@ export const zAttachmentRejection = zAgentAttachmentRejected.pick({
   type: true
 })
 
+export const zLoopbackOnlyRefusal = zGeneratedAgentError
+  .extend({
+    error: z.string().trim().min(1),
+    code: z.literal('agent_loopback_only')
+  })
+  .passthrough()
+
 /**
  * The 403 body the agent service returns when it will not serve the turn's
  * `workflow_id` to the caller's workspace, whether the row is gone or belongs
@@ -300,7 +310,8 @@ const zAgentUsage = z
     output_tokens: z.number().nullish(),
     total_tokens: z.number().nullish(),
     cache_read_input_tokens: z.number().nullish(),
-    cache_creation_input_tokens: z.number().nullish()
+    cache_creation_input_tokens: z.number().nullish(),
+    charge_micro_usd: zGeneratedAgentTurnUsage.shape.charge_micro_usd
   })
   .passthrough()
 
@@ -347,6 +358,11 @@ const zAgentMessageDraftEvent = z.object({
   data: zAgentMessageDraftData
 })
 
+const zAgentThinkingDraftEvent = z.object({
+  type: z.literal('agent_thinking_draft'),
+  data: zAgentMessageDraftData
+})
+
 const zAgentMessageDoneEvent = z.object({
   type: z.literal('agent_message_done'),
   data: zAgentMessageDoneData
@@ -367,15 +383,28 @@ const zAgentAskResolvedEvent = z.object({
   data: zAgentAskResolvedData
 })
 
+const zAgentExtensionChangedEvent = z.object({
+  type: z.literal('agent_extension_changed'),
+  data: zGeneratedAgentExtensionChangedData
+    .extend({
+      pack: zGeneratedAgentExtensionChangedData.shape.pack
+        .max(256)
+        .refine((pack) => !/[\p{Cc}\p{Cf}]/u.test(pack))
+    })
+    .passthrough()
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
   zAgentMessageDraftEvent,
+  zAgentThinkingDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,
-  zAgentAskResolvedEvent
+  zAgentAskResolvedEvent,
+  zAgentExtensionChangedEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 

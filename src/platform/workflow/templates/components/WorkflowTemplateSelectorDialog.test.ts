@@ -8,6 +8,7 @@ import { useWorkflowTemplateSelectorDialog } from '@/platform/workflow/templates
 import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { app } from '@/scripts/app'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -133,6 +134,60 @@ describe('template picker close lifecycle', () => {
     expect(afterClose).not.toHaveBeenCalled()
     expect(useTelemetry()?.trackTemplateLibraryClosed).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { name: 'malformed', isRemote: false },
+    {
+      name: 'throwing',
+      isRemote: () => {
+        throw new Error('Host detection failed')
+      }
+    }
+  ])(
+    'cancels a selection after $name host detection and allows retry',
+    async ({ isRemote }) => {
+      const getTemplateInputAssets = vi.fn(async () => [])
+      const downloadTemplateInputAsset = vi.fn()
+      vi.stubGlobal('__comfyDesktop2', {
+        isRemote,
+        getTemplateInputAssets,
+        downloadTemplateInputAsset
+      })
+      vi.mocked(app.loadGraphData).mockResolvedValue(true)
+      const { afterClose } = renderPicker()
+      const card = await screen.findByTestId('template-workflow-example')
+
+      await userEvent.click(card)
+      await waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+          surface: 'graph',
+          errorType: 'error_loading_template'
+        })
+      )
+
+      expect(useWorkflowTemplatesStore().loadingTemplateId).toBeNull()
+      expect(card).toBeInTheDocument()
+      expect(afterClose).not.toHaveBeenCalled()
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(getTemplateInputAssets).not.toHaveBeenCalled()
+      expect(downloadTemplateInputAsset).not.toHaveBeenCalled()
+      expect(fetch).not.toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ method: 'POST' })
+      )
+
+      vi.stubGlobal('__comfyDesktop2', {
+        isRemote: () => false,
+        getTemplateInputAssets
+      })
+      await userEvent.click(card)
+      await waitFor(() => expect(afterClose).toHaveBeenCalledOnce())
+
+      expect(useWorkflowTemplatesStore().loadingTemplateId).toBeNull()
+      expect(app.loadGraphData).toHaveBeenCalledOnce()
+      expect(downloadTemplateInputAsset).not.toHaveBeenCalled()
+    }
+  )
 
   it('keeps a reopened picker open when another graph load is busy', async () => {
     const store = useWorkflowTemplatesStore()

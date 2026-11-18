@@ -35,6 +35,9 @@
   "Comfy-Desktop_Restart": {
     "label": "Riavvia"
   },
+  "Comfy_3DViewer_Open3DViewer": {
+    "label": "Apri il visualizzatore 3D (Beta) per il nodo selezionato"
+  },
   "Comfy_BrowseModelAssets": {
     "label": "Sperimentale: Sfoglia risorse modello"
   },
@@ -103,6 +106,9 @@
   },
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Comprimi/Espandi nodi selezionati"
+  },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Nascondi/Mostra collegamenti sui nodi selezionati"
   },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Silenzia/Attiva nodi selezionati"
