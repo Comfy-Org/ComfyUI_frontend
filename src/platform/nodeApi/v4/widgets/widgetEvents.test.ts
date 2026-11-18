@@ -11,10 +11,15 @@ import type { Comfy, WidgetSerializeEvent } from '@/platform/nodeApi/v4/types'
 describe('widget listeners', () => {
   let graph: LGraph
   let comfy: Comfy
+  let loading: boolean
 
   beforeEach(() => {
     graph = new LGraph()
-    ;({ comfy } = createComfyApi({ getGraph: () => graph }))
+    loading = false
+    ;({ comfy } = createComfyApi({
+      getGraph: () => graph,
+      isLoading: () => loading
+    }))
   })
 
   function nodeWithSeed() {
@@ -145,6 +150,28 @@ describe('widget listeners', () => {
 
       expect(stepsChanged).toHaveBeenCalledExactlyOnceWith(30, 20)
       expect(stepsActivated).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('while the host loads a graph', () => {
+    it('reports no change or activation, and compares the next commit with the value the load left', () => {
+      const { node, seedWidget, seed } = nodeWithSeed()
+      const heard = vi.fn()
+      seed.on('change', (to, from) => heard('change', to, from))
+      seed.on('activate', (value) => heard('activate', value))
+
+      loading = true
+      seedWidget.setValue(7, { node })
+      loading = false
+
+      expect(heard).not.toHaveBeenCalled()
+
+      seedWidget.setValue(8, { node })
+
+      expect(heard.mock.calls).toEqual([
+        ['change', 8, 7],
+        ['activate', 8]
+      ])
     })
   })
 

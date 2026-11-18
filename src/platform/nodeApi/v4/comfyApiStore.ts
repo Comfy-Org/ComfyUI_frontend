@@ -5,6 +5,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 
 import { useApp } from '@/scripts/appInstance'
+import { ChangeTracker } from '@/scripts/changeTracker'
+import { isChangeCaptureSuppressed } from '@/services/changeCaptureSuppression'
 
 import type { CanvasSource } from './canvasSource'
 import { createComfyApi } from './comfyApi'
@@ -15,7 +17,8 @@ export const useComfyApiStore = defineStore('comfyApiV4', () => {
   const { comfy, host } = createComfyApi({
     canvas: () => canvas,
     getGraph: () => useApp().canvasOrUndefined?.graph ?? null,
-    history: () => useWorkflowStore().activeWorkflow?.changeTracker
+    history: () => useWorkflowStore().activeWorkflow?.changeTracker,
+    isLoading: () => ChangeTracker.isLoadingGraph || isChangeCaptureSuppressed()
   })
 
   const installNodeTypeHooks = once(() =>

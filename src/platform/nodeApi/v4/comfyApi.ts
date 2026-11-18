@@ -48,6 +48,8 @@ export interface ComfyApiServices {
   history?(): EditHistory | undefined
   /** The canvas, once the renderer has supplied it. */
   canvas?(): CanvasSource | undefined
+  /** True while the host loads or restores a graph, when a widget's commit is part of the load. */
+  isLoading?(): boolean
 }
 
 /** What the host drives. A pack never sees this. */
@@ -91,7 +93,8 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const canvas = () => services.canvas?.()
   const widgets = createWidgetCollections(
     handles,
-    createEditRunner(() => services.history?.())
+    createEditRunner(() => services.history?.()),
+    () => services.isLoading?.() ?? false
   )
   const nodes = createNodeHandles(handles, (handle) => ({
     ...nodeHandleMembers(handle, edit, nodes, slots),
