@@ -174,6 +174,12 @@ export interface BootstrapCompleteMetadata {
   /** Wall-clock ms the tab was hidden during startup. */
   hidden_ms: number
   /**
+   * Wall-clock ms the tab was visible during startup: `total_ms - hidden_ms`.
+   * Alert on this rather than dropping rows with hidden time, so a user who
+   * waited and then switched tabs still counts for the time they watched.
+   */
+  visible_ms: number
+  /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
    * aggregate parent, so consumers must not sum entries across the map.

@@ -81,7 +81,13 @@ route change creates a new view during startup, such as a login redirect,
 ### The aggregate action still earns its place
 
 `app:bootstrap_complete` carries `total_ms`, `outcome`, `phase_count`,
-`phases`, and `pending`. Custom timings cannot express `outcome` or `pending`,
+`untraced_ms`, `hidden_ms`, `visible_ms`, `phases`, and `pending`.
+
+`visible_ms` is `total_ms - hidden_ms`. Browsers throttle background tabs on
+purpose, so most slow `total_ms` rows end in a hidden tab (364 of 456 over
+45 s in 2026-11-16..18 stable). Latency alerts should read `visible_ms` rather
+than drop rows with hidden time: a user who waits and then switches tabs
+still counts for the time they watched. Custom timings cannot express `outcome` or `pending`,
 and per-phase events cannot be percentiled without a multi-row join. This row
 is what makes "how many users hit a slow load" a single query.
 

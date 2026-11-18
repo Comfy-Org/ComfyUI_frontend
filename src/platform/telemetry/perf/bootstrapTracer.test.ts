@@ -181,7 +181,11 @@ describe('bootstrapTracer', () => {
 
     const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
       .calls[0][0]
-    expect(metadata).toMatchObject({ total_ms: 200, hidden_ms: 150 })
+    expect(metadata).toMatchObject({
+      total_ms: 200,
+      hidden_ms: 150,
+      visible_ms: 50
+    })
   })
 
   it('counts time before the tracer existed as hidden when startup began hidden', async () => {
@@ -202,7 +206,11 @@ describe('bootstrapTracer', () => {
 
     const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
       .calls[0][0]
-    expect(metadata).toMatchObject({ total_ms: 200, hidden_ms: 100 })
+    expect(metadata).toMatchObject({
+      total_ms: 200,
+      hidden_ms: 100,
+      visible_ms: 100
+    })
   })
 
   it('reads visibility changes from before the tracer existed when the browser buffers them', async () => {
@@ -227,7 +235,36 @@ describe('bootstrapTracer', () => {
 
     const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
       .calls[0][0]
-    expect(metadata).toMatchObject({ total_ms: 200, hidden_ms: 70 })
+    expect(metadata).toMatchObject({
+      total_ms: 200,
+      hidden_ms: 70,
+      visible_ms: 130
+    })
+  })
+
+  it('reports visible time for a timed-out startup that is still hidden', async () => {
+    const telemetry = sharedUseTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('visible')
+    const tracer = new BootstrapTracer()
+    tracer.armWatchdog(300)
+
+    await vi.advanceTimersByTimeAsync(100)
+    visibility.mockReturnValue('hidden')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await vi.advanceTimersByTimeAsync(200)
+    visibility.mockRestore()
+
+    const metadata = vi.mocked(telemetry.trackBootstrapComplete).mock
+      .calls[0][0]
+    expect(metadata).toMatchObject({
+      outcome: 'timed_out',
+      total_ms: 300,
+      hidden_ms: 200,
+      visible_ms: 100
+    })
   })
 
   it('reports a failed startup, closing phases still open', () => {
