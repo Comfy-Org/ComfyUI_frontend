@@ -10,7 +10,7 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { loadShapeDefs, runPack, shapeDefsPath } from './matrix_runner'
 
-const HERE = path.dirname(new URL(import.meta.url).pathname)
+const HERE = import.meta.dirname
 const FIXTURE = path.join(HERE, 'object_info.fixture.json')
 
 const initialVueNodesMode = LiteGraph.vueNodesMode
@@ -605,6 +605,45 @@ describe('form proof, hooks that rewrite in place', () => {
   )
 
   it(
+    'refuses a hook that reorders the widgets in place',
+    { timeout: 60_000 },
+    async () => {
+      const { formProof } = await rowFor(
+        'form-widgets-reordered',
+        serializingPack('form-widgets-reordered', function (this: LGraphNode) {
+          this.widgets?.reverse()
+        })
+      )
+
+      expect(verdictFor(formProof, 'KSampler')).toBe('values_replaced')
+    }
+  )
+
+  it(
+    'measures a class whose onSerialize hook is read-only',
+    { timeout: 60_000 },
+    async () => {
+      const { formProof } = await rowFor('form-readonly-hook', async () => {
+        const { useExtensionService } =
+          await import('@/platform/extensions/services/extensionService')
+        useExtensionService().registerExtension({
+          name: 'matrix.test.form-readonly-hook',
+          beforeRegisterNodeDef(nodeType: typeof LGraphNode) {
+            Object.defineProperty(nodeType.prototype, 'onSerialize', {
+              value: () => {},
+              writable: false,
+              configurable: true
+            })
+          }
+        })
+      })
+
+      expect(formProof.err).toBeUndefined()
+      expect(verdictFor(formProof, 'KSampler')).toBe('provable')
+    }
+  )
+
+  it(
     'refuses a class whose prototype serialize a pack replaced, even in place',
     { timeout: 60_000 },
     async () => {
@@ -635,21 +674,17 @@ describe('form proof, temporary nodes', () => {
     'removes each temporary node even when a pack forbids removal',
     { timeout: 60_000 },
     async () => {
-      const strays: number[] = []
+      const temporary: LGraphNode[] = []
 
       await rowFor('form-unremovable', () => {
-        LGraphNode.prototype.onAdded = function (graph) {
+        LGraphNode.prototype.onAdded = function () {
           this.ignore_remove = true
-          strays.push(
-            graph._nodes.filter(
-              (n) => n !== this && n.pos[0] === 1400 && n.pos[1] === 100
-            ).length
-          )
+          if (this.pos[0] === 1400 && this.pos[1] === 100) temporary.push(this)
         }
       })
 
-      expect(strays.length).toBeGreaterThan(1)
-      expect(Math.max(...strays)).toBe(0)
+      expect(temporary.length).toBeGreaterThan(1)
+      expect(temporary.filter((node) => node.graph)).toEqual([])
     }
   )
 })
@@ -694,6 +729,7 @@ describe('form proof, shapes nothing can describe', () => {
 
 describe('registry form census', () => {
   it('registers REAL node definitions, not the six battery defs', () => {
+    vi.stubEnv('MATRIX_OBJECT_INFO', '')
     const fixture = JSON.parse(fs.readFileSync(FIXTURE, 'utf8')) as Record<
       string,
       unknown

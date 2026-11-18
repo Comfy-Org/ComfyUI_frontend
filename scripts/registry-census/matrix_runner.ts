@@ -118,20 +118,31 @@ function captureSerialization(node: LGraphNode): Capture | null {
   const inherited = node.onSerialize
   let produced: unknown = NOT_CAPTURED
   let before: unknown[] | null = null
-  node.onSerialize = function (serialised: ISerialisedNode) {
+  let names: string[] = []
+  function capture(this: LGraphNode, serialised: ISerialisedNode) {
     produced = serialised.widgets_values
     before = Array.isArray(produced) ? [...produced] : null
+    names = widgetNames(this)
     inherited?.call(this, serialised)
   }
   try {
+    Object.defineProperty(node, 'onSerialize', {
+      value: capture,
+      writable: true,
+      configurable: true
+    })
     const serialised = node.serialize()
+    const reordered =
+      produced !== NOT_CAPTURED &&
+      JSON.stringify(names) !== JSON.stringify(widgetNames(node))
     return {
       serialised,
-      produced: rewrittenInPlace(produced, before)
-        ? before
-        : produced === NOT_CAPTURED
-          ? undefined
-          : produced,
+      produced:
+        reordered || rewrittenInPlace(produced, before)
+          ? before
+          : produced === NOT_CAPTURED
+            ? undefined
+            : produced,
       captured: produced !== NOT_CAPTURED
     }
   } catch {
@@ -140,6 +151,10 @@ function captureSerialization(node: LGraphNode): Capture | null {
     if (descriptor) Object.defineProperty(node, 'onSerialize', descriptor)
     else Reflect.deleteProperty(node, 'onSerialize')
   }
+}
+
+function widgetNames(node: LGraphNode): string[] {
+  return (node.widgets ?? []).map((widget) => widget.name)
 }
 
 function rewrittenInPlace(
