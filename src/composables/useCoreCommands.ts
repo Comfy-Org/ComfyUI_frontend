@@ -1,4 +1,3 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -36,7 +35,7 @@ import { useUnreadyDeploymentRun } from '@/platform/workspace/composables/useUnr
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildSupportUrl } from '@/platform/support/config'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ExecutionTriggerSource } from '@comfyorg/telemetry/types'
@@ -962,12 +961,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        const { userEmail, resolvedUserInfo } = useCurrentUser()
-        const supportUrl = buildSupportUrl({
-          userEmail: userEmail.value,
-          userId: resolvedUserInfo.value?.id
-        })
-        window.open(supportUrl, '_blank', 'noopener,noreferrer')
+        openSupportForm('question')
       }
     },
     {
