@@ -1,7 +1,7 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const resolveMock = vi.hoisted(() => vi.fn())
@@ -17,7 +17,10 @@ vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
 }))
 
+vi.mock(import('@/scripts/app'))
+
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { app } from '@/scripts/app'
 
 import WidgetDOM from './WidgetDOM.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -117,6 +120,27 @@ describe('WidgetDOM', () => {
 
     // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('[data-testid="hosted-dom"]')).toBeNull()
+  })
+
+  it('mounts the replacement DOM element after the root graph is configured', () => {
+    const removed = document.createElement('div')
+    removed.textContent = 'removed node element'
+    mountWithWidget(removed)
+    expect(screen.getByText('removed node element')).toBe(removed)
+
+    const replacement = document.createElement('div')
+    replacement.textContent = 'live node element'
+    resolveMock.mockReturnValue({
+      node: { mock: true },
+      widget: { element: replacement, name: 'dom' }
+    })
+
+    app.rootGraph.events.dispatch('configured')
+
+    expect(screen.getByText('live node element')).toBe(replacement)
+    expect(screen.queryByText('removed node element')).toBeNull()
+    expect(replacement.isConnected).toBe(true)
+    expect(removed.isConnected).toBe(false)
   })
 
   it('renders a visible root element for pointer-event capture', () => {

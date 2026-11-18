@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { whenever } from '@vueuse/core'
+import { useEventListener, whenever } from '@vueuse/core'
 import { onMounted, ref } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { DOMWidget } from '@/types/domWidget'
+import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -39,6 +40,12 @@ function mountWidgetElement() {
 onMounted(() => {
   mountWidgetElement()
 })
+
+useEventListener(
+  () => app.rootGraphOrUndefined?.events,
+  'configured',
+  mountWidgetElement
+)
 
 whenever(() => !canvasStore.linearMode, mountWidgetElement)
 </script>
