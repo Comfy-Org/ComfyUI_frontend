@@ -16,16 +16,30 @@ interface GraphNodeTypes {
   definitions?: { subgraphs?: readonly GraphNodeTypes[] }
 }
 
-let load3dExtensionsLoaded = false
-let load3dExtensionsLoading: Promise<ComfyExtension[] | undefined> | null = null
-
-function loadLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
-  if (load3dExtensionsLoaded) return Promise.resolve([])
-  load3dExtensionsLoading ??= importLoad3dExtensions()
-  return load3dExtensionsLoading
+interface Load3dLoadState {
+  loaded: boolean
+  loading: Promise<ComfyExtension[] | undefined> | null
 }
 
-async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
+// The 3D extensions register into the extension store, so the once-only load
+// belongs to that store's app session, not to the module.
+const loadStates = new WeakMap<object, Load3dLoadState>()
+
+function loadLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
+  const extensionStore = useExtensionStore()
+  let state = loadStates.get(extensionStore)
+  if (!state) {
+    state = { loaded: false, loading: null }
+    loadStates.set(extensionStore, state)
+  }
+  if (state.loaded) return Promise.resolve([])
+  state.loading ??= importLoad3dExtensions(state)
+  return state.loading
+}
+
+async function importLoad3dExtensions(
+  state: Load3dLoadState
+): Promise<ComfyExtension[] | undefined> {
   const disposers: (() => void)[] = []
   let extensions: ComfyExtension[]
   try {
@@ -67,14 +81,14 @@ async function importLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
       disposers.push(registerExtension(extension))
   } catch (cause) {
     disposers.forEach((dispose) => dispose())
-    load3dExtensionsLoading = null
+    state.loading = null
     reportError(cause, {
       errorType: 'error_loading_3d_extensions',
       surface: 'graph'
     })
     return undefined
   }
-  load3dExtensionsLoaded = true
+  state.loaded = true
   const { isExtensionEnabled } = useExtensionStore()
   return extensions.filter((extension) => isExtensionEnabled(extension.name))
 }
