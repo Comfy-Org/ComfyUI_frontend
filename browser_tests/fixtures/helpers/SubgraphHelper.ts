@@ -54,10 +54,14 @@ export class SubgraphHelper {
     return this.comfyPage.page
   }
 
+  inputPort(name: string): Locator {
+    return this.inputPorts.and(
+      this.inputPanel.getByLabel(name, { exact: true })
+    )
+  }
+
   inputSocket(name: string): Locator {
-    return this.inputPorts
-      .and(this.inputPanel.getByLabel(name, { exact: true }))
-      .getByTestId(TestIds.node.slotConnectionDot)
+    return this.inputPort(name).getByTestId(TestIds.node.slotConnectionDot)
   }
 
   async fillInput(name: string, value: string): Promise<void> {
