@@ -1245,11 +1245,7 @@ export type AgentErrorClass =
   | 'workflow_open_failed'
   | 'workflow_sync_failed'
 
-/**
- * Why the agent's live copy of a workflow stopped syncing: a doc-host
- * subscribe refusal code, or the page and doc host disagreeing on the document
- * schema. A closed set; any other code is reported as `other`.
- */
+/** Why an agent workflow sync failed; codes outside this set are `other`. */
 export type AgentWorkflowSyncErrorCode =
   | 'schema_version_mismatch'
   | 'catalog_mismatch'

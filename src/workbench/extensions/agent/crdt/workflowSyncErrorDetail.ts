@@ -47,11 +47,7 @@ function isKnownSyncErrorCode(
   return code !== undefined && KNOWN_SYNC_ERROR_CODES.has(code)
 }
 
-/**
- * The sync failure's code as a telemetry tag. The code comes from the doc host,
- * so anything outside the known set is reported as `other` rather than
- * verbatim.
- */
+/** Maps a doc-host sync error code to its telemetry tag; unknown codes map to `other`. */
 export function workflowSyncErrorTelemetryCode(
   code: string | undefined
 ): AgentWorkflowSyncErrorCode {
