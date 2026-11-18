@@ -5,7 +5,21 @@ import { expect } from '@playwright/test'
 import { z } from 'zod'
 import { zJobDetailResponse, zPromptResponse } from '@comfyorg/ingest-types/zod'
 
-import { desktopWorkflowRelayFixture as test } from '@e2e/fixtures/desktopWorkflowRelayFixture'
+import { desktopWorkflowRelayFixture } from '@e2e/fixtures/desktopWorkflowRelayFixture'
+
+const test = desktopWorkflowRelayFixture.extend({
+  liveNetworkOrigins: async ({ cloudOrigin, liveNetworkOrigins }, use) => {
+    const { hostname } = new URL(cloudOrigin)
+    const preview = /^(?:fe-)?(pr-\d+)\.testenvs\.comfy\.org$/.exec(hostname)
+    await use([
+      ...liveNetworkOrigins,
+      ...(preview ? [`https://${preview[1]}-registry.testenvs.comfy.org`] : []),
+      'https://consumer.cloud.gist.build',
+      'https://mp.comfy.org',
+      'https://e2.sy-d.io'
+    ])
+  }
+})
 
 const jobResult = zJobDetailResponse.pick({
   id: true,
@@ -57,7 +71,8 @@ test.describe(
     test('imports the Desktop workflow after sign-in and completes a Cloud job', async ({
       cloudOrigin,
       comfyPage,
-      relayTransfer
+      relayTransfer,
+      toast
     }, testInfo) => {
       test.setTimeout(240_000)
       const email = process.env.SMOKE_ACCOUNT_EMAIL
@@ -69,6 +84,28 @@ test.describe(
       const capture = async (name: string) => {
         await page.screenshot({ path: testInfo.outputPath(name) })
       }
+      const receiverFlagResponses: Array<{
+        authorized: boolean
+        enabled: boolean
+      }> = []
+      page.on('response', async (response) => {
+        if (response.url() !== `${cloudOrigin}/api/features` || !response.ok())
+          return
+        const features = z
+          .object({ open_on_cloud_enabled: z.boolean() })
+          .safeParse(await response.json().catch(() => undefined))
+        if (!features.success) return
+        const authorized = Boolean(
+          await response
+            .request()
+            .headerValue('authorization')
+            .catch(() => null)
+        )
+        receiverFlagResponses.push({
+          authorized,
+          enabled: features.data.open_on_cloud_enabled
+        })
+      })
 
       await test.step('Follow the Desktop relay and sign in on the Cloud preview', async () => {
         await page.goto(relayTransfer.url, { waitUntil: 'domcontentloaded' })
@@ -110,19 +147,33 @@ test.describe(
       })
 
       await test.step('Restore the transferred workflow in the authenticated editor', async () => {
-        await expect(
-          page.getByTestId('toast').filter({
-            visible: true,
-            hasText: 'Opened from ComfyUI on your computer'
-          })
-        ).toBeVisible()
-        await expect
-          .poll(() =>
-            page.evaluate(() =>
+        const graphNodeTypes = () =>
+          page
+            .evaluate(() =>
               window.app?.graph.nodes.map((node) => node.type).toSorted()
             )
+            .catch(() => undefined)
+        try {
+          await Promise.all([
+            expect(
+              toast.withText('Opened from ComfyUI on your computer')
+            ).toBeVisible(),
+            expect.poll(graphNodeTypes).toEqual(['EmptyImage', 'SaveImage'])
+          ])
+        } catch (error) {
+          const { origin, pathname } = new URL(page.url())
+          const graph = await graphNodeTypes()
+          const workflowMissing = await toast
+            .withText("Your workflow didn't arrive")
+            .isVisible()
+          if (origin === cloudOrigin && (await comfyPage.canvas.isVisible())) {
+            await capture('02-cloud-editor-after-sign-in.png')
+          }
+          throw new Error(
+            `Cloud could not confirm workflow import: ${JSON.stringify({ pathname, graph, workflowMissing, receiverFlagResponses })}`,
+            { cause: error }
           )
-          .toEqual(['EmptyImage', 'SaveImage'])
+        }
         await capture('02-imported-workflow.png')
       })
 

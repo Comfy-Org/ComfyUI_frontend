@@ -92,6 +92,7 @@ jobs:
           name: open-on-cloud-authenticated-evidence
           path: |
             ${{ runner.temp }}/open-on-cloud-smoke/**/01-hosted-sign-in.png
+            ${{ runner.temp }}/open-on-cloud-smoke/**/02-cloud-editor-after-sign-in.png
             ${{ runner.temp }}/open-on-cloud-smoke/**/02-imported-workflow.png
             ${{ runner.temp }}/open-on-cloud-smoke/**/03-after-cloud-execution.png
             ${{ runner.temp }}/open-on-cloud-smoke/**/cloud-job-result.json
