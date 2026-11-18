@@ -799,7 +799,7 @@ describe('useDeploymentPickStore', () => {
     })
 
     it('stops waiting for a stalled listing and never picks when it eventually answers', async () => {
-      vi.useFakeTimers()
+      vi.useFakeTimers({ shouldAdvanceTime: false })
       const listed = deferred<WorkspaceDeploymentList>()
       mockWorkspaceApi.listDeployments.mockReturnValue(listed.promise)
       const store = useDeploymentPickStore()
