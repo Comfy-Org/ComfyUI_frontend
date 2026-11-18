@@ -462,6 +462,54 @@ test('floating connectivity is undoable even without an ordinary link', async ()
   expect(tracker.activeState.floatingLinks).toBeUndefined()
 })
 
+test.for([
+  { outcome: 'moved', veto: false, sameSource: false, history: 1, origin: 2 },
+  { outcome: 'vetoed', veto: true, sameSource: false, history: 0, origin: 1 },
+  { outcome: 'unchanged', veto: false, sameSource: true, history: 0, origin: 1 }
+])(
+  'a $outcome floating reroute drop captures only actual changes',
+  async ({ veto, sameSource, history, origin }) => {
+    const { graph, source, replacement, tracker } = await trackedGraph()
+    const original = source.connectFloatingReroute([137, 81], source.outputs[0])
+    const target = replacement.connectFloatingReroute(
+      [281, 163],
+      replacement.outputs[0]
+    )
+    assert(original && target)
+    const link = [...graph.floatingLinks.values()].find(
+      (candidate) => candidate.parentId === original.id
+    )
+    assert(link)
+    const initial = await validateComfyWorkflow(graph.serialize())
+    assert(initial)
+    tracker.reset(initial)
+    tracker.undoQueue.length = 0
+    const connector = new LinkConnector(() => {})
+    connector.events.addEventListener('dropped-on-reroute', (event) => {
+      if (veto) event.preventDefault()
+    })
+    connector.moveOutputLink(graph, source, source.outputs[0])
+
+    connector.dropOnReroute(
+      sameSource ? original : target,
+      createMockCanvasPointerEvent(281, 163)
+    )
+
+    expect(tracker.undoQueue).toHaveLength(history)
+    expect(serializeNodeId(link.origin_id)).toBe(origin)
+    expect(tracker.activeState.floatingLinks).toHaveLength(2)
+    expect(tracker.activeState.floatingLinks).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: link.id,
+          origin_id: origin,
+          origin_slot: 0
+        })
+      ])
+    )
+  }
+)
+
 test('an outer legacy transaction still groups multiple connectivity edits', async () => {
   const { source, replacement, sink, tracker } = await trackedGraph()
   tracker.beforeChange()

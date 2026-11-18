@@ -25,6 +25,7 @@ import type { LinkNetwork } from '@comfyorg/graph-model/linkNetwork'
 
 import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 
+import { noteGraphEdit } from '@/lib/litegraph/src/graphEdits'
 import type { RenderLink } from './RenderLink'
 
 /**
@@ -218,10 +219,19 @@ export class FloatingRenderLink implements RenderLink {
     events: CustomEventTarget<LinkConnectorEventMap>
   ) {
     const floatingLink = this.link
+    const { origin_id, origin_slot } = floatingLink
+    const graph = this.outputNode?.graph
     floatingLink.updateEndpoints({
       originNodeId: outputNode.id,
       originSlot: outputNode.outputs.indexOf(output)
     })
+    if (
+      graph &&
+      (floatingLink.origin_id !== origin_id ||
+        floatingLink.origin_slot !== origin_slot)
+    ) {
+      noteGraphEdit(graph)
+    }
 
     events.dispatch('output-moved', this)
   }
