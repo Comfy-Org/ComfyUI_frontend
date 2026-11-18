@@ -27,31 +27,55 @@
           @value-commit="onSliderCommit"
         />
       </div>
-      <div v-else class="flex gap-1">
-        <Button
-          :tooltip="t('g.arrangeVertically')"
-          variant="muted-textonly"
-          :aria-label="t('g.arrangeVertically')"
-          @click="start('vertical')"
-        >
-          <i class="icon-[lucide--stretch-horizontal]" />
-        </Button>
-        <Button
-          :tooltip="t('g.arrangeHorizontally')"
-          variant="muted-textonly"
-          :aria-label="t('g.arrangeHorizontally')"
-          @click="start('horizontal')"
-        >
-          <i class="icon-[lucide--stretch-vertical]" />
-        </Button>
-        <Button
-          :tooltip="t('g.arrangeAsGrid')"
-          variant="muted-textonly"
-          :aria-label="t('g.arrangeAsGrid')"
-          @click="start('grid')"
-        >
-          <i class="icon-[lucide--grid-3x3]" />
-        </Button>
+      <div v-else class="flex flex-col gap-1">
+        <div class="flex gap-1">
+          <Button
+            v-for="option in alignOptions"
+            :key="option.action"
+            :tooltip="t(option.label)"
+            variant="muted-textonly"
+            :aria-label="t(option.label)"
+            @click="align(option.action)"
+          >
+            <i :class="option.icon" />
+          </Button>
+        </div>
+        <div class="flex gap-1">
+          <Button
+            :tooltip="t('g.arrangeVertically')"
+            variant="muted-textonly"
+            :aria-label="t('g.arrangeVertically')"
+            @click="start('vertical')"
+          >
+            <i class="icon-[lucide--stretch-horizontal]" />
+          </Button>
+          <Button
+            :tooltip="t('g.arrangeHorizontally')"
+            variant="muted-textonly"
+            :aria-label="t('g.arrangeHorizontally')"
+            @click="start('horizontal')"
+          >
+            <i class="icon-[lucide--stretch-vertical]" />
+          </Button>
+          <Button
+            :tooltip="t('g.arrangeAsGrid')"
+            variant="muted-textonly"
+            :aria-label="t('g.arrangeAsGrid')"
+            @click="start('grid')"
+          >
+            <i class="icon-[lucide--grid-3x3]" />
+          </Button>
+          <Button
+            v-for="option in sizeOptions"
+            :key="option.action"
+            :tooltip="t(option.label)"
+            variant="muted-textonly"
+            :aria-label="t(option.label)"
+            @click="align(option.action)"
+          >
+            <i :class="option.icon" />
+          </Button>
+        </div>
       </div>
       <PopoverArrow class="fill-background stroke-border/50" />
     </PopoverContent>
@@ -70,11 +94,77 @@ import {
   MAX_ARRANGE_GAP,
   MIN_ARRANGE_GAP
 } from '@/composables/graph/useArrangeNodes'
+import { useAlignSelection } from '@/renderer/core/canvas/smartGuides/useAlignSelection'
 import { useArrangeSession } from '@/composables/graph/useArrangeSession'
+import type { AlignAction } from '@/renderer/core/canvas/smartGuides/alignBoxes'
 
 const { t } = useI18n()
 const { activeLayout, gap, start, previewGap, commitGap, reset } =
   useArrangeSession()
+
+const { align } = useAlignSelection()
+
+interface AlignOption {
+  action: AlignAction
+  label: string
+  icon: string
+}
+
+const alignOptions: AlignOption[] = [
+  {
+    action: 'left',
+    label: 'g.alignLeft',
+    icon: 'icon-[lucide--align-start-vertical]'
+  },
+  {
+    action: 'center',
+    label: 'g.alignHorizontalCenters',
+    icon: 'icon-[lucide--align-center-vertical]'
+  },
+  {
+    action: 'right',
+    label: 'g.alignRight',
+    icon: 'icon-[lucide--align-end-vertical]'
+  },
+  {
+    action: 'top',
+    label: 'g.alignTop',
+    icon: 'icon-[lucide--align-start-horizontal]'
+  },
+  {
+    action: 'middle',
+    label: 'g.alignVerticalCenters',
+    icon: 'icon-[lucide--align-center-horizontal]'
+  },
+  {
+    action: 'bottom',
+    label: 'g.alignBottom',
+    icon: 'icon-[lucide--align-end-horizontal]'
+  }
+]
+
+const sizeOptions: AlignOption[] = [
+  {
+    action: 'distributeX',
+    label: 'g.distributeHorizontally',
+    icon: 'icon-[lucide--align-horizontal-space-between]'
+  },
+  {
+    action: 'distributeY',
+    label: 'g.distributeVertically',
+    icon: 'icon-[lucide--align-vertical-space-between]'
+  },
+  {
+    action: 'matchWidth',
+    label: 'g.matchWidth',
+    icon: 'icon-[lucide--unfold-horizontal]'
+  },
+  {
+    action: 'matchHeight',
+    label: 'g.matchHeight',
+    icon: 'icon-[lucide--unfold-vertical]'
+  }
+]
 
 const isOpen = ref(false)
 

@@ -239,6 +239,19 @@ import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
 import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
 import { findFirstNode, getDraggedItems } from './utils/collections'
+import {
+  beginIncrementalDragSnap,
+  endIncrementalDragSnap,
+  resizeEdgesOf,
+  snapIncrementalDragStep,
+  startResizeSnap
+} from './canvas/gestureSnap'
+import type { ResizeSnap } from './canvas/gestureSnap'
+import {
+  clampToMinimum,
+  resizeCornerAt,
+  resizeFromCorner
+} from './canvas/groupResize'
 import { resolveConnectingLinkColor } from './utils/linkColors'
 import { slotTypeKey } from './utils/type'
 import { createUuidv4 } from '@/utils/uuid'
@@ -3001,25 +3014,57 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         return
 
       case 'groupResize': {
-        const { group } = target
-        const b = group.boundingRect
-        const offsetX = e.canvasX - (b[0] + b[2])
-        const offsetY = e.canvasY - (b[1] + b[3])
+        const { group, corner } = target
+        const start = new Float64Array(group.boundingRect)
+        const head = group.titleHeight
+        let resizeSnap: ResizeSnap | undefined
 
-        pointer.onDragStart = () => (this.resizingGroup = group)
+        pointer.onDragStart = () => {
+          this.resizingGroup = group
+          resizeSnap = startResizeSnap(this, group)
+        }
         pointer.onDrag = (eMove) => {
           if (this.read_only || !pointer.dragStarted) return
 
-          const pos: Point = [
-            eMove.canvasX - group.pos[0] - offsetX,
-            eMove.canvasY - group.pos[1] - offsetY
-          ]
-          if (this._snapToGrid) snapPoint(pos, this._snapToGrid)
+          const [x, y, width, height] = resizeFromCorner(
+            start,
+            corner,
+            eMove.canvasX - e.canvasX,
+            eMove.canvasY - e.canvasY
+          )
+          const pos: Point = [x, y]
+          const size: Point = [width, height]
+          if (this._snapToGrid) {
+            snapPoint(pos, this._snapToGrid)
+            snapPoint(size, this._snapToGrid)
+          }
+          const box = {
+            x: pos[0],
+            y: pos[1],
+            width: size[0],
+            height: size[1],
+            head
+          }
+          const snapped =
+            resizeSnap?.resize(box, resizeEdgesOf(corner), {
+              suspended: !!this._snapToGrid
+            }) ?? box
+          const bounds = clampToMinimum(
+            snapped,
+            corner,
+            LGraphGroup.minWidth,
+            LGraphGroup.minHeight
+          )
 
-          const resized = group.resize(pos[0], pos[1])
-          if (resized) this.dirty_bgcanvas = true
+          if (group.pinned) return
+          group.pos = [bounds.x, bounds.y]
+          group.resize(bounds.width, bounds.height)
+          this.dirty_bgcanvas = true
         }
-        pointer.finally = () => (this.resizingGroup = null)
+        pointer.finally = () => {
+          resizeSnap?.stop()
+          this.resizingGroup = null
+        }
         pressGroup(group)
         break
       }
@@ -3301,9 +3346,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
             node.size[1]
           )
 
+          const head = node.pos[1] - node.boundingRect[1]
+          let resizeSnap: ResizeSnap | undefined
           pointer.onDragStart = () => {
             graph.beforeChange()
             this.resizing_node = node
+            resizeSnap = startResizeSnap(this, node)
           }
 
           pointer.onDrag = (eMove) => {
@@ -3363,6 +3411,22 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
               snapPoint(newBounds.size, this._snapToGrid)
             }
 
+            const box = {
+              x: newBounds.x,
+              y: newBounds.y - head,
+              width: newBounds.width,
+              height: newBounds.height + head,
+              head
+            }
+            const snapped =
+              resizeSnap?.resize(box, resizeEdgesOf(resizeDirection), {
+                suspended: !!this._snapToGrid
+              }) ?? box
+            newBounds.x = snapped.x
+            newBounds.y = snapped.y + head
+            newBounds.width = snapped.width
+            newBounds.height = snapped.height - head
+
             const min = node.computeSize()
             if (this._snapToGrid) {
               snapPoint(min, this._snapToGrid, 'ceil')
@@ -3393,6 +3457,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
           pointer.onDragEnd = finishResize
           pointer.onDragCancel = finishResize
           pointer.finally = () => {
+            resizeSnap?.stop()
             this.resizing_node = null
             pointer.resizeDirection = undefined
           }
@@ -3927,8 +3992,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         }
 
         const group = graph.getGroupOnPos(x, y)
-        if (group && !e.ctrlKey && group.isInResize(x, y)) {
-          pointer.resizeDirection = 'SE'
+        const corner =
+          group && !e.ctrlKey && !group.pinned
+            ? resizeCornerAt(group.boundingRect, x, y)
+            : undefined
+        if (corner) {
+          pointer.resizeDirection = corner
         } else {
           pointer.resizeDirection &&= undefined
         }
@@ -3954,8 +4023,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         this._lastDragModifiers = { ctrlKey: e.ctrlKey, metaKey: e.metaKey }
         const allItems = getDraggedItems(selected, e)
 
+        const [deltaX, deltaY] = snapIncrementalDragStep(this, dragDelta, {
+          suspended: e.shiftKey
+        })
+
         for (const item of allItems) {
-          item.move(dragDelta[0], dragDelta[1], true)
+          item.move(deltaX, deltaY, true)
         }
 
         this._dirty()
@@ -4022,6 +4095,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Ensure that dragging is properly cleaned up, on success or failure.
     pointer.finally = () => {
       this.isDragging = false
+      endIncrementalDragSnap(this)
       this._autoPan?.stop()
       this._autoPan = null
       this.graph?.afterChange()
@@ -4031,6 +4105,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.processSelect(item, pointer.eDown, sticky)
     this.isDragging = true
+    beginIncrementalDragSnap(
+      this,
+      getDraggedItems(
+        this.selectedItems,
+        pointer.eDown ?? { ctrlKey: false, metaKey: false }
+      )
+    )
 
     // Seed the auto-pan modifier state from the pointer-down event so a drag
     // that reaches the canvas edge before the first move still honours the
@@ -4052,9 +4133,12 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       onPan: (panX, panY) => {
         const selected = this.selectedItems
         const allItems = getDraggedItems(selected, this._lastDragModifiers)
+        const [deltaX, deltaY] = snapIncrementalDragStep(this, [panX, panY], {
+          suspended: this._shiftDown
+        })
 
         for (const item of allItems) {
-          item.move(panX, panY, true)
+          item.move(deltaX, deltaY, true)
         }
 
         this._dirty()

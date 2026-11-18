@@ -7,6 +7,12 @@ import type {
   Point2D as Point,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  resizeEdgesOf,
+  startResizeSnap
+} from '@/lib/litegraph/src/canvas/gestureSnap'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
@@ -79,6 +85,14 @@ export function useNodeResize(
       return measured / currentScale
     }
 
+    const { canvas } = useCanvasStore()
+    const rawNodeId = nodeElement.dataset.nodeId
+    const node = rawNodeId
+      ? canvas?.graph?.getNodeById(toNodeId(rawNodeId))
+      : undefined
+    const resizeSnap =
+      canvas && node ? startResizeSnap(canvas, node) : undefined
+    const head = node ? node.pos[1] - node.boundingRect[1] : 0
     const startPosition: Point = { ...position }
 
     const stopShiftSync = trackShiftKey(event.shiftKey)
@@ -164,6 +178,22 @@ export function useNodeResize(
         newHeight = snappedSize.height
       }
 
+      const box = {
+        x: newX,
+        y: newY - head,
+        width: newWidth,
+        height: newHeight,
+        head
+      }
+      const snapped =
+        resizeSnap?.resize(box, resizeEdgesOf(activeCorner), {
+          suspended: shouldSnap(moveEvent)
+        }) ?? box
+      newX = snapped.x
+      newY = snapped.y + head
+      newWidth = snapped.width
+      newHeight = snapped.height
+
       const minWidth =
         parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
         MIN_NODE_WIDTH
@@ -203,6 +233,7 @@ export function useNodeResize(
       resizeStartPointer.value = null
       resizeStartSize.value = null
       resizeStartPosition.value = null
+      resizeSnap?.stop()
 
       stopShiftSync()
 
