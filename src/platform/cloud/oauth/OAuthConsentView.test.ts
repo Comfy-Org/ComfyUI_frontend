@@ -250,6 +250,23 @@ describe('OAuthConsentView', () => {
     }
   )
 
+  it('hides the verified icon for a platform without a brand icon', () => {
+    renderConsent({
+      client_display_name: 'Cursor',
+      client_provenance: 'dynamic',
+      redirect_uri: 'https://cursor.com/oauth/callback',
+      verified_client: { platform: 'cursor', display_name: 'Cursor' }
+    })
+
+    const icon = screen.getByTestId('client-verified-icon')
+    expect(icon).toHaveClass('hidden')
+    expect(icon.className).not.toContain('icon-[')
+    expect(screen.getByTestId('client-verified')).toHaveTextContent(
+      "Verified destination: Cursor · you'll return to cursor.com"
+    )
+    expect(screen.queryByTestId('client-unverified')).not.toBeInTheDocument()
+  })
+
   const chatgptCallback = 'https://chatgpt.com/connector/oauth/abc123'
   const chatgpt = { platform: 'chatgpt', display_name: 'ChatGPT' }
 

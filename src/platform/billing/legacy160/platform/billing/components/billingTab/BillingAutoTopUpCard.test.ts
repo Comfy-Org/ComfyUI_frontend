@@ -2,7 +2,7 @@ import type { AutoTopUpSetup } from '@comfyorg/ingest-types'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromAny } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
@@ -24,6 +24,8 @@ import {
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
+import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 
 import BillingAutoTopUpCard from '@/platform/billing/legacy160/platform/billing/components/billingTab/BillingAutoTopUpCard.vue'
 import BillingLocalCreditBanner from '@/platform/billing/legacy160/platform/billing/components/billingTab/BillingLocalCreditBanner.vue'
@@ -36,6 +38,7 @@ vi.mock(import('@/platform/billing/composables/useBillingUI'))
 vi.mock(import('@/platform/billing/api/billingApi'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@comfyorg/telemetry'))
+vi.mock(import('@/platform/billing/localBillingHandoff'))
 vi.mock<unknown>(import('@/platform/workspace/utils/platformLink'), () => ({
   platformLink: (path: string, correlationId?: string) => {
     const url = new URL(`https://platform.test${path}`)
@@ -50,6 +53,7 @@ const BILLING_HREF =
   /^https:\/\/platform\.test\/profile\/billing\?correlation_id=.+$/
 
 const configured: AutoReloadSettings = {
+  auto_top_up_conflict: false,
   card_expiry: null,
   configured: true,
   cycle_resets_at: '2026-11-28T00:00:00Z',
@@ -368,6 +372,25 @@ describe('BillingAutoTopUpCard', () => {
       })
     }
   )
+
+  it('offers the Platform action as a button that opens billing through a handoff when local billing uses one', async () => {
+    setLocalBillingWebEnabled(true)
+    onTestFinished(() => setLocalBillingWebEnabled(false))
+    renderCard(notConfigured)
+
+    expect(
+      await screen.findByTestId('billing-auto-top-up-status')
+    ).toHaveTextContent('Off')
+    expect(
+      screen
+        .getAllByTestId('billing-auto-top-up-line')
+        .map((line) => line.textContent.trim())
+    ).toEqual(['Refills credits when your balance runs low.'])
+    await userEvent.click(screen.getByRole('button', { name: 'Turn on' }))
+
+    expect(openPlatformBillingHandoff).toHaveBeenCalledOnce()
+    expect(screen.queryByRole('link')).not.toBeInTheDocument()
+  })
 
   it.for([
     { status: 'off', action: 'Turn on', reported: 'turn_on' },

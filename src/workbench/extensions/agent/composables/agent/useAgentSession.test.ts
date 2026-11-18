@@ -72,6 +72,7 @@ const telemetry = vi.mocked(telemetryProvider)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
+    getUsageStatus: vi.fn(async () => ({ has_used_agent: false })),
     postMessage: vi.fn(async (): Promise<AgentTurnAccepted> => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
@@ -6676,6 +6677,88 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({
       node_ids: ['5'],
       workflow_id: 'wf-selected'
+    })
+  })
+
+  it('sends a plain canvas selection as canvas_selection, not as the tagged selection', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        canvasSelection: () => ['7']
+      }
+    })
+    session.start()
+
+    await session.sendMessage(
+      'what node is selected',
+      undefined,
+      undefined,
+      undefined,
+      () => 'wf-selected'
+    )
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.selection).toBeUndefined()
+    expect(body.canvasSelection).toEqual({
+      node_ids: ['7'],
+      workflow_id: 'wf-selected'
+    })
+  })
+
+  it.for([
+    { tags: ['5'], expected: { node_ids: ['9'] } },
+    { tags: ['5', '9'], expected: undefined }
+  ])(
+    'leaves tagged nodes $tags out of the canvas selection',
+    async ({ tags, expected }) => {
+      const rest = fakeRest()
+      const session = useAgentSession({
+        rest,
+        events: fakeEvents().source,
+        workflow: {
+          current: () => undefined,
+          adopted: () => {},
+          canvasSelection: () => ['5', '9']
+        }
+      })
+      session.start()
+
+      await session.sendMessage(
+        'compare',
+        undefined,
+        tags.map((id) => ({ id, title: `Node ${id}` }))
+      )
+
+      const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+      expect(body.selection).toEqual({ node_ids: tags })
+      expect(body.canvasSelection).toEqual(expected)
+    }
+  )
+
+  it('caps a large plain canvas selection and reports the total', async () => {
+    const rest = fakeRest()
+    const ids = Array.from({ length: 25 }, (_, index) => String(index + 1))
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        canvasSelection: () => ids
+      }
+    })
+    session.start()
+
+    await session.sendMessage('what are these')
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.canvasSelection).toEqual({
+      node_ids: ids.slice(0, 20),
+      total_selected: 25
     })
   })
 

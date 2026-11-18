@@ -29,6 +29,7 @@ import {
 
 import type { OperationNotice } from '@/checkout/operationChannel'
 
+import { awaitPlanChangeCardChoice } from '@/config/checkoutUi'
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { createBillingI18n } from '@/i18n'
 import type {
@@ -88,6 +89,12 @@ vi.mock(import('@/session/stripeChallengePort'), () => ({
     }
   })
 }))
+
+vi.mock(import('@/config/checkoutUi'), { spy: true })
+
+beforeEach(() => {
+  vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(false)
+})
 
 vi.mock(import('@/entry/workspaceBinding'), () => ({
   boundWorkspaceId: () => undefined,
@@ -167,7 +174,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
         isLoading: { type: Boolean, default: false },
         locked: { type: Boolean, default: false }
       },
-      emits: ['confirm', 'phase'],
+      emits: ['confirm', 'phase', 'submittingChange'],
       setup(
         props: { canSubmit: boolean; isLoading: boolean; locked: boolean },
         {
@@ -3688,5 +3695,195 @@ describe('FullPageCheckoutView attempt telemetry', () => {
         'billing.subscription_checkout.succeeded'
       ])
     )
+  })
+})
+
+describe('FullPageCheckoutView card choice on a plan change', () => {
+  beforeEach(() => {
+    form.mounts = 0
+    vi.mocked(awaitPlanChangeCardChoice).mockResolvedValue(true)
+  })
+
+  const PLAN_CHANGES: {
+    name: string
+    preview: Partial<SubscriptionPreview>
+    eyebrow: string
+    cta: 'Confirm upgrade' | 'Confirm change'
+  }[] = [
+    {
+      name: 'an upgrade charged today',
+      preview: { transition_type: 'upgrade' },
+      eyebrow: 'Upgrade to Creator Plan · Acme Team',
+      cta: 'Confirm upgrade'
+    },
+    {
+      name: 'a switch to yearly charged today',
+      preview: { transition_type: 'duration_change' },
+      eyebrow: 'Switch to Creator Plan · Acme Team',
+      cta: 'Confirm change'
+    },
+    {
+      name: 'a downgrade scheduled for period end',
+      preview: {
+        transition_type: 'downgrade',
+        is_immediate: false,
+        cost_today_cents: 0
+      },
+      eyebrow: 'Switch to Creator Plan · Acme Team',
+      cta: 'Confirm change'
+    }
+  ]
+
+  async function renderPlanChange(
+    preview: Partial<SubscriptionPreview>,
+    eyebrow: string,
+    options: FakeBillingClientOptions = {}
+  ) {
+    const fake = await renderCheckout({
+      preview: { status: 'ok', value: previewOf(preview) },
+      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] },
+      ...options
+    })
+    await screen.findByText(eyebrow)
+    return fake
+  }
+
+  it.for(PLAN_CHANGES)(
+    'opens $name on Saved with the default card, and $cta sends it with the return URL',
+    async ({ preview, eyebrow, cta }) => {
+      const fake = await renderPlanChange(preview, eyebrow)
+
+      expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+      expect(savedPicker()).toHaveTextContent('·· 4402')
+
+      await userEvent.click(confirmButton(cta))
+
+      await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+      const request = fake.subscribe.mock.calls[0][0]
+      expect(request).toMatchObject({
+        saved_payment_method_id: 'pm_mastercard',
+        return_url: expect.stringContaining('/checkout')
+      })
+      expect(request).not.toHaveProperty('confirmation_token')
+    }
+  )
+
+  it('sends another saved card picked for the upgrade', async () => {
+    const fake = await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4242/ }))
+    await userEvent.click(confirmButton('Confirm upgrade'))
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_visa'
+    })
+  })
+
+  it('sends a new card typed under Add new payment with the return URL', async () => {
+    const fake = await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+
+    await userEvent.click(tab('Add new payment'))
+    form.emit('confirm', 'ctoken_new')
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    const request = fake.subscribe.mock.calls[0][0]
+    expect(request).toMatchObject({
+      confirmation_token: 'ctoken_new',
+      return_url: expect.stringContaining('/checkout')
+    })
+    expect(request).not.toHaveProperty('saved_payment_method_id')
+  })
+
+  it('holds the tabs while a new card is still turning into a token, so Saved cannot be switched to under it', async () => {
+    await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await userEvent.click(tab('Add new payment'))
+
+    form.emit('submittingChange', true)
+    await nextTick()
+    expect(screen.getByRole('tablist')).toHaveAttribute('inert')
+
+    form.emit('submittingChange', false)
+    await nextTick()
+    expect(screen.getByRole('tablist')).not.toHaveAttribute('inert')
+  })
+
+  it('releases the tabs when the card form fails mid-token, so Saved is still chosen and paid', async () => {
+    const fake = await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team'
+    )
+    reportPhase({ phase: 'payment_element_ready', element: 'payment' })
+    await userEvent.click(tab('Add new payment'))
+    form.emit('submittingChange', true)
+    await nextTick()
+
+    reportPhase({
+      phase: 'payment_element_failed',
+      element: 'payment',
+      element_phase: 'update'
+    })
+    await nextTick()
+
+    expect(screen.getByRole('tablist')).not.toHaveAttribute('inert')
+    await userEvent.click(tab('Saved'))
+    await userEvent.click(confirmButton('Confirm upgrade'))
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledOnce())
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_mastercard'
+    })
+  })
+
+  it('keeps the picker after a declined upgrade, so another saved card is confirmed on the same page', async () => {
+    const fake = await renderPlanChange(
+      { transition_type: 'upgrade' },
+      'Upgrade to Creator Plan · Acme Team',
+      {
+        subscribe: {
+          status: 'ok',
+          value: {
+            phase: 'failed',
+            operation: failedOperation('card_declined', 'op_declined')
+          }
+        }
+      }
+    )
+
+    await userEvent.click(confirmButton('Confirm upgrade'))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Payment declined'
+    )
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    await waitFor(() => expect(confirmButton('Confirm upgrade')).toBeEnabled())
+
+    fake.subscribe.mockResolvedValueOnce({
+      status: 'ok',
+      value: { phase: 'succeeded' }
+    })
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4242/ }))
+    await userEvent.click(confirmButton('Confirm upgrade'))
+
+    await waitFor(() => expect(fake.subscribe).toHaveBeenCalledTimes(2))
+    expect(fake.subscribe.mock.calls[0][0]).toMatchObject({
+      saved_payment_method_id: 'pm_mastercard'
+    })
+    expect(fake.subscribe.mock.calls[1][0]).toMatchObject({
+      saved_payment_method_id: 'pm_visa'
+    })
   })
 })

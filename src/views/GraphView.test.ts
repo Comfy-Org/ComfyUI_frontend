@@ -23,6 +23,7 @@ import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useQueueStore } from '@/stores/queueStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -490,6 +491,27 @@ describe('GraphView - output assets refresh', () => {
     apiEvents.dispatchEvent(new Event('execution_success'))
 
     await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
+  })
+
+  it('reloads the queue and output assets once on the status sent after a reconnect, not when the socket drops', async () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+    const loadNew = vi
+      .spyOn(useAssetsStore().outputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+    const updateQueue = vi
+      .spyOn(useQueueStore(), 'update')
+      .mockResolvedValue(undefined)
+
+    apiMock.dispatchCustomEvent('status', null)
+    await vi.advanceTimersByTimeAsync(0)
+    expect(updateQueue).not.toHaveBeenCalled()
+    expect(loadNew).not.toHaveBeenCalled()
+
+    apiMock.dispatchCustomEvent('status', {
+      exec_info: { queue_remaining: 0 }
+    })
+    await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
+    expect(updateQueue).toHaveBeenCalledTimes(1)
   })
 })
 

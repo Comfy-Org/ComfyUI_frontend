@@ -1,13 +1,11 @@
 <template>
   <div
-    ref="root"
     :class="
       cn(
         'flex max-h-[calc(100dvh-2rem)] min-h-0 w-[min(400px,95vw)] flex-col rounded-2xl border bg-background text-sm text-foreground shadow-md',
         ui.root
       )
     "
-    :style="{ transform: `translateY(${growth / 2}px)` }"
     data-testid="add-credits-dialog"
     :data-step="state.step"
   >
@@ -67,36 +65,37 @@
       <template #description><slot name="description" /></template>
       <template #autoTopUp>
         <AddCreditsAutoTopUpCard
-          v-if="autoTopUpOffer.kind === 'checkbox' && billingUrl"
+          v-if="autoTopUpOffer.kind === 'checkbox' && billingLink"
           v-model:checked="autoTopUpFields.checked.value"
           :rules="autoTopUpOffer.rules"
           :default-card="autoTopUpOffer.defaultCard"
           :input="autoTopUpFields.input.value"
           :values="autoTopUpFields.values.value"
           :errors="autoTopUpFields.errors.value"
-          :billing-url
+          :billing-url="billingLink"
           :locked="dialog.amountView.value?.locked ?? false"
           :translate
           :format
           :ui
           @edit="autoTopUpFields.edit"
+          @open-billing="openBilling"
         />
         <p
-          v-else-if="autoTopUpOffer.kind === 'on'"
+          v-else-if="autoTopUpOffer.kind === 'on' && billingLink"
           :class="cn('m-0 text-muted-foreground', ui.line)"
           data-testid="add-credits-auto-top-up-is-on"
         >
           {{ translate('autoTopUp.isOn') }}
-          <a
-            :href="billingUrl"
-            target="_blank"
+          <AddCreditsBillingLink
+            :to="billingLink"
             rel="noopener noreferrer"
-            class="text-inherit underline"
+            inline
+            @click="openBilling"
             >{{ translate('autoTopUp.manage')
             }}<i
               class="ml-0.5 icon-[lucide--arrow-up-right] size-3"
               aria-hidden="true"
-          /></a>
+          /></AddCreditsBillingLink>
         </p>
       </template>
       <template #notice="scope"><slot name="notice" v-bind="scope" /></template>
@@ -118,23 +117,25 @@
     <AddCreditsAutoTopUpResultStep
       v-else-if="state.step === 'auto_top_up_on'"
       :settings="state.settings"
-      :link-url="billingUrl"
+      :link-url="billingLink"
       :translate
       :format
       :ui
       @close="emit('close')"
+      @open-billing="openBilling"
     />
     <AddCreditsAutoTopUpResultStep
       v-else-if="state.step === 'auto_top_up_failed'"
-      :link-url="state.setupUrl"
+      :link-url="linkTo(failedSetupUrl)"
       :translate
       :format
       :ui
       @close="emit('close')"
+      @open-billing="openBilling"
     />
     <AddCreditsAutoTopUpOfferStep
-      v-else-if="state.step === 'auto_top_up_offer'"
-      :setup-url="state.setupUrl"
+      v-else-if="offerSetupUrl"
+      :setup-url="linkTo(offerSetupUrl)"
       :translate
       :ui
       @set-up="setUpAutoTopUp"
@@ -144,9 +145,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
+import { computed, watch } from 'vue'
 import type { Component } from 'vue'
-import { useResizeObserver, useWindowSize } from '@vueuse/core'
 
 import type {
   AddCreditsAutoTopUpOffer,
@@ -170,9 +170,13 @@ import AddCreditsAmountStep from './AddCreditsAmountStep.vue'
 import AddCreditsAutoTopUpCard from './AddCreditsAutoTopUpCard.vue'
 import AddCreditsAutoTopUpResultStep from './AddCreditsAutoTopUpResultStep.vue'
 import AddCreditsAutoTopUpOfferStep from './AddCreditsAutoTopUpOfferStep.vue'
+import AddCreditsBillingLink from './AddCreditsBillingLink.vue'
 import AddCreditsBlockedStep from './AddCreditsBlockedStep.vue'
 import AddCreditsOpenedStep from './AddCreditsOpenedStep.vue'
-import type { AddCreditsUi } from './addCreditsPresentation'
+import type {
+  AddCreditsBillingLinkTarget,
+  AddCreditsUi
+} from './addCreditsPresentation'
 import { addCreditsFormat } from './addCreditsPresentation'
 import type { AddCreditsPorts } from './useAddCreditsDialog'
 import { useAddCreditsAutoTopUp } from './useAddCreditsAutoTopUp'
@@ -190,6 +194,8 @@ const {
   planLine,
   autoTopUp = { kind: 'hidden' },
   billingUrl,
+  autoTopUpSetupHidden = false,
+  hostOpensBilling = false,
   opensIn = 'tab',
   supportUrl,
   locale,
@@ -208,6 +214,10 @@ const {
   planLine?: AddCreditsPlanLine
   autoTopUp?: AddCreditsAutoTopUpOffer
   billingUrl?: string
+  /** Withdraws a setup link the dialog already holds, e.g. once Platform links stop being offered. */
+  autoTopUpSetupHidden?: boolean
+  /** Renders every billing link as a button, with no URL in the page, for a host that opens billing itself on `openBilling` and `setUpAutoTopUp`. */
+  hostOpensBilling?: boolean
   opensIn?: 'tab' | 'browser'
   supportUrl: string
   locale: string
@@ -220,7 +230,20 @@ const emit = defineEmits<{
   close: []
   setUpAutoTopUp: []
   declineAutoTopUp: []
+  openBilling: []
 }>()
+
+function linkTo<Url extends string | undefined>(
+  url: Url
+): Url | AddCreditsBillingLinkTarget {
+  return url && hostOpensBilling ? true : url
+}
+
+const billingLink = computed(() => linkTo(billingUrl))
+
+function openBilling() {
+  if (hostOpensBilling) emit('openBilling')
+}
 
 function setUpAutoTopUp() {
   emit('setUpAutoTopUp')
@@ -263,22 +286,25 @@ const dialog = useAddCreditsDialog({
 })
 const state = dialog.state
 
-const format = computed(() => addCreditsFormat(locale))
+const failedSetupUrl = computed(() =>
+  state.value.step === 'auto_top_up_failed' && !autoTopUpSetupHidden
+    ? state.value.setupUrl
+    : undefined
+)
+const offerSetupUrl = computed(() =>
+  state.value.step === 'auto_top_up_offer' && !autoTopUpSetupHidden
+    ? state.value.setupUrl
+    : undefined
+)
 
-const VIEWPORT_GUTTER_PX = 16
-const root = useTemplateRef('root')
-const defaultHeight = ref<number>()
-const height = ref(0)
-const { height: viewportHeight } = useWindowSize()
-useResizeObserver(root, ([entry]) => {
-  height.value = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height
-  defaultHeight.value ??= height.value
-})
-const growth = computed(() => {
-  if (defaultHeight.value === undefined) return 0
-  const room = viewportHeight.value - 2 * VIEWPORT_GUTTER_PX - height.value
-  return Math.max(0, Math.min(height.value - defaultHeight.value, room))
-})
+watch(
+  () => state.value.step === 'auto_top_up_offer' && autoTopUpSetupHidden,
+  (withdrawn) => {
+    if (withdrawn) emit('close')
+  }
+)
+
+const format = computed(() => addCreditsFormat(locale))
 
 const blockedUrl = computed(() => {
   const current = state.value

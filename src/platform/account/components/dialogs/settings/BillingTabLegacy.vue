@@ -52,7 +52,7 @@
         data-testid="billing-load-error"
       >
         <p class="m-0 text-sm text-muted-foreground">
-          {{ $t('workspacePanel.billingTab.loadError') }}
+          {{ $t(loadErrorKey) }}
         </p>
         <Button variant="secondary" size="md" class="shrink-0" @click="retry">
           {{ $t('workspacePanel.billingTab.tryAgain') }}
@@ -96,7 +96,11 @@
     </section>
 
     <div class="flex flex-col gap-6">
-      <section class="flex flex-col gap-3" data-testid="billing-handoff">
+      <section
+        v-if="handoffAvailable"
+        class="flex flex-col gap-3"
+        data-testid="billing-handoff"
+      >
         <h2 class="m-0 text-base font-medium text-foreground">
           {{ $t(`workspacePanel.billingTab.handoff.${handoffAudience}.label`) }}
         </h2>
@@ -204,6 +208,7 @@ import { useBillingCreditsCard } from '@/platform/billing/legacy160/platform/bil
 import { useBillingPlanRow } from '@/platform/billing/legacy160/platform/billing/components/billingTab/useBillingPlanRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useRefreshBillingOnReturn } from '@/platform/billing/composables/useRefreshBillingOnReturn'
 import { useTopUpPlanCreditCopy } from '@/platform/billing/legacy160/platform/billing/composables/useTopUpPlanCreditCopy'
 import { usePausedBanner } from '@/platform/billing/composables/usePausedBanner'
 import { useTopupCheckoutBanner } from '@/platform/billing/legacy160/platform/billing/composables/useTopupCheckoutBanner'
@@ -229,6 +234,9 @@ const { state: creditsCard } = useBillingCreditsCard(planRow)
 const planCreditNote = useTopUpPlanCreditCopy()
 const { showTopUpCreditsDialog } = useBillingDialogs()
 const telemetry = useTelemetry()
+const loadErrorKey = isCloud
+  ? 'workspacePanel.billingTab.loadError'
+  : 'workspacePanel.billingTab.localLoadError'
 const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
 const { buildDocsUrl, docsPaths } = useExternalLink()
 const partnerNodesPricingHref = computed(() =>
@@ -286,7 +294,11 @@ const salesVariant = computed(() =>
   billing.subscriptionStatus.value === 'ended' ? 'inverted' : 'secondary'
 )
 
-const { href: handoffHref, track: trackHandoff } = usePlatformHandoff(
+const {
+  href: handoffHref,
+  track: trackHandoff,
+  available: handoffAvailable
+} = usePlatformHandoff(
   () => HANDOFF[handoffAudience.value].path,
   () => ({ target: HANDOFF[handoffAudience.value].target })
 )
@@ -315,4 +327,6 @@ onMounted(() => {
   }
   void capabilities.initialize()
 })
+
+useRefreshBillingOnReturn()
 </script>

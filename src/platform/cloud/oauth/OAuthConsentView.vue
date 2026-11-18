@@ -39,7 +39,7 @@
             data-testid="client-verified"
           >
             <i
-              :class="cn(verifiedClientIcons[verified.platform], 'shrink-0')"
+              :class="verifiedIconClass"
               aria-hidden="true"
               data-testid="client-verified-icon"
             />
@@ -283,7 +283,7 @@ import {
   redirectHost,
   submitOAuthConsentDecision,
   verifiedClient,
-  verifiedClientIcons
+  verifiedClientIcon
 } from '@/platform/cloud/oauth/oauthApi'
 import type {
   OAuthConsentChallenge,
@@ -350,6 +350,11 @@ const verified = computed(() =>
     ? verifiedClient(challenge.value)
     : undefined
 )
+
+const verifiedIconClass = computed(() => {
+  const icon = verified.value && verifiedClientIcon(verified.value.platform)
+  return cn(icon || 'hidden', 'shrink-0')
+})
 
 const selectedWorkspaceIsValid = computed(() =>
   Boolean(

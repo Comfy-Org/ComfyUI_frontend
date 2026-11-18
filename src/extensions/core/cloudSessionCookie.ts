@@ -15,9 +15,7 @@ export const cloudSessionCookieExtension: ComfyExtension = {
     await createSession()
   },
 
-  onAuthUserLogout: async () => {
+  onAuthUserLogout: () => {
     clearOAuthRequestId()
-    const { deleteSession } = useSessionCookie()
-    await deleteSession()
   }
 }

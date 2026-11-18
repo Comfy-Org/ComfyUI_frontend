@@ -283,6 +283,13 @@
       }
     },
     {
+      "files": ["src/**/*.{ts,vue}"],
+      "excludeFiles": ["src/**/*.{test,stories}.ts", "src/**/__mocks__/**"],
+      "rules": {
+        "comfy/no-app-singleton-import": "error"
+      }
+    },
+    {
       "files": [
         "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
@@ -355,6 +362,23 @@
       ],
       "rules": {
         "comfy/no-direct-selection-write": "error"
+      }
+    },
+    {
+      "files": [
+        "src/components/graph/**/*.{ts,vue}",
+        "src/composables/canvas/**/*.{ts,vue}",
+        "src/composables/graph/**/*.{ts,vue}",
+        "src/renderer/**/*.{ts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/renderer/core/layout/transform/useCompositedTransform.ts",
+        "src/renderer/core/canvas/workflowImage/rasterizeElement.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-transform-write": "error"
       }
     },
     {
