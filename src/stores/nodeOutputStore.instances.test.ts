@@ -29,7 +29,7 @@ function arrangeTwoInstances() {
     rootGraph.add(host)
     return host
   })
-  Object.assign(app, { rootGraph, nodeOutputs: {}, nodePreviewImages: {} })
+  Object.assign(app, { rootGraph })
 
   return {
     rootGraph,
@@ -124,7 +124,6 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
   )
 
   it('keeps one instance live preview when the other instance starts', () => {
-    vi.useFakeTimers()
     const { firstRun, secondRun } = arrangeTwoInstances()
     const store = useNodeOutputStore()
     store.setNodePreviewsByExecutionId(firstRun, ['blob:hostA'])
@@ -140,7 +139,6 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
   })
 
   it('keeps the newer frame of another instance when an instance starts', () => {
-    vi.useFakeTimers()
     const { locator, firstRun, secondRun } = arrangeTwoInstances()
     const store = useNodeOutputStore()
     store.setNodePreviewsByExecutionId(firstRun, ['blob:hostA'])
@@ -245,7 +243,7 @@ describe('nodeOutputStore with two instances of one subgraph definition', () => 
     outerDefinition.add(innerHost)
     const outerHost = createTestSubgraphNode(outerDefinition, { id: 5 })
     rootGraph.add(outerHost)
-    Object.assign(app, { rootGraph, nodeOutputs: {}, nodePreviewImages: {} })
+    Object.assign(app, { rootGraph })
     const leafRun = createNodeExecutionId([outerHost.id, innerHost.id, leaf.id])
     const store = useNodeOutputStore()
     store.setNodeOutputsByExecutionId(leafRun, images('nested.png'))

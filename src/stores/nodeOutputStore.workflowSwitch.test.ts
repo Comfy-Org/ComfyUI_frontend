@@ -261,7 +261,6 @@ describe('nodeOutputStore preview lifecycle across workflow tab switches', () =>
   })
 
   it('keeps the restored workflow preview when a revoke scheduled before the switch fires', () => {
-    vi.useFakeTimers()
     const store = useNodeOutputStore()
     const node = createMockNode(5)
     switchToWorkflow(WORKFLOW_B)
