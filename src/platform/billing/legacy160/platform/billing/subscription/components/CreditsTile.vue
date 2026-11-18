@@ -39,7 +39,8 @@
             variant="link"
             size="link"
             class="py-0 text-foreground underline"
-            @click="handleRefresh"
+            :loading="isRetryingBalance"
+            @click="retryBalance"
           >
             {{ $t('workspacePanel.billingTab.tryAgain') }}
           </Button>
@@ -245,7 +246,7 @@
 import { BILLING_ACTION_NAME } from '@/platform/telemetry/billingActionNames'
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
-import { computed, onMounted, useId, watch } from 'vue'
+import { computed, onMounted, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
@@ -288,6 +289,7 @@ const { zeroState = false, inactivePlan } = defineProps<{
 const { locale, t } = useI18n()
 
 const {
+  type: billingType,
   subscription,
   balance,
   canAccessSubscriptionFeatures,
@@ -472,13 +474,23 @@ const monthlyUsageLabel = computed(() =>
 
 // A failed read leaves the balance null. Show it as unknown rather than as
 // 0 credits, and drop the breakdown, whose figures would derive from that 0.
+// Before billing routing is known no read has been made, so nothing failed.
 const isBalanceUnavailable = computed(
   () =>
+    billingType.value !== 'unknown' &&
     !isLoadingBalance.value &&
     balance.value == null &&
-    !zeroState &&
     !showsInactivePlanState.value
 )
+const isRetryingBalance = ref(false)
+async function retryBalance() {
+  isRetryingBalance.value = true
+  try {
+    await handleRefresh()
+  } finally {
+    isRetryingBalance.value = false
+  }
+}
 
 const showBreakdown = computed(
   () =>

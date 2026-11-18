@@ -34,6 +34,8 @@ beforeEach(() => {
   billing.balance = computed(() => mockBalance.value)
   billing.isLoading = mockIsLoading
   billing.isTeamPlan = computed(() => mockIsTeamPlan.value)
+  mockBillingType.value = 'workspace'
+  billing.type = computed(() => mockBillingType.value)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 
   window.open = vi.fn()
@@ -69,6 +71,7 @@ const mockCanAccessSubscriptionFeatures = ref(true)
 const mockTier = ref<SubscriptionInfo['tier']>('CREATOR')
 const mockSubscription = ref<SubscriptionInfo | null>(makeSubscription())
 const mockBalance = ref<BalanceInfo | null>(null)
+const mockBillingType = ref<'workspace' | 'unknown'>('workspace')
 const mockIsLoading = ref(false)
 const mockIsTeamPlan = ref(false)
 
@@ -395,6 +398,17 @@ describe('CurrentUserPopoverLegacy', () => {
         screen.getByText("Couldn't load your balance.")
       ).toBeInTheDocument()
       expect(screen.queryByText('0')).not.toBeInTheDocument()
+    })
+
+    it('does not report an unread balance before billing routing is known', () => {
+      mockBalance.value = null
+      mockBillingType.value = 'unknown'
+
+      renderComponent()
+
+      expect(
+        screen.queryByTestId('credits-balance-unavailable')
+      ).not.toBeInTheDocument()
     })
 
     it('keeps a known zero balance as 0', () => {

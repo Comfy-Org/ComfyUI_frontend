@@ -826,6 +826,25 @@ describe('CreditsTile', () => {
     expect(useBillingContext().fetchBalance).toHaveBeenCalledTimes(2)
   })
 
+  it('does not report an unread balance before billing routing is known', () => {
+    activeProSubscription()
+    state.balance = null
+    state.type = 'unknown'
+    renderTile()
+    expect(
+      screen.queryByTestId('credits-total-unavailable')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows an unread balance as unavailable in the zero state too', () => {
+    activeProSubscription()
+    state.balance = null
+    renderTile({ zeroState: true })
+    expect(screen.getByTestId('credits-total-unavailable')).toHaveTextContent(
+      '—'
+    )
+  })
+
   it('keeps the skeleton, not the unavailable state, while the balance loads', () => {
     activeProSubscription()
     state.balance = null

@@ -336,28 +336,35 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
    * FRONT-3164: a balance read that still fails after the shared retry used
    * to render as 0 credits, the same as an empty account.
    */
-  test('shows a failed balance read as unavailable, then recovers on Try again', async ({
-    page
-  }) => {
-    test.setTimeout(60_000)
-    let down = true
-    await mockCloudBoot(page, { balanceDown: () => down })
-    await bootApp(page)
+  test(
+    'shows a failed balance read as unavailable, then recovers on Try again',
+    { tag: '@screenshot' },
+    async ({ page }) => {
+      test.setTimeout(60_000)
+      let down = true
+      await mockCloudBoot(page, { balanceDown: () => down })
+      await bootApp(page)
 
-    const content = await openPlanAndCredits(page)
-    const tile = content.getByTestId('credits-tile')
+      const content = await openPlanAndCredits(page)
+      const tile = content.getByTestId('credits-tile')
 
-    await expect(tile.getByTestId('credits-total-unavailable')).toHaveText('—')
-    await expect(tile.getByText("Couldn't load your balance.")).toBeVisible()
-    await expect(tile.getByText('0', { exact: true })).toBeHidden()
-    await expectElementScreenshot(tile, 'credits-tile-balance-unavailable.png')
+      await expect(tile.getByTestId('credits-total-unavailable')).toHaveText(
+        '—'
+      )
+      await expect(tile.getByText("Couldn't load your balance.")).toBeVisible()
+      await expect(tile.getByText('0', { exact: true })).toBeHidden()
+      await expectElementScreenshot(
+        tile,
+        'credits-tile-balance-unavailable.png'
+      )
 
-    down = false
-    await tile.getByRole('button', { name: 'Try again' }).click()
+      down = false
+      await tile.getByRole('button', { name: 'Try again' }).click()
 
-    await expect(tile.getByText('12,660')).toBeVisible()
-    await expect(tile.getByTestId('credits-total-unavailable')).toBeHidden()
-  })
+      await expect(tile.getByText('12,660')).toBeVisible()
+      await expect(tile.getByTestId('credits-total-unavailable')).toBeHidden()
+    }
+  )
 
   test('issues its own request for the second page of the usage log', async ({
     page

@@ -82,7 +82,7 @@
       <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton v-if="isLoadingBalance" class="h-5 w-16" />
       <span
-        v-else-if="!balance"
+        v-else-if="isBalanceUnavailable"
         class="text-base font-semibold text-muted-foreground"
         data-testid="credits-balance-unavailable"
         :title="$t('profileMenu.balanceUnavailable')"
@@ -363,9 +363,14 @@ const {
   canAccessSubscriptionFeatures,
   subscription,
   balance,
+  type: billingType,
   isLoading,
   fetchBalance
 } = useBillingContext()
+// Before billing routing is known no read has been made, so nothing failed.
+const isBalanceUnavailable = computed(
+  () => billingType.value !== 'unknown' && !balance.value
+)
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()

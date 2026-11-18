@@ -203,6 +203,7 @@ describe('CurrentUserPopoverWorkspace', () => {
       () => ({ amountMicros: 100, currency: 'USD' }) satisfies BalanceInfo
     )
     billingContext.isLoading = ref(false)
+    billingContext.type = computed(() => 'workspace')
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
     const workspaceUI = vi.mocked(useAccountUI())
     workspaceUI.permissions = computed(() => ({
@@ -288,6 +289,30 @@ describe('CurrentUserPopoverWorkspace', () => {
       '—'
     )
     expect(screen.getByText("Couldn't load your balance.")).toBeInTheDocument()
+  })
+
+  it('does not report an unread balance before billing routing is known', () => {
+    const billing = vi.mocked(useBillingContext)()
+    billing.balance = computed(() => null)
+    billing.type = computed(() => 'unknown')
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('credits-balance-unavailable')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the skeleton, not the unavailable state, while billing loads', () => {
+    const billing = vi.mocked(useBillingContext)()
+    billing.balance = computed(() => null)
+    billing.isLoading = ref(true)
+
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('credits-balance-unavailable')
+    ).not.toBeInTheDocument()
   })
 
   it('reports a failed balance read once instead of leaving it unhandled', async () => {
