@@ -1547,7 +1547,7 @@ describe('DeploymentSwitcher', () => {
     })
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const user = renderSwitcher()
-    const trigger = await screen.findByTestId('deployment-switcher-trigger')
+    await screen.findByTestId('deployment-switcher-trigger')
     expect(screen.queryByRole('menu')).toBeNull()
 
     useDeploymentPickStore().requestSwitcherOpen()
@@ -1567,7 +1567,9 @@ describe('DeploymentSwitcher', () => {
         screen.queryByTestId('deployment-switcher-new')
       ).not.toBeInTheDocument()
     )
-    expect(trigger).toHaveAccessibleName(
+    expect(
+      screen.getByTestId('deployment-switcher-trigger')
+    ).toHaveAccessibleName(
       'Running on Comfy Cloud. Choose where this editor runs'
     )
   })
