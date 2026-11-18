@@ -14,12 +14,11 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-let stopReturnRefresh: (() => void) | null = null
-
 /** Opens the served payment action for an unpaid initial-signup invoice; reads the plans-served fact unless given another served source. */
 export function useSubscriptionPaymentRecovery(
   servedRecovery?: MaybeRefOrGetter<SubscriptionPaymentRecovery | null>
 ) {
+  let stopReturnRefresh: (() => void) | null = null
   const billing = useBillingContext()
   const { fetchPlans, fetchStatus } = billing
   const subscriptionPaymentRecovery = computed(() =>
