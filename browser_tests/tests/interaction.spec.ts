@@ -105,6 +105,32 @@ test.describe('Item Interaction', { tag: ['@node'] }, () => {
     })
   })
 
+  test('A node dragged in small steps follows the full pointer travel', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('default')
+    const [node] = await comfyPage.nodeOps.getNodeRefsByType('KSampler')
+    const origin = await node.getProperty<[number, number]>('pos')
+    const scale = await comfyPage.canvasOps.getScale()
+    const start = await comfyPage.canvasOps.toAbsolute(
+      await node.getTitlePosition()
+    )
+
+    await comfyPage.page.mouse.move(start.x, start.y)
+    await comfyPage.page.mouse.down()
+    await comfyPage.page.mouse.move(start.x - 215, start.y + 43, {
+      steps: 40
+    })
+    await comfyPage.page.mouse.up()
+
+    await expect
+      .poll(async () => {
+        const [x, y] = await node.getProperty<[number, number]>('pos')
+        return [(x - origin[0]) * scale, (y - origin[1]) * scale]
+      })
+      .toEqual([expect.closeTo(-215, 1), expect.closeTo(43, 1)])
+  })
+
   test(
     'Can pin/unpin items with keyboard shortcut',
     { tag: ['@screenshot'] },
@@ -788,6 +814,21 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     await comfyPage.canvasOps.expectNavigationTransform(before, {
       ratio: 1.1,
       anchor: [400, 300],
+      pan: [137, 83]
+    })
+  })
+
+  test('A middle-button pan in small steps follows the full pointer travel', async ({
+    comfyPage
+  }) => {
+    const before = await comfyPage.canvasOps.snapshotNavigation()
+
+    await comfyPage.page.mouse.move(50, 50)
+    await comfyPage.page.mouse.down({ button: 'middle' })
+    await comfyPage.page.mouse.move(187, 133, { steps: 40 })
+    await comfyPage.page.mouse.up({ button: 'middle' })
+
+    await comfyPage.canvasOps.expectNavigationTransform(before, {
       pan: [137, 83]
     })
   })

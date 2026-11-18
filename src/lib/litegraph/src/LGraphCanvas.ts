@@ -3668,7 +3668,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const mouse: Readonly<Point> = [e.clientX, e.clientY]
     this.mouse[0] = mouse[0]
     this.mouse[1] = mouse[1]
-    const delta = [mouse[0] - this.last_mouse[0], mouse[1] - this.last_mouse[1]]
+    const previousMouse = this.last_mouse
     this.last_mouse = mouse
     const { canvasX: x, canvasY: y } = e
     this.graph_mouse[0] = x
@@ -3683,7 +3683,15 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       this.dirty_bgcanvas = true
     }
 
+    const wasMoving = this.isDragging || this.dragging_canvas
     if (e.isPrimary) pointer.move(e)
+    const startedMoving =
+      !wasMoving && (this.isDragging || this.dragging_canvas)
+    const origin =
+      startedMoving && pointer.eDown
+        ? [pointer.eDown.clientX, pointer.eDown.clientY]
+        : previousMouse
+    const delta = [mouse[0] - origin[0], mouse[1] - origin[1]]
 
     /** See {@link state}.{@link LGraphCanvasState.hoveringOver hoveringOver} */
     let underPointer = CanvasItem.Nothing
