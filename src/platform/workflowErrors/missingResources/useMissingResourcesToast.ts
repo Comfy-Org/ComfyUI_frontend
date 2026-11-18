@@ -97,7 +97,9 @@ export function useMissingResourcesToast() {
   watch(downloads, (entries) => {
     const finished = entries.filter(
       ({ key, download }) =>
-        download.status === 'done' && !downloadedKeys.value.has(key)
+        download.status === 'done' &&
+        missingKeys.value.has(key) &&
+        !downloadedKeys.value.has(key)
     )
     if (finished.length > 0)
       downloadedKeys.value = new Set([

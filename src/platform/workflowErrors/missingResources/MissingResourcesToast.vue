@@ -9,7 +9,7 @@
       <div
         :id="detailsId"
         :inert="!isExpanded"
-        class="flex w-max max-w-3xl min-w-full flex-col gap-2 px-4 py-3"
+        class="flex w-max max-w-[calc(100vw-2rem)] min-w-full flex-col gap-2 px-4 py-3 sm:max-w-3xl"
       >
         <p
           v-if="needsAttention"
