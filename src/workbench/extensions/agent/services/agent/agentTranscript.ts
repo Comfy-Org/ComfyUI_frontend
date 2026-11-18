@@ -336,6 +336,22 @@ function parseToolCalls(
   return parsedByCallId.size > 0 ? [...parsedByCallId.values()] : undefined
 }
 
+/** One stored thinking entry as a restored part, or `undefined` when the
+ * entry is malformed or blank. A restored part keeps its round's
+ * `tool_call_id` as `toolCallId` (see `ThinkingPart`). */
+function restoredThinkingPart(entry: unknown): ThinkingPart | undefined {
+  const parsed = zPersistedThinkingEntry.safeParse(entry)
+  if (!parsed.success || !parsed.data.text.trim()) return undefined
+  const part: ThinkingPart = {
+    type: 'thinking',
+    text: parsed.data.text,
+    state: 'done'
+  }
+  if (parsed.data.truncated) part.truncated = true
+  if (parsed.data.tool_call_id) part.toolCallId = parsed.data.tool_call_id
+  return part
+}
+
 function insertThinking(
   parts: AssistantMessage['parts'],
   content: Record<string, unknown> | undefined
@@ -345,17 +361,10 @@ function insertThinking(
   const next = [...parts]
   let unplaced: ThinkingPart[] = []
   for (const entry of raw as unknown[]) {
-    const parsed = zPersistedThinkingEntry.safeParse(entry)
-    if (!parsed.success || !parsed.data.text.trim()) continue
-    const part: ThinkingPart = {
-      type: 'thinking',
-      text: parsed.data.text,
-      state: 'done'
-    }
-    if (parsed.data.truncated) part.truncated = true
-    const anchor = parsed.data.tool_call_id
-    if (anchor) part.toolCallId = anchor
+    const part = restoredThinkingPart(entry)
+    if (!part) continue
     unplaced.push(part)
+    const anchor = part.toolCallId
     const index = anchor
       ? next.findIndex(
           (existing) => existing.type === 'tool' && existing.callId === anchor
