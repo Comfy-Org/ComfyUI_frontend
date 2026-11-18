@@ -183,6 +183,30 @@ describe('PostHogTelemetryProvider', () => {
     setLocation('')
   })
 
+  it.for([
+    { outcome: 'opened', workspace_id: 'workspace-1' },
+    { outcome: 'not_found', workspace_id: 'workspace-1' },
+    { outcome: 'error', workspace_id: null },
+    {
+      outcome: 'out_of_sync',
+      reason: 'content_mismatch',
+      workspace_id: 'workspace-1'
+    }
+  ] as const)(
+    'records the workflow-id link result $outcome with no workflow name, path or id',
+    async (metadata) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackWorkflowLinkOpened(metadata)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        'app:workflow_link_opened',
+        metadata
+      )
+    }
+  )
+
   describe('initialization', () => {
     it('disables itself when posthog_project_token is not provided', async () => {
       const provider = createProvider({ posthog_project_token: undefined })

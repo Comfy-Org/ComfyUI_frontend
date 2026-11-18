@@ -1039,21 +1039,14 @@ describe('CheckoutView', () => {
     }
   )
 
-  it("names the end date the billing status reports, as the app's notice does", async () => {
+  it('names the served cancel_at, not the period end, as the end date', async () => {
     await renderCheckout(CHECKOUT_PATH, {
       preview: {
         status: 'ok',
-        value: upgradeQuote({ requires_reactivation_confirmation: true })
-      },
-      status: {
-        is_active: true,
-        has_funds: true,
-        max_seats: 1,
-        occupied_seats: 1,
-        scheduled_change: null,
-        ended_at: null,
-        team_credit_stop: null,
-        cancel_at: '2026-10-25T00:00:00.000Z'
+        value: upgradeQuote({
+          requires_reactivation_confirmation: true,
+          cancel_at: '2026-10-25T00:00:00.000Z'
+        })
       }
     })
 
@@ -1070,6 +1063,7 @@ describe('CheckoutView', () => {
         value: upgradeQuote({
           requires_reactivation_confirmation: true,
           requires_reactivation_charge_confirmation: true,
+          cancel_at: '2026-10-25T00:00:00.000Z',
           amount_due_cents: 4500
         })
       }
@@ -1200,7 +1194,11 @@ describe('CheckoutView', () => {
     })
     fake.previewSubscribe.mockResolvedValue({
       status: 'ok',
-      value: upgradeQuote({ requires_reactivation_charge_confirmation: true })
+      value: upgradeQuote({
+        requires_reactivation_confirmation: true,
+        requires_reactivation_charge_confirmation: true,
+        cancel_at: '2026-10-25T00:00:00.000Z'
+      })
     })
     await userEvent.click(confirmUpgrade)
 
@@ -1608,7 +1606,11 @@ describe('CheckoutView attempt telemetry', () => {
     })
     fake.previewSubscribe.mockResolvedValue({
       status: 'ok',
-      value: upgradeQuote({ requires_reactivation_charge_confirmation: true })
+      value: upgradeQuote({
+        requires_reactivation_confirmation: true,
+        requires_reactivation_charge_confirmation: true,
+        cancel_at: '2026-10-25T00:00:00.000Z'
+      })
     })
     await userEvent.click(confirmUpgrade)
     const reactivate = await screen.findByRole('button', {

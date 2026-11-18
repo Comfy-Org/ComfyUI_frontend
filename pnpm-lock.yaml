@@ -9,6 +9,9 @@ catalogs:
     '@alloc/quick-lru':
       specifier: ^5.2.0
       version: 5.2.0
+    '@axe-core/playwright':
+      specifier: ^4.14.0
+      version: 4.14.0
     '@comfyorg/comfy-multi-player':
       specifier: 0.3.13
       version: 0.3.13
@@ -472,6 +475,9 @@ importers:
       '@comfyorg/layer-editor':
         specifier: workspace:*
         version: link:packages/layer-editor
+      '@comfyorg/layer-editor-ui':
+        specifier: workspace:*
+        version: link:packages/layer-editor-ui
       '@comfyorg/mask-editor':
         specifier: workspace:*
         version: link:packages/mask-editor
@@ -493,6 +499,9 @@ importers:
       '@comfyorg/telemetry':
         specifier: workspace:*
         version: link:packages/telemetry
+      '@comfyorg/theme-core':
+        specifier: workspace:*
+        version: link:packages/theme-core
       '@comfyorg/viewport3d':
         specifier: workspace:*
         version: link:packages/viewport3d
@@ -647,6 +656,9 @@ importers:
         specifier: 'catalog:'
         version: 5.0.0(zod@4.6.7)
     devDependencies:
+      '@axe-core/playwright':
+        specifier: 'catalog:'
+        version: 4.14.0(playwright-core@1.63.0)
       '@comfyorg/design-system-audits':
         specifier: workspace:*
         version: link:tools/design-system-audits
@@ -1384,6 +1396,9 @@ importers:
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:../shared-frontend-utils
+      ag-psd:
+        specifier: 'catalog:'
+        version: 31.0.2
       es-toolkit:
         specifier: 'catalog:'
         version: 1.49.0
@@ -1400,15 +1415,79 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.5(@types/node@26.6.6)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.44(typescript@6.0.3)
+
+  packages/layer-editor-ui:
+    dependencies:
+      '@comfyorg/layer-editor':
+        specifier: workspace:*
+        version: link:../layer-editor
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:*
+        version: link:../tailwind-utils
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.44(typescript@6.0.3))
+      reka-ui:
+        specifier: 'catalog:'
+        version: 2.11.0(vue@3.5.44(typescript@6.0.3))
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.44(typescript@6.0.3)
+      vue-i18n:
+        specifier: 'catalog:'
+        version: 11.4.10(vue@3.5.44(typescript@6.0.3))
+    devDependencies:
+      '@comfyorg/design-system':
+        specifier: workspace:*
+        version: link:../design-system
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)(vitest@5.0.5)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@testing-library/vue':
+        specifier: 'catalog:'
+        version: 8.1.0(@vue/compiler-dom@3.5.44)(@vue/compiler-sfc@3.5.44)(@vue/server-renderer@3.5.44)(vue@3.5.44(typescript@6.0.3))
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.6
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.10(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
+      '@vitest/coverage-v8':
+        specifier: 'catalog:'
+        version: 5.0.5(vitest@5.0.5)
+      happy-dom:
+        specifier: 'catalog:'
+        version: 21.0.4
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
+      vite:
+        specifier: ^8.3.5
+        version: 8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1)
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.5(@types/node@26.6.6)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
 
   packages/mask-editor:
     dependencies:
       '@alloc/quick-lru':
         specifier: 'catalog:'
         version: 5.2.0
+      '@comfyorg/design-system':
+        specifier: workspace:*
+        version: link:../design-system
       '@comfyorg/shared-frontend-utils':
         specifier: workspace:*
         version: link:../shared-frontend-utils
+      '@comfyorg/tailwind-utils':
+        specifier: workspace:*
+        version: link:../tailwind-utils
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.44(typescript@6.0.3))
@@ -1424,13 +1503,31 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.44(typescript@6.0.3)
+      vue-i18n:
+        specifier: 'catalog:'
+        version: 11.4.10(vue@3.5.44(typescript@6.0.3))
     devDependencies:
       '@pinia/testing':
         specifier: 'catalog:'
         version: 2.0.1(pinia@4.0.2(@vue/devtools-api@8.1.5)(typescript@6.0.3)(vue@3.5.44(typescript@6.0.3)))
+      '@testing-library/jest-dom':
+        specifier: 'catalog:'
+        version: 7.0.1(@testing-library/dom@10.4.2)(vitest@5.0.5)
+      '@testing-library/user-event':
+        specifier: 'catalog:'
+        version: 14.6.8(@testing-library/dom@10.4.2)
+      '@testing-library/vue':
+        specifier: 'catalog:'
+        version: 8.1.0(@vue/compiler-dom@3.5.44)(@vue/compiler-sfc@3.5.44)(@vue/server-renderer@3.5.44)(vue@3.5.44(typescript@6.0.3))
       '@total-typescript/shoehorn':
         specifier: 'catalog:'
         version: 0.1.2(patch_hash=8860f8e380c137bc50b1976516d562675229ce1e5b436bb48c7daf65a3dbec15)
+      '@types/node':
+        specifier: 'catalog:'
+        version: 26.6.6
+      '@vitejs/plugin-vue':
+        specifier: 'catalog:'
+        version: 6.0.10(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))(vue@3.5.44(typescript@6.0.3))
       '@vitest/coverage-v8':
         specifier: 'catalog:'
         version: 5.0.5(vitest@5.0.5)
@@ -1449,6 +1546,9 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.5(@types/node@26.6.6)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.11(typescript@6.0.3)
 
   packages/object-info-parser:
     dependencies:
@@ -1489,6 +1589,9 @@ importers:
       '@comfyorg/telemetry':
         specifier: workspace:*
         version: link:../telemetry
+      '@comfyorg/theme-core':
+        specifier: workspace:*
+        version: link:../theme-core
       '@vueuse/core':
         specifier: 'catalog:'
         version: 14.4.0(vue@3.5.44(typescript@6.0.3))
@@ -1501,9 +1604,6 @@ importers:
       vue:
         specifier: 'catalog:'
         version: 3.5.44(typescript@6.0.3)
-      zod:
-        specifier: 'catalog:'
-        version: 4.6.7
     devDependencies:
       '@types/semver':
         specifier: 'catalog:'
@@ -1604,6 +1704,19 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 5.0.5(@types/node@26.6.6)(@vitest/coverage-v8@5.0.5)(@vitest/ui@5.0.5)(happy-dom@21.0.4)(jsdom@30.1.3)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/theme-core:
+    dependencies:
+      '@comfyorg/graph-model':
+        specifier: workspace:*
+        version: link:../graph-model
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
+    devDependencies:
+      typescript:
+        specifier: 'catalog:'
+        version: 6.0.3
 
   packages/viewport3d:
     dependencies:
@@ -1838,6 +1951,12 @@ packages:
 
   '@atlaskit/pragmatic-drag-and-drop@1.8.1':
     resolution: {integrity: sha512-uXWNPpL8n4OmTVbduH7nq8pk8htqGo/prR5cYEE8sVCPJGAUMWn6lzvWTfI+4VCeQvHiDRODVz4YzH06OVAxhw==}
+
+  '@axe-core/playwright@4.14.0':
+    resolution: {integrity: sha512-SGUhG5PIHd2eMdpgBF2PyQLOhX+qyDR2PT4cmoS4Qk2ak+jX/rrSvst9l0PGv5WTHolKpUMvVmoHpr4cZgf1RQ==}
+    engines: {node: '>=22.12.0'}
+    peerDependencies:
+      playwright-core: '>= 1.0.0'
 
   '@babel/code-frame@7.29.7':
     resolution: {integrity: sha512-Aup7aUOfpbAUg2ROOJN6Iw5f9DMBlzu0mIkm/malLQFN/YQgO48wCj0Kxa3sEHJvPVFg7siR+qRInwXd2qhQKw==}
@@ -5393,6 +5512,10 @@ packages:
     resolution: {integrity: sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ==}
     engines: {node: '>= 0.4'}
 
+  axe-core@4.14.0:
+    resolution: {integrity: sha512-9WTZxEjsZ7b13TH8JPmbV2z8CHbl80/2hm3XPEG4JgNdQLK81IBRXmSxHfMAOkSqQeRxT/0dwNDz2GOm3zzpcQ==}
+    engines: {node: '>=4'}
+
   axios@1.21.0:
     resolution: {integrity: sha512-YCzXMB53Q9PZBsh7yN7wtapit4WepwcHS2fP8QhGsBxSz5YtgYobV7GGlWlAJi+RxfU77GQTQi2DSLUma42EYA==}
 
@@ -8290,6 +8413,7 @@ packages:
 
   tldts-core@7.4.20:
     resolution: {integrity: sha512-C630TWXZCZmLq0F2bW4QqwnaaxCQ/svpAqvJwnC4JvgEM5ohhBnGsEzTLSOXcN+xjz+kEaHS5uoWIw2klnqd0A==}
+    deprecated: Partial release, see https://github.com/remusao/tldts/issues/2735. Use >=7.4.22.
 
   tldts@7.4.19:
     resolution: {integrity: sha512-48dH6aSpQnpbzDUc4vIQZ1VjB8tkK+e8c1yx05/SZK+rkssgjEOlxDd/yU8/a4vGYQ9vRgJr9dwMq9TJ0b3X2Q==}
@@ -9191,6 +9315,11 @@ snapshots:
       '@babel/runtime': 7.29.10
       bind-event-listener: 3.0.0
       raf-schd: 4.0.3
+
+  '@axe-core/playwright@4.14.0(playwright-core@1.63.0)':
+    dependencies:
+      axe-core: 4.14.0
+      playwright-core: 1.63.0
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -12453,6 +12582,8 @@ snapshots:
   available-typed-arrays@1.0.7:
     dependencies:
       possible-typed-array-names: 1.1.0
+
+  axe-core@4.14.0: {}
 
   axios@1.21.0(debug@4.4.3(supports-color@10.2.2))(supports-color@10.2.2):
     dependencies:

@@ -4,7 +4,8 @@ import type {
   GetI18nResponse,
   ModelDownloadData,
   ModelFile,
-  PostAssetsFromWorkflowResponse
+  PostAssetsFromWorkflowResponse,
+  PromptOutputsSkippedData
 } from '@comfyorg/ingest-types'
 import {
   zGetEmbeddingsResponse,
@@ -23,9 +24,9 @@ import type { ApiAuthProvider } from './apiAuthProvider'
 import { anonymousApiAuthProvider } from './apiAuthProvider'
 import { authCredentialOf, notifyAuthCredential } from './authCredential'
 import { scopeMediaRoute } from './sessionMediaUrl'
+import { socketReconnectDelayMs } from './socketReconnectDelay'
 import { webSessionRequests } from './webSessionFetch'
 import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from './apiTimeouts'
-import { reconnectDelayMs } from './reconnectBackoff'
 import { addBreadcrumb } from '@sentry/vue'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -206,6 +207,7 @@ interface BackendApiCalls {
   execution_error: ExecutionErrorWsMessage
   execution_interrupted: ExecutionInterruptedWsMessage
   execution_cached: ExecutionCachedWsMessage
+  prompt_outputs_skipped: PromptOutputsSkippedData
   logs: LogsWsMessage
   /** Binary preview/progress data */
   b_preview: Blob
@@ -1020,7 +1022,11 @@ export class ComfyApi extends EventTarget {
       const recoverSession = sessionRequests && !opened
       const delayMs = recoverSession
         ? this.socketRetryDelayMs
-        : reconnectDelayMs(this.consecutiveFailedConnects)
+        : socketReconnectDelayMs({
+            isCloud: this.ports.isCloud,
+            opened,
+            failedConnects: this.consecutiveFailedConnects
+          })
       if (!opened) this.consecutiveFailedConnects++
       if (recoverSession) {
         this.socketRetryDelayMs = Math.min(delayMs * 2, 60_000)
@@ -1153,6 +1159,7 @@ export class ComfyApi extends EventTarget {
             case 'execution_interrupted':
             case 'execution_cached':
             case 'execution_success':
+            case 'prompt_outputs_skipped':
             case 'progress':
             case 'progress_state':
             case 'executed':
@@ -1521,15 +1528,17 @@ export class ComfyApi extends EventTarget {
    */
   async getHistory(
     max_items: number = 200,
-    options?: { offset?: number }
+    options?: { offset?: number; throwOnError?: boolean }
   ): Promise<JobListItem[]> {
     try {
       return await fetchHistory(
         this.fetchApi.bind(this),
         max_items,
-        options?.offset
+        options?.offset,
+        options
       )
     } catch (error) {
+      if (options?.throwOnError) throw error
       console.error(error)
       return []
     }
@@ -1567,32 +1576,27 @@ export class ComfyApi extends EventTarget {
     return await res.json()
   }
 
-  /**
-   * Sends a POST request to the API
-   * @param {*} type The endpoint to post to
-   * @param {*} body Optional POST data
-   */
-  private async _postItem(type: string, body?: Record<string, unknown>) {
+  private async _postItem(
+    type: string,
+    body?: Record<string, unknown>
+  ): Promise<boolean> {
     try {
-      await this.fetchApi('/' + type, {
+      const response = await this.fetchApi('/' + type, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: body ? JSON.stringify(body) : undefined
       })
+      return response.ok
     } catch (error) {
       console.error(error)
+      return false
     }
   }
 
-  /**
-   * Deletes an item from the specified list
-   * @param {string} type The type of item to delete, queue or history
-   * @param {number} id The id of the item to delete
-   */
-  async deleteItem(type: string, id: string) {
-    await this._postItem(type, { delete: [id] })
+  async deleteItem(type: string, id: string): Promise<boolean> {
+    return this._postItem(type, { delete: [id] })
   }
 
   /**

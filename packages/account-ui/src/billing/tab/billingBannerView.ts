@@ -50,8 +50,8 @@ export type BillingBannerView = BillingBannerText &
       }
     | {
         readonly kind: 'autoTopUp'
-        readonly action: 'updatePayment'
-        readonly href: string
+        readonly action: 'updatePayment' | null
+        readonly href: string | null
       }
     | {
         readonly kind: 'credit'
@@ -196,11 +196,18 @@ const CREDIT_KINDS: ReadonlySet<BillingBannerKind> = new Set([
   'credit'
 ])
 
+/** Whether a shown paused or checkout banner hides the credit banners. */
+export function suppressesCreditBanners(
+  kinds: readonly BillingBannerKind[]
+): boolean {
+  return kinds.some((kind) => CREDIT_SUPPRESSORS.has(kind))
+}
+
 /** The Billing tab banner stack: fixed order, credit banners hidden behind a paused or checkout banner. */
 export function selectBillingBanners(
   views: readonly BillingBannerView[]
 ): BillingBannerView[] {
-  const suppressCredit = views.some(({ kind }) => CREDIT_SUPPRESSORS.has(kind))
+  const suppressCredit = suppressesCreditBanners(views.map(({ kind }) => kind))
   return views
     .filter(({ kind }) => !(suppressCredit && CREDIT_KINDS.has(kind)))
     .toSorted(

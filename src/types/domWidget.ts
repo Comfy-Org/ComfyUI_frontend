@@ -50,15 +50,6 @@ export interface DOMWidget<
 export type ComponentWidgetCustomProps = Record<string, unknown>
 
 /**
- * Standard props that are handled separately by DomWidget.vue and should be
- * omitted when defining custom props for component widgets
- */
-export type ComponentWidgetStandardProps =
-  | 'modelValue'
-  | 'widget'
-  | 'onUpdate:modelValue'
-
-/**
  * A DOM widget that wraps a Vue component as a litegraph widget.
  */
 export interface ComponentWidget<

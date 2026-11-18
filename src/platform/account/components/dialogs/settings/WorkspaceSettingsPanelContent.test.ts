@@ -5,6 +5,7 @@ import { computed, defineComponent, h, onMounted, onUnmounted } from 'vue'
 
 import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { receiveServerFact } from '@/platform/serverFacts/serverFact'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -21,6 +22,30 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/services/dialogService'))
+vi.mock<unknown>(
+  import('@/platform/billing/components/settings/BillingStatusBanner.vue'),
+  async () => {
+    const { defineComponent, h } = await import('vue')
+    return {
+      default: defineComponent({
+        name: 'BillingStatusBanner',
+        setup: () => () => h('div', { 'data-testid': 'status-banner-current' })
+      })
+    }
+  }
+)
+vi.mock<unknown>(
+  import('@/platform/billing/legacy160/platform/billing/components/settings/BillingStatusBanner.vue'),
+  async () => {
+    const { defineComponent, h } = await import('vue')
+    return {
+      default: defineComponent({
+        name: 'BillingStatusBanner',
+        setup: () => () => h('div', { 'data-testid': 'status-banner-1.60' })
+      })
+    }
+  }
+)
 vi.mock(
   import('@/platform/billing/subscription/composables/useSubscriptionDialog')
 )
@@ -69,6 +94,28 @@ describe('WorkspaceSettingsPanelContent', () => {
     vi.mocked(useTeamWorkspaceStore().fetchMembers).mockResolvedValue([])
     vi.mocked(useTeamWorkspaceStore().fetchPendingInvites).mockResolvedValue([])
   })
+
+  it.for([
+    { enabled: false, banner: 'status-banner-1.60' },
+    { enabled: true, banner: 'status-banner-current' }
+  ])(
+    'renders the $banner status banner with billing_new_ux_enabled $enabled',
+    ({ enabled, banner }) => {
+      vi.mocked(useFeatureFlags().flags).billingNewUxEnabled = enabled
+      const { BillingStatusBanner: _banner, ...otherStubs } = stubs
+      render(WorkspaceSettingsPanelContent, {
+        props: { section: 'planCredits' },
+        global: { stubs: otherStubs, plugins: [i18n] }
+      })
+
+      expect(screen.getByTestId(banner)).toBeInTheDocument()
+      expect(
+        screen.queryByTestId(
+          enabled ? 'status-banner-1.60' : 'status-banner-current'
+        )
+      ).not.toBeInTheDocument()
+    }
+  )
 
   it('keeps the billing banner mounted while switching sections', async () => {
     const { rerender, unmount } = render(WorkspaceSettingsPanelContent, {

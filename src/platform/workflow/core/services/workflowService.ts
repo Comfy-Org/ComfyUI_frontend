@@ -35,6 +35,7 @@ import { useApp } from '@/scripts/appInstance'
 import {
   bindCanvasTracker,
   invalidateCanvasTracker,
+  isCanvasCaptureBlocked,
   isCanvasOwner
 } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
@@ -174,7 +175,12 @@ async function keepingSavedBaseline<T>(
     return await load()
   } finally {
     const tracker = workflow.changeTracker
-    if (tracker && savedState && workflow.originalContent === savedContent) {
+    if (
+      tracker &&
+      savedState &&
+      tracker.initialState !== savedState &&
+      workflow.originalContent === savedContent
+    ) {
       tracker.initialState = savedState
       workflow.isModified = !ChangeTracker.graphEqual(
         savedState,
@@ -501,29 +507,29 @@ export const useWorkflowService = () => {
    * @returns false when the graph load failed, the stored file is unreadable
    * or the open was skipped mid-close; true otherwise
    */
-  /**
-   * A failed replacement load leaves the shared root graph cleaned or
-   * partially configured while the previous workflow stays selected
-   * (16075 review). Repaint the retained workflow from its just-saved
-   * state so selection, canvas, and change tracking agree again. No
-   * retry loop: a failure here leaves the first failure's dialog
-   * standing.
-   */
   const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
     const retained = getActiveWorkflow()
     if (!retained || retained.path === failed.path || !retained.isLoaded) return
 
-    await useApp().loadGraphData(
-      toRaw(retained.activeState) as ComfyWorkflowJSON,
-      /* clean=*/ true,
-      /* restore_view=*/ true,
-      retained,
-      {
-        checkForRerouteMigration: false,
-        deferWarnings: true,
-        skipAssetScans: true
-      }
-    )
+    const canvasAwaitsRetained = () =>
+      workflowStore.isActive(retained) &&
+      !(
+        retained.changeTracker !== null && isCanvasOwner(retained.changeTracker)
+      )
+    const load = () =>
+      useApp().loadGraphData(
+        toRaw(retained.activeState) as ComfyWorkflowJSON,
+        true,
+        true,
+        retained,
+        {
+          checkForRerouteMigration: false,
+          deferWarnings: true,
+          skipAssetScans: true,
+          isCurrent: canvasAwaitsRetained
+        }
+      )
+    await (retained.isModified ? keepingSavedBaseline(retained, load) : load())
   }
 
   function getActiveWorkflow(): ComfyWorkflow | null {
@@ -541,6 +547,45 @@ export const useWorkflowService = () => {
     if (workflow.isTemporary) return
     workflow.unload()
     workflow.isModified = wasModified
+  }
+
+  function loadOpenedGraph(
+    workflow: ComfyWorkflow,
+    {
+      force,
+      isCurrent,
+      keepSavedBaseline,
+      loadFromRemote,
+      navigationIntentId
+    }: {
+      force?: boolean
+      isCurrent?: () => boolean
+      keepSavedBaseline?: boolean
+      loadFromRemote: boolean
+      navigationIntentId: number
+    }
+  ) {
+    workflow.changeTracker?.prepareForSave()
+    const graphLoadIsCurrent = workflowStore.isActive(workflow)
+      ? undefined
+      : isCurrent
+    const load = () =>
+      useApp().loadGraphData(
+        toRaw(workflow.activeState) as ComfyWorkflowJSON,
+        true,
+        true,
+        workflow,
+        {
+          checkForRerouteMigration: false,
+          deferWarnings: true,
+          skipAssetScans: !loadFromRemote && !force,
+          workflowNavigationId: navigationIntentId,
+          isCurrent: graphLoadIsCurrent
+        }
+      )
+    return keepSavedBaseline && workflow.isModified
+      ? keepingSavedBaseline(workflow, load)
+      : load()
   }
 
   const openWorkflow = (
@@ -588,26 +633,15 @@ export const useWorkflowService = () => {
           return false
         }
 
-        workflow.changeTracker?.prepareForSave()
-        const load = () =>
-          useApp().loadGraphData(
-            toRaw(workflow.activeState) as ComfyWorkflowJSON,
-            true,
-            true,
-            workflow,
-            {
-              checkForRerouteMigration: false,
-              deferWarnings: true,
-              skipAssetScans: !loadFromRemote && !options.force,
-              workflowNavigationId: navigationIntentId
-            }
-          )
-        const loaded =
-          options.keepSavedBaseline && workflow.isModified
-            ? await keepingSavedBaseline(workflow, load)
-            : await load()
+        const loaded = await loadOpenedGraph(workflow, {
+          ...options,
+          loadFromRemote,
+          navigationIntentId
+        })
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          if (loadFromRemote && options.isCurrent?.() === false)
+            discardSupersededLoad(workflow, wasModified)
           await restoreRetainedWorkflow(workflow)
           return false
         }
@@ -873,47 +907,42 @@ export const useWorkflowService = () => {
    * a new graph.
    */
   const beforeLoadNewGraph = (suppressWorkflowReset = true) => {
-    // Use workspaceStore here as it is patched in unit tests.
     const workflowStore = useWorkspaceStore().workflow
     const activeWorkflow = workflowStore.activeWorkflow
     if (activeWorkflow) {
-      // Typed as `ComfyWorkflow`: the active workflow's tracker can be absent
-      // despite `LoadedComfyWorkflow`'s declared type.
-      const tracker = (activeWorkflow as ComfyWorkflow).changeTracker
-      if (tracker) {
-        tracker.deactivate()
-      } else {
-        reportWorkflowStateAnomaly(
-          'Active workflow has no change tracker before loading a new graph',
-          'beforeLoadNewGraph',
+      if (!isCanvasCaptureBlocked()) {
+        const tracker = (activeWorkflow as ComfyWorkflow).changeTracker
+        if (tracker) {
+          tracker.deactivate()
+        } else {
+          reportWorkflowStateAnomaly(
+            'Active workflow has no change tracker before loading a new graph',
+            'beforeLoadNewGraph',
+            activeWorkflow,
+            { isActive: true }
+          )
+        }
+        persistActiveWorkflowDraft(activeWorkflow)
+        const modelCandidates = useMissingModelStore().missingModelCandidates
+        const mediaCandidates = useMissingMediaStore().missingMediaCandidates
+        const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
+        updatePendingWarnings(activeWorkflow, {
+          missingNodeTypes: nodeTypes?.length ? [...nodeTypes] : undefined,
+          missingModelCandidates: modelCandidates ?? undefined,
+          missingMediaCandidates: mediaCandidates ?? undefined
+        })
+
+        useNodeOutputStore().stashPreviewsForWorkflow(activeWorkflow.path)
+
+        void workflowThumbnail.storeThumbnail(
           activeWorkflow,
-          { isActive: true }
+          workflowStore.activeSubgraph || useApp().canvasOrUndefined?.graph
         )
+      } else {
+        useNodeOutputStore().addLivePreviewsToStash(activeWorkflow.path)
       }
-      persistActiveWorkflowDraft(activeWorkflow)
-      // Cache missing model/media/node state for restore on tab switch.
-      // Always overwrite to reflect the current store state (e.g. after
-      // muting a node cleared its errors).
-      const modelCandidates = useMissingModelStore().missingModelCandidates
-      const mediaCandidates = useMissingMediaStore().missingMediaCandidates
-      const nodeTypes = missingNodesErrorStore.missingNodesError?.nodeTypes
-      updatePendingWarnings(activeWorkflow, {
-        missingNodeTypes: nodeTypes?.length ? [...nodeTypes] : undefined,
-        missingModelCandidates: modelCandidates ?? undefined,
-        missingMediaCandidates: mediaCandidates ?? undefined
-      })
-
-      // Hand the previews to the store before `app.clean()` revokes them
-      useNodeOutputStore().stashPreviewsForWorkflow(activeWorkflow.path)
-
-      // Capture thumbnail before loading new graph
-      void workflowThumbnail.storeThumbnail(
-        activeWorkflow,
-        workflowStore.activeSubgraph || useApp().canvasOrUndefined?.graph
-      )
       domWidgetStore.clear()
 
-      // Save subgraph viewport before the canvas gets overwritten
       useSubgraphNavigationStore().saveCurrentViewport(suppressWorkflowReset)
     }
     return invalidateCanvasTracker

@@ -7,7 +7,7 @@ import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { GET_CONFIG } from '@comfyorg/graph-model/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
@@ -55,7 +55,7 @@ function onCustomComboCreated(this: LGraphNode) {
         (w) => w.name.startsWith('option') && w.value
       ).map((w) => `${w.value}`)
     )
-    if (app.configuringGraph || !this.graph) return
+    if (useApp().configuringGraph || !this.graph) return
     if (values.includes(`${comboWidget.value}`)) return
     comboWidget.value = values.at(0) ?? ''
     comboWidget.callback?.(comboWidget.value)
@@ -78,14 +78,14 @@ function onCustomComboCreated(this: LGraphNode) {
       get() {
         return (
           useWidgetValueStore().getWidget(
-            widgetId(app.rootGraph.id, node.id, widgetName)
+            widgetId(useApp().rootGraph.id, node.id, widgetName)
           )?.value ?? localValue
         )
       },
       set(v: string) {
         localValue = v
         const state = useWidgetValueStore().getWidget(
-          widgetId(app.rootGraph.id, node.id, widgetName)
+          widgetId(useApp().rootGraph.id, node.id, widgetName)
         )
         if (state) state.value = v
         updateCombo()
