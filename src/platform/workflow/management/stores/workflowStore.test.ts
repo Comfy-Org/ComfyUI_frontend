@@ -905,6 +905,23 @@ describe('useWorkflowStore', () => {
       expect(bookmarkStore.isBookmarked('workflows/dir/test.json')).toBe(false)
     })
 
+    it('refuses to rename onto a path another workflow holds', async () => {
+      const first = store.createTemporary('First.json')
+      const second = store.createTemporary('Second.json')
+      store.openWorkflowsInBackground({ right: [first.path, second.path] })
+
+      await expect(store.renameWorkflow(first, second.path)).rejects.toThrow()
+
+      expect(store.openWorkflows.map((workflow) => workflow.path)).toEqual([
+        'workflows/First.json',
+        'workflows/Second.json'
+      ])
+      expect(store.getWorkflowByPath('workflows/Second.json')?.key).toBe(
+        second.key
+      )
+      expect(store.getWorkflowByPath('workflows/First.json')).not.toBeNull()
+    })
+
     it('should move V2 draft when renaming workflow', async () => {
       const workflow = store.createTemporary('test.json')
       const oldPath = workflow.path

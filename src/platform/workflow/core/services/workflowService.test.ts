@@ -4458,6 +4458,44 @@ describe('useWorkflowService', () => {
       expect(workflowStore.saveWorkflow).toHaveBeenCalledWith(workflow)
     })
 
+    it('asks before replacing another open unsaved tab at the target path', async () => {
+      const workflow = createTemporaryWorkflow()
+      const occupant = createTemporaryWorkflow()
+      occupant.path = 'workflows/my-workflow.json'
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(occupant)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(false)
+      expect(useDialogService().confirm).toHaveBeenCalled()
+      expect(workflowStore.renameWorkflow).not.toHaveBeenCalled()
+      expect(workflowStore.saveWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('replaces another open unsaved tab at the target path once confirmed', async () => {
+      const workflow = createTemporaryWorkflow()
+      const occupant = createTemporaryWorkflow()
+      occupant.path = 'workflows/my-workflow.json'
+      vi.mocked(workflowStore.getWorkflowByPath).mockReturnValue(occupant)
+      vi.spyOn(workflowStore, 'isOpen').mockReturnValue(false)
+      vi.spyOn(workflowStore, 'deleteWorkflow').mockResolvedValue()
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+
+      const result = await service.saveWorkflowAs(workflow, {
+        filename: 'my-workflow'
+      })
+
+      expect(result).toBe(true)
+      expect(workflowStore.deleteWorkflow).toHaveBeenCalledWith(occupant)
+      expect(workflowStore.renameWorkflow).toHaveBeenCalledWith(
+        workflow,
+        'workflows/my-workflow.json'
+      )
+    })
+
     it('should return false when no filename is provided', async () => {
       const workflow = createModeTestWorkflow({
         path: 'workflows/test.json'

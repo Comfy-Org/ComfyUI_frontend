@@ -484,7 +484,10 @@ export const useWorkflowService = () => {
     const isSelfOverwrite =
       existingWorkflow?.path === workflow.path && !existingWorkflow.isTemporary
 
-    if (existingWorkflow && !existingWorkflow.isTemporary) {
+    const replacesOther =
+      existingWorkflow !== null && existingWorkflow.path !== workflow.path
+
+    if (existingWorkflow && (!existingWorkflow.isTemporary || replacesOther)) {
       if ((await confirmOverwrite(newPath)) !== true) return false
 
       if (!isSelfOverwrite) {
@@ -534,7 +537,7 @@ export const useWorkflowService = () => {
       workflow.directory + '/' + appendWorkflowJsonExt(workflow.filename, isApp)
     if (workflow.path !== expectedPath) {
       const existing = workflowStore.getWorkflowByPath(expectedPath)
-      if (existing && !existing.isTemporary) {
+      if (existing) {
         if ((await confirmOverwrite(expectedPath)) !== true) {
           await workflowStore.saveWorkflow(workflow)
           return true

@@ -542,6 +542,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
   const renameWorkflow = async (workflow: ComfyWorkflow, newPath: string) => {
+    const occupant = getWorkflowByPath(newPath)
+    if (occupant && occupant.path !== workflow.path)
+      throw new Error(`A workflow already exists at '${newPath}'`)
     isBusy.value = true
     try {
       // Capture all needed values upfront
