@@ -5,8 +5,8 @@ import { socketReconnectDelayMs } from './socketReconnectDelay'
 describe('socketReconnectDelayMs', () => {
   it.for([
     { random: 0, delayMs: 0 },
-    { random: 0.5, delayMs: 2_500 },
-    { random: 0.999, delayMs: 4_995 }
+    { random: 0.5, delayMs: 750 },
+    { random: 0.875, delayMs: 1_312.5 }
   ])(
     'spreads an opened Cloud socket reconnect to $delayMs ms when random is $random',
     ({ random, delayMs }) => {

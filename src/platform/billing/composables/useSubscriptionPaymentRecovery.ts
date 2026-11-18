@@ -1,3 +1,4 @@
+import type { RecoveryPaymentPage } from '@comfyorg/account-core/billing'
 import type { SubscriptionTier } from '@comfyorg/ingest-types'
 import { shallowRef, watch } from 'vue'
 
@@ -10,30 +11,63 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-let stopReturnRefresh: (() => void) | null = null
+type RecoverySource = 'plans' | 'status'
 
-/** Opens the served payment action for an unpaid initial-signup invoice that holds plan changes. */
-export function useSubscriptionPaymentRecovery() {
-  const { subscriptionPaymentRecovery, fetchPlans, fetchStatus } =
-    useBillingContext()
+let pendingPaymentRefresh: {
+  readonly source: RecoverySource
+  readonly stop: () => void
+} | null = null
+
+function armPendingPaymentRefresh(
+  source: RecoverySource,
+  refresh: () => Promise<unknown>
+) {
+  pendingPaymentRefresh?.stop()
+  pendingPaymentRefresh = { source, stop: registerRefreshOnReturn(refresh) }
+}
+
+function disarmPendingPaymentRefresh(source: RecoverySource) {
+  if (pendingPaymentRefresh?.source !== source) return
+  pendingPaymentRefresh.stop()
+  pendingPaymentRefresh = null
+}
+
+/** Opens the served payment action for an unpaid initial-signup invoice, read from the plans or the status copy of the served fact. */
+export function useSubscriptionPaymentRecovery(
+  source: RecoverySource = 'plans'
+) {
+  const billing = useBillingContext()
+  const { fetchPlans, fetchStatus } = billing
+  const subscriptionPaymentRecovery = {
+    plans: billing.subscriptionPaymentRecovery,
+    status: billing.statusPaymentRecovery
+  }[source]
   const capabilities = useBillingCapabilities()
+
+  function isServedRecovery(opId: string) {
+    return subscriptionPaymentRecovery.value?.billing_op_id === opId
+  }
   const toast = useToast()
   const isOpeningPayment = shallowRef(false)
   const recoveryPlanTier = shallowRef<SubscriptionTier | null>(null)
+  const recoveryPaymentPage = shallowRef<RecoveryPaymentPage>('unknown')
 
   watch(
     () => subscriptionPaymentRecovery.value?.billing_op_id,
     async (opId) => {
       recoveryPlanTier.value = null
+      recoveryPaymentPage.value = 'unknown'
       if (!opId) {
-        stopReturnRefresh?.()
-        stopReturnRefresh = null
+        disarmPendingPaymentRefresh(source)
         return
       }
       try {
         const operation = await billingApi.getBillingOpStatus(opId)
-        if (subscriptionPaymentRecovery.value?.billing_op_id !== opId) return
+        if (!isServedRecovery(opId)) return
         recoveryPlanTier.value = operation.plan?.tier ?? null
+        recoveryPaymentPage.value = operation.action_url
+          ? 'hostedPage'
+          : 'noHostedPage'
       } catch (error) {
         reportError(error, {
           surface: 'billing',
@@ -50,11 +84,6 @@ export function useSubscriptionPaymentRecovery() {
       fetchStatus(),
       capabilities.refresh()
     ])
-  }
-
-  function refreshOnReturn() {
-    stopReturnRefresh?.()
-    stopReturnRefresh = registerRefreshOnReturn(refreshBillingState)
   }
 
   function reportPaymentUnavailable() {
@@ -77,13 +106,17 @@ export function useSubscriptionPaymentRecovery() {
       const operation = await billingApi.getBillingOpStatus(
         recovery.billing_op_id
       )
+      if (!isServedRecovery(recovery.billing_op_id)) {
+        tab.close()
+        return
+      }
       if (!operation.action_url) {
         tab.close()
         reportPaymentUnavailable()
         return
       }
       tab.navigate(operation.action_url)
-      refreshOnReturn()
+      armPendingPaymentRefresh(source, refreshBillingState)
     } catch (error) {
       tab.close()
       reportError(error, {
@@ -99,6 +132,7 @@ export function useSubscriptionPaymentRecovery() {
   return {
     subscriptionPaymentRecovery,
     recoveryPlanTier,
+    recoveryPaymentPage,
     isOpeningPayment,
     finishPayment
   }

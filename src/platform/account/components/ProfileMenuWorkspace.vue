@@ -72,17 +72,19 @@
       </PopoverRoot>
 
       <HoverCard
-        :open="creditsOpen && !switcherOpen"
+        :open="creditsOpen"
         :open-delay="120"
-        @update:open="creditsOpen = $event"
+        @update:open="previewCredits"
       >
         <HoverCardTrigger as-child>
           <button
+            ref="creditsRow"
             type="button"
             :class="profileMenuRowClass"
+            :aria-expanded="creditsOpen"
             data-testid="credits-menu-item"
-            @click="openSettings('workspace')"
-            @keydown.arrow-right.prevent="creditsOpen = true"
+            @click="pinCredits"
+            @keydown.arrow-right.prevent="pinCredits"
           >
             <i class="icon-[lucide--coins] text-muted-foreground" />
             <span class="flex-1 text-foreground">{{
@@ -118,6 +120,8 @@
           :side-flip="false"
           :align-flip="false"
           class="w-64 rounded-xl border-border bg-background p-0"
+          @escape-key-down="closeCredits"
+          @pointer-down-outside="closeCreditsUnlessOnRow"
         >
           <ProfileMenuCreditsFlyout
             @open-billing="openSettings('workspace')"
@@ -190,6 +194,7 @@
 import type { SettingPanelType } from '@comfyorg/settings-core/types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
+import type { PointerDownOutsideEvent } from 'reka-ui'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -231,7 +236,7 @@ const { accountActionsOnly = false, flyoutSide = 'left' } = defineProps<{
 
 const menuInset = 5
 const flyoutGap = menuInset + 8
-const creditsFlyoutAlignOffset = -13
+const creditsFlyoutAlignOffset = -11
 
 const emit = defineEmits<{
   close: []
@@ -241,8 +246,19 @@ const { t, locale } = useI18n()
 const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
 const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
 const menu = useTemplateRef<HTMLElement>('menu')
-const switcherOpen = ref(false)
-const creditsOpen = ref(false)
+const creditsRow = useTemplateRef<HTMLElement>('creditsRow')
+type MenuFlyout = 'none' | 'switcher' | 'creditsPreview' | 'creditsPinned'
+const flyout = ref<MenuFlyout>('none')
+const creditsOpen = computed(
+  () => flyout.value === 'creditsPreview' || flyout.value === 'creditsPinned'
+)
+const switcherOpen = computed({
+  get: () => flyout.value === 'switcher',
+  set: (open) => {
+    if (open) flyout.value = 'switcher'
+    else if (flyout.value === 'switcher') flyout.value = 'none'
+  }
+})
 const { userDisplayName, userEmail, handleSignOut, isApiKeyLogin } =
   useCurrentUser()
 const { balance, isLoading, fetchBalance } = useBillingContext()
@@ -273,6 +289,28 @@ const displayedCredits = computed(() =>
 const monogram = computed(() =>
   (userDisplayName.value || userEmail.value || '').trim().charAt(0)
 )
+
+function previewCredits(open: boolean) {
+  if (open && flyout.value === 'none') flyout.value = 'creditsPreview'
+  if (!open && flyout.value === 'creditsPreview') flyout.value = 'none'
+}
+
+function pinCredits() {
+  flyout.value = 'creditsPinned'
+}
+
+function closeCredits() {
+  if (creditsOpen.value) flyout.value = 'none'
+}
+
+function closeCreditsUnlessOnRow(event: PointerDownOutsideEvent) {
+  const target = event.detail.originalEvent.target
+  if (target instanceof Node && creditsRow.value?.contains(target)) {
+    event.preventDefault()
+    return
+  }
+  closeCredits()
+}
 
 function openSettings(panel: SettingPanelType) {
   settingsDialog.show(panel)

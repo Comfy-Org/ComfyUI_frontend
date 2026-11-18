@@ -112,7 +112,7 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const flyoutRowClass = cn(profileMenuRowClass, 'h-10 justify-start font-normal')
+const flyoutRowClass = cn(profileMenuRowClass, 'justify-start font-normal')
 
 const { t, locale } = useI18n()
 const {
