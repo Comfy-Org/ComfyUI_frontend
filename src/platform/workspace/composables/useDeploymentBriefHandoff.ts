@@ -6,27 +6,20 @@ import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { t } from '@/i18n'
 import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import type { AgentApp } from '@/platform/workflow/deploy/utils/agentApps'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 
-type BriefHandoff = Pick<CustomDeploymentPitch, 'brief' | 'workflowFileName'>
+type BriefHandoff = Pick<CustomDeploymentPitch, 'brief' | 'workflow'>
 
-/** Hands a deployment brief to an agent, with the open workflow as a download when the brief names one. */
+/** Hands a deployment brief to an agent, with its workflow as a download when the brief names one. */
 export function useDeploymentBriefHandoff(handoff: () => BriefHandoff) {
-  const workflowStore = useWorkflowStore()
   const toast = useToast()
   const { copyToClipboard } = useCopyToClipboard()
 
   function workflowDownload(): (() => void) | null {
-    const { workflowFileName } = handoff()
-    if (!workflowFileName) return null
-    const workflow = workflowStore.activeWorkflow
-    workflow?.changeTracker.prepareForSave()
-    const blob = new Blob(
-      [JSON.stringify(workflow?.activeState ?? {}, null, 2)],
-      { type: 'application/json' }
-    )
-    return () => downloadBlob(workflowFileName, blob)
+    const { workflow } = handoff()
+    if (!workflow) return null
+    const blob = new Blob([workflow.serialize()], { type: 'application/json' })
+    return () => downloadBlob(workflow.fileName, blob)
   }
 
   function reportHandoffFailure(error: unknown) {

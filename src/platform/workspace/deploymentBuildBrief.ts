@@ -98,7 +98,7 @@ function workflowFileSection(fileName: string): string[] {
   return [
     '## The workflow',
     '',
-    `The browser downloaded the workflow as \`${inline(fileName)}\`, most likely`,
+    `The browser downloaded the workflow as \`${fileName}\`, most likely`,
     'to the download directory. Create the Build from that file, as the recipe',
     "says. The recipe's import sends the whole workflow JSON to the Comfy",
     'builder. Tell the user that, and wait for a yes before you run it.',
@@ -146,11 +146,11 @@ export function deploymentBuildBrief(
   ].join('\n')
 }
 
-/** Agent brief for a custom deployment that runs the downloaded workflow Cloud can't. */
+/** Agent brief for a custom deployment that runs a workflow Cloud can't; names the workflow's downloaded file when given. */
 export function workflowDeploymentBrief(
   packs: readonly MissingBuildPack[],
   models: readonly MissingBuildModel[],
-  workflowFileName: string
+  workflowFileName?: string
 ): string {
   return [
     '# Create a custom deployment that runs a workflow',
@@ -161,7 +161,7 @@ export function workflowDeploymentBrief(
     'deployed, it appears under **Run on** in the ComfyUI editor for everyone in',
     "the user's workspace.",
     '',
-    ...workflowFileSection(workflowFileName),
+    ...(workflowFileName ? workflowFileSection(workflowFileName) : []),
     ...missingSections(packs, models),
     BUILD_RECIPE_SECTION,
     '',

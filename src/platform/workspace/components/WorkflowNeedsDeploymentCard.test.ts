@@ -270,6 +270,39 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(JSON.parse(await blob.text())).toEqual(activeState)
   })
 
+  it('keeps downloading the workflow it opened for after another becomes active', async () => {
+    const activeState = { nodes: [{ id: 1, type: 'KJ' }] }
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait.json',
+      activeState,
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const user = renderCard()
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'other.json',
+      activeState: { nodes: [] },
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+
+    await copyPrompt(user)
+
+    const [fileName, blob] = vi.mocked(downloadBlob).mock.calls[0]
+    expect(fileName).toBe('portrait.json')
+    expect(JSON.parse(await blob.text())).toEqual(activeState)
+  })
+
+  it('names no workflow file and downloads nothing when no workflow is open', async () => {
+    useWorkflowStore().activeWorkflow = null
+    const user = renderCard()
+
+    await copyPrompt(user)
+
+    expect(await navigator.clipboard.readText()).not.toContain(
+      'The browser downloaded the workflow'
+    )
+    expect(downloadBlob).not.toHaveBeenCalled()
+  })
+
   it('lists and briefs a model Comfy Cloud finds missing after the dialog opens', async () => {
     const user = renderCard({ models: [] })
     expect(

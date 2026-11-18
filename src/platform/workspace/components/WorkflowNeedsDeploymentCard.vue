@@ -12,6 +12,7 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -20,6 +21,7 @@ import SwitchDeploymentCard from '@/platform/workspace/components/SwitchDeployme
 import { useDeploymentCompatibility } from '@/platform/workspace/composables/useDeploymentCompatibility'
 import { customDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 import type {
+  BriefWorkflow,
   CustomDeploymentPitch,
   MissingItemsRow
 } from '@/platform/workspace/customDeploymentPitch'
@@ -47,10 +49,22 @@ const models = computed(() =>
   missingModelsOf(missingModelStore.visibleMissingModelCandidates ?? [])
 )
 
-const workflowFileName = handoffFileName(
-  useWorkflowStore().activeWorkflow?.filename.replace(/\.json$/i, '') ||
-    'workflow'
-)
+const briefWorkflow = briefWorkflowOf(useWorkflowStore().activeWorkflow)
+
+function briefWorkflowOf(
+  workflow: ComfyWorkflow | null
+): BriefWorkflow | undefined {
+  if (!workflow) return
+  return {
+    fileName: handoffFileName(
+      workflow.filename.replace(/\.json$/i, '') || 'workflow'
+    ),
+    serialize: () => {
+      workflow.changeTracker?.prepareForSave()
+      return JSON.stringify(workflow.activeState, null, 2)
+    }
+  }
+}
 
 const offer = workflowDeploymentOffer(
   useDeploymentPickStore().deployments,
@@ -96,8 +110,8 @@ const pitch = computed<CustomDeploymentPitch>(() => ({
   platformLabel: t(
     'deploymentSwitcher.workflowNeedsDeployment.buildOnPlatform'
   ),
-  brief: workflowDeploymentBrief(packs, models.value, workflowFileName),
-  workflowFileName,
+  brief: workflowDeploymentBrief(packs, models.value, briefWorkflow?.fileName),
+  workflow: briefWorkflow,
   missing: missing.value,
   ...(offer.kind === 'noneRunIt'
     ? {

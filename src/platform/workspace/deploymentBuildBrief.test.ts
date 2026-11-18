@@ -245,6 +245,17 @@ describe(workflowDeploymentBrief, () => {
   })
 })
 
+describe('workflowDeploymentBrief without a workflow file', () => {
+  it('leaves the workflow section out', () => {
+    expect(
+      workflowDeploymentBrief(
+        [{ packId: 'comfyui-birefnet', nodeTypes: ['BiRefNet'] }],
+        []
+      )
+    ).not.toContain('## The workflow')
+  })
+})
+
 describe('both briefs', () => {
   it.for([
     {

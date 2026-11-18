@@ -8,7 +8,6 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
 import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 
 import CustomDeploymentCard from './CustomDeploymentCard.vue'
@@ -180,7 +179,9 @@ describe('CustomDeploymentCard', () => {
   })
 
   it('keeps the original label and downloads nothing when the brief did not reach the clipboard', async () => {
-    const { user } = renderCard({ workflowFileName: 'portrait.json' })
+    const { user } = renderCard({
+      workflow: { fileName: 'portrait.json', serialize: () => '{}' }
+    })
     vi.spyOn(navigator.clipboard, 'writeText').mockRejectedValueOnce(
       new Error('Clipboard permission denied')
     )
@@ -199,13 +200,14 @@ describe('CustomDeploymentCard', () => {
     expect(downloadBlob).not.toHaveBeenCalled()
   })
 
-  it('downloads the open workflow when it opens an app with a brief that names one', async () => {
+  it('downloads the workflow when it opens an app with a brief that names one', async () => {
     const activeState = { nodes: [{ id: 1, type: 'BiRefNet' }] }
-    useWorkflowStore().activeWorkflow = fromPartial({
-      activeState,
-      changeTracker: { prepareForSave: vi.fn() }
+    const { user } = renderCard({
+      workflow: {
+        fileName: 'portrait.json',
+        serialize: () => JSON.stringify(activeState)
+      }
     })
-    const { user } = renderCard({ workflowFileName: 'portrait.json' })
 
     await pickRow(user, 'Open in Claude desktop')
 
