@@ -895,6 +895,36 @@ describe('createBillingOperationLifecycle', () => {
       })
     })
 
+    it('adopts nothing for a named operation whose read returns after a payment command started', async () => {
+      const namedRead = deferred<BillingResult<BillingHttpResponse>>()
+      const { lifecycle } = harness({
+        embedded: true,
+        answers: [namedRead.promise, httpOk(opStatus({ id: 'op-new' }))]
+      })
+      const announced: BillingOperationState[] = []
+      lifecycle.subscribe((state) => announced.push(state))
+
+      const recovering = lifecycle.recover({
+        operation: { id: 'op-signup', kind: 'subscription' }
+      })
+      await flush()
+      await lifecycle.begin('subscription', issued({ operationId: 'op-new' }))
+      namedRead.resolve(
+        httpOk(
+          opStatus({
+            id: 'op-signup',
+            payment_intent_client_secret: 'pi_signup'
+          })
+        )
+      )
+
+      await expect(recovering).resolves.toMatchObject({
+        status: 'error',
+        code: 'SUPERSEDED'
+      })
+      expect(announced.map((state) => state.id)).not.toContain('op-signup')
+    })
+
     it('recovers nothing when the named operation is not found', async () => {
       const { lifecycle } = harness({
         status: statusSnapshot({
