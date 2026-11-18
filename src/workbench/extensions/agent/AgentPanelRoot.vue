@@ -140,10 +140,7 @@ import {
 } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentSendGates } from './composables/agent/useAgentSendGates'
-import type {
-  AgentCoachReleaseReason,
-  CoachHoldEnd
-} from './composables/agent/useAgentSendGates'
+import type { CoachHoldEnd } from './composables/agent/useAgentSendGates'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import {
   agentRequestFailureFingerprint,
@@ -692,7 +689,10 @@ const coachReleaseReasons = {
   finish: 'finished',
   skip: 'skipped',
   elsewhere: 'elsewhere'
-} as const satisfies Record<string, AgentCoachReleaseReason>
+} as const satisfies Record<
+  string,
+  Extract<CoachHoldEnd, { outcome: 'released' }>['reason']
+>
 
 function onCoachFinished(action: keyof typeof coachReleaseReasons): void {
   releaseCoachCompletionWaiters({

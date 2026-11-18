@@ -8,7 +8,8 @@ import type {
 
 import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 
-export type { AgentCoachReleaseReason, AgentComposerDropReason }
+/** Why the composer refused a send before it was held or posted. */
+export type ComposerRejectReason = AgentComposerDropReason
 
 export type HeldGate = 'consent' | 'coach'
 
