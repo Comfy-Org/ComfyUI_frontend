@@ -292,7 +292,9 @@ review finding requires it. The counts below are packs, then call sites.
     prompt it was processing has been sent or refused, or when the listener
     unsubscribes, whichever is first. Cleanups belong to the registration
     that made them, so one pack unsubscribing runs only its own. A cleanup
-    that throws is reported like a listener. Overlapping calls are folded
+    that throws is reported like a listener. A listener that returns a promise has no
+    cleanup; if the promise rejects, the rejection is reported as a
+    listener's is. Overlapping calls are folded
     into one processing pass by `queuePrompt`, so "the queue settled" is
     the end of every attempt whose listener ran.
 19. `onAfterRun(listener)` (7 packs) fires on the host's existing

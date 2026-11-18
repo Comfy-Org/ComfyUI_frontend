@@ -82,7 +82,8 @@ to a subgraph input fed by a widget produce the widget's value.
    nothing for a muted node, the matching input for a bypassed one. For a node
    that runs, it asks the node's resolver for its answer and follows it:
    - `{ omit: true }`: nothing feeds the consumer's input, so the prompt leaves
-     it out.
+     it out; the socket of a widget keeps the widget's value, as with a muted
+     source.
    - `{ literal }`: the value, in the form the host gives a widget's value, so
      a list is wrapped as a list widget value is. Each consumer gets its own
      unfrozen copy.
@@ -122,6 +123,11 @@ to a subgraph input fed by a widget produce the widget's value.
    boolean, `null`, or a plain object or list of those.
 9. Resolvers are synchronous. Nothing waits for them and nothing cancels them:
    the deadline and the `signal` existed for resolvers running in a sandbox.
+   An async resolver, supplier or `onPromptSerialize` hook answers with a
+   promise, which is refused as decision 8 says; if the promise rejects, the
+   rejection is reported too, with the same event, as the listener
+   primitive reports a listener's (`reportIfRejected`), so it does not
+   reach the page as an unhandled rejection.
 
 ### What a resolver sees
 
@@ -327,6 +333,8 @@ to a subgraph input fed by a widget produce the widget's value.
 - **Reads**: the mode names and node bounds come from `nodeHandle.ts`
   (`MODE_NAMES`, `boundsOnCanvas`), the centre test from LiteGraph
   (`containsCentre`), the link of an input from `slotLinks.ts` (`inputLink`).
+  The shown name of a slot (`shownName`) repeats `NodeSlot.renderingLabel`,
+  which `INodeInputSlot` and `INodeOutputSlot` do not declare.
   A node's groups are computed per node rather than through `GroupHandle.nodes`,
   which lists a group's nodes as handles; the rule is the same.
 

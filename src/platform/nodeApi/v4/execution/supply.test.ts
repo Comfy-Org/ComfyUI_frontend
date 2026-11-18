@@ -376,6 +376,25 @@ describe('a supplier', () => {
       )
     })
 
+    it('reports the rejection of an async supplier as well as the refusal of its promise', async () => {
+      const rejected = new Error('later')
+      Reflect.apply(supplyWith, undefined, [
+        async () => {
+          throw rejected
+        }
+      ])
+      addEverywhere()
+      const consumer = addBackendNode(graph, 'Consumer', { inputs: ['x'] })
+
+      expect(await inputsOf(consumer)).toEqual({})
+      await Promise.resolve()
+      expect(reportError).toHaveBeenCalledTimes(2)
+      expect(reportError).toHaveBeenCalledWith(
+        rejected,
+        expect.objectContaining({ tags: { event: 'setSupply' } })
+      )
+    })
+
     it.for([
       { name: 'an answer that is not a list', answer: () => ({}) },
       { name: 'an edge that is not an object', answer: () => ['edge'] },

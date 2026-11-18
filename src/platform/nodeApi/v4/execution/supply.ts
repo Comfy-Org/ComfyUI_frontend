@@ -6,7 +6,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { inputHasLink } from '@/lib/litegraph/src/node/slotLinks'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { callListener } from '@/platform/nodeApi/shared/listeners'
+import {
+  callListener,
+  reportIfRejected
+} from '@/platform/nodeApi/shared/listeners'
 import type {
   Supplier,
   SupplyView,
@@ -69,9 +72,11 @@ function graphSupplies(
       unconnectedInputs: candidates
     })
     for (const supply of suppliersFor(node)) {
-      const edges = callListener('setSupply', () =>
-        checkedEdges(supply(view), node, candidates)
-      )
+      const edges = callListener('setSupply', () => {
+        const given = supply(view)
+        reportIfRejected('setSupply', given)
+        return checkedEdges(given, node, candidates)
+      })
       for (const { key, claim } of edges ?? []) {
         claims.set(key, [...(claims.get(key) ?? []), claim])
       }

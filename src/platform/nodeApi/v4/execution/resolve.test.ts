@@ -368,6 +368,24 @@ describe('a frontend node type with a resolver', () => {
       )
     })
 
+    it('reports the rejection of an async resolver as well as the refusal of its promise, and builds the node as if it had none', async () => {
+      const rejected = new Error('later')
+      Reflect.apply(defineWire, undefined, [
+        async () => {
+          throw rejected
+        }
+      ])
+      const { source, consumer } = sourceWireConsumer()
+
+      expect(await consumerInput(consumer)).toEqual([String(source.id), 0])
+      await Promise.resolve()
+      expect(reportError).toHaveBeenCalledTimes(2)
+      expect(reportError).toHaveBeenCalledWith(
+        rejected,
+        expect.objectContaining({ tags: { event: 'resolve' } })
+      )
+    })
+
     it('keeps another node resolving when one resolver throws', async () => {
       defineWire(() => {
         throw new Error('broken')

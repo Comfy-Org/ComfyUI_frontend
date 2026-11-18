@@ -115,6 +115,26 @@ describe('queue.onBeforeRun', () => {
       'queue.onBeforeRun needs a function to call, not 1.'
     )
   })
+
+  it('reports a listener whose promise rejects', async () => {
+    const { queue } = queueApi()
+    const broken = new Error('pack failed')
+    Reflect.apply(queue.onBeforeRun, queue, [
+      async () => {
+        throw broken
+      }
+    ])
+
+    runStarts()
+    await Promise.resolve()
+    await Promise.resolve()
+
+    expect(reportError).toHaveBeenCalledWith(broken, {
+      errorType: 'node_api_listener_failure',
+      surface: 'platform',
+      tags: { event: 'queue.onBeforeRun' }
+    })
+  })
 })
 
 describe('queue.onAfterRun', () => {
