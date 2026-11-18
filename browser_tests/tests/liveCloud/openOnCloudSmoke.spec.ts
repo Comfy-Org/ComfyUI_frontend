@@ -39,19 +39,26 @@ const creditBalance = zBillingBalanceResponse
   .required({ amount_cents: true })
 
 async function readCreditBalance(page: Page) {
-  const balance = await page.evaluate(async () => {
-    const app = window.app
-    if (!app) throw new Error('The Cloud editor is unavailable')
-    const response = await app.api.fetchApi('/billing/balance', {
-      cache: 'no-store',
-      timeoutMs: 10_000
+  let balance: z.infer<typeof creditBalance> | undefined
+  await expect(async () => {
+    const result = await page.evaluate(async () => {
+      const app = window.app
+      if (!app) throw new Error('The Cloud editor is unavailable')
+      const response = await app.api.fetchApi('/billing/balance', {
+        cache: 'no-store',
+        timeoutMs: 20_000
+      })
+      if (!response.ok) {
+        throw new Error(
+          `Could not read Cloud credits (HTTP ${response.status})`
+        )
+      }
+      return response.json()
     })
-    if (!response.ok) {
-      throw new Error(`Could not read Cloud credits (HTTP ${response.status})`)
-    }
-    return response.json()
-  })
-  return creditBalance.parse(balance)
+    balance = creditBalance.parse(result)
+  }).toPass({ timeout: 45_000 })
+  if (!balance) throw new Error('The Cloud credit balance is unavailable')
+  return balance
 }
 
 const firebaseSignInError = z.object({
