@@ -350,7 +350,10 @@ export interface GraphScopeHandleMembers {
 export interface GroupHandle {
   /** The group's id in its graph. */
   readonly id: string
-  /** True while the group is gone, and every other read is `undefined`. */
+  /**
+   * True while the group is gone, and every other read is `undefined`. An undo or redo that removes
+   * the graph's newest groups retires their handles for good.
+   */
   readonly isDeleted: boolean
   getTitle(): string | undefined
   /** The color the group is drawn in. */
