@@ -66,7 +66,7 @@ function onceViewShown(
   canvas: () => CanvasSource | undefined,
   shown: (view: HTMLElement) => void
 ): () => void {
-  const viewOf = () => canvas()?.canvas()?.canvas.parentElement ?? undefined
+  const viewOf = () => canvas()?.canvas()?.canvas.parentElement
   const view = viewOf()
   if (view) {
     shown(view)
