@@ -270,7 +270,10 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     app creates the graph view, and use the handle straight away. The
     element joins the graph view (the parent of the canvas the renderer
     supplies, as for a viewport panel) when there is one, and moves to the
-    next graph view when the app shows another. `ariaLabel` is required, as
+    next graph view when the app shows another. It goes in before the view's
+    first viewport panel, so a panel stays above every overlay whichever
+    joined the view first: an overlay mounted at import joins at the first
+    frame, after a panel mounted in `onReady`. `ariaLabel` is required, as
     for a viewport panel, because the overlay takes focus. An id already
     mounted is refused.
 30. The overlay draws after each frame in which the graph draws its

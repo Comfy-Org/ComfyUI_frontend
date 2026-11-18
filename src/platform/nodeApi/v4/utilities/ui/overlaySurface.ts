@@ -62,7 +62,10 @@ export function createOverlaySurface(
     const view = canvas.canvas.parentElement
     if (attached?.canvas === canvas || !view) return
     detach()
-    view.append(element)
+    view.insertBefore(
+      element,
+      view.querySelector(':scope > [data-viewport-panel]')
+    )
     const release = routeOverlayInput(
       element,
       view,
