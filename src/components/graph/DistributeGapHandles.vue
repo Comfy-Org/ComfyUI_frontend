@@ -84,7 +84,7 @@ let handlesKey = ''
 function sessionNodes(canvas: LGraphCanvas): LGraphNode[] | undefined {
   const session = distributeSession.value
   const { graph } = canvas
-  if (!session || !graph || session.graph !== graph) return
+  if (!session || !graph || session.graph !== graph || canvas.read_only) return
   if (canvas.selectedItems.size !== session.selectionSize) return
   const nodes = session.nodeIds.map((id) => graph.getNodeById(id))
   if (nodes.some((node) => !node || !canvas.selectedItems.has(node))) return
@@ -143,9 +143,12 @@ watch(
   { immediate: true }
 )
 
-function applyBoxes(nodes: LGraphNode[], boxes: SnapBox[]) {
-  const { rootGraphId, canvas } = canvasStore
-  if (!rootGraphId) return
+function applyBoxes(
+  canvas: LGraphCanvas,
+  rootGraphId: string,
+  nodes: LGraphNode[],
+  boxes: SnapBox[]
+) {
   mutations.batchMoveNodes(
     rootGraphId,
     nodes.map((node, i) => ({
@@ -153,11 +156,7 @@ function applyBoxes(nodes: LGraphNode[], boxes: SnapBox[]) {
       position: { x: boxes[i].x, y: boxes[i].y + boxes[i].head }
     }))
   )
-  canvas?.setDirty(true, true)
-}
-
-function captureUndo() {
-  workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
+  canvas.setDirty(true, true)
 }
 
 function pointerAlong(event: PointerEvent) {
@@ -165,15 +164,22 @@ function pointerAlong(event: PointerEvent) {
 }
 
 function startDrag(event: PointerEvent, index: number) {
-  const { canvas } = canvasStore
+  const { canvas, rootGraphId } = canvasStore
   const nodes = canvas && sessionNodes(canvas)
-  if (event.button !== 0 || !canvas || !nodes) return
+  if (event.button !== 0 || !canvas || !nodes || !rootGraphId) return
   event.preventDefault()
   event.stopPropagation()
 
   const target = event.currentTarget
-  if (!(target instanceof HTMLElement)) return
-  target.setPointerCapture(event.pointerId)
+  if (target instanceof HTMLElement) target.setPointerCapture(event.pointerId)
+
+  const { graph } = canvas
+  const workflow = workflowStore.activeWorkflow
+  const isStillEditable = () =>
+    !canvas.read_only &&
+    canvas.graph === graph &&
+    canvasStore.rootGraphId === rootGraphId &&
+    workflowStore.activeWorkflow === workflow
 
   const startBoxes = nodes.map(nodeBox)
   const startPointer = pointerAlong(event)
@@ -181,20 +187,27 @@ function startDrag(event: PointerEvent, index: number) {
   let moved = false
 
   const onMove = (moveEvent: PointerEvent) => {
+    if (!isStillEditable()) return onEnd()
     const travel = (pointerAlong(moveEvent) - startPointer) / scale
     const gap = gapAfterTravel(startBoxes, axis.value, index, travel)
-    applyBoxes(nodes, setGap(startBoxes, axis.value, index, gap))
+    applyBoxes(
+      canvas,
+      rootGraphId,
+      nodes,
+      setGap(startBoxes, axis.value, index, gap)
+    )
     moved = true
   }
   const onEnd = () => {
-    target.removeEventListener('pointermove', onMove)
-    target.removeEventListener('pointerup', onEnd)
-    target.removeEventListener('pointercancel', onEnd)
-    if (moved) captureUndo()
+    window.removeEventListener('pointermove', onMove)
+    window.removeEventListener('pointerup', onEnd)
+    window.removeEventListener('pointercancel', onEnd)
+    if (moved && workflowStore.activeWorkflow === workflow)
+      workflow?.changeTracker.captureCanvasState()
   }
-  target.addEventListener('pointermove', onMove)
-  target.addEventListener('pointerup', onEnd)
-  target.addEventListener('pointercancel', onEnd)
+  window.addEventListener('pointermove', onMove)
+  window.addEventListener('pointerup', onEnd)
+  window.addEventListener('pointercancel', onEnd)
 }
 
 const NUDGE_KEYS: Record<string, number> = {
@@ -206,16 +219,16 @@ const NUDGE_KEYS: Record<string, number> = {
 
 function nudge(event: KeyboardEvent, index: number) {
   const direction = NUDGE_KEYS[event.key]
-  const { canvas } = canvasStore
+  const { canvas, rootGraphId } = canvasStore
   const nodes = canvas && sessionNodes(canvas)
-  if (!direction || !nodes) return
+  if (!direction || !canvas || !nodes || !rootGraphId) return
   event.preventDefault()
   event.stopPropagation()
 
   const boxes = nodes.map(nodeBox)
   const gap =
     (evenGap(boxes, axis.value) ?? 0) + direction * (event.shiftKey ? 10 : 1)
-  applyBoxes(nodes, setGap(boxes, axis.value, index, gap))
-  captureUndo()
+  applyBoxes(canvas, rootGraphId, nodes, setGap(boxes, axis.value, index, gap))
+  workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 }
 </script>

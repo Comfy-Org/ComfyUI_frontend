@@ -92,14 +92,14 @@ function visibleTargets(
   ].filter(inView)
 }
 
-function rootReroutePos(graph: LGraph, rerouteId: RerouteId | undefined) {
+function rootReroute(graph: LGraph, rerouteId: RerouteId | undefined) {
   let reroute = graph.getReroute(rerouteId)
   while (reroute?.parentId != null) {
     const parent = graph.getReroute(reroute.parentId)
     if (!parent) break
     reroute = parent
   }
-  return reroute?.pos
+  return reroute
 }
 
 function toPoint(point: ArrayLike<number>): Point2D {
@@ -143,8 +143,9 @@ function outputWires(
       if (!link) return []
       const mine = toPoint(node.getOutputPos(slot))
       if (link.parentId != null) {
-        const pos = rootReroutePos(graph, link.parentId)
-        return pos ? [{ theirs: toPoint(pos), mine }] : []
+        const root = rootReroute(graph, link.parentId)
+        if (!root || moving.has(root)) return []
+        return [{ theirs: toPoint(root.pos), mine }]
       }
       const target = graph.getNodeById(link.target_id)
       if (!target || moving.has(target)) return []
