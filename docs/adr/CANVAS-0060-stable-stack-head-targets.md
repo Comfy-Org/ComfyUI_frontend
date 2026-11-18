@@ -1,4 +1,4 @@
-# ADR-CANVAS-0053: Stable stack-head targets
+# ADR-CANVAS-0060: Stable stack-head targets
 
 Date: 2026-11-17
 

@@ -1,4 +1,4 @@
-# ADR-NODE-MENU-0001: Action identity for menu assembly
+# ADR-NODE-MENU-0059: Action identity for menu assembly
 
 Date: 2026-11-15
 
