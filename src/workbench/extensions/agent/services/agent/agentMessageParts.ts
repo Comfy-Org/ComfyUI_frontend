@@ -257,6 +257,25 @@ export function retireAskParts(
     : next
 }
 
+export function retireKnownAskParts(
+  parts: MessagePart[],
+  resolutions: ReadonlyMap<string, AskUserResolution>
+): MessagePart[] {
+  if (resolutions.size === 0) return parts
+  const next = parts.flatMap((part): MessagePart[] => {
+    const askId = askIdOf(part)
+    if (askId === undefined) return [part]
+    const resolution = resolutions.get(askId)
+    return resolution === undefined
+      ? [part]
+      : retireAskParts([part], askId, resolution)
+  })
+  return next.length === parts.length &&
+    next.every((part, index) => part === parts[index])
+    ? parts
+    : next
+}
+
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
 type AskInput = Omit<PendingAsk, 'message_id'>

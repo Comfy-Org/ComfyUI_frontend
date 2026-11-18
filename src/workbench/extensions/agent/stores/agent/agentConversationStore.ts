@@ -31,6 +31,7 @@ import {
   createAssistantMessage,
   isOpenAskPart,
   isPendingAskPart,
+  retireKnownAskParts,
   retireAskParts,
   settleResolution
 } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
@@ -1759,14 +1760,19 @@ export const useAgentConversationStore = defineStore(
     ): void {
       const retired = retiredAsksFor()
       const provisional = provisionalRetiredAsksFor()
-      for (const message of transcript.messages)
-        for (const [askId, resolution] of retired)
-          message.parts = retireAskParts(message.parts, askId, resolution)
-      for (const message of transcript.messages)
-        for (const askId of provisional.keys())
-          message.parts = retireAskParts(message.parts, askId, {
-            status: 'retired'
-          })
+      const provisionalResolutions = new Map(
+        [...provisional.keys()].map((askId) => [
+          askId,
+          { status: 'retired' } as const
+        ])
+      )
+      for (const message of transcript.messages) {
+        message.parts = retireKnownAskParts(message.parts, retired)
+        message.parts = retireKnownAskParts(
+          message.parts,
+          provisionalResolutions
+        )
+      }
     }
 
     function hydrate(history: AgentMessages): void {
