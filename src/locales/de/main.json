@@ -60,8 +60,8 @@
     "coachHoldNotice": "Ihre Nachricht wird gesendet, wenn Sie die Tour abschließen oder überspringen.",
     "coachProgress": "{current} von {total}",
     "coachTitle": "Lernen Sie Ihren Comfy Agent kennen",
-    "coachWorkflowBody": "Der Workflow, den er bearbeitet, ist über dem Nachrichtenfeld benannt. Beim Wechseln der Tabs wird der neueste Chat dieses Workflows angezeigt, sofern vorhanden.",
-    "coachWorkflowTitle": "Jeder Chat arbeitet an einem Workflow",
+    "coachWorkflowBody": "Dieser Workflow wird oben im Nachrichtenfeld benannt. Klicken Sie auf den Namen, um einen anderen auszuwählen. Durch Klicken auf einen Workflow-Tab kann der neueste Chat geöffnet werden, sofern das Nachrichtenfeld keinen Entwurf enthält.",
+    "coachWorkflowTitle": "Der Agent bearbeitet jeweils nur einen Workflow",
     "consent": {
       "accept": "Comfy Agent verwenden",
       "agreeAndContinue": "Zustimmen und fortfahren",

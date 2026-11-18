@@ -60,8 +60,8 @@
     "coachHoldNotice": "پیام شما وقتی گشت را تمام کنید یا از آن بگذرید ارسال خواهد شد.",
     "coachProgress": "{current} از {total}",
     "coachTitle": "با Comfy Agent خود آشنا شوید",
-    "coachWorkflowBody": "نام workflowی که در حال ویرایش آن است، بالای کادر پیام نمایش داده می‌شود. با جابه‌جایی بین تب‌ها، آخرین chat آن workflow، در صورت وجود، نمایش داده می‌شود.",
-    "coachWorkflowTitle": "هر chat روی یک workflow کار می‌کند",
+    "coachWorkflowBody": "نام آن workflow در بالای کادر پیام نوشته شده است. برای انتخاب موردی دیگر، روی نام کلیک کنید. کلیک روی زبانهٔ یک workflow می‌تواند آخرین گفت‌وگوی آن را باز کند، مگر اینکه کادر پیام دارای پیش‌نویس باشد.",
+    "coachWorkflowTitle": "عامل هر بار یک workflow را ویرایش می‌کند",
     "consent": {
       "accept": "شروع استفاده از Comfy Agent",
       "agreeAndContinue": "موافقت و ادامه",

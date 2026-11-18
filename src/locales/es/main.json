@@ -60,8 +60,8 @@
     "coachHoldNotice": "Tu mensaje se enviará cuando termines u omitas el recorrido.",
     "coachProgress": "{current} de {total}",
     "coachTitle": "Conoce a tu agente de Comfy",
-    "coachWorkflowBody": "El flujo de trabajo que está editando se llama como se indica encima del cuadro de mensaje. Al cambiar de pestaña, se muestra el chat más reciente de ese flujo de trabajo, si lo tiene.",
-    "coachWorkflowTitle": "Cada chat funciona con un solo flujo de trabajo",
+    "coachWorkflowBody": "El nombre de ese flujo de trabajo aparece en la parte superior del cuadro de mensajes. Haz clic en el nombre para elegir otro. Al hacer clic en una pestaña de flujo de trabajo, se puede abrir su chat más reciente, salvo que el cuadro de mensajes tenga un borrador.",
+    "coachWorkflowTitle": "El agente edita un solo flujo de trabajo a la vez",
     "consent": {
       "accept": "Empezar a usar Comfy Agent",
       "agreeAndContinue": "Aceptar y continuar",

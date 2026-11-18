@@ -60,8 +60,8 @@
     "coachHoldNotice": "둘러보기를 완료하거나 건너뛰면 메시지가 전송됩니다.",
     "coachProgress": "{total}개 중 {current}",
     "coachTitle": "Comfy Agent 만나기",
-    "coachWorkflowBody": "편집 중인 워크플로의 이름은 메시지 상자 위에 표시됩니다. 탭을 전환하면 해당 워크플로의 최신 채팅이 있으면 표시됩니다.",
-    "coachWorkflowTitle": "각 채팅은 하나의 워크플로에서 작업합니다",
+    "coachWorkflowBody": "해당 워크플로의 이름은 메시지 상단에 표시됩니다. 다른 워크플로를 선택하려면 이름을 클릭하세요. 메시지 상자에 초안이 없는 경우 워크플로 탭을 클릭하면 해당 워크플로의 최신 채팅이 열릴 수 있습니다.",
+    "coachWorkflowTitle": "에이전트는 한 번에 하나의 워크플로를 편집합니다",
     "consent": {
       "accept": "Comfy Agent 사용 시작",
       "agreeAndContinue": "동의하고 계속하기",

@@ -60,8 +60,8 @@
     "coachHoldNotice": "Votre message sera envoyé lorsque vous aurez terminé ou ignoré la visite guidée.",
     "coachProgress": "{current} sur {total}",
     "coachTitle": "Faites connaissance avec votre agent Comfy",
-    "coachWorkflowBody": "Le workflow qu’il modifie est nommé au-dessus de la zone de message. Changer d’onglet affiche le dernier chat de ce workflow, s’il y en a un.",
-    "coachWorkflowTitle": "Chaque chat concerne un seul workflow",
+    "coachWorkflowBody": "Le nom de ce workflow apparaît en haut de la zone de message. Cliquez sur son nom pour en choisir un autre. Cliquer sur un onglet de workflow peut ouvrir son chat le plus récent, sauf si la zone de message contient un brouillon.",
+    "coachWorkflowTitle": "L’agent modifie un workflow à la fois",
     "consent": {
       "accept": "Commencer à utiliser Comfy Agent",
       "agreeAndContinue": "Accepter et continuer",

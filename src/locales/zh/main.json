@@ -60,8 +60,8 @@
     "coachHoldNotice": "当您完成或跳过导览后，您的消息将发送。",
     "coachProgress": "{current} / {total}",
     "coachTitle": "认识你的 Comfy Agent",
-    "coachWorkflowBody": "它正在编辑的工作流名称显示在消息框上方。切换标签页会显示该工作流的最新聊天记录（如果有）。",
-    "coachWorkflowTitle": "每个聊天仅处理一个工作流",
+    "coachWorkflowBody": "该工作流的名称显示在消息框顶部。点击名称可选择其他工作流。点击工作流标签页可打开其最新聊天，除非消息框中有草稿。",
+    "coachWorkflowTitle": "智能体一次编辑一个工作流",
     "consent": {
       "accept": "开始使用 Comfy Agent",
       "agreeAndContinue": "同意并继续",
