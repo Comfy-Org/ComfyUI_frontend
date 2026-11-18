@@ -3154,6 +3154,42 @@ describe('useWorkflowService', () => {
       ])
     })
 
+    it('refuses workflow data outside clipboard limits without changing the graph', async () => {
+      const graph = new LGraph()
+      const existing = createTestNode(graph, [], [], 'Existing')
+      const canvas = useInsertionCanvas(graph)
+      app.canvas = canvas
+      canvas.selectItems([existing])
+      const workflow = insertionWorkflow()
+      workflow.changeTracker = createMockChangeTracker({
+        initialState: zComfyWorkflow.parse({
+          ...workflow.initialState,
+          nodes: workflow.initialState.nodes.map((node) => ({
+            ...node,
+            widgets_values: { '0': 0, length: 10_001 }
+          }))
+        })
+      })
+      const before = graph.serialize()
+      const beforeChange = vi.spyOn(graph, 'beforeChange')
+      reportErrorMock.mockClear()
+
+      await expect(useWorkflowService().insertWorkflow(workflow)).resolves.toBe(
+        false
+      )
+
+      expect(graph.serialize()).toEqual(before)
+      expect([...canvas.selectedItems]).toEqual([existing])
+      expect(beforeChange).not.toHaveBeenCalled()
+      expect(reportErrorMock).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        {
+          surface: 'graph',
+          errorType: 'workflow_insert_invalid_clipboard_data'
+        }
+      )
+    })
+
     it.for([
       {
         kind: 'canvas',

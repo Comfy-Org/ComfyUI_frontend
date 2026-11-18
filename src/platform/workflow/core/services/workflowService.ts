@@ -28,6 +28,10 @@ import {
   UnreadableWorkflowError
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useTelemetry } from '@comfyorg/telemetry'
+import type {
+  ClipboardItems,
+  SerialisableGraph
+} from '@comfyorg/graph-model/serialisation'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
@@ -1162,9 +1166,6 @@ export const useWorkflowService = () => {
     )
   }
 
-  /**
-   * Insert the given workflow into the current graph editor.
-   */
   const insertWorkflow = async (
     workflow: ComfyWorkflow,
     options: { position?: Point } = {}
@@ -1195,7 +1196,16 @@ export const useWorkflowService = () => {
       return
     }
     const workflowJSON = toRaw(loadedWorkflow.initialState)
-    const items = workflowToClipboardItems(workflowJSON)
+    let items: ClipboardItems
+    try {
+      items = workflowToClipboardItems(workflowJSON)
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'workflow_insert_invalid_clipboard_data'
+      })
+      return false
+    }
     insertItems(canvas, items, options)
   }
 

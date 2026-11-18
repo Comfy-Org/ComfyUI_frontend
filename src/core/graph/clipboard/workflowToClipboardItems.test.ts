@@ -50,11 +50,19 @@ function workflowV1(): SerialisableGraph {
 
 describe('workflowToClipboardItems', () => {
   it.for([
-    { version: 0.4, schema: zComfyWorkflow },
-    { version: 1, schema: zComfyWorkflow1 }
+    {
+      version: 0.4,
+      schema: zComfyWorkflow,
+      expectedReroute: { id: 8, pos: [60, 90], linkIds: [] }
+    },
+    {
+      version: 1,
+      schema: zComfyWorkflow1,
+      expectedReroute: { id: 7, pos: [40, 50], linkIds: [] }
+    }
   ])(
     'normalizes schema workflow version $version without mutating its data',
-    ({ version, schema }) => {
+    ({ version, schema, expectedReroute }) => {
       const data = {
         ...workflowV1(),
         last_node_id: 2,
@@ -76,7 +84,7 @@ describe('workflowToClipboardItems', () => {
         links: [],
         groups: [{ title: 'Group without ID', bounding: [0, 0, 200, 100] }],
         reroutes: [{ id: 7, pos: [40, 50], linkIds: null }],
-        extra: { reroutes: [{ id: 7, pos: [40, 50] }] }
+        extra: { reroutes: [{ id: 8, pos: [60, 90] }] }
       }
       const workflow: ComfyWorkflowJSON = schema.parse(data)
       const before = structuredClone(workflow)
@@ -86,7 +94,7 @@ describe('workflowToClipboardItems', () => {
       expect(items.groups).toEqual([
         { id: -1, title: 'Group without ID', bounding: [0, 0, 200, 100] }
       ])
-      expect(items.reroutes).toEqual([{ id: 7, pos: [40, 50], linkIds: [] }])
+      expect(items.reroutes).toEqual([expectedReroute])
       expect(items.nodes?.[0].widgets_values_named).toEqual({
         prompt: 'Keep me'
       })
