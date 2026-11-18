@@ -2,7 +2,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { pick } from 'es-toolkit'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -913,7 +913,7 @@ describe('useCoreCommands', () => {
       }
     )
 
-    function listingTurnsReadyOnRequest() {
+    function listingAnswersOnRequest(status: WorkspaceDeployment['status']) {
       let resolve: () => void = () => {}
       const promise = new Promise<void>((done) => {
         resolve = done
@@ -927,8 +927,8 @@ describe('useCoreCommands', () => {
             {
               deployment_id: 'dep-1',
               release_id: 'r-1',
-              status: 'ready',
-              can_start: false,
+              status,
+              can_start: status !== 'ready',
               created_at: '2026-10-01T00:00:00Z'
             }
           ]
@@ -939,7 +939,7 @@ describe('useCoreCommands', () => {
 
     it('Comfy.QueuePrompt queues the original Run once a fresh listing says the deployment is ready', async () => {
       await pickDeploymentWithStatus('stopped')
-      const answerReady = listingTurnsReadyOnRequest()
+      const answerReady = listingAnswersOnRequest('ready')
 
       const run = findCmd('Comfy.QueuePrompt').function()
       answerReady()
@@ -952,33 +952,87 @@ describe('useCoreCommands', () => {
       )
     })
 
-    it('Comfy.QueuePrompt queues nothing when the workflow changes while the listing is read again', async () => {
-      await pickDeploymentWithStatus('stopped')
-      const answerReady = listingTurnsReadyOnRequest()
+    const freshStatuses = [
+      { status: 'ready' },
+      { status: 'stopped' }
+    ] satisfies { status: WorkspaceDeployment['status'] }[]
 
-      const run = findCmd('Comfy.QueuePrompt').function()
-      mockWorkflowStore.activeWorkflow = fromPartial<
-        NonNullable<typeof mockWorkflowStore.activeWorkflow>
-      >({ changeTracker: mockChangeTracker })
-      answerReady()
-      await run
+    it.for(freshStatuses)(
+      'Comfy.QueuePrompt queues nothing and opens no menu when the workflow changes while a fresh listing that says $status is read',
+      async ({ status }) => {
+        await pickDeploymentWithStatus('stopped')
+        const answer = listingAnswersOnRequest(status)
+        const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
-      expect(app.queuePrompt).not.toHaveBeenCalled()
-    })
+        const run = findCmd('Comfy.QueuePrompt').function()
+        mockWorkflowStore.activeWorkflow = fromPartial<
+          NonNullable<typeof mockWorkflowStore.activeWorkflow>
+        >({ changeTracker: mockChangeTracker })
+        answer()
+        await run
 
-    it('Comfy.QueueSelectedOutputNodes queues nothing when the selection changes while the listing is read again', async () => {
-      await pickDeploymentWithStatus('stopped')
-      const answerReady = listingTurnsReadyOnRequest()
-      app.canvas.selectedItems = new Set([new LGraphNode('A')])
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+      }
+    )
 
-      const run = findCmd('Comfy.QueueSelectedOutputNodes').function()
-      app.canvas.selectedItems = new Set([new LGraphNode('B')])
-      answerReady()
-      await run
+    it.for(freshStatuses)(
+      'Comfy.QueueSelectedOutputNodes queues nothing and opens no menu when the selection changes while a fresh listing that says $status is read',
+      async ({ status }) => {
+        await pickDeploymentWithStatus('stopped')
+        const answer = listingAnswersOnRequest(status)
+        const asksBefore = useDeploymentPickStore().switcherOpenAsks
+        app.canvas.selectedItems = new Set([new LGraphNode('A')])
+        onTestFinished(() => {
+          app.canvas.selectedItems = new Set()
+        })
 
-      expect(app.queuePrompt).not.toHaveBeenCalled()
-      expect(useToast().error).not.toHaveBeenCalled()
-    })
+        const run = findCmd('Comfy.QueueSelectedOutputNodes').function()
+        app.canvas.selectedItems = new Set([new LGraphNode('B')])
+        answer()
+        await run
+
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(useToast().error).not.toHaveBeenCalled()
+        expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+      }
+    )
+
+    it.for(freshStatuses)(
+      'Comfy.QueuePrompt queues nothing and opens no menu when node picking starts while a fresh listing that says $status is read',
+      async ({ status }) => {
+        await pickDeploymentWithStatus('stopped')
+        const answer = listingAnswersOnRequest(status)
+        const asksBefore = useDeploymentPickStore().switcherOpenAsks
+
+        const run = findCmd('Comfy.QueuePrompt').function()
+        useCanvasStore().isPickingNodes = true
+        answer()
+        await run
+
+        expect(app.queuePrompt).not.toHaveBeenCalled()
+        expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+      }
+    )
+
+    it.for(freshStatuses)(
+      'Comfy.QueuePrompt queues only the Run made during node picking when picking starts and ends while a fresh listing that says $status is read',
+      async ({ status }) => {
+        await pickDeploymentWithStatus('stopped')
+        const answer = listingAnswersOnRequest(status)
+        const asksBefore = useDeploymentPickStore().switcherOpenAsks
+
+        const deferredRun = findCmd('Comfy.QueuePrompt').function()
+        useCanvasStore().isPickingNodes = true
+        await findCmd('Comfy.QueuePrompt').function()
+        useCanvasStore().isPickingNodes = false
+        answer()
+        await deferredRun
+
+        expect(app.queuePrompt).toHaveBeenCalledOnce()
+        expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+      }
+    )
 
     it('Comfy.QueuePrompt queues while node picking hides the Run on menu', async () => {
       await pickDeploymentWithStatus('stopped')

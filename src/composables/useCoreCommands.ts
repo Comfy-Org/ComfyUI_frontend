@@ -112,14 +112,17 @@ export function useCoreCommands(): ComfyCommand[] {
   async function deploymentStopsRun(
     runTarget: () => readonly unknown[]
   ): Promise<boolean> {
-    if (useCanvasStore().isPickingNodes) return false
+    const canvasStore = useCanvasStore()
+    if (canvasStore.isPickingNodes) return false
     const asked = runTarget()
-    if (await openSwitcherInsteadOfRun()) return true
-    const now = runTarget()
-    const targetChangedMeanwhile =
-      asked.length !== now.length ||
-      asked.some((item, index) => item !== now[index])
-    return targetChangedMeanwhile
+    return openSwitcherInsteadOfRun(() => {
+      if (canvasStore.isPickingNodes) return false
+      const now = runTarget()
+      return (
+        asked.length === now.length &&
+        asked.every((item, index) => item === now[index])
+      )
+    })
   }
 
   async function blockRunWithoutSubscription(): Promise<boolean> {

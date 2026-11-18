@@ -26,6 +26,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
+const runStands = () => true
+
 const PICKED = 'dep-a1a1a1a1-0000-4000-8000-000000000001'
 
 function listingWith(
@@ -82,7 +84,7 @@ describe('useUnreadyDeploymentRun', () => {
       const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
       expect(unreadyReason.value).toBe(reason)
-      expect(await openSwitcherInsteadOfRun()).toBe(true)
+      expect(await openSwitcherInsteadOfRun(runStands)).toBe(true)
       expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore + 1)
     }
   )
@@ -96,7 +98,7 @@ describe('useUnreadyDeploymentRun', () => {
     listDeployments.mockClear()
     const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
-    expect(await openSwitcherInsteadOfRun()).toBe(false)
+    expect(await openSwitcherInsteadOfRun(runStands)).toBe(false)
 
     expect(listDeployments).toHaveBeenCalledOnce()
     expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
@@ -110,8 +112,8 @@ describe('useUnreadyDeploymentRun', () => {
       .mockResolvedValue(listingWith('ready'))
     listDeployments.mockClear()
 
-    const firstRun = openSwitcherInsteadOfRun()
-    const secondRun = openSwitcherInsteadOfRun()
+    const firstRun = openSwitcherInsteadOfRun(runStands)
+    const secondRun = openSwitcherInsteadOfRun(runStands)
 
     expect(await secondRun).toBe(true)
     expect(await firstRun).toBe(false)
@@ -131,13 +133,96 @@ describe('useUnreadyDeploymentRun', () => {
       )
       .mockResolvedValue(listingWith('ready'))
 
-    const firstRun = openSwitcherInsteadOfRun()
+    const firstRun = openSwitcherInsteadOfRun(runStands)
     await useDeploymentPickStore().load()
-    const secondRun = openSwitcherInsteadOfRun()
+    const secondRun = openSwitcherInsteadOfRun(runStands)
     answerFirstRead()
 
     expect(await secondRun).toBe(true)
     expect(await firstRun).toBe(false)
+  })
+
+  it.for<{ status: WorkspaceDeployment['status'] }>([
+    { status: 'stopped' },
+    { status: 'ready' }
+  ])(
+    'drops the Run without opening the menu when it no longer stands after a fresh listing says $status',
+    async ({ status }) => {
+      await loadListing(listingWith('stopped'))
+      const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+      vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue(
+        listingWith(status)
+      )
+      const asksBefore = useDeploymentPickStore().switcherOpenAsks
+
+      expect(await openSwitcherInsteadOfRun(() => false)).toBe(true)
+
+      expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+    }
+  )
+
+  it.for<{ status: WorkspaceDeployment['status'] }>([
+    { status: 'stopped' },
+    { status: 'ready' }
+  ])(
+    'drops the Run without opening the menu when App mode is entered while a fresh listing that says $status is read',
+    async ({ status }) => {
+      await loadListing(listingWith('stopped'))
+      const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+      vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue(
+        listingWith(status)
+      )
+      const asksBefore = useDeploymentPickStore().switcherOpenAsks
+
+      const run = openSwitcherInsteadOfRun(runStands)
+      useWorkflowStore().activeWorkflow = fromPartial<
+        NonNullable<ReturnType<typeof useWorkflowStore>['activeWorkflow']>
+      >({ activeMode: 'app' })
+
+      expect(await run).toBe(true)
+      expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+    }
+  )
+
+  it.for<{ status: WorkspaceDeployment['status'] }>([
+    { status: 'stopped' },
+    { status: 'ready' }
+  ])(
+    'drops the Run without opening the menu when App mode is entered and left again while a fresh listing that says $status is read',
+    async ({ status }) => {
+      await loadListing(listingWith('stopped'))
+      const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+      vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue(
+        listingWith(status)
+      )
+      const asksBefore = useDeploymentPickStore().switcherOpenAsks
+      const graphWorkflow = useWorkflowStore().activeWorkflow
+
+      const run = openSwitcherInsteadOfRun(runStands)
+      useWorkflowStore().activeWorkflow = fromPartial<
+        NonNullable<ReturnType<typeof useWorkflowStore>['activeWorkflow']>
+      >({ activeMode: 'app' })
+      useWorkflowStore().activeWorkflow = graphWorkflow
+
+      expect(await run).toBe(true)
+      expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
+    }
+  )
+
+  it('lets a Run in App mode go ahead while a Run from the graph is still being checked', async () => {
+    await loadListing(listingWith('stopped'))
+    const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+    vi.spyOn(workspaceApi, 'listDeployments').mockResolvedValue(
+      listingWith('stopped')
+    )
+
+    const graphRun = openSwitcherInsteadOfRun(runStands)
+    useWorkflowStore().activeWorkflow = fromPartial<
+      NonNullable<ReturnType<typeof useWorkflowStore>['activeWorkflow']>
+    >({ activeMode: 'app' })
+
+    expect(await openSwitcherInsteadOfRun(runStands)).toBe(false)
+    expect(await graphRun).toBe(true)
   })
 
   it('opens the Run on menu when the fresh listing does not answer in time', async () => {
@@ -152,7 +237,7 @@ describe('useUnreadyDeploymentRun', () => {
       vi.useRealTimers()
     })
 
-    const run = openSwitcherInsteadOfRun()
+    const run = openSwitcherInsteadOfRun(runStands)
     await vi.advanceTimersByTimeAsync(3000)
 
     expect(await run).toBe(true)
@@ -211,7 +296,7 @@ describe('useUnreadyDeploymentRun', () => {
     const asksBefore = useDeploymentPickStore().switcherOpenAsks
 
     expect(unreadyReason.value).toBeNull()
-    expect(await openSwitcherInsteadOfRun()).toBe(false)
+    expect(await openSwitcherInsteadOfRun(runStands)).toBe(false)
     expect(useDeploymentPickStore().switcherOpenAsks).toBe(asksBefore)
   })
 })

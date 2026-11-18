@@ -920,17 +920,38 @@ describe('DeploymentSwitcher', () => {
     expect(mockWorkspaceApi.listDeployments).toHaveBeenCalledTimes(2)
   })
 
-  it('counts itself as a switcher that can open while it is mounted', async () => {
+  it('puts keyboard focus in the menu each time it is asked to open', async () => {
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    const user = renderSwitcher()
+    await screen.findByTestId('deployment-switcher-trigger')
+    const store = useDeploymentPickStore()
+
+    store.requestSwitcherOpen()
+    const firstMenu = await screen.findByRole('menu')
+    await waitFor(() => expect(firstMenu).toHaveFocus())
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+
+    store.requestSwitcherOpen()
+    const secondMenu = await screen.findByRole('menu')
+    await waitFor(() => expect(secondMenu).toHaveFocus())
+  })
+
+  it('counts as a switcher that can open only while it is mounted', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const { unmount } = render(DeploymentSwitcher, {
       global: { plugins: [i18n] }
     })
-    expect(await screen.findByTestId('deployment-switcher')).toBeVisible()
-    expect(useDeploymentPickStore().switcherMounts).toBe(1)
+    await screen.findByTestId('deployment-switcher-trigger')
+    const store = useDeploymentPickStore()
+
+    store.requestSwitcherOpen()
+    expect(await screen.findByRole('menu')).toBeVisible()
+    expect(store.switcherMounts).toBe(1)
 
     unmount()
 
-    expect(useDeploymentPickStore().switcherMounts).toBe(0)
+    expect(store.switcherMounts).toBe(0)
   })
 
   it('keeps reading the listing while the picked deployment is starting, with the menu closed', async () => {

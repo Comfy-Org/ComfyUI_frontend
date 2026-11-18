@@ -1,5 +1,5 @@
 import { promiseTimeout } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
 
@@ -60,12 +60,24 @@ export function useUnreadyDeploymentRun() {
 
   /**
    * Opens the Run on menu in place of a Run the deployment would refuse; false when Run may go ahead.
-   * The listing is read again first, and a Run made during that read is dropped.
+   * The listing is read again first. A Run made during that read, or one that no longer stands after it, is dropped.
    */
-  async function openSwitcherInsteadOfRun(): Promise<boolean> {
+  async function openSwitcherInsteadOfRun(
+    runStillStands: () => boolean
+  ): Promise<boolean> {
+    if (!isSwitcherOnScreen.value) return false
     if (pendingRecheck) return true
     if (!isRunBlocked()) return false
-    await recheckListingOnce()
+    const changedMeanwhile = shallowRef(false)
+    const stopWatchingRun = watch(
+      () => isSwitcherOnScreen.value && runStillStands(),
+      () => {
+        changedMeanwhile.value = true
+      },
+      { flush: 'sync', once: true }
+    )
+    await recheckListingOnce().finally(stopWatchingRun)
+    if (changedMeanwhile.value || !runStillStands()) return true
     if (!isRunBlocked()) return false
     useDeploymentPickStore().requestSwitcherOpen()
     return true
