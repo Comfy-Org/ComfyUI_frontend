@@ -43,8 +43,10 @@ function watchOverlay(
   const toastKind = ref(initialKind)
   const scope = effectScope()
   onTestFinished(() => scope.stop())
-  scope.run(() => useCloseOverlayCoveredByToast(() => toastKind.value))
-  return toastKind
+  const { forgetHeldOverlay } = scope.run(() =>
+    useCloseOverlayCoveredByToast(() => toastKind.value)
+  )!
+  return { toastKind, forgetHeldOverlay }
 }
 
 async function openOverlay() {
@@ -139,7 +141,7 @@ describe(useCloseOverlayCoveredByToast, () => {
   })
 
   it('lets the overlay open again once the toast is dismissed', async () => {
-    const toastKind = watchOverlay()
+    const { toastKind } = watchOverlay()
     await openOverlay()
 
     toastKind.value = 'hidden'
@@ -159,7 +161,7 @@ describe(useCloseOverlayCoveredByToast, () => {
   })
 
   it('keeps the overlay closed when only the toast is dismissed', async () => {
-    const toastKind = watchOverlay()
+    const { toastKind } = watchOverlay()
     await openOverlay()
 
     toastKind.value = 'hidden'
@@ -168,7 +170,7 @@ describe(useCloseOverlayCoveredByToast, () => {
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
   })
 
-  it('forgets the closed overlay once the covered models resolve', async () => {
+  it('keeps holding the overlay after the covered models resolve, as an open overlay would stay open', async () => {
     watchOverlay()
     await openOverlay()
 
@@ -177,6 +179,28 @@ describe(useCloseOverlayCoveredByToast, () => {
     seedMissingMedia()
     await nextTick()
 
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+  })
+
+  it('forgets the held overlay when the user dismisses the toast', async () => {
+    const { toastKind, forgetHeldOverlay } = watchOverlay()
+    await openOverlay()
+
+    toastKind.value = 'hidden'
+    forgetHeldOverlay()
+    seedMissingMedia()
+    await nextTick()
+
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
+  })
+
+  it('leaves an open overlay alone when the user dismisses the toast', async () => {
+    useMissingNodesErrorStore().setMissingNodeTypes(['UnknownNode'])
+    const { forgetHeldOverlay } = watchOverlay()
+    await openOverlay()
+
+    forgetHeldOverlay()
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
   })
 })

@@ -7,7 +7,7 @@ import type { MissingResourcesToastState } from '@/platform/workflowErrors/missi
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
-/** Holds the error overlay closed while the toast lists every issue it would show, and releases it when another issue appears. */
+/** Holds the error overlay closed while the toast lists every issue it would show, releases it when another issue appears, and can forget the hold when the user dismisses the toast. */
 export function useCloseOverlayCoveredByToast(
   toastKind: () => MissingResourcesToastState['kind']
 ) {
@@ -43,11 +43,10 @@ export function useCloseOverlayCoveredByToast(
     if (present) executionErrorStore.releaseErrorOverlay()
   })
 
-  watch(
-    () => missingModelStore.hasMissingModels,
-    (missing) => {
-      if (!missing && !executionErrorStore.isErrorOverlayOpen)
-        executionErrorStore.dismissErrorOverlay()
-    }
-  )
+  function forgetHeldOverlay() {
+    if (!executionErrorStore.isErrorOverlayOpen)
+      executionErrorStore.dismissErrorOverlay()
+  }
+
+  return { forgetHeldOverlay }
 }

@@ -163,12 +163,13 @@ export function useMissingResourcesToast() {
       state.value.kind !== 'hidden'
   )
 
-  useCloseOverlayCoveredByToast(() =>
+  const { forgetHeldOverlay } = useCloseOverlayCoveredByToast(() =>
     visible.value ? state.value.kind : 'hidden'
   )
 
   function dismiss() {
     dismissed.value = true
+    forgetHeldOverlay()
   }
 
   const { start: hideWhenReady, stop: cancelReadyHide } = useTimeoutFn(
