@@ -2225,7 +2225,13 @@ async function ensureSendAllowed(
   )
     return false
   if (!isCurrent()) return false
-  if (hasAgentCredential()) return true
+  return hasAgentCredential() || signedInForSend(submissionId, isCurrent)
+}
+
+async function signedInForSend(
+  submissionId: number | undefined,
+  isCurrent: () => boolean
+): Promise<boolean> {
   const identityBeforeSignIn = consentIdentity.value
   if (!(await ensureSignedIn())) return false
   return (
