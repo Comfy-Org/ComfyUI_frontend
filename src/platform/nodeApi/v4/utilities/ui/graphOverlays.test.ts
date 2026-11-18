@@ -497,6 +497,49 @@ describe('taking the pointer', () => {
     expect(onPointerDown).toHaveBeenCalledOnce()
   })
 
+  it('stays below a panel mounted before the overlay first drew, and leaves a press on that panel to it', () => {
+    const { view, canvas } = graphView()
+    const api = apiOnTestCanvas(canvas.graph)
+    const onPointerDown = vi.fn()
+    mount(api.comfy.ui, overlay({ interactive: true, onPointerDown }))
+    api.useCanvas(canvas)
+    const panel = api.comfy.ui.mountViewportPanel({
+      id: 'MyPack.tools',
+      ariaLabel: 'Tools',
+      render: (container) => container.append(document.createElement('button'))
+    })
+    const button = view.querySelector('[data-viewport-panel] button')
+    assert(button && panel)
+    canvas.draw(true, true)
+
+    press(button, 'pointerdown')
+    expect(onPointerDown).not.toHaveBeenCalled()
+    press(canvas.canvas, 'pointerdown')
+
+    expect(onPointerDown).toHaveBeenCalledOnce()
+    expect(overlayElement(view).nextElementSibling).toBe(
+      view.querySelector('[data-viewport-panel]')
+    )
+  })
+
+  it('stays below a panel already shown when it is mounted, and above the graph', () => {
+    const { view, canvas, ui } = appShowingGraph()
+    const panel = ui.mountViewportPanel({
+      id: 'MyPack.tools',
+      ariaLabel: 'Tools',
+      render: () => {}
+    })
+    assert(panel)
+
+    mount(ui, overlay())
+
+    const element = overlayElement(view)
+    expect(element.previousElementSibling).toBe(canvas.canvas)
+    expect(element.nextElementSibling).toBe(
+      view.querySelector('[data-viewport-panel]')
+    )
+  })
+
   it('stops listening on the window once it holds no pointer', () => {
     const { canvas, ui } = appShowingGraph()
     mount(ui, overlay({ interactive: true }))
