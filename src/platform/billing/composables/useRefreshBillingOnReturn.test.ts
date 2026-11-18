@@ -42,7 +42,11 @@ function heldRead() {
   return { read, settle, settleAll }
 }
 
-function openBillingTab({ isCloud = false, isInitialized = true } = {}) {
+function openBillingTab({
+  isCloud = false,
+  isInitialized = true,
+  includeCloud = false
+} = {}) {
   distribution.isCloud = isCloud
   onTestFinished(() => {
     distribution.isCloud = false
@@ -57,7 +61,7 @@ function openBillingTab({ isCloud = false, isInitialized = true } = {}) {
     capabilities.read
   )
   const scope = effectScope()
-  scope.run(useRefreshBillingOnReturn)
+  scope.run(() => useRefreshBillingOnReturn({ includeCloud }))
   const finishReads = async () => {
     account.settleAll()
     capabilities.settleAll()
@@ -122,7 +126,35 @@ describe('useRefreshBillingOnReturn', () => {
     expect(readAccount).toHaveBeenCalledTimes(2)
   })
 
-  it('reads nothing on Cloud', () => {
+  it('re-reads plan, balance and capabilities once on a return to a Cloud tab that asked for it', () => {
+    const { readAccount, readCapabilities } = openBillingTab({
+      isCloud: true,
+      includeCloud: true
+    })
+
+    leave()
+    comeBack()
+    document.dispatchEvent(new Event('visibilitychange'))
+
+    expect(readAccount).toHaveBeenCalledExactlyOnceWith('account')
+    expect(readCapabilities).toHaveBeenCalledOnce()
+  })
+
+  it('leaves the first load alone on a Cloud tab that asked for it while billing has not initialized', () => {
+    const { readAccount, readCapabilities } = openBillingTab({
+      isCloud: true,
+      includeCloud: true,
+      isInitialized: false
+    })
+
+    leave()
+    comeBack()
+
+    expect(readAccount).not.toHaveBeenCalled()
+    expect(readCapabilities).not.toHaveBeenCalled()
+  })
+
+  it('reads nothing on Cloud by default', () => {
     const { readAccount, readCapabilities } = openBillingTab({ isCloud: true })
 
     leave()

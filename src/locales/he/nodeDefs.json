@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "הסרת הרקע מתמונה באמצעות Bria RMBG 2.0.",
+    "description": "הסרת הרקע מתמונה באמצעות Bria RMBG 2.0 או RMBG 3.0.",
     "display_name": "Bria הסרת רקע מתמונה",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "תמונה"
       },
+      "model": {
+        "name": "model"
+      },
       "moderation": {
         "name": "הגדרות בקרה",
         "tooltip": "הגדרות בקרה"
       },
       "seed": {
         "name": "seed",
-        "tooltip": "ה-seed קובע אם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+        "tooltip": "ה-Seed קובע אם הצומת יופעל מחדש; אותה תמונה תמיד מפיקה אותה תוצאה ללא תלות ב-Seed."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מעבד את התוצאה הסופית ב-1080p או ב-4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast לאופטימיזציית מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "duration"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מעבד את התוצאה הסופית ב-1080p או ב-4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast לאופטימיזציית מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מעבד את התוצאה הסופית ב-1080p או ב-4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast לאופטימיזציית מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "הקטנה אוטומטית"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו־mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שעבורה draft_task_id מעבד את הגרסה הסופית ב־1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.0 לאיכות מרבית ול־4k; Fast למיטוב מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מעבד את התוצאה הסופית ב-1080p או ב-4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast לאופטימיזציית מהירות; Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "משך"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "בניית camera_info. המצב 'orbit' מכוון באמצעות yaw/pitch/distance סביב היעד; המצב 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן מרחב העולם של הצופה (right-handed,Y-up).",
+    "description": "בניית camera_info. המצב 'orbit' מכוון באמצעות yaw/pitch/distance סביב היעד; 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן במרחב העולם של הצופה (ימני, ציר Y כלפי מעלה), או, כאשר מחובר mesh, במסגרת של אותו mesh; לכן אותן הגדרות ממסגרות כל mesh.",
     "display_name": "יצירת מידע מצלמה",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "שדה ראייה אנכי במעלות."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "מסגור mesh זה: המיקומים, היעד והמרחק מחושבים ממרכז תיבת התיחום שלו, ביחידות של קוטר ספירת התיחום שלו, כך שאותן הגדרות ממסגרות כל mesh."
       },
       "mode": {
         "name": "מצב",
@@ -19341,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "יצירת תגובות טקסט דרך OpenRouter. מנתב למודלים פופולריים נבחרים מ-xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), ו-Perplexity Sonar.",
+    "description": "יצירת תגובות טקסט באמצעות OpenRouter. ניתוב לקבוצה נבחרת של מודלים פופולריים מבית Anthropic ‏(Claude), OpenAI ‏(GPT), Google ‏(Gemini), xAI ‏(Grok), Meta ‏(Muse), DeepSeek, Qwen, Mistral, Z.AI ‏(GLM), Moonshot ‏(Kimi) ו-Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -30305,6 +30312,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "עקביות לאורך זמן לפי Bonneel ואחרים, 2015, עם איבר נאמנות כנגד סחיפה: כל פריים שומר על הפרטים שלו תוך מעקב אחר הפריימים השכנים לאורך הזרימה האופטית של סרטון ההנחיה.",
+    "display_name": "הסרת הבהובים בווידאו",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "bidirectional מחשב ממוצע של מעבר קדימה ומעבר אחורה, וכך מונע השתהות מאחורי תנועה, במחיר של פי שניים זמן."
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "פריימי מקור יציבים שיש לעקוב אחר תנועתם, בכל רזולוציה. ברירת המחדל היא images, אשר מפחיתה פחות הבהובים."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "פריימים מהבהבים, לדוגמה סרטון ששודרג ברזולוציה או עובד פריים אחר פריים."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "מידת העוצמה שבה כל פריים עוקב אחר שכניו. ערך גבוה יותר מסיר יותר הבהובים ומרכך יותר פרטים עדינים."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "שינויים גדולים מערך זה בין פריים לשכנו המפוצה לפי תנועה נחשבים אמיתיים ומוחלקים פחות. הערך 0 מחליק את כל השינויים באופן אחיד."
       }
     },
     "outputs": {

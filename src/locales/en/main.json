@@ -131,6 +131,9 @@
     "resizeFromTopRight": "Resize from top-right corner",
     "resizeFromBottomLeft": "Resize from bottom-left corner",
     "resizeFromTopLeft": "Resize from top-left corner",
+    "resizePreviewHeight": "Resize preview height",
+    "resizeNumberedPreviewHeight": "Resize preview {index} height",
+    "resizeWidgetHeight": "Resize {name} height",
     "info": "Node Info",
     "bookmark": "Save to Library",
     "moreOptions": "More Options",
@@ -3054,6 +3057,7 @@
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
       "planRequiredFreeRuns": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
+      "planRequiredContactSales": "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
       "planRequiredResubscribe": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
       "planRequiredSubscribe": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
@@ -3306,6 +3310,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "unknownTierName": "Current plan",
+    "planWithPeriod": {
+      "monthly": "{plan} monthly",
+      "annual": "{plan} yearly"
+    },
     "salesManagedRunBlockedTitle": "Plan inactive",
     "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
@@ -3386,6 +3394,10 @@
       "runRefusedNoPlan": "Running workflows on Cloud needs a plan.",
       "runRefusedEnded": "Your plan has ended. Resubscribe to keep running workflows on Cloud.",
       "runRefusedFreeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows on Cloud.",
+      "runRefusedManualBlock": "This workspace has been blocked. Contact support.",
+      "runRefusedWorkspaceCap": "This workspace has reached its spending limit.",
+      "runRefusedProjectCap": "This project has reached its spending limit.",
+      "runRefusedUserCap": "You've reached your spending limit in this workspace.",
       "choosePlan": "Choose a plan"
     },
     "paymentRecovery": {
@@ -3900,6 +3912,7 @@
         "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "teamNotCreatorBody": "This workspace's plan has ended. Ask the workspace's creator to resubscribe.",
         "personalTitle": "Your {plan} plan ended on {date}",
         "personalTitleNoDate": "Your {plan} plan has ended",
         "personalBody": "Resubscribe to run workflows and get credits again.",
@@ -6189,6 +6202,7 @@
     "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "openVideo": "Open video: {name}",
+    "assetLoadFailed": "Couldn't load {name}",
     "diagnosticReport": {
       "retry": "Retry copy report",
       "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",
@@ -6587,6 +6601,7 @@
     "planLine": {
       "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "ended_sales_managed": "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
       "free_runs": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
     },
     "credits": "{credits} credits",

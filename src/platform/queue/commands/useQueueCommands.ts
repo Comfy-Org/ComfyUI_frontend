@@ -18,7 +18,7 @@ import {
 } from '@/platform/queue/stores/queueStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useExecutionStore } from '@/stores/executionStore'
 import { getExecutionIdsForSelectedNodes } from '@/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
@@ -124,7 +124,7 @@ export function useQueueCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(0, batchCount, { intent: metadata })
+        await useApp().queuePrompt(0, batchCount, { intent: metadata })
       }
     },
     {
@@ -144,7 +144,7 @@ export function useQueueCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(-1, batchCount, { intent: metadata })
+        await useApp().queuePrompt(-1, batchCount, { intent: metadata })
       }
     },
     {
@@ -180,7 +180,7 @@ export function useQueueCommands(): ComfyCommand[] {
           return
         }
         useTelemetry()?.trackWorkflowExecution()
-        await app.queuePrompt(0, batchCount, {
+        await useApp().queuePrompt(0, batchCount, {
           queueNodeIds: executionIds,
           intent: metadata
         })

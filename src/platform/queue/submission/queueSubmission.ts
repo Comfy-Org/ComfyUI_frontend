@@ -1,4 +1,5 @@
 import { PromptExecutionError } from '@comfyorg/api-client/ComfyApi'
+import type { PromptError } from '@comfyorg/api-client/types'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -16,7 +17,7 @@ import { applyPromotedWidgetControl } from '@/core/graph/subgraph/promotedWidget
 import { t } from '@/i18n'
 import { isDesktopHostSignedIn } from '@/platform/auth/desktopHost/desktopHostSession'
 import { queueAuthToken } from '@/platform/auth/partnerNode/partnerNodeQueueToken'
-import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/auth/partnerNode/usePartnerNodesRunGate'
 import { useAccountPreconditionDialog } from '@/platform/billing/subscription/composables/useAccountPreconditionDialog'
 import { useFreeTierQuota } from '@/platform/billing/subscription/composables/useFreeTierQuota'
 import { isCloud } from '@/platform/distribution/types'
@@ -27,7 +28,8 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import {
   promptErrorHasLockedCredits,
   promptRefusalPrecondition,
-  resolveAccountPrecondition
+  resolveAccountPrecondition,
+  withRefusalReason
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -43,11 +45,17 @@ import { normalizePromptError } from '@/utils/executionErrorUtil'
 import { collectAllNodes, forEachNode } from '@/utils/graphTraversalUtil'
 import { executeWidgetsCallback } from '@/utils/litegraphUtil'
 
-function servedRefusalPrecondition(error: unknown) {
+function servedRefusal(error: unknown): unknown {
   if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
   return error instanceof PromptExecutionError
-    ? promptRefusalPrecondition(error.response.error)
+    ? error.response.error
     : undefined
+}
+
+function withCloudRefusalReason(promptError: PromptError, error: unknown) {
+  return isCloud
+    ? withRefusalReason(promptError, servedRefusal(error))
+    : promptError
 }
 
 export class QueueSubmission {
@@ -317,7 +325,7 @@ export class QueueSubmission {
               ? (resolveAccountPrecondition({
                   exceptionType: promptError.type,
                   exceptionMessage: promptError.message
-                }) ?? servedRefusalPrecondition(error))
+                }) ?? promptRefusalPrecondition(servedRefusal(error)))
               : undefined
             if (promptPrecondition) {
               const opened = await useAccountPreconditionDialog().open(
@@ -390,7 +398,7 @@ export class QueueSubmission {
                 promptError
               ) {
                 executionErrorStore.recordPromptError(
-                  promptError,
+                  withCloudRefusalReason(promptError, error),
                   queuedRunErrorKey
                 )
               }

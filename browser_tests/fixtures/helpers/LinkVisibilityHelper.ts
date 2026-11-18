@@ -97,13 +97,14 @@ export class LinkVisibilityHelper {
     }
   }
 
-  async clickOutputBadgeRow(
+  async expandOutputBadgeStack(
     nodeId: NodeId,
     slot: number,
     row: number
   ): Promise<void> {
     const [x, y] = await this.outputBadgeRowClientPoint(nodeId, slot, row)
     await this.comfyPage.page.mouse.click(x, y)
+    await this.comfyPage.page.clock.runFor(300)
     await this.comfyPage.nextFrame()
   }
 

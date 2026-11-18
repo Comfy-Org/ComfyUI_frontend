@@ -11,12 +11,9 @@ const mocks = vi.hoisted(() => ({
   gateBlocks: false
 }))
 
-vi.mock(
-  import('@/platform/billing/composables/usePartnerNodesRunGate'),
-  () => ({
-    partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
-  })
-)
+vi.mock(import('@/platform/auth/partnerNode/usePartnerNodesRunGate'), () => ({
+  partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
+}))
 
 vi.mock(import('@/scripts/api'))
 
