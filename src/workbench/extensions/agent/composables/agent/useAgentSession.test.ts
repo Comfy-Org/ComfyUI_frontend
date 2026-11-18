@@ -6474,11 +6474,14 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(3_001)
       expect(approvalParts(session)).toHaveLength(0)
       expect(
+        useAgentConversationStore().isAskRetired('turn-1:call-1', 'th-1')
+      ).toBe(true)
+      expect(
         useAgentConversationStore().isAskPermanentlyRetired(
           'turn-1:call-1',
           'th-1'
         )
-      ).toBe(true)
+      ).toBe(false)
 
       emit(runApproval('msg-1'))
       expect(approvalParts(session)).toHaveLength(0)

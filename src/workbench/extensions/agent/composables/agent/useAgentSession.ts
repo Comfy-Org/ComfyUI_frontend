@@ -2583,11 +2583,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (cause !== 'reconnect') {
       if (running.settledSnapshot) {
         running.rerun = true
-        if (running.rerunCause !== 'reconnect') running.rerunCause = cause
       }
       if (!running.settledSnapshot && running.cause === 'reconnect') {
         running.rerun = true
-        if (running.rerunCause !== 'reconnect') running.rerunCause = cause
       }
       return true
     }
@@ -2710,7 +2708,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.hasApprovalShown(turn)
     )
       return
-    restoreMissingApproval(turn, outcome.pendingAsk, cause)
+    restoreMissingApproval(turn, outcome.pendingAsk, cause, pendingAskConfirmed)
   }
 
   function reconcileConfirmedApproval(
@@ -2718,11 +2716,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     outcome: Extract<TurnOutcome, { kind: 'streaming' }>,
     deliveredDuringPoll: ReadonlySet<string>
   ): void {
-    conversationStore.confirmApprovalSnapshot(
-      turn,
-      outcome.pendingAsk?.ask_id,
-      deliveredDuringPoll
-    )
     if (outcome.pendingAsk)
       conversationStore.confirmAskPending(
         outcome.pendingAsk.ask_id,
@@ -2739,11 +2732,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function restoreMissingApproval(
     turn: LiveTurn,
     pendingAsk: PendingAsk | undefined,
-    cause: RecoveryCause
+    cause: RecoveryCause,
+    snapshotConfirmed: boolean
   ): void {
-    if (!shouldRestoreApproval(turn, pendingAsk)) return
+    if (!shouldRestoreApproval(turn, pendingAsk, snapshotConfirmed)) return
     const wasDeliveredBefore = observedDeliveredAsks.has(pendingAsk.ask_id)
-    conversationStore.confirmAskPending(pendingAsk.ask_id, turn.threadId)
+    if (snapshotConfirmed)
+      conversationStore.confirmAskPending(pendingAsk.ask_id, turn.threadId)
     conversationStore.ingest({
       type: 'agent_ask',
       data: {
@@ -2760,12 +2755,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function shouldRestoreApproval(
     turn: LiveTurn,
-    pendingAsk: PendingAsk | undefined
+    pendingAsk: PendingAsk | undefined,
+    snapshotConfirmed: boolean
   ): pendingAsk is PendingAsk {
     if (!pendingAsk) return false
     if (conversationStore.submittedAskAnswer(pendingAsk.ask_id) !== undefined)
       return false
     if (answeringAskIds.value.has(pendingAsk.ask_id)) return false
+    if (
+      !snapshotConfirmed &&
+      conversationStore.isAskRetired(pendingAsk.ask_id, turn.threadId)
+    )
+      return false
     if (
       conversationStore.isAskPermanentlyRetired(
         pendingAsk.ask_id,
@@ -2802,9 +2803,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     event: Extract<AgentWsEvent, { type: 'agent_ask' }>
   ): void {
     const askId = event.data.ask_id
-    if (
-      conversationStore.isAskPermanentlyRetired(askId, event.data.thread_id)
-    ) {
+    if (conversationStore.isAskRetired(askId, event.data.thread_id)) {
       withdrawLateAskReport(event.data.thread_id, askId)
       return
     }
@@ -2812,7 +2811,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadId: event.data.thread_id,
       messageId: toTurnId(event.data.message_id)
     }
-    conversationStore.confirmAskPending(askId, event.data.thread_id)
     if (
       deliveredAsks.has(askId) &&
       (conversationStore.isAskShown(turn, askId) ||
