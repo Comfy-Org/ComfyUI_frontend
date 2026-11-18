@@ -35,8 +35,8 @@
 import { computed } from 'vue'
 
 import type {
-  INodeInputSlot,
-  INodeOutputSlot
+  InputSlotRecord,
+  OutputSlotRecord
 } from '@comfyorg/graph-model/slots'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeHeader from '@/renderer/extensions/vueNodes/components/NodeHeader.vue'
@@ -49,9 +49,11 @@ import { dynamicComboOptionKeys } from '@/core/graph/nodeDef/inputSpecInterprete
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toSlotRecordId } from '@comfyorg/graph-model/slotRecordId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 import { matchesWidgetName } from '@/utils/widgetBinding'
 import type { WidgetValueBinding } from '@/utils/widgetBinding'
 import { cn } from '@comfyorg/tailwind-utils'
@@ -68,32 +70,32 @@ const {
 
 const widgetStore = useWidgetStore()
 
-const previewInputs = computed<INodeInputSlot[]>(() =>
+const previewInputs = computed<InputSlotRecord[]>(() =>
   Object.entries(nodeDef.inputs || {})
     .filter(([, input]) => !widgetStore.inputIsWidget(input))
     .map(([name, input]) => ({
+      id: toSlotRecordId(createUuidv4()),
       name,
       type: input.type,
       shape: input.isOptional ? RenderShape.HollowCircle : undefined,
-      boundingRect: [0, 0, 0, 0],
-      link: null
+      boundingRect: [0, 0, 0, 0]
     }))
 )
 
-const previewOutputs = computed<INodeOutputSlot[]>(() =>
+const previewOutputs = computed<OutputSlotRecord[]>(() =>
   (nodeDef.outputs || []).map((output) => {
     if (typeof output === 'string') {
       return {
+        id: toSlotRecordId(createUuidv4()),
         name: output,
         type: output,
-        boundingRect: [0, 0, 0, 0],
-        links: []
+        boundingRect: [0, 0, 0, 0]
       }
     }
     return {
       ...output,
-      boundingRect: [0, 0, 0, 0],
-      links: []
+      id: toSlotRecordId(createUuidv4()),
+      boundingRect: [0, 0, 0, 0]
     }
   })
 )

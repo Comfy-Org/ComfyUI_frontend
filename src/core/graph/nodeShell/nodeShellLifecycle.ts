@@ -85,17 +85,22 @@ function reportWidgetRefusal(
   })
 }
 
-/**
- * Registers a node's shell state and its widget bindings with the app
- * stores. Call once the node has a valid id and graph reference. Retries
- * with a freshly minted id on a registration collision.
- */
 export function attachNodeToStores(
   graph: LGraph | Subgraph,
   node: LGraphNode,
   mintId: () => NodeId
-): void {
-  while (!registerNodeState(graph, node)) {
+): boolean {
+  for (;;) {
+    const registration = registerNodeState(graph, node)
+    if (registration.ok) break
+    if (registration.reason === 'slot-id-collision') {
+      reportError(new Error('Distinct slot records share an identity'), {
+        errorType: 'failure_registering_slot_identity',
+        surface: 'graph',
+        context: { nodeId: String(node.id), graphId: graph.id }
+      })
+      return false
+    }
     const collidedId = node.id
     node.id = mintId()
     console.warn(
@@ -107,7 +112,7 @@ export function attachNodeToStores(
   refuseAmbiguousNodeWidgets(node, (report) =>
     reportWidgetRefusal(node, report)
   )
-  if (!node.widgets) return
+  if (!node.widgets) return true
   for (const widget of node.widgets) {
     if (isNodeBindable(widget)) widget.setNodeId(node.id)
   }
@@ -116,6 +121,7 @@ export function attachNodeToStores(
     node.id,
     getWidgetIds(node.widgets)
   )
+  return true
 }
 
 /**

@@ -13,8 +13,8 @@ import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
 
 import type {
-  InputSlotDescriptor,
-  OutputSlotDescriptor
+  InputSlotRecord,
+  OutputSlotRecord
 } from '@comfyorg/graph-model/slots'
 
 import type { TitleMode } from '@comfyorg/graph-model/globalEnums'
@@ -29,9 +29,9 @@ export function createNodeShellState(
     flags: {},
     graphId: zeroUuid,
     id: UNASSIGNED_NODE_ID,
-    inputs: shallowReactive<InputSlotDescriptor[]>([]),
+    inputs: shallowReactive<InputSlotRecord[]>([]),
     mode: LGraphEventMode.ALWAYS,
-    outputs: shallowReactive<OutputSlotDescriptor[]>([]),
+    outputs: shallowReactive<OutputSlotRecord[]>([]),
     properties: {},
     title: title || 'Unnamed',
     type: type ?? '',
@@ -61,16 +61,12 @@ export function setTrackedNodeState<K extends keyof NodeState>(
   return true
 }
 
-/**
- * Registers a node's shell state into {@link useNodeDataStore} and adopts the
- * store's proxy as {@link LGraphNode._state}. Call wherever a node joins a
- * graph. Returns `false` on an id collision within the owning root graph —
- * the caller must mint a new id and retry.
- */
 export function registerNodeState(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
   node: LGraphNode
-): boolean {
+):
+  | { ok: true }
+  | { ok: false; reason: 'node-id-collision' | 'slot-id-collision' } {
   const graphScope = graphScopeOf(graph)
   const store = useNodeDataStore()
   const strandedScope =
@@ -93,12 +89,21 @@ export function registerNodeState(
     }
   )
 
+  const previousGraphId = node._state.graphId
   node._state.graphId = graph.id
   const registered = store.registerNode(graphScope, node._state)
-  if (!registered) return false
+  if (!registered) {
+    node._state.graphId = previousGraphId
+    return {
+      ok: false,
+      reason: store.canRegisterSlots(node._state)
+        ? 'node-id-collision'
+        : 'slot-id-collision'
+    }
+  }
   node._state = registered
   node._graphScope = graphScope
-  return true
+  return { ok: true }
 }
 
 /**

@@ -1254,7 +1254,6 @@ export class LGraph
   ): LGraphNode | null | undefined {
     if (!node) return
 
-    // Handle backwards compatibility: 2nd arg can be boolean or options
     const opts: GraphAddOptions =
       typeof skipComputeOrderOrOptions === 'object'
         ? skipComputeOrderOrOptions
@@ -1263,14 +1262,11 @@ export class LGraph
 
     const { state } = this
 
-    // Ensure created items are snapped
     if (LiteGraph.alwaysSnapToGrid) {
       const snapTo = this.getSnapToGridSize()
       if (snapTo) node.snapToGrid(snapTo)
     }
 
-    // LEGACY: This was changed from constructor === LGraphGroup
-    // groups
     if (node instanceof LGraphGroup) {
       const selected = node.selected
       const groupId = runtimeOptional(node.id)
@@ -1321,7 +1317,6 @@ export class LGraph
         )
     }
 
-    // give him an id
     if (node.id === UNASSIGNED_NODE_ID) {
       const mintMode = nodeIdMintModeFor(this)
       node.id = mintNodeId(state, mintMode, reservedNodeIds)
@@ -1329,18 +1324,23 @@ export class LGraph
       observeNodeId(state, node.id)
     }
 
-    // Set ghost flag before registration so the node state carries it
     if (opts.ghost) {
       node.flags.ghost = true
     }
 
     const selected = node.selected
     normalizeWidgetsView(node)
+    const previousGraph = node.graph
     node.graph = this
 
-    attachNodeToStores(this, node, () =>
-      mintNodeId(state, nodeIdMintModeFor(this), reservedNodeIds)
-    )
+    if (
+      !attachNodeToStores(this, node, () =>
+        mintNodeId(state, nodeIdMintModeFor(this), reservedNodeIds)
+      )
+    ) {
+      node.graph = previousGraph
+      return null
+    }
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
@@ -1355,8 +1355,6 @@ export class LGraph
     this.onNodeAdded?.(node)
     this.events.dispatch('node:added', { node })
 
-    // Keep after onNodeAdded so its deferred hooks run before these writes
-    // flush Vue.
     attachNodeLayout(this, node)
     this.incrementVersion()
 
@@ -1376,7 +1374,6 @@ export class LGraph
 
     emitGraphIntent({ type: 'add_node', graph: this, node })
 
-    // to chain actions
     return node
   }
 

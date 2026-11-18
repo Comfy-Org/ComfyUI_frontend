@@ -1,7 +1,9 @@
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import type {
   INodeInputSlot,
-  INodeOutputSlot
+  INodeOutputSlot,
+  InputSlotRecord,
+  OutputSlotRecord
 } from '@comfyorg/graph-model/slots'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
@@ -27,10 +29,12 @@ import { toGroupId } from '@comfyorg/graph-model/groupId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { toSlotRecordId } from '@comfyorg/graph-model/slotRecordId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { zeroUuid } from '@comfyorg/graph-model/uuid'
+import { createUuidv4 } from '@/utils/uuid'
 
 /** Creates a node shell state with minimal required fields. */
 export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
@@ -143,13 +147,11 @@ export function createMockLinkNetwork(
   } as LinkNetwork
 }
 
-/**
- * Creates a mock INodeInputSlot
- */
 export function createMockNodeInputSlot(
   overrides: Partial<INodeInputSlot> = {}
-): INodeInputSlot {
+): INodeInputSlot & InputSlotRecord {
   return {
+    id: toSlotRecordId(createUuidv4()),
     name: 'input',
     type: '*',
     boundingRect: [0, 0, 0, 0],
@@ -158,13 +160,11 @@ export function createMockNodeInputSlot(
   }
 }
 
-/**
- * Creates a mock INodeOutputSlot
- */
 export function createMockNodeOutputSlot(
   overrides: Partial<INodeOutputSlot> = {}
-): INodeOutputSlot {
+): INodeOutputSlot & OutputSlotRecord {
   return {
+    id: toSlotRecordId(createUuidv4()),
     name: 'output',
     type: '*',
     boundingRect: [0, 0, 0, 0],

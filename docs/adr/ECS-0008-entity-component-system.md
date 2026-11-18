@@ -65,6 +65,16 @@ Entity registration collision and recovery policy is defined by
 Node ID reminting policy is defined by
 [ADR MINT](CRDT-MINT-0018-merge-identity-for-node-transfers.md).
 
+### Amendment (2026-11-16): runtime slot identities
+
+Slot records have independently minted runtime UUIDs, separate from positional
+slot locators. Node registration rejects a distinct slot record at an occupied
+identity without changing the incumbent. Aliasing the same raw record is
+allowed across node arrays and roots. Slot-ID conflicts refuse the new node;
+node-ID reminting is not a recovery for them. See
+[the runtime slot identity decision](ECS-SLOTS-0058-independent-runtime-slot-identity.md)
+for lifetime, serialization, and lookup tradeoffs.
+
 ## Context
 
 The litegraph layer is built on deeply coupled OOP classes (`LGraphNode`, `LLink`, `Subgraph`, `BaseWidget`, `Reroute`, `LGraphGroup`, `SlotBase`). Each entity directly references its container and children — nodes hold widget arrays, widgets back-reference their node, links reference origin/target node IDs, subgraphs extend the graph class, and so on.

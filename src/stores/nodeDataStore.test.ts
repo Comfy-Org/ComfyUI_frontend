@@ -1,5 +1,5 @@
 import { assert, describe, expect, it, vi } from 'vitest'
-import { computed } from 'vue'
+import { computed, toRaw } from 'vue'
 
 import { transferReplacementOwnership } from '@/core/graph/nodeShell/nodeShellState'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -11,6 +11,7 @@ import {
 import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { zeroUuid } from '@comfyorg/graph-model/uuid'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 import type { UUID } from '@/utils/uuid'
 
@@ -29,6 +30,149 @@ function graphScope(rootGraphId: UUID, owningGraphId: UUID): GraphScope {
 }
 
 describe('useNodeDataStore', () => {
+  it.for(['inputs', 'outputs'] as const)(
+    'resolves %s by identity across reorder, rename and node-id changes',
+    (direction) => {
+      const store = useNodeDataStore()
+      const graph = new LGraph()
+      const original = new LGraphNode('Original')
+      original.addInput('first', 'INT')
+      original.addInput('second', 'FLOAT')
+      original.addOutput('first', 'MODEL')
+      original.addOutput('second', 'LATENT')
+      const record = original._state[direction][0]
+      const id = record.id
+      const name = computed(() => store.getSlotRecord(id)?.name)
+      expect(store.getSlotRecord(id)).toBeUndefined()
+      graph.add(original)
+      expect(name.value).toBe('first')
+
+      original[direction].reverse()
+      original[direction][1].name = 'renamed'
+      graph.remove(original)
+      original.id = toNodeId(53)
+      graph.add(original)
+
+      expect(toRaw(store.getSlotRecord(id))).toBe(toRaw(record))
+      expect(store.getSlotRecord(id)?.name).toBe('renamed')
+      expect(name.value).toBe('renamed')
+      expect(original._state[direction][1].id).toBe(id)
+      expect(original._state[direction][0].id).not.toBe(id)
+      expect(Reflect.set(record, 'id', original._state[direction][0].id)).toBe(
+        false
+      )
+    }
+  )
+
+  it('keeps aliased records queryable until the last registered membership leaves', () => {
+    const store = useNodeDataStore()
+    const sourceGraph = new LGraph()
+    const targetGraph = new LGraph()
+    const source = new LGraphNode('Source')
+    const target = new LGraphNode('Target')
+    const retained = source.addInput('shared', 'INT')
+    const record = source._state.inputs[0]
+    sourceGraph.add(source)
+    targetGraph.add(target)
+    target.inputs.push(retained)
+
+    sourceGraph.clear()
+    expect(toRaw(store.getSlotRecord(record.id))).toBe(toRaw(record))
+    target.inputs.splice(0, 1)
+    expect(store.getSlotRecord(record.id)).toBeUndefined()
+    retained.label = 'Detached'
+    target.inputs.push(retained)
+    expect(store.getSlotRecord(record.id)?.label).toBe('Detached')
+    targetGraph.clear()
+    expect(store.getSlotRecord(record.id)).toBeUndefined()
+  })
+
+  it('replaces slot identity without rebinding retained records during node replacement', () => {
+    const store = useNodeDataStore()
+    const graph = new LGraph()
+    const original = new LGraphNode('Original')
+    const retained = original.addInput('old', 'INT')
+    graph.add(original)
+    const oldRecord = original._state.inputs[0]
+    const replacement = new LGraphNode('Replacement')
+    replacement.addInput('new', 'FLOAT')
+    replacement.id = original.id
+    const newRecord = replacement._state.inputs[0]
+
+    expect(transferReplacementOwnership(original, replacement)).toBe(true)
+
+    expect(store.getSlotRecord(oldRecord.id)).toBeUndefined()
+    expect(toRaw(store.getSlotRecord(newRecord.id))).toBe(toRaw(newRecord))
+    retained.label = 'Retained old slot'
+    expect(oldRecord.label).toBe('Retained old slot')
+    expect(newRecord.label).toBeUndefined()
+    expect(newRecord.id).not.toBe(oldRecord.id)
+  })
+
+  it('reconstructs fresh slot identities without changing workflow serialization', () => {
+    const graph = new LGraph()
+    const original = new LGraphNode('Original')
+    original.addInput('in', 'INT')
+    original.addOutput('out', 'FLOAT')
+    graph.add(original)
+    const serialized = original.serialize()
+    const restored = new LGraphNode('Restored')
+
+    restored.configure(serialized)
+
+    expect(serialized.inputs?.[0]).not.toHaveProperty('id')
+    expect(serialized.outputs?.[0]).not.toHaveProperty('id')
+    expect(restored._state.inputs[0].id).not.toBe(original._state.inputs[0].id)
+    expect(restored._state.outputs[0].id).not.toBe(
+      original._state.outputs[0].id
+    )
+    expect(restored.serialize().inputs).toEqual(serialized.inputs)
+    expect(restored.serialize().outputs).toEqual(serialized.outputs)
+  })
+
+  it('does not retain a sparse or truncated membership', () => {
+    const store = useNodeDataStore()
+    const graph = new LGraph()
+    const original = new LGraphNode('Original')
+    original.addInput('removed', 'INT')
+    original.addInput('retained', 'FLOAT')
+    const removed = original._state.inputs[0]
+    const retained = original._state.inputs[1]
+    graph.add(original)
+
+    Reflect.deleteProperty(original.inputs, '0')
+    expect(store.getSlotRecord(removed.id)).toBeUndefined()
+    expect(toRaw(store.getSlotRecord(retained.id))).toBe(toRaw(retained))
+    graph.remove(original)
+    graph.add(original)
+    original.inputs.length = 0
+    expect(store.getSlotRecord(retained.id)).toBeUndefined()
+  })
+
+  it('refuses a colliding slot without retrying node IDs or adding partial graph membership', () => {
+    const store = useNodeDataStore()
+    const graph = new LGraph()
+    const original = new LGraphNode('Original')
+    original.addInput('incumbent', 'INT')
+    graph.add(original)
+    const record = original._state.inputs[0]
+    const challenger = new LGraphNode('Challenger')
+    challenger._state.inputs.push({
+      ...record,
+      id: record.id,
+      name: 'conflict'
+    })
+
+    expect(graph.add(challenger)).toBeNull()
+
+    expect(graph.nodes).toEqual([original])
+    expect(challenger._graphScope).toBeUndefined()
+    expect(challenger._state.graphId).toBe(zeroUuid)
+    expect(challenger.graph).toBeNull()
+    expect(toRaw(store.getSlotRecord(record.id))).toBe(toRaw(record))
+    expect(console.warn).not.toHaveBeenCalled()
+  })
+
   it('re-runs consumers when membership changes', () => {
     const store = useNodeDataStore()
     const ids = computed(() =>

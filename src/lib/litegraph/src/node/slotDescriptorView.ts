@@ -4,9 +4,10 @@ import { toRaw } from 'vue'
 import type {
   INodeInputSlot,
   INodeOutputSlot,
-  InputSlotDescriptor,
-  OutputSlotDescriptor,
-  SlotDescriptor
+  InputSlotRecord,
+  OutputSlotRecord,
+  SlotDescriptor,
+  SlotRecord
 } from '@comfyorg/graph-model/slots'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
@@ -21,7 +22,7 @@ const assignedInputViews = new WeakMap<
 
 export function createInputSlotView(
   node: LGraphNode,
-  inputs: InputSlotDescriptor[]
+  inputs: InputSlotRecord[]
 ): INodeInputSlot[] {
   const assignedViews = new WeakMap<INodeInputSlot, INodeInputSlot>()
   const view = createSlotView(node, inputs, NodeInputSlot, assignedViews)
@@ -31,22 +32,22 @@ export function createInputSlotView(
 
 export function createOutputSlotView(
   node: LGraphNode,
-  outputs: OutputSlotDescriptor[]
+  outputs: OutputSlotRecord[]
 ): INodeOutputSlot[] {
   return createSlotView(node, outputs, NodeOutputSlot)
 }
 
 function createSlotView(
   node: LGraphNode,
-  descriptors: SlotDescriptor[],
+  descriptors: SlotRecord[],
   Slot: new (
     slot: SlotDescriptor,
     node: LGraphNode,
-    descriptor?: SlotDescriptor
+    descriptor?: SlotRecord
   ) => NodeSlot,
   assignedViews?: WeakMap<INodeInputSlot, INodeInputSlot>
 ): SlotDescriptor[] {
-  function adapter(value: unknown): unknown {
+  function adapter(value: SlotRecord | undefined): unknown {
     if (!isSlot(value)) return value
     return slotAdapters.get(toRaw(value)) ?? new Slot(value, node, value)
   }
@@ -62,8 +63,9 @@ function createSlotView(
     get(target, property, receiver) {
       if (!Object.hasOwn(target, property) && property in Array.prototype)
         return Reflect.get(Array.prototype, property, receiver)
-      const value: unknown = Reflect.get(target, property, receiver)
-      return isArrayIndex(property) ? adapter(value) : value
+      return isArrayIndex(property)
+        ? adapter(target[Number(property)])
+        : Reflect.get(target, property, receiver)
     },
     set(target, property, value: unknown) {
       return Reflect.set(target, property, descriptor(property, value))
@@ -89,7 +91,7 @@ function createSlotView(
     getOwnPropertyDescriptor(target, property) {
       const descriptor = Reflect.getOwnPropertyDescriptor(target, property)
       if (descriptor && isArrayIndex(property) && 'value' in descriptor)
-        return { ...descriptor, value: adapter(descriptor.value) }
+        return { ...descriptor, value: adapter(target[Number(property)]) }
       return descriptor
     }
   })

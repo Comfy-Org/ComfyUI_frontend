@@ -2,6 +2,7 @@ import type { LGraphNode, LLink, SubgraphInput } from './entityRegistry'
 import type { LinkId } from './linkId'
 import type { RerouteId } from './rerouteId'
 import type { SlotIndex } from './slotId'
+import type { SlotRecordId } from './slotRecordId'
 import type { WidgetId } from './widgetId'
 
 import type { ISlotType, INodeSlot } from './interfaces'
@@ -79,6 +80,14 @@ export type InputSlotDescriptor = Omit<
 export type OutputSlotDescriptor = Omit<INodeOutputSlot, 'links' | '_data'>
 
 export type SlotDescriptor = InputSlotDescriptor & OutputSlotDescriptor
+
+export type InputSlotRecord = InputSlotDescriptor & {
+  readonly id: SlotRecordId
+}
+export type OutputSlotRecord = OutputSlotDescriptor & {
+  readonly id: SlotRecordId
+}
+export type SlotRecord = InputSlotRecord & OutputSlotRecord
 
 export type INodeSlotContextItem = [
   string,

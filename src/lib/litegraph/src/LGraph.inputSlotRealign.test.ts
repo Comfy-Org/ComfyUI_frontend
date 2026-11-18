@@ -388,7 +388,7 @@ describe('LGraph.configure input slot realignment (#3348)', () => {
     graph.id = payload.id
     const incumbent = new ReorderTargetNode()
     incumbent.id = toNodeId(2)
-    if (!registerNodeState(graph, incumbent)) {
+    if (!registerNodeState(graph, incumbent).ok) {
       throw new Error('failed to register incumbent target')
     }
     const contents = shiftedNodesAndLinks(10, 2, 10)

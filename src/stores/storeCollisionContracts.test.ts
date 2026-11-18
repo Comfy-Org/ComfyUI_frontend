@@ -10,6 +10,8 @@ import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { toSlotRecordId } from '@comfyorg/graph-model/slotRecordId'
+import type { SlotRecord } from '@comfyorg/graph-model/slots'
 import type { RerouteChain } from '@comfyorg/graph-model/rerouteChain'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
@@ -67,6 +69,69 @@ function rerouteChain(id: number, graphId: UUID = rootA): RerouteChain {
 }
 
 describe('store collision contracts (EX-002)', () => {
+  it('rejects a distinct slot record at an occupied ID before registering its node', () => {
+    const store = useNodeDataStore()
+    const record: SlotRecord = {
+      id: toSlotRecordId('incumbent-slot'),
+      name: 'Incumbent',
+      type: 'INT',
+      boundingRect: new Float64Array(4)
+    }
+    const incumbent = nodeState(1)
+    incumbent.inputs.push(record)
+    store.registerNode(scopeA, incumbent)
+    const challenger = nodeState(2, 'sub-1')
+    challenger.outputs.push({ ...record, name: 'Challenger' })
+
+    expect(store.registerNode(scopeSibling, challenger)).toBeUndefined()
+    expect(store.getSlotRecord(record.id)?.name).toBe('Incumbent')
+    expect(store.getGraphNodesFor(rootA, 'sub-1')).toEqual([])
+    expect(store.deleteNode(scopeSibling, challenger)).toBe(false)
+    expect(store.registerNode(scopeA, incumbent)).toBeDefined()
+  })
+
+  it('rejects distinct records sharing an ID inside one incoming node', () => {
+    const store = useNodeDataStore()
+    const record: SlotRecord = {
+      id: toSlotRecordId('duplicate-slot'),
+      name: 'Input',
+      type: 'INT',
+      boundingRect: new Float64Array(4)
+    }
+    const challenger = nodeState(1)
+    challenger.inputs.push(record)
+    challenger.outputs.push({ ...record, name: 'Output' })
+
+    expect(store.registerNode(scopeA, challenger)).toBeUndefined()
+    expect(store.getSlotRecord(record.id)).toBeUndefined()
+    expect(store.getGraphNodesFor(rootA, rootA)).toEqual([])
+  })
+
+  it('allows the same raw slot record to have memberships in different roots', () => {
+    const store = useNodeDataStore()
+    const record: SlotRecord = {
+      id: toSlotRecordId('shared-slot'),
+      name: 'Shared',
+      type: 'INT',
+      boundingRect: new Float64Array(4)
+    }
+    const source = nodeState(1)
+    source.inputs.push(record)
+    const alias = nodeState(2, 'other-root')
+    alias.inputs.push(record)
+    const otherScope: GraphScope = {
+      rootGraphId: toRootGraphId('other-root'),
+      owningGraphId: toOwningGraphId('other-root')
+    }
+    store.registerNode(scopeA, source)
+
+    expect(store.registerNode(otherScope, alias)).toBeDefined()
+    store.clearOwner(scopeA)
+    expect(store.getSlotRecord(record.id)?.name).toBe('Shared')
+    store.clearGraph('other-root')
+    expect(store.getSlotRecord(record.id)).toBeUndefined()
+  })
+
   it('nodeDataStore rejects a registration at an occupied identity key', () => {
     const store = useNodeDataStore()
     const incumbent = nodeState(1)

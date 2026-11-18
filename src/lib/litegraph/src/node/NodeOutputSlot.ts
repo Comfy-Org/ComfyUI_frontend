@@ -12,7 +12,7 @@ import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geomet
 import type {
   INodeInputSlot,
   INodeOutputSlot,
-  SlotDescriptor
+  SlotRecord
 } from '@comfyorg/graph-model/slots'
 import { LiteGraph } from '@/lib/litegraph/src/litegraphInstance'
 import { createArrayMutationView } from '@/lib/litegraph/src/infrastructure/createMutationView'
@@ -96,7 +96,7 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   constructor(
     slot: OptionalProps<INodeOutputSlot, 'boundingRect'>,
     node: LGraphNode,
-    descriptor?: SlotDescriptor
+    descriptor?: SlotRecord
   ) {
     const { links: legacyLinks, ...rest } = slot
     super(rest, node, descriptor)
