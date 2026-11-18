@@ -31,39 +31,20 @@
         <i aria-hidden="true" class="icon-[lucide--lock]" />
       </Button>
       <Button
-        v-if="canStart"
+        v-if="startButton"
         variant="muted-textonly"
         size="icon-sm"
         :class="
           cn(
             'size-8 shrink-0 hover:text-foreground focus-visible:ring-inset',
-            phase === 'failed' && 'text-destructive'
+            startButton.class
           )
         "
-        :aria-label="
-          t(
-            phase === 'failed'
-              ? 'rightSidePanel.missingModels.retryDownloadModel'
-              : 'rightSidePanel.missingModels.downloadModel',
-            { model: model.name },
-            { escapeParameter: false }
-          )
-        "
-        :title="
-          phase === 'failed'
-            ? t('rightSidePanel.missingModels.downloadFailedHint')
-            : undefined
-        "
+        :aria-label="startButton.label"
+        :title="startButton.title"
         @click="start"
       >
-        <i
-          aria-hidden="true"
-          :class="
-            phase === 'failed'
-              ? 'icon-[lucide--rotate-ccw]'
-              : 'icon-[lucide--download]'
-          "
-        />
+        <i aria-hidden="true" :class="startButton.icon" />
       </Button>
       <template v-else-if="phase === 'active'">
         <Button
@@ -71,21 +52,10 @@
           variant="muted-textonly"
           size="icon-sm"
           class="size-8 shrink-0 hover:text-foreground focus-visible:ring-inset"
-          :aria-label="
-            t(
-              isPaused
-                ? 'rightSidePanel.missingModels.resumeDownloadModel'
-                : 'rightSidePanel.missingModels.pauseDownloadModel',
-              { model: model.name },
-              { escapeParameter: false }
-            )
-          "
+          :aria-label="pauseButton.label"
           @click="togglePause"
         >
-          <i
-            aria-hidden="true"
-            :class="isPaused ? 'icon-[lucide--play]' : 'icon-[lucide--pause]'"
-          />
+          <i aria-hidden="true" :class="pauseButton.icon" />
         </Button>
         <Button
           v-if="canCancel"
@@ -148,6 +118,39 @@ const {
   cancel,
   requestAccess
 } = useTrackedModelActions(() => tracked)
+
+function labelFor(key: string): string {
+  return t(key, { model: model.value.name }, { escapeParameter: false })
+}
+
+const startButton = computed(() => {
+  if (!canStart.value) return undefined
+  return phase.value === 'failed'
+    ? {
+        label: labelFor('rightSidePanel.missingModels.retryDownloadModel'),
+        title: t('rightSidePanel.missingModels.downloadFailedHint'),
+        icon: 'icon-[lucide--rotate-ccw]',
+        class: 'text-destructive'
+      }
+    : {
+        label: labelFor('rightSidePanel.missingModels.downloadModel'),
+        title: undefined,
+        icon: 'icon-[lucide--download]',
+        class: undefined
+      }
+})
+
+const pauseButton = computed(() =>
+  isPaused.value
+    ? {
+        label: labelFor('rightSidePanel.missingModels.resumeDownloadModel'),
+        icon: 'icon-[lucide--play]'
+      }
+    : {
+        label: labelFor('rightSidePanel.missingModels.pauseDownloadModel'),
+        icon: 'icon-[lucide--pause]'
+      }
+)
 
 const sizeLabel = computed(() => {
   const bytes = trackedModelBytes(tracked)
