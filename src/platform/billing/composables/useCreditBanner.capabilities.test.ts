@@ -138,6 +138,7 @@ beforeEach(() => {
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
       subscription: computed(() => exhaustedSubscription),
+      subscriptionState: computed(() => null),
       balance: computed(() => null),
       isTeamPlan: computed(() => true),
       nextCreditRefillAt: computed(() => null),

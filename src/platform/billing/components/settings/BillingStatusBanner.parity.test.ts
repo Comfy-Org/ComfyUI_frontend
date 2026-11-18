@@ -50,6 +50,7 @@ vi.mock<unknown>(
         () => state.canAccessSubscriptionFeatures
       ),
       isTeamPlan: computed(() => state.isTeamPlan),
+      subscriptionState: computed(() => null),
       billingStatus: computed(() => state.billingStatus),
       subscriptionStatus: computed(() => state.subscriptionStatus),
       subscription: computed(() => state.subscription),
@@ -104,7 +105,8 @@ const copy: Pick<BillingBannerCopy, 'dismiss' | 'actions'> = {
     contactSupport: t(`${bs}.parked.contactSupport`),
     resumePlan: t(`${bs}.ending.reactivate`),
     choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
-    contactSales: t(`${bs}.ending.contactSales`)
+    contactSales: t(`${bs}.ending.contactSales`),
+    finishPayment: t('subscription.signupPaymentRecovery.finishPayment')
   }
 }
 
