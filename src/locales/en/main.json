@@ -3909,7 +3909,9 @@
       "planNotStarted": {
         "title": "Your {plan} plan hasn’t started",
         "titleNoPlan": "Your plan hasn’t started",
-        "body": "Finish paying to start it."
+        "body": "Finish paying to start it.",
+        "bodyUnavailable": "Your plan starts once the payment goes through.",
+        "viewPlans": "View on Plans"
       },
       "parked": {
         "title": "Something went wrong with a recent payment",

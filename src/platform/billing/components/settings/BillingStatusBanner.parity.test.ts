@@ -5,11 +5,11 @@ import { createI18n } from 'vue-i18n'
 
 import { BillingBanner } from '@comfyorg/account-ui/billing'
 import type { BillingBannerCopy } from '@comfyorg/account-ui/billing'
-import type { WorkspaceWithRole } from '@comfyorg/ingest-types'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json'
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
+import type { WorkspaceIdentityAccess } from '@/platform/workspace/ports/workspaceIdentity'
 import BillingStatusBanner from '@/platform/billing/components/settings/BillingStatusBanner.vue'
 import { serveBillingNotices } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
@@ -28,7 +28,9 @@ const state = vi.hoisted(() => ({
   billingStatus: 'paid' as string | null,
   subscriptionStatus: 'active' as string | null,
   subscription: null as Subscription | null,
-  workspaceType: 'team' as WorkspaceWithRole['type'],
+  workspaceType: 'team' as NonNullable<
+    WorkspaceIdentityAccess['activeWorkspace']
+  >['type'],
   canManageSubscription: true
 }))
 
@@ -106,7 +108,8 @@ const copy: Pick<BillingBannerCopy, 'dismiss' | 'actions'> = {
     resumePlan: t(`${bs}.ending.reactivate`),
     choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
     contactSales: t(`${bs}.ending.contactSales`),
-    finishPayment: t('subscription.signupPaymentRecovery.finishPayment')
+    finishPayment: t('subscription.signupPaymentRecovery.finishPayment'),
+    viewPlans: t(`${bs}.planNotStarted.viewPlans`)
   }
 }
 
