@@ -1,8 +1,11 @@
-import type { CreditsCardCopy } from '#/billing/tab/creditsCardCopy'
+import type {
+  CreditsBreakdownCopy,
+  CreditsCardCopy
+} from '#/billing/tab/creditsCardCopy'
 
 const ADD_CREDITS_REASONS: Record<string, string> = {
   'credits.addCreditsRefusal.topupPurchasesPaused':
-    "Buying credits isn't available right now. Try again later, or message support.",
+    "Buying credits isn't available right now. Try again later.",
   'credits.addCreditsRefusal.paymentPastDue':
     'Update your payment method to add credits.',
   'credits.addCreditsRefusal.unavailable':
@@ -33,4 +36,10 @@ export const creditsCardCopy: CreditsCardCopy = {
   inUse: 'In use now',
   addCredits: 'Add credits',
   addCreditsReason: (reasonKey) => ADD_CREDITS_REASONS[reasonKey] ?? reasonKey
+}
+
+export const creditsBreakdownCopy: CreditsBreakdownCopy = {
+  ...creditsCardCopy,
+  planCredits: 'Plan credits',
+  topUpCredits: 'Top-up credits'
 }

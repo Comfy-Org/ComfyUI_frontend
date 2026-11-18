@@ -23,7 +23,7 @@ test(
     await page.route('**/api/upload/image', (route) =>
       route.fulfill(jsonRoute(response))
     )
-    await page.route('**/view?filename=reference.png&type=input', (route) =>
+    await page.route('**/view?filename=reference.png&type=input*', (route) =>
       route.fulfill({ path: assetPath('image32x32.webp') })
     )
 

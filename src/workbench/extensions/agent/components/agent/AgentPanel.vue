@@ -16,6 +16,7 @@ import type {
 } from '@comfyorg/telemetry/types'
 
 import type { FreeUseVariant } from '@/workbench/extensions/agent/experiments/freeUsePlacement'
+import type { AgentGreeting } from '@/workbench/extensions/agent/types/proactiveGreeting'
 import type { ActiveTab } from '@/workbench/extensions/agent/types/activeTab'
 import type {
   WorkflowReference,
@@ -85,6 +86,7 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   syncRetryAvailable = false,
+  greeting,
   blocked = false
 } = defineProps<{
   entries: ConversationEntry[]
@@ -130,6 +132,7 @@ const {
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
   syncRetryAvailable?: boolean
+  greeting?: AgentGreeting
   blocked?: boolean
 }>()
 const emit = defineEmits<{
@@ -308,6 +311,14 @@ function onClose(): void {
   emit('close')
 }
 
+const visibleGreeting = computed(() =>
+  !entries.length && !openingChat.value ? greeting : undefined
+)
+const greetingReplacesIntro = computed(
+  () =>
+    visibleGreeting.value !== undefined && visibleGreeting.value.variant !== 'A'
+)
+
 const composerRef = ref<InstanceType<typeof Composer>>()
 const runNoticeReady = ref(false)
 const { isPending: runNoticeTimerPending, start: startRunNoticeTimer } =
@@ -396,6 +407,13 @@ function removeAttachment(id: string): void {
   composerRef.value?.removeAttachment(id)
 }
 
+async function onGreetingPrefilled(delayMs: number): Promise<void> {
+  const current = visibleGreeting.value
+  await nextTick()
+  if (current !== visibleGreeting.value) return
+  await composerRef.value?.focusPrefill(delayMs)
+}
+
 function onComposerSend(
   text: string,
   attachments: ComposerAttachment[],
@@ -421,13 +439,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
     />
 
     <slot name="panelNotice" />
-
-    <FreeUseNotice
-      v-if="!showHistory && freeUsePlacement === 'top-banner'"
-      :inert="blocked"
-      placement="top-banner"
-      @notice="emit('freeUseNotice', $event)"
-    />
 
     <template v-if="showHistory">
       <ChatHistoryScreen
@@ -523,7 +534,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :aria-busy="openingChat"
           :inert="openingChat"
           :user-name
+          :greeting="visibleGreeting"
           :has-selection="hasNodeSelectionModeAddition"
+          @prefilled="onGreetingPrefilled"
           @insert="
             (text, prompt) => {
               composerRef?.insert(text, prompt)
@@ -605,6 +618,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
           <RunNoticeBanner
+            :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
             :context="targetNotice"
@@ -613,7 +627,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           />
           <FreeUseNotice
             v-if="freeUsePlacement === 'near-composer'"
-            placement="near-composer"
             @notice="emit('freeUseNotice', $event)"
           />
           <Composer
@@ -659,20 +672,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
                 :select-tab
                 :detached="workflowDetached"
                 :disabled="streaming || submitting || savingReference"
-              />
-            </template>
-            <template #aboveInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'above-input'"
-                placement="above-input"
-                @notice="emit('freeUseNotice', $event)"
-              />
-            </template>
-            <template #insideInput>
-              <FreeUseNotice
-                v-if="freeUsePlacement === 'inside-input'"
-                placement="inside-input"
-                @notice="emit('freeUseNotice', $event)"
               />
             </template>
           </Composer>

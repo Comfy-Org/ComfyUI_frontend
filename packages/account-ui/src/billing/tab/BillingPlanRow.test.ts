@@ -96,6 +96,18 @@ describe('BillingPlanRow', () => {
       line: 'This plan has ended.'
     },
     {
+      case: 'an ended sales-managed plan with no served plan name',
+      state: {
+        kind: 'ended',
+        planName: null,
+        cadence: 'monthly',
+        endedAt: '2026-10-01T00:00:00Z',
+        salesManaged: true
+      },
+      title: 'Enterprise',
+      line: 'Ended October 1.'
+    },
+    {
       case: 'no plan with free runs left',
       state: { kind: 'noPlan', freeRuns: { remaining: 3, total: 5 } },
       title: 'This workspace has no active plan',

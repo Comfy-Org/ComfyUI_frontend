@@ -1,4 +1,7 @@
-import type { SubscriptionDialogOptions } from '@/platform/billing/composables/types'
+import type {
+  SubscriptionDialogOptions,
+  TopUpCreditsDialogOptions
+} from '@/platform/billing/composables/types'
 import type { ExtensionDialogService } from '@/services/dialogServiceTypes'
 
 type BillingDialogsAccess = Pick<
@@ -8,6 +11,7 @@ type BillingDialogsAccess = Pick<
   showSubscriptionRequiredDialog(
     options?: SubscriptionDialogOptions
   ): Promise<boolean>
+  showTopUpCreditsDialog(options?: TopUpCreditsDialogOptions): Promise<unknown>
 }
 
 /** `useBillingDialogs` for the dialogs it opens, which cannot import it back. */

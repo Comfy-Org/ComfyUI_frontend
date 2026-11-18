@@ -653,6 +653,24 @@ describe('postMessage wire body', () => {
     expect(contentType(init)).toBe('application/json')
   })
 
+  it('sends a plain canvas selection as canvas_selection, apart from selection', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'what is this',
+      canvasSelection: { node_ids: ['7'], workflow_id: 'wf-9' }
+    })
+
+    const parsed = JSON.parse(String(lastCall().init.body)) as Record<
+      string,
+      unknown
+    >
+    expect(parsed.canvas_selection).toEqual({
+      node_ids: ['7'],
+      workflow_id: 'wf-9'
+    })
+    expect(parsed).not.toHaveProperty('selection')
+  })
+
   it('sends current_tab_unbound when the turn comes from a tab with no workflow', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
@@ -1778,5 +1796,36 @@ describe('user auth on agent requests', () => {
     expect(new Headers(lastCall().init.headers).has('Authorization')).toBe(
       false
     )
+  })
+})
+
+describe('usage status', () => {
+  it('reads whether the agent has been used from the usage-status endpoint', async () => {
+    respond(jsonResponse(200, { has_used_agent: false }))
+
+    await expect(makeClient().getUsageStatus()).resolves.toEqual({
+      has_used_agent: false
+    })
+    expect(lastCall().route).toBe('/agent/usage-status')
+  })
+
+  it('rejects a successful response missing has_used_agent', async () => {
+    respond(jsonResponse(200, {}))
+
+    await expect(makeClient().getUsageStatus()).rejects.toMatchObject({
+      name: 'ZodError',
+      issues: expect.arrayContaining([
+        expect.objectContaining({ path: ['has_used_agent'] })
+      ])
+    })
+  })
+
+  it('rejects with the HTTP status when the request fails', async () => {
+    respond(jsonResponse(500, { error: 'unavailable' }))
+
+    await expect(makeClient().getUsageStatus()).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 500
+    })
   })
 })

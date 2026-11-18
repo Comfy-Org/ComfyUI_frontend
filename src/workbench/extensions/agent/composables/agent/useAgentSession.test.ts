@@ -72,6 +72,7 @@ const telemetry = vi.mocked(telemetryProvider)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
+    getUsageStatus: vi.fn(async () => ({ has_used_agent: false })),
     postMessage: vi.fn(async (): Promise<AgentTurnAccepted> => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
@@ -6679,6 +6680,88 @@ describe('useAgentSession (v1 composition root)', () => {
     })
   })
 
+  it('sends a plain canvas selection as canvas_selection, not as the tagged selection', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        canvasSelection: () => ['7']
+      }
+    })
+    session.start()
+
+    await session.sendMessage(
+      'what node is selected',
+      undefined,
+      undefined,
+      undefined,
+      () => 'wf-selected'
+    )
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.selection).toBeUndefined()
+    expect(body.canvasSelection).toEqual({
+      node_ids: ['7'],
+      workflow_id: 'wf-selected'
+    })
+  })
+
+  it.for([
+    { tags: ['5'], expected: { node_ids: ['9'] } },
+    { tags: ['5', '9'], expected: undefined }
+  ])(
+    'leaves tagged nodes $tags out of the canvas selection',
+    async ({ tags, expected }) => {
+      const rest = fakeRest()
+      const session = useAgentSession({
+        rest,
+        events: fakeEvents().source,
+        workflow: {
+          current: () => undefined,
+          adopted: () => {},
+          canvasSelection: () => ['5', '9']
+        }
+      })
+      session.start()
+
+      await session.sendMessage(
+        'compare',
+        undefined,
+        tags.map((id) => ({ id, title: `Node ${id}` }))
+      )
+
+      const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+      expect(body.selection).toEqual({ node_ids: tags })
+      expect(body.canvasSelection).toEqual(expected)
+    }
+  )
+
+  it('caps a large plain canvas selection and reports the total', async () => {
+    const rest = fakeRest()
+    const ids = Array.from({ length: 25 }, (_, index) => String(index + 1))
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        canvasSelection: () => ids
+      }
+    })
+    session.start()
+
+    await session.sendMessage('what are these')
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.canvasSelection).toEqual({
+      node_ids: ids.slice(0, 20),
+      total_selected: 25
+    })
+  })
+
   it('sends a skill invocation unchanged as ordinary message content', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
@@ -7794,6 +7877,33 @@ describe('useAgentSession (v1 composition root)', () => {
     // The resolver prefers its name-derived cloud index over the binding
     // store, so the refused id has to leave that index too.
     expect(disowned).toHaveBeenCalledWith('wf-dead')
+  })
+
+  it('(k5) reports a discarded accepted turn when the send generation moved on before the ack', async () => {
+    let abandon: () => void = () => {}
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => {
+      abandon()
+      return { thread_id: 'th-1', message_id: 'msg-1' }
+    })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+    abandon = () => session.newChat()
+
+    expect(await session.sendMessage('run it')).toBe(false)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'failure_tracking_agent_accepted_turn_generation_change',
+      context: {
+        threadAtSend: 'new',
+        ackThreadId: 'th-1',
+        turnId: toTurnId('msg-1')
+      }
+    })
+    expect(session.entries.value).toEqual([])
   })
 
   it('(k) a failed POST records the user text plus a settled error reply and returns false', async () => {

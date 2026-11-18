@@ -44,7 +44,11 @@ import type { WidgetValue } from '@/types/simplifiedWidget'
 import { followedDoc } from './__fixtures__/followedDoc'
 import { attachDocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
-import { LiveGraphApplier } from './liveGraphApplier'
+import {
+  LiveGraphApplier,
+  readDocGroups,
+  readDocWidgetValue
+} from './liveGraphApplier'
 import type {
   LiveGraphApplierDeps,
   RemoteApplyContext
@@ -218,6 +222,48 @@ class TestNestedGrowing extends LGraphNode {
   }
 }
 
+class TestSelectionCombo extends LGraphNode {
+  constructor() {
+    super('Test Selection Combo')
+    const model = this.addWidget('combo', 'model', 'seedream', () => {}, {
+      values: ['seedream', 'reference']
+    })
+    let selected: unknown = 'seedream'
+    const mount = (next: unknown) => {
+      this.widgets = this.widgets?.filter(
+        ({ name }) => !name.startsWith('model.')
+      )
+      if (next === 'seedream')
+        this.addWidget('number', 'model.size_preset', 1, () => {})
+      else if (next === 'reference') {
+        this.addWidget('string', 'model.task_type', 'edit', () => {})
+        this.addWidget('number', 'model.strength', 5, () => {})
+      }
+    }
+    Object.defineProperty(model, 'value', {
+      configurable: true,
+      get: () => selected,
+      set: (next: unknown) => {
+        selected = next
+        mount(next)
+      }
+    })
+    mount(selected)
+    this.serialize_widgets = true
+  }
+}
+
+class TestSelectionComboNestedGroup extends LGraphNode {
+  constructor() {
+    super('Test Selection Combo Nested Group')
+    this.addWidget('combo', 'model', 'plain', () => {}, {
+      values: ['plain', 'grouped']
+    })
+    this.addWidget('string', 'model.label', 'a', () => {})
+    this.serialize_widgets = true
+  }
+}
+
 /** Grows and shrinks its rows from the row-count controller's own setter. */
 class TestPlainDynamicGroup extends LGraphNode {
   constructor() {
@@ -338,6 +384,8 @@ const CATALOG: WidgetCatalog = {
     // value under the positional alias `_extra_2`.
     TestTwoGrowing: { widget_order: ['mode', 'mode.a'] },
     TestNestedGrowing: { widget_order: ['mode', 'mode.inner', 'mode.inner.x'] },
+    TestSelectionCombo: { widget_order: ['model', 'model.size_preset'] },
+    TestSelectionComboNestedGroup: { widget_order: ['model', 'model.label'] },
     TestPlainDynamicGroup: { widget_order: ['before', 'rows'] },
     TestAliasNamedWidget: { widget_order: ['first', 'second', '_extra_1'] },
     TestPrototypeNamedWidget: { widget_order: ['known'] },
@@ -407,6 +455,11 @@ beforeEach(() => {
   LiteGraph.registerNodeType('TestGrowingWidgets', TestGrowingWidgets)
   LiteGraph.registerNodeType('TestTwoGrowing', TestTwoGrowing)
   LiteGraph.registerNodeType('TestNestedGrowing', TestNestedGrowing)
+  LiteGraph.registerNodeType('TestSelectionCombo', TestSelectionCombo)
+  LiteGraph.registerNodeType(
+    'TestSelectionComboNestedGroup',
+    TestSelectionComboNestedGroup
+  )
   LiteGraph.registerNodeType('TestPlainDynamicGroup', TestPlainDynamicGroup)
   LiteGraph.registerNodeType('TestAliasNamedWidget', TestAliasNamedWidget)
   LiteGraph.registerNodeType(
@@ -433,6 +486,73 @@ beforeEach(() => {
   ]) {
     nodeType.nodeData = dynamicNodeData
   }
+
+  TestSelectionCombo.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({
+    inputs: {
+      model: transformInputSpecV1ToV2(
+        [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              {
+                key: 'seedream',
+                inputs: {
+                  required: {
+                    size_preset: ['INT', {}],
+                    unmounted_field: ['STRING', {}]
+                  }
+                }
+              },
+              {
+                key: 'reference',
+                inputs: {
+                  required: {
+                    task_type: ['STRING', {}],
+                    strength: ['INT', {}]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        { name: 'model' }
+      )
+    }
+  })
+
+  TestSelectionComboNestedGroup.nodeData = fromPartial<
+    NonNullable<LGraphNode['constructor']['nodeData']>
+  >({
+    inputs: {
+      model: transformInputSpecV1ToV2(
+        [
+          'COMFY_DYNAMICCOMBO_V3',
+          {
+            options: [
+              {
+                key: 'plain',
+                inputs: { required: { label: ['STRING', {}] } }
+              },
+              {
+                key: 'grouped',
+                inputs: {
+                  required: {
+                    rows: [
+                      'COMFY_DYNAMICGROUP_V3',
+                      { template: { required: { field: ['STRING', {}] } } }
+                    ]
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        { name: 'model' }
+      )
+    }
+  })
 })
 
 describe('LiveGraphApplier', () => {
@@ -812,6 +932,193 @@ describe('LiveGraphApplier', () => {
       }),
       expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
     )
+  })
+
+  describe('a selection-dependent layout (PM-2356, PM-1932)', () => {
+    const selectionComboNode = (widgets_values: unknown[]) => ({
+      nodes: [
+        {
+          id: 1,
+          type: 'TestSelectionCombo',
+          pos: [0, 0] as [number, number],
+          size: [210, 100] as [number, number],
+          widgets_values
+        }
+      ],
+      links: []
+    })
+
+    const setDocWidget = (doc: Y.Doc, name: string, value: unknown) => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      assert(widgets instanceof Y.Map)
+      widgets.set(name, value)
+    }
+
+    it('does not report a sub-value only a non-selected option owns', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.task_type', 'inpaint'))
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(node?.widgets?.map(({ name }) => name)).toEqual([
+        'model',
+        'model.size_preset'
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('does not report an overflow slot the current selection shortened', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, '_extra_2', 99))
+
+      expect(
+        graph.getNodeById(toNodeId(1))?.widgets?.map(({ value }) => value)
+      ).toEqual(['seedream', 3])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('still reports an overflow slot no selection of this node can reach', () => {
+      const { doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, '_extra_10', 99))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Node 1 (TestSelectionCombo) has no widget '_extra_10'"
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    })
+
+    it('still reports a sub-value the SELECTED option owns but the node did not mount', () => {
+      const { doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.unmounted_field', 'x'))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message:
+            "Node 1 (TestSelectionCombo) has no widget 'model.unmounted_field'"
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    })
+
+    it('still reports a sub-value NO option owns, which is catalog drift', () => {
+      const { doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.retired_field', 7))
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message:
+            "Node 1 (TestSelectionCombo) has no widget 'model.retired_field'"
+        }),
+        expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+      )
+    })
+
+    it('resolves a sub-value once its own option is selected', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => {
+        setDocWidget(doc, 'model', 'reference')
+        setDocWidget(doc, 'model.task_type', 'outpaint')
+      })
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(
+        node?.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([
+        { name: 'model', value: 'reference' },
+        { name: 'model.task_type', value: 'outpaint' },
+        { name: 'model.strength', value: 5 }
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('leaves a retained value unapplied when the selector arrives in a later edit', () => {
+      const { graph, doc, applyCollected, applyEdit } = setup(
+        selectionComboNode(['seedream', 3])
+      )
+      applyCollected()
+
+      applyEdit(() => setDocWidget(doc, 'model.task_type', 'outpaint'))
+      applyEdit(() => setDocWidget(doc, 'model', 'reference'))
+
+      const node = graph.getNodeById(toNodeId(1))
+      expect(
+        node?.widgets?.map(({ name, value }) => ({ name, value }))
+      ).toEqual([
+        { name: 'model', value: 'reference' },
+        { name: 'model.task_type', value: 'edit' },
+        { name: 'model.strength', value: 5 }
+      ])
+      expect(readDocWidgetValue(doc, '1', 'model.task_type')).toBe('outpaint')
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    describe('a container nested inside one option', () => {
+      const nestedGroupNode = (widgets_values: unknown[]) => ({
+        nodes: [
+          {
+            id: 1,
+            type: 'TestSelectionComboNestedGroup',
+            pos: [0, 0] as [number, number],
+            size: [210, 100] as [number, number],
+            widgets_values
+          }
+        ],
+        links: []
+      })
+
+      it('does not report a group row the non-selected option owns', () => {
+        const { doc, applyCollected, applyEdit } = setup(
+          nestedGroupNode(['plain', 'a'])
+        )
+        applyCollected()
+
+        applyEdit(() => setDocWidget(doc, 'model.rows.0.field', 'z'))
+
+        expect(reportError).not.toHaveBeenCalled()
+      })
+
+      it('still reports a sub-value no option owns', () => {
+        const { doc, applyCollected, applyEdit } = setup(
+          nestedGroupNode(['plain', 'a'])
+        )
+        applyCollected()
+
+        applyEdit(() => setDocWidget(doc, 'model.retired_field', 'z'))
+
+        expect(reportError).toHaveBeenCalledWith(
+          expect.objectContaining({
+            message:
+              "Node 1 (TestSelectionComboNestedGroup) has no widget 'model.retired_field'"
+          }),
+          expect.objectContaining({ errorType: 'agent_graph_widget_missing' })
+        )
+      })
+    })
   })
 
   it('keeps a named entry authoritative over its own overflow alias', () => {
@@ -2630,7 +2937,8 @@ describe('LiveGraphApplier widget writes through BaseWidget.setValue', () => {
     const canvas = fromPartial<LGraphCanvas>({
       graph_mouse: [3, 4],
       emitBeforeChange: () => {},
-      emitAfterChange: () => {}
+      emitAfterChange: () => {},
+      setDirty: () => {}
     })
     const { node, writeDocWidget } = rangedSetup({ getCanvas: () => canvas })
     const widget = node.widgets?.find(({ name }) => name === 'cfg')
@@ -2840,9 +3148,50 @@ describe('LiveGraphApplier change bracket', () => {
     expect(graph._nodes).toEqual([])
     expect(reportError).not.toHaveBeenCalled()
 
-    const detached = new LiveGraphApplier({ getGraph: () => null })
+    const detached = new LiveGraphApplier({
+      getGraph: () => null,
+      getCanvas: () => canvas
+    })
     detached.applyChanges(doc, catchUp, CONTEXT)
     detached.applyChanges(empty.doc, empty.collector.take(), CONTEXT, 'replace')
     expect(events).toHaveLength(4)
+  })
+
+  it('invalidates the graph when no canvas is available', () => {
+    const { graph, doc, collector, applier } = setup(seed)
+    const setDirtyCanvas = vi.spyOn(graph, 'setDirtyCanvas')
+
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(setDirtyCanvas).toHaveBeenCalledWith(true, true)
+  })
+})
+
+describe('readDocGroups', () => {
+  const frame = { title: 'Stage', bounding: [0, 0, 100, 100] }
+
+  it('keeps a stored positive integer id', () => {
+    expect([...readDocGroups([{ ...frame, id: 7 }]).keys()]).toEqual(['7'])
+  })
+
+  it('names a record without a usable id the same way on every read', () => {
+    const records = [frame, { ...frame, id: -1 }, { ...frame, id: Number.NaN }]
+    const first = [...readDocGroups(records).values()].map(({ id }) => id)
+    const second = [...readDocGroups(records).values()].map(({ id }) => id)
+    expect(first).toHaveLength(3)
+    expect(second).toEqual(first)
+    expect(first.every((id) => Number.isSafeInteger(id) && id > 0)).toBe(true)
+  })
+
+  it('tells apart id-less records whose titles differ only in an astral character', () => {
+    const groups = readDocGroups([
+      { ...frame, title: 'Stage \u{1F600}' },
+      { ...frame, title: 'Stage \u{1F601}' }
+    ])
+    expect(groups.size).toBe(2)
+  })
+
+  it('reads an id-less record that carries a bigint field', () => {
+    expect(readDocGroups([{ ...frame, extra: 1n }]).size).toBe(1)
   })
 })

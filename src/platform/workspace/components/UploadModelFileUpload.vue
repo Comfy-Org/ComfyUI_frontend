@@ -8,7 +8,7 @@
         v-bind="progressAttrs"
       >
         <div
-          v-if="state.status === 'uploading'"
+          v-if="isTransferring"
           class="pointer-events-none absolute inset-y-0 left-0 bg-primary/30 transition-[width]"
           :style="{ width: `${percent}%` }"
         />
@@ -48,10 +48,6 @@
         />
       </div>
 
-      <p v-else-if="statusLine" class="m-0">
-        {{ statusLine }}
-      </p>
-
       <div v-else-if="state.status === 'done'" class="flex flex-col gap-2">
         <p class="m-0 font-bold text-foreground">
           {{ $t('assetBrowser.modelUploaded') }}
@@ -60,6 +56,11 @@
           {{ $t('assetBrowser.findInLibrary', { type: modelTypeLabel }) }}
         </p>
       </div>
+
+      <p v-if="transferEstimate" class="m-0">{{ transferEstimate }}</p>
+      <p role="status" :class="cn('m-0', !statusLine && 'sr-only')">
+        {{ statusLine }}
+      </p>
     </div>
 
     <div class="flex w-full shrink-0 justify-end gap-2">
@@ -127,6 +128,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -150,27 +152,70 @@ const emit = defineEmits<{
   close: []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { modelTypes, isLoading } = useModelTypes()
 
+const isTransferring = computed(
+  () => state.status === 'uploading' || state.status === 'reconnecting'
+)
+
 const percent = computed(() =>
-  state.status === 'uploading' && state.file.size > 0
+  (state.status === 'uploading' || state.status === 'reconnecting') &&
+  state.file.size > 0
     ? Math.round((state.sent / state.file.size) * 100)
     : 0
 )
 
 const canCancel = computed(
-  () => state.status === 'uploading' || state.status === 'stopping'
+  () => isTransferring.value || state.status === 'stopping'
 )
 
+const transferEstimate = computed(() => {
+  if (
+    state.status === 'uploading' &&
+    state.bytesPerSecond &&
+    state.bytesPerSecond > 0
+  ) {
+    return t('assetBrowser.fileUpload.transferEstimate', {
+      rate: formatSize(Math.max(1, Math.round(state.bytesPerSecond))),
+      time: formatTimeLeft(
+        Math.ceil((state.file.size - state.sent) / state.bytesPerSecond)
+      )
+    })
+  }
+  return undefined
+})
+
 const statusLine = computed(() => {
+  if (state.status === 'reconnecting')
+    return t('assetBrowser.fileUpload.reconnecting')
   if (state.status === 'saving') return t('assetBrowser.fileUpload.saving')
   if (state.status === 'stopping') return t('assetBrowser.fileUpload.stopping')
   return undefined
 })
 
+function formatTimeLeft(seconds: number) {
+  const units = [
+    { unit: 'hour', count: Math.floor(seconds / 3600) },
+    { unit: 'minute', count: Math.floor((seconds % 3600) / 60) },
+    { unit: 'second', count: seconds % 60 }
+  ]
+  return units
+    .filter(
+      ({ unit, count }) => count > 0 || (unit === 'second' && seconds === 0)
+    )
+    .map(({ unit, count }) =>
+      new Intl.NumberFormat(locale.value, {
+        style: 'unit',
+        unit,
+        unitDisplay: 'narrow'
+      }).format(count)
+    )
+    .join(' ')
+}
+
 const progressAttrs = computed(() =>
-  state.status === 'uploading'
+  isTransferring.value
     ? {
         role: 'progressbar',
         'aria-label': title.value,
@@ -182,13 +227,13 @@ const progressAttrs = computed(() =>
 )
 
 const title = computed(() =>
-  state.status === 'uploading'
+  isTransferring.value
     ? t('assetBrowser.fileUpload.uploading', { name: state.file.name })
     : state.file.name
 )
 
 const sizeText = computed(() =>
-  state.status === 'uploading'
+  state.status === 'uploading' || state.status === 'reconnecting'
     ? t('assetBrowser.fileUpload.progress', {
         sent: formatSize(state.sent),
         total: formatSize(state.file.size)

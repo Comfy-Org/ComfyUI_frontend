@@ -81,7 +81,6 @@ export function deriveWidgetRenderState(
   widget: Readonly<IBaseWidget>
 ): WidgetRenderState {
   return {
-    hasLayoutSize: typeof widget.computeLayoutSize === 'function',
     isDOMWidget: isDOMBackedWidget(widget),
     tooltip: widget.tooltip
   }

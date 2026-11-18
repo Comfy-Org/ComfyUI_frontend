@@ -93,7 +93,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   })
 
   // Persists across component re-mounts so that download progress
-  // survives tab switches within the right-side panel.
+  // survives tab switches within the properties panel.
   const modelExpandState = ref<Record<string, boolean>>({})
   const selectedLibraryModel = ref<Record<string, string>>({})
   const importTaskIds = ref<Record<string, string>>({})

@@ -1,5 +1,6 @@
 import type {
   PeriodCreditGrant,
+  SubscriptionPaymentRecovery,
   SubscriptionState
 } from '@comfyorg/ingest-types'
 import type { ComputedRef, Ref } from 'vue'
@@ -59,6 +60,12 @@ export interface SubscriptionDialogOptions {
   creditsLocked?: boolean
   /** Server `error.type` of the refused run, reported with the paywall opening. */
   refusalType?: string
+  /** A failed checkout is being restored: the in-app table reopens, unless the new billing UX hands every entry to the platform Plans page. */
+  resumingCheckout?: boolean
+  /** A run was refused without a click, so a dialog explains why and links to the Plans page. */
+  runRefused?: boolean
+  /** Opened on page load, so the Plans page replaces this tab. */
+  sameTab?: boolean
 }
 
 // A type alias, not an interface: `showDialog`'s props are index-signature
@@ -184,6 +191,10 @@ export interface BillingState {
   currentPlanSlug: ComputedRef<string | null>
   /** Team per-credit pricing ladder; null for personal/legacy. */
   teamCreditStops: ComputedRef<TeamCreditStops | null>
+  /** The served unpaid initial-signup invoice holding plan changes; null when none is served. */
+  subscriptionPaymentRecovery: ComputedRef<SubscriptionPaymentRecovery | null>
+  /** The same served fact on billing status; null when status serves none. */
+  statusPaymentRecovery: ComputedRef<SubscriptionPaymentRecovery | null>
   /** The team's currently-subscribed credit stop; null for personal/legacy. */
   currentTeamCreditStop: ComputedRef<TeamCreditStopSummary | null>
   /** Effective member limit for the current workspace; zero is unlimited. */

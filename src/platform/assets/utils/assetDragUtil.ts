@@ -15,10 +15,13 @@ import {
   getAssetType,
   isGeneratedTempOutput
 } from '@/platform/assets/composables/media/assetMappers'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import { getAssetUrlFilename, getOutputSubfolder } from './assetMetadataUtils'
+import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
+import {
+  getAssetStoredFilename,
+  getOutputSubfolder
+} from './assetMetadataUtils'
 import { resolvePreviewUrl } from './assetPreviewUtil'
 import { getAssetFileUrl } from './assetUrlUtil'
 import { parseUrl } from '@/utils/urlSafety'
@@ -76,24 +79,13 @@ export function startAssetDrag(
   const { dataTransfer } = event
   if (!dataTransfer) return
 
-  const output = getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0]
+  const storedHash = asset.hash ?? getStoredOutputIdentity(asset)?.hash
   const assetInfo = {
-    ...(output?.filename
-      ? {
-          filename: output.filename,
-          subfolder: output.subfolder,
-          type: output.type,
-          display_name: output.display_name
-        }
-      : {
-          filename: asset.name,
-          subfolder: getOutputSubfolder(asset.user_metadata),
-          type: isGeneratedTempOutput(asset)
-            ? 'temp'
-            : getAssetType(asset.tags),
-          display_name: asset.display_name ?? undefined
-        }),
-    attachment_ref: getAssetUrlFilename(asset),
+    filename: getAssetStoredFilename(asset, storedHash),
+    subfolder: getOutputSubfolder(asset),
+    type: isGeneratedTempOutput(asset) ? 'temp' : getAssetType(asset.tags),
+    display_name: asset.display_name || asset.name,
+    attachment_ref: storedHash ?? asset.name,
     ...assetMediaSources(asset)
   }
   dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))

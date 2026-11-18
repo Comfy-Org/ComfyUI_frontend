@@ -1100,11 +1100,23 @@ function awaitsUnansweredPay(page: Capture): boolean {
   )
 }
 
+function showsVerdict(
+  page: Capture,
+  operation: BillingOperationState,
+  outcome: OperationOutcome | undefined
+): boolean {
+  return (
+    outcome?.kind === page.outcome?.kind &&
+    namesOperation(page.outcome, operation.id)
+  )
+}
+
 function waitingInCapture(
   page: Capture,
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
+  if (showsVerdict(page, operation, outcome)) return page
   if (outcome !== undefined && operation.awaitedHere)
     return { kind: 'resolving', outcome }
   if (!isInFlight(operation) || outcome !== undefined)

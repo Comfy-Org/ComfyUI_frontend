@@ -993,6 +993,7 @@ export default defineConfig({
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'packages/api-client/src/**/*.test.ts',
             'packages/settings-core/src/**/*.test.ts',
+            'packages/theme-core/src/**/*.test.ts',
             'packages/telemetry/src/**/*.test.ts',
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
