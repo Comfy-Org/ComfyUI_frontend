@@ -163,7 +163,9 @@ export function useMissingResourcesToast() {
       state.value.kind !== 'hidden'
   )
 
-  useCloseOverlayCoveredByToast(() => visible.value)
+  useCloseOverlayCoveredByToast(() =>
+    visible.value ? state.value.kind : 'hidden'
+  )
 
   function dismiss() {
     dismissed.value = true

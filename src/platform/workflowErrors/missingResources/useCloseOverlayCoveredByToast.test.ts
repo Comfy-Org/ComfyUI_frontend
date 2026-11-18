@@ -1,12 +1,15 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
 
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
 import { createMissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/__fixtures__/promotedMedia'
 import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
+import type { MissingResourcesToastState } from '@/platform/workflowErrors/missingResources/missingResourcesToastState'
 import { useCloseOverlayCoveredByToast } from '@/platform/workflowErrors/missingResources/useCloseOverlayCoveredByToast'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
@@ -35,10 +38,14 @@ function seedMissingMedia() {
   ])
 }
 
-function watchOverlay(toastVisible = true) {
-  const visible = ref(toastVisible)
-  effectScope().run(() => useCloseOverlayCoveredByToast(() => visible.value))
-  return visible
+function watchOverlay(
+  initialKind: MissingResourcesToastState['kind'] = 'needsDownload'
+) {
+  const toastKind = ref(initialKind)
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  scope.run(() => useCloseOverlayCoveredByToast(() => toastKind.value))
+  return toastKind
 }
 
 async function openOverlay() {
@@ -51,13 +58,16 @@ describe(useCloseOverlayCoveredByToast, () => {
     seedMissingModel()
   })
 
-  it('closes an overlay that opens while the toast lists every missing model', async () => {
-    watchOverlay()
+  it.for(['needsDownload', 'downloading', 'failed', 'needsAttention'] as const)(
+    'closes an overlay that opens while the toast lists every missing model as %s',
+    async (kind) => {
+      watchOverlay(kind)
 
-    await openOverlay()
+      await openOverlay()
 
-    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
-  })
+      expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
+    }
+  )
 
   it('closes an overlay that only repeats a run blocked by the missing model', async () => {
     useExecutionErrorStore().recordNodeErrors({
@@ -77,7 +87,11 @@ describe(useCloseOverlayCoveredByToast, () => {
   it.for([
     {
       name: 'the toast is hidden',
-      arrange: () => watchOverlay(false)
+      arrange: () => watchOverlay('hidden')
+    },
+    {
+      name: 'the toast reports the models ready',
+      arrange: () => watchOverlay('ready')
     },
     {
       name: 'nodes are missing too',
@@ -125,12 +139,58 @@ describe(useCloseOverlayCoveredByToast, () => {
   })
 
   it('lets the overlay open again once the toast is dismissed', async () => {
-    const toastVisible = watchOverlay()
+    const toastKind = watchOverlay()
     await openOverlay()
 
-    toastVisible.value = false
+    toastKind.value = 'hidden'
     await openOverlay()
 
     expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+  })
+
+  it('reopens the overlay it closed when another issue appears without opening it', async () => {
+    watchOverlay()
+    await openOverlay()
+
+    seedMissingMedia()
+    await nextTick()
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(true)
+  })
+
+  it('keeps the overlay closed when only the toast is dismissed', async () => {
+    const toastKind = watchOverlay()
+    await openOverlay()
+
+    toastKind.value = 'hidden'
+    await nextTick()
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
+  })
+
+  it('does not reopen an overlay the user closed after it opened again', async () => {
+    const toastKind = watchOverlay()
+    await openOverlay()
+    toastKind.value = 'hidden'
+    await openOverlay()
+
+    useExecutionErrorStore().dismissErrorOverlay()
+    seedMissingMedia()
+    await nextTick()
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
+  })
+
+  it('does not reopen an overlay it closed for the previous workflow', async () => {
+    watchOverlay()
+    await openOverlay()
+
+    useWorkflowStore().activeWorkflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'workflows/other.json'
+    })
+    seedMissingMedia()
+    await nextTick()
+
+    expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
   })
 })
