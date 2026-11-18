@@ -9,6 +9,7 @@ import type { Page } from '@playwright/test'
 import { E2E_USER } from './fixtures/env'
 import {
   PRO_MONTHLY_OP_PLAN,
+  declinedOperation,
   pendingOperation,
   processingOperation,
   succeededOperation
@@ -127,6 +128,42 @@ test('a checkout link naming an unfinished signup follows that operation, not an
 
   await expect(page.getByTestId('checkout-ending-code')).toHaveText('op_signup')
   expect(subscribeRequests(cloud)).toHaveLength(0)
+})
+
+test('after paying again in place of the linked signup, a reload follows the new payment, not the linked one', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.scenario.operations.op_signup = {
+    ...declinedOperation('op_signup'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  await signIn(
+    entryPath('checkout', { plan: 'pro_monthly', operation: 'op_signup' })
+  )
+  cloud.scenario.operations.op_subscribe = {
+    ...processingOperation('op_subscribe'),
+    plan: PRO_MONTHLY_OP_PLAN
+  }
+  cloud.reply('POST', '/billing/subscribe', () => {
+    markPending(cloud, 'op_subscribe')
+    return {
+      body: { billing_op_id: 'op_subscribe', status: 'pending_payment' }
+    }
+  })
+
+  await payButton(page).click()
+  await expect.poll(() => subscribeRequests(cloud)).toHaveLength(1)
+  await page.reload()
+
+  await expect(waiting(page)).toHaveText(WAITING)
+  cloud.scenario.operations.op_subscribe = succeededOperation('op_subscribe')
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  expect(subscribeRequests(cloud)).toHaveLength(1)
 })
 
 test('an operation parked on a payment method renders capture, and Pay resubmits it', async ({
