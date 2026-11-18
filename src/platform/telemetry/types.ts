@@ -832,7 +832,6 @@ export interface AgentConsentOfferExitedMetadata extends Record<
 export type AgentOnboardingNotShownMetadata =
   | { reason: 'app_mode' | 'tour_active' | 'dialog_open' }
   | { reason: 'target_missing'; step: number }
-export type AgentSendGate = 'composer' | 'consent' | 'coach'
 export type AgentComposerDropReason =
   | 'cannot_submit'
   | 'submission_pending'

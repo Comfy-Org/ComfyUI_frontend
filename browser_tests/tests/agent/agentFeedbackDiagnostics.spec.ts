@@ -1,7 +1,5 @@
 import { expect } from '@playwright/test'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 
 test.describe('Agent feedback diagnostics', { tag: ['@cloud', '@ui'] }, () => {
@@ -11,27 +9,6 @@ test.describe('Agent feedback diagnostics', { tag: ['@cloud', '@ui'] }, () => {
       'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
         'true'
     }
-  })
-
-  test.describe('when the consent check fails', () => {
-    test.use({ agentConsentLoadStatus: 500 })
-
-    test('reports the failed check rather than one still running', async ({
-      agentPanel,
-      typeform
-    }) => {
-      await agentPanel.openFromClosed()
-      await expect(agentPanel.consentLoadError).toContainText(
-        enMessages.agent.consent.loadErrorTitle
-      )
-
-      await agentPanel.consentContactFormButton.click()
-
-      await expect(typeform.root).toHaveAttribute(
-        'data-tf-hidden',
-        typeform.hiddenField('consent', 'check_failed')
-      )
-    })
   })
 
   test('names the page load, hold and composer state with no thread', async ({

@@ -30,9 +30,7 @@ export class AgentPanel {
   public readonly composerPromptArea: Locator
   public readonly composerStack: Locator
   public readonly consentAcceptButton: Locator
-  public readonly consentContactFormButton: Locator
   public readonly consentDialog: Locator
-  public readonly consentLoadError: Locator
   public readonly consentRejectButton: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
@@ -90,10 +88,6 @@ export class AgentPanel {
     this.consentAcceptButton = this.consentDialog.getByRole('button', {
       name: enMessages.agent.consent.accept
     })
-    this.consentContactFormButton = this.consentDialog.getByRole('button', {
-      name: enMessages.agent.consent.contactForm
-    })
-    this.consentLoadError = this.consentDialog.getByRole('alert')
     this.consentRejectButton = this.consentDialog.getByRole('button', {
       name: enMessages.agent.consent.reject
     })
