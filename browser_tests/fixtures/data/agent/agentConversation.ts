@@ -25,7 +25,8 @@ const [
   activeTab,
   ask,
   askResolved,
-  extensionChanged
+  extensionChanged,
+  turnStatus
 ] = zAgentWsEvent.options
 
 export const zRecordedWsEvent = z.discriminatedUnion('type', [
@@ -40,7 +41,8 @@ export const zRecordedWsEvent = z.discriminatedUnion('type', [
   askResolved.extend({ data: askResolved.shape.data.omit(mintedIds) }),
   extensionChanged.extend({
     data: extensionChanged.shape.data.omit(mintedIds)
-  })
+  }),
+  turnStatus.extend({ data: turnStatus.shape.data.omit(mintedIds) })
 ])
 export type RecordedWsEvent = z.infer<typeof zRecordedWsEvent>
 
