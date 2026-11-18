@@ -8,12 +8,14 @@ import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
+import type { ComposerRejectReason } from './useAgentSendGates'
 import { selectedNodeKey } from './useCanvasSelection'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
   onSubmit: () => void
+  onRejected?: (reason: ComposerRejectReason) => void
   target: () => ComfyWorkflow | null
   editableWorkflowId: () => string | undefined
   selection: Pick<
@@ -91,14 +93,15 @@ export function useAgentDraftSubmission(
     references: WorkflowReference[] = []
   ): Promise<void> {
     const target = options.target()
-    if (
-      !options.canSubmit() ||
-      composer.submission?.phase === 'pending' ||
-      target === null ||
-      (!text.trim() && attachments.length === 0) ||
-      attachments.some((attachment) => attachment.uploading)
-    )
-      return
+    const reject = (reason: ComposerRejectReason) =>
+      options.onRejected?.(reason)
+    if (!options.canSubmit()) return reject('cannot_submit')
+    if (composer.submission?.phase === 'pending')
+      return reject('submission_pending')
+    if (target === null) return reject('no_target')
+    if (!text.trim() && attachments.length === 0) return reject('empty')
+    if (attachments.some((attachment) => attachment.uploading))
+      return reject('attachment_uploading')
 
     options.onSubmit()
     const prompt = composer.prompt

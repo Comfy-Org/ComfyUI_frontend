@@ -335,6 +335,7 @@ async function mockAgentBoot(
   page: Page,
   {
     agentConsentAccepted,
+    agentConsentLoadStatus,
     agentConsentReads,
     agentConsentSave,
     agentConsentWebSession,
@@ -569,6 +570,8 @@ async function mockAgentBoot(
         return route.fulfill({ status: 401 })
       }
       agentConsentReads.push(consentAccepted)
+      if (agentConsentLoadStatus >= 400)
+        return route.fulfill({ status: agentConsentLoadStatus })
       return route.fulfill(
         consentAccepted
           ? jsonRoute(storedConsent)
@@ -669,6 +672,7 @@ type AgentFixtures = {
   agentBilling: AgentBillingFixture
   agentAutoShownReadProbe: boolean
   agentConsentAccepted: boolean
+  agentConsentLoadStatus: number
   agentConsentReads: boolean[]
   agentConsentSave: { status: number; pending?: Promise<void> }
   agentConsentWebSession: boolean
@@ -693,6 +697,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   },
   agentAutoShownReadProbe: [false, { option: true }],
   agentConsentAccepted: [true, { option: true }],
+  agentConsentLoadStatus: [200, { option: true }],
   agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
@@ -716,6 +721,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     {
       agentAutoShownReadProbe,
       agentConsentAccepted,
+      agentConsentLoadStatus,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,
@@ -739,6 +745,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
     await mockAgentBoot(page, {
       agentAutoShownReadProbe,
       agentConsentAccepted,
+      agentConsentLoadStatus,
       agentConsentReads,
       agentConsentSave,
       agentConsentWebSession,

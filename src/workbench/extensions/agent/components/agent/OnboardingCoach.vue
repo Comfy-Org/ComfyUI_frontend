@@ -38,7 +38,10 @@ const { steps, storageKey, holdNotice } = defineProps<{
   storageKey?: string
   holdNotice?: string
 }>()
-const emit = defineEmits<{ finished: []; stalled: [] }>()
+const emit = defineEmits<{
+  finished: [action: 'finish' | 'skip' | 'elsewhere']
+  stalled: []
+}>()
 
 const { active, index, step, isLast, next, previous, finish, restart } =
   useOnboarding(() => steps, storageKey)
@@ -121,19 +124,19 @@ function onNext(): void {
   reportStep(isLast.value ? 'finish' : 'next')
   if (finished) finishedHere = true
   next()
-  if (finished) emit('finished')
+  if (finished) emit('finished', 'finish')
 }
 
 function onSkip(): void {
   reportStep('skip')
   finishedHere = true
   finish()
-  emit('finished')
+  emit('finished', 'skip')
 }
 
 const completed = computed(() => !active.value && !!step.value)
 watch(completed, (isCompleted) => {
-  if (isCompleted && !finishedHere) emit('finished')
+  if (isCompleted && !finishedHere) emit('finished', 'elsewhere')
   finishedHere = false
 })
 
@@ -232,7 +235,7 @@ const arrowStyle = computed(() => {
 })
 
 const cardBorderClass = computed(() =>
-  index.value < 2 ? 'border-secondary' : 'border-smoke-500/20'
+  index.value < 2 ? 'border-muted-foreground' : 'border-smoke-500/20'
 )
 const cardStyle = computed(() => ({
   ...floatingStyles.value,
@@ -347,7 +350,7 @@ useEventListener(
             :style="arrowStyle"
             :class="
               cn(
-                'pointer-events-none absolute -right-1.5 size-3 rotate-45 border-t border-r bg-background',
+                'pointer-events-none absolute -right-2 size-4 rotate-45 border-t border-r bg-background',
                 cardBorderClass
               )
             "
