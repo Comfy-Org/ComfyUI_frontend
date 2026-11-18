@@ -1,7 +1,7 @@
 import { setTimeout as wait } from 'node:timers/promises'
 
 import { chromium } from '@playwright/test'
-import type { Frame, Page } from '@playwright/test'
+import type { Frame, Locator, Page } from '@playwright/test'
 import {
   zBillingBalanceResponse,
   zBillingCapabilityDenials,
@@ -42,6 +42,31 @@ let phase = 'credential and preview checks'
 
 class TopUpError extends Error {}
 
+function stripeFrames(page: Page) {
+  return page.frames().filter((frame) => {
+    const origin = URL.canParse(frame.url()) ? new URL(frame.url()).origin : ''
+    return (
+      stripeCheckoutOrigins.has(origin) || origin === 'https://js.stripe.com'
+    )
+  })
+}
+
+async function visibleStripeControl(
+  page: Page,
+  locate: (frame: Frame) => Locator,
+  timeout = 0
+) {
+  const deadline = Date.now() + timeout
+  do {
+    for (const frame of stripeFrames(page)) {
+      const control = locate(frame).filter({ visible: true }).first()
+      if (await control.isVisible()) return control
+    }
+    if (Date.now() >= deadline) return undefined
+    await wait(500)
+  } while (Date.now() < deadline)
+}
+
 async function captureStripeForm(page: Page, name: string) {
   await page
     .screenshot({
@@ -67,13 +92,7 @@ async function findCardFrame(page: Page): Promise<Frame> {
   const deadline = Date.now() + 35_000
   const openedChoices = new Set<string>()
   while (Date.now() < deadline) {
-    for (const frame of page.frames()) {
-      const origin = new URL(frame.url()).origin
-      if (
-        !stripeCheckoutOrigins.has(origin) &&
-        origin !== 'https://js.stripe.com'
-      )
-        continue
+    for (const frame of stripeFrames(page)) {
       if (await frame.locator(cardNumberSelector).first().isVisible())
         return frame
       const cardChoice = frame
@@ -375,7 +394,7 @@ async function main() {
         'The card form was not hosted by the verified Stripe checkout'
       )
     }
-    console.log('The test card form is visible on Stripe.')
+    console.log(`The test card form is visible at ${cardOrigin}.`)
     await cardFrame
       .locator(cardNumberSelector)
       .first()
@@ -390,45 +409,58 @@ async function main() {
       .locator('input#cardCvc, input[name="cvc"], input[autocomplete="cc-csc"]')
       .first()
       .fill('123', { timeout: 8_000 })
-    const saveInformation = payment.getByRole('checkbox', {
-      name: 'Save my information for faster checkout',
-      exact: true
-    })
-    if (await saveInformation.isVisible()) {
+    const saveInformation = await visibleStripeControl(payment, (frame) =>
+      frame.getByRole('checkbox', {
+        name: 'Save my information for faster checkout',
+        exact: true
+      })
+    )
+    if (saveInformation) {
       await saveInformation.uncheck({ timeout: 8000 })
     } else {
-      const linkOptIn = payment.getByText(
-        'Save my information for faster checkout',
-        { exact: true }
+      const linkOptIn = await visibleStripeControl(payment, (frame) =>
+        frame.getByText('Save my information for faster checkout', {
+          exact: true
+        })
       )
-      const linkPhone = payment.getByText('Mobile number', { exact: true })
-      if ((await linkOptIn.isVisible()) && (await linkPhone.isVisible())) {
+      const linkPhone = await visibleStripeControl(payment, (frame) =>
+        frame.getByText('Mobile number', { exact: true })
+      )
+      if (linkOptIn && linkPhone) {
         await linkOptIn.click({ timeout: 8000 })
       }
     }
-    await payment
-      .getByText('Mobile number', { exact: true })
-      .waitFor({ state: 'hidden', timeout: 8000 })
-    const billingName = payment.locator('input#billingName')
-    if (await billingName.isVisible())
-      await billingName.fill('Cloud Preview Smoke')
-    const billingCountry = payment.locator('select#billingCountry')
-    if (await billingCountry.isVisible())
-      await billingCountry.selectOption('US')
-    const manualAddress = payment.getByText('Enter address manually', {
-      exact: true
-    })
-    if (await manualAddress.isVisible()) await manualAddress.click()
-    const addressLine = payment.locator('input#billingAddressLine1')
-    if (await addressLine.isVisible()) await addressLine.fill('123 Test Street')
-    const city = payment.locator('input#billingLocality')
-    if (await city.isVisible()) await city.fill('Portland')
-    const state = payment.locator('select#billingAdministrativeArea')
-    if (await state.isVisible()) await state.selectOption('OR')
-    const postalCode = payment.locator('input#billingPostalCode')
-    if (await postalCode.isVisible()) await postalCode.fill('97201')
-    const emailInput = payment.locator('input#email')
-    if ((await emailInput.isVisible()) && !(await emailInput.inputValue())) {
+    const linkPhone = await visibleStripeControl(payment, (frame) =>
+      frame.getByText('Mobile number', { exact: true })
+    )
+    await linkPhone?.waitFor({ state: 'hidden', timeout: 8000 })
+    const billingCountry = await visibleStripeControl(payment, (frame) =>
+      frame.locator('select#billingCountry')
+    )
+    await billingCountry?.selectOption('US')
+    const manualAddress = await visibleStripeControl(payment, (frame) =>
+      frame.getByText('Enter address manually', { exact: true })
+    )
+    await manualAddress?.click()
+    for (const [selector, value] of [
+      ['input#billingName', 'Cloud Preview Smoke'],
+      ['input#billingAddressLine1', '123 Test Street'],
+      ['input#billingLocality', 'Portland'],
+      ['input#billingPostalCode', '97201']
+    ]) {
+      const field = await visibleStripeControl(payment, (frame) =>
+        frame.locator(selector)
+      )
+      await field?.fill(value)
+    }
+    const state = await visibleStripeControl(payment, (frame) =>
+      frame.locator('select#billingAdministrativeArea')
+    )
+    await state?.selectOption('OR')
+    const emailInput = await visibleStripeControl(payment, (frame) =>
+      frame.locator('input#email')
+    )
+    if (emailInput && !(await emailInput.inputValue())) {
       await emailInput.fill(email)
     }
     const displayedSession = new URL(payment.url())
@@ -441,40 +473,62 @@ async function main() {
       )
     }
     phase = 'Stripe test submission'
-    const buttonNames = await payment.evaluate(() =>
-      [...document.querySelectorAll('button')]
-        .filter((button) => button.getClientRects().length > 0)
-        .filter(
-          (button) =>
-            button.type === 'submit' ||
-            /^(Pay|Confirm)/i.test(button.textContent?.trim() ?? '')
+    const buttonNames = (
+      await Promise.all(
+        stripeFrames(payment).map((frame) =>
+          frame
+            .evaluate(() =>
+              [
+                ...document.querySelectorAll(
+                  'button,input[type="submit"],[role="button"]'
+                )
+              ]
+                .filter((button) => button.getClientRects().length > 0)
+                .filter(
+                  (button) =>
+                    button.getAttribute('type') === 'submit' ||
+                    /^(Pay|Confirm)/i.test(button.textContent?.trim() ?? '')
+                )
+                .map((button) => ({
+                  type: button.getAttribute('type'),
+                  disabled: button.hasAttribute('disabled'),
+                  label: (
+                    button.getAttribute('aria-label') ??
+                    button.textContent ??
+                    ''
+                  )
+                    .trim()
+                    .replace(/https?:\/\/\S+|\S+@\S+|\d{4,}/g, '[redacted]')
+                    .slice(0, 90)
+                }))
+            )
+            .catch(() => [])
         )
-        .map((button) => ({
-          type: button.type,
-          disabled: button.disabled,
-          label: (button.getAttribute('aria-label') ?? button.textContent ?? '')
-            .trim()
-            .replace(/https?:\/\/\S+|\S+@\S+|\d{4,}/g, '[redacted]')
-            .slice(0, 90)
-        }))
-    )
+      )
+    ).flat()
     console.log(
       `Stripe checkout payment buttons ${JSON.stringify(buttonNames)}`
     )
-    const submit = payment
-      .locator('button[type="submit"]')
-      .filter({
-        hasText: /^\s*(?:Pay(?!\s+with\b|Pal)|Confirm payment)/i,
-        visible: true
-      })
-      .or(
-        payment
-          .getByRole('button', {
-            name: /^(?:Pay(?:\s|$)(?!with\b)|Confirm payment)/i
+    const submit = await visibleStripeControl(
+      payment,
+      (frame) =>
+        frame
+          .locator('button[type="submit"], input[type="submit"]')
+          .filter({
+            hasText: /^\s*(?:Pay(?!\s+with\b|Pal)|Confirm payment)/i,
+            visible: true
           })
-          .filter({ visible: true })
-      )
+          .or(
+            frame
+              .getByRole('button', {
+                name: /^(?:Pay(?:\s|$)(?!with\b)|Confirm payment)/i
+              })
+              .filter({ visible: true })
+          ),
+      10_000
+    )
     try {
+      if (!submit) throw new Error('Stripe Pay control unavailable')
       await submit.click({ trial: true, timeout: 8_000 })
     } catch {
       await captureStripeForm(payment, 'stripe-submit-before-payment')
@@ -501,6 +555,10 @@ async function main() {
       )
         console.log('Stripe acknowledged the test payment.')
     })
+    if ((await getStatus()).state !== 'open') {
+      await verifyCreditGrant(cloud, checkout.session_id)
+      return
+    }
     await submit.click({ timeout: 10_000, noWaitAfter: true })
     console.log('Submitted the Stripe test card ending in 4242 once.')
 
