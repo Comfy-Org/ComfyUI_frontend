@@ -13,13 +13,13 @@ import { expect } from '@playwright/test'
 import { liveCloudBillingFixture } from '@e2e/fixtures/liveCloudBillingFixture'
 import { liveCloudBillingConfigSchema } from '@e2e/fixtures/utils/liveCloudBillingConfig'
 
-// The sandbox never answers this path, so the request outlives the test.
-const PENDING_PATH = '/api/pending'
-// The sandbox drops the connection for this path.
-const FAILING_PATH = '/api/failing'
-
 const test = liveCloudBillingFixture.extend<{
-  sandboxProxy: { server: string; requests: string[] }
+  sandboxProxy: {
+    server: string
+    requests: string[]
+    pendingPath: string
+    failingPath: string
+  }
 }>({
   sandboxProxy: async ({ liveCloudBillingConfig }, use) => {
     if (!liveCloudBillingConfig) throw new Error('Live routing config required')
@@ -50,6 +50,8 @@ const test = liveCloudBillingFixture.extend<{
       { timeout: 10_000 }
     )
     const requests: string[] = []
+    const pendingPath = '/api/pending'
+    const failingPath = '/api/failing'
     const sockets = new Set<Duplex>()
     const sandbox = createHttpsServer(
       {
@@ -59,8 +61,8 @@ const test = liveCloudBillingFixture.extend<{
       (request, response) => {
         const destination = `${request.method} https://${request.headers.host}${request.url}`
         requests.push(destination)
-        if (request.url === PENDING_PATH) return
-        if (request.url === FAILING_PATH) {
+        if (request.url === pendingPath) return
+        if (request.url === failingPath) {
           request.socket.destroy()
           return
         }
@@ -89,7 +91,12 @@ const test = liveCloudBillingFixture.extend<{
     if (!address || typeof address === 'string')
       throw new Error('TCP address required')
     try {
-      await use({ server: `http://127.0.0.1:${address.port}`, requests })
+      await use({
+        server: `http://127.0.0.1:${address.port}`,
+        requests,
+        pendingPath,
+        failingPath
+      })
     } finally {
       sockets.forEach((socket) => socket.destroy())
       await new Promise<void>((resolve) => proxy.close(() => resolve()))
@@ -170,66 +177,69 @@ test.describe('Live Cloud network boundary', { tag: '@smoke' }, () => {
     })
   }
 
-  test('blocks background POSTs without failing the run', async ({
-    page,
-    networkPolicy,
-    sandboxProxy
-  }) => {
-    await page.route('http://localhost:5173/', (route) =>
-      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
-    )
-    await page.goto('http://localhost:5173/')
-    for (const url of ['/reslyf/settings', 'https://mp.comfy.org/track/']) {
-      expect(
-        await page.evaluate(
-          (url) =>
-            fetch(url, { method: 'POST' }).then(
-              () => 'sent',
-              () => 'blocked'
-            ),
-          url
-        )
-      ).toBe('blocked')
+  test.describe('from a loaded local page', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route('http://localhost:5173/', (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<html></html>' })
+      )
+      await page.goto('http://localhost:5173/')
+    })
+
+    for (const { url, violation } of [
+      {
+        url: '/reslyf/settings',
+        violation: 'Background POST http://localhost:5173/reslyf/settings'
+      },
+      {
+        url: 'https://mp.comfy.org/track/',
+        violation: 'Background POST https://mp.comfy.org/track/'
+      }
+    ]) {
+      test(`blocks background POST ${url} without failing the run`, async ({
+        page,
+        networkPolicy,
+        sandboxProxy
+      }) => {
+        expect(
+          await page.evaluate(
+            (url) =>
+              fetch(url, { method: 'POST' }).then(
+                () => 'sent',
+                () => 'blocked'
+              ),
+            url
+          )
+        ).toBe('blocked')
+        expect([...networkPolicy.unexpected]).toEqual([violation])
+        expect(sandboxProxy.requests).toEqual([])
+      })
     }
-    expect([...networkPolicy.unexpected]).toEqual([
-      'Background POST http://localhost:5173/reslyf/settings',
-      'Background POST https://mp.comfy.org/track/'
-    ])
-    expect(sandboxProxy.requests).toEqual([])
-  })
 
-  test('fails when a proxied request fails during the test', async ({
-    page,
-    sandboxProxy
-  }) => {
-    test.fail(true, 'A Cloud proxy failure during the test must fail it')
-    await page.route('http://localhost:5173/', (route) =>
-      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
-    )
-    await page.goto('http://localhost:5173/')
-    await page.evaluate((path) => {
-      void fetch(path)
-    }, FAILING_PATH)
-    await expect
-      .poll(() => sandboxProxy.requests)
-      .toEqual([`GET https://testcloud.comfy.org${FAILING_PATH}`])
-    await page.waitForEvent('close')
-  })
+    test('fails when a proxied request fails during the test', async ({
+      page,
+      sandboxProxy
+    }) => {
+      test.fail(true, 'A Cloud proxy failure during the test must fail it')
+      await page.evaluate((path) => {
+        void fetch(path)
+      }, sandboxProxy.failingPath)
+      await expect
+        .poll(() => sandboxProxy.requests)
+        .toEqual([`GET https://testcloud.comfy.org${sandboxProxy.failingPath}`])
+      await page.waitForEvent('close')
+    })
 
-  test('ignores a proxied request still in flight when the test ends', async ({
-    page,
-    sandboxProxy
-  }) => {
-    await page.route('http://localhost:5173/', (route) =>
-      route.fulfill({ contentType: 'text/html', body: '<html></html>' })
-    )
-    await page.goto('http://localhost:5173/')
-    await page.evaluate((path) => {
-      void fetch(path)
-    }, PENDING_PATH)
-    await expect
-      .poll(() => sandboxProxy.requests)
-      .toEqual([`GET https://testcloud.comfy.org${PENDING_PATH}`])
+    test('ignores a proxied request still in flight when the test ends', async ({
+      page,
+      sandboxProxy
+    }) => {
+      await page.evaluate((path) => {
+        void fetch(path)
+      }, sandboxProxy.pendingPath)
+      await expect
+        .poll(() => sandboxProxy.requests)
+        .toEqual([`GET https://testcloud.comfy.org${sandboxProxy.pendingPath}`])
+    })
   })
 
   for (const client of ['request', 'context.request'] as const) {

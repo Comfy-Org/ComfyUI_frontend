@@ -19,11 +19,6 @@ export function getLiveCloudDestinationViolation(
 
 const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS']
 
-// POSTs a deployed build sends on its own, whatever the test does. Monitoring
-// and analytics are matched by host: Datadog RUM, Sentry, Mixpanel
-// (mp.comfy.org) and PostHog (t.comfy.org). The Cloudflare bot check and the
-// RES4LYF custom-node extension post to the app's own origin, so they are
-// matched by path there and nowhere else.
 function isBackgroundWrite(
   url: URL,
   method: string,
@@ -63,8 +58,7 @@ export function getBlockedRequestViolation(url: URL, method: string): string {
 }
 
 // A live run reports only these entries; an off-origin read the page happened
-// to attempt, or a background write, is aborted either way and is not worth
-// failing the run over.
+// to attempt is aborted either way and is not worth failing the run over.
 export function isReportedViolation(violation: string): boolean {
   return /^(API|Navigation|Mutation|WebSocket) /.test(violation)
 }

@@ -11,10 +11,6 @@ import {
   isLiveCloudMutationAllowed
 } from '@e2e/fixtures/utils/liveCloudBillingPolicy'
 
-// A local frontend reaches Cloud through a rewrite. A deployed frontend is
-// already on the Cloud origin, so its API requests leave the browser unchanged:
-// Cloud refuses a session read that lacks the browser's Sec-Fetch-Site header,
-// which a re-sent copy does not carry.
 function needsCloudRewrite(url: URL, config: LiveCloudBillingConfig): boolean {
   return (
     url.origin === config.PLAYWRIGHT_TEST_URL &&
@@ -35,7 +31,6 @@ async function resendToCloud(
     })
     await route.fulfill({ response })
   } catch {
-    // A request still in flight when the test ends dies with the context.
     if (hasTestEnded()) return
     throw new Error(`Cloud proxy request failed: ${targetUrl.pathname}`)
   }
