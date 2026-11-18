@@ -351,10 +351,10 @@ function routedWidgetOperation(
   }
 }
 
-function withoutCancelledAdd(
-  pending: PendingOp[],
+function withoutCancelledAdd<Op extends PendingOp>(
+  pending: Op[],
   nodeId: NodeId
-): PendingOp[] {
+): Op[] {
   const cancelledLinkIds = new Set<WireNodeId>()
   for (const entry of pending) {
     if (entry.kind !== 'connect') continue
@@ -925,13 +925,16 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     })
   }
 
-  function dropCancelledGrownSlots(): void {
-    for (const [key, state] of pendingGrownSlots)
-      if (
+  function dropCancelledGrownSlots(removedNodeId: NodeId): void {
+    const cancelled = [...pendingGrownSlots].filter(
+      ([, state]) =>
         !state.sent &&
         !pending.some((entry) => isQueuedConnect(entry, state.growLinkId))
-      )
-        pendingGrownSlots.delete(key)
+    )
+    for (const [key] of cancelled) pendingGrownSlots.delete(key)
+    for (const [, state] of cancelled)
+      for (const entry of withoutCancelledAdd(state.deferred, removedNodeId))
+        routeLinkOp(state.rootGraphId, entry)
   }
 
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
@@ -944,7 +947,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     if (pendingAdds.get(key) === event.node) {
       pendingAdds.delete(key)
       pending = withoutCancelledAdd(pending, event.node.id)
-      dropCancelledGrownSlots()
+      dropCancelledGrownSlots(event.node.id)
       return
     }
     schedule({
@@ -1084,7 +1087,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       },
       target: linkTarget(event.graph, link)
     }
-    if (!holdGrowConnect(event.graph.rootGraph.id, entry)) schedule(entry)
+    routeLinkOp(event.graph.rootGraph.id, entry)
   }
 
   function mintDisconnect(event: IntentOf<'disconnect'>): void {
@@ -1099,7 +1102,15 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       },
       target: linkTarget(event.graph, link)
     }
-    if (!holdGrowDisconnect(event.graph.rootGraph.id, entry)) schedule(entry)
+    routeLinkOp(event.graph.rootGraph.id, entry)
+  }
+
+  function routeLinkOp(rootGraphId: string, entry: PendingLinkOp): void {
+    const held =
+      entry.kind === 'connect'
+        ? holdGrowConnect(rootGraphId, entry)
+        : holdGrowDisconnect(rootGraphId, entry)
+    if (!held) schedule(entry)
   }
 
   function mintClear(event: IntentOf<'clear'>): void {

@@ -693,6 +693,28 @@ describe('a local link edit lands on the document slot that carries its input', 
       reported: []
     },
     {
+      name: 'a replacing link from a surviving source still grows the input when the unsent source it replaced is removed',
+      sink: 'TestAutogrowSink',
+      seed: firstImageWired,
+      act: async ({ graph, sources, sink, echo }) => {
+        sources[1].connect(0, sink, 1)
+        await afterFlush()
+        echo()
+        const unsentSource = addNode(graph, 'TestSource')
+        unsentSource.connect(0, sink, 2)
+        sources[2].connect(0, sink, 2)
+        graph.remove(unsentSource)
+        await afterFlush()
+      },
+      sent: [`connect grow ${IMAGES}.image_3`],
+      docSlots: [
+        [`${IMAGES}.image_1`, 0],
+        [`${IMAGES}.image_2`, 1],
+        [`${IMAGES}.image_3`, 2]
+      ],
+      reported: []
+    },
+    {
       name: 'a grow connected and disconnected in the tick an earlier grow is cancelled sends nothing',
       sink: 'TestAutogrowSink',
       seed: noLinks,
