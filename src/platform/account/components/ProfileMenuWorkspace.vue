@@ -136,13 +136,16 @@
               'max-h-none max-w-none overflow-visible data-[state=closed]:animate-none data-[state=open]:animate-none'
             )
           "
+          :aria-label="$t('profileMenu.credits')"
           @escape-key-down="returnFocusToCreditsRow"
           @interact-outside="keepPinnedOnCreditsRow"
         >
-          <ProfileMenuCreditsFlyout
-            @open-billing="openSettings('workspace')"
-            @close="emit('close')"
-          />
+          <div ref="pinnedCredits">
+            <ProfileMenuCreditsFlyout
+              @open-billing="openSettings('workspace')"
+              @close="emit('close')"
+            />
+          </div>
         </PopoverContent>
       </PopoverRoot>
 
@@ -329,7 +332,15 @@ function previewCredits(open: boolean) {
   if (!open && flyout.value === 'creditsPreview') flyout.value = 'none'
 }
 
+const pinnedCredits = useTemplateRef<HTMLElement>('pinnedCredits')
+
 function pinCredits() {
+  if (flyout.value === 'creditsPinned') {
+    pinnedCredits.value
+      ?.querySelector<HTMLElement>('button:not([disabled]), a[href]')
+      ?.focus()
+    return
+  }
   flyout.value = 'creditsPinned'
 }
 
