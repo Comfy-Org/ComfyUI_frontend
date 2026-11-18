@@ -163,12 +163,10 @@ function onSearchKeydown(event: KeyboardEvent): void {
         class="agent-scope"
       >
         <div
-          data-testid="workflow-selector-search"
           class="-mx-1 -mt-1 flex items-center gap-2 border-b border-border px-2 py-1.5 has-focus-visible:ring-1 has-focus-visible:ring-ring has-focus-visible:ring-inset"
         >
           <i
             aria-hidden="true"
-            data-testid="workflow-search-icon"
             class="icon-[lucide--search] text-muted-foreground"
           />
           <Input

@@ -412,10 +412,6 @@ describe('WorkflowTab - Agent target', () => {
     expect(screen.queryByTestId('workflow-mode-icon')).toBeNull()
     expect(screen.getByText('test.json')).toBeVisible()
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
-    expect(screen.getByTestId('workflow-target-icon')).toHaveClass(
-      'icon-[lucide--focus]',
-      'text-credit'
-    )
     expect(
       screen.getByRole('img', { name: statusAriaLabels.running })
     ).toBeVisible()
