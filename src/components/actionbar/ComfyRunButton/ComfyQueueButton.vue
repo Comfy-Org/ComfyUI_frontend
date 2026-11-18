@@ -25,11 +25,12 @@
         <Button
           :variant="queueMenuTriggerVariant"
           size="unset"
-          :disabled="Boolean(paymentRecoveryLock ?? blockedBy)"
+          :disabled="Boolean(paymentRecoveryLock)"
           :class="
             cn(
               queueMenuTriggerClass,
-              queueMenuTriggerVariantClass[queueMenuTriggerVariant]
+              queueMenuTriggerVariantClass[queueMenuTriggerVariant],
+              blockedBy && 'opacity-50'
             )
           "
           :aria-label="t('menu.runOptions')"

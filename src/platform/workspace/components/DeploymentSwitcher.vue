@@ -5,6 +5,7 @@
     data-testid="deployment-switcher"
   >
     <Menu
+      :key="menuMounts"
       v-model:open="isOpen"
       :modal="false"
       :side-offset="8"
@@ -107,9 +108,16 @@ const { pickedRow, isAnyStarting } = useDeploymentRows()
 const isOpen = ref(false)
 const switchingTo = ref<string | null>(null)
 
+const menuMounts = ref(0)
+
+function openOnFreshMenu() {
+  if (!isOpen.value) menuMounts.value++
+  isOpen.value = true
+}
+
 watch(switcherOpenAsks, () => {
   if (!isOffered.value || !isVisible.value) return
-  isOpen.value = true
+  openOnFreshMenu()
 })
 
 let pendingRetry: Promise<void> | undefined

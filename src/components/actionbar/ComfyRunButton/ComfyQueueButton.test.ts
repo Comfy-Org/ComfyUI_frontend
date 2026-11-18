@@ -256,7 +256,9 @@ describe('ComfyQueueButton', () => {
 
       expect(queueButton).toBeEnabled()
       expect(queueButton).toHaveClass('opacity-50')
-      expect(screen.getByTestId('queue-mode-menu-trigger')).toBeDisabled()
+      expect(screen.getByTestId('queue-mode-menu-trigger')).toHaveClass(
+        'opacity-50'
+      )
       await user.hover(queueButton)
       expect(await screen.findByRole('tooltip')).toHaveTextContent(tooltip)
 
@@ -267,6 +269,20 @@ describe('ComfyQueueButton', () => {
       )
     }
   )
+
+  it('turns Run on change off from the run options while the deployment is stopped', async () => {
+    unreadyDeployment.reason = 'stopped'
+    onTestFinished(() => {
+      unreadyDeployment.reason = null
+    })
+    useQueueSettingsStore().mode = 'change'
+    const { user } = renderQueueButton()
+
+    await user.click(screen.getByTestId('queue-mode-menu-trigger'))
+    await user.click(screen.getByRole('menuitemradio', { name: 'Run' }))
+
+    expect(useQueueSettingsStore().mode).toBe('disabled')
+  })
 
   it('keeps the payment message on a locked Run when the deployment is also stopped', async () => {
     unreadyDeployment.reason = 'stopped'
