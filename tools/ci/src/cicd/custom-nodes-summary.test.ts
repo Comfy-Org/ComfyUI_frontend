@@ -8,9 +8,16 @@ import { z } from 'zod'
 
 const SCRIPT = path.join(import.meta.dirname, 'custom-nodes-summary.py')
 
-it.for(['scripts/cicd', 'tools/ci/src/cicd'])(
-  'reports each pack and tier when the selected ref stores scripts in %s',
-  (scriptDirectory) => {
+it.for([
+  { scriptDirectory: 'scripts/cicd', duplicateDirectory: 'scripts/cicd' },
+  {
+    scriptDirectory: 'tools/ci/src/cicd',
+    duplicateDirectory: 'tools/ci/src/cicd'
+  },
+  { scriptDirectory: 'scripts/cicd', duplicateDirectory: 'tools/ci/src/cicd' }
+])(
+  'reports each pack and tier with tracked scripts in $scriptDirectory and $duplicateDirectory',
+  ({ scriptDirectory, duplicateDirectory }) => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'custom-nodes-summary-'))
     try {
       fs.mkdirSync(path.join(dir, scriptDirectory), { recursive: true })
@@ -18,8 +25,15 @@ it.for(['scripts/cicd', 'tools/ci/src/cicd'])(
         SCRIPT,
         path.join(dir, scriptDirectory, 'custom-nodes-summary.py')
       )
+      fs.mkdirSync(path.join(dir, duplicateDirectory), { recursive: true })
+      fs.copyFileSync(
+        SCRIPT,
+        path.join(dir, duplicateDirectory, 'custom-nodes-summary.py')
+      )
       execFileSync('git', ['init', '-q'], { cwd: dir })
-      execFileSync('git', ['add', scriptDirectory], { cwd: dir })
+      execFileSync('git', ['add', scriptDirectory, duplicateDirectory], {
+        cwd: dir
+      })
       const workflow = z
         .object({
           jobs: z.record(
