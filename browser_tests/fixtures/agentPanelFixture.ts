@@ -227,7 +227,6 @@ export async function mockWorkflowPersistence(
 }
 
 export async function sendUnsavedWorkflowPromptAndWaitForSubscribe(
-  page: Page,
   panel: Locator,
   hostSocket: AgentFollowerHostSocket,
   prompt: string,

@@ -120,26 +120,55 @@ test.describe('Agent workflow selection', { tag: ['@cloud', '@ui'] }, () => {
     expect(workflowSelection.postedMessages).toHaveLength(1)
   })
 
-  test('explains disabled node references while a send keeps the panel on another workflow', async ({
+  test('explains disabled node references while viewing another workflow', async ({
     page,
     workflowSelection
   }, testInfo) => {
     await new AgentPanel(page).open()
     const panel = page.locator('#agent-panel-root')
-    const composer = panel.getByRole('textbox', { includeHidden: true })
-    workflowSelection.pauseMessagePosts()
-    await composer.fill('Start in this workflow')
-    await composer.press('Enter')
-    await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+    const topbar = new Topbar(page)
+    const saving = topbar.saveWorkflowAs('Unsaved Workflow')
+    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+    workflowSelection.finishSave(true)
+    await saving
+
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
         exact: true
       })
       .click()
+    await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
+
+    const composer = panel.getByRole('textbox', { includeHidden: true })
+    await composer.fill('Start in this workflow')
+    await composer.press('Enter')
+    await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+    await expect(panel.getByTestId('pending-send-error')).toContainText(
+      enMessages.agent.sendFailed
+    )
+    await composer.fill('@')
+    await panel
+      .getByRole('menuitem', {
+        name: enMessages.agent.workflows,
+        exact: true
+      })
+      .click()
+    await panel
+      .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
+      .click()
+    await panel
+      .getByTestId('workflow-reference-chip')
+      .getByRole('button', {
+        name: 'Open Unsaved Workflow',
+        exact: true
+      })
+      .click()
+    await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
+
     const reason = enMessages.agent.switchWorkflowForNodes.replace(
       '{workflowName}',
-      'Unsaved Workflow'
+      'Unsaved Workflow (2)'
     )
     const tooltip = new Tooltip(page).named(reason)
     const addToPrompt = panel.getByRole('button', {
@@ -182,22 +211,20 @@ test.describe('Agent workflow selection', { tag: ['@cloud', '@ui'] }, () => {
     await expect(addToPrompt).toBeVisible()
     expect(workflowSelection.postedMessages).toHaveLength(1)
 
-    await page.getByTestId('workflow-tab').first().click()
+    await page.getByTestId('workflow-tab').last().click()
+    await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
     await addToPrompt.click()
     await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
     await page.keyboard.press('Escape')
     await expect(plusNodes).toBeHidden()
 
-    workflowSelection.resumeMessagePosts()
     await page
       .getByRole('button', {
         name: enMessages.sideToolbar.newBlankWorkflow,
         exact: true
       })
       .click()
-    await expect(new Topbar(page).getActiveTab()).toHaveText(
-      'Unsaved Workflow (3)'
-    )
+    await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (3)')
     await addToPrompt.click()
     await expect(plusNodes).not.toHaveAttribute('aria-disabled', 'true')
   })

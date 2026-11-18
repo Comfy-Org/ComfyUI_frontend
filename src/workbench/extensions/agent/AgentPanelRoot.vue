@@ -2911,20 +2911,25 @@ function notifyOffscreenBlankSendFailed({
 }
 
 function discardBlankComposerBeforeNewChat(): void {
+  const targetBlankOrigin = {
+    kind: 'blank' as const,
+    blankChatId: blankChatIdFor(workflowStore.activeWorkflow)
+  }
+  for (const discardedId of conversationStore.discardFailedPendingSends(
+    targetBlankOrigin
+  ))
+    composerStore.releaseRetainedAssets(pendingAssetOwnerKey(discardedId))
   if (threadId.value !== null) return
   for (const { id } of composerStore.attachments) attachment.cancelUpload(id)
   blankUploadNonce.value += 1
-  for (const discardedId of conversationStore.discardFailedPendingSends(
-    conversationStore.currentOrigin()
-  ))
-    composerStore.releaseRetainedAssets(pendingAssetOwnerKey(discardedId))
 }
 
 function advanceBlankTabIfPending(): void {
-  if (threadId.value !== null) return
-  if (
-    conversationStore.hasPendingSendForOrigin(conversationStore.currentOrigin())
-  )
+  const targetBlankOrigin = {
+    kind: 'blank' as const,
+    blankChatId: blankChatIdFor(workflowStore.activeWorkflow)
+  }
+  if (conversationStore.hasPendingSendForOrigin(targetBlankOrigin))
     conversationStore.advanceBlankChatIdForTab(
       workflowStore.activeWorkflow?.instanceId ?? null
     )
