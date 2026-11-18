@@ -266,7 +266,6 @@ async function main(): Promise<void> {
   console.error(`PyPI latest: ${published}`)
   console.error(`Checking: ${linesToCheck.join(', ')}\n`)
 
-  // Set by the workflow on `release: published` runs; empty on the daily cron.
   const justPublishedTag = process.env.RELEASE_TAG?.trim() || null
 
   const allFindings: Finding[] = []
