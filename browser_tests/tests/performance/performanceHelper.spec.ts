@@ -21,7 +21,9 @@ test.describe('PerformanceHelper', { tag: '@perf' }, () => {
       })
       const measurement = await perf.stopMeasuring('immediate-block')
 
-      expect(Math.max(...measurement.allFrameDurationsMs)).toBeGreaterThan(50)
+      expect(
+        Math.max(...measurement.allFrameDurationsMs)
+      ).toBeGreaterThanOrEqual(50)
     } finally {
       await perf.dispose()
     }

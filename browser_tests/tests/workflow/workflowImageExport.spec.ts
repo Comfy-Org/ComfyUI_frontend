@@ -91,6 +91,50 @@ for (const { renderer, tags, workflow, imageCount } of [
 }
 
 test.describe(
+  'Workflow image export: far-edge node',
+  { tag: ['@vue-nodes', '@canvas'] },
+  () => {
+    test.use({
+      viewport: { width: 1920, height: 1080 },
+      initialSettings: {
+        'Comfy.Minimap.Visible': false,
+        'Comfy.PromptFilename': false
+      }
+    })
+
+    test('exports a node far from the graph origin with matching pixels', async ({
+      comfyPage
+    }, testInfo) => {
+      await comfyPage.workflow.loadWorkflow('large-graph-workflow')
+      const download = comfyPage.page.waitForEvent('download')
+      await comfyPage.command.executeCommand('Comfy.ExportWorkflowImage')
+      const exported = await readFile(await (await download).path())
+
+      const farNode = await comfyPage.nodeOps.getNodeRefById('245')
+      await comfyPage.setFocusMode(true)
+      const framed = await alignCanvasWithExport(
+        comfyPage,
+        exported,
+        await farNode.getBounding()
+      )
+      const live = await comfyPage.page.screenshot({ clip: framed.clip })
+      await testInfo.attach('large-workflow.png', {
+        body: exported,
+        contentType: 'image/png'
+      })
+      await expectPngsToMatch(
+        comfyPage.page,
+        testInfo,
+        'far-edge-node',
+        framed.exported,
+        live,
+        { maxDiffPixelRatio: 0.001 }
+      )
+    })
+  }
+)
+
+test.describe(
   'Workflow image export failures',
   { tag: ['@vue-nodes', '@canvas'] },
   () => {
