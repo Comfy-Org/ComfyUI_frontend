@@ -465,7 +465,6 @@ async function mockAgentBoot(
   await mockCloudBootRoutes(page, {
     features: {
       ...agentFeatures(agentFlagEnabled),
-      ...(agentConsentWebSession && { unified_web_session: true }),
       ...initialFeatureFlags,
       ...agentRemoteConfig
     },

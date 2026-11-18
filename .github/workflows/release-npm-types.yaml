@@ -16,18 +16,6 @@ on:
         description: 'Git ref to checkout (commit SHA, tag, or branch)'
         required: false
         type: string
-  workflow_call:
-    inputs:
-      version:
-        required: true
-        type: string
-      dist_tag:
-        required: false
-        type: string
-        default: latest
-      ref:
-        required: false
-        type: string
 
 concurrency:
   group: publish-frontend-types
@@ -40,6 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - name: Validate inputs
         shell: bash

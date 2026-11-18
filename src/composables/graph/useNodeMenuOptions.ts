@@ -9,9 +9,6 @@ import { useNodeCustomization } from './useNodeCustomization'
 import { useSelectedNodeActions } from './useSelectedNodeActions'
 import type { NodeSelectionState } from './useSelectionState'
 
-/**
- * Composable for node-related menu operations
- */
 export function useNodeMenuOptions() {
   const { t } = useI18n()
   const { shapeOptions, applyShape, applyColor, colorOptions, isLightTheme } =
@@ -54,6 +51,7 @@ export function useNodeMenuOptions() {
     bump: () => void
   ): MenuOption[] => [
     {
+      id: 'collapse',
       label: states.collapsed
         ? t('contextMenu.Expand Node')
         : t('contextMenu.Minimize Node'),
@@ -66,6 +64,7 @@ export function useNodeMenuOptions() {
       }
     },
     {
+      id: 'shape',
       label: t('contextMenu.Shape'),
       icon: 'icon-[lucide--box]',
       hasSubmenu: true,
@@ -74,6 +73,7 @@ export function useNodeMenuOptions() {
       action: () => {}
     },
     {
+      id: 'color',
       label: t('contextMenu.Color'),
       icon: 'icon-[lucide--palette]',
       hasSubmenu: true,
@@ -87,6 +87,7 @@ export function useNodeMenuOptions() {
     states: NodeSelectionState,
     bump: () => void
   ): MenuOption => ({
+    id: 'pin',
     label: states.pinned ? t('contextMenu.Unpin') : t('contextMenu.Pin'),
     icon: states.pinned ? 'icon-[lucide--pin-off]' : 'icon-[lucide--pin]',
     action: () => {
@@ -96,6 +97,7 @@ export function useNodeMenuOptions() {
   })
 
   const getBypassOption = (bump: () => void): MenuOption => ({
+    id: 'bypass',
     label: areAllSelectedNodesInMode(LGraphEventMode.BYPASS)
       ? t('contextMenu.Remove Bypass')
       : t('contextMenu.Bypass'),
@@ -108,12 +110,14 @@ export function useNodeMenuOptions() {
   })
 
   const getRunBranchOption = (): MenuOption => ({
+    id: 'runBranch',
     label: t('contextMenu.Run Branch'),
     icon: 'icon-[lucide--play]',
     action: runBranch
   })
 
   const getNodeInfoOption = (openNodeInfo: () => boolean): MenuOption => ({
+    id: 'nodeInfo',
     label: t('contextMenu.Node Info'),
     icon: 'icon-[lucide--info]',
     action: openNodeInfo

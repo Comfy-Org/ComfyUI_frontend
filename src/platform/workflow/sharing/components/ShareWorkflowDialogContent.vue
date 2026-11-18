@@ -293,12 +293,7 @@ function handleOpenPublishDialog() {
 }
 
 function tabButtonClass(mode: DialogMode) {
-  return cn(
-    'cursor-pointer border-none transition-colors',
-    dialogMode.value === mode
-      ? 'bg-secondary text-foreground'
-      : 'bg-transparent text-muted-foreground hover:bg-accent'
-  )
+  return dialogMode.value === mode ? '' : 'bg-transparent text-muted-foreground'
 }
 
 async function handleDialogModeChange(nextMode: DialogMode) {
