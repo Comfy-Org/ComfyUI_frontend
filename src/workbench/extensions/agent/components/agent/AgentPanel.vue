@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useTimeout, useTimeoutFn } from '@vueuse/core'
+import { useTimeoutFn } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onScopeDispose, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -31,6 +31,7 @@ import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type { FollowLanding } from '@/workbench/extensions/agent/composables/agent/useAgentWorkflowChatFollow'
 import type { ConversationEntry } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 import type { HistoryGroups } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -42,8 +43,8 @@ import AgentSyncRetryAlert from './AgentSyncRetryAlert.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
 import ConversationView from './ConversationView.vue'
-import EmptyState from './EmptyState.vue'
 import FreeUseNotice from './FreeUseNotice.vue'
+import NewChatScreen from './NewChatScreen.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
 import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
@@ -80,6 +81,7 @@ const {
   currentChatReady = false,
   customTitle,
   openingWorkflowName,
+  landing = null,
   historyGroups,
   selectHistory = async () => false,
   editableTurnId = null,
@@ -126,6 +128,7 @@ const {
   currentChatReady?: boolean
   customTitle?: string
   openingWorkflowName?: string
+  landing?: FollowLanding | null
   historyGroups: HistoryGroups
   selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
@@ -170,24 +173,13 @@ const emit = defineEmits<{
   showTarget: []
   freeUseNotice: [metadata: AgentFreeUseNoticeMetadata]
   retrySync: []
+  openLandingChat: [id: string]
+  retryLanding: []
 }>()
 
-const openingChat = computed(() => openingWorkflowName !== undefined)
-const {
-  ready: loadingDelayReady,
-  start: startLoadingDelay,
-  stop: stopLoadingDelay
-} = useTimeout(120, { controls: true, immediate: false })
-watch(
-  openingChat,
-  (opening) => {
-    if (opening) startLoadingDelay()
-    else stopLoadingDelay()
-  },
-  { immediate: true, flush: 'sync' }
-)
-const showChatLoading = computed(
-  () => openingChat.value && loadingDelayReady.value
+const resumingChat = computed(() => openingWorkflowName !== undefined)
+const openingChat = computed(
+  () => resumingChat.value || (landing?.openingId ?? null) !== null
 )
 
 const targetNotice = computed(() => {
@@ -197,7 +189,7 @@ const targetNotice = computed(() => {
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
     return 'mismatch'
-  return followsVisibleWorkflow ? 'following' : undefined
+  return undefined
 })
 
 const panelStore = useAgentPanelStore()
@@ -312,7 +304,9 @@ function onClose(): void {
 }
 
 const visibleGreeting = computed(() =>
-  !entries.length && !openingChat.value ? greeting : undefined
+  !entries.length && !openingChat.value && landing === null
+    ? greeting
+    : undefined
 )
 const greetingReplacesIntro = computed(
   () =>
@@ -529,24 +523,8 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       </div>
 
       <div :inert="blocked" class="relative min-h-0 flex-1">
-        <EmptyState
-          v-if="!entries.length"
-          :aria-busy="openingChat"
-          :inert="openingChat"
-          :user-name
-          :greeting="visibleGreeting"
-          :has-selection="hasNodeSelectionModeAddition"
-          @prefilled="onGreetingPrefilled"
-          @insert="
-            (text, prompt) => {
-              composerRef?.insert(text, prompt)
-            }
-          "
-        />
         <ConversationView
-          v-else
-          :aria-busy="openingChat"
-          :inert="openingChat"
+          v-if="entries.length && !resumingChat"
           :entries
           :conversation-id="sessionId"
           :editable-turn-id
@@ -573,28 +551,23 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             (action, surface) => emit('paywallAction', action, surface)
           "
         />
-        <div
-          v-if="showChatLoading"
-          role="status"
-          aria-live="polite"
-          aria-atomic="true"
-          :aria-label="
-            t('agent.openingWorkflowChat', {
-              workflowName: openingWorkflowName
-            })
+        <NewChatScreen
+          v-else
+          :opening-workflow-name
+          :landing
+          :user-name
+          :greeting="visibleGreeting"
+          :has-selection="hasNodeSelectionModeAddition"
+          @prefilled="onGreetingPrefilled"
+          @insert="
+            (text, prompt) => {
+              composerRef?.insert(text, prompt)
+            }
           "
-          class="absolute inset-0 z-10 flex items-center justify-center gap-2 bg-background/80 px-6 text-center text-sm"
-        >
-          <i
-            aria-hidden="true"
-            class="icon-[lucide--loader-circle] motion-safe:animate-spin"
-          />
-          {{
-            t('agent.openingWorkflowChat', {
-              workflowName: openingWorkflowName
-            })
-          }}
-        </div>
+          @select-chat="emit('openLandingChat', $event)"
+          @retry="emit('retryLanding')"
+          @show-all="onOpenHistory"
+        />
       </div>
       <slot name="instrument" />
       <footer
@@ -621,6 +594,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :follows-visible-workflow
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"

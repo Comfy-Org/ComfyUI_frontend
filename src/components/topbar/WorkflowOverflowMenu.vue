@@ -12,10 +12,7 @@
       </template>
       <template #item="{ item }">
         <i v-if="item.icon" :class="item.icon" />
-        <WorkflowAgentTargetIndicator
-          v-if="item.key"
-          :workflow-path="item.key"
-        />
+        <WorkflowTabChatStatus v-if="item.key" :workflow-path="item.key" />
         <span>{{ item.label }}</span>
       </template>
     </Menu>
@@ -30,7 +27,7 @@ import Menu from '@comfyorg/design-system/menu/Menu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
-import WorkflowAgentTargetIndicator from './WorkflowAgentTargetIndicator.vue'
+import WorkflowTabChatStatus from './WorkflowTabChatStatus.vue'
 
 const props = defineProps<{
   workflows: ComfyWorkflow[]

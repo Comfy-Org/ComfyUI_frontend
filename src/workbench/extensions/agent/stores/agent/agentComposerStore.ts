@@ -80,7 +80,27 @@ interface SubmittedDraft {
   prompt: ComposerPrompt
 }
 
+interface KeptDraft {
+  prompt: ComposerPrompt
+  attachmentIds: string[]
+  origin: AgentInputMethod
+  starterPrompt: AgentStarterPromptSource | null
+}
+
+const MAX_KEPT_DRAFTS = 20
+
+function emptyKeptDraft(): KeptDraft {
+  return {
+    prompt: { text: '', references: [] },
+    attachmentIds: [],
+    origin: 'typed',
+    starterPrompt: null
+  }
+}
+
 export const useAgentComposerStore = defineStore('agentComposer', () => {
+  const keptDrafts = new Map<string, KeptDraft>()
+  let activeDraftKey: string | null = null
   const draftState = shallowRef<ComposerPrompt>({ text: '', references: [] })
   const prompt = computed(() => draftState.value)
   const draft = computed(() => prompt.value.text)
@@ -622,6 +642,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     const retained = new Set(attachments.value.map(({ id }) => id))
     for (const attachment of submission.value?.snapshot.attachments ?? [])
       retained.add(attachment.id)
+    for (const kept of keptDrafts.values())
+      for (const id of kept.attachmentIds) retained.add(id)
     for (const [id, attachment] of assetsById)
       if (!retained.has(id)) {
         cancelThumbnail(id)
@@ -697,6 +719,62 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
     releaseUnusedAssets()
+  }
+
+  function keepActiveDraft(): void {
+    if (activeDraftKey === null) return
+    keptDrafts.delete(activeDraftKey)
+    const references = prompt.value.references.filter(
+      (item) => item.kind !== 'node'
+    )
+    const text = resetTextWhenReferencesCleared(draft.value, references)
+    const ids = attachments.value.map(({ id }) => id)
+    if (text.trim() === '' && references.length === 0 && ids.length === 0)
+      return
+    keptDrafts.set(activeDraftKey, {
+      prompt: { text, references },
+      attachmentIds: ids,
+      origin: promptOrigin.value,
+      starterPrompt: starterPrompt.value
+    })
+    for (const key of keptDrafts.keys()) {
+      if (keptDrafts.size <= MAX_KEPT_DRAFTS) break
+      keptDrafts.delete(key)
+    }
+  }
+
+  function restoreKeptDraft(kept: KeptDraft): void {
+    rejectedDraft.value = null
+    restorePrompt(
+      kept.prompt,
+      kept.attachmentIds.flatMap((id) => assetsById.get(id) ?? [])
+    )
+    promptOrigin.value = kept.origin
+    starterPrompt.value = kept.starterPrompt
+    insertionPoint.value = {
+      textOffset: prompt.value.text.length,
+      referenceIndex: prompt.value.references.length
+    }
+  }
+
+  function activateDraft(key: string): void {
+    if (key === activeDraftKey) return
+    const adoptsCurrentContent = activeDraftKey === null
+    keepActiveDraft()
+    activeDraftKey = key
+    if (adoptsCurrentContent) return
+    const kept = keptDrafts.get(key) ?? emptyKeptDraft()
+    keptDrafts.delete(key)
+    restoreKeptDraft(kept)
+  }
+
+  function rekeyDraft(from: string, to: string): void {
+    if (activeDraftKey === from) activeDraftKey = to
+  }
+
+  function discardDraft(key: string): void {
+    if (key === activeDraftKey) clearDraft()
+    else if (keptDrafts.delete(key)) releaseUnusedAssets()
   }
 
   const savedDraft = useLocalStorage<unknown>(
@@ -778,6 +856,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     takeFailedSubmission,
     invalidateSubmission,
     clearDraft,
+    activateDraft,
+    rekeyDraft,
+    discardDraft,
     trackDraftThread
   }
 })

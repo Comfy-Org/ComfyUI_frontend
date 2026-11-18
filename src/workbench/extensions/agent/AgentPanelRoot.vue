@@ -104,7 +104,6 @@ import { useFreeUsePlacement } from './experiments/freeUsePlacement'
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentCreditTransitionNotice from './components/agent/AgentCreditTransitionNotice.vue'
 import AgentHostFenceNotice from './components/agent/AgentHostFenceNotice.vue'
-import RunNoticeBanner from './components/agent/RunNoticeBanner.vue'
 import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
@@ -158,6 +157,7 @@ import {
   isLoopbackOnlyRefusal
 } from './services/agent/agentRestClient'
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
+import { useAgentChatDrafts } from './composables/agent/useAgentChatDrafts'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
@@ -178,6 +178,7 @@ import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { toSocketIdentity, useAgentPageSession } from './agentPageSession'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
+import { useAgentOpenChatsStore } from './stores/agent/agentOpenChatsStore'
 import { useAgentNodeDefinitionRefreshStore } from './stores/agent/agentNodeDefinitionRefreshStore'
 import { agentMessageText } from './utils/agentMessageText'
 import {
@@ -226,6 +227,7 @@ const {
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 const history = useAgentChatHistoryStore()
+const openChats = useAgentOpenChatsStore()
 const { accepted: consentAccepted, identity: consentIdentity } = storeToRefs(
   useAgentConsentStore()
 )
@@ -536,6 +538,7 @@ const workflowResolver = useAgentWorkflowResolver({
 })
 const {
   refreshCloudWorkflowIds,
+  refreshCloudWorkflowListing,
   forgetCloudWorkflowId,
   cloudIdFor,
   boundOrOpenWorkflowFor,
@@ -1022,7 +1025,7 @@ async function onWorkflowRestoredAndBound(
 }
 
 function bindRestoredWorkflow(workflowId: string): void {
-  if (hasUnsyncedHumanOps(workflowId)) return
+  if (hasUnsyncedHumanOps(workflowId) && !holdsWorkflow(workflowId)) return
   if (boundWorkflowId.value !== workflowId) bindWorkflow(workflowId)
 }
 
@@ -1160,6 +1163,11 @@ const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'
 )
 
+if (agentPanelStore.blankChatTab === null)
+  agentPanelStore.blankChatTab =
+    workflowStore.activeWorkflow?.instanceId ?? null
+const chatDrafts = useAgentChatDrafts({ threadId, isSending })
+
 const isBoundWorkflowActive = computed(() => {
   const bound = boundWorkflowId.value
   const active = workflowStore.activeWorkflow
@@ -1195,7 +1203,8 @@ const {
   mayWritePromotedHost,
   docHasSubgraphDefinition,
   notifyWidgetWriteRefused,
-  subscriptionSent
+  subscriptionSent,
+  holdsWorkflow
 } = useAgentCrdtFollower(boundWorkflowId, {
   transport: docTransport,
   userId: () => agentUserId.value,
@@ -1374,7 +1383,10 @@ async function restoreThreadWorkflow(
 }
 
 conversationStore.setTurnTabResolver(turnTab)
-const { clearTurnSignals } = useAgentTabSignals({ onIdentityChange })
+const { clearTurnSignals } = useAgentTabSignals({
+  cloudIdFor,
+  onIdentityChange
+})
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {
@@ -1949,19 +1961,39 @@ const historyGroups = computed(() => {
   )
 })
 
+function openBlankChat(source?: Parameters<typeof newChat>[0]): void {
+  agentPanelStore.blankChatTab =
+    workflowStore.activeWorkflow?.instanceId ?? null
+  newChat(source)
+}
+
+function showBlankChatForVisibleWorkflow(): void {
+  const alreadyShowsIt =
+    threadId.value === null &&
+    agentPanelStore.followsVisibleWorkflow &&
+    agentPanelStore.blankChatTab ===
+      (workflowStore.activeWorkflow?.instanceId ?? null)
+  if (alreadyShowsIt) return
+  provisionalTitle.value = undefined
+  openBlankChat()
+  agentPanelStore.startFollowingVisibleWorkflow()
+}
+
 const workflowChatFollow = useAgentWorkflowChatFollow({
   activeWorkflow: () => workflowStore.activeWorkflow,
   selectedTarget: () => selectedTarget.value,
   currentThreadId: () => threadId.value,
-  sessions: () => history.sessions,
+  chatsFor: history.sessionsFor,
+  openChatFor: openChats.recall,
+  forgetOpenChat: openChats.forget,
   followsVisibleWorkflow: () => agentPanelStore.followsVisibleWorkflow,
-  hasDraft: () => composerStore.hasDraft,
   userEngaged,
+  switchBlocked,
   cloudIdFor,
-  refreshCloudWorkflowIds,
+  refreshCloudWorkflowListing,
   refreshHistory,
   loadThread,
-  clearDraft: () => composerStore.setText(''),
+  showBlankChat: showBlankChatForVisibleWorkflow,
   trackThreadStarted: () =>
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
   restoreThreadWorkflow,
@@ -1970,12 +2002,20 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
 })
 
 const {
-  failure: followFailure,
+  landing,
   openingWorkflowName,
   followTab,
   retireFollow,
   retryFollow: onRetryFollow
 } = workflowChatFollow
+
+watch(
+  [threadId, boundWorkflowId],
+  ([id, workflowId]) => {
+    if (id !== null && workflowId !== null) openChats.remember(workflowId, id)
+  },
+  { immediate: true, flush: 'sync' }
+)
 
 watch(
   threadId,
@@ -2019,8 +2059,23 @@ async function onSelectHistory(
   return opened
 }
 
+async function onOpenLandingChat(id: string): Promise<void> {
+  provisionalTitle.value = undefined
+  errorAttachRun++
+  composerStore.clearErrorContext()
+  await workflowChatFollow.openChat(id)
+}
+
 function userEngaged(): boolean {
-  return composerStore.hasDraft || isSending.value || workflowSelecting.value
+  return composerStore.hasDraft || switchBlocked()
+}
+
+function switchBlocked(): boolean {
+  return (
+    isSending.value ||
+    workflowSelecting.value ||
+    composerStore.errorContext !== null
+  )
 }
 
 function restoreChatWorkflow(
@@ -2045,7 +2100,9 @@ const mountedOn = workflowStore.activeWorkflow
 if (
   mountedOn !== null &&
   selectedTarget.value !== null &&
-  selectedTarget.value.path !== mountedOn.path
+  (selectedTarget.value.path !== mountedOn.path ||
+    (threadId.value === null &&
+      agentPanelStore.blankChatTab !== mountedOn.instanceId))
 )
   void followTab(mountedOn)
 
@@ -2292,6 +2349,8 @@ function onDeleteHistory(id: string): void {
     id === history.activeId ||
     (history.activeId === null && id === threadId.value)
   history.remove(id)
+  openChats.forget(id)
+  chatDrafts.discardChatDraft(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
   if (isCurrent) onNewChat('history_delete')
 }
@@ -2301,7 +2360,7 @@ function onNewChat(
 ): void {
   retireFollow()
   if (source === 'history_back') {
-    newChat()
+    openBlankChat()
     agentPanelStore.startFollowingVisibleWorkflow()
     return
   }
@@ -2309,12 +2368,11 @@ function onNewChat(
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
-  attachment.cancelAllUploads()
   replaceSelectionTags([])
   dismissedSelectionSignature.value = null
   errorAttachRun++
+  openBlankChat(source)
   composerStore.clearDraft()
-  newChat(source)
   void proactive.refresh()
   agentPanelStore.startFollowingVisibleWorkflow()
 }
@@ -2669,6 +2727,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :select-history="onSelectHistory"
       :current-chat-ready="currentChatReady"
       :opening-workflow-name="openingWorkflowName"
+      :landing="landing"
       :session-id="threadId"
       :custom-title="
         history.titleFor(threadId) ??
@@ -2728,6 +2787,8 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       @close="onClosePanel"
       @open-history="onOpenHistory"
       @delete-history="onDeleteHistory"
+      @open-landing-chat="onOpenLandingChat"
+      @retry-landing="onRetryFollow"
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
@@ -2743,12 +2804,6 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
       </template>
       <template #composerNotice>
-        <RunNoticeBanner
-          v-if="followFailure"
-          context="followFailed"
-          :workflow-name="followFailure.filename"
-          @retry="onRetryFollow"
-        />
         <AgentCreditTransitionNotice
           v-if="showCreditTransitionNotice"
           data-testid="agent-credit-transition-notice"

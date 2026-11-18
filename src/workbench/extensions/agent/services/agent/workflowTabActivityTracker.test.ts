@@ -54,6 +54,26 @@ describe('registerWorkflowTabActivityTracker', () => {
     expect(activity.unseenModifiedPaths.has('workflows/b.json')).toBe(false)
   })
 
+  it('drops the chat mark of a tab that closes, with no panel mounted', async () => {
+    const activity = useWorkflowTabActivityStore()
+    const first = createMockLoadedWorkflow({ path: 'workflows/a.json' })
+    const second = createMockLoadedWorkflow({
+      path: 'workflows/b.json',
+      isTemporary: false,
+      unload: vi.fn()
+    })
+    workflowStore.attachWorkflow(first, 0)
+    workflowStore.attachWorkflow(second, 1)
+    await nextTick()
+    activity.setChatPaths(['workflows/a.json', 'workflows/b.json'])
+
+    await workflowStore.closeWorkflow(second)
+    await nextTick()
+
+    expect(activity.chatStatusFor('workflows/b.json')).toBeUndefined()
+    expect(activity.chatStatusFor('workflows/a.json')).toBe('seen')
+  })
+
   it('stops watching once its scope is disposed', async () => {
     const activity = useWorkflowTabActivityStore()
     activity.markModified('workflows/a.json')
@@ -116,6 +136,7 @@ describe('registerWorkflowTabActivityTracker', () => {
     expect(activity.unseenModifiedPaths.has('workflows/a.json')).toBe(false)
 
     activity.markModified('workflows/b.json')
+    activity.setChatPaths(['workflows/b.json'])
     activity.setAgentTurnTabs([
       { path: 'workflows/b.json', awaitingApproval: false }
     ])
@@ -124,6 +145,7 @@ describe('registerWorkflowTabActivityTracker', () => {
 
     expect(activity.unseenModifiedPaths).toHaveLength(0)
     expect(activity.editingPaths.size).toBe(0)
+    expect(activity.chatStatusFor('workflows/b.json')).toBeUndefined()
   })
 
   it('removes the agent tab-title prefix when the feature is disabled', async () => {

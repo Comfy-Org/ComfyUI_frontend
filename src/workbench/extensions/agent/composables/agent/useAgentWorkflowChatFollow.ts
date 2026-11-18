@@ -1,44 +1,85 @@
-import { maxBy } from 'es-toolkit'
 import { computed, shallowRef } from 'vue'
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { CloudWorkflowRefreshOutcome } from '@/workbench/extensions/agent/composables/agent/useAgentWorkflowResolver'
 import type { ThreadListing } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { ChatSession } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
-type FollowOperation = {
-  status: 'loading'
-  generation: number
-  workflow: ComfyWorkflow
-  chat: { threadId: string; workflowId: string } | null
+const LANDING_CHAT_LIMIT = 5
+
+type OpeningSource = 'list' | 'resume' | 'only_chat'
+
+type Opening = { threadId: string; workflowId: string; source: OpeningSource }
+
+type OpeningOutcome = 'settled' | 'failed'
+
+function opensAutomatically(opening: Opening): boolean {
+  return opening.source !== 'list'
 }
+
+function marksFailedRow(opening: Opening): boolean {
+  return opening.source !== 'resume'
+}
+
+type ListPhase = 'hidden' | 'loading' | 'ready' | 'failed'
 
 type FollowState =
   | { status: 'idle'; generation: number }
-  | FollowOperation
-  | { status: 'failed'; generation: number; workflow: ComfyWorkflow }
+  | {
+      status: 'following'
+      generation: number
+      workflow: ComfyWorkflow
+      workflowId: string | null
+      list: ListPhase
+      opening: Opening | null
+      failedId: string | null
+    }
+
+type FollowOperation = Pick<
+  Extract<FollowState, { status: 'following' }>,
+  'generation' | 'workflow'
+>
+
+export type FollowLanding = {
+  workflowName: string
+  status: 'loading' | 'ready' | 'failed'
+  chats: ChatSession[]
+  hasMore: boolean
+  openingId: string | null
+  failedId: string | null
+}
+
+type WorkflowLookup =
+  | { status: 'found'; workflowId: string }
+  | { status: 'none' }
+  | { status: 'unknown' }
 
 type FollowEvent =
   | { type: 'requested'; workflow: ComfyWorkflow; heldBack: boolean }
   | {
-      type: 'chat_found'
+      type: 'list_changed'
       generation: number
-      threadId: string
-      workflowId: string
+      workflowId: string | null
+      list: ListPhase
     }
-  | { type: 'failed'; generation: number; workflow: ComfyWorkflow }
-  | { type: 'finished'; generation: number }
+  | { type: 'opening_started'; generation: number; opening: Opening }
+  | { type: 'opening_failed'; generation: number; threadId: string }
+  | { type: 'opening_done'; generation: number }
+  | { type: 'abandoned' }
   | { type: 'retired' }
 
 type FollowDeps = {
   activeWorkflow: () => ComfyWorkflow | null
   selectedTarget: () => ComfyWorkflow | null
   currentThreadId: () => string | null
-  sessions: () => ChatSession[]
+  chatsFor: (workflowId: string) => ChatSession[]
+  openChatFor: (workflowId: string) => string | undefined
+  forgetOpenChat: (threadId: string) => void
   followsVisibleWorkflow: () => boolean
-  hasDraft: () => boolean
   userEngaged: () => boolean
+  switchBlocked: () => boolean
   cloudIdFor: (workflow: ComfyWorkflow) => string | undefined
-  refreshCloudWorkflowIds: () => Promise<boolean>
+  refreshCloudWorkflowListing: () => Promise<CloudWorkflowRefreshOutcome>
   refreshHistory: (
     uiTreatment?: 'error_overlay' | 'none',
     workflowId?: string
@@ -48,7 +89,7 @@ type FollowDeps = {
     isCurrent: () => boolean,
     options: { keepOpenChatUntilLoaded: boolean }
   ) => Promise<boolean>
-  clearDraft: () => void
+  showBlankChat: () => void
   trackThreadStarted: () => void
   restoreThreadWorkflow: (
     workflowId: string | undefined,
@@ -66,57 +107,107 @@ function requestedState(
   return event.heldBack
     ? { status: 'idle', generation }
     : {
-        status: 'loading',
+        status: 'following',
         generation,
         workflow: event.workflow,
-        chat: null
+        workflowId: null,
+        list: 'hidden',
+        opening: null,
+        failedId: null
       }
 }
 
-function chatFoundState(
+function listChangedState(
   state: FollowState,
-  event: Extract<FollowEvent, { type: 'chat_found' }>
+  event: Extract<FollowEvent, { type: 'list_changed' }>
 ): FollowState {
-  if (state.status !== 'loading' || state.generation !== event.generation)
+  if (state.status !== 'following' || state.generation !== event.generation)
+    return state
+  return { ...state, workflowId: event.workflowId, list: event.list }
+}
+
+function openingStartedState(
+  state: FollowState,
+  event: Extract<FollowEvent, { type: 'opening_started' }>
+): FollowState {
+  if (state.status !== 'following' || state.generation !== event.generation)
+    return state
+  return { ...state, opening: event.opening, failedId: null }
+}
+
+function openingFailedState(
+  state: FollowState,
+  event: Extract<FollowEvent, { type: 'opening_failed' }>
+): FollowState {
+  if (state.status !== 'following' || state.generation !== event.generation)
     return state
   return {
     ...state,
-    chat: { threadId: event.threadId, workflowId: event.workflowId }
+    opening: null,
+    failedId:
+      state.opening !== null && marksFailedRow(state.opening)
+        ? event.threadId
+        : null
   }
 }
 
-function failedState(
+function openingDoneState(
   state: FollowState,
-  event: Extract<FollowEvent, { type: 'failed' }>
+  event: Extract<FollowEvent, { type: 'opening_done' }>
 ): FollowState {
-  if (state.status !== 'loading' || state.generation !== event.generation)
-    return state
-  return {
-    status: 'failed',
-    generation: event.generation,
-    workflow: event.workflow
-  }
-}
-
-function finishedState(
-  state: FollowState,
-  event: Extract<FollowEvent, { type: 'finished' }>
-): FollowState {
-  return state.status === 'loading' && state.generation === event.generation
+  return state.status === 'following' && state.generation === event.generation
     ? { status: 'idle', generation: state.generation }
     : state
+}
+
+function abandonedState(state: FollowState): FollowState {
+  if (
+    state.status !== 'following' ||
+    !state.opening ||
+    !opensAutomatically(state.opening)
+  )
+    return state
+  return {
+    ...state,
+    generation: state.generation + 1,
+    opening: null,
+    list: 'hidden'
+  }
+}
+
+function describeLanding(
+  followed: Extract<FollowState, { status: 'following' }>,
+  chats: ChatSession[]
+): FollowLanding | null {
+  if (followed.list === 'hidden') return null
+  const listedWhileLoading = followed.list === 'loading' && chats.length > 1
+  const status = listedWhileLoading ? 'ready' : followed.list
+  if (status === 'ready' && chats.length === 0) return null
+  return {
+    workflowName: followed.workflow.filename,
+    status,
+    chats: chats.slice(0, LANDING_CHAT_LIMIT),
+    hasMore: chats.length > LANDING_CHAT_LIMIT,
+    openingId:
+      followed.opening?.source === 'list' ? followed.opening.threadId : null,
+    failedId: followed.failedId
+  }
 }
 
 function reduceFollow(state: FollowState, event: FollowEvent): FollowState {
   switch (event.type) {
     case 'requested':
       return requestedState(state, event)
-    case 'chat_found':
-      return chatFoundState(state, event)
-    case 'failed':
-      return failedState(state, event)
-    case 'finished':
-      return finishedState(state, event)
+    case 'list_changed':
+      return listChangedState(state, event)
+    case 'opening_started':
+      return openingStartedState(state, event)
+    case 'opening_failed':
+      return openingFailedState(state, event)
+    case 'opening_done':
+      return openingDoneState(state, event)
+    case 'abandoned':
+      return abandonedState(state)
     case 'retired':
       return { status: 'idle', generation: state.generation + 1 }
   }
@@ -133,103 +224,216 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     const target = deps.selectedTarget()
     const chatTargetsWorkflow =
       !deps.followsVisibleWorkflow() && target?.path === workflow.path
-    return workflow.isTemporary || deps.userEngaged() || chatTargetsWorkflow
-  }
-
-  function latestChatFor(workflowId: string): string | undefined {
-    return maxBy(
-      deps.sessions().filter((session) => session.workflowId === workflowId),
-      ({ lastActivityAt }) => lastActivityAt ?? Number.NEGATIVE_INFINITY
-    )?.id
+    return deps.switchBlocked() || chatTargetsWorkflow
   }
 
   function isCurrent(operation: FollowOperation): boolean {
     return (
       state.value.generation === operation.generation &&
-      deps.activeWorkflow()?.path === operation.workflow.path &&
-      !deps.userEngaged()
+      deps.activeWorkflow()?.path === operation.workflow.path
     )
   }
 
-  async function openFollowedChat(
-    id: string,
+  function isCurrentAndIdle(operation: FollowOperation): boolean {
+    return isCurrent(operation) && !deps.userEngaged()
+  }
+
+  function isOpeningWanted(
     operation: FollowOperation,
-    workflowId: string
-  ): Promise<void> {
+    threadId: string
+  ): boolean {
+    return (
+      isCurrent(operation) &&
+      (deps.currentThreadId() === threadId || !deps.userEngaged())
+    )
+  }
+
+  function isUnsavedTabWithoutBinding(workflow: ComfyWorkflow): boolean {
+    return workflow.isTemporary && deps.cloudIdFor(workflow) === undefined
+  }
+
+  async function lookUpWorkflow(
+    workflow: ComfyWorkflow
+  ): Promise<WorkflowLookup> {
+    const existing = deps.cloudIdFor(workflow)
+    if (existing !== undefined) return { status: 'found', workflowId: existing }
+    const listing = await deps.refreshCloudWorkflowListing()
+    const refreshed = deps.cloudIdFor(workflow)
+    if (refreshed !== undefined)
+      return { status: 'found', workflowId: refreshed }
+    return { status: listing === 'complete' ? 'none' : 'unknown' }
+  }
+
+  async function openFollowedChat(
+    operation: FollowOperation,
+    opening: Opening,
+    isStillWanted: () => boolean
+  ): Promise<OpeningOutcome> {
     dispatch({
-      type: 'chat_found',
+      type: 'opening_started',
       generation: operation.generation,
-      threadId: id,
-      workflowId
+      opening
     })
-    const opened = await deps.loadThread(id, () => isCurrent(operation), {
+    const opened = await deps.loadThread(opening.threadId, isStillWanted, {
       keepOpenChatUntilLoaded: true
     })
-    if (!isCurrent(operation)) return
+    if (!isStillWanted()) return 'settled'
     if (!opened) {
       dispatch({
-        type: 'failed',
+        type: 'opening_failed',
         generation: operation.generation,
-        workflow: operation.workflow
+        threadId: opening.threadId
       })
-      return
+      return 'failed'
     }
-    dispatch({ type: 'finished', generation: operation.generation })
-    if (!deps.hasDraft()) deps.clearDraft()
+    dispatch({ type: 'opening_done', generation: operation.generation })
     deps.trackThreadStarted()
+    return 'settled'
   }
 
-  async function resolveWorkflowId(
+  function rememberedChat(
     workflow: ComfyWorkflow
-  ): Promise<string | undefined> {
-    const existing = deps.cloudIdFor(workflow)
-    if (existing !== undefined) return existing
-    await deps.refreshCloudWorkflowIds()
-    return deps.cloudIdFor(workflow)
+  ): { threadId: string; workflowId: string } | undefined {
+    const workflowId = deps.cloudIdFor(workflow)
+    if (workflowId === undefined) return undefined
+    const threadId = deps.openChatFor(workflowId)
+    return threadId === undefined ? undefined : { threadId, workflowId }
   }
 
-  async function refreshForFollow(
-    workflowId: string,
-    operation: FollowOperation
-  ): Promise<boolean> {
-    const outcome = await deps.refreshHistory('none', workflowId)
-    if (!isCurrent(operation)) return false
-    if (outcome === 'failed' || outcome === 'incomplete') {
-      dispatch({
-        type: 'failed',
-        generation: operation.generation,
-        workflow: operation.workflow
-      })
-      return false
-    }
-    return outcome === 'complete'
+  function showList(
+    operation: FollowOperation,
+    workflowId: string | null,
+    list: ListPhase
+  ): void {
+    dispatch({
+      type: 'list_changed',
+      generation: operation.generation,
+      workflowId,
+      list
+    })
   }
 
-  async function openLatestChat(
+  async function openOnlyChat(
+    operation: FollowOperation,
     workflowId: string,
-    operation: FollowOperation
+    threadId: string
   ): Promise<void> {
-    const latest = latestChatFor(workflowId)
-    if (latest !== undefined && latest !== deps.currentThreadId())
-      await openFollowedChat(latest, operation, workflowId)
+    const outcome = await openFollowedChat(
+      operation,
+      { threadId, workflowId, source: 'only_chat' },
+      () => isOpeningWanted(operation, threadId)
+    )
+    if (outcome === 'failed') showList(operation, workflowId, 'ready')
+  }
+
+  async function landOnChats(
+    operation: FollowOperation,
+    workflowId: string,
+    options: { mayOpenOnlyChat: boolean; failedThreadId?: string }
+  ): Promise<void> {
+    const chats = deps.chatsFor(workflowId)
+    const onlyChat = chats.length === 1 ? chats[0] : undefined
+    const opensOnlyChat =
+      options.mayOpenOnlyChat &&
+      onlyChat !== undefined &&
+      onlyChat.id !== options.failedThreadId &&
+      isCurrentAndIdle(operation)
+    if (opensOnlyChat) return openOnlyChat(operation, workflowId, onlyChat.id)
+    showList(operation, workflowId, 'ready')
+  }
+
+  async function landOnKnownChats(
+    operation: FollowOperation,
+    workflowId: string,
+    failedThreadId?: string
+  ): Promise<void> {
+    const landed = landOnChats(operation, workflowId, {
+      mayOpenOnlyChat: true,
+      failedThreadId
+    })
+    void deps.refreshHistory('none', workflowId)
+    await landed
+  }
+
+  async function landOnFreshChats(
+    operation: FollowOperation,
+    workflowId: string,
+    failedThreadId?: string
+  ): Promise<void> {
+    showList(operation, workflowId, 'loading')
+    const outcome = await deps.refreshHistory('none', workflowId)
+    if (!isCurrent(operation)) return
+    if (outcome === 'failed' || outcome === 'incomplete')
+      return showList(operation, workflowId, 'failed')
+    if (deps.chatsFor(workflowId).length === 0)
+      return showList(operation, workflowId, 'hidden')
+    await landOnChats(operation, workflowId, {
+      mayOpenOnlyChat: outcome === 'complete',
+      failedThreadId
+    })
+  }
+
+  async function showLanding(
+    workflow: ComfyWorkflow,
+    operation: FollowOperation,
+    failedThreadId?: string
+  ): Promise<void> {
+    if (isUnsavedTabWithoutBinding(workflow)) return
+    const known = deps.cloudIdFor(workflow)
+    if (known !== undefined && deps.chatsFor(known).length > 0)
+      return landOnKnownChats(operation, known, failedThreadId)
+    showList(operation, known ?? null, 'loading')
+    const lookup = await lookUpWorkflow(workflow)
+    if (!isCurrent(operation)) return
+    if (lookup.status !== 'found')
+      return showList(
+        operation,
+        null,
+        lookup.status === 'unknown' ? 'failed' : 'hidden'
+      )
+    if (deps.chatsFor(lookup.workflowId).length > 0)
+      return landOnKnownChats(operation, lookup.workflowId, failedThreadId)
+    await landOnFreshChats(operation, lookup.workflowId, failedThreadId)
   }
 
   async function followTab(workflow: ComfyWorkflow): Promise<void> {
     dispatch({ type: 'requested', workflow, heldBack: heldBack(workflow) })
     const operation = state.value
-    if (operation.status !== 'loading') return
-    try {
-      const workflowId = await resolveWorkflowId(workflow)
-      if (workflowId === undefined || !isCurrent(operation)) return
-      if (
-        !(await refreshForFollow(workflowId, operation)) ||
-        !isCurrent(operation)
-      )
-        return
-      await openLatestChat(workflowId, operation)
-    } finally {
-      dispatch({ type: 'finished', generation: operation.generation })
+    if (operation.status !== 'following') return
+    const remembered = rememberedChat(workflow)
+    if (remembered?.threadId === deps.currentThreadId()) {
+      dispatch({ type: 'retired' })
+      return
     }
+    deps.showBlankChat()
+    let failedThreadId: string | undefined
+    if (remembered !== undefined && !deps.userEngaged()) {
+      const outcome = await openFollowedChat(
+        operation,
+        { ...remembered, source: 'resume' },
+        () => isOpeningWanted(operation, remembered.threadId)
+      )
+      if (outcome === 'settled') return
+      deps.forgetOpenChat(remembered.threadId)
+      failedThreadId = remembered.threadId
+    }
+    if (isCurrent(operation))
+      await showLanding(workflow, operation, failedThreadId)
+  }
+
+  async function openChat(threadId: string): Promise<void> {
+    const landing = state.value
+    if (
+      landing.status !== 'following' ||
+      landing.workflowId === null ||
+      landing.opening !== null
+    )
+      return
+    await openFollowedChat(
+      landing,
+      { threadId, workflowId: landing.workflowId, source: 'list' },
+      () => isCurrent(landing)
+    )
   }
 
   function retireFollow(): void {
@@ -238,24 +442,28 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
 
   function retryFollow(): void {
     const failed = state.value
-    if (failed.status === 'failed') void followTab(failed.workflow)
+    if (failed.status === 'following' && failed.list === 'failed')
+      void showLanding(failed.workflow, failed)
   }
 
   function activeWorkflowChanged(workflow: ComfyWorkflow | null): void {
     const current = state.value
-    if (
-      current.status !== 'idle' &&
-      (current.status === 'failed' || current.workflow.path !== workflow?.path)
-    )
+    if (current.status !== 'idle' && current.workflow.path !== workflow?.path)
       retireFollow()
   }
 
   function userEngagementChanged(engaged: boolean): void {
-    if (engaged) retireFollow()
+    if (!engaged) return
+    const followed = state.value
+    const opening = followed.status === 'following' ? followed.opening : null
+    if (opening?.threadId === deps.currentThreadId()) return
+    dispatch({ type: 'abandoned' })
   }
 
   function isOpeningThread(id: string): boolean {
-    return state.value.status === 'loading' && state.value.chat?.threadId === id
+    return (
+      state.value.status === 'following' && state.value.opening?.threadId === id
+    )
   }
 
   function restoreChatWorkflow(
@@ -264,29 +472,42 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
   ): Promise<boolean> | boolean {
     const followed = state.value
     if (
-      followed.status !== 'loading' ||
-      followed.chat?.threadId !== deps.currentThreadId()
+      followed.status !== 'following' ||
+      followed.opening?.threadId !== deps.currentThreadId()
     )
       return deps.restoreThreadWorkflow(workflowId, navigationCurrent)
-    deps.adoptWorkflowTarget(followed.workflow, followed.chat.workflowId)
-    deps.adoptRestoredWorkflowTab(followed.chat.workflowId)
+    deps.adoptWorkflowTarget(followed.workflow, followed.opening.workflowId)
+    deps.adoptRestoredWorkflowTab(followed.opening.workflowId)
     return true
   }
 
-  const failure = computed(() =>
-    state.value.status === 'failed' ? state.value.workflow : null
-  )
+  const landing = computed<FollowLanding | null>(() => {
+    const followed = state.value
+    if (
+      followed.status !== 'following' ||
+      followed.workflow.path !== deps.activeWorkflow()?.path
+    )
+      return null
+    return describeLanding(
+      followed,
+      followed.workflowId === null ? [] : deps.chatsFor(followed.workflowId)
+    )
+  })
+
   const openingWorkflowName = computed(() =>
-    state.value.status === 'loading' &&
+    state.value.status === 'following' &&
+    state.value.opening !== null &&
+    opensAutomatically(state.value.opening) &&
     state.value.workflow.path === deps.activeWorkflow()?.path
       ? state.value.workflow.filename
       : undefined
   )
 
   return {
-    failure,
+    landing,
     openingWorkflowName,
     followTab,
+    openChat,
     retireFollow,
     retryFollow,
     activeWorkflowChanged,

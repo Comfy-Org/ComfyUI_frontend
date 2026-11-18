@@ -131,6 +131,89 @@ describe('useAgentChatHistoryStore', () => {
     expect(store.activeId).toBe('a')
   })
 
+  describe('sessionsFor', () => {
+    const forWorkflow = (
+      id: string,
+      workflowId: string,
+      lastActivityAt?: number
+    ): ChatSession => ({
+      ...session(id, lastActivityAt ?? NOW),
+      lastActivityAt,
+      workflowId
+    })
+
+    it('lists only the chats of one workflow, by last activity, with the renamed titles', () => {
+      const store = useAgentChatHistoryStore()
+      store.replaceAll([
+        forWorkflow('older', 'wf-a', 1),
+        forWorkflow('elsewhere', 'wf-b', 9),
+        forWorkflow('newer', 'wf-a', 3),
+        { ...session('unbound', 7), lastActivityAt: 7 }
+      ])
+      store.rename('older', 'Duck pipeline')
+
+      expect(store.sessionsFor('wf-a')).toMatchObject([
+        { id: 'newer', title: 'newer' },
+        { id: 'older', title: 'Duck pipeline' }
+      ])
+    })
+
+    it('lists a chat with no valid time last, though History groups it under Today', () => {
+      const store = useAgentChatHistoryStore()
+      store.replaceAll([
+        forWorkflow('stampless', 'wf-a'),
+        forWorkflow('stamped', 'wf-a', 1)
+      ])
+
+      expect(store.sessionsFor('wf-a').map(({ id }) => id)).toEqual([
+        'stamped',
+        'stampless'
+      ])
+    })
+
+    it('leaves out a chat that was deleted', () => {
+      const store = useAgentChatHistoryStore()
+      store.replaceAll([
+        forWorkflow('a', 'wf-a', 1),
+        forWorkflow('b', 'wf-a', 2)
+      ])
+
+      store.remove('b')
+
+      expect(store.sessionsFor('wf-a').map(({ id }) => id)).toEqual(['a'])
+    })
+  })
+
+  describe('workflowIdsWithChats', () => {
+    const forWorkflow = (id: string, workflowId?: string): ChatSession => ({
+      ...session(id, NOW),
+      workflowId
+    })
+
+    it('holds each workflow that has at least one chat, once', () => {
+      const store = useAgentChatHistoryStore()
+      store.replaceAll([
+        forWorkflow('a', 'wf-a'),
+        forWorkflow('b', 'wf-a'),
+        forWorkflow('c', 'wf-b'),
+        forWorkflow('unbound')
+      ])
+
+      expect(store.workflowIdsWithChats).toEqual(new Set(['wf-a', 'wf-b']))
+    })
+
+    it('drops a workflow when its last chat is deleted', () => {
+      const store = useAgentChatHistoryStore()
+      store.replaceAll([forWorkflow('a', 'wf-a'), forWorkflow('b', 'wf-a')])
+
+      store.remove('a')
+      expect(store.workflowIdsWithChats.has('wf-a')).toBe(true)
+
+      store.remove('b')
+      expect(store.workflowIdsWithChats.has('wf-a')).toBe(false)
+    })
+  })
+
   it('restores titles and tombstones only from the current scope', () => {
     sessionStorage.setItem(
       'Comfy.Workspace.Current',

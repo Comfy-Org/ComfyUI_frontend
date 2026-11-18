@@ -48,6 +48,20 @@ describe('EmptyState', () => {
     distribution.isCloud = false
   })
 
+  it('leaves out the greeting and the starter prompts when told so, and still renders what it is given', () => {
+    render(EmptyState, {
+      props: { showIntro: false },
+      slots: { default: '<p>Chats of this workflow</p>' },
+      global: { plugins: [i18n] }
+    })
+
+    expect(screen.getByText('Chats of this workflow')).toBeVisible()
+    expect(screen.queryByTestId('suggested-prompts')).toBeNull()
+    expect(
+      screen.queryByText(i18n.global.t('agent.greetingQuestion'))
+    ).toBeNull()
+  })
+
   it('hides the selected-node suggestion without a selection', () => {
     render(EmptyState, {
       global: { plugins: [i18n] }

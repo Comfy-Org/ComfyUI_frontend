@@ -18,7 +18,7 @@ test.describe(
   'Agent chat follows the active workflow tab',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('brings up the tab’s chat on activation unless a chat is picked or drafted', async ({
+    test('brings up the tab’s chat on activation and keeps a draft with its chat', async ({
       tabChats
     }) => {
       await test.step('each chat opens a tab for the workflow it is bound to', async () => {
@@ -64,7 +64,7 @@ test.describe(
         ).toBeVisible()
       })
 
-      await test.step('a draft keeps the open chat when another tab is activated', async () => {
+      await test.step('a draft stays with its chat when another tab is activated and back', async () => {
         await tabChats.openChatFromHistory('Landscape chat')
         await expect(tabChats.panel.userMessageBubbles).toHaveText([
           LANDSCAPE_REQUEST
@@ -83,9 +83,23 @@ test.describe(
             .getWorkflowTab(PORTRAIT_NAME)
             .and(tabChats.topbar.getActiveTab())
         ).toBeVisible()
-        await expect(tabChats.panel.root.getByRole('note')).toContainText(
-          enMessages.agent.viewingDifferentWorkflow
-        )
+        await expect(tabChats.panel.userMessageBubbles).toHaveText([
+          PORTRAIT_REQUEST
+        ])
+        await expect(tabChats.panel.composer).toHaveText('')
+        await expect(
+          tabChats.panel.root.getByText(
+            enMessages.agent.viewingDifferentWorkflow
+          )
+        ).toHaveCount(0)
+
+        await tabChats.activateWorkflow(LANDSCAPE_NAME)
+
+        await expect(
+          tabChats.topbar
+            .getWorkflowTab(LANDSCAPE_NAME)
+            .and(tabChats.topbar.getActiveTab())
+        ).toBeVisible()
         await expect(tabChats.panel.userMessageBubbles).toHaveText([
           LANDSCAPE_REQUEST
         ])

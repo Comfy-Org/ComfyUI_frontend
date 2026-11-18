@@ -17,6 +17,21 @@ needed. `pendingOpLedger` and `PendingLocalEdits` were deleted. References to
 the reconcile, to `pendingOpLedger`, and to `LocalIntent` below are
 historical.
 
+Amended 2026-11-14 by BE-26287 (one chat per workflow tab): the panel now
+follows the visible tab, so leaving a tab that has a chat for a tab without one
+unbinds the session instead of pausing it. When the sender still holds
+unsettled batches (in flight, queued or unsealed) for the workflow being left,
+the follower treats that unbind like a pause: it holds them, keeps the
+projection bound and resumes when the panel binds the workflow again. The
+panel's restore guard (`hasUnsyncedHumanOps`) is skipped for a workflow the
+follower holds, so the return rebinds and resubscribes. "A real detach still
+aborts at once" in the Decision below now applies only when the sender holds
+nothing for the workflow being left. A move to another workflow's chat still
+aborts: `opSender` is one serial queue, so a parked batch for one workflow
+would block another's, and an edit still unconfirmed on a direct switch between
+two tabs with chats settles `unconfirmed`. Closing that gap needs per-workflow
+queues in `opSender` or the bounded drain under Alternatives considered.
+
 ## Context
 
 The human write leg (`opSender`) mints each batch against the workflow the

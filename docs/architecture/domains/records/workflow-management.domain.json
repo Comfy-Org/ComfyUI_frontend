@@ -123,7 +123,7 @@
       "checks": ["src/stores/userFileStore.test.ts"]
     },
     {
-      "name": "Workflow tab activity tracks the editing tab and modified paths and prunes closed tabs",
+      "name": "Workflow tab activity tracks the editing tab, modified paths and chat marks, resolves one chat status per tab by priority, and prunes closed tabs",
       "checks": ["src/stores/workflowTabActivityStore.test.ts"]
     },
     {

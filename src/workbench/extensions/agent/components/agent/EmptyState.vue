@@ -15,10 +15,12 @@ import { starterPromptAttribution } from '@/workbench/extensions/agent/utils/sta
 const {
   userName,
   hasSelection = false,
+  showIntro = true,
   greeting
 } = defineProps<{
   userName?: string
   hasSelection?: boolean
+  showIntro?: boolean
   greeting?: AgentGreeting
 }>()
 const emit = defineEmits<{
@@ -111,7 +113,7 @@ function onPromptClick(prompt: string, label: string, index: number): void {
 
 <template>
   <ProactiveGreeting
-    v-if="greeting && greeting.variant !== 'A'"
+    v-if="showIntro && greeting && greeting.variant !== 'A'"
     :greeting
     :user-name
     @prefilled="emit('prefilled', $event)"
@@ -122,11 +124,13 @@ function onPromptClick(prompt: string, label: string, index: number): void {
   >
     <div class="my-auto flex shrink-0 flex-col items-center gap-8 text-center">
       <GreetingHeading
+        v-if="showIntro"
         class="pt-12"
         :user-name
         :title="t('agent.greetingQuestion')"
       />
       <div
+        v-if="showIntro"
         ref="promptList"
         data-testid="suggested-prompts"
         class="mx-auto flex w-full max-w-[608px] shrink-0 flex-wrap gap-2 @min-[460px]:justify-center"
@@ -154,6 +158,7 @@ function onPromptClick(prompt: string, label: string, index: number): void {
           <span class="truncate">{{ suggestion.text }}</span>
         </Button>
       </div>
+      <slot />
     </div>
   </div>
 </template>

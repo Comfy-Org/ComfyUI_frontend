@@ -118,6 +118,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
+  const blankChatTab = ref<string | null>(null)
   const followsVisibleWorkflow = computed(
     () => targetTracking.value.mode === 'following'
   )
@@ -441,6 +442,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     dismissedSelectionSignature,
     open,
     targetTracking,
+    blankChatTab,
     followsVisibleWorkflow,
     pendingErrorContext,
     pendingCloudHandoff,
