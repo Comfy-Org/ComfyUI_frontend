@@ -1,3 +1,4 @@
+import { cloneDeep } from 'es-toolkit'
 import { markRaw } from 'vue'
 
 import { assert } from '@/base/assert'
@@ -451,16 +452,20 @@ export class ComfyWorkflow extends UserFile {
   }
 
   override async save() {
-    this.content = JSON.stringify(
+    const tracker = this.changeTracker
+    const savedState = cloneDeep(
       requireActiveStateForSave(this, 'ComfyWorkflow.save')
     )
-    // Force save to ensure the content is updated in remote storage incase
-    // the isModified state is screwed by changeTracker.
-    const ret = await super.save({ force: true })
-    this.changeTracker?.reset()
-    this.isModified = false
-    workflowRuntime().removeDraft(this.path)
-    return ret
+    this.content = JSON.stringify(savedState)
+    const savedFile = await super.save({ force: true })
+    if (tracker && this.changeTracker === tracker) {
+      const runtime = workflowRuntime()
+      tracker.prepareForSave()
+      tracker.initialState = savedState
+      this.isModified = !runtime.graphEqual(savedState, tracker.activeState)
+      if (!this.isModified) runtime.removeDraft(this.path)
+    }
+    return savedFile
   }
 
   /**

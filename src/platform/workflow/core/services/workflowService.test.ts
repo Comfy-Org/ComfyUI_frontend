@@ -28,6 +28,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWorkflowService'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useRunOnCloudHandoff } from '@/platform/openOnCloud/useRunOnCloudHandoff'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import {
@@ -3219,6 +3220,39 @@ describe('useWorkflowService', () => {
         Reflect.set(canvas, '_deserializeItems', priorDeserialize)
       }
     })
+  })
+
+  it('keeps edits made during a deployment save unsaved and stops the handoff', async () => {
+    const workflow = createModeTestWorkflow()
+    workflow.changeTracker = new ChangeTracker(workflow, makeWorkflowData())
+    const store = useWorkflowStore()
+    store.attachWorkflow(workflow)
+    store.activeWorkflow = workflow
+    app.rootGraph.extra.prompt = 'being saved'
+    workflow.changeTracker.activeState = zComfyWorkflow.parse(
+      app.rootGraph.serialize()
+    )
+    workflow.isModified = true
+    let finishSave = () => {}
+    const write = vi.spyOn(api, 'storeUserData').mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finishSave = () => resolve(Response.json(workflow.path))
+        })
+    )
+
+    const handoff = useRunOnCloudHandoff('localhost').prepareBrief()
+    await vi.waitFor(() => expect(write).toHaveBeenCalledOnce())
+    app.rootGraph.extra.prompt = 'edited during save'
+    workflow.changeTracker.activeState = zComfyWorkflow.parse(
+      app.rootGraph.serialize()
+    )
+    finishSave()
+
+    expect(await handoff).toBeNull()
+    expect(workflow.originalContent).toContain('"prompt":"being saved"')
+    expect(workflow.activeState.extra?.prompt).toBe('edited during save')
+    expect(workflow.isModified).toBe(true)
   })
 
   describe('saveWorkflow', () => {

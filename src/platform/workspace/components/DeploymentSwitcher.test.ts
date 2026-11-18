@@ -473,7 +473,7 @@ describe('DeploymentSwitcher', () => {
 
     await user.click(screen.getByTestId(`deployment-row-${D1}`))
     expect(openPage).toHaveBeenCalledWith(
-      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}?utm_source=comfyui&utm_medium=app&utm_content=deployment-switcher`,
       '_blank',
       'noopener,noreferrer'
     )
@@ -588,7 +588,7 @@ describe('DeploymentSwitcher', () => {
     const builds = screen.getByRole('menuitem', { name: 'Manage deployments' })
     expect(builds).toHaveAttribute(
       'href',
-      expect.stringMatching(/\/profile\/builds$/)
+      `${getComfyPlatformBaseUrl()}/profile/builds?utm_source=comfyui&utm_medium=app&utm_content=deployment-switcher`
     )
     expect(builds).toHaveAttribute('target', '_blank')
     expect(screen.queryByTestId('deployment-switcher-create')).toBeNull()
@@ -2195,7 +2195,7 @@ describe('DeploymentSwitcher, starting a stopped deployment', () => {
       })
     )
     expect(openPage).toHaveBeenCalledWith(
-      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}`,
+      `${getComfyPlatformBaseUrl()}/profile/deployments/${D1}?utm_source=comfyui&utm_medium=app&utm_content=deployment-switcher`,
       '_blank',
       'noopener,noreferrer'
     )

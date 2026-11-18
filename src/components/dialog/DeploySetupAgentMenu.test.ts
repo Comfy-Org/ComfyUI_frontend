@@ -365,6 +365,18 @@ describe('DeploySetupAgentMenu', () => {
     )
   })
 
+  function mockPlatformTab() {
+    const tabDocument = document.implementation.createHTMLDocument()
+    const destination = vi.fn<(link: HTMLAnchorElement) => void>()
+    tabDocument.body.addEventListener('click', (event) => {
+      event.preventDefault()
+      if (event.target instanceof HTMLAnchorElement) destination(event.target)
+    })
+    const tab = fromPartial<Window>({ opener: window, document: tabDocument })
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab)
+    return { tab, open, destination }
+  }
+
   async function clickPlatformForNewWorkflow() {
     const workflow = fromPartial<LoadedComfyWorkflow>({
       path: 'workflows/Unsaved Workflow.json',
@@ -372,8 +384,7 @@ describe('DeploySetupAgentMenu', () => {
       isModified: true
     })
     useWorkflowStore().activeWorkflow = workflow
-    const tab = fromPartial<Window>({ opener: window, location: {} })
-    const open = vi.spyOn(window, 'open').mockReturnValue(tab)
+    const platformTab = mockPlatformTab()
     render(GlobalDialog, { global: { plugins: [testI18n] } })
     await openDeploySetupDialog()
     const user = userEvent.setup({ pointerEventsCheck: 0 })
@@ -386,7 +397,7 @@ describe('DeploySetupAgentMenu', () => {
       event.preventDefault()
     })
     await user.click(link)
-    return { workflow, tab, open, link, navigated }
+    return { workflow, ...platformTab, link, navigated }
   }
 
   it('saves a new workflow, then opens Deploy on Platform', async () => {
@@ -397,7 +408,7 @@ describe('DeploySetupAgentMenu', () => {
       }
     )
 
-    const { workflow, tab, open, link, navigated } =
+    const { workflow, tab, open, destination, link, navigated } =
       await clickPlatformForNewWorkflow()
 
     expect(navigated).toHaveBeenCalledExactlyOnceWith(true)
@@ -408,7 +419,12 @@ describe('DeploySetupAgentMenu', () => {
       expect(open).toHaveBeenCalledExactlyOnceWith('', '_blank')
     )
     expect(tab.opener).toBeNull()
-    expect(tab.location.href).toBe(link.getAttribute('href'))
+    expect(destination).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        href: link.getAttribute('href'),
+        rel: link.getAttribute('rel')
+      })
+    )
     expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
       false
     )
@@ -428,6 +444,29 @@ describe('DeploySetupAgentMenu', () => {
     expect(open).not.toHaveBeenCalled()
     expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
       true
+    )
+  })
+
+  it('opens the saved Platform destination in the Desktop system browser', async () => {
+    vi.stubGlobal('__comfyDesktop2', {})
+    vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
+      async (workflow) => {
+        Object.assign(workflow, { isPersisted: true, isModified: false })
+        return true
+      }
+    )
+
+    const { open, link } = await clickPlatformForNewWorkflow()
+
+    await waitFor(() =>
+      expect(open).toHaveBeenCalledExactlyOnceWith(
+        link.getAttribute('href'),
+        '_blank',
+        'noopener,noreferrer'
+      )
+    )
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      false
     )
   })
 
@@ -476,8 +515,7 @@ describe('DeploySetupAgentMenu', () => {
         return true
       }
     )
-    const tab = fromPartial<Window>({ opener: window, location: {} })
-    const open = vi.spyOn(window, 'open').mockReturnValue(tab)
+    const { open } = mockPlatformTab()
     render(GlobalDialog, { global: { plugins: [testI18n] } })
     await openDeploySetupDialog()
     const user = userEvent.setup({ pointerEventsCheck: 0 })

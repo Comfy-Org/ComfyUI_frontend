@@ -7,7 +7,8 @@ import {
   OWNER_ONLY,
   OWNER_ONLY_MESSAGE,
   WORKSPACE_ID,
-  localWebBillingHandoffTest as test
+  localWebBillingHandoffTest as test,
+  taggedEntryUrl
 } from '@e2e/fixtures/localWebBillingHandoffFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 
@@ -148,9 +149,7 @@ test.describe('Local web billing handoff', () => {
       await planAction.click()
       const popup = await popupOpened
 
-      const plansEntry = new URL(ENTRY_URL)
-      plansEntry.searchParams.set('view', 'plans')
-      await expect(popup).toHaveURL(plansEntry.href)
+      await expect(popup).toHaveURL(taggedEntryUrl('plans'))
       expect(handoffRequests).toHaveLength(1)
       const body = handoffRequests[0].postDataJSON()
       expect(body).toEqual(
@@ -186,7 +185,7 @@ test.describe('Local web billing handoff', () => {
         await turnOn.click()
         const popup = await popupOpened
 
-        await expect(popup).toHaveURL(ENTRY_URL)
+        await expect(popup).toHaveURL(taggedEntryUrl())
         expect(handoffRequests).toHaveLength(1)
         const body = handoffRequests[0].postDataJSON()
         expect(body).toEqual(
