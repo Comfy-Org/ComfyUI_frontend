@@ -172,17 +172,38 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       tabByWorkflow.value[workflowId] = { ...record, confirmedAt: Date.now() }
     }
 
-    // Save As on a draft and an in-place rename keep the tab and change its
-    // path. The owner's record follows the tab, or after a reload no tab sits
-    // at the stored path and the chat reports its workflow as gone.
-    function followRenamedTab({ tab, path }: OpenTab, previous: OpenTab[]) {
-      const before = previous.find((entry) => entry.tab === tab)
-      if (before === undefined || before.path === path) return
-      const workflowId = recordIdFor(before.path)
-      // Bind the tab in hand: the watcher can run before renameWorkflow
-      // re-keys the lookup, so a path lookup would miss it.
-      if (workflowId !== undefined && isVerifiedOwner(workflowId, tab))
-        bindTab(workflowId, path, tab)
+    function followRenamedTabs(open: OpenTab[], previous: OpenTab[]): void {
+      const moves = open.flatMap(({ tab, path }) => {
+        const before = previous.find((entry) => entry.tab === tab)
+        if (before === undefined || before.path === path) return []
+        const workflowId = recordIdFor(before.path)
+        return workflowId !== undefined && isVerifiedOwner(workflowId, tab)
+          ? [{ workflowId, tab, path, record: tabByWorkflow.value[workflowId] }]
+          : []
+      })
+      if (moves.length === 0) return
+      const moving = new Set(moves.map(({ workflowId }) => workflowId))
+      const next = Object.fromEntries(
+        Object.entries(tabByWorkflow.value).filter(
+          ([workflowId, record]) =>
+            moving.has(workflowId) ||
+            !moves.some(({ path }) => path === record.tabPath)
+        )
+      )
+      for (const workflowId of Object.keys(tabByWorkflow.value)) {
+        if (Object.hasOwn(next, workflowId)) continue
+        boundInstances.delete(workflowId)
+        refusedInstances.delete(workflowId)
+      }
+      for (const { workflowId, tab, path, record } of moves) {
+        boundInstances.set(workflowId, toRaw(tab))
+        next[workflowId] = {
+          tabPath: path,
+          graphId: graphIdOf(tab) ?? record.graphId,
+          confirmedAt: Date.now()
+        }
+      }
+      tabByWorkflow.value = next
     }
 
     watch(
@@ -192,7 +213,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         previous
           .filter(({ tab }) => !open.some((entry) => entry.tab === tab))
           .forEach(releaseClosedTab)
-        open.forEach((entry) => followRenamedTab(entry, previous))
+        followRenamedTabs(open, previous)
         open.forEach(adoptOpenTab)
       },
       { immediate: true }
@@ -206,16 +227,9 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     }
 
     function bind(workflowId: string, tabPath: string): void {
-      bindTab(workflowId, tabPath, workflows.getWorkflowByPath(tabPath))
-    }
-
-    function bindTab(
-      workflowId: string,
-      tabPath: string,
-      workflow: ComfyWorkflow | null
-    ): void {
       unbind(tabPath)
       refusedInstances.delete(workflowId)
+      const workflow = workflows.getWorkflowByPath(tabPath)
       if (workflow) boundInstances.set(workflowId, toRaw(workflow))
       else boundInstances.delete(workflowId)
       tabByWorkflow.value = {
