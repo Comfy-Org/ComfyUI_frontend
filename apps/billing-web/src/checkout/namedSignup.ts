@@ -30,7 +30,7 @@ function withStorage<T>(
 
 /**
  * The unfinished signup a checkout link names, followed until this tab pays
- * in its place; from then on recovery follows whatever the server reports.
+ * in its place, and only where the tab can remember that it did.
  */
 export function createNamedSignup(
   storage: () => Storage = () => globalThis.sessionStorage
@@ -43,7 +43,7 @@ export function createNamedSignup(
       withStorage(
         storage,
         (store) => parseIds(store.getItem(STORAGE_KEY)).includes(id),
-        false
+        true
       )
     )
   }
