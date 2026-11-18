@@ -231,7 +231,7 @@ const { accountActionsOnly = false, flyoutSide = 'left' } = defineProps<{
 
 const menuInset = 5
 const flyoutGap = menuInset + 8
-const creditsFlyoutAlignOffset = -13
+const creditsFlyoutAlignOffset = -11
 
 const emit = defineEmits<{
   close: []

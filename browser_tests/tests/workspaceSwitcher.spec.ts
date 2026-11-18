@@ -18,6 +18,8 @@ const FLYOUT_GAP_PX = 8
 const FLYOUT_WIDTH_PX = 256
 const FLYOUT_ROW_HEIGHT_PX = 40
 const FLYOUT_ROW_LABEL_INSET_PX = 32
+const MENU_ROW_HEIGHT_PX = 40
+const SWITCHER_VISIBLE_ROW_LIMIT = 6
 
 function profileMenuOf(page: Page) {
   return page.locator('[data-slot="popover-content"]', {
@@ -29,6 +31,25 @@ async function boxOf(locator: Locator) {
   const box = await locator.boundingBox()
   if (!box) throw new Error('Expected a laid-out element')
   return box
+}
+
+async function switcherListLayout(list: Locator) {
+  const rows = list.getByRole('button')
+  const rowCount = await rows.count()
+  const [listBox, ...rowBoxes] = await Promise.all([
+    boxOf(list),
+    ...Array.from({ length: rowCount }, (_, i) => boxOf(rows.nth(i)))
+  ])
+  const listBottom = listBox.y + listBox.height
+  return {
+    visibleRows: rowBoxes.filter(
+      (row) => row.y + row.height > listBox.y + 0.5 && row.y < listBottom - 0.5
+    ).length,
+    fullyVisibleRows: rowBoxes.filter(
+      (row) =>
+        row.y >= listBox.y - 0.5 && row.y + row.height <= listBottom + 0.5
+    ).length
+  }
 }
 
 async function creditsFlyoutLayout(page: Page) {
@@ -114,6 +135,73 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
     await expect(panel).toBeInViewport({ ratio: 1 })
   })
 
+  test('lays out the single-line menu rows 40px tall', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    const rowTestIds = [
+      'credits-menu-item',
+      'workspace-settings-menu-item',
+      'user-settings-menu-item',
+      'logout-menu-item'
+    ]
+    await expect(page.getByTestId('logout-menu-item')).toBeVisible()
+
+    await expect
+      .poll(async () => {
+        const boxes = await Promise.all(
+          rowTestIds.map((testId) => boxOf(page.getByTestId(testId)))
+        )
+        return boxes.map((box) => Math.round(box.height))
+      })
+      .toEqual(rowTestIds.map(() => MENU_ROW_HEIGHT_PX))
+  })
+
+  test('shows six workspace rows and scrolls to the seventh', async ({
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+
+    await mockWorkspaceList(page, createManyWorkspacesResponse())
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    await comfyPage.toast.closeToasts()
+    await page.getByRole('button', { name: 'Current user' }).click()
+    await page.getByTestId('workspace-switcher-trigger').click()
+
+    const list = page.getByTestId('workspace-switcher-list')
+    await expect(
+      list.getByRole('button').nth(SWITCHER_VISIBLE_ROW_LIMIT)
+    ).toBeAttached()
+
+    await expect
+      .poll(() => switcherListLayout(list))
+      .toEqual({
+        visibleRows: SWITCHER_VISIBLE_ROW_LIMIT,
+        fullyVisibleRows: SWITCHER_VISIBLE_ROW_LIMIT
+      })
+
+    const seventhRow = list.getByRole('button').nth(SWITCHER_VISIBLE_ROW_LIMIT)
+    await list.hover()
+    await page.mouse.wheel(0, 100)
+
+    await expect
+      .poll(async () => {
+        const [listBox, rowBox] = await Promise.all([
+          boxOf(list),
+          boxOf(seventhRow)
+        ])
+        return (
+          rowBox.y >= listBox.y - 0.5 &&
+          rowBox.y + rowBox.height <= listBox.y + listBox.height + 0.5
+        )
+      })
+      .toBe(true)
+  })
+
   test.describe('credits flyout', () => {
     test('opens 8px right of the menu, 256px wide, its first line level with the Credits row', async ({
       comfyPage
@@ -187,7 +275,7 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
 
       await comfyPage.toast.closeToasts()
       await page.addStyleTag({
-        content: '[data-testid="credits-flyout"] { min-height: 240px; }'
+        content: '[data-testid="credits-flyout"] { min-height: 260px; }'
       })
       await page.getByRole('button', { name: 'Current user' }).click()
       await page.getByTestId('credits-menu-item').hover()
