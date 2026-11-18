@@ -2,7 +2,7 @@ import type {
   PlanNotStartedBanner,
   RecoveryPaymentPage
 } from '@comfyorg/account-core/billing'
-import { shallowRef, watch } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -17,6 +17,13 @@ import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 type RecoverySource = 'plans' | 'status'
+type BillingOperation = Awaited<
+  ReturnType<typeof billingApi.getBillingOpStatus>
+>
+type OperationRead =
+  | { kind: 'loading' }
+  | { kind: 'failed' }
+  | { kind: 'read'; operation: BillingOperation }
 
 let pendingPaymentRefresh: {
   readonly source: RecoverySource
@@ -51,9 +58,7 @@ export function useSubscriptionPaymentRecovery(
   const { flags } = useFeatureFlags()
   const workspace = useWorkspaceIdentity()
 
-  function paymentPageOf(
-    operation: Awaited<ReturnType<typeof billingApi.getBillingOpStatus>>
-  ): RecoveryPaymentPage {
+  function paymentPageOf(operation: BillingOperation): RecoveryPaymentPage {
     if (operation.action_url) return { kind: 'hostedPage' }
     if (!operation.payment_intent_client_secret || !operation.plan) {
       return { kind: 'unavailable' }
@@ -77,16 +82,24 @@ export function useSubscriptionPaymentRecovery(
   }
   const toast = useToast()
   const isOpeningPayment = shallowRef(false)
-  const recoveryPlanTier = shallowRef<PlanNotStartedBanner['planTier']>(null)
-  const recoveryPaymentPage = shallowRef<RecoveryPaymentPage>({
-    kind: 'loading'
+  const operationRead = shallowRef<OperationRead>({ kind: 'loading' })
+  const recoveryPlanTier = computed<PlanNotStartedBanner['planTier']>(() =>
+    operationRead.value.kind === 'read'
+      ? (operationRead.value.operation.plan?.tier ?? null)
+      : null
+  )
+  const recoveryPaymentPage = computed<RecoveryPaymentPage>(() => {
+    const read = operationRead.value
+    if (read.kind === 'read') return paymentPageOf(read.operation)
+    return read.kind === 'loading'
+      ? { kind: 'loading' }
+      : { kind: 'unavailable' }
   })
 
   watch(
     () => subscriptionPaymentRecovery.value?.billing_op_id,
     async (opId) => {
-      recoveryPlanTier.value = null
-      recoveryPaymentPage.value = { kind: 'loading' }
+      operationRead.value = { kind: 'loading' }
       if (!opId) {
         disarmPendingPaymentRefresh(source)
         return
@@ -94,11 +107,10 @@ export function useSubscriptionPaymentRecovery(
       try {
         const operation = await billingApi.getBillingOpStatus(opId)
         if (!isServedRecovery(opId)) return
-        recoveryPlanTier.value = operation.plan?.tier ?? null
-        recoveryPaymentPage.value = paymentPageOf(operation)
+        operationRead.value = { kind: 'read', operation }
       } catch (error) {
         if (isServedRecovery(opId)) {
-          recoveryPaymentPage.value = { kind: 'unavailable' }
+          operationRead.value = { kind: 'failed' }
         }
         reportError(error, {
           surface: 'billing',
