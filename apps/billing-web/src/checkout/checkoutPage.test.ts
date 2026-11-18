@@ -1171,6 +1171,31 @@ describe('reduceCheckoutPage endings', () => {
       name: 'a collided Pay re-read as parked for a human is unconfirmed',
       events: [...live, submitted, collided, reconciled(parkedForAHuman())],
       expected: { ...UNCONFIRMED, sibling: true }
+    },
+    {
+      name: 'a collided Pay whose re-read fails is unconfirmed, never a locked form',
+      events: [...live, submitted, collided, recheckFailed],
+      expected: { kind: 'unconfirmed', sibling: true }
+    },
+    {
+      name: 'an unanswered Pay whose re-read fails is unconfirmed',
+      events: [
+        ...live,
+        submitted,
+        { type: 'payRejectedAsPending', because: 'unanswered' },
+        recheckFailed
+      ],
+      expected: { kind: 'unconfirmed', sibling: true }
+    },
+    {
+      name: 'a rate-limited Pay whose re-read fails is unconfirmed',
+      events: [
+        ...live,
+        submitted,
+        { type: 'payRejectedAsPending', because: 'rate_limited' },
+        recheckFailed
+      ],
+      expected: { kind: 'unconfirmed' }
     }
   ])('$name', ({ events, expected }) => {
     expect(replay(events)).toEqual(expected)
@@ -1361,6 +1386,11 @@ describe('settled payments the page reads on its own', () => {
       name: 'a success with no receipt',
       page: { kind: 'terminal', attribution: 'started' },
       awaiting: false
+    },
+    {
+      name: 'a collided Pay whose re-read failed',
+      page: replay([...live, submitted, collided, recheckFailed]),
+      awaiting: true
     }
   ])('re-reads $name: $awaiting', ({ page, awaiting }) => {
     expect(awaitingServer(page)).toBe(awaiting)

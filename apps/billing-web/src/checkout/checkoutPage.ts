@@ -860,15 +860,11 @@ function nothingChargedNotice(
 }
 
 function recheckLost(page: CheckoutPage): CheckoutPage {
-  if (
-    page.kind !== 'capture' ||
-    page.outcome?.kind !== 'reconciling' ||
-    page.outcome.because === undefined
-  )
+  if (page.kind !== 'capture' || page.outcome?.kind !== 'reconciling')
     return page
-  return page.outcome.because === 'unanswered'
-    ? { kind: 'unconfirmed', sibling: true }
-    : { kind: 'unconfirmed' }
+  return page.outcome.because === 'rate_limited'
+    ? { kind: 'unconfirmed' }
+    : { kind: 'unconfirmed', sibling: true }
 }
 
 /**

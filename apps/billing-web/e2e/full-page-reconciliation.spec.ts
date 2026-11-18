@@ -243,6 +243,40 @@ test('a Pay the server answers 409 for lands on Already completed once the re-re
   expect(subscribeRequests(cloud)).toHaveLength(1)
 })
 
+test("a Pay the server answers 409 for whose re-read fails lands on We couldn't confirm, never a locked Pay", async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.reply('POST', '/billing/subscribe', () => ({
+    status: 409,
+    body: { code: 'CONFLICT', message: 'operation already pending' }
+  }))
+  let rereads = 0
+  cloud.reply('GET', '/billing/status', () => {
+    if (subscribeRequests(cloud).length === 0)
+      return { body: cloud.scenario.status }
+    rereads += 1
+    return { status: 500, body: { error: 'internal' } }
+  })
+  await page.clock.install()
+  await signIn(CHECKOUT)
+  await expect(payButton(page)).toBeEnabled()
+
+  await payButton(page).click()
+
+  await expect(
+    page.getByRole('heading', { name: "We couldn't confirm your payment" })
+  ).toBeVisible()
+  await expect(payButton(page)).toBeHidden()
+  await expect(page.getByText('Payment declined')).toBeHidden()
+  const rereadsBeforePoll = rereads
+  await page.clock.fastForward(30_000)
+  await expect.poll(() => rereads).toBeGreaterThan(rereadsBeforePoll)
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
 const REFUSED = { status: 401, body: { error: 'unauthorized' } } as const
 const BILLING_READS = [
   '/billing/status',
