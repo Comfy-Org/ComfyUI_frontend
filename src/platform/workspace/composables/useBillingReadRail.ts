@@ -7,7 +7,7 @@ import type {
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   BillingBalanceResponse,
-  BillingCapabilitiesResponse,
+  BillingCapabilitiesRead,
   BillingEventsResponse,
   BillingPlansResponse,
   BillingStatusResponse,
@@ -22,7 +22,7 @@ export interface BillingReadRail {
   readPlans: () => Promise<BillingResult<BillingPlansResponse>>
   readCapabilities: (
     options: CapabilitiesReadOptions
-  ) => Promise<BillingResult<BillingCapabilitiesResponse>>
+  ) => Promise<BillingResult<BillingCapabilitiesRead>>
   readPaymentMethods: () => Promise<BillingResult<SavedPaymentMethod[]>>
   /** The only read whose request varies per call: it asks for one page. */
   readEvents: (
