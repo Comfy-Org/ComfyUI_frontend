@@ -87,7 +87,10 @@ export async function trackDialogFlash(
         for (const el of document.querySelectorAll('[role="dialog"]')) {
           if (
             accessibleName(el) === dialogName &&
-            el.checkVisibility() &&
+            el.checkVisibility({
+              checkOpacity: true,
+              checkVisibilityCSS: true
+            }) &&
             !document.documentElement.hasAttribute(attribute)
           ) {
             document.documentElement.setAttribute(attribute, 'true')
