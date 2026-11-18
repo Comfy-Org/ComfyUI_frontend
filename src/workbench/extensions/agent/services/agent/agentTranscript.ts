@@ -539,16 +539,10 @@ function recordAssistantRow(
 
 function keepAuthoritativeAsk(
   message: AssistantMessage,
-  row: AgentMessages[number],
-  isAskUnavailable: (askId: string) => boolean,
-  isAskRetired: (askId: string) => boolean
+  row: AgentMessages[number]
 ): void {
   const rowAsk = row.status === 'streaming' ? row.pending_ask : undefined
-  const authoritativeAskId =
-    rowAsk !== undefined &&
-    (!isAskUnavailable(rowAsk.ask_id) || isAskRetired(rowAsk.ask_id))
-      ? rowAsk.ask_id
-      : undefined
+  const authoritativeAskId = rowAsk?.ask_id
   message.parts = message.parts.filter((part) => {
     if (!isOpenAskPart(part)) return true
     const askId = askIdOf(part)
@@ -591,9 +585,7 @@ function liveTranscriptTurn(
 }
 
 export function normalizeAgentTranscript(
-  history: AgentMessages,
-  isAskUnavailable: (askId: string) => boolean = () => false,
-  isAskRetired: (askId: string) => boolean = () => false
+  history: AgentMessages
 ): NormalizedAgentTranscript {
   const userTexts = new Map<TurnId, string>()
   const userAttachments = new Map<TurnId, UserAttachment[]>()
@@ -626,8 +618,7 @@ export function normalizeAgentTranscript(
     if (row.role === 'assistant') {
       const pending = recordAssistantRow(row, turnId, text, assistants)
       const message = assistants.get(turnId)
-      if (message)
-        keepAuthoritativeAsk(message, row, isAskUnavailable, isAskRetired)
+      if (message) keepAuthoritativeAsk(message, row)
       pendingByTurn.set(turnId, pending)
     }
   }
