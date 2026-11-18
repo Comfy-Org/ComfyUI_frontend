@@ -12,6 +12,7 @@
  * state.
  */
 import {
+  zAcceptedAutoTopUpSettings,
   zBillingOpChargeBreakdown,
   zBillingOpChargeReason,
   zBillingOpReceiptPlan,
@@ -41,6 +42,13 @@ const ReceiptPlanSchema = zBillingOpReceiptPlan.extend({
 
 export const BillingOpStatusSchema = zBillingOpStatusResponse.extend({
   amount_charged_cents: wireCents.optional(),
+  auto_top_up: zAcceptedAutoTopUpSettings
+    .extend({
+      monthly_budget_cents: wireCents,
+      target_credits: wireCents,
+      threshold_credits: wireCents
+    })
+    .optional(),
   credits_added: wireCents.optional(),
   charge_breakdown: ChargeBreakdownSchema.optional(),
   plan: ReceiptPlanSchema.optional(),

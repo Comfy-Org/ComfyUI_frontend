@@ -1,44 +1,37 @@
 /**
- * A cancellation, card change, or payment made in a hosted tab never pushes
- * back to this one, so every return to this tab re-reads whatever that tab
- * could have changed. A return is leaving (`blur` or hidden) and coming back
- * (`focus` or visible): the focus and visibility events of one return count
- * once, and a return that lands while a refresh is still in flight gets one
- * trailing refresh, because that read may predate what the hosted tab just
- * did. It stays armed until the returned callback runs. Shared by every
- * opener of a hosted billing tab or window so they arm the same return
- * signal one way.
+ * Runs `refresh` with each return to this tab, plus one for a return that lands
+ * mid-refresh. The returned function disarms it and drops that queued one.
  */
 export function registerRefreshOnReturn(
-  refresh: () => Promise<unknown>
+  refresh: (returned: Event) => Promise<unknown>
 ): () => void {
   let away = true
   let inFlight = false
-  let trailing = false
+  let queued: Event | undefined
 
-  const run = () => {
+  const run = (returned: Event) => {
     inFlight = true
-    void refresh().finally(() => {
+    void refresh(returned).finally(() => {
       inFlight = false
-      if (!trailing) return
-      trailing = false
-      run()
+      const next = queued
+      queued = undefined
+      if (next) run(next)
     })
   }
   const onLeave = () => {
     away = true
   }
-  const onReturn = () => {
+  const onReturn = (returned: Event) => {
     if (!away) return
     away = false
     if (inFlight) {
-      trailing = true
+      queued = returned
       return
     }
-    run()
+    run(returned)
   }
-  const onVisibilityChange = () => {
-    if (document.visibilityState === 'visible') onReturn()
+  const onVisibilityChange = (event: Event) => {
+    if (document.visibilityState === 'visible') onReturn(event)
     else onLeave()
   }
 
@@ -46,6 +39,7 @@ export function registerRefreshOnReturn(
   window.addEventListener('focus', onReturn)
   window.addEventListener('blur', onLeave)
   return () => {
+    queued = undefined
     document.removeEventListener('visibilitychange', onVisibilityChange)
     window.removeEventListener('focus', onReturn)
     window.removeEventListener('blur', onLeave)

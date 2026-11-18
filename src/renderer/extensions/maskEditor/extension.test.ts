@@ -1,6 +1,10 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { assert, describe, expect, it, vi } from 'vitest'
 
+import {
+  buildStructuredMenu,
+  convertContextMenuToOptions
+} from '@/composables/graph/contextMenuConverter'
 import type { useMaskEditor } from '@/renderer/extensions/maskEditor/composables/useMaskEditor'
 import type {
   IContextMenuValue,
@@ -77,6 +81,21 @@ describe('Comfy.MaskEditor getExtraMenuOptions', () => {
     expect(item?.content).toBe('Open in MaskEditor | Image Canvas')
     const menuElement: ContextMenuDivElement = document.createElement('div')
     await item?.callback?.call(menuElement)
+    expect(openMaskEditorMock).toHaveBeenCalledWith(node)
+  })
+
+  it('keeps preview-only image nodes editable through the Vue menu', async () => {
+    const nodeType = await registerNodeType()
+    const node = createMockLGraphNode({ previewMediaType: 'image', imgs: [] })
+    const options = buildStructuredMenu(
+      convertContextMenuToOptions(menuOptions(nodeType, node), node),
+      'Extensions'
+    )
+
+    expect(options.map((option) => option.label)).toEqual([
+      'Open in MaskEditor | Image Canvas'
+    ])
+    options[0].action?.()
     expect(openMaskEditorMock).toHaveBeenCalledWith(node)
   })
 

@@ -63,7 +63,8 @@ const copy: Pick<BillingBannerCopy, 'dismiss' | 'actions'> = {
     contactSupport: 'Contact support',
     resumePlan: 'Resume plan',
     choosePlan: 'Choose a plan',
-    contactSales: 'Contact sales'
+    contactSales: 'Contact sales',
+    finishPayment: 'Finish payment'
   }
 }
 
