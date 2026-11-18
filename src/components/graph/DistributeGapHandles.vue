@@ -178,11 +178,13 @@ function startDrag(event: PointerEvent, index: number) {
 
   const { graph } = canvas
   const workflow = workflowStore.activeWorkflow
+  const session = distributeSession.value
   const isStillEditable = () =>
-    !canvas.read_only &&
+    distributeSession.value === session &&
     canvas.graph === graph &&
     canvasStore.rootGraphId === rootGraphId &&
-    workflowStore.activeWorkflow === workflow
+    workflowStore.activeWorkflow === workflow &&
+    !!sessionNodes(canvas)
 
   const startBoxes = nodes.map(nodeBox)
   const startPointer = pointerAlong(event)
