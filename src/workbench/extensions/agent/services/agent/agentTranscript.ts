@@ -654,6 +654,7 @@ export function normalizeAgentTranscript(
       if (message)
         keepAuthoritativeAsk(message, row, isAskUnavailable, isAskRetired)
       pendingByTurn.set(turnId, pending)
+      if (row.workflow_id) latestWorkflowId = row.workflow_id
     }
   }
 

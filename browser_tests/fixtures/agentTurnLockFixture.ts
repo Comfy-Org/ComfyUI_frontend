@@ -24,10 +24,12 @@ import type {
   zTurnInProgressError
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { agentTest, bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const zAnswerRequest = z.object({ selected: z.array(z.string()) })
@@ -648,13 +650,8 @@ export class AgentTurnLockHarness {
     await expect(
       this.page.getByTestId(TestIds.topbar.integratedTabBarActions)
     ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 15_000 })
+    await new Topbar(this.page).saveWorkflowAs(APPROVAL_WORKFLOW_NAME)
     await this.agentPanel.open()
-    await this.page
-      .getByRole('button', {
-        name: enMessages.sideToolbar.newBlankWorkflow,
-        exact: true
-      })
-      .click()
     await expect(this.panel).toBeVisible()
   }
 
@@ -853,9 +850,15 @@ export const agentTurnLockTest = mergeTests(
   agentTest,
   webSocketFixture
 ).extend<{ turnLock: AgentTurnLockHarness }>({
-  turnLock: async ({ page, getAgentSocket, nextAgentSocket }, use) => {
+  turnLock: async (
+    { page, agentFlagEnabled, getAgentSocket, nextAgentSocket },
+    use
+  ) => {
     const server = new TurnLockServer()
-    await routeTurnLock(page, server)
+    await bootAgentApp(page, agentFlagEnabled, {
+      beforeNavigate: (targetPage) => routeTurnLock(targetPage, server)
+    })
+    await mockSavedWorkflowPersistence(page, WORKFLOW_ID)
     await use(
       new AgentTurnLockHarness(page, server, getAgentSocket, nextAgentSocket)
     )

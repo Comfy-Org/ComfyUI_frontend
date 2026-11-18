@@ -4,7 +4,6 @@ import { expect } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
@@ -76,9 +75,9 @@ export class RestoredBindingReloadDriver {
       workflowName,
       { timeout: PANEL_MOUNT_TIMEOUT }
     )
-    await expect(
-      panel.getByRole('button', { name: enMessages.agent.send })
-    ).toBeEnabled({ timeout: PANEL_MOUNT_TIMEOUT })
+    await expect(panel.getByTestId('agent-run-notice-unavailable')).toHaveCount(
+      0
+    )
   }
 
   /** The widget values `nodeId` carries in the draft of the next posted message. */

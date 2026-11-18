@@ -476,7 +476,10 @@ export class AgentMultiAutogrowRealignHarness {
     // the only thing that can satisfy the value assertions.
     await this.page.evaluate(() => {
       for (const key of Object.keys(localStorage)) {
-        if (key.startsWith('Comfy.Workflow.Draft')) {
+        if (
+          key.startsWith('Comfy.Workflow.Draft') ||
+          key.startsWith('Comfy.AgentPanel.thread')
+        ) {
           localStorage.removeItem(key)
         }
       }

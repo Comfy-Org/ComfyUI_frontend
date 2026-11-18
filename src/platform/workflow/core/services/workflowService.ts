@@ -716,6 +716,8 @@ export const useWorkflowService = () => {
       isCanvasOwner(workflow.changeTracker) &&
       !options.force
     ) {
+      if (options.initiator === 'user')
+        workflowStore.reportUserActivation(workflow)
       return Promise.resolve(true)
     }
 

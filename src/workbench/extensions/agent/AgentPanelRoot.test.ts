@@ -14255,6 +14255,38 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).not.toHaveProperty('current_tab_unbound')
   })
 
+  it('keeps an unbound tab flagged as unbound on turn 2 when another saved tab owns the returned workflow id', async () => {
+    const saved = addTab('workflows/saved.json')
+    const unbound = makeTab()
+    Object.assign(unbound, {
+      isTemporary: true,
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        nodes: [{ id: 1, type: 'TextInput' }],
+        links: []
+      })
+    })
+    expect(workflowStore.openWorkflows.map((w) => w.path)).toContain(saved.path)
+    const bodies = mockMessagesEndpoint('wf-saved', [
+      { id: 'wf-saved', name: 'saved' }
+    ])
+    renderWithSelectedTarget()
+
+    await sendFromComposer('turn one on unbound')
+    dispatchApiEvent('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+
+    await sendFromComposer('turn two on unbound')
+
+    expect(bodies).toHaveLength(2)
+    expect(bodies[0]).toMatchObject({ current_tab_unbound: true })
+    expect(bodies[1]).not.toHaveProperty('workflow_id')
+    expect(bodies[1]).toMatchObject({ current_tab_unbound: true })
+    expect(bodies[1]).toHaveProperty('draft')
+  })
+
   it('agent_active_tab with a cloud id activates the open saved tab without minting', async () => {
     makeTab()
     addTab('workflows/temp/duck.json', { isTemporary: true })

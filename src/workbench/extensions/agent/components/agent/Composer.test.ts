@@ -2428,4 +2428,15 @@ describe('Composer', () => {
       expect(store.starterPrompt).toBeNull()
     })
   })
+
+  it('positions the reference menu above the composer without negative bottom margin overlap', async () => {
+    mount()
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.paste('@')
+
+    const menu = await screen.findByTestId('agent-reference-menu')
+    expect(menu.className).not.toContain('-mb-')
+    expect(menu.className).toContain('mb-1')
+  })
 })

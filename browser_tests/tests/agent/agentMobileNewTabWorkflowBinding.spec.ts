@@ -115,6 +115,10 @@ test.describe(
       })
 
       await test.step('the account already has a saved workflow', async () => {
+        await page.evaluate(() =>
+          localStorage.setItem('Comfy.AgentPanel.activationVisits', '2')
+        )
+        if (await panel.isVisible()) await agentPanel.close()
         const saving = topbar.saveWorkflowAs(SAVED_TAB)
         await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
         workflowSelection.finishSave(true)

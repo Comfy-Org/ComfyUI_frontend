@@ -50,7 +50,7 @@ test(
         exact: true
       })
       .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+    await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
     await editor.pressSequentially(' while saving')
     workflowSelection.finishSave(true)
     await expect(editor).toHaveText(
@@ -68,7 +68,7 @@ test(
         exact: true
       })
       .click()
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(2)
+    await expect.poll(() => workflowSelection.savedPaths.length).toBe(3)
     workflowSelection.finishSave(true)
     const text =
       'Before Unsaved Workflow between Unsaved Workflow (2) while saving after'

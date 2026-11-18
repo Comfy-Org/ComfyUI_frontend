@@ -175,6 +175,8 @@ export interface AgentSessionDeps {
     prepare?(clientMessageId?: string): Promise<void>
     /** The server refused this workflow id; forget every cached trace of it. */
     disowned?(workflowId: string): void
+    /** Whether another saved workflow already owns this id. */
+    ownsWorkflowId?(workflowId: string): boolean
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
@@ -1466,7 +1468,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!input.currentTabUnbound || wfContext === undefined) return
     const adoptedOrHeld =
       workflowId !== undefined &&
-      bindingStore.tabPathFor(workflowId) !== undefined
+      (bindingStore.tabPathFor(workflowId) !== undefined ||
+        workflow?.ownsWorkflowId?.(workflowId) === true)
     if (!adoptedOrHeld) unadoptedMintBinding.set(wfContext.tabPath, boundAtSend)
   }
 

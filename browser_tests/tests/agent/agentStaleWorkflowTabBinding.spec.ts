@@ -114,11 +114,15 @@ test.describe(
       await page.route('**/api/agent/threads/*/messages', (route) => {
         if (route.request().method() === 'GET')
           return route.fulfill(jsonRoute(history))
-        posted.push(route.request().postDataJSON())
+        const body = route.request().postDataJSON() as Record<string, unknown>
+        posted.push(body)
         const accepted: AgentTurnAccepted = {
           thread_id: THREAD_ID,
           message_id: TURN_ID,
-          workflow_id: staleWorkflowId
+          workflow_id:
+            body.current_tab_unbound === true
+              ? 'a81718a4-02ae-41e6-ae85-000000000001'
+              : staleWorkflowId
         }
         return route.fulfill({ ...jsonRoute(accepted), status: 202 })
       })

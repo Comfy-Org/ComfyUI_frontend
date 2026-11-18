@@ -2676,6 +2676,27 @@ describe('useWorkflowService', () => {
       expect(activated.mock.calls).toEqual([[clicked]])
     })
 
+    it('reports a user activation when clicking an already-active tab', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/active.json'
+      })
+      const activeTracker = active.changeTracker
+      if (!activeTracker) throw new Error('Expected loaded workflow')
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      bindCanvasTracker(activeTracker)
+      const service = useWorkflowService()
+
+      const activated = vi.fn()
+      workflowStore.onUserActivation(activated)
+
+      await service.openWorkflow(active, { initiator: 'user' })
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(activated.mock.calls).toEqual([[active]])
+    })
+
     it('does not report a user activation whose load fails', async () => {
       const workflowStore = useWorkflowStore()
       const clicked = createWorkflow(null, {

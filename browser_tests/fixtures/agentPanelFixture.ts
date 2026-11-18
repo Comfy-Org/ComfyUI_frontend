@@ -169,6 +169,10 @@ export async function mockAgentTurnApi(
     route.fulfill(jsonRoute(runMode))
   )
   await page.route('**/api/agent/threads/*/messages', async (route) => {
+    if (route.request().method() === 'GET') {
+      await route.fulfill(jsonRoute([]))
+      return
+    }
     await beforeAccept?.()
     await route.fulfill(jsonRoute(turnAccepted))
   })
@@ -345,14 +349,21 @@ export async function loadIntoBootWorkflow(
 ): Promise<void> {
   await page.waitForFunction(() => {
     const workspace = window.app?.extensionManager as WorkspaceStore | undefined
-    return workspace?.workflow.activeWorkflow != null
+    return (
+      workspace?.workflow.tabsRestored === true &&
+      workspace.workflow.activeWorkflow != null
+    )
   })
   await page.evaluate(async (json) => {
     const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
       .workflow.activeWorkflow!
-    await window.app!.loadGraphData(json, true, true, activeWorkflow)
-    if (json.nodes.length > 0)
-      await window.app!.extensionManager.command.execute('Comfy.Canvas.FitView')
+    const extra = json.extra ? { ...json.extra, ds: undefined } : undefined
+    await window.app!.loadGraphData(
+      { ...json, ...(extra ? { extra } : {}) },
+      true,
+      true,
+      activeWorkflow
+    )
   }, json)
   await nextFrame(page)
 }

@@ -231,6 +231,7 @@ class AgentAttachedWorkflowImportFixture {
   }
 
   async attachWorkflow(): Promise<void> {
+    await this.topbar.saveWorkflowAs('Unsaved Workflow')
     await this.agentPanel.open()
     await this.agentPanel.fileInput.setInputFiles({
       name: this.attachmentName,
