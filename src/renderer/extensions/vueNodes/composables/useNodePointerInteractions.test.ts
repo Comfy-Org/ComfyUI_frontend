@@ -66,7 +66,7 @@ function mountNode(nodeState: NodeState) {
   const interactions = scope.run(() => useNodePointerInteractions(nodeState))
   if (!interactions) throw new Error('interactions require an active scope')
   const element = document.createElement('div')
-  const { pointerHandlers } = interactions
+  const { pointerHandlers, isDragging } = interactions
   element.addEventListener('pointerdown', pointerHandlers.onPointerdown)
   element.addEventListener('pointermove', pointerHandlers.onPointermove)
   element.addEventListener('pointerup', pointerHandlers.onPointerup)
@@ -88,6 +88,7 @@ function mountNode(nodeState: NodeState) {
     element,
     scope,
     pointerHandlers,
+    isDragging,
     press: (x: number, y: number, options?: PointerEventOptions) =>
       dispatch('pointerdown', x, y, options),
     move: (x: number, y: number, options?: PointerEventOptions) =>
@@ -302,6 +303,21 @@ describe('useNodePointerInteractions', () => {
 
     expect(useNodeDrag().startDrag).not.toHaveBeenCalled()
     expect(selectedTitles(canvas)).toEqual(['First'])
+  })
+
+  it('reports dragging only on the pressed node', async () => {
+    const { first, second } = await setup()
+    const pressed = mountNode(createNodeState({ id: first.id }))
+    const other = mountNode(createNodeState({ id: second.id }))
+
+    pressed.press(10, 10)
+    pressed.move(10 + DRIFT + 1, 10)
+
+    expect(pressed.isDragging.value).toBe(true)
+    expect(other.isDragging.value).toBe(false)
+
+    pressed.release(40, 10)
+    expect(pressed.isDragging.value).toBe(false)
   })
 
   it('movement past the click drift selects and drags without toggling on release', async () => {
