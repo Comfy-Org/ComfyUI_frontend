@@ -63,8 +63,8 @@ test.describe(
         'subgraphs/subgraph-with-preview-node'
       )
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-      execution.latentPreview('preview-job', '5:10')
-      execution.latentPreview('unrelated-preview-job', '11')
+      execution.latentPreview(await execution.run(), '5:10')
+      execution.latentPreview(await execution.run(), '11')
       await expect
         .poll(() =>
           comfyPage.page.evaluate(() =>

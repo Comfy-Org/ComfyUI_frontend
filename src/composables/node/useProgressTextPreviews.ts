@@ -26,7 +26,12 @@ export function useProgressTextPreviews() {
     const { nodeId, text, prompt_id } = e.detail
     if (!text || !nodeId) return
 
-    if (!executionStore.rememberStampAndCheckActiveWorkflow(prompt_id)) return
+    if (
+      !executionStore.rememberStampAndCheckOutputOwner(
+        prompt_id ?? executionStore.activeJobId ?? undefined
+      )
+    )
+      return
 
     const executionId = String(nodeId)
     const currentId = executionId.includes(':')

@@ -219,7 +219,8 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       await test.step('Inject multiple previews', async () => {
         const file = { filename: 'example.png', type: 'input' }
         const images = Array.from({ length: 100 }, () => file)
-        execution.executed('', '1', { images })
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', { images })
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })
 
@@ -254,7 +255,8 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
           subfolder: '',
           type: 'output'
         }))
-        execution.executed('', '1', { images })
+        const jobId = await execution.run()
+        execution.executed(jobId, '1', { images })
         await expect(gridImages).toHaveCount(4)
       })
 
