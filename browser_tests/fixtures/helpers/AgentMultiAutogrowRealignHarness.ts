@@ -478,7 +478,7 @@ export class AgentMultiAutogrowRealignHarness {
       for (const key of Object.keys(localStorage)) {
         if (
           key.startsWith('Comfy.Workflow.Draft') ||
-          key.startsWith('Comfy.AgentPanel.thread')
+          key.startsWith('Comfy.Agent.ThreadId:')
         ) {
           localStorage.removeItem(key)
         }

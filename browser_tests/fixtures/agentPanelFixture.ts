@@ -355,15 +355,33 @@ export async function loadIntoBootWorkflow(
     )
   })
   await page.evaluate(async (json) => {
-    const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
-      .workflow.activeWorkflow!
-    const extra = json.extra ? { ...json.extra, ds: undefined } : undefined
-    await window.app!.loadGraphData(
-      { ...json, ...(extra ? { extra } : {}) },
-      true,
-      true,
-      activeWorkflow
-    )
+    const app = window.app!
+    const activeWorkflow = (app.extensionManager as WorkspaceStore).workflow
+      .activeWorkflow!
+    await app.loadGraphData(json, true, true, activeWorkflow)
+    if (json.nodes.length > 0) {
+      await app.extensionManager.command.execute('Comfy.Canvas.FitView')
+      await new Promise<void>((resolve) => {
+        const ds = app.canvas.ds
+        let lastScale = ds.scale
+        let lastX = ds.offset[0]
+        let lastY = ds.offset[1]
+        let settledFrames = 0
+        const waitForSettle = () => {
+          const unchanged =
+            ds.scale === lastScale &&
+            ds.offset[0] === lastX &&
+            ds.offset[1] === lastY
+          settledFrames = unchanged ? settledFrames + 1 : 0
+          lastScale = ds.scale
+          lastX = ds.offset[0]
+          lastY = ds.offset[1]
+          if (settledFrames >= 2) resolve()
+          else requestAnimationFrame(waitForSettle)
+        }
+        requestAnimationFrame(waitForSettle)
+      })
+    }
   }, json)
   await nextFrame(page)
 }

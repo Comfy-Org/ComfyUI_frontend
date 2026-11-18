@@ -49,6 +49,7 @@ const SAVED_WORKFLOW_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
 // A workflow the account has never seen, standing in for a server-side mint.
 const MINTED_WORKFLOW_ID = 'b3e5d7f9-1a2c-4d6e-8f01-2a3b4c5d6e7f'
 const THREAD_ID = '59dbdbf7-ec7f-4a51-93b2-602668f3f1b4'
+const SAVED_THREAD_ID = '6a8c9e0f-1b2d-4c3e-9a4b-5c6d7e8f9a01'
 
 const FIRST_MESSAGE_ID = '5c7e1a2b-8d4f-4e93-a016-3b8c5d9e0f12'
 const SECOND_MESSAGE_ID = '7a1c3e5d-2b4f-4068-9c13-5e7a9b0d1f24'
@@ -74,7 +75,7 @@ test.describe(
   'Agent workflow binding on cloud mobile web, opened from a new tab',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('follows the tab on screen rather than a saved workflow, and holds a hand-picked target across the next turn', async ({
+    test('follows the tab on screen rather than a saved workflow, and switches to the saved tab chat on return', async ({
       page,
       workflowSelection,
       getAgentSocket
@@ -94,13 +95,17 @@ test.describe(
         return route.fulfill({ ...jsonRoute(nextAck), status: 202 })
       })
 
-      const finishTurn = async (messageId: string): Promise<void> => {
-        await expect(agentPanel.userMessageBubbles).toHaveCount(posted.length)
+      const finishTurn = async (
+        messageId: string,
+        expectedBubbles: number,
+        threadId = THREAD_ID
+      ): Promise<void> => {
+        await expect(agentPanel.userMessageBubbles).toHaveCount(expectedBubbles)
         const socket = await getAgentSocket()
         socket.send(
           JSON.stringify({
             type: 'agent_message_done',
-            data: { message_id: messageId, thread_id: THREAD_ID }
+            data: { message_id: messageId, thread_id: threadId }
           })
         )
         await expect(agentPanel.sendButton).toBeVisible()
@@ -115,10 +120,16 @@ test.describe(
       })
 
       await test.step('the account already has a saved workflow', async () => {
+        await expect(topbar.integratedTabBarActions).toHaveAttribute(
+          'data-agent-gate-settled',
+          'true',
+          { timeout: 15_000 }
+        )
         await page.evaluate(() =>
           localStorage.setItem('Comfy.AgentPanel.activationVisits', '2')
         )
-        if (await panel.isVisible()) await agentPanel.close()
+        await agentPanel.open()
+        await agentPanel.close()
         const saving = topbar.saveWorkflowAs(SAVED_TAB)
         await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
         workflowSelection.finishSave(true)
@@ -175,7 +186,7 @@ test.describe(
       })
 
       await test.step('the minted workflow the server returns stays bound on the next turn', async () => {
-        await finishTurn(FIRST_MESSAGE_ID)
+        await finishTurn(FIRST_MESSAGE_ID, 1)
 
         nextAck = {
           ...nextAck,
@@ -187,7 +198,7 @@ test.describe(
           posted[1].workflow_id,
           'the turn after minting must carry the minted workflow id'
         ).toBe(MINTED_WORKFLOW_ID)
-        await finishTurn(SECOND_MESSAGE_ID)
+        await finishTurn(SECOND_MESSAGE_ID, 2)
       })
 
       await test.step('the user activates the saved workflow tab', async () => {
@@ -199,7 +210,7 @@ test.describe(
 
       await test.step('the next turn is bound to that saved workflow', async () => {
         nextAck = {
-          ...nextAck,
+          thread_id: SAVED_THREAD_ID,
           message_id: THIRD_MESSAGE_ID,
           workflow_id: SAVED_WORKFLOW_ID
         }
@@ -213,7 +224,7 @@ test.describe(
           posted[2].current_tab_unbound,
           'a bound tab is not an unbound tab'
         ).toBeUndefined()
-        await finishTurn(THIRD_MESSAGE_ID)
+        await finishTurn(THIRD_MESSAGE_ID, 1, SAVED_THREAD_ID)
         await expect(panel.getByRole('note')).toContainText(SAVED_TAB)
       })
     })

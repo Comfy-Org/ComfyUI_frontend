@@ -68,9 +68,9 @@ test.describe(
         await expect(field).toHaveValue(AGENT_VALUE)
 
         await field.click()
-        await field.press(
-          process.platform === 'darwin' ? 'Meta+ArrowDown' : 'Control+End'
-        )
+        // Not `End`: the value wraps across two visual lines at this node's
+        // width, and `End` stops at the end of the wrapped line it is on.
+        await field.press('ControlOrMeta+End')
 
         await field.press('!')
         const outcomes = await agentConversation.waitForHumanOps(1)
@@ -129,9 +129,7 @@ test.describe(
         const head = 'a red bicycle'
         const tail = AGENT_VALUE.slice(head.length)
         await field.click()
-        await field.press(
-          process.platform === 'darwin' ? 'Meta+ArrowUp' : 'Control+Home'
-        )
+        await field.press('ControlOrMeta+Home')
         for (let step = 0; step < head.length; step++) {
           await field.press('ArrowRight')
         }
