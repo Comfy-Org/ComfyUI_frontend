@@ -59,6 +59,7 @@ vi.mock(import('@/config/stripeKey'), async () => {
 const form = vi.hoisted(() => ({
   mounts: 0,
   payOnce: undefined as boolean | undefined,
+  savesCardOffSession: (): boolean | undefined => undefined,
   configuration: undefined as string | undefined,
   emit: (() => {}) as (event: string, ...payload: unknown[]) => void
 }))
@@ -72,6 +73,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
         canSubmit: { type: Boolean, default: true },
         isLoading: { type: Boolean, default: false },
         payOnce: { type: Boolean, default: false },
+        savesCardOffSession: { type: Boolean, default: false },
         paymentMethodConfigurationId: { type: String, default: '' }
       },
       emits: ['confirm', 'phase'],
@@ -80,6 +82,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
           canSubmit: boolean
           isLoading: boolean
           payOnce: boolean
+          savesCardOffSession: boolean
           paymentMethodConfigurationId: string
         },
         {
@@ -93,6 +96,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
         form.mounts += 1
         form.emit = emit
         form.payOnce = props.payOnce
+        form.savesCardOffSession = () => props.savesCardOffSession
         form.configuration = props.paymentMethodConfigurationId
         return () =>
           h(
@@ -1364,4 +1368,28 @@ describe('FullPageTopupView with auto top-up from the link', () => {
     })
     expect(createHostedTopupCheckout).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { name: 'no default card', methods: [VISA], saves: true },
+    {
+      name: 'a default card',
+      methods: [{ ...VISA, is_default: true }],
+      saves: false
+    }
+  ])(
+    'a new card saves for off-session charges exactly when there is $name',
+    async ({ methods, saves }) => {
+      renderAutoTopUp(
+        AUTO_TOP_UP_PATH,
+        { status: 'ok', value: methods },
+        PAYS_ONCE
+      )
+
+      await userEvent.click(
+        await screen.findByRole('tab', { name: 'Add new payment' })
+      )
+
+      await waitFor(() => expect(form.savesCardOffSession()).toBe(saves))
+    }
+  )
 })
