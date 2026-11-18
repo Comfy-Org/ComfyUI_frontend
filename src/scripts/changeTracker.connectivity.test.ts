@@ -463,12 +463,11 @@ test('floating connectivity is undoable even without an ordinary link', async ()
 })
 
 test.for([
-  { outcome: 'moved', veto: false, sameSource: false, history: 1, origin: 2 },
-  { outcome: 'vetoed', veto: true, sameSource: false, history: 0, origin: 1 },
-  { outcome: 'unchanged', veto: false, sameSource: true, history: 0, origin: 1 }
-])(
+  { outcome: 'moved', destination: 'target', history: 1, origin: 2 },
+  { outcome: 'unchanged', destination: 'original', history: 0, origin: 1 }
+] as const)(
   'a $outcome floating reroute drop captures only actual changes',
-  async ({ veto, sameSource, history, origin }) => {
+  async ({ destination, history, origin }) => {
     const { graph, source, replacement, tracker } = await trackedGraph()
     const original = source.connectFloatingReroute([137, 81], source.outputs[0])
     const target = replacement.connectFloatingReroute(
@@ -485,13 +484,11 @@ test.for([
     tracker.reset(initial)
     tracker.undoQueue.length = 0
     const connector = new LinkConnector(() => {})
-    connector.events.addEventListener('dropped-on-reroute', (event) => {
-      if (veto) event.preventDefault()
-    })
     connector.moveOutputLink(graph, source, source.outputs[0])
+    const destinations = { original, target }
 
     connector.dropOnReroute(
-      sameSource ? original : target,
+      destinations[destination],
       createMockCanvasPointerEvent(281, 163)
     )
 
@@ -509,6 +506,31 @@ test.for([
     )
   }
 )
+
+test('a vetoed floating reroute drop preserves the endpoint without history', async () => {
+  const { graph, source, replacement, tracker } = await trackedGraph()
+  source.connectFloatingReroute([137, 81], source.outputs[0])
+  const target = replacement.connectFloatingReroute(
+    [281, 163],
+    replacement.outputs[0]
+  )
+  assert(target)
+  const initial = await validateComfyWorkflow(graph.serialize())
+  assert(initial)
+  tracker.reset(initial)
+  tracker.undoQueue.length = 0
+  const connector = new LinkConnector(() => {})
+  connector.events.addEventListener('dropped-on-reroute', (event) => {
+    event.preventDefault()
+  })
+  connector.moveOutputLink(graph, source, source.outputs[0])
+
+  connector.dropOnReroute(target, createMockCanvasPointerEvent(281, 163))
+
+  expect(tracker.undoQueue).toEqual([])
+  expect(tracker.activeState).toEqual(initial)
+  expect(await validateComfyWorkflow(graph.serialize())).toEqual(initial)
+})
 
 test('an outer legacy transaction still groups multiple connectivity edits', async () => {
   const { source, replacement, sink, tracker } = await trackedGraph()
