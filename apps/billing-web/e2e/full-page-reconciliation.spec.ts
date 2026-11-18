@@ -9,6 +9,7 @@ import type { Page } from '@playwright/test'
 import { E2E_USER } from './fixtures/env'
 import {
   PRO_MONTHLY_OP_PLAN,
+  challengeRequiredOperation,
   declinedOperation,
   pendingOperation,
   processingOperation,
@@ -274,6 +275,57 @@ test("a Pay the server answers 409 for whose re-read fails lands on We couldn't 
   const rereadsBeforePoll = rereads
   await page.clock.fastForward(30_000)
   await expect.poll(() => rereads).toBeGreaterThan(rereadsBeforePoll)
+  expect(subscribeRequests(cloud)).toHaveLength(1)
+})
+
+test('a Pay the server answers 409 for whose re-read fails offers Complete verification once a later read finds the payment waiting on the customer', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  cloud.scenario.paymentMethods = []
+  cloud.reply('POST', '/billing/subscribe', () => ({
+    status: 409,
+    body: { code: 'CONFLICT', message: 'operation already pending' }
+  }))
+  cloud.scenario.operations.op_challenge = challengeRequiredOperation(
+    'op_challenge',
+    'cs_e2e'
+  )
+  let rereads = 0
+  cloud.reply('GET', '/billing/status', () => {
+    if (subscribeRequests(cloud).length === 0)
+      return { body: cloud.scenario.status }
+    rereads += 1
+    return rereads === 1
+      ? { status: 500, body: { error: 'internal' } }
+      : {
+          body: {
+            ...cloud.scenario.status,
+            pending_billing_op_id: 'op_challenge',
+            pending_billing_op_type: 'subscription'
+          }
+        }
+  })
+  await page.clock.install()
+  await signIn(CHECKOUT)
+  await expect(payButton(page)).toBeEnabled()
+  await payButton(page).click()
+  await expect(
+    page.getByRole('heading', { name: "We couldn't confirm your payment" })
+  ).toBeVisible()
+
+  await page.clock.fastForward(30_000)
+
+  await expect(
+    page.getByRole('button', { name: 'Complete verification' })
+  ).toBeEnabled()
+  await expect(
+    page.getByRole('button', { name: 'Cancel payment' })
+  ).toBeVisible()
+  await expect(
+    page.getByRole('heading', { name: "We couldn't confirm your payment" })
+  ).toBeHidden()
   expect(subscribeRequests(cloud)).toHaveLength(1)
 })
 

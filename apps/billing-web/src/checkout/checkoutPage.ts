@@ -1025,12 +1025,15 @@ function watched(
     : watchedWaiting(page, operation)
 }
 
-/** A charge the server now says went through moves the page forward to Payment received. */
+/** A charge the server now says went through, or a challenge it says waits on the customer, moves the page forward to waiting. */
 function watchedUnconfirmed(
   page: Extract<CheckoutPage, { kind: 'unconfirmed' }>,
   operation: BillingOperationState
 ): CheckoutPage {
-  if (isInFlight(operation) && waitingOn(operation) === 'received')
+  if (
+    isInFlight(operation) &&
+    (waitingOn(operation) === 'received' || isChallengePending(operation))
+  )
     return { kind: 'waiting', operation, ...provenanceOf(page) }
   return isInFlight(operation) || operation.phase === 'timed_out'
     ? page

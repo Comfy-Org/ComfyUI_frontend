@@ -1022,6 +1022,10 @@ const planUnavailable: CheckoutPageEvent = {
 }
 const tryAgain: CheckoutPageEvent = { type: 'retried' }
 const UNCONFIRMED: CheckoutPage = { kind: 'unconfirmed', operationId: 'op_1' }
+const challengeRequired: PendingBillingOperation = {
+  ...pendingOperation(),
+  authenticationState: 'requires_action'
+}
 
 describe('reduceCheckoutPage endings', () => {
   it.for<{
@@ -1196,6 +1200,28 @@ describe('reduceCheckoutPage endings', () => {
         recheckFailed
       ],
       expected: { kind: 'unconfirmed' }
+    },
+    {
+      name: 'a collided Pay whose re-read fails waits on a later read that needs verification',
+      events: [
+        ...live,
+        submitted,
+        collided,
+        recheckFailed,
+        reconciled(challengeRequired)
+      ],
+      expected: { kind: 'waiting', operation: challengeRequired, sibling: true }
+    },
+    {
+      name: 'a rate-limited Pay whose re-read fails waits as its own on a later read that needs verification',
+      events: [
+        ...live,
+        submitted,
+        { type: 'payRejectedAsPending', because: 'rate_limited' },
+        recheckFailed,
+        reconciled(challengeRequired)
+      ],
+      expected: { kind: 'waiting', operation: challengeRequired }
     }
   ])('$name', ({ events, expected }) => {
     expect(replay(events)).toEqual(expected)
