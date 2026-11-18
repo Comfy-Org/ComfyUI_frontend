@@ -177,9 +177,15 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         const before = previous.find((entry) => entry.tab === tab)
         if (before === undefined || before.path === path) return []
         const workflowId = recordIdFor(before.path)
-        return workflowId !== undefined && isVerifiedOwner(workflowId, tab)
-          ? [{ workflowId, tab, path, record: tabByWorkflow.value[workflowId] }]
-          : []
+        if (workflowId === undefined || !isVerifiedOwner(workflowId, tab))
+          return []
+        const record = tabByWorkflow.value[workflowId]
+        const graphId = graphIdOf(tab)
+        const sameDocument =
+          graphId === undefined ||
+          record.graphId === null ||
+          areWorkflowIdsEquivalent(graphId, record.graphId, tab.legacyId)
+        return sameDocument ? [{ workflowId, tab, path, record }] : []
       })
       if (moves.length === 0) return
       const moving = new Set(moves.map(({ workflowId }) => workflowId))

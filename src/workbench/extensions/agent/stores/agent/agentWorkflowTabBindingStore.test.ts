@@ -383,6 +383,38 @@ describe('agentWorkflowTabBindingStore', () => {
     })
   })
 
+  it('does not move a record when the renamed owner now holds another document', async () => {
+    const path = 'workflows/Saved.json'
+    seedBindings({
+      'wf-saved': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    workflows.attachWorkflow(
+      new ComfyWorkflow({ path, modified: 1, size: 1 }),
+      0
+    )
+    const bindings = useAgentWorkflowTabBindingStore()
+    await nextTick()
+    expect(bindings.tabPathFor('wf-saved')).toBe(path)
+    const tab = workflows.getWorkflowByPath(path)!
+    tab.originalContent = JSON.stringify({ ...blankGraph, id: OTHER_GRAPH_ID })
+    vi.spyOn(api, 'moveUserData').mockResolvedValue(
+      new Response(JSON.stringify('workflows/Renamed.json'), { status: 200 })
+    )
+
+    await workflows.renameWorkflow(tab, 'workflows/Renamed.json')
+    await nextTick()
+
+    expect(bindings.workflowIdFor('workflows/Renamed.json')).toBeUndefined()
+    expect(storedBindings()).toMatchObject({
+      'wf-saved': { tabPath: path, graphId: DRAFT_GRAPH_ID }
+    })
+  })
+
   it('prunes bindings not confirmed within the TTL at store creation', () => {
     seedBindings({
       'wf-expired': {
