@@ -90,7 +90,9 @@ A persisted binding is keyed by tab path and proven by document identity.
   keeps the old path, no tab sits there after a reload, and the chat reports
   its workflow as gone (release QA C-164). All moves in one flush are worked
   out before any record changes. Like `bind()`, a move replaces another
-  workflow's record at the new path. A rename of a tab that does not own the
+  workflow's record at the new path. A tab whose readable id no longer matches
+  the record's (it claimed the record unloaded, then loaded another document)
+  does not move it. A rename of a tab that does not own the
   record moves nothing, and a closed owner has already released its record.
 
 The gate lives in the lookups, not only in the adoption watcher, because
