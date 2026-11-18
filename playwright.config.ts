@@ -73,7 +73,10 @@ export default defineConfig({
           {
             name: 'cloud-live',
             testMatch: '**/tests/liveCloud/**/*.spec.ts',
-            testIgnore: [],
+            testIgnore:
+              process.env.PLAYWRIGHT_CLOUD_SMOKE === '1'
+                ? []
+                : '**/openOnCloudSmoke.spec.ts',
             fullyParallel: false,
             retries: 0,
             timeout: 120_000,

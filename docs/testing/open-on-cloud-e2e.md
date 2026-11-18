@@ -39,9 +39,22 @@ pnpm test:browser browser_tests/tests/liveCloud/openOnCloud.spec.ts \
 
 The login fixture permits the hosted application's analytics, diagnostics, and Impact marketing attribution requests, including `www.ojrq.net`. It does not replace responses or suppress the marketing script. Marketing attribution is outside this suite's acceptance assertions. Follow the execution environment's authorization requirements before running it.
 
-## Remaining acceptance work
+## Authenticated Desktop relay smoke test
 
-Authenticated local-to-Cloud import and Cloud execution require an authenticated Cloud browser context and an enabled receiver flag. These are separate from the three compatibility cases and the signed-out login test.
+`browser_tests/tests/liveCloud/openOnCloudSmoke.spec.ts` follows a Desktop relay through the hosted email sign-in form, checks that the transferred EmptyImage workflow appears in the editor, and runs it once. It reads the job returned by that run and requires Cloud to report a completed job with an image output.
+
+Use an HTTP `localhost` editor and a non-production Cloud deployment with the receiver flag enabled for the smoke account and a worker that can run the workflow. Inject `SMOKE_ACCOUNT_EMAIL` and `SMOKE_ACCOUNT_PASSWORD` through the approved secret store or job environment.
+
+```sh
+PLAYWRIGHT_CLOUD_LIVE=1 \
+PLAYWRIGHT_CLOUD_SMOKE=1 \
+PLAYWRIGHT_TEST_URL=http://localhost:5173 \
+PLAYWRIGHT_SETUP_API_URL=http://localhost:8188 \
+pnpm test:browser browser_tests/tests/liveCloud/openOnCloudSmoke.spec.ts \
+  --project=cloud-live --workers=1 --reporter=line
+```
+
+## Remaining acceptance work
 
 A verified `@comfy.org` employee can use the existing Cloud override `?ff=open_on_cloud_enabled:true` for controlled import acceptance. To carry it automatically into a new browser or Desktop handoff tab, configure the local frontend's `VITE_STAGING_CLOUD_BASE_URL` as `https://fe-pr-22949.testenvs.comfy.org/?ff=open_on_cloud_enabled:true`. The handoff retains configured `ff` parameters; the Cloud receiver still checks the real signed-in employee identity. This changes the rollout configuration without replacing authentication, API responses or the workflow loader.
 
@@ -53,4 +66,4 @@ Local model upload, background progress, cancellation, and sign-in-to-upload rem
 
 Desktop stages a short-lived transfer in the real local userdata API and opens a local relay through its native external browser. The relay consumes that record and carries the compressed workflow in a Cloud URL fragment. Cloud removes the fragment before telemetry, preserves the transfer in tab session storage through sign-in and imports it through the normal validator. Ten-minute expiry and payload limits retain download/manual-import fallback when transport is unavailable.
 
-`browser_tests/tests/liveCloud/desktopWorkflowRelay.spec.ts` covers the real userdata GET/DELETE and hosted login, plus missing and expired records. Run it with the same live-suite environment variables. It proves browser relay transport; authenticated import and native Desktop window acceptance are additional checks.
+`browser_tests/tests/liveCloud/desktopWorkflowRelay.spec.ts` covers the real userdata GET/DELETE and hosted login, plus missing and expired records. Run it with the same live-suite environment variables. These tests exercise the relay in a browser. The native Desktop window can be verified separately.
