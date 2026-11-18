@@ -57,9 +57,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
+function readStoredBindings(key: string): string | null | undefined {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return undefined
+  }
+}
+
 function parseBindings(
-  serialized: string | null
+  serialized: string | null | undefined
 ): Record<string, unknown> | undefined {
+  if (serialized === undefined) return undefined
   if (serialized === null) return {}
   try {
     const parsed: unknown = JSON.parse(serialized)
@@ -106,7 +115,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     function syncFromStorage(event: StorageEvent): void {
       if (event.storageArea !== localStorage) return
       if (event.key !== null && event.key !== storageKey) return
-      const stored = parseBindings(localStorage.getItem(storageKey))
+      const stored = parseBindings(readStoredBindings(storageKey))
       if (stored === undefined) return
       const next = liveBindings(stored, Date.now())
       for (const workflowId of Object.keys(tabByWorkflow.value)) {
@@ -115,6 +124,9 @@ export const useAgentWorkflowTabBindingStore = defineStore(
         refusedInstances.delete(workflowId)
       }
       tabByWorkflow.value = next
+      workflows.openWorkflows
+        .map((tab) => ({ tab, path: tab.path }))
+        .forEach(adoptOpenTab)
     }
     useEventListener(window, 'storage', syncFromStorage)
 

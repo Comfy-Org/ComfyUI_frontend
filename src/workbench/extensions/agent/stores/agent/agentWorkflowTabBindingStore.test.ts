@@ -382,6 +382,10 @@ describe('agentWorkflowTabBindingStore', () => {
   })
 
   it('persists a binding change made in the same flush as another write', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
     const path = 'workflows/Agent draft.json'
     const staleConfirmedAt = Date.now() - DAY_MS
     seedBindings({
@@ -447,6 +451,37 @@ describe('agentWorkflowTabBindingStore', () => {
 
     expect(bindings.tabPathFor('wf-1')).toBeUndefined()
     expect(storedBindings()).not.toHaveProperty('wf-1')
+  })
+
+  it('re-adopts an open draft when another tab binds it again after a clear', async () => {
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+
+    localStorage.clear()
+    storageEvent(null, null)
+    await nextTick()
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(false)
+
+    seedBindings({
+      'wf-draft': {
+        tabPath: draft.path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-draft')).toBe(draft.path)
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
   })
 
   it('keeps its bindings when another tab writes unreadable data', async () => {
