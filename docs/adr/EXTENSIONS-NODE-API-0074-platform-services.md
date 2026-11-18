@@ -36,6 +36,12 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    (`settings.declare needs attrs.min as a finite number, not -Infinity.`).
    An object a pack passes is read field by field, once each, through
    `packArguments.ts`; an extra field is ignored. A number must be finite.
+   An id a host store keys a plain object by must not be a name every object
+   inherits (`__proto__`, `constructor`, `toString`; `isStoreKey`):
+   `settings.declare`, `get`, `set` and `onChange` and `commands.register`
+   refuse one, and `commands.run` resolves `false` for one. Without that,
+   `settings.set('__proto__', value)` would replace the prototype of the
+   store's values, so every setting nobody stored would read the pack's value.
 
 2. A failure the pack cannot prevent, such as a server that refuses a request
    or cannot be reached, is a value and not a throw, as

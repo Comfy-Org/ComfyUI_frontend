@@ -20,7 +20,6 @@ import {
   isCallback,
   isFiniteNumber,
   isList,
-  isName,
   isObject,
   isStoreKey,
   isText,
@@ -35,6 +34,8 @@ interface SettingChange {
   readonly value: unknown
   readonly oldValue: unknown
 }
+
+const SETTING_ID = 'a setting id no object inherits'
 
 export function createSettingsHandle(): SettingsHandle {
   const onAnySettingChange = createHostEvent<[SettingChange]>(
@@ -57,12 +58,16 @@ export function createSettingsHandle(): SettingsHandle {
     },
 
     get(id) {
-      if (!isName(id)) throw invalidArgument('settings.get', 'a setting id', id)
+      if (!isStoreKey(id)) {
+        throw invalidArgument('settings.get', SETTING_ID, id)
+      }
       return frozenSettingValue(useSettingStore().get(hostSettingId(id)))
     },
 
     set(id, value) {
-      if (!isName(id)) throw invalidArgument('settings.set', 'a setting id', id)
+      if (!isStoreKey(id)) {
+        throw invalidArgument('settings.set', SETTING_ID, id)
+      }
       if (!isSettingValue(value)) {
         throw invalidArgument('settings.set', 'a value JSON can hold', value)
       }
@@ -70,8 +75,8 @@ export function createSettingsHandle(): SettingsHandle {
     },
 
     onChange(id, listener) {
-      if (!isName(id)) {
-        throw invalidArgument('settings.onChange', 'a setting id', id)
+      if (!isStoreKey(id)) {
+        throw invalidArgument('settings.onChange', SETTING_ID, id)
       }
       if (!isCallback(listener)) {
         throw invalidArgument(
