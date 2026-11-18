@@ -30,6 +30,14 @@ import {
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 
+function endOnAbort(work: Promise<void>, signal: AbortSignal): Promise<void> {
+  const aborted = new Promise<void>((resolve) => {
+    if (signal.aborted) resolve()
+    else signal.addEventListener('abort', () => resolve(), { once: true })
+  })
+  return Promise.race([work, aborted])
+}
+
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
   createVerificationAbortController: () => AbortController
@@ -206,7 +214,11 @@ export async function runMissingModelPipeline({
         surfaceActiveCandidates()
       })
       .catch(reportVerificationFailure)
-    return { missingModels, confirmedCandidates, surfaced }
+    return {
+      missingModels,
+      confirmedCandidates,
+      surfaced: endOnAbort(surfaced, controller.signal)
+    }
   }
 
   if (!confirmedCandidates.length && !hasDeferredCandidates) {
@@ -261,7 +273,11 @@ export async function runMissingModelPipeline({
     })
     .catch(reportVerificationFailure)
 
-  return { missingModels, confirmedCandidates, surfaced }
+  return {
+    missingModels,
+    confirmedCandidates,
+    surfaced: endOnAbort(surfaced, controller.signal)
+  }
 }
 
 export async function refreshMissingModelPipeline({

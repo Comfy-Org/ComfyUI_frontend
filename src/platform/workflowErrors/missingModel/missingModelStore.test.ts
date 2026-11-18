@@ -1,5 +1,5 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { watch } from 'vue'
 
 import { st, t } from '@/i18n'
@@ -184,18 +184,31 @@ describe('missingModelStore', () => {
         (refreshing) => events.push(refreshing ? 'refreshing' : 'settled'),
         { flush: 'sync' }
       )
-      vi.spyOn(app, 'refreshMissingModels').mockResolvedValue({
-        missingModels: [],
-        confirmedCandidates: [],
-        surfaced: new Promise((resolve) =>
-          setTimeout(() => {
-            events.push('surfaced')
-            resolve()
+      let surface: () => void = () => undefined
+      const pipelineReturned = vi
+        .spyOn(app, 'refreshMissingModels')
+        .mockResolvedValue({
+          missingModels: [],
+          confirmedCandidates: [],
+          surfaced: new Promise((resolve) => {
+            surface = () => {
+              events.push('surfaced')
+              resolve()
+            }
           })
-        )
+        })
+
+      vi.useFakeTimers()
+      onTestFinished(() => {
+        vi.useRealTimers()
       })
 
-      await store.refreshMissingModels()
+      const refresh = store.refreshMissingModels()
+      await vi.runAllTimersAsync()
+      expect(pipelineReturned).toHaveBeenCalledOnce()
+      expect(store.isRefreshingMissingModels).toBe(true)
+      surface()
+      await refresh
 
       expect(events).toEqual(['refreshing', 'surfaced', 'settled'])
     })

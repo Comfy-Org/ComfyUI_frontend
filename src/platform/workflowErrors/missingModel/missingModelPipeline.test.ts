@@ -688,6 +688,36 @@ describe('missingModelPipeline', () => {
       ).toHaveBeenLastCalledWith([confirmedCandidate], { silent: false })
     })
 
+    it('settles surfaced when the verification is aborted before the folder paths arrive', async () => {
+      mockHandles.state.enrichedCandidates = [
+        {
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ]
+      vi.mocked(api.getFolderPaths).mockReturnValueOnce(new Promise(() => {}))
+      const controller = new AbortController()
+      const missingModelStore = useMissingModelStore()
+      vi.mocked(
+        missingModelStore.createVerificationAbortController
+      ).mockReturnValue(controller)
+
+      const { surfaced } = await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore
+      })
+      controller.abort()
+
+      await expect(surfaced).resolves.toBeUndefined()
+      expect(
+        useExecutionErrorStore().surfaceMissingModels
+      ).not.toHaveBeenCalled()
+    })
+
     it('drops a candidate whose selection changed while folder paths were loading', async () => {
       const confirmedCandidate = {
         nodeId: '7',
