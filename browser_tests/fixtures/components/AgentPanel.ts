@@ -35,11 +35,14 @@ export class AgentPanel {
   public readonly consentDialog: Locator
   public readonly consentLoadError: Locator
   public readonly consentRejectButton: Locator
+  public readonly conversation: Locator
+  public readonly conversationNewChatButton: Locator
   public readonly copiedButton: Locator
   public readonly copyReportButton: Locator
   public readonly creditsExhaustedPaywall: Locator
   public readonly creditTransitionNotice: Locator
   public readonly debugHeading: Locator
+  public readonly deletePendingButton: Locator
   public readonly dockedPanel: Locator
   public readonly dockedPanelShell: Locator
   public readonly feedbackButton: Locator
@@ -47,17 +50,22 @@ export class AgentPanel {
   public readonly footer: Locator
   public readonly historyButton: Locator
   public readonly hostFenceNotice: Locator
+  public readonly inlinePaywallCard: Locator
   public readonly loadFailedMessage: Locator
   public readonly loadRetryButton: Locator
+  public readonly newChatButton: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly pendingSendError: Locator
   public readonly referenceMenu: Locator
   public readonly replyAssetThumbnails: Locator
   public readonly replyAssetTiles: Locator
   public readonly resizeHandle: Locator
+  public readonly retryPendingButton: Locator
   public readonly root: Locator
   public readonly scrollAssetsRight: Locator
   public readonly sendButton: Locator
+  public readonly sendingSpinner: Locator
   public readonly serverLogsSwitch: Locator
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
@@ -105,6 +113,11 @@ export class AgentPanel {
     this.consentRejectButton = this.consentDialog.getByRole('button', {
       name: enMessages.agent.consent.reject
     })
+    this.conversation = this.root.getByTestId('agent-conversation')
+    this.conversationNewChatButton = this.conversation.getByRole('button', {
+      name: enMessages.agent.newChat,
+      exact: true
+    })
     this.copiedButton = this.root.getByRole('button', { name: 'Copied' })
     this.copyReportButton = this.root.getByRole('button', {
       name: 'Copy full report'
@@ -116,6 +129,10 @@ export class AgentPanel {
       'agent-credit-transition-notice'
     )
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })
+    this.deletePendingButton = this.conversation.getByRole('button', {
+      name: enMessages.g.delete,
+      exact: true
+    })
     this.dockedPanel = page.getByTestId('docked-agent-panel')
     this.dockedPanelShell = page.getByTestId('docked-agent-panel-shell')
     this.feedbackButton = page.getByRole('button', {
@@ -127,28 +144,44 @@ export class AgentPanel {
       name: enMessages.agent.showChatHistory
     })
     this.hostFenceNotice = this.root.getByTestId('agent-host-fence-notice')
+    this.inlinePaywallCard = this.conversation.getByRole('alert').filter({
+      hasText: enMessages.agent.paywall.title
+    })
     this.loadFailedMessage = this.dockedPanelShell.getByText(
       enMessages.agent.loadFailed
     )
     this.loadRetryButton = this.dockedPanelShell.getByRole('button', {
       name: enMessages.g.retry
     })
+    this.newChatButton = this.root.getByRole('button', {
+      name: enMessages.agent.newChat,
+      exact: true
+    })
     this.nodeSelectionBanner = page.getByTestId('node-selection-mode-banner')
     this.openButton = page.getByRole('button', {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.pendingSendError = this.root.getByTestId('pending-send-error')
     this.referenceMenu = this.root.getByTestId('agent-reference-menu')
     this.replyAssetThumbnails = this.root.getByRole('img', {
       name: /^mesh-\d+/
     })
     this.replyAssetTiles = this.root.getByRole('button', { name: /^mesh-\d+$/ })
     this.resizeHandle = page.getByTestId('agent-panel-resize-handle')
+    this.retryPendingButton = this.conversation.getByRole('button', {
+      name: enMessages.g.retry,
+      exact: true
+    })
     this.scrollAssetsRight = this.root.getByRole('button', {
       name: enMessages.g.scrollRight
     })
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send
+    })
+    this.sendingSpinner = this.root.getByRole('status', {
+      name: enMessages.agent.sendingMessage,
+      exact: true
     })
     this.serverLogsSwitch = this.root.getByRole('switch', {
       name: 'Server logs'
