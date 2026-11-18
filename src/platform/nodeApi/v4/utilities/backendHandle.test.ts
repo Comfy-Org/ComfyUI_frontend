@@ -87,6 +87,23 @@ describe('calling the backend', () => {
     expect(headers).toEqual({ 'X-Pack': 'yes' })
   })
 
+  it('reads the pack headers once', async () => {
+    vi.mocked(fetch).mockResolvedValue(new Response('done'))
+    const readHeaders = vi.fn(() => ({ 'X-Pack': 'yes' }))
+    const options = { method: 'POST' }
+    Object.defineProperty(options, 'headers', {
+      get: readHeaders,
+      enumerable: true
+    })
+
+    await backendApi().fetch('/my-pack/items', options)
+
+    expect(readHeaders).toHaveBeenCalledOnce()
+    const [, init] = vi.mocked(fetch).mock.calls[0]
+    expect(new Headers(init?.headers).get('X-Pack')).toBe('yes')
+    expect(init).toMatchObject({ method: 'POST' })
+  })
+
   it('resolves with a response whatever its status', async () => {
     vi.mocked(fetch).mockResolvedValue(new Response('no', { status: 500 }))
 
