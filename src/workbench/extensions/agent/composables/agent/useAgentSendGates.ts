@@ -8,6 +8,8 @@ import type {
 
 import { agentClientSessionId } from '@/workbench/extensions/agent/agentClientSession'
 
+export type { AgentCoachReleaseReason, AgentComposerDropReason }
+
 export type HeldGate = 'consent' | 'coach'
 
 export type CoachHoldEnd =
