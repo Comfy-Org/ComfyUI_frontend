@@ -238,10 +238,10 @@ export type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 
 declare global {
   interface Window {
-    /** For use by extensions and in the browser console. Where possible, import `app` from '@/scripts/app' instead. */
+    /** For use by extensions and in the browser console. First-party code calls `useApp()` from '@/scripts/appInstance' instead. */
     app?: ComfyApp
 
-    /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
+    /** For use by extensions and in the browser console. First-party code reads `useApp().rootGraph` instead. */
     graph?: unknown
 
     LiteGraph?: LiteGraphGlobal

@@ -1721,6 +1721,12 @@
     "reload": "Ricarica",
     "retry": "Riprova",
     "retryLabel": "Riprova ad avviare {deployment}",
+    "runBlocked": {
+      "failed": "Questa distribuzione non è riuscita. Fai clic per cambiare.",
+      "notReady": "Questa distribuzione non è pronta. Fai clic per cambiare.",
+      "starting": "Questa distribuzione è in avvio. Fai clic per cambiare.",
+      "stopped": "Questa distribuzione è arrestata. Fai clic per cambiare."
+    },
     "runOn": "Esegui su",
     "runningOn": "In esecuzione su",
     "runsThisWorkflow": "Esegue questo workflow",

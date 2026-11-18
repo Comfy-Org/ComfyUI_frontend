@@ -38,7 +38,8 @@ const {
   reopening,
   keepSubscription,
   savedMethods = [],
-  purchase = 'subscribe'
+  purchase = 'subscribe',
+  savesCardOffSession = false
 } = defineProps<{
   page: Extract<CheckoutPage, { kind: 'resolving' | 'capture' | 'waiting' }>
   charge?: CheckoutCharge
@@ -50,6 +51,8 @@ const {
   keepSubscription?: KeepSubscriptionCopy
   savedMethods?: readonly SavedPaymentMethod[]
   purchase?: PlanPurchase | 'credits'
+  /** A new card is saved for off-session charges, as auto top-up with no default card requires. */
+  savesCardOffSession?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -246,6 +249,7 @@ const copy = computed<StripePaymentCopy>(() => ({
           :can-submit="canPay"
           :locked
           :pay-once="purchase === 'credits'"
+          :saves-card-off-session
           page-layout
           @phase="emit('phase', $event)"
           @submitting-change="tokenizing = $event"

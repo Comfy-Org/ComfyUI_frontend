@@ -134,6 +134,7 @@ interface UnreconciledSnapshotTurn {
   messageId: string
   transport: AgentEventTransport
   announced: boolean
+  missedFrom: 'reload' | 'reconnect'
 }
 
 interface AnchoredLocalPart {
@@ -304,9 +305,14 @@ function storedCallIdOf(
 
 function preserveCanvasVerdicts(
   liveParts: AssistantMessage['parts'],
-  persistedParts: AssistantMessage['parts']
+  persistedParts: AssistantMessage['parts'],
+  alignedOffset: number | 'exact-ids' = liveToolOffset(
+    liveParts,
+    persistedParts
+  )
 ): AssistantMessage['parts'] {
-  const offset = liveToolOffset(liveParts, persistedParts)
+  const exactIdsOnly = alignedOffset === 'exact-ids'
+  const offset = exactIdsOnly ? 0 : alignedOffset
   const storedCallId = storedCallIdOf(liveParts, persistedParts, offset)
   const liveTools = toolPartsOf(liveParts)
   const persistedCallIds = new Set(toolCallIdsOf(persistedParts))
@@ -318,7 +324,8 @@ function preserveCanvasVerdicts(
   for (const part of liveTools) {
     if (
       !persistedCallIds.has(part.callId) &&
-      liveCounts.get(part.name) !== alignedCounts.get(part.name)
+      (exactIdsOnly ||
+        liveCounts.get(part.name) !== alignedCounts.get(part.name))
     )
       continue
     liveByStoredCallId.set(storedCallId(part.callId), part)
@@ -352,17 +359,59 @@ function finishSnapshotTurn(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts']
 ): void {
-  finishWithPersistedParts(
-    message,
-    persistedParts,
-    liveToolOffset(message.parts, persistedParts)
-  )
+  const offset = liveToolOffset(message.parts, persistedParts)
+  finishWithPersistedParts(message, persistedParts, {
+    canvasOffset: offset,
+    toolCountOf: behindLiveCallId(message.parts, persistedParts, offset)
+  })
+}
+
+function finishReconnectedTurn(
+  message: AssistantMessage,
+  persistedParts: AssistantMessage['parts']
+): void {
+  finishWithPersistedParts(message, persistedParts, {
+    canvasOffset: 'exact-ids',
+    toolCountOf: behindLiveCallId(message.parts, persistedParts, 0)
+  })
+}
+
+function behindLiveCallId(
+  liveParts: AssistantMessage['parts'],
+  persistedParts: AssistantMessage['parts'],
+  offset: number
+): (liveToolCount: number) => number {
+  const liveCallIds = toolCallIdsOf(liveParts)
+  const persistedCallIds = toolCallIdsOf(persistedParts)
+  return (toolCount) => {
+    if (toolCount === 0) return offset
+    const at = persistedCallIds.indexOf(liveCallIds[toolCount - 1])
+    return at < 0 ? toolCount + offset : at + 1
+  }
+}
+
+interface LocalPartAlignment {
+  canvasOffset?: number | 'exact-ids'
+  toolCountOf: (liveToolCount: number) => number
+}
+
+function finishActiveTurn(
+  slot: Pick<ActiveTurnSlot, 'origin' | 'message'>,
+  persistedParts: AssistantMessage['parts'] | undefined,
+  missedFrames: boolean
+): void {
+  if (persistedParts === undefined)
+    finishWithPersistedParts(slot.message, persistedParts)
+  else if (slot.origin === 'snapshot')
+    finishSnapshotTurn(slot.message, persistedParts)
+  else if (missedFrames) finishReconnectedTurn(slot.message, persistedParts)
+  else finishWithPersistedParts(slot.message, persistedParts)
 }
 
 function finishWithPersistedParts(
   message: AssistantMessage,
   persistedParts: AssistantMessage['parts'] | undefined,
-  localToolOffset = 0
+  alignment: LocalPartAlignment = { toolCountOf: (toolCount) => toolCount }
 ): void {
   if (persistedParts === undefined) {
     message.parts = message.parts.filter((part) => !isOpenAskPart(part))
@@ -378,14 +427,18 @@ function finishWithPersistedParts(
   )
   message.parts = interleaveLocalParts(
     preserveLiveToolStartTimes(
-      preserveCanvasVerdicts(message.parts, persistedParts),
+      preserveCanvasVerdicts(
+        message.parts,
+        persistedParts,
+        alignment.canvasOffset
+      ),
       message.parts
     ),
     anchorLocalParts(message.parts)
       .filter(({ part }) => !persistedHasThinking || part.type !== 'thinking')
       .map((anchor) => ({
         ...anchor,
-        toolCount: anchor.toolCount + localToolOffset
+        toolCount: alignment.toolCountOf(anchor.toolCount)
       }))
   )
 }
@@ -442,6 +495,7 @@ export const useAgentConversationStore = defineStore(
       UnreconciledSnapshotTurn
     >()
     const snapshotTurnSettled = createEventHook<LiveTurn>()
+    const missedFrameTurnIds = new Set<TurnId>()
     const workflowStore = useWorkflowStore()
     const openTabPaths = computed(
       () =>
@@ -971,13 +1025,15 @@ export const useAgentConversationStore = defineStore(
       | UnreconciledSnapshotTurn
       | undefined {
       const slot = activeSlot.value
-      if (slot?.origin !== 'snapshot' || slot.threadId === null)
-        return undefined
+      if (slot === null || slot.threadId === null) return undefined
+      const missedFrames = missedFrameTurnIds.delete(slot.turnId)
+      if (slot.origin !== 'snapshot' && !missedFrames) return undefined
       const unreconciled: UnreconciledSnapshotTurn = {
         turn: { threadId: slot.threadId, messageId: slot.turnId },
         messageId: slot.message.id,
         transport: slot.transport,
-        announced: false
+        announced: false,
+        missedFrom: slot.origin === 'snapshot' ? 'reload' : 'reconnect'
       }
       unreconciledSnapshotTurns.set(slot.turnId, unreconciled)
       return unreconciled
@@ -996,6 +1052,12 @@ export const useAgentConversationStore = defineStore(
       void snapshotTurnSettled.trigger(unreconciled.turn)
     }
 
+    /** Frames may be missing: reconcile the active turn with its stored row. */
+    function markActiveTurnMissedFrames(): void {
+      const slot = activeSlot.value
+      if (slot !== null) missedFrameTurnIds.add(slot.turnId)
+    }
+
     function reconcileSettledTurn(
       turn: LiveTurn,
       persistedParts: AssistantMessage['parts'] | undefined
@@ -1010,7 +1072,9 @@ export const useAgentConversationStore = defineStore(
       )
       if (index < 0) return
       const reconciled = { ...messages.value[index] }
-      finishSnapshotTurn(reconciled, persistedParts)
+      if (unreconciled.missedFrom === 'reconnect')
+        finishReconnectedTurn(reconciled, persistedParts)
+      else finishSnapshotTurn(reconciled, persistedParts)
       messages.value[index] = reconciled
     }
 
@@ -1387,7 +1451,11 @@ export const useAgentConversationStore = defineStore(
         turn.messageId === slot.turnId
       if (isActive) {
         clearSettledAskState(turn.threadId)
-        finishWithPersistedParts(slot.message, persistedParts)
+        finishActiveTurn(
+          slot,
+          persistedParts,
+          missedFrameTurnIds.has(slot.turnId)
+        )
         rememberDepartedActiveTurn('settled-turn')
         slot.transport.settle()
         slot.transport.dispose()
@@ -1509,6 +1577,7 @@ export const useAgentConversationStore = defineStore(
 
     function clearActive(): void {
       activeSlot.value = null
+      missedFrameTurnIds.clear()
     }
 
     // PM-1575: reset() and hydrate() both discard the active transport (if
@@ -1868,6 +1937,7 @@ export const useAgentConversationStore = defineStore(
       historySkillNames,
       settleTurn,
       reconcileSettledTurn,
+      markActiveTurnMissedFrames,
       isApprovalShown,
       isAskShown,
       hasApprovalShown,

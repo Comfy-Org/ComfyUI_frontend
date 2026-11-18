@@ -77,6 +77,11 @@ case "$method $endpoint" in
     jq -nc --arg body "$body" '{user: {login: "comfy-pr-bot"}, body: $body}' >> "$FAKE_COMMENTS" ;;
   *"/labels") jq -r "$filter" "$FAKE_LABELS" ;;
   *"/comments") cat "$FAKE_COMMENTS" | jq -rs "$filter" ;;
+  *"/pulls?"*state=all*page=*)
+    [ -z "\${FAKE_MANUAL_FAIL:-}" ] || { echo 'HTTP 502' >&2; exit 1; }
+    case "$endpoint" in *page=1) ;; *) echo '[]'; exit 0 ;; esac
+    base="\${endpoint#*base=}" base="\${base%%&*}"
+    jq --arg b "$base" 'map(select(.base.ref == $b))' "$FAKE_MANUAL" | jq -r "$filter" ;;
   *"/pulls?"*)
     base='' head="\${endpoint#*head=}" head="\${head%%&*}"
     case "$endpoint" in *base=*) base="\${endpoint#*base=}" base="\${base%%&*}" ;; esac
@@ -87,8 +92,19 @@ case "$method $endpoint" in
 esac
 `
 
+interface ManualBackport {
+  base: string
+  head: string
+  title: string
+  body?: string
+  state?: 'open' | 'closed' | 'merged'
+  fork?: boolean
+}
+
 interface PrSetup {
   labels: string[]
+  manualBackports?: ManualBackport[]
+  manualLookupFails?: boolean
   backports?: Array<{
     base: string
     head: string
@@ -102,6 +118,8 @@ interface PrSetup {
 function createPr({
   labels,
   backports = [],
+  manualBackports = [],
+  manualLookupFails = false,
   comments: existingComments = [],
   locked = false,
   sharedTokenExhausted = false
@@ -122,6 +140,29 @@ function createPr({
     backports
       .map(({ base, head, state = 'merged' }) => `${base} ${head} ${state}`)
       .join('\n')
+  )
+  writeFileSync(
+    join(directory, 'manual.json'),
+    JSON.stringify(
+      manualBackports.map(
+        ({ base, head, title, body = '', state = 'merged', fork = false }) => ({
+          number: 30000,
+          title,
+          body,
+          base: { ref: base },
+          head: {
+            ref: head,
+            repo: {
+              full_name: fork
+                ? 'someone/ComfyUI_frontend'
+                : 'Comfy-Org/ComfyUI_frontend'
+            }
+          },
+          state: state === 'open' ? 'open' : 'closed',
+          merged_at: state === 'merged' ? '2026-10-01T00:00:00Z' : null
+        })
+      )
+    )
   )
   writeFileSync(
     comments,
@@ -154,6 +195,8 @@ function createPr({
           FAKE_COMMENTS: comments,
           FAKE_LABELS: join(directory, 'labels.json'),
           FAKE_LOCKED: locked ? '1' : '',
+          FAKE_MANUAL: join(directory, 'manual.json'),
+          FAKE_MANUAL_FAIL: manualLookupFails ? '1' : '',
           FAKE_SHARED_TOKEN_EXHAUSTED: sharedTokenExhausted ? '1' : '',
           GH_REPO: 'Comfy-Org/ComfyUI_frontend',
           PATH: `${directory}:${process.env.PATH}`,
@@ -209,6 +252,128 @@ describe('backport warning for release labels without needs-backport', () => {
     const [comment] = pr.postedComments()
     expect(comment).toContain('`cloud/1.57`')
     expect(comment).not.toContain('`core/1.57`')
+  })
+
+  it('leaves out targets backported by hand from a branch the bot did not create', () => {
+    const pr = createPr({
+      labels: ['core/1.57', 'core/1.58', 'cloud/1.58'],
+      manualBackports: [
+        {
+          base: 'core/1.57',
+          head: 'backport-21241-to-core-1.57-port',
+          title:
+            '[backport core/1.57] fix(agent): persist onboarding tour (#21241)'
+        },
+        {
+          base: 'core/1.58',
+          head: 'fix/onboarding-port',
+          title: '[core/1.58] fix(agent): persist onboarding tour',
+          body: 'Backport of #21241 to core/1.58'
+        }
+      ]
+    })
+
+    pr.runWarning()
+
+    const [comment] = pr.postedComments()
+    expect(pr.postedComments()).toHaveLength(1)
+    expect(comment).toContain('`cloud/1.58`')
+    expect(comment).not.toContain('`core/1.57`')
+    expect(comment).not.toContain('`core/1.58`')
+  })
+
+  it('leaves out a target whose hand-made backport is still open', () => {
+    const pr = createPr({
+      labels: ['core/1.57'],
+      manualBackports: [
+        {
+          base: 'core/1.57',
+          head: 'fix/onboarding-port',
+          title: '[backport core/1.57] fix(agent): persist onboarding tour',
+          body: 'Backport of #21241 to core/1.57',
+          state: 'open'
+        }
+      ]
+    })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(pr.postedComments()).toHaveLength(0)
+  })
+
+  it('still warns when the hand-made backport lookup fails', () => {
+    const pr = createPr({
+      labels: ['core/1.57'],
+      manualLookupFails: true
+    })
+
+    const result = pr.runWarning()
+
+    expect(result.status).toBe(0)
+    expect(pr.postedComments()).toHaveLength(1)
+    expect(pr.postedComments()[0]).toContain('`core/1.57`')
+  })
+
+  it.for<[string, ManualBackport]>([
+    [
+      'it was closed without merging',
+      {
+        base: 'core/1.57',
+        head: 'backport-21241-to-core-1.57-port',
+        title: '[backport core/1.57] fix (#21241)',
+        state: 'closed'
+      }
+    ],
+    [
+      'it only mentions the PR',
+      {
+        base: 'core/1.57',
+        head: 'fix/other',
+        title: '[backport core/1.57] fix something else',
+        body: 'Follow-up to the backport of #21241'
+      }
+    ],
+    [
+      'it is a revert',
+      {
+        base: 'core/1.57',
+        head: 'revert-21241-port',
+        title: '[backport core/1.57] Revert "fix" (#21241)'
+      }
+    ],
+    [
+      'it is the bot backport of another PR',
+      {
+        base: 'core/1.57',
+        head: 'backport-99999-to-core-1.57',
+        title: '[backport core/1.57] fix (#21241)'
+      }
+    ],
+    [
+      'it comes from a fork',
+      {
+        base: 'core/1.57',
+        head: 'backport-21241-port',
+        title: '[backport core/1.57] fix (#21241)',
+        fork: true
+      }
+    ],
+    [
+      'it carries a PR whose number only starts with this one',
+      {
+        base: 'core/1.57',
+        head: 'backport-212410-port',
+        title: '[backport core/1.57] fix (#212410)'
+      }
+    ]
+  ])('still warns about a hand-made PR when %s', ([, manual]) => {
+    const pr = createPr({ labels: ['core/1.57'], manualBackports: [manual] })
+
+    pr.runWarning()
+
+    expect(pr.postedComments()).toHaveLength(1)
+    expect(pr.postedComments()[0]).toContain('`core/1.57`')
   })
 
   it('still warns when the matching backport branch targets a different release', () => {

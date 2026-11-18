@@ -120,6 +120,7 @@ function openBillingSettings() {
         :reopening
         purchase="credits"
         :saved-methods="savedMethods"
+        :saves-card-off-session="autoTopUpConsent?.card.kind === 'none'"
         @phase="onPaymentPhase"
         @pay="pay"
         @retry-element="retryElement"

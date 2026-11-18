@@ -945,6 +945,8 @@ function reportWithheldDraft(workflowId: string | undefined): void {
       failure_kind: 'bad_state',
       feature_area: 'agent',
       operation: 'send',
+      stale_cause: crdtStatus.value.canvasStaleCause ?? 'unknown',
+      stale_terminal: crdtStatus.value.terminal ?? 'none',
       outcome: 'withheld'
     },
     context: { workflowId }
