@@ -21,14 +21,23 @@
       :side-offset="8"
       :collision-padding="8"
       data-testid="queue-status-idle-panel"
-      class="w-80 rounded-xl border-none p-2 shadow-lg"
+      class="w-80 rounded-xl border-none p-1.5 shadow-lg"
+      @open-auto-focus="focusListWithoutRing"
     >
-      <QueueStatusRecents
-        :results="results"
-        @view="emit('view', $event)"
-        @open-workflow="emit('openWorkflow', $event)"
-        @history="emit('history')"
-      />
+      <div
+        ref="listRoot"
+        role="group"
+        :aria-label="t('queueStatus.recentResults')"
+        tabindex="-1"
+        class="outline-none"
+      >
+        <QueueStatusRecents
+          :results="results"
+          @view="emit('view', $event)"
+          @open-workflow="emit('openWorkflow', $event)"
+          @history="emit('history')"
+        />
+      </div>
     </PopoverContent>
   </Popover>
 </template>
@@ -36,6 +45,8 @@
 <script setup lang="ts">
 import Button from '@comfyorg/design-system/button/Button'
 import { PopoverRoot as Popover, PopoverTrigger } from 'reka-ui'
+import { useTemplateRef } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import PopoverContent from '@comfyorg/design-system/popover/PopoverContent'
 import type { JobListItem } from '@/composables/queue/useJobList'
@@ -56,4 +67,13 @@ const emit = defineEmits<{
   openWorkflow: [job: JobListItem]
   history: []
 }>()
+
+const { t } = useI18n()
+
+const listRoot = useTemplateRef<HTMLDivElement>('listRoot')
+
+function focusListWithoutRing(event: Event) {
+  event.preventDefault()
+  listRoot.value?.focus()
+}
 </script>

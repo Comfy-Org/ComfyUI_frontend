@@ -4,9 +4,8 @@ import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import QueueStatusPanel from '@/components/queue/QueueStatusPanel.vue'
-import type { JobListItem } from '@/composables/queue/useJobList'
 
-import type { JobView, RecentResult } from './queueStatusTypes'
+import type { JobView } from './queueStatusTypes'
 
 const i18n = createI18n({
   legacy: false,
@@ -34,21 +33,6 @@ const job = (id: string, status: JobView['status']): JobView => ({
   progress: 0,
   queuePosition: status === 'queued' ? 1 : 0
 })
-
-const historyJob: JobListItem = {
-  id: 'h1',
-  title: 'h1',
-  meta: '',
-  state: 'completed'
-}
-
-const result: RecentResult = {
-  id: 'h1',
-  job: historyJob,
-  name: 'ComfyUI_00001_.png',
-  meta: 'Completed · 2:43 PM',
-  isVideo: false
-}
 
 function renderPanel(
   props: Partial<InstanceType<typeof QueueStatusPanel>['$props']> = {}

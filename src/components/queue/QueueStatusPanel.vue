@@ -2,25 +2,48 @@
   <div
     :class="
       cn(
-        'absolute z-50 flex w-80 flex-col gap-1 rounded-xl bg-background p-2 shadow-lg',
+        'absolute z-50 flex w-80 flex-col rounded-xl bg-background p-1.5 shadow-lg',
         above ? 'bottom-full mb-1.5' : 'top-full mt-1.5',
         alignStart ? 'left-0' : 'right-0'
       )
     "
     data-testid="queue-status-panel"
   >
-    <div class="flex h-8 items-center justify-between gap-2 pr-0.5 pl-3">
-      <span
-        class="min-w-0 truncate text-[11px] font-medium tracking-wide text-muted-foreground uppercase"
+    <span
+      class="flex h-8 items-center px-3 text-[11px] font-medium tracking-wider text-muted-foreground uppercase"
+    >
+      {{ t('queueStatus.activeGenerations') }}
+    </span>
+
+    <div class="flex flex-col gap-0.5">
+      <QueueStatusRow
+        v-for="(row, index) in rows"
+        :key="row.job.id"
+        :job="row.job"
+        :subtitle="row.subtitle"
+        :delay-ms="index * 35"
+        @cancel="emit('cancel', row.job)"
+        @details="emit('history')"
+      />
+    </div>
+
+    <div class="mt-1 flex h-9 items-center justify-between gap-2 px-1">
+      <Button
+        variant="muted-textonly"
+        size="sm"
+        :class="footerButtonClass"
+        data-testid="queue-status-panel-history"
+        @click="emit('history')"
       >
-        {{ t('queueStatus.activeGenerations') }}
-      </span>
+        <i class="icon-[lucide--history] size-3.5" aria-hidden />
+        {{ t('queueStatus.goToHistoryShort') }}
+      </Button>
       <div v-if="hasBulkActions" class="flex shrink-0 items-center gap-0.5">
         <Button
           v-if="queuedCount > 0"
           variant="muted-textonly"
           size="sm"
-          :class="headerButtonClass"
+          :class="footerButtonClass"
           data-testid="queue-status-clear-queue"
           @click="emit('clearQueue')"
         >
@@ -29,7 +52,7 @@
         <Button
           variant="muted-textonly"
           size="sm"
-          :class="headerButtonClass"
+          :class="footerButtonClass"
           data-testid="queue-status-cancel-all"
           @click="emit('cancelAll')"
         >
@@ -37,27 +60,6 @@
         </Button>
       </div>
     </div>
-
-    <QueueStatusRow
-      v-for="(row, index) in rows"
-      :key="row.job.id"
-      :job="row.job"
-      :subtitle="row.subtitle"
-      :delay-ms="index * 35"
-      @cancel="emit('cancel', row.job)"
-      @details="emit('history')"
-    />
-
-    <Button
-      variant="secondary"
-      size="unset"
-      class="mt-1 h-9 w-full gap-2 rounded-lg text-[13px] font-medium"
-      data-testid="queue-status-panel-history"
-      @click="emit('history')"
-    >
-      <i class="icon-[lucide--history] size-3.5" aria-hidden />
-      {{ t('queueStatus.goToHistoryShort') }}
-    </Button>
   </div>
 </template>
 
@@ -95,5 +97,5 @@ const activeRowCount = computed(
 )
 /** Clear queue and Cancel all only make sense with more than one job. */
 const hasBulkActions = computed(() => activeRowCount.value > 1)
-const headerButtonClass = 'h-7 px-1.5 font-medium'
+const footerButtonClass = 'h-7 gap-1.5 hover:text-foreground'
 </script>
