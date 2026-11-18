@@ -185,7 +185,10 @@ export const useAgentWorkflowTabBindingStore = defineStore(
           graphId === undefined ||
           record.graphId === null ||
           areWorkflowIdsEquivalent(graphId, record.graphId, tab.legacyId)
-        return sameDocument ? [{ workflowId, tab, path, record }] : []
+        if (sameDocument) return [{ workflowId, tab, path, record }]
+        boundInstances.delete(workflowId)
+        refusedInstances.set(workflowId, toRaw(tab))
+        return []
       })
       if (moves.length === 0) return
       const moving = new Set(moves.map(({ workflowId }) => workflowId))

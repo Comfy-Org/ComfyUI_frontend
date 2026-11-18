@@ -402,17 +402,25 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.tabPathFor('wf-saved')).toBe(path)
     const tab = workflows.getWorkflowByPath(path)!
     tab.originalContent = JSON.stringify({ ...blankGraph, id: OTHER_GRAPH_ID })
-    vi.spyOn(api, 'moveUserData').mockResolvedValue(
-      new Response(JSON.stringify('workflows/Renamed.json'), { status: 200 })
+    vi.spyOn(api, 'moveUserData').mockImplementation(
+      async (_from, to) => new Response(JSON.stringify(to), { status: 200 })
     )
 
     await workflows.renameWorkflow(tab, 'workflows/Renamed.json')
     await nextTick()
 
+    expect(workflows.openWorkflows.map((open) => open.path)).toEqual([
+      'workflows/Renamed.json'
+    ])
     expect(bindings.workflowIdFor('workflows/Renamed.json')).toBeUndefined()
     expect(storedBindings()).toMatchObject({
       'wf-saved': { tabPath: path, graphId: DRAFT_GRAPH_ID }
     })
+
+    await workflows.renameWorkflow(tab, path)
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-saved')).toBeUndefined()
   })
 
   it('prunes bindings not confirmed within the TTL at store creation', () => {
