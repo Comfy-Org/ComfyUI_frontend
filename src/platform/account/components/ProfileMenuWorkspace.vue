@@ -85,6 +85,8 @@
             data-testid="credits-menu-item"
             @click="pinCredits"
             @keydown.arrow-right.prevent="pinCredits"
+            @blur="previewHeldBack = false"
+            @pointerleave="previewHeldBack = false"
           >
             <i class="icon-[lucide--coins] text-muted-foreground" />
             <span class="flex-1 text-foreground">{{
@@ -134,7 +136,7 @@
               'max-h-none max-w-none overflow-visible data-[state=closed]:animate-none data-[state=open]:animate-none'
             )
           "
-          @escape-key-down="creditsRow?.focus()"
+          @escape-key-down="returnFocusToCreditsRow"
           @interact-outside="keepPinnedOnCreditsRow"
         >
           <ProfileMenuCreditsFlyout
@@ -314,8 +316,16 @@ const monogram = computed(() =>
   (userDisplayName.value || userEmail.value || '').trim().charAt(0)
 )
 
+const previewHeldBack = ref(false)
+
+function returnFocusToCreditsRow() {
+  previewHeldBack.value = true
+  creditsRow.value?.focus()
+}
+
 function previewCredits(open: boolean) {
-  if (open && flyout.value === 'none') flyout.value = 'creditsPreview'
+  if (open && flyout.value === 'none' && !previewHeldBack.value)
+    flyout.value = 'creditsPreview'
   if (!open && flyout.value === 'creditsPreview') flyout.value = 'none'
 }
 
