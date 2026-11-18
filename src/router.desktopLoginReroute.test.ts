@@ -3,6 +3,7 @@ import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { cloudSignIn } from '@/platform/auth/session/cloudIdentityBoot'
+import { hasPendingDesktopLoginCode } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 import {
   capturePreservedQuery,
   clearPreservedQuery
@@ -10,6 +11,7 @@ import {
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { createAppRouter } from '@/router'
 import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -24,6 +26,8 @@ vi.mock(import('@/platform/auth/session/cloudIdentityBoot'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
+
+vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@comfyorg/telemetry'))
 
@@ -44,6 +48,7 @@ describe('desktop sign-in handoff reaching the workspace entry', () => {
   beforeEach(() => {
     vi.mocked(cloudSignIn).mockResolvedValue('signed_in')
     useAuthStore().isInitialized = true
+    vi.mocked(useDialogService().confirm).mockResolvedValue(false)
   })
 
   afterEach(() => {
@@ -58,6 +63,7 @@ describe('desktop sign-in handoff reaching the workspace entry', () => {
     await router.push('/')
 
     expect(router.currentRoute.value.name).toBe('cloud-desktop-login')
+    await vi.waitFor(() => expect(hasPendingDesktopLoginCode()).toBe(false))
   })
 
   it('lets a signed-in Firebase tab without a stashed code reach the workspace', async () => {
@@ -65,17 +71,15 @@ describe('desktop sign-in handoff reaching the workspace entry', () => {
     vi.mocked(api.getUserConfig).mockResolvedValue(fromPartial({}))
     const router = await createAppRouter()
 
-    // The cloud guard runs first and must not redirect; stop before the heavy
-    // workspace chunk loads and record where it let the tab go.
-    let reached: string | undefined
+    let routeAllowedByCloudGuard: string | undefined
     router.beforeEach((to) => {
-      reached = String(to.name)
+      routeAllowedByCloudGuard = String(to.name)
       return to.path === '/' ? false : undefined
     })
 
     await router.push('/')
 
-    expect(reached).toBe('GraphView')
+    expect(routeAllowedByCloudGuard).toBe('GraphView')
   })
 
   it('still bounces a session-only tab with a stashed code to sign-in to switch accounts', async () => {

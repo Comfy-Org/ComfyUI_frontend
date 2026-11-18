@@ -46,6 +46,9 @@ const onboardingSurveyEnabled = computed(
 
 const skeletonType = ref<'login' | 'survey' | 'loading'>('loading')
 
+const hasDesktopSignInToApprove = () =>
+  useAuthStore().currentUser !== null && hasPendingDesktopLoginCode()
+
 const {
   isLoading,
   error,
@@ -55,7 +58,11 @@ const {
     await nextTick()
 
     if (!onboardingSurveyEnabled.value) {
-      await router.replace({ path: '/' })
+      await router.replace(
+        hasDesktopSignInToApprove()
+          ? { name: 'cloud-desktop-login' }
+          : { path: '/' }
+      )
       return
     }
 
@@ -78,9 +85,7 @@ const {
       return
     }
 
-    // A desktop sign-in handoff stays on its dedicated approval page rather
-    // than hard-reloading into the workspace.
-    if (hasPendingDesktopLoginCode()) {
+    if (hasDesktopSignInToApprove()) {
       await router.replace({ name: 'cloud-desktop-login' })
       return
     }

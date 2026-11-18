@@ -106,11 +106,6 @@ export const cloudOnboardingRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true, hideHero: true }
       },
       {
-        // Desktop sign-in handoff tabs land here and stay, so the approval is
-        // confirmed on a dedicated onboarding page instead of the workspace
-        // where Cloud Agent onboarding runs. The child's
-        // `defersDesktopLoginRedemption: false` overrides the parent's `true`
-        // in the merged route.meta, so the approval prompt fires here.
         path: 'desktop-login',
         name: 'cloud-desktop-login',
         component: () =>

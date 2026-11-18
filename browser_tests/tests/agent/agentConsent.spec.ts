@@ -10,6 +10,9 @@ import { agentConsentTelemetryTest as telemetryTest } from '@e2e/fixtures/agentC
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
+const DESKTOP_LOGIN_HANDOFF_URL =
+  '/?desktop_login_code=dlc_e2eApprovalCodeFE2808abcdefghijklmnopqrstu'
+
 async function requestConsentFromOpenPanel(page: Page): Promise<void> {
   const openButton = page.getByRole('button', {
     name: enMessages.agent.entryButton,
@@ -730,11 +733,7 @@ telemetryTest.describe(
   'Agent activation behind a desktop sign-in approval',
   { tag: ['@cloud', '@ui'] },
   () => {
-    telemetryTest.use({
-      agentConsentAccepted: false,
-      initialUrl:
-        '/?desktop_login_code=dlc_e2eApprovalCodeFE2808abcdefghijklmnopqrstu'
-    })
+    telemetryTest.use({ agentConsentAccepted: false })
 
     telemetryTest.beforeEach(async ({ page }) => {
       await page.route('**/api/auth/desktop-login-codes/redeem', (route) =>
@@ -757,14 +756,19 @@ telemetryTest.describe(
         const consent = page.getByRole('dialog', {
           name: enMessages.agent.consent.title
         })
-        const success = page.getByText(enMessages.desktopLogin.successSummary)
+        const success = page.getByRole('heading', {
+          name: enMessages.desktopLogin.successSummary,
+          exact: true
+        })
         const approve = approval.getByRole('button', {
           name: enMessages.g.confirm
         })
+        const visitedPaths: string[] = []
 
         await telemetryTest.step(
           'The handoff lands on the dedicated approval page, not the workspace',
           async () => {
+            await comfyPage.goto({ url: DESKTOP_LOGIN_HANDOFF_URL })
             await expect
               .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
               .toBe('/cloud/desktop-login')
@@ -777,11 +781,17 @@ telemetryTest.describe(
         await telemetryTest.step(
           'Approving confirms the sign-in and the page never enters the workspace',
           async () => {
+            page.on('framenavigated', (frame) => {
+              if (frame === page.mainFrame())
+                visitedPaths.push(new URL(frame.url()).pathname)
+            })
             await approve.click()
             await expect(approval).toHaveCount(0)
             await expect(success).toBeVisible()
             await expect(consent).toHaveCount(0)
             await expect(agentPanel.root).toHaveCount(0)
+            expect(new URL(page.url()).pathname).toBe('/cloud/desktop-login')
+            expect(visitedPaths).not.toContain('/')
           }
         )
       }
@@ -801,11 +811,15 @@ telemetryTest.describe(
         const approval = page.getByRole('dialog', {
           name: enMessages.desktopLogin.confirmSummary
         })
-        const success = page.getByText(enMessages.desktopLogin.successSummary)
+        const success = page.getByRole('heading', {
+          name: enMessages.desktopLogin.successSummary,
+          exact: true
+        })
         const coach = page.getByRole('dialog', {
           name: enMessages.agent.coachTitle
         })
 
+        await comfyPage.goto({ url: DESKTOP_LOGIN_HANDOFF_URL })
         await expect
           .poll(() => new URL(page.url()).pathname, { timeout: 15_000 })
           .toBe('/cloud/desktop-login')

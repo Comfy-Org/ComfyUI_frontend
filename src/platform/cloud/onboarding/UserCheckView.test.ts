@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
+import type { User } from 'firebase/auth'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
@@ -10,6 +11,7 @@ import {
   getUserCloudStatus
 } from '@/platform/cloud/onboarding/auth'
 import { hasPendingDesktopLoginCode } from '@/platform/cloud/onboarding/desktopLoginRedemption'
+import { useAuthStore } from '@/stores/authStore'
 
 import UserCheckView from './UserCheckView.vue'
 
@@ -48,21 +50,25 @@ describe('UserCheckView', () => {
     )
   })
 
-  it('routes a pending desktop sign-in to its approval page instead of hard-reloading the workspace', async () => {
-    vi.mocked(useFeatureFlags().flags).onboardingSurveyEnabled = true
-    vi.mocked(getUserCloudStatus).mockResolvedValue(fromPartial({}))
-    vi.mocked(getSurveyCompletedStatus).mockResolvedValue(true)
-    vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(true)
-    const location = { href: '' }
-    vi.stubGlobal('location', location)
+  it.for([true, false])(
+    'routes a pending desktop sign-in to its approval page instead of the workspace (survey enabled: %s)',
+    async (surveyEnabled) => {
+      vi.mocked(useFeatureFlags().flags).onboardingSurveyEnabled = surveyEnabled
+      useAuthStore().currentUser = fromPartial<User>({ uid: 'user-a' })
+      vi.mocked(getUserCloudStatus).mockResolvedValue(fromPartial({}))
+      vi.mocked(getSurveyCompletedStatus).mockResolvedValue(true)
+      vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(true)
+      const location = { href: '' }
+      vi.stubGlobal('location', location)
 
-    renderView()
+      renderView()
 
-    await vi.waitFor(() =>
-      expect(useRouter().replace).toHaveBeenCalledWith({
-        name: 'cloud-desktop-login'
-      })
-    )
-    expect(location.href).toBe('')
-  })
+      await vi.waitFor(() =>
+        expect(useRouter().replace).toHaveBeenCalledWith({
+          name: 'cloud-desktop-login'
+        })
+      )
+      expect(location.href).toBe('')
+    }
+  )
 })

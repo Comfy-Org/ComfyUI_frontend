@@ -28,7 +28,7 @@ function renderView() {
     routes: [{ path: '/', component: { template: '<div />' } }]
   })
   const replace = vi.spyOn(router, 'replace')
-  render(CloudDesktopLoginView, {
+  const { unmount } = render(CloudDesktopLoginView, {
     global: {
       plugins: [
         router,
@@ -40,7 +40,7 @@ function renderView() {
       ]
     }
   })
-  return { replace }
+  return { replace, unmount }
 }
 
 describe('CloudDesktopLoginView', () => {
@@ -54,7 +54,7 @@ describe('CloudDesktopLoginView', () => {
 
     const { replace } = renderView()
 
-    expect(replace).toHaveBeenCalledWith({ path: '/' })
+    expect(replace).toHaveBeenCalledWith(expect.objectContaining({ path: '/' }))
   })
 
   it('explains the pending approval without a continue link', () => {
@@ -74,20 +74,51 @@ describe('CloudDesktopLoginView', () => {
     expect(replace).not.toHaveBeenCalled()
   })
 
-  it('shows the success summary and a continue link once redeemed', () => {
+  it('shows progress without a continue link while redeeming', () => {
+    vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
+    desktopLoginRedemptionStatus.value = 'redeeming'
+
+    renderView()
+
+    expect(
+      screen.getByText(enMessages.desktopLogin.redeemingSummary)
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('link', {
+        name: enMessages.desktopLogin.continueToCloud
+      })
+    ).toBeNull()
+  })
+
+  it.for([
+    ['redeemed', enMessages.desktopLogin.successSummary],
+    ['declined', enMessages.desktopLogin.declinedSummary],
+    ['sso_unavailable', enMessages.desktopLogin.ssoUnavailableSummary]
+  ] as const)(
+    'shows the %s outcome with a continue link',
+    ([status, heading]) => {
+      vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
+      desktopLoginRedemptionStatus.value = status
+
+      const { replace } = renderView()
+
+      expect(screen.getByRole('heading', { name: heading })).toBeInTheDocument()
+      expect(
+        screen.getByRole('link', {
+          name: enMessages.desktopLogin.continueToCloud
+        })
+      ).toBeInTheDocument()
+      expect(replace).not.toHaveBeenCalled()
+    }
+  )
+
+  it('forgets a settled outcome once the page is left', () => {
     vi.mocked(hasPendingDesktopLoginCode).mockReturnValue(false)
     desktopLoginRedemptionStatus.value = 'redeemed'
 
-    const { replace } = renderView()
+    const { unmount } = renderView()
+    unmount()
 
-    expect(
-      screen.getByText(enMessages.desktopLogin.successSummary)
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('link', {
-        name: enMessages.desktopLogin.continueToCloud
-      })
-    ).toBeInTheDocument()
-    expect(replace).not.toHaveBeenCalled()
+    expect(desktopLoginRedemptionStatus.value).toBe('idle')
   })
 })

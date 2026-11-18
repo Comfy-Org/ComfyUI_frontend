@@ -705,11 +705,24 @@ describe('installDesktopLoginRedemption', () => {
       respondToFetch(REDEEM_URL, () => new Response(null, { status: 500 }))
 
       await trigger()
-      expect(status.value).toBe('awaiting_approval')
+      expect(status.value).toBe('redeeming')
 
       await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
 
       expect(status.value).toBe('failed')
+    })
+
+    it('reports failed and drops the code when the approval dialog throws', async () => {
+      const { trigger, seedStash, status, stashedCode } = await setup()
+      seedStash(VALID_CODE)
+      vi.mocked(useDialogService().confirm).mockRejectedValue(
+        new Error('dialog exploded')
+      )
+
+      await trigger()
+
+      expect(status.value).toBe('failed')
+      expect(stashedCode()).toBeUndefined()
     })
   })
 

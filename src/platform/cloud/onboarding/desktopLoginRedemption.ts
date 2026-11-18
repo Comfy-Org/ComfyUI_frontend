@@ -132,6 +132,7 @@ function settledForSsoSession(
   const auth = useAuthStore()
   if (auth.currentUser !== null || !auth.signedInWithSso) return false
   settle(code, state)
+  desktopLoginRedemptionStatus.value = 'sso_unavailable'
   useToast().warning(t('desktopLogin.ssoUnavailableSummary'), {
     description: t('desktopLogin.ssoUnavailableDetail'),
     duration: 8000
@@ -170,8 +171,12 @@ async function redeemCode(code: string): Promise<void> {
   // dialog was open, keep the code stashed and let the (replayed) auth-change
   // trigger re-prompt under the now-current account.
   const approvedUser = useAuthStore().currentUser
-  if (!approvedUser || approvedUser.uid !== state.approvedUserUid) return
+  if (!approvedUser || approvedUser.uid !== state.approvedUserUid) {
+    desktopLoginRedemptionStatus.value = 'idle'
+    return
+  }
 
+  desktopLoginRedemptionStatus.value = 'redeeming'
   state.attempts++
 
   // Token comes straight from the Firebase user: authStore.getIdToken()
@@ -233,17 +238,16 @@ async function redeemCode(code: string): Promise<void> {
   handleTransientFailure(code, state, `status ${response.status}`)
 }
 
-export type DesktopLoginRedemptionStatus =
+type DesktopLoginRedemptionStatus =
   | 'idle'
   | 'awaiting_approval'
+  | 'redeeming'
   | 'redeemed'
   | 'failed'
   | 'expired'
   | 'declined'
+  | 'sso_unavailable'
 
-// The dedicated Cloud onboarding page (CloudDesktopLoginView) renders the
-// handoff outcome from this shared status, so a desktop sign-in settles on
-// that page instead of falling through to the workspace.
 export const desktopLoginRedemptionStatus =
   shallowRef<DesktopLoginRedemptionStatus>('idle')
 
@@ -274,6 +278,8 @@ async function redeemPendingDesktopLoginCode(): Promise<void> {
     } while (retriggerRequested)
   } catch (error) {
     console.error('[DesktopLoginRedemption] Redemption failed:', error)
+    clearPreservedQuery(NAMESPACE)
+    desktopLoginRedemptionStatus.value = 'failed'
   } finally {
     draining = false
   }

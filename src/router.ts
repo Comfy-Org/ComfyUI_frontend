@@ -371,13 +371,8 @@ function installCloudAuthGuards(router: Router): void {
         }
       }
 
-      // A desktop sign-in handoff that reaches the workspace entry (a
-      // CloudSignupView default redirect, a reload, or a returning user whose
-      // stash survived) is sent to the dedicated approval page instead. Reached
-      // only when signed in (the `!isLoggedIn` guards above have returned), so a
-      // live Firebase user plus a pending code is the full condition.
       if (authStore.currentUser !== null && hasPendingDesktopLoginCode()) {
-        return { name: 'cloud-desktop-login' }
+        return { name: 'cloud-desktop-login', query: to.query, hash: to.hash }
       }
     }
 
