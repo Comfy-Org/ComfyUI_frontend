@@ -1328,7 +1328,8 @@ describe('live updates and media on the shared web session', () => {
     await refuseSocketFor(60_000)
 
     FakeSocket.created.at(-1)?.dispatchEvent(new Event('open'))
-    await refuseSocketFor(300)
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.5)
+    await refuseSocketFor(750)
     await refuseSocketFor(1_000)
   })
 
@@ -1643,7 +1644,7 @@ describe('live updates and media on the shared web session', () => {
     assert.instanceOf(closed, FakeSocket)
 
     closed.closeFromServer()
-    await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(5_000)
 
     await vi.waitFor(() => expect(api.socket).not.toBe(closed))
     expect(api.socket).toEqual(

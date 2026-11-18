@@ -95,16 +95,17 @@ export function useBillingDialogs() {
       return
     }
 
+    const opensAddCreditsDialog =
+      useFeatureFlags().flags.billingNewUxEnabled || opensLocalBillingHandoff()
     return dialogStore.showDialog({
       key: 'top-up-credits',
-      component:
-        useFeatureFlags().flags.billingNewUxEnabled ||
-        opensLocalBillingHandoff()
-          ? AddCreditsDialogContent
-          : TopUpCreditsDialogContentWorkspace,
+      component: opensAddCreditsDialog
+        ? AddCreditsDialogContent
+        : TopUpCreditsDialogContentWorkspace,
       props: options,
       dialogComponentProps: {
-        headless: true
+        headless: true,
+        growsDown: opensAddCreditsDialog
       }
     })
   }

@@ -101,7 +101,7 @@ import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAppMode } from '@/composables/useAppMode'
@@ -157,16 +157,19 @@ const { linearMode } = storeToRefs(useCanvasStore())
 const templateInputDownloadStore = useTemplateInputDownloadStore()
 const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   getReferencedInputNames: () =>
-    new Set(scanAllMediaCandidates(app.rootGraph).map(({ name }) => name)),
+    new Set(scanAllMediaCandidates(useApp().rootGraph).map(({ name }) => name)),
   refreshGraphBindings: async (completedInputNames) => {
     try {
-      await app.reloadNodeDefs()
+      await useApp().reloadNodeDefs()
       refreshDownloadedTemplateInputBindings(
-        app.rootGraph,
-        scanAllMediaCandidates(app.rootGraph),
+        useApp().rootGraph,
+        scanAllMediaCandidates(useApp().rootGraph),
         new Set(completedInputNames)
       )
-      await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
+      await runMissingMediaPipeline({
+        rootGraph: useApp().rootGraph,
+        silent: true
+      })
     } finally {
       // The transfers finished even if rebinding them did not. Releasing them
       // either way keeps a failed rebind from holding the run action behind a
@@ -319,10 +322,10 @@ const useNewMenu = computed(() => {
 })
 watchEffect(() => {
   if (useNewMenu.value === 'Disabled') {
-    app.ui.menuContainer.style.setProperty('display', 'block')
-    app.ui.restoreMenuPosition()
+    useApp().ui.menuContainer.style.setProperty('display', 'block')
+    useApp().ui.restoreMenuPosition()
   } else {
-    app.ui.menuContainer.style.setProperty('display', 'none')
+    useApp().ui.menuContainer.style.setProperty('display', 'none')
   }
 })
 
@@ -342,8 +345,9 @@ void registerCoreBottomPanelTabs()
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 
-const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
+const onStatus = async (e: CustomEvent<StatusWsMessageStatus | null>) => {
   queuePendingTaskCountStore.update(e)
+  if (!e.detail) return
   await queueStore.update()
   await assetsStore.outputAssets.loadNew()
 }
@@ -372,7 +376,7 @@ onMounted(() => {
   executionStore.bindExecutionEvents()
 
   try {
-    legacyMenuContainerRef.value?.append(app.ui.menuContainer)
+    legacyMenuContainerRef.value?.append(useApp().ui.menuContainer)
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
