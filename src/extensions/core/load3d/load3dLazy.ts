@@ -21,8 +21,6 @@ interface Load3dLoadState {
   loading: Promise<ComfyExtension[] | undefined> | null
 }
 
-// The 3D extensions register into the extension store, so the once-only load
-// belongs to that store's app session, not to the module.
 const loadStates = new WeakMap<object, Load3dLoadState>()
 
 function loadLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
@@ -33,11 +31,12 @@ function loadLoad3dExtensions(): Promise<ComfyExtension[] | undefined> {
     loadStates.set(extensionStore, state)
   }
   if (state.loaded) return Promise.resolve([])
-  state.loading ??= importLoad3dExtensions(state)
+  state.loading ??= importLoad3dExtensions(extensionStore, state)
   return state.loading
 }
 
 async function importLoad3dExtensions(
+  extensionStore: ReturnType<typeof useExtensionStore>,
   state: Load3dLoadState
 ): Promise<ComfyExtension[] | undefined> {
   const disposers: (() => void)[] = []
@@ -75,13 +74,13 @@ async function importLoad3dExtensions(
       cameraAngle.cameraAngleExtension,
       lightInfo.lightInfoExtension
     ]
-    useExtensionStore().markCoreExtensions(extensions)
+    extensionStore.markCoreExtensions(extensions)
     const { registerExtension } = useExtensionService()
     for (const extension of extensions)
       disposers.push(registerExtension(extension))
   } catch (cause) {
-    disposers.forEach((dispose) => dispose())
     state.loading = null
+    disposers.forEach((dispose) => dispose())
     reportError(cause, {
       errorType: 'error_loading_3d_extensions',
       surface: 'graph'
@@ -89,8 +88,9 @@ async function importLoad3dExtensions(
     return undefined
   }
   state.loaded = true
-  const { isExtensionEnabled } = useExtensionStore()
-  return extensions.filter((extension) => isExtensionEnabled(extension.name))
+  return extensions.filter((extension) =>
+    extensionStore.isExtensionEnabled(extension.name)
+  )
 }
 
 function enableMeshUpload(nodeData: ComfyNodeDef) {
