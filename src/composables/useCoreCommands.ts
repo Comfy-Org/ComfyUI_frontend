@@ -101,9 +101,25 @@ export function useCoreCommands(): ComfyCommand[] {
   const { showSubscriptionDialog } = useSubscriptionPaywall()
   const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
 
-  async function sendRunToSwitcher(): Promise<boolean> {
+  function activeWorkflowTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow]
+  }
+
+  function selectedNodesTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow, ...getSelectedNodes()]
+  }
+
+  async function deploymentStopsRun(
+    runTarget: () => readonly unknown[]
+  ): Promise<boolean> {
     if (useCanvasStore().isPickingNodes) return false
-    return openSwitcherInsteadOfRun()
+    const asked = runTarget()
+    if (await openSwitcherInsteadOfRun()) return true
+    const now = runTarget()
+    const targetChangedMeanwhile =
+      asked.length !== now.length ||
+      asked.some((item, index) => item !== now[index])
+    return targetChangedMeanwhile
   }
 
   async function blockRunWithoutSubscription(): Promise<boolean> {
@@ -553,7 +569,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        if (await sendRunToSwitcher()) return
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -574,7 +590,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        if (await sendRunToSwitcher()) return
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -594,7 +610,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
-        if (await sendRunToSwitcher()) return
+        if (await deploymentStopsRun(selectedNodesTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 

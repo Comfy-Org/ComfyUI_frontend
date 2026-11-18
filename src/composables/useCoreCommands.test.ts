@@ -11,8 +11,7 @@ import { useSubscriptionPaywall } from '@/platform/billing/composables/useSubscr
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useExternalLink } from '@/composables/useExternalLink'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode,LGraphGroup } from '@/lib/litegraph/src/litegraph'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -913,6 +912,73 @@ describe('useCoreCommands', () => {
         expect(useToast().error).not.toHaveBeenCalled()
       }
     )
+
+    function listingTurnsReadyOnRequest() {
+      let resolve: () => void = () => {}
+      const promise = new Promise<void>((done) => {
+        resolve = done
+      })
+      vi.spyOn(workspaceApi, 'listDeployments').mockImplementation(async () => {
+        await promise
+        return {
+          builds_visible: true,
+          picked_deployment_id: 'dep-1',
+          items: [
+            {
+              deployment_id: 'dep-1',
+              release_id: 'r-1',
+              status: 'ready',
+              can_start: false,
+              created_at: '2026-10-01T00:00:00Z'
+            }
+          ]
+        }
+      })
+      return () => resolve()
+    }
+
+    it('Comfy.QueuePrompt queues the original Run once a fresh listing says the deployment is ready', async () => {
+      await pickDeploymentWithStatus('stopped')
+      const answerReady = listingTurnsReadyOnRequest()
+
+      const run = findCmd('Comfy.QueuePrompt').function()
+      answerReady()
+      await run
+
+      expect(app.queuePrompt).toHaveBeenCalledExactlyOnceWith(
+        0,
+        1,
+        expect.anything()
+      )
+    })
+
+    it('Comfy.QueuePrompt queues nothing when the workflow changes while the listing is read again', async () => {
+      await pickDeploymentWithStatus('stopped')
+      const answerReady = listingTurnsReadyOnRequest()
+
+      const run = findCmd('Comfy.QueuePrompt').function()
+      mockWorkflowStore.activeWorkflow = fromPartial<
+        NonNullable<typeof mockWorkflowStore.activeWorkflow>
+      >({ changeTracker: mockChangeTracker })
+      answerReady()
+      await run
+
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+    })
+
+    it('Comfy.QueueSelectedOutputNodes queues nothing when the selection changes while the listing is read again', async () => {
+      await pickDeploymentWithStatus('stopped')
+      const answerReady = listingTurnsReadyOnRequest()
+      app.canvas.selectedItems = new Set([new LGraphNode('A')])
+
+      const run = findCmd('Comfy.QueueSelectedOutputNodes').function()
+      app.canvas.selectedItems = new Set([new LGraphNode('B')])
+      answerReady()
+      await run
+
+      expect(app.queuePrompt).not.toHaveBeenCalled()
+      expect(useToast().error).not.toHaveBeenCalled()
+    })
 
     it('Comfy.QueuePrompt queues while node picking hides the Run on menu', async () => {
       await pickDeploymentWithStatus('stopped')
