@@ -47,6 +47,7 @@ import { useMessageSupport } from '@/platform/billing/subscription/composables/u
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { openPlatformBillingHandoff } from '@/platform/billing/localBillingHandoff'
 import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
 import BillingTab from '@/platform/account/components/dialogs/settings/BillingTab.vue'
 
@@ -2552,10 +2553,15 @@ describe('BillingTab plan not started banner', () => {
     ).toBeVisible()
   })
 
-  it('keeps the banner without Finish payment when the operation serves only a client secret', async () => {
+  it('links Complete verification to billing-web checkout for the served plan when the operation serves only a client secret', async () => {
     distribution.isCloud = true
     onTestFinished(() => {
       distribution.isCloud = false
+    })
+    vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'billing_web'
+    remoteConfig.value = { billing_web_url: 'https://billing.comfy.org' }
+    onTestFinished(() => {
+      remoteConfig.value = {}
     })
     serveSignupOperation({ payment_intent_client_secret: 'pi_signup_secret' })
     arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
@@ -2564,11 +2570,34 @@ describe('BillingTab plan not started banner', () => {
     const banner = screen.getByTestId('billing-banner-planNotStarted')
     expect(banner).toHaveTextContent('Finish paying to start it.')
     expect(
+      within(banner).getByRole('link', { name: 'Complete verification' })
+    ).toHaveAttribute(
+      'href',
+      'https://billing.comfy.org/v1/checkout?product=comfyui&return_to=comfyui_workspace&plan=creator-monthly&workspace=workspace-a'
+    )
+    expect(
       within(banner).queryByRole('button', { name: 'Finish payment' })
     ).not.toBeInTheDocument()
   })
 
-  it('still offers Finish payment when reading the operation fails', async () => {
+  it('shows no banner while the operation read is in flight', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(billingApi.getBillingOpStatus).mockReturnValue(
+      new Promise(() => {})
+    )
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+    await nextTick()
+
+    expect(billingApi.getBillingOpStatus).toHaveBeenCalledWith('op-signup')
+    expect(
+      screen.queryByTestId('billing-banner-planNotStarted')
+    ).not.toBeInTheDocument()
+  })
+
+  it('offers View on Plans with no payment link when reading the operation fails', async () => {
     distribution.isCloud = true
     onTestFinished(() => {
       distribution.isCloud = false
@@ -2578,19 +2607,22 @@ describe('BillingTab plan not started banner', () => {
     )
     arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
 
-    await vi.waitFor(() =>
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          errorType: 'error_reading_signup_payment_recovery_plan'
-        })
+    const banner = await screen.findByTestId('billing-banner-planNotStarted')
+    expect(banner).toHaveTextContent('Your plan hasn’t started')
+    expect(banner).toHaveTextContent(
+      'Your plan starts once the payment goes through.'
+    )
+    expect(
+      within(banner).getByRole('link', { name: 'View on Plans' })
+    ).toHaveAttribute(
+      'href',
+      expect.stringContaining(
+        'https://platform.test/profile/billing/plans?workspace=ws_1'
       )
     )
-    const banner = screen.getByTestId('billing-banner-planNotStarted')
-    expect(banner).toHaveTextContent('Your plan hasn’t started')
     expect(
-      within(banner).getByRole('button', { name: 'Finish payment' })
-    ).toBeVisible()
+      within(banner).queryByRole('button', { name: 'Finish payment' })
+    ).not.toBeInTheDocument()
   })
 
   it('shows nothing on local ComfyUI even when the fact is served', () => {
