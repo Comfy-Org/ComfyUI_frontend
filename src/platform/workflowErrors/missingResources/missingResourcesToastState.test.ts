@@ -477,6 +477,10 @@ describe('toUnavailableModels', () => {
           name: 'notes.txt',
           directory: 'loras',
           url: 'https://huggingface.co/org/repo/resolve/main/notes.txt'
+        }),
+        candidate({
+          name: 'folderless.safetensors',
+          url: 'https://huggingface.co/org/repo/resolve/main/folderless.safetensors'
         })
       ],
       false
@@ -504,9 +508,14 @@ describe('toUnavailableModels', () => {
           name: 'notes.txt',
           directory: 'loras',
           reason: 'unsupportedFile'
+        },
+        {
+          name: 'folderless.safetensors',
+          directory: null,
+          reason: 'noDirectory'
         }
       ])
     )
-    expect(toUnavailableModels(groups)).toHaveLength(3)
+    expect(toUnavailableModels(groups)).toHaveLength(4)
   })
 })

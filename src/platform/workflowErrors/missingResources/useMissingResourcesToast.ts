@@ -150,8 +150,8 @@ export function useMissingResourcesToast() {
   const needsAttention = computed(
     () =>
       unavailableModels.value.length > 0 ||
-      trackedModels.value.some(
-        (tracked) => tracked.gatedRepoUrl && tracked.stillMissing
+      startableModels(trackedModels.value).some(
+        (tracked) => tracked.gatedRepoUrl
       )
   )
 

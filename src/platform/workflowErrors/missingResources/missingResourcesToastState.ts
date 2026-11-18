@@ -20,7 +20,7 @@ export interface UnavailableModel {
   key: string
   name: string
   directory: string | null
-  reason: 'noUrl' | 'unsupportedSource' | 'unsupportedFile'
+  reason: 'noUrl' | 'noDirectory' | 'unsupportedSource' | 'unsupportedFile'
 }
 
 export type MissingResourcesToastState =
@@ -83,9 +83,11 @@ export function isTrackedModelRelevant(tracked: TrackedModel): boolean {
 }
 
 function unavailableReason(
-  url: string | undefined
+  url: string | undefined,
+  directory: string | null
 ): UnavailableModel['reason'] {
   if (!url) return 'noUrl'
+  if (!directory) return 'noDirectory'
   return isModelUrlAllowlisted(url) ? 'unsupportedFile' : 'unsupportedSource'
 }
 
@@ -102,7 +104,10 @@ export function toUnavailableModels(
               key: `${group.directory ?? ''}:${model.name}`,
               name: model.name,
               directory: group.directory,
-              reason: unavailableReason(model.representative.url)
+              reason: unavailableReason(
+                model.representative.url,
+                group.directory
+              )
             }
           ]
     )

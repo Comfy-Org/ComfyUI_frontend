@@ -5881,6 +5881,7 @@
     "needsAttentionLabel": "Needs attention:",
     "needsAttentionHint": "Some models can't be downloaded automatically or need access on Hugging Face.",
     "noDownloadUrl": "No download URL",
+    "noModelFolder": "Unknown model folder",
     "unsupportedSource": "Unsupported source",
     "unsupportedFile": "Unsupported file",
     "downloadAll": "Download all",
