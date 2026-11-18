@@ -85,6 +85,7 @@ interface ImageUploadOptions {
   onUploadStart?: (files: File[]) => void
   onUploadError?: () => void
   onReject?: (files: File[]) => boolean
+  canHandleRejectedFile?: (file: File) => boolean
 }
 
 /**
@@ -146,6 +147,7 @@ export const useNodeImageUpload = (
   useNodeDragAndDrop(node, {
     fileFilter,
     onReject: options.onReject,
+    canHandleRejectedFile: options.canHandleRejectedFile,
     onDrop: handleUploadBatch,
     onResultItemDrop: (item) => onUploadComplete([item])
   })
