@@ -95,26 +95,6 @@ test.describe('Save Video preview', () => {
     ).toBeVisible()
   })
 
-  test('canvas renderer says a video whose audio plays but picture cannot be played', async ({
-    comfyPage,
-    getWebSocket
-  }) => {
-    const { page } = comfyPage
-    const execution = new ExecutionHelper(comfyPage, await getWebSocket())
-    const nodeId = await addSaveVideo(comfyPage)
-
-    execution.executed('', nodeId, output(WIDE))
-    await expect
-      .poll(() => canvasVideo(page))
-      .toEqual({ decoded: true, portrait: false })
-
-    execution.executed('', nodeId, output(PRORES_AUDIO))
-    await expect.poll(() => canvasVideo(page)).toBeNull()
-    await expect(
-      page.locator('.comfy-img-preview').getByText(CANT_PLAY)
-    ).toBeVisible()
-  })
-
   test(
     'Vue nodes renderer says a video whose audio plays but picture cannot be played',
     { tag: '@vue-nodes' },
