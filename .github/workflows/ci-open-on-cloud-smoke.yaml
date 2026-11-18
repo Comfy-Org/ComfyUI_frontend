@@ -81,6 +81,8 @@ jobs:
             echo "::error::Configure OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD in GitHub Actions."
             exit 1
           fi
+          export OPEN_ON_CLOUD_EVIDENCE_DIR="$RUNNER_TEMP/open-on-cloud-evidence"
+          mkdir -p "$OPEN_ON_CLOUD_EVIDENCE_DIR"
           pnpm test:browser browser_tests/tests/liveCloud/openOnCloudSmoke.spec.ts \
             --project=cloud-live --workers=1 --reporter=line \
             --output="$RUNNER_TEMP/open-on-cloud-smoke"
@@ -90,12 +92,7 @@ jobs:
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
         with:
           name: open-on-cloud-authenticated-evidence
-          path: |
-            ${{ runner.temp }}/open-on-cloud-smoke/**/01-hosted-sign-in.png
-            ${{ runner.temp }}/open-on-cloud-smoke/**/02-cloud-editor-after-sign-in.png
-            ${{ runner.temp }}/open-on-cloud-smoke/**/02-imported-workflow.png
-            ${{ runner.temp }}/open-on-cloud-smoke/**/03-after-cloud-execution.png
-            ${{ runner.temp }}/open-on-cloud-smoke/**/cloud-job-result.json
+          path: ${{ runner.temp }}/open-on-cloud-evidence/
           retention-days: 7
           if-no-files-found: ignore
 

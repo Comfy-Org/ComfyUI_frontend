@@ -1,6 +1,6 @@
 import { writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 
-import type { Request } from '@playwright/test'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 import { zJobDetailResponse, zPromptResponse } from '@comfyorg/ingest-types/zod'
@@ -15,6 +15,8 @@ const test = desktopWorkflowRelayFixture.extend({
       ...liveNetworkOrigins,
       ...(preview ? [`https://${preview[1]}-registry.testenvs.comfy.org`] : []),
       'https://consumer.cloud.gist.build',
+      'https://realtime.cloud.gist.build',
+      'https://ajax.googleapis.com',
       'https://mp.comfy.org',
       'https://e2.sy-d.io'
     ])
@@ -43,25 +45,6 @@ const firebaseSignInError = z.object({
   })
 })
 
-async function getJobResult(origin: string, id: string, submission: Request) {
-  const headers = new Headers()
-  for (const name of ['authorization', 'cookie', 'x-comfy-workspace-id']) {
-    const value = await submission.headerValue(name)
-    if (value) headers.set(name, value)
-  }
-  const response = await fetch(new URL(`/api/jobs/${id}`, origin), {
-    headers,
-    redirect: 'error',
-    signal: AbortSignal.timeout(10_000)
-  })
-  if (!response.ok) {
-    throw new Error(
-      `Could not read the submitted Cloud job (HTTP ${response.status})`
-    )
-  }
-  return jobResult.parse(await response.json())
-}
-
 test.use({ billingNewUx: false, trace: 'off', video: 'off', screenshot: 'off' })
 
 test.describe(
@@ -81,8 +64,11 @@ test.describe(
         throw new Error('Set SMOKE_ACCOUNT_EMAIL and SMOKE_ACCOUNT_PASSWORD')
       }
       const { page, actionbar } = comfyPage
+      const evidenceDir = process.env.OPEN_ON_CLOUD_EVIDENCE_DIR
+      const evidencePath = (name: string) =>
+        evidenceDir ? join(evidenceDir, name) : testInfo.outputPath(name)
       const capture = async (name: string) => {
-        await page.screenshot({ path: testInfo.outputPath(name) })
+        await page.screenshot({ path: evidencePath(name) })
       }
       const receiverFlagResponses: Array<{
         authorized: boolean
@@ -192,15 +178,25 @@ test.describe(
         const { prompt_id: id } = zPromptResponse.parse(await submission.json())
         if (!id) throw new Error('Cloud did not return a job ID')
 
-        let completedJob: Awaited<ReturnType<typeof getJobResult>> | undefined
+        let completedJob: z.infer<typeof jobResult> | undefined
         await expect
           .poll(
             async () => {
-              completedJob = await getJobResult(
-                cloudOrigin,
-                id,
-                submission.request()
-              )
+              const result = await page.evaluate(async (jobId) => {
+                const app = window.app
+                if (!app) throw new Error('The Cloud editor is unavailable')
+                const response = await app.api.fetchApi(
+                  `/jobs/${encodeURIComponent(jobId)}`,
+                  { timeoutMs: 10_000 }
+                )
+                if (!response.ok) {
+                  throw new Error(
+                    `Could not read the submitted Cloud job (HTTP ${response.status})`
+                  )
+                }
+                return response.json()
+              }, id)
+              completedJob = jobResult.parse(result)
               return completedJob.status
             },
             { timeout: 120_000, intervals: [1000, 2000, 5000] }
@@ -212,7 +208,7 @@ test.describe(
           outputs_count: 1
         })
         await writeFile(
-          testInfo.outputPath('cloud-job-result.json'),
+          evidencePath('cloud-job-result.json'),
           JSON.stringify(completedJob, null, 2)
         )
         await capture('03-after-cloud-execution.png')
