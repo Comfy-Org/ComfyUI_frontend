@@ -1,16 +1,9 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
-import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
+import { publishedApi } from '@/platform/nodeApi/v4/__tests__/publishedApi'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
 import { useActionBarButtonStore } from './actionBarButtonStore'
-
-function publishedApi() {
-  useComfyApiStore().publish()
-  const comfy = window.comfy_v4
-  assert(comfy, 'the node API was not published')
-  return comfy
-}
 
 describe('the action bar buttons', () => {
   it('lists the buttons packs add through the node API after those of extensions, and drops a removed one', () => {
