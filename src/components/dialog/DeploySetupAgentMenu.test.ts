@@ -10,9 +10,12 @@ import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import type { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openDeploySetupDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useToast } from '@/components/ui/toast/toastStore'
 import type { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -30,6 +33,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: vi.fn()
 }))
@@ -358,6 +362,150 @@ describe('DeploySetupAgentMenu', () => {
     })
     expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
       !closes
+    )
+  })
+
+  it.for([
+    { outcome: 'saved', saves: true, opens: 1 },
+    { outcome: 'cancelled', saves: false, opens: 0 }
+  ])(
+    'saves an unsaved workflow before Deploy on Platform: $outcome',
+    async ({ saves, opens }) => {
+      const workflow = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/Unsaved Workflow.json',
+        isPersisted: false,
+        isModified: true
+      })
+      useWorkflowStore().activeWorkflow = workflow
+      vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
+        async (saved) => {
+          if (saves)
+            Object.assign(saved, { isPersisted: true, isModified: false })
+          return saves
+        }
+      )
+      const tab = fromPartial<Window>({ opener: window, location: {} })
+      const open = vi.spyOn(window, 'open').mockReturnValue(tab)
+      render(GlobalDialog, { global: { plugins: [testI18n] } })
+      await openDeploySetupDialog()
+      const user = userEvent.setup({ pointerEventsCheck: 0 })
+      const link = await screen.findByRole('link', {
+        name: 'Deploy on Platform'
+      })
+      const navigated = vi.fn<(prevented: boolean) => void>()
+      link.addEventListener('click', (event) => {
+        navigated(event.defaultPrevented)
+        event.preventDefault()
+      })
+
+      await user.click(link)
+
+      expect(navigated).toHaveBeenCalledExactlyOnceWith(true)
+      expect(useWorkflowService().saveWorkflow).toHaveBeenCalledExactlyOnceWith(
+        workflow
+      )
+      await waitFor(() => expect(open).toHaveBeenCalledTimes(opens))
+      if (opens) {
+        expect(open).toHaveBeenCalledWith('', '_blank')
+        expect(tab.opener).toBeNull()
+        expect(tab.location.href).toBe(link.getAttribute('href'))
+      }
+      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+        !saves
+      )
+    }
+  )
+
+  it('keeps the dialog open when the browser blocks the Platform tab', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      path: 'workflows/portraits/upscale.json',
+      isPersisted: true,
+      isModified: true
+    })
+    vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
+      async (saved) => {
+        Object.assign(saved, { isModified: false })
+        return true
+      }
+    )
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    render(GlobalDialog, { global: { plugins: [testI18n] } })
+    await openDeploySetupDialog()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(
+      await screen.findByRole('link', { name: 'Deploy on Platform' })
+    )
+
+    await waitFor(() => expect(open).toHaveBeenCalledOnce())
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      true
+    )
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'info',
+        title: 'Workflow saved. Click Deploy on Platform again to continue.'
+      })
+    ])
+  })
+
+  it('saves before a middle-click opens Deploy on Platform', async () => {
+    useWorkflowStore().activeWorkflow = fromPartial({
+      path: 'workflows/portraits/upscale.json',
+      isPersisted: true,
+      isModified: true
+    })
+    vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
+      async (saved) => {
+        Object.assign(saved, { isModified: false })
+        return true
+      }
+    )
+    const tab = fromPartial<Window>({ opener: window, location: {} })
+    const open = vi.spyOn(window, 'open').mockReturnValue(tab)
+    render(GlobalDialog, { global: { plugins: [testI18n] } })
+    await openDeploySetupDialog()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.pointer({
+      keys: '[MouseMiddle]',
+      target: await screen.findByRole('link', { name: 'Deploy on Platform' })
+    })
+
+    await waitFor(() => expect(open).toHaveBeenCalledOnce())
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      true
+    )
+  })
+
+  it('saves a modified workflow before opening it in an agent', async () => {
+    const workflow = fromPartial<LoadedComfyWorkflow>({
+      path: 'workflows/portraits/upscale.json',
+      isPersisted: true,
+      isModified: true,
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    useWorkflowStore().activeWorkflow = workflow
+    vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
+      async (saved) => {
+        Object.assign(saved, { isModified: false })
+        return true
+      }
+    )
+    render(DeploySetupAgentMenu, { global: { plugins: [testI18n] } })
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await pickRow(user, 'Open in Codex')
+
+    await waitFor(() =>
+      expect(openAgentApp).toHaveBeenCalledExactlyOnceWith(
+        'codex',
+        expect.stringContaining('Workflow: "workflows/portraits/upscale.json"')
+      )
+    )
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledExactlyOnceWith(
+      workflow
     )
   })
 

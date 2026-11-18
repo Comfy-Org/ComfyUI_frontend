@@ -66,7 +66,7 @@
           target="_blank"
           rel="noopener noreferrer"
           @click="openPlatform"
-          @auxclick.middle="trackPlatformClick"
+          @auxclick.middle="openPlatform($event, false)"
         >
           {{ $t('deployToComfyApi.deployOnPlatform') }}
           <i
@@ -90,6 +90,8 @@ import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
+import { useRunOnCloudHandoff } from '@/platform/openOnCloud/useRunOnCloudHandoff'
+import { useToast } from '@/components/ui/toast/toastStore'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
 
@@ -118,8 +120,27 @@ function trackPlatformClick() {
   })
 }
 
-function openPlatform() {
+const { needsSave, saveActiveWorkflow } = useRunOnCloudHandoff()
+
+const toast = useToast()
+
+async function openPlatform(event: MouseEvent, closes = true) {
   trackPlatformClick()
-  emit('done')
+  if (!needsSave()) {
+    if (closes) emit('done')
+    return
+  }
+  event.preventDefault()
+  if (!(await saveActiveWorkflow())) return
+  // A slow save can outlast the click's popup allowance; keep the dialog
+  // open so the now-saved link can be clicked again if the tab was blocked.
+  const tab = window.open('', '_blank')
+  if (!tab) {
+    toast.info(t('openOnCloud.deploySetupDialog.platformTabBlocked'))
+    return
+  }
+  tab.opener = null
+  tab.location.href = platformUrl
+  if (closes) emit('done')
 }
 </script>
