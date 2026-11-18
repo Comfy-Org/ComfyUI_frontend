@@ -256,8 +256,7 @@ ticket, and the workaround is removed when the ticket is fixed.
   0.4 workflow the change tracker keeps has no group counter, so a restore
   sets `state.lastGroupId` from the groups it loads, and after an undo to before a group was made the
   next group takes that group's id. `afterHistoryRestore()` retires group
-  handles by that counter until a ticket for group ids (to be filed: "Undo
-  reissues the id of a group it removed to the next group made") is fixed as
+  handles by that counter until [#23733](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23733) (group ids) is fixed as
   well; removing it when only #23333 is fixed would let a group handle read
   another group.
 

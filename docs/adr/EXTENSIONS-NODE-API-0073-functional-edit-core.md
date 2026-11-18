@@ -635,7 +635,8 @@ ADR-EXTENSIONS-NODE-API-0070.
   or the node's type chose: `updateNode`'s `resizable: false` and
   `NodeDefinition.presentation`'s `resizable: false` (ADR-EXTENSIONS-NODE-API-0071
   decision 10) last until the user unpins the node. The API keeps the host's
-  behavior and does not put the choice back. Ticket draft: _Title:_
+  behavior and does not put the choice back. Filed as
+  [#23731](https://github.com/Comfy-Org/ComfyUI_frontend/issues/23731):
   "Unpinning a node makes it resizable even when it was not". _Reproduction:_
   on frontend 1.61.0, in the browser console, take a node
   (`const node = app.graph.nodes[0]`) and run
