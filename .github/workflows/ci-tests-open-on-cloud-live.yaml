@@ -1,0 +1,82 @@
+# Description: Runs the live Open on Cloud Playwright specs from a signed-out local ComfyUI against a Cloud deployment, signing in with the Open on Cloud smoke account.
+name: 'CI: Tests Open on Cloud live'
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/ci-tests-open-on-cloud-live.yaml'
+      - 'browser_tests/tests/liveCloud/openOnCloud*.spec.ts'
+      - 'browser_tests/fixtures/liveOpenOnCloudFixture.ts'
+      - 'src/platform/openOnCloud/**'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  open-on-cloud-live:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      OPEN_ON_CLOUD_URL: https://pr-19562.testenvs.comfy.org
+      FRONTEND_MERGE_REF: refs/pull/23617/head
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Merge the frontend rollout under test
+        if: env.FRONTEND_MERGE_REF != ''
+        run: |
+          git fetch --no-tags origin "$FRONTEND_MERGE_REF"
+          git -c user.name=ci -c user.email=ci@localhost merge --no-edit FETCH_HEAD
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          include_build_step: true
+        env:
+          VITE_STAGING_CLOUD_BASE_URL: ${{ env.OPEN_ON_CLOUD_URL }}
+
+      - name: Setup Playwright
+        uses: ./.github/actions/setup-playwright
+
+      - name: Setup ComfyUI server
+        uses: ./.github/actions/setup-comfyui-server
+
+      - name: Start single-user ComfyUI server
+        working-directory: ComfyUI
+        run: |
+          python main.py --cpu --front-end-root ../dist &
+          wait-for-it --service 127.0.0.1:8188 -t 600
+
+      - name: Run live Open on Cloud specs
+        run: >-
+          pnpm exec playwright test
+          browser_tests/tests/liveCloud/openOnCloud.spec.ts
+          browser_tests/tests/liveCloud/openOnCloudLogin.spec.ts
+          --project=cloud-live --workers=1 --reporter=line,json,html
+          --output=open-on-cloud-live/test-results
+        env:
+          PLAYWRIGHT_CLOUD_LIVE: '1'
+          PLAYWRIGHT_TEST_URL: http://127.0.0.1:8188
+          PLAYWRIGHT_SETUP_API_URL: http://127.0.0.1:8188
+          PLAYWRIGHT_JSON_OUTPUT_NAME: open-on-cloud-live/results.json
+          PLAYWRIGHT_HTML_OUTPUT_DIR: open-on-cloud-live/report
+          PLAYWRIGHT_HTML_OPEN: never
+          CLOUD_ACCOUNT_EMAIL: ${{ vars.OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL }}
+          CLOUD_ACCOUNT_PASSWORD: ${{ secrets.OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD }}
+
+      - name: Upload results and screenshots
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: open-on-cloud-live
+          path: open-on-cloud-live/
+          retention-days: 14
