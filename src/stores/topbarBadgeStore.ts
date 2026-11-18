@@ -1,3 +1,4 @@
+import { contributedBadges } from '@/platform/nodeApi/chromeContributions'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
@@ -8,11 +9,12 @@ import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 export const useTopbarBadgeStore = defineStore('topbarBadge', () => {
   const extensionStore = useExtensionStore()
 
-  const badges = computed<TopbarBadge[]>(() =>
-    extensionStore.extensions
+  const badges = computed<TopbarBadge[]>(() => [
+    ...extensionStore.extensions
       .filter((e) => extensionStore.contributes(e.name))
-      .flatMap((e) => e.topbarBadges ?? [])
-  )
+      .flatMap((e) => e.topbarBadges ?? []),
+    ...contributedBadges.value
+  ])
 
   return {
     badges

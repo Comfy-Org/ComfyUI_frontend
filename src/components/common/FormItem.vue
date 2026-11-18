@@ -90,6 +90,9 @@ function getFormAttrs(item: FormItem) {
     case 'text':
       attrs['class'] = 'w-44'
       break
+    case 'password':
+      attrs['type'] = 'password'
+      break
   }
   return attrs
 }
