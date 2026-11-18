@@ -2,8 +2,13 @@ import { writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 import { z } from 'zod'
-import { zJobDetailResponse, zPromptResponse } from '@comfyorg/ingest-types/zod'
+import {
+  zBillingBalanceResponse,
+  zJobDetailResponse,
+  zPromptResponse
+} from '@comfyorg/ingest-types/zod'
 
 import { desktopWorkflowRelayFixture } from '@e2e/fixtures/desktopWorkflowRelayFixture'
 
@@ -28,6 +33,26 @@ const jobResult = zJobDetailResponse.pick({
   status: true,
   outputs_count: true
 })
+
+const creditBalance = zBillingBalanceResponse
+  .pick({ amount_cents: true, currency: true, pending_charges_cents: true })
+  .required({ amount_cents: true })
+
+async function readCreditBalance(page: Page) {
+  const balance = await page.evaluate(async () => {
+    const app = window.app
+    if (!app) throw new Error('The Cloud editor is unavailable')
+    const response = await app.api.fetchApi('/billing/balance', {
+      cache: 'no-store',
+      timeoutMs: 10_000
+    })
+    if (!response.ok) {
+      throw new Error(`Could not read Cloud credits (HTTP ${response.status})`)
+    }
+    return response.json()
+  })
+  return creditBalance.parse(balance)
+}
 
 const firebaseSignInError = z.object({
   error: z.object({
@@ -163,7 +188,8 @@ test.describe(
         await capture('02-imported-workflow.png')
       })
 
-      await test.step('Run the imported workflow and confirm its Cloud output', async () => {
+      await test.step('Complete the Cloud job with one image and no credit charge', async () => {
+        const before = await readCreditBalance(page)
         const [submission] = await Promise.all([
           page.waitForResponse(
             (response) =>
@@ -207,10 +233,19 @@ test.describe(
           status: 'completed',
           outputs_count: 1
         })
+        const after = await readCreditBalance(page)
         await writeFile(
           evidencePath('cloud-job-result.json'),
-          JSON.stringify(completedJob, null, 2)
+          JSON.stringify(
+            { ...completedJob, credit_balance: { before, after } },
+            null,
+            2
+          )
         )
+        expect(
+          after,
+          'The completed workflow leaves Cloud credits unchanged'
+        ).toEqual(before)
         await capture('03-after-cloud-execution.png')
       })
     })

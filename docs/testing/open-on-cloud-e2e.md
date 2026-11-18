@@ -41,7 +41,7 @@ The login fixture permits the hosted application's analytics, diagnostics, and I
 
 ## Authenticated Desktop relay smoke test
 
-`browser_tests/tests/liveCloud/openOnCloudSmoke.spec.ts` follows a Desktop relay through the hosted email sign-in form, checks that the transferred EmptyImage workflow appears in the editor, and runs it once. It reads the job returned by that run and requires Cloud to report a completed job with an image output.
+`browser_tests/tests/liveCloud/openOnCloudSmoke.spec.ts` follows a Desktop relay through hosted email sign-in, verifies the imported Empty Image → Save Image workflow, and runs it once. It requires a completed job with one image output and an unchanged Cloud credit balance.
 
 Use an HTTP `localhost` editor and a non-production Cloud deployment with the receiver flag enabled for the smoke account and a worker that can run the workflow. Inject `SMOKE_ACCOUNT_EMAIL` and `SMOKE_ACCOUNT_PASSWORD` through the approved secret store or job environment.
 
