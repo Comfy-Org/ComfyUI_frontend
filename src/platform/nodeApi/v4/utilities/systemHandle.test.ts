@@ -49,7 +49,7 @@ const backendStats: SystemStats = {
   devices: [gpu]
 }
 
-function stats(overrides: { system?: object; devices?: unknown[] } = {}) {
+function stats(overrides: { system?: object; devices?: unknown } = {}) {
   return { ...backendStats, ...overrides }
 }
 
@@ -71,6 +71,10 @@ describe('reading the system monitor', () => {
       ]
     })
     expect(String(vi.mocked(fetch).mock.calls[0][0])).toBe('/api/system_stats')
+  })
+
+  it('is frozen, so a pack cannot replace monitor for another', () => {
+    expect(Object.isFrozen(systemApi())).toBe(true)
   })
 
   it('freezes the reading and each part of it', async () => {
@@ -158,9 +162,22 @@ describe('reading the system monitor', () => {
       failure: Response.json({ system: backendStats.system })
     },
     {
+      name: 'gives devices that are not a list',
+      failure: Response.json(stats({ devices: { 0: gpu, length: 1 } }))
+    },
+    {
       name: 'gives a RAM total that is not a number',
       failure: Response.json(
         stats({ system: { ram_total: '64', ram_free: 1 } })
+      )
+    },
+    {
+      name: 'gives a RAM total too large for a number',
+      failure: new Response(
+        JSON.stringify(stats()).replace(
+          '"ram_total":67108864000',
+          '"ram_total":1e999'
+        )
       )
     },
     {
