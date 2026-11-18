@@ -420,6 +420,7 @@ export { planCheckoutBannerFor } from './billingTab/planCheckoutBanner'
 export type {
   PlanNotStartedBanner,
   PlanNotStartedFacts,
+  RecoveryPaymentPage,
   SubscriptionPaymentRecovery
 } from './billingTab/planNotStartedBanner'
 export { planNotStartedBannerFor } from './billingTab/planNotStartedBanner'

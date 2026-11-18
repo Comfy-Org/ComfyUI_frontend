@@ -96,7 +96,7 @@ export function useBillingBannerCopy() {
 
   function planNotStartedView({
     planTier,
-    actionUrl
+    paymentPage
   }: PlanNotStartedBanner): BillingBannerView {
     const plan = formatTierName(planTier, false)
     return {
@@ -105,7 +105,7 @@ export function useBillingBannerCopy() {
         ? t(`${bs}.planNotStarted.title`, { plan })
         : t(`${bs}.planNotStarted.titleNoPlan`),
       body: t(`${bs}.planNotStarted.body`),
-      action: actionUrl ? 'finishPayment' : null
+      action: paymentPage === 'noHostedPage' ? null : 'finishPayment'
     }
   }
 

@@ -6,40 +6,33 @@ const recovery = {
   billing_op_id: 'op-signup',
   reason: 'payment_required'
 } as const
-const PAYMENT_PAGE = 'https://invoice.stripe.example/i/signup'
 
 describe('planNotStartedBannerFor', () => {
-  it('names the served plan and payment page of the unfinished first payment', () => {
+  it.for([
+    {
+      case: 'the served plan and its hosted payment page',
+      planTier: 'CREATOR',
+      paymentPage: 'hostedPage'
+    },
+    {
+      case: 'no plan while the operation has not served one',
+      planTier: null,
+      paymentPage: 'unknown'
+    },
+    {
+      case: 'an operation that serves no hosted payment page',
+      planTier: 'CREATOR',
+      paymentPage: 'noHostedPage'
+    }
+  ] as const)('carries $case', ({ planTier, paymentPage }) => {
     expect(
       planNotStartedBannerFor({
         isCloud: true,
         recovery,
-        planTier: 'CREATOR',
-        actionUrl: PAYMENT_PAGE
+        planTier,
+        paymentPage
       })
-    ).toEqual({ planTier: 'CREATOR', actionUrl: PAYMENT_PAGE })
-  })
-
-  it('names no plan while the operation has not served one', () => {
-    expect(
-      planNotStartedBannerFor({
-        isCloud: true,
-        recovery,
-        planTier: null,
-        actionUrl: PAYMENT_PAGE
-      })
-    ).toEqual({ planTier: null, actionUrl: PAYMENT_PAGE })
-  })
-
-  it('offers no payment page while the operation serves none', () => {
-    expect(
-      planNotStartedBannerFor({
-        isCloud: true,
-        recovery,
-        planTier: 'CREATOR',
-        actionUrl: null
-      })
-    ).toEqual({ planTier: 'CREATOR', actionUrl: null })
+    ).toEqual({ planTier, paymentPage })
   })
 
   it('shows nothing when no recovery is served', () => {
@@ -48,7 +41,7 @@ describe('planNotStartedBannerFor', () => {
         isCloud: true,
         recovery: null,
         planTier: 'CREATOR',
-        actionUrl: PAYMENT_PAGE
+        paymentPage: 'hostedPage'
       })
     ).toBeNull()
   })
@@ -59,7 +52,7 @@ describe('planNotStartedBannerFor', () => {
         isCloud: false,
         recovery,
         planTier: 'CREATOR',
-        actionUrl: PAYMENT_PAGE
+        paymentPage: 'hostedPage'
       })
     ).toBeNull()
   })

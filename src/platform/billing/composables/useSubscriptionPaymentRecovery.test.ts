@@ -152,14 +152,14 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(stopRefresh).toHaveBeenCalledOnce()
   })
 
-  it('keeps one surface armed when another surface serves no recovery', async () => {
+  it('keeps the refresh armed from the plans copy when a surface reading the status copy is served no recovery', async () => {
     serveRecovery(true)
     vi.mocked(reserveBillingTab).mockReturnValue(trackedTab())
     const stopRefresh = vi.fn()
     vi.mocked(registerRefreshOnReturn).mockReturnValue(stopRefresh)
 
     await useSubscriptionPaymentRecovery().finishPayment()
-    useSubscriptionPaymentRecovery(() => null)
+    useSubscriptionPaymentRecovery('status')
     await nextTick()
 
     expect(stopRefresh).not.toHaveBeenCalled()
@@ -245,15 +245,16 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(billingApi.getBillingOpStatus).toHaveBeenCalledWith(SIGNUP_OP)
   })
 
-  it('exposes the payment page the bound signup operation serves', async () => {
+  it('says the bound signup operation serves a hosted payment page', async () => {
     serveRecovery(true)
 
-    const { recoveryActionUrl } = useSubscriptionPaymentRecovery()
+    const { recoveryPaymentPage } = useSubscriptionPaymentRecovery()
 
-    await vi.waitFor(() => expect(recoveryActionUrl.value).toBe(INVOICE_URL))
+    expect(recoveryPaymentPage.value).toBe('unknown')
+    await vi.waitFor(() => expect(recoveryPaymentPage.value).toBe('hostedPage'))
   })
 
-  it('exposes no payment page when the operation serves only a client secret', async () => {
+  it('says there is no hosted payment page when the operation serves only a client secret', async () => {
     serveRecovery(true)
     vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
       id: SIGNUP_OP,
@@ -263,19 +264,19 @@ describe('useSubscriptionPaymentRecovery', () => {
       plan: { slug: 'creator-monthly', duration: 'MONTHLY', tier: 'CREATOR' }
     })
 
-    const { recoveryPlanTier, recoveryActionUrl } =
+    const { recoveryPlanTier, recoveryPaymentPage } =
       useSubscriptionPaymentRecovery()
 
     await vi.waitFor(() => expect(recoveryPlanTier.value).toBe('CREATOR'))
-    expect(recoveryActionUrl.value).toBeNull()
+    expect(recoveryPaymentPage.value).toBe('noHostedPage')
   })
 
-  it('leaves the plan unnamed and offers no payment page when the operation read fails', async () => {
+  it('leaves the plan unnamed and the payment page unknown when the operation read fails', async () => {
     serveRecovery(true)
     const failure = new Error('network down')
     vi.mocked(billingApi.getBillingOpStatus).mockRejectedValue(failure)
 
-    const { recoveryPlanTier, recoveryActionUrl } =
+    const { recoveryPlanTier, recoveryPaymentPage } =
       useSubscriptionPaymentRecovery()
 
     await vi.waitFor(() =>
@@ -287,7 +288,7 @@ describe('useSubscriptionPaymentRecovery', () => {
       )
     )
     expect(recoveryPlanTier.value).toBeNull()
-    expect(recoveryActionUrl.value).toBeNull()
+    expect(recoveryPaymentPage.value).toBe('unknown')
   })
 
   it('does nothing when the server serves no recovery', async () => {

@@ -98,7 +98,7 @@ vi.mock(
         () => mockSignupPaymentRecovery.value
       ),
       recoveryPlanTier: computed(() => mockRecoveryPlanTier.value),
-      recoveryActionUrl: computed(() => null),
+      recoveryPaymentPage: computed(() => 'unknown'),
       isOpeningPayment: ref(false),
       finishPayment: mockFinishPayment
     })

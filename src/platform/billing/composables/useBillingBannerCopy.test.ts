@@ -42,8 +42,6 @@ function renderBanner(banner: PlanCheckoutBanner) {
   return { onDismiss }
 }
 
-const PAYMENT_PAGE = 'https://invoice.stripe.example/i/signup'
-
 function renderPlanNotStarted(banner: PlanNotStartedBanner) {
   const onAction = vi.fn()
   render(
@@ -147,7 +145,7 @@ describe('useBillingBannerCopy plan not started banner', () => {
   it('names the served plan and offers a white Finish payment with no Dismiss', async () => {
     const { onAction } = renderPlanNotStarted({
       planTier: 'CREATOR',
-      actionUrl: PAYMENT_PAGE
+      paymentPage: 'hostedPage'
     })
 
     const banner = screen.getByRole('status')
@@ -165,21 +163,32 @@ describe('useBillingBannerCopy plan not started banner', () => {
   })
 
   it('falls back to a generic title when no plan is served', () => {
-    renderPlanNotStarted({ planTier: null, actionUrl: PAYMENT_PAGE })
+    renderPlanNotStarted({ planTier: null, paymentPage: 'unknown' })
 
     expect(screen.getByRole('status')).toHaveTextContent(
       'Your plan hasn’t started'
     )
   })
 
-  it('offers no Finish payment while the operation serves no payment page', () => {
-    renderPlanNotStarted({ planTier: 'CREATOR', actionUrl: null })
+  it.for([
+    {
+      case: 'offers Finish payment while the operation is unread or its read failed',
+      paymentPage: 'unknown',
+      finishPayment: 1
+    },
+    {
+      case: 'offers no Finish payment when the operation serves no hosted payment page',
+      paymentPage: 'noHostedPage',
+      finishPayment: 0
+    }
+  ] as const)('$case', ({ paymentPage, finishPayment }) => {
+    renderPlanNotStarted({ planTier: 'CREATOR', paymentPage })
 
     expect(screen.getByRole('status')).toHaveTextContent(
       'Your Creator plan hasn’t started'
     )
     expect(
-      screen.queryByRole('button', { name: 'Finish payment' })
-    ).not.toBeInTheDocument()
+      screen.queryAllByRole('button', { name: 'Finish payment' })
+    ).toHaveLength(finishPayment)
   })
 })

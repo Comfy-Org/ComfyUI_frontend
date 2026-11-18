@@ -259,9 +259,7 @@ const planCheckout = usePlanCheckoutBanner()
 const topupCheckout = useTopupCheckoutBanner(
   () => capabilities.canManageBilling.value
 )
-const signupPayment = useSubscriptionPaymentRecovery(
-  billing.statusPaymentRecovery
-)
+const signupPayment = useSubscriptionPaymentRecovery('status')
 const planNotStarted = computed(() =>
   planCheckout.banner.value
     ? null
@@ -269,7 +267,7 @@ const planNotStarted = computed(() =>
         isCloud,
         recovery: billing.statusPaymentRecovery.value,
         planTier: signupPayment.recoveryPlanTier.value,
-        actionUrl: signupPayment.recoveryActionUrl.value
+        paymentPage: signupPayment.recoveryPaymentPage.value
       })
 )
 const suppressCreditBanner = computed(() =>

@@ -1,7 +1,6 @@
-import type { SubscriptionPaymentRecovery } from '@comfyorg/account-core/billing'
+import type { RecoveryPaymentPage } from '@comfyorg/account-core/billing'
 import type { SubscriptionTier } from '@comfyorg/ingest-types'
-import { computed, shallowRef, toValue, watch } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
+import { shallowRef, watch } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
@@ -12,37 +11,59 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-/** Opens the served payment action for an unpaid initial-signup invoice; reads the plans-served fact unless given another served source. */
-export function useSubscriptionPaymentRecovery(
-  servedRecovery?: MaybeRefOrGetter<SubscriptionPaymentRecovery | null>
+type RecoverySource = 'plans' | 'status'
+
+let pendingPaymentRefresh: {
+  readonly source: RecoverySource
+  readonly stop: () => void
+} | null = null
+
+function armPendingPaymentRefresh(
+  source: RecoverySource,
+  refresh: () => Promise<unknown>
 ) {
-  let stopReturnRefresh: (() => void) | null = null
+  pendingPaymentRefresh?.stop()
+  pendingPaymentRefresh = { source, stop: registerRefreshOnReturn(refresh) }
+}
+
+function disarmPendingPaymentRefresh(source: RecoverySource) {
+  if (pendingPaymentRefresh?.source !== source) return
+  pendingPaymentRefresh.stop()
+  pendingPaymentRefresh = null
+}
+
+/** Opens the served payment action for an unpaid initial-signup invoice, read from the plans or the status copy of the served fact. */
+export function useSubscriptionPaymentRecovery(
+  source: RecoverySource = 'plans'
+) {
   const billing = useBillingContext()
   const { fetchPlans, fetchStatus } = billing
-  const subscriptionPaymentRecovery = computed(() =>
-    toValue(servedRecovery ?? billing.subscriptionPaymentRecovery)
-  )
+  const subscriptionPaymentRecovery = {
+    plans: billing.subscriptionPaymentRecovery,
+    status: billing.statusPaymentRecovery
+  }[source]
   const capabilities = useBillingCapabilities()
   const toast = useToast()
   const isOpeningPayment = shallowRef(false)
   const recoveryPlanTier = shallowRef<SubscriptionTier | null>(null)
-  const recoveryActionUrl = shallowRef<string | null>(null)
+  const recoveryPaymentPage = shallowRef<RecoveryPaymentPage>('unknown')
 
   watch(
     () => subscriptionPaymentRecovery.value?.billing_op_id,
     async (opId) => {
       recoveryPlanTier.value = null
-      recoveryActionUrl.value = null
+      recoveryPaymentPage.value = 'unknown'
       if (!opId) {
-        stopReturnRefresh?.()
-        stopReturnRefresh = null
+        disarmPendingPaymentRefresh(source)
         return
       }
       try {
         const operation = await billingApi.getBillingOpStatus(opId)
         if (subscriptionPaymentRecovery.value?.billing_op_id !== opId) return
         recoveryPlanTier.value = operation.plan?.tier ?? null
-        recoveryActionUrl.value = operation.action_url ?? null
+        recoveryPaymentPage.value = operation.action_url
+          ? 'hostedPage'
+          : 'noHostedPage'
       } catch (error) {
         reportError(error, {
           surface: 'billing',
@@ -59,11 +80,6 @@ export function useSubscriptionPaymentRecovery(
       fetchStatus(),
       capabilities.refresh()
     ])
-  }
-
-  function refreshOnReturn() {
-    stopReturnRefresh?.()
-    stopReturnRefresh = registerRefreshOnReturn(refreshBillingState)
   }
 
   function reportPaymentUnavailable() {
@@ -92,7 +108,7 @@ export function useSubscriptionPaymentRecovery(
         return
       }
       tab.navigate(operation.action_url)
-      refreshOnReturn()
+      armPendingPaymentRefresh(source, refreshBillingState)
     } catch (error) {
       tab.close()
       reportError(error, {
@@ -108,7 +124,7 @@ export function useSubscriptionPaymentRecovery(
   return {
     subscriptionPaymentRecovery,
     recoveryPlanTier,
-    recoveryActionUrl,
+    recoveryPaymentPage,
     isOpeningPayment,
     finishPayment
   }
