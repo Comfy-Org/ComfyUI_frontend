@@ -289,9 +289,10 @@ export const useMissingModelStore = defineStore('missingModel', () => {
         silent: true,
         reloadDefs: options.reloadDefs
       })
-      void surfaced.finally(() => {
+      const release = () => {
         isRefreshingMissingModels.value = false
-      })
+      }
+      void surfaced.then(release, release)
     } catch (error) {
       isRefreshingMissingModels.value = false
       if (isAbortError(error)) return

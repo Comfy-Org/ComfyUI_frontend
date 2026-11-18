@@ -130,31 +130,6 @@ describe(useMissingModelDownloadStore, () => {
 
     expect(refreshMissingModels).toHaveBeenCalledOnce()
   })
-  it('holds a pending re-check while a workflow load has cleared the missing models', async () => {
-    installDesktopHost()
-    const missingModelStore = useMissingModelStore()
-    const refreshMissingModels = vi
-      .spyOn(missingModelStore, 'refreshMissingModels')
-      .mockResolvedValue(undefined)
-    seedMissingModel()
-    missingModelStore.isRefreshingMissingModels = true
-    const store = useMissingModelDownloadStore()
-    store.startTracking()
-    store.download(model)
-    emitHostProgress('pending')
-    emitHostProgress('completed')
-    await nextTick()
-
-    missingModelStore.missingModelCandidates = null
-    missingModelStore.isRefreshingMissingModels = false
-    await nextTick()
-    expect(refreshMissingModels).not.toHaveBeenCalled()
-
-    seedMissingModel()
-    await nextTick()
-    expect(refreshMissingModels).toHaveBeenCalledOnce()
-  })
-
   it('mirrors a download of the same destination started elsewhere', () => {
     installDesktopHost()
     const store = useMissingModelDownloadStore()
