@@ -13,7 +13,10 @@ import { z } from 'zod'
 import type { ComfyApp } from '../../src/scripts/app'
 
 const preview = 'https://pr-19562.testenvs.comfy.org'
-const stripe = 'https://checkout.stripe.com'
+const stripeCheckoutOrigins = new Set([
+  'https://checkout.stripe.com',
+  'https://checkout.comfy.org'
+])
 const account = 'smoke-test+open-on-cloud-preview@comfy.org'
 const amountCents = 500
 const idempotencyKey = 'preview-19562-smoke-test-topup-2026-11-18'
@@ -28,6 +31,11 @@ const eligibilitySchema = z.object({
     .optional()
 })
 const errorSchema = z.object({ code: z.string().regex(/^[A-Z0-9_]{1,60}$/) })
+const stripeConfirmationSchema = z.object({
+  status: z.string().optional(),
+  payment_status: z.string().optional(),
+  payment_intent: z.object({ status: z.string() }).optional()
+})
 
 let phase = 'credential and preview checks'
 
@@ -151,7 +159,7 @@ async function main() {
       destination.pathname.split('/').includes(checkout.session_id)
     )
     if (
-      destination.origin !== stripe ||
+      !stripeCheckoutOrigins.has(destination.origin) ||
       !checkout.session_id ||
       !/^cs_test_[a-zA-Z0-9]+$/.test(checkout.session_id) ||
       !matchingCheckoutPath
@@ -177,7 +185,7 @@ async function main() {
     phase = 'Stripe test form'
     const payment = await context.newPage()
     await payment.goto(destination.href, { waitUntil: 'domcontentloaded' })
-    if (new URL(payment.url()).origin !== stripe) {
+    if (!stripeCheckoutOrigins.has(new URL(payment.url()).origin)) {
       throw new TopUpError('Checkout left the expected Stripe origin')
     }
     const cardNumber = payment.locator('input#cardNumber')
@@ -194,15 +202,25 @@ async function main() {
     const billingCountry = payment.locator('select#billingCountry')
     if (await billingCountry.isVisible())
       await billingCountry.selectOption('US')
+    const manualAddress = payment.getByText('Enter address manually', {
+      exact: true
+    })
+    if (await manualAddress.isVisible()) await manualAddress.click()
+    const addressLine = payment.locator('input#billingAddressLine1')
+    if (await addressLine.isVisible()) await addressLine.fill('123 Test Street')
+    const city = payment.locator('input#billingLocality')
+    if (await city.isVisible()) await city.fill('Portland')
+    const state = payment.locator('select#billingAdministrativeArea')
+    if (await state.isVisible()) await state.selectOption('OR')
     const postalCode = payment.locator('input#billingPostalCode')
-    if (await postalCode.isVisible()) await postalCode.fill('94107')
+    if (await postalCode.isVisible()) await postalCode.fill('97201')
     const emailInput = payment.locator('input#email')
     if ((await emailInput.isVisible()) && !(await emailInput.inputValue())) {
       await emailInput.fill(email)
     }
     const displayedSession = new URL(payment.url())
     if (
-      displayedSession.origin !== stripe ||
+      !stripeCheckoutOrigins.has(displayedSession.origin) ||
       !displayedSession.pathname.split('/').includes(checkout.session_id)
     ) {
       throw new TopUpError(
@@ -210,6 +228,27 @@ async function main() {
       )
     }
     phase = 'Stripe test submission'
+    payment.on('response', async (confirmation) => {
+      const url = new URL(confirmation.url())
+      if (
+        (url.origin !== 'https://api.stripe.com' &&
+          !stripeCheckoutOrigins.has(url.origin)) ||
+        !url.pathname.endsWith('/confirm') ||
+        confirmation.request().method() !== 'POST' ||
+        !confirmation.ok()
+      )
+        return
+      const result = stripeConfirmationSchema.safeParse(
+        await confirmation.json().catch(() => null)
+      )
+      if (
+        result.success &&
+        (result.data.status === 'complete' ||
+          result.data.payment_status === 'paid' ||
+          result.data.payment_intent?.status === 'succeeded')
+      )
+        console.log('Stripe acknowledged the test payment.')
+    })
     await payment
       .getByRole('button', { name: /^Pay(?:\s+\$5(?:\.00)?(?:\s+USD)?)?$/i })
       .click()
