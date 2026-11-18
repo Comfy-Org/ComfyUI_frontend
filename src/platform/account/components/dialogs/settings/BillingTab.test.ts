@@ -2540,6 +2540,31 @@ describe('BillingTab plan not started banner', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('still offers Finish payment when reading the operation fails', async () => {
+    distribution.isCloud = true
+    onTestFinished(() => {
+      distribution.isCloud = false
+    })
+    vi.mocked(billingApi.getBillingOpStatus).mockRejectedValue(
+      new Error('network down')
+    )
+    arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })
+
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'error_reading_signup_payment_recovery_plan'
+        })
+      )
+    )
+    const banner = screen.getByTestId('billing-banner-planNotStarted')
+    expect(banner).toHaveTextContent('Your plan hasn’t started')
+    expect(
+      within(banner).getByRole('button', { name: 'Finish payment' })
+    ).toBeVisible()
+  })
+
   it('shows nothing on local ComfyUI even when the fact is served', () => {
     serveSignupOperation()
     arrange({ statusPaymentRecovery: SIGNUP_RECOVERY })

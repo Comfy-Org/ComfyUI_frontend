@@ -1,6 +1,7 @@
 import type { SubscriptionPaymentRecovery } from '@comfyorg/ingest-types'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import { computed, effectScope, nextTick, shallowRef } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -25,6 +26,14 @@ vi.mock(import('@/platform/billing/refreshOnReturn'), () => ({
 
 const SIGNUP_OP = 'op-signup'
 const INVOICE_URL = 'https://invoice.stripe.example/i/signup'
+const PENDING_SIGNUP_OPERATION: Awaited<
+  ReturnType<typeof billingApi.getBillingOpStatus>
+> = {
+  id: SIGNUP_OP,
+  started_at: '2026-11-05T17:15:54Z',
+  status: 'pending',
+  action_url: INVOICE_URL
+}
 
 function trackedTab(): BillingTab & { opened: string[]; closed: boolean } {
   const tab = {
@@ -49,18 +58,53 @@ function serveRecovery(served: boolean) {
   return context
 }
 
+function serveLiveRecovery() {
+  const recovery = shallowRef<SubscriptionPaymentRecovery | null>({
+    billing_op_id: SIGNUP_OP,
+    reason: 'payment_required'
+  })
+  const context = useBillingContext()
+  context.subscriptionPaymentRecovery = computed(() => recovery.value)
+  vi.mocked(useBillingContext).mockReturnValue(context)
+  return recovery
+}
+
+function trackArmedReturnRefreshes() {
+  const stops: Mock<() => void>[] = []
+  vi.mocked(registerRefreshOnReturn).mockImplementation(() => {
+    const stop = vi.fn<() => void>()
+    stops.push(stop)
+    return stop
+  })
+  return () => stops.filter((stop) => stop.mock.calls.length === 0).length
+}
+
+function openPricingDialog() {
+  const scope = effectScope()
+  const dialog = scope.run(() => useSubscriptionPaymentRecovery())
+  if (!dialog) throw new Error('pricing dialog scope did not run')
+  return { finishPayment: dialog.finishPayment, close: () => scope.stop() }
+}
+
+function deferNextOperationLookup() {
+  let settle = () => {}
+  vi.mocked(billingApi.getBillingOpStatus).mockReturnValueOnce(
+    new Promise((resolve) => {
+      settle = () => resolve(PENDING_SIGNUP_OPERATION)
+    })
+  )
+  return () => settle()
+}
+
 function toastKinds() {
   return useToast().toasts.map((toast) => toast.kind)
 }
 
 describe('useSubscriptionPaymentRecovery', () => {
   beforeEach(() => {
-    vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue({
-      id: SIGNUP_OP,
-      started_at: '2026-11-05T17:15:54Z',
-      status: 'pending',
-      action_url: INVOICE_URL
-    })
+    vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+      PENDING_SIGNUP_OPERATION
+    )
   })
 
   it('opens the served invoice payment page for the bound signup operation', async () => {
@@ -121,7 +165,7 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(stopRefresh).not.toHaveBeenCalled()
   })
 
-  it('keeps the return refresh armed after the pricing dialog closes', async () => {
+  it('keeps the return refresh armed after the pricing dialog closes while the payment stays pending', async () => {
     const context = serveRecovery(true)
     vi.mocked(reserveBillingTab).mockReturnValue(trackedTab())
     const stopRefresh = vi.fn()
@@ -254,4 +298,95 @@ describe('useSubscriptionPaymentRecovery', () => {
     expect(reserveBillingTab).not.toHaveBeenCalled()
     expect(billingApi.getBillingOpStatus).not.toHaveBeenCalled()
   })
+})
+
+describe('useSubscriptionPaymentRecovery return refresh across pricing dialogs', () => {
+  beforeEach(() => {
+    vi.mocked(billingApi.getBillingOpStatus).mockResolvedValue(
+      PENDING_SIGNUP_OPERATION
+    )
+    vi.mocked(reserveBillingTab).mockImplementation(trackedTab)
+  })
+
+  it('keeps one return refresh armed when pricing is reopened to pay again and again', async () => {
+    serveRecovery(true)
+    const armedReturnRefreshes = trackArmedReturnRefreshes()
+
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const dialog = openPricingDialog()
+      await dialog.finishPayment()
+      dialog.close()
+    }
+
+    expect(registerRefreshOnReturn).toHaveBeenCalledTimes(3)
+    expect(armedReturnRefreshes()).toBe(1)
+  })
+
+  it('disarms every return refresh once the latest open dialog stops being served the recovery', async () => {
+    const recovery = serveLiveRecovery()
+    const armedReturnRefreshes = trackArmedReturnRefreshes()
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const dialog = openPricingDialog()
+      await dialog.finishPayment()
+      dialog.close()
+    }
+    const latest = openPricingDialog()
+    await latest.finishPayment()
+
+    recovery.value = null
+    await nextTick()
+
+    expect(armedReturnRefreshes()).toBe(0)
+  })
+
+  it('disarms a closed dialog return refresh when pricing reopens after the recovery cleared', async () => {
+    const recovery = serveLiveRecovery()
+    const armedReturnRefreshes = trackArmedReturnRefreshes()
+    const closed = openPricingDialog()
+    await closed.finishPayment()
+    closed.close()
+    recovery.value = null
+
+    openPricingDialog()
+
+    expect(armedReturnRefreshes()).toBe(0)
+  })
+
+  it.for([
+    {
+      settles: 'the closed dialog lookup',
+      first: 'closed',
+      second: 'reopened'
+    },
+    {
+      settles: 'the reopened dialog lookup',
+      first: 'reopened',
+      second: 'closed'
+    }
+  ] as const)(
+    'keeps one return refresh armed when $settles settles first across a reopen',
+    async ({ first, second }) => {
+      serveRecovery(true)
+      const armedReturnRefreshes = trackArmedReturnRefreshes()
+      const closed = openPricingDialog()
+      const settleClosed = deferNextOperationLookup()
+      const closedPaying = closed.finishPayment()
+      closed.close()
+      const reopened = openPricingDialog()
+      const settleReopened = deferNextOperationLookup()
+      const reopenedPaying = reopened.finishPayment()
+      const attempts = {
+        closed: { settle: settleClosed, paying: closedPaying },
+        reopened: { settle: settleReopened, paying: reopenedPaying }
+      }
+
+      attempts[first].settle()
+      await attempts[first].paying
+      attempts[second].settle()
+      await attempts[second].paying
+
+      expect(registerRefreshOnReturn).toHaveBeenCalledTimes(2)
+      expect(armedReturnRefreshes()).toBe(1)
+    }
+  )
 })
