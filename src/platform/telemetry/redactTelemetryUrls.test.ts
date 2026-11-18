@@ -1,6 +1,7 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
 import {
+  REDACTION_SENTINEL,
   redactTelemetryError,
   redactTelemetryUrls,
   redactTelemetryValues
@@ -567,5 +568,28 @@ describe('redactTelemetryValues', () => {
     const redacted = redactTelemetryError(error)
 
     expect(redacted.stack).toBeUndefined()
+  })
+
+  it('preserves a naturally captured stack instead of redacting it outright', () => {
+    const error = new Error('https://user:secret@example.com/a?token=x')
+
+    const redacted = redactTelemetryError(error)
+
+    expect(redacted.stack).not.toBe(REDACTION_SENTINEL)
+    expect(redacted.stack).toContain('example.com/a')
+    expect(redacted.stack).not.toContain('secret')
+  })
+
+  it('still fails closed for an accessor on message, unlike the native stack getter', () => {
+    const getter = vi.fn(() => 'secret')
+    const error = Object.defineProperty(new Error(), 'message', {
+      enumerable: true,
+      get: getter
+    })
+
+    const redacted = redactTelemetryError(error)
+
+    expect(redacted.message).toBe(REDACTION_SENTINEL)
+    expect(getter).not.toHaveBeenCalled()
   })
 })

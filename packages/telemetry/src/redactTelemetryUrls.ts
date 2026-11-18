@@ -388,7 +388,9 @@ function readErrorString(
   if (typeof properties[key] === 'string') return properties[key]
   try {
     const ownDescriptor = Object.getOwnPropertyDescriptor(source, key)
-    if (ownDescriptor && !('value' in ownDescriptor)) return REDACTION_SENTINEL
+    if (ownDescriptor && !('value' in ownDescriptor)) {
+      return readOwnAccessor(source, key, ownDescriptor)
+    }
     let prototype = Object.getPrototypeOf(source)
     while (prototype) {
       const descriptor = Object.getOwnPropertyDescriptor(prototype, key)
@@ -403,6 +405,26 @@ function readErrorString(
   } catch {
     return undefined
   }
+}
+
+function hasOwnAccessor(value: object, key: string): boolean {
+  const descriptor = Object.getOwnPropertyDescriptor(value, key)
+  return !!descriptor && !('value' in descriptor)
+}
+
+function readOwnAccessor(
+  source: Error,
+  key: 'message' | 'name' | 'stack',
+  descriptor: PropertyDescriptor
+): string {
+  if (key !== 'stack' || typeof descriptor.get !== 'function') {
+    return REDACTION_SENTINEL
+  }
+  if (hasOwnAccessor(source, 'message') || hasOwnAccessor(source, 'name')) {
+    return REDACTION_SENTINEL
+  }
+  const stack = descriptor.get.call(source)
+  return typeof stack === 'string' ? stack : REDACTION_SENTINEL
 }
 
 function ownDataProperties(value: object): Record<string, unknown> | null {
