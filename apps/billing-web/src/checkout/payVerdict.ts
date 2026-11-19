@@ -69,7 +69,8 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
  * A Pay the server refused before any operation settled: one already under
  * way is re-read, never a decline (rule 18); any other is the coded card.
  */
-function refusalVerdict(result: {
+/** A purchase the server refused: a pending or conflicting one is re-read, anything else is its card. */
+export function refusalVerdict(result: {
   readonly code: string
   readonly serverCode?: BillingServerCode
   readonly serverMessage?: string

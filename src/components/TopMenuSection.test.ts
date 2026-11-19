@@ -167,8 +167,10 @@ function createWrapper({
         QueueProgressOverlay: true,
         QueueInlineProgressSummary: true,
         QueueNotificationBannerHost: true,
-        CurrentUserButton: true,
-        LoginButton: true,
+        CurrentUserButton: {
+          template: '<div data-testid="current-user-button" />'
+        },
+        LoginButton: { template: '<div data-testid="login-button" />' },
         ContextMenu: {
           name: 'ContextMenu',
           props: ['model'],
@@ -244,19 +246,35 @@ describe('TopMenuSection', () => {
     describe('when user is logged in', () => {
       it('should display CurrentUserButton and not display LoginButton', () => {
         useCurrentUser().isLoggedIn = computed(() => true)
-        const { container } = createLegacyTabBarWrapper()
-        expect(
-          container.querySelector('current-user-button-stub')
-        ).not.toBeNull()
-        expect(container.querySelector('login-button-stub')).toBeNull()
+        createLegacyTabBarWrapper()
+        expect(screen.getByTestId('current-user-button')).toBeInTheDocument()
+        expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
       })
+    })
+
+    it('moves CurrentUserButton out of the top bar while billing_new_ux_enabled is on', () => {
+      useCurrentUser().isLoggedIn = computed(() => true)
+      Object.assign(useFeatureFlags().flags, { billingNewUxEnabled: true })
+      createLegacyTabBarWrapper()
+      expect(
+        screen.queryByTestId('current-user-button')
+      ).not.toBeInTheDocument()
+      expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
     })
 
     describe('when user is not logged in', () => {
       it('should display LoginButton and not display CurrentUserButton', () => {
-        const { container } = createLegacyTabBarWrapper()
-        expect(container.querySelector('login-button-stub')).not.toBeNull()
-        expect(container.querySelector('current-user-button-stub')).toBeNull()
+        createLegacyTabBarWrapper()
+        expect(screen.getByTestId('login-button')).toBeInTheDocument()
+        expect(
+          screen.queryByTestId('current-user-button')
+        ).not.toBeInTheDocument()
+      })
+
+      it('moves LoginButton out of the top bar while billing_new_ux_enabled is on', () => {
+        Object.assign(useFeatureFlags().flags, { billingNewUxEnabled: true })
+        createLegacyTabBarWrapper()
+        expect(screen.queryByTestId('login-button')).not.toBeInTheDocument()
       })
     })
   })
@@ -788,16 +806,16 @@ describe('TopMenuSection', () => {
         }
       }
     ])(
-      'renders no Cloud button on $host until its relay ships',
+      'renders the Cloud button on $host when Open on Cloud is enabled',
       ({ enter, leave }) => {
         enter()
         onTestFinished(leave)
-        servedFrom('http://127.0.0.1:8188')
+        servedFrom('http://localhost:8188')
         Object.assign(useFeatureFlags().flags, { openOnCloudEnabled: true })
 
-        createWrapper({ stubs: { FreeTierQuota: true, CloudButton: true } })
+        createWrapper({ stubs: { FreeTierQuota: true } })
 
-        expect(document.querySelectorAll('cloud-button-stub')).toHaveLength(0)
+        expect(screen.getByTestId('cloud-button')).toBeInTheDocument()
       }
     )
 

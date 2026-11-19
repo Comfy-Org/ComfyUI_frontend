@@ -742,7 +742,7 @@
       "auth/account-exists-with-different-credential": "نتوانستیم با این روش شما را وارد کنیم. گزینهٔ ورود دیگری را امتحان کنید یا برای ادامه گذرواژه‌تان را بازنشانی کنید.",
       "auth/cancelled-popup-request": "پنجره ورود دیگری از قبل باز بود، بنابراین این پنجره لغو شد. لطفاً دوباره تلاش کنید.",
       "auth/email-already-in-use": "نتوانستیم با این ایمیل حسابی ایجاد کنیم. به‌جای آن، ورود را امتحان کنید یا گذرواژه‌تان را بازنشانی کنید.",
-      "auth/invalid-credential": "اطلاعات ورود نامعتبر است. لطفاً ایمیل و رمز عبور خود را بررسی کنید.",
+      "auth/invalid-credential": "اطلاعات ورود نامعتبر است. لطفاً ایمیل و گذرواژه‌تان را بررسی کنید. اگر قبلاً با Google یا GitHub وارد شده‌اید، از همان استفاده کنید.",
       "auth/invalid-email": "لطفاً یک آدرس ایمیل معتبر وارد کنید.",
       "auth/network-request-failed": "خطای شبکه. لطفاً اتصال خود را بررسی کرده و دوباره تلاش کنید.",
       "auth/operation-not-allowed": "این روش ورود در حال حاضر پشتیبانی نمی‌شود.",
@@ -803,6 +803,7 @@
       "userAvatar": "آواتار کاربر"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "برای استفاده از Nodeهای شریک وارد شوید",
       "tooltipHelp": "برای استفاده از «API Nodeها» وارد شوید",
       "tooltipLearnMore": "بیشتر بدانید..."
     },
@@ -907,11 +908,9 @@
     "index": "{current} / {total}"
   },
   "billingHandoff": {
-    "failed": "امکان باز کردن صورت‌حساب وجود نداشت. دوباره تلاش کنید.",
-    "openBilling": "باز کردن صورت‌حساب",
     "opening": "در حال باز کردن پرداخت…",
     "openingDetail": "این کار چند ثانیه طول می‌کشد.",
-    "popupBlocked": "مرورگر شما تب صورت‌حساب را مسدود کرد.",
+    "openingTabTitle": "در حال باز کردن پرداخت · Comfy",
     "signInAgain": "برای باز کردن صورت‌حساب، دوباره وارد شوید.",
     "superseded": "حساب یا فضای کاری شما هنگام باز شدن صورت‌حساب تغییر کرد. دوباره تلاش کنید."
   },
@@ -1381,6 +1380,8 @@
     "Search": "جستجو",
     "Shape": "شکل",
     "Shapes": "اشکال",
+    "Show Downscaled Preview": "نمایش پیش‌نمایش با وضوح کاهش‌یافته",
+    "Show Full Resolution": "نمایش با وضوح کامل",
     "Show Link": "نمایش پیوند",
     "Show Links": "نمایش پیوندها",
     "Title": "عنوان",
@@ -1591,9 +1592,7 @@
     "LOAD_3D": "بارگذاری سه‌بعدی",
     "LORA_MODEL": "مدل lora",
     "LOSS_MAP": "نقشه خطا",
-    "LUMA_CONCEPTS": "مفاهیم Luma",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "مرجع Luma",
     "MASK": "ماسک",
     "MESH": "مش",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -1722,6 +1721,12 @@
     "reload": "بارگذاری مجدد",
     "retry": "تلاش مجدد",
     "retryLabel": "تلاش مجدد برای راه‌اندازی {deployment}",
+    "runBlocked": {
+      "failed": "این deployment ناموفق بود. برای تغییر کلیک کنید.",
+      "notReady": "این deployment آماده نیست. برای تغییر کلیک کنید.",
+      "starting": "این deployment در حال راه‌اندازی است. برای تغییر کلیک کنید.",
+      "stopped": "این deployment متوقف است. برای تغییر کلیک کنید."
+    },
     "runOn": "اجرا در",
     "runningOn": "در حال اجرا روی",
     "runsThisWorkflow": "این workflow را اجرا می‌کند",
@@ -2769,6 +2774,7 @@
     "versionMismatchWarning": "هشدار ناسازگاری نسخه",
     "videoFailedToLoad": "بارگذاری ویدیو ناموفق بود",
     "videoFilenameExtensionRequired": "نام فایل ویدیو باید با پسوندی مانند .mp4 پایان یابد. نام فایل را تغییر دهید و دوباره تلاش کنید.",
+    "videoFormatNotSupported": "این ویدیو در مرورگر قابل پخش نیست.",
     "videoPreview": "پیش‌نمایش ویدیو - برای جابجایی بین ویدیوها از کلیدهای جهت‌دار استفاده کنید",
     "viewGrid": "نمای شبکه‌ای",
     "viewImageOfTotal": "مشاهده تصویر {index} از {total}",
@@ -4149,6 +4155,7 @@
       "errorUnavailable": "این قابلیت در حال حاضر در دسترس نیست. در صورت تداوم مشکل با پشتیبانی تماس بگیرید.",
       "genericError": "درخواست OAuth با خطا مواجه شد. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
       "loading": "در حال بارگذاری درخواست احراز هویت…",
+      "loginRequired": "برای ادامه وارد شوید.",
       "missingRequest": "این درخواست احراز هویت وجود ندارد. لطفاً از برنامه کلاینت مجدداً اقدام کنید.",
       "noWorkspaces": "هیچ ورک‌اسپیس واجدی برای این درخواست موجود نیست.",
       "notYou": "شما نیستید؟",
@@ -4157,6 +4164,7 @@
       "resourceFallback": "این برنامه",
       "sessionError": "برقراری نشست با خطا مواجه شد. لطفاً دوباره تلاش کنید.",
       "sessionErrorToastSummary": "ورود با OAuth ادامه نیافت",
+      "signInAgain": "دوباره وارد شوید",
       "signedInAs": "واردشده با حساب",
       "subtitle": "برای ادامه وارد {resource} شوید",
       "switchAccount": "تغییر حساب",
@@ -4164,6 +4172,7 @@
       "unverifiedBadge": "نام تأیید نشده است",
       "unverifiedNotice": "این نام توسط فردی که این برنامه را ثبت کرده است ارائه شده است. پس از ادامه، مرورگر شما به {host} هدایت می‌شود — مطمئن شوید که آن را می‌شناسید.",
       "unverifiedNoticeNoHost": "این نام توسط فردی که این برنامه را ثبت کرده است ارائه شده و توسط Comfy تأیید نشده است.",
+      "verifiedNotice": "نام تأیید نشده است · مقصد تأییدشده: {platform} · به {host} بازخواهید گشت",
       "workspaceLabel": "ورک‌اسپیس"
     },
     "scopes": {
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "کپی prompt",
       "openInClaude": "باز کردن در Claude desktop",
-      "openInCodex": "باز کردن در Codex"
+      "openInCodex": "باز کردن در Codex",
+      "saveFirst": "پیش از ارسال این workflow به یک agent، آن را ذخیره کنید.",
+      "useLocalAgent": "استفاده از agent محلی"
     },
     "checkFailed": "بررسی این workflow در Comfy Cloud ممکن نشد. دوباره تلاش کنید.",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "راه‌اندازی خود را در Comfy Cloud مستقر کنید",
     "deploySetupDialog": {
-      "body": "با این کار، پیکربندی شما در Comfy Cloud مستقر می‌شود. آن را از Comfy Platform مدیریت می‌کنید.",
-      "pointApi": "آن را از محصول خود به‌صورت یک API با مقیاس‌پذیری خودکار فراخوانی کنید",
-      "pointGpu": "در ComfyUI با GPU انتخابی خود کار کنید",
-      "pointNodes": "nodeها و مدل‌های سفارشی خود را بیاورید"
+      "body": "راه‌اندازی محلی خود را به‌صورت یک Build در Comfy Cloud مستقر کنید، سپس از آن در ComfyUI استفاده کنید یا آن را به‌عنوان یک API با مقیاس‌پذیری خودکار فراخوانی کنید.",
+      "pointGpu": "با GPUهای قدرتمند ابری اجرا کنید",
+      "pointNodes": "nodeها و مدل‌های سفارشی خود را بیاورید",
+      "pointPricing": "فقط در زمانی که workerهای GPU شما فعال هستند، به‌علاوه هزینهٔ فضای ذخیره‌سازی، پرداخت کنید",
+      "title": "workflowهای خود را در Comfy Cloud اجرا کنید"
     },
     "deployWithAgent": "با عامل خود مستقر کنید",
     "desktopTransferFailed": "انتقال workflow شما ممکن نشد. دوباره در Desktop روی «Open on Comfy Cloud» کلیک کنید.",
@@ -4384,13 +4396,17 @@
     "balanceUnavailable": "نتوانستیم موجودی شما را بارگذاری کنیم.",
     "billingSettings": "تنظیمات صورت‌حساب",
     "credits": "اعتبارها",
+    "paymentProcessing": "در حال پردازش پرداخت…",
+    "planCredits": "اعتبارهای طرح",
     "planStatus": {
       "ended": "طرح پایان یافته است",
       "noPlan": "بدون طرح",
       "paused": "متوقف‌شده",
       "paymentDue": "پرداخت سررسیدشده"
     },
-    "switchWorkspace": "تغییر فضای کاری"
+    "purchasesStopped": "خرید اعتبار در حال حاضر در دسترس نیست",
+    "switchWorkspace": "تغییر فضای کاری",
+    "topUpCredits": "افزایش اعتبار"
   },
   "progressToast": {
     "allDownloadsCompleted": "همه دانلودها تکمیل شدند",
@@ -6356,6 +6372,7 @@
         }
       },
       "loadError": "نتوانستیم طرح شما را بارگیری کنیم.",
+      "localLoadError": "جزئیات صورت‌حساب شما بارگیری نشد. اتصال خود را بررسی کنید، سپس دوباره تلاش کنید.",
       "plan": {
         "actions": {
           "choosePlan": "انتخاب طرح",
@@ -6379,6 +6396,7 @@
           "freeRunsLeft": "{remaining} از {total} اجرای رایگان شما باقی مانده است. برای ادامهٔ اجرای workflowها پس از آن، اشتراک بگیرید.",
           "freeRunsUsed": "از همهٔ {total} اجرای رایگان استفاده کرده‌اید. برای ادامهٔ اجرای workflowها اشتراک بگیرید.",
           "line": "برای اجرای workflowها در Cloud اشتراک بگیرید.",
+          "localLine": "برای دریافت اعتبار ماهانه اشتراک بگیرید. همچنین هر زمان می‌توانید اعتبار اضافه کنید.",
           "title": "این workspace هیچ طرح فعالی ندارد"
         },
         "paused": "متوقف شده است. پرداخت تمدید انجام نشد.",
@@ -6663,16 +6681,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "در حال حاضر نمی‌توانید در این حساب فضای کاری ایجاد کنید.",
     "createWorkspace": "ایجاد محیط کاری جدید",
+    "createWorkspaceAction": "ایجاد workspace",
     "failedToSwitch": "تغییر فضای کاری ناموفق بود",
+    "loadFailed": "workspaceهای شما بارگیری نشدند.",
     "managedByOrganization": "سازمان شما workspaceهایتان را مدیریت می‌کند؛ بنابراین نمی‌توانید workspace جدیدی ایجاد کنید.",
     "maxWorkspacesReached": "شما فقط می‌توانید مالک {max} فضای کاری باشید. آن را حذف کنید تا یک فضای کاری جدید ایجاد کنید. | شما فقط می‌توانید مالک {max} فضای کاری باشید. یکی را حذف کنید تا یک فضای کاری جدید ایجاد کنید.",
+    "noResults": "هیچ workspaceی با «{query}» مطابقت ندارد.",
+    "ownedLimit": "می‌توانید حداکثر مالک {max} باشید.",
     "personal": "شخصی",
     "roleMember": "عضو",
     "roleOwner": "مالک",
     "scopeCaption": "فضاهای کاری فقط بر اعتبارهایی که استفاده می‌کنید تأثیر می‌گذارند.",
     "scopeTooltip": "اجراهایی که از نودهای همکار استفاده می‌کنند، اعتبارهای این فضای کاری را مصرف می‌کنند. برخلاف Cloud، هر فضای کاری در پوشه خروجی معمول شما ذخیره می‌شود.",
+    "searchPlaceholder": "جست‌وجوی workspace...",
     "subscribe": "اشتراک",
-    "switchWorkspace": "تغییر محیط کاری"
+    "switchWorkspace": "تغییر محیط کاری",
+    "tryAgain": "دوباره تلاش کنید"
   },
   "zoomControls": {
     "hideMinimap": "مخفی‌سازی نقشه کوچک",

@@ -13,6 +13,7 @@ import {
   promoteWidget,
   pruneDisconnected,
   refreshPromotedWidgetRendering,
+  removePreviewExposure,
   reorderSubgraphInputsByWidgetOrder
 } from '@/core/graph/subgraph/promotionUtils'
 import {
@@ -287,13 +288,7 @@ function demoteRow(row: ActiveRow) {
     demoteWidget(row.node, row.realWidget, [subgraphNode])
     return
   }
-  const hostLocator = getPreviewExposureHostLocator(subgraphNode)
-  if (!hostLocator) return
-  previewExposureStore.removeExposure(
-    subgraphNode.rootGraph.id,
-    hostLocator,
-    row.exposure.name
-  )
+  removePreviewExposure(subgraphNode, row.exposure.name)
   refreshActiveNodeRendering()
 }
 

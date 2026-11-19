@@ -1,23 +1,43 @@
 import { spawnSync } from 'node:child_process'
 import {
+  accessSync,
+  constants,
   mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { basename, join } from 'node:path'
+import { basename, delimiter, isAbsolute, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { assert, describe, expect, it, onTestFinished } from 'vitest'
+import type { TestContext } from 'vitest'
 import { parse } from 'yaml'
 import { z } from 'zod'
 
 const script = join(import.meta.dirname, 'plan-playwright-videos.sh')
-const bash = '/bin/bash'
+function isExecutableFile(path: string): boolean {
+  try {
+    if (!statSync(path).isFile()) return false
+    accessSync(path, constants.X_OK)
+    return true
+  } catch {
+    return false
+  }
+}
+function resolveOnPath(name: string, skip: TestContext['skip']): string {
+  const found = (process.env.PATH ?? '')
+    .split(delimiter)
+    .filter(isAbsolute)
+    .map((dir) => join(dir, name))
+    .find(isExecutableFile)
+  return found ?? skip(`${name} not found on PATH`)
+}
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
 const bin = join(import.meta.dirname, '../../node_modules/.bin')
 
@@ -255,7 +275,7 @@ describe('independent video workflow', () => {
     ]
   ] satisfies [string[], string[], string[], number, string[]][])(
     'records %j one spec at a time and marks only passing specs cacheable',
-    ([files, failing, blobless, status, expectedBlobs]) => {
+    ([files, failing, blobless, status, expectedBlobs], { skip }) => {
       const workflow = z
         .object({
           jobs: z.object({
@@ -283,6 +303,9 @@ describe('independent video workflow', () => {
       const bin = join(root, 'bin')
       mkdirSync(bin)
       symlinkSync(process.execPath, join(bin, 'node'))
+      for (const tool of ['mkdir', 'touch']) {
+        symlinkSync(resolveOnPath(tool, skip), join(bin, tool))
+      }
       writeFileSync(
         join(bin, 'pnpm'),
         `#!${process.execPath}
@@ -301,6 +324,7 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
         { mode: 0o755 }
       )
       const specs = files.map((file, i) => ({ file, key: `key${i}` }))
+      const bash = resolveOnPath('bash', skip)
       const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
         cwd: root,
         encoding: 'utf8',
@@ -352,7 +376,7 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
     ]
   ] satisfies [string[], number, string[], string[], string][])(
     'combines recordings %j with exit status %i',
-    ([recorded, status, cached, blobs, index]) => {
+    ([recorded, status, cached, blobs, index], { skip }) => {
       const workflow = z
         .object({
           jobs: z.object({
@@ -382,6 +406,7 @@ process.exit(${JSON.stringify(failing)}.includes(args.at(-1)) ? 1 : 0)
       writeFileSync(join(root, 'previous-cache', 'hit.zip'), 'blob')
       spawnSync('touch', recorded, { cwd: join(root, 'video-blobs') })
 
+      const bash = resolveOnPath('bash', skip)
       const result = spawnSync(bash, ['-eo', 'pipefail', '-c', command], {
         cwd: root,
         encoding: 'utf8',

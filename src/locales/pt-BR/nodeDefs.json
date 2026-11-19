@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Remove o fundo de uma imagem usando Bria RMBG 2.0.",
+    "description": "Remova o fundo de uma imagem usando Bria RMBG 2.0 ou RMBG 3.0.",
     "display_name": "Bria Remover Fundo da Imagem",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "imagem"
       },
+      "model": {
+        "name": "model"
+      },
       "moderation": {
         "name": "moderação",
         "tooltip": "Configurações de moderação"
       },
       "seed": {
         "name": "semente",
-        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+        "tooltip": "A seed controla se o nó deve ser executado novamente; a mesma imagem sempre produz o mesmo resultado, independentemente da seed."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Crie um camera_info. O modo 'orbit' mira com guinada/inclinação/distância ao redor do alvo; 'look_at' posiciona a câmera na posição do mundo. As coordenadas pertencem ao espaço do mundo do visualizador (destro, Y para cima).",
+    "description": "Crie uma camera_info. O modo 'orbit' aponta usando yaw/pitch/distance ao redor do alvo; 'look_at' posiciona a câmera na posição do mundo. As coordenadas correspondem ao espaço do mundo do visualizador (destro, Y para cima) ou, com uma mesh conectada, ao referencial dessa mesh; assim, as mesmas configurações enquadram qualquer mesh.",
     "display_name": "Criar Informações da Câmera",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "Campo de visão vertical em graus."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "Enquadre esta mesh: as posições, o alvo e a distância são contados a partir do centro da caixa delimitadora, em unidades do diâmetro da esfera delimitadora, para que as mesmas configurações enquadrem qualquer mesh."
       },
       "mode": {
         "name": "modo",
@@ -8548,6 +8555,9 @@
       "model": {
         "name": "modelo"
       },
+      "model_auto_duration": {
+        "name": "duração automática"
+      },
       "model_duration": {
         "name": "duração"
       },
@@ -8568,7 +8578,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "Gere um vídeo com diálogo e som sincronizados a partir de um prompt de texto usando o HeyGen Video 1.0. Opcionalmente, conecte até 12 imagens, vídeos e clipes de áudio de referência e mencione-os no prompt como {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "description": "Gere um vídeo com diálogo e som sincronizados a partir de um prompt de texto usando o HeyGen Video 1.0. Opcionalmente, conecte até 15 imagens, vídeos e clipes de áudio de referência e mencione-os no prompt como {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
     "display_name": "HeyGen Video 1.0 Referência para Vídeo",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8589,9 @@
       },
       "model_aspect_ratio": {
         "name": "proporção_da_tela"
+      },
+      "model_auto_duration": {
+        "name": "duração automática"
       },
       "model_duration": {
         "name": "duração"
@@ -13723,34 +13736,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "Conceitos de Câmera para uso com os nós Luma Texto para Vídeo e Luma Imagem para Vídeo.",
-    "display_name": "Luma Concepts",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Conceitos de Câmera opcionais para adicionar aos escolhidos aqui."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "Edite uma imagem existente com um prompt de texto usando o modelo Luma UNI-1.",
     "display_name": "Luma UNI-1 Image Edit",
@@ -13787,82 +13772,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "Modifica imagens de forma síncrona com base no prompt e na proporção.",
-    "display_name": "Luma Imagem para Imagem",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_weight": {
-        "name": "image_weight",
-        "tooltip": "Peso da imagem; quanto mais próximo de 1.0, menos a imagem será modificada."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt para a geração da imagem"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente do seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "Gera imagens de forma síncrona com base no prompt e na proporção.",
-    "display_name": "Luma Texto para Imagem",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "character_image": {
-        "name": "character_image",
-        "tooltip": "Imagens de referência de personagem; pode ser um lote de várias, até 4 imagens podem ser consideradas."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image_luma_ref": {
-        "name": "image_luma_ref",
-        "tooltip": "Conexão do nó de Referência Luma para influenciar a geração com imagens de entrada; até 4 imagens podem ser consideradas."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt para a geração da imagem"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente do seed."
-      },
-      "style_image": {
-        "name": "style_image",
-        "tooltip": "Imagem de referência de estilo; apenas 1 imagem será usada."
-      },
-      "style_image_weight": {
-        "name": "style_image_weight",
-        "tooltip": "Peso da imagem de estilo. Ignorado se nenhuma style_image for fornecida."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "Gere imagens a partir de texto usando o modelo Luma UNI-1.",
     "display_name": "Luma UNI-1 Image",
@@ -13890,52 +13799,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "O seed controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente do seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "Gera vídeos de forma síncrona com base no prompt, imagens de entrada e output_size.",
-    "display_name": "Luma Imagem para Vídeo",
-    "inputs": {
-      "control_after_generate": {
-        "name": "controlar após gerar"
-      },
-      "duration": {
-        "name": "duração"
-      },
-      "first_image": {
-        "name": "primeira_imagem",
-        "tooltip": "Primeiro quadro do vídeo gerado."
-      },
-      "last_image": {
-        "name": "última_imagem",
-        "tooltip": "Último quadro do vídeo gerado."
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Conceitos de Câmera opcionais para ditar o movimento da câmera via o nó Luma Concepts."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt para a geração do vídeo"
-      },
-      "resolution": {
-        "name": "resolução"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente do seed."
       }
     },
     "outputs": {
@@ -14165,7 +14028,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "Altere a proporção de aspecto de um vídeo existente, usando Luma Ray 3.2 para preencher as novas áreas expostas do canvas. Vídeo de origem de até 30 segundos. Cobrança por segundo de saída.",
+    "description": "Altere a proporção de aspecto de um vídeo existente, usando o Luma Ray 3.2 para preencher as áreas da tela recém-expostas. Vídeo de origem de até 10 segundos. Cobrado por segundo de saída.",
     "display_name": "Luma Ray 3.2 Reenquadrar Vídeo",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14050,7 @@
       },
       "video": {
         "name": "vídeo",
-        "tooltip": "Vídeo de origem para reenquadrar. Até 30 segundos."
+        "tooltip": "Vídeo de origem a ser reenquadrado. Até 10 segundos."
       }
     },
     "outputs": {
@@ -14196,70 +14059,6 @@
       },
       "1": {
         "name": "id_geração",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "Armazena uma imagem e peso para uso com o nó Luma Gerar Imagem.",
-    "display_name": "Luma Referência",
-    "inputs": {
-      "image": {
-        "name": "imagem",
-        "tooltip": "Imagem para usar como referência."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "peso",
-        "tooltip": "Peso da referência da imagem."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "Gera vídeos de forma síncrona com base no prompt e output_size.",
-    "display_name": "Luma Texto para Vídeo",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "proporção"
-      },
-      "control_after_generate": {
-        "name": "controlar após gerar"
-      },
-      "duration": {
-        "name": "duração"
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Conceitos de Câmera opcionais para ditar o movimento da câmera via o nó Luma Concepts."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Prompt para a geração do vídeo"
-      },
-      "resolution": {
-        "name": "resolução"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente do seed."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -19549,7 +19348,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "Gere respostas de texto através do OpenRouter. Direciona para um conjunto selecionado de modelos populares da xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
+    "description": "Gere respostas de texto por meio do OpenRouter. Encaminha para um conjunto selecionado de modelos populares da Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -24987,6 +24786,9 @@
       "format_bit_depth": {
         "name": "profundidade_de_bits"
       },
+      "format_channels": {
+        "name": "canais"
+      },
       "format_input_color_space": {
         "name": "espaço_de_cor_de_entrada"
       },
@@ -25977,6 +25779,33 @@
       },
       "1": {
         "name": "direito",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "Separa uma imagem em imagens vermelha, verde e azul e uma mask alfa.",
+    "display_name": "Separar Canais da Imagem",
+    "inputs": {
+      "image": {
+        "name": "imagem"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "vermelho",
+        "tooltip": null
+      },
+      "1": {
+        "name": "verde",
+        "tooltip": null
+      },
+      "2": {
+        "name": "azul",
+        "tooltip": null
+      },
+      "3": {
+        "name": "alfa",
         "tooltip": null
       }
     }
@@ -30483,6 +30312,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Consistência temporal segundo Bonneel et al. 2015, com um termo de fidelidade contra desvio: cada quadro mantém seus próprios detalhes enquanto segue os quadros vizinhos ao longo do fluxo óptico do vídeo-guia.",
+    "display_name": "Anticintilação de Vídeo",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "bidirectional calcula a média de uma passagem para frente e outra para trás, o que evita ficar atrás do movimento, ao custo de duas vezes mais tempo."
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "Quadros de origem estáveis cujo movimento deve ser seguido, em qualquer resolução. Por padrão, usa images, o que remove menos cintilação."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Quadros com cintilação, por exemplo, um vídeo ampliado ou processado quadro a quadro."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "A intensidade com que cada quadro segue os quadros vizinhos. Valores maiores removem mais cintilação e suavizam mais os detalhes finos."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "Alterações maiores que este valor entre um quadro e seu vizinho compensado pelo movimento são consideradas reais e são menos suavizadas. 0 suaviza todas as alterações da mesma forma."
       }
     },
     "outputs": {

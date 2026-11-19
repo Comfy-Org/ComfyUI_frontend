@@ -742,7 +742,7 @@
       "auth/account-exists-with-different-credential": "לא הצלחנו לחבר אתכם באמצעות שיטה זו. נסו אפשרות התחברות אחרת, או אפסו את הסיסמה כדי להמשיך.",
       "auth/cancelled-popup-request": "חלון התחברות אחר כבר היה פתוח, ולכן חלון זה בוטל. נסה שוב.",
       "auth/email-already-in-use": "לא הצלחנו ליצור חשבון עם כתובת דוא״ל זו. נסו להתחבר או לאפס את הסיסמה במקום זאת.",
-      "auth/invalid-credential": "פרטי כניסה לא תקינים. אנא בדוק את הדוא\"ל והסיסמה שלך.",
+      "auth/invalid-credential": "פרטי ההתחברות אינם תקינים. יש לבדוק את כתובת הדוא״ל והסיסמה. אם התחברתם בעבר באמצעות Google או GitHub, השתמשו בהם במקום זאת.",
       "auth/invalid-email": "אנא הזן כתובת דוא\"ל תקינה.",
       "auth/network-request-failed": "שגיאת רשת. אנא בדוק את החיבור שלך ונסה שוב.",
       "auth/operation-not-allowed": "שיטת התחברות זו אינה נתמכת כרגע.",
@@ -803,6 +803,7 @@
       "userAvatar": "תמונת המשתמש"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "התחברו כדי להשתמש בצמתי שותפים",
       "tooltipHelp": "התחבר כדי שתוכל להשתמש ב\"צמתי API\"",
       "tooltipLearnMore": "מידע נוסף..."
     },
@@ -907,11 +908,9 @@
     "index": "{current} / {total}"
   },
   "billingHandoff": {
-    "failed": "לא ניתן היה לפתוח את החיוב. נסה שוב.",
-    "openBilling": "פתיחת החיוב",
     "opening": "פתיחת התשלום…",
     "openingDetail": "פעולה זו נמשכת כמה שניות.",
-    "popupBlocked": "הדפדפן שלך חסם את לשונית החיוב.",
+    "openingTabTitle": "פתיחת תהליך התשלום · Comfy",
     "signInAgain": "יש להתחבר שוב כדי לפתוח את החיוב.",
     "superseded": "החשבון או סביבת העבודה שלך השתנו בזמן שהחיוב נפתח. נסה שוב."
   },
@@ -1381,6 +1380,8 @@
     "Search": "חיפוש",
     "Shape": "צורה",
     "Shapes": "צורות",
+    "Show Downscaled Preview": "הצג תצוגה מקדימה מוקטנת",
+    "Show Full Resolution": "הצג ברזולוציה מלאה",
     "Show Link": "הצג קישור",
     "Show Links": "הצג קישורים",
     "Title": "כותרת",
@@ -1591,9 +1592,7 @@
     "LOAD_3D": "LOAD_3D",
     "LORA_MODEL": "LORA_MODEL",
     "LOSS_MAP": "LOSS_MAP",
-    "LUMA_CONCEPTS": "LUMA_CONCEPTS",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "LUMA_REF",
     "MASK": "MASK",
     "MESH": "MESH",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -1722,6 +1721,12 @@
     "reload": "טען מחדש",
     "retry": "ניסיון חוזר",
     "retryLabel": "ניסיון חוזר להפעלת {deployment}",
+    "runBlocked": {
+      "failed": "הפריסה הזו נכשלה. לחצו כדי להחליף.",
+      "notReady": "הפריסה הזו אינה מוכנה. לחצו כדי להחליף.",
+      "starting": "הפריסה הזו מופעלת כעת. לחצו כדי להחליף.",
+      "stopped": "הפריסה הזו הופסקה. לחצו כדי להחליף."
+    },
     "runOn": "הפעל ב-",
     "runningOn": "פועל על",
     "runsThisWorkflow": "מריץ את תהליך העבודה הזה",
@@ -2769,6 +2774,7 @@
     "versionMismatchWarning": "אזהרת תאימות גרסאות",
     "videoFailedToLoad": "טעינת הסרטון נכשלה",
     "videoFilenameExtensionRequired": "שם קובץ הווידאו חייב להסתיים בסיומת כגון .mp4. שנה את שם הקובץ ונסה שוב.",
+    "videoFormatNotSupported": "לא ניתן להפעיל סרטון זה בדפדפן.",
     "videoPreview": "תצוגה מקדימה של סרטון - השתמש במקשי החיצים לניווט בין הסרטונים",
     "viewGrid": "תצוגת רשת",
     "viewImageOfTotal": "הצגת תמונה {index} מתוך {total}",
@@ -4149,6 +4155,7 @@
       "errorUnavailable": "תכונה זו אינה זמינה כרגע. אנא פנה לתמיכה אם הבעיה נמשכת.",
       "genericError": "בקשת OAuth נכשלה. אנא התחל מחדש מיישום הלקוח.",
       "loading": "טוען בקשת הרשאה…",
+      "loginRequired": "יש להתחבר כדי להמשיך.",
       "missingRequest": "בקשת הרשאה זו חסרה. אנא התחל מחדש מיישום הלקוח.",
       "noWorkspaces": "אין סביבות עבודה מתאימות הזמינות לבקשה זו.",
       "notYou": "לא את/ה?",
@@ -4157,6 +4164,7 @@
       "resourceFallback": "יישום זה",
       "sessionError": "יצירת ההפעלה (Session) נכשלה. אנא נסה שוב.",
       "sessionErrorToastSummary": "לא ניתן היה להמשיך בהתחברות OAuth",
+      "signInAgain": "התחברות מחדש",
       "signedInAs": "מחובר/ת כ־",
       "subtitle": "התחבר אל {resource} כדי להמשיך",
       "switchAccount": "החלפת חשבון",
@@ -4164,6 +4172,7 @@
       "unverifiedBadge": "השם לא אומת",
       "unverifiedNotice": "שם זה סופק על ידי מי שרשם יישום זה. לאחר שתמשיכו, הדפדפן שלכם יישלח אל {host} — ודאו שאתם מזהים אותו.",
       "unverifiedNoticeNoHost": "שם זה סופק על ידי מי שרשם יישום זה ולא אומת על ידי Comfy.",
+      "verifiedNotice": "השם לא אומת · יעד מאומת: {platform} · תחזרו אל {host}",
       "workspaceLabel": "סביבת עבודה"
     },
     "scopes": {
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "העתק פרומפט",
       "openInClaude": "פתח ב-Claude desktop",
-      "openInCodex": "פתח ב-Codex"
+      "openInCodex": "פתח ב-Codex",
+      "saveFirst": "שמרו את תהליך העבודה הזה לפני שליחתו לסוכן.",
+      "useLocalAgent": "השתמשו בסוכן מקומי"
     },
     "checkFailed": "לא ניתן היה לבדוק את תהליך העבודה הזה ב-Comfy Cloud. נסו שוב.",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "פרסו את ההגדרה שלכם ל-Comfy Cloud",
     "deploySetupDialog": {
-      "body": "פעולה זו יוצרת פריסה של ההגדרה שלך ב-Comfy Cloud. ניתן לנהל אותה מ-Comfy Platform.",
-      "pointApi": "קראו לה מהמוצר שלכם כ-API עם התאמה אוטומטית לעומס",
-      "pointGpu": "עבדו ב-ComfyUI על ה-GPU שתבחרו",
-      "pointNodes": "הביאו את הצמתים והמודלים המותאמים אישית שלכם"
+      "body": "פרסו את ההגדרה המקומית שלכם ל-Comfy Cloud כ-Build, ולאחר מכן השתמשו בה ב-ComfyUI או קראו לה כ-API בעל התאמה אוטומטית לעומס.",
+      "pointGpu": "הפעילו על מעבדי GPU עוצמתיים בענן",
+      "pointNodes": "הביאו את הצמתים והמודלים המותאמים אישית שלכם",
+      "pointPricing": "שלמו רק בזמן שעובדי ה-GPU שלכם פעילים, בתוספת אחסון",
+      "title": "הפעילו את תהליכי העבודה שלכם ב-Comfy Cloud"
     },
     "deployWithAgent": "פריסה באמצעות הסוכן שלכם",
     "desktopTransferFailed": "לא ניתן היה להעביר את תהליך העבודה שלכם. לחצו שוב על Open on Comfy Cloud ב-Desktop.",
@@ -4384,13 +4396,17 @@
     "balanceUnavailable": "לא הצלחנו לטעון את היתרה שלכם.",
     "billingSettings": "הגדרות חיוב",
     "credits": "קרדיטים",
+    "paymentProcessing": "התשלום בעיבוד…",
+    "planCredits": "נקודות זכות של התוכנית",
     "planStatus": {
       "ended": "התוכנית הסתיימה",
       "noPlan": "ללא תוכנית",
       "paused": "מושהה",
       "paymentDue": "ממתין לתשלום"
     },
-    "switchWorkspace": "החלפת סביבת עבודה"
+    "purchasesStopped": "רכישת זיכויים אינה זמינה כרגע",
+    "switchWorkspace": "החלפת סביבת עבודה",
+    "topUpCredits": "הוספת נקודות זכות"
   },
   "progressToast": {
     "allDownloadsCompleted": "כל ההורדות הושלמו",
@@ -6356,6 +6372,7 @@
         }
       },
       "loadError": "לא הצלחנו לטעון את התוכנית שלך.",
+      "localLoadError": "לא הצלחנו לטעון את פרטי החיוב שלך. בדקו את החיבור שלכם ולאחר מכן נסו שוב.",
       "plan": {
         "actions": {
           "choosePlan": "בחירת תוכנית",
@@ -6379,6 +6396,7 @@
           "freeRunsLeft": "נותרו לך {remaining} מתוך {total} הרצות חינמיות. הירשם כדי להמשיך להריץ תהליכי עבודה לאחר מכן.",
           "freeRunsUsed": "ניצלת את כל {total} ההרצות החינמיות. הירשם כדי להמשיך להריץ תהליכי עבודה.",
           "line": "הירשם כדי להריץ תהליכי עבודה ב־Cloud.",
+          "localLine": "הירשמו לקבלת זיכויים חודשיים. תוכלו גם להוסיף זיכויים בכל עת.",
           "title": "לסביבת העבודה הזו אין תוכנית פעילה"
         },
         "paused": "מושהה. תשלום החידוש לא עבר.",
@@ -6663,16 +6681,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "אין באפשרותך ליצור סביבת עבודה בחשבון זה כעת.",
     "createWorkspace": "יצירת סביבת עבודה חדשה",
+    "createWorkspaceAction": "יצירת סביבת עבודה",
     "failedToSwitch": "המעבר לסביבת העבודה נכשל",
+    "loadFailed": "לא ניתן היה לטעון את סביבות העבודה שלכם.",
     "managedByOrganization": "הארגון שלך מנהל את סביבות העבודה שלך, ולכן אין באפשרותך ליצור אחת.",
     "maxWorkspacesReached": "באפשרותכם להיות בעלים של סביבת עבודה אחת בלבד מתוך {max}. מחקו אותה כדי ליצור חדשה. | באפשרותכם להיות בעלים של {max} סביבות עבודה בלבד. מחקו אחת כדי ליצור חדשה.",
+    "noResults": "אין סביבות עבודה התואמות ל־“{query}”.",
+    "ownedLimit": "באפשרותכם להיות בעלים של עד {max}.",
     "personal": "אישי",
     "roleMember": "חבר",
     "roleOwner": "בעלים",
     "scopeCaption": "סביבות עבודה משפיעות רק על הקרדיטים שבהם אתה משתמש.",
     "scopeTooltip": "הרצות המשתמשות בצמתי שותפים צורכות קרדיטים מסביבת עבודה זו. בניגוד ל-Cloud, כל סביבת עבודה שומרת בתיקיית הפלט הרגילה שלך.",
+    "searchPlaceholder": "חיפוש סביבת עבודה...",
     "subscribe": "הרשמה",
-    "switchWorkspace": "מעבר בין סביבות עבודה"
+    "switchWorkspace": "מעבר בין סביבות עבודה",
+    "tryAgain": "נסו שוב"
   },
   "zoomControls": {
     "hideMinimap": "הסתרת מפת המיני",

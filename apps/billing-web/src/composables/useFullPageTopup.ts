@@ -1,10 +1,17 @@
 import { useIntervalFn } from '@vueuse/core'
-import { computed, shallowReadonly, shallowRef, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  shallowReadonly,
+  shallowRef,
+  watch
+} from 'vue'
 
 import { useBillingClient, useTopUp } from '@comfyorg/account-ui/billing'
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 import type {
   BillingOperationState,
+  BillingRecoverOptions,
   BillingResult,
   CapabilitiesSnapshot,
   InteractiveTopupPayment,
@@ -14,6 +21,7 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 import { OPERATION_POLL_TIMING } from '@comfyorg/account-core/billing'
+import type { EntryAutoTopUp } from '@comfyorg/billing-contract'
 
 import type {
   CheckoutPage,
@@ -34,22 +42,27 @@ import type { PayVerdict } from '@/checkout/payVerdict'
 import {
   outcomeFor,
   reconciledEvent,
+  refusalVerdict,
   topupVerdictOf
 } from '@/checkout/payVerdict'
-import { planCreditsSettingsUrl } from '@/checkout/cloudLinks'
+import { platformBillingUrl } from '@/checkout/platformLinks'
 import {
+  TOPUP_RETURN_PATH,
+  autoTopUpConsentOf,
   interactivePaymentOf,
   interactiveVerdictOf,
   isSamePayment,
   settlesAttempt,
+  topupAutoTopUpOf,
   topupReturnUrl
 } from '@/checkout/topupRequest'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
 import { useCheckoutExit } from '@/composables/useCheckoutExit'
 import type { PayChoice } from '@/composables/useFullPageCheckout'
-import { awaitUnifiedBillingSettings } from '@/config/checkoutUi'
+import { awaitInPageTopup } from '@/config/checkoutUi'
 import { awaitBillingWebStripeKey } from '@/config/stripeKey'
 import { useBillingEntry } from '@/entry/billingEntry'
+import { useAutoTopUpSettings } from '@/session/autoTopUpSettings'
 import { createDeferredStripeChallengePort } from '@/session/stripeChallengePort'
 
 /** The contract bounds the amount; the server's quote applies its own limits. */
@@ -83,6 +96,16 @@ interface HeldAttempt {
   readonly idempotencyKey: string
 }
 
+function awaitedOperationOf(
+  current: CheckoutPage
+): Pick<BillingRecoverOptions, 'operation'> {
+  return current.kind === 'terminal' && current.operation !== undefined
+    ? {
+        operation: { id: current.operation.id, kind: current.operation.kind }
+      }
+    : {}
+}
+
 /**
  * A top-up link is always for sale, so a top-up this tab already saw
  * succeed ends the revisit on Already completed instead of a second form.
@@ -92,16 +115,8 @@ function revisited(page: CheckoutPage): boolean {
 }
 
 /**
- * The full-page credit top-up: the same `CheckoutPage` states as the
- * subscription checkout, driven by the top-up command. Arrival reconciles
- * with whatever the workspace is already waiting on, reads `can_top_up`, and
- * quotes the link's amount. With `unified_billing_settings` on, a quote with
- * a payment configuration pays once with a new card or a chosen saved card,
- * resending one purchase under one key until the server answers it. A Pay
- * with no answer keeps its key and the page locked while it re-reads what
- * the workspace is waiting on;
- * any other page charges the method on file.
- * The lifecycle's operation moves the page to its ending.
+ * The full-page credit top-up. Where `awaitInPageTopup` allows and the quote has a payment
+ * configuration it pays once with a saved or new card, carrying any auto top-up; otherwise the method on file.
  */
 export function useFullPageTopup() {
   const { entry, error: unreadableLink } = useBillingEntry()
@@ -112,10 +127,31 @@ export function useFullPageTopup() {
 
   /** This page's latest successful read only: empty while reading, and after a failure. */
   const savedMethods = shallowRef<readonly SavedPaymentMethod[]>([])
+  const savedMethodsRead = shallowRef(false)
   let savedGeneration = 0
 
   const amountCents = entry.value?.amountCents
+  const autoTopUp = entry.value?.autoTopUp
   const page = shallowRef<CheckoutPage>(arrivalPage())
+
+  const autoTopUpCeilingCents = shallowRef<number>()
+  if (autoTopUp !== undefined && autoTopUp.monthlyBudgetCents === undefined)
+    void useAutoTopUpSettings()
+      .read()
+      .then((read) => {
+        if (read.status === 'ok')
+          autoTopUpCeilingCents.value =
+            read.value.settings.max_monthly_budget_cents
+      })
+  const autoTopUpConsent = computed(() =>
+    autoTopUp === undefined
+      ? undefined
+      : autoTopUpConsentOf(
+          autoTopUp,
+          autoTopUpCeilingCents.value,
+          savedMethodsRead.value ? savedMethods.value : undefined
+        )
+  )
 
   function arrivalPage(): CheckoutPage {
     if (unreadableLink.value === 'INVALID_AMOUNT') return INVALID_AMOUNT_LINK
@@ -123,12 +159,18 @@ export function useFullPageTopup() {
     return amountCents === undefined ? INVALID_AMOUNT_LINK : RESOLVING
   }
   const quote = shallowRef<TopupQuote>()
-  const unifiedBillingSettings = awaitUnifiedBillingSettings()
+  const inPageTopup = awaitInPageTopup()
   const interactiveAllowed = shallowRef(false)
   const paysOnce = computed(
     () =>
       interactiveAllowed.value &&
       quote.value?.paymentMethodConfigurationId !== undefined
+  )
+  const autoTopUpPaysHosted = computed(
+    () => autoTopUp !== undefined && !paysOnce.value
+  )
+  const autoTopUpPayGoesHosted = computed(
+    () => autoTopUpPaysHosted.value || !savedMethodsRead.value
   )
   const offeredMethods = computed(() =>
     paysOnce.value ? eligibleCards(savedMethods.value) : savedMethods.value
@@ -171,7 +213,10 @@ export function useFullPageTopup() {
 
   async function reconcileOnce(): Promise<RecoveredOperation | undefined> {
     const mine = ++generation
-    const recovered = await lifecycle.recover({ includeSettled: true })
+    const recovered = await lifecycle.recover({
+      includeSettled: true,
+      ...awaitedOperationOf(page.value)
+    })
     if (mine !== generation) return undefined
     dispatch(reconciledEvent(recovered))
     return recovered
@@ -186,9 +231,13 @@ export function useFullPageTopup() {
   async function readSaved(): Promise<SavedArrival> {
     const mine = ++savedGeneration
     savedMethods.value = []
+    savedMethodsRead.value = false
     const read = await paymentMethods.read()
     if (read.status !== 'ok') return 'failed'
-    if (mine === savedGeneration) savedMethods.value = read.value.methods
+    if (mine === savedGeneration) {
+      savedMethods.value = read.value.methods
+      savedMethodsRead.value = true
+    }
     return eligibleCards(read.value.methods).length
   }
 
@@ -213,12 +262,12 @@ export function useFullPageTopup() {
   async function readCapture() {
     if (amountCents === undefined) return
     const saved = readSaved()
-    const [allowed, quoted, unified] = await Promise.all([
+    const [allowed, quoted, inPage] = await Promise.all([
       capabilities.read(),
       topup.quoteTopup({ amountCents }),
-      unifiedBillingSettings
+      inPageTopup
     ])
-    interactiveAllowed.value = unified
+    interactiveAllowed.value = inPage
     if (quoted.status === 'ok') quote.value = quoted.value
     const event = capabilityStop(allowed) ?? (await quoteEvent(quoted, saved))
     await latest
@@ -304,6 +353,7 @@ export function useFullPageTopup() {
   )
 
   let payGeneration = 0
+  onScopeDispose(() => payGeneration++)
   const billedWorkspace = useBilledWorkspace()
 
   function attemptFor(choice: NonNullable<PayChoice>): HeldAttempt | undefined {
@@ -324,7 +374,10 @@ export function useFullPageTopup() {
     const result = await topup.createInteractiveTopup({
       amountCents: amount,
       payment: attempt.payment,
-      idempotencyKey: attempt.idempotencyKey
+      idempotencyKey: attempt.idempotencyKey,
+      ...(autoTopUp === undefined
+        ? {}
+        : { autoTopUp: topupAutoTopUpOf(autoTopUp) })
     })
     if (held === attempt && settlesAttempt(result)) held = undefined
     return result
@@ -356,8 +409,23 @@ export function useFullPageTopup() {
     dispatch({ type: 'payFailed', outcome })
   }
 
+  async function payWithAutoTopUp(amount: number, choice: EntryAutoTopUp) {
+    const mine = ++payGeneration
+    dispatch({ type: 'paySubmitted' })
+    const result = await topup.createHostedTopupCheckout({
+      amountCents: amount,
+      returnUrl: new URL(TOPUP_RETURN_PATH, window.location.origin).href,
+      autoTopUp: topupAutoTopUpOf(choice)
+    })
+    if (mine !== payGeneration) return
+    if (result.status === 'ok') return window.location.assign(result.url)
+    await follow(refusalVerdict(result))
+  }
+
   async function pay(choice: PayChoice) {
     if (!canPay.value || amountCents === undefined) return
+    if (autoTopUp !== undefined && autoTopUpPayGoesHosted.value)
+      return payWithAutoTopUp(amountCents, autoTopUp)
     const run = sendFor(choice, amountCents)
     if (run === undefined) return
     if (run === CARD_REQUIRED)
@@ -376,7 +444,7 @@ export function useFullPageTopup() {
   }
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
-  const settingsLink = computed(() => planCreditsSettingsUrl(billedWorkspace()))
+  const settingsLink = computed(() => platformBillingUrl(billedWorkspace()))
 
   function retryLoad() {
     void reconcile()
@@ -388,6 +456,8 @@ export function useFullPageTopup() {
     quote: shallowReadonly(quote),
     savedMethods: offeredMethods,
     paysOnce,
+    autoTopUpConsent,
+    autoTopUpPaysHosted,
     onPaymentPhase,
     retryElement: () => dispatch({ type: 'elementRetried' }),
     retrySaved: () => void retrySaved(),

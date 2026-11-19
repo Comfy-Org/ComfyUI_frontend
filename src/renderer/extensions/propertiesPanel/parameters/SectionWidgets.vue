@@ -196,8 +196,9 @@ function handleLocateNode() {
 function navigateToErrorTab() {
   if (!targetNode.value) return
   if (!useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab')) return
-  errorsTabRequestStore.focusNode(String(targetNode.value.id))
-  propertiesPanelStore.openPanel('errors')
+  if (propertiesPanelStore.openPanel('errors')) {
+    errorsTabRequestStore.focusNode(String(targetNode.value.id))
+  }
 }
 
 function clearWidgetErrors(
@@ -301,7 +302,7 @@ defineExpose({
           <span class="flex min-w-0 flex-1 items-center gap-2">
             <i
               v-if="nodeHasError"
-              class="icon-[lucide--octagon-alert] text-destructive"
+              class="icon-[comfy--circle-alert-filled] text-destructive"
             />
             <span :class="cn('truncate', nodeHasError && 'text-destructive')">
               <slot name="label">

@@ -24,7 +24,30 @@ describe('resultItemPreviewUrl', () => {
         '/api/view?filename=out.png&type=output&preview=webp;75&rand=second'
     })
     expect(resultItemPreviewUrl(item, { fullRes: true })).toBe(item.url)
-    expect(resultItemPreviewUrl(item)).toBe(item.previewUrl)
+    expect(
+      resultItemPreviewUrl(item, {
+        previewFormat: '&preview=webp;75',
+        rand: '&rand=ignored'
+      })
+    ).toBe(item.previewUrl)
+  })
+
+  it('applies preview format and output revision to generated URLs', () => {
+    const url = new URL(
+      resultItemPreviewUrl(resultItem({ filename: 'out.png' }), {
+        previewFormat: '&preview=webp;75',
+        rand: '&rand=revision-2'
+      }),
+      window.location.origin
+    )
+
+    expect(Object.fromEntries(url.searchParams)).toMatchObject({
+      filename: 'out.png',
+      type: 'output',
+      subfolder: '',
+      preview: 'webp;75',
+      rand: 'revision-2'
+    })
   })
 
   it.for([
@@ -51,8 +74,11 @@ describe('resultItemPreviewUrl', () => {
   )
 
   it('resolves no preview for an HDR output without a stored preview', () => {
-    expect(resultItemPreviewUrl(resultItem({ filename: 'render.exr' }))).toBe(
-      ''
-    )
+    expect(
+      resultItemPreviewUrl(resultItem({ filename: 'render.exr' }), {
+        previewFormat: '&preview=webp;75',
+        rand: '&rand=ignored'
+      })
+    ).toBe('')
   })
 })

@@ -1358,6 +1358,27 @@ describe('settled payments the page reads on its own', () => {
       awaiting: false
     },
     {
+      name: 'a success whose auto top-up is still turning on',
+      page: {
+        kind: 'terminal',
+        operation: settled({
+          creditsAdded: 10,
+          autoTopUpActivation: 'pending'
+        }),
+        attribution: 'started'
+      },
+      awaiting: true
+    },
+    {
+      name: 'a success whose auto top-up failed to turn on',
+      page: {
+        kind: 'terminal',
+        operation: settled({ creditsAdded: 10, autoTopUpActivation: 'failed' }),
+        attribution: 'started'
+      },
+      awaiting: false
+    },
+    {
       name: 'a success with no receipt',
       page: { kind: 'terminal', attribution: 'started' },
       awaiting: false

@@ -86,11 +86,9 @@ export function useAgentConsent() {
     { canShow, onExit }: ConsentOfferHooks = {},
     initialError: ConsentCardError | '' = ''
   ): Promise<boolean> {
+    if ((canShow && !canShow()) || dialogStore.isDialogOpen(CONSENT_DIALOG_KEY))
+      return Promise.resolve(false)
     return new Promise<boolean>((resolve) => {
-      if (canShow && !canShow()) {
-        resolve(false)
-        return
-      }
       let settled = false
       let saving = false
       let shown = false
