@@ -192,7 +192,6 @@ describe('useAgentPromptQueue', () => {
     busy = false
     const pumping = settleActiveAndPump()
     expect(sent).toEqual(['one', 'two'])
-    // The send ends without a turn: the busy watcher settles it mid-flight.
     await settleActiveAndPump()
     finishTwo(false)
     await pumping

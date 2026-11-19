@@ -16,7 +16,6 @@ export type PromptQueueItem = {
   prompt: ComposerPrompt
   references: WorkflowReference[]
   nodes: SelectedNode[]
-  /** Workflow the nodes were picked in; node ids are graph-local. */
   target: ComfyWorkflow | null
 }
 
@@ -49,11 +48,7 @@ export function emptyPromptQueue(): PromptQueueState {
   }
 }
 
-/**
- * Node ids are graph-local: after a target switch they would name different
- * nodes, so a queued prompt sends its nodes only to the target it was queued
- * for, the same rule a direct send applies.
- */
+/** Node tags of a queued prompt, only for the target it was queued for. */
 export function queuedNodesFor(
   item: PromptQueueItem,
   target: ComfyWorkflow | null

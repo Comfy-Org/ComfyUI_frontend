@@ -414,7 +414,6 @@ function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
   event.preventDefault()
   if (running.value && !editing.value) return
-  // An unsendable edit would reach useComposer's stop path while a turn runs.
   if (editing.value && !composer.canSend.value) return
   composer.submit('keyboard')
 }

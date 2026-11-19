@@ -2353,8 +2353,6 @@ watch(
     if (wasBusy && !busy) void settleActiveAndPump()
   }
 )
-// A turn that ended while the panel was unmounted left its item running and
-// no busy-to-idle edge to see. Once the restored chat settles, reconcile.
 void until(currentChatReady)
   .toBe(true)
   .then(nextTick)

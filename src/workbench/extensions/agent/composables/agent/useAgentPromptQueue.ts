@@ -45,7 +45,6 @@ export function useAgentPromptQueue(options: {
 
   async function pump(): Promise<void> {
     if (pumping) {
-      // A turn can end while this send is still settling; run again after it.
       pumpRequested = true
       return
     }
@@ -71,8 +70,6 @@ export function useAgentPromptQueue(options: {
     await pump()
   }
 
-  // Cancelling an edit makes its item sendable again, and no turn may be left
-  // to end and pump the queue.
   watch(
     () => queue.editingId,
     (editingId, previous) => {

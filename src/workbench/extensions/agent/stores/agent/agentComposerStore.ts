@@ -607,7 +607,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function removeAttachment(id: string): void {
-    // A queued prompt still owns this one; releaseUnusedAssets frees it later.
     if (!heldAssetIds.value.includes(id)) {
       cancelThumbnail(id)
       const attachment = assetsById.get(id)
