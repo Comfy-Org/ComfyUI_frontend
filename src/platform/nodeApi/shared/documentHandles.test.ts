@@ -22,10 +22,22 @@ function handlesWithProbes(
   reissuable?: (graph: LGraph, key: string) => boolean
 ) {
   const handles = createDocumentHandles()
-  return {
-    handles,
-    probes: handles.createCache<GraphProbe>(exists, reissuable)
+  const cache = handles.createCache<GraphProbe, LGraph>(reissuable)
+  const probes = {
+    handleFor: (
+      graph: LGraph,
+      key: string,
+      make: (resolveGraph: GraphResolver) => GraphProbe
+    ) =>
+      cache.handleFor(
+        graph,
+        key,
+        (current) => (exists(current, key) ? current : undefined),
+        (_locate, resolveGraph) => make(resolveGraph)
+      ),
+    locator: cache.locator
   }
+  return { handles, probes }
 }
 
 function rootWithPlacedSubgraph() {
@@ -50,12 +62,17 @@ describe('document handles', () => {
 
   it('keeps the handles of each kind apart', () => {
     const { handles, probes } = handlesWithProbes()
-    const otherKind = handles.createCache<GraphProbe>(() => true)
+    const otherKind = handles.createCache<GraphProbe, LGraph>()
     const root = new LGraph()
 
-    expect(otherKind.handleFor(root, '1', graphProbe)).not.toBe(
-      probes.handleFor(root, '1', graphProbe)
-    )
+    expect(
+      otherKind.handleFor(
+        root,
+        '1',
+        (graph) => graph,
+        (_locate, resolveGraph) => graphProbe(resolveGraph)
+      )
+    ).not.toBe(probes.handleFor(root, '1', graphProbe))
   })
 
   it('finds each graph by its own id', () => {

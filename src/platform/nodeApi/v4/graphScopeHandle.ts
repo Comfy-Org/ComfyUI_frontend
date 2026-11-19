@@ -6,7 +6,10 @@ import type {
   GraphResolver
 } from '@/platform/nodeApi/shared/documentHandles'
 import type { NodeHandles } from './nodeHandle'
-import type { GraphScopeHandle, GraphScopeHandleMembers } from './types'
+import type { GraphScopeHandle } from './types'
+
+/** The graph scope handle members other modules own. */
+export type GraphScopeHandleMembers = Pick<GraphScopeHandle, 'groups'>
 
 /** Gives the one handle for a root graph or a subgraph definition. */
 export type GraphScopeFor = (graph: LGraph) => GraphScopeHandle
@@ -25,22 +28,22 @@ export function createGraphScopes(
   nodes: NodeHandles,
   membersFor: (resolveGraph: GraphResolver) => GraphScopeHandleMembers
 ): GraphScopes {
-  const cache = handles.createCache<GraphScopeHandle>(() => true)
-  const liveGraphs = new WeakMap<object, GraphResolver>()
+  const cache = handles.createCache<GraphScopeHandle, LGraph>()
   return {
     scopeFor: (graph) =>
-      cache.handleFor(graph, graph.id, (resolveGraph) => {
-        const reads = graphScopeReads(graph.id, resolveGraph, nodes)
-        const handle = Object.freeze(
-          Object.assign(reads, membersFor(resolveGraph))
-        )
-        liveGraphs.set(handle, resolveGraph)
-        return handle
-      }),
-    locator: (value) =>
-      typeof value === 'object' && value !== null
-        ? liveGraphs.get(value)
-        : undefined
+      cache.handleFor(
+        graph,
+        graph.id,
+        (current) => current,
+        (_locate, resolveGraph) =>
+          Object.freeze(
+            Object.assign(
+              graphScopeReads(graph.id, resolveGraph, nodes),
+              membersFor(resolveGraph)
+            )
+          )
+      ),
+    locator: cache.locator
   }
 }
 

@@ -26,7 +26,7 @@ export type LiveSlot = SlotPlace &
   )
 
 /** Finds a handle's slot in its own node, graph and document while it is there. */
-export interface SlotLocator {
+interface SlotLocator {
   readonly side: SlotSide
   locate(): LiveSlot | undefined
 }
