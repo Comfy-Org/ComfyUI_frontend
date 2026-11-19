@@ -222,7 +222,7 @@ export function useFullPageTopup() {
       ...awaitedOperationOf(page.value)
     })
     if (mine !== generation) return undefined
-    dispatch(reconciledEvent(recovered))
+    dispatch(reconciledEvent(recovered, 'topup'))
     return recovered
   }
 

@@ -19,17 +19,19 @@
         <div
           :data-testid="row.testId"
           :data-widget-name="row.widget.simplified.name"
+          :data-autogrow-group="row.autogrowGroup"
           :style="row.style"
           :class="
             cn(
               'group relative mr-3 grid grid-cols-[min-content_minmax(0,1fr)] items-stretch',
               row.flexClass,
               rowSpacingClass(row.showsControl),
-              rowEdgeClass(sectionIndex, rowIndex)
+              rowEdgeClass(sectionIndex, rowIndex),
+              row.highlightClass
             )
           "
         >
-          <div :class="row.slotClass">
+          <div class="z-10 flex items-stretch" :class="row.slotClass">
             <InputSlot
               v-if="row.widget.slotMetadata"
               :key="`widget-slot-${row.widget.simplified.name}-${row.widget.slotMetadata.index}`"
@@ -37,11 +39,14 @@
                 name: row.widget.simplified.name,
                 label: row.widget.simplified.label,
                 type: row.widget.slotMetadata.type,
+                shape: row.widget.slotMetadata.shape,
                 boundingRect: [0, 0, 0, 0]
               }"
               :node-id
               :has-error="row.widget.hasError"
               :index="row.widget.slotMetadata.index"
+              :connected="row.widget.slotMetadata.linked"
+              :compatible="row.inHoveredGroup"
               :socketless="row.widget.simplified.spec?.socketless"
               :standalone="row.standalone"
               :dot-only="row.showsControl"
@@ -116,8 +121,13 @@ import { useResizeObserver } from '@vueuse/core'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { minRowHeight } from '@/lib/litegraph/src/utils/widgetLayout'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import {
+  autogrowIoInputDragType,
+  hoveredAutogrowGroup
+} from '@/renderer/core/canvas/links/autogrowGroupDropState'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import AppInput from '@/renderer/extensions/linearMode/AppInput.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
@@ -205,6 +215,54 @@ const {
 
 useVueElementTracking(syncLayout ? String(nodeId ?? '') : '', 'widgets-grid')
 const canvasStore = useCanvasStore()
+const hoveredGroupName = computed(() => {
+  const hovered = hoveredAutogrowGroup.value
+  return hovered && hovered.nodeId === nodeId ? hovered.groupName : undefined
+})
+
+function revealedAutogrowGroup(widget: WidgetGridItem) {
+  const slot = widget.slotMetadata
+  if (widget.inputRole !== 'autogrowGroup' || !slot) return undefined
+  const dragType = autogrowIoInputDragType.value
+  const accepts =
+    dragType !== undefined && LiteGraph.isValidConnection(dragType, slot.type)
+  return slot.linked || accepts ? widget.simplified.name : undefined
+}
+
+function isInHoveredGroup(name: string) {
+  const group = hoveredGroupName.value
+  return !!group && (name === group || name.startsWith(`${group}.`))
+}
+
+const socketRow = {
+  showsControl: false,
+  testId: undefined,
+  slotClass: 'col-span-full'
+}
+const rowKinds = {
+  control: {
+    showsControl: true,
+    standalone: false,
+    testId: 'node-widget',
+    slotClass:
+      'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100 has-[.lg-slot--compatible,.lg-slot--connected]:opacity-100'
+  },
+  socket: { ...socketRow, standalone: true },
+  convertedSocket: { ...socketRow, standalone: false }
+}
+
+function rowKind(widget: WidgetGridItem, autogrowGroup?: string) {
+  const { slotMetadata, suppressedByConnection } = widget
+  if (isConvertedWidgetType(widget.simplified.type)) {
+    if (!slotMetadata) return undefined
+    return suppressedByConnection ? 'socket' : 'convertedSocket'
+  }
+  if (widget.visible)
+    return widget.inputRole === 'socket' ? 'socket' : 'control'
+  const revealed = suppressedByConnection || autogrowGroup
+  return revealed && slotMetadata ? 'socket' : undefined
+}
+
 const renderedRows = computed(() => fillWithLastLegacyRow(rawRows.value))
 
 function fillWithLastLegacyRow(rows: typeof rawRows.value) {
@@ -227,34 +285,25 @@ function fillWithLastLegacyRow(rows: typeof rawRows.value) {
 
 const rawRows = computed(() =>
   processedWidgets.flatMap((widget) => {
-    const isConverted = isConvertedWidgetType(widget.simplified.type)
-    const showsControl = !isConverted && widget.visible
-    const shouldRender = isConverted
-      ? !!widget.slotMetadata
-      : widget.visible ||
-        (!!widget.suppressedByConnection && !!widget.slotMetadata)
-    if (!shouldRender) return []
-
+    const autogrowGroup = revealedAutogrowGroup(widget)
+    const kind = rowKind(widget, autogrowGroup)
+    if (!kind) return []
+    const { showsControl } = rowKinds[kind]
     const sizing = showsControl ? widget.sizing : undefined
+    const inHoveredGroup = isInHoveredGroup(widget.simplified.name)
     return [
       {
+        ...rowKinds[kind],
         widget,
-        showsControl,
-        slotClass: cn(
-          'z-10 flex items-stretch',
-          showsControl
-            ? 'w-3 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
-            : 'col-span-full',
-          widget.slotMetadata?.linked && 'opacity-100'
-        ),
-        standalone: !showsControl && !!widget.suppressedByConnection,
-        testId: showsControl ? 'node-widget' : undefined,
         selectable: canSelectInputs && !widget.simplified.options?.disabled,
         ...rowSizing(
           widget.simplified.name,
           showsControl && shouldExpand(widget.simplified.type, sizing),
           sizing
-        )
+        ),
+        autogrowGroup,
+        inHoveredGroup,
+        highlightClass: inHoveredGroup && 'rounded-sm ring-1 ring-primary'
       }
     ]
   })
