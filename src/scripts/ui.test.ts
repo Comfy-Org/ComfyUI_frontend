@@ -1,5 +1,7 @@
+import userEvent from '@testing-library/user-event'
+import { within } from '@testing-library/vue'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -56,6 +58,7 @@ describe('ComfyUI file input', () => {
       trackRunButton: vi.fn(),
       enterFocusMode: vi.fn()
     })
+    // oxlint-disable-next-line testing-library/no-node-access -- hidden legacy <input type="file"> has no accessible role or label
     const fileInput = document.getElementById(
       'comfy-file-input'
     ) as HTMLInputElement
@@ -93,6 +96,7 @@ describe('ComfyUI file input', () => {
     })
     giveDialogDoublesRemovableElements(ui)
     onTestFinished(() => ui.dispose())
+    // oxlint-disable-next-line testing-library/no-node-access -- hidden legacy <input type="file"> has no accessible role or label
     const fileInput = document.getElementById(
       'comfy-file-input'
     ) as HTMLInputElement
@@ -128,11 +132,11 @@ describe('ComfyUI file input', () => {
     giveDialogDoublesRemovableElements(ui)
     onTestFinished(() => ui.dispose())
 
-    const loadDefaultButton = ui.menuContainer.querySelector(
-      '#comfy-load-default-button'
+    const user = userEvent.setup()
+    ui.menuContainer.style.display = 'block'
+    await user.click(
+      within(ui.menuContainer).getByRole('button', { name: 'Load Default' })
     )
-    assert(loadDefaultButton instanceof HTMLButtonElement)
-    loadDefaultButton.click()
 
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(
@@ -170,12 +174,12 @@ describe('ComfyUI file input', () => {
     giveDialogDoublesRemovableElements(ui)
     onTestFinished(() => ui.dispose())
 
-    await ui.queue.load()
-    const loadButton = Array.from(
-      ui.queue.element.querySelectorAll('button')
-    ).find((button) => button.textContent === 'Load')
-    assert(loadButton instanceof HTMLButtonElement)
-    loadButton.click()
+    const user = userEvent.setup()
+    ui.menuContainer.style.display = 'block'
+    await ui.queue.show()
+    await user.click(
+      within(ui.queue.element).getByRole('button', { name: 'Load' })
+    )
 
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(
