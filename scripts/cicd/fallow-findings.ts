@@ -165,11 +165,11 @@ export function renderReport(report: FallowReport): string {
   }
 
   return [
-    `Fallow gates on **new findings only**, so everything below was introduced or moved by this PR${
+    `Fallow reports these findings${
       report.changed_files_count
-        ? ` (${report.changed_files_count} changed files)`
+        ? ` for ${report.changed_files_count} changed files`
         : ''
-    }. An unused file or export can sit outside the changed files when this PR removed its last use.`,
+    }. Only **new findings** can fail the check. An unused file or export can sit outside the changed files when this PR removed its last use.`,
     '',
     '| Kind | Finding | Where | Usual remedy |',
     '| --- | --- | --- | --- |',
