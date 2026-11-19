@@ -14,7 +14,6 @@ import {
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { WebSessionSend } from '@/platform/auth/session/webSessionFetch'
-import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@/types/authTypes'
 import { retryingSend } from '@/utils/fetchWithRetry'
 
@@ -35,13 +34,6 @@ function globalSettingsUrl(key?: GlobalSettingKey): string {
     ? getComfyCloudBaseUrl()
     : getComfyApiBaseUrl()
   return `${baseUrl}/api${path}`
-}
-
-export async function getGlobalSettingsAuthHeader(): Promise<AuthHeader | null> {
-  const authStore = useAuthStore()
-  return isCloud
-    ? authStore.getWorkspaceAuthHeader()
-    : authStore.getUserAuthHeader()
 }
 
 async function responseBody(response: Response): Promise<unknown> {

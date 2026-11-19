@@ -20,9 +20,12 @@ const accountApi = vi.hoisted(() => ({
 }))
 vi.mock(import('@/platform/settings/globalSettingsApi'), () => ({
   getGlobalSetting: accountApi.get,
-  setGlobalSetting: accountApi.set,
-  getGlobalSettingsAuthHeader: accountApi.header
+  setGlobalSetting: accountApi.set
 }))
+vi.mock(
+  import('@/workbench/extensions/agent/services/agent/agentAuth'),
+  () => ({ agentSettingsAuthHeader: accountApi.header })
+)
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 const stored: GlobalSetting = {
