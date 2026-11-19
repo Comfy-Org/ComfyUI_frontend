@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
+import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import {
   readCloudUploadFolders,
+  readLocalModelSizes,
   waitForStoredModel
 } from './localModelUploadApi'
 
@@ -75,6 +77,21 @@ describe('readCloudUploadFolders', () => {
         Object.defineProperty(AbortSignal, 'timeout', nativeTimeout)
       else Reflect.deleteProperty(AbortSignal, 'timeout')
     }
+  })
+})
+
+describe('readLocalModelSizes', () => {
+  it('uses the same model as Core when two local roots contain the same filename', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      Response.json([
+        { name: 'style.safetensors', pathIndex: 0, size: 16 },
+        { name: 'style.safetensors', pathIndex: 1, size: 32 }
+      ])
+    )
+
+    const sizes = await readLocalModelSizes('loras')
+
+    expect(sizes.get('style.safetensors')).toBe(16)
   })
 })
 

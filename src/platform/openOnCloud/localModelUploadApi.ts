@@ -66,9 +66,12 @@ export async function readLocalModelSizes(
     if (!response.ok) return new Map()
     const files = zLocalModelFiles.safeParse(await response.json())
     if (!files.success) return new Map()
-    return new Map(
-      files.data.map((file) => [file.name.replaceAll('\\', '/'), file.size])
-    )
+    const firstSizeByName = new Map<string, number>()
+    for (const file of files.data) {
+      const name = file.name.replaceAll('\\', '/')
+      if (!firstSizeByName.has(name)) firstSizeByName.set(name, file.size)
+    }
+    return firstSizeByName
   } catch {
     return new Map()
   }
