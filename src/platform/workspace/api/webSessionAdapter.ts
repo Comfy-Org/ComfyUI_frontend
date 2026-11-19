@@ -16,15 +16,6 @@ function requestHeaders({ headers }: InternalAxiosRequestConfig): Headers {
   return result
 }
 
-function requestSignal({
-  signal,
-  timeout
-}: InternalAxiosRequestConfig): AbortSignal {
-  const signals: AbortSignal[] = []
-  if (signal instanceof AbortSignal) signals.push(signal)
-  if (timeout) signals.push(createTimeoutSignal(timeout))
-  return combineAbortSignals(signals)
-}
 
 function statusError(
   config: InternalAxiosRequestConfig,
@@ -44,7 +35,13 @@ function statusError(
 /** Sends an axios request on the web session and hands back the raw text. */
 export function createWebSessionAdapter(send: WebSessionSend): AxiosAdapter {
   return async (config) => {
-    const signal = requestSignal(config)
+    const signals: AbortSignal[] = []
+    const userSignal = config.signal instanceof AbortSignal ? config.signal : undefined
+    if (userSignal) signals.push(userSignal)
+    const timeoutSignal = config.timeout ? createTimeoutSignal(config.timeout) : undefined
+    if (timeoutSignal) signals.push(timeoutSignal)
+    const signal = combineAbortSignals(signals)
+
     let response: Response
     try {
       response = await send(axios.getUri(config), {
@@ -57,8 +54,7 @@ export function createWebSessionAdapter(send: WebSessionSend): AxiosAdapter {
       throw AxiosError.from(
         error,
         signal.aborted
-          ? signal.reason instanceof DOMException &&
-            signal.reason.name === 'TimeoutError'
+          ? timeoutSignal?.aborted
             ? AxiosError.ETIMEDOUT
             : AxiosError.ERR_CANCELED
           : AxiosError.ERR_NETWORK,
