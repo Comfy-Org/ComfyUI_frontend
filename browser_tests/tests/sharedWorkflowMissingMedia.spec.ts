@@ -8,7 +8,7 @@ import {
   sharedWorkflowImportScenario
 } from '@e2e/fixtures/sharedWorkflowImportFixture'
 import type { SharedWorkflowImportMocks } from '@e2e/fixtures/sharedWorkflowImportFixture'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const IMPORT_ORDER_TIMEOUT_MS = 5_000
@@ -66,7 +66,7 @@ async function openPanelAndExpectNoMissingMedia(
   const errorOverlay = page.getByTestId(TestIds.dialogs.errorOverlay)
   await expect(errorOverlay).toBeHidden()
 
-  const panel = new PropertiesPanelHelper(page)
+  const panel = new PropertiesPanel(page)
   await panel.open(comfyPage.actionbar.propertiesButton)
   await expect(
     panel.root.getByTestId(TestIds.propertiesPanel.errorsTab)

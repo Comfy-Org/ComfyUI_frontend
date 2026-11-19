@@ -149,11 +149,12 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
  * One persisted `content.thinking` entry: a model round's thinking text,
- * anchored to that round's first tool call when it made one.
+ * anchored to that round's first tool call, `truncated` where it was cut.
  */
 export const zPersistedThinkingEntry = zAgentThinkingEntry
-  .pick({ text: true })
+  .pick({ text: true, truncated: true })
   .extend({ tool_call_id: z.string().nullish() })
+export type PersistedThinkingEntry = z.infer<typeof zPersistedThinkingEntry>
 
 /**
  * The message-parse boundary's `content.tool_calls` field is deliberately

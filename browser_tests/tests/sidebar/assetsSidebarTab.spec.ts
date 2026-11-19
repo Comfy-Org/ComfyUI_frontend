@@ -17,7 +17,7 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 import type { JobDetail, RawJobListItem } from '@comfyorg/api-client/jobTypes'
 
 const test = mergeTests(
@@ -395,7 +395,7 @@ bulkInsertionTest.describe(
       await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
       await comfyPage.expectNodeCount(0)
       await comfyPage.toast.closeToasts()
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await panel.open(comfyPage.actionbar.propertiesButton)
       await expect(
         comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
@@ -411,7 +411,7 @@ bulkInsertionTest.describe(
       'does not surface errors for inserted output assets',
       async ({ comfyPage }) => {
         const tab = comfyPage.menu.assetsTab
-        const panel = new PropertiesPanelHelper(comfyPage.page)
+        const panel = new PropertiesPanel(comfyPage.page)
         await expect(panel.root).toBeVisible()
 
         await tab.getAssetCardByName('alpha').click()
@@ -431,6 +431,90 @@ bulkInsertionTest.describe(
         await expect.poll(() => comfyPage.vueNodes.getNodeCount()).toBe(2)
 
         await expectNoErrorUiAfterVerification(comfyPage, panel)
+      }
+    )
+  }
+)
+
+const largeLibraryJobs: RawJobListItem[] = Array.from(
+  { length: 60 },
+  (_, index) =>
+    createRouteMockJob({
+      id: `scroll-${String(index).padStart(2, '0')}`,
+      create_time: routeMockJobTimestamp - index * 1_000
+    })
+)
+
+const largeLibraryTest = comfyPageFixture.extend({
+  page: async ({ page }, use) => {
+    const jobsRoutes = new JobsRouteMocker(page)
+    await jobsRoutes.mockJobsQueue([])
+    await jobsRoutes.mockJobsHistory(largeLibraryJobs)
+    await mockViewFiles(
+      page,
+      Object.fromEntries(
+        largeLibraryJobs.map((job) => [`output_${job.id}.png`, {}])
+      )
+    )
+    await use(page)
+  }
+})
+
+largeLibraryTest(
+  'a marquee keeps tracking the cards when the grid scrolls mid-drag',
+  { tag: '@ui' },
+  async ({ comfyPage }) => {
+    const tab = comfyPage.menu.assetsTab
+    const { page } = comfyPage
+    await tab.open()
+    const firstCard = tab.getAssetCardByName('scroll-00')
+    await expect(firstCard).toBeVisible()
+
+    const header = await tab.panelHeader.boundingBox()
+    const panel = await tab.panel.boundingBox()
+    if (!header || !panel) throw new Error('assets panel has no layout box')
+    const pointer = {
+      x: panel.x + panel.width - 24,
+      y: panel.y + panel.height / 2
+    }
+    const cardsDisagreeingWithMarquee = () =>
+      tab.assetCards.evaluateAll(
+        (elements, bottom) =>
+          elements.flatMap((element) => {
+            const covered = element.getBoundingClientRect().top <= bottom
+            const selected = element.getAttribute('data-selected') === 'true'
+            return covered === selected
+              ? []
+              : [element.getAttribute('data-asset-id')]
+          }),
+        pointer.y
+      )
+
+    await largeLibraryTest.step(
+      'drag a marquee over the top rows',
+      async () => {
+        await page.mouse.move(header.x + 24, header.y + 20)
+        await page.mouse.down()
+        await page.mouse.move(pointer.x, pointer.y, { steps: 14 })
+        await expect.poll(cardsDisagreeingWithMarquee).toEqual([])
+      }
+    )
+
+    await largeLibraryTest.step(
+      'scrolling without moving the pointer extends the selection to the cards now under it',
+      async () => {
+        await page.mouse.wheel(0, 1_200)
+        await expect(firstCard).toHaveCount(0)
+        await expect.poll(cardsDisagreeingWithMarquee).toEqual([])
+      }
+    )
+
+    await largeLibraryTest.step(
+      'cards scrolled out of view stay selected after release',
+      async () => {
+        await page.mouse.up()
+        await page.mouse.wheel(0, -10_000)
+        await expect(firstCard).toHaveAttribute('data-selected', 'true')
       }
     )
   }

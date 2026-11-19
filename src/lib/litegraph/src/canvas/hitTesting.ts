@@ -1,8 +1,14 @@
-import type { LGraph, LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
+import type {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode
+} from '@comfyorg/graph-model/entityRegistry'
+import { getSlotLayoutAtPoint } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import type { LinkSegment } from '@comfyorg/graph-model/interfaces'
 
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { Reroute } from '@/lib/litegraph/src/Reroute'
 
 /**
@@ -58,4 +64,16 @@ export function queryRenderedLinkSegmentsAtPoint(
   } finally {
     ctx.lineWidth = lineWidth
   }
+}
+
+export function getNodeOrSlotOwnerOnPos(
+  graph: LGraph,
+  x: number,
+  y: number,
+  nodeList?: LGraphNode[]
+): LGraphNode | undefined {
+  const node = graph.getNodeOnPos(x, y, nodeList)
+  if (node || !litegraph().vueNodesMode) return node ?? undefined
+  const slot = getSlotLayoutAtPoint(graph, { x, y })
+  return graph.getNodeById(slot?.nodeId) ?? undefined
 }
