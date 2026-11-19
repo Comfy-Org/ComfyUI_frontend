@@ -690,6 +690,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return true
   }
 
+  function showOrQueueSupersededNotice(owner: string): void {
+    if (owner === conversationStore.threadId) {
+      pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
+      return
+    }
+    pendingSupersededNoticeThreads.delete(owner)
+    pendingSupersededNoticeThreads.add(owner)
+    while (pendingSupersededNoticeThreads.size > MAX_DELIVERED_ASKS)
+      pendingSupersededNoticeThreads.delete(
+        pendingSupersededNoticeThreads.values().next().value!
+      )
+  }
+
   function recordPendingAskObservation(
     key: string,
     pendingAskId: string | undefined,
@@ -2196,16 +2209,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ask_kind: submitted.kind
       }
     })
-    if (submitted.owner === conversationStore.threadId)
-      pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
-    else {
-      pendingSupersededNoticeThreads.delete(submitted.owner)
-      pendingSupersededNoticeThreads.add(submitted.owner)
-      while (pendingSupersededNoticeThreads.size > MAX_DELIVERED_ASKS)
-        pendingSupersededNoticeThreads.delete(
-          pendingSupersededNoticeThreads.values().next().value!
-        )
-    }
+    showOrQueueSupersededNotice(submitted.owner)
   }
 
   async function sendAnswer(
