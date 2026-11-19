@@ -1,11 +1,26 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import type { ListMembersResponse } from '@comfyorg/ingest-types'
+
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-const test = mergeTests(agentTest, webSocketFixture)
+const test = mergeTests(agentTest, webSocketFixture).extend({
+  page: async ({ page }, use) => {
+    await page.route('**/api/workspace/members**', (route) =>
+      route.fulfill(
+        jsonRoute({
+          members: [],
+          pagination: { offset: 0, limit: 50, total: 0, has_more: false }
+        } satisfies ListMembersResponse)
+      )
+    )
+    await use(page)
+  }
+})
 
 test.describe(
   "Agent entry button follows ComfyUI's agent",
