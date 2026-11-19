@@ -1722,6 +1722,12 @@ export const useAgentConversationStore = defineStore(
     function reapplyRetiredAsks(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
+      for (const message of transcript.messages)
+        for (const part of message.parts) {
+          if (!isOpenAskPart(part)) continue
+          const askId = askIdOf(part)
+          if (askId !== undefined) confirmAskPending(askId)
+        }
       const retired = retiredAsksFor()
       const provisional = provisionalRetiredAsksFor()
       const provisionalResolutions = new Map(
