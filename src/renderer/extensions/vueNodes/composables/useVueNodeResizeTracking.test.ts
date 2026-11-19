@@ -7,6 +7,7 @@ import { render, screen } from '@testing-library/vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeLayout } from '@comfyorg/graph-model/layout'
+import type { LayoutChange } from '@/renderer/core/layout/types'
 import type { ComfyApp } from '@/scripts/app'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
@@ -67,7 +68,8 @@ const testState = vi.hoisted(() => {
       }
     ),
     syncSlotOffsets: vi.fn(),
-    setDirty: vi.fn()
+    setDirty: vi.fn(),
+    layoutChangeListeners: new Set<(change: LayoutChange) => void>()
   }
 })
 
@@ -91,7 +93,11 @@ vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
     contentSizeOf: (rootGraphId: UUID, nodeId: NodeId) =>
       testState.contentSizes.get(`${rootGraphId}:${nodeId}`),
     getNodeLayout: (_rootGraphId: UUID, rawNodeId: NodeId): NodeLayout | null =>
-      testState.nodeLayouts.get(rawNodeId) ?? null
+      testState.nodeLayouts.get(rawNodeId) ?? null,
+    onChange: (listener: (change: LayoutChange) => void) => {
+      testState.layoutChangeListeners.add(listener)
+      return () => testState.layoutChangeListeners.delete(listener)
+    }
   }
 }))
 
@@ -384,6 +390,35 @@ describe('useVueNodeResizeTracking', () => {
     )
     expect(testState.syncSlotOffsets).toHaveBeenCalledWith(nodeId)
   })
+
+  it.for([
+    { graphId: ROOT_GRAPH_ID, remeasured: true },
+    { graphId: SECOND_GRAPH_ID, remeasured: false }
+  ])(
+    'remeasures a mounted node whose layout is recreated in $graphId: $remeasured',
+    ({ graphId, remeasured }) => {
+      const nodeId = toNodeId('recreated-node')
+      const view = render(TrackedNode, { props: { nodeId } })
+      const element = screen.getByTestId(`tracked-${nodeId}`)
+      vi.clearAllMocks()
+
+      for (const listener of testState.layoutChangeListeners)
+        listener(
+          fromPartial<LayoutChange>({
+            type: 'create',
+            nodeIds: [nodeId],
+            operation: { graphId }
+          })
+        )
+
+      expect(
+        resizeObserverState.observe.mock.calls.some(
+          ([observed]) => observed === element
+        )
+      ).toBe(remeasured)
+      view.unmount()
+    }
+  )
 
   it('re-observes hidden elements without re-reporting an unchanged size', async () => {
     const nodeId = toNodeId('hidden-node')

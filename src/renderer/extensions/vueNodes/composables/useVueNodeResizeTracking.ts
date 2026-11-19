@@ -13,6 +13,7 @@ import {
   effectScope,
   getCurrentInstance,
   onMounted,
+  onScopeDispose,
   onUnmounted,
   watch
 } from 'vue'
@@ -230,12 +231,28 @@ function measureEntries(
   }
 }
 
+function remeasureNodes(nodeIds: Set<string>, observer: ResizeObserver) {
+  for (const element of trackedElements) {
+    const nodeId = element.dataset.nodeId
+    if (!nodeId || !nodeIds.has(nodeId)) continue
+    markElementForFreshMeasurement(element)
+    observer.unobserve(element)
+    observer.observe(element)
+  }
+}
+
 function createResizeTracking(scope: EffectScope): ResizeTracking {
   const tracking: ResizeTracking = {
     scope,
     visibility: useDocumentVisibility(),
     observer: new ResizeObserver((entries) => measureEntries(entries, tracking))
   }
+  const stopRemeasuring = layoutStore.onChange((change) => {
+    if (change.type !== 'create') return
+    if (change.operation.graphId !== useCanvasStore().rootGraphId) return
+    remeasureNodes(new Set(change.nodeIds.map(String)), tracking.observer)
+  })
+  onScopeDispose(stopRemeasuring)
   watch(tracking.visibility, (state) => {
     if (state !== 'visible' || deferredElements.size === 0) return
 
