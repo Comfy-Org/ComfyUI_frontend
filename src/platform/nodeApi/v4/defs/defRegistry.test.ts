@@ -530,6 +530,10 @@ describe('node definitions', () => {
         definition: { type: 'T', inputs: ['i'] }
       },
       {
+        name: 'a slot type that is a built-in name, which no node could be made with',
+        definition: { type: 'T', inputs: [{ name: 'i', type: 'toString' }] }
+      },
+      {
         name: 'an input with a shape, which only outputs take',
         definition: {
           type: 'T',
