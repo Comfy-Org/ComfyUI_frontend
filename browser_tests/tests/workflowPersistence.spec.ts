@@ -1042,14 +1042,14 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.menu.topbar.saveWorkflow(third)
 
-    await test.step('visit every tab without editing, leaving drafts behind', async () => {
+    await test.step('visit every tab without editing, leaving no drafts behind', async () => {
       await comfyPage.workflow.expectTabOpensAsSaved(first)
       await comfyPage.workflow.expectTabOpensAsSaved(second)
       await comfyPage.workflow.expectTabOpensAsSaved(third)
       await waitForWorkflowTabState(comfyPage, 3)
       await expect
         .poll(async () => (await comfyPage.workflow.getDraftWorkflows()).length)
-        .toBeGreaterThanOrEqual(2)
+        .toBe(0)
     })
 
     await comfyPage.workflow.reloadAndWaitForApp()
@@ -1071,6 +1071,45 @@ test.describe('Workflow Persistence', () => {
     await test.step('the second restored tab reopens as saved', async () => {
       await comfyPage.workflow.expectTabOpensAsSaved(second)
     })
+  })
+
+  test('An unedited workflow saved by an older version reopens as saved after a reload', async ({
+    comfyPage
+  }) => {
+    test.info().annotations.push({
+      type: 'regression',
+      description:
+        'A file that the current version serializes differently left a tab-switch draft that differed from the file, so it reopened as unsaved'
+    })
+    test.setTimeout(45_000)
+
+    await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
+    await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
+    await comfyPage.settings.setSetting(
+      'Comfy.Workflow.WorkflowTabsPosition',
+      'Topbar'
+    )
+
+    // An older save format: node sizes as objects, no slot metadata.
+    const legacy = generateUniqueFilename()
+    await comfyPage.workflow.setupWorkflowsDirectory({
+      [`${legacy}.json`]: 'nodes/single_ksampler.json'
+    })
+    await comfyPage.workflow.openPersistedWorkflow(legacy)
+    await expect
+      .poll(() => comfyPage.workflow.isCurrentWorkflowModified())
+      .toBe(false)
+
+    const other = generateUniqueFilename()
+    await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
+    await comfyPage.menu.topbar.saveWorkflow(other)
+    await comfyPage.workflow.expectTabOpensAsSaved(legacy)
+    await comfyPage.workflow.expectTabOpensAsSaved(other)
+    await waitForWorkflowTabState(comfyPage)
+
+    await comfyPage.workflow.reloadAndWaitForApp()
+
+    await comfyPage.workflow.expectTabOpensAsSaved(legacy)
   })
 
   test('Flushes a pending draft edit before an immediate reload', async ({
