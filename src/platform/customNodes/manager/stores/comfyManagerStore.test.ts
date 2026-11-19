@@ -19,6 +19,7 @@ import * as registryService from '@/services/comfyRegistryService'
 import type { components as RegistryComponents } from '@/types/comfyRegistryTypes'
 import PackUpdateButton from '@/platform/customNodes/manager/components/manager/button/PackUpdateButton.vue'
 import ManagerProgressToast from '@/platform/customNodes/manager/components/ManagerProgressToast.vue'
+import { useInstalledPacks } from '@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'
 import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
 import type { components as ManagerComponents } from '@comfyorg/api-client/generatedManagerTypes'
@@ -109,6 +110,7 @@ describe('useComfyManagerStore', () => {
       getImportFailInfo: vi.fn().mockResolvedValue(null),
       getImportFailInfoBulk: vi.fn().mockResolvedValue({}),
       installPack: vi.fn().mockResolvedValue(''),
+      reinstallPack: vi.fn().mockResolvedValue(''),
       uninstallPack: vi.fn().mockResolvedValue(''),
       enablePack: vi.fn().mockResolvedValue(''),
       disablePack: vi.fn().mockResolvedValue(''),
@@ -1046,6 +1048,290 @@ describe('useComfyManagerStore', () => {
     expect(store.isProcessingTasks).toBe(true)
   })
 
+  async function receiveInstalledList(installed: InstalledPacksResponse) {
+    vi.mocked(mockManagerService.listInstalledPacks).mockResolvedValue(
+      installed
+    )
+    const store = useComfyManagerStore()
+    await store.refreshInstalledList()
+    await nextTick()
+    return store
+  }
+
+  async function receiveTaskState(installed: InstalledPacksResponse) {
+    const store = useComfyManagerStore()
+    await store.refreshInstalledList()
+    api.dispatchCustomEvent('cm-task-started', {
+      ui_id: 'other-task',
+      kind: 'install',
+      timestamp: '2026-11-21T00:00:00Z',
+      state: {
+        installed_packs: installed,
+        running_queue: [],
+        pending_queue: [],
+        history: {}
+      }
+    })
+    await nextTick()
+    return store
+  }
+
+  describe('isPackInvalidInstallation', () => {
+    const invalidFolder: ManagerPackInstalled = {
+      ver: 'unknown',
+      cnr_id: 'comfyui-foo',
+      aux_id: null,
+      enabled: true,
+      invalid_installation: true
+    }
+    const validInstall: ManagerPackInstalled = {
+      ver: '1.0.0',
+      cnr_id: 'comfyui-foo',
+      enabled: true
+    }
+
+    it.for<{
+      name: string
+      installed: InstalledPacksResponse
+      expected: boolean
+      enabled: boolean
+    }>([
+      {
+        name: 'a flagged folder named after something else',
+        installed: { 'ComfyUI-Foo': invalidFolder },
+        expected: true,
+        enabled: true
+      },
+      {
+        name: 'a flagged folder beside a valid install',
+        installed: {
+          'comfyui-foo': validInstall,
+          'ComfyUI-Foo': invalidFolder
+        },
+        expected: false,
+        enabled: true
+      },
+      {
+        name: 'a flagged folder beside a disabled valid install',
+        installed: {
+          'comfyui-foo': { ...validInstall, enabled: false },
+          'ComfyUI-Foo': invalidFolder
+        },
+        expected: false,
+        enabled: false
+      },
+      {
+        name: 'only a valid install',
+        installed: { 'comfyui-foo': validInstall },
+        expected: false,
+        enabled: true
+      },
+      {
+        name: 'a flagged folder of another pack',
+        installed: {
+          'comfyui-foo': validInstall,
+          'ComfyUI-Bar': { ...invalidFolder, cnr_id: 'comfyui-bar' }
+        },
+        expected: false,
+        enabled: true
+      }
+    ])('is $expected for $name', async ({ installed, expected, enabled }) => {
+      const store = await receiveInstalledList(installed)
+
+      expect(store.isPackInvalidInstallation('comfyui-foo')).toBe(expected)
+      expect(store.isPackInstalled('comfyui-foo')).toBe(true)
+      expect(store.isPackEnabled('comfyui-foo')).toBe(enabled)
+    })
+  })
+
+  describe.for([
+    { entryPoint: 'the installed list', receive: receiveInstalledList },
+    { entryPoint: 'a queue task state', receive: receiveTaskState }
+  ])('when $entryPoint arrives', ({ receive }) => {
+    const validClone: ManagerPackInstalled = {
+      ver: '1.0.0',
+      cnr_id: 'comfyui-foo',
+      aux_id: null,
+      enabled: true
+    }
+    const flaggedFolder: ManagerPackInstalled = {
+      ver: 'unknown',
+      cnr_id: 'comfyui-foo',
+      aux_id: null,
+      enabled: true,
+      invalid_installation: true
+    }
+
+    it.for<{ order: string; installed: InstalledPacksResponse }>([
+      {
+        order: 'the valid clone comes first',
+        installed: { 'ComfyUI-Foo': validClone, 'comfyui-foo': flaggedFolder }
+      },
+      {
+        order: 'the flagged folder comes first',
+        installed: { 'comfyui-foo': flaggedFolder, 'ComfyUI-Foo': validClone }
+      }
+    ])(
+      'reads a valid clone as if its flagged folder were not sent when $order',
+      async ({ installed }) => {
+        const store = await receive(installed)
+        const { installedPacksWithVersions } = useInstalledPacks()
+
+        expect({
+          isInvalidInstallation: store.isPackInvalidInstallation('comfyui-foo'),
+          installedVersion: store.getInstalledPackVersion('comfyui-foo'),
+          installedPacksWithVersions: installedPacksWithVersions.value
+        }).toEqual({
+          isInvalidInstallation: false,
+          installedVersion: undefined,
+          installedPacksWithVersions: [{ id: 'comfyui-foo', version: '1.0.0' }]
+        })
+      }
+    )
+
+    it('keeps a flagged folder that is alone for its nodepack', async () => {
+      const store = await receive({ 'comfyui-foo': flaggedFolder })
+      const { installedPacksWithVersions } = useInstalledPacks()
+
+      expect(store.isPackInvalidInstallation('comfyui-foo')).toBe(true)
+      expect(store.getInstalledPackVersion('comfyui-foo')).toBe('unknown')
+      expect(installedPacksWithVersions.value).toEqual([
+        { id: 'comfyui-foo', version: 'unknown' }
+      ])
+    })
+  })
+
+  describe('reinstallPack', () => {
+    const request: ManagerComponents['schemas']['InstallPackParams'] = {
+      id: 'comfyui-foo',
+      repository: 'https://github.com/test/comfyui-foo',
+      channel: 'dev',
+      mode: 'cache',
+      version: '1.2.0',
+      selected_version: '1.2.0'
+    }
+    const invalidInstall: InstalledPacksResponse = {
+      'ComfyUI-Foo': {
+        ver: 'unknown',
+        cnr_id: 'comfyui-foo',
+        aux_id: null,
+        enabled: true,
+        invalid_installation: true
+      }
+    }
+
+    it.for([
+      {
+        name: 'success',
+        status: 'success',
+        result: 'success',
+        installed: {
+          'comfyui-foo': { ver: '1.2.0', cnr_id: 'comfyui-foo', enabled: true }
+        },
+        expectedInvalid: false,
+        expectedToasts: []
+      },
+      {
+        name: 'failure',
+        status: 'error',
+        result: 'Reinstall failed. See the terminal for details.',
+        installed: invalidInstall,
+        expectedInvalid: true,
+        expectedToasts: [
+          expect.objectContaining({
+            kind: 'error',
+            description: 'Reinstall failed. See the terminal for details.'
+          })
+        ]
+      }
+    ] as const)(
+      'queues a reinstall task and reflects its $name',
+      async ({
+        status,
+        result,
+        installed,
+        expectedInvalid,
+        expectedToasts
+      }) => {
+        const store = useComfyManagerStore()
+        await triggerPacksChange(invalidInstall, store)
+        expect(store.isPackInvalidInstallation('comfyui-foo')).toBe(true)
+
+        await store.reinstallPack(request)
+
+        expect(mockManagerService.reinstallPack).toHaveBeenCalledWith(
+          request,
+          expect.any(String)
+        )
+        expect(mockManagerService.startQueue).toHaveBeenCalledOnce()
+        expect(store.isPackInstalling('comfyui-foo')).toBe(true)
+        const taskId = vi.mocked(mockManagerService.reinstallPack).mock
+          .calls[0][1]
+        assert.isDefined(taskId)
+
+        const taskStatus: TaskExecutionStatus = {
+          status_str: status,
+          completed: true,
+          messages: [result]
+        }
+        api.dispatchCustomEvent('cm-task-completed', {
+          ui_id: taskId,
+          kind: 'reinstall',
+          result,
+          status: taskStatus,
+          timestamp: '2026-11-20T00:00:00Z',
+          state: {
+            installed_packs: installed,
+            running_queue: [],
+            pending_queue: [],
+            history: {
+              [taskId]: {
+                ui_id: taskId,
+                client_id: 'test-client',
+                kind: 'reinstall',
+                result,
+                status: taskStatus,
+                timestamp: '2026-11-20T00:00:00Z'
+              }
+            }
+          }
+        })
+        await nextTick()
+
+        expect(store.isPackInstalling('comfyui-foo')).toBe(false)
+        expect(store.isPackInvalidInstallation('comfyui-foo')).toBe(
+          expectedInvalid
+        )
+        expect(store.isProcessingTasks).toBe(false)
+        expect(useToast().toasts).toEqual(expectedToasts)
+      }
+    )
+
+    it('clears a rejected reinstall request so the user can retry', async () => {
+      vi.mocked(mockManagerService.reinstallPack).mockImplementationOnce(
+        async () => {
+          mockManagerService.error.value =
+            'Request rejected. Check the terminal.'
+          return null
+        }
+      )
+      const store = useComfyManagerStore()
+      await triggerPacksChange(invalidInstall, store)
+
+      await store.reinstallPack(request)
+
+      expect(store.isPackInstalling('comfyui-foo')).toBe(false)
+      expect(store.isProcessingTasks).toBe(false)
+      expect(mockManagerService.startQueue).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          description: 'Request rejected. Check the terminal.'
+        })
+      ])
+    })
+  })
+
   const testCases: EnabledDisabledTestCase[] = [
     {
       desc: 'Two enabled versions',
@@ -1426,6 +1712,61 @@ describe('useComfyManagerStore', () => {
       // The normalized key should exist (last one wins with mapKeys)
       expect(store.installedPacks['test-pack']).toBeDefined()
       expect(store.installedPacks['test-pack'].ver).toBe('1.1.0')
+    })
+
+    describe('when a disabled valid install and a flagged folder share a key', () => {
+      const validInstall: ManagerPackInstalled = {
+        ver: '1.0.0',
+        cnr_id: 'comfyui-foo',
+        aux_id: null,
+        enabled: false
+      }
+      const flaggedFolder: ManagerPackInstalled = {
+        ver: 'unknown',
+        cnr_id: 'comfyui-foo',
+        aux_id: null,
+        enabled: false,
+        invalid_installation: true
+      }
+
+      it.for<{ name: string; installed: InstalledPacksResponse }>([
+        {
+          name: 'the valid install comes first',
+          installed: {
+            'comfyui-foo@1_0_0': validInstall,
+            'comfyui-foo': flaggedFolder
+          }
+        },
+        {
+          name: 'the flagged folder comes first',
+          installed: {
+            'comfyui-foo': flaggedFolder,
+            'comfyui-foo@1_0_0': validInstall
+          }
+        },
+        {
+          name: 'the flagged folder is enabled',
+          installed: {
+            'comfyui-foo@1_0_0': validInstall,
+            'comfyui-foo': { ...flaggedFolder, enabled: true }
+          }
+        }
+      ])(
+        'presents the disabled valid install when $name',
+        async ({ installed }) => {
+          vi.mocked(mockManagerService.listInstalledPacks).mockResolvedValue(
+            installed
+          )
+
+          const store = useComfyManagerStore()
+          await store.refreshInstalledList()
+
+          expect(store.isPackInvalidInstallation('comfyui-foo')).toBe(false)
+          expect(store.isPackInstalled('comfyui-foo')).toBe(true)
+          expect(store.isPackEnabled('comfyui-foo')).toBe(false)
+          expect(store.getInstalledPackVersion('comfyui-foo')).toBe('1.0.0')
+        }
+      )
     })
 
     it('preserves version information for disabled packs', async () => {

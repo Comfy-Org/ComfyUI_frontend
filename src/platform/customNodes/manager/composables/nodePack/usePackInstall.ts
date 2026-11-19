@@ -6,9 +6,29 @@ import type { components as ManagerComponents } from '@comfyorg/api-client/gener
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useNodeConflictDialog } from '@/platform/customNodes/manager/composables/dialogs/useNodeConflictDialog'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import type { NodePackId } from '@/platform/customNodes/manager/types/comfyManagerTypes'
 import type { ConflictDetail } from '@/platform/customNodes/manager/types/conflictDetectionTypes'
 
 type NodePack = components['schemas']['Node']
+
+/** The queue params that install the latest version of a pack. */
+export function createInstallParams(
+  pack: NodePack & { id: NodePackId }
+): ManagerComponents['schemas']['InstallPackParams'] {
+  const isUnclaimedPack = pack.publisher?.name === 'Unclaimed'
+  const versionToInstall = isUnclaimedPack
+    ? 'nightly'
+    : (pack.latest_version?.version ?? 'latest')
+
+  return {
+    id: pack.id,
+    repository: pack.repository ?? '',
+    channel: 'dev',
+    mode: 'cache',
+    selected_version: versionToInstall,
+    version: versionToInstall
+  }
+}
 
 export function usePackInstall(
   getNodePacks: () => NodePack[],
@@ -28,24 +48,12 @@ export function usePackInstall(
   })
 
   const createPayload = (installItem: NodePack) => {
-    if (!installItem.id) {
+    const { id } = installItem
+    if (!id) {
       console.error(t('manager.packInstall.nodeIdRequired'))
       return
     }
-
-    const isUnclaimedPack = installItem.publisher?.name === 'Unclaimed'
-    const versionToInstall = isUnclaimedPack
-      ? ('nightly' as ManagerComponents['schemas']['SelectedVersion'])
-      : (installItem.latest_version?.version ?? 'latest')
-
-    return {
-      id: installItem.id,
-      repository: installItem.repository ?? '',
-      channel: 'dev' as ManagerComponents['schemas']['ManagerChannel'],
-      mode: 'cache' as ManagerComponents['schemas']['ManagerDatabaseSource'],
-      selected_version: versionToInstall,
-      version: versionToInstall
-    }
+    return createInstallParams({ ...installItem, id })
   }
 
   const installPack = (item: NodePack) => {

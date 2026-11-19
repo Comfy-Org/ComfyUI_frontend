@@ -42,16 +42,16 @@ export function usePacksSelection(nodePacks: Ref<NodePack[]>) {
     return 'mixed'
   })
 
-  /**
-   * Nightly packs are installed packs with a non-semver version (git hash)
-   * that are also enabled
-   */
   const nightlyPacks = computed(() =>
     installedPacks.value.filter((pack) => {
       if (!pack.id) return false
       const version = managerStore.getInstalledPackVersion(pack.id)
       const isEnabled = managerStore.isPackEnabled(pack.id)
-      return isNightlyVersion(version) && isEnabled
+      return (
+        isNightlyVersion(version) &&
+        isEnabled &&
+        !managerStore.isPackInvalidInstallation(pack.id)
+      )
     })
   )
 

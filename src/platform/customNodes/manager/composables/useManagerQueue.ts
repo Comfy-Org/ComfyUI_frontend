@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 import { t } from '@/i18n'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useApp } from '@/scripts/appInstance'
-import { normalizePackKeys } from '@/platform/customNodes/manager/utils/packUtils'
+import { normalizeInstalledPacks } from '@/platform/customNodes/manager/utils/packUtils'
 import type { components } from '@comfyorg/api-client/generatedManagerTypes'
 
 type ManagerTaskHistory = Record<
@@ -100,7 +100,7 @@ export const useManagerQueue = (
     taskQueue.value.pending_queue = filterQueueByClientId(state.pending_queue)
     taskHistory.value = filterHistoryByClientId(state.history)
 
-    installedPacks.value = normalizePackKeys(state.installed_packs)
+    installedPacks.value = normalizeInstalledPacks(state.installed_packs)
     updateProcessingState()
   }
 
