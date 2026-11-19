@@ -118,7 +118,11 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
 
   const workspace = { id: undefined as string | undefined }
   const verifiedAuthorizations = new Set<string>()
-  let starts = 0
+  const starts = {
+    attempted: 0,
+    accepted: 0,
+    resumableRefused: undefined as Promise<boolean> | undefined
+  }
   const apiUpload = '/api/assets/uploads'
 
   await context.route('**/*', async (route) => {
@@ -147,13 +151,21 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
         }
         verifiedAuthorizations.add(auth)
       }
-      if (url.pathname === apiUpload && starts++ !== 0) {
-        await route.abort('blockedbyclient')
-        return
+      if (url.pathname === apiUpload) {
+        const legacyFallback =
+          starts.attempted === 1 &&
+          req.postDataJSON().resumable === false &&
+          (await starts.resumableRefused)
+        if (starts.attempted && !legacyFallback) {
+          console.log('Blocked an extra staging upload attempt')
+          await route.abort('blockedbyclient')
+          return
+        }
+        starts.attempted++
       }
     }
     const storage =
-      starts === 1 &&
+      starts.accepted === 1 &&
       url.protocol === 'https:' &&
       /(?:^|\.)storage\.googleapis\.com$/.test(url.hostname)
     if (allowed.includes(url.origin) || storage) await route.fallback()
@@ -199,8 +211,20 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
       }
       workspaceFeatures.push(response)
     }
-    if (url.origin === cloud && url.pathname === apiUpload)
+    if (url.origin === cloud && url.pathname === apiUpload) {
       console.log(`Cloud upload start responded HTTP ${response.status()}`)
+      if (response.ok()) starts.accepted++
+      if (response.status() === 403) {
+        starts.resumableRefused = response
+          .json()
+          .then((body) => {
+            const refused = body?.code === 'FEATURE_DISABLED'
+            if (refused) console.log('Staging refused resumable upload mode')
+            return refused
+          })
+          .catch(() => false)
+      }
+    }
   })
   page.on('requestfailed', (request) => {
     const url = new URL(request.url())
@@ -275,7 +299,7 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
   console.log('Staging confirmed the stored model')
   const ready = page.getByTestId('run-on-cloud-card')
   await expect(ready).toBeVisible()
-  expect(starts).toBe(1)
+  expect(starts.accepted).toBe(1)
   await ready.screenshot({
     path: info.outputPath('staging-upload-verified.png')
   })
