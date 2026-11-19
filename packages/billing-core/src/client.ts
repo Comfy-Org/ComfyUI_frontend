@@ -46,6 +46,13 @@ import {
 import type { BillingTelemetryEvent } from '@comfyorg/account-core/billing'
 import type { AxiosInstance, AxiosRequestConfig } from 'axios'
 
+function throwIfSignalAborted(signal: AbortSignal | undefined): void {
+  if (!signal?.aborted) return
+  throw signal.reason === undefined
+    ? new DOMException('This operation was aborted', 'AbortError')
+    : signal.reason
+}
+
 export type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
 type SubscribeBillingCycle = 'monthly' | 'yearly'
 export interface SubscribeOptions {
@@ -459,7 +466,7 @@ export function createBillingApi({
       signal?: AbortSignal
     ): Promise<CreateTopupCheckoutResponse> {
       const auth = await requestAuth()
-      signal?.throwIfAborted()
+      throwIfSignalAborted(signal)
       try {
         const response = await client.post<CreateTopupCheckoutResponse>(
           resolveUrl('/billing/topup/checkout'),
