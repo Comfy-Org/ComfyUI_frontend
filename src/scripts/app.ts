@@ -89,7 +89,7 @@ import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput
 } from '@comfyorg/api-client/executionTypes'
-import type { NodeError } from '@comfyorg/api-client/types'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import {
   isComboInputSpecV1,
   isComboInputSpecV2
@@ -102,6 +102,7 @@ import { useAccountPreconditionDialog } from '@/platform/billing/subscription/co
 import {
   promptErrorHasLockedCredits,
   promptRefusalPrecondition,
+  withRefusalReason,
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -231,11 +232,17 @@ import {
 
 export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 
-function servedRefusalPrecondition(error: unknown) {
+function servedRefusal(error: unknown): unknown {
   if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
   return error instanceof PromptExecutionError
-    ? promptRefusalPrecondition(error.response.error)
+    ? error.response.error
     : undefined
+}
+
+function withCloudRefusalReason(promptError: PromptError, error: unknown) {
+  return isCloud
+    ? withRefusalReason(promptError, servedRefusal(error))
+    : promptError
 }
 
 function isMeshModelFile(file: File): boolean {
@@ -1204,7 +1211,7 @@ export class ComfyApp implements IComfyApp {
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     return this.enqueueGraphLoad(async () =>
-      options.isCurrent?.() === false
+      options.isCurrent?.() === false || options.isReady?.() === false
         ? false
         : this.loadGraphDataNow(
             graphData,
@@ -1234,12 +1241,31 @@ export class ComfyApp implements IComfyApp {
       skipAssetScans = false,
       silentAssetErrors = false,
       workflowNavigationId,
-      isCurrent
+      isCurrent,
+      isReady,
+      resolveGraphData
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    const skipUnreadyLoad = async () => {
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Workflow load was replaced', 'AbortError')
+      )
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
+      return false
+    }
+    if (isReady?.() === false) return skipUnreadyLoad()
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
+      if (resolveGraphData) {
+        const resolved = resolveGraphData()
+        if (!resolved) return await skipUnreadyLoad()
+        graphData = resolved
+      }
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
       replaceCanvas()
       ChangeTracker.isLoadingGraph = true
@@ -2001,7 +2027,7 @@ export class ComfyApp implements IComfyApp {
               ? (resolveAccountPrecondition({
                   exceptionType: promptError.type,
                   exceptionMessage: promptError.message
-                }) ?? servedRefusalPrecondition(error))
+                }) ?? promptRefusalPrecondition(servedRefusal(error)))
               : undefined
             if (promptPrecondition) {
               const opened = await useAccountPreconditionDialog().open(
@@ -2074,7 +2100,7 @@ export class ComfyApp implements IComfyApp {
                 promptError
               ) {
                 executionErrorStore.recordPromptError(
-                  promptError,
+                  withCloudRefusalReason(promptError, error),
                   queuedRunErrorKey
                 )
               }

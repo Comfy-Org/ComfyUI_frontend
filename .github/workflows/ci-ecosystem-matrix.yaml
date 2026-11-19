@@ -701,7 +701,7 @@ jobs:
           {
             echo '| Stage | Result | What a failure here means |'
             echo '| --- | --- | --- |'
-            echo "| pin-status | $PIN_STATUS_RESULT | Informational. It never fails the build; it warns when the corpus snapshot is over 30 days old. |"
+            echo "| pin-status | $PIN_STATUS_RESULT | Informational. It never fails the build; it warns when the corpus snapshot is over 35 days old. |"
             echo "| corpus | $CORPUS_RESULT | Infrastructure: the pack mirror could not be fetched, validated or cached. Not your diff. |"
             echo "| shards | $SHARDS_RESULT | **Harness integrity, not pack breakage.** A shard only checks that every built spec wrote its row; vitest's own exit code is deliberately ignored because pack code leaks unhandled rejections. |"
             echo "| verdicts | $VERDICTS_RESULT | The population verdict per renderer. **This is the stage that judges packs.** Exit 1 is FAIL; exit 2 is *withheld* — rows were missing, so nothing was measured, which is not the same as your change breaking packs. |"

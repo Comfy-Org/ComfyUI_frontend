@@ -8,19 +8,21 @@
       "
       :placeholder="$t('g.searchPlaceholder', { subject: $t('g.extensions') })"
     />
-    <Message v-if="hasChanges" severity="info" class="max-h-96 overflow-y-auto">
+    <Message
+      v-if="hasPendingExtensionChanges"
+      severity="info"
+      class="max-h-96 overflow-y-auto"
+    >
       <ul>
         <li v-for="ext in changedExtensions" :key="ext.name">
           <span>
-            {{ extensionStore.isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
+            {{ isExtensionEnabled(ext.name) ? '[-]' : '[+]' }}
           </span>
           {{ ext.name }}
         </li>
         <li v-for="path in changedExtensionPaths" :key="path">
           <span>
-            {{
-              extensionStore.isExtensionPathEnabledAtBoot(path) ? '[-]' : '[+]'
-            }}
+            {{ isExtensionPathEnabledAtBoot(path) ? '[-]' : '[+]' }}
           </span>
           {{ extensionNameFromPath(path) }}
         </li>
@@ -28,7 +30,7 @@
       <div class="flex justify-end">
         <Button
           variant="destructive"
-          :disabled="extensionStore.isSavingExtensionPaths"
+          :disabled="isSavingExtensionPaths"
           @click="applyChanges"
         >
           {{ $t('g.reloadToApplyChanges') }}
@@ -47,9 +49,9 @@
       </ToggleGroup>
     </div>
     <ExtensionPathTable
-      :paths="extensionStore.extensionPaths"
+      :paths="extensionPaths"
       :enabled-by-path
-      :disabled="extensionStore.isSavingExtensionPaths"
+      :disabled="isSavingExtensionPaths"
       @set-enabled="handleExtensionPathEnabled"
     />
     <ExtensionListTable
@@ -61,14 +63,15 @@
       :actions
       @toggle-all="toggleAllVisible"
       @set-selected="setExtensionSelected"
-      @set-enabled="setExtensionEnabled"
+      @set-enabled="(name, enabled) => handleExtensionsEnabled([name], enabled)"
     />
   </div>
 </template>
 
 <script setup lang="ts">
 import type { CheckboxCheckedState } from 'reka-ui'
-import { computed, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -83,9 +86,9 @@ import type { TableSortDirection } from '@comfyorg/design-system/lib/table/table
 import ToggleGroup from '@comfyorg/design-system/toggle-group/ToggleGroup'
 import ToggleGroupItem from '@comfyorg/design-system/toggle-group/ToggleGroupItem'
 import { useToast } from '@/components/ui/toast/toastStore'
+import type { SettingWriteOutcome } from '@comfyorg/settings-core/settingStore'
 import ExtensionListTable from '@/platform/extensions/components/ExtensionListTable.vue'
 import ExtensionPathTable from '@/platform/extensions/components/ExtensionPathTable.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { extensionNameFromPath } from '@/platform/settings/utils/extensionPath'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 
@@ -105,26 +108,39 @@ const searchQuery = ref('')
 const nameSortDirection = ref<TableSortDirection | null>(null)
 
 const extensionStore = useExtensionStore()
-const settingStore = useSettingStore()
+const {
+  agentExtensions,
+  changedExtensionPaths,
+  changedExtensions,
+  enabledByName,
+  enabledByPath,
+  extensionPaths,
+  extensions,
+  hasEditableAgentExtensions,
+  hasPendingExtensionChanges,
+  hasThirdPartyExtensions,
+  isSavingExtensionPaths,
+  thirdPartyExtensions
+} = storeToRefs(extensionStore)
+const {
+  isCoreExtension,
+  isExtensionEnabled,
+  isExtensionPathEnabledAtBoot,
+  setExtensionPathEnabled,
+  setExtensionsEnabled
+} = extensionStore
 const toast = useToast()
 
-const enabledByName = ref<Record<string, boolean>>({})
-
 const filteredExtensions = computed(() => {
-  const extensions = extensionStore.extensions
   switch (filterType.value) {
     case 'core':
-      return extensions.filter((ext) =>
-        extensionStore.isCoreExtension(ext.name)
-      )
+      return extensions.value.filter((ext) => isCoreExtension(ext.name))
     case 'custom':
-      return extensions.filter(
-        (ext) => !extensionStore.isCoreExtension(ext.name)
-      )
+      return thirdPartyExtensions.value
     case 'agentCreated':
-      return extensionStore.agentExtensions
+      return agentExtensions.value
     default:
-      return extensions
+      return extensions.value
   }
 })
 
@@ -166,118 +182,37 @@ function toggleAllVisible(selected: CheckboxCheckedState) {
   )
 }
 
-watch(
-  () => extensionStore.extensions,
-  (extensions) => {
-    extensions.forEach((ext) => {
-      if (ext.name in enabledByName.value) return
-      enabledByName.value[ext.name] = extensionStore.isExtensionEnabled(
-        ext.name
-      )
-    })
-  },
-  { immediate: true }
-)
-
-const enabledByPath = computed(() => {
-  const disabledPaths = new Set(
-    extensionStore.getCurrentDisabledExtensionPaths()
-  )
-  return Object.fromEntries(
-    extensionStore.extensionPaths.map((path) => [
-      path,
-      !disabledPaths.has(path)
-    ])
-  )
-})
-
-const changedExtensions = computed(() => {
-  return extensionStore.extensions.filter(
-    (ext) =>
-      enabledByName.value[ext.name] !==
-      extensionStore.isExtensionEnabled(ext.name)
-  )
-})
-
-const changedExtensionPaths = computed(() => {
-  return extensionStore.extensionPaths.filter(
-    (path) =>
-      enabledByPath.value[path] !==
-      extensionStore.isExtensionPathEnabledAtBoot(path)
-  )
-})
-
-const hasChanges = computed(() => {
-  return (
-    changedExtensions.value.length > 0 || changedExtensionPaths.value.length > 0
-  )
-})
-
-const updateExtensionStatus = async () => {
-  const editingDisabledExtensionNames = Object.entries(enabledByName.value)
-    .filter(([_, enabled]) => !enabled)
-    .map(([name]) => name)
-
-  await settingStore.set('Comfy.Extension.Disabled', [
-    ...extensionStore.inactiveDisabledExtensionNames,
-    ...editingDisabledExtensionNames
-  ])
-}
-
-async function setExtensionEnabled(name: string, enabled: boolean) {
-  enabledByName.value[name] = enabled
-  await updateExtensionStatus()
-}
-
 async function handleExtensionPathEnabled(path: string, enabled: boolean) {
-  const result = await extensionStore.setExtensionPathEnabled(path, enabled)
-  if (result === 'refused') {
-    toast.warning(t('g.warning'), {
-      description: t('g.extensionPathSaveRefused'),
-      duration: 5000
-    })
-  } else if (result === 'unconfirmed' || result === 'indeterminate') {
-    toast.warning(t('g.warning'), {
-      description: t('g.extensionPathSaveUnconfirmed'),
-      duration: 5000
-    })
+  warnIfUnsaved(await setExtensionPathEnabled(path, enabled))
+}
+
+async function handleExtensionsEnabled(
+  names: readonly string[],
+  enabled: boolean
+) {
+  warnIfUnsaved(await setExtensionsEnabled(names, enabled))
+}
+
+function warnIfUnsaved(status: SettingWriteOutcome['status'] | undefined) {
+  switch (status) {
+    case 'refused':
+      toast.warning(t('g.warning'), {
+        description: t('g.extensionPathSaveRefused'),
+        duration: 5000
+      })
+      break
+    case 'unconfirmed':
+    case 'indeterminate':
+      toast.warning(t('g.warning'), {
+        description: t('g.extensionPathSaveUnconfirmed'),
+        duration: 5000
+      })
+      break
   }
 }
 
-const enableAllExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
-
-    enabledByName.value[ext.name] = true
-  })
-  await updateExtensionStatus()
-}
-
-const disableAllExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
-
-    enabledByName.value[ext.name] = false
-  })
-  await updateExtensionStatus()
-}
-
-const disableThirdPartyExtensions = async () => {
-  extensionStore.extensions.forEach((ext) => {
-    if (extensionStore.isCoreExtension(ext.name)) return
-
-    enabledByName.value[ext.name] = false
-  })
-  await updateExtensionStatus()
-}
-
-async function disableAgentExtensions() {
-  extensionStore.agentExtensions.forEach((ext) => {
-    if (extensionStore.isExtensionReadOnly(ext.name)) return
-
-    enabledByName.value[ext.name] = false
-  })
-  await updateExtensionStatus()
+function namesOf(extensionList: readonly { name: string }[]) {
+  return extensionList.map((ext) => ext.name)
 }
 
 const applyChanges = () => {
@@ -288,26 +223,12 @@ const actions = computed<MenuItem[]>(() => [
   {
     label: t('g.enableSelected'),
     icon: 'icon-[lucide--check]',
-    command: async () => {
-      selectedNames.value.forEach((name) => {
-        if (!extensionStore.isExtensionReadOnly(name)) {
-          enabledByName.value[name] = true
-        }
-      })
-      await updateExtensionStatus()
-    }
+    command: () => handleExtensionsEnabled([...selectedNames.value], true)
   },
   {
     label: t('g.disableSelected'),
     icon: 'icon-[lucide--x]',
-    command: async () => {
-      selectedNames.value.forEach((name) => {
-        if (!extensionStore.isExtensionReadOnly(name)) {
-          enabledByName.value[name] = false
-        }
-      })
-      await updateExtensionStatus()
-    }
+    command: () => handleExtensionsEnabled([...selectedNames.value], false)
   },
   {
     separator: true
@@ -315,26 +236,26 @@ const actions = computed<MenuItem[]>(() => [
   {
     label: t('g.enableAll'),
     icon: 'icon-[lucide--check]',
-    command: enableAllExtensions
+    command: () => handleExtensionsEnabled(namesOf(extensions.value), true)
   },
   {
     label: t('g.disableAll'),
     icon: 'icon-[lucide--x]',
-    command: disableAllExtensions
+    command: () => handleExtensionsEnabled(namesOf(extensions.value), false)
   },
   {
     label: t('g.disableThirdParty'),
     icon: 'icon-[lucide--x]',
-    command: disableThirdPartyExtensions,
-    disabled: !extensionStore.hasThirdPartyExtensions
+    command: () =>
+      handleExtensionsEnabled(namesOf(thirdPartyExtensions.value), false),
+    disabled: !hasThirdPartyExtensions.value
   },
   {
     label: t('g.disableAgentCreated'),
     icon: 'icon-[lucide--x]',
-    command: disableAgentExtensions,
-    disabled: !extensionStore.agentExtensions.some(
-      (extension) => !extensionStore.isExtensionReadOnly(extension.name)
-    )
+    command: () =>
+      handleExtensionsEnabled(namesOf(agentExtensions.value), false),
+    disabled: !hasEditableAgentExtensions.value
   }
 ])
 </script>

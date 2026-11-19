@@ -1065,6 +1065,41 @@ describe('cloud API requests on the shared web session', () => {
     expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(true)
   })
 
+  it('gives an extension sending its own requests the session headers fetchApi sends', async () => {
+    const ingest = await bootOnSession()
+    const authStore = await api.getAuthStore()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    await postPrompt()
+    const {
+      'comfy-user': _,
+      'content-type': __,
+      ...sent
+    } = ingest.requests.at(-1)!.headers
+    const lowercased = (headers: Record<string, string> | null | undefined) =>
+      Object.fromEntries(
+        Object.entries(headers ?? {}).map(([name, value]) => [
+          name.toLowerCase(),
+          value
+        ])
+      )
+
+    expect(sent).toEqual({
+      'x-comfy-client': COMFY_CLIENT,
+      'x-comfy-workspace-id': 'ws-team',
+      'x-csrf-token': 'csrf-1'
+    })
+    expect(lowercased(await authStore?.getAuthHeader())).toEqual(sent)
+    expect(
+      lowercased(await api.getRequestAuthHeaders({ method: 'POST' }))
+    ).toEqual(sent)
+    expect(
+      lowercased(await api.getRequestAuthHeaders({ method: 'GET' }))
+    ).toEqual({
+      'x-comfy-client': COMFY_CLIENT,
+      'x-comfy-workspace-id': 'ws-team'
+    })
+  })
+
   it('refuses a switch into a workspace the session cannot enter', async () => {
     await bootOnSession()
     const workspaceAuth = useWorkspaceAuthStore()
@@ -1330,7 +1365,8 @@ describe('live updates and media on the shared web session', () => {
     await refuseSocketFor(60_000)
 
     FakeSocket.created.at(-1)?.dispatchEvent(new Event('open'))
-    await refuseSocketFor(300)
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0.5)
+    await refuseSocketFor(750)
     await refuseSocketFor(1_000)
   })
 
@@ -1645,7 +1681,7 @@ describe('live updates and media on the shared web session', () => {
     assert.instanceOf(closed, FakeSocket)
 
     closed.closeFromServer()
-    await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(5_000)
 
     await vi.waitFor(() => expect(api.socket).not.toBe(closed))
     expect(api.socket).toEqual(

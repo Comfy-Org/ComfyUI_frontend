@@ -578,40 +578,54 @@ describe('usePainter', () => {
       expect(result).toBe('painter/existing.png [temp]')
     })
 
-    it('uploads the current canvas when no cached modelValue is present, even if nothing has been painted yet', async () => {
-      makePaintNode([{ name: 'mask', type: 'string', value: '' }])
+    it.for([
+      {
+        server: 'a server that keeps the painter subfolder',
+        subfolder: 'painter',
+        expected: 'painter/uploaded.png'
+      },
+      {
+        server: 'a server that flattens subfolders',
+        subfolder: '',
+        expected: 'uploaded.png'
+      }
+    ])(
+      'uploads the current canvas to the painter subfolder on $server, even if nothing has been painted yet',
+      async ({ subfolder, expected }) => {
+        makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
-      vi.mocked(api.fetchApi).mockResolvedValueOnce({
-        status: 200,
-        json: async () => ({ name: 'uploaded.png' })
-      } as Response)
+        vi.mocked(api.fetchApi).mockResolvedValueOnce({
+          status: 200,
+          json: async () => ({ name: 'uploaded.png', subfolder, type: 'input' })
+        } as Response)
 
-      const fakeCanvas = fromPartial<HTMLCanvasElement>({
-        width: 4,
-        height: 4,
-        toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
-      })
+        const fakeCanvas = fromPartial<HTMLCanvasElement>({
+          width: 4,
+          height: 4,
+          toBlob: (cb: BlobCallback) => cb(new Blob(['x']))
+        })
 
-      const { canvasEl } = mountPainter(toNodeId('test-node'), '')
-      canvasEl.value = fakeCanvas
-      await nextTick()
+        const { canvasEl } = mountPainter(toNodeId('test-node'), '')
+        canvasEl.value = fakeCanvas
+        await nextTick()
 
-      const result = await widgetOf('mask').serializeValue!(
-        executablePaintNode(),
-        0
-      )
-      expect(api.fetchApi).toHaveBeenCalledWith(
-        '/upload/image',
-        expect.objectContaining({ method: 'POST' })
-      )
-      expect(result).toBe('uploaded.png [input]')
+        const result = await widgetOf('mask').serializeValue!(
+          executablePaintNode(),
+          0
+        )
+        expect(api.fetchApi).toHaveBeenCalledWith(
+          '/upload/image',
+          expect.objectContaining({ method: 'POST' })
+        )
+        expect(result).toBe(expected)
 
-      const [, init] = vi.mocked(api.fetchApi).mock.calls[0]
-      const body = init?.body as FormData
-      expect(body).toBeInstanceOf(FormData)
-      expect(body.get('type')).toBe('input')
-      expect(body.get('subfolder')).toBeNull()
-    })
+        const [, init] = vi.mocked(api.fetchApi).mock.calls[0]
+        const body = init?.body as FormData
+        expect(body).toBeInstanceOf(FormData)
+        expect(body.get('type')).toBe('input')
+        expect(body.get('subfolder')).toBe('painter')
+      }
+    )
 
     it('throws when the upload response is missing a name', async () => {
       makePaintNode([{ name: 'mask', type: 'string', value: '' }])
