@@ -16,6 +16,6 @@ const { t } = useI18n()
     data-testid="selection-toolbox-ask-agent"
     @click="emit('click')"
   >
-    <i aria-hidden="true" class="icon-[lucide--sparkle]" />
+    <i aria-hidden="true" class="icon-[lucide--astroid]" />
   </Button>
 </template>

@@ -92,7 +92,7 @@ function onKeydown(event: KeyboardEvent): void {
           class="w-full justify-start font-normal"
           @click="send(t(key))"
         >
-          <i aria-hidden="true" class="icon-[lucide--sparkle] size-3" />
+          <i aria-hidden="true" class="icon-[lucide--astroid] size-3" />
           {{ t(key) }}
         </Button>
       </li>

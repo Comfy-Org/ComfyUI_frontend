@@ -44,7 +44,7 @@ const DOT: Partial<Record<AgentCanvasPinStatus, string>> = {
         aria-hidden="true"
         class="icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin"
       />
-      <i v-else aria-hidden="true" class="icon-[lucide--sparkle]" />
+      <i v-else aria-hidden="true" class="icon-[lucide--astroid]" />
       <span
         v-if="DOT[status]"
         aria-hidden="true"
