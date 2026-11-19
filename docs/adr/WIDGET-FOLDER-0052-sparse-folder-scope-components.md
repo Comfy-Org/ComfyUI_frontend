@@ -39,3 +39,12 @@ Ordinary widgets allocate no folder component. Workflow metadata remains readabl
 by this feature and ignorable by older renderers. Folder scope is a presentation
 constraint, not a mutation of the execution options or a control-after-generate
 filter.
+
+Other option scopes, such as tag inclusion or exclusion, belong in their own
+sparse component stores with their own workflow metadata keys rather than in a
+union with the folder lock. Scopes intersect in the single scoped option list
+that feeds browsing, search, and stepping, so users can combine them. Separate
+keys also survive a save by renderers that do not recognise them, while a widened
+folder-lock format would fail its schema there and be dropped. Predicates match
+server-provided data literally and do not derive categories from it, per
+[ADR-API-SERVER-FACTS-0042](API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md).
