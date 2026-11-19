@@ -310,6 +310,21 @@ describe('useDeploymentPickStore', () => {
     expect(store.changeSinceBoot).toBe('deployment')
   })
 
+  it('numbers the listing on screen, and a failed load keeps it', async () => {
+    const store = useDeploymentPickStore()
+    mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
+    await store.load()
+    expect(store.shownListing).toBe(1)
+
+    mockWorkspaceApi.listDeployments.mockRejectedValue(
+      new WorkspaceApiError('Service unavailable', 503)
+    )
+    await store.load()
+
+    expect(store.listingsAsked()).toBe(2)
+    expect(store.shownListing).toBe(1)
+  })
+
   it('loads the listing and knows which deployment is picked', async () => {
     mockWorkspaceApi.listDeployments.mockResolvedValue(listing)
     const store = useDeploymentPickStore()
