@@ -63,12 +63,13 @@ function isRetryDisabled(entry: ConversationEntry): boolean {
   if (retryBlocked) return true
   if (entry.role !== 'user' || entry.pending?.status !== 'failed') return false
   const pending = conversation.getPendingSend(entry.pending.clientMessageId)
-  if (!pending) return false
-  return (
-    conversation.hasSendingForOrigin(pending.origin) ||
-    conversation.hasLiveTurnForOrigin(pending.origin)
-  )
+  return pending ? conversation.isOriginBusy(pending.origin) : false
 }
+const hasSendingMessage = computed(() =>
+  entries.some(
+    (entry) => entry.role === 'user' && entry.pending?.status === 'sending'
+  )
+)
 const hasSkills = computed(() =>
   entries.some((entry) => entry.role === 'user' && entry.skillReference)
 )
@@ -293,6 +294,14 @@ watch(
           </template>
         </div>
       </div>
+    </div>
+
+    <div
+      role="status"
+      :aria-label="hasSendingMessage ? t('agent.sendingMessage') : undefined"
+      class="sr-only"
+    >
+      {{ hasSendingMessage ? t('agent.sendingMessage') : '' }}
     </div>
 
     <Button

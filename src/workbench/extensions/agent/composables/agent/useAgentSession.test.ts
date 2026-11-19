@@ -11203,7 +11203,68 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
     })
   })
 
-  it('marks postMessage TimeoutError as non-retryable in both UI failure and telemetry (Item 2)', async () => {
+  it('routes frames for an unrelated hydrating thread to hydration instead of pendingSendEvents during an in-flight blank send', async () => {
+    let resolvePost!: (ack: AgentTurnAccepted) => void
+    let resolveHistory!: (history: AgentMessages) => void
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const getMessages = vi.fn<AgentRestClient['getMessages']>(
+      () =>
+        new Promise<AgentMessages>((resolve) => {
+          resolveHistory = resolve
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: source
+    })
+    session.start()
+
+    const sending = session.sendMessage('Blank prompt')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    const loading = session.loadThread('th-y')
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledWith('th-y'))
+
+    emit({
+      type: 'agent_message_delta',
+      data: { thread_id: 'th-y', message_id: 'msg-y', delta: 'A' }
+    })
+
+    resolveHistory([
+      historyRow(1, 'user', 'msg-y', 'Prior prompt', 'r-y-1', 'th-y'),
+      {
+        ...historyRow(2, 'assistant', 'msg-y', '', 'msg-y', 'th-y'),
+        content: {},
+        status: 'streaming'
+      }
+    ])
+    await loading
+
+    emit({
+      type: 'agent_message_delta',
+      data: { thread_id: 'th-y', message_id: 'msg-y', delta: 'B' }
+    })
+    emit({
+      type: 'agent_message_done',
+      data: { thread_id: 'th-y', message_id: 'msg-y', usage: null }
+    })
+
+    resolvePost({ thread_id: 'th-blank', message_id: 'msg-blank' })
+    expect(await sending).toBe(true)
+
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'text', text: 'AB', state: 'done' }]
+    })
+  })
+
+  it('marks postMessage TimeoutError as non-retryable in both UI failure and telemetry', async () => {
     const unreadableTimeout = new AgentResponseUnreadableError(
       new DOMException('Agent post message timeout', 'TimeoutError')
     )
@@ -11283,7 +11344,7 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
     }
   )
 
-  it('captures canvasOutcomeAtStart after workflow preparation and preserves evidence across stop() (Item 10)', async () => {
+  it('captures canvasOutcomeAtStart after workflow preparation and preserves evidence across stop()', async () => {
     let outcomeCount = 1
     let resolvePrepare!: () => void
     let resolvePost!: (ack: AgentTurnAccepted) => void
@@ -11322,19 +11383,18 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
     )
     await vi.waitFor(() => expect(resolvePrepare).toBeTypeOf('function'))
 
-    // Simulate a canvas sync completion while workflow preparation is still waiting.
     outcomeCount = 5
     resolvePrepare()
     await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
 
-    const clientMessageId = (
-      conversation.entries[0] as { pending?: { clientMessageId: string } }
-    ).pending!.clientMessageId
+    const entry = conversation.entries[0]
+    assert(entry.role === 'user')
+    assert(entry.pending)
+    const { clientMessageId } = entry.pending
     expect(
       conversation.getPendingSend(clientMessageId)?.canvasOutcomeAtStart
     ).toBe(5)
 
-    // Canvas catch-up arriving before acceptance confirms the tool call once accepted.
     outcomeCount = 6
     conversation.notifyCanvasCaughtUp({
       workflowId: 'wf-prep',
@@ -11376,7 +11436,6 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
       ]
     })
 
-    // Stopping the session must not wipe per-send canvas evidence for a surviving pending send.
     conversation.startPendingSend({
       clientMessageId: 'cm-surviving-stop',
       text: 'Still sending across stop',

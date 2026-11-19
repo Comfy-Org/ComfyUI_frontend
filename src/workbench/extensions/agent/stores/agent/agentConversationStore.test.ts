@@ -4300,7 +4300,7 @@ describe('useAgentConversationStore', () => {
       })
     })
 
-    it('drops cross-workspace pending sends across blank and thread origins while preserving an excluded gate hold (Item 7)', () => {
+    it('drops failed cross-workspace pending sends across blank and thread origins while preserving sending entries and excluded entries', () => {
       const store = useAgentConversationStore()
       const blankId = store.activeBlankChatId
       expect(blankId).toBeTruthy()
@@ -4312,6 +4312,10 @@ describe('useAgentConversationStore', () => {
         workflowReferences: [],
         workspaceId: 'ws-a'
       })
+      store.failPendingSend('cm-ws-a-blank', {
+        kind: 'network',
+        message: 'Failed'
+      })
       store.setThreadId('th-ws-a')
       store.startPendingSend({
         clientMessageId: 'cm-ws-a-thread',
@@ -4321,6 +4325,22 @@ describe('useAgentConversationStore', () => {
         workflowReferences: [],
         workspaceId: 'ws-a'
       })
+      store.failPendingSend('cm-ws-a-thread', {
+        kind: 'network',
+        message: 'Failed'
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-a-in-flight',
+        text: 'Still sending in A',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.markPendingSendStopped(
+        { kind: 'thread', threadId: 'th-ws-a' },
+        'button'
+      )
       store.startPendingSend({
         clientMessageId: 'cm-ws-b-held',
         text: 'Held in A during switch',
@@ -4329,6 +4349,10 @@ describe('useAgentConversationStore', () => {
         workflowReferences: [],
         workspaceId: 'ws-a'
       })
+      store.failPendingSend('cm-ws-b-held', {
+        kind: 'network',
+        message: 'Failed'
+      })
       store.startPendingSend({
         clientMessageId: 'cm-ws-b-stay',
         text: 'Already in B',
@@ -4336,6 +4360,10 @@ describe('useAgentConversationStore', () => {
         tags: [],
         workflowReferences: [],
         workspaceId: 'ws-b'
+      })
+      store.failPendingSend('cm-ws-b-stay', {
+        kind: 'network',
+        message: 'Failed'
       })
 
       const dropped = store.discardPendingSendsOutsideWorkspace(
@@ -4347,11 +4375,15 @@ describe('useAgentConversationStore', () => {
       expect(store.hasPendingSendForBlankChat(blankId, 'ws-a')).toBe(false)
       expect(store.getPendingSend('cm-ws-a-blank')).toBeUndefined()
       expect(store.getPendingSend('cm-ws-a-thread')).toBeUndefined()
+      expect(store.getPendingSend('cm-ws-a-in-flight')).toMatchObject({
+        status: 'sending',
+        stopRequested: { method: 'button' }
+      })
       expect(store.getPendingSend('cm-ws-b-held')).toBeDefined()
       expect(store.getPendingSend('cm-ws-b-stay')).toBeDefined()
     })
 
-    it('captures canvas baseline right before postTurn and keeps per-send canvas evidence across reset (Item 10)', () => {
+    it('captures canvas baseline right before postTurn and keeps per-send canvas evidence across reset', () => {
       const store = useAgentConversationStore()
       let outcomeCount = 1
       store.setCanvasSyncGate(
@@ -4369,7 +4401,6 @@ describe('useAgentConversationStore', () => {
         store.getPendingSend('cm-canvas')?.canvasOutcomeAtStart
       ).toBeUndefined()
 
-      // Before postTurn, canvas catch-up notifications must not attach to a pre-post send.
       store.notifyCanvasCaughtUp({
         workflowId: 'wf-before',
         opIds: ['op-before'],

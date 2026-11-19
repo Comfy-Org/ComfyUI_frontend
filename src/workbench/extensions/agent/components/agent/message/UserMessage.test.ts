@@ -422,41 +422,32 @@ describe('UserMessage', () => {
       pending: { clientMessageId: 'cm-1', status: 'sending' }
     })
 
-    expect(
-      screen.getByRole('status', { name: t('agent.sendingMessage') })
-    ).toBeVisible()
-    expect(screen.getByTestId('pending-send-spinner')).toHaveAttribute(
-      'aria-hidden',
-      'true'
-    )
+    const spinner = screen.getByTestId('pending-send-spinner')
+    expect(spinner).toBeVisible()
+    expect(spinner).toHaveAttribute('aria-hidden', 'true')
+    expect(screen.queryByRole('status')).toBeNull()
     expect(screen.queryByTestId('pending-send-error')).toBeNull()
   })
 
-  it('keeps a persistent role="status" container mounted while toggling sr-only text on state change', async () => {
+  it('clears the sending spinner once the message is accepted without adding a per-message status region', async () => {
     const view = renderMessage({
       text: 'sending prompt',
       pending: { clientMessageId: 'cm-live', status: 'sending' }
     })
 
-    const status = screen.getByRole('status', {
-      name: t('agent.sendingMessage')
-    })
-    expect(status).toHaveTextContent(t('agent.sendingMessage'))
-    expect(status).toHaveClass('sr-only')
     expect(screen.getByTestId('pending-send-spinner')).toHaveAttribute(
       'aria-hidden',
       'true'
     )
+    expect(screen.queryByRole('status')).toBeNull()
 
     await view.rerender({
       text: 'sending prompt',
       pending: undefined
     })
 
-    expect(status).toBeInTheDocument()
-    expect(status).toHaveTextContent('')
-    expect(status).not.toHaveAttribute('aria-label')
     expect(screen.queryByTestId('pending-send-spinner')).toBeNull()
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('shows a sending spinner even on an attachment-only pending send (O0-01)', () => {
@@ -466,9 +457,7 @@ describe('UserMessage', () => {
       pending: { clientMessageId: 'cm-1', status: 'sending' }
     })
 
-    expect(
-      screen.getByRole('status', { name: t('agent.sendingMessage') })
-    ).toBeVisible()
+    expect(screen.getByTestId('pending-send-spinner')).toBeVisible()
   })
 
   it('shows the failure explanation and no spinner when a pending send fails (O0-04)', async () => {
@@ -493,9 +482,7 @@ describe('UserMessage', () => {
       }
     })
 
-    expect(
-      screen.queryByRole('status', { name: t('agent.sendingMessage') })
-    ).toBeNull()
+    expect(screen.queryByTestId('pending-send-spinner')).toBeNull()
     const status = screen.getByTestId('pending-send-error')
     expect(status).toHaveAttribute('role', 'alert')
     expect(status).toHaveTextContent(

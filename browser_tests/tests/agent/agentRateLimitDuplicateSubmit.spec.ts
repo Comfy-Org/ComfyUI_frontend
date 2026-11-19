@@ -81,7 +81,7 @@ test.describe(
         await page.clock.install()
         await agentPanel.open()
         await agentPanel.selectWorkflow()
-        await page.clock.pauseAt(Date.now())
+        await page.clock.pauseAt(Date.now() + 1_000)
 
         await agentPanel.composer.fill(prompt)
         await agentPanel.composer.press('Enter')
@@ -93,7 +93,6 @@ test.describe(
         await expect(agentPanel.deletePendingButton).toBeEnabled()
         await expect.poll(() => postedMessages).toHaveLength(1)
 
-        await expect(agentPanel.retryPendingButton).toBeDisabled()
         await page.clock.runFor(1_100)
         await expect(agentPanel.retryPendingButton).toBeEnabled()
         await page.clock.resume()

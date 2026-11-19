@@ -1042,6 +1042,10 @@ export const useAgentConversationStore = defineStore(
       return liveTurns().some((turn) => turn.threadId === origin.threadId)
     }
 
+    function isOriginBusy(origin: PendingSendOrigin): boolean {
+      return hasSendingForOrigin(origin) || hasLiveTurnForOrigin(origin)
+    }
+
     function startPendingSend(input: {
       clientMessageId: string
       origin?: PendingSendOrigin
@@ -1086,12 +1090,6 @@ export const useAgentConversationStore = defineStore(
         canvasOutcomeAtStart: canvasSyncOutcomeCount(),
         canvasEvidence: []
       })
-    }
-
-    function hasAnySendingPendingSend(): boolean {
-      for (const send of pendingSends.values())
-        if (send.status === 'sending') return true
-      return false
     }
 
     function failPendingSend(
@@ -1195,6 +1193,7 @@ export const useAgentConversationStore = defineStore(
       const removed: string[] = []
       for (const [id, send] of pendingSends) {
         if (
+          send.status !== 'failed' ||
           id === excludeClientMessageId ||
           (send.workspaceId ?? null) === activeWorkspaceId
         )
@@ -2340,8 +2339,7 @@ export const useAgentConversationStore = defineStore(
       isOriginOnScreen,
       hasSendingPendingSend,
       hasSendingForOrigin,
-      hasAnySendingPendingSend,
-      hasLiveTurnForOrigin,
+      isOriginBusy,
       startPendingSend,
       capturePendingSendCanvasBaseline,
       failPendingSend,

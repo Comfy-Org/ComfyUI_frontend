@@ -17552,7 +17552,7 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     expect(bodies).toHaveLength(0)
   })
 
-  it('withdraws a node-tagged held send when selectedTarget changes during consent (Item 17)', async () => {
+  it('withdraws a node-tagged held send when selectedTarget changes during consent', async () => {
     bindTab('wf-42')
     const tabB = addTab('workflows/b.json', {
       activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b', nodes: [] })
@@ -18028,36 +18028,36 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
       vi.mocked(fetch).mockImplementation(fetchImpl)
 
       vi.mocked(reportError).mockClear()
-      vi.useFakeTimers({ shouldAdvanceTime: true })
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const fakeTimerUser = userEvent.setup({
+        advanceTimers: (ms) => vi.advanceTimersByTimeAsync(ms)
+      })
       try {
         renderWithSelectedTarget()
-        await vi.waitFor(() => expect(workflowCalls).toBe(1))
+        await vi.advanceTimersByTimeAsync(50)
+        expect(workflowCalls).toBe(1)
 
-        await userEvent.click(
+        await fakeTimerUser.click(
           screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
         )
-        await userEvent.click(screen.getByRole('textbox'))
-        await userEvent.paste('Guard prompt')
-        await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-        await vi.waitFor(() => expect(workflowCalls).toBe(2))
+        await fakeTimerUser.click(screen.getByRole('textbox'))
+        await fakeTimerUser.paste('Guard prompt')
+        await fakeTimerUser.click(screen.getByRole('button', { name: 'Send' }))
+        await vi.advanceTimersByTimeAsync(50)
+        expect(workflowCalls).toBe(2)
 
-        // Freeze the 3 s PREPARE_TIMEOUT_MS timer so the hold stays active until New chat runs.
-        vi.useFakeTimers({ shouldAdvanceTime: false })
-        const fakeTimerUser = userEvent.setup({
-          advanceTimers: (ms) => vi.advanceTimersByTimeAsync(ms)
-        })
-        await vi.advanceTimersByTimeAsync(2_000)
+        await vi.advanceTimersByTimeAsync(1_000)
         expect(bodies).toHaveLength(0)
 
         await fakeTimerUser.click(
           screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
         )
-        await vi.advanceTimersByTimeAsync(2_000)
+        await vi.advanceTimersByTimeAsync(1_000)
         expect(bodies).toHaveLength(0)
-        vi.useFakeTimers({ shouldAdvanceTime: true })
-        releaseWorkflows()
 
-        await vi.waitFor(() => expect(bodies).toHaveLength(1))
+        releaseWorkflows()
+        await vi.advanceTimersByTimeAsync(50)
+        expect(bodies).toHaveLength(1)
         if (boundId === null) {
           expect(bodies[0]).toMatchObject({
             current_tab_unbound: true,
@@ -18069,13 +18069,11 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
             draft: { content: { id: 'temp-draft' } }
           })
         }
-        await vi.waitFor(() =>
-          expect(
-            useAgentChatHistoryStore().sessions.some(
-              ({ id }) => id === 'th-guard-7'
-            )
-          ).toBe(true)
-        )
+        expect(
+          useAgentChatHistoryStore().sessions.some(
+            ({ id }) => id === 'th-guard-7'
+          )
+        ).toBe(true)
         expect(reportError).not.toHaveBeenCalled()
       } finally {
         vi.useRealTimers()
@@ -18360,7 +18358,7 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     await vi.waitFor(() => expect(useToast().toasts).toHaveLength(0))
   })
 
-  it('drops failed thread-origin pending sends when workspace changes so Retry cannot fire across workspaces (Item 7)', async () => {
+  it('drops failed thread-origin pending sends and blocks Retry when workspace changes', async () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
     bindTab('wf-42')
     let shouldFail = true
@@ -18393,13 +18391,16 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     await userEvent.paste('Thread send in workspace A')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByTestId('pending-send-error')
-    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled()
+    const retryButton = screen.getByRole('button', { name: 'Retry' })
+    expect(retryButton).toBeEnabled()
 
     shouldFail = false
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    retryButton.click()
     await vi.waitFor(() =>
       expect(screen.queryByTestId('pending-send-error')).toBeNull()
     )
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
     expect(postCalls).toBe(2)
   })
 })

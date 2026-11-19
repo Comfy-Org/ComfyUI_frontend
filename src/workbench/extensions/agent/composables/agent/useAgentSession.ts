@@ -656,7 +656,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }, CREDENTIAL_REFRESH_INTERVAL_MS)
 
-  const inFlightSends = new Set<string>()
+  const inFlightSends = new Map<string, PendingSendOrigin>()
   const pendingSendEvents: AgentWsEvent[] = []
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
@@ -948,17 +948,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * `agent_message_done` has already settled -- and both `ingest` and a
    * settled transport drop what they cannot place.
    */
+  function clearHydrationTimers(buffer: HydrationBuffer | undefined): void {
+    if (!buffer) return
+    if (buffer.retirement !== undefined) clearTimeout(buffer.retirement)
+    if (buffer.mailboxRetirement !== undefined)
+      clearTimeout(buffer.mailboxRetirement)
+  }
+
   function armHydration(
     threadId: string,
     forThreadLoad = false
   ): HydrationBuffer {
     const superseded =
       hydrationBuffers.get(threadId) ?? hydrationMailboxes.get(threadId)
-    if (superseded?.retirement !== undefined)
-      clearTimeout(superseded.retirement)
-    if (superseded?.mailboxRetirement !== undefined)
-      clearTimeout(superseded.mailboxRetirement)
+    clearHydrationTimers(superseded)
     hydrationMailboxes.delete(threadId)
+    const carriedOwner = superseded?.pending
+      ? superseded.loadOwnerGeneration
+      : undefined
     const buffer: HydrationBuffer = {
       threadId,
       // Moved, not copied: a superseded hydrate still drains from its own
@@ -966,7 +973,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // into whatever is active by then.
       events: superseded?.events.splice(0) ?? [],
       pending: true,
-      loadOwnerGeneration: forThreadLoad ? ownedGeneration : undefined
+      loadOwnerGeneration: forThreadLoad ? ownedGeneration : carriedOwner
     }
     hydrationBuffers.set(threadId, buffer)
     buffer.retirement = setTimeout(
@@ -2143,7 +2150,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const threadSourceAtSend = readThreadSource(origin)
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
-    inFlightSends.add(sendId)
+    inFlightSends.set(sendId, origin)
     try {
       await prepareWorkflow(clientMessageId)
       const wfContext = workflow?.current(resolved.turnOrigin)
@@ -3026,11 +3033,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function hasInFlightSendForThread(threadId: string): boolean {
+    for (const origin of inFlightSends.values()) {
+      if (origin.kind === 'thread' && origin.threadId === threadId) return true
+    }
+    return false
+  }
+
   function shouldBufferPendingSendEvent(event: AgentWsEvent): boolean {
     if (inFlightSends.size === 0) return false
     if (hasRoutableLiveTurn(event.data.thread_id, event.data.message_id))
       return false
     if (event.type === 'agent_ask_resolved' || isLiveUnkeyedActiveTab(event))
+      return false
+    if (
+      event.data.thread_id !== undefined &&
+      hydrationBuffers.has(event.data.thread_id) &&
+      !hasInFlightSendForThread(event.data.thread_id)
+    )
       return false
     return true
   }

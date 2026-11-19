@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
 import { computed, ref, useTemplateRef, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 
 import Tag from '@comfyorg/design-system/chip/Tag'
 
@@ -57,7 +56,6 @@ const emit = defineEmits<{
   paywallAction: [action: AgentPaywallAction, surface: AgentPaywallSurface]
 }>()
 
-const { t } = useI18n()
 const justFailed = ref(false)
 watch(
   () => pending?.status,
@@ -132,13 +130,6 @@ function forwardOpenReference(workflowId: string, workflowName: string): void {
       </Tag>
     </div>
     <UserMessageAttachments v-if="attachments.length" :attachments />
-    <div
-      role="status"
-      :aria-label="isSending ? t('agent.sendingMessage') : undefined"
-      class="sr-only"
-    >
-      {{ isSending ? t('agent.sendingMessage') : '' }}
-    </div>
     <div
       v-if="showBubbleRow"
       class="flex max-w-full items-center justify-end gap-1.5"

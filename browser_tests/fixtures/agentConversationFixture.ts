@@ -463,7 +463,7 @@ export class AgentConversationHarness {
     const { content } = this.conversation.turns[turn].request
     await this.composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
-    // Replay frames are dropped until the page has applied the ack's thread id,
+    // Replay frames are buffered until the page has applied the ack's thread id,
     // and canvas catch-up baselines start right before POST /messages. Waiting
     // for the posted turn and its cleared spinner proves the ack landed before
     // replayResponse starts emitting server/canvas frames.
