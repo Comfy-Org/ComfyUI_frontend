@@ -37,16 +37,18 @@ import {
   DEPLOY_VIDEO_SOURCES
 } from '@/platform/workflow/deploy/constants'
 
+const { resumeUpload = false } = defineProps<{ resumeUpload?: boolean }>()
+
 const emit = defineEmits<{
   done: []
   dismiss: []
 }>()
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
-const { activeModels } = storeToRefs(useLocalModelUploadStore())
+const { activeModels, isUploading } = storeToRefs(useLocalModelUploadStore())
 const { isLoggedIn } = useCurrentUser()
 const state = computed(() => {
-  if (activeModels.value)
+  if (activeModels.value && (isUploading.value || resumeUpload))
     return { kind: 'missingModels' as const, models: activeModels.value }
   return runOnCloudModalState(check.value, { signedIn: isLoggedIn.value })
 })

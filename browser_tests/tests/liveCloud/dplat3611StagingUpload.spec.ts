@@ -8,7 +8,7 @@ import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationF
 
 const editor = 'http://127.0.0.1:8188'
 const cloud = 'https://testcloud.comfy.org'
-const staging = 'https://stagingapi.comfy.org'
+const staging = 'https://testapi.comfy.org'
 const firebaseAuth = 'https://identitytoolkit.googleapis.com'
 const filename = 'dplat3611-staging-smoke-20261119-172601.safetensors'
 
@@ -25,7 +25,10 @@ function smokeInputs() {
 async function readStagingFirebaseKey(request: APIRequestContext) {
   const config = await request.get(`${cloud}/api/features`, { maxRedirects: 0 })
   expect(config.status()).toBe(200)
-  const firebase = (await config.json()).firebase_config
+  const features = await config.json()
+  if (features.comfy_api_base_url !== staging)
+    throw new Error('Cloud and API test environments do not match')
+  const firebase = features.firebase_config
   if (
     firebase?.projectId !== 'dreamboothy-dev' ||
     typeof firebase?.apiKey !== 'string'
@@ -68,6 +71,7 @@ const allowed = [
   'https://fonts.googleapis.com',
   'https://fonts.gstatic.com',
   'https://media.comfy.org',
+  'https://testplatform.comfy.org',
   'https://storage.googleapis.com'
 ]
 

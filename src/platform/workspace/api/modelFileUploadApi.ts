@@ -30,6 +30,7 @@ type ModelFileUploadFailure =
   | 'unsupportedFile'
   | 'unsupportedType'
   | 'tooLarge'
+  | 'storageLimit'
   | 'privateModelsDisabled'
   | 'planUnavailable'
   | 'sessionExpired'
@@ -75,13 +76,20 @@ interface ModelFileUploadOptions {
 
 async function readFailure(res: Response): Promise<ModelFileUploadStopped> {
   const body = zErrorResponse.safeParse(await res.json().catch(() => null))
-  const code = body.success ? body.data.code : undefined
-  const reason = code ? FAILURE_BY_CODE[code] : undefined
-  if (reason) return { ok: false, reason }
-  if (code === 'FILE_TOO_LARGE' && body.success) {
-    return { ok: false, reason: 'tooLarge', message: body.data.message }
+  if (body.success) {
+    const { code, message } = body.data
+    if (code === 'FILE_TOO_LARGE')
+      return { ok: false, reason: 'tooLarge', message }
+    if (code === 'MODEL_STORAGE_LIMIT_REACHED')
+      return { ok: false, reason: 'storageLimit', message }
+    const reason = FAILURE_BY_CODE[code]
+    if (reason) return { ok: false, reason }
   }
-  return { ok: false, reason: 'failed', cause: `${res.status} ${code ?? ''}` }
+  return {
+    ok: false,
+    reason: 'failed',
+    cause: `${res.status} ${body.success ? body.data.code : ''}`
+  }
 }
 
 interface StorageAnswer {

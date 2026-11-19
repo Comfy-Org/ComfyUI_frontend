@@ -25,6 +25,18 @@
     />
     <i v-else class="icon-[lucide--cloud]" aria-hidden="true" />
   </Button>
+  <Button
+    v-if="canRecover"
+    variant="secondary"
+    size="icon"
+    :tooltip="$t('openOnCloud.cloudButton.resumeUpload')"
+    :aria-label="$t('openOnCloud.cloudButton.resumeUpload')"
+    tooltip-side="bottom"
+    data-testid="cloud-upload-recovery-button"
+    @click="openRecovery"
+  >
+    <i class="icon-[lucide--rotate-ccw]" aria-hidden="true" />
+  </Button>
 </template>
 
 <script setup lang="ts">
@@ -53,6 +65,7 @@ const {
   percent: uploadPercent
 } = storeToRefs(useLocalModelUploadStore())
 
+const canRecover = computed(() => !isUploading.value && !!activeModels.value)
 const isChecking = computed(() => check.value.phase === 'checking')
 const opensWhenAnswered = ref(false)
 let isMounted = true
@@ -65,14 +78,13 @@ const tooltip = computed(() => {
     return t('openOnCloud.cloudButton.uploading', {
       percent: uploadPercent.value
     })
-  if (activeModels.value) return t('openOnCloud.cloudButton.resumeUpload')
   return isChecking.value
     ? t('openOnCloud.cloudButton.checking')
     : t('openOnCloud.cloudButton.tooltip')
 })
 
 function prefetch() {
-  if (!activeModels.value && check.value.phase === 'idle')
+  if (!isUploading.value && check.value.phase === 'idle')
     void checkStore.check()
 }
 
@@ -96,8 +108,8 @@ function openModal() {
     button_id: 'run_bar_cloud_clicked',
     element_group: 'top_menu'
   })
-  if (activeModels.value) {
-    void openRunOnCloudDialog(() => isMounted && !!activeModels.value)
+  if (isUploading.value) {
+    void openRunOnCloudDialog(() => isMounted && isUploading.value)
     return
   }
   const { phase } = check.value
@@ -109,10 +121,16 @@ function openModal() {
   if (phase === 'idle' || phase === 'failed') void checkStore.check()
 }
 
+function openRecovery() {
+  void openRunOnCloudDialog(() => isMounted && canRecover.value, {
+    resumeUpload: true
+  })
+}
+
 watch(
   () => check.value.phase,
   (phase) => {
-    if (activeModels.value) return
+    if (isUploading.value) return
     if (phase === 'idle') {
       opensWhenAnswered.value = false
       closeRunOnCloudDialog()

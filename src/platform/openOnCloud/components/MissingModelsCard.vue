@@ -59,7 +59,7 @@
           v-if="canRecheck"
           variant="secondary"
           size="lg"
-          @click="uploads.checkAgain"
+          @click="cloudCheck.check"
         >
           {{ $t('openOnCloud.missingModels.checkAgain') }}
         </Button>
@@ -95,6 +95,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import MissingModelRow from '@/platform/openOnCloud/components/MissingModelRow.vue'
 import {
   modelKey,
@@ -142,7 +143,20 @@ const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
 
 const { t } = useI18n()
 const uploads = useLocalModelUploadStore()
-const { upload, uploadFolders, owner } = storeToRefs(uploads)
+const cloudCheck = useCloudWorkflowCheckStore()
+const { upload: currentUpload, uploadFolders, owner } = storeToRefs(uploads)
+const upload = computed(() => {
+  const current = currentUpload.value
+  if (current.phase === 'failed' && current.models) {
+    const affectedModels = new Set(current.models.map(modelKey))
+    if (
+      models.length !== affectedModels.size ||
+      !models.every((model) => affectedModels.has(modelKey(model)))
+    )
+      return { phase: 'idle' as const }
+  }
+  return current
+})
 
 watch(
   () => [signedIn, models, owner.value] as const,

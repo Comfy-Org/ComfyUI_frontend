@@ -86,7 +86,7 @@ export type StoredTaskOutcome =
   | { ok: true }
   | {
       ok: false
-      reason: 'cancelled' | 'failed' | 'storagePending'
+      reason: 'cancelled' | 'failed' | 'storagePending' | 'taskUnavailable'
       message?: string
     }
 
@@ -113,6 +113,7 @@ async function readTaskOutcome(
   signal: AbortSignal
 ): Promise<StoredTaskOutcome | undefined> {
   if (response.status >= 500 || response.status === 429) return
+  if (response.status === 404) return { ok: false, reason: 'taskUnavailable' }
   if (!response.ok) return { ok: false, reason: 'storagePending' }
   const task = zGetTaskResponse.safeParse(await response.json())
   if (signal.aborted) return

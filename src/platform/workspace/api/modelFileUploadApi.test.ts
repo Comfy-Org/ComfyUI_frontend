@@ -483,6 +483,22 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     expect(StorageRequest.sent).toHaveLength(1)
   })
 
+  it('preserves the workspace storage limit message from completion', async () => {
+    const message = 'Your workspace has used its 1 TB of model storage.'
+    serverAnswers(
+      json(201, started),
+      json(403, { code: 'MODEL_STORAGE_LIMIT_REACHED', message })
+    )
+    const { result } = upload()
+    ;(await storageRequest()).finish(200)
+
+    await expect(result).resolves.toEqual({
+      ok: false,
+      reason: 'storageLimit',
+      message
+    })
+  })
+
   it('fails without completing when storage refuses the bytes', async () => {
     const calls = serverAnswers(json(201, started))
     const { result } = upload()

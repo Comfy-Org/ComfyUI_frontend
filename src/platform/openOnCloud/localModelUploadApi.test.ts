@@ -182,6 +182,11 @@ describe('waitForStoredModel', () => {
       expected: { ok: false, reason: 'failed', message: 'bad file' }
     },
     {
+      label: 'the task has expired',
+      responses: [new Response(null, { status: 404 })],
+      expected: { ok: false, reason: 'taskUnavailable' }
+    },
+    {
       label: 'the answer is not JSON',
       responses: [new Response('<html>', { status: 200 })],
       expected: { ok: false, reason: 'storagePending' }
