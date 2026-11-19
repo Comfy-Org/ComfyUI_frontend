@@ -82,6 +82,12 @@ function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
   return settledToolLabel(row)
 }
 
+function titleOf(
+  row: Extract<ActivityRow, { kind: 'tool' }>
+): string | undefined {
+  return row.download ? labelOf(row) : undefined
+}
+
 function rowSignature(row: ActivityRow): string {
   return row.kind === 'tool'
     ? JSON.stringify([
@@ -135,7 +141,7 @@ function rowSignature(row: ActivityRow): string {
         <template v-else>
           <span
             :class="cn(labelClass(row.state), 'truncate')"
-            :title="row.download ? labelOf(row) : undefined"
+            :title="titleOf(row)"
             >{{ labelOf(row) }}</span
           >
           <span
