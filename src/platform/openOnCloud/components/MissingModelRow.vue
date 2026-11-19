@@ -18,7 +18,7 @@
         :aria-label="$t('openOnCloud.missingModels.uploaded')"
       />
       <label
-        v-else-if="choosable"
+        v-else-if="choosable && size !== undefined"
         class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-foreground hover:bg-accent has-disabled:cursor-default has-disabled:opacity-50"
       >
         <i
@@ -73,6 +73,11 @@ const BLOCKED_COPY = {
 } as const
 
 const note = computed(() => {
+  if (choosable && size === undefined && pick.status !== 'stored')
+    return {
+      tone: 'text-muted-foreground',
+      text: t('openOnCloud.missingModels.sizeUnavailable')
+    }
   if (pick.status === 'wrongFile')
     return {
       tone: 'text-destructive',

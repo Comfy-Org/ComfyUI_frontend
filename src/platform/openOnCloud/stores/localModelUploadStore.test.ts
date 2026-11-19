@@ -86,6 +86,14 @@ describe('useLocalModelUploadStore', () => {
     expect(store.canUpload([lora])).toBe(false)
   })
 
+  it('rejects a matching name when the local size is unavailable', async () => {
+    const store = await prepared([lora], ['loras'], [])
+
+    store.choose(lora, loraFile)
+
+    expect(store.canUpload([lora])).toBe(false)
+  })
+
   it('forgets an unsent pick when the dialog opens again', async () => {
     const store = await prepared()
     store.choose(lora, loraFile)
@@ -193,6 +201,29 @@ describe('useLocalModelUploadStore', () => {
 
     expect(routes).toEqual([])
     expect(store.upload).toEqual({ phase: 'failed', reason: 'accountChanged' })
+    expect(check).not.toHaveBeenCalled()
+  })
+
+  it('clears stored models and ignores a late task when the workspace changes', async () => {
+    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValue({
+      ok: true,
+      taskId: TASK_ID
+    })
+    vi.mocked(localModelUploadApi.waitForStoredModel)
+      .mockResolvedValueOnce({ ok: true })
+      .mockImplementationOnce(async () => {
+        setWorkspace('ws-2')
+        return { ok: true }
+      })
+    const store = await prepared([lora, ckpt])
+    store.choose(lora, loraFile)
+    store.choose(ckpt, ckptFile)
+
+    await store.start([lora, ckpt])
+
+    expect(store.upload).toEqual({ phase: 'failed', reason: 'accountChanged' })
+    expect(store.pickOf(lora).status).toBe('unchosen')
+    expect(store.pickOf(ckpt).status).toBe('unchosen')
     expect(check).not.toHaveBeenCalled()
   })
 

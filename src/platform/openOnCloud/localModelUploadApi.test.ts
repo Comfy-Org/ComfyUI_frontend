@@ -1,10 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
+import { useAuthStore } from '@/stores/authStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
-import { waitForStoredModel } from './localModelUploadApi'
+import {
+  readCloudUploadFolders,
+  waitForStoredModel
+} from './localModelUploadApi'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('firebase/auth'), { spy: true })
 
 const TASK_ID = '8c2d4e6f-1a3b-4c5d-9e7f-0a1b2c3d4e5f'
 
@@ -21,9 +27,21 @@ function task(status: string, extra: Record<string, unknown> = {}) {
   })
 }
 
-function answers(...responses: Array<Response | 'hang'>): UploadRouteRequest {
+function answers(
+  ...responses: Array<Response | 'hang' | 'hangBody'>
+): UploadRouteRequest {
   return vi.fn((_route: string, init: RequestInit) => {
     const next = responses.length > 1 ? responses.shift() : responses[0]
+    if (next === 'hangBody') {
+      const stream = new ReadableStream({
+        start(controller) {
+          init.signal?.addEventListener('abort', () =>
+            controller.error(init.signal?.reason)
+          )
+        }
+      })
+      return Promise.resolve(new Response(stream))
+    }
     if (next !== 'hang') return Promise.resolve(next!.clone())
     return new Promise<Response>((_resolve, reject) =>
       init.signal?.addEventListener('abort', () =>
@@ -32,6 +50,33 @@ function answers(...responses: Array<Response | 'hang'>): UploadRouteRequest {
     )
   })
 }
+
+describe('readCloudUploadFolders', () => {
+  it('reads available folders without native AbortSignal.timeout', async () => {
+    const nativeTimeout = Object.getOwnPropertyDescriptor(
+      AbortSignal,
+      'timeout'
+    )
+    stubFirebaseAuthHarness()
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockResolvedValue(null)
+    vi.useFakeTimers()
+    vi.mocked(fetch).mockResolvedValue(
+      Response.json({ model_upload_folders: ['loras'] })
+    )
+    Object.defineProperty(AbortSignal, 'timeout', {
+      configurable: true,
+      value: undefined
+    })
+
+    try {
+      await expect(readCloudUploadFolders()).resolves.toEqual(['loras'])
+    } finally {
+      if (nativeTimeout)
+        Object.defineProperty(AbortSignal, 'timeout', nativeTimeout)
+      else Reflect.deleteProperty(AbortSignal, 'timeout')
+    }
+  })
+})
 
 describe('waitForStoredModel', () => {
   beforeEach(() => vi.useFakeTimers())
@@ -68,12 +113,15 @@ describe('waitForStoredModel', () => {
     )
   })
 
-  it('gives up on one hung poll and asks again', async () => {
-    const request = answers('hang', task('completed'))
+  it.for(['hang', 'hangBody'] as const)(
+    'retries a stalled poll (%s)',
+    async (stall) => {
+      const request = answers(stall, task('completed'))
 
-    await expect(outcome(request, 20_000)).resolves.toEqual({ ok: true })
-    expect(request).toHaveBeenCalledTimes(2)
-  })
+      await expect(outcome(request, 20_000)).resolves.toEqual({ ok: true })
+      expect(request).toHaveBeenCalledTimes(2)
+    }
+  )
 
   it('fails once the task stays unreachable past the deadline', async () => {
     const request = answers(new Response(null, { status: 503 }))

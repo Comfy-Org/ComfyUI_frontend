@@ -56,7 +56,7 @@ function matchesModel(
   model: MissingModel,
   size: number | undefined
 ): boolean {
-  return file.name === model.name && (size === undefined || file.size === size)
+  return file.name === model.name && file.size === size
 }
 
 function useUploadOwner() {
@@ -84,10 +84,14 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     return Math.min(100, Math.round((current.sent / current.total) * 100))
   })
 
-  watch(owner, (next) => {
-    if (batch && batch.owner !== next) batch.controller.abort()
-    if (!isUploading.value) picks.value = new Map()
-  })
+  watch(
+    owner,
+    () => {
+      batch?.controller.abort('accountChanged')
+      picks.value = new Map()
+    },
+    { flush: 'sync' }
+  )
 
   async function prepare(models: MissingModel[]): Promise<void> {
     if (isUploading.value) return
@@ -189,17 +193,19 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   ): Promise<UploadStop | undefined> {
     const total = queue.reduce((sum, { file }) => sum + file.size, 0)
     let done = 0
+    const { signal } = current.controller
     upload.value = { phase: 'uploading', sent: 0, total }
     for (const { model, file } of queue) {
       const stop = await sendOne(
         model,
         file,
         (sent) => {
-          if (isUploading.value)
+          if (!signal.aborted && isUploading.value)
             upload.value = { phase: 'uploading', sent: done + sent, total }
         },
         current
       )
+      if (signal.aborted) return { phase: 'failed', reason: 'cancelled' }
       if (stop) return stop
       setPick(model, { status: 'stored' })
       done += file.size
@@ -218,22 +224,25 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     batch = current
     try {
       const stop = await sendAll(queue, current)
-      if (stop) {
-        upload.value =
-          current.owner === owner.value
-            ? stop
-            : { phase: 'failed', reason: 'accountChanged' }
+      if (current.controller.signal.reason === 'accountChanged') {
+        upload.value = { phase: 'failed', reason: 'accountChanged' }
         return
       }
-      upload.value = { phase: 'done' }
-      void useCloudWorkflowCheckStore().check()
+      upload.value = stop ?? { phase: 'done' }
+      if (!stop) void useCloudWorkflowCheckStore().check()
     } catch (cause) {
       reportError(cause, {
         surface: 'platform',
         errorType: 'error_uploading_local_model_to_cloud',
         level: 'warning'
       })
-      upload.value = { phase: 'failed', reason: 'failed' }
+      upload.value = {
+        phase: 'failed',
+        reason:
+          current.controller.signal.reason === 'accountChanged'
+            ? 'accountChanged'
+            : 'failed'
+      }
     } finally {
       if (batch === current) batch = undefined
     }

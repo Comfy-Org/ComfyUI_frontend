@@ -4405,6 +4405,7 @@
       "chooseFile": "Choose file",
       "chosen": "File chosen",
       "wrongFile": "Choose {name} from your models folder.",
+      "sizeUnavailable": "Could not verify the file size. Add this model from the Cloud editor.",
       "folderUnsupported": "Comfy Cloud does not take uploads into this folder yet.",
       "subfolderUnsupported": "Uploads from here can't keep this model's subfolder yet. Add it to Comfy Cloud from the Cloud editor.",
       "uploaded": "Uploaded",
