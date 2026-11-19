@@ -1,3 +1,4 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   centerOnGraph,
@@ -19,16 +20,26 @@ const QUEUE_LAYOUTS = [
   { name: 'docked-queue', docked: true }
 ] as const
 
-function definePanZoomTests(renderer: 'vue' | 'litegraph') {
+type Renderer = 'vue' | 'litegraph'
+
+async function loadCenteredGraph(
+  comfyPage: ComfyPage,
+  renderer: Renderer,
+  nodeCount: number
+) {
+  await comfyPage.workflow.loadWorkflowData('large-graph-workflow')
+  if (nodeCount < 245) await trimGraphTo(comfyPage, nodeCount)
+  await centerOnGraph(comfyPage)
+  if (renderer === 'vue') {
+    await waitForMeasuredVueNodes(comfyPage, nodeCount)
+  }
+}
+
+function definePanZoomTests(renderer: Renderer) {
   for (const nodeCount of NODE_COUNTS) {
     test(`${renderer} ${nodeCount} nodes`, async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflowData('large-graph-workflow')
-      if (nodeCount < 245) await trimGraphTo(comfyPage, nodeCount)
-      await centerOnGraph(comfyPage)
+      await loadCenteredGraph(comfyPage, renderer, nodeCount)
       await comfyPage.expectNodeCount(nodeCount)
-      if (renderer === 'vue') {
-        await waitForMeasuredVueNodes(comfyPage, nodeCount)
-      }
 
       const prefix = `${renderer}-${nodeCount}`
       reportPerf(
@@ -52,12 +63,26 @@ function definePanZoomTests(renderer: 'vue' | 'litegraph') {
           SLOW_PROGRESS_CADENCE
         )
       )
-      for (const { name, docked } of QUEUE_LAYOUTS) {
-        await comfyPage.settings.setSetting(QUEUE_PANEL_SETTING, docked)
-        reportPerf(
-          `${prefix} progress ${name}`,
-          await measureProgress(comfyPage, `${prefix}-progress-${name}`)
-        )
+    })
+  }
+
+  for (const { name, docked } of QUEUE_LAYOUTS) {
+    test.describe(name, () => {
+      test.use({ initialSettings: { [QUEUE_PANEL_SETTING]: docked } })
+
+      for (const nodeCount of NODE_COUNTS) {
+        test(`${renderer} ${nodeCount} nodes progress`, async ({
+          comfyPage
+        }) => {
+          await loadCenteredGraph(comfyPage, renderer, nodeCount)
+          await comfyPage.expectNodeCount(nodeCount)
+
+          const prefix = `${renderer}-${nodeCount}`
+          reportPerf(
+            `${prefix} progress ${name}`,
+            await measureProgress(comfyPage, `${prefix}-progress-${name}`)
+          )
+        })
       }
     })
   }

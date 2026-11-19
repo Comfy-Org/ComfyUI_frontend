@@ -1,7 +1,15 @@
-import { describe, expect, it } from 'vitest'
-import { effectScope, nextTick, ref, shallowRef } from 'vue'
+import { usePreferredReducedMotion } from '@vueuse/core'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, effectScope, nextTick, ref, shallowRef } from 'vue'
 
 import { useCompositedProgress } from './useCompositedProgress'
+
+vi.mock(import('@vueuse/core'), { spy: true })
+
+const reducedMotion = ref(false)
+const motionPreference = computed(() =>
+  reducedMotion.value ? 'reduce' : 'no-preference'
+)
 
 const KEYFRAMES = [{ translate: '-100%' }, { translate: '0%' }]
 
@@ -13,6 +21,11 @@ function scrubbedAnimations(element: HTMLElement) {
 }
 
 describe('useCompositedProgress', () => {
+  beforeEach(() => {
+    reducedMotion.value = false
+    vi.mocked(usePreferredReducedMotion).mockReturnValue(motionPreference)
+  })
+
   it('holds the progress in one paused animation and leaves the inline style alone', () => {
     const element = document.createElement('div')
 
@@ -33,6 +46,31 @@ describe('useCompositedProgress', () => {
 
     expect(scrubbedAnimations(over)[0].currentTime).toBe(1000)
     expect(scrubbedAnimations(under)[0].currentTime).toBe(0)
+  })
+
+  it('shows no progress for a value that is not a number', () => {
+    const element = document.createElement('div')
+
+    useCompositedProgress(element, NaN, KEYFRAMES)
+
+    expect(scrubbedAnimations(element)[0].currentTime).toBe(0)
+  })
+
+  it('follows progress at once under reduced motion and keeps it when motion returns', async () => {
+    const element = document.createElement('div')
+    const progress = ref(0.2)
+    useCompositedProgress(element, progress, KEYFRAMES)
+
+    reducedMotion.value = true
+    progress.value = 0.8
+    await nextTick()
+    expect(scrubbedAnimations(element)[0].currentTime).toBe(800)
+
+    reducedMotion.value = false
+    await nextTick()
+    await vi.waitFor(() =>
+      expect(scrubbedAnimations(element)[0].currentTime).toBe(800)
+    )
   })
 
   it('moves the animation to the current element when the target changes', async () => {
