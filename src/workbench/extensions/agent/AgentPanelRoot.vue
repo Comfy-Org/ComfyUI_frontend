@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import type { AgentNodeAsk } from '@/workbench/extensions/agent/types/agentNodeAsk'
-import { useAgentCanvasPinStore } from '@/workbench/extensions/agent/stores/agent/agentCanvasPinStore'
 import './agentPanel.css'
 import type { AgentGreetingAssignment } from './types/proactiveGreeting'
 import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
@@ -230,7 +229,6 @@ const {
   fetchStatus: refreshBillingStatus
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
-const canvasPinStore = useAgentCanvasPinStore()
 const history = useAgentChatHistoryStore()
 const { accepted: consentAccepted, identity: consentIdentity } = storeToRefs(
   useAgentConsentStore()
@@ -2122,30 +2120,10 @@ async function sendNodeAsk(ask: AgentNodeAsk): Promise<void> {
   const keptPrompt = composerStore.hasDraft ? composerStore.prompt : null
   const keptAttachments = composerStore.attachments
   replaceSelectionTags(ask.nodes)
-  const turnBefore = conversationStore.activeTurnId
   const sending = onSend(ask.text, [])
   if (keptPrompt) composerStore.restorePrompt(keptPrompt, keptAttachments)
   await sending
-  const turnId = conversationStore.activeTurnId
-  const sentThread = conversationStore.threadId
-  if (turnId === null || turnId === turnBefore || sentThread === null) return
-  canvasPinStore.add({
-    threadId: sentThread,
-    turnId,
-    nodeIds: ask.nodes.map((node) => node.id),
-    workflowPath: ask.workflowPath ?? ''
-  })
 }
-
-watch(
-  () => agentPanelStore.pendingChatOpen,
-  (chatId) => {
-    if (!chatId) return
-    agentPanelStore.pendingChatOpen = null
-    if (chatId !== threadId.value) void onSelectHistory(chatId, () => true)
-  },
-  { immediate: true }
-)
 
 watch(
   () => agentPanelStore.pendingNodeAsk,

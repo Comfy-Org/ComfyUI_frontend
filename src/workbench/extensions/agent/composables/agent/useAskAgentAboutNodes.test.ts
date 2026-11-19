@@ -132,16 +132,4 @@ describe('useAskAgentAboutNodes', () => {
     expect(panel.isOpen).toBe(false)
     expect(panel.pendingNodeAsk).toBeNull()
   })
-
-  it('opens the panel on a pinned chat', async () => {
-    const panel = useAgentPanelStore()
-    panel.enabled = true
-    const { openAgentChat } = useAskAgentAboutNodes()
-
-    await openAgentChat('th-7')
-
-    expect(panel.isOpen).toBe(true)
-    expect(panel.view).toEqual({ screen: 'chat' })
-    expect(panel.pendingChatOpen).toBe('th-7')
-  })
 })

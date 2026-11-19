@@ -40,8 +40,7 @@ vi.mock(
   () => ({
     useAskAgentAboutNodes: () => ({
       canAskAgent: computed(() => true),
-      askAgentAboutNodes,
-      openAgentChat: vi.fn()
+      askAgentAboutNodes
     })
   })
 )

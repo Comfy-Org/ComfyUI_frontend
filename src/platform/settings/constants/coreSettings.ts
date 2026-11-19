@@ -1090,13 +1090,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.25.0'
   },
   {
-    id: 'Comfy.Agent.CanvasPinsHidden',
-    name: 'Hide agent pins on the canvas',
-    type: 'hidden',
-    defaultValue: false,
-    versionAdded: '1.61.4'
-  },
-  {
     id: 'Comfy.Minimap.NodeColors',
     name: 'Display node with its original color on minimap',
     type: 'hidden',

@@ -6626,16 +6626,6 @@
         "howConnect": "How do these connect?",
         "combine": "Combine these into one workflow",
         "explainGroup": "Explain this group"
-      },
-      "hidePins": "Hide agent pins",
-      "showPins": "Show agent pins",
-      "pin": "Agent chat, {status}",
-      "status": {
-        "working": "working",
-        "waiting": "waiting for you",
-        "done": "new answer",
-        "failed": "failed",
-        "seen": "done"
       }
     }
   },

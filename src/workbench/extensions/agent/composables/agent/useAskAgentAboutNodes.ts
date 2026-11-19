@@ -1,7 +1,6 @@
 import { computed } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { AgentPanelOpenedMetadata } from '@comfyorg/telemetry/types'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -11,8 +10,8 @@ import type { AgentNodeAsk } from '@/workbench/extensions/agent/types/agentNodeA
 
 /**
  * Sends a question about canvas nodes to the current chat in the agent panel,
- * with the nodes as references, and opens a chat from its canvas pin. Opens
- * the panel, after consent, when it is closed.
+ * with the nodes as references. Opens the panel, after consent, when it is
+ * closed.
  */
 export function useAskAgentAboutNodes() {
   const panelStore = useAgentPanelStore()
@@ -37,37 +36,21 @@ export function useAskAgentAboutNodes() {
       workflowPath: workflowStore.activeWorkflow?.path
     }
 
-    await inPanel('selection_toolbox', () => {
-      panelStore.pendingNodeAsk = request
-    })
-  }
-
-  async function openAgentChat(threadId: string): Promise<void> {
-    if (!panelStore.enabled) return
-    await inPanel('canvas_pin', () => {
-      panelStore.pendingChatOpen = threadId
-    })
-  }
-
-  async function inPanel(
-    source: AgentPanelOpenedMetadata['source'],
-    hand: () => void
-  ): Promise<void> {
-    const open = (): void => {
+    const send = (): void => {
       if (!panelStore.enabled) return
       panelStore.view = { screen: 'chat' }
-      panelStore.open(source)
-      hand()
+      panelStore.open('selection_toolbox')
+      panelStore.pendingNodeAsk = request
     }
 
     if (panelStore.isVisible) {
-      open()
+      send()
       return
     }
 
     panelStore.suppressRestoredOpen()
     try {
-      await withConsent('button_click', open)
+      await withConsent('button_click', send)
     } catch (error) {
       reportError(error, {
         surface: 'agent',
@@ -76,5 +59,5 @@ export function useAskAgentAboutNodes() {
     }
   }
 
-  return { canAskAgent, askAgentAboutNodes, openAgentChat }
+  return { canAskAgent, askAgentAboutNodes }
 }

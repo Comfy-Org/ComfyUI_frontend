@@ -117,7 +117,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const pendingCloudHandoff = ref<string | null>(null)
   const pendingErrorContext = shallowRef<AgentErrorContext | null>(null)
   const pendingNodeAsk = shallowRef<AgentNodeAsk | null>(null)
-  const pendingChatOpen = ref<string | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -447,7 +446,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     followsVisibleWorkflow,
     pendingErrorContext,
     pendingNodeAsk,
-    pendingChatOpen,
     pendingCloudHandoff,
     initializeTargetTracking,
     retainWorkflowTarget,

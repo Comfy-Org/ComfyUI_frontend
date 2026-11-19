@@ -323,7 +323,6 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
-import { useAgentCanvasPinStore } from './stores/agent/agentCanvasPinStore'
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { destroyAgentPageSession } from './agentPageSession'
@@ -17244,17 +17243,6 @@ describe('AgentPanelRoot node ask from the selection toolbox', () => {
       selection: { node_ids: ['7'] }
     })
     expect(useAgentPanelStore().pendingNodeAsk).toBeNull()
-    await waitFor(() =>
-      expect(useAgentCanvasPinStore().pins).toEqual([
-        expect.objectContaining({
-          threadId: 'th-1',
-          turnId: 'm-1',
-          nodeIds: ['7'],
-          workflowPath: tab.path,
-          seen: false
-        })
-      ])
-    )
   })
 
   it('keeps the draft in the panel composer', async () => {

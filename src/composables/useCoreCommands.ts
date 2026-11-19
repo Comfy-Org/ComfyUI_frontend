@@ -565,21 +565,6 @@ export function useCoreCommands(): ComfyCommand[] {
       active: () => useSettingStore().get('Comfy.Minimap.Visible')
     },
     {
-      id: 'Comfy.Canvas.ToggleAgentPins',
-      icon: 'icon-[lucide--message-square-off]',
-      label: 'Canvas Toggle Agent Pins',
-      menubarLabel: 'Agent Pins',
-      versionAdded: '1.61.4',
-      function: async () => {
-        const settingStore = useSettingStore()
-        await settingStore.set(
-          'Comfy.Agent.CanvasPinsHidden',
-          !settingStore.get('Comfy.Agent.CanvasPinsHidden')
-        )
-      },
-      active: () => !useSettingStore().get('Comfy.Agent.CanvasPinsHidden')
-    },
-    {
       id: 'Comfy.Queue.ToggleOverlay',
       icon: 'icon-[lucide--history]',
       label: () => t('queue.toggleJobHistory'),
