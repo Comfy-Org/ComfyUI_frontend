@@ -105,8 +105,6 @@ const IMPORTED_RESULT = markerWorkflow(
   IMPORTED_RESULT_TITLE
 )
 
-// The image the user attaches: a real PNG carrying EMBEDDED_WORKFLOW in a
-// `workflow` tEXt chunk, exactly as ComfyUI's SaveImage writes it.
 const ATTACHED_IMAGE = createWorkflowBearingPng({ workflow: EMBEDDED_WORKFLOW })
 
 interface UploadedFile {
@@ -154,8 +152,6 @@ class AgentEmbeddedWorkflowAttachmentFixture {
   public readonly topbar: Topbar
   public readonly userRequest = USER_REQUEST
 
-  // Both the image and the lifted workflow are posted as ordinary attachment
-  // refs; the backend picks the `.json` one up with its shipped reader.
   public readonly expectedRequest: Pick<
     AgentPostMessageRequest,
     'workflow_id' | 'attachments'

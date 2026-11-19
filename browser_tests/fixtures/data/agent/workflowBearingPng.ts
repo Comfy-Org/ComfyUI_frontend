@@ -22,32 +22,28 @@ function textChunk(keyword: string, value: string): Buffer {
   )
 }
 
+function imageHeader(): Buffer {
+  const header = Buffer.alloc(13)
+  header.writeUInt32BE(1, 0)
+  header.writeUInt32BE(1, 4)
+  header[8] = 8
+  header[9] = 2
+  return header
+}
+
+function singlePixel(pixel: [number, number, number]): Buffer {
+  return deflateSync(Buffer.from([0, ...pixel]), { level: 1 })
+}
+
 /**
- * A real, decodable 1×1 PNG carrying `workflow` (and optionally `prompt`) in
- * `tEXt`, the way ComfyUI's own SaveImage writes them.
- *
- * Valid rather than minimal on purpose: the composer builds an object URL and
- * renders the attachment as an image, so a malformed PNG would exercise the
- * broken-image path instead of the one under test. CRCs are real for the same
- * reason — nothing in the read path verifies them today, and a fixture that
- * depends on that staying true is a fixture that breaks later for no reason.
+ * A decodable 1x1 PNG carrying the given ComfyUI metadata in `tEXt`. A key
+ * absent from `metadata` gets no chunk, so a caller can build the prompt-only
+ * shape that API submissions produce.
  */
 export function createWorkflowBearingPng(
   metadata: { workflow?: unknown; prompt?: unknown },
   options: { pixel?: [number, number, number] } = {}
 ): Buffer {
-  const header = Buffer.alloc(13)
-  header.writeUInt32BE(1, 0)
-  header.writeUInt32BE(1, 4)
-  header[8] = 8 // bit depth
-  header[9] = 2 // truecolor
-
-  // One row: the filter byte plus a single RGB pixel.
-  const [r, g, b] = options.pixel ?? [0x40, 0x80, 0xc0]
-  const raw = Buffer.from([0, r, g, b])
-
-  // Each chunk is written only when its key is present, so a caller can build
-  // the prompt-only shape that third-party tools and API submissions produce.
   const text = (['workflow', 'prompt'] as const).flatMap((key) =>
     metadata[key] === undefined
       ? []
@@ -56,27 +52,19 @@ export function createWorkflowBearingPng(
 
   return Buffer.concat([
     Buffer.from(PNG_SIGNATURE),
-    chunk('IHDR', header),
+    chunk('IHDR', imageHeader()),
     ...text,
-    chunk('IDAT', deflateSync(raw, { level: 1 })),
+    chunk('IDAT', singlePixel(options.pixel ?? [0x40, 0x80, 0xc0])),
     chunk('IEND', Buffer.alloc(0))
   ])
 }
 
-/** A decodable 1×1 PNG with no ComfyUI metadata at all. */
+/** A decodable 1x1 PNG with no ComfyUI metadata. */
 export function createPlainPng(): Buffer {
-  const header = Buffer.alloc(13)
-  header.writeUInt32BE(1, 0)
-  header.writeUInt32BE(1, 4)
-  header[8] = 8
-  header[9] = 2
   return Buffer.concat([
     Buffer.from(PNG_SIGNATURE),
-    chunk('IHDR', header),
-    chunk(
-      'IDAT',
-      deflateSync(Buffer.from([0, 0x10, 0x20, 0x30]), { level: 1 })
-    ),
+    chunk('IHDR', imageHeader()),
+    chunk('IDAT', singlePixel([0x10, 0x20, 0x30])),
     chunk('IEND', Buffer.alloc(0))
   ])
 }

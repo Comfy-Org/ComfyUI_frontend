@@ -21,14 +21,9 @@ test(
 
     await embeddedWorkflowAttachment.attachImage()
 
-    // The image and the workflow lifted out of it are two visible, separate
-    // attachments, so the user can see what the agent was given and remove the
-    // workflow before sending if they only meant to share the picture.
     await expect(agentPanel.attachmentChip(imageName)).toBeVisible()
     await expect(agentPanel.attachmentChip(derivedName)).toBeVisible()
 
-    // The lifted upload is the graph that was inside the PNG, not a re-derived
-    // or empty one.
     expect(await embeddedWorkflowAttachment.liftedWorkflowHasMarker()).toBe(
       true
     )
@@ -45,8 +40,6 @@ test(
       expectedRequest
     )
 
-    // Nothing about the user's canvas changed, and the embedded graph was not
-    // opened over it.
     await expect(activeCanvasNode).toBeVisible()
     await expect(embeddedSourceNode).toHaveCount(0)
     await expect(importedResultNode).toHaveCount(0)

@@ -6,11 +6,6 @@ import {
 } from '@e2e/fixtures/data/agent/workflowBearingPng'
 import { deriveWorkflowFile } from './derivedWorkflowAttachment'
 
-// The sibling suite mocks `getWorkflowDataFromFile` to pin this module's own
-// branches. This one deliberately does not: it runs a real PNG through the real
-// metadata parser, so the integration the feature actually depends on is proven
-// rather than assumed from a mock's shape.
-
 const WORKFLOW = {
   nodes: [
     { id: 41, type: 'KSampler', title: 'Embedded', pos: [10, 20] },
@@ -52,8 +47,6 @@ describe('deriveWorkflowFile against a real PNG', () => {
   })
 
   it('prefers the editor workflow when the image carries both', async () => {
-    // ComfyUI's SaveImage writes `workflow` and `prompt` together. The editor
-    // graph is the one with layout, groups and reroutes, so it must win.
     const file = pngFile(
       createWorkflowBearingPng({ workflow: WORKFLOW, prompt: API_PROMPT })
     )
@@ -68,7 +61,6 @@ describe('deriveWorkflowFile against a real PNG', () => {
   })
 
   it('lifts nothing from a PNG carrying only an API prompt', async () => {
-    // BE-4259 owns the lossy API-graph fallback; it must not happen here.
     const promptOnly = createWorkflowBearingPng({ prompt: API_PROMPT })
     const file = pngFile(promptOnly, 'api-only.png')
 

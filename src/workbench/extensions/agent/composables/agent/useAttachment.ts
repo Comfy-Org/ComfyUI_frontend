@@ -402,11 +402,8 @@ export function useAttachment(options: UseAttachmentOptions) {
         return 'failed'
       }
       const result = await uploadStagedFile(id, file)
-      // Same derived-workflow pass as addFiles, so an image dropped from the
-      // asset library reaches the agent's workflow tools the same way a freshly
-      // picked file does. Outside uploadStagedFile for the same slot reason.
       if (result === 'uploaded') {
-        await attachDerivedWorkflows([file])
+        await attachDerivedWorkflows([{ id, file }])
         options.onUploaded?.()
       }
       return result
@@ -472,39 +469,52 @@ export function useAttachment(options: UseAttachmentOptions) {
     return id ? { file, outcome: 'upload', id } : { file, outcome: 'duplicate' }
   }
 
-  // Lifts an embedded workflow out of each uploaded file and stages it as its
-  // own attachment, so the agent's workflow tools can reach it.
-  //
-  // Runs as a pass AFTER its sources have finished uploading, never from inside
-  // uploadStagedFile. Deriving in there would have each upload wait on a
-  // concurrency slot while still holding one, which deadlocks the moment
-  // MAX_CONCURRENT_UPLOADS workflow-bearing images are attached together.
+  /**
+   * Lifts an embedded workflow out of each uploaded source and stages it as its
+   * own attachment.
+   *
+   * Holds each source open — still `pending`, still `uploading` — until its
+   * extraction settles, so the existing send guard refuses to submit while a
+   * workflow is outstanding and `cancelAllUploads` still reaches it.
+   */
   async function attachDerivedWorkflows(
-    sources: readonly File[]
+    sources: readonly { id: string; file: File }[]
   ): Promise<boolean> {
-    const derived = await Promise.all(
-      sources.map(async (source) => ({
-        source,
-        file: await deriveWorkflowFile(source).catch(() => undefined)
-      }))
-    )
+    const held = sources.filter(({ id }) => !cancelled.has(id))
+    if (!held.length) return false
+    for (const { id } of held) {
+      pending.add(id)
+      options.update(id, { uploading: true })
+    }
 
     let uploaded = 0
-    await Promise.all(
-      derived.map(async ({ source, file }) => {
-        if (!file) return
-        // Charged against the per-turn attachment cap like any other file, but
-        // silently: the user did not ask for this one, so hitting the limit
-        // must not raise an error they cannot act on. The image they attached
-        // is already staged and still works.
-        const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${fileUploadKey(source)}`
-        if (admit(sourceKey) !== 'admitted') return
-        if (isTooLarge(file)) return
-        const id = stage(file.name, sourceKey)
-        if (!id) return
-        if ((await uploadStagedFile(id, file)) === 'uploaded') uploaded += 1
+    try {
+      const derived = await Promise.all(
+        held.map(async ({ id, file }) => ({
+          id,
+          file: await deriveWorkflowFile(file).catch(() => undefined)
+        }))
+      )
+      const staged = derived.flatMap(({ id, file }) => {
+        if (!file || cancelled.has(id)) return []
+        const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${id}`
+        if (admit(sourceKey) !== 'admitted') return []
+        if (isTooLarge(file)) return []
+        const derivedId = stage(file.name, sourceKey)
+        return derivedId ? [{ id: derivedId, file }] : []
       })
-    )
+      await Promise.all(
+        staged.map(async (item) => {
+          if ((await uploadStagedFile(item.id, item.file)) === 'uploaded')
+            uploaded += 1
+        })
+      )
+    } finally {
+      for (const { id } of held) {
+        pending.delete(id)
+        if (!cancelled.has(id)) options.update(id, { uploading: false })
+      }
+    }
     return uploaded > 0
   }
 
@@ -515,14 +525,15 @@ export function useAttachment(options: UseAttachmentOptions) {
     )
     if (duplicates.length) options.onDuplicate?.(duplicates)
     if (staged.some(({ outcome }) => outcome === 'too_many')) reportTurnLimit()
+
     let uploaded = 0
-    const sources: File[] = []
+    const sources: Array<{ id: string; file: File }> = []
     await Promise.all(
       staged.map(async (item) => {
         if (item.outcome !== 'upload') return
         if ((await uploadStagedFile(item.id, item.file)) === 'uploaded') {
           uploaded += 1
-          sources.push(item.file)
+          sources.push({ id: item.id, file: item.file })
         }
       })
     )

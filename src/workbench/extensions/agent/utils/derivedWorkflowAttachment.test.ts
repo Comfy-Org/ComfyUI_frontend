@@ -82,8 +82,6 @@ describe('deriveWorkflowFile', () => {
   })
 
   it('returns nothing for an API-format prompt with no editor graph', async () => {
-    // BE-4259 owns the lossy API-graph fallback and it needs product sign-off,
-    // so a prompt-only asset must stay an ordinary attachment.
     mockParser.mockResolvedValue({
       prompt: { '1': { class_type: 'KSampler', inputs: {} } }
     })

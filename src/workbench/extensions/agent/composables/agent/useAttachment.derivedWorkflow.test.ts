@@ -4,8 +4,6 @@ import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent
 import { deriveWorkflowFile } from '@/workbench/extensions/agent/utils/derivedWorkflowAttachment'
 import { MAX_TURN_ATTACHMENTS, useAttachment } from './useAttachment'
 
-// spy:true keeps DERIVED_WORKFLOW_SOURCE_PREFIX real while letting each test
-// decide what the attached image appears to carry.
 vi.mock(
   import('@/workbench/extensions/agent/utils/derivedWorkflowAttachment'),
   { spy: true }
@@ -38,8 +36,6 @@ function harness() {
 
 describe('useAttachment derived workflows', () => {
   beforeEach(() => {
-    // The default for these tests is an image carrying nothing; the project
-    // setup already resets mocks between tests.
     mockDerive.mockResolvedValue(undefined)
   })
 
@@ -53,8 +49,6 @@ describe('useAttachment derived workflows', () => {
       'photo.png',
       'photo.workflow.json'
     ])
-    // Both the image and the lifted workflow reach the backend, the workflow as
-    // an ordinary .json attachment.
     expect(upload).toHaveBeenCalledTimes(2)
     const workflowChip = store.attachments[1]
     expect(workflowChip.ref).toBe('photo.workflow.json')
@@ -104,9 +98,6 @@ describe('useAttachment derived workflows', () => {
       remove: store.removeAttachment
     })
 
-    // Fill the turn with plain images, then attach one more that does carry a
-    // workflow. The cap is real, but the user did not ask for the derived file,
-    // so hitting the limit on it must not raise an error they cannot act on.
     mockDerive.mockResolvedValue(undefined)
     await full.addFiles(
       Array.from({ length: MAX_TURN_ATTACHMENTS - 1 }, (_, index) =>
@@ -123,11 +114,61 @@ describe('useAttachment derived workflows', () => {
     expect(onError).not.toHaveBeenCalled()
   })
 
+  it('keeps the source outstanding until its lifted workflow has uploaded', async () => {
+    mockDerive.mockResolvedValue(workflowFile('photo.workflow.json'))
+    const store = useAgentComposerStore()
+    let releaseDerived: (() => void) | undefined
+    const { addFiles } = useAttachment({
+      upload: (file: File) =>
+        file.name.endsWith('.workflow.json')
+          ? new Promise((resolve) => {
+              releaseDerived = () => resolve({ ref: file.name })
+            })
+          : Promise.resolve({ ref: file.name }),
+      staged: () => store.attachments,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+
+    const batch = addFiles([imageFile('photo.png')])
+    await vi.waitUntil(() => releaseDerived !== undefined)
+
+    expect(store.attachments.map((chip) => chip.name)).toEqual([
+      'photo.png',
+      'photo.workflow.json'
+    ])
+    expect(store.attachments.every((chip) => chip.uploading)).toBe(true)
+
+    releaseDerived?.()
+    await batch
+    expect(store.attachments.every((chip) => chip.uploading)).toBe(false)
+  })
+
+  it('cancels a source whose workflow is still being lifted', async () => {
+    let liftStarted = false
+    mockDerive.mockImplementation(() => {
+      liftStarted = true
+      return new Promise(() => {})
+    })
+    const store = useAgentComposerStore()
+    const { addFiles, cancelAllUploads } = useAttachment({
+      upload: (file: File) => Promise.resolve({ ref: file.name }),
+      staged: () => store.attachments,
+      stage: store.addAttachment,
+      update: store.updateAttachment,
+      remove: store.removeAttachment
+    })
+
+    void addFiles([imageFile('photo.png')])
+    await vi.waitUntil(() => liftStarted)
+
+    cancelAllUploads()
+
+    expect(store.attachments).toHaveLength(0)
+  })
+
   it('lifts a workflow from every image in a batch larger than the upload concurrency', async () => {
-    // Regression guard for the deadlock this design avoids: deriving from
-    // inside uploadStagedFile would have each upload await a concurrency slot
-    // while still holding one. MAX_CONCURRENT_UPLOADS is 3, so a batch of 5
-    // workflow-bearing images is the shape that would hang.
     mockDerive.mockImplementation(async (file: File) =>
       workflowFile(`${file.name}.workflow.json`)
     )
