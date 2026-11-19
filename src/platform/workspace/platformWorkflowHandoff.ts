@@ -109,3 +109,16 @@ export function openPlatformWithWorkflow(
   })
   return true
 }
+
+function asksForItsOwnTab(event: MouseEvent): boolean {
+  return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+}
+
+/** For a click on a Platform link: opens the build wizard with the open workflow in the link's place, or leaves the click to the link. */
+export function handOverWorkflowOnClick(
+  event: MouseEvent,
+  surface: PlatformLinkSurface
+): void {
+  if (asksForItsOwnTab(event)) return
+  if (openPlatformWithWorkflow(surface)) event.preventDefault()
+}

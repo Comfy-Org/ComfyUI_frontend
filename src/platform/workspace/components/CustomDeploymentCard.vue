@@ -138,7 +138,7 @@ import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
-import { openPlatformWithWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
+import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
 import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const {
@@ -166,17 +166,9 @@ const createDeploymentUrl = computed(() =>
   customDeploymentCreateUrl('custom-deployment-card')
 )
 
-function asksForItsOwnTab(event: MouseEvent): boolean {
-  return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
-}
-
 function createOnPlatform(event: MouseEvent) {
-  if (
-    handsOverWorkflow &&
-    !asksForItsOwnTab(event) &&
-    openPlatformWithWorkflow('custom-deployment-card')
-  )
-    event.preventDefault()
+  if (handsOverWorkflow)
+    handOverWorkflowOnClick(event, 'custom-deployment-card')
   emit('done')
 }
 </script>

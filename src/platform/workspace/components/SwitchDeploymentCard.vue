@@ -88,7 +88,7 @@
           :href="createDeploymentUrl"
           target="_blank"
           :rel="platformLinkRel()"
-          @click="emit('done')"
+          @click="createOnPlatform"
         >
           {{ $t('deploymentSwitcher.customDeployment.createOnPlatform') }}
           <i
@@ -135,6 +135,7 @@ import { reloadForDeploymentSwitch } from '@/platform/workspace/deploymentSwitch
 import { confirmUnsavedWorkBeforeSwitch } from '@/platform/workspace/confirmUnsavedWorkBeforeSwitch'
 import { skipLeavePromptOnce } from '@/platform/workflow/management/leavePrompt'
 import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDeploymentSwitchGuard'
+import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { canSwitchTo } from '@/platform/workspace/workflowDeploymentOffer'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
@@ -164,6 +165,11 @@ const selectId = useId()
 const createDeploymentUrl = computed(() =>
   customDeploymentCreateUrl('switch-deployment-card')
 )
+
+function createOnPlatform(event: MouseEvent) {
+  handOverWorkflowOnClick(event, 'switch-deployment-card')
+  emit('done')
+}
 
 function runs(choice: DeploymentChoice): boolean {
   return choice.mark?.kind === 'runs'
