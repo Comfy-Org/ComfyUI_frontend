@@ -111,10 +111,10 @@ function commitBridge(
     const previous = committed
     committed = widget.value
     if (isLoading()) return
-    if (!Object.is(previous, committed)) {
+    if (!Object.is(previous, committed) && !listeners.change.isEmpty()) {
       listeners.change.notify(copy(committed), copy(previous))
     }
-    if (!isSettingValue()) {
+    if (!isSettingValue() && !listeners.activate.isEmpty()) {
       listeners.activate.notify(copy(committed))
     }
   })
@@ -162,6 +162,7 @@ function serializedFor(
   value: unknown,
   copy: (value: unknown) => Copy
 ): unknown {
+  if (listeners.beforeSerialize.isEmpty()) return value
   let replacement: { readonly value: WidgetValue } | undefined
   const event: WidgetSerializeEvent = Object.freeze({
     context: 'prompt',
