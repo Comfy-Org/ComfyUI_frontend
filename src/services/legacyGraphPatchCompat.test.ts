@@ -58,6 +58,54 @@ describe('legacy graph patch compatibility', () => {
     ])
   })
 
+  it('keeps an explicit receiver other than the boot graph during dispatch', () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    const third = new LGraph()
+    first.add(new LGraphNode('first node'))
+    second.add(new LGraphNode('second node'))
+    third.add(new LGraphNode('third node'))
+    const host = { rootGraphOrUndefined: first }
+    const exported: (string | undefined)[][] = []
+    captureLegacyGraphPatches(host, { name: 'cross.root' }, 'setup', () => {
+      const original = first.serialize
+      first.serialize = function (...args) {
+        exported.push(
+          original.apply(third, args).nodes.map((node) => node.title)
+        )
+        return original.apply(this, args)
+      }
+    })
+    applyLegacyGraphPatches(host, second)
+    applyLegacyGraphPatches(host, third)
+    host.rootGraphOrUndefined = second
+
+    const own = second.serialize().nodes.map((node) => node.title)
+
+    expect({ own, exported }).toEqual({
+      own: ['second node'],
+      exported: [['third node']]
+    })
+  })
+
+  it('leaves a member saved but not replaced in setup usable on later roots', () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    second.add(new LGraphNode('second node'))
+    const host = { rootGraphOrUndefined: first }
+    const saved = captureLegacyGraphPatches(
+      host,
+      { name: 'saves.serialize' },
+      'setup',
+      () => first.serialize
+    )
+    host.rootGraphOrUndefined = second
+
+    expect(saved.call(second).nodes.map((node) => node.title)).toEqual([
+      'second node'
+    ])
+  })
+
   it('bypasses the Manager active-graph clear wrapper on an inactive root', async () => {
     const first = new LGraph()
     const second = new LGraph()
