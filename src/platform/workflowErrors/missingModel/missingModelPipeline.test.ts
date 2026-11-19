@@ -690,6 +690,31 @@ describe('missingModelPipeline', () => {
       ).toHaveBeenLastCalledWith([], { silent: false })
     })
 
+    it('keeps the known folder paths when the folder path request falls back to empty', async () => {
+      mockHandles.state.enrichedCandidates = [
+        {
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ]
+      vi.mocked(api.getFolderPaths).mockResolvedValueOnce({})
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: useMissingModelStore()
+      })
+      await vi.dynamicImportSettled()
+
+      expect(useMissingModelStore().setFolderPaths).not.toHaveBeenCalled()
+      expect(
+        useExecutionErrorStore().surfaceMissingModels
+      ).toHaveBeenCalledTimes(1)
+    })
+
     it('drops a candidate that became inactive while folder paths were loading', async () => {
       const confirmedCandidate = {
         nodeType: 'CheckpointLoaderSimple',
