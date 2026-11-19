@@ -20,7 +20,7 @@ import {
   isComboInputSpec
 } from '@comfyorg/object-info-parser'
 import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { addValueControlWidgets } from '@/core/graph/widgets/valueControlWidgets'
@@ -177,7 +177,7 @@ export class PrimitiveNode extends LGraphNode {
     _index: number,
     connected: boolean
   ) {
-    if (app.configuringGraph) {
+    if (useApp().configuringGraph) {
       // Dont run while the graph is still setting up
       return
     }
@@ -305,7 +305,7 @@ export class PrimitiveNode extends LGraphNode {
       }
 
       if (isValidWidgetType(type)) {
-        widget = ComfyWidgets[type](this, 'value', inputData, app).widget
+        widget = ComfyWidgets[type](this, 'value', inputData, useApp()).widget
       } else {
         widget = this.addCustomWidget({
           type: type.toLowerCase(),
@@ -548,7 +548,7 @@ export function setWidgetConfig(slot: INodeInputSlot, config?: InputSpec) {
   if (!originNode || !isPrimitiveNode(originNode)) return
   if (config) {
     originNode.recreateWidget()
-  } else if (!app.configuringGraph) {
+  } else if (!useApp().configuringGraph) {
     originNode.disconnectOutput(0)
     originNode.onLastDisconnect()
   }
@@ -624,7 +624,7 @@ export const widgetInputsExtension: ComfyExtension = {
     nodeType.prototype.onConfigure = useChainCallback(
       nodeType.prototype.onConfigure,
       function (this: LGraphNode) {
-        if (!app.configuringGraph) {
+        if (!useApp().configuringGraph) {
           // On copy + paste of nodes, ensure that widget configs are set up
           for (const input of this.inputs) {
             if (input.widget && !input.widget[GET_CONFIG]) {
@@ -654,7 +654,7 @@ export const widgetInputsExtension: ComfyExtension = {
 
       // Create a primitive node
       const node = LiteGraph.createNode('PrimitiveNode')
-      const graph = app.canvas.graph
+      const graph = useApp().canvas.graph
       if (!node || !graph) return r
 
       graph.add(node)

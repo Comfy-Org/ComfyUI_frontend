@@ -51,6 +51,8 @@ export interface AddCreditsPorts {
   readonly watchPayment: (
     landed: (activation?: AutoTopUpActivationOutcome) => void
   ) => () => void
+  /** True when a checkout URL works once: none is created without a reserved tab, and the blocked step requests one again in its own click. */
+  readonly singleUseCheckout?: boolean
   /** True when `createCheckout` sends `autoTopUp` and `watchPayment` reports its outcome; the checkbox shows only then. */
   readonly activatesAutoTopUp?: boolean
   /** After a top-up lands, Platform's Turn on auto top-up link when the served facts offer it, else null. */
@@ -201,6 +203,7 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     if (stopWatch) return
     stopWatch = ports.watchPayment((activation) => {
       stopWatch?.()
+      stopWatch = undefined
       void land(activation)
     })
   }
@@ -232,6 +235,10 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     request: AddCreditsAutoTopUpRequest
   ) {
     const tab = ports.reserveTab()
+    if (tab === null && ports.singleUseCheckout) {
+      dispatch({ type: 'tab_blocked', amountCents })
+      return
+    }
     dispatch({
       type: 'checkout_requested',
       amountCents,
@@ -273,7 +280,11 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
 
   function reopenCheckout() {
     const current = state.value
-    if (current.step !== 'checkout_opened' || !toValue(options.facts).canTopUp)
+    if (
+      (current.step !== 'checkout_opened' &&
+        current.step !== 'checkout_blocked') ||
+      !toValue(options.facts).canTopUp
+    )
       return
     return openCheckout(current.amountCents, acceptedRequest)
   }

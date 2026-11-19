@@ -133,7 +133,7 @@
             >
               <SelectTrigger
                 size="md"
-                class="h-7 min-w-0 px-2 text-xs"
+                class="h-7 min-w-0 px-2"
                 :aria-label="t('layerEditor.blendMode')"
               >
                 <SelectValue />

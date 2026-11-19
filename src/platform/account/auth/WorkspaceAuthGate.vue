@@ -140,7 +140,7 @@ function cancelInitialization(): void {
 /** A tab signed in on the web session carries its workspace on the session. */
 async function requiresUnifiedToken(): Promise<boolean> {
   return (
-    useFeatureFlags().flags.unifiedCloudAuthEnabled &&
+    isCloud &&
     useAuthStore().currentUser !== null &&
     !(await signedInOnWebSession())
   )

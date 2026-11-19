@@ -489,13 +489,55 @@ describe('AgentPanelRoot Ask agent about errors', () => {
       expect(useAgentComposerStore().errorContext).not.toBeNull()
     )
 
-    await useWorkflowService().openWorkflow(other)
+    await useWorkflowService().openWorkflow(other, { initiator: 'user' })
 
     await vi.waitFor(() =>
       expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
     )
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
     expect(useAgentComposerStore().errorContext).not.toBeNull()
+  })
+
+  it('keeps an attached chip with its workflow across a tab switch when no reply is running', async () => {
+    const other = addBoundTab(otherTab, 'wf-other')
+    respondWithChats([
+      { id: 'th-1', title: 'Current chat', workflowId: 'wf-42' },
+      { id: 'th-2', title: 'Other chat', workflowId: 'wf-other' }
+    ])
+    respondToFetch('/api/agent/threads/th-2/messages', () =>
+      json(200, liveOtherThread('wf-other'))
+    )
+    renderPanel()
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: runningTab
+    }
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().errorContext).not.toBeNull()
+    )
+    const chatBeforeSwitch = useAgentChatHistoryStore().activeId
+    const activationHandled = new Promise<void>((resolve) =>
+      workflowStore.onUserActivation(() => resolve())
+    )
+
+    await useWorkflowService().openWorkflow(other, { initiator: 'user' })
+    await activationHandled
+    await nextTick()
+
+    expect(workflowStore.activeWorkflow?.path).toBe(otherTab)
+    expect(
+      screen.queryByRole('status', {
+        name: i18n.global.t('agent.openingWorkflowChat', {
+          workflowName: 'other'
+        })
+      })
+    ).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+    expect(useAgentChatHistoryStore().activeId).toBe(chatBeforeSwitch)
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(runningTab)
+    expect(useAgentComposerStore().errorContext?.workflowPath).toBe(runningTab)
   })
 
   it('starts a new chat on the errored workflow when it has none', async () => {
@@ -987,7 +1029,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
   })
 
   it('marks a host-permission question as needing an answer page-wide until it is answered', async () => {
-    const { unmount } = renderPanel()
+    renderPanel()
     await send('install the video nodes')
 
     emitAskUser()
@@ -1007,8 +1049,112 @@ describe('AgentPanelRoot tab activity across chats', () => {
     emitRunApproval()
     await nextTick()
     expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+  })
+
+  it.for([
+    { kind: 'run approval', emitAsk: emitRunApproval },
+    { kind: 'question', emitAsk: emitAskUser }
+  ])(
+    'keeps the page-wide prefix after the panel closes while a $kind is pending, until it reopens',
+    async ({ emitAsk }) => {
+      const { unmount } = renderPanel()
+      await send('add an upscaler')
+      emitAsk()
+      await nextTick()
+
+      unmount()
+      await nextTick()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+      renderPanel()
+      await vi.waitFor(() => expect(useBrowserTabTitleStore().prefix).toBe(''))
+    }
+  )
+
+  async function holdAfterTwoAsks(): Promise<{
+    start: number
+    setNow: (at: number) => void
+    unmount: () => void
+  }> {
+    const start = Date.now()
+    let now = start
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+    now = start + 14 * 60_000
+    emitAskUser()
+    await nextTick()
+    return { start, setNow: (at) => (now = at), unmount }
+  }
+
+  it('times the held prefix from the newest pending ask when the first is answered', async () => {
+    const { start, setNow, unmount } = await holdAfterTwoAsks()
+    agentSocket.receive('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: 'm-1',
+      ask_id: 'm-1:call-1',
+      status: 'answered',
+      selected: ['run']
+    })
+    await nextTick()
+
+    setNow(start + 16 * 60_000)
+    unmount()
+    await nextTick()
+
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+  })
+
+  it('times the held prefix from the newest pending ask when both still wait', async () => {
+    const { start, setNow, unmount } = await holdAfterTwoAsks()
+
+    setNow(start + 16 * 60_000)
+    unmount()
+    await nextTick()
+
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+  })
+
+  it('times the held prefix from when the ask first appeared after its chat is left and reopened', async () => {
+    const start = Date.now()
+    let now = start
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+
+    await openChat('Other chat', 'th-2')
+    now = start + 14 * 60_000
+    await openChat('Running chat', 'th-1')
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+    now = start + 16 * 60_000
+    unmount()
+    await nextTick()
+
+    expect(useBrowserTabTitleStore().prefix).toBe('')
+  })
+
+  it('clears the page-wide prefix on close when nothing waits for an answer', async () => {
+    const { unmount } = renderPanel()
+    await send('install the video nodes')
+    emitAskUser()
+    await nextTick()
+    agentSocket.receive('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: 'm-1',
+      ask_id: 'm-1:call-2',
+      status: 'answered',
+      selected: ['allow']
+    })
+    await nextTick()
 
     unmount()
+    await nextTick()
+
     expect(useBrowserTabTitleStore().prefix).toBe('')
   })
 

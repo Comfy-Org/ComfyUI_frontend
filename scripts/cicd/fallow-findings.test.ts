@@ -90,16 +90,71 @@ describe('fallow findings renderer', () => {
     expect(md).toContain('capabilities.ts:214')
   })
 
-  it('says findings are scoped to the diff, so nobody inherits the backlog', () => {
+  it('says only new findings gate, so nobody inherits the backlog', () => {
     const md = renderReport(REAL_REPORT)
-    expect(md).toContain('new findings in changed files only')
+    expect(md).toContain('Only **new findings** can fail the check')
+    expect(md).not.toContain('introduced or moved by this PR')
+    expect(md).toContain('outside the changed files')
     expect(md).toContain('.fallow-baselines/')
   })
 
+  it('omits findings the audit attributes to the base', () => {
+    const md = renderReport({
+      verdict: 'fail',
+      duplication: {
+        clone_groups: [
+          {
+            introduced: false,
+            instances: [
+              { file: 'src/inheritedCloneA.ts', start_line: 10, end_line: 30 },
+              { file: 'src/inheritedCloneB.ts', start_line: 40, end_line: 60 }
+            ]
+          }
+        ]
+      },
+      complexity: {
+        findings: [
+          {
+            path: 'src/touched.ts',
+            name: 'inheritedComplexity',
+            line: 580,
+            cyclomatic: 13,
+            crap: 49.5,
+            severity: 'moderate',
+            introduced: false
+          }
+        ]
+      },
+      dead_code: {
+        unused_files: [{ path: 'src/inheritedFile.ts', introduced: false }],
+        unused_exports: [
+          {
+            path: 'src/touched.ts',
+            export_name: 'newExport',
+            line: 3113,
+            introduced: true
+          },
+          {
+            path: 'src/touched.ts',
+            export_name: 'inheritedExport',
+            line: 12,
+            introduced: false
+          }
+        ]
+      }
+    })
+
+    expect(md).toContain('`newExport`')
+    expect(md).toContain('src/touched.ts:3113')
+    expect(md).not.toContain('inheritedCloneA')
+    expect(md).not.toContain('inheritedCloneB')
+    expect(md).not.toContain('inheritedComplexity')
+    expect(md).not.toContain('inheritedFile')
+    expect(md).not.toContain('inheritedExport')
+  })
+
   it('reports a clean audit plainly', () => {
-    expect(renderReport({ verdict: 'pass' })).toBe(
-      'No new findings in the changed files.'
-    )
+    expect(renderReport({ verdict: 'pass' })).toBe('No new findings.')
   })
 
   it('never claims a clean audit when the verdict failed', () => {
@@ -131,7 +186,9 @@ describe('fallow findings renderer', () => {
     const rows = renderDeadCode({
       dead_code: {
         unused_files: [{ path: 'src/gone.ts' }],
-        unused_exports: [{ file: 'src/api.ts', name: 'publicThing', line: 4 }]
+        unused_exports: [
+          { path: 'src/api.ts', export_name: 'publicThing', line: 4 }
+        ]
       }
     })
     expect(rows).toHaveLength(2)
