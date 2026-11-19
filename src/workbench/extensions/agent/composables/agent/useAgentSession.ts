@@ -2187,6 +2187,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadId
     )
     if (!answerRetried) return
+    if (stopped) {
+      reportUnconfirmedConflict(askId, false)
+      return
+    }
     if (!resolutionChannelWasLost) {
       if (submitted) {
         conversationStore.recordAskAnswer(
@@ -2218,11 +2222,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function reportSupersededAnswer(
     askId: string,
-    source: CommittedAnswerSource,
-    canonicalFrame = false
+    source: CommittedAnswerSource
   ): void {
     if (
-      !canonicalFrame &&
       !namesCommittedAnswer(
         source,
         conversationStore.submittedAskMinSelections(askId)
@@ -2253,7 +2255,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ask_kind: submitted.kind
       }
     })
-    pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
+    if (submitted.owner === conversationStore.threadId)
+      pushError(i18n.global.t('agent.runApproval.answerSuperseded'))
   }
 
   async function sendAnswer(
@@ -2480,11 +2483,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     conversationStore.clearAskAwaitingResolution(event.data.ask_id)
     const resolution = toAskResolution(event.data)
-    reportSupersededAnswer(event.data.ask_id, event.data, true)
+    const namesAnswer =
+      event.data.status === 'answered' &&
+      namesCommittedAnswer(
+        event.data,
+        conversationStore.submittedAskMinSelections(event.data.ask_id)
+      )
+    reportSupersededAnswer(event.data.ask_id, event.data)
     conversationStore.retireAsk(
       event.data.ask_id,
       resolution,
-      event.data.thread_id
+      event.data.thread_id,
+      true,
+      undefined,
+      !namesAnswer
     )
     recordDeliveredAsk(event.data.ask_id)
     onAskResolved?.(event.data.ask_id)
@@ -2792,7 +2804,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         previousObservation === undefined
           ? []
           : [...deliveredAtRecoveryStart].filter(
-              (askId) => !previousObservation.deliveredAskIds.has(askId)
+              (askId) =>
+                !previousObservation.deliveredAskIds.has(askId) &&
+                askId !== previousObservation.pendingAskId
             )
       ),
       consumedSnapshotProtection: new Set()
@@ -3201,7 +3215,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     loadGeneration++
-    conversationStore.reset()
+    conversationStore.reset({ discardCurrentThread: true })
     pruneSkillTurns()
     onThreadActivated?.(null)
     forgetBinding()

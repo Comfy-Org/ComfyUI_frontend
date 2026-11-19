@@ -958,10 +958,8 @@ export const useAgentConversationStore = defineStore(
       if (!submitted) return
       clearAskAwaitingResolution(askId)
       clearAskResolutionReportWatchdog(askId)
-      if (isAskRetired(askId, submitted.owner)) {
-        submittedAskAnswers.delete(askId)
-        setAskAnswering(askId, false)
-      }
+      submittedAskAnswers.delete(askId)
+      setAskAnswering(askId, false)
     }
 
     function expireAskResolution(askId: string): void {
@@ -999,12 +997,14 @@ export const useAgentConversationStore = defineStore(
         if (!retainedThreads.has(owner)) retiredAsks.delete(owner)
       for (const owner of provisionalRetiredAsks.keys())
         if (!retainedThreads.has(owner)) provisionalRetiredAsks.delete(owner)
-      for (const [askId, submitted] of submittedAskAnswers)
-        if (
-          !retainedThreads.has(submitted.owner) &&
-          submitted.awaitingResolution === undefined
-        )
+      for (const [askId, submitted] of submittedAskAnswers) {
+        if (retainedThreads.has(submitted.owner)) continue
+        clearAskRetirementWatchdog(askId)
+        if (submitted.awaitingResolution === undefined) {
           submittedAskAnswers.delete(askId)
+          setAskAnswering(askId, false)
+        }
+      }
     }
 
     const askRetirementWatchdogs = new Map<
@@ -1775,9 +1775,23 @@ export const useAgentConversationStore = defineStore(
       userAttachments.value = new Map()
     }
 
-    function reset(): void {
+    function reset({
+      discardCurrentThread = false
+    }: { discardCurrentThread?: boolean } = {}): void {
       unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
+      if (discardCurrentThread && threadId.value !== null) {
+        const owner = threadId.value
+        retiredAsks.delete(owner)
+        provisionalRetiredAsks.delete(owner)
+        for (const [askId, submitted] of submittedAskAnswers) {
+          if (submitted.owner !== owner) continue
+          clearAskRetirementWatchdog(askId)
+          clearAskResolutionReportWatchdog(askId)
+          submittedAskAnswers.delete(askId)
+          setAskAnswering(askId, false)
+        }
+      }
       discardDetachedAskState()
       messages.value = []
       userTexts.value = new Map()

@@ -3027,7 +3027,7 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
 
-    it('treats an empty question resolution as the committed answer', async () => {
+    it('retains the submitted answer through an empty status-only resolution', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
 
@@ -3036,6 +3036,14 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(card()).toMatchObject({
         resolution: { status: 'answered', selected: [] }
       })
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+      expect(session.notices.value).toEqual([])
+
+      emit(askResolved('msg-1', 'turn-1:call-1', ['flux']))
+
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })

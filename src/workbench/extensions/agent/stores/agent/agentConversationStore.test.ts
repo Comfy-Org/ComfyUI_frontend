@@ -1551,6 +1551,18 @@ describe('useAgentConversationStore', () => {
     expect(store.isAskRetired('ask-2', 'foreground')).toBe(true)
   })
 
+  it('reset discards ask recovery state when the server deleted the thread', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('deleted')
+    store.recordAskAnswer('ask-1', { selected: ['run'] })
+    store.retireAsk('ask-2', { status: 'retired' })
+
+    store.reset({ discardCurrentThread: true })
+
+    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    expect(store.isAskRetired('ask-2', 'deleted')).toBe(false)
+  })
+
   it('reset preserves ask recovery state owned by a background turn', () => {
     const store = useAgentConversationStore()
     store.setThreadId('background')
