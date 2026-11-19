@@ -7,7 +7,6 @@ on:
     workflows: ['CI: Lint Format']
     types: [completed]
     branches:
-      - 'cloud/**'
       - 'core/**'
 
 permissions:
