@@ -272,13 +272,6 @@ export class BootstrapTracer {
     }
   }
 
-  /**
-   * Record a failure that a caller detected outside any `settle()`-wrapped
-   * promise — e.g. a `useAsyncState` ref that reports failure as data instead
-   * of rejecting. `settle()` never sees that failure, so without this call
-   * `_failureCause` has nothing to attribute it to. Does not throw or stop
-   * the phase; the caller still decides whether and how startup ends.
-   */
   noteFailure(phase: BootstrapPhase, error: unknown): void {
     if (!this._failurePhases.has(error)) this._failurePhases.set(error, phase)
   }

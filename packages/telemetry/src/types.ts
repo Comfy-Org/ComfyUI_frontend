@@ -180,14 +180,13 @@ export interface BootstrapCompleteMetadata {
   /** Phases still running when this row was emitted. Only set for `timed_out`. */
   pending?: string[]
   /**
-   * Only set for `failed`: the phase whose work last rejected, else the newest
-   * phase still open, else `untraced` (the error was thrown outside any phase).
+   * Failed startup's rejecting phase when its error matches (or none is supplied),
+   * else the newest open phase or `untraced`.
    */
   failure_phase?: string
   /**
-   * Only set for `failed`: a safe terminal error name, or the rejection
-   * value's type for non-Error values. Its presence does not prove a phase
-   * rejected.
+   * Failed startup's safe error name, or a non-Error rejection's type.
+   * May describe an error outside every phase.
    */
   failure_error?: string
 }
