@@ -110,7 +110,6 @@ function makeWorkflowData(
   }
 }
 
-/** A saved workflow whose canvas differs from its saved file. */
 function createEditedWorkflow(path: string): LoadedComfyWorkflow {
   const workflow = createModeTestWorkflow({ path })
   workflow.changeTracker.activeState = makeWorkflowData({ edited: true })
