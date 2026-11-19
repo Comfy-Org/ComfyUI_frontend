@@ -393,6 +393,19 @@ describe('widget handles', () => {
       expect(node.size[1]).toBeGreaterThan(before + 200)
     })
 
+    it('is one undo step, since the node it grows is saved', () => {
+      const { node, handle } = nodeWithWidget()
+      probe = () => node.size[1]
+      const before = node.size[1]
+
+      handle.setHeight(300)
+
+      expect(changes).toEqual([
+        ['start', before],
+        ['end', node.size[1]]
+      ])
+    })
+
     it.for([[-1], [Number.NaN], [Infinity], ['20']])(
       'refuses a height it cannot use: %o',
       ([height]) => {
@@ -413,10 +426,9 @@ describe('widget handles', () => {
       handle.setOption('max', 3)
       handle.setHidden(true)
       handle.setDisabled(true)
-      handle.setHeight(40)
 
       expect(changes).toEqual([])
-      expect(setDirtyCanvas.mock.calls).toEqual(Array(5).fill([true, true]))
+      expect(setDirtyCanvas.mock.calls).toEqual(Array(4).fill([true, true]))
     })
   })
 

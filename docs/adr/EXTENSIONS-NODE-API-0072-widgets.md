@@ -64,8 +64,9 @@ This ADR records how the API reaches widgets through those owners.
    over the `history` service it uses: one undo step of the open workflow,
    then a new graph version and a redraw. A change made while another is
    open, such as inside `comfy.edit.batch` or a listener reacting to an
-   edit, joins it. A change the workflow does not save (label, option,
-   hidden, disabled, height, links) is not recorded, as it would compare
+   edit, joins it. `setHeight` (decision 8) is such a change too, because
+   the node it grows is saved. A change the workflow does not save (label,
+   option, hidden, disabled, links) is not recorded, as it would compare
    equal and add nothing, and only asks the node's canvas to redraw.
    - The workflow saves a node's widget values, not its widgets. An undo of
      the step gives back the state before it. A redo, the undo of any later
@@ -216,9 +217,12 @@ This ADR records how the API reaches widgets through those owners.
 15. `beforeSerialize` replaces the widget's `serializeValue`, the extension
     point `graphToPrompt` already awaits for each widget, with one that first
     awaits the serializer that was there, then lets listeners replace the
-    value for this prompt only. The value a listener supplies is checked as
-    `setValue` checks one. The event's `context` is always `'prompt'`; see
-    "Core limitation".
+    value for this prompt only. `app.graphToPrompt` builds a prompt to queue,
+    and also for Export and Export (API) and for the share dialog's asset
+    list (ADR-EXTENSIONS-NODE-API-0076 decision 2), so a listener runs for
+    each, and in an Export (API) file the replaced value is what is written.
+    The value a listener supplies is checked as `setValue` checks one. The
+    event's `context` is always `'prompt'`; see "Core limitation".
 16. Each bridge is installed when the first listener that needs it is added,
     and only then, so a widget no pack listens to is untouched. Nothing is
     added to `LGraphNode`, `BaseWidget` or `ExecutableNodeDTO`: `callback`,
@@ -263,12 +267,12 @@ This ADR records how the API reaches widgets through those owners.
     That `destroy` (and a declared type's teardown) is called once relies on
     the host fix in
     [Comfy-Org/ComfyUI_frontend#23520](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23520),
-    which fixes #23476. Until it merges, `addWidget` in
-    `src/scripts/domWidget.ts` keeps calling a DOM widget's `onRemove` from
-    its node's `onRemoved` after `removeWidget` has already called it, so a
+    which fixes #23476 and is merged into `main`. On a base without it,
+    `addWidget` in `src/scripts/domWidget.ts` calls a DOM widget's `onRemove`
+    from its node's `onRemoved` after `removeWidget` has already called it, so a
     widget removed before its node has `destroy` called twice: once when it
     is removed and again when the node is. The API does not guard against
-    this; the fix belongs in the host.
+    this; these changes land on a `main` that carries the fix.
 20. `canvas(def)` is a mount whose element holds a `<canvas>`. `draw` gets the
     context scaled for the device pixel ratio, the size in CSS pixels, the
     theme, and the value accessor when `defaultValue` is given. It runs on
