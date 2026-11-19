@@ -641,7 +641,8 @@ export const useAgentConversationStore = defineStore(
       resolution: AskUserResolution,
       owner?: string,
       permanent = true,
-      provisionalTurnId?: TurnId
+      provisionalTurnId?: TurnId,
+      preserveSubmitted = false
     ): void {
       const key = threadKey(owner)
       const askTurnId =
@@ -662,8 +663,10 @@ export const useAgentConversationStore = defineStore(
           entry.transport.retireAskPart(askId, resolution)
       rememberRetiredAsk(key, askId, resolution, permanent, askTurnId)
       clearAskRetirementWatchdog(askId)
-      clearAskResolutionReportWatchdog(askId)
-      submittedAskAnswers.delete(askId)
+      if (!preserveSubmitted) {
+        clearAskResolutionReportWatchdog(askId)
+        submittedAskAnswers.delete(askId)
+      }
       setAskAnswering(askId, false)
     }
 
@@ -827,12 +830,14 @@ export const useAgentConversationStore = defineStore(
     function asksAwaitingResolution(): Array<{
       askId: string
       kind: 'accepted' | 'conflict'
+      owner: string
     }> {
       return [...submittedAskAnswers]
         .filter(([, submitted]) => submitted.awaitingResolution !== undefined)
         .map(([askId, submitted]) => ({
           askId,
-          kind: submitted.awaitingResolution!
+          kind: submitted.awaitingResolution!,
+          owner: submitted.owner
         }))
     }
 
@@ -930,7 +935,9 @@ export const useAgentConversationStore = defineStore(
         askId,
         setTimeout(() => {
           expireAskResolution(askId)
-          retireAsk(askId, committed, owner)
+          const preserveSubmitted =
+            submittedAskAnswers.get(askId)?.awaitingResolution !== undefined
+          retireAsk(askId, committed, owner, true, undefined, preserveSubmitted)
         }, ASK_RESOLUTION_GRACE_MS)
       )
     }
