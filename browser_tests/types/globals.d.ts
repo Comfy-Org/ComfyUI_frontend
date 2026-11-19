@@ -40,6 +40,25 @@ export interface LegacyGraphInstancePatches {
   safeOnNodeAdded: string[]
 }
 
+interface EcosystemSimulacraLifecycleEntry {
+  hook: string
+  configured: string | null
+  active: string
+}
+
+export interface EcosystemSimulacra {
+  lifecycle: EcosystemSimulacraLifecycleEntry[]
+  registry: { graph: string; nodes: string[] } | null
+  promptExecuted: string[]
+  executed: string[]
+  added: string[]
+  removed: string[]
+  timerErrors: string[]
+  navigation: { groups: unknown[] }
+  timersHeld: () => number
+  releaseTimers: () => void
+}
+
 interface CapturedMessages {
   clientFeatureFlags: { type: string; data: Record<string, unknown> } | null
   serverFeatureFlags: Record<string, unknown> | null
@@ -76,6 +95,7 @@ declare global {
     __perfFrameState?: PerfFrameState
     __perfLongtaskState?: PerfLongtaskState
     __legacyGraphInstancePatches?: LegacyGraphInstancePatches
+    __ecosystemSimulacra?: EcosystemSimulacra
     __captureHostTelemetry?: (captured: {
       event: string
       properties: Record<string, unknown>
