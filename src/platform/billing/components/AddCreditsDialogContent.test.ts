@@ -40,7 +40,10 @@ import {
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
-import { clearCheckoutJourney } from '@/platform/billing/utils/checkoutJourney'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/billing/utils/checkoutJourney'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
@@ -1088,6 +1091,47 @@ describe('AddCreditsDialogContent top-up telemetry', () => {
     unmount()
 
     expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it('keeps an opened checkout handed off when a later reopen from the dialog fails', async () => {
+    hoisted.createHostedCheckout.mockResolvedValueOnce({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    hoisted.createHostedCheckout.mockRejectedValueOnce(new Error('offline'))
+    await user.click(screen.getByTestId('add-credits-reopen'))
+    await waitFor(() =>
+      expect(trackedBillingEvents()).toContain('topup.failed')
+    )
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+  })
+
+  it('leaves a journey another checkout took over untouched', async () => {
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+    clearCheckoutJourney()
+    resolveCheckoutJourney({
+      actorUid: 'user-1',
+      workspaceId: 'workspace-1',
+      entryFlow: 'initial_subscription',
+      entrySource: 'pricing',
+      assignment: { status: 'unavailable' }
+    })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered'])
   })
 
   it('reports the top-up failed when its checkout cannot open', async () => {

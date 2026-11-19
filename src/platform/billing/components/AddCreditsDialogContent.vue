@@ -135,6 +135,7 @@ const pendingTopup = computed(() =>
 let paymentWatched = false
 const readingActivation = shallowRef(false)
 let ownedJourney: CheckoutJourneyRecord | null = null
+let checkoutReached = false
 
 function activeOwnedJourney(): CheckoutJourneyRecord | null {
   const active = getActiveCheckoutJourney()
@@ -151,6 +152,7 @@ function trackTopupStarted(amountCents: number): void {
     payment_intent_source: source,
     amount_cents: amountCents
   })
+  if (checkoutReached) return
   const journey = activeOwnedJourney()
   if (journey) trackCheckoutJourneyPhase(journey, { phase: 'submitted' })
 }
@@ -387,7 +389,9 @@ const ports: AddCreditsPorts = {
   autoTopUpSetupUrl: autoTopUpOffer.setupUrl,
   ownsCheckout: () => ownsCheckout(ownedCheckout),
   checkoutOpened() {
-    if (activeOwnedJourney()) handOffCheckoutJourney()
+    if (checkoutReached || !activeOwnedJourney()) return
+    checkoutReached = true
+    handOffCheckoutJourney()
   }
 }
 

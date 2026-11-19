@@ -205,6 +205,7 @@ describe('the payment watch', () => {
     checkouts: AddCreditsCheckoutResult[]
     owns?: () => boolean
     checkoutOpened?: () => void
+    singleUseCheckout?: boolean
   }) {
     let landed: (() => void) | undefined
     const watchPayment = vi.fn((onPayment: () => void) => {
@@ -221,7 +222,7 @@ describe('the payment watch', () => {
             options.checkouts.shift() ?? { status: 'error', refusal: FAILED },
           reserveTab: () => options.tabs.shift() ?? null,
           watchPayment,
-          singleUseCheckout: true,
+          singleUseCheckout: options.singleUseCheckout ?? true,
           ...(options.owns ? { ownsCheckout: options.owns } : {}),
           ...(options.checkoutOpened
             ? { checkoutOpened: options.checkoutOpened }
@@ -242,15 +243,19 @@ describe('the payment watch', () => {
     const checkoutOpened = vi.fn()
     const { dialog } = watchedDialog({
       tabs: [tab(), null],
-      checkouts: [OPENED],
-      checkoutOpened
+      checkouts: [OPENED, OPENED],
+      checkoutOpened,
+      singleUseCheckout: false
     })
 
     await dialog.continueToCheckout()
     expect(checkoutOpened).toHaveBeenCalledOnce()
 
     await dialog.reopenCheckout()
-    expect(dialog.state.value.step).toBe('checkout_blocked')
+    expect(dialog.state.value).toMatchObject({
+      step: 'checkout_blocked',
+      checkoutUrl: OPENED.url
+    })
     expect(checkoutOpened).toHaveBeenCalledOnce()
 
     dialog.followBlockedLink()
