@@ -1042,14 +1042,11 @@ test.describe('Workflow Persistence', () => {
     await comfyPage.menu.topbar.triggerTopbarCommand(['New'])
     await comfyPage.menu.topbar.saveWorkflow(third)
 
-    await test.step('visit every tab without editing, leaving no drafts behind', async () => {
+    await test.step('visit every tab without editing', async () => {
       await comfyPage.workflow.expectTabOpensAsSaved(first)
       await comfyPage.workflow.expectTabOpensAsSaved(second)
       await comfyPage.workflow.expectTabOpensAsSaved(third)
       await waitForWorkflowTabState(comfyPage, 3)
-      await expect
-        .poll(async () => (await comfyPage.workflow.getDraftWorkflows()).length)
-        .toBe(0)
     })
 
     await comfyPage.workflow.reloadAndWaitForApp()

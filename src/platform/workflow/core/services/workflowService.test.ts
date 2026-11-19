@@ -562,6 +562,28 @@ describe('useWorkflowService', () => {
       )
     })
 
+    it('keeps the draft of a saved workflow opened from unsaved changes', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      // Opening a draft makes it the tracker baseline, so only the modified
+      // flag says the canvas differs from the saved file.
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      activeWorkflow.isModified = true
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(useWorkflowDraftStoreV2().saveDraft).toHaveBeenCalledWith(
+        activeWorkflow.path,
+        JSON.stringify(activeWorkflow.activeState),
+        { name: activeWorkflow.key, isTemporary: false }
+      )
+      expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalled()
+    })
+
     it('saves a draft of a temporary workflow even when unedited', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string) => key === 'Comfy.Workflow.Persist'

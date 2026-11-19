@@ -294,6 +294,23 @@ export const useWorkflowService = () => {
     const activeState = activeWorkflow.activeState
     if (!activeState) return
 
+    // A saved workflow showing exactly its saved file needs no draft. Leaving
+    // one behind made it reopen as unsaved after a reload whenever this
+    // version serializes the file differently from how it was written.
+    // Both checks are needed: a tab opened from a draft has the draft as its
+    // tracker baseline but stays modified, and a stale clean flag must not
+    // drop an edit the baseline comparison still sees.
+    const savedState = activeWorkflow.changeTracker?.initialState
+    if (
+      activeWorkflow.isPersisted &&
+      !activeWorkflow.isModified &&
+      savedState &&
+      ChangeTracker.graphEqual(savedState, activeState)
+    ) {
+      workflowDraftStore.removeDraft(activeWorkflow.path)
+      return
+    }
+
     try {
       const saved = workflowDraftStore.saveDraft(
         activeWorkflow.path,
