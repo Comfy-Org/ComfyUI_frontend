@@ -154,6 +154,7 @@ export type {
 } from './operationState'
 export {
   isBlockedOnCustomerPhase,
+  isAutoTopUpActivating,
   isGrantLanding,
   isTerminal,
   reduceBillingOperation,
@@ -162,6 +163,7 @@ export {
 export {
   OPERATION_POLL_BUDGET,
   OPERATION_POLL_TIMING,
+  backoffDelayMs,
   customerCanActHere,
   hasExhaustedPollBudget,
   isParkedOnCustomer,
@@ -196,6 +198,11 @@ export {
   failureCategoryFor,
   operationRoute
 } from './operationLifecycle'
+export type {
+  OperationOutcomeRead,
+  OperationOutcomeReadOptions
+} from './operationOutcome'
+export { operationOutcomeRoute, readOperationOutcome } from './operationOutcome'
 export {
   BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT
@@ -332,6 +339,7 @@ export type {
   CreateHostedTopupCheckoutInput,
   CreateInteractiveTopupInput,
   CreateTopupCheckoutInput,
+  CreateTopupPurchaseInput,
   HostedTopupCheckout,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
@@ -346,6 +354,8 @@ export type {
   TopupInvalidReturnUrl,
   TopupNoPaymentMethod,
   TopupNotAvailable,
+  TopupPurchaseResult,
+  TopupPurchaseState,
   TopupQuote,
   TopupQuoteResult,
   TopupResult,
@@ -355,6 +365,7 @@ export type {
 export {
   INTERACTIVE_TOPUP_ROUTE,
   TOPUP_CHECKOUT_ROUTE,
+  TOPUP_PURCHASES_ROUTE,
   TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
@@ -411,6 +422,13 @@ export type {
 export { deriveCreditsFlyout } from './billingTab/creditsFlyout'
 export type { PlanCheckoutBanner } from './billingTab/planCheckoutBanner'
 export { planCheckoutBannerFor } from './billingTab/planCheckoutBanner'
+export type {
+  PlanNotStartedBanner,
+  PlanNotStartedFacts,
+  RecoveryPaymentPage,
+  SubscriptionPaymentRecovery
+} from './billingTab/planNotStartedBanner'
+export { planNotStartedBannerFor } from './billingTab/planNotStartedBanner'
 export type {
   TopupCheckoutBanner,
   TopupCheckoutSnapshot

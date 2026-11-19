@@ -149,6 +149,8 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
       set rootGraph(graph: LGraph | undefined) {
         rootGraphInternal = graph
       },
+      nodeOutputs: {},
+      nodePreviewImages: {},
       ui: { settings: { dispatchChange: vi.fn() } },
       setup: vi.fn(),
       loadGraphData: vi.fn()

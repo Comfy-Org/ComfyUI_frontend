@@ -1,14 +1,11 @@
 <template>
   <BillingAutoTopUpBanner v-if="autoTopUpKind" :kind="autoTopUpKind">
     <Button
-      as="a"
-      :href
-      target="_blank"
-      rel="noopener"
+      v-bind="button"
       variant="inverted"
       size="md"
       class="shrink-0"
-      @click="track"
+      @click="open"
     >
       {{ $t('workspacePanel.billingStatus.updatePayment') }}
     </Button>
@@ -86,7 +83,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 
 type BannerAction = 'addCredits' | 'updatePayment'
@@ -128,7 +125,7 @@ const balance = computed(() => billing.balance?.value ?? null)
 const isTeamPlan = computed(() => billing.isTeamPlan?.value ?? false)
 
 const autoTopUp = useAutoTopUpBannerKind()
-const { href, track } = usePlatformHandoff('/profile/billing', {
+const { button, open } = usePlatformBillingLink('/profile/billing', {
   target: 'auto_top_up',
   action: 'update_payment'
 })

@@ -1,3 +1,4 @@
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -12,13 +13,13 @@ import {
   ExecutableNodeDTO,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useAuthStore } from '@/stores/authStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 import { matchesWidgetName } from '@/utils/widgetBinding'
-import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
 
 const LINKED = Symbol('linked')
 
@@ -192,7 +193,6 @@ async function resolveUnmapped(
 async function collectModels(
   nodes: CheckedNode[]
 ): Promise<CompatibilityModel[] | null> {
-  if (nodes.some((node) => node.hasUnreadableModels)) return null
   const { mapped, unmapped, hasLinkedModelInput } = scanModelInputs(nodes)
   if (hasLinkedModelInput) return null
   const resolved = await resolveUnmapped(unmapped)
@@ -203,8 +203,9 @@ async function collectModels(
   return [...models.values()]
 }
 
-async function postCompatibilityCheck(): Promise<Response | null> {
-  const nodes = checkedNodes(app.rootGraph)
+async function postCompatibilityCheck(
+  nodes: CheckedNode[]
+): Promise<Response | null> {
   const models = await collectModels(nodes)
   if (!models) return null
   const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
@@ -216,7 +217,7 @@ async function postCompatibilityCheck(): Promise<Response | null> {
       node_types: nodeTypes,
       models
     }),
-    signal: AbortSignal.timeout(10_000)
+    signal: createTimeoutSignal(10_000)
   })
 }
 
@@ -229,10 +230,17 @@ function giveUp(cause: unknown): null {
 }
 
 /** Resolves null when no verdict is available. */
-export async function checkCloudCompatibility(): Promise<CloudWorkflowVerdict | null> {
+export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResult> {
   let body: unknown
   try {
-    const response = await postCompatibilityCheck()
+    const nodes = checkedNodes(useApp().rootGraph)
+    const unreadableLoader = nodes.find((node) => node.hasUnreadableModels)
+    if (unreadableLoader)
+      return {
+        kind: 'unreadableModelLoader',
+        nodeType: unreadableLoader.class_type
+      }
+    const response = await postCompatibilityCheck(nodes)
     if (!response) return null
     if (!response.ok)
       return giveUp(

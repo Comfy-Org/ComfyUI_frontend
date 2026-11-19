@@ -1,5 +1,3 @@
-import { onScopeDispose } from 'vue'
-
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import type { InputWidgetConfig } from '@/platform/workflow/management/stores/comfyWorkflow'
 
@@ -8,16 +6,9 @@ const RESIZABLE_SELECTOR = 'textarea, [data-slot="drop-zone-indicator"]'
 export function useAppModeWidgetResizing(
   onResize: (widget: IBaseWidget, config: InputWidgetConfig) => void
 ) {
-  let pendingHandler: (() => void) | null = null
-
-  function clearPendingHandler() {
-    if (!pendingHandler) return
-    window.removeEventListener('pointerup', pendingHandler)
-    window.removeEventListener('pointercancel', pendingHandler)
-    pendingHandler = null
-  }
-
-  onScopeDispose(clearPendingHandler)
+  let gesture:
+    | { widget: IBaseWidget; resizable: HTMLElement; startHeight: number }
+    | undefined
 
   function onPointerDown(widget: IBaseWidget, event: PointerEvent) {
     const wrapper = event.currentTarget
@@ -27,21 +18,16 @@ export function useAppModeWidgetResizing(
     const resizable = target.closest<HTMLElement>(RESIZABLE_SELECTOR)
     if (!resizable || !wrapper.contains(resizable)) return
 
-    clearPendingHandler()
-
-    const startHeight = resizable.offsetHeight
-    const handler = () => {
-      window.removeEventListener('pointerup', handler)
-      window.removeEventListener('pointercancel', handler)
-      pendingHandler = null
-      const height = resizable.offsetHeight
-      if (height === startHeight) return
-      onResize(widget, { height })
-    }
-    pendingHandler = handler
-    window.addEventListener('pointerup', handler)
-    window.addEventListener('pointercancel', handler)
+    gesture = { widget, resizable, startHeight: resizable.offsetHeight }
   }
 
-  return { onPointerDown }
+  function onPointerUp() {
+    if (!gesture) return
+    const { widget, resizable, startHeight } = gesture
+    gesture = undefined
+    const height = resizable.offsetHeight
+    if (height !== startHeight) onResize(widget, { height })
+  }
+
+  return { onPointerDown, onPointerUp }
 }
