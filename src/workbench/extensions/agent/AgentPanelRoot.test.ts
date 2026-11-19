@@ -8549,6 +8549,65 @@ describe('AgentPanelRoot history', () => {
         )
       })
 
+      it('does not let a late background blank ACK overwrite a reopened chat on the same tab', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let acceptBlank!: () => void
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first-0',
+              title: 'First chat 0',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            })
+          ],
+          {
+            'th-first-0': { workflowId: 'wf-first' }
+          },
+          {
+            post: () =>
+              new Promise<Response>((resolve) => {
+                acceptBlank = () =>
+                  resolve(
+                    json(202, {
+                      thread_id: 'th-late-blank',
+                      message_id: 'm-late-blank',
+                      workflow_id: 'wf-first'
+                    })
+                  )
+              })
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await openFromHistory('First chat 0')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-0')
+        )
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await sendFromComposer('pending blank send')
+
+        await openFromHistory('First chat 0')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-0')
+        )
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        acceptBlank()
+        await settleFollow()
+
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-0')
+        )
+      })
+
       it('does not open a chat or adopt an id from a partial cloud workflow listing when following an unbound saved tab', async () => {
         const first = addTab('workflows/first.json')
         const portrait = addTab('workflows/portrait.json')
@@ -8717,6 +8776,56 @@ describe('AgentPanelRoot history', () => {
         ])
         expect(screen.getByTestId('workflow-reference-chip')).toHaveTextContent(
           'scratch'
+        )
+      })
+
+      it('inserts an @ workflow pick into the visible composer on New chat after an accepted blank send on the same tab', async () => {
+        const first = addTab('workflows/first.json')
+        addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        stubWorkflowBoundHistory(
+          [],
+          {},
+          {
+            post: () =>
+              Promise.resolve(
+                json(202, {
+                  thread_id: 'th-first-accepted',
+                  message_id: 'm-first-accepted',
+                  workflow_id: 'wf-first'
+                })
+              )
+          }
+        )
+        renderWithSelectedTarget()
+
+        await sendFromComposer('first blank message')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-accepted')
+        )
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        expect(useAgentConversationStore().threadId).toBeNull()
+
+        const textbox = screen.getByRole('textbox')
+        await userEvent.click(textbox)
+        await userEvent.paste('Compare @')
+        await userEvent.click(
+          screen.getByRole('menuitem', { name: 'Workflows' })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', { name: /second/ })
+        )
+
+        await vi.waitFor(() =>
+          expect(useAgentComposerStore().workflowReferences).toMatchObject([
+            { id: 'wf-second', name: 'second' }
+          ])
+        )
+        expect(screen.getByTestId('workflow-reference-chip')).toHaveTextContent(
+          'second'
         )
       })
 

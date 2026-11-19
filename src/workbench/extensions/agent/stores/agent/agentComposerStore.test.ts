@@ -758,6 +758,31 @@ describe('composer drafts per chat', () => {
     ])
   })
 
+  it('keeps workflow reference insertions on a reused blank draft key instead of redirecting to the old thread', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('blank:tab-a')
+    store.setText('old thread draft')
+
+    store.rekeyDraft('blank:tab-a', 'thread:a')
+    store.activateDraft('blank:tab-a')
+    store.setText('Use @ after')
+    const captured = store.captureReferenceInsertion(4, 5)
+
+    expect(store.isCapturedInsertionLive(captured)).toBe(true)
+
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-fresh',
+      name: 'Fresh workflow'
+    })
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-fresh', name: 'Fresh workflow', textOffset: 4 }
+    ])
+
+    store.activateDraft('thread:a')
+    expect(store.draft).toBe('old thread draft')
+    expect(store.workflowReferences).toEqual([])
+  })
+
   it('releases unused attachment assets when evicting the oldest kept draft', () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     const store = useAgentComposerStore()

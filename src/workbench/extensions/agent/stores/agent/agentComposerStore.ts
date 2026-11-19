@@ -175,6 +175,7 @@ function applyWorkflowReferenceToPrompt(
 }
 
 const MAX_KEPT_DRAFTS = 20
+const MAX_ACTIVE_CAPTURES = 32
 
 function emptyKeptDraft(): KeptDraft {
   return {
@@ -187,7 +188,7 @@ function emptyKeptDraft(): KeptDraft {
 
 export const useAgentComposerStore = defineStore('agentComposer', () => {
   const keptDrafts = new Map<string, KeptDraft>()
-  const rekeyedDrafts = new Map<string, string>()
+  const activeCaptures = new Set<CapturedReferenceInsertion>()
   let activeDraftKey: string | null = null
   let draftActivationCount = 0
   const draftState = shallowRef<ComposerPrompt>({ text: '', references: [] })
@@ -844,17 +845,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     }
   }
 
-  function resolveDraftKey(key: string | null): string | null {
-    let current = key
-    const visited = new Set<string>()
-    while (current !== null && rekeyedDrafts.has(current)) {
-      if (visited.has(current)) break
-      visited.add(current)
-      current = rekeyedDrafts.get(current)!
-    }
-    return current
-  }
-
   function trimKeptDrafts(preserveAssetIds?: readonly string[]): void {
     let evicted = false
     for (const key of keptDrafts.keys()) {
@@ -913,11 +903,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function rekeyDraft(from: string, to: string): void {
     if (from === to) return
-    rekeyedDrafts.delete(from)
-    rekeyedDrafts.set(from, to)
-    for (const key of rekeyedDrafts.keys()) {
-      if (rekeyedDrafts.size <= MAX_KEPT_DRAFTS) break
-      rekeyedDrafts.delete(key)
+    for (const captured of activeCaptures) {
+      if (captured.draftKey === from) captured.draftKey = to
     }
     if (activeDraftKey === from) {
       activeDraftKey = to
@@ -933,9 +920,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     key: string,
     snapshot: GateHoldSnapshot
   ): void {
-    const targetKey = resolveDraftKey(key) ?? key
-    if (targetKey === activeDraftKey || keptDrafts.has(targetKey)) return
-    keptDrafts.set(targetKey, {
+    if (key === activeDraftKey || keptDrafts.has(key)) return
+    keptDrafts.set(key, {
       prompt: toKeptPrompt(snapshot.prompt),
       attachmentIds: snapshot.attachments.map(({ id }) => id),
       origin: snapshot.promptOrigin,
@@ -949,20 +935,26 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     to?: number,
     point?: ComposerInsertionPoint
   ): CapturedReferenceInsertion {
-    return {
+    const captured: CapturedReferenceInsertion = {
       draftKey: activeDraftKey,
       activationCount: draftActivationCount,
       from,
       to,
       insertionPoint: point ?? { ...insertionPoint.value }
     }
+    activeCaptures.add(captured)
+    for (const entry of activeCaptures) {
+      if (activeCaptures.size <= MAX_ACTIVE_CAPTURES) break
+      activeCaptures.delete(entry)
+    }
+    return captured
   }
 
   function isCapturedInsertionLive(
     captured: CapturedReferenceInsertion
   ): boolean {
     return (
-      resolveDraftKey(captured.draftKey) === activeDraftKey &&
+      captured.draftKey === activeDraftKey &&
       captured.activationCount === draftActivationCount
     )
   }
@@ -971,7 +963,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     captured: CapturedReferenceInsertion,
     reference: WorkflowReferenceMetadata
   ): void {
-    const key = resolveDraftKey(captured.draftKey)
+    activeCaptures.delete(captured)
+    const key = captured.draftKey
     if (key === activeDraftKey) {
       updateDraft(
         applyWorkflowReferenceToPrompt(prompt.value, reference, captured)

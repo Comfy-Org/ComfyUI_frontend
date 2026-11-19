@@ -14,9 +14,10 @@ export const useAgentOpenChatsStore = defineStore('agentOpenChats', () => {
   }
 
   function remember(workflowId: string, threadId: string): void {
-    if (threadByWorkflow.get(workflowId) === threadId) return
-    forget(threadId)
-    threadByWorkflow.set(workflowId, threadId)
+    if (threadByWorkflow.get(workflowId) !== threadId) {
+      forget(threadId)
+      threadByWorkflow.set(workflowId, threadId)
+    }
     bumpVersion(workflowId)
   }
 

@@ -46,4 +46,18 @@ describe('useAgentOpenChatsStore', () => {
     chats.forget('th-1')
     expect(hasChat.value).toBe(false)
   })
+
+  it('bumps the workflow version even when re-remembering the same chat so stale background ACKs cannot overwrite it', () => {
+    const chats = useAgentOpenChatsStore()
+    chats.remember('wf-a', 'th-0')
+    const versionBeforeReopen = chats.versionFor('wf-a')
+
+    chats.remember('wf-a', 'th-0')
+
+    expect(chats.versionFor('wf-a')).toBeGreaterThan(versionBeforeReopen)
+    expect(
+      chats.rememberIfCurrent('wf-a', 'th-late', versionBeforeReopen)
+    ).toBe(false)
+    expect(chats.recall('wf-a')).toBe('th-0')
+  })
 })
