@@ -2636,6 +2636,34 @@ describe('agent_turn_status wait hint (C8-01..C8-04, C8-06)', () => {
     })
   })
 
+  it('skips redundant snapshot emits for unchanged wait heartbeats and emits when reason or position changes', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(turnStatus('wait', 'turn_queue_position', 3))
+    expect(emit).toHaveBeenCalledTimes(1)
+
+    transport.ingest(turnStatus('wait', 'turn_queue_position', 3))
+    expect(emit).toHaveBeenCalledTimes(1)
+
+    transport.ingest(turnStatus('wait', 'turn_queue_position', 2))
+    expect(emit).toHaveBeenCalledTimes(2)
+    expect(emit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        waitHint: { reason: 'turn_queue_position', position: 2 }
+      })
+    )
+
+    transport.ingest(turnStatus('wait', 'fleet_capacity', 2))
+    expect(emit).toHaveBeenCalledTimes(3)
+    expect(emit).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        waitHint: { reason: 'fleet_capacity', position: 2 }
+      })
+    )
+  })
+
   it.for([
     {
       name: 'thinking',
@@ -2648,6 +2676,21 @@ describe('agent_turn_status wait hint (C8-01..C8-04, C8-06)', () => {
     {
       name: 'delta',
       next: () => delta('Hello')
+    },
+    {
+      name: 'extension_changed',
+      next: () =>
+        zAgentWsEvent.parse({
+          type: 'agent_extension_changed',
+          data: {
+            message_id: T,
+            thread_id: 'th-1',
+            action: 'enabled',
+            pack: 'comfy-cushions',
+            agent_created: false,
+            restart_required: true
+          }
+        })
     },
     {
       name: 'ask',

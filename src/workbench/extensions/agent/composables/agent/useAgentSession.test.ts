@@ -12146,29 +12146,31 @@ describe('useAgentSession turn wait status (C8-01..C8-07)', () => {
 
   it('C8-05/06: keeps background waitHint until the turn starts off screen, leaving no stale hint on return', async () => {
     const { source, emit } = fakeEvents()
-    let call = 0
     const session = useAgentSession({
       rest: fakeRest({
-        postMessage: vi.fn(async () => {
-          call += 1
-          return {
-            thread_id: `th-${call}`,
-            message_id: `msg-${call}`
-          }
-        }),
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-1',
+          message_id: 'msg-th-1'
+        })),
         getMessages: vi.fn(async (threadId): Promise<AgentMessages> => [
           {
             ...historyRow(
               1,
               'user',
-              `msg-${call}`,
+              `msg-${threadId}`,
               `Prompt ${threadId}`,
               `u-${threadId}`
             ),
             thread_id: threadId
           },
           {
-            ...historyRow(2, 'assistant', `msg-${call}`, '', `a-${threadId}`),
+            ...historyRow(
+              2,
+              'assistant',
+              `msg-${threadId}`,
+              '',
+              `a-${threadId}`
+            ),
             thread_id: threadId,
             status: 'streaming'
           }
@@ -12180,14 +12182,22 @@ describe('useAgentSession turn wait status (C8-01..C8-07)', () => {
 
     await session.sendMessage('First')
     await session.loadThread('th-2')
-    emit(turnStatus('th-1', 'msg-1', 'wait', 'user_inflight', 0))
+    emit(turnStatus('th-1', 'msg-th-1', 'wait', 'user_inflight', 0))
     expect(session.notices.value).toEqual([])
 
-    emit(deltaIn('th-1', 'msg-1', 'Started now'))
     await session.loadThread('th-1')
     expect(session.entries.value.at(-1)).toMatchObject({
       role: 'assistant',
-      waitHint: undefined
+      waitHint: { reason: 'user_inflight', position: 0 }
+    })
+
+    await session.loadThread('th-2')
+    emit(deltaIn('th-1', 'msg-th-1', 'Started now'))
+    await session.loadThread('th-1')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      waitHint: undefined,
+      parts: [{ type: 'text', text: 'Started now', state: 'streaming' }]
     })
     session.stop()
   })

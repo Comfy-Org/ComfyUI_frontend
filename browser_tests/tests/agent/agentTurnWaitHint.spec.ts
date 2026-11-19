@@ -1,9 +1,9 @@
 import { expect, mergeTests } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import {
   agentTest as baseAgentTest,
@@ -16,6 +16,7 @@ test.describe('Agent turn wait hint', { tag: ['@cloud', '@ui'] }, () => {
   test.use({ connectWebSocketToServer: false })
 
   test('C8-01 + C8-04: shows the slot-wait hint under Thinking... and clears it once a reply delta arrives', async ({
+    acceptedTurns,
     agentPanel,
     getAgentSocket,
     page
@@ -23,14 +24,9 @@ test.describe('Agent turn wait hint', { tag: ['@cloud', '@ui'] }, () => {
     await new Topbar(page).saveWorkflowAs('Unsaved Workflow')
     await agentPanel.open()
 
-    const acceptedResponse = page.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        response.url().includes('/api/agent/threads/') &&
-        response.url().endsWith('/messages')
-    )
     await agentPanel.sendMessage('Wait for a free slot')
-    const ack = (await (await acceptedResponse).json()) as AgentTurnAccepted
+    await expect.poll(() => acceptedTurns).toHaveLength(1)
+    const ack = acceptedTurns[0]
 
     const ws = await getAgentSocket()
     pushAgentEvent(ws, {
@@ -45,7 +41,7 @@ test.describe('Agent turn wait hint', { tag: ['@cloud', '@ui'] }, () => {
       }
     })
 
-    const waitHint = agentPanel.root.getByTestId('agent-turn-wait-hint')
+    const waitHint = agentPanel.root.getByTestId(TestIds.agent.turnWaitHint)
     await expect(
       agentPanel.root.getByText(enMessages.agent.thinking)
     ).toBeVisible()

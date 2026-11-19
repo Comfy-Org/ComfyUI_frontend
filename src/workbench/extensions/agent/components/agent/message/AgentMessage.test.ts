@@ -1352,6 +1352,14 @@ describe('AgentMessage turn wait hint (C8-01..C8-04)', () => {
     expect(screen.getByTestId('agent-turn-wait-hint')).toBeVisible()
 
     await rerender({
+      message: { ...waiting, streaming: false }
+    })
+    expect(screen.queryByTestId('agent-turn-wait-hint')).toBeNull()
+
+    await rerender({ message: waiting })
+    expect(screen.getByTestId('agent-turn-wait-hint')).toBeVisible()
+
+    await rerender({
       message: {
         ...createAssistantMessage(toTurnId('msg-clear')),
         parts: [{ type: 'text', text: 'Started', state: 'streaming' }]

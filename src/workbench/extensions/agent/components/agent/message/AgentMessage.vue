@@ -133,16 +133,29 @@ const status = computed(() => {
   return null
 })
 
-const waitHintText = computed(() => {
-  if (!message.streaming || !message.waitHint) return null
-  const { reason, position } = message.waitHint
+type TurnWaitKind = 'ownChats' | 'queue' | 'busy'
+
+const TURN_WAIT_KEY = {
+  ownChats: 'agent.turnWaitUserFull',
+  queue: 'agent.turnWaitQueue',
+  busy: 'agent.turnWaitBusy'
+} as const satisfies Record<TurnWaitKind, string>
+
+function turnWaitKind(reason: string): TurnWaitKind {
   if (reason === 'turn_user_full' || reason === 'user_inflight')
-    return t('agent.turnWaitUserFull')
+    return 'ownChats'
   if (reason === 'turn_queue_position' || reason === 'queue_position')
-    return position > 0
-      ? t('agent.turnWaitQueuePosition', { position })
-      : t('agent.turnWaitQueue')
-  return t('agent.turnWaitBusy')
+    return 'queue'
+  return 'busy'
+}
+
+const waitHintText = computed(() => {
+  if (!message.streaming || !status.value || !message.waitHint) return null
+  const { reason, position } = message.waitHint
+  const kind = turnWaitKind(reason)
+  if (kind === 'queue' && position > 0)
+    return t('agent.turnWaitQueuePosition', { position })
+  return t(TURN_WAIT_KEY[kind])
 })
 </script>
 
@@ -180,7 +193,7 @@ const waitHintText = computed(() => {
     <p
       v-if="waitHintText"
       data-testid="agent-turn-wait-hint"
-      class="px-2 pl-8 text-xs/4 text-muted-foreground"
+      class="m-0 pr-2 pl-8 text-xs/4 text-muted-foreground"
     >
       {{ waitHintText }}
     </p>
