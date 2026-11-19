@@ -14,7 +14,8 @@
       cn(
         'group/node lg-node absolute isolate touch-none text-xs text-node-foreground',
         'flex flex-col contain-layout contain-style',
-        'drop-shadow-lg outline-none',
+        isTransparentHeaderless ? 'drop-shadow-lg' : ['shadow-sm', shapeClass],
+        'outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
           : 'min-h-(--node-height) min-w-(--min-node-width)',
@@ -31,7 +32,7 @@
       '--min-node-width': `${MIN_NODE_WIDTH}px`,
       transform: nodeTransform,
       zIndex: zIndex,
-      opacity: nodeOpacity
+      opacity: Math.min(nodeOpacity, OPACITY_THAT_KEEPS_NODE_COMPOSITED)
     }"
     :inert="isGhostPlacing"
     v-bind="pointerHandlers"
@@ -396,6 +397,8 @@ const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
 const muted = computed((): boolean => nodeData.mode === LGraphEventMode.NEVER)
+
+const OPACITY_THAT_KEEPS_NODE_COMPOSITED = 0.999
 
 const nodeOpacity = computed(() => {
   const globalOpacity = settingStore.get('Comfy.Node.Opacity') ?? 1
