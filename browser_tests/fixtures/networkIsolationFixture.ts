@@ -59,12 +59,14 @@ function guardApiRequests(
 }
 
 export const networkIsolationFixture = base.extend<{
+  localNoMocks: boolean
   liveCloudBillingConfig: LiveCloudBillingConfig | undefined
   liveNetworkOrigins: string[]
   billingNewUx: boolean
   networkPolicy: NetworkPolicy
   toast: ToastHelper
 }>({
+  localNoMocks: [false, { option: true }],
   serviceWorkers: 'block',
   liveCloudBillingConfig: [undefined, { option: true }],
   liveNetworkOrigins: [[], { option: true }],
@@ -137,6 +139,7 @@ export const networkIsolationFixture = base.extend<{
   context: async (
     {
       context,
+      localNoMocks,
       baseURL,
       networkPolicy,
       liveCloudBillingConfig,
@@ -145,6 +148,19 @@ export const networkIsolationFixture = base.extend<{
     },
     use
   ) => {
+    if (localNoMocks) {
+      const loopback = new Set(['localhost', '127.0.0.1', '[::1]'])
+      if (
+        liveCloudBillingConfig ||
+        [...networkPolicy.origins].some(
+          (origin) => !loopback.has(new URL(origin).hostname)
+        )
+      ) {
+        throw new Error('localNoMocks requires loopback-only test origins')
+      }
+      await use(context)
+      return
+    }
     if (billingNewUx) {
       await context.addInitScript(installSeededServerFlags, {
         billing_new_ux_enabled: billingNewUx
