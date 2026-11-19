@@ -140,6 +140,7 @@
                 </Button>
                 <Badge
                   v-if="showErrorIndicatorOnPanelButton"
+                  data-testid="properties-panel-toggle-error-indicator"
                   variant="dot"
                   severity="danger"
                   class="absolute -top-1 -right-1"

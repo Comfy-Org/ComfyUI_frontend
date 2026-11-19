@@ -111,6 +111,48 @@ test.describe('Desktop missing resources toast', { tag: '@desktop' }, () => {
       ])
   })
 
+  test.describe('alongside the error overlay', () => {
+    test.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
+    test('keeps the error overlay closed while the toast lists every missing model', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow(workflow.workflow)
+      const toast = comfyPage.page.getByTestId(TestIds.toast.panel)
+      const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+      const panelErrorIndicator = comfyPage.page.getByTestId(
+        TestIds.propertiesPanel.toggleErrorIndicator
+      )
+      await expect(toast).toContainText('This workflow needs 2 models')
+
+      await expect(overlay).toBeHidden()
+      await expect(panelErrorIndicator).toBeVisible()
+
+      await test.step('dismissing the toast leaves the overlay closed', async () => {
+        await toast.getByRole('button', { name: 'Dismiss' }).click()
+
+        await expect(toast).toBeHidden()
+        await expect(overlay).toBeHidden()
+        await expect(panelErrorIndicator).toBeVisible()
+      })
+    })
+
+    test('opens the error overlay when the workflow also has missing nodes', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('missing/missing_models_and_nodes')
+
+      await expect(
+        comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+      ).toBeVisible()
+      await expect(
+        comfyPage.page.getByTestId(TestIds.toast.panel)
+      ).toContainText('This workflow needs 1 model')
+    })
+  })
+
   test.describe('with gated and URL-less models', () => {
     test.beforeEach(async ({ comfyPage }) => {
       await comfyPage.page

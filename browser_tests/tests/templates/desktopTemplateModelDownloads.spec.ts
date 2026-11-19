@@ -8,7 +8,7 @@ import { makeTemplate } from '@e2e/fixtures/data/templateFixtures'
 import { desktopModelDownloadFixture } from '@e2e/fixtures/desktopModelDownloadFixture'
 import {
   cleanupFakeModel,
-  loadWorkflowAndOpenErrorsTab
+  openErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { withTemplates } from '@e2e/fixtures/helpers/TemplateHelper'
 import { templateApiFixture } from '@e2e/fixtures/templateApiFixture'
@@ -35,7 +35,8 @@ test.describe(
         template.name,
         `browser_tests/assets/${template.workflow}.json`
       )
-      await loadWorkflowAndOpenErrorsTab(comfyPage, template.workflow)
+      await comfyPage.workflow.loadWorkflow(template.workflow)
+      await openErrorsTab(comfyPage)
     })
 
     test('shows progress and offers only opening when every model is already downloading', async ({

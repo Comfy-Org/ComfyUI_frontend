@@ -256,3 +256,21 @@ export function deriveMissingResourcesToastState(
 
   return { kind: 'ready' }
 }
+
+interface MissingModelsToastCoverageInput {
+  toastKind: MissingResourcesToastState['kind']
+  missingModels: boolean
+  otherIssues: boolean
+}
+
+/** Whether the toast currently lists the missing models as the workflow's only issue, so the error overlay would only repeat it. */
+export function isCoveredByMissingModelsToast(
+  input: MissingModelsToastCoverageInput
+): boolean {
+  return (
+    input.toastKind !== 'hidden' &&
+    input.toastKind !== 'ready' &&
+    input.missingModels &&
+    !input.otherIssues
+  )
+}

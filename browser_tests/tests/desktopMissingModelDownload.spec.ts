@@ -3,40 +3,64 @@ import { expect } from '@playwright/test'
 import { desktopModelDownloadFixture as test } from '@e2e/fixtures/desktopModelDownloadFixture'
 import {
   cleanupFakeModel,
-  loadWorkflowAndOpenErrorsTab
+  openErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+
+const untrackedHost = test.extend({
+  page: async ({ page }, use) => {
+    await page.addInitScript(() => {
+      Object.assign(window.__comfyDesktop2 ?? {}, {
+        onDownloadProgress: undefined
+      })
+    })
+    await use(page)
+  }
+})
+
+untrackedHost.describe(
+  'Desktop missing model download on a host that does not report progress',
+  { tag: '@desktop' },
+  () => {
+    untrackedHost.use({
+      initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true }
+    })
+
+    untrackedHost(
+      'downloads every missing model from the overlay and opens the errors tab',
+      async ({ comfyPage, modelDownloadHost }) => {
+        await cleanupFakeModel(comfyPage)
+        await comfyPage.workflow.loadWorkflow('missing/missing_models')
+        const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+        await expect(overlay).toBeVisible()
+
+        await overlay
+          .getByTestId(TestIds.dialogs.errorOverlayDownloadAll)
+          .click()
+
+        await expect
+          .poll(() => modelDownloadHost.downloads())
+          .toEqual([
+            {
+              url: 'http://localhost:8188/api/devtools/fake_model.safetensors',
+              filename: 'fake_model.safetensors',
+              directory: 'checkpoints'
+            }
+          ])
+        await expect(overlay).toBeHidden()
+        await expect(
+          comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+        ).toBeVisible()
+      }
+    )
+  }
+)
 
 test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   test.beforeEach(async ({ comfyPage }) => {
     await cleanupFakeModel(comfyPage)
-  })
-
-  test('downloads every missing model from the overlay and opens the errors tab', async ({
-    comfyPage,
-    modelDownloadHost
-  }) => {
-    await comfyPage.workflow.loadWorkflow('missing/missing_models')
-    const overlay = comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
-    await expect(overlay).toBeVisible()
-
-    await overlay.getByTestId(TestIds.dialogs.errorOverlayDownloadAll).click()
-
-    await expect
-      .poll(() => modelDownloadHost.downloads())
-      .toEqual([
-        {
-          url: 'http://localhost:8188/api/devtools/fake_model.safetensors',
-          filename: 'fake_model.safetensors',
-          directory: 'checkpoints'
-        }
-      ])
-    await expect(overlay).toBeHidden()
-    await expect(
-      comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
-    ).toBeVisible()
   })
 
   test('shows download progress on the missing model row until it completes', async ({
@@ -51,11 +75,9 @@ test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
       progress: 0
     }
     await comfyPage.workflow.loadWorkflow('missing/missing_models')
-    await comfyPage.page
-      .getByTestId(TestIds.dialogs.errorOverlay)
-      .getByTestId(TestIds.dialogs.errorOverlayDownloadAll)
-      .click()
+    await openErrorsTab(comfyPage)
     const group = comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
+    await group.getByTestId(TestIds.dialogs.missingModelDownload).click()
 
     await test.step('progress replaces the Download button', async () => {
       await modelDownloadHost.emitProgress({ ...fakeModel, status: 'pending' })
@@ -95,7 +117,8 @@ test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
     comfyPage,
     modelDownloadHost
   }) => {
-    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+    await comfyPage.workflow.loadWorkflow('missing/missing_models')
+    await openErrorsTab(comfyPage)
     const group = comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
     await expect(
       group.getByTestId(TestIds.dialogs.missingModelDownload)
@@ -133,7 +156,8 @@ test.describe('Desktop missing model download', { tag: '@desktop' }, () => {
       receivedBytes: 512,
       totalBytes: 1024
     }
-    await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
+    await comfyPage.workflow.loadWorkflow('missing/missing_models')
+    await openErrorsTab(comfyPage)
     const group = comfyPage.page.getByTestId(TestIds.dialogs.missingModelsGroup)
     await modelDownloadHost.emitProgress({
       ...fakeModel,

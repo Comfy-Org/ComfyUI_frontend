@@ -1550,3 +1550,73 @@ describe('setActiveGraph', () => {
     expect(store.lastNodeErrors).toBeNull()
   })
 })
+
+describe('executionErrorStore — held error overlay', () => {
+  beforeEach(() => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+  })
+
+  function holdOpenOverlay() {
+    const store = useExecutionErrorStore()
+    store.showErrorOverlay()
+    store.holdErrorOverlay()
+    return store
+  }
+
+  it('closes the overlay while held and reopens it on release', () => {
+    const store = holdOpenOverlay()
+    expect(store.isErrorOverlayOpen).toBe(false)
+
+    store.releaseErrorOverlay()
+
+    expect(store.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('does not hold an overlay that is already closed', () => {
+    const store = useExecutionErrorStore()
+
+    store.holdErrorOverlay()
+    store.releaseErrorOverlay()
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+
+  it.for([
+    {
+      name: 'the overlay is dismissed',
+      close: (store: ReturnType<typeof useExecutionErrorStore>) =>
+        store.dismissErrorOverlay()
+    },
+    {
+      name: 'the overlay is opened and dismissed again',
+      close: (store: ReturnType<typeof useExecutionErrorStore>) => {
+        store.showErrorOverlay()
+        store.dismissErrorOverlay()
+      }
+    },
+    {
+      name: 'a run clears its errors',
+      close: (store: ReturnType<typeof useExecutionErrorStore>) =>
+        store.clearRunErrors()
+    },
+    {
+      name: 'another graph becomes active',
+      close: (store: ReturnType<typeof useExecutionErrorStore>) =>
+        store.setActiveGraph('33333333-3333-4333-8333-333333333333')
+    },
+    {
+      name: 'the Errors tab is turned off',
+      close: () => {
+        useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] =
+          false
+      }
+    }
+  ])('keeps a held overlay closed on release after $name', ({ close }) => {
+    const store = holdOpenOverlay()
+
+    close(store)
+    store.releaseErrorOverlay()
+
+    expect(store.isErrorOverlayOpen).toBe(false)
+  })
+})

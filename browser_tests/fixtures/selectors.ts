@@ -147,7 +147,8 @@ export const TestIds = {
     selectionContextStrip: 'selection-context-strip',
     errorsSummaryHero: 'errors-summary-hero',
     errorsSummaryFilters: 'errors-summary-filters',
-    blockedLastRunIndicator: 'blocked-last-run-indicator'
+    blockedLastRunIndicator: 'blocked-last-run-indicator',
+    toggleErrorIndicator: 'properties-panel-toggle-error-indicator'
   },
   assets: {
     browserModal: 'asset-browser-modal',

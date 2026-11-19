@@ -96,6 +96,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   const runErrorsByWorkflow = ref(new Map<string, RunErrorState>())
   const activeRunErrorKey = ref<string | null>(`:${zeroUuid}`)
   const isErrorOverlayOpen = ref(false)
+  const isErrorOverlayHeld = ref(false)
 
   const activeRunErrors = computed<RunErrorState | undefined>(() =>
     activeRunErrorKey.value === null
@@ -169,7 +170,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     const key = graphId === null ? null : runErrorKey(graphId, workflowPath)
     if (key === activeRunErrorKey.value) return
     activeRunErrorKey.value = key
-    isErrorOverlayOpen.value = false
+    dismissErrorOverlay()
   }
 
   const pendingAddedNodeScans = new WeakMap<
@@ -533,6 +534,22 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
 
   function dismissErrorOverlay() {
     isErrorOverlayOpen.value = false
+    isErrorOverlayHeld.value = false
+  }
+
+  /** Closes the open overlay for a surface that already shows its issues, until `releaseErrorOverlay` or any other close. */
+  function holdErrorOverlay() {
+    if (!isErrorOverlayOpen.value) return
+    isErrorOverlayOpen.value = false
+    isErrorOverlayHeld.value = true
+  }
+
+  /** Reopens an overlay closed by `holdErrorOverlay` while the Errors tab is enabled. */
+  function releaseErrorOverlay() {
+    if (!isErrorOverlayHeld.value) return
+    isErrorOverlayHeld.value = false
+    if (useSettingStore().get('Comfy.RightSidePanel.ShowErrorsTab'))
+      isErrorOverlayOpen.value = true
   }
 
   /** Clear error state produced by a run. Missing-resource state describes the
@@ -542,7 +559,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     if (activeRunErrorKey.value !== null) {
       runErrorsByWorkflow.value.delete(activeRunErrorKey.value)
     }
-    isErrorOverlayOpen.value = false
+    dismissErrorOverlay()
   }
 
   function clearExecutionStartErrors(
@@ -550,7 +567,7 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
   ) {
     updateRunErrors({ executionError: null, promptError: null }, key)
     if (key === activeRunErrorKey.value && !lastNodeErrors.value) {
-      isErrorOverlayOpen.value = false
+      dismissErrorOverlay()
     }
   }
 
@@ -1048,6 +1065,8 @@ export const useExecutionErrorStore = defineStore('executionError', () => {
     showExecutionError,
     showErrorOverlay,
     dismissErrorOverlay,
+    holdErrorOverlay,
+    releaseErrorOverlay,
 
     // Derived state
     surfacedNodeErrors,
