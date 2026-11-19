@@ -188,6 +188,18 @@ export function askKindOf(
   return part && ASK_KIND_BY_PART_TYPE[part.type]
 }
 
+export function askMinSelectionsOf(
+  parts: readonly MessagePart[],
+  askId: string
+): number | undefined {
+  const part = parts.find(
+    (candidate): candidate is AskPart =>
+      isAskPart(candidate) && candidate.askId === askId
+  )
+  if (!part) return undefined
+  return part.type === 'askUser' ? part.minSelections : 1
+}
+
 export function retireAskParts(
   parts: MessagePart[],
   askId: string,

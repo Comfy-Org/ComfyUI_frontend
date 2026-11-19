@@ -543,11 +543,22 @@ function keepAuthoritativeAsk(
 ): void {
   const rowAsk = row.status === 'streaming' ? row.pending_ask : undefined
   const authoritativeAskId = rowAsk?.ask_id
-  message.parts = message.parts.filter((part) => {
-    if (!isOpenAskPart(part)) return true
-    const askId = askIdOf(part)
-    return askId !== undefined && askId === authoritativeAskId
-  })
+  let keptAuthoritativeAsk = false
+  message.parts = [...message.parts]
+    .reverse()
+    .filter((part) => {
+      if (!isOpenAskPart(part)) return true
+      const askId = askIdOf(part)
+      if (
+        askId === undefined ||
+        askId !== authoritativeAskId ||
+        keptAuthoritativeAsk
+      )
+        return false
+      keptAuthoritativeAsk = true
+      return true
+    })
+    .reverse()
 }
 
 /**
