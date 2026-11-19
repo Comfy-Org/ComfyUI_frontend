@@ -150,3 +150,12 @@ export function queueUnbatchTypeChange(
     Reflect.apply(changeOutputType, unbatch, [type])
   }, type)
 }
+
+export function seedNavigationGroups(
+  comfyPage: ComfyPage,
+  groups: unknown[]
+): Promise<void> {
+  return comfyPage.page.evaluate((groups) => {
+    window.__ecosystemSimulacra!.navigation.groups = groups
+  }, groups)
+}

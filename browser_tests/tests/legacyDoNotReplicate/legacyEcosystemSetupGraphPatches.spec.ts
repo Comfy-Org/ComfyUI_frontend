@@ -1,6 +1,9 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { test } from '@e2e/fixtures/ecosystemSimulacraFixture'
-import { readEcosystemSimulacra } from '@e2e/fixtures/utils/ecosystemSimulacra'
+import {
+  readEcosystemSimulacra,
+  seedNavigationGroups
+} from '@e2e/fixtures/utils/ecosystemSimulacra'
 import {
   openSecondWorkflowTab,
   removeGraphNode
@@ -13,15 +16,19 @@ test.describe(
     test('Danbooru QuickGroupNavigation serialize wrapper saves its groups from another workflow', async ({
       comfyPage
     }) => {
+      const groups = [{ id: 'saved-group', shortcutKey: '2' }]
+      await seedNavigationGroups(comfyPage, groups)
       expect(
         (await comfyPage.workflow.getExportedWorkflow()).extra
-      ).toHaveProperty('qgn_navigation_groups')
+          ?.qgn_navigation_groups
+      ).toEqual(groups)
 
       await openSecondWorkflowTab(comfyPage)
 
       expect(
         (await comfyPage.workflow.getExportedWorkflow()).extra
-      ).toHaveProperty('qgn_navigation_groups')
+          ?.qgn_navigation_groups
+      ).toEqual(groups)
     })
 
     test('Danbooru QuickGroupNavigation configure wrapper restores groups imported into another workflow', async ({

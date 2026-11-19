@@ -70,12 +70,17 @@ export function captureLegacyGraphPatches<T>(
 
   const candidates = bridgedMembers.map((member) => {
     const descriptor = Object.getOwnPropertyDescriptor(graph, member)
-    const previousByGraph = new WeakMap([[graph, graph[member]]])
+    const original = graph[member]
+    const previousByGraph = new WeakMap([[graph, original]])
     function callPrevious(this: LGraph, ...args: unknown[]) {
       const dispatching = dispatchingGraphs.at(-1)
       const target =
-        dispatching && previousByGraph.has(dispatching) ? dispatching : this
-      const previous = previousByGraph.get(target)
+        this === graph && dispatching && previousByGraph.has(dispatching)
+          ? dispatching
+          : this
+      const previous = previousByGraph.has(target)
+        ? previousByGraph.get(target)
+        : original
       if (typeof previous === 'function')
         return Reflect.apply(previous, target, args)
     }
