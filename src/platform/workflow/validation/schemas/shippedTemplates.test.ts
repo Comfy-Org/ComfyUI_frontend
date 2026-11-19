@@ -1,15 +1,3 @@
-/**
- * Every workflow template we ship has to be strictly loadable.
- *
- * A rejected template does not look broken, which is why this is worth a test:
- * `useTemplateWorkflows` falls back to `zLegacyLoadableWorkflow`, loads it
- * anyway with `strict: false`, and reports
- * `error_validating_workflow_template_schema` at warning level.
- *
- * Set `COMFYUI_TEMPLATES_DIR` to the installed package's `templates` directory
- * to run it; `.github/workflows/ci-shipped-templates.yaml` does that with the
- * release ComfyUI pins, and explains the trigger choices.
- */
 import fs from 'node:fs'
 import path from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
@@ -18,34 +6,16 @@ import { validateComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 const TEMPLATES_DIR = process.env.COMFYUI_TEMPLATES_DIR
 
-/** The package ships its index, schema and lookup tables beside the workflows. */
 const NON_WORKFLOW_ASSETS = new Set([
   'fuse_options.json',
   'index_logo.json',
   'index.schema.json'
 ])
 
-/**
- * Templates this schema rejects today, with why. Each one loads through the
- * legacy fallback, so this is a defect list rather than an exemption: fix the
- * template in Comfy-Org/workflow_templates and delete the entry. The test
- * fails if one of these starts passing, so a fix cannot leave a stale entry
- * behind, and it fails if anything else starts failing.
- */
 const KNOWN_UNLOADABLE: Record<string, string> = {
-  // Every output slot carries an explicit `slot_index: null` (along with null
-  // color_off, color_on, dir, label, locked, nameLocked, removable and pos).
-  // The schema takes a number or a string there, not null.
   'image_fibo2_edit_dev_pe.json': 'outputs[].slot_index is null',
   'image_fibo2_edit_turbo_pe.json': 'outputs[].slot_index is null',
-  // Arrived in templates 0.11.111, saved by frontend 1.59.1, with the same
-  // defect as the two above. Three templates from three different releases now
-  // ship explicit nulls in their output slots, so whatever writes these files
-  // is doing it repeatedly rather than having done it once.
   'api_heygen_avatar_6_id2v.json': 'outputs[].slot_index is null',
-  // Hand-authored ids: the workflow id is the slug "pika-h3-flex-fl2va", and
-  // the subgraph input ids are names like "image1" and "prompt". The schema
-  // requires GUIDs, which is what a real save writes.
   'video_pika_h3_flex_fl2va.json': 'workflow id is a slug, not a GUID',
   'image_joyai_image_edit.json':
     'definitions.subgraphs[].inputs[].id are names, not GUIDs'
@@ -67,7 +37,6 @@ interface ShippedTemplate {
 
 interface Corpus {
   templates: ShippedTemplate[]
-  /** Files that look like a template but could not be read as a graph. */
   unreadable: string[]
 }
 
@@ -107,25 +76,21 @@ async function validationError(
 }
 
 describe.skipIf(!TEMPLATES_DIR)('shipped workflow templates', () => {
-  // Read in a hook, not at module scope: a missing or wrong directory has to
-  // surface as a failed assertion naming the path, not as a collection error
-  // that reports "no tests" and reads like a skip.
   let corpus: Corpus
 
   beforeAll(() => {
     corpus = readCorpus(TEMPLATES_DIR!)
   })
 
-  it('found the shipped corpus', () => {
-    // A wrong COMFYUI_TEMPLATES_DIR would otherwise make every assertion
-    // below vacuous: an empty corpus passes them all.
+  it('finds more than 100 templates, so a wrong COMFYUI_TEMPLATES_DIR cannot pass vacuously', () => {
     expect(corpus.templates.length).toBeGreaterThan(100)
   })
 
   it('every file that looks like a template is readable as a graph', () => {
-    // A template that is not JSON, or has no node list, is malformed rather
-    // than out of scope. Dropping it quietly would hide it from the checks.
-    expect(corpus.unreadable).toEqual([])
+    expect(
+      corpus.unreadable,
+      'a malformed template would otherwise be dropped silently instead of failing'
+    ).toEqual([])
   })
 
   it('every shipped template is strictly loadable', async () => {
@@ -138,10 +103,9 @@ describe.skipIf(!TEMPLATES_DIR)('shipped workflow templates', () => {
           `${file} (saved by ${savedBy(graph)}): ${firstLine(error)}`
         )
     }
-    // Anything listed here loads through the legacy fallback instead of the
-    // strict schema, reporting error_validating_workflow_template_schema on
-    // every open. Fix the template, or add it to KNOWN_UNLOADABLE with why.
-    expect(failures).toEqual([])
+    expect(failures, 'fix the template or list it in KNOWN_UNLOADABLE').toEqual(
+      []
+    )
   })
 
   it('no entry in the known-unloadable list has been fixed', async () => {
@@ -156,9 +120,10 @@ describe.skipIf(!TEMPLATES_DIR)('shipped workflow templates', () => {
       if (!(await validationError(graph)))
         stale.push(`${file} now validates (${reason})`)
     }
-    // Remove these from KNOWN_UNLOADABLE, so that a later regression in the
-    // same template is caught again instead of staying excused.
-    expect(stale).toEqual([])
+    expect(
+      stale,
+      'remove fixed entries from KNOWN_UNLOADABLE so a regression is caught again'
+    ).toEqual([])
   })
 })
 
