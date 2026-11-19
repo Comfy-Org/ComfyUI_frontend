@@ -443,6 +443,29 @@ describe('scanNodeMediaCandidates', () => {
     })
   })
 
+  it('leaves an OSS input value in a subfolder unresolved because the dropdown lists only top-level files', () => {
+    const node = makeMediaNode(
+      1,
+      'LoadImage',
+      [
+        makeMediaCombo(
+          'image',
+          'clipspace/clipspace-painted-masked-1.png [input]',
+          ['photo.png']
+        )
+      ],
+      0
+    )
+    const graph = makeGraph([node])
+
+    const result = scanNodeMediaCandidates(graph, node)
+
+    expect(result[0]).toMatchObject({
+      name: 'clipspace/clipspace-painted-masked-1.png [input]',
+      isMissing: undefined
+    })
+  })
+
   it('matches compact annotations against clean OSS options', () => {
     const node = makeMediaNode(
       1,

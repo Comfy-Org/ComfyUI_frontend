@@ -11,15 +11,14 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { recordOpenedUrl } from '@e2e/fixtures/utils/recordOpenedUrl'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
 const BOOT_FEATURES = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_fe2475'
@@ -101,16 +100,6 @@ function idempotencyKey(request: Request): string | undefined {
   return request.headers()['idempotency-key']
 }
 
-function transport(request: Request): string {
-  return request.resourceType()
-}
-
-async function enableSdkRail(page: Page) {
-  await new FeatureFlagHelper(page).seedServerFlags({
-    billing_sdk_topup_enabled: true
-  })
-}
-
 async function openTopUpAndContinue(page: Page) {
   const dialog = new TopUpCreditsDialog(page)
   await page.goto(`${APP_URL}/?topup=1`)
@@ -136,34 +125,19 @@ async function expectHandOffThenLanding(
 }
 
 test.describe('Top-up checkout rail (FE-2475)', { tag: '@cloud' }, () => {
-  test('keeps the legacy call while the rail is off', async ({ page }) => {
-    test.setTimeout(60_000)
-    await recordOpenedUrl(page)
-    const routes = await setupCheckout(page)
-
-    const dialog = await openTopUpAndContinue(page)
-
-    await expect.poll(() => routes.checkoutRequests.length).toBe(1)
-    const [issued] = routes.checkoutRequests
-    expect(transport(issued)).toBe('xhr')
-    expect(idempotencyKey(issued)).toBeUndefined()
-    await expectHandOffThenLanding(page, routes, dialog)
-  })
-
   test('issues through the SDK transport while the rail is on', async ({
     page
   }) => {
     test.setTimeout(60_000)
     await recordOpenedUrl(page)
     const routes = await setupCheckout(page)
-    await enableSdkRail(page)
 
     const dialog = await openTopUpAndContinue(page)
 
     await expect.poll(() => routes.checkoutRequests.length).toBe(1)
     const [issued] = routes.checkoutRequests
     expect(issued.method()).toBe('POST')
-    expect(transport(issued)).toBe('fetch')
+    expect(billingClient(issued)).toBe('sdk')
     expect(idempotencyKey(issued)).toBeTruthy()
     expect(issued.postDataJSON()).toMatchObject({
       amount_cents: 5_000,
@@ -177,7 +151,6 @@ test.describe('Top-up checkout rail (FE-2475)', { tag: '@cloud' }, () => {
   }) => {
     test.setTimeout(60_000)
     const routes = await setupCheckout(page)
-    await enableSdkRail(page)
     routes.respondNotFound()
 
     const dialog = await openTopUpAndContinue(page)
@@ -186,7 +159,7 @@ test.describe('Top-up checkout rail (FE-2475)', { tag: '@cloud' }, () => {
       'data-notice',
       'checkout_failed'
     )
-    expect(routes.checkoutRequests.map(transport)).toEqual(['fetch'])
+    expect(routes.checkoutRequests.map(billingClient)).toEqual(['sdk'])
     expect(routes.purchaseRequests).toHaveLength(0)
   })
 })

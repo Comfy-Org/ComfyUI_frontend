@@ -69,6 +69,7 @@ import { projectBillingPlans } from './billingPlansView'
 import { projectBillingStatus } from './billingStatusView'
 import type { BillingSdkOptions } from '@comfyorg/billing-core/sdk'
 import { createBillingSdk } from '@comfyorg/billing-core/sdk'
+import type { TopupAutoTopUpSettings } from '@comfyorg/ingest-types'
 import type { BillingOperationRecordView } from './operationRecordView'
 import { projectOperationRecord } from './operationRecordView'
 import type {
@@ -83,6 +84,7 @@ import {
   projectSubscribeResult,
   projectSubscriptionResult
 } from './subscriptionOperationView'
+import type { HostedCheckoutSession } from './topupOperationView'
 import {
   declineDetail,
   projectHostedTopupCheckoutResult,
@@ -338,25 +340,34 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     openHostedAction(state)
   }
 
-  // One offer per hosted step, not per poll, and not again for a step this
-  // operation already offered: the open runs off the lifecycle rather than a
-  // click, so a browser that blocked the first one blocks every retry and each
-  // retry would repeat the warning. An operation reattached on load is never
-  // offered at all, since no click of this page started it. A step the
-  // customer still owes stays on `subscriptionActionUrl` for the checkout to
-  // put behind a button of their own.
+  function openHostedStep(operationId: string, actionUrl: string): boolean {
+    if (!openBillingUrl(actionUrl)) return false
+    sdk.lifecycle.reportHostedStepOpened(operationId, 'new_tab')
+    return true
+  }
+
+  function isHostedStepOwed(operationId: string, actionUrl: string): boolean {
+    const current = sdk.lifecycle.get(operationId)
+    return current !== undefined && hostedActionUrl(current) === actionUrl
+  }
+
   function openHostedAction(state: PendingBillingOperation) {
     const actionUrl = hostedActionUrl(state)
     if (actionUrl === undefined) return
     const offered = offeredActions.get(state.id) ?? new Set<string>()
     if (offered.has(actionUrl)) return
     offeredActions.set(state.id, offered.add(actionUrl))
-    if (openBillingUrl(actionUrl)) {
-      sdk.lifecycle.reportHostedStepOpened(state.id, 'new_tab')
-      return
-    }
+    if (openHostedStep(state.id, actionUrl)) return
     toast.warning(t('g.warning'), {
-      description: t('subscription.preview.paymentPopupBlocked')
+      description: t('subscription.preview.paymentPopupBlocked'),
+      action: {
+        label: t('subscription.planLoadErrorRetry'),
+        onClick: () => {
+          if (isHostedStepOwed(state.id, actionUrl)) {
+            openHostedStep(state.id, actionUrl)
+          }
+        }
+      }
     })
   }
 
@@ -423,13 +434,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   async function createHostedTopupCheckout(
     amountCents: number,
     returnUrl: string,
-    signal?: AbortSignal
-  ): Promise<string> {
+    signal?: AbortSignal,
+    autoTopUp?: TopupAutoTopUpSettings
+  ): Promise<HostedCheckoutSession> {
     return projectHostedTopupCheckoutResult(
       await sdk.topup.createHostedTopupCheckout({
         amountCents,
         returnUrl,
-        ...(signal === undefined ? {} : { signal })
+        ...(signal === undefined ? {} : { signal }),
+        ...(autoTopUp === undefined ? {} : { autoTopUp })
       })
     )
   }

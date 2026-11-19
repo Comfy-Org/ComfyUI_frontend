@@ -1,5 +1,5 @@
-import { onTestFinished, vi } from 'vitest'
-import { computed, shallowRef } from 'vue'
+import { vi } from 'vitest'
+import { computed } from 'vue'
 
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import type { useBillingAutoTopUpCard as realUseBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
@@ -8,6 +8,7 @@ type AutoTopUpCard = ReturnType<typeof realUseBillingAutoTopUpCard>
 type AutoTopUpCardState = AutoTopUpCard['state']['value']
 
 const offSettings: AutoReloadSettings = {
+  auto_top_up_conflict: false,
   card_expiry: null,
   configured: false,
   cycle_resets_at: null,
@@ -38,21 +39,18 @@ export function loadedAutoTopUp(
   return { kind: 'loaded', settings: { ...offSettings, status } }
 }
 
-export const autoTopUpCardState = shallowRef<AutoTopUpCardState>({
-  kind: 'loading'
-})
-
-const card: AutoTopUpCard = {
-  scope: computed(() => 'workspace-test'),
-  state: computed(() => autoTopUpCardState.value),
-  isReady: computed(() => autoTopUpCardState.value.kind !== 'loading'),
-  ensureRead: vi.fn(),
-  retry: vi.fn(async () => undefined)
+export function autoTopUpCard(
+  state: AutoTopUpCardState = { kind: 'loading' }
+): AutoTopUpCard {
+  return {
+    scope: computed(() => 'workspace-test'),
+    state: computed(() => state),
+    isReady: computed(() => state.kind !== 'loading'),
+    ensureRead: vi.fn(),
+    retry: vi.fn(async () => undefined)
+  }
 }
 
-export const useBillingAutoTopUpCard = vi.fn(() => {
-  onTestFinished(() => {
-    autoTopUpCardState.value = { kind: 'loading' }
-  })
-  return card
-})
+const card = autoTopUpCard()
+
+export const useBillingAutoTopUpCard = vi.fn(() => card)
