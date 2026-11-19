@@ -7,7 +7,7 @@
       "type": "Note",
       "title": "A",
       "pos": [50, 130],
-      "size": [200, 100],
+      "size": [240, 100],
       "flags": {},
       "order": 0,
       "mode": 0,
@@ -22,8 +22,8 @@
       "id": 2,
       "type": "Note",
       "title": "B",
-      "pos": [300, 160],
-      "size": [150, 100],
+      "pos": [320, 160],
+      "size": [230, 160],
       "flags": {},
       "order": 1,
       "mode": 0,
@@ -38,8 +38,8 @@
       "id": 3,
       "type": "Note",
       "title": "C",
-      "pos": [520, 110],
-      "size": [200, 100],
+      "pos": [600, 110],
+      "size": [280, 120],
       "flags": {},
       "order": 2,
       "mode": 0,
@@ -54,6 +54,11 @@
   "links": [],
   "groups": [],
   "config": {},
-  "extra": { "ds": { "offset": [0, 0], "scale": 1 } },
+  "extra": {
+    "ds": {
+      "offset": [0, 0],
+      "scale": 1
+    }
+  },
   "version": 0.4
 }
