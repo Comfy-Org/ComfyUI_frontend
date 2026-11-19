@@ -1,4 +1,7 @@
-import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import {
+  callOutOfTurn,
+  invalidArgument
+} from '@/platform/nodeApi/shared/invalidArgument'
 import type {
   BeforeConnectEvent,
   ConnectionChangeEvent,
@@ -96,9 +99,7 @@ export function createNodeDefBuilder(def: NodeDef): OpenBuilder {
   ) {
     return (value: Given): void => {
       if (!open) {
-        throw new TypeError(
-          `${name} can only be called inside the callback given to extend.`
-        )
+        throw callOutOfTurn(name, 'inside the callback given to extend')
       }
       callbacks[name].push(checked(value))
     }

@@ -205,7 +205,7 @@ describe('querying nodes', () => {
       member: 'queryNodes',
       argument: { scope: ['visible'] },
       message:
-        'queryNodes needs a scope of visible or root-and-subgraphs, not a value of type object.'
+        'queryNodes needs a scope of visible or root-and-subgraphs, not a list.'
     },
     {
       member: 'queryNodes',
@@ -231,7 +231,7 @@ describe('querying nodes', () => {
       member: 'queryNodes',
       argument: { type: /^Mine\// },
       message:
-        'queryNodes needs a type name or a list of type names, not a value of type object.'
+        'queryNodes needs a type name or a list of type names, not an instance of RegExp.'
     },
     {
       member: 'queryNodes',
@@ -262,29 +262,28 @@ describe('querying nodes', () => {
       member: 'queryNodes',
       argument: /Mine/,
       message:
-        'queryNodes needs a query as a plain object, not a value of type object.'
+        'queryNodes needs a query as a plain object, not an instance of RegExp.'
     },
     {
       member: 'queryNodes',
       argument: new Map([['type', 'Mine/A']]),
       message:
-        'queryNodes needs a query as a plain object, not a value of type object.'
+        'queryNodes needs a query as a plain object, not an instance of Map.'
     },
     {
       member: 'queryNodes',
       argument: Object.create({ type: 'Mine/A' }),
-      message:
-        'queryNodes needs a query as a plain object, not a value of type object.'
+      message: 'queryNodes needs a query as a plain object, not an object.'
     },
     {
       member: 'node',
       argument: ['1'],
-      message: 'node needs a node id, not a value of type object.'
+      message: 'node needs a node id, not a list.'
     },
     {
       member: 'node',
       argument: { toString: (): string => '1' },
-      message: 'node needs a node id, not a value of type object.'
+      message: 'node needs a node id, not an object.'
     },
     {
       member: 'node',
@@ -304,7 +303,7 @@ describe('querying nodes', () => {
     {
       member: 'nodesOfType',
       argument: /Mine/,
-      message: 'nodesOfType needs a type name, not a value of type object.'
+      message: 'nodesOfType needs a type name, not an instance of RegExp.'
     }
   ]
 
@@ -328,7 +327,7 @@ describe('graph scopes', () => {
     root.subgraphs.delete(subgraph.id)
 
     expect(() => Reflect.apply(scope.node, scope, [['1']])).toThrow(
-      new TypeError('node needs a node id, not a value of type object.')
+      new TypeError('node needs a node id, not a list.')
     )
   })
 
