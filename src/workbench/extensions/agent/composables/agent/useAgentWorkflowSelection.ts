@@ -22,8 +22,14 @@ import type {
   useAgentWorkflowResolver
 } from './useAgentWorkflowResolver'
 
+type OpenReason =
+  | 'listing_unavailable'
+  | 'listed'
+  | 'lifecycle_live'
+  | 'lifecycle_unknown'
+
 type RestorationOutcome =
-  | { outcome: 'open'; target: ComfyWorkflow | null }
+  | { outcome: 'open'; target: ComfyWorkflow | null; reason: OpenReason }
   | { outcome: 'deleted' }
   | { outcome: 'superseded' }
 
@@ -51,8 +57,9 @@ function restorationOutcomeFor(
     case 'gone':
       return { outcome: 'deleted' }
     case 'live':
+      return { outcome: 'open', target, reason: 'lifecycle_live' }
     case 'unknown':
-      return { outcome: 'open', target }
+      return { outcome: 'open', target, reason: 'lifecycle_unknown' }
   }
 }
 
@@ -274,8 +281,10 @@ export function useAgentWorkflowSelection({
         return { outcome: 'superseded' }
       target = localOwnerFor(workflowId)
     }
-    if (!listed || !cloudListingOmits(workflowId))
-      return { outcome: 'open', target }
+    if (!listed)
+      return { outcome: 'open', target, reason: 'listing_unavailable' }
+    if (!cloudListingOmits(workflowId))
+      return { outcome: 'open', target, reason: 'listed' }
     if (target === null) return { outcome: 'deleted' }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
@@ -320,13 +329,19 @@ export function useAgentWorkflowSelection({
       panelStore.markWorkflowTargetUnavailable()
       return NOT_RESTORED
     }
-    return openRestoredWorkflow(resolved.target, workflowId, isCurrent)
+    return openRestoredWorkflow(
+      resolved.target,
+      workflowId,
+      isCurrent,
+      resolved.reason
+    )
   }
 
   async function openRestoredWorkflow(
     target: ComfyWorkflow | null,
     workflowId: string,
-    isCurrent: () => boolean
+    isCurrent: () => boolean,
+    openReason?: OpenReason
   ): Promise<WorkflowRestoration> {
     try {
       if (target === null) {
@@ -338,7 +353,8 @@ export function useAgentWorkflowSelection({
         panelStore.setWorkflowTarget(null)
         failRestore(
           workflowId,
-          new Error('No saved workflow resolves to the chat target')
+          new Error('No saved workflow resolves to the chat target'),
+          { openReason }
         )
         return RESTORE_ABANDONED
       }
@@ -361,11 +377,15 @@ export function useAgentWorkflowSelection({
     }
   }
 
-  function failRestore(workflowId: string, cause: unknown): void {
+  function failRestore(
+    workflowId: string,
+    cause: unknown,
+    extraContext?: Record<string, unknown>
+  ): void {
     reportError(cause, {
       surface: 'agent',
       errorType: 'agent_workflow_restore_failed',
-      context: { workflowId }
+      context: { workflowId, ...extraContext }
     })
     warnRestoreFailed()
   }

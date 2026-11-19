@@ -374,7 +374,7 @@ describe('historical workflow restoration', () => {
       {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved' }
+        context: { workflowId: 'wf-saved', openReason: 'listed' }
       }
     )
   })
@@ -385,7 +385,8 @@ describe('historical workflow restoration', () => {
       list: async () => listing([{ id: 'wf-saved', name: 'saved' }]),
       ready: true,
       unavailable: true,
-      warns: 0
+      warns: 0,
+      openReason: undefined
     },
     {
       listing: 'fails',
@@ -394,11 +395,12 @@ describe('historical workflow restoration', () => {
       },
       ready: false,
       unavailable: false,
-      warns: 1
+      warns: 1,
+      openReason: 'listing_unavailable'
     }
   ])(
     'restores a chat whose workflow the Cloud listing $listing',
-    async ({ list, ready, unavailable, warns }) => {
+    async ({ list, ready, unavailable, warns, openReason }) => {
       const {
         selection,
         workflows,
@@ -417,6 +419,16 @@ describe('historical workflow restoration', () => {
       expect(panel.selectedWorkflow).toBeNull()
       expect(panel.targetUnavailable).toBe(unavailable)
       expect(warnRestoreFailed).toHaveBeenCalledTimes(warns)
+      if (openReason !== undefined) {
+        expect(reportError).toHaveBeenCalledWith(
+          new Error('No saved workflow resolves to the chat target'),
+          {
+            surface: 'agent',
+            errorType: 'agent_workflow_restore_failed',
+            context: { workflowId: 'wf-gone', openReason }
+          }
+        )
+      }
     }
   )
 
@@ -670,7 +682,14 @@ describe('historical workflow restoration', () => {
   })
 
   it('does not reopen a draft closed while its row is being read', async () => {
-    const { selection, workflows, bindings, panel, getCloudWorkflow } = setup()
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      getCloudWorkflow,
+      warnRestoreFailed
+    } = setup()
     const draft = openDraftTab(workflows, bindings)
     let readStarted = () => {}
     const started = new Promise<void>((resolve) => {
@@ -700,6 +719,15 @@ describe('historical workflow restoration', () => {
     expect((await restoration).ready).toBe(false)
     expect(panel.selectedWorkflow).toBeNull()
     expect(workflows.openWorkflows).not.toContain(draft)
+    expect(warnRestoreFailed).toHaveBeenCalledOnce()
+    expect(reportError).toHaveBeenCalledWith(
+      new Error('No saved workflow resolves to the chat target'),
+      {
+        surface: 'agent',
+        errorType: 'agent_workflow_restore_failed',
+        context: { workflowId: 'wf-draft', openReason: 'lifecycle_live' }
+      }
+    )
   })
 
   it('leaves a deleted target unavailable, and reports ready with no commit, when nothing local answers for it', async () => {
