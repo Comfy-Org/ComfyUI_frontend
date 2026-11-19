@@ -1,12 +1,27 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { combineAbortSignals, createTimeoutSignal } from './abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal,
+  throwIfAborted
+} from './abortSignal'
 
 const nativeAny = Object.getOwnPropertyDescriptor(AbortSignal, 'any')
 const nativeTimeout = Object.getOwnPropertyDescriptor(AbortSignal, 'timeout')
+const nativeThrowIfAborted = Object.getOwnPropertyDescriptor(
+  AbortSignal.prototype,
+  'throwIfAborted'
+)
 
 function removeAbortSignalAny(): void {
   Object.defineProperty(AbortSignal, 'any', {
+    configurable: true,
+    value: undefined
+  })
+}
+
+function removeThrowIfAborted(): void {
+  Object.defineProperty(AbortSignal.prototype, 'throwIfAborted', {
     configurable: true,
     value: undefined
   })
@@ -25,6 +40,13 @@ afterEach(() => {
   if (nativeTimeout)
     Object.defineProperty(AbortSignal, 'timeout', nativeTimeout)
   else Reflect.deleteProperty(AbortSignal, 'timeout')
+  if (nativeThrowIfAborted)
+    Object.defineProperty(
+      AbortSignal.prototype,
+      'throwIfAborted',
+      nativeThrowIfAborted
+    )
+  else Reflect.deleteProperty(AbortSignal.prototype, 'throwIfAborted')
 })
 
 describe('combineAbortSignals', () => {
@@ -66,5 +88,31 @@ describe('createTimeoutSignal', () => {
     vi.advanceTimersByTime(1)
     expect(signal.aborted).toBe(true)
     expect(signal.reason).toMatchObject({ name: 'TimeoutError' })
+  })
+})
+
+describe('throwIfAborted', () => {
+  it('does nothing for a live or missing signal without signal.throwIfAborted', () => {
+    removeThrowIfAborted()
+
+    expect(() => throwIfAborted(new AbortController().signal)).not.toThrow()
+    expect(() => throwIfAborted(undefined)).not.toThrow()
+  })
+
+  it('throws the abort reason without signal.throwIfAborted', () => {
+    removeThrowIfAborted()
+    const controller = new AbortController()
+    const reason = new DOMException('Stopped', 'AbortError')
+    controller.abort(reason)
+
+    expect(() => throwIfAborted(controller.signal)).toThrow(reason)
+  })
+
+  it('throws an AbortError when the runtime records no abort reason', () => {
+    const signal = { aborted: true, reason: undefined } as AbortSignal
+
+    expect(() => throwIfAborted(signal)).toThrow(
+      expect.objectContaining({ name: 'AbortError' })
+    )
   })
 })
