@@ -46,6 +46,7 @@ type ResizeCallback = (
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
+  mockProgress: undefined as number | undefined,
   mockLgraphNode: null as Record<string, unknown> | null,
   resizeCallback: null as ResizeCallback | null
 }))
@@ -115,7 +116,7 @@ vi.mock(
   () => ({
     useNodeExecutionState: vi.fn(() => ({
       executing: computed(() => mockData.mockExecuting),
-      progress: computed(() => undefined),
+      progress: computed(() => mockData.mockProgress),
       progressPercentage: computed(() => undefined),
       progressState: computed(() => undefined),
       executionState: computed(() => 'idle' as const)
@@ -260,6 +261,7 @@ describe('LGraphNode', () => {
       )
     )
     mockData.mockExecuting = false
+    mockData.mockProgress = undefined
     mockData.mockLgraphNode = null
     mockData.resizeCallback = null
     app.dragOverNode = null
@@ -502,6 +504,30 @@ describe('LGraphNode', () => {
 
     const overlay = screen.getByTestId('node-state-outline-overlay')
     expect(overlay).toHaveClass('border-primary')
+  })
+
+  it('moves the progress fill with a translate and leaves its size alone', () => {
+    mockData.mockExecuting = true
+    mockData.mockProgress = 0.35
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    const fill = screen.getByTestId('node-progress-fill')
+    expect(fill.style.getPropertyValue('--node-progress')).toBe('35%')
+    expect(fill.style.width).toBe('')
+  })
+
+  it('caps the progress fill at the full track', () => {
+    mockData.mockExecuting = true
+    mockData.mockProgress = 1.4
+
+    renderLGraphNode({ nodeData: mockNodeData })
+
+    expect(
+      screen
+        .getByTestId('node-progress-fill')
+        .style.getPropertyValue('--node-progress')
+    ).toBe('100%')
   })
 
   it('hides a linked core LoadImage input preview', () => {
