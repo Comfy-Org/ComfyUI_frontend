@@ -133,9 +133,9 @@ follow-up for a command interface.
    own: LiteGraph's `pin()` sets the flag to `!pinned`, so pinning a node and
    unpinning it makes it resizable whatever the pack chose, and the API keeps
    that host behavior (see "Core limitations"). The JSDoc says so.
-   `isResizable()`, which no stored pack calls, exists because A-09 asks that
-   the choice can be read back; it reads the node's flag. The choice is not saved, and a node
-   that undo or a load rebuilds has none.
+   There is no `isResizable()`: no stored pack reads the choice back, as none
+   reads a shape or size constraints back (see "What is left out"). The
+   choice is not saved, and a node that undo or a load rebuilds has none.
 9. `removeNode(node)` removes the node through `LGraph.remove`, which removes
    its links. It returns `false` if the node is gone or the host keeps it (a
    node marked `ignore_remove`).
@@ -275,7 +275,7 @@ follow-up for a command interface.
 
 ### Node handle members that are not edits
 
-22. `isSerializingWidgets()`, `isResizable()` and `snapshot()` read the live
+22. `isSerializingWidgets()` and `snapshot()` read the live
     node, and return `undefined` once it is gone. `snapshot()` is a frozen copy
     of the node's identity, title, mode, flags, colors, shape, position and
     size; a shape with no name here reads as `'default'`.
@@ -480,7 +480,7 @@ contract. A member no stored pack calls is cut.
 | Member                                                                                                                                                      |               Packs, sites | Why                                                                                                                                                                                                                     |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GraphHandle.remove(id)`                                                                                                                                    |                       0, 0 | `node.remove()` and `comfy.edit.removeNode` cover it                                                                                                                                                                    |
-| `NodeHandle.setPinned`, `getShape`, `getSizeConstraints`                                                                                                    |                       0, 0 | No use; `snapshot()` reads the shape                                                                                                                                                                                    |
+| `NodeHandle.setPinned`, `getShape`, `getSizeConstraints`, `isResizable`                                                                                     |                       0, 0 | No use; `snapshot()` reads the shape                                                                                                                                                                                    |
 | `GroupHandle.setTitle`, `setColor`                                                                                                                          |                       0, 0 | No use, so `bounds` is the only field `updateGroup` takes                                                                                                                                                               |
 | `SlotCollection.get`, `ids`; `SlotOptions.localizedName`, `position`, `direction`                                                                           |                       0, 0 | No use; `byId`, `at` and `byName` remain                                                                                                                                                                                |
 | `SlotSnapshot.*` fields read on their own                                                                                                                   |                       0, 0 | `snapshot()` is used (3 packs) and returns them all                                                                                                                                                                     |

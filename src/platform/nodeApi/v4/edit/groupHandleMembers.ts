@@ -1,7 +1,7 @@
 import type { EditCore } from './edits'
 import type { GroupHandleMembers } from './groupHandles'
 
-/** A group handle's edit methods, each a call to `comfy.edit`. */
+/** A group handle's edit methods, each through the edit core. */
 export function groupHandleMembers(
   handle: object,
   edits: EditCore

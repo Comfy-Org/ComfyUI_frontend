@@ -2,15 +2,15 @@ import type {
   NodeHandleMembers,
   NodeHandles
 } from '@/platform/nodeApi/v4/nodeHandle'
-import type { NodePatch } from '@/platform/nodeApi/v4/types'
 import { checkedString } from './checkedArguments'
 import type { EditCore } from './edits'
 import type { SlotHandles } from './liveSlot'
 import { attachBadge, checkedBadge } from './nodeBadges'
 import { slotCollection } from './slotCollection'
+import type { NodePatch } from './nodePatch'
 import { snapshotOf } from './nodeSnapshot'
 
-/** A node handle's edit methods, each a call to `comfy.edit`, and its reads of them. */
+/** A node handle's edit methods, through the edit core, and its reads of them. */
 export function nodeHandleMembers(
   handle: object,
   edits: EditCore,
@@ -61,10 +61,6 @@ export function nodeHandleMembers(
     isSerializingWidgets() {
       const node = live()
       return node && Boolean(node.serialize_widgets)
-    },
-    isResizable() {
-      const node = live()
-      return node && node.resizable !== false
     },
     snapshot() {
       const node = live()

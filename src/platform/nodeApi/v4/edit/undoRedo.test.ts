@@ -100,7 +100,7 @@ describe('edits through the real change tracker', () => {
   })
 
   it('makes a batch of edits one undo step, even when the host asks for a capture inside it', async () => {
-    comfy.edit.batch(() => {
+    comfy.graph.batch(() => {
       handleOf(source).setTitle('One')
       tracker.captureCanvasState()
       handleOf(target).setTitle('Two')
@@ -144,11 +144,9 @@ describe('edits through the real change tracker', () => {
 
   it('makes adding a node one undo step that undo removes', async () => {
     LiteGraph.registerNodeType('EditTest/Added', class extends LGraphNode {})
-    const root = comfy.graph.root()
-    assert(root)
     const before = app.rootGraph.nodes.length
 
-    expect(comfy.edit.addNode(root, 'EditTest/Added')).toBeDefined()
+    expect(comfy.graph.add('EditTest/Added')).toBeDefined()
     expect(app.rootGraph.nodes).toHaveLength(before + 1)
     expect(tracker.undoQueue).toHaveLength(1)
 
@@ -165,7 +163,7 @@ describe('edits through the real change tracker', () => {
     group.size = [400, 300]
     app.rootGraph.add(group)
     tracker.reset(fromAny(app.rootGraph.serialize()))
-    const [handle] = comfy.graph.groups() ?? []
+    const [handle] = comfy.graph.groups()
     assert(handle)
     return handle
   }
@@ -186,7 +184,7 @@ describe('edits through the real change tracker', () => {
     await tracker.undo()
     expect(groupBoundsNow()).toEqual([[0, 0, 400, 300]])
     expect(handle.getBounds()).toEqual({ x: 0, y: 0, width: 400, height: 300 })
-    expect(comfy.graph.groups()?.[0]).toBe(handle)
+    expect(comfy.graph.groups()[0]).toBe(handle)
     expect(workflow.isModified).toBe(false)
 
     await tracker.redo()
@@ -198,7 +196,7 @@ describe('edits through the real change tracker', () => {
     const handle = trackedGroup()
     const sourceBefore = handleOf(source).getPosition()
 
-    comfy.edit.batch(() => {
+    comfy.graph.batch(() => {
       handleOf(source).setPosition({ x: 600, y: 700 })
       handle.setBounds({ x: 550, y: 600, width: 400, height: 300 })
     })

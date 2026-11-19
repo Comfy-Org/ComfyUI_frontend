@@ -193,8 +193,7 @@ describe('querying nodes', () => {
     {
       member: 'queryNodes',
       argument: { toString: 'visible' },
-      message:
-        "queryNodes needs a query of scope and type only, not 'toString'."
+      message: "queryNodes needs a query of scope, type only, not 'toString'."
     },
     {
       member: 'queryNodes',
@@ -211,17 +210,17 @@ describe('querying nodes', () => {
     {
       member: 'queryNodes',
       argument: { types: ['Mine/A'] },
-      message: "queryNodes needs a query of scope and type only, not 'types'."
+      message: "queryNodes needs a query of scope, type only, not 'types'."
     },
     {
       member: 'queryNodes',
       argument: null,
-      message: 'queryNodes needs a query object, not null.'
+      message: 'queryNodes needs a query as a plain object, not null.'
     },
     {
       member: 'queryNodes',
       argument: 'visible',
-      message: "queryNodes needs a query object, not 'visible'."
+      message: "queryNodes needs a query as a plain object, not 'visible'."
     },
     {
       member: 'queryNodes',
@@ -257,22 +256,25 @@ describe('querying nodes', () => {
     {
       member: 'queryNodes',
       argument: { '': 'visible' },
-      message: "queryNodes needs a query of scope and type only, not ''."
+      message: "queryNodes needs a query of scope, type only, not ''."
     },
     {
       member: 'queryNodes',
       argument: /Mine/,
-      message: 'queryNodes needs a query object, not a value of type object.'
+      message:
+        'queryNodes needs a query as a plain object, not a value of type object.'
     },
     {
       member: 'queryNodes',
       argument: new Map([['type', 'Mine/A']]),
-      message: 'queryNodes needs a query object, not a value of type object.'
+      message:
+        'queryNodes needs a query as a plain object, not a value of type object.'
     },
     {
       member: 'queryNodes',
       argument: Object.create({ type: 'Mine/A' }),
-      message: 'queryNodes needs a query object, not a value of type object.'
+      message:
+        'queryNodes needs a query as a plain object, not a value of type object.'
     },
     {
       member: 'node',

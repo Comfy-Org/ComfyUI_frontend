@@ -13,8 +13,10 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
-import type { Comfy, NodeHandle, NodePatch } from '@/platform/nodeApi/v4/types'
+import type { NodePatch } from '@/platform/nodeApi/v4/edit/nodePatch'
+import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
 
 function recordingHistory() {
   const steps: string[] = []
@@ -28,13 +30,14 @@ function recordingHistory() {
 describe('node edits', () => {
   let graph: LGraph
   let comfy: Comfy
+  let edit: EditCore
   let host: ComfyApiHost
   let history: ReturnType<typeof recordingHistory>
 
   beforeEach(() => {
     graph = new LGraph()
     history = recordingHistory()
-    ;({ comfy, host } = createComfyApi({
+    ;({ comfy, host, edit } = createComfyApi({
       getGraph: () => graph,
       history: () => history
     }))
@@ -68,7 +71,7 @@ describe('node edits', () => {
     it('applies every field of a patch to the node', () => {
       const { node, handle } = add()
 
-      const applied = comfy.edit.updateNode(handle, {
+      const applied = edit.updateNode(handle, {
         title: 'Renamed',
         mode: 'bypass',
         collapsed: true,
@@ -100,7 +103,7 @@ describe('node edits', () => {
       const { handle } = add()
       const version = graph._version
 
-      comfy.edit.updateNode(handle, { title: 'A', color: '#111' })
+      edit.updateNode(handle, { title: 'A', color: '#111' })
 
       expect(history.steps).toEqual(['before', 'after'])
       expect(graph._version).toBeGreaterThan(version)
@@ -111,7 +114,7 @@ describe('node edits', () => {
       const seen: string[] = []
       history.afterChange = () => seen.push(node.title)
 
-      comfy.edit.updateNode(handle, { title: 'After' })
+      edit.updateNode(handle, { title: 'After' })
 
       expect(seen).toEqual(['After'])
     })
@@ -120,7 +123,7 @@ describe('node edits', () => {
       const { handle } = add()
       const redraw = vi.spyOn(graph, 'setDirtyCanvas')
 
-      comfy.edit.updateNode(handle, { title: 'Shown' })
+      edit.updateNode(handle, { title: 'Shown' })
 
       expect(redraw).toHaveBeenCalledWith(true, true)
     })
@@ -129,7 +132,7 @@ describe('node edits', () => {
       const { node, handle } = add('Kept')
       node.color = '#abc'
 
-      comfy.edit.updateNode(handle, { bgColor: '#def' })
+      edit.updateNode(handle, { bgColor: '#def' })
 
       expect([node.title, node.color, node.bgcolor]).toEqual([
         'Kept',
@@ -144,7 +147,7 @@ describe('node edits', () => {
       node.bgcolor = '#def'
       node.shape = RenderShape.CARD
 
-      comfy.edit.updateNode(handle, {
+      edit.updateNode(handle, {
         color: undefined,
         bgColor: undefined,
         shape: 'default'
@@ -157,15 +160,26 @@ describe('node edits', () => {
       ])
     })
 
+    it('restores the default colors for null as for undefined', () => {
+      const { node, handle } = add()
+      node.color = '#abc'
+      node.bgcolor = '#def'
+
+      expect(handle.setColor(null)).toBe(true)
+      expect(edit.updateNode(handle, { bgColor: null })).toBe(true)
+
+      expect([node.color, node.bgcolor]).toEqual([undefined, undefined])
+    })
+
     it('expands a collapsed node, and leaves it alone when it already is as asked', () => {
       const { node, handle } = add()
       const collapse = vi.spyOn(node, 'collapse')
 
-      comfy.edit.updateNode(handle, { collapsed: false })
+      edit.updateNode(handle, { collapsed: false })
       expect(collapse).not.toHaveBeenCalled()
 
-      comfy.edit.updateNode(handle, { collapsed: true })
-      comfy.edit.updateNode(handle, { collapsed: false })
+      edit.updateNode(handle, { collapsed: true })
+      edit.updateNode(handle, { collapsed: false })
 
       expect(node.collapsed).toBe(false)
       expect(collapse).toHaveBeenCalledTimes(2)
@@ -175,7 +189,7 @@ describe('node edits', () => {
       const { node, handle } = add()
       node.pin(true)
 
-      comfy.edit.updateNode(handle, { collapsed: true })
+      edit.updateNode(handle, { collapsed: true })
 
       expect(node.collapsed).toBe(true)
     })
@@ -189,7 +203,7 @@ describe('node edits', () => {
     ] as const)('sets mode %s', ([mode, value]) => {
       const { node, handle } = add()
 
-      comfy.edit.updateNode(handle, { mode })
+      edit.updateNode(handle, { mode })
 
       expect(node.mode).toBe(value)
       expect(handle.getMode()).toBe(mode)
@@ -203,30 +217,46 @@ describe('node edits', () => {
     ] as const)('sets shape %s', ([shape, value]) => {
       const { node, handle } = add()
 
-      comfy.edit.updateNode(handle, { shape })
+      edit.updateNode(handle, { shape })
 
       expect(node.shape).toBe(value)
     })
 
-    it('stores a property as the workflow saves it, through the node', () => {
+    it('stores a copy of a property the workflow saves unchanged, through the node', () => {
       const { node, handle } = add()
       const onPropertyChanged = vi.fn()
       node.onPropertyChanged = onPropertyChanged
-      const value = { when: new Date(0), nan: Number.NaN }
+      const value = { when: '1970-01-01T00:00:00.000Z', list: [1, null] }
 
-      comfy.edit.updateNode(handle, { properties: { stamp: value } })
+      edit.updateNode(handle, { properties: { stamp: value } })
 
-      expect(node.properties.stamp).toEqual({
-        when: '1970-01-01T00:00:00.000Z',
-        nan: null
-      })
+      expect(node.properties.stamp).toEqual(value)
       expect(node.properties.stamp).not.toBe(value)
+      expect(Object.isFrozen(node.properties.stamp)).toBe(false)
       expect(onPropertyChanged).toHaveBeenCalledWith(
         'stamp',
         node.properties.stamp,
         undefined
       )
     })
+
+    it.for([
+      ['a Date', { when: new Date(0) }, 'property stamp.when'],
+      ['a nested NaN', { nan: Number.NaN }, 'property stamp.nan'],
+      ['a nested function', { run: () => 1 }, 'property stamp.run'],
+      ['a nested undefined', { gone: undefined }, 'property stamp.gone'],
+      ['a toJSON', { toJSON: () => 5 }, 'property stamp.toJSON']
+    ] as const)(
+      'refuses %s that the workflow would save changed, and changes nothing',
+      ([, value, path]) => {
+        const { node, handle } = add()
+
+        expect(() =>
+          edit.updateNode(handle, { properties: { stamp: value } })
+        ).toThrow(`updateNode needs ${path} as a string, a finite number`)
+        expect(Object.hasOwn(node.properties, 'stamp')).toBe(false)
+      }
+    )
 
     it('deletes a property given undefined, through the node, so the workflow no longer saves it', () => {
       const { node, handle } = add()
@@ -236,7 +266,7 @@ describe('node edits', () => {
       node.onPropertyChanged = onPropertyChanged
 
       expect(
-        comfy.edit.updateNode(handle, { properties: { stamp: undefined } })
+        edit.updateNode(handle, { properties: { stamp: undefined } })
       ).toBe(true)
 
       expect(Object.hasOwn(node.properties, 'stamp')).toBe(false)
@@ -273,7 +303,7 @@ describe('node edits', () => {
       node.properties.old = 'x'
 
       expect(
-        comfy.edit.updateNode(handle, {
+        edit.updateNode(handle, {
           properties: { old: undefined, fresh: 2 }
         })
       ).toBe(true)
@@ -287,7 +317,7 @@ describe('node edits', () => {
       const onResize = vi.fn()
       node.onResize = onResize
 
-      comfy.edit.updateNode(handle, { size: { width: 250, height: 90 } })
+      edit.updateNode(handle, { size: { width: 250, height: 90 } })
 
       expect(onResize).toHaveBeenCalledOnce()
       expect(handle.getSize()).toEqual({ width: 250, height: 90 })
@@ -296,7 +326,7 @@ describe('node edits', () => {
     it('accepts a size and limits of zero', () => {
       const { node, handle } = add()
 
-      comfy.edit.updateNode(handle, {
+      edit.updateNode(handle, {
         size: { width: 0, height: 0 },
         sizeConstraints: { minWidth: 0, maxHeight: 0 }
       })
@@ -311,7 +341,7 @@ describe('node edits', () => {
       const position = other.getPosition()
       assert(position)
 
-      comfy.edit.updateNode(handle, { position })
+      edit.updateNode(handle, { position })
 
       expect(Array.from(node.pos)).toEqual([7, 9])
     })
@@ -329,7 +359,6 @@ describe('node edits', () => {
       ['a prototype key as a mode', { mode: 'toString' }],
       ['collapsed that is not a boolean', { collapsed: 1 }],
       ['a color that is not text', { color: 7 }],
-      ['a null color', { color: null }],
       ['a background color that is not text', { bgColor: {} }],
       ['an unknown shape', { shape: 'hexagon' }],
       ['a prototype key as a shape', { shape: 'toString' }],
@@ -381,7 +410,7 @@ describe('node edits', () => {
       const version = graph._version
 
       expect(() =>
-        Reflect.apply(comfy.edit.updateNode, undefined, [handle, patch])
+        Reflect.apply(edit.updateNode, undefined, [handle, patch])
       ).toThrow(TypeError)
       expect(stateOf(node)).toEqual(before)
       expect(graph._version).toBe(version)
@@ -392,7 +421,7 @@ describe('node edits', () => {
       const { handle } = add()
 
       expect(() =>
-        Reflect.apply(comfy.edit.updateNode, undefined, [
+        Reflect.apply(edit.updateNode, undefined, [
           handle,
           { position: { x: Number.NaN, y: 0 } }
         ])
@@ -407,19 +436,16 @@ describe('node edits', () => {
       add()
 
       expect(() =>
-        Reflect.apply(comfy.edit.updateNode, undefined, [
-          notAHandle,
-          { title: 'x' }
-        ])
+        Reflect.apply(edit.updateNode, undefined, [notAHandle, { title: 'x' }])
       ).toThrow(TypeError)
       expect(() =>
-        Reflect.apply(comfy.edit.removeNode, undefined, [notAHandle])
+        Reflect.apply(edit.removeNode, undefined, [notAHandle])
       ).toThrow(TypeError)
     })
 
     it('refuses a handle another API made', () => {
       const { handle } = add()
-      const other = createComfyApi({ getGraph: () => graph }).comfy
+      const other = createComfyApi({ getGraph: () => graph })
 
       expect(() => other.edit.updateNode(handle, { title: 'x' })).toThrow(
         TypeError
@@ -433,8 +459,8 @@ describe('node edits', () => {
       graph.remove(node)
       const version = graph._version
 
-      expect(comfy.edit.updateNode(handle, { title: 'Changed' })).toBe(false)
-      expect(comfy.edit.removeNode(handle)).toBe(false)
+      expect(edit.updateNode(handle, { title: 'Changed' })).toBe(false)
+      expect(edit.removeNode(handle)).toBe(false)
       expect(node.title).toBe('Removed')
       expect(graph._version).toBe(version)
       expect(history.steps).toEqual([])
@@ -445,7 +471,7 @@ describe('node edits', () => {
       graph.remove(node)
 
       expect(() =>
-        Reflect.apply(comfy.edit.updateNode, undefined, [handle, { title: 1 }])
+        Reflect.apply(edit.updateNode, undefined, [handle, { title: 1 }])
       ).toThrow(TypeError)
     })
 
@@ -512,10 +538,11 @@ describe('node edits', () => {
 describe('node handle edit methods', () => {
   let graph: LGraph
   let comfy: Comfy
+  let edit: EditCore
 
   beforeEach(() => {
     graph = new LGraph()
-    ;({ comfy } = createComfyApi({ getGraph: () => graph }))
+    ;({ comfy, edit } = createComfyApi({ getGraph: () => graph }))
   })
 
   function add() {
@@ -567,7 +594,7 @@ describe('node handle edit methods', () => {
     const viaEdit = add()
 
     expect(wrapper(viaHandle.handle)).toBe(true)
-    expect(comfy.edit.updateNode(viaEdit.handle, patch)).toBe(true)
+    expect(edit.updateNode(viaEdit.handle, patch)).toBe(true)
 
     expect(viaHandle.handle.snapshot()).toEqual({
       ...viaEdit.handle.snapshot(),
@@ -715,14 +742,13 @@ describe('node handle edit methods', () => {
   })
 
   describe('resizable', () => {
-    it('reads back what the pack chose', () => {
-      const { handle } = add()
+    it('sets the node to what the pack chose', () => {
+      const { node, handle } = add()
 
-      expect(handle.isResizable()).toBe(true)
-      handle.setResizable(false)
-      expect(handle.isResizable()).toBe(false)
-      handle.setResizable(true)
-      expect(handle.isResizable()).toBe(true)
+      expect(handle.setResizable(false)).toBe(true)
+      expect(node.resizable).toBe(false)
+      expect(handle.setResizable(true)).toBe(true)
+      expect(node.resizable).toBe(true)
     })
 
     it('keeps a pack’s refusal while the node is pinned, and the host’s unpin makes the node resizable again', () => {
@@ -730,11 +756,10 @@ describe('node handle edit methods', () => {
       handle.setResizable(false)
 
       node.pin(true)
-      expect(handle.isResizable()).toBe(false)
+      expect(node.resizable).toBe(false)
       node.pin(false)
 
       expect(node.resizable).toBe(true)
-      expect(handle.isResizable()).toBe(true)
     })
 
     it('keeps a pinned node from being resized when the pack allows it, until the unpin', () => {
@@ -743,7 +768,7 @@ describe('node handle edit methods', () => {
 
       handle.setResizable(true)
 
-      expect(handle.isResizable()).toBe(false)
+      expect(node.resizable).toBe(false)
 
       node.pin(false)
 
@@ -760,11 +785,12 @@ describe('node handle edit methods', () => {
       expect(node.resizable).toBe(false)
     })
 
-    it('is gone with the node', () => {
+    it('changes nothing once the node is gone', () => {
       const { node, handle } = add()
       graph.remove(node)
 
-      expect(handle.isResizable()).toBeUndefined()
+      expect(handle.setResizable(false)).toBe(false)
+      expect(node.resizable).not.toBe(false)
     })
   })
 })

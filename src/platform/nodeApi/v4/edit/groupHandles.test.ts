@@ -49,18 +49,15 @@ describe('group handles', () => {
 
     const groups = comfy.graph.groups()
 
-    expect(groups?.map((group) => group.getTitle())).toEqual([
-      'First',
-      'Second'
-    ])
+    expect(groups.map((group) => group.getTitle())).toEqual(['First', 'Second'])
     expect(Object.isFrozen(groups)).toBe(true)
-    expect(comfy.graph.groups()?.[0]).toBe(groups?.[0])
+    expect(comfy.graph.groups()[0]).toBe(groups[0])
   })
 
   it('reads a group’s id, title, color and bounds', () => {
     const group = addGroup('Named', [10, 20, 300, 200])
     group.color = '#335'
-    const [handle] = comfy.graph.groups() ?? []
+    const [handle] = comfy.graph.groups()
 
     expect(handle.id).toBe(String(group.id))
     expect(handle.isDeleted).toBe(false)
@@ -81,8 +78,8 @@ describe('group handles', () => {
     const inside = addNode('Inside', 50, 100)
     const edge = addNode('Across the edge', 360, 100)
     addNode('Outside', 600, 100)
-    addNode('Top inside, centre below', 50, 400 + 20)
-    const [handle] = comfy.graph.groups() ?? []
+    addNode('Top inside, center below', 50, 400 + 20)
+    const [handle] = comfy.graph.groups()
 
     expect(handle.nodes()?.map((node) => node.getTitle())).toEqual(['Inside'])
 
@@ -99,7 +96,7 @@ describe('group handles', () => {
     addGroup('Area', [0, 0, 400, 100])
     addNode('Centre in the group only with its title bar', 50, 100 - 25 + 5)
     const titleBar = LiteGraph.NODE_TITLE_HEIGHT
-    const [handle] = comfy.graph.groups() ?? []
+    const [handle] = comfy.graph.groups()
 
     expect(titleBar).toBeGreaterThan(10)
     expect(handle.nodes()).toHaveLength(1)
@@ -107,7 +104,7 @@ describe('group handles', () => {
 
   it('reads nothing once the group is removed', () => {
     const group = addGroup('Removed', [0, 0, 100, 100])
-    const [handle] = comfy.graph.groups() ?? []
+    const [handle] = comfy.graph.groups()
 
     shown().remove(group)
 
@@ -120,14 +117,14 @@ describe('group handles', () => {
 
   it('follows its group through an undo, and is retired when another document loads', () => {
     addGroup('Kept', [0, 0, 100, 100])
-    const [handle] = comfy.graph.groups() ?? []
+    const [handle] = comfy.graph.groups()
 
     shown().configure(shown().serialize())
     host.afterHistoryRestore()
 
     expect(handle.isDeleted).toBe(false)
     expect(handle.getTitle()).toBe('Kept')
-    expect(comfy.graph.groups()?.[0]).toBe(handle)
+    expect(comfy.graph.groups()[0]).toBe(handle)
 
     host.beginDocument()
 
@@ -137,7 +134,7 @@ describe('group handles', () => {
   it('retires the handle of a group an undo removed, so the group that takes its id next gets another', () => {
     const beforeAdding = shown().serialize()
     addGroup('Gone', [0, 0, 100, 100])
-    const [handle] = comfy.graph.groups() ?? []
+    const [handle] = comfy.graph.groups()
 
     shown().configure(beforeAdding)
     host.afterHistoryRestore()
@@ -145,14 +142,14 @@ describe('group handles', () => {
 
     expect(String(next.id)).toBe(handle.id)
     expect(handle.isDeleted).toBe(true)
-    expect(comfy.graph.groups()?.[0]).not.toBe(handle)
+    expect(comfy.graph.groups()[0]).not.toBe(handle)
   })
 
   it('keeps the handle of a group a restore removed while a later group holds the counter above its id, and reads it when it comes back', () => {
     const group = addGroup('Back', [0, 0, 100, 100])
     addGroup('Later', [200, 0, 100, 100])
     const withGroup = shown().serialize()
-    const [handle] = comfy.graph.groups() ?? []
+    const [handle] = comfy.graph.groups()
     shown().remove(group)
     const withoutGroup = shown().serialize()
 
@@ -164,12 +161,12 @@ describe('group handles', () => {
 
     expect(handle.isDeleted).toBe(false)
     expect(handle.getTitle()).toBe('Back')
-    expect(comfy.graph.groups()?.[0]).toBe(handle)
+    expect(comfy.graph.groups()[0]).toBe(handle)
   })
 
   it('retires the handle of the newest group a restore removed, whose id the next group takes, since a saved state does not keep the group counter', () => {
     const group = addGroup('Newest', [0, 0, 100, 100])
-    const [handle] = comfy.graph.groups() ?? []
+    const [handle] = comfy.graph.groups()
     shown().remove(group)
 
     shown().configure(shown().serialize())
@@ -201,6 +198,6 @@ describe('group handles', () => {
 
     graph = null
 
-    expect(comfy.graph.groups()).toBeUndefined()
+    expect(comfy.graph.groups()).toEqual([])
   })
 })

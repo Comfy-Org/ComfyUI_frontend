@@ -63,6 +63,7 @@ describe('slot handles', () => {
       const { inputs } = targetHandle
 
       expect(inputs.at(2)).toBeUndefined()
+      expect(inputs.at(-3)).toBeUndefined()
       expect(inputs.byName('missing')).toBeUndefined()
       expect(inputs.byId('slot:none')).toBeUndefined()
     })
@@ -74,8 +75,15 @@ describe('slot handles', () => {
       expect(sourceHandle.outputs.byName('mask')?.index).toBe(1)
     })
 
-    it.for([[-1], [1.5], ['0'], [Number.NaN]])(
-      'refuse a position that is not a whole number of zero or more: %o',
+    it('count a negative position back from the end, as widgets do', () => {
+      const { inputs } = targetHandle
+
+      expect(inputs.at(-1)).toBe(inputs.at(1))
+      expect(inputs.at(-2)).toBe(inputs.at(0))
+    })
+
+    it.for([[1.5], ['0'], [Number.NaN]])(
+      'refuse a position that is not a whole number: %o',
       ([index]) => {
         expect(() =>
           Reflect.apply(targetHandle.inputs.at, undefined, [index])
@@ -242,7 +250,7 @@ describe('slot handles', () => {
       expect(link?.sourceNodeId).toBe(String(SUBGRAPH_INPUT_ID))
       expect(link?.sourceSlotId).toEqual(expect.stringMatching(/^slot:/))
       expect(link?.targetSlotId).toBe(value?.id)
-      expect(inside.graph.links()?.[0]?.sourceSlotId).toBe(link?.sourceSlotId)
+      expect(inside.graph.links()[0]?.sourceSlotId).toBe(link?.sourceSlotId)
     })
 
     it('read the subgraph output a link inside a subgraph goes to', () => {
@@ -269,7 +277,7 @@ describe('slot handles', () => {
       target.inputs.length = 0
       source.outputs.length = 0
 
-      expect(comfy.graph.links()?.[0]).toMatchObject({
+      expect(comfy.graph.links()[0]).toMatchObject({
         sourceSlotId: undefined,
         targetSlotId: undefined
       })

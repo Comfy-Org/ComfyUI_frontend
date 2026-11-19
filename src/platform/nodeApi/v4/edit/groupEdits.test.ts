@@ -16,19 +16,21 @@ import {
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, GroupHandle } from '@/platform/nodeApi/v4/types'
 
 describe('group edits', () => {
   let graph: LGraph
   let comfy: Comfy
+  let edit: EditCore
   let host: ComfyApiHost
   let steps: string[]
 
   beforeEach(() => {
     graph = new LGraph()
     steps = []
-    ;({ comfy, host } = createComfyApi({
+    ;({ comfy, host, edit } = createComfyApi({
       getGraph: () => graph,
       history: () => ({
         beforeChange: () => steps.push('before'),
@@ -49,7 +51,7 @@ describe('group edits', () => {
   }
 
   function handleOf(group: LGraphGroup, of = comfy.graph.groups()) {
-    const handle = of?.find((each) => each.id === String(group.id))
+    const handle = of.find((each) => each.id === String(group.id))
     assert(handle)
     return handle
   }
@@ -185,7 +187,7 @@ describe('group edits', () => {
       const group = addGroup([0, 0, 200, 100])
 
       expect(
-        comfy.edit.updateGroup(handleOf(group), {
+        edit.updateGroup(handleOf(group), {
           bounds: { x: 3, y: 4, width: 150, height: 90 }
         })
       ).toBe(true)
@@ -196,7 +198,7 @@ describe('group edits', () => {
     it('changes nothing for an empty patch, and says it applied', () => {
       const group = addGroup([5, 6, 200, 100])
 
-      expect(comfy.edit.updateGroup(handleOf(group), {})).toBe(true)
+      expect(edit.updateGroup(handleOf(group), {})).toBe(true)
       expect(boundsOf(group)).toEqual([5, 6, 200, 100])
     })
   })
@@ -224,10 +226,7 @@ describe('group edits', () => {
       const version = graph._version
 
       expect(() =>
-        Reflect.apply(comfy.edit.updateGroup, undefined, [
-          handleOf(group),
-          patch
-        ])
+        Reflect.apply(edit.updateGroup, undefined, [handleOf(group), patch])
       ).toThrow(TypeError)
       expect(boundsOf(group)).toEqual([1, 2, 200, 100])
       expect(graph._version).toBe(version)
@@ -244,19 +243,19 @@ describe('group edits', () => {
         Reflect.apply(handle.setBounds, undefined, [{ ...fine, height: -2 }])
       ).toThrow('setBounds needs bounds.height of zero or more, not -2.')
       expect(() => Reflect.apply(handle.setBounds, undefined, [null])).toThrow(
-        'setBounds needs bounds as an object, not null.'
+        'setBounds needs bounds as a plain object, not null.'
       )
       expect(() =>
-        comfy.edit.updateGroup(handle, {
+        edit.updateGroup(handle, {
           bounds: { ...fine, y: Number.NaN }
         })
       ).toThrow('updateGroup needs bounds.y as a finite number, not NaN.')
       expect(() =>
-        Reflect.apply(comfy.edit.updateGroup, undefined, [
+        Reflect.apply(edit.updateGroup, undefined, [
           handle,
           { bounds: fine, color: 'red' }
         ])
-      ).toThrow("updateGroup needs fields among bounds, not 'color'.")
+      ).toThrow("updateGroup needs a group patch of bounds only, not 'color'.")
     })
 
     it.for([
@@ -267,7 +266,7 @@ describe('group edits', () => {
       addGroup([0, 0, 200, 100])
 
       expect(() =>
-        Reflect.apply(comfy.edit.updateGroup, undefined, [
+        Reflect.apply(edit.updateGroup, undefined, [
           notAHandle,
           { bounds: fine }
         ])
@@ -279,10 +278,10 @@ describe('group edits', () => {
       const node = new LGraphNode('Node')
       graph.add(node)
       const nodeHandle = comfy.graph.node(String(node.id))
-      const other = createComfyApi({ getGraph: () => graph }).comfy
+      const other = createComfyApi({ getGraph: () => graph })
 
       expect(() =>
-        Reflect.apply(comfy.edit.updateGroup, undefined, [
+        Reflect.apply(edit.updateGroup, undefined, [
           nodeHandle,
           { bounds: fine }
         ])

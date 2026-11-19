@@ -7,6 +7,7 @@ import {
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy } from '@/platform/nodeApi/v4/types'
 
@@ -24,6 +25,7 @@ class AddedNode extends LGraphNode {
 describe('graph edits', () => {
   let graph: LGraph | null
   let comfy: Comfy
+  let edit: EditCore
   let host: ComfyApiHost
   let steps: string[]
 
@@ -31,7 +33,7 @@ describe('graph edits', () => {
     LiteGraph.registerNodeType(TYPE, AddedNode)
     graph = new LGraph()
     steps = []
-    ;({ comfy, host } = createComfyApi({
+    ;({ comfy, host, edit } = createComfyApi({
       getGraph: () => graph,
       history: () => ({
         beforeChange: () => steps.push('before'),
@@ -115,7 +117,7 @@ describe('graph edits', () => {
       root.add(createTestSubgraphNode(subgraph, { parentGraph: root }))
       const [scope] = comfy.graph.subgraphs()
 
-      const handle = comfy.edit.addNode(scope, TYPE)
+      const handle = edit.addNode(scope, TYPE)
 
       expect(handle?.graphId).toBe(subgraph.id)
       expect(subgraph.nodes.map((node) => node.type)).toEqual([TYPE])
@@ -127,11 +129,11 @@ describe('graph edits', () => {
       assert(scope)
       host.beginDocument()
 
-      expect(comfy.edit.addNode(scope, TYPE)).toBeUndefined()
+      expect(edit.addNode(scope, TYPE)).toBeUndefined()
       expect(shown().nodes).toHaveLength(0)
-      expect(() =>
-        Reflect.apply(comfy.edit.addNode, undefined, [scope, 5])
-      ).toThrow(TypeError)
+      expect(() => Reflect.apply(edit.addNode, undefined, [scope, 5])).toThrow(
+        TypeError
+      )
     })
 
     it.for([
@@ -144,7 +146,7 @@ describe('graph edits', () => {
         given === 'graph' ? comfy.graph : given === 'id' ? shown().id : given
 
       expect(() =>
-        Reflect.apply(comfy.edit.addNode, undefined, [graphArgument, TYPE])
+        Reflect.apply(edit.addNode, undefined, [graphArgument, TYPE])
       ).toThrow('addNode needs a graph handle')
       expect(shown().nodes).toHaveLength(0)
     })
@@ -153,7 +155,7 @@ describe('graph edits', () => {
       const node = comfy.graph.add(TYPE)
 
       expect(() =>
-        Reflect.apply(comfy.edit.addNode, undefined, [node, TYPE])
+        Reflect.apply(edit.addNode, undefined, [node, TYPE])
       ).toThrow(TypeError)
     })
   })
@@ -227,13 +229,13 @@ describe('graph edits', () => {
         }
       ])
       expect(Object.isFrozen(links)).toBe(true)
-      expect(links?.every((link) => Object.isFrozen(link))).toBe(true)
+      expect(links.every((link) => Object.isFrozen(link))).toBe(true)
     })
 
     it('has no links without a graph on screen', () => {
       graph = null
 
-      expect(comfy.graph.links()).toBeUndefined()
+      expect(comfy.graph.links()).toEqual([])
     })
   })
 

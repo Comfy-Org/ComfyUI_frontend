@@ -24,7 +24,7 @@ export interface SlotSideAccess<
   reorder(names: readonly string[]): boolean
 }
 
-/** A node's inputs or outputs: reads of the live list, and edits through `comfy.edit`. */
+/** A node's inputs or outputs: reads of the live list, and edits through the edit core. */
 export function slotCollection<
   TSlot extends { readonly name: string },
   THandle
@@ -63,10 +63,13 @@ export function slotCollection<
       return found && side.slotsOf(found.node).length
     },
     at(index: number) {
-      if (!Number.isSafeInteger(index) || index < 0) {
-        throw invalidArgument('at', 'a whole index of zero or more', index)
+      if (!Number.isSafeInteger(index)) {
+        throw invalidArgument('at', 'a whole number', index)
       }
-      return handleWhere((slots) => (index < slots.length ? index : -1))
+      return handleWhere((slots) => {
+        const from = index < 0 ? slots.length + index : index
+        return from >= 0 && from < slots.length ? from : -1
+      })
     },
     all,
     names() {
