@@ -258,7 +258,7 @@ vi.mock(
       const selectedModels = ref<string[]>([])
       const selectedUseCases = ref<string[]>([])
       const selectedRunsOn = ref<string[]>([])
-      const sortSelection = ref('default')
+      const sortSelection = ref('newest')
 
       return {
         searchQuery,

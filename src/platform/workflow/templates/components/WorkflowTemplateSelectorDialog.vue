@@ -882,10 +882,6 @@ const sortOptions = computed(() => [
       ]
     : []),
   {
-    name: t('templateWorkflows.sort.default', 'Default'),
-    value: 'default'
-  },
-  {
     name: t('templateWorkflows.sort.recommended', 'Recommended'),
     value: 'recommended'
   },

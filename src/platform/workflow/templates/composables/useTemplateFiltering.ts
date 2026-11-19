@@ -6,6 +6,7 @@ import {
   createTemplateSearchIndex,
   searchTemplates
 } from '@comfyorg/shared-frontend-utils/templateSearch'
+import { TEMPLATES_DEFAULT_SORT } from '@/platform/settings/constants/templates'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
@@ -16,7 +17,6 @@ import { useTemplateRankingStore } from '@/platform/workflow/templates/stores/te
 import { debounce } from 'es-toolkit/compat'
 
 type TemplateBrowseSort =
-  | 'default'
   | 'recommended'
   | 'popular'
   | 'alphabetical'
@@ -27,9 +27,6 @@ type TemplateBrowseSort =
 export type TemplateSortMode = TemplateBrowseSort | 'relevance'
 
 const SEARCH_DEFAULT_SORT: TemplateSortMode = 'popular'
-
-/** Default browse sort; keep in sync with the `Comfy.Templates.SortBy` setting default. */
-export const BROWSE_DEFAULT_SORT: TemplateBrowseSort = 'newest'
 
 /** The title shown on the card, trimmed for stable sorting. */
 function displayTitle(template: TemplateInfo): string {
@@ -316,7 +313,6 @@ export function useTemplateFiltering<T extends TemplateInfo>(
           if (sizeA === sizeB) return 0
           return sizeA - sizeB
         })
-      case 'default':
       default:
         return templates
     }
@@ -329,7 +325,7 @@ export function useTemplateFiltering<T extends TemplateInfo>(
     selectedModels.value = []
     selectedUseCases.value = []
     selectedRunsOn.value = []
-    sortBy.value = BROWSE_DEFAULT_SORT
+    sortBy.value = TEMPLATES_DEFAULT_SORT
     searchSort.value = SEARCH_DEFAULT_SORT
   }
 
@@ -372,7 +368,7 @@ export function useTemplateFiltering<T extends TemplateInfo>(
         selectedModels.value.length > 0 ||
         selectedUseCases.value.length > 0 ||
         selectedRunsOn.value.length > 0 ||
-        activeSort.value !== BROWSE_DEFAULT_SORT
+        activeSort.value !== TEMPLATES_DEFAULT_SORT
 
       if (hasActiveFilters) {
         debouncedTrackFilterChange()

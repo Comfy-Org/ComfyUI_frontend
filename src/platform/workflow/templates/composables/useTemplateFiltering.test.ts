@@ -284,14 +284,6 @@ describe('useTemplateFiltering', () => {
       'beta-pro',
       'zeta-extended'
     ])
-
-    sortBy.value = 'default'
-    await nextTick()
-    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
-      'zeta-extended',
-      'alpha-starter',
-      'beta-pro'
-    ])
   })
 
   const usageRankedTemplates = () =>
