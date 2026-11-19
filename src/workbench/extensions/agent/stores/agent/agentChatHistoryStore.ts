@@ -83,7 +83,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     [],
     { flush: 'sync' }
   )
-  const pendingDeletes = new Set<string>()
+  const pendingDeletes = new Map<string, string | undefined>()
   const committedDeletes = new Set<string>()
 
   const sessions = computed(() =>
@@ -149,7 +149,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
       customTitle: customTitles.value[id],
       pending: pendingSession !== undefined
     }
-    pendingDeletes.add(id)
+    pendingDeletes.set(id, snapshot.session?.workflowId)
     dropSessionFromMemory(id)
     return snapshot
   }
@@ -170,6 +170,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
 
   function restoreDelete(id: string, snapshot: ChatDeleteSnapshot): void {
     pendingDeletes.delete(id)
+    if (isDeleted(id)) return
     if (snapshot.customTitle !== undefined) {
       customTitles.value = {
         ...customTitles.value,
@@ -179,8 +180,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     if (
       snapshot.session !== undefined &&
       !serverSessions.value.some((item) => item.id === id) &&
-      !pendingServerSessions.value.some((item) => item.id === id) &&
-      !isDeleted(id)
+      !pendingServerSessions.value.some((item) => item.id === id)
     ) {
       if (snapshot.pending) {
         pendingServerSessions.value = [
@@ -194,6 +194,11 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   }
 
   function dropByWorkflow(workflowId: string): ChatSession[] {
+    for (const [id, pendingWorkflowId] of pendingDeletes) {
+      if (pendingWorkflowId !== workflowId) continue
+      pendingDeletes.delete(id)
+      committedDeletes.add(id)
+    }
     const dropped = sessions.value.filter(
       (session) => session.workflowId === workflowId
     )
