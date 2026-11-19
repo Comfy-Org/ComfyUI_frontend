@@ -271,12 +271,14 @@ async function loadWithHooks(
   await op(`${phase}:afterLoadGraph`, () => invoke('afterLoadGraph'))
 }
 
+type SnapshotRead = { ok: true; text: string } | { ok: false; text: string }
+
 async function snapshotLoad(app: MatrixApp, target: LGraph) {
-  const capture = async (read: () => unknown) => {
+  const capture = async (read: () => unknown): Promise<SnapshotRead> => {
     try {
-      return S(await read())
+      return { ok: true, text: S(await read()) }
     } catch (e) {
-      return 'THREW ' + errMsg(e)
+      return { ok: false, text: 'THREW ' + errMsg(e) }
     }
   }
   return {
@@ -287,21 +289,25 @@ async function snapshotLoad(app: MatrixApp, target: LGraph) {
 
 type LoadSnapshot = Awaited<ReturnType<typeof snapshotLoad>>
 
+function readsMatch(first: SnapshotRead, second: SnapshotRead) {
+  return first.ok && second.ok && first.text === second.text
+}
+
 function compareLoads(first: LoadSnapshot, second: LoadSnapshot) {
-  const serialisationMatches = first.serialised === second.serialised
-  const promptMatches = first.prompt === second.prompt
+  const serialisationMatches = readsMatch(first.serialised, second.serialised)
+  const promptMatches = readsMatch(first.prompt, second.prompt)
   return {
     serialisationMatches,
     promptMatches,
     ...(serialisationMatches
       ? {}
       : {
-          firstSerialised: first.serialised,
-          secondSerialised: second.serialised
+          firstSerialised: first.serialised.text,
+          secondSerialised: second.serialised.text
         }),
     ...(promptMatches
       ? {}
-      : { firstPrompt: first.prompt, secondPrompt: second.prompt })
+      : { firstPrompt: first.prompt.text, secondPrompt: second.prompt.text })
   }
 }
 

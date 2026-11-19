@@ -5,7 +5,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { runPack } from './matrix_runner'
 
@@ -108,6 +108,30 @@ describe('matrix runner', () => {
       )
     }
   )
+
+  it('records a second load whose snapshot throws on both roots as a mismatch', async () => {
+    outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+    vi.stubEnv('MATRIX_OUT', outputDir)
+    vi.stubEnv('MATRIX_VUE', '')
+    vi.spyOn(LGraph.prototype, 'serialize').mockImplementation(() => {
+      throw new Error('serialize unavailable')
+    })
+
+    await runPack('serialize-unavailable', {}, [], 'serialize-unavailable')
+
+    const row = JSON.parse(
+      fs.readFileSync(
+        path.join(outputDir, 'serialize-unavailable.json'),
+        'utf8'
+      )
+    ) as { secondRoot?: Record<string, unknown> }
+
+    expect(row.secondRoot).toMatchObject({
+      serialisationMatches: false,
+      firstSerialised: 'THREW Error: serialize unavailable',
+      secondSerialised: 'THREW Error: serialize unavailable'
+    })
+  }, 30_000)
 
   it('finishes the row when a lifecycle hook never settles and names the hook that threw', async () => {
     outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
