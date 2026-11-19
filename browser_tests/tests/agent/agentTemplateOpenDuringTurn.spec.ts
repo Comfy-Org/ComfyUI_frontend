@@ -28,13 +28,17 @@ test.describe(
         const opened = await templates.openFirstTemplate()
         await templates.expectTemplateOpened(opened)
         await expect(toast.toastErrors).toHaveCount(0)
+        await expect(topbar.tabs).toHaveCount(2)
+        await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
         await expect(turnLock.stopButton).toHaveCount(0)
         await expect(turnLock.sendButton).toBeVisible()
         await expect(turnLock.userBubbles).toHaveCount(0)
+        await expect(turnLock.agentPanel.suggestedPrompts.first()).toBeVisible()
       })
 
       await test.step('returning to the original tab shows the turn still running', async () => {
         await topbar.getTab(0).click()
+        await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
         await expect(turnLock.stopButton).toBeVisible()
         await expect(turnLock.userBubbles).toHaveText([
           'add an audio output node'

@@ -2,10 +2,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type {
-  ComfyWorkflow,
-  LoadedComfyWorkflow
-} from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { pick } from 'es-toolkit'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
@@ -835,10 +832,10 @@ describe('useCoreCommands', () => {
     })
 
     it('Comfy.DuplicateWorkflow duplicates the active tab as a user activation', async () => {
-      const active = fromPartial<ComfyWorkflow>({
+      const active = fromPartial<LoadedComfyWorkflow>({
         path: 'workflows/active.json'
       })
-      mockWorkflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      mockWorkflowStore.activeWorkflow = active
 
       await findCmd('Comfy.DuplicateWorkflow').function()
 

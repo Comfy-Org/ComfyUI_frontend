@@ -1,14 +1,21 @@
-import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { extractWorkflow } from '@comfyorg/api-client/fetchJobs'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { markGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 
+import { api } from './api'
 import { app } from './app'
 import { ComfyUI } from './ui'
 
 vi.mock(import('./app'))
 
 vi.mock(import('./api'))
+
+vi.mock(import('@comfyorg/api-client/fetchJobs'), () => ({
+  extractWorkflow: vi.fn()
+}))
 
 vi.mock(import('./ui/dialog'), () => ({
   ComfyDialog: fromAny(class {})
@@ -123,14 +130,58 @@ describe('ComfyUI file input', () => {
 
     const loadDefaultButton = ui.menuContainer.querySelector(
       '#comfy-load-default-button'
-    ) as HTMLButtonElement | null
-    loadDefaultButton?.click()
+    )
+    assert(loadDefaultButton instanceof HTMLButtonElement)
+    loadDefaultButton.click()
 
     await vi.waitFor(() =>
       expect(app.loadGraphData).toHaveBeenCalledWith(
         undefined,
         true,
         true,
+        null,
+        { initiator: 'user' }
+      )
+    )
+  })
+
+  it('loads a queued job workflow as a user activation from the legacy queue list', async ({
+    onTestFinished
+  }) => {
+    const workflow = fromPartial<ComfyWorkflowJSON>({ id: 'queued-wf' })
+    const job = fromPartial<
+      NonNullable<Awaited<ReturnType<typeof api.getJobDetail>>>
+    >({ id: 'job-1' })
+    vi.mocked(api.getQueue).mockResolvedValue({
+      Running: [
+        fromPartial({ id: 'job-1', priority: 0, prompt: [], remove: {} })
+      ],
+      Pending: []
+    })
+    vi.mocked(api.getJobDetail).mockResolvedValue(job)
+    vi.mocked(extractWorkflow).mockResolvedValue(workflow)
+
+    const ui = new ComfyUI(app, {
+      resetView: vi.fn(),
+      restoreOutputs: vi.fn(),
+      trackRunButton: vi.fn(),
+      enterFocusMode: vi.fn()
+    })
+    giveDialogDoublesRemovableElements(ui)
+    onTestFinished(() => ui.dispose())
+
+    await ui.queue.load()
+    const loadButton = Array.from(
+      ui.queue.element.querySelectorAll('button')
+    ).find((button) => button.textContent === 'Load')
+    assert(loadButton instanceof HTMLButtonElement)
+    loadButton.click()
+
+    await vi.waitFor(() =>
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        workflow,
+        true,
+        false,
         null,
         { initiator: 'user' }
       )

@@ -1522,7 +1522,13 @@ describe('useWorkflowService', () => {
         service.closeWorkflow(lastOpen, { warnIfUnsaved: false })
       ).resolves.toBe(true)
 
-      expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(defaultGraph)
+      expect(app.loadGraphData).toHaveBeenCalledExactlyOnceWith(
+        defaultGraph,
+        true,
+        true,
+        null,
+        {}
+      )
     })
 
     it('keeps the tab open and its draft intact when the replacement load fails', async () => {
@@ -2255,7 +2261,14 @@ describe('useWorkflowService', () => {
       expect(workflowStore.openWorkflows).not.toContain(closing)
       expect(workflowStore.activeWorkflow.path).toBe(final.path)
       expect(app.loadGraphData).toHaveBeenCalledTimes(2)
-      expect(app.loadGraphData).toHaveBeenNthCalledWith(1, expect.anything())
+      expect(app.loadGraphData).toHaveBeenNthCalledWith(
+        1,
+        expect.anything(),
+        true,
+        true,
+        null,
+        {}
+      )
       expect(app.loadGraphData).toHaveBeenNthCalledWith(
         2,
         expect.anything(),
@@ -2876,7 +2889,13 @@ describe('useWorkflowService', () => {
 
       await useWorkflowService().closeWorkflows([only], options)
 
-      expect(app.loadGraphData).toHaveBeenCalledWith(defaultGraph)
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        defaultGraph,
+        true,
+        true,
+        null,
+        {}
+      )
       expect(activated.mock.calls.map(([workflow]) => workflow.path)).toEqual(
         expectedPaths
       )
@@ -3007,72 +3026,23 @@ describe('useWorkflowService', () => {
     describe('loadDefaultWorkflow', () => {
       it.for([
         {
-          name: 'reports a user-initiated default load when it stays active',
-          options: { initiator: 'user' as const },
-          reported: true
+          name: 'forwards initiator user to loadGraphData',
+          options: { initiator: 'user' as const }
         },
         {
-          name: 'does not report a default workflow loaded programmatically',
-          options: {},
-          reported: false
+          name: 'omits initiator when loaded programmatically',
+          options: {}
         }
-      ])('$name', async ({ options, reported }) => {
-        const workflowStore = useWorkflowStore()
-        const loadedDefault = createWorkflow(null, {
-          loadable: true,
-          path: 'workflows/Unsaved Workflow.json'
-        }) as LoadedComfyWorkflow
-        vi.mocked(app.loadGraphData).mockImplementation(async () => {
-          workflowStore.activeWorkflow = loadedDefault
-          return loadedDefault
-        })
-        const activated = vi.fn()
-        workflowStore.onUserActivation(activated)
-
+      ])('$name', async ({ options }) => {
         await useWorkflowService().loadDefaultWorkflow(options)
 
-        expect(app.loadGraphData).toHaveBeenCalledWith(defaultGraph)
-        expect(activated.mock.calls).toEqual(reported ? [[loadedDefault]] : [])
-      })
-
-      it.for([
-        { name: 'fails', loaded: false },
-        { name: 'is superseded by a later load', loaded: undefined }
-      ])(
-        'does not report a user-initiated default load that $name',
-        async ({ loaded }) => {
-          const workflowStore = useWorkflowStore()
-          vi.mocked(app.loadGraphData).mockResolvedValue(loaded)
-          const activated = vi.fn()
-          workflowStore.onUserActivation(activated)
-
-          await useWorkflowService().loadDefaultWorkflow({ initiator: 'user' })
-
-          expect(activated).not.toHaveBeenCalled()
-        }
-      )
-
-      it('does not report a default tab the user has already left', async () => {
-        const workflowStore = useWorkflowStore()
-        const loadedDefault = createWorkflow(null, {
-          loadable: true,
-          path: 'workflows/Unsaved Workflow.json'
-        }) as LoadedComfyWorkflow
-        const other = createWorkflow(null, {
-          loadable: true,
-          path: 'workflows/other.json'
-        }) as LoadedComfyWorkflow
-        vi.mocked(app.loadGraphData).mockImplementation(async () => {
-          workflowStore.activeWorkflow = loadedDefault
-          workflowStore.activeWorkflow = other
-          return loadedDefault
-        })
-        const activated = vi.fn()
-        workflowStore.onUserActivation(activated)
-
-        await useWorkflowService().loadDefaultWorkflow({ initiator: 'user' })
-
-        expect(activated).not.toHaveBeenCalled()
+        expect(app.loadGraphData).toHaveBeenCalledWith(
+          defaultGraph,
+          true,
+          true,
+          null,
+          options
+        )
       })
     })
   })
@@ -3743,66 +3713,35 @@ describe('useWorkflowService', () => {
         expect.objectContaining({ id: expect.any(String) }),
         true,
         true,
-        expect.objectContaining({ path: 'workflows/source (Copy) (2).json' })
+        expect.objectContaining({ path: 'workflows/source (Copy) (2).json' }),
+        {}
       )
     })
 
     it.for([
       {
-        name: 'reports the duplicate when initiated by the user and still active',
-        options: { initiator: 'user' as const },
-        reported: true
+        name: 'forwards initiator user to loadGraphData',
+        options: { initiator: 'user' as const }
       },
       {
-        name: 'does not report a duplicate loaded without user initiator',
-        options: {},
-        reported: false
+        name: 'omits initiator when duplicated programmatically',
+        options: {}
       }
-    ])('$name', async ({ options, reported }) => {
-      const workflowStore = useWorkflowStore()
+    ])('$name', async ({ options }) => {
       const source = createModeTestWorkflow({
         path: 'workflows/source.json'
       })
       source.changeTracker.activeState = makeWorkflowData()
-      let createdDuplicate: LoadedComfyWorkflow | undefined
-      vi.mocked(app.loadGraphData).mockImplementation(
-        async (_data, _clean, _restore, wf) => {
-          createdDuplicate = wf as LoadedComfyWorkflow
-          workflowStore.activeWorkflow = createdDuplicate
-          return createdDuplicate
-        }
-      )
-      const activated = vi.fn()
-      workflowStore.onUserActivation(activated)
 
       await useWorkflowService().duplicateWorkflow(source, options)
 
-      expect(activated.mock.calls).toEqual(reported ? [[createdDuplicate]] : [])
-    })
-
-    it('does not report a duplicate if another workflow became active before completion', async () => {
-      const workflowStore = useWorkflowStore()
-      const source = createModeTestWorkflow({
-        path: 'workflows/source.json'
-      })
-      source.changeTracker.activeState = makeWorkflowData()
-      const other = createModeTestWorkflow({
-        path: 'workflows/other.json'
-      })
-      vi.mocked(app.loadGraphData).mockImplementation(
-        async (_data, _clean, _restore, wf) => {
-          workflowStore.activeWorkflow = other
-          return wf as LoadedComfyWorkflow
-        }
+      expect(app.loadGraphData).toHaveBeenCalledWith(
+        expect.objectContaining({ id: expect.any(String) }),
+        true,
+        true,
+        expect.objectContaining({ path: 'workflows/source (Copy).json' }),
+        options
       )
-      const activated = vi.fn()
-      workflowStore.onUserActivation(activated)
-
-      await useWorkflowService().duplicateWorkflow(source, {
-        initiator: 'user'
-      })
-
-      expect(activated).not.toHaveBeenCalled()
     })
   })
 

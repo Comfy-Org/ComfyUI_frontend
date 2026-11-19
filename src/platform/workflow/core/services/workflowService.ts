@@ -557,17 +557,9 @@ export const useWorkflowService = () => {
    * Load the default workflow
    */
   const loadDefaultWorkflow = async (options: { initiator?: 'user' } = {}) => {
-    const loaded = await queueWorkflowLoad(() =>
-      useApp().loadGraphData(getDefaultWorkflow())
+    return queueWorkflowLoad(() =>
+      useApp().loadGraphData(getDefaultWorkflow(), true, true, null, options)
     )
-    const activatedWorkflow = typeof loaded === 'object' ? loaded : undefined
-    if (
-      options.initiator === 'user' &&
-      activatedWorkflow !== undefined &&
-      workflowStore.isActive(activatedWorkflow)
-    )
-      workflowStore.reportUserActivation(activatedWorkflow)
-    return loaded
   }
 
   /**
@@ -1340,16 +1332,9 @@ export const useWorkflowService = () => {
       state
     )
 
-    const loaded = await queueWorkflowLoad(() =>
-      useApp().loadGraphData(state, true, true, duplicate)
+    await queueWorkflowLoad(() =>
+      useApp().loadGraphData(state, true, true, duplicate, options)
     )
-    const activatedWorkflow = typeof loaded === 'object' ? loaded : undefined
-    if (
-      options.initiator === 'user' &&
-      activatedWorkflow !== undefined &&
-      workflowStore.isActive(activatedWorkflow)
-    )
-      workflowStore.reportUserActivation(activatedWorkflow)
   }
 
   /**

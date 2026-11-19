@@ -1657,21 +1657,4 @@ describe('useTemplateWorkflows', () => {
       expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
     })
   })
-
-  it('passes initiator user when loading a template workflow', async () => {
-    mockWorkflowTemplatesStore.isLoaded = true
-    const { loader } = mountTemplateWorkflows()
-
-    expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
-      'loaded'
-    )
-
-    expect(app.loadGraphData).toHaveBeenCalledWith(
-      expect.any(Object),
-      true,
-      true,
-      expect.any(String),
-      expect.objectContaining({ openSource: 'template', initiator: 'user' })
-    )
-  })
 })
