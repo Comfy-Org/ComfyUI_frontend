@@ -82,6 +82,14 @@ describe('validateAdrDirectory', () => {
       message: 'Status must be one line'
     },
     {
+      name: 'a heading with no title',
+      contents: adr('UI-decision', '2026-01-01', 'Accepted').replace(
+        ': Title',
+        ': '
+      ),
+      message: 'first line must be "# ADR-UI-decision: Title"'
+    },
+    {
       name: 'a leftover template comment',
       contents: adr(
         'UI-decision',
@@ -159,6 +167,20 @@ describe('validateAdrDirectory', () => {
     expect(() => validateAdrDirectory(directory)).toThrow(
       'UI-decision.md: cites ADR-ECS-entity-component-system, which is still Proposed'
     )
+  })
+
+  test('does not read a longer filename as a citation', () => {
+    const directory = createFixture({
+      'UI-plan.md': adr('UI-plan', '2026-01-01', 'Proposed'),
+      'UI-decision.md': adr(
+        'UI-decision',
+        '2026-01-01',
+        'Accepted',
+        'The retired file was OLD-UI-plan.md.'
+      )
+    })
+
+    expect(() => validateAdrDirectory(directory)).not.toThrow()
   })
 
   test('does not read a longer identifier as a citation', () => {
@@ -266,6 +288,25 @@ describe('findStaleAdrReferences', () => {
     {
       name: 'a current numbered ADR',
       line: 'Follows [ADR-UI-0003-plan](UI-0003-plan.md).',
+      expected: []
+    },
+    {
+      name: 'a citation of an unnumbered name no ADR has',
+      line: 'Follows ADR-UI-old-slug.',
+      expected: [
+        { lineNumber: 1, reference: 'ADR-UI-old-slug', replacement: undefined }
+      ]
+    },
+    {
+      name: 'a link to an unnumbered file no ADR has',
+      line: 'See [the plan](UI-old-slug.md).',
+      expected: [
+        { lineNumber: 1, reference: 'UI-old-slug.md', replacement: undefined }
+      ]
+    },
+    {
+      name: 'a current unnumbered ADR and a bare tag mention',
+      line: 'Follows [ADR-UI-decision](UI-decision.md) in the ADR-UI area.',
       expected: []
     },
     {

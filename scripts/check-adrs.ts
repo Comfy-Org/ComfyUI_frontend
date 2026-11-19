@@ -22,10 +22,10 @@ const CITED_PROPOSALS_AWAITING_OWNER_STATUS = new Set([
   'PACKAGES-ACCOUNT-UI-payment-ui-belongs-to-the-shared-account-ui-package',
   'PERF-BENCHMARKS-performance-evidence-and-regression-framework'
 ])
-const NUMBERED_ADR_CITATION_PATTERN =
-  /(?<![A-Za-z0-9-])ADR-([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{4})(?![0-9])/g
-const NUMBERED_ADR_FILENAME_PATTERN =
-  /(?<![A-Za-z0-9-])(([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{4})-[a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.md/g
+const ADR_CITATION_PATTERN =
+  /(?<![A-Za-z0-9-])ADR-(([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*)(?:-(\d{4}))?(?:-[a-z][a-z0-9]*(?:-[a-z0-9]+)*)?)(?![0-9])/g
+const ADR_FILENAME_PATTERN =
+  /(?<![A-Za-z0-9-])(([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*)(?:-(\d{4}))?-[a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.md/g
 const EXTERNAL_ADR_IDS = new Set(['ORDERING-0005'])
 const STALE_REFERENCE_FIXTURE_FILES = new Set([
   'scripts/check-adrs.test.ts',
@@ -71,30 +71,32 @@ export const findStaleAdrReferences = (
   adrFilenames: string[],
   renames: Record<string, string>
 ): StaleReference[] => {
-  const currentStems = new Set(
-    adrFilenames.map((filename) => filename.replace(/\.md$/, ''))
-  )
-  const currentNumberedIds = new Set(
-    adrFilenames.flatMap(
+  const currentIds = new Set([
+    ...adrFilenames.map((filename) => filename.replace(/\.md$/, '')),
+    ...adrFilenames.flatMap(
       (filename) => /^([A-Z][A-Z0-9-]*?-\d{4})-[a-z]/.exec(filename)?.[1] ?? []
-    )
-  )
+    ),
+    ...EXTERNAL_ADR_IDS
+  ])
+  const isStale = ([, id, tags]: RegExpMatchArray): boolean =>
+    id !== tags && !currentIds.has(id)
+  const renamed = ([, , tags, sequence]: RegExpMatchArray):
+    | string
+    | undefined => sequence && renames[`${tags}-${sequence}`]
   return contents.split('\n').flatMap((line, index) => [
-    ...[...line.matchAll(NUMBERED_ADR_CITATION_PATTERN)]
-      .filter(
-        ([, id]) => !currentNumberedIds.has(id) && !EXTERNAL_ADR_IDS.has(id)
-      )
-      .map(([reference, id]) => ({
+    ...[...line.matchAll(ADR_CITATION_PATTERN)]
+      .filter(isStale)
+      .map((match) => ({
         lineNumber: index + 1,
-        reference,
-        replacement: renames[id] && `ADR-${renames[id]}`
+        reference: match[0],
+        replacement: renamed(match) && `ADR-${renamed(match)}`
       })),
-    ...[...line.matchAll(NUMBERED_ADR_FILENAME_PATTERN)]
-      .filter(([, stem]) => !currentStems.has(stem))
-      .map(([reference, , id]) => ({
+    ...[...line.matchAll(ADR_FILENAME_PATTERN)]
+      .filter(([, stem]) => !currentIds.has(stem))
+      .map((match) => ({
         lineNumber: index + 1,
-        reference,
-        replacement: renames[id] && `${renames[id]}.md`
+        reference: match[0],
+        replacement: renamed(match) && `${renamed(match)}.md`
       }))
   ])
 }
@@ -124,11 +126,11 @@ const findFormatProblems = ({
   status
 }: Adr): string[] =>
   [
-    !contents.startsWith(`# ADR-${id}: `) &&
+    !new RegExp(`^# ADR-${id}: \\S`).test(contents) &&
       `first line must be "# ADR-${id}: Title"`,
     !date && 'missing a valid Date field',
     !status &&
-      'Status must be one line, such as "Accepted", "Accepted (2026-01-31)" or "Superseded by [ADR-X](X-title.md)"; move notes to another section',
+      'Status must be one line, such as "Accepted", "Accepted (2026-01-31)" or "Superseded by [ADR-<identifier>](<identifier>.md)"; move notes to another section',
     contents.includes('<!--') && 'remove the leftover template comment'
   ]
     .filter((problem) => typeof problem === 'string')
@@ -147,16 +149,17 @@ const findNumberingProblems = (adrs: Adr[]): string[] =>
   })
 
 const cites = (contents: string, { filename, id }: Adr): boolean =>
-  contents.includes(filename) ||
-  new RegExp(`(?<![A-Za-z0-9-])ADR-${id}(?![A-Za-z0-9]|-[A-Za-z0-9])`).test(
-    contents
-  )
+  new RegExp(
+    `(?<![A-Za-z0-9-])(?:ADR-${id}(?![A-Za-z0-9]|-[A-Za-z0-9])|${filename.replace('.', '\\.')})`
+  ).test(contents)
 
 const findProposedCitations = (adrs: Adr[], guides: TextFile[]): string[] => {
   const settledAwaitingIds = adrs
     .filter(
       ({ id, status }) =>
-        CITED_PROPOSALS_AWAITING_OWNER_STATUS.has(id) && status !== 'Proposed'
+        CITED_PROPOSALS_AWAITING_OWNER_STATUS.has(id) &&
+        status &&
+        status !== 'Proposed'
     )
     .map(
       ({ id }) =>
@@ -215,74 +218,67 @@ export const validateAdrDirectory = (
   if (errors.length) throw new Error(`ADR check failed:\n${errors.join('\n')}`)
 }
 
-const checkLegacyReferences = (files: TextFile[]): void => {
-  const matches = files.flatMap(({ contents, filename }) =>
-    findLegacyAdrReferences(contents).map(
-      ({ line, lineNumber }) => `${filename}:${lineNumber}:${line.trim()}`
-    )
+const formatLegacyReferences = ({ contents, filename }: TextFile): string[] =>
+  findLegacyAdrReferences(contents).map(
+    ({ line, lineNumber }) => `${filename}:${lineNumber}:${line.trim()}`
   )
 
-  if (matches.length) {
-    throw new Error(
-      `Legacy numbered ADR references found:\n${matches.join('\n')}`
-    )
-  }
-}
-
-const checkStaleReferences = (
-  files: TextFile[],
+const formatStaleReferences = (
+  { contents, filename }: TextFile,
   adrFilenames: string[],
   renames: Record<string, string>
-): void => {
-  const problems = files
-    .filter(({ filename }) => !STALE_REFERENCE_FIXTURE_FILES.has(filename))
-    .flatMap(({ contents, filename }) =>
-      findStaleAdrReferences(contents, adrFilenames, renames).map(
+): string[] =>
+  STALE_REFERENCE_FIXTURE_FILES.has(filename)
+    ? []
+    : findStaleAdrReferences(contents, adrFilenames, renames).map(
         ({ lineNumber, reference, replacement }) =>
           `${filename}:${lineNumber}: ${reference} names no current ADR${replacement ? `; use ${replacement}` : ''}`
       )
-    )
 
-  if (problems.length) {
-    throw new Error(`Stale ADR references found:\n${problems.join('\n')}`)
-  }
-}
-
-const readTextFiles = (repositoryRoot: string): TextFile[] =>
-  execFileSync(
+function* readTextFiles(repositoryRoot: string): Generator<TextFile> {
+  const filenames = execFileSync(
     'git',
     ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
     { cwd: repositoryRoot, encoding: 'utf8' }
-  )
-    .split('\0')
-    .filter(
-      (filename) => filename && existsSync(join(repositoryRoot, filename))
-    )
-    .map((filename) => ({
-      contents: readFileSync(join(repositoryRoot, filename), 'utf8'),
-      filename
-    }))
-    .filter(({ contents }) => !contents.includes('\0'))
+  ).split('\0')
+  for (const filename of filenames) {
+    const path = join(repositoryRoot, filename)
+    if (!filename || !existsSync(path)) continue
+    const contents = readFileSync(path, 'utf8')
+    if (!contents.includes('\0')) yield { contents, filename }
+  }
+}
 
 if (
   process.argv[1] &&
   fileURLToPath(import.meta.url) === resolve(process.argv[1])
 ) {
   const repositoryRoot = process.cwd()
-  const files = readTextFiles(repositoryRoot)
-  validateAdrDirectory(
-    join(repositoryRoot, 'docs/adr'),
-    files.filter(({ filename }) => basename(filename) === 'AGENTS.md')
+  const adrDirectory = join(repositoryRoot, 'docs/adr')
+  const adrFilenames = readdirSync(adrDirectory).filter((filename) =>
+    filename.endsWith('.md')
   )
-  checkLegacyReferences(files)
-  checkStaleReferences(
-    files,
-    readdirSync(join(repositoryRoot, 'docs/adr')).filter((filename) =>
-      filename.endsWith('.md')
-    ),
-    JSON.parse(
-      readFileSync(join(repositoryRoot, 'scripts/adr-renames.json'), 'utf8')
+  const renames: Record<string, string> = JSON.parse(
+    readFileSync(join(repositoryRoot, 'scripts/adr-renames.json'), 'utf8')
+  )
+  const guides: TextFile[] = []
+  const legacyReferences: string[] = []
+  const staleReferences: string[] = []
+  for (const file of readTextFiles(repositoryRoot)) {
+    if (basename(file.filename) === 'AGENTS.md') guides.push(file)
+    legacyReferences.push(...formatLegacyReferences(file))
+    staleReferences.push(...formatStaleReferences(file, adrFilenames, renames))
+  }
+  validateAdrDirectory(adrDirectory, guides)
+  if (legacyReferences.length) {
+    throw new Error(
+      `Legacy numbered ADR references found:\n${legacyReferences.join('\n')}`
     )
-  )
+  }
+  if (staleReferences.length) {
+    throw new Error(
+      `Stale ADR references found:\n${staleReferences.join('\n')}`
+    )
+  }
   process.stdout.write('ADR validation passed\n')
 }
