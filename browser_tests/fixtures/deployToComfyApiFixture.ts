@@ -4,7 +4,7 @@ import { assetPath } from '@e2e/fixtures/utils/paths'
 export const deployToComfyApiTest = comfyPageFixture.extend({
   page: async ({ page }, use) => {
     await page.route(
-      'https://media.comfy.org/website/comfy-api/**',
+      'https://media.comfy.org/website/cloud-deploy/**',
       (route) => {
         const url = route.request().url()
         if (url.endsWith('.webm')) {

@@ -478,7 +478,7 @@ describe('resumable model transfers', () => {
   beforeEach(() => {
     StorageRequest.sent = []
     vi.stubGlobal('XMLHttpRequest', StorageRequest)
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     return () => vi.useRealTimers()
   })
 
@@ -760,7 +760,7 @@ describe('model upload reports', () => {
   beforeEach(() => {
     StorageRequest.sent = []
     vi.stubGlobal('XMLHttpRequest', StorageRequest)
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     return () => vi.useRealTimers()
   })
 

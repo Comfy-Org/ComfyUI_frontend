@@ -1566,10 +1566,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   },
   viewport: VIEWPORT,
   video: {
-    mode:
-      process.env.PLAYWRIGHT_LOCAL || process.env.RECORD_VIDEO === 'true'
-        ? 'on'
-        : 'off',
+    mode: process.env.RECORD_VIDEO === 'true' ? 'on' : 'off',
     size: VIEWPORT
   },
   agentConversation: async (
