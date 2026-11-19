@@ -159,36 +159,58 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
       initialSettings: { 'Comfy.Canvas.SelectionToolbox': true }
     })
 
+    const outerMin = (rects: NodeRect[], edge: 'left' | 'top') =>
+      Math.min(...rects.map((rect) => rect[edge]))
+    const outerMax = (rects: NodeRect[], edge: 'right' | 'bottom') =>
+      Math.max(...rects.map((rect) => rect[edge]))
+    const centreX = (rect: NodeRect) => (rect.left + rect.right) / 2
+    const centreY = (rect: NodeRect) => (rect.top + rect.bottom) / 2
+
     const alignCases: {
       action: string
-      edge: keyof NodeRect
-      target: (values: number[]) => number
+      measure: (rect: NodeRect) => number
+      target: (rects: NodeRect[]) => number
     }[] = [
       {
         action: 'Align left edges',
-        edge: 'left',
-        target: (v) => Math.min(...v)
+        measure: (rect) => rect.left,
+        target: (rects) => outerMin(rects, 'left')
+      },
+      {
+        action: 'Align horizontal centers',
+        measure: centreX,
+        target: (rects) =>
+          (outerMin(rects, 'left') + outerMax(rects, 'right')) / 2
       },
       {
         action: 'Align right edges',
-        edge: 'right',
-        target: (v) => Math.max(...v)
+        measure: (rect) => rect.right,
+        target: (rects) => outerMax(rects, 'right')
       },
-      { action: 'Align top edges', edge: 'top', target: (v) => Math.min(...v) },
+      {
+        action: 'Align top edges',
+        measure: (rect) => rect.top,
+        target: (rects) => outerMin(rects, 'top')
+      },
+      {
+        action: 'Align vertical centers',
+        measure: centreY,
+        target: (rects) =>
+          (outerMin(rects, 'top') + outerMax(rects, 'bottom')) / 2
+      },
       {
         action: 'Align bottom edges',
-        edge: 'bottom',
-        target: (v) => Math.max(...v)
+        measure: (rect) => rect.bottom,
+        target: (rects) => outerMax(rects, 'bottom')
       }
     ]
 
-    for (const { action, edge, target } of alignCases) {
-      test(`${action} lines every node up on the outermost ${edge} edge`, async ({
+    for (const { action, measure, target } of alignCases) {
+      test(`${action} lines every node up on the selection's outer bounds`, async ({
         comfyPage
       }) => {
         await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_row')
-        const before = await nodeRects(comfyPage, ROW_TITLES)
-        const expected = target(before.map((rect) => rect[edge]))
+        const expected = target(await nodeRects(comfyPage, ROW_TITLES))
 
         await openArrange(comfyPage)
         await comfyPage.page.getByRole('button', { name: action }).click()
@@ -196,7 +218,7 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
         await expect
           .poll(async () =>
             (await nodeRects(comfyPage, ROW_TITLES)).map((rect) =>
-              Math.round(rect[edge])
+              Math.round(measure(rect))
             )
           )
           .toEqual(ROW_TITLES.map(() => Math.round(expected)))
@@ -219,6 +241,52 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
 
       await comfyPage.keyboard.undo()
       await expect.poll(() => nodeRects(comfyPage, ROW_TITLES)).toEqual(before)
+    })
+
+    test('distributing vertically evens the gaps and keeps the outer nodes in place', async ({
+      comfyPage
+    }) => {
+      await comfyPage.workflow.loadWorkflow('smartGuides/three_notes_column')
+      const column = async () =>
+        (await nodeRects(comfyPage, ROW_TITLES)).toSorted(
+          (a, b) => a.top - b.top
+        )
+      const before = await column()
+      const heights = before.reduce(
+        (sum, rect) => sum + rect.bottom - rect.top,
+        0
+      )
+      const evenGap = Math.round(
+        (before[2].bottom - before[0].top - heights) / 2
+      )
+
+      await openArrange(comfyPage)
+      await comfyPage.page
+        .getByRole('button', { name: 'Distribute vertically' })
+        .click()
+
+      await expect
+        .poll(async () => {
+          const [first, middle, last] = await column()
+          return {
+            firstTop: Math.round(first.top),
+            lastBottom: Math.round(last.bottom),
+            gaps: [
+              Math.round(middle.top - first.bottom),
+              Math.round(last.top - middle.bottom)
+            ]
+          }
+        })
+        .toEqual({
+          firstTop: Math.round(before[0].top),
+          lastBottom: Math.round(before[2].bottom),
+          gaps: [evenGap, evenGap]
+        })
+      await expect(
+        comfyPage.page.getByRole('separator', {
+          name: 'Gap between distributed nodes'
+        })
+      ).toHaveCount(2)
     })
 
     test('distributing, then dragging a gap handle changes every gap and undoes in one step', async ({
