@@ -15,6 +15,7 @@ import type {
   InputValueSource
 } from '@/core/graph/subgraph/resolveInputValueSource'
 import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeBase'
+import { subgraphInputHeightId } from '@/lib/litegraph/src/subgraph/subgraphInputHeights'
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import {
@@ -136,7 +137,8 @@ function portFieldsOf(port: Port) {
     portTestId: isAddPort
       ? `subgraph-add-${direction}`
       : `subgraph-${direction}-port`,
-    portLabel: isAddPort ? undefined : port.displayName
+    portLabel: isAddPort ? undefined : port.displayName,
+    heightId: isSubgraphInput(port) ? subgraphInputHeightId(port) : undefined
   }
 }
 
@@ -390,6 +392,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
             :source="row.editable"
             :label="row.port.displayName"
             :status="row.status"
+            :height-id="row.heightId"
             :resizable="!canvasStore.isReadOnly && !ioNode.pinned"
             @resize="resizeHeight"
             @commit="captureEdits"

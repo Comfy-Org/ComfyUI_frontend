@@ -7,6 +7,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
 import { heightOf, requireBoundingBox } from '@e2e/fixtures/utils/locatorBox'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 function widgetRow(panel: Locator, name: string) {
   return panel.locator(`[data-widget-name="${name}"]`)
@@ -21,6 +22,14 @@ function portScreenY(comfyPage: ComfyPage, name: string) {
     if (!canvas || !port) throw new Error(`Expected subgraph input ${name}`)
     return port.pos[1] * canvas.ds.scale
   }, name)
+}
+
+function canvasScale(comfyPage: ComfyPage) {
+  return comfyPage.page.evaluate(() => window.app?.canvas.ds.scale ?? 1)
+}
+
+async function graphHeightOf(comfyPage: ComfyPage, locator: Locator) {
+  return (await heightOf(locator)) / (await canvasScale(comfyPage))
 }
 
 async function dragBy(comfyPage: ComfyPage, handle: Locator, deltaY: number) {
@@ -142,6 +151,77 @@ test.describe(
       await expect
         .poll(() => heightOf(text2))
         .toBeCloseTo(initial.text2 + 45, 0)
+    })
+
+    test('panel and host node widget heights stay independent and both survive save and reload', async ({
+      comfyPage
+    }) => {
+      const { inputPanel } = comfyPage.subgraph
+      const panelText = widgetRow(inputPanel, 'text')
+      const hostText = () =>
+        new VueNodeFixture(comfyPage.vueNodes.getNodeLocator('12')).widgetRow(
+          'text'
+        )
+      const enterHost = async () => {
+        await fitToViewInstant(comfyPage)
+        await comfyPage.vueNodes.enterSubgraph('12')
+        await expect(panelText).toBeVisible()
+      }
+      const panelInitial = await graphHeightOf(comfyPage, panelText)
+      await comfyPage.subgraph.exitViaBreadcrumb()
+      await expect(hostText()).toBeVisible()
+      const hostInitial = await graphHeightOf(comfyPage, hostText())
+      let hostResized = hostInitial
+      let panelResized = panelInitial
+
+      await test.step('Resizing on the host node leaves the panel alone', async () => {
+        await dragBy(
+          comfyPage,
+          hostText().getByTestId('growable-region-handle'),
+          60
+        )
+        hostResized = hostInitial + 60 / (await canvasScale(comfyPage))
+        await expect
+          .poll(() => graphHeightOf(comfyPage, hostText()))
+          .toBeCloseTo(hostResized, -1)
+
+        await enterHost()
+        await expect
+          .poll(() => graphHeightOf(comfyPage, panelText))
+          .toBeCloseTo(panelInitial, 0)
+      })
+
+      await test.step('Resizing in the panel leaves the host node alone', async () => {
+        await dragBy(
+          comfyPage,
+          panelText.getByTestId('growable-region-handle'),
+          80
+        )
+        panelResized = panelInitial + 80 / (await canvasScale(comfyPage))
+        await expect
+          .poll(() => graphHeightOf(comfyPage, panelText))
+          .toBeCloseTo(panelResized, -1)
+
+        await comfyPage.subgraph.exitViaBreadcrumb()
+        await expect
+          .poll(() => graphHeightOf(comfyPage, hostText()))
+          .toBeCloseTo(hostResized, -1)
+      })
+
+      await test.step('Both heights survive saving and reopening the workflow', async () => {
+        const workflow = await comfyPage.workflow.getExportedWorkflow()
+        await comfyPage.command.executeCommand('Comfy.NewBlankWorkflow')
+        await comfyPage.workflow.loadGraphData(workflow)
+
+        await fitToViewInstant(comfyPage)
+        await expect
+          .poll(() => graphHeightOf(comfyPage, hostText()))
+          .toBeCloseTo(hostResized, -1)
+        await enterHost()
+        await expect
+          .poll(() => graphHeightOf(comfyPage, panelText))
+          .toBeCloseTo(panelResized, -1)
+      })
     })
   }
 )
