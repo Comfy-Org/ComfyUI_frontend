@@ -5,6 +5,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('batch', () => {
   let graph: LGraph
@@ -79,9 +80,7 @@ describe('batch', () => {
     ['nothing', undefined],
     ['a value', 3]
   ])('refuses %s before running anything', ([, edits]) => {
-    expect(() => Reflect.apply(edit.batch, undefined, [edits])).toThrow(
-      TypeError
-    )
+    expectRefusal(() => Reflect.apply(edit.batch, undefined, [edits]), 'batch')
     expect(steps).toEqual([])
     expect(open).toBe(0)
   })

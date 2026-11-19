@@ -7,6 +7,7 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { DefRegistry } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('registering node types and extensions at the edges', () => {
   let graph: LGraph
@@ -229,12 +230,11 @@ describe('registering node types and extensions at the edges', () => {
         }
       })
 
-      expect(() =>
-        Reflect.apply(defs.extend, defs, [hostile, () => {}])
-      ).toThrow(TypeError)
-      expect(() => Reflect.apply(defs.define, defs, [hostile])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(defs.extend, defs, [hostile, () => {}]),
+        'extend'
       )
+      expectRefusal(() => Reflect.apply(defs.define, defs, [hostile]), 'define')
       expect(menuRefusal).toBeInstanceOf(TypeError)
     })
   })

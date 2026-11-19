@@ -2,6 +2,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { describe, expect, it, vi } from 'vitest'
 
 import { createAppLifecycle } from './appLifecycle'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('app readiness', () => {
   it('holds a listener until the host says the app is ready', () => {
@@ -80,9 +81,10 @@ describe('app readiness', () => {
     (listener) => {
       const lifecycle = createAppLifecycle()
 
-      expect(() =>
-        Reflect.apply(lifecycle.onReady, lifecycle, [listener])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(lifecycle.onReady, lifecycle, [listener]),
+        'onReady'
+      )
 
       lifecycle.markReady()
 

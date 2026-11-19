@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 const [major, minor, patch] = API_VERSION
 
@@ -47,15 +48,16 @@ describe('API version', () => {
     '4..0',
     '4.0.'
   ])('refuses %j, which is not written as a version', (version) => {
-    expect(() => isApiVersionAtLeast(version)).toThrow(TypeError)
+    expectRefusal(() => isApiVersionAtLeast(version), 'isApiVersionAtLeast')
   })
 
   it.for([undefined, null, 4, [4, 0, 0], new String('v4.0.0')])(
     'refuses %j from untyped code',
     (version) => {
-      expect(() =>
-        Reflect.apply(isApiVersionAtLeast, undefined, [version])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(isApiVersionAtLeast, undefined, [version]),
+        'isApiVersionAtLeast'
+      )
     }
   )
 

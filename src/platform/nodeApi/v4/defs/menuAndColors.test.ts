@@ -16,6 +16,7 @@ import type {
   NodeMenuItem
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 const TYPE = 'Pack/Probe'
 
@@ -323,8 +324,9 @@ describe('node menus and colors', () => {
     })
 
     it.for([5, '', null])('refuses %j as a type to read', (type) => {
-      expect(() => Reflect.apply(defs.typeColor, defs, [type])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(defs.typeColor, defs, [type]),
+        'typeColor'
       )
     })
 
@@ -362,7 +364,7 @@ describe('node menus and colors', () => {
       (type) => {
         const prototype = Object.getPrototypeOf(LGraphCanvas.link_type_colors)
 
-        expect(() => defs.setTypeColor(type, '#123456')).toThrow(TypeError)
+        expectRefusal(() => defs.setTypeColor(type, '#123456'), 'setTypeColor')
         expect(Object.hasOwn(LGraphCanvas.link_type_colors, type)).toBe(false)
         expect(Object.getPrototypeOf(LGraphCanvas.link_type_colors)).toBe(
           prototype
@@ -373,7 +375,7 @@ describe('node menus and colors', () => {
     it('refuses a type the palette colors, and leaves its color', () => {
       LGraphCanvas.link_type_colors.IMAGE = '#64B5F6'
 
-      expect(() => defs.setTypeColor('IMAGE', '#000')).toThrow(TypeError)
+      expectRefusal(() => defs.setTypeColor('IMAGE', '#000'), 'setTypeColor')
       expect(defs.typeColor('IMAGE')).toBe('#64B5F6')
     })
 
@@ -420,7 +422,10 @@ describe('node menus and colors', () => {
       stop()
 
       expect(defs.typeColor('PACK_TYPE')).toBe('#00f')
-      expect(() => defs.setTypeColor('PACK_TYPE', '#a00')).toThrow(TypeError)
+      expectRefusal(
+        () => defs.setTypeColor('PACK_TYPE', '#a00'),
+        'setTypeColor'
+      )
     })
 
     it.for([
@@ -429,9 +434,10 @@ describe('node menus and colors', () => {
       ['PACK_TYPE', ''],
       ['PACK_TYPE', null]
     ])('refuses a type or color of %j and %j', ([type, color]) => {
-      expect(() =>
-        Reflect.apply(defs.setTypeColor, defs, [type, color])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(defs.setTypeColor, defs, [type, color]),
+        'setTypeColor'
+      )
       expect(Object.hasOwn(LGraphCanvas.link_type_colors, 'PACK_TYPE')).toBe(
         false
       )
@@ -458,8 +464,9 @@ describe('node menus and colors', () => {
     )
 
     it.for([5, '', undefined])('refuses %j as a name', (name) => {
-      expect(() => Reflect.apply(defs.nodeColor, defs, [name])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(defs.nodeColor, defs, [name]),
+        'nodeColor'
       )
     })
   })
@@ -481,9 +488,10 @@ describe('node menus and colors', () => {
       [5, 'IMAGE'],
       ['IMAGE', undefined]
     ])('refuses %j and %j', ([output, input]) => {
-      expect(() =>
-        Reflect.apply(defs.isTypeCompatible, defs, [output, input])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(defs.isTypeCompatible, defs, [output, input]),
+        'isTypeCompatible'
+      )
     })
   })
 })

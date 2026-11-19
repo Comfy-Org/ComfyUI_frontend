@@ -19,6 +19,7 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, GroupHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('group edits', () => {
   let graph: LGraph
@@ -225,9 +226,11 @@ describe('group edits', () => {
       const group = addGroup([1, 2, 200, 100])
       const version = graph._version
 
-      expect(() =>
-        Reflect.apply(edit.updateGroup, undefined, [handleOf(group), patch])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () =>
+          Reflect.apply(edit.updateGroup, undefined, [handleOf(group), patch]),
+        'updateGroup'
+      )
       expect(boundsOf(group)).toEqual([1, 2, 200, 100])
       expect(graph._version).toBe(version)
       expect(steps).toEqual([])
@@ -280,15 +283,18 @@ describe('group edits', () => {
       const nodeHandle = comfy.graph.node(String(node.id))
       const other = createComfyApi({ getGraph: () => graph })
 
-      expect(() =>
-        Reflect.apply(edit.updateGroup, undefined, [
-          nodeHandle,
-          { bounds: fine }
-        ])
-      ).toThrow(TypeError)
-      expect(() =>
-        other.edit.updateGroup(handleOf(group), { bounds: fine })
-      ).toThrow(TypeError)
+      expectRefusal(
+        () =>
+          Reflect.apply(edit.updateGroup, undefined, [
+            nodeHandle,
+            { bounds: fine }
+          ]),
+        'updateGroup'
+      )
+      expectRefusal(
+        () => other.edit.updateGroup(handleOf(group), { bounds: fine }),
+        'updateGroup'
+      )
       expect(boundsOf(group)).toEqual([0, 0, 200, 100])
     })
   })
@@ -315,9 +321,10 @@ describe('group edits', () => {
     it('still refuses unusable bounds', () => {
       const { handle } = removed()
 
-      expect(() =>
-        handle.setBounds({ x: 0, y: 0, width: -1, height: 0 })
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => handle.setBounds({ x: 0, y: 0, width: -1, height: 0 }),
+        'setBounds'
+      )
     })
 
     it('does not edit another document’s group that reuses its id', () => {

@@ -8,6 +8,7 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTest
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { DefRegistry, NodePresentation } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 vi.mock(import('@/services/litegraphService'))
 
@@ -170,11 +171,13 @@ describe('a defined type’s presentation', () => {
       const given = field ? { title: 'hidden', [field]: 'none' } : presentation
       const before = Object.keys(LiteGraph.registered_node_types)
 
-      expect(() =>
-        Reflect.apply(defs.define, defs, [
-          { type: 'Pack/Refused', presentation: given }
-        ])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () =>
+          Reflect.apply(defs.define, defs, [
+            { type: 'Pack/Refused', presentation: given }
+          ]),
+        'define'
+      )
       expect(Object.keys(LiteGraph.registered_node_types)).toEqual(before)
       expect(defs.has('Pack/Refused')).toBe(false)
     })

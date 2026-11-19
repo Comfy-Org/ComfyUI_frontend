@@ -17,6 +17,7 @@ import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtu
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('edit edges', () => {
   let graph: LGraph
@@ -69,11 +70,13 @@ describe('edit edges', () => {
   })
 
   it('reads only a point’s own fields', () => {
-    expect(() =>
-      Reflect.apply(handle.setPosition, undefined, [
-        Object.create({ x: 1, y: 2 })
-      ])
-    ).toThrow(TypeError)
+    expectRefusal(
+      () =>
+        Reflect.apply(handle.setPosition, undefined, [
+          Object.create({ x: 1, y: 2 })
+        ]),
+      'setPosition'
+    )
   })
 
   it('answers false for a patch whose property the node keeps, with its other fields applied', () => {
@@ -151,7 +154,7 @@ describe('edit edges', () => {
   it('refuses an empty widget name', () => {
     node.addWidget('number', 'w', 1, () => {})
 
-    expect(() => handle.inputs.at(0)?.modify({ widget: '' })).toThrow(TypeError)
+    expectRefusal(() => handle.inputs.at(0)?.modify({ widget: '' }), 'modify')
     expect(node.inputs[0].widget).toBeUndefined()
   })
 
@@ -216,7 +219,7 @@ describe('edit edges', () => {
     assert(output && innerHandle)
 
     expect(output.isConnected).toBe(false)
-    expect(() => edit.disconnect(output, innerHandle)).toThrow(TypeError)
+    expectRefusal(() => edit.disconnect(output, innerHandle), 'disconnect')
   })
 
   it('starts version again on a reload, so a later reading can repeat an earlier one', () => {

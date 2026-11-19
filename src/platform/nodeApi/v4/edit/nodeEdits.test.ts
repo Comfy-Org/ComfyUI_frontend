@@ -17,6 +17,7 @@ import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { NodePatch } from '@/platform/nodeApi/v4/edit/nodePatch'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function recordingHistory() {
   const steps: string[] = []
@@ -414,9 +415,10 @@ describe('node edits', () => {
       const before = stateOf(node)
       const version = graph._version
 
-      expect(() =>
-        Reflect.apply(edit.updateNode, undefined, [handle, patch])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(edit.updateNode, undefined, [handle, patch]),
+        'updateNode'
+      )
       expect(stateOf(node)).toEqual(before)
       expect(graph._version).toBe(version)
       expect(history.steps).toEqual([])
@@ -440,20 +442,27 @@ describe('node edits', () => {
     ])('refuses %s in place of a node handle', ([, notAHandle]) => {
       add()
 
-      expect(() =>
-        Reflect.apply(edit.updateNode, undefined, [notAHandle, { title: 'x' }])
-      ).toThrow(TypeError)
-      expect(() =>
-        Reflect.apply(edit.removeNode, undefined, [notAHandle])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () =>
+          Reflect.apply(edit.updateNode, undefined, [
+            notAHandle,
+            { title: 'x' }
+          ]),
+        'updateNode'
+      )
+      expectRefusal(
+        () => Reflect.apply(edit.removeNode, undefined, [notAHandle]),
+        'removeNode'
+      )
     })
 
     it('refuses a handle another API made', () => {
       const { handle } = add()
       const other = createComfyApi({ getGraph: () => graph })
 
-      expect(() => other.edit.updateNode(handle, { title: 'x' })).toThrow(
-        TypeError
+      expectRefusal(
+        () => other.edit.updateNode(handle, { title: 'x' }),
+        'updateNode'
       )
     })
   })
@@ -475,9 +484,10 @@ describe('node edits', () => {
       const { node, handle } = add()
       graph.remove(node)
 
-      expect(() =>
-        Reflect.apply(edit.updateNode, undefined, [handle, { title: 1 }])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(edit.updateNode, undefined, [handle, { title: 1 }]),
+        'updateNode'
+      )
     })
 
     it('does not edit another document’s node that reuses its id', () => {
@@ -624,9 +634,10 @@ describe('node handle edit methods', () => {
     ([name]) => {
       const { node, handle } = add()
 
-      expect(() =>
-        Reflect.apply(handle.setProperty, undefined, [name, 1])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(handle.setProperty, undefined, [name, 1]),
+        'setProperty'
+      )
       expect(node.properties).toEqual({})
     }
   )
@@ -634,8 +645,9 @@ describe('node handle edit methods', () => {
   it('setProperty refuses __proto__', () => {
     const { node, handle } = add()
 
-    expect(() => handle.setProperty('__proto__', { polluted: true })).toThrow(
-      TypeError
+    expectRefusal(
+      () => handle.setProperty('__proto__', { polluted: true }),
+      'setProperty'
     )
     expect(Reflect.get(node.properties, 'polluted')).toBeUndefined()
   })
