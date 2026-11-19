@@ -1595,6 +1595,24 @@ describe('ComfyApp', () => {
       ).toEqual(['beforeLoadGraph', 'afterConfigureGraph', 'afterLoadGraph'])
     })
 
+    it('binds an API JSON import to the supplied workflow', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const graph = new LGraph()
+      Reflect.set(app, 'rootGraphInternal', graph)
+      const workflow = new ComfyWorkflow({
+        path: 'workflows/api-format.json',
+        modified: 0,
+        size: 0
+      })
+
+      await app.loadApiJson({}, workflow)
+
+      expect(mockWorkflowService.afterLoadNewGraph).toHaveBeenLastCalledWith(
+        workflow,
+        expect.any(Object)
+      )
+    })
+
     it.for([
       {
         format: 'API JSON',

@@ -29,6 +29,7 @@ import {
 } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useApp } from '@/scripts/appInstance'
@@ -42,6 +43,7 @@ import { getDefaultWorkflow } from '@/platform/workflow/core/services/defaultWor
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
+import { isGraphLoadFailurePresented } from '@/services/graphLoadFailure'
 import { nodeTypesMayStillArrive } from '@/platform/customNodes/lateLoading/lateNodeTypes'
 import { showPlaceholdersAsWaiting } from '@/platform/customNodes/lateLoading/waitingNodes'
 import { useAppMode } from '@/composables/useAppMode'
@@ -88,6 +90,12 @@ export function writeWorkflowDraftLineage(
 function linearModeToAppMode(linearMode: unknown): AppMode | null {
   if (typeof linearMode !== 'boolean') return null
   return linearMode ? 'app' : 'graph'
+}
+
+function parseApiWorkflow(graphData: ComfyWorkflowJSON | undefined) {
+  if (!graphData || Object.keys(graphData).length === 0) return undefined
+  const parsed = zComfyApiWorkflow.safeParse(graphData)
+  return parsed.success ? parsed.data : undefined
 }
 
 /**
@@ -667,6 +675,18 @@ export const useWorkflowService = () => {
       return ready
     }
     try {
+      const apiWorkflow = parseApiWorkflow(queued)
+      if (apiWorkflow) {
+        try {
+          const outcome = await useApp().loadApiJson(apiWorkflow, workflow, {
+            deferWarnings: true
+          })
+          return outcome !== false
+        } catch (error) {
+          if (isGraphLoadFailurePresented(error)) return false
+          throw error
+        }
+      }
       return await useApp().loadGraphData(queued, true, true, workflow, {
         checkForRerouteMigration: false,
         deferWarnings: true,

@@ -2509,19 +2509,20 @@ export class ComfyApp implements IComfyApp {
 
   async loadApiJson(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    source: string | ComfyWorkflow,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void | false> {
     return this.enqueueGraphLoad(() =>
-      this.loadApiJsonNow(apiData, fileName, options)
+      this.loadApiJsonNow(apiData, source, options)
     )
   }
 
   private async loadApiJsonNow(
     apiData: ComfyApiWorkflow,
-    fileName: string,
+    source: string | ComfyWorkflow,
     options: { deferWarnings?: boolean }
   ): Promise<void> {
+    const fileName = typeof source === 'string' ? source : source.path
     let lifecycleStarted = false
     let lifecycleCompleted = false
     let releaseCaptureSuppression: (() => void) | undefined
@@ -2729,7 +2730,7 @@ export class ComfyApp implements IComfyApp {
         )
       )
       await useWorkflowService().afterLoadNewGraph(
-        fileName,
+        source,
         this.rootGraph.serialize() as unknown as ComfyWorkflowJSON
       )
       await useExtensionService().invokeExtensionsAsync('afterLoadGraph')

@@ -84,6 +84,7 @@ const actions = vi.mockObject<
     | 'getRandParam'
     | 'graphToPrompt'
     | 'handleFile'
+    | 'loadApiJson'
     | 'loadGraphData'
     | 'openClipspace'
     | 'queuePrompt'
@@ -127,6 +128,7 @@ const actions = vi.mockObject<
     getPreviewFormatParam: () => '',
     getRandParam: () => '',
     async handleFile() {},
+    async loadApiJson() {},
     showErrorOnFileLoad() {}
   },
   { spy: true }
