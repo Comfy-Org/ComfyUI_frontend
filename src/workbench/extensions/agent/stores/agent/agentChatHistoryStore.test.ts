@@ -346,4 +346,30 @@ describe('useAgentChatHistoryStore', () => {
       )
     ).toEqual([])
   })
+
+  it('keeps a pending-delete chat hidden when its workflow is dropped before restoreDelete runs', () => {
+    const store = useAgentChatHistoryStore()
+    const pendingInDeleted = { ...session('a', 1), workflowId: 'wf-deleted' }
+    const pendingInOther = { ...session('b', 2), workflowId: 'wf-keep' }
+    store.replaceAll([pendingInDeleted, pendingInOther])
+    store.rename('a', 'Custom A')
+    store.rename('b', 'Custom B')
+
+    const snapshotDeleted = store.beginDelete('a')
+    const snapshotOther = store.beginDelete('b')
+
+    expect(store.dropByWorkflow('wf-deleted')).toEqual([])
+
+    store.restoreDelete('a', snapshotDeleted)
+    store.restoreDelete('b', snapshotOther)
+
+    expect(store.sessions.map(({ id }) => id)).toEqual(['b'])
+    expect(store.titleFor('a')).toBeUndefined()
+    expect(store.titleFor('b')).toBe('Custom B')
+    expect(store.isDeleted('a')).toBe(true)
+    expect(store.isDeleted('b')).toBe(false)
+
+    store.replaceAll([pendingInDeleted, pendingInOther])
+    expect(store.sessions.map(({ id }) => id)).toEqual(['b'])
+  })
 })

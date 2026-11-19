@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
@@ -30,6 +30,7 @@ describe('useAgentChatDeletion', () => {
     const onDeleteFailed = vi.fn()
     const onFallbackRefresh = vi.fn()
     const scope = effectScope()
+    onTestFinished(() => scope.stop())
     const deletion = scope.run(() =>
       useAgentChatDeletion({
         deleteThread,
@@ -58,7 +59,7 @@ describe('useAgentChatDeletion', () => {
           resolveDelete = resolve
         })
     )
-    const { history, onOptimisticDelete, onDeleteFailed, scope, deletion } =
+    const { history, onOptimisticDelete, onDeleteFailed, deletion } =
       setup(deleteThread)
     history.replaceAll([makeSession('th-1')])
     history.setActive('th-1')
@@ -82,7 +83,6 @@ describe('useAgentChatDeletion', () => {
       )
     ).toEqual([])
     expect(onDeleteFailed).not.toHaveBeenCalled()
-    scope.stop()
   })
 
   it.for([404, 405])(
@@ -91,7 +91,7 @@ describe('useAgentChatDeletion', () => {
       const deleteThread = vi.fn(async () => {
         throw new AgentApiError('not found', status, { error: 'not found' })
       })
-      const { history, onDeleteFailed, scope, deletion } = setup(deleteThread)
+      const { history, onDeleteFailed, deletion } = setup(deleteThread)
       history.replaceAll([makeSession('th-1')])
 
       await deletion.deleteChat('th-1')
@@ -100,7 +100,6 @@ describe('useAgentChatDeletion', () => {
       expect(history.isDeleted('th-1')).toBe(true)
       history.replaceAll([makeSession('th-1')])
       expect(history.sessions).toEqual([])
-      scope.stop()
     }
   )
 
@@ -112,7 +111,7 @@ describe('useAgentChatDeletion', () => {
         throw new AgentApiError('retry', 503, {}, 2)
       }
     })
-    const { history, onDeleteFailed, scope, deletion } = setup(deleteThread)
+    const { history, onDeleteFailed, deletion } = setup(deleteThread)
     history.replaceAll([makeSession('th-1')])
 
     const pending = deletion.deleteChat('th-1')
@@ -126,14 +125,13 @@ describe('useAgentChatDeletion', () => {
     expect(calls).toBe(3)
     expect(onDeleteFailed).not.toHaveBeenCalled()
     expect(history.sessions).toEqual([])
-    scope.stop()
   })
 
   it('P2-02 P2-03: restores chat and triggers failure callback after two 503 Retry-After retries still fail', async () => {
     const deleteThread = vi.fn(async () => {
       throw new AgentApiError('retry', 503, {}, 1)
     })
-    const { history, onDeleteFailed, scope, deletion } = setup(deleteThread)
+    const { history, onDeleteFailed, deletion } = setup(deleteThread)
     history.replaceAll([makeSession('th-1')])
     history.rename('th-1', 'My chat')
 
@@ -146,7 +144,6 @@ describe('useAgentChatDeletion', () => {
     expect(history.titleFor('th-1')).toBe('My chat')
     expect(history.isDeleted('th-1')).toBe(false)
     expect(onDeleteFailed).toHaveBeenCalledOnce()
-    scope.stop()
   })
 
   it.for([
@@ -163,7 +160,7 @@ describe('useAgentChatDeletion', () => {
       const deleteThread = vi.fn(async (): Promise<void> => {
         throw err()
       })
-      const { history, onDeleteFailed, scope, deletion } = setup(deleteThread)
+      const { history, onDeleteFailed, deletion } = setup(deleteThread)
       history.replaceAll([makeSession('th-1')])
 
       await deletion.deleteChat('th-1')
@@ -178,7 +175,6 @@ describe('useAgentChatDeletion', () => {
       retry()
       await vi.advanceTimersByTimeAsync(0)
       expect(history.sessions).toEqual([])
-      scope.stop()
     }
   )
 
@@ -188,7 +184,7 @@ describe('useAgentChatDeletion', () => {
       calls += 1
       if (calls === 1) throw new AgentApiError('retry', 503, {}, 30)
     })
-    const { history, onDeleteFailed, scope, deletion } = setup(deleteThread)
+    const { history, onDeleteFailed, deletion } = setup(deleteThread)
     history.replaceAll([makeSession('th-1')])
 
     const pending = deletion.deleteChat('th-1')
@@ -200,7 +196,6 @@ describe('useAgentChatDeletion', () => {
     expect(calls).toBe(2)
     expect(onDeleteFailed).not.toHaveBeenCalled()
     expect(history.sessions).toEqual([])
-    scope.stop()
   })
 
   it.for([31, 600])(
@@ -209,7 +204,7 @@ describe('useAgentChatDeletion', () => {
       const deleteThread = vi.fn(async () => {
         throw new AgentApiError('retry', 503, {}, retryAfterSeconds)
       })
-      const { history, onDeleteFailed, scope, deletion } = setup(deleteThread)
+      const { history, onDeleteFailed, deletion } = setup(deleteThread)
       history.replaceAll([makeSession('th-1')])
 
       await deletion.deleteChat('th-1')
@@ -218,7 +213,6 @@ describe('useAgentChatDeletion', () => {
       expect(history.sessions.map(({ id }) => id)).toEqual(['th-1'])
       expect(history.isDeleted('th-1')).toBe(false)
       expect(onDeleteFailed).toHaveBeenCalledOnce()
-      scope.stop()
     }
   )
 

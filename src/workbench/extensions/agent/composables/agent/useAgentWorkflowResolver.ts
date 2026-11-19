@@ -119,34 +119,40 @@ export function useAgentWorkflowResolver({
       : undefined
   }
 
-  function namedCloudIdFor(workflow: ComfyWorkflow): string | undefined {
+  function uniqueSavedCloudIdFor(
+    workflow: ComfyWorkflow,
+    candidates: ComfyWorkflow[]
+  ): string | undefined {
+    if (workflow.isTemporary) return undefined
     const name = cloudWorkflowName(workflow)
-    return !workflow.isTemporary &&
-      savedMatches(name, workflows.openWorkflows).length === 1
+    const matches = savedMatches(name, candidates)
+    return matches.length === 1 && matches[0].path === workflow.path
       ? cloudIdsByName.value.get(name)
       : undefined
   }
 
   function cloudIdFor(workflow: ComfyWorkflow): string | undefined {
-    return namedCloudIdFor(workflow) ?? boundCloudIdFor(workflow)
+    return (
+      uniqueSavedCloudIdFor(workflow, workflows.openWorkflows) ??
+      boundCloudIdFor(workflow)
+    )
   }
 
   function authoritativeCloudIdFor(
     workflow: ComfyWorkflow
   ): string | undefined {
     if (listingComplete.value) {
-      const saved = namedCloudIdFor(workflow)
+      const saved = uniqueSavedCloudIdFor(workflow, workflows.openWorkflows)
       if (saved !== undefined) return saved
     }
     return boundCloudIdFor(workflow)
   }
 
   function persistedCloudIdFor(workflow: ComfyWorkflow): string | undefined {
-    const direct = cloudIdFor(workflow)
-    if (direct !== undefined) return direct
-    return workflow.isTemporary
-      ? undefined
-      : cloudIdsByName.value.get(cloudWorkflowName(workflow))
+    return (
+      uniqueSavedCloudIdFor(workflow, workflows.workflows) ??
+      boundCloudIdFor(workflow)
+    )
   }
 
   function indexedNameFor(workflowId: string): string | undefined {
