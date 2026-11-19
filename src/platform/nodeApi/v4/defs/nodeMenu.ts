@@ -87,16 +87,18 @@ export function checkedMenuItem(item: unknown): CheckedMenuItem {
 /** The context-menu entry for one item on one node, or `undefined` when it is not shown. */
 export function menuEntry(
   item: CheckedMenuItem,
-  node: NodeHandle
+  node: NodeHandle,
+  asked: <T>(answer: T) => T
 ): IContextMenuValue | undefined {
-  if (item.when && item.when(node) !== true) return undefined
-  const label = typeof item.label === 'function' ? item.label(node) : item.label
+  if (item.when && asked(item.when(node)) !== true) return undefined
+  const label =
+    typeof item.label === 'function' ? asked(item.label(node)) : item.label
   if (typeof label !== 'string') {
     throw invalidArgument('label', 'to give text', label)
   }
   const items =
     typeof item.items === 'function'
-      ? checkedSubMenu(item.items(node))
+      ? checkedSubMenu(asked(item.items(node)))
       : item.items
   if (items?.length) {
     return {
