@@ -110,6 +110,8 @@ const CAPABILITIES = {
   can_manage_subscription: false,
   can_open_plans: false,
   can_run_workflows: false,
+  can_set_budgets: false,
+  can_set_hard_caps: false,
   can_upgrade: false,
   can_subscribe_self_serve: false,
   can_top_up: true
@@ -602,10 +604,19 @@ describe('createInteractiveTopup', () => {
       name: 'only the saved card the customer chose',
       payment: { savedPaymentMethodId: 'pm_chosen' },
       sent: { saved_payment_method_id: 'pm_chosen' }
+    },
+    {
+      name: 'a saved card and the auto top-up it turns on',
+      payment: { savedPaymentMethodId: 'pm_chosen' },
+      autoTopUp: { threshold_credits: 1000, target_credits: 5000 },
+      sent: {
+        saved_payment_method_id: 'pm_chosen',
+        auto_top_up: { threshold_credits: 1000, target_credits: 5000 }
+      }
     }
   ])(
     'pays once with $name under the caller key, never asking to save or default',
-    async ({ payment, sent }) => {
+    async ({ payment, sent, autoTopUp }) => {
       const { command, calls, routes } = harness()
 
       await expect(
@@ -613,7 +624,8 @@ describe('createInteractiveTopup', () => {
           command.createInteractiveTopup({
             amountCents: 1000,
             payment,
-            idempotencyKey: 'attempt-key'
+            idempotencyKey: 'attempt-key',
+            ...(autoTopUp === undefined ? {} : { autoTopUp })
           })
         )
       ).resolves.toMatchObject({ status: 'ok', creditsReconciled: true })
@@ -733,6 +745,28 @@ describe('createHostedTopupCheckout', () => {
         idempotencyKey: 'key-1'
       }
     ])
+  })
+
+  it('sends the auto top-up settings with the purchase', async () => {
+    const { command, calls } = harness()
+    const autoTopUp = {
+      threshold_credits: 1000,
+      target_credits: 5000,
+      monthly_budget_cents: null
+    }
+
+    await command.createHostedTopupCheckout({
+      amountCents: 1000,
+      returnUrl: RETURN_URL,
+      autoTopUp
+    })
+
+    expect(postedBodies(calls)[0].body).toEqual({
+      amount_cents: 1000,
+      return_url: RETURN_URL,
+      auto_top_up: autoTopUp,
+      idempotency_key: 'key-1'
+    })
   })
 
   it('refuses when the server resolved can_top_up false, without a POST', async () => {

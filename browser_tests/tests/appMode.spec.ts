@@ -7,6 +7,7 @@ import {
 import { GraphCanvasMenu } from '@e2e/fixtures/components/GraphCanvasMenu'
 import { subgraphBreadcrumbFixture } from '@e2e/fixtures/helpers/SubgraphBreadcrumbHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { openWorkflowFromSidebar } from '@e2e/fixtures/utils/builderTestUtils'
 
 const test = mergeTests(comfyPageFixture, subgraphBreadcrumbFixture)
 
@@ -92,23 +93,31 @@ test.describe('App mode usage', () => {
   })
 
   test('Widget Interaction', async ({ comfyPage }) => {
+    const promptInput: [string, string] = ['6', 'text']
+    const promptKey = promptInput.join(':')
     await comfyPage.appMode.enterAppModeWithInputs([
       ['3', 'seed'],
       ['3', 'sampler_name'],
-      ['6', 'text']
+      promptInput
     ])
-    const seed = comfyPage.appMode.linearWidgets.getByLabel('seed', {
-      exact: true
+    const seed = comfyPage.appMode.linearWidgets.filter({
+      has: comfyPage.page.getByRole('spinbutton', { name: 'seed', exact: true })
     })
     const { input, incrementButton, decrementButton } =
       comfyPage.vueNodes.getInputNumberControls(seed)
     const initialValue = Number(await input.inputValue())
+    const seedBox = (await seed.boundingBox())!
+    const inputBox = (await input.boundingBox())!
+    const sourcePosition = {
+      x: inputBox.x + inputBox.width / 2 - seedBox.x,
+      y: inputBox.y + inputBox.height / 2 - seedBox.y
+    }
 
-    await seed.dragTo(incrementButton, { steps: 5 })
+    await seed.dragTo(incrementButton, { sourcePosition, steps: 5 })
     const intermediateValue = Number(await input.inputValue())
     expect(intermediateValue).toBeGreaterThan(initialValue)
 
-    await seed.dragTo(decrementButton, { steps: 5 })
+    await seed.dragTo(decrementButton, { sourcePosition, steps: 5 })
     const endValue = Number(await input.inputValue())
     expect(endValue).toBeLessThan(intermediateValue)
 
@@ -123,7 +132,31 @@ test.describe('App mode usage', () => {
     await comfyPage.page.keyboard.press('Enter')
     await expect(sampler).toHaveText('uni_pc')
 
-    //verify values are consistent with litegraph
+    const { appMode } = comfyPage
+    const textarea = appMode.widgets
+      .getWidgetItem(promptKey)
+      .locator('textarea')
+    let resizedHeight = 0
+
+    await test.step('Dragging the grip grows the textarea', async () => {
+      const startHeight = (await textarea.boundingBox())!.height
+      await appMode.widgets.resizeTextareaBy(promptKey, 80)
+      resizedHeight = (await textarea.boundingBox())!.height
+      expect(resizedHeight).toBeGreaterThan(startHeight + 60)
+    })
+
+    await test.step('Reopened workflow restores the height', async () => {
+      const workflowName = `${Date.now()} app-mode-textarea-resize`
+      await appMode.toggleAppMode()
+      await comfyPage.menu.topbar.saveWorkflow(workflowName)
+      await openWorkflowFromSidebar(comfyPage, workflowName)
+      await appMode.toggleAppMode()
+
+      await expect(textarea).toBeVisible()
+      await expect
+        .poll(async () => (await textarea.boundingBox())?.height)
+        .toBe(resizedHeight)
+    })
   })
 
   test('FormDropdown search Enter selects the top filtered item', async ({

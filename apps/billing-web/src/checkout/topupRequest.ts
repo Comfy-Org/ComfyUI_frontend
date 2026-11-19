@@ -1,10 +1,12 @@
 import type {
   InteractiveTopupPayment,
+  SavedPaymentMethod,
   TopupResult
 } from '@comfyorg/account-core/billing'
 import { isPurchaseRefusal } from '@comfyorg/account-core/billing'
-import type { BillingEntry } from '@comfyorg/billing-contract'
+import type { BillingEntry, EntryAutoTopUp } from '@comfyorg/billing-contract'
 import { buildBillingEntryUrl } from '@comfyorg/billing-contract'
+import type { TopupAutoTopUpSettings } from '@comfyorg/ingest-types'
 
 import type { Recheck } from '@/checkout/checkoutPage'
 import type { PayVerdict } from '@/checkout/payVerdict'
@@ -12,6 +14,72 @@ import { topupVerdictOf } from '@/checkout/payVerdict'
 import type { PayChoice } from '@/composables/useFullPageCheckout'
 
 const CARD_METHOD_TYPE = 'card'
+
+/** Where a hosted top-up checkout returns; billing-web's own neutral page. */
+export const TOPUP_RETURN_PATH = '/return/topup'
+
+interface AutoTopUpDefaultCard {
+  readonly brand: string
+  readonly last4: string
+}
+
+type AutoTopUpConsentCard =
+  | { readonly kind: 'default'; readonly card: AutoTopUpDefaultCard }
+  | { readonly kind: 'none' }
+  | { readonly kind: 'unknown' }
+
+/** What a top-up link's auto top-up consent names: the rule, the monthly limit, and the card it charges. */
+export interface AutoTopUpConsent {
+  readonly thresholdCredits: number
+  readonly targetCredits: number
+  /** The customer's own limit, else the ceiling served for no limit; undefined until that read lands. */
+  readonly monthlyLimitCents: number | undefined
+  readonly card: AutoTopUpConsentCard
+}
+
+const upperFirst = (word: string) =>
+  word.charAt(0).toUpperCase() + word.slice(1)
+
+function consentCardOf(
+  methods: readonly SavedPaymentMethod[] | undefined
+): AutoTopUpConsentCard {
+  if (methods === undefined) return { kind: 'unknown' }
+  const card = methods.find((method) => method.is_default)
+  if (card === undefined) return { kind: 'none' }
+  return card.brand && card.last4
+    ? {
+        kind: 'default',
+        card: { brand: upperFirst(card.brand), last4: card.last4 }
+      }
+    : { kind: 'unknown' }
+}
+
+/** `methods` is undefined until a saved-cards read succeeds. */
+export function autoTopUpConsentOf(
+  choice: EntryAutoTopUp,
+  ceilingCents: number | undefined,
+  methods: readonly SavedPaymentMethod[] | undefined
+): AutoTopUpConsent {
+  return {
+    thresholdCredits: choice.thresholdCredits,
+    targetCredits: choice.targetCredits,
+    monthlyLimitCents: choice.monthlyBudgetCents ?? ceilingCents,
+    card: consentCardOf(methods)
+  }
+}
+
+/** The settings a hosted top-up sends; an absent limit stays absent, which the server stores as no limit. */
+export function topupAutoTopUpOf(
+  choice: EntryAutoTopUp
+): TopupAutoTopUpSettings {
+  return {
+    threshold_credits: choice.thresholdCredits,
+    target_credits: choice.targetCredits,
+    ...(choice.monthlyBudgetCents === undefined
+      ? {}
+      : { monthly_budget_cents: choice.monthlyBudgetCents })
+  }
+}
 
 const STATUSLESS_ANSWERS: ReadonlySet<string> = new Set([
   'NOT_AUTHENTICATED',
@@ -39,6 +107,9 @@ export function topupReturnUrl(
     ...(arrival.amountCents === undefined
       ? {}
       : { amountCents: arrival.amountCents }),
+    ...(arrival.autoTopUp === undefined
+      ? {}
+      : { autoTopUp: arrival.autoTopUp }),
     ...(workspaceId === undefined ? {} : { workspaceId })
   })
   return built.status === 'ok' ? built.url.href : undefined

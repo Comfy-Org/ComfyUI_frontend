@@ -10,7 +10,8 @@ export const CORE_MENU_COMMANDS = [
       'Comfy.SaveWorkflow',
       'Comfy.SaveWorkflowAs',
       'Comfy.ExportWorkflow',
-      'Comfy.ExportWorkflowAPI'
+      'Comfy.ExportWorkflowAPI',
+      'Comfy.ExportWorkflowImage'
     ]
   ],
   [['Edit'], ['Comfy.Undo', 'Comfy.Redo']],

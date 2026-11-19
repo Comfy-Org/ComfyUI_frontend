@@ -10,7 +10,3 @@ export class SessionRevokedError extends Error {
     this.code = code
   }
 }
-
-export function revokedCodeOf(code: string | undefined): RevokedCode | null {
-  return code === 'SESSION_REVOKED' || code === 'TOKEN_REVOKED' ? code : null
-}

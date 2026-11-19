@@ -1,0 +1,69 @@
+{
+  "last_node_id": 72,
+  "last_link_id": 83,
+  "nodes": [
+    {
+      "id": 63,
+      "type": "VAELoader",
+      "pos": [150, 140],
+      "size": [320, 106.65625],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [83]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAELoader",
+        "cnr_id": "comfy-core",
+        "ver": "0.3.73",
+        "models": [
+          {
+            "name": "ae.safetensors",
+            "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors",
+            "directory": "vae"
+          }
+        ],
+        "enableTabs": false,
+        "tabWidth": 65,
+        "tabXOffset": 10,
+        "hasSecondTab": false,
+        "secondTabText": "Send Back",
+        "secondTabOffset": 80,
+        "secondTabWidth": 65
+      },
+      "widgets_values": ["ae.safetensors"]
+    },
+    {
+      "id": 72,
+      "type": "VAESave",
+      "pos": [480, 140],
+      "size": [275, 85],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 83
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "VAESave"
+      },
+      "widgets_values": ["vae/open-on-cloud-preview"]
+    }
+  ],
+  "links": [[83, 63, 0, 72, 0, "VAE"]],
+  "groups": [],
+  "config": {},
+  "extra": {},
+  "version": 0.4
+}
