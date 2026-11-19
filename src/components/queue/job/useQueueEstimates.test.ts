@@ -17,9 +17,13 @@ const makeHistoryTask = (
     executionTimeInSeconds
   }) as TaskItemImpl
 
-const makeRunningTask = (executionStartTimestamp?: number): TaskItemImpl =>
+const makeRunningTask = (
+  executionStartTimestamp?: number,
+  jobId?: string
+): TaskItemImpl =>
   ({
-    executionStartTimestamp
+    executionStartTimestamp,
+    ...(jobId === undefined ? {} : { jobId })
   }) as TaskItemImpl
 
 const createQueueStore = (data?: Partial<QueueStore>): QueueStore =>
@@ -32,6 +36,7 @@ const createQueueStore = (data?: Partial<QueueStore>): QueueStore =>
 const createExecutionStore = (data?: Partial<ExecutionStore>): ExecutionStore =>
   ({
     runningWorkflowCount: 1,
+    getExecutionStartWallMs: () => undefined,
     ...data
   }) as ExecutionStore
 
@@ -226,5 +231,62 @@ describe('useQueueEstimates', () => {
     harness.firstSeenRef.value = undefined
 
     expect(harness.timeElapsedValue.value).toBe('')
+  })
+
+  it('counts running elapsed time from the wall-clock execution start when the job has no execution_start_time', () => {
+    const queuedAt = 1000
+    const executionStart = 10000
+    const now = 13000
+    const queueStore = createQueueStore({
+      historyTasks: [10, 20, 30].map((value) => makeHistoryTask(value))
+    })
+    const executionStore = createExecutionStore({
+      getExecutionStartWallMs: (jobId) =>
+        jobId === 'job-1' ? executionStart : undefined
+    })
+
+    const harness = createHarness({
+      queueStore,
+      executionStore,
+      task: makeRunningTask(undefined, 'job-1'),
+      jobState: 'running',
+      firstSeenTs: queuedAt,
+      now
+    })
+
+    expect(harness.timeElapsedValue.value).toBe('0m 3s')
+    expect(harness.estimateRemainingRangeSeconds.value).toEqual([17, 27])
+  })
+
+  it('prefers the job execution_start_time over the wall-clock execution start', () => {
+    const queueStore = createQueueStore({
+      historyTasks: [10, 20, 30].map((value) => makeHistoryTask(value))
+    })
+    const executionStore = createExecutionStore({
+      getExecutionStartWallMs: () => 8000
+    })
+
+    const harness = createHarness({
+      queueStore,
+      executionStore,
+      task: makeRunningTask(11000, 'job-1'),
+      jobState: 'running',
+      firstSeenTs: 1000,
+      now: 14000
+    })
+
+    expect(harness.timeElapsedValue.value).toBe('0m 3s')
+    expect(harness.estimateRemainingRangeSeconds.value).toEqual([17, 27])
+  })
+
+  it('counts a running job from the first-seen time when no execution start is known', () => {
+    const harness = createHarness({
+      task: makeRunningTask(undefined, 'job-reload'),
+      jobState: 'running',
+      firstSeenTs: 2000,
+      now: 5000
+    })
+
+    expect(harness.timeElapsedValue.value).toBe('0m 3s')
   })
 })
