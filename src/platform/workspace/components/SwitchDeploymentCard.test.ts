@@ -242,6 +242,35 @@ describe('SwitchDeploymentCard', () => {
     expect(onDone).toHaveBeenCalledOnce()
   })
 
+  it('leaves Create on Platform to the link while a switch is under way, because the reload would drop the answer', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait',
+      activeState: { nodes: [] },
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    const open = vi.spyOn(window, 'open')
+    vi.mocked(confirmUnsavedWorkBeforeSwitch).mockReturnValue(
+      new Promise(() => {})
+    )
+    const followed: boolean[] = []
+    const { user } = renderCard()
+    await user.click(screen.getByRole('button', { name: 'Switch' }))
+    document.addEventListener(
+      'click',
+      (event) => {
+        followed.push(!event.defaultPrevented)
+        event.preventDefault()
+      },
+      { once: true }
+    )
+
+    await user.click(screen.getByRole('link', { name: /Create on Platform/ }))
+
+    expect(open).not.toHaveBeenCalled()
+    expect(followed).toEqual([true])
+  })
+
   it('closes when the user goes to create a deployment instead', async () => {
     const { onDone, user } = renderCard()
 

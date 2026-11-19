@@ -166,11 +166,6 @@ const createDeploymentUrl = computed(() =>
   customDeploymentCreateUrl('switch-deployment-card')
 )
 
-function createOnPlatform(event: MouseEvent) {
-  handOverWorkflowOnClick(event, 'switch-deployment-card')
-  emit('done')
-}
-
 function runs(choice: DeploymentChoice): boolean {
   return choice.mark?.kind === 'runs'
 }
@@ -197,6 +192,12 @@ function choose(value: AcceptableValue) {
 
 const isSettling = ref(false)
 const isSwitching = computed(() => isSettling.value || isPicking.value)
+
+function createOnPlatform(event: MouseEvent) {
+  if (!isSwitching.value)
+    handOverWorkflowOnClick(event, 'switch-deployment-card')
+  emit('done')
+}
 
 function landWhenAlreadyPicked() {
   if (isPicking.value || changeSinceBoot.value === null) return
