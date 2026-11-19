@@ -1,4 +1,3 @@
-import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { createListeners } from '@/platform/nodeApi/shared/listeners'
 import type { Unsubscribe } from './types'
 
@@ -13,10 +12,7 @@ export function createAppLifecycle(): AppLifecycle {
 
   return {
     onReady(listener) {
-      if (typeof listener !== 'function') {
-        throw invalidArgument('onReady', 'a function to call', listener)
-      }
-      const stop = waiting.add(listener)
+      const stop = waiting.subscribe(listener)
       if (ready) queueMicrotask(waiting.drain)
       return stop
     },
