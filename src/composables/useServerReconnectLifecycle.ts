@@ -4,13 +4,9 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { api } from '@/scripts/api'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
-/**
- * Owns what the app does when the ComfyUI `/ws` socket drops and comes back:
- * the reconnecting toast, the queue refresh and the node definition refresh.
- * A new "after the server comes back" behaviour is added here, not in a view.
- * Listeners are removed when the calling scope is disposed.
- */
+/** Runs every app behaviour for a ComfyUI `/ws` disconnect and reconnect until the calling scope is disposed. */
 export function useServerReconnectLifecycle(): void {
   const { onReconnecting, onReconnected } = useReconnectingNotification()
   const refreshQueueOnReconnect = useReconnectQueueRefresh()
@@ -20,6 +16,14 @@ export function useServerReconnectLifecycle(): void {
   useEventListener(api, 'reconnected', async () => {
     onReconnected()
     void refreshNodeDefinitionsOnReconnect()
-    await refreshQueueOnReconnect()
+    try {
+      await refreshQueueOnReconnect()
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'failure_refreshing_queue_after_reconnect',
+        level: 'warning'
+      })
+    }
   })
 }

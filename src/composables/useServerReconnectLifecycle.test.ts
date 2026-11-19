@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
@@ -6,10 +6,10 @@ import { useReconnectingNotification } from '@/composables/useReconnectingNotifi
 import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { api } from '@/scripts/api'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: new EventTarget() as unknown as typeof api
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 vi.mock(
   import('@/platform/customNodes/useReconnectNodeDefinitionRefresh'),
@@ -34,57 +34,66 @@ vi.mock(import('@/composables/useReconnectingNotification'), () => {
   }
 })
 
-function dispatch(type: 'reconnecting' | 'reconnected') {
-  ;(api as unknown as EventTarget).dispatchEvent(new CustomEvent(type))
-}
-
 function startLifecycle() {
   const scope = effectScope()
+  onTestFinished(() => scope.stop())
   scope.run(() => useServerReconnectLifecycle())
   return scope
 }
 
 describe('useServerReconnectLifecycle', () => {
   it('shows the reconnecting notification when the socket drops', () => {
-    const scope = startLifecycle()
+    startLifecycle()
 
-    dispatch('reconnecting')
+    api.dispatchCustomEvent('reconnecting')
 
     expect(useReconnectingNotification().onReconnecting).toHaveBeenCalledOnce()
     expect(useReconnectQueueRefresh()).not.toHaveBeenCalled()
     expect(useReconnectNodeDefinitionRefresh()).not.toHaveBeenCalled()
-    scope.stop()
   })
 
   it('runs every reconnect consumer once when the server comes back', () => {
-    const scope = startLifecycle()
+    startLifecycle()
 
-    dispatch('reconnected')
+    api.dispatchCustomEvent('reconnected')
 
     expect(useReconnectingNotification().onReconnected).toHaveBeenCalledOnce()
     expect(useReconnectQueueRefresh()).toHaveBeenCalledOnce()
     expect(useReconnectNodeDefinitionRefresh()).toHaveBeenCalledOnce()
-    scope.stop()
   })
 
   it('refreshes the queue even while the node definition refresh is still running', () => {
     vi.mocked(useReconnectNodeDefinitionRefresh()).mockReturnValueOnce(
       new Promise(() => {})
     )
-    const scope = startLifecycle()
+    startLifecycle()
 
-    dispatch('reconnected')
+    api.dispatchCustomEvent('reconnected')
 
     expect(useReconnectQueueRefresh()).toHaveBeenCalledOnce()
-    scope.stop()
+  })
+
+  it('reports a failed queue refresh', async () => {
+    const failure = new Error('queue refresh failed')
+    vi.mocked(useReconnectQueueRefresh()).mockRejectedValueOnce(failure)
+    startLifecycle()
+
+    api.dispatchCustomEvent('reconnected')
+    await vi.waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(
+        failure,
+        expect.objectContaining({
+          errorType: 'failure_refreshing_queue_after_reconnect'
+        })
+      )
+    )
   })
 
   it('stops listening when its scope is disposed', () => {
-    const scope = startLifecycle()
-    scope.stop()
+    startLifecycle().stop()
 
-    dispatch('reconnecting')
-    dispatch('reconnected')
+    api.dispatchCustomEvent('reconnecting')
+    api.dispatchCustomEvent('reconnected')
 
     expect(useReconnectingNotification().onReconnecting).not.toHaveBeenCalled()
     expect(useReconnectingNotification().onReconnected).not.toHaveBeenCalled()
