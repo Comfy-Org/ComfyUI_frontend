@@ -51,6 +51,14 @@ const ISOLATED_STORE_TESTS = [
   'src/testing/pinia.test.ts'
 ]
 
+// Reads ~700 template files off disk and runs them through the workflow
+// schema. There is no DOM in that, and leaving it in the happy-dom `frontend`
+// project made its shard about five times slower: one node-environment file
+// among happy-dom ones stops the environment being reused across files.
+const NODE_ENVIRONMENT_TESTS = [
+  'src/platform/workflow/validation/schemas/shippedTemplates.test.ts'
+]
+
 const CRITICAL_COVERAGE_DIRS = [
   'src/base',
   'src/composables',
@@ -985,7 +993,7 @@ export default defineConfig({
             './vitest.timer.setup.ts',
             './vitest.setup.ts'
           ],
-          exclude: ISOLATED_STORE_TESTS,
+          exclude: [...ISOLATED_STORE_TESTS, ...NODE_ENVIRONMENT_TESTS],
           include: [
             'src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             'packages/api-client/src/**/*.test.ts',
@@ -994,6 +1002,15 @@ export default defineConfig({
             'browser_tests/**/*.test.{js,mjs,cjs,ts,mts,cts,jsx,tsx}',
             ...FRONTEND_SCRIPT_TESTS
           ]
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'node-environment',
+          environment: 'node',
+          setupFiles: ['./vitest.console.setup.ts'],
+          include: NODE_ENVIRONMENT_TESTS
         }
       },
       {
