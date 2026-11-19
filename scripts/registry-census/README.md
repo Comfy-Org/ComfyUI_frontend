@@ -161,6 +161,14 @@ these hooks also gets 10 seconds to settle: a `setup` that awaits a `<script>`
 load never settles under happy-dom, which blocked the whole pack until the
 300 s test timeout.
 
+Those errors are too common for a floor, but the share of packs free of them
+(counting a hook that did not settle as a failure) is stable: exactly 292
+packs failed in every one of eight arm and renderer runs. The verdict gates
+it as a delta instead: it may not drop more than 0.5 points, about 13 packs,
+below the previous main baseline, so a frontend change that breaks `setup` or
+`init` for a group of packs fails the verdict. Baselines saved before this
+metric existed skip that delta.
+
 ### PASS criteria
 
 Applied independently by the legacy and Vue `matrix-verdict` jobs over each
@@ -177,6 +185,7 @@ harness/withheld):
 | rows complete (no hang or crash)          | >= 98%    | ~100%             |
 | every operation clean (`err` OR `desync`) | >= 99%    | 99.8%             |
 | entry-clean delta vs baseline             | >= -1.5pp | carried by cache  |
+| new-hook-free delta vs baseline           | >= -0.5pp | carried by cache  |
 
 All must hold. Each floor sits under the baseline so a handful of broken pack
 refs cannot flip the verdict, while a frontend regression that breaks pack
