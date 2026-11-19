@@ -75,6 +75,59 @@ describe('addWidget on a node that refuses the widget', () => {
   })
 })
 
+describe('addWidget teardown', () => {
+  function domWidget(node: LGraphNode) {
+    const widget = new DOMWidgetImpl({
+      node,
+      name: 'preview',
+      type: 'custom',
+      element: document.createElement('div'),
+      options: {}
+    })
+    addWidget(node, widget)
+    return widget
+  }
+
+  test('removes a widget once when its node is removed', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test-node')
+    graph.add(node)
+    const widget = domWidget(node)
+    const onRemove = vi.spyOn(widget, 'onRemove')
+
+    graph.remove(node)
+
+    expect(onRemove).toHaveBeenCalledOnce()
+  })
+
+  test('does not remove a widget again when its node is removed after the widget', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test-node')
+    graph.add(node)
+    const widget = domWidget(node)
+    const onRemove = vi.spyOn(widget, 'onRemove')
+
+    node.removeWidget(widget)
+    graph.remove(node)
+
+    expect(onRemove).toHaveBeenCalledOnce()
+  })
+
+  test('still removes a widget taken out of the widget list without removeWidget when its node is removed', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test-node')
+    graph.add(node)
+    const widget = domWidget(node)
+    const onRemove = vi.spyOn(widget, 'onRemove')
+
+    node.widgets?.splice(node.widgets.indexOf(widget), 1)
+    graph.remove(node)
+
+    expect(onRemove).toHaveBeenCalledOnce()
+    expect(useDomWidgetStore().widgetStates.has(widget.id)).toBe(false)
+  })
+})
+
 describe('DOM widget value accessors with a non-function getValue/setValue', () => {
   function domWidgetWithStaleAccessors() {
     const widget = new DOMWidgetImpl({

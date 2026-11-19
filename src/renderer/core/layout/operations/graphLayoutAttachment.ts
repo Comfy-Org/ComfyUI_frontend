@@ -22,30 +22,35 @@ import type { UUID } from '@/utils/uuid'
 type GraphLayoutOwner = Pick<
   LGraph,
   '_nodes' | '_groups' | '_subgraphs' | 'reroutes'
->
+> &
+  Partial<Record<'inputNode' | 'outputNode', LayoutNode>>
 type LayoutGraph = { rootGraph: { id: UUID } }
+type LayoutNode = Pick<LGraphNode, 'id'>
+type IoLayoutNode = LayoutNode & { subgraph: { id: UUID } }
 
 interface LayoutAttachment<TId> {
   graphId: UUID
   id: TId
 }
 
-type NodeLayoutAttachment = LayoutAttachment<LGraphNode['id']>
+interface NodeLayoutAttachment extends LayoutAttachment<LayoutNode['id']> {
+  measuredSizeOutlivesResize: boolean
+}
 
-const nodeAttachments = new WeakMap<LGraphNode, NodeLayoutAttachment>()
+const nodeAttachments = new WeakMap<LayoutNode, NodeLayoutAttachment>()
 const nodeAttachmentOwners = new Map<
   UUID,
-  Map<LGraphNode['id'], WeakRef<LGraphNode>>
+  Map<LayoutNode['id'], WeakRef<LayoutNode>>
 >()
 
 function nodeAttachmentOwner(
   graphId: UUID,
-  nodeId: LGraphNode['id']
-): LGraphNode | undefined {
+  nodeId: LayoutNode['id']
+): LayoutNode | undefined {
   return nodeAttachmentOwners.get(graphId)?.get(nodeId)?.deref()
 }
 
-function setNodeAttachmentOwner(graphId: UUID, node: LGraphNode): void {
+function setNodeAttachmentOwner(graphId: UUID, node: LayoutNode): void {
   let owners = nodeAttachmentOwners.get(graphId)
   if (!owners) {
     owners = new Map()
@@ -54,7 +59,7 @@ function setNodeAttachmentOwner(graphId: UUID, node: LGraphNode): void {
   owners.set(node.id, new WeakRef(node))
 }
 
-function deleteNodeAttachmentOwner(graphId: UUID, node: LGraphNode): boolean {
+function deleteNodeAttachmentOwner(graphId: UUID, node: LayoutNode): boolean {
   const owners = nodeAttachmentOwners.get(graphId)
   if (owners?.get(node.id)?.deref() !== node) return false
   owners.delete(node.id)
@@ -76,10 +81,10 @@ interface NodeGeometryProjection {
 }
 
 const nodeGeometryProjections = new WeakMap<
-  LGraphNode,
+  LayoutNode,
   NodeGeometryProjection
 >()
-function nodeGeometryProjection(node: LGraphNode): NodeGeometryProjection {
+function nodeGeometryProjection(node: LayoutNode): NodeGeometryProjection {
   const existing = nodeGeometryProjections.get(node)
   if (existing) return existing
 
@@ -109,31 +114,31 @@ function nodeGeometryProjection(node: LGraphNode): NodeGeometryProjection {
   return projection
 }
 
-export function nodeGeometryBuffer(node: LGraphNode): Rectangle {
+export function nodeGeometryBuffer(node: LayoutNode): Rectangle {
   return nodeGeometryProjection(node).buffer
 }
 
-export function nodePositionBuffer(node: LGraphNode): LegacyPoint {
+export function nodePositionBuffer(node: LayoutNode): LegacyPoint {
   return nodeGeometryProjection(node).position
 }
 
-export function nodeSizeBuffer(node: LGraphNode): LegacySize {
+export function nodeSizeBuffer(node: LayoutNode): LegacySize {
   return nodeGeometryProjection(node).size
 }
 
-export function nodePositionView(node: LGraphNode): LegacyPoint {
+export function nodePositionView(node: LayoutNode): LegacyPoint {
   const projection = nodeGeometryProjection(node)
   void projection.layoutRef?.value
   return projection.positionView
 }
 
-export function nodeSizeView(node: LGraphNode): LegacySize {
+export function nodeSizeView(node: LayoutNode): LegacySize {
   const projection = nodeGeometryProjection(node)
   void projection.layoutRef?.value
   return projection.sizeView
 }
 
-export function refreshNodeGeometry(node: LGraphNode): LegacySize {
+export function refreshNodeGeometry(node: LayoutNode): LegacySize {
   const projection = nodeGeometryProjection(node)
   const attachment = nodeAttachments.get(node)
   let geometryChanged = false
@@ -172,14 +177,14 @@ export function refreshNodeGeometry(node: LGraphNode): LegacySize {
   return projection.renderedSize
 }
 
-export function setNodePosition(node: LGraphNode, value: LegacyPoint): void {
+export function setNodePosition(node: LayoutNode, value: LegacyPoint): void {
   const position = nodeGeometryProjection(node).position
   position[0] = value[0]
   position[1] = value[1]
   commitNodePosition(node)
 }
 
-function commitNodePosition(node: LGraphNode): void {
+function commitNodePosition(node: LayoutNode): void {
   const attachment = nodeAttachments.get(node)
   if (node.id === UNASSIGNED_NODE_ID || !attachment) return
   const projection = nodeGeometryProjection(node)
@@ -200,7 +205,7 @@ function commitNodePosition(node: LGraphNode): void {
   refreshNodeGeometry(node)
 }
 
-export function setNodeSize(node: LGraphNode, value: LegacySize): void {
+export function setNodeSize(node: LayoutNode, value: LegacySize): void {
   const projection = nodeGeometryProjection(node)
   const size = projection.size
   size[0] = value[0]
@@ -208,12 +213,8 @@ export function setNodeSize(node: LGraphNode, value: LegacySize): void {
   commitNodeSize(node)
 }
 
-function commitNodeSize(node: LGraphNode): void {
+function commitNodeSize(node: LayoutNode): void {
   const projection = nodeGeometryProjection(node)
-  // Both whole-array assignments and indexed writes through the stable
-  // mutation view converge here. Detached nodes do not receive a layout-store
-  // geometry revision, so invalidate their derived rendering size before the
-  // attachment guard as well.
   projection.renderedSizeDirty = true
   const attachment = nodeAttachments.get(node)
   if (node.id === UNASSIGNED_NODE_ID || !attachment) return
@@ -228,13 +229,11 @@ function commitNodeSize(node: LGraphNode): void {
   )
     return
 
-  // A direct resize is authoritative over the previous DOM measurement. Drop
-  // that measurement before deriving the rendered size so the node can shrink;
-  // ResizeObserver reports the content's new size after layout settles.
-  ;(layoutStore as Partial<typeof layoutStore>).clearContentSize?.(
-    attachment.graphId,
-    attachment.id
-  )
+  if (!attachment.measuredSizeOutlivesResize)
+    (layoutStore as Partial<typeof layoutStore>).clearContentSize?.(
+      attachment.graphId,
+      attachment.id
+    )
   resizeNodeLayout(node, {
     width: projection.size[0],
     height: projection.size[1]
@@ -261,16 +260,29 @@ function canvasOperationMeta() {
 
 /** A newly attached node stacks above those already attached. */
 export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
+  attachNodeLayoutIn(graph.rootGraph.id, node, false)
+}
+
+/** Keys a subgraph IO pseudo-node's layout by its definition. */
+export function attachIoNodeLayout(ioNode: IoLayoutNode): void {
+  attachNodeLayoutIn(ioNode.subgraph.id, ioNode, true)
+}
+
+function attachNodeLayoutIn(
+  graphId: UUID,
+  node: LayoutNode,
+  measuredSizeOutlivesResize: boolean
+): void {
   if (nodeAttachments.has(node)) detachNodeLayout(node)
 
-  const graphId = graph.rootGraph.id
   if (layoutStore.getNodeLayout(graphId, node.id)) {
-    adoptNodeAttachment(graphId, node)
+    adoptNodeAttachment(graphId, node, measuredSizeOutlivesResize)
     return
   }
 
-  const position = { x: node._pos[0], y: node._pos[1] }
-  const size = { width: node._size[0], height: node._size[1] }
+  const [x, y, width, height] = nodeGeometryBuffer(node)
+  const position = { x, y }
+  const size = { width, height }
   layoutStore.applyOperation({
     ...canvasOperationMeta(),
     graphId,
@@ -285,17 +297,25 @@ export function attachNodeLayout(graph: LayoutGraph, node: LGraphNode): void {
     nodeId: node.id,
     type: 'createNode'
   })
-  adoptNodeAttachment(graphId, node)
+  adoptNodeAttachment(graphId, node, measuredSizeOutlivesResize)
 }
 
-function adoptNodeAttachment(graphId: UUID, node: LGraphNode): void {
+function adoptNodeAttachment(
+  graphId: UUID,
+  node: LayoutNode,
+  measuredSizeOutlivesResize: boolean
+): void {
   const projection = nodeGeometryProjection(node)
   const geometrySynchronized = layoutStore.readNodeRect(
     graphId,
     node.id,
     projection.buffer
   )
-  nodeAttachments.set(node, { graphId, id: node.id })
+  nodeAttachments.set(node, {
+    graphId,
+    id: node.id,
+    measuredSizeOutlivesResize
+  })
   setNodeAttachmentOwner(graphId, node)
   projection.layoutRef = layoutStore.getNodeLayoutRef(graphId, node.id)
   if (geometrySynchronized) {
@@ -355,8 +375,8 @@ export function transferLayoutAttachment(
 }
 
 function takeNodeLayoutAttachment(
-  node: LGraphNode
-): NodeLayoutAttachment | undefined {
+  node: LayoutNode
+): LayoutAttachment<LayoutNode['id']> | undefined {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
   const { graphId, id: nodeId } = attachment
@@ -370,7 +390,7 @@ function takeNodeLayoutAttachment(
     : undefined
 }
 
-export function detachNodeLayout(node: LGraphNode): void {
+export function detachNodeLayout(node: LayoutNode): void {
   const attachment = takeNodeLayoutAttachment(node)
   if (!attachment) return
   layoutStore.applyOperation({
@@ -453,7 +473,7 @@ export function detachRerouteLayout(reroute: Reroute): void {
   })
 }
 
-function moveNodeLayout(node: LGraphNode, position: Point): void {
+function moveNodeLayout(node: LayoutNode, position: Point): void {
   const attachment = nodeAttachments.get(node)
   if (!attachment) return
   layoutStore.applyOperation({
@@ -466,7 +486,7 @@ function moveNodeLayout(node: LGraphNode, position: Point): void {
 }
 
 export function resizeNodeLayout(
-  node: LGraphNode,
+  node: LayoutNode,
   size: Size,
   {
     position,
@@ -527,6 +547,93 @@ export function moveRerouteLayout(reroute: Reroute, position: Point): void {
   })
 }
 
+type OperationMeta = ReturnType<typeof canvasOperationMeta>
+
+function detachIoNodeAttachments(
+  owner: GraphLayoutOwner,
+  meta: OperationMeta
+): LayoutOperation[] {
+  return [owner.inputNode, owner.outputNode].flatMap(
+    (ioNode): LayoutOperation[] => {
+      const attachment = ioNode && takeNodeLayoutAttachment(ioNode)
+      if (!attachment) return []
+      return [
+        {
+          ...meta,
+          graphId: attachment.graphId,
+          nodeId: attachment.id,
+          type: 'deleteNode'
+        }
+      ]
+    }
+  )
+}
+
+function detachNodeAttachments(
+  owner: GraphLayoutOwner,
+  meta: OperationMeta
+): LayoutOperation[] {
+  return owner._nodes.flatMap((node): LayoutOperation[] => {
+    const attachment = nodeAttachments.get(node)
+    if (!attachment) return []
+    layoutStore.readNodeRect(
+      attachment.graphId,
+      attachment.id,
+      nodeGeometryProjection(node).buffer
+    )
+    nodeAttachments.delete(node)
+    if (!deleteNodeAttachmentOwner(attachment.graphId, node)) return []
+    return [
+      {
+        ...meta,
+        graphId: attachment.graphId,
+        nodeId: attachment.id,
+        type: 'deleteNode'
+      }
+    ]
+  })
+}
+
+function detachGroupAttachments(
+  owner: GraphLayoutOwner,
+  meta: OperationMeta
+): LayoutOperation[] {
+  return owner._groups.flatMap((group): LayoutOperation[] => {
+    const attachment = groupAttachments.get(group)
+    if (!attachment) return []
+    group.syncBoundsFromStore()
+    groupAttachments.delete(group)
+    return [
+      {
+        ...meta,
+        graphId: attachment.graphId,
+        groupId: attachment.id,
+        type: 'deleteGroup'
+      }
+    ]
+  })
+}
+
+function detachRerouteAttachments(
+  owner: GraphLayoutOwner,
+  meta: OperationMeta
+): LayoutOperation[] {
+  return [...owner.reroutes.values()].flatMap((reroute): LayoutOperation[] => {
+    const attachment = rerouteAttachments.get(reroute)
+    if (!attachment) return []
+    reroute.syncPosition()
+    rerouteAttachments.delete(reroute)
+    return [
+      {
+        ...meta,
+        graphId: attachment.graphId,
+        rerouteId: attachment.id,
+        type: 'deleteReroute'
+      }
+    ]
+  })
+}
+
 /**
  * Invalidates every attachment a graph owns, including those inside its
  * subgraph definitions. Layout entries are removed in one store transaction
@@ -534,65 +641,25 @@ export function moveRerouteLayout(reroute: Reroute, position: Point): void {
  */
 export function detachGraphLayouts(
   graphs: readonly GraphLayoutOwner[],
-  { removeLayouts = true }: { removeLayouts?: boolean } = {}
+  { removeRootKeyedLayouts = true }: { removeRootKeyedLayouts?: boolean } = {}
 ): void {
-  const meta = removeLayouts ? canvasOperationMeta() : undefined
+  const meta = canvasOperationMeta()
   const operations: LayoutOperation[] = []
   const visited = new Set<GraphLayoutOwner>()
 
   function collect(owner: GraphLayoutOwner): void {
     if (visited.has(owner)) return
     visited.add(owner)
-    for (const node of owner._nodes) {
-      const attachment = nodeAttachments.get(node)
-      if (!attachment) continue
-      layoutStore.readNodeRect(
-        attachment.graphId,
-        attachment.id,
-        nodeGeometryProjection(node).buffer
-      )
-      nodeAttachments.delete(node)
-      const owned = deleteNodeAttachmentOwner(attachment.graphId, node)
-      if (meta && owned) {
-        operations.push({
-          ...meta,
-          graphId: attachment.graphId,
-          nodeId: attachment.id,
-          type: 'deleteNode'
-        })
-      }
-    }
-    for (const group of owner._groups) {
-      const attachment = groupAttachments.get(group)
-      if (!attachment) continue
-      group.syncBoundsFromStore()
-      groupAttachments.delete(group)
-      if (meta) {
-        operations.push({
-          ...meta,
-          graphId: attachment.graphId,
-          groupId: attachment.id,
-          type: 'deleteGroup'
-        })
-      }
-    }
-    for (const reroute of owner.reroutes.values()) {
-      const attachment = rerouteAttachments.get(reroute)
-      if (!attachment) continue
-      reroute.syncPosition()
-      rerouteAttachments.delete(reroute)
-      if (meta) {
-        operations.push({
-          ...meta,
-          graphId: attachment.graphId,
-          rerouteId: attachment.id,
-          type: 'deleteReroute'
-        })
-      }
-    }
+    operations.push(...detachIoNodeAttachments(owner, meta))
+    const rootKeyed = [
+      ...detachNodeAttachments(owner, meta),
+      ...detachGroupAttachments(owner, meta),
+      ...detachRerouteAttachments(owner, meta)
+    ]
+    if (removeRootKeyedLayouts) operations.push(...rootKeyed)
     for (const subgraph of owner._subgraphs.values()) collect(subgraph)
   }
 
   for (const graph of graphs) collect(graph)
-  if (removeLayouts) layoutStore.applyOperations(operations)
+  layoutStore.applyOperations(operations)
 }
