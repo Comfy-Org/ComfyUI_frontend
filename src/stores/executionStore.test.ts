@@ -2345,19 +2345,22 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         })
       })
 
-      it.each([
-        ['the request fails', () => Promise.reject(new Error('offline'))],
-        [
-          'the server answers with an error',
-          () => Promise.resolve(new Response('busy', { status: 503 }))
-        ],
-        [
-          'the body is not JSON',
-          () => Promise.resolve(new Response('<html>', { status: 200 }))
-        ]
+      it.for([
+        {
+          label: 'the request fails',
+          answer: () => Promise.reject(new Error('offline'))
+        },
+        {
+          label: 'the server answers with an error',
+          answer: () => Promise.resolve(new Response('busy', { status: 503 }))
+        },
+        {
+          label: 'the body is not JSON',
+          answer: () => Promise.resolve(new Response('<html>', { status: 200 }))
+        }
       ])(
-        'reports once and leaves the job as it was when %s',
-        async (_case, answer) => {
+        'reports once and leaves the job as it was when $label',
+        async ({ answer }) => {
           vi.mocked(api.fetchApi).mockImplementation(answer)
 
           fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
