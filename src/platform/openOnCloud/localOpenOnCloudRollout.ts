@@ -3,7 +3,7 @@ import { z } from 'zod'
 
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 import { reportError } from '@/platform/telemetry/reportError'
-import { combineAbortSignals } from '@/utils/abortSignal'
+import { combineAbortSignals, createTimeoutSignal } from '@/utils/abortSignal'
 
 const zOpenOnCloudRollout = z.object({
   open_on_cloud_enabled: z.boolean(),
@@ -40,7 +40,7 @@ async function readRollout(
       credentials: 'omit',
       headers: { Authorization: `Bearer ${token}` },
       redirect: 'error',
-      signal: combineAbortSignals([signal, AbortSignal.timeout(5_000)])
+      signal: combineAbortSignals([signal, createTimeoutSignal(5_000)])
     })
     if (!response.ok) {
       reportRolloutReadFailure(

@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@/utils/abortSignal'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -231,9 +232,9 @@ export function useTemplateWorkflows() {
         await useAssetsStore().inputAssets.invalidate()
         await app.reloadNodeDefs()
       }
-      signal.throwIfAborted()
+      throwIfAborted(signal)
     } catch (error) {
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       errors.push(error)
     } finally {
       toast.dismiss(progressToastId)
@@ -260,7 +261,7 @@ export function useTemplateWorkflows() {
     signal: AbortSignal
   ) {
     const fetched = await fetchTemplateJson(id, sourceModule, signal)
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     if (!fetched) return null
     const { json } = fetched
 
@@ -322,7 +323,7 @@ export function useTemplateWorkflows() {
       return null
     }
     const data = await loadTemplateData(id, source, signal)
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     if (!data) {
       showTemplateError(t('templateWorkflows.error.loading'))
       return null

@@ -1,3 +1,4 @@
+import { createTimeoutSignal } from '@/utils/abortSignal'
 import { useMemoize } from '@vueuse/core'
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
@@ -1119,7 +1120,7 @@ export const useAuthStore = defineStore('auth', () => {
       buildApiUrl('/customers/billing'),
       {
         method: 'POST',
-        signal: AbortSignal.timeout(BILLING_PORTAL_REQUEST_TIMEOUT_MS),
+        signal: createTimeoutSignal(BILLING_PORTAL_REQUEST_TIMEOUT_MS),
         headers: {
           ...authHeader,
           'Content-Type': 'application/json'
