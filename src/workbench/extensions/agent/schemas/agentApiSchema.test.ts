@@ -230,7 +230,7 @@ describe('agentApiSchema contract subtleties', () => {
     }
   )
 
-  it('clamps an over-long download without splitting a code point', () => {
+  it('drops a download longer than the contract allows', () => {
     const parsed = zAgentWsEvent.parse({
       type: 'agent_tool_call',
       data: {
@@ -244,7 +244,7 @@ describe('agentApiSchema contract subtleties', () => {
     })
 
     assert(parsed.type === 'agent_tool_call')
-    expect(parsed.data.download).toBe(`${'a'.repeat(254)}😀`)
+    expect(parsed.data.download).toBeUndefined()
   })
 
   it('clamps an over-long skill instead of dropping the tool-call frame', () => {

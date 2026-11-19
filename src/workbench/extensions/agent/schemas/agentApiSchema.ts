@@ -110,14 +110,8 @@ const zSkillName = z
   .transform((skill) => Array.from(skill).slice(0, SKILL_NAME_MAX).join(''))
   .nullish()
 
-const DOWNLOAD_NAME_MAX = 255
-
-const zDownloadName = z
-  .string()
-  .min(1)
-  .refine((name) => !/\p{Cc}/u.test(name))
-  .transform((name) => Array.from(name).slice(0, DOWNLOAD_NAME_MAX).join(''))
-  .optional()
+const zDownloadName = zGeneratedAgentToolCallData.shape.download
+  .refine((name) => name === undefined || !/\p{Cc}/u.test(name))
   .catch(undefined)
 
 /**
