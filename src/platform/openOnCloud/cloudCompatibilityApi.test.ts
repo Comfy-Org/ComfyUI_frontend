@@ -72,7 +72,7 @@ describe(checkCloudCompatibility, () => {
     stubFirebaseAuthHarness()
     rootGraph = createTestRootGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
-    vi.spyOn(useAuthStore(), 'getAuthHeader').mockResolvedValue(null)
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockResolvedValue(null)
   })
 
   it('opens a workflow when Cloud omits the optional missing models', async () => {
@@ -100,7 +100,7 @@ describe(checkCloudCompatibility, () => {
       node('CheckpointLoaderSimple', { ckpt_name: 'sdxl.safetensors' }),
       node('KSampler')
     )
-    vi.mocked(useAuthStore().getAuthHeader).mockResolvedValue({
+    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
       Authorization: 'Bearer token'
     })
     cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))

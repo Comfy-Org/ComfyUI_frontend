@@ -1,3 +1,4 @@
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -208,7 +209,7 @@ async function postCompatibilityCheck(
   const models = await collectModels(nodes)
   if (!models) return null
   const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
-  const auth = await useAuthStore().getAuthHeader()
+  const auth = await useAuthStore().getWorkspaceAuthHeader()
   return fetch(new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...auth },
@@ -216,7 +217,7 @@ async function postCompatibilityCheck(
       node_types: nodeTypes,
       models
     }),
-    signal: AbortSignal.timeout(10_000)
+    signal: createTimeoutSignal(10_000)
   })
 }
 

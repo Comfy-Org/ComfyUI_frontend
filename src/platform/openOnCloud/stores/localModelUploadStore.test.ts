@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import * as localModelUploadApi from '@/platform/openOnCloud/localModelUploadApi'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
@@ -215,7 +217,8 @@ describe('useLocalModelUploadStore', () => {
     expect(store.pickOf(lora).status).toBe('stored')
     store.reset(models)
     await store.prepare(models)
-    store.choose(ckpt, ckptFile)
+    expect(store.upload).toMatchObject({ phase: 'failed' })
+    expect(store.pickOf(ckpt).status).toBe('chosen')
     await store.start(models)
 
     expect(upload.mock.calls.map(([file]) => file)).toEqual([
@@ -296,6 +299,23 @@ describe('useLocalModelUploadStore', () => {
     expect(store.pickOf(lora).status).toBe('unchosen')
     expect(store.pickOf(ckpt).status).toBe('unchosen')
     expect(check).not.toHaveBeenCalled()
+  })
+
+  it('reports an account change after the user already clicked cancel', async () => {
+    let finish: (result: ModelFileUploadResult) => void = () => {}
+    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockImplementation(
+      () => new Promise((resolve) => (finish = resolve))
+    )
+    const store = await prepared()
+    store.choose(lora, loraFile)
+    const started = store.start([lora])
+
+    store.cancel()
+    setWorkspace('ws-2')
+    finish({ ok: false, reason: 'cancelled' })
+    await started
+
+    expect(store.upload).toEqual({ phase: 'failed', reason: 'accountChanged' })
   })
 
   it('reports progress across the whole upload', async () => {
@@ -384,5 +404,30 @@ describe('useLocalModelUploadStore', () => {
     expect(store.upload).toMatchObject({ phase: 'failed', ...expected })
     expect(store.isUploading).toBe(false)
     expect(check).not.toHaveBeenCalled()
+  })
+})
+
+it('rechecks when the workspace changes and ignores the old workspace result', async () => {
+  setWorkspace('ws-1')
+  const store = useCloudWorkflowCheckStore()
+  let finish: (result: CloudWorkflowCheckResult) => void = () => {}
+  vi.mocked(checkCloudCompatibility)
+    .mockImplementationOnce(() => new Promise((resolve) => (finish = resolve)))
+    .mockResolvedValueOnce({ kind: 'canOpen' })
+
+  const first = store.check()
+  setWorkspace('ws-2')
+  await vi.waitFor(() =>
+    expect(store.state).toEqual({
+      phase: 'answered',
+      verdict: { kind: 'canOpen' }
+    })
+  )
+  finish({ kind: 'missing', gaps: { nodePacks: [], models: [lora] } })
+  await first
+
+  expect(store.state).toEqual({
+    phase: 'answered',
+    verdict: { kind: 'canOpen' }
   })
 })

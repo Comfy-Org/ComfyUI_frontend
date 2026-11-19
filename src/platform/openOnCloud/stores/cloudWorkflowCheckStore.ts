@@ -5,6 +5,7 @@ import { shallowRef, watch } from 'vue'
 import { api } from '@/scripts/api'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type {
   CloudWorkflowCheckEvent,
@@ -15,7 +16,8 @@ import { reduceCloudWorkflowCheck } from '@/platform/openOnCloud/cloudWorkflowCh
 export const useCloudWorkflowCheckStore = defineStore(
   'cloudWorkflowCheck',
   () => {
-    const { isLoggedIn } = useCurrentUser()
+    const { isLoggedIn, resolvedUserInfo } = useCurrentUser()
+    const workspaces = useTeamWorkspaceStore()
     const state = shallowRef<CloudWorkflowCheckState>({ phase: 'idle' })
     let lastRun = 0
 
@@ -44,9 +46,17 @@ export const useCloudWorkflowCheckStore = defineStore(
     useEventListener(api, 'graphChanged', invalidate)
     watch(() => workflowStore.activeWorkflow, invalidate, { flush: 'sync' })
 
-    watch(isLoggedIn, () => {
-      if (state.value.phase !== 'idle') void check()
-    })
+    watch(
+      [
+        isLoggedIn,
+        () => resolvedUserInfo.value?.id,
+        () => workspaces.activeWorkspaceId
+      ],
+      () => {
+        if (state.value.phase !== 'idle') void check()
+      },
+      { flush: 'sync' }
+    )
 
     return { state, check }
   }

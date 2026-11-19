@@ -75,7 +75,9 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   const sizes = shallowRef(new Map<string, number>())
   const picks = shallowRef(new Map<string, ModelPick>())
   const upload = shallowRef<LocalModelUpload>({ phase: 'idle' })
-  let batch: { controller: AbortController; owner: string } | undefined
+  let batch:
+    | { controller: AbortController; owner: string; ownerChanged: boolean }
+    | undefined
   let preparation = 0
   let modelSnapshot: MissingModel[] | undefined
 
@@ -89,7 +91,10 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   watch(
     owner,
     () => {
-      batch?.controller.abort('accountChanged')
+      if (batch) {
+        batch.ownerChanged = true
+        batch.controller.abort()
+      }
       picks.value = new Map()
       clearPreparation()
     },
@@ -236,11 +241,15 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       const pick = pickOf(model)
       return pick.status === 'chosen' ? [{ model, file: pick.file }] : []
     })
-    const current = { controller: new AbortController(), owner: owner.value }
+    const current = {
+      controller: new AbortController(),
+      owner: owner.value,
+      ownerChanged: false
+    }
     batch = current
     try {
       const stop = await sendAll(queue, current)
-      if (current.controller.signal.reason === 'accountChanged') {
+      if (current.ownerChanged) {
         upload.value = { phase: 'failed', reason: 'accountChanged' }
         return
       }
@@ -254,10 +263,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       })
       upload.value = {
         phase: 'failed',
-        reason:
-          current.controller.signal.reason === 'accountChanged'
-            ? 'accountChanged'
-            : 'failed'
+        reason: current.ownerChanged ? 'accountChanged' : 'failed'
       }
     } finally {
       if (batch === current) batch = undefined
@@ -271,6 +277,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   function reset(models: MissingModel[]): void {
     if (isUploading.value) return
     clearPreparation()
+    if (modelSnapshot === models && upload.value.phase === 'failed') return
     upload.value = { phase: 'idle' }
     picks.value =
       modelSnapshot === models
