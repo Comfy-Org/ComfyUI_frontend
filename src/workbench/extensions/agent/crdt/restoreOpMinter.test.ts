@@ -258,6 +258,19 @@ describe('attachRestoreOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('leaves the document alone when the panel rebinds to another workflow during the restore', () => {
+    notifyRestoreMintersBeforeGraphConfigure({ graph, workflow })
+    graph.remove(sink)
+    boundWorkflow = fromPartial<ComfyWorkflow>({ path: 'workflows/next.json' })
+    notifyRestoreMintersAfterGraphConfigure({ graph, workflow })
+    minter.deliverHeld()
+
+    expect({ minted, unsyncedRestores }).toEqual({
+      minted: [],
+      unsyncedRestores: 0
+    })
+  })
+
   it('leaves the document alone when the restore targets another workflow', () => {
     workflow = fromPartial<ComfyWorkflow>({ path: 'workflows/other.json' })
 

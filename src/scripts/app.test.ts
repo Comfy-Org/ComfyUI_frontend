@@ -649,7 +649,7 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('keeps the graph awaiting node types when post-configure node resizing fails', async () => {
+    it('keeps the graph contents and awaiting node types when post-configure node resizing fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const workflow = markLoaded(
         new ComfyWorkflow({
@@ -659,6 +659,7 @@ describe('ComfyApp', () => {
         })
       )
       const graph = new LGraph()
+      graph.add(new LGraphNode('existing'))
       workflow.adoptGraph(graph)
       useWorkflowStore().attachWorkflow(workflow)
       Reflect.set(app, 'rootGraphInternal', graph)
@@ -693,6 +694,7 @@ describe('ComfyApp', () => {
         app.loadGraphData(data, true, false, workflow)
       ).rejects.toThrow('node resize failed')
 
+      expect(graph.nodes.map((node) => node.title)).toEqual(['existing'])
       expect(graphsAwaitingNodeTypes.has(graph)).toBe(true)
     })
 
@@ -1230,6 +1232,156 @@ describe('ComfyApp', () => {
       )
     })
 
+    describe('a load that resolves its graph when it reaches the front of the queue', () => {
+      function holdFirstLoad() {
+        let release = () => {}
+        const held = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        let calls = 0
+        vi.mocked(
+          mockExtensionService.invokeExtensionsAsync
+        ).mockImplementation(async (hook: string) => {
+          if (hook === 'beforeLoadGraph' && calls++ === 0) await held
+        })
+        const first = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { skipAssetScans: true }
+        )
+        return { first, release: () => release() }
+      }
+
+      beforeEach(() => {
+        app.canvasElRef.value = document.createElement('canvas')
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+      })
+
+      it('loads the graph produced at its turn, not the one it was queued with', async () => {
+        const { first, release } = holdFirstLoad()
+        let current = { ...createWorkflowGraphData(), extra: { at: 'queued' } }
+        const reload = app.loadGraphData(current, false, true, null, {
+          skipAssetScans: true,
+          resolveGraphData: () => current
+        })
+        current = { ...createWorkflowGraphData(), extra: { at: 'its turn' } }
+
+        release()
+        await first
+        await reload
+
+        expect(app.rootGraph.extra.at).toBe('its turn')
+      })
+
+      it('loads an edit made while its own beforeLoadGraph hooks ran', async () => {
+        let release = () => {}
+        const hookHeld = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        vi.mocked(
+          mockExtensionService.invokeExtensionsAsync
+        ).mockImplementation(async (hook: string) => {
+          if (hook === 'beforeLoadGraph') await hookHeld
+        })
+        let current = { ...createWorkflowGraphData(), extra: { at: 'queued' } }
+        const reload = app.loadGraphData(undefined, false, true, null, {
+          skipAssetScans: true,
+          isReady: () => true,
+          resolveGraphData: () => current
+        })
+        await vi.waitFor(() =>
+          expect(
+            mockExtensionService.invokeExtensionsAsync
+          ).toHaveBeenCalledWith('beforeLoadGraph')
+        )
+        current = {
+          ...createWorkflowGraphData(),
+          extra: { at: 'during hooks' }
+        }
+        release()
+        await reload
+
+        expect(app.rootGraph.extra.at).toBe('during hooks')
+      })
+
+      it('resolves its graph after the beforeLoadGraph hooks, and skips if no longer ready', async () => {
+        let release = () => {}
+        const hookHeld = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        vi.mocked(
+          mockExtensionService.invokeExtensionsAsync
+        ).mockImplementation(async (hook: string) => {
+          if (hook === 'beforeLoadGraph') await hookHeld
+        })
+        let ready = true
+        const resolveGraphData = vi.fn(() => createWorkflowGraphData())
+        const reload = app.loadGraphData(undefined, false, true, null, {
+          skipAssetScans: true,
+          isReady: () => ready,
+          resolveGraphData
+        })
+        await vi.waitFor(() =>
+          expect(
+            mockExtensionService.invokeExtensionsAsync
+          ).toHaveBeenCalledWith('beforeLoadGraph')
+        )
+        ready = false
+        release()
+
+        await expect(reload).resolves.toBe(false)
+        expect(resolveGraphData).not.toHaveBeenCalled()
+        expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'onGraphLoadError',
+          expect.objectContaining({ name: 'AbortError' })
+        )
+      })
+
+      it('skips without touching the canvas when it is not ready at its turn', async () => {
+        const { first, release } = holdFirstLoad()
+        let ready = true
+        const reload = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { skipAssetScans: true, isReady: () => ready }
+        )
+        ready = false
+
+        release()
+        await first
+
+        await expect(reload).resolves.toBe(false)
+        expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+        expect(
+          vi
+            .mocked(mockExtensionService.invokeExtensionsAsync)
+            .mock.calls.filter(([hook]) => hook === 'beforeLoadGraph')
+        ).toHaveLength(1)
+      })
+
+      it('skips instead of loading the default workflow when the resolver has nothing to load', async () => {
+        const { first, release } = holdFirstLoad()
+        const reload = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { skipAssetScans: true, resolveGraphData: () => undefined }
+        )
+
+        release()
+        await first
+
+        await expect(reload).resolves.toBe(false)
+        expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      })
+    })
+
     it('leaves the canvas untouched for a load that stopped being current while it waited its turn', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -1277,6 +1429,33 @@ describe('ComfyApp', () => {
         'afterConfigureGraph',
         expect.anything(),
         expect.anything()
+      )
+    })
+
+    it('resolves false and notifies onGraphLoadError when resolving the graph throws', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(
+        app.loadGraphData(undefined, false, true, null, {
+          workflowNavigationId: 22,
+          resolveGraphData: () => {
+            throw new Error('snapshot serializer blew up')
+          }
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'snapshot serializer blew up' })
+      )
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(isGraphLoading(app.rootGraph)).toBe(false)
+      expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        22
       )
     })
 

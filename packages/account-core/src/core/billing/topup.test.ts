@@ -604,10 +604,19 @@ describe('createInteractiveTopup', () => {
       name: 'only the saved card the customer chose',
       payment: { savedPaymentMethodId: 'pm_chosen' },
       sent: { saved_payment_method_id: 'pm_chosen' }
+    },
+    {
+      name: 'a saved card and the auto top-up it turns on',
+      payment: { savedPaymentMethodId: 'pm_chosen' },
+      autoTopUp: { threshold_credits: 1000, target_credits: 5000 },
+      sent: {
+        saved_payment_method_id: 'pm_chosen',
+        auto_top_up: { threshold_credits: 1000, target_credits: 5000 }
+      }
     }
   ])(
     'pays once with $name under the caller key, never asking to save or default',
-    async ({ payment, sent }) => {
+    async ({ payment, sent, autoTopUp }) => {
       const { command, calls, routes } = harness()
 
       await expect(
@@ -615,7 +624,8 @@ describe('createInteractiveTopup', () => {
           command.createInteractiveTopup({
             amountCents: 1000,
             payment,
-            idempotencyKey: 'attempt-key'
+            idempotencyKey: 'attempt-key',
+            ...(autoTopUp === undefined ? {} : { autoTopUp })
           })
         )
       ).resolves.toMatchObject({ status: 'ok', creditsReconciled: true })

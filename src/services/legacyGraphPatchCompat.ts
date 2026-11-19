@@ -2,20 +2,20 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 
-const bridgedMembers = [
+const graphPatchMembers = [
+  'add',
+  'remove',
+  'configure',
+  'serialize',
   'onNodeAdded',
   'onNodeRemoved',
   'beforeChange',
   'afterChange',
   'convertToSubgraph',
-  'clear',
-  'add',
-  'remove',
-  'configure',
-  'serialize'
-] as const
+  'clear'
+] as const satisfies readonly (keyof LGraph)[]
 
-type GraphPatchMember = (typeof bridgedMembers)[number]
+type GraphPatchMember = (typeof graphPatchMembers)[number]
 
 type GraphPatchHost = Pick<ComfyApp, 'rootGraphOrUndefined'>
 
@@ -27,26 +27,32 @@ interface GraphPatch {
 
 const capturedHooks = new Set(['init', 'setup'])
 
-const dispatchingGraphs: LGraph[] = []
-
 const bridges = new WeakMap<
   GraphPatchHost,
   { patches: GraphPatch[]; reported: Set<string> }
 >()
 
+const dispatchingGraphs: LGraph[] = []
+
+function dispatch(graph: LGraph, handler: unknown, args: unknown[]) {
+  if (typeof handler !== 'function') return
+  dispatchingGraphs.push(graph)
+  try {
+    return Reflect.apply(handler, graph, args)
+  } finally {
+    dispatchingGraphs.pop()
+  }
+}
+
 function installPatch(host: GraphPatchHost, graph: LGraph, patch: GraphPatch) {
   Reflect.set(graph, patch.member, function (this: LGraph, ...args: unknown[]) {
-    const handler =
+    return dispatch(
+      this,
       this === host.rootGraphOrUndefined
         ? patch.handler
-        : patch.previousByGraph.get(this)
-    if (typeof handler !== 'function') return
-    dispatchingGraphs.push(this)
-    try {
-      return Reflect.apply(handler, this, args)
-    } finally {
-      dispatchingGraphs.pop()
-    }
+        : patch.previousByGraph.get(this),
+      args
+    )
   })
 }
 
@@ -68,7 +74,7 @@ export function captureLegacyGraphPatches<T>(
   )
     return run()
 
-  const candidates = bridgedMembers.map((member) => {
+  const candidates = graphPatchMembers.map((member) => {
     const descriptor = Object.getOwnPropertyDescriptor(graph, member)
     const original = graph[member]
     const previousByGraph = new WeakMap([[graph, original]])
@@ -81,8 +87,7 @@ export function captureLegacyGraphPatches<T>(
       const previous = previousByGraph.has(target)
         ? previousByGraph.get(target)
         : original
-      if (typeof previous === 'function')
-        return Reflect.apply(previous, target, args)
+      return dispatch(target, previous, args)
     }
     Reflect.set(graph, member, callPrevious)
     return { member, descriptor, previousByGraph, callPrevious }

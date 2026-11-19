@@ -287,7 +287,7 @@ export function useFullPageCheckout() {
       ...namedSignup.recoverOptions(entry.value)
     })
     if (mine !== generation) return
-    dispatch(reconciledEvent(recovered))
+    dispatch(reconciledEvent(recovered, 'subscription'))
   }
 
   /** Re-reads what the workspace is waiting on; the newest run's answer wins. */

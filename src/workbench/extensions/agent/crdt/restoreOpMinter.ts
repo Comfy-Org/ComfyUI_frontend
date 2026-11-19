@@ -279,7 +279,7 @@ export function attachRestoreOpMinter(
       const { workflow, snapshot } = pending
       pending = null
       const operations = diffRestore(snapshot, snapshotGraph(graph), deps)
-      if (operations.length === 0) return
+      if (operations.length === 0 || !deps.isBoundWorkflow(workflow)) return
       if (deps.isDocBound()) deps.enqueue(operations)
       else hold(workflow, operations)
     },

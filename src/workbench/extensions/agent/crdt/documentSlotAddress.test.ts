@@ -355,7 +355,7 @@ describe('a local link edit lands on the document slot that carries its input', 
   }
   function noLinks() {}
   function firstImageWired(sources: LGraphNode[], sink: LGraphNode) {
-    sources[0].connect(0, sink, 0)
+    sources[0].connect(0, sink, 1)
   }
 
   it.for<{
@@ -404,11 +404,12 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
       },
-      sent: ['connect 1'],
+      sent: ['connect 2'],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1]
       ],
@@ -419,14 +420,15 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, 2]
@@ -461,17 +463,18 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
-        sink.disconnectInput(2)
+        sink.disconnectInput(3)
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
-      released: ['disconnect 2'],
+      released: ['disconnect 3'],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, null]
@@ -483,20 +486,21 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo, binding }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
-        sink.disconnectInput(2)
+        sink.disconnectInput(3)
         await afterFlush()
         binding.delivers = false
         await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
         binding.delivers = true
       },
       sent: [`connect grow ${IMAGES}.image_3`],
-      released: ['disconnect 2'],
+      released: ['disconnect 3'],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, null]
@@ -508,12 +512,12 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo, binding }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
-        sink.disconnectInput(2)
+        sink.disconnectInput(3)
         await afterFlush()
         binding.delivers = false
         binding.workflowBound = false
@@ -523,6 +527,7 @@ describe('a local link edit lands on the document slot that carries its input', 
       },
       sent: [`connect grow ${IMAGES}.image_3`],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, 2]
@@ -534,17 +539,18 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
-        sources[0].connect(0, sink, 2)
+        sources[0].connect(0, sink, 3)
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
-      released: ['connect 2'],
+      released: ['connect 3'],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, 0]
@@ -556,17 +562,18 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
         echo()
-        sources[0].connect(0, sink, 2)
+        sources[0].connect(0, sink, 3)
         await afterFlush()
       },
-      sent: ['connect 2'],
+      sent: ['connect 3'],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, 0]
@@ -578,20 +585,21 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: noLinks,
       act: async ({ sources, sink }) => {
-        sources[0].connect(0, sink, 0)
-        sources[1].connect(0, sink, 1)
-        sources[2].connect(0, sink, 2)
+        sources[0].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
-        sink.disconnectInput(2)
+        sink.disconnectInput(3)
         await afterFlush()
       },
       sent: [
-        'connect 0',
+        'connect 1',
         `connect grow ${IMAGES}.image_2`,
         `connect grow ${IMAGES}.image_3`
       ],
-      released: ['disconnect 2'],
+      released: ['disconnect 3'],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, null]
@@ -603,18 +611,19 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo, foreignAppend }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
         foreignAppend(`${IMAGES}.image_4`)
-        sink.disconnectInput(2)
+        sink.disconnectInput(3)
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
-      released: ['disconnect 3'],
+      released: ['disconnect 4'],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_4`, 0],
@@ -627,18 +636,19 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo, foreignAppend }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
         foreignAppend(`${IMAGES}.image_4`)
-        sources[0].connect(0, sink, 2)
+        sources[0].connect(0, sink, 3)
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
-      released: ['connect 3'],
+      released: ['connect 4'],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_4`, 0],
@@ -651,18 +661,19 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ sources, sink, echo, unsent }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
         unsent.splice(0)
         await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_CATCH_UP_DEADLINE_MS)
-        sources[0].connect(0, sink, 2)
+        sources[0].connect(0, sink, 3)
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, 0]
@@ -674,18 +685,19 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ graph, sources, sink, echo }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
         const unsentSource = addNode(graph, 'TestSource')
-        unsentSource.connect(0, sink, 2)
+        unsentSource.connect(0, sink, 3)
         graph.remove(unsentSource)
         await afterFlush()
-        sources[2].connect(0, sink, 2)
+        sources[2].connect(0, sink, 3)
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, 2]
@@ -697,17 +709,18 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: firstImageWired,
       act: async ({ graph, sources, sink, echo }) => {
-        sources[1].connect(0, sink, 1)
+        sources[1].connect(0, sink, 2)
         await afterFlush()
         echo()
         const unsentSource = addNode(graph, 'TestSource')
-        unsentSource.connect(0, sink, 2)
-        sources[2].connect(0, sink, 2)
+        unsentSource.connect(0, sink, 3)
+        sources[2].connect(0, sink, 3)
         graph.remove(unsentSource)
         await afterFlush()
       },
       sent: [`connect grow ${IMAGES}.image_3`],
       docSlots: [
+        [IMAGES, null],
         [`${IMAGES}.image_1`, 0],
         [`${IMAGES}.image_2`, 1],
         [`${IMAGES}.image_3`, 2]
@@ -719,18 +732,21 @@ describe('a local link edit lands on the document slot that carries its input', 
       sink: 'TestAutogrowSink',
       seed: noLinks,
       act: async ({ graph, sources, sink, echo }) => {
-        sources[0].connect(0, sink, 0)
+        sources[0].connect(0, sink, 1)
         await afterFlush()
         echo()
         const unsentSource = addNode(graph, 'TestSource')
-        unsentSource.connect(0, sink, 1)
-        sources[1].connect(0, sink, 2)
-        sink.disconnectInput(2)
+        unsentSource.connect(0, sink, 2)
+        sources[1].connect(0, sink, 3)
+        sink.disconnectInput(3)
         graph.remove(unsentSource)
         await afterFlush()
       },
       sent: [],
-      docSlots: [[`${IMAGES}.image_1`, 0]],
+      docSlots: [
+        [IMAGES, null],
+        [`${IMAGES}.image_1`, 0]
+      ],
       reported: []
     }
   ])(
@@ -793,12 +809,12 @@ describe('a local link edit lands on the document slot that carries its input', 
     const { sources, sink, doc, echo } = bind(
       'TestAutogrowSink',
       'TestSource',
-      (sources, sink) => sources[0].connect(0, sink, 0)
+      (sources, sink) => sources[0].connect(0, sink, 1)
     )
-    sources[1].connect(0, sink, 1)
+    sources[1].connect(0, sink, 2)
     await afterFlush()
     echo()
-    sources[2].connect(0, sink, 2)
+    sources[2].connect(0, sink, 3)
     await afterFlush()
     echo()
 
@@ -854,7 +870,7 @@ describe('a document link lands on the live input it names', () => {
         addNode(seeded, 'TestSource')
       ]
       sink = addNode(seeded, 'TestAutogrowSink')
-      sources[0].connect(0, sink, 0)
+      sources[0].connect(0, sink, 1)
     })
     assert.exists(sink)
     const host = mint(toWorkflowJson(seeded.serialize()), CATALOG)

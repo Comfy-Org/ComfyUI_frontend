@@ -1,4 +1,5 @@
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ObjectInfoResponse } from '@comfyorg/object-info-parser'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { EcosystemSimulacra, WorkspaceStore } from '@e2e/types/globals'
@@ -158,4 +159,19 @@ export function seedNavigationGroups(
   return comfyPage.page.evaluate((groups) => {
     window.__ecosystemSimulacra!.navigation.groups = groups
   }, groups)
+}
+
+export function addPreMatchTypeVhsUnbatch(objectInfo: ObjectInfoResponse) {
+  objectInfo.VHS_Unbatch = {
+    name: 'VHS_Unbatch',
+    display_name: 'Unbatch 🎥🅥🅗🅢',
+    description: '',
+    category: 'Video Helper Suite 🎥🅥🅗🅢',
+    python_module: 'custom_nodes.ComfyUI-VideoHelperSuite',
+    output_node: false,
+    input: { required: { batched: ['*'] } },
+    output: ['*'],
+    output_name: ['unbatched'],
+    output_is_list: [false]
+  }
 }

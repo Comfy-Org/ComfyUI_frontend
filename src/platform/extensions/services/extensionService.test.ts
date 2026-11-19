@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import type { WatchHandle } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -12,8 +20,9 @@ import { useTopbarBadgeStore } from '@/stores/topbarBadgeStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { legacyMenuCompat } from '@/lib/litegraph/src/contextMenuCompat'
-import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useApp } from '@/scripts/appInstance'
+import { applyLegacyGraphPatches } from '@/services/legacyGraphPatchCompat'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { ComfyExtension } from '@/types/comfy'
@@ -661,6 +670,38 @@ describe('sidebar tab attribution during setup', () => {
     expect(sourceOf('agent-tab')).toBe('agent.tools.sidebar')
     expect(sourceOf('manual-tab')).toBeUndefined()
   })
+})
+
+describe('graph patches from late-loaded startup hooks', () => {
+  it.for(['init', 'setup'] as const)(
+    'replays a graph patch from a late %s onto the next root graph',
+    async (hook) => {
+      const app = useApp()
+      const bootGraph = new LGraph()
+      const original = Reflect.get(app, 'rootGraphInternal')
+      Reflect.set(app, 'rootGraphInternal', bootGraph)
+      onTestFinished(() => {
+        Reflect.set(app, 'rootGraphInternal', original)
+      })
+      const added = vi.fn()
+      const extension: ComfyExtension = {
+        name: `late.${hook}.patcher`,
+        [hook]: () => {
+          useApp().rootGraph.onNodeAdded = added
+        }
+      }
+      useExtensionStore().registerExtension(extension)
+
+      await useExtensionService().invokeStartupHook([extension], hook)
+      const nextGraph = new LGraph()
+      applyLegacyGraphPatches(app, nextGraph)
+      Reflect.set(app, 'rootGraphInternal', nextGraph)
+      const node = new LGraphNode('added')
+      nextGraph.onNodeAdded?.(node)
+
+      expect(added).toHaveBeenCalledWith(node)
+    }
+  )
 })
 
 describe('holding new extensions', () => {

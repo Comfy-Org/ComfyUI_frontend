@@ -1,8 +1,10 @@
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { test } from '@e2e/fixtures/ecosystemSimulacraFixture'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
 import {
   activeRootId,
+  addPreMatchTypeVhsUnbatch,
   connectUnbatchToPreview,
   heldTimerCount,
   latentPreviewWidgetsByOpenWorkflow,
@@ -13,6 +15,20 @@ import {
   startLatentPreviewOnNode
 } from '@e2e/fixtures/utils/ecosystemSimulacra'
 import { switchToWorkflowTab } from '@e2e/fixtures/utils/legacyGraphInstancePatches'
+
+test.describe('pre-MatchType VHS installed', { tag: '@canvas' }, () => {
+  test.beforeEach(async ({ page }) => {
+    await routeObjectInfoFromSetupApi(page, addPreMatchTypeVhsUnbatch)
+  })
+
+  test('warns once that VideoHelperSuite needs an update', async ({
+    comfyPage
+  }) => {
+    const warning = comfyPage.toast.withText('Update ComfyUI-VideoHelperSuite')
+
+    await expect(warning).toHaveCount(1)
+  })
+})
 
 test.describe('VHS callbacks that read app.graph', { tag: '@canvas' }, () => {
   test.describe('pre-MatchType cloneType', () => {

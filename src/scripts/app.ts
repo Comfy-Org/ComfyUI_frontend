@@ -1316,7 +1316,8 @@ export class ComfyApp implements IComfyApp {
     loaded: LoadedComfyWorkflow | boolean | undefined
     surfaceWarnings?: () => Promise<void>
   }> {
-    if (options.isCurrent?.() === false) return { loaded: false }
+    if (options.isCurrent?.() === false || options.isReady?.() === false)
+      return { loaded: false }
     if (!clean && workflow instanceof ComfyWorkflow && !workflow.graph) {
       return { loaded: false }
     }
@@ -1329,7 +1330,9 @@ export class ComfyApp implements IComfyApp {
       skipAssetScans = false,
       silentAssetErrors = false,
       workflowNavigationId,
-      isCurrent
+      isCurrent,
+      isReady,
+      resolveGraphData
     } = options
     const backgroundRestore =
       !clean &&
@@ -1346,6 +1349,18 @@ export class ComfyApp implements IComfyApp {
       )
       return { loaded: false }
     }
+    const skipUnreadyLoad = async () => {
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Workflow load was replaced', 'AbortError')
+      )
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
+      return { loaded: false }
+    }
+    if (isReady?.() === false) return skipUnreadyLoad()
     const targetWorkflow = workflow instanceof ComfyWorkflow ? workflow : null
     const graph = this.rootGraphForLoad(targetWorkflow, clean)
     const configureContext = { graph, workflow: targetWorkflow }
@@ -1369,6 +1384,14 @@ export class ComfyApp implements IComfyApp {
       let reset_invalid_values = false
       const missingNodeTypes: MissingNodeType[] = []
       try {
+        if (resolveGraphData) {
+          const resolved = resolveGraphData()
+          if (!resolved) {
+            endGraphLoad(graph)
+            return await skipUnreadyLoad()
+          }
+          graphData = resolved
+        }
         if (!backgroundRestore) {
           const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
           replaceCanvas()
@@ -1800,6 +1823,10 @@ export class ComfyApp implements IComfyApp {
         })
         graphsAwaitingNodeTypes.delete(graph)
         return { loaded: activatedWorkflow ?? true, surfaceWarnings }
+      } catch (error) {
+        restoreContentsBeforeReload()
+        if (clean) graphsAwaitingNodeTypes.add(graph)
+        throw error
       } finally {
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
