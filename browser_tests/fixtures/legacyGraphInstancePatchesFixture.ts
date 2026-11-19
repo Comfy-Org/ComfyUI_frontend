@@ -22,27 +22,13 @@ export const test = comfyPageFixture.extend<{ legacyGraphPatches: void }>({
         '**/extensions/ComfyUI_devtools/legacyCompatibility.js*',
         async (route) =>
           route.fulfill({
-            body: (
-              await readFile(
-                resolve(
-                  import.meta.dirname,
-                  '../../tools/devtools/web/legacyCompatibility.js'
-                ),
-                'utf8'
-              )
-            )
-              .replace(
-                'DevTools.LegacyGraphInstancePatches.Boot',
-                'pysssss.WidgetDefaults'
-              )
-              .replace(
-                'DevTools.LegacyGraphInstancePatches.Change',
-                'cg.customnodes.use_everywhere'
-              )
-              .replace(
-                'DevTools.LegacyGraphInstancePatches.Manager',
-                'Comfy.ManagerMenu'
+            body: await readFile(
+              resolve(
+                import.meta.dirname,
+                '../../tools/devtools/web/legacyCompatibility.js'
               ),
+              'utf8'
+            ),
             contentType: 'text/javascript'
           })
       )
