@@ -4,7 +4,7 @@
     :choices="offer.choices"
     :missing="missing"
   />
-  <CustomDeploymentCard v-else :pitch="pitch" />
+  <CustomDeploymentCard v-else :pitch="pitch" hands-over-workflow />
 </template>
 
 <script setup lang="ts">
