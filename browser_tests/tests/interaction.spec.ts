@@ -887,6 +887,26 @@ test.describe('Canvas Interaction', { tag: '@screenshot' }, () => {
     })
   })
 
+  test('A middle-button pan after a Space pan does not replay the panned travel', async ({
+    comfyPage
+  }) => {
+    const before = await comfyPage.canvasOps.snapshotNavigation()
+
+    await comfyPage.canvas.focus()
+    await comfyPage.page.mouse.move(50, 50)
+    await comfyPage.page.mouse.down({ button: 'middle' })
+    await comfyPage.page.keyboard.down('Space')
+    await comfyPage.page.mouse.move(54, 53)
+    await comfyPage.page.keyboard.up('Space')
+    await comfyPage.page.mouse.move(187, 133, { steps: 40 })
+    await comfyPage.page.mouse.up({ button: 'middle' })
+    await comfyPage.nextFrame()
+
+    await comfyPage.canvasOps.expectNavigationTransform(before, {
+      pan: [137, 83]
+    })
+  })
+
   test('Widgets recover after a low-quality zoom round trip', async ({
     comfyPage
   }) => {

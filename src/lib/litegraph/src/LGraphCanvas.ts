@@ -3688,9 +3688,16 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const startedMoving =
       !wasMoving && (this.isDragging || this.dragging_canvas)
     const moveOrigin = startedMoving ? pointer.eDown : undefined
+    const panOrigin: Readonly<Point> = moveOrigin
+      ? [
+          moveOrigin.clientX + pointer.panTravel[0],
+          moveOrigin.clientY + pointer.panTravel[1]
+        ]
+      : previousMouse
+    const panStep: Point = [mouse[0] - panOrigin[0], mouse[1] - panOrigin[1]]
     const panDelta: Point = [
-      (mouse[0] - (moveOrigin?.clientX ?? previousMouse[0])) / this.ds.scale,
-      (mouse[1] - (moveOrigin?.clientY ?? previousMouse[1])) / this.ds.scale
+      panStep[0] / this.ds.scale,
+      panStep[1] / this.ds.scale
     ]
     const dragDelta: Point = moveOrigin
       ? [x - moveOrigin.canvasX, y - moveOrigin.canvasY]
@@ -3744,6 +3751,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     } else if (this.dragging_canvas) {
       this.ds.offset[0] += panDelta[0]
       this.ds.offset[1] += panDelta[1]
+      pointer.panTravel[0] += panStep[0]
+      pointer.panTravel[1] += panStep[1]
       this._dirty()
     } else if (
       (this.allow_interaction || node?.flags.allow_interaction) &&
