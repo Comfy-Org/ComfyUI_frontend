@@ -6599,10 +6599,12 @@ describe('useAgentSession (v1 composition root)', () => {
     vi.useFakeTimers()
     try {
       const rest = fakeRest({
-        getMessages: vi.fn(async (): Promise<AgentMessages> => [
-          historyRow(1, 'user', 'msg-1', 'go'),
-          unparkedRow()
-        ])
+        getMessages: vi.fn(
+          async (): Promise<AgentMessages> => [
+            historyRow(1, 'user', 'msg-1', 'go'),
+            unparkedRow()
+          ]
+        )
       })
       const { source, emit, status } = fakeEvents()
       const session = useAgentSession({ rest, events: source })
