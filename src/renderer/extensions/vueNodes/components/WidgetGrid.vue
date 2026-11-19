@@ -3,6 +3,7 @@
     ref="grid"
     data-testid="node-widgets"
     class="lg-node-widgets contents text-xs text-node-foreground"
+    :data-expands="expands"
   >
     <div
       v-for="(section, sectionIndex) in sections"
@@ -330,6 +331,10 @@ async function restoreRowFocus(name: string) {
     }
   }
 }
+
+const expands = computed(
+  () => renderedRows.value.some((row) => row.growable) || undefined
+)
 
 const layoutKey = computed(() =>
   renderedRows.value
