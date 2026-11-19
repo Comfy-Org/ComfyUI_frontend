@@ -5,7 +5,10 @@ import {
   graphItems,
   screenshotRegion
 } from '@e2e/fixtures/utils/screenshotRegion'
-import { assertNodeSlotsWithinBounds } from '@e2e/fixtures/utils/slotBoundsUtil'
+import {
+  assertNodeSlotsWithinBounds,
+  measureNodeSlotOffsets
+} from '@e2e/fixtures/utils/slotBoundsUtil'
 
 const NODE_ID = '3'
 const NODE_TITLE = 'KSampler'
@@ -26,6 +29,28 @@ test.describe(
       await comfyPage.nextFrame()
 
       await assertNodeSlotsWithinBounds(comfyPage.page, NODE_ID)
+    })
+
+    test('collapsed node fits its title and anchors slots on its edges', async ({
+      comfyPage
+    }) => {
+      const node = await comfyPage.vueNodes.getFixtureByTitle(NODE_TITLE)
+      const expanded = await node.boundingBox()
+      await node.toggleCollapse()
+
+      await expect
+        .poll(async () => (await node.boundingBox())?.width)
+        .toBeLessThan((expanded?.width ?? 0) / 2)
+
+      const { nodeW, slots } = (await measureNodeSlotOffsets(
+        comfyPage.page,
+        NODE_ID
+      )) ?? { nodeW: 0, slots: [] }
+      expect(slots.length).toBeGreaterThan(1)
+      for (const slot of slots) {
+        const edge = slot.key.includes('-in-') ? 0 : nodeW
+        expect(slot.offsetX, `Slot ${slot.key} anchor`).toBeCloseTo(edge, -1)
+      }
     })
 
     test('links follow collapsed node after drag', async ({ comfyPage }) => {

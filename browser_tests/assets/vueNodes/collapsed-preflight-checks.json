@@ -1,0 +1,1061 @@
+{
+  "config": {},
+  "extra": {
+    "ds": {
+      "offset": [217.8333333333333, 273.7361111111111],
+      "scale": 0.7262945527908541
+    }
+  },
+  "groups": [],
+  "id": "3ac0104e-c528-4813-8bf0-1590d2835fa2",
+  "last_link_id": 21,
+  "last_node_id": 18,
+  "links": [
+    [1, 2, 0, 4, 0, "STRING"],
+    [3, 2, 0, 5, 0, "STRING"],
+    [4, 5, 0, 6, 0, "STRING"],
+    [6, 2, 0, 7, 0, "STRING"],
+    [7, 7, 0, 8, 0, "STRING"],
+    [9, 2, 0, 9, 0, "STRING"],
+    [10, 9, 0, 10, 0, "STRING"],
+    [12, 2, 0, 11, 0, "STRING"],
+    [13, 11, 0, 12, 0, "STRING"],
+    [15, 2, 0, 13, 0, "STRING"],
+    [16, 13, 0, 14, 0, "STRING"],
+    [2, 4, 0, 3, 0, "BOOLEAN"],
+    [5, 6, 0, 3, 1, "BOOLEAN"],
+    [8, 8, 0, 3, 2, "BOOLEAN"],
+    [11, 10, 0, 3, 3, "BOOLEAN"],
+    [14, 12, 0, 3, 4, "BOOLEAN"],
+    [17, 14, 0, 3, 5, "BOOLEAN"],
+    [18, 3, 0, 17, 2, "BOOLEAN"],
+    [19, 15, 0, 17, 1, "STRING"],
+    [20, 16, 0, 17, 0, "STRING"],
+    [21, 17, 0, 18, 0, "STRING"]
+  ],
+  "nodes": [
+    {
+      "bgcolor": "#653",
+      "color": "#432",
+      "flags": {},
+      "id": 1,
+      "inputs": [],
+      "mode": 0,
+      "order": 0,
+      "outputs": [],
+      "pos": [40, 55],
+      "properties": {},
+      "size": [365, 175],
+      "title": "PAN 2 caption preflight",
+      "type": "Note",
+      "widgets_values": [
+        "Run with the sample caption or paste a rewrite. For your PAN 2 graph, replace Sample caption with the rewriter output. Keep that same output wired directly to the encoder.\n\nThis branch only displays a status. It does not verify JSON types, timing, or the token budget."
+      ],
+      "widgets_values_named": {
+        "text": "Run with the sample caption or paste a rewrite. For your PAN 2 graph, replace Sample caption with the rewriter output. Keep that same output wired directly to the encoder.\n\nThis branch only displays a status. It does not verify JSON types, timing, or the token budget."
+      }
+    },
+    {
+      "flags": {},
+      "id": 2,
+      "inputs": [
+        {
+          "link": null,
+          "localized_name": "value",
+          "name": "value",
+          "type": "STRING",
+          "widget": {
+            "name": "value"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 1,
+      "outputs": [
+        {
+          "links": [1, 3, 6, 9, 12, 15],
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "pos": [40, 283],
+      "properties": {
+        "Node name for S&R": "PrimitiveStringMultiline"
+      },
+      "size": [365, 425],
+      "title": "Sample caption",
+      "type": "PrimitiveStringMultiline",
+      "widgets_values": [
+        "{\n  \"video_style\": \"Documentary\",\n  \"lighting\": \"Soft dawn light\",\n  \"perspective_view\": \"Eye level\",\n  \"subjects_lifecycle\": [\n    {\n      \"subject_id\": \"<|Subject1|>\",\n      \"display_name\": \"Boat\",\n      \"subject_attribute\": \"Small wooden rowboat\"\n    }\n  ],\n  \"init_frame_visual_description\": \"A boat floats on a still lake.\",\n  \"events\": [\n    {\n      \"event_index\": 0,\n      \"time_range_sec\": \"0 to 5\",\n      \"event_description\": \"Ripples spread across the lake.\",\n      \"camera_motion\": [\n        {\n          \"time_range_sec\": \"0 to 5\",\n          \"camera_motion\": [\n            \"static\"\n          ]\n        }\n      ],\n      \"contained_actions\": [\n        {\n          \"time_range_sec\": \"0 to 5\",\n          \"action\": \"<|Subject1|> drifts slowly across the water.\"\n        }\n      ]\n    }\n  ],\n  \"quality\": {\n    \"video_quality\": \"Sharp and natural\",\n    \"text_logos_overlays\": null,\n    \"artifacts\": null\n  }\n}"
+      ],
+      "widgets_values_named": {
+        "value": "{\n  \"video_style\": \"Documentary\",\n  \"lighting\": \"Soft dawn light\",\n  \"perspective_view\": \"Eye level\",\n  \"subjects_lifecycle\": [\n    {\n      \"subject_id\": \"<|Subject1|>\",\n      \"display_name\": \"Boat\",\n      \"subject_attribute\": \"Small wooden rowboat\"\n    }\n  ],\n  \"init_frame_visual_description\": \"A boat floats on a still lake.\",\n  \"events\": [\n    {\n      \"event_index\": 0,\n      \"time_range_sec\": \"0 to 5\",\n      \"event_description\": \"Ripples spread across the lake.\",\n      \"camera_motion\": [\n        {\n          \"time_range_sec\": \"0 to 5\",\n          \"camera_motion\": [\n            \"static\"\n          ]\n        }\n      ],\n      \"contained_actions\": [\n        {\n          \"time_range_sec\": \"0 to 5\",\n          \"action\": \"<|Subject1|> drifts slowly across the water.\"\n        }\n      ]\n    }\n  ],\n  \"quality\": {\n    \"video_quality\": \"Sharp and natural\",\n    \"text_logos_overlays\": null,\n    \"artifacts\": null\n  }\n}"
+      }
+    },
+    {
+      "flags": {},
+      "id": 3,
+      "inputs": [
+        {
+          "link": 2,
+          "localized_name": "value0",
+          "name": "values.value0",
+          "type": "*"
+        },
+        {
+          "link": 5,
+          "localized_name": "value1",
+          "name": "values.value1",
+          "shape": 7,
+          "type": "*"
+        },
+        {
+          "link": 8,
+          "localized_name": "value2",
+          "name": "values.value2",
+          "shape": 7,
+          "type": "*"
+        },
+        {
+          "link": 11,
+          "localized_name": "value3",
+          "name": "values.value3",
+          "shape": 7,
+          "type": "*"
+        },
+        {
+          "link": 14,
+          "localized_name": "value4",
+          "name": "values.value4",
+          "shape": 7,
+          "type": "*"
+        },
+        {
+          "link": 17,
+          "localized_name": "value5",
+          "name": "values.value5",
+          "shape": 7,
+          "type": "*"
+        },
+        {
+          "link": null,
+          "localized_name": "value6",
+          "name": "values.value6",
+          "shape": 7,
+          "type": "*"
+        }
+      ],
+      "mode": 0,
+      "order": 16,
+      "outputs": [
+        {
+          "links": [18],
+          "localized_name": "BOOLEAN",
+          "name": "BOOLEAN",
+          "type": "BOOLEAN"
+        }
+      ],
+      "pos": [948, 344],
+      "properties": {
+        "Node name for S&R": "ComfyAndNode"
+      },
+      "size": [168, 155],
+      "title": "All checks pass",
+      "type": "ComfyAndNode"
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 4,
+      "inputs": [
+        {
+          "link": 1,
+          "localized_name": "string",
+          "name": "string",
+          "type": "STRING",
+          "widget": {
+            "name": "string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "regex_pattern",
+          "name": "regex_pattern",
+          "type": "STRING",
+          "widget": {
+            "name": "regex_pattern"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "case_insensitive",
+          "name": "case_insensitive",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "case_insensitive"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "multiline",
+          "name": "multiline",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "multiline"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "dotall",
+          "name": "dotall",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "dotall"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 5,
+      "outputs": [
+        {
+          "links": [2],
+          "localized_name": "matches",
+          "name": "matches",
+          "type": "BOOLEAN"
+        }
+      ],
+      "pos": [738, 285],
+      "properties": {
+        "Node name for S&R": "RegexMatch"
+      },
+      "size": [280, 178],
+      "title": "Bare object",
+      "type": "RegexMatch",
+      "widgets_values": [
+        "",
+        "\\A\\s*\\{[\\s\\S]*\\}\\s*\\Z",
+        false,
+        false,
+        false
+      ],
+      "widgets_values_named": {
+        "case_insensitive": false,
+        "dotall": false,
+        "multiline": false,
+        "regex_pattern": "\\A\\s*\\{[\\s\\S]*\\}\\s*\\Z",
+        "string": ""
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 5,
+      "inputs": [
+        {
+          "link": 3,
+          "localized_name": "json_string",
+          "name": "json_string",
+          "type": "STRING",
+          "widget": {
+            "name": "json_string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "key",
+          "name": "key",
+          "type": "STRING",
+          "widget": {
+            "name": "key"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 6,
+      "outputs": [
+        {
+          "links": [4],
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "pos": [451, 366],
+      "properties": {
+        "Node name for S&R": "JsonExtractString"
+      },
+      "size": [280, 150],
+      "title": "Get video_style",
+      "type": "JsonExtractString",
+      "widgets_values": ["", "video_style"],
+      "widgets_values_named": {
+        "json_string": "",
+        "key": "video_style"
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 6,
+      "inputs": [
+        {
+          "link": 4,
+          "localized_name": "string",
+          "name": "string",
+          "type": "STRING",
+          "widget": {
+            "name": "string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "regex_pattern",
+          "name": "regex_pattern",
+          "type": "STRING",
+          "widget": {
+            "name": "regex_pattern"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "case_insensitive",
+          "name": "case_insensitive",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "case_insensitive"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "multiline",
+          "name": "multiline",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "multiline"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "dotall",
+          "name": "dotall",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "dotall"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 11,
+      "outputs": [
+        {
+          "links": [5],
+          "localized_name": "matches",
+          "name": "matches",
+          "type": "BOOLEAN"
+        }
+      ],
+      "pos": [738, 366],
+      "properties": {
+        "Node name for S&R": "RegexMatch"
+      },
+      "size": [280, 178],
+      "title": "Description check",
+      "type": "RegexMatch",
+      "widgets_values": [
+        "",
+        "\\A(?![\\s\\S]*<\\|Subject[1-9][0-9]*\\|>)[\\s\\S]*\\S",
+        false,
+        false,
+        false
+      ],
+      "widgets_values_named": {
+        "case_insensitive": false,
+        "dotall": false,
+        "multiline": false,
+        "regex_pattern": "\\A(?![\\s\\S]*<\\|Subject[1-9][0-9]*\\|>)[\\s\\S]*\\S",
+        "string": ""
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 7,
+      "inputs": [
+        {
+          "link": 6,
+          "localized_name": "json_string",
+          "name": "json_string",
+          "type": "STRING",
+          "widget": {
+            "name": "json_string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "key",
+          "name": "key",
+          "type": "STRING",
+          "widget": {
+            "name": "key"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 7,
+      "outputs": [
+        {
+          "links": [7],
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "pos": [451, 440],
+      "properties": {
+        "Node name for S&R": "JsonExtractString"
+      },
+      "size": [280, 150],
+      "title": "Get lighting",
+      "type": "JsonExtractString",
+      "widgets_values": ["", "lighting"],
+      "widgets_values_named": {
+        "json_string": "",
+        "key": "lighting"
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 8,
+      "inputs": [
+        {
+          "link": 7,
+          "localized_name": "string",
+          "name": "string",
+          "type": "STRING",
+          "widget": {
+            "name": "string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "regex_pattern",
+          "name": "regex_pattern",
+          "type": "STRING",
+          "widget": {
+            "name": "regex_pattern"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "case_insensitive",
+          "name": "case_insensitive",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "case_insensitive"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "multiline",
+          "name": "multiline",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "multiline"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "dotall",
+          "name": "dotall",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "dotall"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 12,
+      "outputs": [
+        {
+          "links": [8],
+          "localized_name": "matches",
+          "name": "matches",
+          "type": "BOOLEAN"
+        }
+      ],
+      "pos": [738, 440],
+      "properties": {
+        "Node name for S&R": "RegexMatch"
+      },
+      "size": [280, 178],
+      "title": "Description check",
+      "type": "RegexMatch",
+      "widgets_values": [
+        "",
+        "\\A(?![\\s\\S]*<\\|Subject[1-9][0-9]*\\|>)[\\s\\S]*\\S",
+        false,
+        false,
+        false
+      ],
+      "widgets_values_named": {
+        "case_insensitive": false,
+        "dotall": false,
+        "multiline": false,
+        "regex_pattern": "\\A(?![\\s\\S]*<\\|Subject[1-9][0-9]*\\|>)[\\s\\S]*\\S",
+        "string": ""
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 9,
+      "inputs": [
+        {
+          "link": 9,
+          "localized_name": "json_string",
+          "name": "json_string",
+          "type": "STRING",
+          "widget": {
+            "name": "json_string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "key",
+          "name": "key",
+          "type": "STRING",
+          "widget": {
+            "name": "key"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 8,
+      "outputs": [
+        {
+          "links": [10],
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "pos": [451, 514],
+      "properties": {
+        "Node name for S&R": "JsonExtractString"
+      },
+      "size": [280, 150],
+      "title": "Get perspective_view",
+      "type": "JsonExtractString",
+      "widgets_values": ["", "perspective_view"],
+      "widgets_values_named": {
+        "json_string": "",
+        "key": "perspective_view"
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 10,
+      "inputs": [
+        {
+          "link": 10,
+          "localized_name": "string",
+          "name": "string",
+          "type": "STRING",
+          "widget": {
+            "name": "string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "regex_pattern",
+          "name": "regex_pattern",
+          "type": "STRING",
+          "widget": {
+            "name": "regex_pattern"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "case_insensitive",
+          "name": "case_insensitive",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "case_insensitive"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "multiline",
+          "name": "multiline",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "multiline"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "dotall",
+          "name": "dotall",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "dotall"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 13,
+      "outputs": [
+        {
+          "links": [11],
+          "localized_name": "matches",
+          "name": "matches",
+          "type": "BOOLEAN"
+        }
+      ],
+      "pos": [738, 514],
+      "properties": {
+        "Node name for S&R": "RegexMatch"
+      },
+      "size": [280, 178],
+      "title": "Description check",
+      "type": "RegexMatch",
+      "widgets_values": [
+        "",
+        "\\A(?![\\s\\S]*<\\|Subject[1-9][0-9]*\\|>)[\\s\\S]*\\S",
+        false,
+        false,
+        false
+      ],
+      "widgets_values_named": {
+        "case_insensitive": false,
+        "dotall": false,
+        "multiline": false,
+        "regex_pattern": "\\A(?![\\s\\S]*<\\|Subject[1-9][0-9]*\\|>)[\\s\\S]*\\S",
+        "string": ""
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 11,
+      "inputs": [
+        {
+          "link": 12,
+          "localized_name": "json_string",
+          "name": "json_string",
+          "type": "STRING",
+          "widget": {
+            "name": "json_string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "key",
+          "name": "key",
+          "type": "STRING",
+          "widget": {
+            "name": "key"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 9,
+      "outputs": [
+        {
+          "links": [13],
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "pos": [451, 588],
+      "properties": {
+        "Node name for S&R": "JsonExtractString"
+      },
+      "size": [280, 150],
+      "title": "Get initial frame",
+      "type": "JsonExtractString",
+      "widgets_values": ["", "init_frame_visual_description"],
+      "widgets_values_named": {
+        "json_string": "",
+        "key": "init_frame_visual_description"
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 12,
+      "inputs": [
+        {
+          "link": 13,
+          "localized_name": "string",
+          "name": "string",
+          "type": "STRING",
+          "widget": {
+            "name": "string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "regex_pattern",
+          "name": "regex_pattern",
+          "type": "STRING",
+          "widget": {
+            "name": "regex_pattern"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "case_insensitive",
+          "name": "case_insensitive",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "case_insensitive"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "multiline",
+          "name": "multiline",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "multiline"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "dotall",
+          "name": "dotall",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "dotall"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 14,
+      "outputs": [
+        {
+          "links": [14],
+          "localized_name": "matches",
+          "name": "matches",
+          "type": "BOOLEAN"
+        }
+      ],
+      "pos": [738, 588],
+      "properties": {
+        "Node name for S&R": "RegexMatch"
+      },
+      "size": [280, 178],
+      "title": "Description check",
+      "type": "RegexMatch",
+      "widgets_values": [
+        "",
+        "\\A(?![\\s\\S]*<\\|Subject[1-9][0-9]*\\|>)[\\s\\S]*\\S",
+        false,
+        false,
+        false
+      ],
+      "widgets_values_named": {
+        "case_insensitive": false,
+        "dotall": false,
+        "multiline": false,
+        "regex_pattern": "\\A(?![\\s\\S]*<\\|Subject[1-9][0-9]*\\|>)[\\s\\S]*\\S",
+        "string": ""
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 13,
+      "inputs": [
+        {
+          "link": 15,
+          "localized_name": "json_string",
+          "name": "json_string",
+          "type": "STRING",
+          "widget": {
+            "name": "json_string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "key",
+          "name": "key",
+          "type": "STRING",
+          "widget": {
+            "name": "key"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 10,
+      "outputs": [
+        {
+          "links": [16],
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "pos": [451, 662],
+      "properties": {
+        "Node name for S&R": "JsonExtractString"
+      },
+      "size": [280, 150],
+      "title": "Get events",
+      "type": "JsonExtractString",
+      "widgets_values": ["", "events"],
+      "widgets_values_named": {
+        "json_string": "",
+        "key": "events"
+      }
+    },
+    {
+      "flags": {
+        "collapsed": true
+      },
+      "id": 14,
+      "inputs": [
+        {
+          "link": 16,
+          "localized_name": "string",
+          "name": "string",
+          "type": "STRING",
+          "widget": {
+            "name": "string"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "regex_pattern",
+          "name": "regex_pattern",
+          "type": "STRING",
+          "widget": {
+            "name": "regex_pattern"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "case_insensitive",
+          "name": "case_insensitive",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "case_insensitive"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "multiline",
+          "name": "multiline",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "multiline"
+          }
+        },
+        {
+          "link": null,
+          "localized_name": "dotall",
+          "name": "dotall",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "dotall"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 15,
+      "outputs": [
+        {
+          "links": [17],
+          "localized_name": "matches",
+          "name": "matches",
+          "type": "BOOLEAN"
+        }
+      ],
+      "pos": [738, 662],
+      "properties": {
+        "Node name for S&R": "RegexMatch"
+      },
+      "size": [280, 178],
+      "title": "Nonempty events",
+      "type": "RegexMatch",
+      "widgets_values": ["", "\\A\\[\\s*\\{", false, false, false],
+      "widgets_values_named": {
+        "case_insensitive": false,
+        "dotall": false,
+        "multiline": false,
+        "regex_pattern": "\\A\\[\\s*\\{",
+        "string": ""
+      }
+    },
+    {
+      "flags": {},
+      "id": 15,
+      "inputs": [
+        {
+          "link": null,
+          "localized_name": "value",
+          "name": "value",
+          "type": "STRING",
+          "widget": {
+            "name": "value"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 2,
+      "outputs": [
+        {
+          "links": [19],
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "pos": [918, 88],
+      "properties": {
+        "Node name for S&R": "PrimitiveString"
+      },
+      "size": [315, 70],
+      "title": "Pass message",
+      "type": "PrimitiveString",
+      "widgets_values": ["Basic caption checks passed."],
+      "widgets_values_named": {
+        "value": "Basic caption checks passed."
+      }
+    },
+    {
+      "flags": {},
+      "id": 16,
+      "inputs": [
+        {
+          "link": null,
+          "localized_name": "value",
+          "name": "value",
+          "type": "STRING",
+          "widget": {
+            "name": "value"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 3,
+      "outputs": [
+        {
+          "links": [20],
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "pos": [918, 197],
+      "properties": {
+        "Node name for S&R": "PrimitiveString"
+      },
+      "size": [315, 70],
+      "title": "Warning message",
+      "type": "PrimitiveString",
+      "widgets_values": ["Check the caption format, descriptions, or events."],
+      "widgets_values_named": {
+        "value": "Check the caption format, descriptions, or events."
+      }
+    },
+    {
+      "flags": {},
+      "id": 17,
+      "inputs": [
+        {
+          "link": 20,
+          "localized_name": "on_false",
+          "name": "on_false",
+          "shape": 7,
+          "type": "STRING"
+        },
+        {
+          "link": 19,
+          "localized_name": "on_true",
+          "name": "on_true",
+          "shape": 7,
+          "type": "STRING"
+        },
+        {
+          "link": 18,
+          "localized_name": "switch",
+          "name": "switch",
+          "type": "BOOLEAN",
+          "widget": {
+            "name": "switch"
+          }
+        }
+      ],
+      "mode": 0,
+      "order": 17,
+      "outputs": [
+        {
+          "links": [21],
+          "localized_name": "output",
+          "name": "output",
+          "type": "STRING"
+        }
+      ],
+      "pos": [1270, 344],
+      "properties": {
+        "Node name for S&R": "ComfySwitchNode"
+      },
+      "size": [237, 100],
+      "title": "Choose preflight message",
+      "type": "ComfySwitchNode",
+      "widgets_values": [false],
+      "widgets_values_named": {
+        "switch": false
+      }
+    },
+    {
+      "flags": {},
+      "id": 18,
+      "inputs": [
+        {
+          "link": 21,
+          "localized_name": "source",
+          "name": "source",
+          "type": "*"
+        }
+      ],
+      "mode": 0,
+      "order": 4,
+      "outputs": [
+        {
+          "links": null,
+          "localized_name": "STRING",
+          "name": "STRING",
+          "type": "STRING"
+        }
+      ],
+      "pos": [1270, 507],
+      "properties": {
+        "Node name for S&R": "PreviewAny"
+      },
+      "size": [237, 112],
+      "title": "PAN 2 preflight status",
+      "type": "PreviewAny",
+      "widgets_values": [],
+      "widgets_values_named": {}
+    }
+  ],
+  "revision": 0,
+  "version": 0.4
+}
