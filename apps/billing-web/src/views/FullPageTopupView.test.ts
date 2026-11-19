@@ -16,7 +16,10 @@ import type {
   TopupResult
 } from '@comfyorg/account-core/billing'
 import type { AccountCredential } from '@comfyorg/account-core/session'
-import { readBillingErrorCode } from '@comfyorg/account-core/billing'
+import {
+  OPERATION_POLL_TIMING,
+  readBillingErrorCode
+} from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 
@@ -59,6 +62,7 @@ vi.mock(import('@/config/stripeKey'), async () => {
 const form = vi.hoisted(() => ({
   mounts: 0,
   payOnce: undefined as boolean | undefined,
+  savesCardOffSession: (): boolean | undefined => undefined,
   configuration: undefined as string | undefined,
   emit: (() => {}) as (event: string, ...payload: unknown[]) => void
 }))
@@ -72,6 +76,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
         canSubmit: { type: Boolean, default: true },
         isLoading: { type: Boolean, default: false },
         payOnce: { type: Boolean, default: false },
+        savesCardOffSession: { type: Boolean, default: false },
         paymentMethodConfigurationId: { type: String, default: '' }
       },
       emits: ['confirm', 'phase'],
@@ -80,6 +85,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
           canSubmit: boolean
           isLoading: boolean
           payOnce: boolean
+          savesCardOffSession: boolean
           paymentMethodConfigurationId: string
         },
         {
@@ -93,6 +99,7 @@ vi.mock<unknown>(import('@comfyorg/account-ui/billing/stripe'), async () => {
         form.mounts += 1
         form.emit = emit
         form.payOnce = props.payOnce
+        form.savesCardOffSession = () => props.savesCardOffSession
         form.configuration = props.paymentMethodConfigurationId
         return () =>
           h(
@@ -1172,12 +1179,14 @@ function renderAutoTopUp(
   paymentMethods: BillingResult<readonly SavedPaymentMethod[]> = {
     status: 'ok',
     value: []
-  }
+  },
+  topupQuote: TopupQuoteResult = QUOTED
 ) {
   recordBillingEntry(parseBillingEntry(path))
   const fake = createFakeBillingClient({
     capabilities: { can_top_up: true },
-    topupQuote: QUOTED,
+    topupQuote,
+    topup: SUCCEEDED,
     paymentMethods
   })
   const createHostedTopupCheckout = vi
@@ -1260,18 +1269,25 @@ describe('FullPageTopupView with auto top-up from the link', () => {
     )
   })
 
-  it('names neither card as certain when the saved cards cannot be read, since an existing default card is kept', async () => {
-    renderAutoTopUp(
-      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
-      { status: 'error', code: 'REQUEST_FAILED' }
-    )
+  it.for([
+    { payment: 'hosted', topupQuote: QUOTED },
+    { payment: 'in-page', topupQuote: PAYS_ONCE }
+  ])(
+    'names neither card as certain when the saved cards cannot be read on the $payment payment, since an existing default card is kept',
+    async ({ topupQuote }) => {
+      renderAutoTopUp(
+        `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
+        { status: 'error', code: 'REQUEST_FAILED' },
+        topupQuote
+      )
 
-    expect(
-      await screen.findByTestId('checkout-auto-top-up-consent')
-    ).toHaveTextContent(
-      'Top-ups are charged to your default card, or to the card you pay with if you have none, up to $50.00 a month.'
-    )
-  })
+      expect(
+        await screen.findByTestId('checkout-auto-top-up-consent')
+      ).toHaveTextContent(
+        'Top-ups are charged to your default card, or to the card you pay with if you have none, up to $50.00 a month.'
+      )
+    }
+  )
 
   it('does not leave for a hosted checkout that answers after the page is gone', async () => {
     const assign = vi
@@ -1322,4 +1338,120 @@ describe('FullPageTopupView with auto top-up from the link', () => {
     expect(assign).not.toHaveBeenCalled()
     expect(screen.getByRole('alert')).toBeInTheDocument()
   })
+
+  it('pays a quote with a payment configuration in the page, the consent above Saved or Add new, and sends the settings with that payment', async () => {
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&auto_top_up_monthly_budget_cents=5000`,
+      { status: 'ok', value: [{ ...VISA, is_default: true }, MASTERCARD] },
+      PAYS_ONCE
+    )
+
+    expect(
+      await screen.findByTestId('checkout-auto-top-up-consent')
+    ).toHaveTextContent(
+      'Top-ups are charged to your default card, Visa ···· 3184, up to $50.00 a month.'
+    )
+    expect(tab('Saved')).toHaveAttribute('aria-selected', 'true')
+    expect(tab('Add new payment')).toBeInTheDocument()
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    )
+    expect(fake.createInteractiveTopup.mock.calls[0][0]).toMatchObject({
+      amountCents: 2500,
+      payment: { savedPaymentMethodId: 'pm_mc' },
+      autoTopUp: {
+        threshold_credits: 1055,
+        target_credits: 11605,
+        monthly_budget_cents: 5000
+      }
+    })
+    expect(createHostedTopupCheckout).not.toHaveBeenCalled()
+  })
+
+  it('pays a new card on the hosted checkout with the settings when the saved-card read failed, so the card is never confirmed under a guessed saving policy', async () => {
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      AUTO_TOP_UP_PATH,
+      { status: 'error', code: 'REQUEST_FAILED' },
+      PAYS_ONCE
+    )
+    await userEvent.click(
+      await screen.findByRole('tab', { name: 'Add new payment' })
+    )
+    readyCardForm()
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    await waitFor(() =>
+      expect(createHostedTopupCheckout).toHaveBeenCalledExactlyOnceWith({
+        amountCents: 2500,
+        returnUrl: `${window.location.origin}/return/topup`,
+        autoTopUp: { threshold_credits: 1055, target_credits: 11605 }
+      })
+    )
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('finishes Turning on auto top-up from the operation the receipt names when the browser kept no pointer to it', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const activating = settledTopup({
+      amountChargedCents: 2500,
+      creditsAdded: 5275,
+      autoTopUpActivation: 'pending'
+    })
+    renderTopup({}, TOPUP_PATH, (fake) => {
+      fake.recover.mockResolvedValueOnce({ status: 'ok', value: activating })
+      fake.recover.mockImplementation(async (options) => ({
+        status: 'ok',
+        value:
+          options?.operation?.id === activating.id
+            ? {
+                ...activating,
+                receipt: { ...activating.receipt, autoTopUpActivation: 'on' }
+              }
+            : undefined
+      }))
+    })
+
+    expect(
+      await screen.findByTestId('checkout-ending-auto-top-up')
+    ).toHaveTextContent('Turning on auto top-up…')
+
+    await vi.advanceTimersByTimeAsync(OPERATION_POLL_TIMING.parkedMs)
+
+    await waitFor(() =>
+      expect(
+        screen.queryByTestId('checkout-ending-auto-top-up')
+      ).not.toBeInTheDocument()
+    )
+  })
+
+  it.for([
+    { name: 'no default card', methods: [VISA], saves: true },
+    {
+      name: 'a default card',
+      methods: [{ ...VISA, is_default: true }],
+      saves: false
+    }
+  ])(
+    'a new card saves for off-session charges exactly when there is $name',
+    async ({ methods, saves }) => {
+      renderAutoTopUp(
+        AUTO_TOP_UP_PATH,
+        { status: 'ok', value: methods },
+        PAYS_ONCE
+      )
+
+      await userEvent.click(
+        await screen.findByRole('tab', { name: 'Add new payment' })
+      )
+
+      await waitFor(() => expect(form.savesCardOffSession()).toBe(saves))
+    }
+  )
 })

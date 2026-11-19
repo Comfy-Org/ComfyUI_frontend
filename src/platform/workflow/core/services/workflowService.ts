@@ -170,28 +170,46 @@ function resetAndRestoreTracker(
   return true
 }
 
+interface SavedBaseline {
+  state: ComfyWorkflowJSON | undefined
+  content: string | null | undefined
+}
+
+function captureSavedBaseline(workflow: ComfyWorkflow): SavedBaseline {
+  return {
+    state: workflow.changeTracker?.initialState,
+    content: workflow.originalContent
+  }
+}
+
+function restoreSavedBaseline(
+  workflow: ComfyWorkflow,
+  saved: SavedBaseline
+): void {
+  const tracker = workflow.changeTracker
+  if (
+    tracker &&
+    saved.state &&
+    tracker.initialState !== saved.state &&
+    workflow.originalContent === saved.content
+  ) {
+    tracker.initialState = saved.state
+    workflow.isModified = !ChangeTracker.graphEqual(
+      saved.state,
+      tracker.activeState
+    )
+  }
+}
+
 async function keepingSavedBaseline<T>(
   workflow: ComfyWorkflow,
   load: () => Promise<T>
 ): Promise<T> {
-  const savedState = workflow.changeTracker?.initialState
-  const savedContent = workflow.originalContent
+  const saved = captureSavedBaseline(workflow)
   try {
     return await load()
   } finally {
-    const tracker = workflow.changeTracker
-    if (
-      tracker &&
-      savedState &&
-      tracker.initialState !== savedState &&
-      workflow.originalContent === savedContent
-    ) {
-      tracker.initialState = savedState
-      workflow.isModified = !ChangeTracker.graphEqual(
-        savedState,
-        tracker.activeState
-      )
-    }
+    restoreSavedBaseline(workflow, saved)
   }
 }
 
@@ -599,7 +617,7 @@ export const useWorkflowService = () => {
     workflow.isModified = wasModified
   }
 
-  function loadOpenedGraph(
+  async function loadOpenedGraph(
     workflow: ComfyWorkflow,
     {
       force,
@@ -613,29 +631,45 @@ export const useWorkflowService = () => {
       keepSavedBaseline?: boolean
       loadFromRemote: boolean
       navigationIntentId: number
-    }
+    },
+    attempt: { skipped: boolean }
   ) {
-    workflow.changeTracker?.prepareForSave()
-    const graphLoadIsCurrent = workflowStore.isActive(workflow)
-      ? undefined
-      : isCurrent
-    const load = () =>
-      useApp().loadGraphData(
-        toRaw(workflow.activeState) as ComfyWorkflowJSON,
-        true,
-        true,
-        workflow,
-        {
-          checkForRerouteMigration: false,
-          deferWarnings: true,
-          skipAssetScans: !loadFromRemote && !force,
-          workflowNavigationId: navigationIntentId,
-          isCurrent: graphLoadIsCurrent
-        }
-      )
-    return keepSavedBaseline && workflow.isModified
-      ? keepingSavedBaseline(workflow, load)
-      : load()
+    const reloadsCanvas = workflowStore.isActive(workflow)
+    let saved: SavedBaseline | undefined
+    const snapshot = () => {
+      workflow.changeTracker?.prepareForSave()
+      saved =
+        keepSavedBaseline && workflow.isModified
+          ? captureSavedBaseline(workflow)
+          : undefined
+      return toRaw(workflow.activeState) as ComfyWorkflowJSON | undefined
+    }
+    const queued = snapshot()
+    const snapshotAtTurn = () => {
+      const data = snapshot()
+      if (!data) attempt.skipped = true
+      return data
+    }
+    const readyAtTurn = () => {
+      const ready = workflowStore.isActive(workflow) && isCurrent?.() !== false
+      if (!ready) attempt.skipped = true
+      return ready
+    }
+    try {
+      return await useApp().loadGraphData(queued, true, true, workflow, {
+        checkForRerouteMigration: false,
+        deferWarnings: true,
+        skipAssetScans: !loadFromRemote && !force,
+        workflowNavigationId: navigationIntentId,
+        isCurrent: reloadsCanvas ? undefined : isCurrent,
+        ...(reloadsCanvas && {
+          isReady: readyAtTurn,
+          resolveGraphData: snapshotAtTurn
+        })
+      })
+    } finally {
+      if (saved && !attempt.skipped) restoreSavedBaseline(workflow, saved)
+    }
   }
 
   const openWorkflow = (
@@ -683,16 +717,17 @@ export const useWorkflowService = () => {
           return false
         }
 
-        const loaded = await loadOpenedGraph(workflow, {
-          ...options,
-          loadFromRemote,
-          navigationIntentId
-        })
+        const attempt = { skipped: false }
+        const loaded = await loadOpenedGraph(
+          workflow,
+          { ...options, loadFromRemote, navigationIntentId },
+          attempt
+        )
         if (loaded === false) {
           useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
           if (loadFromRemote && options.isCurrent?.() === false)
             discardSupersededLoad(workflow, wasModified)
-          await restoreRetainedWorkflow(workflow)
+          if (!attempt.skipped) await restoreRetainedWorkflow(workflow)
           return false
         }
         dismissUnreadableWorkflowToast(workflow)

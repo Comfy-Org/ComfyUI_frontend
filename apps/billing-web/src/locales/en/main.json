@@ -308,6 +308,11 @@
           "paidToday": "Paid today",
           "prorated": "Prorated for the rest of this billing period"
         },
+        "autoTopUp": {
+          "pending": "Turning on auto top-up…",
+          "failed": "Your credits were added, but auto top-up couldn't be turned on.",
+          "openBilling": "Turn it on in Billing settings"
+        },
         "actions": {
           "close": "Close",
           "retry": "Try again",
