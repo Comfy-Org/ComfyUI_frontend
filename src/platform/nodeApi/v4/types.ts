@@ -850,9 +850,9 @@ export interface WidgetHandle {
     event: 'activate',
     listener: (value: WidgetValue | undefined) => void
   ): Unsubscribe
-  /** Runs once when the host releases the widget, as `remove` does. */
+  /** Runs once when the widget is removed from its node; for a mount, canvas or declared type also when the node is deleted. */
   on(event: 'removed', listener: () => void): Unsubscribe
-  /** Runs while a prompt is queued, to send another value for this run only. */
+  /** Runs each time a prompt is built (queueing, Export, Export (API), sharing), to send another value in that prompt only. */
   on(
     event: 'beforeSerialize',
     listener: (event: WidgetSerializeEvent) => void
@@ -861,7 +861,7 @@ export interface WidgetHandle {
 
 /** A widget's value about to be sent in a queued prompt. */
 export interface WidgetSerializeEvent {
-  /** Where the value goes. The queued prompt is the only destination. */
+  /** Where the value goes: a prompt, whether queued or exported. The saved workflow cannot be changed. */
   readonly context: 'prompt'
   /** A copy of what is sent unless a listener replaces it. */
   readonly value: WidgetValue | undefined
@@ -920,7 +920,10 @@ export interface MountDef {
   readonly name: string
   /** Called once, with the element mounted on the node. A throw is reported. */
   render(container: HTMLElement, value: MountedValue): void
-  /** Called once when the host releases the widget. A throw is reported. */
+  /**
+   * Called once when the host releases the widget, which relies on the host fix #23520 in `main`
+   * (#23476: before it, a widget removed before its node had it called again). A throw is reported.
+   */
   destroy?(): void
   /**
    * The height the widget takes on its node on the litegraph canvas, in graph units; omit to share the free space.
@@ -999,7 +1002,7 @@ export interface CanvasTheme {
 export interface WidgetTypeDef {
   /**
    * Fills the widget's element for the input named `name`. Return a teardown
-   * to run when the host releases the widget. A throw is reported.
+   * to run once when the host releases the widget (as `MountDef.destroy`, #23520). A throw is reported.
    */
   render(
     container: HTMLElement,
