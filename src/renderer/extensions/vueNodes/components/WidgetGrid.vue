@@ -79,7 +79,7 @@
                   />
                 </div>
               </TooltipTrigger>
-              <TooltipContent side="left">{{
+              <TooltipContent side="top">{{
                 row.widget.tooltipText
               }}</TooltipContent>
             </Tooltip>
