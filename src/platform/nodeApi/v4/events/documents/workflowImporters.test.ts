@@ -44,6 +44,27 @@ describe('workflow.registerImporter', () => {
     expect(Object.isFrozen(parse.mock.calls[0][1])).toBe(true)
   })
 
+  it('calls enabled and parse with no this, as every other pack callback', async () => {
+    const { comfy, host } = api()
+    const seen: unknown[] = []
+    comfy.workflow.registerImporter(
+      importer({
+        enabled() {
+          seen.push(this)
+          return true
+        },
+        parse() {
+          seen.push(this)
+          return { workflow: { version: 0.4 } }
+        }
+      })
+    )
+
+    await host.importWorkflowFile(file('a.bin'), undefined)
+
+    expect(seen).toEqual([undefined, undefined])
+  })
+
   it.for([
     ['workflow', { workflow: '{}' }],
     ['prompt', { prompt: {} }],
