@@ -901,6 +901,34 @@ describe('ComfyApp', () => {
       }
     )
 
+    it('keeps a background graph awaiting node types refreshed while afterConfigureGraph runs', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      const workflow = markLoaded(
+        new ComfyWorkflow({
+          path: 'workflows/background-refresh.json',
+          modified: 0,
+          size: 0
+        })
+      )
+      const graph = new LGraph()
+      workflow.adoptGraph(graph)
+      useWorkflowStore().attachWorkflow(workflow, 0)
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      onTestFinished(() => {
+        graphsAwaitingNodeTypes.delete(graph)
+      })
+      mockExtensionService.invokeExtensionsAsync.mockImplementation(
+        async (method: string) => {
+          if (method === 'afterConfigureGraph') await app.reloadNodeDefs({})
+          return []
+        }
+      )
+
+      await app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+
+      expect(graphsAwaitingNodeTypes.has(graph)).toBe(true)
+    })
+
     it('reuses a successfully reconfigured waiting graph on the next workflow switch', async () => {
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       app.canvas = mockCanvas

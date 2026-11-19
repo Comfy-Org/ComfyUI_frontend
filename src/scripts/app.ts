@@ -1600,6 +1600,8 @@ export class ComfyApp implements IComfyApp {
       }
 
       let activatedWorkflow: LoadedComfyWorkflow | undefined
+      const awaitedNodeTypes = graphsAwaitingNodeTypes.delete(graph)
+      let loadSucceeded = false
       try {
         if (
           !clean &&
@@ -1728,7 +1730,7 @@ export class ComfyApp implements IComfyApp {
           graph !== this.rootGraph
         ) {
           workflow.changeTracker?.reset(configuredGraphData)
-          graphsAwaitingNodeTypes.delete(graph)
+          loadSucceeded = true
           return { loaded: true }
         }
 
@@ -1817,13 +1819,15 @@ export class ComfyApp implements IComfyApp {
         requestAnimationFrame(() => {
           this.canvas.setDirty(true, true)
         })
-        graphsAwaitingNodeTypes.delete(graph)
+        loadSucceeded = true
         return { loaded: activatedWorkflow ?? true, surfaceWarnings }
       } catch (error) {
         restoreContentsBeforeReload()
         if (clean) graphsAwaitingNodeTypes.add(graph)
         throw error
       } finally {
+        if (awaitedNodeTypes && !loadSucceeded)
+          graphsAwaitingNodeTypes.add(graph)
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',
           workflowNavigationId
