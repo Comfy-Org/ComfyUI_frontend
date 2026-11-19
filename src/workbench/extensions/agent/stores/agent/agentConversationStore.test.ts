@@ -503,8 +503,29 @@ describe('useAgentConversationStore', () => {
       vi.advanceTimersByTime(60_000)
 
       expect(store.asksAwaitingResolution()).toEqual([
-        { askId: 'turn-1:call-1', kind: 'accepted' }
+        { askId: 'turn-1:call-1', kind: 'accepted', owner: 'th-A' }
       ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('keeps an unresolved answer marker when retirement beats a stopped reporter', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.hydrate(parkedApprovalTranscript('th-A'))
+      store.recordAskAnswer('turn-1:call-1', { selected: ['run'] }, 'th-A')
+      store.commitAsk('turn-1:call-1', 'th-A', { status: 'retired' })
+      store.markAskAwaitingResolution('turn-1:call-1', 'accepted', () => false)
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(store.asksAwaitingResolution()).toEqual([
+        { askId: 'turn-1:call-1', kind: 'accepted', owner: 'th-A' }
+      ])
+      expect(store.isAskRetired('turn-1:call-1', 'th-A')).toBe(true)
     } finally {
       vi.useRealTimers()
     }

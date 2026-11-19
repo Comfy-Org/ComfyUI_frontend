@@ -652,7 +652,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rerun: boolean
     rerunCause: RecoveryCause
     automaticRerun: boolean
-    settledSnapshot: boolean
   }
   const recoveringTurns = new Map<string, RunningRecovery>()
   interface PendingAskObservation {
@@ -786,6 +785,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
     receivedStatusSnapshot = false
+    for (const awaiting of conversationStore.asksAwaitingResolution())
+      conversationStore.markAskAwaitingResolution(
+        awaiting.askId,
+        awaiting.kind,
+        () => {
+          if (stopped) return false
+          if (awaiting.kind === 'accepted')
+            reportAcceptedRecoveredAnswer(
+              awaiting.askId,
+              true,
+              conversationStore.threadId === awaiting.owner
+            )
+          else
+            reportUnconfirmedConflict(
+              awaiting.askId,
+              conversationStore.threadId === awaiting.owner
+            )
+          return true
+        }
+      )
     const surviving = conversationStore.threadId
     const stored =
       conversationStore.messages.length === 0
@@ -1883,6 +1902,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     if (answeringAskIds.value.has(askId)) return false
     conversationStore.recordAskAnswer(askId, answer, currentThreadId)
+    const askKind = conversationStore.submittedAskKind(askId)
     conversationStore.setAskAnswering(askId, true)
     const answerChannelEpoch = resolutionChannelEpoch
     const answerStartedBeforeFirstOpen = connection === 'initial'
@@ -1898,6 +1918,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         answer,
         currentThreadId,
         receipt,
+        askKind,
         resolutionChannelDropped
       })
     } catch (error) {
@@ -1906,6 +1927,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           error,
           askId,
           currentThreadId,
+          askKind,
           resolutionChannelWasLost()
         )
       return false
@@ -1917,15 +1939,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answer,
     currentThreadId,
     receipt,
+    askKind,
     resolutionChannelDropped
   }: {
     askId: string
     answer: AgentAnswerRequest
     currentThreadId: string
     receipt: AgentAnswerReceipt
+    askKind: RenderedAskKind | 'unknown' | undefined
     resolutionChannelDropped: () => boolean
   }): boolean {
-    if (!receiptNamesCommittedAnswer(receipt, askId))
+    if (!receiptNamesCommittedAnswer(receipt, askKind))
       return commitStatusOnlyAskReceipt({
         askId,
         answer,
@@ -1945,13 +1969,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function receiptNamesCommittedAnswer(
     receipt: AnswerReceiptSource,
-    askId: string
+    askKind: RenderedAskKind | 'unknown' | undefined
   ): boolean {
     if (receipt.status !== 'answered') return false
-    return namesCommittedAnswer(
-      receipt,
-      conversationStore.submittedAskKind(askId)
-    )
+    return namesCommittedAnswer(receipt, askKind)
   }
 
   function commitStatusOnlyAskReceipt({
@@ -2037,6 +2058,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: unknown,
     askId: string,
     threadId: string,
+    askKind: RenderedAskKind | 'unknown' | undefined,
     resolutionChannelWasLost = connection === 'dropped'
   ): boolean {
     conversationStore.clearAskAwaitingResolution(askId)
@@ -2045,6 +2067,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         error,
         askId,
         threadId,
+        askKind,
         resolutionChannelWasLost
       )
     }
@@ -2081,6 +2104,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     error: AgentApiError,
     askId: string,
     threadId: string,
+    askKind: RenderedAskKind | 'unknown' | undefined,
     resolutionChannelWasLost: boolean
   ): boolean {
     const conflict = zAgentAskConflict.safeParse(error.body)
@@ -2097,7 +2121,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     const submitted = conversationStore.submittedAskAnswer(askId)
-    if (conflict.success && receiptNamesCommittedAnswer(conflict.data, askId)) {
+    if (
+      conflict.success &&
+      receiptNamesCommittedAnswer(conflict.data, askKind)
+    ) {
       const committed = toAskResolution(conflict.data)
       const superseded =
         submitted !== undefined &&
@@ -2492,8 +2519,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     resolutionChannelEpoch += 1
     for (const awaiting of conversationStore.asksAwaitingResolution())
       if (awaiting.kind === 'accepted')
-        reportAcceptedRecoveredAnswer(awaiting.askId, true)
-      else reportUnconfirmedConflict(awaiting.askId)
+        reportAcceptedRecoveredAnswer(
+          awaiting.askId,
+          true,
+          awaiting.owner === conversationStore.threadId
+        )
+      else
+        reportUnconfirmedConflict(
+          awaiting.askId,
+          awaiting.owner === conversationStore.threadId
+        )
   }
 
   function reconcileLiveTurns(cause: RecoveryCause): void {
@@ -2515,8 +2550,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       cause,
       rerun: false,
       rerunCause: cause,
-      automaticRerun: false,
-      settledSnapshot: false
+      automaticRerun: false
     }
     recoveringTurns.set(key, state)
     const deadline = setTimeout(() => {
@@ -2646,8 +2680,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       cause: 'hydrate',
       rerun: false,
       rerunCause: 'hydrate',
-      automaticRerun: false,
-      settledSnapshot: true
+      automaticRerun: false
     }
     recoveringTurns.set(key, state)
     const deadlineReason = new Error('settled read deadline')
@@ -2710,14 +2743,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
     signal: AbortSignal
   ): Promise<boolean> {
     const key = recoveryKey(turn)
+    const previousObservation = recentPendingAskObservation(key)
+    const deliveredAtRecoveryStart = new Set(deliveredAsks)
     const state: RecoveryObservationState = {
-      previousObservation: recentPendingAskObservation(key),
+      previousObservation,
       hasUnconfirmedObservation: false,
       sawStreamingObservation: false,
       consecutiveThreadMissing: 0,
-      deliveredAtRecoveryStart: new Set(deliveredAsks),
+      deliveredAtRecoveryStart,
       snapshotNamedDeliveredAsks: new Set(),
-      deliveredAsksAwaitingSnapshot: new Set()
+      deliveredAsksAwaitingSnapshot: new Set(
+        [...deliveredAtRecoveryStart].filter(
+          (askId) => !previousObservation?.deliveredAskIds.has(askId)
+        )
+      ),
+      consumedSnapshotProtection: new Set()
     }
     for (const ms of TURN_RECOVERY_DELAYS_MS) {
       await delay(ms, { signal })
@@ -2749,6 +2789,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     deliveredAtRecoveryStart: Set<string>
     snapshotNamedDeliveredAsks: Set<string>
     deliveredAsksAwaitingSnapshot: Set<string>
+    consumedSnapshotProtection: Set<string>
   }
 
   function observeRecoveryOutcome(
@@ -2808,12 +2849,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     if (pendingAskConfirmed)
       for (const askId of state.deliveredAsksAwaitingSnapshot)
-        if (askId !== pendingAskId)
+        if (askId !== pendingAskId) {
           state.deliveredAsksAwaitingSnapshot.delete(askId)
+          state.consumedSnapshotProtection.add(askId)
+        }
     for (const askId of deliveredAsks)
       if (
         !state.deliveredAtRecoveryStart.has(askId) &&
-        !state.snapshotNamedDeliveredAsks.has(askId)
+        !state.snapshotNamedDeliveredAsks.has(askId) &&
+        !state.consumedSnapshotProtection.has(askId)
       )
         state.deliveredAsksAwaitingSnapshot.add(askId)
   }

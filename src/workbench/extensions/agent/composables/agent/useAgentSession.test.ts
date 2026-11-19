@@ -3604,7 +3604,11 @@ describe('useAgentSession (v1 composition root)', () => {
     it('treats an empty approval receipt as status-only for object answers', async () => {
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
-        .mockResolvedValue({ status: 'answered', selected: [], other_text: '' })
+        .mockResolvedValue({
+          status: 'answered',
+          selected: [],
+          other_text: ''
+        })
       const events = fakeEvents()
       const session = useAgentSession({
         rest: fakeRest({ answerAsk }),
@@ -3625,6 +3629,37 @@ describe('useAgentSession (v1 composition root)', () => {
         errorType: 'agent_ask_answer_superseded'
       })
       expect(session.notices.value).toEqual([])
+    })
+
+    it('keeps the approval kind when resolution beats a status-only receipt', async () => {
+      let accept: (receipt: AgentAnswerAccepted) => void = () => {}
+      const answerAsk = vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((resolve) => {
+            accept = resolve
+          })
+      )
+      const events = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: events.source
+      })
+      session.start()
+      events.status(true)
+      await session.sendMessage('build it and run it')
+      events.emit(runApproval('msg-1'))
+
+      const answering = session.answerAsk('turn-1:call-1', {
+        selected: ['run']
+      })
+      events.emit(askResolved('msg-1'))
+      accept({ status: 'answered', selected: [] })
+
+      await expect(answering).resolves.toBe(true)
+      expect(reportError).not.toHaveBeenCalledWith(expect.any(Error), {
+        surface: 'agent',
+        errorType: 'agent_ask_answer_superseded'
+      })
     })
 
     // The resolution frame retires the card on its way through, so by the time
@@ -6116,7 +6151,9 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(1)
       await vi.waitFor(() => expect(rest.getMessages).toHaveBeenCalledTimes(2))
 
-      const answered = session.answerAsk('turn-1:call-1', { selected: ['run'] })
+      const answered = session.answerAsk('turn-1:call-1', {
+        selected: ['run']
+      })
       await vi.advanceTimersByTimeAsync(5_000)
       await answered
       expect(approvalParts(session)).toHaveLength(0)
@@ -6261,6 +6298,25 @@ describe('useAgentSession (v1 composition root)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('(g39f) an offline answer from another chat reports without showing there', async () => {
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    status(true)
+    await session.sendMessage('go')
+    emit(runApproval('msg-1'))
+
+    await session.answerAsk('turn-1:call-1', { selected: ['run'] })
+    session.newChat()
+    status(false)
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_winner_unconfirmed'
+    })
+    expect(session.notices.value).toEqual([])
   })
 
   it('(g38) a remount does not restore an ask the prior session retired', async () => {
@@ -6521,6 +6577,36 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(0)
       expect(approvalParts(session)).toHaveLength(1)
 
+      await vi.advanceTimersByTimeAsync(3_001)
+      expect(approvalParts(session)).toHaveLength(0)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g46c) a mid-recovery delivery loses protection after confirmed omission', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          unparkedRow()
+        ])
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start({ restore: false })
+      status(true)
+      await session.sendMessage('go')
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      emit(runApproval('msg-1'))
+      expect(approvalParts(session)).toHaveLength(1)
+
+      // The first poll after delivery grants one-poll protection; the next
+      // confirmed omission consumes it instead of re-adding it forever.
       await vi.advanceTimersByTimeAsync(3_001)
       expect(approvalParts(session)).toHaveLength(0)
     } finally {
@@ -7188,7 +7274,9 @@ describe('useAgentSession (v1 composition root)', () => {
   })
 
   it('(h10b) a continuing turn with no canvas is held instead of retargeting the remembered workflow', async () => {
-    let draft: DraftSnapshot | undefined = { content: { nodes: [], links: [] } }
+    let draft: DraftSnapshot | undefined = {
+      content: { nodes: [], links: [] }
+    }
     const { session, postMessage } = unboundTabSession({
       acks: ['wf-other-tab'],
       draft: () => draft
