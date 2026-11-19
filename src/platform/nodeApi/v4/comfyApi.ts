@@ -172,7 +172,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
         ...graphHandleMembers(visible, scopes.scopeFor, edit, groupsOf),
         ...createGraphView(nodes, visible, canvas),
         groupSelection: () => selectedGroups(groupsOf, visible()),
-        resolvedSupplies: () => suppliesIn(visible)
+        resolvedSupplies: () => suppliesIn(visible) ?? Object.freeze([])
       })
     ),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)

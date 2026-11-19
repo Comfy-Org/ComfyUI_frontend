@@ -67,16 +67,7 @@ export function createDocuments(): Documents {
   return {
     current,
     changeTrackerOf,
-    onWorkflowLoaded(listener) {
-      if (typeof listener !== 'function') {
-        throw invalidArgument(
-          'onWorkflowLoaded',
-          'a function to call',
-          listener
-        )
-      }
-      return loaded.add(listener)
-    },
+    onWorkflowLoaded: loaded.subscribe,
     onDocumentActivated: createHostEvent<[DocumentHandle]>(
       'onDocumentActivated',
       (emit) =>

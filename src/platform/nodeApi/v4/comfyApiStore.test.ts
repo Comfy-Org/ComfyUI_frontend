@@ -400,7 +400,7 @@ describe("the app's node API", () => {
       })
       const widgets = comfy.graph.node(node.id)?.widgets
 
-      comfy.edit.batch(() => {
+      comfy.graph.batch(() => {
         widgets?.get('seed')?.setValue(2)
         widgets?.get('steps')?.setValue(3)
       })

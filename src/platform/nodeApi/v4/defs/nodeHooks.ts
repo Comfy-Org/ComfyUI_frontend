@@ -129,9 +129,7 @@ export function createNodeDefBuilder(
   ) {
     return (value: Given): void => {
       if (!open) {
-        throw new TypeError(
-          `${member} can only be called inside the callback given to extend.`
-        )
+        throw callOutOfTurn(member, 'inside the callback given to extend')
       }
       callbacks[name].push(checked(value))
     }

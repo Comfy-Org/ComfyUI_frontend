@@ -1,3 +1,4 @@
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import { callListener } from '@/platform/nodeApi/shared/listeners'
 import type {
   CanvasDef,
@@ -5,24 +6,23 @@ import type {
   CanvasTheme,
   MountedValue
 } from '@/platform/nodeApi/v4/types'
-import { definitionFields } from './definitionFields'
 import { checkedMountDef, packFunction } from './mountedWidget'
 import type { MountSpec } from './mountedWidget'
 
 type Draw = CanvasDef['draw']
 type PointerHandler = (event: CanvasPointerEvent) => void
 
-const FIELDS = [
-  'name',
-  'draw',
-  'onPointerDown',
-  'onPointerMove',
-  'onPointerUp',
-  'height',
-  'defaultValue',
-  'serialize',
-  'sendToPrompt'
-] as const satisfies readonly (keyof CanvasDef)[]
+const FIELDS = {
+  name: true,
+  draw: true,
+  onPointerDown: true,
+  onPointerMove: true,
+  onPointerUp: true,
+  height: true,
+  defaultValue: true,
+  serialize: true,
+  sendToPrompt: true
+} satisfies Record<keyof CanvasDef, true>
 
 const THEME_COLORS: Readonly<Record<keyof CanvasTheme, [string, string]>> = {
   surface: ['--color-input', 'transparent'],
@@ -37,7 +37,7 @@ export function checkedCanvasDef(def: unknown): {
   readonly spec: MountSpec
   readonly redraw: () => void
 } {
-  const fields = definitionFields('canvas', def, FIELDS)
+  const fields = checkedFields('canvas', 'a canvas definition', def, FIELDS)
   const { name, height, defaultValue, serialize, sendToPrompt } = fields
   const draw: Draw = packFunction('canvas', fields.draw)
   const handlers = {

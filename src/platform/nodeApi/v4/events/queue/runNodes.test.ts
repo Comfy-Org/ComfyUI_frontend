@@ -127,23 +127,23 @@ describe('queue.run', () => {
     ],
     ['a value that is not a handle', { nodes: [1] }],
     ['null for a handle', { nodes: [null] }]
-  ] as const)('refuses %s, without queuing', async ([, options]) => {
+  ] as const)('refuses %s, without queuing', ([, options]) => {
     const { comfy, queuePrompt } = documentWithSubgraph()
 
-    await expect(
+    expect(() =>
       Reflect.apply(comfy.queue.run, comfy.queue, [options])
-    ).rejects.toThrow(/^queue\.run needs /)
+    ).toThrow(/^queue\.run needs /)
     expect(queuePrompt).not.toHaveBeenCalled()
   })
 
-  it('refuses a frozen copy of a handle, which the API did not make', async () => {
+  it('refuses a frozen copy of a handle, which the API did not make', () => {
     const { root, outer, comfy, queuePrompt } = documentWithSubgraph()
 
-    await expect(
+    expect(() =>
       Reflect.apply(comfy.queue.run, comfy.queue, [
         { nodes: [Object.freeze({ id: outer.id, graphId: root.id })] }
       ])
-    ).rejects.toThrow('queue.run needs node handles')
+    ).toThrow('queue.run needs node handles')
     expect(queuePrompt).not.toHaveBeenCalled()
   })
 
@@ -164,12 +164,12 @@ describe('queue.run', () => {
     expect(queuePrompt.mock.calls[0][2]).toHaveLength(2)
   })
 
-  it('refuses a handle another API made', async () => {
+  it('refuses a handle another API made', () => {
     const { root, outer, nodeOf } = documentWithSubgraph()
     const handle = nodeOf(root, outer)
     const { comfy } = createComfyApi({ getGraph: () => null })
 
-    await expect(comfy.queue.run({ nodes: [handle] })).rejects.toThrow(
+    expect(() => comfy.queue.run({ nodes: [handle] })).toThrow(
       'queue.run needs node handles'
     )
   })

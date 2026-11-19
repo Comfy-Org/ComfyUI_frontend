@@ -8,7 +8,10 @@ import type {
 import type { NodeHandles } from './nodeHandle'
 import type { GraphScopeHandle } from './types'
 
-export type GraphScopeHandleMembers = Pick<GraphScopeHandle, 'groups'>
+export type GraphScopeHandleMembers = Pick<
+  GraphScopeHandle,
+  'groups' | 'resolvedSupplies'
+>
 
 /** Gives the one handle for a root graph or a subgraph definition. */
 export type GraphScopeFor = (graph: LGraph) => GraphScopeHandle

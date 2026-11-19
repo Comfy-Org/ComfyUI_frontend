@@ -208,8 +208,9 @@ to a subgraph input fed by a widget produce the widget's value.
     `GraphScopeHandle` (its own graph, found through the handle, B-01) asks
     that graph's suppliers again, arbitrates as in decision 18, and gives each
     winning supply in the order of the inputs it feeds, frozen: the supplier,
-    the input, and the source in the graph. `undefined` with no graph on
-    screen, or for a scope that is gone.
+    the input, and the source in the graph. With no graph on screen,
+    `comfy.graph` gives none, as its `nodes()`, `links()` and `groups()` do;
+    a scope that is gone gives `undefined`, as its other reads do.
 21. The source is the output a link from it would start at: an output of the
     supplier, or the output that feeds its forwarded input, followed through
     frontend nodes whose resolvers answer and that are not muted or bypassed.

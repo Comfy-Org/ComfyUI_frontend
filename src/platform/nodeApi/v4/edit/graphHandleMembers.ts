@@ -1,7 +1,7 @@
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 
 import type { GraphScopeFor } from '@/platform/nodeApi/v4/graphScopeHandle'
-import type { GraphHandleMembers } from '@/platform/nodeApi/v4/graphHandle'
+import type { GraphHandle } from '@/platform/nodeApi/v4/types'
 import type { EditCore } from './edits'
 import { checkedNodeCreation } from './graphEdits'
 import type { GroupsOf } from './groupHandles'
@@ -14,7 +14,7 @@ export function graphHandleMembers(
   graphScopeFor: GraphScopeFor,
   edits: EditCore,
   groupsOf: GroupsOf
-): GraphHandleMembers {
+): Pick<GraphHandle, 'add' | 'batch' | 'links' | 'groups'> {
   return {
     add(type, init) {
       const graph = visible()

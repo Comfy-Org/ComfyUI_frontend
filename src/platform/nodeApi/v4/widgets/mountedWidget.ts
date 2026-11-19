@@ -4,19 +4,15 @@ import { DOMWidgetImpl } from '@/scripts/domWidget'
 import type { DOMWidgetValue } from '@/types/domWidget'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import {
   callListener,
   createListeners
 } from '@/platform/nodeApi/shared/listeners'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { MountDef, MountedValue } from '@/platform/nodeApi/v4/types'
-import {
-  definitionFields,
-  optionalFlag,
-  optionalSize,
-  requiredName
-} from './definitionFields'
-import { savableValue } from './savableValue'
+import { optionalFlag, optionalSize, requiredName } from './definitionFields'
+import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 
 /** A mount definition from a pack, checked, with its defaults applied. */
 export interface MountSpec {
@@ -34,19 +30,19 @@ export interface MountSpec {
   readonly written: () => void
 }
 
-const FIELDS = [
-  'name',
-  'render',
-  'destroy',
-  'height',
-  'hideOnZoom',
-  'serialize',
-  'sendToPrompt',
-  'defaultValue'
-] as const satisfies readonly (keyof MountDef)[]
+const FIELDS = {
+  name: true,
+  render: true,
+  destroy: true,
+  height: true,
+  hideOnZoom: true,
+  serialize: true,
+  sendToPrompt: true,
+  defaultValue: true
+} satisfies Record<keyof MountDef, true>
 
 export function checkedMountDef(member: string, def: unknown): MountSpec {
-  const fields = definitionFields(member, def, FIELDS)
+  const fields = checkedFields(member, 'a mount definition', def, FIELDS)
   const defaultValue =
     fields.defaultValue === undefined
       ? undefined

@@ -150,7 +150,10 @@ This ADR records how the API reaches widgets through those owners.
 10. `remove(name)` uses `LGraphNode.removeWidget`. `reorder(names)` and
     `move(name, index)` splice `node.widgets`, whose view updates the order
     the Vue canvas draws from. `reorder` needs every name once; `move`
-    clamps the index to the list.
+    clamps the index to the list. As every edit in the API does, each change
+    a widget handle or collection makes returns `true` when it is applied and
+    `false` when its widget or node is gone, and `move` of a name the node
+    lacks is `false`, as `remove` is.
 11. Every argument is checked before anything is read or changed, and refused
     with the `TypeError` of ADR-EXTENSIONS-NODE-API-0070 decision 13. The checks run on a deleted
     widget too. A refusal of a value the workflow cannot save names the part

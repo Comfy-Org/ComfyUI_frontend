@@ -38,13 +38,15 @@ export function createGroupHandles(
   })
 
   function handleFor(graph: LGraph, id: string): GroupHandle {
-    return cache.handleFor(graph, id, (resolveGraph) => {
-      const locate = locator(resolveGraph, id)
-      const reads = groupReads(id, locate, nodes, centerOn)
-      const handle = Object.freeze(Object.assign(reads, membersFor(reads)))
-      liveGroups.set(handle, locate)
-      return handle
-    })
+    return cache.handleFor(
+      graph,
+      id,
+      (current) => liveGroup(current, id),
+      (locate) => {
+        const reads = groupReads(id, locate, nodes, centerOn)
+        return Object.freeze(Object.assign(reads, membersFor(reads)))
+      }
+    )
   }
 
   return {

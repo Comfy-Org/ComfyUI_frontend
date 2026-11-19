@@ -9,7 +9,7 @@ import type {
   WidgetSerializeEvent,
   WidgetValue
 } from '@/platform/nodeApi/v4/types'
-import { savableValue } from './savableValue'
+import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 
 export interface WidgetEvents {
   /**

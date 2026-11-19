@@ -28,7 +28,6 @@ import type {
 } from '@/platform/nodeApi/v4/types'
 import { registerTestPack } from '@/platform/nodeApi/v4/__tests__/testPack'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
-import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 vi.mock(import('@/lib/litegraph/src/graphIntents'), { spy: true })
 

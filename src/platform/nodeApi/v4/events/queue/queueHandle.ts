@@ -78,9 +78,9 @@ export function createQueue(nodes: NodeHandles): {
   }
 
   const queue: QueueHandle = Object.freeze({
-    async run(options?: unknown) {
+    run(options?: unknown) {
       const queueNodeIds = executionIdsToRun(options, nodes)
-      if (queueNodeIds === null) return false
+      if (queueNodeIds === null) return Promise.resolve(false)
       const app = useApp()
       return queueNodeIds
         ? app.queuePrompt(0, 1, queueNodeIds)
@@ -88,16 +88,7 @@ export function createQueue(nodes: NodeHandles): {
     },
     onBeforeRun,
     onAfterRun: createHostEvent('queue.onAfterRun', followRunsSubmitted),
-    onRejected(listener: () => void) {
-      if (typeof listener !== 'function') {
-        throw invalidArgument(
-          'queue.onRejected',
-          'a function to call',
-          listener
-        )
-      }
-      return rejected.add(listener)
-    },
+    onRejected: rejected.subscribe,
     pending: () => useQueuePendingTaskCountStore().count,
     onPendingChanged: createHostEvent<[number]>(
       'queue.onPendingChanged',

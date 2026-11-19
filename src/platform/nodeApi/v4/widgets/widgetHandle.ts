@@ -1,19 +1,15 @@
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 
-import type {
-  DocumentHandles,
-  GraphResolver
-} from '@/platform/nodeApi/shared/documentHandles'
+import type { DocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { WidgetHandle, WidgetOptions } from '@/platform/nodeApi/v4/types'
 import { requiredFlag, requiredSize } from './definitionFields'
-import { savableValue } from './savableValue'
+import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 import type { WidgetEdits } from './widgetEdits'
 import type { WidgetEvents } from './widgetEvents'
 
@@ -39,26 +35,25 @@ export function createWidgetHandles(
   handles: DocumentHandles,
   services: Omit<WidgetServices, 'handleFor'>
 ): WidgetHandleFor {
-  const cache = handles.createCache<WidgetHandle>((graph, key) => {
-    const { nodeId, name } = parseKey(key)
-    const node = graph.getNodeById(toNodeId(nodeId))
-    return !!node && !!widgetNamed(node, name)
-  })
-
+  const cache = handles.createCache<WidgetHandle, LiveWidget>()
   const handleFor: WidgetHandleFor = (graph, node, name) =>
-    cache.handleFor(graph, keyOf(node.id, name), (resolveGraph) =>
-      widgetHandle(
-        { nodeId: node.id, name, resolveGraph },
-        { ...services, handleFor }
-      )
+    cache.handleFor(
+      graph,
+      keyOf(node.id, name),
+      (current) => liveWidget(current, node.id, name),
+      (locate) => widgetHandle(name, locate, { ...services, handleFor })
     )
   return handleFor
 }
 
-interface WidgetIdentity {
-  readonly nodeId: NodeId
-  readonly name: string
-  readonly resolveGraph: GraphResolver
+function liveWidget(
+  graph: LGraph,
+  nodeId: NodeId,
+  name: string
+): LiveWidget | undefined {
+  const node = graph.getNodeById(nodeId)
+  const widget = node && widgetNamed(node, name)
+  return node && widget ? { graph, node, widget } : undefined
 }
 
 interface WidgetServices {
@@ -77,16 +72,17 @@ interface LiveWidget {
 interface WidgetAccess {
   live(): LiveWidget | undefined
   read<T>(reader: (widget: BaseWidget) => T): T | undefined
-  change(edit: (found: LiveWidget) => void): void
+  change(edit: (found: LiveWidget) => void): boolean
 }
 
 function widgetHandle(
-  identity: WidgetIdentity,
+  name: string,
+  live: () => LiveWidget | undefined,
   services: WidgetServices
 ): WidgetHandle {
-  const access = widgetAccess(identity)
+  const access = widgetAccess(live)
   return Object.freeze({
-    name: identity.name,
+    name,
     get isDeleted() {
       return !access.live()
     },
@@ -101,17 +97,7 @@ function widgetHandle(
   })
 }
 
-function widgetAccess({
-  nodeId,
-  name,
-  resolveGraph
-}: WidgetIdentity): WidgetAccess {
-  function live(): LiveWidget | undefined {
-    const graph = resolveGraph()
-    const node = graph?.getNodeById(nodeId)
-    const widget = node && widgetNamed(node, name)
-    return graph && node && widget ? { graph, node, widget } : undefined
-  }
+function widgetAccess(live: () => LiveWidget | undefined): WidgetAccess {
   return {
     live,
     read(reader) {
@@ -121,6 +107,7 @@ function widgetAccess({
     change(edit) {
       const found = live()
       if (found) edit(found)
+      return !!found
     }
   }
 }
@@ -134,7 +121,7 @@ function valueMembers(
       read((widget) => copyOfSaved('getValue', widget.value ?? null)),
     setValue(value: unknown) {
       const checked = savableValue('setValue', value)
-      change(({ node, widget }) => edits.setInput(node, widget, checked))
+      return change(({ node, widget }) => edits.setInput(node, widget, checked))
     },
     getOptions: () =>
       read(({ options }) =>
@@ -143,7 +130,7 @@ function valueMembers(
     setOption(key: unknown, value: unknown) {
       const checkedKey = optionKey(key)
       const checked = savableValue('setOption', value, `options.${checkedKey}`)
-      change(({ node, widget }) =>
+      return change(({ node, widget }) =>
         edits.setOption(node, widget, checkedKey, checked)
       )
     }
@@ -168,22 +155,28 @@ function displayMembers(
       if (typeof label !== 'string') {
         throw invalidArgument('setLabel', 'a label', label)
       }
-      change(({ node, widget }) => edits.setLabel(node, widget, label))
+      return change(({ node, widget }) => edits.setLabel(node, widget, label))
     },
     isHidden: () => read((widget) => widget.hidden),
     setHidden(hidden: unknown) {
       const checked = requiredFlag('setHidden', hidden)
-      change(({ node, widget }) => edits.setHidden(node, widget, checked))
+      return change(({ node, widget }) =>
+        edits.setHidden(node, widget, checked)
+      )
     },
     isDisabled: () => read((widget) => !!widget.disabled),
     setDisabled(disabled: unknown) {
       const checked = requiredFlag('setDisabled', disabled)
-      change(({ node, widget }) => edits.setDisabled(node, widget, checked))
+      return change(({ node, widget }) =>
+        edits.setDisabled(node, widget, checked)
+      )
     },
     isSerialized: () => read((widget) => widget.serialize !== false),
     setHeight(height: unknown) {
       const checked = requiredSize('setHeight', height)
-      change(({ node, widget }) => edits.setHeight(node, widget, checked))
+      return change(({ node, widget }) =>
+        edits.setHeight(node, widget, checked)
+      )
     }
   }
 }
@@ -206,7 +199,7 @@ function linkMembers(
     },
     setLinked(names: unknown) {
       const checked = nameList('setLinked', names)
-      change(({ node, widget }) => {
+      return change(({ node, widget }) => {
         const linked = checked.map((linkedName) =>
           linkedWidget(node, widget, linkedName)
         )
@@ -255,10 +248,4 @@ function linkedWidget(
 function keyOf(nodeId: NodeId, name: string): string {
   const id = String(nodeId)
   return `${id.length}:${id}${name}`
-}
-
-function parseKey(key: string): { nodeId: string; name: string } {
-  const idStart = key.indexOf(':') + 1
-  const idEnd = idStart + Number(key.slice(0, idStart - 1))
-  return { nodeId: key.slice(idStart, idEnd), name: key.slice(idEnd) }
 }

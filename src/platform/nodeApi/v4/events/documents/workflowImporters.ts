@@ -2,10 +2,12 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { isPlainObject } from 'es-toolkit'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import type {
   Unsubscribe,
   WorkflowData,
   WorkflowImportContext,
+  WorkflowImporter,
   WorkflowImportResult
 } from '@/platform/nodeApi/v4/types'
 
@@ -126,11 +128,22 @@ function importedData(value: unknown): WorkflowData | string | undefined {
   return isPlainObject(copy) ? copy : undefined
 }
 
+const IMPORTER_FIELDS = {
+  id: true,
+  parse: true,
+  enabled: true,
+  maxBytes: true,
+  mimeTypes: true,
+  extensions: true
+} satisfies Record<keyof WorkflowImporter, true>
+
 function checkedRegistration(importer: unknown): Registration {
-  if (!isPlainObject(importer)) {
-    throw invalidArgument(REGISTER, 'an importer object', importer)
-  }
-  const { id, parse, enabled, maxBytes, mimeTypes, extensions } = importer
+  const { id, parse, enabled, maxBytes, mimeTypes, extensions } = checkedFields(
+    REGISTER,
+    'an importer',
+    importer,
+    IMPORTER_FIELDS
+  )
   if (typeof id !== 'string' || id === '') {
     throw invalidArgument(REGISTER, 'an id', id)
   }

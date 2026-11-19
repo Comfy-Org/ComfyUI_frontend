@@ -1,11 +1,10 @@
-import { isPlainObject } from 'es-toolkit'
-
 import type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
-import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
+import { checkedScope } from '@/platform/nodeApi/v4/nodeQuery'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type {
   NodeChangeEvent,
@@ -35,24 +34,16 @@ export function createNodeChanges(
   const onAnyChange = inScope('root-and-subgraphs')
 
   return (listener, options = {}) =>
-    checkedScope(options) === 'visible'
+    scopeOf(options) === 'visible'
       ? onVisibleChange(listener)
       : onAnyChange(listener)
 }
 
-function checkedScope(options: unknown): NodeQueryScope {
-  if (!isPlainObject(options)) {
-    throw invalidArgument('onNodeChanged', 'an options object', options)
-  }
-  const { scope = 'visible' } = options
-  if (scope !== 'visible' && scope !== 'root-and-subgraphs') {
-    throw invalidArgument(
-      'onNodeChanged',
-      'a scope of visible or root-and-subgraphs',
-      scope
-    )
-  }
-  return scope
+function scopeOf(options: unknown): NodeQueryScope {
+  const { scope } = checkedFields('onNodeChanged', 'options', options, {
+    scope: true
+  })
+  return checkedScope('onNodeChanged', scope)
 }
 
 function reportChanges(

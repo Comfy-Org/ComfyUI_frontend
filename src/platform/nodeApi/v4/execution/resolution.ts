@@ -14,7 +14,7 @@ import type {
   Resolver,
   WidgetValue
 } from '@/platform/nodeApi/v4/types'
-import { savableValue } from '@/platform/nodeApi/v4/widgets/savableValue'
+import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 import type { NodeViews } from './nodeView'
 
 type CheckedResolution =

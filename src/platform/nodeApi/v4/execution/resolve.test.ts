@@ -633,7 +633,7 @@ describe('a frontend node type with a resolver', () => {
       expect(Object.isFrozen(view.self)).toBe(true)
     })
 
-    it('has no colour for a node with the default one', async () => {
+    it('has no color for a node with the default one', async () => {
       const { view } = await viewSeenBy()
 
       expect(view.self.color).toBeUndefined()

@@ -39,8 +39,6 @@ export interface Comfy {
    */
   sameEntity(a: unknown, b: unknown): boolean
   readonly defs: DefRegistry
-  /** Every change a pack makes to the document. */
-  readonly edit: Edits
   /**
    * A node's title, mode or color was set by the user or a pack, in the graphs `options.scope` names. A load, undo or
    * redo is not reported, except each saved mode or color unlike a new node's; re-read nodes in `onWorkflowLoaded`.
@@ -90,7 +88,7 @@ export interface Comfy {
 }
 
 /** The graph on screen at each call: the root graph, or the subgraph the user opened. An argument a member cannot use throws a `TypeError`. */
-export interface GraphHandle extends GraphHandleEdits, GraphSupplyReads {
+export interface GraphHandle {
   /** The id of the graph on screen, or `undefined` before there is one. */
   readonly id: string | undefined
   node(id: string): NodeHandle | undefined
@@ -122,10 +120,27 @@ export interface GraphHandle extends GraphHandleEdits, GraphSupplyReads {
   centerOn(node: NodeHandle): boolean
   /** Where the pointer last was over the canvas, in graph space, or `undefined` before there is a canvas. */
   pointerPosition(): Point | undefined
-  /** Zooms the view about its centre; 1 is unzoomed. Clamped to the zoom the canvas allows. */
+  /** Zooms the view about its center; 1 is unzoomed. Clamped to the zoom the canvas allows. */
   setZoom(scale: number): void
   /** Pans the view by `delta` screen pixels, the same at every zoom. */
   panBy(delta: Point): void
+
+  /**
+   * Adds a node of a registered type to the graph on screen, placed before it joins.
+   * `undefined` before there is a graph, or if no such type is registered.
+   */
+  add(type: string, init?: NodeInit): NodeHandle | undefined
+  /**
+   * Runs `edits` now as one undo step, which re-reads the whole graph once, and returns its result.
+   * Edits made before a throw stay; edits after it returns are not in the step. Loop inside one batch.
+   */
+  batch<T>(edits: () => T): T
+  /** Every link in the graph on screen, in id order; none before there is one. */
+  links(): readonly LinkInfo[]
+  /** The groups in the graph on screen, in draw order; none before there is one. */
+  groups(): readonly GroupHandle[]
+  /** The supplies a prompt would use in the graph on screen, by the inputs they feed in the graph's order; none before there is one. */
+  resolvedSupplies(): readonly ResolvedSupply[]
 }
 
 /** One particular graph: the root graph, or a subgraph definition. */
@@ -142,6 +157,11 @@ export interface GraphScopeHandle {
   nodes(): readonly NodeHandle[] | undefined
   /** The groups in this graph, in draw order. */
   groups(): readonly GroupHandle[] | undefined
+  /**
+   * The supplies a prompt would use in this graph, by the inputs they feed in the graph's order.
+   * `undefined` while there is no such graph.
+   */
+  resolvedSupplies(): readonly ResolvedSupply[] | undefined
 }
 
 /**
@@ -200,7 +220,7 @@ export interface NodeHandle {
   /** The node's rectangle on the page; `undefined` when its graph is not on screen. */
   getScreenRect(): Bounds | undefined
   /** Where a slot sits, in graph space; `undefined` if the node has no slot there. */
-  getSlotPosition(side: 'input' | 'output', index: number): Point | undefined
+  getSlotPosition(side: SlotSide, index: number): Point | undefined
 
   setTitle(title: string): boolean
   setMode(mode: NodeMode): boolean
@@ -312,23 +332,6 @@ export interface LinkInfo {
   readonly targetSlotId: string | undefined
   readonly targetIndex: number
   readonly type: string
-}
-
-/** Each edit method is a call to `comfy.edit` on the graph on screen. */
-export interface GraphHandleEdits {
-  /** `comfy.edit.addNode` on the graph on screen. */
-  add(type: string, init?: NodeInit): NodeHandle | undefined
-  /** `comfy.edit.batch`. */
-  batch<T>(edits: () => T): T
-  /** Every link in the graph on screen, in id order. */
-  links(): readonly LinkInfo[] | undefined
-  /** The groups in the graph on screen, in draw order. */
-  groups(): readonly GroupHandle[] | undefined
-}
-
-export interface GraphScopeHandleMembers extends GraphSupplyReads {
-  /** The groups in this graph, in draw order. */
-  groups(): readonly GroupHandle[] | undefined
 }
 
 /** A group: a titled rectangle. Which nodes it holds follows from where they are. */
@@ -781,12 +784,6 @@ export interface NodePresentation {
   readonly collapsible?: boolean
 }
 
-/** What `updateGroup` changes. A field left out stays as it is. */
-export interface GroupPatch {
-  /** The group's rectangle in graph space, title bar included; width and height zero or more. */
-  readonly bounds?: Bounds
-}
-
 /** A widget's value, as the workflow saves it. */
 export type WidgetValue = string | number | boolean | object | null
 
@@ -805,10 +802,13 @@ export interface WidgetCollection extends Iterable<WidgetHandle> {
   add(def: WidgetDef): WidgetHandle | undefined
   /** Removes the widget. `false` if the node has none by that name. */
   remove(name: string): boolean
-  /** Puts the widgets in this order. `names` names every widget once. */
-  reorder(names: readonly string[]): void
-  /** Moves one widget to `index`, clamped to the list: unlike `at`, a negative index is the front. */
-  move(name: string, index: number): void
+  /** Puts the widgets in this order. `names` names every widget once. `false` if the node is gone. */
+  reorder(names: readonly string[]): boolean
+  /**
+   * Moves one widget to `index`, clamped to the list: unlike `at`, a negative index is the front.
+   * `false` if the node has no widget by that name.
+   */
+  move(name: string, index: number): boolean
   /** Adds a widget whose element the pack fills. A name the node already has throws a `TypeError`. */
   mount(def: MountDef): WidgetHandle | undefined
   /** Adds a widget the pack draws on its own canvas. A name the node already has throws a `TypeError`. */
@@ -817,7 +817,7 @@ export interface WidgetCollection extends Iterable<WidgetHandle> {
 
 /**
  * One widget, named by its node and its name. On a deleted widget every read
- * is `undefined` and every change does nothing.
+ * is `undefined` and every change does nothing and returns `false`.
  */
 export interface WidgetHandle {
   readonly name: string
@@ -829,27 +829,27 @@ export interface WidgetHandle {
   /** A frozen copy of the value. `undefined` too if the workflow cannot save it. */
   getValue(): WidgetValue | undefined
   /** Commits a value as a user's edit does: the widget's callbacks run, and it is one undo step. */
-  setValue(value: WidgetValue): void
+  setValue(value: WidgetValue): boolean
   /** A frozen copy of the options. An option that is a function is left out. */
   getOptions(): Readonly<WidgetOptions> | undefined
-  setOption(key: string, value: WidgetValue): void
-  setLabel(label: string): void
+  setOption(key: string, value: WidgetValue): boolean
+  setLabel(label: string): boolean
   isHidden(): boolean | undefined
   /** Hides or shows the widget and every widget linked to it. */
-  setHidden(hidden: boolean): void
+  setHidden(hidden: boolean): boolean
   isDisabled(): boolean | undefined
-  setDisabled(disabled: boolean): void
+  setDisabled(disabled: boolean): boolean
   /** False if the widget is kept out of its node's saved values; a node saves none unless `isSerializingWidgets()`. */
   isSerialized(): boolean | undefined
   /**
    * Fixes the height the widget takes on its node, in graph units. On Vue nodes a DOM widget (a mount, canvas,
    * declared type or text area) keeps sharing the free height, and only the node grows.
    */
-  setHeight(height: number): void
+  setHeight(height: number): boolean
   /** The widgets linked to this one, such as a seed's control. */
   linked(): readonly WidgetHandle[] | undefined
   /** Links these widgets of the same node to this one, in place of any linked before. */
-  setLinked(names: readonly string[]): void
+  setLinked(names: readonly string[]): boolean
 
   /**
    * Runs after a commit leaves a value other than the last commit's, with copies of both. Not while a workflow
@@ -1096,8 +1096,8 @@ export interface WorkflowHandle {
   /** A frozen copy of the open document's workflow, as it would be saved. */
   snapshot(): WorkflowData | undefined
   /**
-   * Opens `data` as a new document on screen. Resolves `false` if the host did
-   * not load it, and rejects with a `TypeError` if it is not a workflow.
+   * Opens `data` as a new document on screen. Resolves `false` if it is not a
+   * workflow or the host did not load it. Data that is not an object throws a `TypeError`.
    */
   open(data: WorkflowData): Promise<boolean>
   /** `value` with `%date:…%` and `%Node.widget%` expanded in the open document. */
@@ -1165,7 +1165,7 @@ export interface RunSubmittedEvent {
   readonly submissions: readonly RunSubmission[]
 }
 
-/** An argument a member cannot use throws a `TypeError`; `run` rejects with one. */
+/** An argument a member cannot use throws a `TypeError`. */
 export interface QueueHandle {
   /**
    * Queues the workflow as Run does: `true` once this call's prompts are submitted, and when a request fails with
@@ -1222,7 +1222,7 @@ export interface ResolvedNodeView {
   readonly color: string | undefined
   /** A copy of the node's saved properties. */
   readonly properties: Readonly<Record<string, unknown>>
-  /** The groups that hold the node's centre, in draw order. */
+  /** The groups that hold the node's center, in draw order. */
   readonly groups: readonly GroupMembership[]
   readonly inputs: readonly OwnInput[]
   readonly outputs: readonly OwnOutput[]
@@ -1273,7 +1273,7 @@ export interface UnconnectedInput {
   /** `undefined` for a mode that has no name here. */
   readonly nodeMode: NodeMode | undefined
   readonly nodeColor: string | undefined
-  /** The groups that hold the node's centre, in draw order. */
+  /** The groups that hold the node's center, in draw order. */
   readonly nodeGroups: readonly GroupMembership[]
   /** A copy of the node's saved properties. */
   readonly nodeProperties: Readonly<Record<string, unknown>>
@@ -1312,14 +1312,6 @@ export type ResolvedSource =
     }
   | { readonly kind: 'literal' }
   | { readonly kind: 'omitted' }
-
-export interface GraphSupplyReads {
-  /**
-   * The supplies a prompt would use in this graph, by the inputs they feed in the graph's order.
-   * `undefined` while there is no such graph.
-   */
-  resolvedSupplies(): readonly ResolvedSupply[] | undefined
-}
 
 export interface PromptInputProjection {
   /** Names of the node's inputs and widgets, as the prompt names them. */
