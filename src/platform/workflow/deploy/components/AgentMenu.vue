@@ -50,7 +50,6 @@ import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
 
 const { variant, copyBrief } = defineProps<{
   variant: ButtonVariants['variant']
-  /** Copies the prompt, and resolves whether it reached the clipboard. */
   copyBrief: () => Promise<boolean>
 }>()
 
