@@ -31,6 +31,7 @@ import type {
   Resolver
 } from '@/platform/nodeApi/v4/types'
 import { addBackendNode, addNodeOfType } from './__fixtures__/promptGraphs'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 const WIRE = 'Pack/Wire'
 
@@ -769,29 +770,33 @@ describe('a frontend node type with a resolver', () => {
     it.for([
       {
         name: 'an input that is a fraction',
+        member: 'input',
         read: (self: ResolvedNodeView) => self.input(0.5)
       },
       {
         name: 'an input that is not a name or index',
+        member: 'input',
         read: (self: ResolvedNodeView) =>
           Reflect.apply(self.input, self, [null])
       },
       {
         name: 'a widget name that is not text',
+        member: 'widgetValue',
         read: (self: ResolvedNodeView) =>
           Reflect.apply(self.widgetValue, self, [1])
       }
-    ])('refuses $name with a TypeError', async ({ read }) => {
+    ])('refuses $name with a TypeError', async ({ member, read }) => {
       const { view } = await viewSeenBy()
 
-      expect(() => read(view.self)).toThrow(TypeError)
+      expectRefusal(() => read(view.self), member)
     })
 
     it('refuses a type that is not text in nodesOfType', async () => {
       const { view } = await viewSeenBy()
 
-      expect(() => Reflect.apply(view.nodesOfType, view, [3])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(view.nodesOfType, view, [3]),
+        'nodesOfType'
       )
     })
   })

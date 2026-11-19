@@ -13,6 +13,7 @@ import type {
   MountedValue,
   WidgetCollection
 } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('mounted widgets', () => {
   let graph: LGraph
@@ -240,9 +241,7 @@ describe('mounted widgets', () => {
       const { widgets } = node()
       const { value } = mount(widgets, { defaultValue: 'kept' })
 
-      expect(() => Reflect.apply(value.set, value, [refused])).toThrow(
-        TypeError
-      )
+      expectRefusal(() => Reflect.apply(value.set, value, [refused]), 'set')
       expect(value.get()).toBe('kept')
     }
   )
@@ -335,9 +334,7 @@ describe('mounted widgets', () => {
     const { node: added, widgets } = node()
     added.addWidget('number', 'taken', 1, () => {}, {})
 
-    expect(() => Reflect.apply(widgets.mount, widgets, [def])).toThrow(
-      TypeError
-    )
+    expectRefusal(() => Reflect.apply(widgets.mount, widgets, [def]), 'mount')
     expect(added.widgets).toHaveLength(1)
   })
 

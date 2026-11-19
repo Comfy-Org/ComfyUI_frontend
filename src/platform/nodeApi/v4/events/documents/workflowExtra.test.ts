@@ -15,6 +15,7 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 
 import { useComfyApiStore } from '@/platform/nodeApi/v4/comfyApiStore'
 import type { Comfy, DocumentHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/scripts/api'))
@@ -155,12 +156,14 @@ describe('workflow extra', () => {
     })
 
     it('refuses a value that is not a document handle', () => {
-      expect(() =>
-        Reflect.apply(comfy.workflow.getExtra, comfy.workflow, [
-          { ...document },
-          'note'
-        ])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () =>
+          Reflect.apply(comfy.workflow.getExtra, comfy.workflow, [
+            { ...document },
+            'note'
+          ]),
+        'workflow.getExtra'
+      )
       expect(() =>
         Reflect.apply(comfy.workflow.getExtra, comfy.workflow, [
           document.id,

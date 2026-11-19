@@ -6,6 +6,7 @@ import { stubCanvasGetContext } from '@/utils/__tests__/canvasTestUtils'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 
 import { apiOnTestCanvas } from './__tests__/testCanvasSource'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function canvasOnScreen() {
   stubCanvasGetContext()
@@ -103,8 +104,9 @@ describe('onViewportChanged', () => {
   it('refuses a listener that is not a function', () => {
     const { comfy } = canvasOnScreen()
 
-    expect(() => Reflect.apply(comfy.onViewportChanged, comfy, [1])).toThrow(
-      TypeError
+    expectRefusal(
+      () => Reflect.apply(comfy.onViewportChanged, comfy, [1]),
+      'onViewportChanged'
     )
   })
 })

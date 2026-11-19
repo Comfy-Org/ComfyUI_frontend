@@ -7,6 +7,7 @@ import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, WidgetHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('widget handles', () => {
   let graph: LGraph
@@ -489,8 +490,9 @@ describe('widget handles', () => {
       assert(steps)
       widget.linkedWidgets = [steps]
 
-      expect(() => Reflect.apply(handle.setLinked, handle, [names])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(handle.setLinked, handle, [names]),
+        'setLinked'
       )
       expect(widget.linkedWidgets).toEqual([steps])
     })
@@ -596,11 +598,13 @@ describe('widget handles', () => {
       const { node, handle } = nodeWithWidget()
       graph.remove(node)
 
-      expect(() =>
-        Reflect.apply(handle.setValue, handle, [Number.NaN])
-      ).toThrow(TypeError)
-      expect(() => Reflect.apply(handle.setLabel, handle, [1])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(handle.setValue, handle, [Number.NaN]),
+        'setValue'
+      )
+      expectRefusal(
+        () => Reflect.apply(handle.setLabel, handle, [1]),
+        'setLabel'
       )
     })
   })

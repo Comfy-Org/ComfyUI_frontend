@@ -9,6 +9,7 @@ import {
 import { useExecutionStore } from '@/stores/executionStore'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function documentWithSubgraph() {
   const root = new LGraph()
@@ -122,8 +123,9 @@ describe('executingNode', () => {
   it('refuses a listener that is not a function', () => {
     const { comfy } = documentWithSubgraph()
 
-    expect(() =>
-      Reflect.apply(comfy.onExecutingNodeChanged, comfy, [{}])
-    ).toThrow(TypeError)
+    expectRefusal(
+      () => Reflect.apply(comfy.onExecutingNodeChanged, comfy, [{}]),
+      'onExecutingNodeChanged'
+    )
   })
 })

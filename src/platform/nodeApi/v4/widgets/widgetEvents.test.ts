@@ -7,6 +7,7 @@ import { graphToPrompt } from '@/utils/executionUtil'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, WidgetSerializeEvent } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('widget listeners', () => {
   let graph: LGraph
@@ -270,9 +271,7 @@ describe('widget listeners', () => {
 
       expect(seedWidget.callback).toBe(callback)
       expect(stop).not.toThrow()
-      expect(() => Reflect.apply(seed.on, seed, ['change', 1])).toThrow(
-        TypeError
-      )
+      expectRefusal(() => Reflect.apply(seed.on, seed, ['change', 1]), 'on')
     })
   })
 

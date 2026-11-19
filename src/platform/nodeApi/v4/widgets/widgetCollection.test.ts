@@ -13,6 +13,7 @@ import { resolveComboValues } from '@/utils/litegraphUtil'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, WidgetCollection } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('a node’s widgets', () => {
   let graph: LGraph
@@ -193,8 +194,8 @@ describe('a node’s widgets', () => {
       const { node, widgets } = nodeWith('seed')
       graph.remove(node)
 
-      expect(() => Reflect.apply(widgets.get, widgets, [1])).toThrow(TypeError)
-      expect(() => widgets.add(Object.create(null))).toThrow(TypeError)
+      expectRefusal(() => Reflect.apply(widgets.get, widgets, [1]), 'get')
+      expectRefusal(() => widgets.add(Object.create(null)), 'add')
     })
   })
 
@@ -230,9 +231,10 @@ describe('a node’s widgets', () => {
       const widget = node.widgets?.[0]
       assert(widget)
       expect(isComboWidget(widget)).toBe(true)
-      expect(() =>
-        widgets.add({ type: 'Combo', name: 'other', options: {} })
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => widgets.add({ type: 'Combo', name: 'other', options: {} }),
+        'add'
+      )
     })
 
     it('records the addition as one change', () => {
@@ -363,9 +365,7 @@ describe('a node’s widgets', () => {
     ] as const)('refuses a definition with %s, and adds nothing', ([, def]) => {
       const { node, widgets } = nodeWith('seed')
 
-      expect(() => Reflect.apply(widgets.add, widgets, [def])).toThrow(
-        TypeError
-      )
+      expectRefusal(() => Reflect.apply(widgets.add, widgets, [def]), 'add')
       expect(node.widgets?.map(({ name }) => name)).toEqual(['seed'])
     })
 
@@ -545,8 +545,9 @@ describe('a node’s widgets', () => {
       ([, names]) => {
         const { node, widgets } = nodeWith('a', 'b', 'c')
 
-        expect(() => Reflect.apply(widgets.reorder, widgets, [names])).toThrow(
-          TypeError
+        expectRefusal(
+          () => Reflect.apply(widgets.reorder, widgets, [names]),
+          'reorder'
         )
         expect(node.widgets?.map(({ name }) => name)).toEqual(['a', 'b', 'c'])
         expect(changes).toEqual([])

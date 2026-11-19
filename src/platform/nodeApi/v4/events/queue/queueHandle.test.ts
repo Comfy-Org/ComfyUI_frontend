@@ -9,6 +9,7 @@ import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { RunSubmittedEvent } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function queueApi() {
   const { comfy, host } = createComfyApi({ getGraph: () => null })
@@ -231,8 +232,9 @@ describe('queue.onRejected', () => {
   it('refuses a listener that is not a function', () => {
     const { queue } = queueApi()
 
-    expect(() => Reflect.apply(queue.onRejected, queue, ['no'])).toThrow(
-      TypeError
+    expectRefusal(
+      () => Reflect.apply(queue.onRejected, queue, ['no']),
+      'queue.onRejected'
     )
   })
 })
