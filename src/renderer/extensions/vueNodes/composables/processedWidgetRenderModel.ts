@@ -1,5 +1,6 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
@@ -71,7 +72,6 @@ interface WidgetErrorTarget {
 }
 
 export interface ProcessedWidget extends WidgetGridItem {
-  handleContextMenu: (e: PointerEvent) => void
   hasError: boolean
   tooltipText: string
   updateHandler: (value: WidgetValue) => void
@@ -80,7 +80,7 @@ export interface ProcessedWidget extends WidgetGridItem {
 
 export interface WidgetUiCallbacks {
   getTooltipText: (widget: WidgetTooltipSource, fullValue?: string) => string
-  handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
+  handleNodeRightClick?: (e: PointerEvent, nodeId: NodeId) => void
 }
 
 export interface ComputeProcessedWidgetsOptions {
@@ -127,6 +127,7 @@ function createSlotMetadata(
       ? originNode?.outputs[link.originSlot]?.name
       : undefined,
     promoted: input.widgetId !== undefined,
+    shape: input.shape,
     type: String(input.type)
   }
 }
@@ -403,6 +404,20 @@ function widgetTooltipFullValue(type: string, value: WidgetValue) {
     : undefined
 }
 
+function widgetContextMenu(
+  ctx: WidgetProcessingContext,
+  widgetName: string
+): ((e: PointerEvent) => void) | undefined {
+  const { handleNodeRightClick } = ctx.ui
+  if (!handleNodeRightClick) return undefined
+  return (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    handleNodeRightClick(e, ctx.nodeData.id)
+    showNodeOptions(e, { nodeId: ctx.nodeData.id, widgetName })
+  }
+}
+
 function processWidget(
   id: WidgetId,
   ctx: WidgetProcessingContext
@@ -461,18 +476,9 @@ function processWidget(
     { name: widgetState.name, tooltip: renderState?.tooltip },
     widgetTooltipFullValue(type, value)
   )
-  const handleContextMenu = (e: PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    ctx.ui.handleNodeRightClick(e, ctx.nodeData.id)
-    showNodeOptions(e, {
-      nodeId: ctx.nodeData.id,
-      widgetName: widgetState.name
-    })
-  }
 
   return {
-    handleContextMenu,
+    handleContextMenu: widgetContextMenu(ctx, widgetState.name),
     get sizing() {
       return live ? getWidgetSizing(live.widget, live.node) : undefined
     },
@@ -562,4 +568,47 @@ export function computeProcessedWidgets({
   return Array.from(new Set(ids))
     .map((id) => processWidget(id, ctx))
     .filter((widget): widget is ProcessedWidget => widget !== null)
+}
+
+export function computeInputRows(
+  nodeData: NodeState | undefined,
+  rootGraph: LGraph | null
+): WidgetGridItem[] {
+  const hostNode = nodeData && getHostNode(rootGraph, nodeData)
+  const graphRef = hostNode?.graph
+  if (!nodeData || !hostNode || !graphRef) return []
+  const linkStore = useLinkStore()
+  const scope = graphScopeOf(graphRef)
+  return nodeData.inputs.flatMap((input, index) => {
+    const role = autogrowInputRole(hostNode, input)
+    if (!role) return []
+    const link = linkStore.getInputSlotLink(scope, nodeData.id, index)
+    return [
+      {
+        inputRole: role === 'group' ? 'autogrowGroup' : 'socket',
+        renderKey: `input:${input.name}`,
+        simplified: {
+          name: input.name,
+          label: input.label ?? input.localized_name,
+          type: String(input.type),
+          value: undefined
+        },
+        slotMetadata: createSlotMetadata(input, index, link, graphRef),
+        visible: role === 'child'
+      }
+    ]
+  })
+}
+
+export function withInputRows(
+  widgets: WidgetGridItem[],
+  inputRows: WidgetGridItem[]
+): WidgetGridItem[] {
+  const rows = [...widgets]
+  for (const row of inputRows) {
+    const index = row.slotMetadata?.index ?? -1
+    const next = rows.findIndex((r) => (r.slotMetadata?.index ?? -1) > index)
+    rows.splice(next === -1 ? rows.length : next, 0, row)
+  }
+  return rows
 }

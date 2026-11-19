@@ -507,6 +507,25 @@ class NodeWithNumericCombo(IO.ComfyNode):
         return IO.NodeOutput()
 
 
+class NodeWithAdvancedSocketInput(IO.ComfyNode):
+    @classmethod
+    def define_schema(cls):
+        return IO.Schema(
+            node_id="DevToolsNodeWithAdvancedSocketInput",
+            display_name="Node With Advanced Socket Input",
+            category="DevTools",
+            description="A node with an advanced input that has no widget",
+            inputs=[
+                IO.Image.Input("image"),
+                IO.Mask.Input("mask", optional=True, advanced=True),
+            ],
+        )
+
+    @classmethod
+    async def execute(cls, image, mask=None):
+        return IO.NodeOutput()
+
+
 class NodeWithDynamicCombo(IO.ComfyNode):
     @classmethod
     def define_schema(cls):
@@ -610,6 +629,7 @@ NODE_CLASS_MAPPINGS = {
     "DevToolsPlagueKindSimulacrum": PlagueKindSimulacrum,
     "DevToolsNodeWithPriceBadge": NodeWithPriceBadge,
     "DevToolsNodeWithNumericCombo": NodeWithNumericCombo,
+    "DevToolsNodeWithAdvancedSocketInput": NodeWithAdvancedSocketInput,
     "DevToolsNodeWithDynamicCombo": NodeWithDynamicCombo,
     "DevToolsBranchNode": TestBranchNode,
 }
@@ -644,6 +664,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DevToolsPlagueKindSimulacrum": "PlagueKind-ish (TEST ONLY, zero plagues)",
     "DevToolsNodeWithPriceBadge": "Node With Price Badge",
     "DevToolsNodeWithNumericCombo": "Node With Numeric Combo",
+    "DevToolsNodeWithAdvancedSocketInput": "Node With Advanced Socket Input",
     "DevToolsNodeWithDynamicCombo": "Node With Dynamic Combo",
     "DevToolsBranchNode": "Test Branch Node",
 }

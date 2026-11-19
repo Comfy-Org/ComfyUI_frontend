@@ -5,6 +5,7 @@ import {
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { heightOf } from '@e2e/fixtures/utils/locatorBox'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const wstest = mergeTests(test, webSocketFixture)
@@ -154,6 +155,44 @@ test.describe('Preview as Text node', () => {
       await test.step('clears it when the output is empty', async () => {
         execution.executed('', id, null)
         await expect(preview).toHaveValue('')
+      })
+    }
+  )
+
+  wstest(
+    'keeps its size and scrolls when switching long output to Markdown',
+    { tag: '@vue-nodes' },
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const source = Array.from(
+        { length: 40 },
+        (_, index) => `- item ${index + 1}`
+      ).join('\n')
+
+      await comfyPage.menu.topbar.newWorkflowButton.click()
+      await comfyPage.searchBoxV2.addNode('Preview as Text')
+      const node = await comfyPage.vueNodes.getFixtureByTitle('Preview as Text')
+      const id = await comfyPage.vueNodes.getNodeIdByTitle('Preview as Text')
+      const preview = comfyPage.vueNodes.getWidgetByName(
+        'Preview as Text',
+        'preview_text'
+      )
+      execution.executed('', id, { text: [source] })
+      await expect(preview).toHaveValue(source)
+      const plaintextHeight = await heightOf(node.root)
+
+      await test.step('Markdown mode keeps the node height', async () => {
+        await node.root.getByRole('button', { name: 'Markdown' }).click()
+        await expect(preview.getByRole('listitem')).toHaveCount(40)
+        await expect.poll(() => heightOf(node.root)).toBe(plaintextHeight)
+      })
+
+      await test.step('the focused Markdown preview scrolls', async () => {
+        await preview.click()
+        await comfyPage.page.mouse.wheel(0, 200)
+        await expect
+          .poll(() => preview.evaluate((el) => el.scrollTop))
+          .toBeGreaterThan(0)
       })
     }
   )

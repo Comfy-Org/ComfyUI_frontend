@@ -154,6 +154,7 @@ export type {
 } from './operationState'
 export {
   isBlockedOnCustomerPhase,
+  isAutoTopUpActivating,
   isGrantLanding,
   isTerminal,
   reduceBillingOperation,

@@ -1334,7 +1334,7 @@ describe('live updates and media on the shared web session', () => {
 
     FakeSocket.created.at(-1)?.dispatchEvent(new Event('open'))
     vi.spyOn(Math, 'random').mockReturnValueOnce(0.5)
-    await refuseSocketFor(2_500)
+    await refuseSocketFor(750)
     await refuseSocketFor(1_000)
   })
 

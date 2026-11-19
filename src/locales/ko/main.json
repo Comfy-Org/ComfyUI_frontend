@@ -1721,6 +1721,12 @@
     "reload": "다시 로드",
     "retry": "재시도",
     "retryLabel": "{deployment} 시작 재시도",
+    "runBlocked": {
+      "failed": "이 배포는 실패했습니다. 클릭하여 전환하세요.",
+      "notReady": "이 배포는 준비되지 않았습니다. 클릭하여 전환하세요.",
+      "starting": "이 배포는 시작 중입니다. 클릭하여 전환하세요.",
+      "stopped": "이 배포는 중지되었습니다. 클릭하여 전환하세요."
+    },
     "runOn": "실행 위치",
     "runningOn": "실행 위치",
     "runsThisWorkflow": "이 워크플로를 실행합니다",

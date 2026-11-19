@@ -64,8 +64,9 @@
           as="a"
           :href="platformUrl"
           target="_blank"
-          rel="noopener noreferrer"
-          @click="emit('done')"
+          :rel="platformLinkRel()"
+          @click="openPlatform"
+          @auxclick.middle="trackPlatformClick"
         >
           {{ $t('deployToComfyApi.deployOnPlatform') }}
           <i
@@ -80,16 +81,21 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { useTelemetry } from '@comfyorg/telemetry'
 import DeploySetupAgentMenu from '@/platform/openOnCloud/components/DeploySetupAgentMenu.vue'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
+import {
+  platformSurfaceLink,
+  platformLinkRel
+} from '@/platform/workspace/utils/platformLink'
 
 const { videoSources = [], posterSrc = '' } = defineProps<{
   videoSources?: ComponentProps<typeof Video>['sources']
@@ -102,10 +108,27 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const platformUrl = getComfyPlatformBaseUrl()
+const platformUrl = computed(() =>
+  platformSurfaceLink(
+    '/profile/deploy?onboarding=custom_comfy_cloud',
+    'deploy-setup-card'
+  )
+)
 const points = [
   t('openOnCloud.deploySetupDialog.pointNodes'),
   t('openOnCloud.deploySetupDialog.pointGpu'),
   t('openOnCloud.deploySetupDialog.pointPricing')
 ]
+
+function trackPlatformClick() {
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'run_on_cloud_platform_clicked',
+    element_group: 'run_on_cloud'
+  })
+}
+
+function openPlatform() {
+  trackPlatformClick()
+  emit('done')
+}
 </script>
