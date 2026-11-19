@@ -85,6 +85,8 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     const testScope = effectScope()
     scope = testScope
     distribution.isCloud = false
+    api.serverFeatureFlags.value = {}
+    api.serverFeatureFlagsSettled.value = true
     showCanvas()
     useWorkflowStore().activeWorkflow = createMockLoadedWorkflow({
       path: 'workflows/open.json',
@@ -456,5 +458,141 @@ describe('useReconnectNodeDefinitionRefresh', () => {
     await done
 
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
+
+  describe('when the server reports a boot id', () => {
+    function serverStarted(bootId: string) {
+      api.serverFeatureFlags.value = { server_boot_id: bootId }
+      api.serverFeatureFlagsSettled.value = true
+      api.dispatchCustomEvent('feature_flags', { server_boot_id: bootId })
+    }
+
+    function socketReconnects() {
+      api.serverFeatureFlagsSettled.value = false
+    }
+
+    beforeEach(() => {
+      api.serverFeatureFlags.value = { server_boot_id: 'boot-1' }
+    })
+
+    it('refreshes node definitions and reloads the open workflow after a restart even when no node type is new', async () => {
+      const order: string[] = []
+      registerRefreshCommand(vi.fn(async () => void order.push('refresh')))
+      vi.mocked(useWorkflowService().openWorkflow).mockImplementation(
+        async () => {
+          order.push('reload')
+          return true
+        }
+      )
+      pageKnows('UpdatedPackNode')
+      showCanvas(node('UpdatedPackNode'))
+      const fetchDefs = serverHas('UpdatedPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      await done
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(order).toEqual(['refresh', 'reload'])
+      expect(fetchDefs).not.toHaveBeenCalled()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+        useWorkflowStore().activeWorkflow,
+        expect.objectContaining({ force: true, keepSavedBaseline: true })
+      )
+    })
+
+    it('does nothing when the socket reconnects to the same server', async () => {
+      const refresh = registerRefreshCommand()
+      pageKnows('KSampler')
+      showCanvas(node('NewPackNode', { missing: true }))
+      const fetchDefs = serverHas('KSampler', 'NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-1')
+      await done
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(fetchDefs).not.toHaveBeenCalled()
+      expect(refresh).not.toHaveBeenCalled()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+    })
+
+    it('refreshes once when the reconnect and the new boot id arrive together', async () => {
+      const refresh = registerRefreshCommand()
+      showCanvas()
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-2')
+      await done
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).toHaveBeenCalledOnce()
+    })
+
+    it('learns the boot id from the first feature flags without refreshing', async () => {
+      api.serverFeatureFlags.value = {}
+      const refresh = registerRefreshCommand()
+      useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-1')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).not.toHaveBeenCalled()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+    })
+
+    it('falls back to checking node types when the restarted server no longer reports a boot id', async () => {
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => pageKnows('NewPackNode'))
+      )
+      showCanvas()
+      serverHas('NewPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      api.serverFeatureFlags.value = {}
+      api.serverFeatureFlagsSettled.value = true
+      await done
+
+      expect(refresh).toHaveBeenCalledOnce()
+    })
+
+    it('retries a failed restart refresh on the next reconnect', async () => {
+      const refresh = registerRefreshCommand(
+        vi
+          .fn<() => Promise<void>>()
+          .mockRejectedValueOnce(new Error('object_info failed'))
+          .mockResolvedValue(undefined)
+      )
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+
+      await onReconnected()
+      expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
+    it('stops reacting to boot ids when the view that started it goes away', async () => {
+      const refresh = registerRefreshCommand()
+      useReconnectNodeDefinitionRefresh()
+      scope.stop()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).not.toHaveBeenCalled()
+    })
   })
 })

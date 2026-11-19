@@ -2,6 +2,7 @@ import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { serverReportsBootId } from '@/platform/customNodes/serverBootId'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
@@ -69,7 +70,9 @@ const RESTART_WINDOW_MS = 10 * 60_000
  * either may come first: every reconnect within the window refreshes,
  * including one that came just before the report. An unrelated reconnect in
  * the window refreshes too, which is harmless, and leaves the restart's own
- * reconnect to refresh again.
+ * reconnect to refresh again. When the server reports a boot id, the core
+ * reconnect refresh already refreshes once per restart, so this store leaves
+ * restarts to it and only handles catalog refreshes.
  */
 export const useAgentNodeDefinitionRefreshStore = defineStore(
   'agentNodeDefinitionRefresh',
@@ -121,6 +124,7 @@ export const useAgentNodeDefinitionRefreshStore = defineStore(
     }
 
     function refreshIfRestartNearby(): void {
+      if (serverReportsBootId()) return
       if (Math.abs(reconnectedAt - restartedAt) <= RESTART_WINDOW_MS) {
         enqueueRefresh()
       }

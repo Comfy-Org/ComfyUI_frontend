@@ -8,6 +8,7 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import { serverReportsBootId } from '@/platform/customNodes/serverBootId'
 
 export const useApplyChanges = createSharedComposable(() => {
   const comfyManagerStore = useComfyManagerStore()
@@ -29,8 +30,12 @@ export const useApplyChanges = createSharedComposable(() => {
     const onReconnect = async () => {
       try {
         comfyManagerStore.setStale()
-        await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
-        await useWorkflowService().reloadCurrentWorkflow()
+        // With a boot id the core reconnect refresh refreshes node
+        // definitions and reloads the workflow once for this restart.
+        if (!serverReportsBootId()) {
+          await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
+          await useWorkflowService().reloadCurrentWorkflow()
+        }
         runFullConflictAnalysis().catch((err) => {
           console.error('[useApplyChanges] Conflict analysis failed:', err)
         })
