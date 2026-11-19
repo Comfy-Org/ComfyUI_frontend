@@ -80,7 +80,9 @@ function graphSupplies(
         return checkedEdges(given, node, candidateInputs)
       })
       for (const { key, claim } of edges ?? []) {
-        claims.set(key, [...(claims.get(key) ?? []), claim])
+        const earlier = claims.get(key)
+        if (earlier) earlier.push(claim)
+        else claims.set(key, [claim])
       }
     }
   }
