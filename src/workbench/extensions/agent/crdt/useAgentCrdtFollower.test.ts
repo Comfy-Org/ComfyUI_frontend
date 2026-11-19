@@ -1591,6 +1591,29 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('releases held edits when a readable live frame recovers a schema error', async () => {
+    vi.useFakeTimers()
+    const { enqueue, unmount, status } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    dispatchFrame('schema_error', { workflowId: 'wf-1', code: 'unreadable' })
+
+    enqueue([{ op: 'set_widget', node_id: '1', widget: 'cfg', value: 4.5 }])
+    await Promise.resolve()
+    vi.advanceTimersByTime(500 * 6)
+    expect(clientState.sendOps).not.toHaveBeenCalled()
+
+    bridge().isSubscribeBaselineIntegrated = true
+    dispatchFrame('doc_update', {
+      workflowId: 'wf-1',
+      seq: 2,
+      catchUp: false
+    })
+
+    expect(status().canvasMayBeStale).toBe(false)
+    expect(clientState.sendOps).toHaveBeenCalledOnce()
+    unmount()
+  })
+
   it('surfaces applied updates and the last frame type in status', () => {
     const { unmount, status } = mountFollower('wf-1')
     bridge().follower.updatesApplied = 3

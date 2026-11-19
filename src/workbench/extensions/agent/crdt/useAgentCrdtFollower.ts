@@ -397,6 +397,7 @@ function startAgentCrdtFollower(
 ) {
   const connected = ref(false)
   let catchUpAwaitingProjectionFor: string | null = null
+  let schemaRecoveryPending = false
   const syncCanvasMayBeStale = ref(false)
   const projectionFailureFor = ref<string | null>(null)
   const canvasMayBeStale = computed(
@@ -806,6 +807,7 @@ function startAgentCrdtFollower(
       const projectionIsClean =
         workflowId === null || retryFailedProjection(workflowId)
       if (subscribeBaselineIsIntegrated(detail.seq)) {
+        schemaRecoveryPending = false
         if (projectionIsClean) clearCanvasStaleness()
         else {
           clearSyncStaleness()
@@ -832,9 +834,16 @@ function startAgentCrdtFollower(
     ) {
       clearProjectionStaleness(update.workflowId)
     }
-    if (!update.catchUp) return
+    const recoveredSchema =
+      schemaRecoveryPending && bridge.isSubscribeBaselineIntegrated
+    if (!update.catchUp && !recoveredSchema) return
     if (outcome.applied) clearSyncStaleness()
     else catchUpAwaitingProjectionFor = update.workflowId
+    if (recoveredSchema) {
+      schemaRecoveryPending = false
+      connected.value = true
+      terminal.value = null
+    }
     sender.retryTransport()
   }
   const onUpdate: EventListener = (event) => {
@@ -939,6 +948,7 @@ function startAgentCrdtFollower(
   const staleClientNotified = new Set<string>()
   const onSchemaError: EventListener = (event) => {
     connected.value = false
+    schemaRecoveryPending = true
     markCanvasStale()
     terminal.value = 'schema_error'
     lastFrameType.value = event.type
