@@ -58,6 +58,10 @@
       "summary": "Unter {threshold} Credits wird bis auf {target} aufgeladen.",
       "title": "Automatisches Aufladen ist aktiviert"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "Öffnen Sie „Abrechnung“, um zu prüfen, ob das automatische Aufladen aktiviert ist.",
+      "title": "Credits hinzugefügt"
+    },
     "blocked": {
       "action": "Checkout öffnen",
       "body": "Ihr Browser hat den neuen Tab blockiert. Öffnen Sie den Checkout, um die Zahlung abzuschließen.",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}, beim Checkout bezahlt",
     "planLine": {
       "ended": "Der Kauf von Credits startet Ihr Cloud-Abo nicht erneut. Abonnieren Sie erneut, um Workflows in der Cloud auszuführen.",
+      "ended_sales_managed": "Der Kauf von Credits startet Ihren Cloud-Plan nicht erneut. Wenden Sie sich an den Vertrieb, um ihn zu verlängern.",
       "free_runs": "Der Kauf von Credits startet kein Cloud-Abo. Abonnieren Sie, um Workflows weiterhin auszuführen, sobald Ihre kostenlosen Ausführungen aufgebraucht sind.",
       "no_plan": "Der Kauf von Credits startet kein Cloud-Abo. Abonnieren Sie, um Workflows in der Cloud auszuführen."
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "Wir konnten nicht bestätigen, dass Ihre Antwort den Agenten erreicht hat."
     },
     "assetFetchFailed": "{name} konnte nicht abgerufen werden",
+    "assetLoadFailed": "{name} konnte nicht geladen werden",
     "assetNotAttachable": "Bilder, Videos, Audio, 3D-Modelle und Textdateien können angehängt werden",
     "attach": "Datei anhängen",
     "attachFiles": "Laden Sie Bilder oder Dateien hoch",
@@ -337,6 +343,36 @@
     "placeholder": "Beschreiben Sie, was Sie erstellen möchten",
     "placeholderWithoutSkills": "Beschreiben Sie, was Sie erstellen möchten",
     "previewAsset": "Vorschau von {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "Sagen Sie Comfy Agent, was Sie erstellen möchten.",
+        "title": "Haben Sie etwas im Sinn?"
+      },
+      "firstOpen": {
+        "description": "Sie wissen nicht, wo Sie anfangen sollen? Senden Sie die folgende Frage oder schreiben Sie Ihre eigene.",
+        "prompt": "Wobei können Sie mir helfen?",
+        "title": "Ein wenig Hilfe für den Einstieg!"
+      },
+      "workflowOpen": {
+        "description": "Comfy Agent zeigt Ihnen, was er vorhat, bevor sich etwas in Ihrem Workflow ändert.",
+        "prompt": "Helfen Sie mir, diesen Workflow zu verbessern",
+        "title": "Stellen Sie eine Frage oder beschreiben Sie eine Änderung."
+      }
+    },
     "recoveredTurnFailed": "Der Agent konnte diese Antwort nicht abschließen.",
     "reference": "Referenz",
     "remove": "Entfernen",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "Der Ziel-Workflow konnte nicht geöffnet werden.",
     "targetWorkflowUnavailable": "Der Ziel-Workflow ist nicht mehr verfügbar.",
     "thinking": "Denkt nach...",
+    "thinkingShortened": "Begründung gekürzt: Der Rest war zu lang zum Speichern.",
     "title": "Comfy Agent",
     "toolFailed": "{tool} fehlgeschlagen",
     "toolFailedSkill": "{skill} konnte nicht geladen werden",
@@ -1485,6 +1522,7 @@
       "paymentProcessingFlyout": "Zahlung wird verarbeitet. Sie müssen nicht erneut bezahlen.",
       "paymentProcessingTitle": "Eine Zahlung über {amount} wird noch verarbeitet",
       "paymentProcessingTitleNoAmount": "Eine Zahlung wird noch verarbeitet",
+      "planRequiredContactSales": "Der Kauf von Credits startet Ihren Cloud-Plan nicht erneut. Wenden Sie sich an den Vertrieb, um ihn zu verlängern.",
       "planRequiredFreeRuns": "Der Kauf von Credits startet keinen Cloud-Plan. Abonnieren Sie, um Workflows weiterhin auszuführen, sobald Ihre kostenlosen Ausführungen aufgebraucht sind.",
       "planRequiredResubscribe": "Der Kauf von Credits startet Ihren Cloud-Plan nicht erneut. Abonnieren Sie erneut, um Workflows in der Cloud auszuführen.",
       "planRequiredSubscribe": "Der Kauf von Credits startet keinen Cloud-Plan. Abonnieren Sie, um Workflows in der Cloud auszuführen.",
@@ -1722,10 +1760,10 @@
     "retry": "Erneut versuchen",
     "retryLabel": "Starten von {deployment} erneut versuchen",
     "runBlocked": {
-      "failed": "Dieses Deployment ist fehlgeschlagen. Klicken Sie, um zu wechseln.",
-      "notReady": "Dieses Deployment ist nicht bereit. Klicken Sie, um zu wechseln.",
-      "starting": "Dieses Deployment wird gestartet. Klicken Sie, um zu wechseln.",
-      "stopped": "Dieses Deployment ist gestoppt. Klicken Sie, um zu wechseln."
+      "failed": "Diese Bereitstellung ist fehlgeschlagen. Klicken Sie hier, um zu wechseln.",
+      "notReady": "Diese Bereitstellung ist noch nicht bereit. Klicken Sie hier, um zu wechseln.",
+      "starting": "Diese Bereitstellung wird gestartet. Klicken Sie hier, um zu wechseln.",
+      "stopped": "Diese Bereitstellung wurde angehalten. Klicken Sie hier, um zu wechseln."
     },
     "runOn": "Ausführen auf",
     "runningOn": "Wird ausgeführt auf",
@@ -2685,6 +2723,9 @@
     "resizeFromBottomRight": "Größe an der unteren rechten Ecke ändern",
     "resizeFromTopLeft": "Größe an der oberen linken Ecke ändern",
     "resizeFromTopRight": "Größe an der oberen rechten Ecke ändern",
+    "resizeNumberedPreviewHeight": "Höhe der Vorschau {index} ändern",
+    "resizePreviewHeight": "Vorschauhöhe ändern",
+    "resizeWidgetHeight": "Höhe von {name} ändern",
     "restart": "Neustarten",
     "restore": "Wiederherstellen",
     "restoreDialog": "Dialog wiederherstellen",
@@ -3752,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "Experimentell: Nodes 2.0 aktivieren",
     "Export": "Exportieren",
     "Export (API)": "Exportieren (API)",
+    "Export (Workflow Image)": "Exportieren (Workflow-Bild)",
     "File": "Datei",
     "Fit Group To Contents": "Gruppe an Inhalt anpassen",
     "Focus Mode": "Fokusmodus",
@@ -4323,6 +4365,7 @@
     "handoffFailed": "Der Workflow aus ComfyUI auf Ihrem Computer konnte nicht geöffnet werden",
     "handoffMissing": "Ihr Workflow ist nicht angekommen",
     "handoffMissingDetail": "ComfyUI wartet nach 10 Minuten nicht mehr. Klicken Sie in ComfyUI erneut auf „Auf Comfy Cloud öffnen“.",
+    "missingLocalModelLoader": "Die Modelleinstellungen für {nodeType} konnten nicht gelesen werden. Installieren Sie das Node-Paket, das ihn bereitstellt, und versuchen Sie es dann erneut.",
     "missingModels": {
       "title": "{count} Modell fehlt | {count} Modelle fehlen",
       "unavailable": "Fügen Sie diese Modelle zu Comfy Cloud hinzu, um diesen Workflow auszuführen. Uploads aus diesem ComfyUI sind derzeit nicht verfügbar."
@@ -5220,6 +5263,16 @@
     "triggerLinePlaceholder": "Lade mich, wenn der Benutzer nach Hochskalierung fragt",
     "yourPacks": "Ihre Pakete"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Rufen Sie diesen Subgraph über einen Subgraph Node auf, um seine Werte zu bearbeiten.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "Verknüpfter Wert · schreibgeschützt",
+    "locateSource": "Quell-Node suchen",
+    "sharedSource": "Gemeinsame Quelle",
+    "sourceHint": "Das Bearbeiten dieser Quelle ändert auch die anderen mit ihr verbundenen Eingaben.",
+    "unavailable": "Wert nicht verfügbar"
+  },
   "subgraphStore": {
     "blueprintName": "Subgraph-Name",
     "blueprintNamePrompt": "Subgraph-Name:",
@@ -5469,18 +5522,28 @@
       "subscriptionChangeInProgress": "Sie haben bereits eine Tarifänderung geplant. Nach ihrem Inkrafttreten können Sie einen anderen Tarif auswählen.",
       "subscriptionChangeScheduled": "Ihre geplante Tarifänderung wird am {date} wirksam. Danach können Sie einen anderen Tarif auswählen."
     },
+    "planWithPeriod": {
+      "annual": "{plan} jährlich",
+      "monthly": "{plan} monatlich"
+    },
     "plansAndCredits": "Tarife und Credits",
     "plansAndPricing": "Tarife & Preise",
     "plansForWorkspace": "Pläne für {workspace}",
     "plansLink": {
       "blockedBody": "Ihr Browser hat den neuen Tab blockiert. Öffnen Sie die Planseite, um einen Plan auszuwählen.",
       "blockedTitle": "Die Planseite wurde nicht geöffnet",
+      "checkoutUnfinishedBody": "Öffnen Sie die Seite „Pläne“, um es erneut zu versuchen. Ihr Browser hat verhindert, dass sie automatisch geöffnet wird.",
+      "checkoutUnfinishedTitle": "Ihr Bezahlvorgang wurde nicht abgeschlossen",
       "choosePlan": "Plan auswählen",
       "openPlansPage": "Planseite öffnen",
       "runRefusedEnded": "Ihr Plan ist abgelaufen. Abonnieren Sie erneut, um weiterhin Workflows in der Cloud auszuführen.",
       "runRefusedFreeRunsUsed": "Sie haben alle {total} kostenlosen Ausführungen genutzt. Abonnieren Sie, um weiterhin Workflows in der Cloud auszuführen.",
+      "runRefusedManualBlock": "Dieser Workspace wurde gesperrt. Wenden Sie sich an den Support.",
       "runRefusedNoPlan": "Zum Ausführen von Workflows in der Cloud benötigen Sie einen Plan.",
-      "runRefusedTitle": "Ihr Workflow wurde nicht ausgeführt"
+      "runRefusedProjectCap": "Dieses Projekt hat sein Ausgabenlimit erreicht.",
+      "runRefusedTitle": "Ihr Workflow wurde nicht ausgeführt",
+      "runRefusedUserCap": "Sie haben Ihr Ausgabenlimit in diesem Workspace erreicht.",
+      "runRefusedWorkspaceCap": "Dieser Workspace hat sein Ausgabenlimit erreicht."
     },
     "plansLoadFailed": "Pläne konnten nicht geladen werden",
     "prepaidCreditsInfo": "Prepaid-Credits verfallen 1 Jahr nach dem Kaufdatum.",
@@ -5918,6 +5981,7 @@
     "failedToConvertToSubgraph": "Elemente konnten nicht in einen Subgraph konvertiert werden",
     "failedToCreateCustomer": "Kunde konnte nicht erstellt werden: {error}",
     "failedToExportModel": "Export des Modells als {format} fehlgeschlagen",
+    "failedToExportWorkflowImage": "Workflow-Bild konnte nicht exportiert werden",
     "failedToFetchLogs": "Serverprotokolle konnten nicht abgerufen werden",
     "failedToFetchSubscription": "Abonnementstatus konnte nicht abgerufen werden: {error}",
     "failedToInitializeCameraAngleViewer": "Der Kamerawinkel-Viewer konnte nicht initialisiert werden. Versuchen Sie, die Seite neu zu laden.",
@@ -6109,12 +6173,14 @@
     "undo": "Rückgängig"
   },
   "widgets": {
+    "backFromFolder": "Zurück: {name}",
     "boolean": {
       "false": "falsch",
       "true": "wahr"
     },
     "node2only": "Nur Node 2.0",
     "precisionLimit": "Erhöhen/Verringern deaktiviert: Wert überschreitet das JavaScript-Präzisionslimit (±2^53)",
+    "selectFolder": "Ordner: {name}",
     "selectModel": "Modell auswählen",
     "uploadSelect": {
       "maxSelectionReached": "Maximale Auswahlanzahl erreicht",
@@ -6287,7 +6353,15 @@
         "salesMemberBody": "Bitten Sie den Besitzer Ihres Workspace, den Vertrieb zu kontaktieren.",
         "teamBody": "Abonnieren Sie erneut, um Workflows auszuführen und wieder geteilte Credits zu erhalten.",
         "teamMemberBody": "Bitten Sie den Besitzer Ihres Workspace, erneut zu abonnieren.",
+        "teamNotCreatorBody": "Der Plan dieses Workspace ist abgelaufen. Bitten Sie den Ersteller des Workspace, ihn erneut zu abonnieren.",
         "teamTitle": "Ihr Team-Plan endete am {date}"
+      },
+      "planNotStarted": {
+        "body": "Schließen Sie die Zahlung ab, um ihn zu starten.",
+        "bodyUnavailable": "Ihr Plan beginnt, sobald die Zahlung eingegangen ist.",
+        "title": "Ihr {plan}-Plan hat noch nicht begonnen",
+        "titleNoPlan": "Ihr Plan hat noch nicht begonnen",
+        "viewPlans": "In „Pläne“ anzeigen"
       },
       "updatePayment": "Zahlungsmethode aktualisieren"
     },

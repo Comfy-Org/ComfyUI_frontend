@@ -12,7 +12,7 @@ const test = mergeTests(comfyPageFixture, templateApiFixture)
  * it cannot reach, because `coordinateNavAndSort` and its two watchers live in
  * `WorkflowTemplateSelectorDialog.vue`. Those watchers mirror nav and sort for
  * browsing — the Popular category selects the Popular sort and moving off it
- * restores Default — which, once a search also defaults to Popular, would
+ * restores the saved sort — which, once a search also defaults to Popular, would
  * discard the sort the user is looking at every time the category changed.
  */
 test.describe('Template search sort', () => {

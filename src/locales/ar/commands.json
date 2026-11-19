@@ -149,6 +149,9 @@
   "Comfy_ExportWorkflowAPI": {
     "label": "تصدير سير العمل (تنسيق API)"
   },
+  "Comfy_ExportWorkflowImage": {
+    "label": "تصدير صورة سير العمل"
+  },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "تحويل التحديد إلى رسم فرعي"
   },

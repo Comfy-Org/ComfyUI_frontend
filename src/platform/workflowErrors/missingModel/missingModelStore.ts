@@ -286,19 +286,22 @@ export const useMissingModelStore = defineStore('missingModel', () => {
 
     isRefreshingMissingModels.value = true
     try {
-      await useApp().refreshMissingModels({
+      const { surfaced } = await useApp().refreshMissingModels({
         silent: true,
         reloadDefs: options.reloadDefs
       })
+      const release = () => {
+        isRefreshingMissingModels.value = false
+      }
+      void surfaced.then(release, release)
     } catch (error) {
+      isRefreshingMissingModels.value = false
       if (isAbortError(error)) return
 
       console.error('Failed to refresh missing models:', error)
       useToast().error(t('g.error'), {
         description: t('rightSidePanel.missingModels.refreshFailed')
       })
-    } finally {
-      isRefreshingMissingModels.value = false
     }
   }
 
