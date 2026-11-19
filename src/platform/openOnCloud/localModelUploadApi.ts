@@ -1,6 +1,7 @@
 import {
   combineAbortSignals,
-  createTimeoutSignal
+  createTimeoutSignal,
+  throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
 import {
   zGetFeaturesResponse,
@@ -38,7 +39,7 @@ function cloudUploadUrl(route: string): string {
 /** Sends an upload route to Comfy Cloud as the signed-in workspace. */
 export const cloudUploadRequest: UploadRouteRequest = async (route, init) => {
   const headers = await cloudHeaders(init.headers)
-  init.signal?.throwIfAborted()
+  throwIfAborted(init.signal ?? undefined)
   return fetch(cloudUploadUrl(route), { ...init, headers })
 }
 
@@ -107,6 +108,20 @@ const TASK_OUTCOMES: Partial<Record<string, StoredTaskOutcome>> = {
   cancelled: { ok: false, reason: 'cancelled' }
 }
 
+async function readTaskOutcome(
+  response: Response,
+  signal: AbortSignal
+): Promise<StoredTaskOutcome | undefined> {
+  if (response.status >= 500 || response.status === 429) return
+  if (!response.ok) return { ok: false, reason: 'storagePending' }
+  const task = zGetTaskResponse.safeParse(await response.json())
+  if (signal.aborted) return
+  if (!task.success) return { ok: false, reason: 'storagePending' }
+  if (task.data.status === 'failed')
+    return { ok: false, reason: 'failed', message: task.data.error_message }
+  return TASK_OUTCOMES[task.data.status]
+}
+
 async function readStoredTask(
   taskId: string,
   signal: AbortSignal,
@@ -120,14 +135,7 @@ async function readStoredTask(
     response = await request(`/tasks/${encodeURIComponent(taskId)}`, {
       signal: pollSignal
     })
-    if (response.status >= 500 || response.status === 429) return
-    if (!response.ok) return { ok: false, reason: 'storagePending' }
-    const task = zGetTaskResponse.safeParse(await response.json())
-    if (pollSignal.aborted) return
-    if (!task.success) return { ok: false, reason: 'storagePending' }
-    if (task.data.status === 'failed')
-      return { ok: false, reason: 'failed', message: task.data.error_message }
-    return TASK_OUTCOMES[task.data.status]
+    return await readTaskOutcome(response, pollSignal)
   } catch {
     if (!response || pollSignal.aborted) return
     return { ok: false, reason: 'storagePending' }

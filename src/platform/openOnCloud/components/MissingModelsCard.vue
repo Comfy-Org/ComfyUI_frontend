@@ -44,14 +44,7 @@
           />
         </div>
         <p class="my-0 text-xs text-muted-foreground">
-          {{
-            upload.canCancel
-              ? $t('openOnCloud.missingModels.progress', {
-                  sent: formatSize(upload.sent),
-                  total: formatSize(upload.total)
-                })
-              : $t('assetBrowser.fileUpload.saving')
-          }}
+          {{ progressText }}
         </p>
       </div>
       <p
@@ -63,7 +56,7 @@
       </p>
       <footer class="flex justify-end gap-2.5 pt-3">
         <Button
-          v-if="isPrepared && !uploads.isUploading"
+          v-if="canRecheck"
           variant="secondary"
           size="lg"
           @click="uploads.checkAgain"
@@ -71,10 +64,10 @@
           {{ $t('openOnCloud.missingModels.checkAgain') }}
         </Button>
         <Button
-          v-if="footer !== 'uploading' || uploads.canCancel"
+          v-if="showSecondary"
           variant="secondary"
           size="lg"
-          @click="footer === 'uploading' ? uploads.cancel() : emit('dismiss')"
+          @click="onSecondary"
         >
           {{ $t(SECONDARY_COPY[footer]) }}
         </Button>
@@ -82,19 +75,11 @@
           v-if="footer !== 'close'"
           variant="inverted"
           size="lg"
-          :data-testid="
-            footer === 'upload' ? 'missing-models-upload' : undefined
-          "
-          :disabled="footer === 'upload' && !uploads.canUpload(models)"
+          :data-testid="uploadButtonId"
+          :disabled="uploadDisabled"
           @click="onPrimary"
         >
-          {{
-            footer === 'upload' &&
-            upload.phase === 'failed' &&
-            upload.reason === 'storagePending'
-              ? $t('g.retry')
-              : $t(PRIMARY_COPY[footer])
-          }}
+          {{ $t(primaryCopy) }}
         </Button>
       </footer>
     </section>
@@ -209,6 +194,33 @@ const footer = computed<Footer>(() => {
   return canOffer.value ? 'upload' : 'close'
 })
 
+const canRecheck = computed(() => isPrepared.value && !uploads.isUploading)
+const showSecondary = computed(
+  () => footer.value !== 'uploading' || uploads.canCancel
+)
+const uploadButtonId = computed(() =>
+  footer.value === 'upload' ? 'missing-models-upload' : undefined
+)
+const uploadDisabled = computed(
+  () => footer.value === 'upload' && !uploads.canUpload(models)
+)
+const primaryCopy = computed(() =>
+  footer.value === 'upload' &&
+  upload.value.phase === 'failed' &&
+  upload.value.reason === 'storagePending'
+    ? 'g.retry'
+    : PRIMARY_COPY[footer.value]
+)
+const progressText = computed(() => {
+  const current = upload.value
+  if (current.phase !== 'uploading') return ''
+  if (!current.canCancel) return t('assetBrowser.fileUpload.saving')
+  return t('openOnCloud.missingModels.progress', {
+    sent: formatSize(current.sent),
+    total: formatSize(current.total)
+  })
+})
+
 const totalSize = computed(() => {
   if (!canOffer.value) return ''
   const bytes = models.reduce(
@@ -222,6 +234,11 @@ function failureText(reason: LocalModelUploadFailure, message?: string) {
   const key = FAILURE_COPY[reason]
   if (key) return t(key)
   return message ?? t('openOnCloud.missingModels.failed')
+}
+
+function onSecondary() {
+  if (footer.value === 'uploading') uploads.cancel()
+  else emit('dismiss')
 }
 
 function onPrimary() {

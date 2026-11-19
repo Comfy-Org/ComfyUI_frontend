@@ -417,42 +417,45 @@ async function stageFile(
   return stopped
 }
 
+async function completeStagedFile(
+  file: File,
+  staged: StagedModelFile,
+  { tags, signal, completionTimeoutMs, request }: ModelFileUploadOptions
+): Promise<ModelFileUploadResult> {
+  const completionSignal =
+    completionTimeoutMs === undefined
+      ? signal
+      : combineAbortSignals([signal, createTimeoutSignal(completionTimeoutMs)])
+
+  const completeRes = await postJson(
+    `${UPLOADS_ENDPOINT}/${encodeURIComponent(staged.uploadId)}/complete`,
+    {
+      filename: file.name,
+      tags,
+      upload_analytics: { client: UPLOAD_CLIENT, resumed: staged.resumed }
+    } satisfies z.input<typeof zCompleteModelUploadBody>,
+    completionSignal,
+    request
+  )
+  if (!completeRes.ok) return await readFailure(completeRes)
+  const task = zCompleteModelUploadResponse.safeParse(await completeRes.json())
+  if (!task.success) {
+    return { ok: false, reason: 'failed', cause: task.error }
+  }
+  return { ok: true, taskId: task.data.task_id }
+}
+
 async function uploadModelFile(
   file: File,
   options: ModelFileUploadOptions
 ): Promise<ModelFileUploadResult> {
-  const { tags, signal } = options
+  const { signal } = options
   try {
     const staged = options.resumeFrom ?? (await stageFile(file, options))
     if ('ok' in staged) return staged
     if (signal.aborted) return { ok: false, reason: 'cancelled' }
     options.onCompleting?.(staged)
-    const completionSignal =
-      options.completionTimeoutMs === undefined
-        ? signal
-        : combineAbortSignals([
-            signal,
-            createTimeoutSignal(options.completionTimeoutMs)
-          ])
-
-    const completeRes = await postJson(
-      `${UPLOADS_ENDPOINT}/${encodeURIComponent(staged.uploadId)}/complete`,
-      {
-        filename: file.name,
-        tags,
-        upload_analytics: { client: UPLOAD_CLIENT, resumed: staged.resumed }
-      } satisfies z.input<typeof zCompleteModelUploadBody>,
-      completionSignal,
-      options.request
-    )
-    if (!completeRes.ok) return await readFailure(completeRes)
-    const task = zCompleteModelUploadResponse.safeParse(
-      await completeRes.json()
-    )
-    if (!task.success) {
-      return { ok: false, reason: 'failed', cause: task.error }
-    }
-    return { ok: true, taskId: task.data.task_id }
+    return await completeStagedFile(file, staged, options)
   } catch (cause) {
     return signal.aborted
       ? { ok: false, reason: 'cancelled' }
