@@ -631,11 +631,7 @@ export class ComfyApi extends EventTarget {
       : { authHeader: await this.authProvider.getAuthHeader() }
   }
 
-  /**
-   * The credential headers {@link fetchApi} attaches to a request with this
-   * method, for extensions that send their own requests (e.g. an
-   * XMLHttpRequest upload with progress). Empty off-cloud and when signed out.
-   */
+  /** The credential headers {@link fetchApi} attaches to a request with this method; empty off-cloud or signed out. */
   async getRequestAuthHeaders({
     method = 'GET'
   }: { method?: string } = {}): Promise<Record<string, string>> {

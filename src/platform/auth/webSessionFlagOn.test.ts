@@ -1068,8 +1068,9 @@ describe('cloud API requests on the shared web session', () => {
     expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(true)
   })
 
-  it('gives an extension sending its own upload the session headers fetchApi sends', async () => {
+  it('gives an extension sending its own requests the session headers fetchApi sends', async () => {
     const ingest = await bootOnSession()
+    const authStore = await api.getAuthStore()
     await useWorkspaceAuthStore().switchWorkspace('ws-team')
     await postPrompt()
     const {
@@ -1077,25 +1078,29 @@ describe('cloud API requests on the shared web session', () => {
       'content-type': __,
       ...sent
     } = ingest.requests.at(-1)!.headers
-
-    const authStore = await api.getAuthStore()
-    const extensionHeaders = await authStore?.getAuthHeader()
-
-    expect(sent).toMatchObject({
-      'x-csrf-token': 'csrf-1',
-      'x-comfy-workspace-id': 'ws-team'
-    })
-    expect(
+    const lowercased = (headers: Record<string, string> | null | undefined) =>
       Object.fromEntries(
-        Object.entries(extensionHeaders ?? {}).map(([name, value]) => [
+        Object.entries(headers ?? {}).map(([name, value]) => [
           name.toLowerCase(),
           value
         ])
       )
+
+    expect(sent).toEqual({
+      'x-comfy-client': COMFY_CLIENT,
+      'x-comfy-workspace-id': 'ws-team',
+      'x-csrf-token': 'csrf-1'
+    })
+    expect(lowercased(await authStore?.getAuthHeader())).toEqual(sent)
+    expect(
+      lowercased(await api.getRequestAuthHeaders({ method: 'POST' }))
     ).toEqual(sent)
-    expect(await api.getRequestAuthHeaders({ method: 'POST' })).toEqual(
-      extensionHeaders
-    )
+    expect(
+      lowercased(await api.getRequestAuthHeaders({ method: 'GET' }))
+    ).toEqual({
+      'x-comfy-client': COMFY_CLIENT,
+      'x-comfy-workspace-id': 'ws-team'
+    })
   })
 
   it('refuses a switch into a workspace the session cannot enter', async () => {

@@ -516,15 +516,15 @@ describe('api.fetchApi', () => {
   })
 
   describe('request auth headers for extensions', () => {
-    afterEach(() => {
-      mockDistribution.isCloud = false
-    })
-
-    function installTokenProvider(authHeader: Record<string, string> | null) {
+    function installTokenProvider(
+      authHeader: Awaited<ReturnType<ApiAuthProvider['getAuthHeader']>>
+    ) {
       mockDistribution.isCloud = true
       const provider: ApiAuthProvider = {
         ...anonymousApiAuthProvider,
-        getAuthHeader: vi.fn().mockResolvedValue(authHeader),
+        getAuthHeader: vi
+          .fn<ApiAuthProvider['getAuthHeader']>()
+          .mockResolvedValue(authHeader),
         getAuthToken: vi.fn().mockResolvedValue('token'),
         fetch: vi.fn().mockResolvedValue(new Response())
       }
@@ -550,30 +550,6 @@ describe('api.fetchApi', () => {
       expect(await api.getRequestAuthHeaders()).toEqual({})
       installTokenProvider(null)
       expect(await api.getRequestAuthHeaders()).toEqual({})
-    })
-
-    it('returns the session headers for the method on a web-session tab', async () => {
-      installTokenProvider({ Authorization: 'Bearer token' })
-      const scope = { session: fromPartial({}), epoch: 1, workspaceId: 'ws' }
-      const ingestHeaders = vi.fn().mockResolvedValue({
-        'X-Comfy-Client': 'client',
-        'X-CSRF-Token': 'csrf'
-      })
-      onTestFinished(
-        provideWebSessionRequests(
-          fromPartial<WebSessionRequests>({
-            scope: async () => scope,
-            send: vi.fn(),
-            ingestHeaders
-          })
-        )
-      )
-
-      expect(await api.getRequestAuthHeaders({ method: 'POST' })).toEqual({
-        'X-Comfy-Client': 'client',
-        'X-CSRF-Token': 'csrf'
-      })
-      expect(ingestHeaders).toHaveBeenCalledExactlyOnceWith(scope, 'POST')
     })
 
     describe('deprecated getAuthStore', () => {
