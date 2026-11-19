@@ -16,10 +16,13 @@ type IsLeaf = (value: object) => boolean
 
 const noLeaf: IsLeaf = () => false
 
+const MAX_DEPTH = 1000
+
 class Unsavable {
   constructor(
     readonly path: string,
-    readonly value: unknown
+    readonly value: unknown,
+    readonly tooDeep = false
   ) {}
 }
 
@@ -33,7 +36,10 @@ export function savableValue(
     return copyOf(value, path, new Set(), noLeaf) as SavableValue
   } catch (error) {
     if (!(error instanceof Unsavable)) throw error
-    throw invalidArgument(member, `${error.path} as ${SAVABLE}`, error.value)
+    const needed = error.tooDeep
+      ? `${path} nested at most ${MAX_DEPTH} deep`
+      : `${error.path} as ${SAVABLE}`
+    throw invalidArgument(member, needed, error.value)
   }
 }
 
@@ -80,6 +86,7 @@ function copyOf(
   if ((!isList && !isPlainData(value)) || ancestors.has(value)) {
     throw new Unsavable(path, value)
   }
+  if (ancestors.size === MAX_DEPTH) throw new Unsavable(path, value, true)
   ancestors.add(value)
   const copy: Record<string, unknown> = isList ? Object.assign([]) : {}
   for (const key of Object.keys(value)) {
