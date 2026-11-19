@@ -162,7 +162,9 @@ registered, so `extend` cannot depend on the order.
     object of the documented fields only, a type name that is non-empty, is
     not a property of `Object.prototype`, and is not registered yet, text for
     the title, category and description, slots of exactly a text `name` and a
-    text `type`, and for an output an optional `shape` of `'default'`,
+    `type` that slot edits accept (non-empty, and no `Object.prototype` member
+    in it, ADR-EXTENSIONS-NODE-API-0073 decision 16: the host's slot-type
+    registry fails to make a node otherwise), and for an output an optional `shape` of `'default'`,
     `'optional'`, `'list'` or `'directional'`, `'backend'` or
     `'frontend'`, and a presentation that is a plain object of `title`
     (`'default'` or `'hidden'`), `resizable` and `collapsible` (each `true`
@@ -318,10 +320,11 @@ registered, so `extend` cannot depend on the order.
 27. `onPropertyChanged` hears every call of the node's `onPropertyChanged`:
     `setProperty`, and each property a saved workflow restores in `configure`.
     `value` is a frozen copy as a workflow would save it, made when a hook
-    first reads it. `setValue` stores a frozen copy of the pack's value in the
-    node's properties, where `setProperty` has just stored the edited one;
-    `undefined` and a value a workflow cannot save are refused with a
-    `TypeError`, and nothing is reported: `setValue` replaces a value and
+    first reads it. `setValue` stores a copy of the pack's value in the
+    node's properties, unfrozen as `setProperty` stores one, where
+    `setProperty` has just stored the edited one; `undefined` and a value a
+    workflow cannot save unchanged (ADR-EXTENSIONS-NODE-API-0070 decision 13)
+    are refused with a `TypeError`, and nothing is reported: `setValue` replaces a value and
     does not delete one. A deletion through the API's `setProperty(name,
     undefined)` is heard with `value` `undefined`; a hook that rejects it or
     gives a value keeps the property. The
