@@ -56,15 +56,12 @@ describe('matrix runner', () => {
   )
 
   it.for([
-    { shape: 'patches the setup-time graph instance', matches: true },
-    {
-      shape: 'keys its patch to the setup-time graph',
-      matches: false
-    }
+    { shape: 'patches the setup-time graph instance', keyedToBootGraph: false },
+    { shape: 'keys its patch to the setup-time graph', keyedToBootGraph: true }
   ])(
     'loads a second workflow after setup and records whether a pack that $shape still serialises it the same',
     { timeout: 30_000 },
-    async ({ matches }) => {
+    async ({ keyedToBootGraph }) => {
       outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
       vi.stubEnv('MATRIX_OUT', outputDir)
       vi.stubEnv('MATRIX_VUE', '')
@@ -83,7 +80,7 @@ describe('matrix runner', () => {
                   const data = serialize.apply(this, args)
                   data.extra = {
                     ...data.extra,
-                    patched: matches || this === bootGraph
+                    patched: !keyedToBootGraph || this === bootGraph
                   }
                   return data
                 }
@@ -100,14 +97,53 @@ describe('matrix runner', () => {
       ) as {
         lifecycle?: Record<string, string>
         serialized?: string
+        perWorkflowRoots?: boolean
         secondRoot?: { serialisationMatches?: boolean }
       }
 
       expect(row.lifecycle?.setup).toBe('OK')
       expect(JSON.parse(row.serialized ?? '{}').extra.patched).toBe(true)
-      expect(row.secondRoot?.serialisationMatches).toBe(matches)
+      expect(row.secondRoot?.serialisationMatches).toBe(
+        !(keyedToBootGraph && row.perWorkflowRoots)
+      )
     }
   )
+
+  it('finishes the row when a lifecycle hook never settles and names the hook that threw', async () => {
+    outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+    vi.stubEnv('MATRIX_OUT', outputDir)
+    vi.stubEnv('MATRIX_VUE', '')
+    const { app } = await import('@/scripts/app')
+
+    await runPack(
+      'hanging-setup',
+      {
+        entry: async () => {
+          app.registerExtension({
+            name: 'matrix.hangingSetup',
+            init() {
+              throw new Error('init needs a canvas')
+            },
+            setup: () => new Promise<void>(() => {})
+          })
+        }
+      },
+      ['entry'],
+      'hanging-setup'
+    )
+
+    const row = JSON.parse(
+      fs.readFileSync(path.join(outputDir, 'hanging-setup.json'), 'utf8')
+    ) as {
+      incomplete?: boolean
+      lifecycle?: Record<string, string>
+      hookErrorMethods?: string[]
+    }
+
+    expect(row.incomplete).toBeUndefined()
+    expect(row.lifecycle?.setup).toMatch(/setup did not settle/)
+    expect(row.hookErrorMethods).toEqual(['init'])
+  }, 60_000)
 
   it('drives more than eight frontend-registered node types from one pack', async () => {
     outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))

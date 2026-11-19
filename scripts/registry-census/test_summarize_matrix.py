@@ -38,6 +38,7 @@ def row(pack: str, **over: object) -> dict:
         'newTypes': [],
         'driveTypes': {},
         'hookErrors': [],
+        'hookErrorMethods': [],
         'ops': {'load': {'err': '', 'sig': '{}', 'depr': '', 'desync': ''}},
     }
     base.update(over)
@@ -79,8 +80,9 @@ def break_register_custom_nodes(r: dict) -> None:
     r['registerCustomNodes'] = 'boom'
 
 
-def add_hook_error(r: dict) -> None:
-    r['hookErrors'] = ['Error calling extension "x" beforeRegisterNodeDef']
+def add_hook_error(r: dict, method: str = 'beforeRegisterNodeDef') -> None:
+    r['hookErrors'] = [f"Error calling extension 'x' method '{method}'"]
+    r['hookErrorMethods'] = [method]
 
 
 def break_op_err(r: dict) -> None:
@@ -123,7 +125,7 @@ CRITERION_CASES = (
      100 - F['register_node_def']),
     ('registerCustomNodes OK', break_register_custom_nodes,
      100 - F['register_custom_nodes']),
-    ('packs free of contained hook errors', add_hook_error,
+    ('packs free of gated hook errors', add_hook_error,
      100 - F['hook_free']),
     ('every operation clean', break_op_err, 100 - F['op_clean']),
     ('every operation clean', break_op_desync, 100 - F['op_clean']),
@@ -156,6 +158,22 @@ class Criteria(unittest.TestCase):
         v = sm.evaluate(broken(50, break_op_desync), {})
         self.assertEqual(v.code, 1)
         self.assertIn('every operation clean', v.breaches[0])
+
+    def test_errors_from_telemetry_hooks_are_reported_not_gated(self) -> None:
+        every_setup_throws = broken(
+            100, lambda r: add_hook_error(r, 'setup')
+        )
+        v = sm.evaluate(every_setup_throws, {})
+        self.assertEqual(v.code, 0, v.lines)
+        self.assertRegex('\n'.join(v.lines), r'not gated:\n\s+setup\s+100 pack')
+
+        unattributed = 100 - int(F['hook_free']) + 1
+        v = sm.evaluate(
+            broken(unattributed, lambda r: add_hook_error(r, 'unattributed')),
+            {},
+        )
+        self.assertEqual(v.code, 1)
+        self.assertIn('packs free of gated hook errors', v.breaches[0])
 
     def test_ungated_row_fields_are_labelled_telemetry(self) -> None:
         report = '\n'.join(sm.evaluate(population(), {}).lines)

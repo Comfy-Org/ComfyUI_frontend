@@ -182,14 +182,34 @@ async function installGlobals() {
 type MatrixApp = Awaited<ReturnType<typeof installGlobals>>['app']
 type Op = (name: string, fn: () => unknown) => Promise<void>
 
+const LIFECYCLE_HOOK_TIMEOUT_MS = 10_000
+
+function settleWithin<T>(work: Promise<T>, method: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const expiry = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `${method} did not settle within ${LIFECYCLE_HOOK_TIMEOUT_MS} ms`
+          )
+        ),
+      LIFECYCLE_HOOK_TIMEOUT_MS
+    )
+  })
+  return Promise.race([work, expiry]).finally(() => clearTimeout(timer))
+}
+
 async function createLifecycle(app: MatrixApp, GraphClass: new () => LGraph) {
   const { useExtensionService } =
     await import('@/platform/extensions/services/extensionService')
   const service = useExtensionService()
-  const invoke = service.invokeExtensionsAsync as (
+  const invokeAsync = service.invokeExtensionsAsync as (
     method: string,
     ...args: unknown[]
   ) => Promise<unknown>
+  const invoke = (method: string, ...args: unknown[]) =>
+    settleWithin(invokeAsync(method, ...args), method)
   const createRootGraph: unknown = Reflect.get(app, 'createRootGraph')
   const perWorkflowRoots = typeof createRootGraph === 'function'
   const record: Record<string, string> = {}
@@ -502,10 +522,12 @@ export async function runPack(
   // console.errors them), so a pack whose hook throws would otherwise read
   // clean. Capture the containment signature as row data.
   const hookErrors: string[] = []
+  const hookErrorMethods = new Set<string>()
   vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
     const text = args.map(argText).join(' ').replace(/\s+/g, ' ')
-    if (text.includes('Error calling extension'))
-      hookErrors.push(text.slice(0, 200))
+    if (!text.includes('Error calling extension')) return
+    hookErrors.push(text.slice(0, 200))
+    hookErrorMethods.add(/ method '([^']+)'/.exec(text)?.[1] ?? 'unattributed')
   })
   vi.spyOn(console, 'warn').mockImplementation(() => {})
   vi.spyOn(console, 'log').mockImplementation(() => {})
@@ -989,6 +1011,7 @@ export async function runPack(
   row.ops = ops
   row.storeReadErrors = storeReadErrors
   row.hookErrors = [...new Set(hookErrors)].slice(0, 20)
+  row.hookErrorMethods = [...hookErrorMethods].sort()
   row.vueNodesMode = LiteGraph.vueNodesMode
 
   fs.writeFileSync(rowPath, JSON.stringify(row))
