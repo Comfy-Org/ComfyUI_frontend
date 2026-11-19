@@ -77,17 +77,12 @@ describe('loadAndApply', () => {
 })
 
 describe('save', () => {
-  it('delays writing settings captured at call time', () => {
+  it('writes the settings at call time without waiting for a timer', () => {
     const store = useMaskEditorStore()
     store.setBrushSize(300)
     const { save } = useMaskEditorPreferences()
     save()
     store.setBrushSize(10)
-
-    expect(localStorage.getItem(BRUSH_STORAGE_KEY)).toBeNull()
-    expect(vi.getTimerCount()).toBe(1)
-
-    vi.runOnlyPendingTimers()
 
     const saved = JSON.parse(localStorage.getItem(BRUSH_STORAGE_KEY) ?? '{}')
     expect(saved.size).toBe(250)
@@ -96,7 +91,7 @@ describe('save', () => {
 })
 
 describe('tool settings', () => {
-  it('restores tool settings after the editor is closed and reopened', () => {
+  it('restores tool settings when the editor is reopened right after closing', () => {
     const store = useMaskEditorStore()
     store.rgbColor = '#00FF00'
     store.maskBlendMode = MaskBlendMode.White
@@ -113,7 +108,6 @@ describe('tool settings', () => {
     const { save, loadAndApply } = useMaskEditorPreferences()
 
     save()
-    vi.runOnlyPendingTimers()
     store.resetState()
     loadAndApply()
 

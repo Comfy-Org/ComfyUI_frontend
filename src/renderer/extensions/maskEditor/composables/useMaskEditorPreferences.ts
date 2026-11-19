@@ -1,4 +1,3 @@
-import { debounce } from 'es-toolkit/compat'
 import { z } from 'zod'
 
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
@@ -63,15 +62,6 @@ function readStoredJson(key: string): unknown {
   }
 }
 
-const debouncedWrite = debounce((brush: string, tools: string): void => {
-  try {
-    setStorageValue(BRUSH_STORAGE_KEY, brush)
-    setStorageValue(TOOL_STORAGE_KEY, tools)
-  } catch (error) {
-    reportPreferencesFailure(error, 'error_saving_mask_editor_preferences')
-  }
-}, 300)
-
 export function useMaskEditorPreferences() {
   const store = useMaskEditorStore()
 
@@ -134,10 +124,12 @@ export function useMaskEditorPreferences() {
   }
 
   function save(): void {
-    debouncedWrite(
-      JSON.stringify(store.brushSettings),
-      JSON.stringify(currentToolSettings())
-    )
+    try {
+      setStorageValue(BRUSH_STORAGE_KEY, JSON.stringify(store.brushSettings))
+      setStorageValue(TOOL_STORAGE_KEY, JSON.stringify(currentToolSettings()))
+    } catch (error) {
+      reportPreferencesFailure(error, 'error_saving_mask_editor_preferences')
+    }
   }
 
   return { loadAndApply, save }
