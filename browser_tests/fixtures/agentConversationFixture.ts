@@ -584,23 +584,29 @@ export class AgentConversationHarness {
     ).toHaveCount(0)
   }
 
+  private recordWidgetOp(
+    graph: ReturnType<HostDoc['graph']>,
+    op: RecordedGraphOperation,
+    latest: Map<string, RecordedWidgetValue>
+  ): void {
+    if (op.op !== 'set_widget' || typeof op.widget !== 'string') return
+    const nodeId = String(op.node_id)
+    const widget = op.widget
+    const widgets = graph.nodes[nodeId]?.widgets as
+      | Record<string, unknown>
+      | undefined
+    const value = widgets?.[widget]
+    if (typeof value === 'string' || typeof value === 'number')
+      latest.set(`${nodeId}/${widget}`, { nodeId, widget, value })
+  }
+
   // Last write wins per widget; the rendered control shows only the final value.
   private recordedWidgetValues(throughTurn: number): RecordedWidgetValue[] {
     const graph = this.host.graph()
     const latest = new Map<string, RecordedWidgetValue>()
     for (const entry of this.entries(throughTurn)) {
       if (entry.kind !== 'graph_ops') continue
-      for (const op of entry.ops) {
-        if (op.op !== 'set_widget' || typeof op.widget !== 'string') continue
-        const nodeId = String(op.node_id)
-        const widget = op.widget
-        const widgets = graph.nodes[nodeId]?.widgets as
-          | Record<string, unknown>
-          | undefined
-        const value = widgets?.[widget]
-        if (typeof value === 'string' || typeof value === 'number')
-          latest.set(`${nodeId}/${widget}`, { nodeId, widget, value })
-      }
+      for (const op of entry.ops) this.recordWidgetOp(graph, op, latest)
     }
     return [...latest.values()]
   }
