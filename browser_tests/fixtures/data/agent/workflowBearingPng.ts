@@ -35,11 +35,7 @@ function singlePixel(pixel: [number, number, number]): Buffer {
   return deflateSync(Buffer.from([0, ...pixel]), { level: 1 })
 }
 
-/**
- * A decodable 1x1 PNG carrying the given ComfyUI metadata in `tEXt`. A key
- * absent from `metadata` gets no chunk, so a caller can build the prompt-only
- * shape that API submissions produce.
- */
+/** A decodable 1x1 PNG carrying the given ComfyUI metadata in `tEXt`. */
 export function createWorkflowBearingPng(
   metadata: { workflow?: unknown; prompt?: unknown },
   options: { pixel?: [number, number, number] } = {}

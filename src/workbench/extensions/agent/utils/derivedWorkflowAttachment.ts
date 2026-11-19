@@ -32,15 +32,7 @@ function parseWorkflow(raw: string | object): unknown {
   return typeof raw === 'string' ? parseJsonWithNonFinite(raw) : raw
 }
 
-/**
- * Lifts an embedded editor workflow out of `file` as a `.json` File ready to
- * stage as its own attachment.
- *
- * Resolves undefined without reading `file` unless it is an image container
- * that can carry a workflow, and undefined when there is nothing to lift,
- * including an API-format `prompt` with no editor graph, and on any read or
- * parse failure.
- */
+/** Lifts an embedded editor workflow out of `file`, or undefined if there is none. */
 export async function deriveWorkflowFile(
   file: File
 ): Promise<File | undefined> {

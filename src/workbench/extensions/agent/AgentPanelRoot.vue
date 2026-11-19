@@ -2212,7 +2212,10 @@ async function consentAllowsSubmission(
 }
 
 const { submit: onSend } = useAgentDraftSubmission({
-  canSubmit: () => !workflowSelecting.value && !isSending.value,
+  canSubmit: () =>
+    !workflowSelecting.value &&
+    !isSending.value &&
+    !attachment.liftingWorkflow.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
   onRejected: sendGates.rejectDraft,
   target: () => selectedTarget.value,

@@ -1,3 +1,5 @@
+import { computed, ref } from 'vue'
+
 import { TimeoutError } from 'es-toolkit/error'
 import { withTimeout } from 'es-toolkit/promise'
 
@@ -22,6 +24,8 @@ import {
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
 export const MAX_TURN_ATTACHMENTS = 25
+
+const MAX_IMPORTED_WORKFLOW_BYTES = 10 * 1024 * 1024
 const UPLOAD_HANDSHAKE_TIMEOUT_MS = 30 * 1000
 const UPLOAD_FLOOR_BYTES_PER_SECOND = 64 * 1024
 const DEFERRED_FETCH_TIMEOUT_MS = 60 * 1000
@@ -134,6 +138,8 @@ function uploadedPreview(
 
 export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
+  const deriving = ref(new Set<string>())
+  const derivingCancelled = new Set<string>()
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
@@ -190,6 +196,28 @@ export function useAttachment(options: UseAttachmentOptions) {
     pending.delete(id)
     inFlight.delete(id)
     cancelled.delete(id)
+  }
+
+  function markDeriving(id: string, active: boolean): void {
+    const next = new Set(deriving.value)
+    if (active) next.add(id)
+    else {
+      next.delete(id)
+      derivingCancelled.delete(id)
+    }
+    deriving.value = next
+  }
+
+  function isDerivationCancelled(id: string): boolean {
+    return derivingCancelled.has(id) || cancelled.has(id)
+  }
+
+  function exceedsAttachmentLimit(file: File): boolean {
+    return file.size > (options.maxBytes?.(file) ?? MAX_ATTACHMENT_BYTES)
+  }
+
+  function exceedsImportLimit(file: File): boolean {
+    return file.size > MAX_IMPORTED_WORKFLOW_BYTES
   }
 
   function isTooLarge(file: File): boolean {
@@ -356,6 +384,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelUpload(id: string): void {
+    if (deriving.value.has(id)) derivingCancelled.add(id)
     if (!pending.has(id)) return
     cancelled.add(id)
     options.remove(id)
@@ -363,6 +392,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelAllUploads(): void {
+    for (const id of Array.from(deriving.value)) derivingCancelled.add(id)
     for (const id of Array.from(pending)) cancelUpload(id)
   }
 
@@ -470,15 +500,6 @@ export function useAttachment(options: UseAttachmentOptions) {
     return id ? { file, outcome: 'upload', id } : { file, outcome: 'duplicate' }
   }
 
-  /**
-   * Lifts an embedded workflow out of each uploaded source and stages it as its
-   * own attachment.
-   *
-   * The lifted workflow is staged as an ordinary uploading attachment, so the
-   * existing send guard refuses to submit while it is outstanding and
-   * `cancelAllUploads` reaches it. Runs detached from the caller's promise, so
-   * attaching a file is never slower for it.
-   */
   async function attachDerivedWorkflows(
     sources: readonly { id: string; file: File }[]
   ): Promise<boolean> {
@@ -487,22 +508,28 @@ export function useAttachment(options: UseAttachmentOptions) {
     )
     if (!candidates.length) return false
 
-    const lifted = (
-      await Promise.all(
-        candidates.map(async ({ id, file }) => ({
-          id,
-          file: await deriveWorkflowFile(file).catch(() => undefined)
-        }))
+    for (const { id } of candidates) markDeriving(id, true)
+    let lifted: Array<{ id: string; file: File }>
+    try {
+      lifted = (
+        await Promise.all(
+          candidates.map(async ({ id, file }) => ({
+            id,
+            file: await deriveWorkflowFile(file).catch(() => undefined)
+          }))
+        )
+      ).flatMap(({ id, file }) =>
+        file && !isDerivationCancelled(id) ? [{ id, file }] : []
       )
-    ).flatMap(({ id, file }) =>
-      file && !cancelled.has(id) ? [{ id, file }] : []
-    )
+    } finally {
+      for (const { id } of candidates) markDeriving(id, false)
+    }
     if (!lifted.length) return false
 
     const staged = lifted.flatMap(({ id, file }) => {
       const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${id}`
       if (admit(sourceKey) !== 'admitted') return []
-      if (isTooLarge(file)) return []
+      if (exceedsAttachmentLimit(file) || exceedsImportLimit(file)) return []
       const derivedId = stage(file.name, sourceKey)
       return derivedId ? [{ id: derivedId, file }] : []
     })
@@ -548,6 +575,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     addUnsupportedAsset,
     cancelUpload,
     cancelAllUploads,
-    forgetUploads
+    forgetUploads,
+    liftingWorkflow: computed(() => deriving.value.size > 0)
   }
 }

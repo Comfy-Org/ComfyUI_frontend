@@ -24,6 +24,7 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import MARKER_WORKFLOW_ASSET from '@e2e/assets/agent/embedded-workflow-marker.json'
 import { createWorkflowBearingPng } from '@e2e/fixtures/data/agent/workflowBearingPng'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -66,30 +67,14 @@ function markerWorkflow(
   id: number,
   title: string
 ): WorkflowJSON & ComfyWorkflowJSON {
-  return {
-    last_node_id: id,
-    last_link_id: 0,
-    nodes: [
-      {
-        id,
-        type: MARKER_TYPE,
-        title,
-        pos: [320, 240],
-        size: [260, 60],
-        flags: {},
-        order: 0,
-        mode: 0,
-        inputs: [],
-        outputs: [],
-        properties: {}
-      }
-    ],
-    links: [],
-    groups: [],
-    config: {},
-    extra: {},
-    version: 0.4
-  }
+  const asset = structuredClone(
+    MARKER_WORKFLOW_ASSET
+  ) as unknown as WorkflowJSON & ComfyWorkflowJSON
+  asset.last_node_id = id
+  const [node] = asset.nodes
+  node.id = id
+  node.title = title
+  return asset
 }
 
 const CURRENT_WORKFLOW = markerWorkflow(
@@ -248,7 +233,6 @@ class AgentEmbeddedWorkflowAttachmentFixture {
     })
   }
 
-  /** The workflow JSON the composer lifted out of the image and uploaded. */
   async liftedWorkflow(): Promise<unknown> {
     await expect
       .poll(() => this.uploads.some((file) => file.filename === DERIVED_NAME))
@@ -258,7 +242,6 @@ class AgentEmbeddedWorkflowAttachmentFixture {
     return JSON.parse(derived.text)
   }
 
-  /** True when the lifted upload carries the graph embedded in the image. */
   async liftedWorkflowHasMarker(): Promise<boolean> {
     return hasEmbeddedWorkflowMarker(await this.liftedWorkflow())
   }
