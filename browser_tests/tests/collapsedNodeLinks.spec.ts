@@ -47,10 +47,14 @@ test.describe(
         NODE_ID
       )) ?? { nodeW: 0, slots: [] }
       expect(slots.length).toBeGreaterThan(1)
-      for (const slot of slots) {
-        const edge = slot.key.includes('-in-') ? 0 : nodeW
-        expect(slot.offsetX, `Slot ${slot.key} anchor`).toBeCloseTo(edge, -1)
-      }
+      const displacedAnchors = slots
+        .map(({ key, offsetX }) => ({
+          key,
+          offsetX,
+          edge: key.includes('-in-') ? 0 : nodeW
+        }))
+        .filter(({ offsetX, edge }) => Math.abs(offsetX - edge) > 5)
+      expect(displacedAnchors, 'Slot anchors off the node edge').toEqual([])
     })
 
     test('links follow collapsed node after drag', async ({ comfyPage }) => {

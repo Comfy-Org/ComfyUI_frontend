@@ -4,7 +4,12 @@
   </div>
   <div
     v-else
-    :class="headerClass"
+    :class="
+      cn(
+        'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4 group-data-collapsed/node:pr-7',
+        headerShapeClass
+      )
+    "
     :data-testid="`node-header-${nodeData?.id || ''}`"
     @dblclick="handleDoubleClick"
   >
@@ -39,14 +44,14 @@
             />
           </Button>
         </div>
-        <Tooltip :disabled="!titleTooltip">
+        <Tooltip :disabled="!hasTitleTooltip">
           <TooltipTrigger as-child>
             <div
               class="flex min-w-0 flex-1 items-center gap-2"
               data-testid="node-title"
               @pointerenter="measureTitleTruncation"
             >
-              <div ref="titleText" :class="titleClass">
+              <div ref="titleText" class="flex-1 truncate">
                 <EditableText
                   :model-value="displayTitle"
                   :is-editing="isEditing"
@@ -106,11 +111,10 @@ import type { NodeBadgeProps } from './NodeBadge.vue'
 interface NodeHeaderProps {
   nodeData?: NodeState
   collapsed?: boolean
-  compact?: boolean
   showMissingWarning?: boolean
 }
 
-const { nodeData, collapsed, compact, showMissingWarning } =
+const { nodeData, collapsed, showMissingWarning } =
   defineProps<NodeHeaderProps>()
 
 const emit = defineEmits<{
@@ -146,12 +150,8 @@ const nodeDescription = computed(() =>
   isEditing.value ? '' : getNodeDescription.value
 )
 
-const titleTooltip = computed(
+const hasTitleTooltip = computed(
   () => showFullTitle.value || !!nodeDescription.value
-)
-
-const titleClass = computed(() =>
-  cn('flex-1 truncate', compact && isEditing.value && 'w-(--min-node-width)')
 )
 
 const resolveTitle = (info: NodeState | undefined) => {
@@ -199,14 +199,6 @@ const headerShapeClass = computed(() => {
       return 'rounded-t-(--node-radius)'
   }
 })
-
-const headerClass = computed(() =>
-  cn(
-    'lg-node-header w-full min-w-0 py-1 pr-2 pl-1 text-(length:--node-title-font-size) leading-4',
-    compact && 'pr-7',
-    headerShapeClass.value
-  )
-)
 
 // Event handlers
 const handleCollapse = () => {

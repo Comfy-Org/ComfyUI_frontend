@@ -120,7 +120,6 @@
           <NodeHeader
             :node-data
             :collapsed="isCollapsed"
-            :compact="compactHeader"
             :show-missing-warning="
               errorSeverity === 'missing' && !showErrorsTabEnabled
             "
