@@ -3069,7 +3069,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(committed).toBe(true)
       expect(card()).toMatchObject({
-        resolution: { status: 'answered', selected: [] }
+        resolution: { status: 'unconfirmed' }
       })
       expect(session.notices.value).toEqual([
         {
@@ -3287,6 +3287,35 @@ describe('useAgentSession (v1 composition root)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('keeps a first-attempt 409 submission for the winning resolution frame', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    status(true)
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
+    emit(askResolved('msg-1', 'turn-1:call-1', ['run']))
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+    )
+    expect(session.notices.value).toEqual([
+      {
+        level: 'error',
+        text: enMessages.agent.runApproval.answerSuperseded
+      }
+    ])
   })
 
   it('reports a 409 after a retry because the first attempt may have landed', async () => {
@@ -6591,7 +6620,7 @@ describe('useAgentSession (v1 composition root)', () => {
         'turn-1:call-1'
       ])
 
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(3_000)
 
       expect(approvalParts(session).map((part) => part.askId)).toEqual([
         currentAskId
@@ -6619,7 +6648,7 @@ describe('useAgentSession (v1 composition root)', () => {
 
       status(false)
       status(true)
-      await vi.advanceTimersByTimeAsync(1_000)
+      await vi.advanceTimersByTimeAsync(3_000)
 
       expect(approvalParts(session)).toHaveLength(0)
     } finally {

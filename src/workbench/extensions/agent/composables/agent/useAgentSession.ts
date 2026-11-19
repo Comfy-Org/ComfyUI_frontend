@@ -1047,7 +1047,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (conversationStore.threadId !== threadId || !isCurrent()) return false
     conversationStore.hydrate(history)
     rememberSnapshotTurn(conversationStore.activeTurnId)
-    reconcileLiveTurns('hydrate')
+    reconcileLiveTurns('hydrate', threadId)
     readyThreadId.value = threadId
     drainHydration(buffer)
     const workflowReady = await workflow?.restored?.(
@@ -2002,11 +2002,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.threadId === currentThreadId
       )
     recordDeliveredAsk(askId)
-    conversationStore.commitAsk(askId, currentThreadId, {
-      status: 'answered',
-      selected: answer.selected,
-      ...(answer.other_text ? { otherText: answer.other_text } : {})
-    })
+    if (resolutionStillPending)
+      conversationStore.commitAsk(askId, currentThreadId, {
+        status: 'unconfirmed'
+      })
     if (resolutionStillPending && !channelDropped) {
       if (stopped) {
         reportAcceptedRecoveredAnswer(askId, true, false)
@@ -2103,16 +2102,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
         deliveredAsks.delete(askId)
         conversationStore.takeSubmittedAskAnswer(askId)
         conversationStore.setAskAnswering(askId, false)
-        pushError(i18n.global.t('agent.askUser.answerRejected'))
+        if (conversationStore.threadId === threadId)
+          pushError(i18n.global.t('agent.askUser.answerRejected'))
       },
       refused: () => {
-        pushError(i18n.global.t('agent.runApproval.answerFailed'))
+        if (conversationStore.threadId === threadId)
+          pushError(i18n.global.t('agent.runApproval.answerFailed'))
         conversationStore.retireAsk(askId, { status: 'retired' }, threadId)
       },
       unconfirmed: () => {
         recordDeliveredAsk(askId)
-        conversationStore.retireAsk(askId, { status: 'unconfirmed' }, threadId)
-        pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+        conversationStore.retireAsk(
+          askId,
+          { status: 'unconfirmed' },
+          threadId,
+          false
+        )
+        if (conversationStore.threadId === threadId)
+          pushError(i18n.global.t('agent.runApproval.answerUncertain'))
       }
     }
     settle[failure]()
@@ -2183,12 +2190,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
     recordDeliveredAsk(askId)
     conversationStore.retireAsk(
       askId,
-      { status: resolutionChannelWasLost ? 'unconfirmed' : 'retired' },
-      threadId
+      {
+        status:
+          answerRetried && resolutionChannelWasLost ? 'unconfirmed' : 'retired'
+      },
+      threadId,
+      true,
+      undefined,
+      submitted !== undefined
     )
     if (!answerRetried) return
     if (stopped) {
       reportUnconfirmedConflict(askId, false)
+      conversationStore.completeAskResolutionReport(askId)
       return
     }
     if (!resolutionChannelWasLost) {
@@ -2218,6 +2232,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
     if (conversationStore.threadId === threadId)
       pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    conversationStore.completeAskResolutionReport(askId)
   }
 
   function reportSupersededAnswer(
@@ -2550,7 +2565,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (reconnected) {
       conversationStore.markActiveTurnMissedFrames()
       reconcileLiveTurns('reconnect')
-    } else if (firstLive) reconcileLiveTurns('hydrate')
+    } else if (firstLive)
+      reconcileLiveTurns('hydrate', conversationStore.threadId ?? undefined)
   }
 
   function handleSocketOffline(): void {
@@ -2578,9 +2594,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  function reconcileLiveTurns(cause: RecoveryCause): void {
+  function reconcileLiveTurns(
+    cause: RecoveryCause,
+    hydratedThreadId?: string
+  ): void {
     for (const turn of conversationStore.liveTurns())
-      void reconcileTurn(turn, cause)
+      if (hydratedThreadId === undefined || turn.threadId === hydratedThreadId)
+        void reconcileTurn(turn, cause)
   }
 
   async function reconcileTurn(
@@ -2802,7 +2822,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       snapshotNamedDeliveredAsks: new Set(),
       deliveredAsksAwaitingSnapshot: new Set(
         previousObservation === undefined
-          ? []
+          ? deliveredAtRecoveryStart
           : [...deliveredAtRecoveryStart].filter(
               (askId) =>
                 !previousObservation.deliveredAskIds.has(askId) &&
