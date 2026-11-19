@@ -14,10 +14,9 @@ const test = mergeTests(desktopTemplateInputsFixture, templateApiFixture)
 const OFFICIAL_TEMPLATE = 'desktop-inputs'
 const CUSTOM_TEMPLATE = 'extension-inputs'
 const WORKFLOW = 'browser_tests/assets/nodes/single_ksampler.json'
-/** A LoadImage node bound to `bare_photo.png`, which no input folder holds. */
 const WORKFLOW_MISSING_INPUT =
-  'browser_tests/assets/missing/missing_media_bare_filename.json'
-const MISSING_INPUT = 'bare_photo.png'
+  'browser_tests/assets/missing/missing_media_single.json'
+const MISSING_INPUT = 'nonexistent_test_image_12345.png'
 
 /** Names the missing-media scan has confirmed, once it has finished. */
 async function confirmedMissingNames(page: Page): Promise<string[]> {
@@ -43,6 +42,19 @@ function missingAsset(): ComfyTemplateInputAsset {
 }
 
 test.describe('Desktop template input assets', { tag: '@desktop' }, () => {
+  test.use({
+    initialSettings: {
+      'Comfy.RightSidePanel.ShowErrorsTab': true,
+      'Comfy.Workflow.ShowMissingMediaWarning': true
+    }
+  })
+
+  test.beforeEach(async ({ page }) => {
+    await page.route('https://host.invalid/subject.png', (route) =>
+      route.fulfill({ path: 'browser_tests/assets/example.webp' })
+    )
+  })
+
   test('fetches a declared input for a first-party template', async ({
     comfyPage,
     templateApi,
@@ -61,6 +73,9 @@ test.describe('Desktop template input assets', { tag: '@desktop' }, () => {
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
     await comfyPage.templates.selectTemplate(OFFICIAL_TEMPLATE)
+    await comfyPage.page
+      .getByRole('button', { name: 'Download assets & open', exact: true })
+      .click()
 
     await expect
       .poll(() => templateInputHost.lookups())
@@ -91,11 +106,12 @@ test.describe('Desktop template input assets', { tag: '@desktop' }, () => {
     await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
     await expect(comfyPage.templates.content).toBeVisible()
     await comfyPage.templates.selectTemplate(OFFICIAL_TEMPLATE)
+    await comfyPage.page
+      .getByRole('button', { name: 'Download assets & open', exact: true })
+      .click()
 
     await expect.poll(() => templateInputHost.downloads()).toHaveLength(1)
 
-    // The file is genuinely absent, so without the download in flight this is
-    // the state that raises the warning.
     await templateInputHost.emitProgress({
       downloadId: 'job-asset-a',
       filename: MISSING_INPUT,
@@ -104,8 +120,6 @@ test.describe('Desktop template input assets', { tag: '@desktop' }, () => {
       templateInputs: [{ templateId: OFFICIAL_TEMPLATE, assetId: 'asset-a' }]
     })
 
-    // The scan runs without being awaited, so a hidden overlay means nothing
-    // until it has actually confirmed this file as missing.
     await expect
       .poll(() => confirmedMissingNames(comfyPage.page))
       .toContain(MISSING_INPUT)
@@ -113,6 +127,40 @@ test.describe('Desktop template input assets', { tag: '@desktop' }, () => {
     await expect(
       comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
     ).toBeHidden()
+  })
+
+  test('just opens without downloads and preserves missing-media warnings', async ({
+    comfyPage,
+    templateApi,
+    templateInputHost,
+    seedTemplateInputs
+  }) => {
+    await seedTemplateInputs([
+      {
+        templateId: OFFICIAL_TEMPLATE,
+        assets: [{ ...missingAsset(), filename: MISSING_INPUT }]
+      }
+    ])
+    templateApi.configure(
+      withTemplates([makeTemplate({ name: OFFICIAL_TEMPLATE })])
+    )
+    await templateApi.mock()
+    await templateApi.mockWorkflow(OFFICIAL_TEMPLATE, WORKFLOW_MISSING_INPUT)
+
+    await comfyPage.command.executeCommand('Comfy.BrowseTemplates')
+    await expect(comfyPage.templates.content).toBeVisible()
+    await comfyPage.templates.selectTemplate(OFFICIAL_TEMPLATE)
+    await comfyPage.page
+      .getByRole('button', { name: 'Just open', exact: true })
+      .click()
+
+    await expect(
+      comfyPage.page.getByTestId(TestIds.dialogs.errorOverlay)
+    ).toBeVisible()
+    await expect
+      .poll(() => confirmedMissingNames(comfyPage.page))
+      .toContain(MISSING_INPUT)
+    expect(await templateInputHost.downloads()).toEqual([])
   })
 
   test('never asks the host about a template served by an extension', async ({

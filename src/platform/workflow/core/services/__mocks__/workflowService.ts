@@ -4,6 +4,7 @@ import type { useWorkflowService as realUseWorkflowService } from '@/platform/wo
 
 const workflowService: ReturnType<typeof realUseWorkflowService> = {
   exportWorkflow: vi.fn(async () => {}),
+  exportWorkflowImage: vi.fn(async () => {}),
   saveWorkflowAs: vi.fn(async () => true),
   saveWorkflow: vi.fn(async () => true),
   loadDefaultWorkflow: vi.fn(async () => true),

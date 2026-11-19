@@ -1,4 +1,3 @@
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 export const PERSONAL_WORKSPACE_NAME = 'Personal Workspace'
@@ -6,10 +5,6 @@ export const LONG_WORKSPACE_NAME =
   'Quantum Renaissance Collective for Hyperdimensional Latent Diffusion Research and Experimental Workflow Engineering'
 export const TEAM_WORKSPACE_NAME = 'Team Workspace'
 export const OFF_SCREEN_WORKSPACE_NAME = 'Off-screen Team Workspace'
-
-export const WORKSPACE_SWITCHER_REMOTE_CONFIG: RemoteConfig = {
-  unified_cloud_auth: true
-}
 
 export const TEAM_WORKSPACE: WorkspaceWithRole = {
   id: 'ws-team',

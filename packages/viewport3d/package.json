@@ -23,7 +23,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@comfyorg/fbx-exporter-three": "^1.0.1",
+    "@comfyorg/fbx-exporter-three": "^1.0.2",
     "@comfyorg/quad-wireframe-three": "^0.1.0",
     "@comfyorg/shared-frontend-utils": "workspace:*",
     "@sparkjsdev/spark": "catalog:",

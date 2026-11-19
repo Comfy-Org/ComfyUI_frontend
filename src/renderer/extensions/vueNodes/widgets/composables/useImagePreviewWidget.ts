@@ -374,16 +374,6 @@ class ImagePreviewWidget extends BaseWidget {
     )
   }
 
-  override createCopyForNode(node: LGraphNode): this {
-    const copy = new ImagePreviewWidget(
-      node,
-      this.name,
-      this.options as IWidgetOptions<string | object>
-    ) as this
-    copy.value = this.value
-    return copy
-  }
-
   override onPointerDown(pointer: CanvasPointer, node: LGraphNode): boolean {
     pointer.onDragStart = () => {
       const { canvas } = useApp()
