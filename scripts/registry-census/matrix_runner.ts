@@ -61,7 +61,7 @@ type ConvertibleWidget = IBaseWidget & {
 }
 
 interface SigNode {
-  id: unknown
+  id: LGraphNode['id']
   type: unknown
   widgets: unknown
   r: unknown
@@ -180,7 +180,12 @@ async function installGlobals() {
 }
 
 type MatrixApp = Awaited<ReturnType<typeof installGlobals>>['app']
-type Op = (name: string, fn: () => unknown) => Promise<void>
+type Op = (
+  name: string,
+  fn: () => unknown,
+  dispatching?: boolean,
+  measured?: LGraph
+) => Promise<void>
 
 const LIFECYCLE_HOOK_TIMEOUT_MS = 10_000
 
@@ -311,10 +316,11 @@ async function loadSecondWorkflow(
   const secondRoot = lifecycle.perWorkflowRoots
     ? lifecycle.newRootGraph()
     : firstRoot
+  const opOnSecondRoot: Op = (name, fn) => op(name, fn, true, secondRoot)
   Reflect.set(app, 'rootGraphInternal', secondRoot)
-  await loadWithHooks(lifecycle, op, secondRoot, 'secondRoot')
+  await loadWithHooks(lifecycle, opOnSecondRoot, secondRoot, 'secondRoot')
   const secondLoad = await snapshotLoad(app, secondRoot)
-  await op('secondRoot:addRemove', () => {
+  await opOnSecondRoot('secondRoot:addRemove', () => {
     const node = createNode('EmptyLatentImage')
     if (!node) return
     secondRoot.add(node)
@@ -563,9 +569,6 @@ export async function runPack(
 
   const lifecycle = await createLifecycle(app, LGraph)
   const graph = lifecycle.newRootGraph()
-  // ComfyApp.setup() non-null-asserts five DOM elements and needs a 2D
-  // context, so it cannot boot here. DOM widgets read app.rootGraph while
-  // graph.configure runs, so the private field has to be seeded directly.
   Reflect.set(app, 'rootGraphInternal', graph)
   row.perWorkflowRoots = lifecycle.perWorkflowRoots
 
@@ -588,7 +591,8 @@ export async function runPack(
   const defsByName: Record<string, (typeof batteryDefs)[number]> =
     Object.fromEntries(batteryDefs.map((d) => [d.name, d]))
   await lifecycle.run('addCustomNodeDefs', defsByName)
-  for (const nodeDef of batteryDefs.map((d) => defsByName[d.name] ?? d)) {
+  const effectiveBatteryDefs = batteryDefs.map((d) => defsByName[d.name] ?? d)
+  for (const nodeDef of effectiveBatteryDefs) {
     try {
       await svc.registerNodeDef(nodeDef.name, nodeDef)
     } catch (e) {
@@ -596,7 +600,7 @@ export async function runPack(
     }
   }
   const { useNodeDefStore } = await import('@/stores/nodeDefStore')
-  useNodeDefStore().updateNodeDefs(batteryDefs)
+  useNodeDefStore().updateNodeDefs(effectiveBatteryDefs)
   row.registerNodeDef = regErrs.join('|') || 'OK'
 
   // ---- registerCustomNodes (frontend-only pack node types) --------------
@@ -680,13 +684,20 @@ export async function runPack(
     DISPATCHED = false
   }
 
-  /** `nodeId:widgetName` of every row the battery desynced deliberately. */
-  const mangled = new Set<string>()
+  const mangled = new WeakMap<LGraphNode, Set<string>>()
+  function markMangled(node: LGraphNode, widgetName: string) {
+    mangled.set(node, (mangled.get(node) ?? new Set()).add(widgetName))
+  }
+  function isMangled(node: LGraphNode | null | undefined, widgetName: string) {
+    return !!node && !!mangled.get(node)?.has(widgetName)
+  }
 
-  // dispatching=false marks an op that is a bare property or array write with
-  // no call into the app: its err channel cannot fail, so the summarizer must
-  // exclude it from the gated cleanliness percentage.
-  async function op(name: string, fn: () => unknown, dispatching = true) {
+  async function op(
+    name: string,
+    fn: () => unknown,
+    dispatching = true,
+    measured: LGraph = graph
+  ) {
     DEPR = []
     NOTE = ''
     DISPATCHED = dispatching
@@ -698,14 +709,10 @@ export async function runPack(
     }
     let sig: string
     try {
-      sig = signature(graph, wvStore)
+      sig = signature(measured, wvStore)
     } catch (e) {
       sig = 'SIGFAIL ' + errMsg(e)
     }
-    // Vue-renderer desync: a live widget row the store does not back, or backs
-    // with a different type. Rows the battery mangled itself are skipped -
-    // they diverge by construction and are permanent once made, so leaving
-    // them in would mask a real divergence on every op that follows.
     let desync = ''
     try {
       const d = JSON.parse(sig) as { nodes?: SigNode[] }
@@ -716,7 +723,10 @@ export async function runPack(
         const rows = (csv: unknown) =>
           String(csv ?? '')
             .split(',')
-            .filter((e) => e && !mangled.has(`${n.id}:${e.split('=')[0]}`))
+            .filter(
+              (e) =>
+                e && !isMangled(measured.getNodeById(n.id), e.split('=')[0])
+            )
         const live = rows(n.wn).sort()
         const stored = rows(n.st).sort()
         const liveNames = new Set(live.map((e) => e.split('=')[0]))
@@ -730,7 +740,7 @@ export async function runPack(
           .map((n) => `${n.type}#${n.id}(w${n.widgets}/r${n.r})`)
           .join(';')
     } catch {
-      /* sig unparseable */
+      desync = ''
     }
     ops[name] = {
       err,
@@ -803,7 +813,7 @@ export async function runPack(
     () => {
       const k = byType('KSampler')
       const removed = k?.widgets?.splice(0, 1)[0]
-      if (k && removed) mangled.add(`${k.id}:${removed.name}`)
+      if (k && removed) markMangled(k, removed.name)
     },
     false
   )
@@ -827,7 +837,7 @@ export async function runPack(
         w.origComputeSize = w.computeSize
         w.computeSize = () => [0, -4]
         w.type = 'converted-widget'
-        mangled.add(`${k.id}:${w.name}`)
+        markMangled(k, w.name)
       }
     },
     false
@@ -844,7 +854,7 @@ export async function runPack(
         y: 0,
         computeSize: () => [100, 20]
       })
-      if (k) mangled.add(`${k.id}:XPOJO`)
+      if (k) markMangled(k, 'XPOJO')
     },
     false
   )
@@ -876,7 +886,7 @@ export async function runPack(
     const expectedWidget = new ForeignWidget()
     const widgetMethods = ['draw', 'mouse', 'computeSize'] as const
     k.addCustomWidget(foreignWidget)
-    mangled.add(`${k.id}:XFOREIGN`)
+    markMangled(k, 'XFOREIGN')
 
     const widget = k.widgets?.find((item) => item.name === 'XFOREIGN')
     const prototypeMethods = widgetMethods.filter(
