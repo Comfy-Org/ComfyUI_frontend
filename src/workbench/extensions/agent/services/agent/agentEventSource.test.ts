@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createAgentEventSource } from './agentEventSource'
+import type { AgentSocketFailure } from './agentEventSource'
 
 class FakeSocket extends EventTarget {
   static readonly CONNECTING = 0
@@ -62,6 +63,7 @@ function createSource(
     getAuthParams?: () => Promise<URLSearchParams | null>
     random?: () => number
     maxReconnectDelayMs?: number
+    reportFailure?: (error: unknown, failure: AgentSocketFailure) => void
   } = {}
 ) {
   return createAgentEventSource({
@@ -627,5 +629,70 @@ describe('createAgentEventSource send', () => {
     await connected()
 
     expect(sockets()).toHaveLength(1)
+  })
+  it('reports an auth read that keeps failing once per run, not once per backoff', async () => {
+    const failure = new Error('refresh rejected')
+    const reportFailure = vi.fn()
+    const source = createSource({
+      getAuthParams: () => Promise.reject(failure),
+      reportFailure
+    })
+
+    source.subscribe(() => {})
+    await connected()
+    // Several backoff intervals of the same failure.
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      await vi.advanceTimersByTimeAsync(30_000)
+    }
+
+    expect(reportFailure.mock.calls).toEqual([[failure, 'auth_read']])
+  })
+
+  it('reports a socket the browser refuses to construct', async () => {
+    const reportFailure = vi.fn()
+    const refusal = new Error('insecure url')
+    const RealSocket = globalThis.WebSocket
+    vi.stubGlobal(
+      'WebSocket',
+      class {
+        constructor() {
+          throw refusal
+        }
+      }
+    )
+    try {
+      const source = createSource({ reportFailure })
+      source.subscribe(() => {})
+      await connected()
+
+      expect(reportFailure.mock.calls).toEqual([[refusal, 'socket_construct']])
+    } finally {
+      vi.stubGlobal('WebSocket', RealSocket)
+    }
+  })
+
+  it('reports again after a socket that opened ends the failure run', async () => {
+    const failure = new Error('refresh rejected')
+    const reportFailure = vi.fn()
+    const getAuthParams = vi
+      .fn<() => Promise<URLSearchParams | null>>()
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce(tokenParams('good'))
+      .mockRejectedValue(failure)
+    const source = createSource({ getAuthParams, reportFailure })
+
+    source.subscribe(() => {})
+    await connected()
+    expect(reportFailure).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(30_000)
+    lastSocket().open()
+    await connected()
+
+    // The run ended, so the next outage is a new run rather than a suppressed repeat.
+    lastSocket().close()
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(reportFailure).toHaveBeenCalledTimes(2)
   })
 })

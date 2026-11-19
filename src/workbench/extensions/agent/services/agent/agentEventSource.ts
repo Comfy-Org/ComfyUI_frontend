@@ -8,12 +8,21 @@ export interface AgentEventSocket extends AgentEventSource {
   onStatus(listener: (live: boolean) => void): () => void
 }
 
+/** Why a socket could not be established, for the telemetry the caller sends. */
+export type AgentSocketFailure = 'auth_read' | 'socket_construct'
+
 interface AgentEventSourceOptions {
   endpoint: string
   getAuthParams: () => Promise<URLSearchParams | null>
   reconnectDelayMs?: number
   maxReconnectDelayMs?: number
   random?: () => number
+  /**
+   * Reports a failure that keeps the socket from opening. This source stays
+   * telemetry-free and the caller owns reporting, so the error reaches whatever
+   * reporter the caller already uses.
+   */
+  reportFailure?: (error: unknown, failure: AgentSocketFailure) => void
 }
 
 type AuthRead = { ok: true; params: URLSearchParams | null } | { ok: false }
@@ -23,7 +32,8 @@ export function createAgentEventSource({
   getAuthParams,
   reconnectDelayMs = 1000,
   maxReconnectDelayMs = 30_000,
-  random = Math.random
+  random = Math.random,
+  reportFailure = () => {}
 }: AgentEventSourceOptions): AgentEventSocket {
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
@@ -62,10 +72,26 @@ export function createAgentEventSource({
     reconnectTimer.start()
   }
 
+  // Both failure paths below retry on the backoff forever, so without this the only
+  // record of a credential that never mints, or a URL the browser refuses outright,
+  // was a socket that silently never opened. Reported once per run of failures so a
+  // panel left open overnight does not send one report per backoff interval.
+  let reportedFailure: AgentSocketFailure | null = null
+
+  function reportFailureOncePerRun(
+    error: unknown,
+    failure: AgentSocketFailure
+  ): void {
+    if (reportedFailure === failure) return
+    reportedFailure = failure
+    reportFailure(error, failure)
+  }
+
   async function readAuth(): Promise<AuthRead> {
     try {
       return { ok: true, params: await getAuthParams() }
-    } catch {
+    } catch (error) {
+      reportFailureOncePerRun(error, 'auth_read')
       return { ok: false }
     }
   }
@@ -100,7 +126,10 @@ export function createAgentEventSource({
     let current: WebSocket
     try {
       current = new WebSocket(url)
-    } catch {
+    } catch (error) {
+      // A SecurityError for an insecure ws: URL on an https page, or a SyntaxError
+      // for a malformed one, never resolves itself: the same URL is retried forever.
+      reportFailureOncePerRun(error, 'socket_construct')
       notifyStatus(false)
       scheduleReconnect()
       return
@@ -109,6 +138,8 @@ export function createAgentEventSource({
     let openedAt: number | null = null
     current.addEventListener('open', () => {
       if (socket !== current) return
+      // A socket that opened ends the failure run, so a later outage reports again.
+      reportedFailure = null
       openedAt = Date.now()
       notifyStatus(true)
     })
