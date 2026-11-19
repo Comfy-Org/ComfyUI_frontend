@@ -187,8 +187,17 @@ beforeEach(() => {
   Object.assign(useCanvasStore(), { linearMode: false })
   vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockImplementation(() => true)
   vi.mocked(useWorkflowDraftStoreV2().getDraft).mockReturnValue(null)
-  vi.mocked(useWorkflowDraftStoreV2().removeDraft).mockImplementation(() => {})
+  vi.mocked(useWorkflowDraftStoreV2().removeDraft).mockReturnValue(true)
   vi.mocked(useWorkflowDraftStoreV2().markDraftUsed).mockImplementation(
+    () => {}
+  )
+  vi.mocked(useWorkflowDraftStoreV2().isPersistencePaused).mockReturnValue(
+    false
+  )
+  vi.mocked(useWorkflowDraftStoreV2().shouldNotifySaveFailure).mockReturnValue(
+    true
+  )
+  vi.mocked(useWorkflowDraftStoreV2().markSaveSucceeded).mockImplementation(
     () => {}
   )
   vi.mocked(useDomWidgetStore().clear).mockImplementation(() => {})
@@ -539,9 +548,51 @@ describe('useWorkflowService', () => {
         JSON.stringify(activeWorkflow.activeState),
         {
           name: activeWorkflow.key,
-          isTemporary: activeWorkflow.isTemporary
+          isTemporary: activeWorkflow.isTemporary,
+          isModified: activeWorkflow.isModified
         }
       )
+      expect(useWorkflowDraftStoreV2().markSaveSucceeded).toHaveBeenCalledOnce()
+    })
+
+    it('does not persist the outgoing workflow while persistence is paused', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/paused.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+      vi.mocked(useWorkflowDraftStoreV2().isPersistencePaused).mockReturnValue(
+        true
+      )
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(useWorkflowDraftStoreV2().saveDraft).not.toHaveBeenCalled()
+    })
+
+    it('persists workflow view state when view restore is enabled', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return (
+          key === 'Comfy.Workflow.Persist' ||
+          key === 'Comfy.EnableWorkflowViewRestore'
+        )
+      })
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/view-state.json'
+      })
+      activeWorkflow.changeTracker.ds = { scale: 0.5, offset: [10, -20] }
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      const [, payload] = vi.mocked(useWorkflowDraftStoreV2().saveDraft).mock
+        .calls[0]
+      expect(JSON.parse(payload).extra.ds).toEqual({
+        scale: 0.5,
+        offset: [10, -20]
+      })
     })
 
     it('removes the draft of a saved workflow that matches its saved file', () => {
@@ -576,7 +627,7 @@ describe('useWorkflowService', () => {
       expect(useWorkflowDraftStoreV2().saveDraft).toHaveBeenCalledWith(
         activeWorkflow.path,
         JSON.stringify(activeWorkflow.activeState),
-        { name: activeWorkflow.key, isTemporary: false }
+        { name: activeWorkflow.key, isTemporary: false, isModified: true }
       )
       expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalled()
     })
@@ -596,7 +647,7 @@ describe('useWorkflowService', () => {
       expect(useWorkflowDraftStoreV2().saveDraft).toHaveBeenCalledWith(
         activeWorkflow.path,
         JSON.stringify(activeWorkflow.activeState),
-        { name: activeWorkflow.key, isTemporary: true }
+        { name: activeWorkflow.key, isTemporary: true, isModified: false }
       )
       expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalled()
     })
@@ -623,7 +674,11 @@ describe('useWorkflowService', () => {
       expect(useWorkflowDraftStoreV2().saveDraft).toHaveBeenCalledWith(
         activeWorkflow.path,
         JSON.stringify(current),
-        { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary }
+        {
+          name: activeWorkflow.key,
+          isTemporary: activeWorkflow.isTemporary,
+          isModified: activeWorkflow.isModified
+        }
       )
       expect(activeWorkflow.activeState).toEqual(current)
       expect(tracker.undoQueue).toEqual([saved])
@@ -646,6 +701,34 @@ describe('useWorkflowService', () => {
           description: t('toastMessages.failedToSaveDraft')
         })
       )
+    })
+
+    it('deduplicates repeated failures through the shared failure episode', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
+        return key === 'Comfy.Workflow.Persist'
+      })
+      vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockReturnValue(false)
+      vi.mocked(useWorkflowDraftStoreV2().shouldNotifySaveFailure)
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
+      workflowStore.activeWorkflow = createEditedWorkflow(
+        'workflows/failure-episode.json'
+      )
+
+      const service = useWorkflowService()
+      service.beforeLoadNewGraph()
+      service.beforeLoadNewGraph()
+
+      expect(
+        useWorkflowDraftStoreV2().shouldNotifySaveFailure
+      ).toHaveBeenCalledTimes(2)
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({
+          kind: 'error',
+          title: t('g.error'),
+          description: t('toastMessages.failedToSaveDraft')
+        })
+      ])
     })
 
     it('should log and show an error toast when the V2 draft store throws', () => {
@@ -3715,6 +3798,30 @@ describe('useWorkflowService', () => {
       ).toHaveBeenCalledWith(existingWorkflow.path)
     })
 
+    it('keeps a restored draft dirty after a later edit is undone', async () => {
+      const saved = makeWorkflowData({ note: 'saved file' })
+      const draft = makeWorkflowData({ note: 'restored draft' })
+      const tracker = new ChangeTracker(existingWorkflow, saved)
+      vi.spyOn(tracker, 'restore').mockImplementation(() => {})
+      tracker.activeState = draft
+      existingWorkflow.changeTracker = tracker
+      existingWorkflow.isModified = true
+      workflowStore.activeWorkflow = existingWorkflow
+
+      await useWorkflowService().afterLoadNewGraph(existingWorkflow, draft)
+
+      tracker.activeState = makeWorkflowData({ note: 'later edit' })
+      tracker.undoQueue.push(draft)
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        tracker.activeState = draft
+        return true
+      })
+      await tracker.undo()
+
+      expect(existingWorkflow.activeState).toEqual(draft)
+      expect(existingWorkflow.isModified).toBe(true)
+    })
+
     it('should reuse equivalent UUIDs regardless of casing', async () => {
       const workflowId = '9cea40bb-b0cf-4b40-a758-8935cfe8d52f'
       existingWorkflow.changeTracker.activeState.id = workflowId
@@ -4824,12 +4931,19 @@ describe('useWorkflowService', () => {
   describe('saving a tab that is not loaded', () => {
     let workflowStore: ReturnType<typeof useWorkflowStore>
     let service: ReturnType<typeof useWorkflowService>
+    const savedViewport = { scale: 0.85, offset: [12, -34] }
 
     beforeEach(() => {
       workflowStore = useWorkflowStore()
       service = useWorkflowService()
       vi.spyOn(api, 'getUserData').mockImplementation(
-        async () => new Response(JSON.stringify(defaultGraph))
+        async () =>
+          new Response(
+            JSON.stringify({
+              ...defaultGraph,
+              extra: { ...defaultGraph.extra, ds: savedViewport }
+            })
+          )
       )
       vi.spyOn(api, 'storeUserData').mockImplementation(
         async (path) =>
@@ -4886,7 +5000,8 @@ describe('useWorkflowService', () => {
       expect(await service.closeWorkflow(tab)).toBe(true)
 
       expect(storedContent('workflows/background.json').extra).toEqual({
-        editedInDraft: true
+        editedInDraft: true,
+        ds: savedViewport
       })
       expect(workflowStore.openWorkflows).not.toContain(tab)
       expect(mockAssert).not.toHaveBeenCalledWith(
@@ -4942,7 +5057,8 @@ describe('useWorkflowService', () => {
       expect(await service.saveWorkflow(tab)).toBe(true)
 
       expect(storedContent('workflows/background.json').extra).toEqual({
-        editedInDraft: true
+        editedInDraft: true,
+        ds: savedViewport
       })
       expect(tab.isModified).toBe(false)
     })
@@ -4957,7 +5073,8 @@ describe('useWorkflowService', () => {
       ).toBe(true)
 
       expect(storedContent('workflows/background copy.json').extra).toEqual({
-        editedInDraft: true
+        editedInDraft: true,
+        ds: savedViewport
       })
       expect(
         vi

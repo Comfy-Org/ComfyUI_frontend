@@ -1,5 +1,7 @@
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   afterEach,
@@ -195,6 +197,7 @@ describe('useWorkflowPersistenceV2', () => {
     api.clientId = 'test-client'
     api.initialClientId = 'test-client'
     routeMocks.query = {}
+    folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl.mockResolvedValue(false)
     preservedQueryMocks.payloads = {}
     distributionMocks.isCloud = false
     vi.mocked(useCurrentUser()).isAuthInitialized = computed(() => true)
@@ -295,6 +298,57 @@ describe('useWorkflowPersistenceV2', () => {
 
       expect(resetSpy).toHaveBeenCalledOnce()
     })
+  })
+
+  it('keeps one save-failure notification across workflow transitions until recovery', async () => {
+    await loadBlankIntoActiveWorkflow()
+
+    const workflowStore = useWorkflowStore()
+    const draftStore = useWorkflowDraftStoreV2()
+    const saveDraftSpy = vi.spyOn(draftStore, 'saveDraft')
+    saveDraftSpy.mockReturnValue(false)
+
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { nodes: [{ id: 1 }] }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    mocks.state.currentGraph = { nodes: [{ id: 2 }] }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'g.error',
+        description: 'toastMessages.failedToSaveDraft'
+      })
+    ])
+
+    const second = workflowStore.createTemporary('second-workflow.json')
+    await workflowStore.openWorkflow(second)
+    await nextTick()
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: 'g.error',
+        description: 'toastMessages.failedToSaveDraft'
+      })
+    ])
+
+    saveDraftSpy.mockReturnValueOnce(true)
+    mocks.state.currentGraph = { nodes: [{ id: 3 }] }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+
+    saveDraftSpy.mockReturnValueOnce(false)
+    mocks.state.currentGraph = { nodes: [{ id: 4 }] }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    await vi.runAllTimersAsync()
+    expect(useToast().toasts.map((toast) => toast.kind)).toEqual([
+      'error',
+      'error'
+    ])
   })
 
   describe('loadPreviousWorkflowFromStorage', () => {
@@ -613,11 +667,12 @@ describe('useWorkflowPersistenceV2', () => {
     })
 
     it.for([
-      ['no id', {}],
-      ['a legacy id', { id: 'legacy-workflow-id' }]
+      ['no id', {}, undefined],
+      ['a legacy id', { id: 'legacy-workflow-id' }, 'legacy-workflow-id'],
+      ['a non-string id', { id: 42 }, undefined]
     ] as const)(
       'keeps the draft of an unsaved background tab with %s when it is first loaded',
-      async ([, idFields]) => {
+      async ([, idFields, legacyId]) => {
         vi.useFakeTimers({ toFake: ['Date'] })
         onTestFinished(() => {
           vi.useRealTimers()
@@ -654,6 +709,7 @@ describe('useWorkflowPersistenceV2', () => {
         const tabId = background!.initialState?.id
         expect(isValidUuid(tabId)).toBe(true)
         expect(background!.activeState?.id).toBe(tabId)
+        expect(background!.legacyId).toBe(legacyId)
       }
     )
 
@@ -765,6 +821,41 @@ describe('useWorkflowPersistenceV2', () => {
       expect(workflowStore.openWorkflows.map((w) => w.path)).toContain(path)
     })
 
+    it('uses a default temporary workflow for a schema-invalid draft with a legacy id', async () => {
+      const workflowStore = useWorkflowStore()
+      vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+
+      const draftStore = useWorkflowDraftStoreV2()
+      const path = 'workflows/invalid-draft.json'
+      expect(
+        draftStore.saveDraft(
+          path,
+          JSON.stringify({ id: 'legacy-workflow-id', title: 'not-a-workflow' }),
+          {
+            name: 'invalid-draft.json',
+            isTemporary: true
+          }
+        )
+      ).toBe(true)
+      writeTabState([path], 0)
+
+      const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+      await restoreWorkflowTabsState()
+
+      const restored = workflowStore.getWorkflowByPath(path)
+      expect(restored).toBeDefined()
+      if (!restored?.content) {
+        throw new Error('Expected restored temporary workflow content')
+      }
+      const restoredData = JSON.parse(restored.content) as {
+        version?: unknown
+        title?: unknown
+      }
+      expect(typeof restoredData.version).toBe('number')
+      expect(restoredData.title).toBeUndefined()
+      expect(draftStore.getDraft(path)).toBeNull()
+    })
+
     it('skips activation when persistence is disabled', async () => {
       useSettingStore().settingValues['Comfy.Workflow.Persist'] = false
       vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
@@ -842,6 +933,26 @@ describe('useWorkflowPersistenceV2', () => {
         mountWorkflowPersistence().initializeWorkflow(),
         'A workflow the user opened must survive a reload'
       ).resolves.toBe('restored')
+    })
+
+    it('persists a modified temporary startup workflow synchronously only once', async () => {
+      loadBlankWorkflowMock.mockImplementation(async () => {
+        await loadBlankIntoActiveWorkflow()
+        const workflow = useWorkflowStore().activeWorkflow
+        if (workflow) workflow.isModified = true
+      })
+
+      const draftStore = useWorkflowDraftStoreV2()
+      const saveDraftSpy = vi.spyOn(draftStore, 'saveDraft')
+      vi.spyOn(draftStore, 'getDraft').mockReturnValue(null)
+
+      const { initializeWorkflow } = mountWorkflowPersistence()
+
+      await initializeWorkflow()
+      expect(saveDraftSpy).toHaveBeenCalledOnce()
+
+      await vi.runAllTimersAsync()
+      expect(saveDraftSpy).toHaveBeenCalledOnce()
     })
 
     it('persists a temporary workflow once the user has modified it', async () => {
@@ -1057,6 +1168,34 @@ describe('useWorkflowPersistenceV2', () => {
       nodes: [],
       extra: { marker: 'final-edit' }
     })
+  })
+
+  it('does not evict an inactive draft when hiding a page with a full draft index', async () => {
+    const draftStore = useWorkflowDraftStoreV2()
+    for (let index = 0; index < MAX_DRAFTS; index++) {
+      const name = `Inactive-${index}.json`
+      draftStore.saveDraft(`workflows/${name}`, '{}', {
+        name,
+        isTemporary: true
+      })
+    }
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore.createTemporary('Active.json').load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+    mocks.state.currentGraph = { nodes: [], extra: { marker: 'active edit' } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+    const indexKey = StorageKeys.draftIndex('personal')
+    const index = localStorage.getItem(indexKey)
+
+    window.dispatchEvent(new PageTransitionEvent('pagehide'))
+    await vi.runAllTimersAsync()
+
+    expect(localStorage.getItem(indexKey)).toBe(index)
+    expect(draftStore.getDraft(workflow.path, { fresh: true })).toBeNull()
+    expect(
+      draftStore.getDraft('workflows/Inactive-0.json', { fresh: true })?.data
+    ).toBe('{}')
   })
 
   it('does not flush a pending workflow edit after disposal', async () => {

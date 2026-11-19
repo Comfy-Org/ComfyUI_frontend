@@ -2,6 +2,10 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import {
+  bindCanvasTracker,
+  resetCanvasTrackerForTest
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   skipLeavePromptOnce,
@@ -94,6 +98,7 @@ describe('UnloadWindowConfirmDialog', () => {
   describe('workflow recovery', () => {
     beforeEach(() => {
       resetStorageAvailable()
+      resetCanvasTrackerForTest()
       useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
       api.clientId = 'recovery-client'
       api.initialClientId = 'recovery-client'
@@ -103,7 +108,8 @@ describe('UnloadWindowConfirmDialog', () => {
         isModified: true,
         isTemporary: true,
         lastModified: 0,
-        activeState: structuredClone(blankGraph)
+        activeState: structuredClone(blankGraph),
+        changeTracker: {}
       })
       Object.assign(useWorkflowStore(), {
         activeWorkflow: active,
@@ -140,9 +146,11 @@ describe('UnloadWindowConfirmDialog', () => {
 
     it.for([
       { damage: 'none', lastModified: 0, asks: false },
+      { damage: 'stored viewport', lastModified: 0, asks: false },
       { damage: 'missing payload', lastModified: 0, asks: true },
       { damage: 'missing index', lastModified: 0, asks: true },
       { damage: 'stale content', lastModified: 0, asks: true },
+      { damage: 'marked clean', lastModified: 0, asks: true },
       {
         damage: 'older than saved file',
         lastModified: Number.MAX_SAFE_INTEGER,
@@ -151,13 +159,18 @@ describe('UnloadWindowConfirmDialog', () => {
     ] as const)(
       'checks inactive edits against persisted recovery data: $damage',
       ({ damage, lastModified, asks }) => {
+        const viewport: { scale: number; offset: [number, number] } = {
+          scale: 0.7,
+          offset: [10, -20]
+        }
         const inactive = fromPartial<ComfyWorkflow>({
           path: 'workflows/inactive.json',
           key: 'inactive.json',
           isModified: true,
           isTemporary: false,
           lastModified,
-          activeState: structuredClone(blankGraph)
+          activeState: structuredClone(blankGraph),
+          changeTracker: { ds: structuredClone(viewport) }
         })
         const active = useWorkflowStore().activeWorkflow
         Object.assign(useWorkflowStore(), {
@@ -172,6 +185,18 @@ describe('UnloadWindowConfirmDialog', () => {
         const payloadKey = StorageKeys.draftPayload(inactive.path, 'personal')
         const damageDraft = {
           none: () => undefined,
+          'stored viewport': () => {
+            useSettingStore().settingValues['Comfy.EnableWorkflowViewRestore'] =
+              true
+            draftStore.saveDraft(
+              inactive.path,
+              JSON.stringify({
+                ...blankGraph,
+                extra: { ...blankGraph.extra, ds: viewport }
+              }),
+              { name: inactive.key, isTemporary: false }
+            )
+          },
           'missing payload': () => localStorage.removeItem(payloadKey),
           'missing index': () => {
             const getItem = localStorage.getItem.bind(localStorage)
@@ -190,6 +215,13 @@ describe('UnloadWindowConfirmDialog', () => {
                 updatedAt: Date.now()
               })
             ),
+          'marked clean': () => {
+            draftStore.saveDraft(inactive.path, JSON.stringify(blankGraph), {
+              name: inactive.key,
+              isTemporary: false,
+              isModified: false
+            })
+          },
           'older than saved file': () => undefined
         }
         damageDraft[damage]()
@@ -312,6 +344,21 @@ describe('UnloadWindowConfirmDialog', () => {
         ).toEqual(previousPayloads)
       }
     )
+
+    it('warns without replacing a draft when another workflow owns the canvas', () => {
+      const store = useWorkflowDraftStoreV2()
+      store.saveDraft('workflows/active.json', JSON.stringify(blankGraph), {
+        name: 'active.json',
+        isTemporary: true
+      })
+      bindCanvasTracker({})
+      render(UnloadWindowConfirmDialog)
+
+      expect(leavePage().defaultPrevented).toBe(true)
+      expect(
+        store.getDraft('workflows/active.json', { fresh: true })?.data
+      ).toBe(JSON.stringify(blankGraph))
+    })
 
     it('warns when draft persistence is disabled', () => {
       useSettingStore().settingValues['Comfy.Workflow.Persist'] = false
