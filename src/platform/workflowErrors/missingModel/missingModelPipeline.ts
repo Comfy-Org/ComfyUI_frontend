@@ -30,14 +30,6 @@ import {
   isMissingCandidateActive
 } from '@/utils/graphTraversalUtil'
 
-function endOnAbort(work: Promise<void>, signal: AbortSignal): Promise<void> {
-  const aborted = new Promise<void>((resolve) => {
-    if (signal.aborted) resolve()
-    else signal.addEventListener('abort', () => resolve(), { once: true })
-  })
-  return Promise.race([work, aborted])
-}
-
 interface MissingModelPipelineStore {
   missingModelCandidates: MissingModelCandidate[] | null
   createVerificationAbortController: () => AbortController
@@ -205,20 +197,13 @@ export async function runMissingModelPipeline({
   }
 
   if (isCloud) {
-    const surfaced = verifyAssetSupportedCandidates(
-      enrichedCandidates,
-      controller.signal
-    )
+    void verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
       .then(() => {
         if (controller.signal.aborted) return
         surfaceActiveCandidates()
       })
       .catch(reportVerificationFailure)
-    return {
-      missingModels,
-      confirmedCandidates,
-      surfaced: endOnAbort(surfaced, controller.signal)
-    }
+    return { missingModels, confirmedCandidates, surfaced: Promise.resolve() }
   }
 
   if (!confirmedCandidates.length && !hasDeferredCandidates) {
@@ -229,7 +214,7 @@ export async function runMissingModelPipeline({
   const verification = hasDeferredCandidates
     ? verifyAssetSupportedCandidates(enrichedCandidates, controller.signal)
     : Promise.resolve()
-  const surfaced = verification
+  void verification
     .then(async () => {
       if (controller.signal.aborted) return
       const hasActiveMissing = enrichedCandidates.some((c) =>
@@ -273,11 +258,7 @@ export async function runMissingModelPipeline({
     })
     .catch(reportVerificationFailure)
 
-  return {
-    missingModels,
-    confirmedCandidates,
-    surfaced: endOnAbort(surfaced, controller.signal)
-  }
+  return { missingModels, confirmedCandidates, surfaced: Promise.resolve() }
 }
 
 export async function refreshMissingModelPipeline({
