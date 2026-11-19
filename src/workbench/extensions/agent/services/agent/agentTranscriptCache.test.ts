@@ -27,13 +27,26 @@ function pending<T>() {
 }
 
 describe('createTranscriptCache', () => {
-  it('hands back the very promise the load returned, so waiting on it adds no turn', () => {
+  it('delivers the loaded transcript to callers without adding an extra microtask turn', async () => {
     const cache = createTranscriptCache()
     const answer = pending<AgentMessages>()
+    const rows = transcript('th-1')
 
     const read = cache.fetch('th-1', () => answer.promise)
+    const order: string[] = []
+    const delivered = read.answer.then((value) => {
+      order.push('cache-caller')
+      return value
+    })
+    const direct = answer.promise.then(() => {
+      order.push('direct-caller')
+    })
 
-    expect(read.answer).toBe(answer.promise)
+    answer.resolve(rows)
+    const [result] = await Promise.all([delivered, direct])
+
+    expect(result).toEqual(rows)
+    expect(order).toEqual(['cache-caller', 'direct-caller'])
   })
 
   it('knows whether a fetch of the chat is on its way', async () => {

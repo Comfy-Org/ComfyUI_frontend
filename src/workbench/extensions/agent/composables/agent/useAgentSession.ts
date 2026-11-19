@@ -157,6 +157,7 @@ export interface AgentSessionDeps {
   onAgentEvent?: (event: AgentWsEvent) => void
   onThreadActivated?: (threadId: string | null) => void
   onAskResolved?: (askId: string) => void
+  onBackgroundTranscriptSettled?: (threadId: string) => void
   /**
    * Re-send the user's credential on an interval while a turn runs, so a long
    * local turn never outlives its token. Off in the cloud, where fetchApi
@@ -203,8 +204,7 @@ const RECONCILE_TIMEOUT_MS = 5000
 
 interface BufferedHydrationEvent {
   event: AgentWsEvent
-  /** Delivered live by this session; retained only so a stale hydrate or remounted successor can still settle the turn. */
-  deliveredByGeneration?: number
+  liveDeliveryGeneration?: number
 }
 
 interface HydrationBuffer {
@@ -259,6 +259,8 @@ type TurnOutcome =
       kind: 'terminal'
       parts: AssistantMessage['parts'] | undefined
       ending: 'completed' | 'failed'
+      history: AgentMessages
+      outdated: boolean
     }
   | { kind: 'thread-missing' }
   | { kind: 'streaming'; pendingAsk: PendingAsk | undefined }
@@ -552,6 +554,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onAgentEvent,
     onThreadActivated,
     onAskResolved,
+    onBackgroundTranscriptSettled,
     refreshCredentialDuringTurns = false,
     workspaceId,
     workflow
@@ -1087,10 +1090,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   function replayHydrationEvent({
     event,
-    deliveredByGeneration
+    liveDeliveryGeneration
   }: BufferedHydrationEvent): void {
     if (
-      deliveredByGeneration === ownedGeneration &&
+      liveDeliveryGeneration === ownedGeneration &&
       !hasRoutableLiveTurn(event.data.thread_id, event.data.message_id)
     )
       return
@@ -1145,6 +1148,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function installHydration(threadId: string, history: AgentMessages): void {
+    latestTranscriptReadByThread.delete(threadId)
     deletedThreads.delete(threadId)
     conversationStore.hydrate(history)
     conversationStore.recordHydratedChat(
@@ -1157,7 +1161,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = threadId
   }
 
-  function handleFailedWorkflowRestore(threadId: string): false {
+  function handleFailedWorkflowRestore(
+    threadId: string,
+    ownsLoad: boolean
+  ): false {
+    if (!ownsLoad) return false
     invalidateChat(threadId)
     if (readyThreadId.value === threadId) readyThreadId.value = null
     return false
@@ -1168,22 +1176,50 @@ export function useAgentSession(deps: AgentSessionDeps) {
     history: AgentMessages,
     buffer: HydrationBuffer,
     isCurrent: () => boolean,
-    restoreWorkflow = true
+    restoredWorkflow?: { workflowId: string | undefined }
   ): Promise<boolean> {
     if (conversationStore.threadId !== threadId || !isCurrent()) return false
     installHydration(threadId, history)
     drainHydration(buffer)
-    if (!restoreWorkflow) return true
+    if (
+      restoredWorkflow !== undefined &&
+      conversationStore.latestWorkflowId === restoredWorkflow.workflowId
+    )
+      return true
     const workflowReady = await workflow?.restored?.(
       conversationStore.latestWorkflowId,
       isCurrent
     )
-    if (workflowReady === false) return handleFailedWorkflowRestore(threadId)
+    if (workflowReady === false)
+      return handleFailedWorkflowRestore(
+        threadId,
+        conversationStore.threadId === threadId && isCurrent()
+      )
     return conversationStore.threadId === threadId && isCurrent()
   }
 
   const transcripts = createTranscriptCache()
   const deferredRechecks = new Set<string>()
+  const latestTranscriptReadByThread = new Map<string, number>()
+  let transcriptReadSequence = 0
+
+  function claimTranscriptRead(threadId: string): {
+    owns: () => boolean
+    release: () => void
+  } {
+    const token = ++transcriptReadSequence
+    latestTranscriptReadByThread.set(threadId, token)
+    return {
+      owns: () =>
+        !stopped &&
+        ownedGeneration === sessionGeneration &&
+        latestTranscriptReadByThread.get(threadId) === token,
+      release: () => {
+        if (latestTranscriptReadByThread.get(threadId) === token)
+          latestTranscriptReadByThread.delete(threadId)
+      }
+    }
+  }
 
   function hasLiveTurnForThread(threadId: string): boolean {
     return conversationStore
@@ -1193,12 +1229,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function invalidateChat(threadId: string): void {
     deferredRechecks.delete(threadId)
+    latestTranscriptReadByThread.delete(threadId)
     transcripts.touch(threadId)
     conversationStore.invalidateKnownChat(threadId)
   }
 
   function invalidateAllChats(): void {
     deferredRechecks.clear()
+    latestTranscriptReadByThread.clear()
     transcripts.touchAll()
     conversationStore.invalidateAllKnownChats()
   }
@@ -1267,21 +1305,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function warmTranscript(threadId: string | null): void {
     if (!canWarmTranscript(threadId)) return
+    const ownership = claimTranscriptRead(threadId)
     const read = readTranscript(threadId)
-    void read.answer.then(
-      (history) => {
-        if (
-          stopped ||
-          read.isOutdated() ||
-          conversationStore.threadId === threadId ||
-          deletedThreads.has(threadId) ||
-          isDeletedThread?.(threadId)
-        )
-          return
-        applyWarmedHistory(threadId, history)
-      },
-      () => undefined
-    )
+    void read.answer
+      .then(
+        (history) => {
+          if (
+            !ownership.owns() ||
+            read.isOutdated() ||
+            conversationStore.threadId === threadId ||
+            deletedThreads.has(threadId) ||
+            isDeletedThread?.(threadId)
+          )
+            return
+          applyWarmedHistory(threadId, history)
+        },
+        () => undefined
+      )
+      .finally(() => {
+        ownership.release()
+        onBackgroundTranscriptSettled?.(threadId)
+      })
   }
 
   function warmLeftChat(threadId: string | null): void {
@@ -1309,6 +1353,43 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function isRecheckOnScreen(threadId: string, generation: number): boolean {
+    return (
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration &&
+      conversationStore.threadId === threadId
+    )
+  }
+
+  function hasBufferedRemoteActivity(buffer: HydrationBuffer): {
+    any: boolean
+    terminal: boolean
+  } {
+    let any = false
+    let terminal = false
+    for (const entry of buffer.events) {
+      if (
+        entry.liveDeliveryGeneration !== undefined ||
+        FRAMES_THAT_LEAVE_TRANSCRIPTS_ALONE.has(entry.event.type)
+      )
+        continue
+      any = true
+      if (entry.event.type === 'agent_message_done') terminal = true
+    }
+    return { any, terminal }
+  }
+
+  function forgetMissingThread(threadId: string, clearActive: boolean): void {
+    invalidateChat(threadId)
+    deletedThreads.add(threadId)
+    if (localStorage.getItem(threadStorageKey) === threadId)
+      localStorage.removeItem(threadStorageKey)
+    if (clearActive && conversationStore.threadId === threadId) {
+      resetToBlankChat()
+      onThreadActivated?.(null)
+    }
+  }
+
   function applyRecheckResult(
     threadId: string,
     fresh: AgentMessages,
@@ -1334,27 +1415,154 @@ export function useAgentSession(deps: AgentSessionDeps) {
     drainHydration(buffer)
   }
 
+  function shouldRetryOutdatedRecheck(
+    threadId: string,
+    versionAtFetchStart: number,
+    generation: number,
+    buffer: HydrationBuffer,
+    remoteRetryCount: number
+  ): boolean {
+    const remote = hasBufferedRemoteActivity(buffer)
+    const withinRetryBudget =
+      remoteRetryCount < 1 || (remote.terminal && remoteRetryCount < 2)
+    return (
+      remote.any &&
+      withinRetryBudget &&
+      isRecheckOnScreen(threadId, generation) &&
+      !hasRecheckSupersededSend(threadId, versionAtFetchStart)
+    )
+  }
+
+  function handleRecheckError(
+    error: unknown,
+    threadId: string,
+    versionAtFetchStart: number,
+    generation: number,
+    owns: boolean,
+    outdated: boolean
+  ): void {
+    if (!owns || outdated) return
+    if (hasRecheckSupersededSend(threadId, versionAtFetchStart)) return
+    if (error instanceof AgentApiError && error.status === 404) {
+      forgetMissingThread(threadId, isRecheckOnScreen(threadId, generation))
+      return
+    }
+    dropFailedRecheckIfNeeded(threadId)
+  }
+
+  function canRetryRecheckAfterDrain(
+    threadId: string,
+    generation: number,
+    owns: boolean
+  ): boolean {
+    return (
+      owns &&
+      !deletedThreads.has(threadId) &&
+      !isDeletedThread?.(threadId) &&
+      isRecheckOnScreen(threadId, generation) &&
+      !conversationStore.hasPendingSendForOrigin({
+        kind: 'thread',
+        threadId
+      }) &&
+      !hasLiveTurnForThread(threadId)
+    )
+  }
+
+  function applyLoadedRecheck(
+    threadId: string,
+    fresh: AgentMessages,
+    versionAtFetchStart: number,
+    generation: number,
+    buffer: HydrationBuffer,
+    allowRemovedCache: boolean
+  ): void {
+    if (hasRecheckSupersededSend(threadId, versionAtFetchStart)) return
+    const onScreen = isRecheckOnScreen(threadId, generation)
+    if (
+      !conversationStore.isKnownChat(threadId) &&
+      !(allowRemovedCache && onScreen)
+    )
+      return
+    applyRecheckResult(threadId, fresh, buffer, onScreen)
+  }
+
+  function finishRecheck(
+    threadId: string,
+    generation: number,
+    buffer: HydrationBuffer,
+    ownership: { owns: () => boolean; release: () => void },
+    retryForRemoteActivity: boolean,
+    remoteRetryCount: number
+  ): void {
+    drainHydration(buffer)
+    const canRetry =
+      retryForRemoteActivity &&
+      canRetryRecheckAfterDrain(threadId, generation, ownership.owns())
+    ownership.release()
+    if (canRetry) {
+      void recheckKnownTranscript(
+        threadId,
+        conversationStore.knownChatVersion(threadId),
+        generation,
+        { allowRemovedCache: true, remoteRetryCount: remoteRetryCount + 1 }
+      )
+    }
+    onBackgroundTranscriptSettled?.(threadId)
+  }
+
   async function recheckKnownTranscript(
     threadId: string,
     versionAtFetchStart: number,
-    generation: number
+    generation: number,
+    {
+      allowRemovedCache = false,
+      remoteRetryCount = 0
+    }: { allowRemovedCache?: boolean; remoteRetryCount?: number } = {}
   ): Promise<void> {
+    const ownership = claimTranscriptRead(threadId)
     const buffer = armHydration(threadId)
+    let read: TranscriptRead | undefined
+    let retryForRemoteActivity = false
     try {
-      const read = readTranscript(threadId)
+      read = readTranscript(threadId)
       const fresh = await read.answer
-      if (read.isOutdated()) return
-      if (hasRecheckSupersededSend(threadId, versionAtFetchStart)) return
-      if (!conversationStore.isKnownChat(threadId)) return
-      const onScreen =
-        generation === loadGeneration &&
-        ownedGeneration === sessionGeneration &&
-        conversationStore.threadId === threadId
-      applyRecheckResult(threadId, fresh, buffer, onScreen)
-    } catch {
-      dropFailedRecheckIfNeeded(threadId)
+      if (!ownership.owns()) return
+      if (read.isOutdated()) {
+        retryForRemoteActivity = shouldRetryOutdatedRecheck(
+          threadId,
+          versionAtFetchStart,
+          generation,
+          buffer,
+          remoteRetryCount
+        )
+        return
+      }
+      applyLoadedRecheck(
+        threadId,
+        fresh,
+        versionAtFetchStart,
+        generation,
+        buffer,
+        allowRemovedCache
+      )
+    } catch (error) {
+      handleRecheckError(
+        error,
+        threadId,
+        versionAtFetchStart,
+        generation,
+        ownership.owns(),
+        read?.isOutdated() ?? false
+      )
     } finally {
-      drainHydration(buffer)
+      finishRecheck(
+        threadId,
+        generation,
+        buffer,
+        ownership,
+        retryForRemoteActivity,
+        remoteRetryCount
+      )
     }
   }
 
@@ -1366,13 +1574,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       forThreadLoad = false,
       openThread,
       failureNotice = 'error_overlay',
-      restoreWorkflow = true
+      restoredWorkflow
     }: {
       stashedTurn?: boolean
       forThreadLoad?: boolean
       openThread?: () => void
       failureNotice?: 'error_overlay' | 'inline_notice'
-      restoreWorkflow?: boolean
+      restoredWorkflow?: { workflowId: string | undefined }
     } = {}
   ): Promise<boolean> {
     const buffer = armHydration(threadId, forThreadLoad)
@@ -1384,7 +1592,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         history,
         buffer,
         isCurrent,
-        restoreWorkflow
+        restoredWorkflow
       )
     } catch (error) {
       return handleHistoryLoadError(
@@ -3274,16 +3482,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
 
     function failKnownRestore(): false {
-      handleFailedWorkflowRestore(threadId)
-      clearUnloadedThread()
+      const owned = ownsUnloadedThread()
+      handleFailedWorkflowRestore(threadId, owned && isCurrent())
+      if (owned) resetToBlankChat(previousBlankChatId)
       return false
     }
 
-    function finishAfterRestore(): Promise<boolean> | boolean {
+    function handleRestoreError(error: unknown): false {
+      const owned = ownsUnloadedThread()
+      if (owned) invalidateChat(threadId)
+      handleHistoryLoadError(
+        error,
+        threadId,
+        isCurrent,
+        stashedTurn(),
+        keepOpenChatUntilLoaded ? 'inline_notice' : 'error_overlay'
+      )
+      if (owned) resetToBlankChat(previousBlankChatId)
+      return false
+    }
+
+    function finishAfterRestore(
+      restoredWorkflowId: string | undefined
+    ): Promise<boolean> | boolean {
       if (!stillOwned()) {
         clearUnloadedThread()
         return false
       }
+      const currentKnown = conversationStore.recallKnownChat(threadId)
+      if (
+        currentKnown !== undefined &&
+        currentKnown.latestWorkflowId !== restoredWorkflowId
+      )
+        return restoreWorkflowAndFinish(currentKnown.latestWorkflowId)
       if (!tryHydrateKnownChat(threadId)) {
         if (!isCurrent()) {
           clearUnloadedThread()
@@ -3296,7 +3527,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
           openThread,
           isCurrent,
           outlivedItsNavigation,
-          { alreadyOpened: true, restoreWorkflow: false }
+          {
+            alreadyOpened: true,
+            restoredWorkflow: { workflowId: restoredWorkflowId }
+          }
         )
       }
       const opened = isCurrent()
@@ -3305,39 +3539,31 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return opened
     }
 
-    function handleRestoreError(error: unknown): false {
-      invalidateChat(threadId)
-      const owned = ownsUnloadedThread()
-      handleHistoryLoadError(
-        error,
-        threadId,
-        isCurrent,
-        stashedTurn(),
-        keepOpenChatUntilLoaded ? 'inline_notice' : 'error_overlay'
+    function restoreWorkflowAndFinish(
+      targetWorkflowId: string | undefined
+    ): Promise<boolean> {
+      let restored: Promise<boolean> | boolean | undefined
+      try {
+        restored = workflow?.restored?.(targetWorkflowId, isCurrent)
+      } catch (error) {
+        return Promise.resolve(handleRestoreError(error))
+      }
+      if (restored === undefined || typeof restored === 'boolean') {
+        if (restored === false) return Promise.resolve(failKnownRestore())
+        return Promise.resolve(finishAfterRestore(targetWorkflowId))
+      }
+
+      return restored.then(
+        (workflowReady) => {
+          if (!workflowReady) return failKnownRestore()
+          return finishAfterRestore(targetWorkflowId)
+        },
+        (error) => handleRestoreError(error)
       )
-      if (owned) resetToBlankChat(previousBlankChatId)
-      return false
     }
 
     openThread()
-    let restored: Promise<boolean> | boolean | undefined
-    try {
-      restored = workflow?.restored?.(known.latestWorkflowId, isCurrent)
-    } catch (error) {
-      return Promise.resolve(handleRestoreError(error))
-    }
-    if (restored === undefined || typeof restored === 'boolean') {
-      if (restored === false) return Promise.resolve(failKnownRestore())
-      return Promise.resolve(finishAfterRestore())
-    }
-
-    return restored.then(
-      (workflowReady) => {
-        if (!workflowReady) return failKnownRestore()
-        return finishAfterRestore()
-      },
-      (error) => handleRestoreError(error)
-    )
+    return restoreWorkflowAndFinish(known.latestWorkflowId)
   }
 
   function serverHydrateOptions(
@@ -3345,7 +3571,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     keepOpenChatUntilLoaded: boolean,
     openThread: () => void,
     alreadyOpened: boolean,
-    restoreWorkflow: boolean
+    restoredWorkflow?: { workflowId: string | undefined }
   ) {
     if (alreadyOpened)
       return {
@@ -3354,16 +3580,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
           ? ('inline_notice' as const)
           : ('error_overlay' as const),
         forThreadLoad: true,
-        restoreWorkflow
+        restoredWorkflow
       }
     return keepOpenChatUntilLoaded
       ? {
           openThread,
           failureNotice: 'inline_notice' as const,
           forThreadLoad: true,
-          restoreWorkflow
+          restoredWorkflow
         }
-      : { stashedTurn: stashedTurn(), forThreadLoad: true, restoreWorkflow }
+      : { stashedTurn: stashedTurn(), forThreadLoad: true, restoredWorkflow }
   }
 
   async function loadServerThread(
@@ -3375,8 +3601,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     outlivedItsNavigation: () => boolean,
     {
       alreadyOpened = false,
-      restoreWorkflow = true
-    }: { alreadyOpened?: boolean; restoreWorkflow?: boolean } = {}
+      restoredWorkflow
+    }: {
+      alreadyOpened?: boolean
+      restoredWorkflow?: { workflowId: string | undefined }
+    } = {}
   ): Promise<boolean> {
     if (!alreadyOpened && !keepOpenChatUntilLoaded) openThread()
     const hydrated = await hydrateFromServer(
@@ -3387,7 +3616,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         keepOpenChatUntilLoaded,
         openThread,
         alreadyOpened,
-        restoreWorkflow
+        restoredWorkflow
       )
     )
     const opened = hydrated && isCurrent()
@@ -3531,6 +3760,64 @@ export function useAgentSession(deps: AgentSessionDeps) {
     trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
   }
 
+  function canReuseRecoveredTranscript(
+    threadId: string,
+    recovered: { history: AgentMessages; outdated: boolean } | undefined
+  ): recovered is { history: AgentMessages; outdated: false } {
+    return (
+      recovered !== undefined &&
+      !recovered.outdated &&
+      !stopped &&
+      !deletedThreads.has(threadId) &&
+      !isDeletedThread?.(threadId) &&
+      !transcripts.isFetching(threadId) &&
+      !conversationStore.hasPendingSendForOrigin({
+        kind: 'thread',
+        threadId
+      })
+    )
+  }
+
+  function afterTurnSettled(
+    threadId: string,
+    recovered?: { history: AgentMessages; outdated: boolean }
+  ): void {
+    if (threadId !== conversationStore.threadId) {
+      deferredRechecks.delete(threadId)
+      if (
+        !hasLiveTurnForThread(threadId) &&
+        canReuseRecoveredTranscript(threadId, recovered)
+      ) {
+        applyWarmedHistory(threadId, recovered.history)
+        return
+      }
+      warmTranscript(threadId)
+      return
+    }
+    if (
+      !deferredRechecks.delete(threadId) ||
+      hasLiveTurnForThread(threadId) ||
+      !conversationStore.isKnownChat(threadId)
+    )
+      return
+    if (canReuseRecoveredTranscript(threadId, recovered)) {
+      const result = conversationStore.reconcileKnownChat(
+        threadId,
+        recovered.history,
+        true
+      )
+      if (result.status === 'applied') {
+        settleReconciledTurns(result.settledLiveTurns)
+        return
+      }
+    }
+    void recheckKnownTranscript(
+      threadId,
+      conversationStore.knownChatVersion(threadId),
+      loadGeneration
+    )
+  }
+
   function handleMessageDone(
     event: Extract<AgentWsEvent, { type: 'agent_message_done' }>
   ): void {
@@ -3542,21 +3829,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadId: event.data.thread_id,
       messageId: toTurnId(event.data.message_id)
     })
-    if (event.data.thread_id !== conversationStore.threadId) {
-      deferredRechecks.delete(event.data.thread_id)
-      warmTranscript(event.data.thread_id)
-      return
-    }
-    if (
-      deferredRechecks.delete(event.data.thread_id) &&
-      !hasLiveTurnForThread(event.data.thread_id) &&
-      conversationStore.isKnownChat(event.data.thread_id)
-    )
-      void recheckKnownTranscript(
-        event.data.thread_id,
-        conversationStore.knownChatVersion(event.data.thread_id),
-        loadGeneration
-      )
+    afterTurnSettled(event.data.thread_id)
   }
 
   /**
@@ -3613,7 +3886,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       buffer.events.splice(Math.max(0, replace), 1)
     }
     buffer.events.push(
-      routable ? { event, deliveredByGeneration: ownedGeneration } : { event }
+      routable ? { event, liveDeliveryGeneration: ownedGeneration } : { event }
     )
     return !routable
   }
@@ -4364,6 +4637,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     switch (outcome.kind) {
       case 'terminal':
         settleTerminalTurn(turn, outcome.parts, outcome.ending)
+        afterTurnSettled(turn.threadId, {
+          history: outcome.history,
+          outdated: outcome.outdated
+        })
         return true
       case 'thread-missing':
         forgetDeletedThread(turn)
@@ -4395,8 +4672,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     turn: LiveTurn,
     signal: AbortSignal
   ): Promise<TurnOutcome> {
+    const read = transcripts.fetch(turn.threadId, () =>
+      rest.getMessages(turn.threadId, { signal })
+    )
     try {
-      const history = await rest.getMessages(turn.threadId, { signal })
+      const history = await read.answer
       const anchor = history.find(
         (entry) => entry.role === 'assistant' && entry.id === turn.messageId
       )
@@ -4420,7 +4700,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return {
         kind: 'terminal',
         parts: terminalRecoveryParts(rows),
-        ending: rows.at(-1)?.status === 'complete' ? 'completed' : 'failed'
+        ending: rows.at(-1)?.status === 'complete' ? 'completed' : 'failed',
+        history,
+        outdated: read.isOutdated()
       }
     } catch (error) {
       if (signal.aborted) throw error

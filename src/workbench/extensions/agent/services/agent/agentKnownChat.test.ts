@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import type { AgentMessages } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -75,8 +75,7 @@ describe('alignKnownChatHistory', () => {
       [],
       [localTurn('msg-1', 'hi', 'cm-1')]
     )
-    expect(result.status).toBe('aligned')
-    if (result.status !== 'aligned') return
+    assert(result.status === 'aligned')
     expect(result.history.map((r) => r.turn_id)).toEqual(['msg-1', 'msg-1'])
     expect(result.settledServerTurns).toEqual(new Set([toTurnId('msg-1')]))
   })
@@ -114,8 +113,7 @@ describe('alignKnownChatHistory', () => {
       [],
       [localTurn('msg-1', 'run')]
     )
-    expect(result.status).toBe('aligned')
-    if (result.status !== 'aligned') return
+    assert(result.status === 'aligned')
     expect(result.settledServerTurns.size).toBe(0)
   })
 
@@ -147,8 +145,7 @@ describe('alignKnownChatHistory', () => {
       [],
       [localTurn('msg-1', 'hi', 'cm-1'), localTurn('msg-2', 'hi', 'cm-2')]
     )
-    expect(result.status).toBe('aligned')
-    if (result.status !== 'aligned') return
+    assert(result.status === 'aligned')
     expect(result.history.map((r) => r.turn_id)).toEqual([
       'msg-1',
       'msg-1',

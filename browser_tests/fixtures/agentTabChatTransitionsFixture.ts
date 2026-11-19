@@ -66,7 +66,11 @@ class TabChatTransitions {
   readonly workflows = WORKFLOWS
   readonly threads = THREADS
   readonly skillName = SKILL_NAME
-  readonly posted: { threadId: string; body: AgentPostMessageRequest }[] = []
+  readonly posted: {
+    requestedThreadId: string
+    threadId: string
+    body: AgentPostMessageRequest
+  }[] = []
   readonly unexpectedMutations: string[] = []
   private agentSocket: WebSocketRoute | undefined
   private held:
@@ -86,7 +90,7 @@ class TabChatTransitions {
 
   constructor(
     private readonly page: Page,
-    blankMode = false
+    private readonly blankMode = false
   ) {
     this.panel = new AgentPanel(page)
     this.topbar = new Topbar(page)
@@ -181,6 +185,14 @@ class TabChatTransitions {
     await this.readMessages(route, threadId)
   }
 
+  private allocateNewThreadId(): string {
+    if (this.blankMode) {
+      const seeded = THREADS[this.createdThreads++]
+      if (seeded) return seeded
+    }
+    return `00000000-0000-4000-8000-${String(++this.createdThreads).padStart(12, '0')}`
+  }
+
   private async acceptMessage(
     route: Route,
     requestedThreadId: string
@@ -188,15 +200,16 @@ class TabChatTransitions {
     const body = zAgentPostMessageRequest.parse(route.request().postDataJSON())
     const threadId =
       requestedThreadId === 'new'
-        ? THREADS[this.createdThreads++]
+        ? this.allocateNewThreadId()
         : requestedThreadId
-    this.posted.push({ threadId, body })
+    this.posted.push({ requestedThreadId, threadId, body })
     const messageId = `${threadId}-accepted-${this.posted.length}`
     const turnId = `server-turn-${this.posted.length}`
     const existing = this.transcripts[threadId] ?? []
     if (requestedThreadId === 'new')
       this.threadsList.push(
         agentThreadSummary(threadId, body.content, {
+          workflow_id: body.workflow_id ?? '',
           preview: body.content
         })
       )

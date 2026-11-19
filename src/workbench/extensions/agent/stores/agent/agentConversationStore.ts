@@ -2861,7 +2861,6 @@ export const useAgentConversationStore = defineStore(
       bg: BackgroundTurn | undefined
     ): { message: AssistantMessage; resume?: BackgroundTurn } {
       if (bg && !bg.settled) {
-        backgroundTurns.delete(bg.messageId)
         return { message: bg.message, resume: bg }
       }
       if (bg?.settled) {
@@ -2944,8 +2943,10 @@ export const useAgentConversationStore = defineStore(
       }
 
       messages.value = updatedMessages
-      if (resumed) claimSlotForBackgroundTurn(resumed.entry, resumed.index, id)
-      else if (activeSlot.value === null && threadHasLiveTurn(id))
+      if (resumed) {
+        backgroundTurns.delete(resumed.entry.messageId)
+        claimSlotForBackgroundTurn(resumed.entry, resumed.index, id)
+      } else if (activeSlot.value === null && threadHasLiveTurn(id))
         resumeBackgroundTurn()
       return { nextLocal, settledLiveTurns }
     }

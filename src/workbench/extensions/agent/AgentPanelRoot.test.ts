@@ -9093,6 +9093,7 @@ describe('AgentPanelRoot history', () => {
         releaseRecheckA()
         releaseRecheckB()
         await settleFollow()
+        expect(await screen.findByText('reply in b')).toBeVisible()
         expect(userPrompts()).toEqual(['hi in b'])
         expect(
           useAgentConversationStore().isKnownChat('th-first-created')

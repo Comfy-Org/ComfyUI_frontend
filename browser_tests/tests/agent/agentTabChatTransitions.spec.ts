@@ -77,6 +77,7 @@ test.describe(
 
       await expect.poll(() => tabChats.posted).toHaveLength(1)
       expect(tabChats.posted[0]).toMatchObject({
+        requestedThreadId: tabChats.threads[0],
         threadId: tabChats.threads[0],
         body: {
           content: 'Draft addressed to Portrait',
@@ -247,6 +248,9 @@ test.describe(
         await expect(blankTabChats.opening(0)).toHaveCount(0)
 
         blankTabChats.sendDelta(0, '!')
+        await expect(blankTabChats.panel.conversation).toContainText(
+          'Reply in A!'
+        )
         blankTabChats.complete(0)
         await pendingA.entered
         await pendingA.release()

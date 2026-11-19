@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { nextTick, watch } from 'vue'
 
@@ -4650,6 +4650,24 @@ describe('useAgentConversationStore', () => {
       expect(store.entries).toEqual([])
     })
 
+    function fillKnownChatCache(
+      store: ReturnType<typeof useAgentConversationStore>,
+      count: number
+    ): void {
+      for (let i = 1; i <= count; i += 1) {
+        const id = `th-other-${i}`
+        store.setThreadId(id)
+        const history: AgentMessages = [
+          {
+            ...historyRow(1, 'user', `turn-${i}`, `Prompt ${i}`, `u-${i}`),
+            thread_id: id
+          }
+        ]
+        store.hydrate(history)
+        store.recordHydratedChat(id, history)
+      }
+    }
+
     it('skips a chat with a live turn during known-chat eviction and keeps its stream and tab spinner intact', () => {
       const liveWorkflow = fromPartial<LoadedComfyWorkflow>({
         path: 'workflows/live.json',
@@ -4676,18 +4694,7 @@ describe('useAgentConversationStore', () => {
       store.ingest(delta('msg-live', 'First part'))
       store.stashActiveTurn()
 
-      for (let i = 1; i <= 13; i += 1) {
-        const id = `th-other-${i}`
-        store.setThreadId(id)
-        const history: AgentMessages = [
-          {
-            ...historyRow(1, 'user', `turn-${i}`, `Prompt ${i}`, `u-${i}`),
-            thread_id: id
-          }
-        ]
-        store.hydrate(history)
-        store.recordHydratedChat(id, history)
-      }
+      fillKnownChatCache(store, 13)
 
       expect(store.isKnownChat('th-live')).toBe(true)
       expect(store.isKnownChat('th-other-1')).toBe(false)
@@ -4784,8 +4791,9 @@ describe('useAgentConversationStore', () => {
       const textPart = activeAfterPublish.parts.find(
         (part) => part.type === 'text'
       )
-      expect(textPart?.text).toBe('Done')
-      if (textPart) textPart.text = 'corrupted'
+      assert.exists(textPart)
+      expect(textPart.text).toBe('Done')
+      textPart.text = 'corrupted'
       activeAfterPublish.parts.push({
         type: 'text',
         text: 'extra',
@@ -4825,7 +4833,8 @@ describe('useAgentConversationStore', () => {
       const hydratedTextPart = hydrated.parts.find(
         (part) => part.type === 'text'
       )
-      if (hydratedTextPart) hydratedTextPart.text = 'mutated-after-hydrate'
+      assert.exists(hydratedTextPart)
+      hydratedTextPart.text = 'mutated-after-hydrate'
       hydrated.parts.push({
         type: 'text',
         text: 'hydrated-extra',
@@ -4845,6 +4854,71 @@ describe('useAgentConversationStore', () => {
         },
         { type: 'text', text: 'Done', state: 'done' }
       ])
+    })
+
+    it('keeps an earlier live background turn routable when a second live turn takes the active slot on hydrateKnownChat', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-multi')
+      const firstTurn = toTurnId('msg-first')
+      const secondTurn = toTurnId('msg-second')
+
+      store.recordUser(firstTurn, 'First live prompt')
+      store.startTurn(firstTurn)
+      store.recordAcceptedTurn({
+        threadId: 'th-multi',
+        turnId: firstTurn,
+        createdHere: true,
+        text: 'First live prompt'
+      })
+      store.ingest(delta('msg-first', 'First partial'))
+      store.stashActiveTurn()
+
+      store.recordUser(secondTurn, 'Second live prompt')
+      store.startTurn(secondTurn)
+      store.recordAcceptedTurn({
+        threadId: 'th-multi',
+        turnId: secondTurn,
+        createdHere: false,
+        text: 'Second live prompt'
+      })
+      store.ingest(delta('msg-second', 'Second partial'))
+      store.stashActiveTurn()
+
+      store.setThreadId('th-multi')
+      expect(store.hydrateKnownChat('th-multi')).toBe(true)
+      expect(store.activeTurnId).toBe(secondTurn)
+      expect(store.liveTurns().map((turn) => turn.messageId)).toEqual([
+        secondTurn,
+        firstTurn
+      ])
+
+      store.ingest(
+        chat({
+          type: 'agent_message_delta',
+          data: {
+            thread_id: 'th-multi',
+            message_id: 'msg-first',
+            delta: ' + continued'
+          }
+        })
+      )
+      store.ingest(
+        chat({
+          type: 'agent_message_done',
+          data: { thread_id: 'th-multi', message_id: 'msg-first' }
+        })
+      )
+
+      expect(store.liveTurns().map((turn) => turn.messageId)).toEqual([
+        secondTurn
+      ])
+      store.stashActiveTurn()
+      store.setThreadId('th-multi')
+      expect(store.hydrateKnownChat('th-multi')).toBe(true)
+      expect(store.messages[0].parts).toEqual([
+        { type: 'text', text: 'First partial + continued', state: 'done' }
+      ])
+      expect(store.activeTurnId).toBe(secondTurn)
     })
   })
 })
