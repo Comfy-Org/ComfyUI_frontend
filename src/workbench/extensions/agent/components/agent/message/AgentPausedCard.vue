@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import Card from '@comfyorg/design-system/card/Card'
+import Card from '@/components/ui/card/Card.vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@comfyorg/design-system/button/Button'
+import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { PausedPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import type { AgentPaywallSurface } from '@comfyorg/telemetry/types'
+import type { AgentPaywallSurface } from '@/platform/telemetry/types'
 import type { ActivityPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import type {
   AgentPaywallAction,
