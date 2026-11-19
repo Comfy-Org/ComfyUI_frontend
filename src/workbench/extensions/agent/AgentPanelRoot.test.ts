@@ -815,6 +815,75 @@ describe('AgentPanelRoot first-use experience', () => {
     )
   })
 
+  it('keeps the latest diagnostic level when saves finish out of order', async () => {
+    let finishFirst = () => {}
+    let finishSecond = () => {}
+    const first = new Promise<Response>((resolve) => {
+      finishFirst = () => resolve(new Response(null))
+    })
+    const second = new Promise<Response>((resolve) => {
+      finishSecond = () => resolve(new Response(null))
+    })
+    vi.mocked(api.storeSetting)
+      .mockReturnValueOnce(first)
+      .mockReturnValueOnce(second)
+    const user = userEvent.setup()
+    useAgentPanelStore().enabled = true
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'warn'
+    )
+
+    finishSecond()
+    await second
+    await setImmediate()
+    finishFirst()
+    await first
+    await setImmediate()
+    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('warn')
+    unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
+      'warn'
+    )
+  })
+
+  it('retains the diagnostic level and reports a failed save', async () => {
+    const failure = new Error('offline')
+    vi.mocked(api.storeSetting).mockRejectedValueOnce(failure)
+    const user = userEvent.setup()
+    useAgentPanelStore().enabled = true
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
+    localStorage.setItem('Comfy.Agent.CrdtDebug.level', 'warn')
+    const { unmount } = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await user.click(await screen.findByTestId('crdt-dev-panel-chip'))
+    await user.selectOptions(
+      screen.getByTestId('crdt-dev-panel-verbosity'),
+      'trace'
+    )
+
+    await waitFor(() =>
+      expect(reportError).toHaveBeenCalledWith(failure, {
+        surface: 'agent',
+        errorType: 'failure_saving_crdt_debug_level',
+        level: 'warning'
+      })
+    )
+    expect(localStorage.getItem('Comfy.Agent.CrdtDebug.level')).toBe('trace')
+    unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByTestId('crdt-dev-panel-verbosity')).toHaveValue(
+      'trace'
+    )
+  })
+
   const reportFreeUseNotice = vi.fn()
 
   function placeFundedFreeUseNotice() {

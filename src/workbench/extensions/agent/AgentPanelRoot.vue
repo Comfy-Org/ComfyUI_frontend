@@ -574,13 +574,22 @@ const settingStore = useSettingStore()
 const crdtLogLevel = computed({
   get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
   set: (level: CrdtLogLevel) => {
-    void settingStore.set('Comfy.Agent.CrdtDebug.Level', level).then(() => {
-      try {
-        localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
-      } catch {
-        return
-      }
-    })
+    try {
+      localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_saving_crdt_debug_level_mirror',
+        level: 'warning'
+      })
+    }
+    void settingStore.set('Comfy.Agent.CrdtDebug.Level', level).catch((error) =>
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_saving_crdt_debug_level',
+        level: 'warning'
+      })
+    )
   }
 })
 const dialogStore = useDialogStore()
