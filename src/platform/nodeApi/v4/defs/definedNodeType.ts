@@ -4,8 +4,9 @@ import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import {
-  optionalCallback,
-  checkedFields
+  checkedFields,
+  isStoreKey,
+  optionalCallback
 } from '@/platform/nodeApi/v4/checkedFields'
 import {
   checkedChoice,
@@ -175,7 +176,7 @@ export function nodeDefFromDefinition(definition: CheckedDefinition): NodeDef {
 }
 
 function availableTypeName(type: unknown): string {
-  if (typeof type !== 'string' || type === '' || type in Object.prototype) {
+  if (!isStoreKey(type) || type.trim() === '') {
     throw invalidArgument('define', 'a type name', type)
   }
   if (Object.hasOwn(LiteGraph.registered_node_types, type)) {
