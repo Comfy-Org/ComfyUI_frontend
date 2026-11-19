@@ -13,6 +13,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 
 import { apiOnTestCanvas } from './__tests__/testCanvasSource'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function graphWithNodes() {
   const graph = new LGraph()
@@ -170,8 +171,9 @@ describe('onSelectionChanged', () => {
   it('refuses a listener that is not a function', () => {
     const { comfy } = graphWithNodes()
 
-    expect(() =>
-      Reflect.apply(comfy.onSelectionChanged, comfy, [undefined])
-    ).toThrow(TypeError)
+    expectRefusal(
+      () => Reflect.apply(comfy.onSelectionChanged, comfy, [undefined]),
+      'onSelectionChanged'
+    )
   })
 })

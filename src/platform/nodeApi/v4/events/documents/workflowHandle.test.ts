@@ -4,6 +4,7 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function graphWithNode(title: string) {
   const graph = new LGraph()
@@ -98,9 +99,10 @@ describe('workflow.open', () => {
       const { comfy } = graphWithNode('Before')
       const load = vi.spyOn(app, 'loadGraphData')
 
-      expect(() =>
-        Reflect.apply(comfy.workflow.open, comfy.workflow, [data])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(comfy.workflow.open, comfy.workflow, [data]),
+        'workflow.open'
+      )
       expect(load).not.toHaveBeenCalled()
     }
   )

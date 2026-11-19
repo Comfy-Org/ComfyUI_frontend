@@ -12,6 +12,7 @@ import type {
   WidgetTypeDef,
   WidgetTypeValue
 } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('declared widget types', () => {
   let graph: LGraph
@@ -253,9 +254,10 @@ describe('declared widget types', () => {
       { render: () => {}, serialize: 1 }
     ]
   ] as const)('refuses %s, and registers nothing', ([, type, def]) => {
-    expect(() =>
-      Reflect.apply(widgetTypes.define, widgetTypes, [type, def])
-    ).toThrow(TypeError)
+    expectRefusal(
+      () => Reflect.apply(widgetTypes.define, widgetTypes, [type, def]),
+      'defineWidgetType'
+    )
     expect(useWidgetStore().widgets.has('PACK_X')).toBe(false)
   })
 

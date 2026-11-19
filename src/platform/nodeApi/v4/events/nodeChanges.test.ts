@@ -11,6 +11,7 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { NodeChangeEvent } from '@/platform/nodeApi/v4/types'
 
 import { apiOnTestCanvas } from './__tests__/testCanvasSource'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function documentOnScreen() {
   const root = new LGraph()
@@ -215,9 +216,10 @@ describe('onNodeChanged', () => {
     const { outer, comfy } = documentOnScreen()
     const listener = vi.fn()
 
-    expect(() =>
-      Reflect.apply(comfy.onNodeChanged, comfy, [listener, options])
-    ).toThrow(TypeError)
+    expectRefusal(
+      () => Reflect.apply(comfy.onNodeChanged, comfy, [listener, options]),
+      'onNodeChanged'
+    )
     outer.title = 'Renamed'
 
     expect(listener).not.toHaveBeenCalled()

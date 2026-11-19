@@ -13,6 +13,7 @@ import type {
   Comfy,
   WidgetCollection
 } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('canvas widgets', () => {
   let graph: LGraph
@@ -301,8 +302,9 @@ describe('canvas widgets', () => {
   ] as const)('refuses a definition with %s', ([, def]) => {
     const { node, widgets: collection } = widgets()
 
-    expect(() => Reflect.apply(collection.canvas, collection, [def])).toThrow(
-      TypeError
+    expectRefusal(
+      () => Reflect.apply(collection.canvas, collection, [def]),
+      'canvas'
     )
     expect(node.widgets ?? []).toHaveLength(0)
   })
