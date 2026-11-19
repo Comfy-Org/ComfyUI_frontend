@@ -152,8 +152,8 @@ registered, so `extend` cannot depend on the order.
     limitations"), and the JSDoc says so. `'default'` and `true` are the host's own defaults. As in the
     host, Vue nodes still show the header's collapse button on a node that
     cannot collapse, and the Vue node menu still offers Minimize Node, and
-    both do nothing; `comfy.edit.updateNode`'s
-    `collapsed` collapses such a node, as the host's own `collapse(true)`
+    both do nothing; `setCollapsed`
+    collapses such a node, as the host's own `collapse(true)`
     does. `get` does not report the presentation, as a server definition has
     none. rgthree declares it on its Label and Reroute (2 definitions; it is
     in the later V2 contract stored with rgthree, not in the V2 contract
