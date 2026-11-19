@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "当用户询问放大时加载我",
     "yourPacks": "你的技能包"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "请通过子图节点进入此子图以编辑其数值。",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "已连接的数值 · 只读",
+    "locateSource": "定位源节点",
+    "sharedSource": "共享源",
+    "sourceHint": "编辑此源也会更改与其连接的其他输入。",
+    "unavailable": "数值不可用"
+  },
   "subgraphStore": {
     "blueprintName": "子工作流名称",
     "blueprintNamePrompt": "子图名称：",

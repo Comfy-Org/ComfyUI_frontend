@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "Caricami quando l'utente chiede dell'upscaling",
     "yourPacks": "I tuoi pacchetti"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Accedi a questo sottografo tramite un nodo sottografo per modificarne i valori.",
+    "fromSource": "← {title} n. {id}",
+    "instance": "{title} · n. {id}",
+    "linked": "Valore collegato · sola lettura",
+    "locateSource": "Individua il nodo sorgente",
+    "sharedSource": "Sorgente condivisa",
+    "sourceHint": "La modifica di questa sorgente modifica anche gli altri input collegati a essa.",
+    "unavailable": "Valore non disponibile"
+  },
   "subgraphStore": {
     "blueprintName": "Nome Subgraph",
     "blueprintNamePrompt": "Nome Subgraph:",

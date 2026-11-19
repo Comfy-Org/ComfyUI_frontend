@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "وقتی کاربر دربارهٔ بزرگ‌نمایی پرسید، مرا بارگذاری کن",
     "yourPacks": "بسته‌های شما"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "برای ویرایش مقادیر این زیرگراف، از طریق یک node زیرگراف وارد آن شوید.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "مقدار پیوندشده · فقط‌خواندنی",
+    "locateSource": "مکان‌یابی node منبع",
+    "sharedSource": "منبع مشترک",
+    "sourceHint": "ویرایش این منبع، دیگر ورودی‌های متصل به آن را نیز تغییر می‌دهد.",
+    "unavailable": "مقدار در دسترس نیست"
+  },
   "subgraphStore": {
     "blueprintName": "نام زیرگراف",
     "blueprintNamePrompt": "نام Subgraph:",

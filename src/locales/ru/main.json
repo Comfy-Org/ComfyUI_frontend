@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "Загрузи меня, когда пользователь спрашивает об увеличении разрешения",
     "yourPacks": "Ваши наборы"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Войдите в этот подграф через узел подграфа, чтобы изменить его значения.",
+    "fromSource": "← {title} №{id}",
+    "instance": "{title} · №{id}",
+    "linked": "Связанное значение · только для чтения",
+    "locateSource": "Найти исходный узел",
+    "sharedSource": "Общий источник",
+    "sourceHint": "Изменение этого источника также изменяет другие входы, подключённые к нему.",
+    "unavailable": "Значение недоступно"
+  },
   "subgraphStore": {
     "blueprintName": "Имя подграфа",
     "blueprintNamePrompt": "Имя подграфа:",

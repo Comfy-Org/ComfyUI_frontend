@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "ユーザーがアップスケーリングについて尋ねたときに読み込む",
     "yourPacks": "あなたのパック"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "このサブグラフには、Subgraph Nodeを介して入ると値を編集できます。",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "リンクされた値 · 読み取り専用",
+    "locateSource": "ソースノードを表示",
+    "sharedSource": "共有ソース",
+    "sourceHint": "このソースを編集すると、それに接続されている他の入力も変更されます。",
+    "unavailable": "値を利用できません"
+  },
   "subgraphStore": {
     "blueprintName": "サブグラフ名",
     "blueprintNamePrompt": "サブグラフ名：",

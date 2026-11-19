@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "當使用者詢問放大時載入我",
     "yourPacks": "您的套件"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "請透過子圖節點進入此子圖，以編輯其值。",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "已連結的值 · 唯讀",
+    "locateSource": "定位來源節點",
+    "sharedSource": "共用來源",
+    "sourceHint": "編輯此來源也會變更其他與其連接的輸入。",
+    "unavailable": "值無法使用"
+  },
   "subgraphStore": {
     "blueprintName": "子圖名稱",
     "blueprintNamePrompt": "子圖名稱：",

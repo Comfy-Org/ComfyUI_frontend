@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "Cárgame cuando el usuario pregunte sobre escalado",
     "yourPacks": "Tus paquetes"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Accede a este subgrafo mediante un nodo de subgrafo para editar sus valores.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "Valor vinculado · solo lectura",
+    "locateSource": "Localizar nodo fuente",
+    "sharedSource": "Fuente compartida",
+    "sourceHint": "Editar esta fuente también cambia las otras entradas conectadas a ella.",
+    "unavailable": "Valor no disponible"
+  },
   "subgraphStore": {
     "blueprintName": "Nombre del subgrafo",
     "blueprintNamePrompt": "Nombre del subgrafo:",

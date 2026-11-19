@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "טען אותי כאשר המשתמש שואל על הגדלת רזולוציה",
     "yourPacks": "החבילות שלך"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "היכנסו לתת-הגרף הזה דרך צומת תת-גרף כדי לערוך את הערכים שלו.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "ערך מקושר · לקריאה בלבד",
+    "locateSource": "איתור צומת המקור",
+    "sharedSource": "מקור משותף",
+    "sourceHint": "עריכת מקור זה משנה גם את הקלטים האחרים המחוברים אליו.",
+    "unavailable": "הערך אינו זמין"
+  },
   "subgraphStore": {
     "blueprintName": "שם תת-הגרף",
     "blueprintNamePrompt": "שם תת-הגרף:",

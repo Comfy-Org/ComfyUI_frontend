@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "Kullanıcı çözünürlük yükseltme hakkında soru sorduğunda beni yükle",
     "yourPacks": "Paketleriniz"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Değerlerini düzenlemek için bu alt grafiğe bir Alt Grafik Düğümü aracılığıyla girin.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "Bağlı değer · salt okunur",
+    "locateSource": "Kaynak düğümünü bul",
+    "sharedSource": "Paylaşılan kaynak",
+    "sourceHint": "Bu kaynağı düzenlemek, ona bağlı diğer girdileri de değiştirir.",
+    "unavailable": "Değer kullanılamıyor"
+  },
   "subgraphStore": {
     "blueprintName": "Alt Grafik adı",
     "blueprintNamePrompt": "Alt grafik adı:",

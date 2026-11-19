@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "Charge-moi lorsque l’utilisateur pose une question sur l’agrandissement",
     "yourPacks": "Vos packs"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Accédez à ce sous-graphe via un nœud de sous-graphe pour modifier ses valeurs.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "Valeur liée · lecture seule",
+    "locateSource": "Localiser le nœud source",
+    "sharedSource": "Source partagée",
+    "sourceHint": "La modification de cette source modifie également les autres entrées qui y sont connectées.",
+    "unavailable": "Valeur indisponible"
+  },
   "subgraphStore": {
     "blueprintName": "Nom du sous-graphe",
     "blueprintNamePrompt": "Nom du sous-graphe :",

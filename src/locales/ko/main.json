@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "사용자가 업스케일링에 관해 물으면 나를 불러와",
     "yourPacks": "내 팩"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "이 하위 그래프의 값을 편집하려면 하위 그래프 노드를 통해 들어가세요.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "연결된 값 · 읽기 전용",
+    "locateSource": "소스 노드 찾기",
+    "sharedSource": "공유 소스",
+    "sourceHint": "이 소스를 편집하면 여기에 연결된 다른 입력도 변경됩니다.",
+    "unavailable": "값을 사용할 수 없음"
+  },
   "subgraphStore": {
     "blueprintName": "서브그래프 이름",
     "blueprintNamePrompt": "서브그래프 이름:",

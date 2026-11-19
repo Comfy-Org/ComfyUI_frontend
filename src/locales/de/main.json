@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "Lade mich, wenn der Benutzer nach Hochskalierung fragt",
     "yourPacks": "Ihre Pakete"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Rufen Sie diesen Subgraph über einen Subgraph Node auf, um seine Werte zu bearbeiten.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "Verknüpfter Wert · schreibgeschützt",
+    "locateSource": "Quell-Node suchen",
+    "sharedSource": "Gemeinsame Quelle",
+    "sourceHint": "Das Bearbeiten dieser Quelle ändert auch die anderen mit ihr verbundenen Eingaben.",
+    "unavailable": "Wert nicht verfügbar"
+  },
   "subgraphStore": {
     "blueprintName": "Subgraph-Name",
     "blueprintNamePrompt": "Subgraph-Name:",

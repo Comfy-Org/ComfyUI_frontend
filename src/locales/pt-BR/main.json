@@ -5263,6 +5263,16 @@
     "triggerLinePlaceholder": "Carregue-me quando o usuário perguntar sobre ampliação de imagem",
     "yourPacks": "Seus Pacotes"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Entre neste subgrafo por meio de um Nó de Subgrafo para editar seus valores.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "Valor vinculado · somente leitura",
+    "locateSource": "Localizar nó de origem",
+    "sharedSource": "Fonte compartilhada",
+    "sourceHint": "Editar esta fonte também altera as outras entradas conectadas a ela.",
+    "unavailable": "Valor indisponível"
+  },
   "subgraphStore": {
     "blueprintName": "Nome do subgrafo",
     "blueprintNamePrompt": "Nome do subgrafo:",
