@@ -98,7 +98,10 @@ describe('useTopupOperation', () => {
       .mockRejectedValueOnce(new WorkspaceApiError('down', 503))
     const view = useTopupOperation()
 
-    await expect(view.quoteTopup(5000, signal)).resolves.toBe(10550)
+    await expect(view.quoteTopup(5000, signal)).resolves.toStrictEqual({
+      credits: 10550,
+      paymentConfigured: false
+    })
     await expect(view.quoteTopup(5000, signal)).resolves.toBeNull()
   })
 
@@ -108,12 +111,20 @@ describe('useTopupOperation', () => {
     vi.mocked(harness.sdk.topup.quoteTopup)
       .mockResolvedValueOnce({
         status: 'ok',
-        value: { amountCents: 5000, credits: 10550, expiresAt: '2027-11-02' }
+        value: {
+          amountCents: 5000,
+          credits: 10550,
+          expiresAt: '2027-11-02',
+          paymentMethodConfigurationId: 'pmc_topup'
+        }
       })
       .mockResolvedValueOnce({ status: 'error', code: 'REQUEST_FAILED' })
     const view = useTopupOperation()
 
-    await expect(view.quoteTopup(5000, signal)).resolves.toBe(10550)
+    await expect(view.quoteTopup(5000, signal)).resolves.toStrictEqual({
+      credits: 10550,
+      paymentConfigured: true
+    })
     await expect(view.quoteTopup(5000, signal)).resolves.toBeNull()
   })
 

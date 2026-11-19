@@ -134,35 +134,23 @@ jobs:
             exit 1
           fi
 
-          RESULTS_FILE=$(mktemp)
-          trap 'rm -f "$RESULTS_FILE"' EXIT
+          BRANCH_NAME="core/${BRANCH_BASE}"
 
-          for PREFIX in core cloud; do
-            BRANCH_NAME="${PREFIX}/${BRANCH_BASE}"
-
-            if git ls-remote --exit-code --heads origin \
-              "$BRANCH_NAME" >/dev/null 2>&1; then
-              echo "⚠️  Branch $BRANCH_NAME already exists"
-              echo "ℹ️  Skipping creation for $BRANCH_NAME"
-              STATUS="exists"
-            else
-              # Create branch from the commit BEFORE the version bump
-              if ! git push origin "$BASE_COMMIT:refs/heads/$BRANCH_NAME"; then
-                echo "::error::Failed to push release branch $BRANCH_NAME"
-                exit 1
-              fi
-              echo "✅ Created release branch: $BRANCH_NAME"
-              STATUS="created"
+          if git ls-remote --exit-code --heads origin \
+            "$BRANCH_NAME" >/dev/null 2>&1; then
+            echo "⚠️  Branch $BRANCH_NAME already exists"
+            echo "ℹ️  Skipping creation for $BRANCH_NAME"
+            STATUS="exists"
+          else
+            if ! git push origin "$BASE_COMMIT:refs/heads/$BRANCH_NAME"; then
+              echo "::error::Failed to push release branch $BRANCH_NAME"
+              exit 1
             fi
+            echo "✅ Created release branch: $BRANCH_NAME"
+            STATUS="created"
+          fi
 
-            echo "$BRANCH_NAME|$STATUS|$PREV_VERSION" >> "$RESULTS_FILE"
-          done
-
-          {
-            echo "results<<EOF"
-            cat "$RESULTS_FILE"
-            echo "EOF"
-          } >> "$GITHUB_OUTPUT"
+          echo "results=$BRANCH_NAME|$STATUS|$PREV_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Ensure release labels
         if: steps.check_version.outputs.is_minor_bump == 'true'
@@ -178,57 +166,12 @@ jobs:
             exit 1
           fi
 
-          declare -A COLORS=(
-            [core]="4361ee"
-            [cloud]="4f6ef5"
-          )
-
-          for PREFIX in core cloud; do
-            LABEL="${PREFIX}/${BRANCH_BASE}"
-            COLOR="${COLORS[$PREFIX]}"
-            DESCRIPTION="Backport PRs for ${PREFIX} ${BRANCH_BASE}"
-
-            # --force creates the label when missing and updates its color and
-            # description when it already exists, so re-runs never hard-fail.
-            gh label create "$LABEL" \
-              --color "$COLOR" \
-              --description "$DESCRIPTION" \
-              --force
-            echo "✅ Ensured label $LABEL"
-          done
-
-          MIN_LABELS_TO_KEEP=3
-          MAX_LABELS_TO_FETCH=200
-
-          for PREFIX in core cloud; do
-            mapfile -t LABELS < <(
-              gh label list \
-                --json name \
-                --limit "$MAX_LABELS_TO_FETCH" \
-                --jq '.[].name' |
-              grep -E "^${PREFIX}/[0-9]+\.[0-9]+$" |
-              sort -t/ -k2,2V
-            )
-
-            TOTAL=${#LABELS[@]}
-
-            if (( TOTAL <= MIN_LABELS_TO_KEEP )); then
-              echo "ℹ️  Nothing to prune for $PREFIX labels"
-              continue
-            fi
-
-            REMOVE_COUNT=$((TOTAL - MIN_LABELS_TO_KEEP))
-
-            if (( REMOVE_COUNT > 1 )); then
-              REMOVE_COUNT=1
-            fi
-
-            for ((i=0; i<REMOVE_COUNT; i++)); do
-              OLD_LABEL="${LABELS[$i]}"
-              gh label delete "$OLD_LABEL" --yes
-              echo "🗑️ Removed old label $OLD_LABEL"
-            done
-          done
+          LABEL="core/${BRANCH_BASE}"
+          gh label create "$LABEL" \
+            --color "4361ee" \
+            --description "Backport PRs for core ${BRANCH_BASE}" \
+            --force
+          echo "✅ Ensured label $LABEL"
 
       - name: Post summary
         if: always() && steps.check_version.outputs.is_minor_bump == 'true'
@@ -284,5 +227,5 @@ jobs:
           1. Create your fix on \`main\` first
           2. Cherry-pick to the target release branch
           3. Create a PR targeting that branch
-          4. Apply the matching \`core/x.y\` or \`cloud/x.y\` label
+          4. Apply the matching \`core/x.y\` label
           EOF

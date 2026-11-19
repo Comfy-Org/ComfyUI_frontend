@@ -28,15 +28,11 @@
       </Button>
     </div>
 
-    <SanitizedHtml
+    <MarkdownView
       v-if="showMarkdown"
-      class="comfy-markdown-content size-full min-h-16 overflow-y-auto rounded-lg text-sm contain-size"
-      tabindex="0"
-      data-capture-wheel="true"
-      role="textarea"
+      class="text-sm"
       :aria-label="widget.name"
-      aria-readonly="true"
-      :html="renderedMarkdown"
+      :markdown="modelValue"
     />
     <Textarea
       v-else
@@ -62,7 +58,6 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SanitizedHtml from '@comfyorg/design-system/common/SanitizedHtml'
 import Button from '@comfyorg/design-system/button/Button'
 import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
@@ -84,9 +79,9 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 
+import MarkdownView from './MarkdownView.vue'
 import { WidgetInputBaseClass } from './layout'
 
 type SaveTextOutput = NodeOutputWith<{
@@ -122,10 +117,6 @@ const showMarkdown = computed<boolean>(() => {
     )?.value === true
   )
 })
-
-const renderedMarkdown = computed(() =>
-  showMarkdown.value ? renderMarkdownToHtml(modelValue.value || '') : ''
-)
 
 const savedFile = computed(() => {
   if (nodeId === undefined) return undefined

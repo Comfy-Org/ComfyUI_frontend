@@ -17,6 +17,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
+import { isValidUuid } from '@/utils/formatUtil'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -610,6 +611,51 @@ describe('useWorkflowPersistenceV2', () => {
 
       expect(draftStore.getDraft(draftPath)?.data).toBe(draftGraph)
     })
+
+    it.for([
+      ['no id', {}],
+      ['a legacy id', { id: 'legacy-workflow-id' }]
+    ] as const)(
+      'keeps the draft of an unsaved background tab with %s when it is first loaded',
+      async ([, idFields]) => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const workflowStore = useWorkflowStore()
+        vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+        const draftStore = useWorkflowDraftStoreV2()
+        const draftPath = 'workflows/Background.json'
+        draftStore.saveDraft(
+          draftPath,
+          JSON.stringify({ ...blankGraph, ...idFields, extra: { a: 1 } }),
+          { name: 'Background.json', isTemporary: true }
+        )
+        const stored = draftStore.getDraft(draftPath)
+        const active = workflowStore.createTemporary('Active.json')
+        writeTabState([draftPath, active.path], 1)
+        vi.advanceTimersByTime(60_000)
+
+        const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+        await restoreWorkflowTabsState()
+        const background = workflowStore.getWorkflowByPath(draftPath)
+        expect(background?.isLoaded).toBe(false)
+        expect(draftStore.getDraft(draftPath)).toMatchObject({
+          data: stored!.data,
+          updatedAt: stored!.updatedAt
+        })
+
+        await background!.load()
+
+        expect(JSON.parse(draftStore.getDraft(draftPath)!.data).extra).toEqual({
+          a: 1
+        })
+        expect(background!.activeState?.extra).toEqual({ a: 1 })
+        const tabId = background!.initialState?.id
+        expect(isValidUuid(tabId)).toBe(true)
+        expect(background!.activeState?.id).toBe(tabId)
+      }
+    )
 
     it('leaves a reused workflow outside the workflows folder unstamped', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })
