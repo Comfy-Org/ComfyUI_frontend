@@ -22,6 +22,18 @@ jobs:
         password: ${{ secrets.GITHUB_TOKEN }}
 
     steps:
+      - name: Verify the configured smoke account
+        shell: bash
+        env:
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+        run: |
+          set -euo pipefail
+          actual=$(printf '%s' "$SMOKE_ACCOUNT_EMAIL" | tr '[:upper:]' '[:lower:]' | sha256sum | cut -d ' ' -f 1)
+          if [ "$actual" != '8a6c2cf3e674a846c910fe28d6d7498aee7f40723b3a21b100426b131d1184e6' ]; then
+            echo 'The CI secret does not identify the requested smoke-test account.'
+            exit 1
+          fi
+          echo 'Verified the requested smoke-test account.'
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
@@ -61,8 +73,8 @@ jobs:
             --project=cloud-live --workers=1 --retries=0 --trace=off --reporter=line \
             --output="$RUNNER_TEMP/dplat3611-staging-smoke"
         env:
-          SMOKE_ACCOUNT_EMAIL: ${{ vars.OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL }}
-          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD }}
+          SMOKE_ACCOUNT_EMAIL: ${{ secrets.SMOKE_ACCOUNT_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.SMOKE_ACCOUNT_PASSWORD }}
           STAGING_SMOKE_FIXTURE: /ComfyUI/models/loras
           PLAYWRIGHT_CLOUD_LIVE: '1'
           PLAYWRIGHT_TEST_URL: http://127.0.0.1:8188

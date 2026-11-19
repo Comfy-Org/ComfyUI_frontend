@@ -155,6 +155,16 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
     const url = new URL(response.url())
     if (url.origin === staging && url.pathname === '/api/features') {
       console.log(`Staging feature response HTTP ${response.status()}`)
+      if (!response.ok()) {
+        void response
+          .json()
+          .then((body) => {
+            const code = body?.code
+            if (typeof code === 'string' && /^[A-Z_]{1,50}$/.test(code))
+              console.log(`Staging feature error code: ${code}`)
+          })
+          .catch(() => {})
+      }
       workspaceFeatures.push(response)
     }
   })
