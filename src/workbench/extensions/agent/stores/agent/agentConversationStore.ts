@@ -1064,6 +1064,7 @@ export const useAgentConversationStore = defineStore(
       )
       const record: PendingSend = {
         ...input,
+        workspaceId: input.workspaceId ?? null,
         rawText: input.rawText ?? input.text,
         sentAttachments: input.sentAttachments ?? [],
         sentTags: input.sentTags ?? [],
@@ -1071,33 +1072,26 @@ export const useAgentConversationStore = defineStore(
         text: parsed.text,
         workflowReferences: parsed.workflowReferences,
         skillReference: parsed.skillReference,
-        status: 'sending',
-        canvasOutcomeAtStart: canvasSyncOutcomeCount(),
-        canvasEvidence: []
+        status: 'sending'
       }
       pendingSends.set(record.clientMessageId, record)
       return record
+    }
+
+    function capturePendingSendCanvasBaseline(clientMessageId: string): void {
+      const existing = pendingSends.get(clientMessageId)
+      if (!existing || existing.status !== 'sending') return
+      pendingSends.set(clientMessageId, {
+        ...existing,
+        canvasOutcomeAtStart: canvasSyncOutcomeCount(),
+        canvasEvidence: []
+      })
     }
 
     function hasAnySendingPendingSend(): boolean {
       for (const send of pendingSends.values())
         if (send.status === 'sending') return true
       return false
-    }
-
-    function clearPendingSendCanvasEvidence(): void {
-      for (const [id, send] of pendingSends) {
-        if (
-          send.canvasOutcomeAtStart !== undefined ||
-          send.canvasEvidence !== undefined
-        ) {
-          pendingSends.set(id, {
-            ...send,
-            canvasOutcomeAtStart: undefined,
-            canvasEvidence: undefined
-          })
-        }
-      }
     }
 
     function failPendingSend(
@@ -1138,8 +1132,8 @@ export const useAgentConversationStore = defineStore(
         failure: undefined,
         paywallResolved: undefined,
         stopRequested: undefined,
-        canvasOutcomeAtStart: canvasSyncOutcomeCount(),
-        canvasEvidence: []
+        canvasOutcomeAtStart: undefined,
+        canvasEvidence: undefined
       }
       const entriesInOrder = [...pendingSends.entries()]
       pendingSends.clear()
@@ -1178,15 +1172,37 @@ export const useAgentConversationStore = defineStore(
       return pendingSends.get(clientMessageId)
     }
 
-    function hasPendingSendForBlankChat(blankChatId: string): boolean {
+    function hasPendingSendForBlankChat(
+      blankChatId: string,
+      workspaceId?: string | null
+    ): boolean {
       for (const send of pendingSends.values()) {
         if (
           send.origin.kind === 'blank' &&
-          send.origin.blankChatId === blankChatId
+          send.origin.blankChatId === blankChatId &&
+          (workspaceId === undefined ||
+            (send.workspaceId ?? null) === workspaceId)
         )
           return true
       }
       return false
+    }
+
+    function discardPendingSendsOutsideWorkspace(
+      activeWorkspaceId: string | null,
+      excludeClientMessageId?: string
+    ): string[] {
+      const removed: string[] = []
+      for (const [id, send] of pendingSends) {
+        if (
+          id === excludeClientMessageId ||
+          (send.workspaceId ?? null) === activeWorkspaceId
+        )
+          continue
+        pendingSends.delete(id)
+        removed.push(id)
+      }
+      return removed
     }
 
     function updatePendingAttachmentPreview(
@@ -1496,7 +1512,11 @@ export const useAgentConversationStore = defineStore(
     function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
       if (evidence !== undefined) {
         for (const send of pendingSends.values()) {
-          if (send.status !== 'sending') continue
+          if (
+            send.status !== 'sending' ||
+            send.canvasOutcomeAtStart === undefined
+          )
+            continue
           send.canvasEvidence ??= []
           if (send.canvasEvidence.length >= 256) send.canvasEvidence.shift()
           send.canvasEvidence.push(evidence)
@@ -2319,12 +2339,14 @@ export const useAgentConversationStore = defineStore(
       hasAnySendingPendingSend,
       hasLiveTurnForOrigin,
       startPendingSend,
+      capturePendingSendCanvasBaseline,
       failPendingSend,
       retryPendingSend,
       markPendingSendStopped,
       takePendingSend,
       getPendingSend,
       hasPendingSendForBlankChat,
+      discardPendingSendsOutsideWorkspace,
       updatePendingAttachmentPreview,
       startBackgroundTurn,
       isStreaming,
@@ -2364,7 +2386,6 @@ export const useAgentConversationStore = defineStore(
       settleBackgroundTurn,
       dropBackgroundTurns,
       liveTurns,
-      clearPendingSendCanvasEvidence,
       turnUsesSkill,
       historySkillNames,
       settleTurn,

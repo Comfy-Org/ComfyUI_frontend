@@ -153,6 +153,7 @@ export interface AgentSessionDeps {
    * authenticates every request.
    */
   refreshCredentialDuringTurns?: boolean
+  workspaceId?: () => string | null
   workflow?: {
     /** Resolve fresh versus restored startup before asynchronous hydration. */
     initialize?(hasThread: boolean): void
@@ -206,6 +207,7 @@ interface HydrationBuffer {
    * unregisters the buffer and re-applies the cap even on a stopped session.
    */
   pending: boolean
+  loadOwnerGeneration?: number
   retirement?: ReturnType<typeof setTimeout>
   mailboxRetirement?: ReturnType<typeof setTimeout>
 }
@@ -328,7 +330,8 @@ export function isRetryableRequestFailure(
   if (accepted) return false
   if (
     error instanceof ZodError ||
-    error instanceof AgentResponseUnreadableError
+    error instanceof AgentResponseUnreadableError ||
+    (error instanceof DOMException && error.name === 'TimeoutError')
   )
     return false
   if (error instanceof AgentApiError)
@@ -516,6 +519,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     onThreadActivated,
     onAskResolved,
     refreshCredentialDuringTurns = false,
+    workspaceId,
     workflow
   } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
@@ -642,7 +646,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }, CREDENTIAL_REFRESH_INTERVAL_MS)
 
   const inFlightSends = new Set<string>()
-  const pendingThreadLoads = new Set<string>()
   const pendingSendEvents: AgentWsEvent[] = []
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
@@ -862,15 +865,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
     const stashedTurn = beginInitialThread(initialThreadId, surviving)
-    pendingThreadLoads.add(initialThreadId)
-    let ready = false
-    try {
-      ready = await hydrateFromServer(initialThreadId, isCurrent, {
-        stashedTurn
-      })
-    } finally {
-      pendingThreadLoads.delete(initialThreadId)
-    }
+    const ready = await hydrateFromServer(initialThreadId, isCurrent, {
+      stashedTurn,
+      forThreadLoad: true
+    })
     if (isCurrent()) settleInitialThread(initialThreadId, surviving, ready)
   }
 
@@ -939,7 +937,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * `agent_message_done` has already settled -- and both `ingest` and a
    * settled transport drop what they cannot place.
    */
-  function armHydration(threadId: string): HydrationBuffer {
+  function armHydration(
+    threadId: string,
+    forThreadLoad = false
+  ): HydrationBuffer {
     const superseded =
       hydrationBuffers.get(threadId) ?? hydrationMailboxes.get(threadId)
     if (superseded?.retirement !== undefined)
@@ -953,7 +954,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // `finally`, and a frame left behind there is replayed a second time
       // into whatever is active by then.
       events: superseded?.events.splice(0) ?? [],
-      pending: true
+      pending: true,
+      loadOwnerGeneration: forThreadLoad ? ownedGeneration : undefined
     }
     hydrationBuffers.set(threadId, buffer)
     buffer.retirement = setTimeout(
@@ -1106,15 +1108,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     isCurrent: () => boolean = () => true,
     {
       stashedTurn = false,
+      forThreadLoad = false,
       openThread,
       failureNotice = 'error_overlay'
     }: {
       stashedTurn?: boolean
+      forThreadLoad?: boolean
       openThread?: () => void
       failureNotice?: 'error_overlay' | 'inline_notice'
     } = {}
   ): Promise<boolean> {
-    const buffer = armHydration(threadId)
+    const buffer = armHydration(threadId, forThreadLoad)
     try {
       const history = await rest.getMessages(threadId)
       if (openThread && isCurrent()) openThread()
@@ -1173,7 +1177,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     readyThreadId.value = null
     inFlightSends.clear()
     pendingSendEvents.length = 0
-    conversationStore.clearPendingSendCanvasEvidence()
     unsubscribe?.()
     unsubscribeStatus?.()
     unsubscribeSnapshotSettled?.()
@@ -1569,14 +1572,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
         adoptWorkflow,
         'agent_workflow_adoption_callback_failed'
       )
-    drainAcceptedTurnHydrationEvents(ack.thread_id, turnId)
     drainPendingSendEvents(ack.thread_id, turnId)
   }
 
   function cancelBackgroundTurn(threadId: string, turnId: TurnId): void {
     void rest.cancelMessage(threadId, turnId).catch((error: unknown) => {
       const status = error instanceof AgentApiError ? error.status : undefined
-      if (status === 404 || status === 409) return
+      if (status === 409) return
       reportStopFailure(
         error,
         status === undefined ? true : isRetryableRequestFailure(error, false)
@@ -1617,11 +1619,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }): void {
     const turnId = toTurnId(ack.message_id)
-    if (isDeletedThread?.(ack.thread_id)) {
-      if (stopped !== undefined)
-        void rest.cancelMessage(ack.thread_id, turnId).catch(() => undefined)
-      return
-    }
     const workflowId = ack.workflow_id
     if (
       workflowId !== undefined &&
@@ -1651,7 +1648,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         onBlankTurnAccepted?.(ack, origin.blankChatId)
     }, 'agent_thread_activated_callback_failed')
     if (stopped !== undefined) cancelBackgroundTurn(ack.thread_id, turnId)
-    drainAcceptedTurnHydrationEvents(ack.thread_id, turnId)
     drainPendingSendEvents(ack.thread_id, turnId)
   }
 
@@ -1771,7 +1767,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return adoptedActiveTurn
   }
 
-  function isServerDeletedSend(
+  function isServer404DeletedSend(
     origin: PendingSendOrigin,
     ackThreadId: string
   ): boolean {
@@ -1779,6 +1775,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
       (origin.kind === 'thread' && deletedThreads.has(origin.threadId)) ||
       deletedThreads.has(ackThreadId)
     )
+  }
+
+  function isHistoryDeletedSend(
+    origin: PendingSendOrigin,
+    ackThreadId: string,
+    backgroundOrStopped: boolean
+  ): boolean {
+    if (origin.kind === 'thread' && isDeletedThread?.(origin.threadId))
+      return true
+    return backgroundOrStopped && Boolean(isDeletedThread?.(ackThreadId))
   }
 
   function isDeletedThreadOrigin(origin: PendingSendOrigin): boolean {
@@ -1941,7 +1947,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       void rest
         .cancelMessage(ack.thread_id, toTurnId(ack.message_id))
         .catch(() => undefined)
-    if (isDeletedThread?.(ack.thread_id)) return false
+    if (
+      isServer404DeletedSend(origin, ack.thread_id) ||
+      isHistoryDeletedSend(origin, ack.thread_id, true)
+    )
+      return false
     if (
       ack.workflow_id !== undefined &&
       shouldAdoptWorkflow(ack.workflow_id, wfContext, boundAtSend)
@@ -1985,12 +1995,22 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const { sendId, ack, input, origin, wfContext, boundAtSend } = params
     if (stopped && ownedGeneration === sessionGeneration)
       return finalizeStoppedSessionAcceptance(params)
-    if (isServerDeletedSend(origin, ack.thread_id)) {
-      conversationStore.takePendingSend(sendId)
-      return false
-    }
     const pending = conversationStore.takePendingSend(sendId)
     const stoppedRequest = pending?.stopRequested
+    const onScreen = conversationStore.isOriginOnScreen(origin)
+    const server404 = isServer404DeletedSend(origin, ack.thread_id)
+    const historyDeleted = isHistoryDeletedSend(
+      origin,
+      ack.thread_id,
+      !onScreen
+    )
+    if (server404 || historyDeleted) {
+      if (stoppedRequest !== undefined)
+        void rest
+          .cancelMessage(ack.thread_id, toTurnId(ack.message_id))
+          .catch(() => undefined)
+      return !server404
+    }
     const attachments = pending?.sentAttachments.length
       ? pending.sentAttachments
       : params.attachments
@@ -2000,10 +2020,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
           evidence: pending.canvasEvidence
         }
       : undefined
-    if (
-      conversationStore.isOriginOnScreen(origin) &&
-      !pendingThreadLoads.has(ack.thread_id)
-    ) {
+    const activeBuffer = hydrationBuffers.get(ack.thread_id)
+    const hydratingForLoad =
+      activeBuffer?.pending === true &&
+      activeBuffer.loadOwnerGeneration === ownedGeneration
+    if (onScreen && !hydratingForLoad) {
       acceptTurn(
         ack,
         origin,
@@ -2041,10 +2062,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function finishInFlightSend(sendId: string): void {
     inFlightSends.delete(sendId)
     if (inFlightSends.size > 0) return
-    if (!conversationStore.hasAnySendingPendingSend())
-      conversationStore.clearPendingSendCanvasEvidence()
-    for (const event of pendingSendEvents.splice(0))
-      dispatchPendingSendEvent(event)
+    for (const event of pendingSendEvents.splice(0)) {
+      try {
+        handleAgentEvent(event)
+      } catch (error) {
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_pending_send_replay_failed'
+        })
+      }
+    }
   }
 
   async function performSend({
@@ -2118,6 +2145,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         canvasNodeIds,
         boundAtSend
       )
+      conversationStore.capturePendingSendCanvasBaseline(sendId)
       const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
       runAcceptedTurnSideEffect(
@@ -2184,6 +2212,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.startPendingSend({
           clientMessageId: sendId,
           origin,
+          workspaceId: workspaceId?.() ?? null,
           text,
           attachments: toUserAttachments(attachments),
           tags: toTagStrings(tags),
@@ -2200,6 +2229,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.startPendingSend({
         clientMessageId: sendId,
         origin,
+        workspaceId: workspaceId?.() ?? null,
         text,
         attachments: toUserAttachments(attachments),
         tags: toTagStrings(tags),
@@ -2757,19 +2787,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       load.switched = keepOpenChatUntilLoaded
     }
     if (!keepOpenChatUntilLoaded) openThread()
-    pendingThreadLoads.add(threadId)
-    let hydrated = false
-    try {
-      hydrated = await hydrateFromServer(
-        threadId,
-        isCurrent,
-        keepOpenChatUntilLoaded
-          ? { openThread, failureNotice: 'inline_notice' }
-          : { stashedTurn: load.stashedTurn }
-      )
-    } finally {
-      pendingThreadLoads.delete(threadId)
-    }
+    const hydrated = await hydrateFromServer(
+      threadId,
+      isCurrent,
+      keepOpenChatUntilLoaded
+        ? {
+            openThread,
+            failureNotice: 'inline_notice',
+            forThreadLoad: true
+          }
+        : { stashedTurn: load.stashedTurn, forThreadLoad: true }
+    )
     const opened = hydrated && isCurrent()
     if (opened || outlivedItsNavigation()) {
       localStorage.setItem(threadStorageKey, threadId)
@@ -2963,11 +2991,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function isProtectedPendingSendEvent(event: AgentWsEvent): boolean {
-    return (
-      event.type === 'agent_message_done' ||
-      event.type === 'agent_ask' ||
-      event.type === 'agent_ask_resolved'
-    )
+    return event.type === 'agent_message_done' || event.type === 'agent_ask'
   }
 
   function heldForPendingSend(event: AgentWsEvent): boolean {
@@ -2981,8 +3005,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       } else if (!isProtectedPendingSendEvent(event)) {
         return true
       } else {
-        pendingSendEvents.shift()
-        reconcileLiveTurns('reconnect')
+        const askIndex = pendingSendEvents.findIndex(
+          (held) => held.type === 'agent_ask'
+        )
+        pendingSendEvents.splice(Math.max(0, askIndex), 1)
       }
     }
     pendingSendEvents.push(event)
@@ -3008,28 +3034,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         surface: 'agent',
         errorType: 'agent_pending_send_replay_failed'
       })
-    }
-  }
-
-  function drainAcceptedTurnHydrationEvents(
-    threadId: string,
-    turnId: TurnId
-  ): void {
-    for (const buffer of [
-      hydrationBuffers.get(threadId),
-      hydrationMailboxes.get(threadId)
-    ]) {
-      if (!buffer || buffer.events.length === 0) continue
-      const remaining: AgentWsEvent[] = []
-      const matched: AgentWsEvent[] = []
-      for (const event of buffer.events) {
-        if (matchesAcceptedTurn(event, threadId, turnId)) matched.push(event)
-        else remaining.push(event)
-      }
-      if (matched.length === 0) continue
-      buffer.events.length = 0
-      buffer.events.push(...remaining)
-      for (const event of matched) dispatchPendingSendEvent(event)
     }
   }
 
@@ -3062,7 +3066,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function handleAgentEvent(event: AgentWsEvent): void {
-    if (heldForHydration(event) || heldForPendingSend(event)) return
+    if (heldForPendingSend(event) || heldForHydration(event)) return
     dispatchAgentEvent(event)
   }
 

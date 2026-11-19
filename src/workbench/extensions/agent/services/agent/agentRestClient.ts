@@ -911,22 +911,13 @@ export function createAgentRestClient() {
       POST_MESSAGE_TIMEOUT_MS
     )
     try {
-      return await Promise.race([
-        request(
-          'post_thread_message',
-          `/agent/threads/${encodeURIComponent(threadId)}/messages`,
-          { ...jsonInit('POST', body), signal: controller.signal },
-          zAgentTurnAccepted,
-          true
-        ),
-        new Promise<never>((_, reject) => {
-          controller.signal.addEventListener(
-            'abort',
-            () => reject(controller.signal.reason),
-            { once: true }
-          )
-        })
-      ])
+      return await request(
+        'post_thread_message',
+        `/agent/threads/${encodeURIComponent(threadId)}/messages`,
+        { ...jsonInit('POST', body), signal: controller.signal },
+        zAgentTurnAccepted,
+        true
+      )
     } finally {
       clearTimeout(timeoutId)
     }

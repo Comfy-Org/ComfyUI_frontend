@@ -27,6 +27,7 @@ interface UseAgentDraftSubmissionOptions {
   onRejected?: (reason: AgentComposerDropReason) => void
   target: () => ComfyWorkflow | null
   editableWorkflowId: () => string | undefined
+  workspaceId?: () => string | null
   selection: Pick<
     ReturnType<typeof useCanvasSelection>,
     'staged' | 'consume' | 'replace'
@@ -177,6 +178,7 @@ export function useAgentDraftSubmission(
     composer.retainAssets(pendingAssetOwnerKey(clientMessageId), assetIds)
     conversation.startPendingSend({
       clientMessageId,
+      workspaceId: options.workspaceId?.() ?? null,
       rawText: text,
       text,
       attachments: toUserAttachments(sentAttachments),

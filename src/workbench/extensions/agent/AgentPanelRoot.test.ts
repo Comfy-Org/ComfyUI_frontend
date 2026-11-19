@@ -6833,7 +6833,7 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentConversationStore().threadId).toBe('th-first')
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
         expect(userPrompts()).toEqual(['Prompt in th-first'])
-        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.queryByRole('status', { name: /Opening/ })).toBeNull()
         expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
           'inert'
         )
@@ -6973,7 +6973,7 @@ describe('AgentPanelRoot history', () => {
         expect(workflowStore.activeWorkflow?.path).toBe(second.path)
         expect(loadedThreads).toEqual(['th-first'])
         expect(await screen.findByText(followFailure())).toBeVisible()
-        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.queryByRole('status', { name: /Opening/ })).toBeNull()
         expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
           'inert'
         )
@@ -7060,7 +7060,7 @@ describe('AgentPanelRoot history', () => {
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
         expect(loadedThreads).toEqual(['th-first'])
         expect(screen.queryByText(followFailure())).toBeNull()
-        expect(screen.queryByRole('status')).toBeNull()
+        expect(screen.queryByRole('status', { name: /Opening/ })).toBeNull()
         expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
           'inert'
         )

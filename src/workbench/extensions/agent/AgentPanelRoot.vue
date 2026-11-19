@@ -1226,6 +1226,7 @@ const {
   onThreadActivated: (id) => history.setActive(id),
   onAskResolved: forgetApproval,
   refreshCredentialDuringTurns: !isCloud,
+  workspaceId: () => workspaceStore.activeWorkspaceId ?? null,
   workflow: {
     initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
@@ -2058,7 +2059,6 @@ async function refreshHistory(
 }
 
 const provisionalTitles = ref(new Map<string, string>())
-const sendWorkspaces = new Map<string, string | null>()
 const offscreenFailureToasts = new Map<
   ToastId,
   { clientMessageId: string; workspaceId: string | null }
@@ -2427,10 +2427,6 @@ async function sendTurn(
     return 'withdrawn'
   armPendingSend(attachments, sentNodes, meta)
   releaseGate?.()
-  sendWorkspaces.set(
-    meta.clientMessageId,
-    workspaceStore.activeWorkspaceId ?? null
-  )
   const sentUsageScope = proactive.scope.value
   try {
     const sent = await sendWithFundsRecheck((onAccepted) =>
@@ -2460,6 +2456,7 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
   onRejected: sendGates.rejectDraft,
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
+  workspaceId: () => workspaceStore.activeWorkspaceId ?? null,
   selection: {
     staged: selectionTags,
     workflow: () => nodeReferenceWorkflow,
@@ -2524,7 +2521,6 @@ void until(currentChatReady)
   })
 
 function onDeletePendingSend(clientMessageId: string): void {
-  sendWorkspaces.delete(clientMessageId)
   conversationStore.takePendingSend(clientMessageId)
   composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
 }
@@ -2542,6 +2538,10 @@ function canRetryPendingFailure(
 function retryablePendingSend(clientMessageId: string) {
   const pending = conversationStore.getPendingSend(clientMessageId)
   if (!pending || pending.status !== 'failed') return null
+  if (
+    (pending.workspaceId ?? null) !== (workspaceStore.activeWorkspaceId ?? null)
+  )
+    return null
   if (!canRetryPendingFailure(pending.failure)) return null
   if (
     workflowSelecting.value ||
@@ -2625,10 +2625,6 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
   if (!hasAgentCredential() && !(await ensureSignedIn())) return
 
   const retryClientMessageId = uuidv4()
-  const priorWorkspace = sendWorkspaces.get(clientMessageId)
-  sendWorkspaces.delete(clientMessageId)
-  if (priorWorkspace !== undefined)
-    sendWorkspaces.set(retryClientMessageId, priorWorkspace)
   const retried = conversationStore.retryPendingSend(
     clientMessageId,
     retryClientMessageId
@@ -2712,8 +2708,12 @@ function showOffscreenBlankSend(
 ): void {
   toast.dismiss(toastId)
   offscreenFailureToasts.delete(toastId)
-  if ((workspaceStore.activeWorkspaceId ?? null) !== originWorkspaceId) return
-  if (!conversationStore.hasPendingSendForBlankChat(blankChatId)) return
+  const activeWorkspace = workspaceStore.activeWorkspaceId ?? null
+  if (activeWorkspace !== originWorkspaceId) return
+  if (
+    !conversationStore.hasPendingSendForBlankChat(blankChatId, activeWorkspace)
+  )
+    return
   agentPanelStore.open()
   agentPanelStore.view = { screen: 'chat' }
   retireFollow()
@@ -2728,12 +2728,11 @@ function notifyOffscreenBlankSendFailed({
   clientMessageId,
   blankChatId
 }: OffscreenBlankSendFailure): void {
+  const activeWorkspace = workspaceStore.activeWorkspaceId ?? null
   const originWorkspaceId =
-    sendWorkspaces.get(clientMessageId) ??
-    workspaceStore.activeWorkspaceId ??
-    null
-  if ((workspaceStore.activeWorkspaceId ?? null) !== originWorkspaceId) {
-    sendWorkspaces.delete(clientMessageId)
+    conversationStore.getPendingSend(clientMessageId)?.workspaceId ??
+    activeWorkspace
+  if (activeWorkspace !== originWorkspaceId) {
     conversationStore.takePendingSend(clientMessageId)
     composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
     return
@@ -2902,16 +2901,11 @@ watch(
       toast.dismiss(toastId)
       offscreenFailureToasts.delete(toastId)
     }
-    for (const [clientMessageId, workspaceId] of sendWorkspaces) {
-      if (workspaceId === activeWorkspace) continue
-      sendWorkspaces.delete(clientMessageId)
-      const pending = conversationStore.getPendingSend(clientMessageId)
-      if (pending?.origin.kind === 'blank') {
-        conversationStore.takePendingSend(clientMessageId)
-        composerStore.releaseRetainedAssets(
-          pendingAssetOwnerKey(clientMessageId)
-        )
-      }
+    for (const clientMessageId of conversationStore.discardPendingSendsOutsideWorkspace(
+      activeWorkspace,
+      composerStore.gateHold?.clientMessageId
+    )) {
+      composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
     }
   }
 )

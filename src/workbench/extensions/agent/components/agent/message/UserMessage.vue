@@ -133,14 +133,20 @@ function forwardOpenReference(workflowId: string, workflowName: string): void {
     </div>
     <UserMessageAttachments v-if="attachments.length" :attachments />
     <div
+      role="status"
+      :aria-label="isSending ? t('agent.sendingMessage') : undefined"
+      class="sr-only"
+    >
+      {{ isSending ? t('agent.sendingMessage') : '' }}
+    </div>
+    <div
       v-if="showBubbleRow"
       class="flex max-w-full items-center justify-end gap-1.5"
     >
       <div
         v-if="isSending"
-        role="status"
+        aria-hidden="true"
         data-testid="pending-send-spinner"
-        :aria-label="t('agent.sendingMessage')"
         class="flex shrink-0 items-center text-muted-foreground"
       >
         <i
