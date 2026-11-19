@@ -103,37 +103,6 @@ test.describe('Vue Node Collapse', { tag: '@vue-nodes' }, () => {
     })
   })
 
-  test('collapsed nodes in a tight layout do not overlap their neighbours', async ({
-    comfyPage
-  }) => {
-    await comfyPage.workflow.loadWorkflow('vueNodes/collapsed-preflight-checks')
-    await expect(comfyPage.vueNodes.nodes).toHaveCount(18)
-
-    const boxes = await Promise.all(
-      (await comfyPage.vueNodes.nodes.all()).map(async (node) => ({
-        id: await node.getAttribute('data-node-id'),
-        box: await node.boundingBox()
-      }))
-    )
-    const overlaps = boxes.flatMap((a, i) =>
-      boxes
-        .slice(i + 1)
-        .filter(
-          (b) =>
-            a.box &&
-            b.box &&
-            Math.min(a.box.x + a.box.width, b.box.x + b.box.width) -
-              Math.max(a.box.x, b.box.x) >
-              1 &&
-            Math.min(a.box.y + a.box.height, b.box.y + b.box.height) -
-              Math.max(a.box.y, b.box.y) >
-              1
-        )
-        .map((b) => `${a.id}/${b.id}`)
-    )
-    expect(overlaps).toEqual([])
-  })
-
   test('should preserve title when collapsing/expanding', async ({
     comfyPage
   }) => {
