@@ -300,7 +300,12 @@ export const useCloudWebSessionStore = defineStore('cloudWebSession', () => {
     if (!isCloud) return false
     const session = createCloudIdentity((change) => {
       resetForAccountChange(change)
-      if (!signingOut) prepareWorkflowLogoutTransition()
+      if (
+        !signingOut &&
+        (change.reason === 'user_changed' || change.outcome === 'revoked')
+      ) {
+        prepareWorkflowLogoutTransition()
+      }
       if (change.reason === 'signed_out' && !signingOut) {
         void signedOutElsewhere.trigger()
       }

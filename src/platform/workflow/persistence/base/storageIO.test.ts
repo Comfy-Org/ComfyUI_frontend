@@ -655,13 +655,18 @@ describe('storageIO', () => {
       const isolatedStorageIO = await import('./storageIO')
 
       isolatedStorageIO.prepareWorkflowWorkspaceTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition({
-        ownerId: Symbol('not-a-logout')
-      })
+      expect(
+        isolatedStorageIO.currentWorkflowLogoutTransition()
+      ).toBeUndefined()
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
       const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition(transition)
+      expect(isolatedStorageIO.currentWorkflowLogoutTransition()?.ownerId).toBe(
+        transition.ownerId
+      )
+      expect(
+        isolatedStorageIO.completeWorkflowLogoutTransition(transition)
+      ).toBe(true)
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
     })
@@ -671,30 +676,32 @@ describe('storageIO', () => {
 
       isolatedStorageIO.markStorageUnavailable()
       const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition(transition)
+      expect(
+        isolatedStorageIO.completeWorkflowLogoutTransition(transition)
+      ).toBe(true)
 
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
     })
 
     it('fences logout writes before cancelling pending persistence', async () => {
       const isolatedStorageIO = await import('./storageIO')
+      const writesDuringCancel: boolean[] = []
       const pending = {
         flush: vi.fn(),
-        cancel: vi.fn(() => {
-          expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
-          expect(
+        cancel: vi.fn(() =>
+          writesDuringCancel.push(
             isolatedStorageIO.writePayload('ws-1', 'stale', {
               data: '{}',
               updatedAt: 1
             })
-          ).toBe(false)
-        })
+          )
+        )
       }
       const unregister = isolatedStorageIO.registerWorkflowPersistence(pending)
 
       isolatedStorageIO.prepareWorkflowLogoutTransition()
 
-      expect(pending.cancel).toHaveBeenCalledOnce()
+      expect(writesDuringCancel).toEqual([false])
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       unregister()
     })
@@ -739,16 +746,37 @@ describe('storageIO', () => {
         resumeAfterAbort
       })
 
+      const staleTransition =
+        isolatedStorageIO.prepareWorkflowLogoutTransition()
       const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
-      isolatedStorageIO.completeWorkflowLogoutTransition({
-        ownerId: Symbol('stale')
-      })
+      expect(
+        isolatedStorageIO.completeWorkflowLogoutTransition(staleTransition)
+      ).toBe(false)
+      expect(
+        isolatedStorageIO.abortWorkflowLogoutTransition(staleTransition)
+      ).toBe(false)
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
+      expect(resumeAfterAbort).not.toHaveBeenCalled()
 
-      isolatedStorageIO.abortWorkflowLogoutTransition(transition)
+      expect(isolatedStorageIO.abortWorkflowLogoutTransition(transition)).toBe(
+        true
+      )
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
       expect(resumeAfterAbort).toHaveBeenCalledOnce()
       unregister()
+    })
+
+    it('blocks reads while a logout transition is in flight', async () => {
+      const isolatedStorageIO = await import('./storageIO')
+
+      isolatedStorageIO.writePayload('ws-1', 'draft', {
+        data: '{}',
+        updatedAt: 1
+      })
+      isolatedStorageIO.prepareWorkflowLogoutTransition()
+
+      expect(isolatedStorageIO.readPayload('ws-1', 'draft')).toBeNull()
+      expect(isolatedStorageIO.getPayloadKeys('ws-1')).toEqual([])
     })
 
     it('does not let a duplicate transition cancel the owner transition', async () => {

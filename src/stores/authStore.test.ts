@@ -30,6 +30,10 @@ import { useDialogService } from '@/services/dialogService'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
+import {
+  isStorageAvailable,
+  resetStorageAvailable
+} from '@/platform/workflow/persistence/base/storageIO'
 import type { DesktopHostAuthState } from '@/platform/auth/desktopHost/desktopHostAuthBridge'
 import {
   startDesktopHostSession,
@@ -49,21 +53,8 @@ const { mockDistributionTypes } = vi.hoisted(() => ({
 }))
 
 const mockReportError = vi.hoisted(() => vi.fn())
-const mockPersistenceTransition = vi.hoisted(() => ({
-  ownerId: Symbol('logout')
-}))
-const mockPrepareWorkflowLogoutTransition = vi.hoisted(() =>
-  vi.fn(() => mockPersistenceTransition)
-)
-const mockAbortWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
-
 vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mockReportError
-}))
-
-vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition,
-  abortWorkflowLogoutTransition: mockAbortWorkflowLogoutTransition
 }))
 
 type MockUser = Omit<User, 'getIdToken' | 'delete'> & {
@@ -117,6 +108,7 @@ describe('useAuthStore', () => {
   } as Partial<User> as MockUser
 
   beforeEach(async () => {
+    resetStorageAvailable()
     clearPreservedQuery(PRESERVED_QUERY_NAMESPACES.SHARE_AUTH)
 
     vi.mocked(useDialogService, { partial: true }).mockReturnValue({
@@ -581,11 +573,11 @@ describe('useAuthStore', () => {
     it('should sign out the user', async () => {
       vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
 
-      await store.logout()
+      const logout = store.logout()
+      expect(isStorageAvailable()).toBe(false)
+      await logout
 
-      expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
-      expect(mockAbortWorkflowLogoutTransition).not.toHaveBeenCalled()
     })
 
     it('should handle logout errors', async () => {
@@ -595,15 +587,26 @@ describe('useAuthStore', () => {
       await expect(store.logout()).rejects.toThrow('Network error')
 
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
-      expect(mockAbortWorkflowLogoutTransition).toHaveBeenCalledExactlyOnceWith(
-        mockPersistenceTransition
-      )
+      expect(isStorageAvailable()).toBe(true)
       expect(mockReportError).toHaveBeenCalledWith(mockError, {
         surface: 'workspace',
         errorType: 'workflow_persistence_logout_aborted',
         level: 'warning',
         tags: { outcome: 'degraded' }
       })
+    })
+
+    it('leaves workflow storage open after a non-Cloud logout', async () => {
+      mockDistributionTypes.isCloud = false
+      try {
+        vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+
+        await store.logout()
+
+        expect(isStorageAvailable()).toBe(true)
+      } finally {
+        mockDistributionTypes.isCloud = true
+      }
     })
   })
 

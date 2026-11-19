@@ -86,7 +86,10 @@ import { createDisposablePinia } from '@/testing/pinia'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { NO_PERSONAL_WORKSPACE, useAuthStore } from '@/stores/authStore'
 import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys'
-import { prepareWorkflowLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
+import {
+  isStorageAvailable,
+  resetStorageAvailable
+} from '@/platform/workflow/persistence/base/storageIO'
 import { useDialogStore } from '@/stores/dialogStore'
 import type { ComfyExtension } from '@/types/comfy'
 import {
@@ -381,6 +384,7 @@ describe('cloud app on the shared web session', () => {
   let hooks: ReturnType<typeof effectScope> | undefined
 
   beforeEach(() => {
+    resetStorageAvailable()
     identity.reset()
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
@@ -527,7 +531,7 @@ describe('cloud app on the shared web session', () => {
       name: 'session_signed_out_remotely',
       properties: { origin: location.origin }
     })
-    expect(prepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
+    expect(isStorageAvailable()).toBe(false)
   })
 
   it.for([
@@ -590,7 +594,7 @@ describe('cloud app on the shared web session', () => {
     await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
 
     expect(firebaseSignOut).toHaveBeenCalledOnce()
-    expect(prepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
+    expect(isStorageAvailable()).toBe(false)
     expect(api.resetSocket).toHaveBeenCalledOnce()
     expect(
       sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)

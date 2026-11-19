@@ -37,6 +37,7 @@ import {
   clearAllWorkspaceStorage,
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
+  currentWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistence
 } from '@/platform/workflow/persistence/base/storageIO'
@@ -74,7 +75,6 @@ export function useWorkflowPersistenceV2() {
   let resolvedAuthSubject: string | null = null
   let authTransitionVersion = 0
   let authTransition = Promise.resolve()
-  let logoutTransition: WorkflowLogoutTransition | undefined
 
   function stopPendingWorkspaceReadinessWatcher(): void {
     stopWorkspaceReadinessWatcher?.()
@@ -164,21 +164,22 @@ export function useWorkflowPersistenceV2() {
     teamWorkspaceStore.initState === 'error'
 
   function beginLogoutTransition(): WorkflowLogoutTransition {
-    logoutTransition = prepareWorkflowLogoutTransition()
-    return logoutTransition
+    return prepareWorkflowLogoutTransition()
   }
 
-  function completeLogoutTransition(transition = logoutTransition): void {
+  function completeLogoutTransition(
+    transition = currentWorkflowLogoutTransition()
+  ): void {
     if (!transition) return
     completeWorkflowLogoutTransition(transition)
-    if (logoutTransition?.ownerId === transition.ownerId) {
-      logoutTransition = undefined
-    }
   }
 
-  function resumePersistenceWhenWorkspaceIsReady(): void {
+  function resumePersistenceWhenWorkspaceIsReady(
+    transition = currentWorkflowLogoutTransition()
+  ): void {
+    if (!transition) return
     if (isWorkspaceInitConcluded()) {
-      completeLogoutTransition()
+      completeLogoutTransition(transition)
       return
     }
 
@@ -186,7 +187,7 @@ export function useWorkflowPersistenceV2() {
       isWorkspaceInitConcluded,
       () => {
         stopWorkspaceReadinessWatcher = undefined
-        completeLogoutTransition()
+        completeLogoutTransition(transition)
       },
       { once: true }
     )

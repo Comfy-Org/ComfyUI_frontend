@@ -648,13 +648,6 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
 }
 
 export function prepareWorkflowLogoutTransition(): WorkflowLogoutTransition {
-  if (
-    workflowStorageState.status === 'transitioning' &&
-    workflowStorageState.reason === 'logout'
-  ) {
-    return { ownerId: workflowStorageState.ownerId }
-  }
-
   const ownerId = Symbol('workflow-logout-transition')
   workflowStorageState = {
     status: 'transitioning',
@@ -669,33 +662,37 @@ export function prepareWorkflowLogoutTransition(): WorkflowLogoutTransition {
   return { ownerId }
 }
 
+export function currentWorkflowLogoutTransition():
+  | WorkflowLogoutTransition
+  | undefined {
+  return workflowStorageState.status === 'transitioning' &&
+    workflowStorageState.reason === 'logout'
+    ? { ownerId: workflowStorageState.ownerId }
+    : undefined
+}
+
 export function completeWorkflowLogoutTransition(
   transition: WorkflowLogoutTransition
-): void {
+): boolean {
   if (
     workflowStorageState.status !== 'transitioning' ||
     workflowStorageState.reason !== 'logout' ||
     workflowStorageState.ownerId !== transition.ownerId
   )
-    return
+    return false
 
   workflowStorageState = {
     status: 'ready',
     availability: workflowStorageState.resumeAvailability
   }
+  return true
 }
 
 export function abortWorkflowLogoutTransition(
   transition: WorkflowLogoutTransition
-): void {
-  if (
-    workflowStorageState.status !== 'transitioning' ||
-    workflowStorageState.reason !== 'logout' ||
-    workflowStorageState.ownerId !== transition.ownerId
-  )
-    return
+): boolean {
+  if (!completeWorkflowLogoutTransition(transition)) return false
 
-  completeWorkflowLogoutTransition(transition)
   for (const { resumeAfterAbort } of pendingWorkflowPersistence) {
     try {
       resumeAfterAbort?.()
@@ -707,6 +704,7 @@ export function abortWorkflowLogoutTransition(
       })
     }
   }
+  return true
 }
 
 export function clearAllWorkflowStorage(): void {

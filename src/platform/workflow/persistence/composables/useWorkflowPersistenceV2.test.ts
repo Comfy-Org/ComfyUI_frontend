@@ -188,6 +188,7 @@ describe('useWorkflowPersistenceV2', () => {
   }> = []
 
   beforeEach(() => {
+    storageIO.resetStorageAvailable()
     useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
     mocks.state.currentGraph = { initial: true }
     mocks.serializeMock.mockImplementation(() => mocks.state.currentGraph)
@@ -1061,14 +1062,59 @@ describe('useWorkflowPersistenceV2', () => {
 
     storageIO.abortWorkflowLogoutTransition(transition)
 
-    await vi.waitFor(() =>
-      expect(localStorage.getItem(payloadKey)).not.toBeNull()
-    )
-    const payload = JSON.parse(localStorage.getItem(payloadKey)!)
+    const stored =
+      localStorage.getItem(payloadKey) ??
+      expect.unreachable('aborted logout did not persist the draft')
+    const payload = JSON.parse(stored)
     expect(JSON.parse(payload.data)).toEqual({
       nodes: [],
       extra: { marker: 'recovered-after-abort' }
     })
+  })
+
+  it('adopts and releases a logout fence started before the graph mounts', () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    storageIO.prepareWorkflowLogoutTransition()
+    mountWorkflowPersistence()
+
+    const onUserResolved = vi
+      .mocked(useCurrentUser().onUserResolved)
+      .mock.calls.at(-1)?.[0]
+    expect(onUserResolved).toBeDefined()
+    onUserResolved?.({ id: 'user-a' })
+
+    expect(storageIO.isStorageAvailable()).toBe(true)
+  })
+
+  it('releases a logout fence after the persistence composable remounts', () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    mountWorkflowPersistence()
+    const onLogout = vi
+      .mocked(useCurrentUser().onUserLogout)
+      .mock.calls.at(-1)?.[0]
+    expect(onLogout).toBeDefined()
+    onLogout?.()
+
+    const mounted = mountedApps.pop()
+    if (!mounted) throw new Error('Failed to find mounted persistence app')
+    mounted.app.unmount()
+    mounted.container.remove()
+    mountWorkflowPersistence()
+    const onUserResolved = vi
+      .mocked(useCurrentUser().onUserResolved)
+      .mock.calls.at(-1)?.[0]
+    expect(onUserResolved).toBeDefined()
+    onUserResolved?.({ id: 'user-b' })
+
+    expect(storageIO.isStorageAvailable()).toBe(true)
   })
 
   it('flushes the final source-workspace edit before blocking transition writes', async () => {
@@ -1317,5 +1363,38 @@ describe('useWorkflowPersistenceV2', () => {
     expect(workflowStore.activeWorkflow).toBeNull()
     expect(draftStore.getDraft(destinationPath)?.data).toBe('{"owner":"b"}')
     expect(draftStore.getDraft('workflows/AccountA.json')).toBeNull()
+  })
+
+  it('keeps writes fenced when the user signs out during an account switch', async () => {
+    distributionMocks.isCloud = true
+    Object.assign(useTeamWorkspaceStore(), {
+      initState: 'ready',
+      activeWorkspaceId: 'personal'
+    })
+    const blankLoaded = createDeferred()
+    loadBlankWorkflowMock.mockReturnValue(blankLoaded.promise)
+    mountWorkflowPersistence()
+    const onLogout = vi
+      .mocked(useCurrentUser().onUserLogout)
+      .mock.calls.at(-1)?.[0]
+    const onUserResolved = vi
+      .mocked(useCurrentUser().onUserResolved)
+      .mock.calls.at(-1)?.[0]
+    expect(onLogout).toBeDefined()
+    expect(onUserResolved).toBeDefined()
+    onUserResolved?.({ id: 'user-a' })
+    onUserResolved?.({ id: 'user-b' })
+    await vi.waitFor(() => expect(loadBlankWorkflowMock).toHaveBeenCalled())
+
+    onLogout?.()
+    blankLoaded.resolve()
+    await vi.runAllTimersAsync()
+
+    expect(
+      storageIO.writePayload('personal', 'after-logout', {
+        data: '{}',
+        updatedAt: 1
+      })
+    ).toBe(false)
   })
 })
