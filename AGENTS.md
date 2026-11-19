@@ -130,11 +130,12 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
     DOM traversal, or timing sleeps.
 - NEVER delete or disable tests to make them pass, or otherwise circumvent quality checks.
 - NEVER add code comments: no `//`, `/* */`, or `<!-- -->` in source, tests, or stories.
-  - The only exception is JSDoc on an exported API that states the contract in
-    one or two lines, without narrating the implementation, history,
-    rationale, or alternatives.
-  - Tool directives (`eslint-disable-next-line`, `@ts-expect-error`,
-    `fallow-ignore`, `@vitest-environment`) get no appended prose reason.
+  - The only prose exception is JSDoc on an exported API that states the
+    contract in one or two lines, without narrating the implementation,
+    history, rationale, or alternatives.
+  - Justified tool directives (`eslint-disable-next-line`, `@ts-expect-error`,
+    `fallow-ignore`, `@vitest-environment`) are allowed, with no appended
+    prose reason.
   - A comment that seems necessary means the code is unclear: rename, extract
     a named function, tighten the type, or add a test. A vendor or platform
     workaround gets a function named after what it works around. Rationale,
