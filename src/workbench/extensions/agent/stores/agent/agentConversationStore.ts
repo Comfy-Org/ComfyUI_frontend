@@ -1509,19 +1509,23 @@ export const useAgentConversationStore = defineStore(
       canvasSyncOutcomeCount = outcomeCount
     }
 
-    function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
-      if (evidence !== undefined) {
-        for (const send of pendingSends.values()) {
-          if (
-            send.status !== 'sending' ||
-            send.canvasOutcomeAtStart === undefined
-          )
-            continue
-          send.canvasEvidence ??= []
-          if (send.canvasEvidence.length >= 256) send.canvasEvidence.shift()
-          send.canvasEvidence.push(evidence)
-        }
+    function recordPendingSendCanvasEvidence(
+      evidence: CanvasSyncEvidence
+    ): void {
+      for (const send of pendingSends.values()) {
+        if (
+          send.status !== 'sending' ||
+          send.canvasOutcomeAtStart === undefined
+        )
+          continue
+        send.canvasEvidence ??= []
+        if (send.canvasEvidence.length >= 256) send.canvasEvidence.shift()
+        send.canvasEvidence.push(evidence)
       }
+    }
+
+    function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
+      if (evidence !== undefined) recordPendingSendCanvasEvidence(evidence)
       activeSlot.value?.transport.notifyCanvasCaughtUp(evidence)
       for (const settledTransport of settledActiveTransports) {
         settledTransport.notifyCanvasCaughtUp(evidence)

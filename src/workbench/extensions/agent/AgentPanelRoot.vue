@@ -137,6 +137,7 @@ import { toTurnId } from './schemas/agentApiSchema'
 import type {
   ConversationEntry,
   PendingSendFailure,
+  PendingSendOrigin,
   TurnTab
 } from './stores/agent/agentConversationStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
@@ -2535,6 +2536,14 @@ function canRetryPendingFailure(
   return failure.retryAtMs === undefined || failure.retryAtMs <= Date.now()
 }
 
+function isOriginBusyForRetry(origin: PendingSendOrigin): boolean {
+  return (
+    workflowSelecting.value ||
+    conversationStore.hasSendingForOrigin(origin) ||
+    conversationStore.hasLiveTurnForOrigin(origin)
+  )
+}
+
 function retryablePendingSend(clientMessageId: string) {
   const pending = conversationStore.getPendingSend(clientMessageId)
   if (!pending || pending.status !== 'failed') return null
@@ -2543,12 +2552,7 @@ function retryablePendingSend(clientMessageId: string) {
   )
     return null
   if (!canRetryPendingFailure(pending.failure)) return null
-  if (
-    workflowSelecting.value ||
-    conversationStore.hasSendingForOrigin(pending.origin) ||
-    conversationStore.hasLiveTurnForOrigin(pending.origin)
-  )
-    return null
+  if (isOriginBusyForRetry(pending.origin)) return null
   return pending
 }
 

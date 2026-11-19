@@ -595,6 +595,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     source: 'selector_chip' | 'restored'
   } | null = null
 
+  function resolveLastReportedWorkflow(
+    currentThreadId: string,
+    pending: typeof pendingWorkflowBind,
+    previousWorkflowId: string | null
+  ): string | null {
+    if (reportedWorkflowBind?.threadId === currentThreadId)
+      return reportedWorkflowBind.workflowId
+    return pending?.previousWorkflowId ?? previousWorkflowId
+  }
+
   function reportWorkflowBound(
     workflowId: string,
     previousWorkflowId: string | null,
@@ -611,10 +621,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         ? pendingWorkflowBind
         : null
     pendingWorkflowBind = null
-    const lastReported =
-      reportedWorkflowBind?.threadId === currentThreadId
-        ? reportedWorkflowBind.workflowId
-        : (pending?.previousWorkflowId ?? previousWorkflowId)
+    const lastReported = resolveLastReportedWorkflow(
+      currentThreadId,
+      pending,
+      previousWorkflowId
+    )
     if (workflowId === lastReported) return
     reportedWorkflowBind = { threadId: currentThreadId, workflowId }
     useTelemetry()?.trackAgentWorkflowBound({
@@ -1977,6 +1988,36 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return false
   }
 
+  function isHydratingThreadForLoad(threadId: string): boolean {
+    const activeBuffer = hydrationBuffers.get(threadId)
+    return (
+      activeBuffer?.pending === true &&
+      activeBuffer.loadOwnerGeneration === ownedGeneration
+    )
+  }
+
+  function dropDeletedAcceptedAck(
+    origin: PendingSendOrigin,
+    ack: AgentTurnAccepted,
+    onScreen: boolean,
+    stoppedRequest: NonNullable<
+      ReturnType<typeof conversationStore.takePendingSend>
+    >['stopRequested']
+  ): boolean | null {
+    const server404 = isServer404DeletedSend(origin, ack.thread_id)
+    const historyDeleted = isHistoryDeletedSend(
+      origin,
+      ack.thread_id,
+      !onScreen
+    )
+    if (!server404 && !historyDeleted) return null
+    if (stoppedRequest !== undefined)
+      void rest
+        .cancelMessage(ack.thread_id, toTurnId(ack.message_id))
+        .catch(() => undefined)
+    return !server404
+  }
+
   function routeAcceptedAck(params: {
     sendId: string
     ack: AgentTurnAccepted
@@ -1998,19 +2039,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const pending = conversationStore.takePendingSend(sendId)
     const stoppedRequest = pending?.stopRequested
     const onScreen = conversationStore.isOriginOnScreen(origin)
-    const server404 = isServer404DeletedSend(origin, ack.thread_id)
-    const historyDeleted = isHistoryDeletedSend(
+    const deletedResult = dropDeletedAcceptedAck(
       origin,
-      ack.thread_id,
-      !onScreen
+      ack,
+      onScreen,
+      stoppedRequest
     )
-    if (server404 || historyDeleted) {
-      if (stoppedRequest !== undefined)
-        void rest
-          .cancelMessage(ack.thread_id, toTurnId(ack.message_id))
-          .catch(() => undefined)
-      return !server404
-    }
+    if (deletedResult !== null) return deletedResult
     const attachments = pending?.sentAttachments.length
       ? pending.sentAttachments
       : params.attachments
@@ -2020,11 +2055,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           evidence: pending.canvasEvidence
         }
       : undefined
-    const activeBuffer = hydrationBuffers.get(ack.thread_id)
-    const hydratingForLoad =
-      activeBuffer?.pending === true &&
-      activeBuffer.loadOwnerGeneration === ownedGeneration
-    if (onScreen && !hydratingForLoad) {
+    if (onScreen && !isHydratingThreadForLoad(ack.thread_id)) {
       acceptTurn(
         ack,
         origin,
@@ -2193,6 +2224,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return current?.id !== origin.id
   }
 
+  function ensurePendingSendEntry(
+    sendId: string,
+    origin: PendingSendOrigin,
+    text: string,
+    attachments?: SentAttachment[],
+    tags?: SentTag[],
+    workflowReferences?: WorkflowReference[]
+  ): void {
+    if (conversationStore.getPendingSend(sendId)) return
+    conversationStore.startPendingSend({
+      clientMessageId: sendId,
+      origin,
+      workspaceId: workspaceId?.() ?? null,
+      text,
+      attachments: toUserAttachments(attachments),
+      tags: toTagStrings(tags),
+      workflowReferences: workflowReferences ?? []
+    })
+  }
+
   async function sendMessage(
     text: string,
     attachments?: SentAttachment[],
@@ -2208,34 +2259,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const origin = existingPending?.origin ?? conversationStore.currentOrigin()
     if (conversationStore.hasSendingForOrigin(origin, sendId)) {
       trackSendRefused('send_busy', clientMessageId, origin)
-      if (!existingPending) {
-        conversationStore.startPendingSend({
-          clientMessageId: sendId,
-          origin,
-          workspaceId: workspaceId?.() ?? null,
-          text,
-          attachments: toUserAttachments(attachments),
-          tags: toTagStrings(tags),
-          workflowReferences: workflowReferences ?? []
-        })
-      }
+      ensurePendingSendEntry(
+        sendId,
+        origin,
+        text,
+        attachments,
+        tags,
+        workflowReferences
+      )
       recordFailedPendingSend(sendId, origin, {
         kind: 'request',
         message: i18n.global.t('agent.sendBusy')
       })
       return false
     }
-    if (!existingPending) {
-      conversationStore.startPendingSend({
-        clientMessageId: sendId,
-        origin,
-        workspaceId: workspaceId?.() ?? null,
-        text,
-        attachments: toUserAttachments(attachments),
-        tags: toTagStrings(tags),
-        workflowReferences: workflowReferences ?? []
-      })
-    }
+    ensurePendingSendEntry(
+      sendId,
+      origin,
+      text,
+      attachments,
+      tags,
+      workflowReferences
+    )
     promptEditState.value = { phase: 'idle' }
     const releaseSendGate = sendGateStore.begin()
     try {
