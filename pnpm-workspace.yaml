@@ -12,6 +12,7 @@ publicHoistPattern:
 
 catalog:
   '@alloc/quick-lru': ^5.2.0
+  '@axe-core/playwright': ^4.14.0
   '@comfyorg/comfyui-desktop-bridge-types': 0.5.0
   '@comfyorg/comfyui-electron-types': 0.6.2
   '@customerio/cdp-analytics-browser': ^0.5.3
@@ -76,7 +77,7 @@ catalog:
   eslint-plugin-testing-library: ^7.16.2
   eslint-plugin-unused-imports: ^4.4.1
   eslint-plugin-vue: ^10.12.0
-  fallow: 3.37.0
+  fallow: 3.43.2
   fast-check: ^4.10.2
   firebase: ^11.6.0
   glob: ^13.0.6

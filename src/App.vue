@@ -27,7 +27,8 @@ import {
   reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from '@/platform/telemetry/assetLoadErrorReporting'
-import { app } from '@/scripts/app'
+import '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { registerExtensionDialogService } from '@/services/dialogService'
 import { createExtensionDialogService } from '@/services/extensionDialogService'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -37,7 +38,7 @@ import { useConflictDetection } from '@/platform/customNodes/manager/composables
 
 registerExtensionDialogService(createExtensionDialogService())
 const workspaceStore = useWorkspaceStore()
-app.extensionManager = useWorkspaceStore()
+useApp().extensionManager = useWorkspaceStore()
 
 const conflictDetection = useConflictDetection()
 useAgentExtensionNotices()

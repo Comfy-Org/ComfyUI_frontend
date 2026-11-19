@@ -47,6 +47,9 @@ const config: KnipConfig = {
     'packages/settings-core': {
       project: ['src/**/*.ts']
     },
+    'packages/theme-core': {
+      project: ['src/**/*.ts']
+    },
     'packages/design-system': {
       entry: ['tests/consumer/vite.config.ts'],
       project: ['src/**/*.{css,js,ts,vue}'],
@@ -97,8 +100,6 @@ const config: KnipConfig = {
     // admits one endpoint, and openapi-ts still emits the request/response
     // wrappers and a barrel for it; src/index.ts re-exports what is consumed.
     'packages/comfyui-api-types/src/generated/**',
-    // Agent review check config, not part of the build
-    '.agents/checks/eslint.strict.config.js',
     // Devtools extensions, included dynamically
     'tools/devtools/web/**'
   ],

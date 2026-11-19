@@ -16,7 +16,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
@@ -77,7 +77,7 @@ function renderToolbox() {
 describe('SelectionToolbox', () => {
   beforeEach(() => {
     useCanvasStore().canvas = createMockCanvas()
-    vi.spyOn(useRightSidePanelStore(), 'openPanel').mockImplementation(() => {})
+    vi.spyOn(usePropertiesPanelStore(), 'openPanel').mockReturnValue(true)
     vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(nodeDef)
     vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([])
     useSettingStore().$patch({
@@ -161,7 +161,7 @@ describe('SelectionToolbox', () => {
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'Node Info' }))
-    expect(useRightSidePanelStore().openPanel).toHaveBeenCalledWith('info')
+    expect(usePropertiesPanelStore().openPanel).toHaveBeenCalledWith('info')
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'selection_toolbox_node_info_opened',
       element_group: 'selection_toolbox'

@@ -335,11 +335,26 @@ function scenarioSummary(
   return parts.length > 0 ? `**${testName}**: ${parts.join(' · ')}` : null
 }
 
-function fpsTargetNotice({ below, unsampled }: FpsTargetTally): string[] {
+function performanceNotice(
+  { below, unsampled }: FpsTargetTally,
+  regressions: number
+): string[] {
   const notice: string[] = []
-  if (below > 0) {
+  const fpsMiss = `❌ **${plural(below, 'scenario')} below the ≥${TARGET_P5_FPS} P5 FPS target**`
+  const regressed = `⚠️ **${regressionVerdict(regressions)}**`
+  if (below > 0 && regressions > 0) {
+    notice.push(
+      `> ${fpsMiss} · ${regressed}. Expand the scenario timings and regressions below and profile the affected scenarios before merging.`,
+      ''
+    )
+  } else if (below > 0) {
     notice.push(
       `> ❌ **${plural(below, 'scenario')} below the ≥${TARGET_P5_FPS} P5 FPS target.** Expand the scenario timings below and profile the affected scenarios before merging.`,
+      ''
+    )
+  } else if (regressions > 0) {
+    notice.push(
+      `> ${regressed}. Review the regressions below and profile the affected scenarios before merging.`,
       ''
     )
   }
@@ -353,10 +368,8 @@ function fpsTargetNotice({ below, unsampled }: FpsTargetTally): string[] {
 }
 
 function renderHeadlineSummary(prGroups: Map<string, PerfMeasurement[]>): {
-  notice: string[]
   lines: string[]
 } {
-  const notice = fpsTargetNotice(tallyFpsTarget(prGroups))
   const lines: string[] = []
   const summaries = [...prGroups]
     .map(([testName, prSamples]) => scenarioSummary(testName, prSamples))
@@ -373,12 +386,12 @@ function renderHeadlineSummary(prGroups: Map<string, PerfMeasurement[]>): {
     )
   }
 
-  return { notice, lines }
+  return { lines }
 }
 
 interface RenderedReport {
   status: string
-  notice?: string[]
+  regressions?: number
   lines: string[]
 }
 
@@ -458,12 +471,7 @@ function renderFullReport(
       ? `⚠️ ${regressionVerdict(flaggedRows.length)}`
       : '✅ No regressions detected'
 
-  const notice: string[] = []
   if (flaggedRows.length > 0) {
-    notice.push(
-      `⚠️ **${regressionVerdict(flaggedRows.length)}**. Review the regressions below and profile the affected scenarios before merging.`,
-      ''
-    )
     lines.push(
       '<details><summary>Show regressions</summary>',
       '',
@@ -490,7 +498,7 @@ function renderFullReport(
     ...renderTrend(prGroups, historical)
   )
 
-  return { status, notice, lines }
+  return { status, regressions: flaggedRows.length, lines }
 }
 
 function renderHistoricalVariance(
@@ -676,7 +684,10 @@ function main() {
       icon: '⚡',
       title: 'Performance',
       status,
-      notice: [...headline.notice, ...(report.notice ?? [])].join('\n'),
+      notice: performanceNotice(
+        tallyFpsTarget(prGroups),
+        report.regressions ?? 0
+      ).join('\n'),
       body: body.join('\n')
     }) + '\n'
   )

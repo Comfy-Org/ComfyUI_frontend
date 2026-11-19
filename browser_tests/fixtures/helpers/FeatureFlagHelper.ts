@@ -1,7 +1,9 @@
 import type { Page, Route } from '@playwright/test'
 
+type FeaturesRouteHandler = (route: Route) => Promise<void>
+
 export class FeatureFlagHelper {
-  private featuresRouteHandler: ((route: Route) => void) | null = null
+  private readonly featuresRouteHandlers: FeaturesRouteHandler[] = []
 
   constructor(private readonly page: Page) {}
 
@@ -117,26 +119,7 @@ export class FeatureFlagHelper {
    * lifetime and cannot be removed.
    */
   async seedServerFlags(flags: Record<string, unknown>): Promise<void> {
-    await this.page.addInitScript((flagMap: Record<string, unknown>) => {
-      let comfyApp: Window['app']
-      Object.defineProperty(window, 'app', {
-        configurable: true,
-        get: () => comfyApp,
-        set: (value: Window['app']) => {
-          comfyApp = value
-          const api = value?.api
-          if (!api) return
-          const apply = () => {
-            api.serverFeatureFlags.value = {
-              ...api.serverFeatureFlags.value,
-              ...flagMap
-            }
-          }
-          apply()
-          api.addEventListener('feature_flags', apply)
-        }
-      })
-    }, flags)
+    await this.page.addInitScript(installSeededServerFlags, flags)
   }
 
   /**
@@ -195,19 +178,61 @@ export class FeatureFlagHelper {
    * Mock server feature flags via route interception on /api/features.
    */
   async mockServerFeatures(features: Record<string, unknown>): Promise<void> {
-    this.featuresRouteHandler = (route: Route) =>
+    await this.routeFeatures((route) =>
       route.fulfill({
         status: 200,
         contentType: 'application/json',
         body: JSON.stringify(features)
       })
-    await this.page.route('**/api/features', this.featuresRouteHandler)
+    )
+  }
+
+  /** Merge features into the real /api/features response. */
+  async mergeServerFeatures(features: Record<string, unknown>): Promise<void> {
+    await this.routeFeatures(async (route) => {
+      const response = await route.fetch()
+      await route.fulfill({
+        response,
+        json: { ...(await response.json()), ...features }
+      })
+    })
   }
 
   async clearMocks(): Promise<void> {
-    if (this.featuresRouteHandler) {
-      await this.page.unroute('**/api/features', this.featuresRouteHandler)
-      this.featuresRouteHandler = null
-    }
+    const handlers = this.featuresRouteHandlers.splice(0)
+    for (const handler of handlers)
+      await this.page.unroute('**/api/features', handler)
   }
+
+  private async routeFeatures(handler: FeaturesRouteHandler): Promise<void> {
+    this.featuresRouteHandlers.push(handler)
+    await this.page.route('**/api/features', handler)
+  }
+}
+
+/** Init script: merges `flagMap` into every `api.serverFeatureFlags` handshake once `window.app` is assigned; later calls add to the same set. */
+export function installSeededServerFlags(
+  flagMap: Record<string, unknown>
+): void {
+  const seeded = (window.__seededServerFlags ??= {})
+  Object.assign(seeded, flagMap)
+  if (Object.getOwnPropertyDescriptor(window, 'app')?.set) return
+  let comfyApp: Window['app']
+  Object.defineProperty(window, 'app', {
+    configurable: true,
+    get: () => comfyApp,
+    set: (value: Window['app']) => {
+      comfyApp = value
+      const api = value?.api
+      if (!api) return
+      const apply = () => {
+        api.serverFeatureFlags.value = {
+          ...api.serverFeatureFlags.value,
+          ...window.__seededServerFlags
+        }
+      }
+      apply()
+      api.addEventListener('feature_flags', apply)
+    }
+  })
 }

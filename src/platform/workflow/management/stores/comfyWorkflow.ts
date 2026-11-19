@@ -11,7 +11,8 @@ import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { AppMode } from '@comfyorg/graph-model/appMode'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
-import { generateUUID } from '@/utils/formatUtil'
+import { getLegacyWorkflowId } from '@/platform/workflow/core/utils/workflowId'
+import { generateUUID, isValidUuid } from '@/utils/formatUtil'
 
 export interface InputWidgetConfig {
   height?: number
@@ -222,6 +223,20 @@ function readUsableDraft(
   }
 }
 
+function withTabId(
+  draft: ComfyWorkflowJSON,
+  tab: ComfyWorkflowJSON
+): ComfyWorkflowJSON {
+  const value: unknown = draft
+  return typeof value === 'object' &&
+    value !== null &&
+    !Array.isArray(value) &&
+    !isValidUuid(draft.id) &&
+    isValidUuid(tab.id)
+    ? { ...draft, id: tab.id }
+    : draft
+}
+
 function draftMatchesSavedFile(
   runtime: WorkflowRuntime,
   saved: ComfyWorkflowJSON,
@@ -235,28 +250,64 @@ function draftMatchesSavedFile(
 }
 
 /**
- * The workflow object parsed from the stored text. Anything else (nothing
- * stored, empty text, JSON `null`, a number, an array) cannot back a change
- * tracker: a tracker around `null` is what later reads as a missing state.
+ * Stored workflow content is empty, not valid JSON, or not a JSON object, so it
+ * can never open. The message is static; the path is on `workflowPath`.
  */
+export class UnreadableWorkflowError extends Error {
+  override readonly name = 'UnreadableWorkflowError'
+
+  constructor(
+    readonly reason: 'empty' | 'unparseable' | 'not-object',
+    readonly workflowPath: string
+  ) {
+    super(UNREADABLE_WORKFLOW_MESSAGES[reason])
+  }
+}
+
+const UNREADABLE_WORKFLOW_MESSAGES: Record<
+  UnreadableWorkflowError['reason'],
+  string
+> = {
+  empty: 'Workflow content is missing or empty',
+  unparseable: 'Workflow content is not valid JSON',
+  'not-object': 'Workflow content is not a JSON object'
+}
+
 function parseStoredWorkflow(workflow: ComfyWorkflow): ComfyWorkflowJSON {
   const content = workflow.originalContent
-  const parsed: unknown = content?.trim() ? JSON.parse(content) : undefined
+  const parsed = content?.trim() ? parseContent(content, workflow) : undefined
   if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
     return parsed as ComfyWorkflowJSON
   }
-  // `undefined` means there was nothing to parse; anything else parsed to
-  // something that is not a workflow.
-  if (parsed !== undefined) {
-    reportWorkflowStateAnomaly(
-      'Workflow content is not a JSON object',
-      'ComfyWorkflow.load',
-      workflow
-    )
+  throw unreadable(parsed === undefined ? 'empty' : 'not-object', workflow)
+}
+
+function parseContent(content: string, workflow: ComfyWorkflow): unknown {
+  try {
+    return JSON.parse(content)
+  } catch {
+    throw unreadable('unparseable', workflow)
   }
-  throw new Error(
-    `Workflow content is ${parsed === undefined ? 'missing or empty' : 'not a JSON object'} for '${workflow.path}'`
-  )
+}
+
+function unreadable(
+  reason: UnreadableWorkflowError['reason'],
+  workflow: ComfyWorkflow
+): UnreadableWorkflowError {
+  const error = new UnreadableWorkflowError(reason, workflow.path)
+  reportUnreadableContent(error, workflow)
+  return error
+}
+
+function reportUnreadableContent(
+  error: UnreadableWorkflowError,
+  workflow: ComfyWorkflow
+): void {
+  try {
+    reportWorkflowStateAnomaly(error.message, 'ComfyWorkflow.load', workflow)
+  } catch (devAssertion) {
+    console.warn('Unreadable stored workflow', devAssertion)
+  }
 }
 
 /** i18n keys for the dialog shown when a workflow is saved without a name. */
@@ -280,7 +331,7 @@ function requireActiveStateForSave(
     method,
     workflow
   )
-  throw new Error(`Cannot save workflow '${workflow.path}' before it is loaded`)
+  throw new Error('Cannot save a workflow before it is loaded')
 }
 
 export class ComfyWorkflow extends UserFile {
@@ -378,13 +429,14 @@ export class ComfyWorkflow extends UserFile {
       runtime.createChangeTracker(this, initialState)
     )
     if (draft?.state && draft.content) {
-      this.changeTracker.activeState = draft.state
-      this.content = draft.content
-      this._isModified = !draftMatchesSavedFile(
-        runtime,
-        initialState,
-        draft.state
-      )
+      const state = withTabId(draft.state, initialState)
+      const draftId: unknown = draft.state.id
+      if (state !== draft.state && typeof draftId === 'string')
+        this.legacyId ??= getLegacyWorkflowId(draftId)
+      this.changeTracker.activeState = state
+      this.content =
+        state === draft.state ? draft.content : JSON.stringify(state)
+      this._isModified = !draftMatchesSavedFile(runtime, initialState, state)
       runtime.markDraftUsed(this.path)
     }
     return this as this & LoadedComfyWorkflow
