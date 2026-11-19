@@ -20,7 +20,10 @@ test.describe('tooltips', { tag: '@vue-nodes' }, async () => {
     await comfyPage.vueNodes.getWidgetRowByLabel('ksampler', 'seed').hover()
     await expect(tooltip, 'displays for numbers').toContainText('15668')
 
-    await comfyPage.vueNodes.getNodeLocator('6').getByLabel('text').hover()
+    await comfyPage.vueNodes
+      .getNodeLocator('6')
+      .getByRole('textbox', { name: 'text', exact: true })
+      .hover()
     await expect(tooltip).toBeVisible()
     await expect(tooltip, "doesn't display for prompts").not.toContainText(
       'purple galaxy bottle'

@@ -5,6 +5,7 @@ import type {
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
 
+import { currentWorkspace } from '@e2e/fixtures/data/webSession'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 export function workspace(
@@ -56,9 +57,8 @@ export async function mockWorkspaceTokenMint(
 }
 
 /**
- * Stub `GET /api/workspaces` with the given roster. Reusable across specs that
- * need to (re)mock the workspace list, including mid-test overrides ahead of a
- * reload.
+ * Stub `GET /api/workspaces` with the roster and the session's
+ * `GET /api/workspaces/current` for whichever of them the request selects.
  */
 export async function mockWorkspaceList(
   routeTarget: Page | BrowserContext,
@@ -67,6 +67,15 @@ export async function mockWorkspaceList(
   await routeTarget.route('**/api/workspaces', async (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     await route.fulfill(jsonRoute({ workspaces }))
+  })
+  await routeTarget.route('**/api/workspaces/current', async (route) => {
+    const workspaceId = await route
+      .request()
+      .headerValue('x-comfy-workspace-id')
+    const selected = workspaces.find(({ id }) => id === workspaceId)
+    await route.fulfill(
+      selected ? jsonRoute(currentWorkspace(selected)) : { status: 404 }
+    )
   })
 }
 

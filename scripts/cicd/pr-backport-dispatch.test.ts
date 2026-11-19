@@ -93,4 +93,58 @@ describe('pr-backport manual dispatch validation', () => {
     expect(result.status).toBe(1)
     expect(result.stdout).toContain('is not merged')
   })
+
+  it.for([
+    {
+      labels: ['core/1.57', 'cloud/1.57'],
+      status: 0,
+      targets: 'targets=core/1.57\n'
+    },
+    { labels: ['cloud/1.57'], status: 1, targets: '' },
+    { labels: ['core/1.56'], status: 1, targets: '' },
+    { labels: ['branch:core/1.56'], status: 1, targets: '' },
+    { labels: ['backport:core/1.56'], status: 1, targets: '' },
+    { labels: ['branch:cloud/1.57'], status: 1, targets: '' },
+    { labels: ['branch:main'], status: 1, targets: '' },
+    {
+      labels: ['1.57', 'branch:core/1.58', 'backport:core/1.58', 'core/1.57'],
+      status: 0,
+      targets: 'targets=core/1.57 core/1.58\n'
+    }
+  ])(
+    'collects only supported targets from $labels',
+    ({ labels, status, targets }) => {
+      const workflow = workflowSchema.parse(
+        parse(readFileSync('.github/workflows/pr-backport.yaml', 'utf8'))
+      )
+      const step = workflow.jobs.backport.steps.find(
+        (step) => step.name === 'Collect backport targets'
+      )
+      if (!step?.run) throw new Error('Missing backport target collection')
+      const script = step.run
+        .replaceAll('${{ github.event_name }}', 'workflow_dispatch')
+        .replaceAll('${{ inputs.pr_number }}', PR_NUMBER)
+      const output = join(dir, 'output')
+      writeFileSync(output, '')
+
+      const result = spawnSync(
+        'bash',
+        ['--noprofile', '--norc', '-c', script],
+        {
+          env: {
+            PATH: `${dir}:${process.env.PATH}`,
+            ACTIVE_CORE_TARGETS: 'core/1.57 core/1.58',
+            STUB_STATE: 'MERGED',
+            STUB_LABELS: JSON.stringify(labels),
+            GITHUB_OUTPUT: output
+          },
+          encoding: 'utf8'
+        }
+      )
+
+      expect(result.stderr).toBe('')
+      expect(result.status).toBe(status)
+      expect(readFileSync(output, 'utf8')).toBe(targets)
+    }
+  )
 })

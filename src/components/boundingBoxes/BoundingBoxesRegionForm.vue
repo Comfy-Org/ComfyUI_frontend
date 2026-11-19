@@ -10,9 +10,9 @@
         :aria-pressed="region.type === option.value"
         :class="
           cn(
-            'flex-1 self-stretch px-2 text-xs transition-colors',
+            'flex-1 self-stretch px-2 text-xs',
             region.type === option.value
-              ? 'rounded-sm bg-muted text-foreground'
+              ? 'rounded-sm bg-muted'
               : 'text-muted-foreground hover:text-foreground'
           )
         "
