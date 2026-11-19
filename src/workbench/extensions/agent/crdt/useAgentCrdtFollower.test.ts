@@ -1615,6 +1615,63 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('reports document counter read failures once per recovery episode', async () => {
+    const { enqueue, unmount } = mountFollower('wf-1')
+    const doc = bridge().follower.doc
+    const readableShare = new Map([['meta', {}]])
+    const counterFailure = new Error('counter read failed')
+    let counterReadable = false
+    Object.defineProperty(doc, 'getMap', {
+      configurable: true,
+      value: () => {
+        return {
+          toJSON: () => ({}),
+          get: (key: string) =>
+            key === 'schema_version' ? SCHEMA_VERSION : undefined
+        }
+      }
+    })
+    Object.defineProperty(doc, 'share', {
+      configurable: true,
+      get() {
+        if (!counterReadable) throw counterFailure
+        return readableShare
+      }
+    })
+    const enqueueAndAcknowledge = async (nodeId: string) => {
+      const sendIndex = clientState.sendOps.mock.calls.length
+      enqueue([
+        { op: 'set_widget', node_id: nodeId, widget: 'cfg', value: 4.5 }
+      ])
+      await Promise.resolve()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(sendIndex + 1)
+      const ops = clientState.sendOps.mock.calls[sendIndex][2]
+      dispatchFrame('doc_ops_result', {
+        workflowId: 'wf-1',
+        ok: true,
+        applied: ops.map((op) => op.op_id),
+        skipped: []
+      })
+    }
+
+    await enqueueAndAcknowledge('1')
+    counterReadable = true
+    await enqueueAndAcknowledge('2')
+    counterReadable = false
+    await enqueueAndAcknowledge('3')
+
+    expect(
+      telemetryState.reportError.mock.calls.filter(
+        ([, options]) =>
+          options.errorType === 'failure_reading_agent_doc_counter'
+      )
+    ).toEqual([
+      [counterFailure, expect.any(Object)],
+      [counterFailure, expect.any(Object)]
+    ])
+    unmount()
+  })
+
   it('surfaces applied updates and the last frame type in status', () => {
     const { unmount, status } = mountFollower('wf-1')
     bridge().follower.updatesApplied = 3
