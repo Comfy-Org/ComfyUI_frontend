@@ -135,5 +135,11 @@ export function useSubgraphIoLayout(
     resize(event, 'SE', { element: panel, position: { x, y } })
   }
 
-  return { style, startResize }
+  function resizeHeight(height: number) {
+    const node = ioNode()
+    const [width] = node.size
+    node.size = [width, height]
+  }
+
+  return { style, startResize, resizeHeight }
 }
