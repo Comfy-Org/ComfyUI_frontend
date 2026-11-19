@@ -20,7 +20,7 @@ export interface Comfy {
   /** The graph on screen, and the way to every node in the open document. */
   readonly graph: GraphHandle
   /**
-   * True if `a` and `b` are the same node, group, slot or graph-scope handle; `false` for anything else.
+   * True if `a` and `b` are the same node, group, slot, widget or graph-scope handle; `false` for anything else.
    * There is one such handle per entity, so `a === b` gives the same answer for two of them.
    */
   sameEntity(a: unknown, b: unknown): boolean
@@ -66,7 +66,10 @@ export interface Comfy {
   ): Unsubscribe
   /** An open document became the one on screen. */
   onDocumentActivated(listener: (document: DocumentHandle) => void): Unsubscribe
-  /** An open document was closed. Its handle reports `isDeleted` from then on. */
+  /**
+   * An open document was closed, or replaced when the host reloaded its changed file. Its handle reports
+   * `isDeleted` from then on; a reloaded file opens as a new document.
+   */
   onDocumentClosed(listener: (document: DocumentHandle) => void): Unsubscribe
   /** The open documents, opening a workflow, and files the host cannot read. */
   readonly workflow: WorkflowHandle

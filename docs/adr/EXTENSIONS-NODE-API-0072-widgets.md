@@ -63,7 +63,7 @@ This ADR records how the API reaches widgets through those owners.
    [ADR-EXTENSIONS-NODE-API-0073](EXTENSIONS-NODE-API-0073-functional-edit-core.md),
    over the `history` service it uses: one undo step of the open workflow,
    then a new graph version and a redraw. A change made while another is
-   open, such as inside `comfy.edit.batch` or a listener reacting to an
+   open, such as inside `comfy.graph.batch` or a listener reacting to an
    edit, joins it. `setHeight` (decision 8) is such a change too, because
    the node it grows is saved. A change the workflow does not save (label,
    option, hidden, disabled, links) is not recorded, as it would compare

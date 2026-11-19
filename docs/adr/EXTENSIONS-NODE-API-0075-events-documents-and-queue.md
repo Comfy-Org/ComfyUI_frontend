@@ -202,7 +202,10 @@ review finding requires it. The counts below are packs, then call sites.
     the workflow store only while they have listeners (B-12): the active
     workflow's change tracker for the first, the change trackers of the open
     workflows for the second. A closed document's handle reports
-    `isDeleted`.
+    `isDeleted`. The host also drops the change tracker of an open, inactive
+    workflow whose file changed on the server (`workflowStore.ts`), so
+    `onDocumentClosed` fires for that tab too, and its reloaded file opens as a
+    new document.
 15. `comfy.workflow`:
     - `current()` (6 packs) and `documentId()` (2) give the open document
       and its id.
@@ -244,8 +247,8 @@ review finding requires it. The counts below are packs, then call sites.
       `extra` and not in the live one; they are the host's, not a pack's.
     - `setExtra(document, key, value)` (1 pack, 1 site) writes a copy of
       `value` into the root graph's `extra` of the document on screen,
-      and `undefined` deletes the key. The write runs inside
-      `comfy.edit.batch`, so the change tracker captures it as one undo
+      and `undefined` deletes the key. The write runs inside the edit core's
+      `batch` (`comfy.graph.batch`), so the change tracker captures it as one undo
       step (or as part of the pack's batch), marks the workflow modified
       and saves it, and undo and redo restore `extra` with the rest of the
       graph, as the host's own app-mode selections are kept in `extra`.
@@ -255,10 +258,11 @@ review finding requires it. The counts below are packs, then call sites.
       `ChangeTracker.isLoadingGraph`): the change tracker can only capture
       the graph on the canvas. On the A1111 import path the host suppresses
       capture instead of setting that flag, so a write there returns `true`
-      and makes no undo step of its own. A key that is not a string, the
-      key `__proto__` (which would replace the object's prototype), a value
-      the workflow cannot save (`savableCopy`, the check `setProperty`
-      uses) and a value that is not a document handle are refused with a
+      and makes no undo step of its own. A key that is not a string, or that is
+      empty or an `Object.prototype` member (`isStoreKey`; `__proto__` would
+      replace the object's prototype), a value the workflow would not save
+      unchanged (`savableValue`, the walk `setProperty` and widget values use:
+      `NaN`, a nested function or `undefined`, a `Date`, a getter, a cycle) and a value that is not a document handle are refused with a
       `TypeError` before anything changes. Both members take the document
       first because a document is what `extra` belongs to; the old
       contract read and wrote the active document only, and returned
@@ -427,7 +431,7 @@ and uses what they already provide rather than a second copy:
 - The edit core's undo history is the open workflow's change tracker. The
   documents of decision 11 are keyed by that same object, so a document is
   the session whose history the edit core writes to. An edit through
-  `comfy.edit` changes a node through the host's setters, which raise
+  the edit core changes a node through the host's setters, which raise
   `node:property:changed`, so `onNodeChanged` hears it like any other
   change. An undo or redo of that edit rebuilds the nodes instead;
   decision 4 says what of it is heard.
@@ -560,9 +564,10 @@ the API reports, recorded here with the change that would lift it.
   changes.
 - **A frozen copy.** `snapshot()` and `getExtra` use `savedCopier` from
   `shared/savedCopy.ts`, the copy the node handles use for property values;
-  `setExtra` checks its value with the edit core's `savableCopy`.
-- **The undo step.** `setExtra` writes through `comfy.edit.batch`, the edit
-  core's runner over the change tracker, rather than calling the tracker
+  `setExtra` checks and copies its value with `shared/savableValue.ts`, as
+  `setProperty` does.
+- **The undo step.** `setExtra` writes through the edit core's `batch`, its
+  runner over the change tracker, rather than calling the tracker
   itself.
 - **Which document is on screen.** `setExtra` and `getExtra` ask the same
   three questions the change tracker asks before it captures the canvas
