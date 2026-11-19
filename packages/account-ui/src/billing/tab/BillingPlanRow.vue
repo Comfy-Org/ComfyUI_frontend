@@ -2,7 +2,7 @@
   <section
     :class="
       cn(
-        'flex items-start justify-between gap-4 rounded-xl border border-card px-5 py-4',
+        'flex items-center justify-between gap-4 rounded-xl border border-border px-5 py-4',
         classes?.root
       )
     "
@@ -45,14 +45,7 @@
           @click="emit('action', action)"
         >
           {{ copy.actions[action] }}
-          <i
-            :class="
-              action === 'contactSales'
-                ? 'icon-[lucide--external-link]'
-                : 'icon-[lucide--arrow-up-right]'
-            "
-            aria-hidden="true"
-          />
+          <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
         </CheckoutButton>
       </slot>
     </div>

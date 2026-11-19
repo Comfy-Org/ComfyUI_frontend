@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Double-cliquez sur le titre du nœud pour le modifier"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Réduire les aperçus de grandes images",
+    "tooltip": "Dans Nodes 2.0, affiche les grandes images sur les nœuds sous forme de copies dont le côté le plus long ne dépasse pas 1024 px, afin que de nombreux grands aperçus restent réactifs. Désactivez cette option pour toujours afficher l’original."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "Le clic du milieu crée un nouveau nœud de réacheminement"
   },

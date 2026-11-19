@@ -1,5 +1,4 @@
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useSessionCookie } from '@/platform/auth/session/useSessionCookie'
 import { clearOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import { useExtensionService } from '@/platform/extensions/services/extensionService'
@@ -21,7 +20,7 @@ import { imageCompositorExtension } from './imageCompositor'
 import { imageCropExtension } from './imageCrop'
 import { layerEditorExtension } from './layerEditor'
 import { load3dLazyExtension } from './load3d/load3dLazy'
-import { maskEditorExtension } from './maskeditor'
+import { maskEditorExtension } from '@/renderer/extensions/maskEditor/extension'
 import { noteNodeExtension } from './noteNode'
 import { painterExtension } from './painter'
 import { previewAnyExtension } from './previewAny'
@@ -128,7 +127,6 @@ function wireSessionCookieLogoutFallback(): () => void {
   const { onUserLogout } = useCurrentUser()
   return onUserLogout(() => {
     clearOAuthRequestId()
-    void useSessionCookie().deleteSession()
   })
 }
 

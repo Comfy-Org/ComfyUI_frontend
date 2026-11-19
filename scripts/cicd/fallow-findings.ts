@@ -24,6 +24,11 @@ export interface ComplexityFinding {
   cyclomatic: number
   crap: number
   severity: string
+  introduced?: boolean
+}
+
+interface Attributed {
+  introduced?: boolean
 }
 
 export interface FallowReport {
@@ -39,11 +44,17 @@ export interface FallowReport {
   exit_code?: number
   verdict?: string
   changed_files_count?: number
-  duplication?: { clone_groups?: { instances?: CloneInstance[] }[] }
+  duplication?: {
+    clone_groups?: (Attributed & { instances?: CloneInstance[] })[]
+  }
   complexity?: { findings?: ComplexityFinding[] }
   dead_code?: {
-    unused_files?: { path?: string }[]
-    unused_exports?: { file?: string; name?: string; line?: number }[]
+    unused_files?: (Attributed & { path?: string })[]
+    unused_exports?: (Attributed & {
+      path?: string
+      export_name?: string
+      line?: number
+    })[]
   }
 }
 
@@ -75,8 +86,12 @@ function asArray<T>(value: T[] | undefined): T[] {
   )
 }
 
+function introducedOnly<T extends Attributed>(value: T[] | undefined): T[] {
+  return asArray(value).filter((entry) => entry.introduced !== false)
+}
+
 export function renderCloneGroups(report: FallowReport): string[] {
-  const groups = asArray(report.duplication?.clone_groups)
+  const groups = introducedOnly(report.duplication?.clone_groups)
   return groups.flatMap((group) => {
     const instances = asArray(group.instances)
     if (instances.length < 2) return []
@@ -92,7 +107,7 @@ export function renderCloneGroups(report: FallowReport): string[] {
 }
 
 export function renderComplexity(report: FallowReport): string[] {
-  const findings = asArray(report.complexity?.findings)
+  const findings = introducedOnly(report.complexity?.findings)
   return findings.map(
     (f) =>
       `| Complexity | \`${cell(f.name)}()\` — cyclomatic ${cell(f.cyclomatic)}, CRAP ${cell(f.crap)} | \`${cell(f.path)}:${cell(f.line)}\` | Extract a branch, or raise branch coverage — CRAP is \`CC² × (1−cov)³ + CC\`, so either moves it. |`
@@ -102,17 +117,17 @@ export function renderComplexity(report: FallowReport): string[] {
 export function renderDeadCode(report: FallowReport): string[] {
   const dc = report.dead_code
   const rows: string[] = []
-  for (const file of asArray(dc?.unused_files)) {
+  for (const file of introducedOnly(dc?.unused_files)) {
     if (file.path) {
       rows.push(
         `| Dead code | unused file | \`${cell(file.path)}\` | Delete it, or declare it an entry point in \`.fallowrc.jsonc\`. |`
       )
     }
   }
-  for (const exp of asArray(dc?.unused_exports)) {
-    if (exp.file && exp.name) {
+  for (const exp of introducedOnly(dc?.unused_exports)) {
+    if (exp.path && exp.export_name) {
       rows.push(
-        `| Dead code | unused export \`${cell(exp.name)}\` | \`${cell(exp.file)}${exp.line ? `:${cell(exp.line)}` : ''}\` | Remove the export, or declare it in \`.fallowrc.jsonc\` if it is public API. |`
+        `| Dead code | unused export \`${cell(exp.export_name)}\` | \`${cell(exp.path)}${exp.line ? `:${cell(exp.line)}` : ''}\` | Remove the export, or declare it in \`.fallowrc.jsonc\` if it is public API. |`
       )
     }
   }
@@ -120,8 +135,6 @@ export function renderDeadCode(report: FallowReport): string[] {
 }
 
 export function renderReport(report: FallowReport): string {
-  // Checked before the rows, because an errored run has no findings and would
-  // otherwise render as "no new findings" underneath a red check.
   if (report.error === true) {
     return [
       'Fallow did not complete, so this PR was never actually audited — the',
@@ -148,15 +161,15 @@ export function renderReport(report: FallowReport): string {
           'step — and please extend `scripts/cicd/fallow-findings.ts` so the next',
           'person does not have to.'
         ].join('\n')
-      : 'No new findings in the changed files.'
+      : 'No new findings.'
   }
 
   return [
-    `Fallow gates on **new findings in changed files only**, so everything below was introduced or moved by this PR${
+    `Fallow reports these findings${
       report.changed_files_count
-        ? ` (${report.changed_files_count} changed files)`
+        ? ` for ${report.changed_files_count} changed files`
         : ''
-    }.`,
+    }. Only **new findings** can fail the check. An unused file or export can sit outside the changed files when this PR removed its last use.`,
     '',
     '| Kind | Finding | Where | Usual remedy |',
     '| --- | --- | --- | --- |',

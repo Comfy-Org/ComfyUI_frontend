@@ -7,6 +7,7 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { createInstallationBundle } from '@/platform/workflow/deploy/api/installationBundleApi'
 import type { BundleFailureReason } from '@/platform/workflow/deploy/api/installationBundleApi'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { tagPlatformUrl } from '@/platform/workspace/utils/platformLink'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import type { AuthHeader } from '@comfyorg/api-client/authTypes'
@@ -144,7 +145,10 @@ export function useInstallationDeploy() {
     const bundle = await createInstallationBundle(credential.header, workflow)
     if (owner !== authStore.currentUserIdentity()) return stopUploading()
     if (!bundle.ok) return fail(bundle)
-    state.value = { status: 'ready', url: bundle.url }
+    state.value = {
+      status: 'ready',
+      url: tagPlatformUrl(bundle.url, 'deploy-installation-button')
+    }
   }
 
   return { state, deploy }

@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
+import en from '@/locales/en/main.json'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import WidgetInputNumberInput from './WidgetInputNumberInput.vue'
@@ -11,7 +12,8 @@ import { createMockWidget } from './widgetTestUtils'
 
 const i18n = createI18n({
   legacy: false,
-  locale: 'en'
+  locale: 'en',
+  messages: { en }
 })
 
 function createNumberInputWidget(
@@ -51,12 +53,344 @@ function getNumberInput(container: Element) {
 }
 
 describe('WidgetInputNumberInput Value Binding', () => {
+  it('preserves the typed draft until Enter commits and formats it', async () => {
+    const user = userEvent.setup()
+    const { emitted, rerender } = renderComponent(
+      createNumberInputWidget(37, 'int', { useGrouping: true }),
+      37
+    )
+    await rerender({
+      'onUpdate:modelValue': (value: number) => rerender({ modelValue: value })
+    })
+    const input = screen.getByRole('spinbutton')
+
+    await user.clear(input)
+    await user.type(input, '123456789')
+
+    expect(input).toHaveValue('123456789')
+    expect(emitted()['update:modelValue']).toBeUndefined()
+
+    await user.keyboard('{Enter}')
+
+    expect(input).toHaveValue('123,456,789')
+    expect(emitted()['update:modelValue']).toEqual([[123456789]])
+  })
+
+  it.for([
+    {
+      pointer: 'MouseLeft',
+      pointerName: 'mouse',
+      value: 37,
+      draft: '1000',
+      commitKey: '',
+      expected: '1133'
+    },
+    {
+      pointer: 'TouchA',
+      pointerName: 'TouchA',
+      value: 37,
+      draft: '1000',
+      commitKey: '',
+      expected: '1133'
+    },
+    {
+      pointer: 'TouchA',
+      pointerName: 'TouchA',
+      value: 37,
+      draft: '1000',
+      commitKey: '{Enter}',
+      expected: '1133'
+    },
+    {
+      pointer: 'TouchA',
+      pointerName: 'TouchA',
+      value: 37,
+      draft: '18446744073709552000',
+      commitKey: '',
+      expected: '18446744073709552000'
+    },
+    {
+      pointer: 'TouchA',
+      pointerName: 'TouchA',
+      value: 18446744073709552000,
+      draft: '1000',
+      commitKey: '',
+      expected: '1133'
+    }
+  ])(
+    'blocks $pointer scrubbing of "$draft" from $value until blur (key="$commitKey")',
+    async ({ pointer, pointerName, value, draft, commitKey, expected }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(value, 'int', { step2: 1 }),
+        value
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const input = screen.getByRole('spinbutton')
+      const row = screen.getByTestId('widget-number-row')
+      const label = screen.getByText('test_input_number')
+      vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 0, 300, 24)
+      )
+
+      await user.clear(input)
+      await user.type(input, `${draft}${commitKey}`)
+      await user.pointer([
+        {
+          keys: `[${pointer}>]`,
+          target: label,
+          coords: { clientX: 20, clientY: 10 }
+        },
+        { pointerName, target: label, coords: { clientX: 30, clientY: 10 } }
+      ])
+
+      expect(input).toHaveValue(draft)
+
+      await user.pointer([
+        { pointerName, target: label, coords: { clientX: 40, clientY: 10 } },
+        { keys: `[/${pointer}]`, target: label }
+      ])
+
+      expect(input).toHaveValue(draft)
+      await user.tab()
+      expect(input).toHaveValue(draft)
+      expect(input).not.toHaveFocus()
+
+      await user.pointer([
+        {
+          keys: `[${pointer}>]`,
+          target: label,
+          coords: { clientX: 20, clientY: 10 }
+        },
+        { pointerName, target: label, coords: { clientX: 30, clientY: 10 } },
+        { pointerName, target: label, coords: { clientX: 40, clientY: 10 } },
+        { keys: `[/${pointer}]`, target: label }
+      ])
+
+      expect(input).toHaveValue(expected)
+      expect(input).toHaveAttribute('aria-valuenow', expected)
+    }
+  )
+
+  it.for(['', '{Enter}'])(
+    'Escape restores the value before focus after typing with %s',
+    async (commitKey) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(createNumberInputWidget(37), 37)
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      await rerender({ modelValue: 83 })
+      const input = screen.getByRole('spinbutton')
+
+      await user.clear(input)
+      await user.type(input, `1000${commitKey}{Escape}`)
+
+      expect(input).toHaveValue('83')
+      expect(input).toHaveAttribute('aria-valuenow', '83')
+      expect(input).not.toHaveFocus()
+    }
+  )
+
+  it.for([
+    { target: 'row', disabled: false, expected: 157 },
+    { target: 'label', disabled: false, expected: 157 },
+    { target: 'input', disabled: false, expected: 37 },
+    { target: 'increment', disabled: false, expected: 39 },
+    { target: 'row', disabled: true, expected: 37 }
+  ] as const)(
+    'handles a unified $target gesture with disabled=$disabled',
+    async ({ target, disabled, expected }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(37, 'int', { step2: 2, disabled }),
+        37
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const targets = {
+        row: screen.getByTestId('widget-number-row'),
+        label: screen.getByText('test_input_number'),
+        input: screen.getByRole('spinbutton'),
+        increment: screen.getByTestId('increment')
+      }
+      vi.spyOn(targets.row, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 0, 300, 24)
+      )
+
+      await user.pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: targets[target],
+          coords: { clientX: 20, clientY: 10 }
+        },
+        { target: targets[target], coords: { clientX: 80, clientY: 10 } },
+        { keys: '[/MouseLeft]', target: targets[target] }
+      ])
+
+      expect(screen.getByRole('spinbutton')).toHaveValue(String(expected))
+    }
+  )
+
+  it.for([
+    { clientX: 21, clientY: 14 },
+    { clientX: 24, clientY: 22 }
+  ])(
+    'preserves the value during vertical touch scrolling to $clientX,$clientY',
+    async ({ clientX, clientY }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(37, 'int', { step2: 2 }),
+        37
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const row = screen.getByTestId('widget-number-row')
+
+      await user.pointer([
+        {
+          keys: '[TouchA>]',
+          target: row,
+          coords: { clientX: 20, clientY: 10 }
+        },
+        { pointerName: 'TouchA', target: row, coords: { clientX, clientY } }
+      ])
+      await fireEvent.pointerCancel(row, {
+        pointerId: 2,
+        pointerType: 'touch',
+        buttons: 0
+      })
+
+      expect(screen.getByRole('spinbutton')).toHaveValue('37')
+    }
+  )
+
+  it.for([
+    {
+      name: 'fragmented',
+      start: 37,
+      step: 2,
+      width: 300,
+      max: 5000,
+      moves: [30, 40, 50, 80],
+      expected: 157
+    },
+    {
+      name: 'return to origin',
+      start: 37,
+      step: 2,
+      width: 300,
+      max: 5000,
+      moves: [80, 20],
+      expected: 37
+    },
+    {
+      name: 'return after clamping',
+      start: 37,
+      step: 2,
+      width: 300,
+      max: 50,
+      moves: [620, 20],
+      expected: 37
+    },
+    {
+      name: 'larger magnitude',
+      start: 3700,
+      step: 2,
+      width: 300,
+      max: 10000,
+      moves: [80],
+      expected: 5180
+    },
+    {
+      name: 'scaled row',
+      start: 3700,
+      step: 2,
+      width: 600,
+      max: 10000,
+      moves: [140],
+      expected: 5180
+    },
+    {
+      name: 'zero',
+      start: 0,
+      step: 2,
+      width: 300,
+      max: 5000,
+      moves: [80],
+      expected: 120
+    },
+    {
+      name: 'fractional',
+      start: -0.75,
+      step: 0.05,
+      width: 300,
+      max: 5000,
+      moves: [80],
+      expected: 2.25
+    }
+  ])(
+    'keeps scrubbing position-based for $name',
+    async ({ start, step, width, max, moves, expected }) => {
+      const user = userEvent.setup()
+      const { rerender } = renderComponent(
+        createNumberInputWidget(start, 'float', {
+          step2: step,
+          max,
+          precision: 2
+        }),
+        start
+      )
+      await rerender({
+        'onUpdate:modelValue': (value: number) =>
+          rerender({ modelValue: value })
+      })
+      const row = screen.getByTestId('widget-number-row')
+      vi.spyOn(row, 'getBoundingClientRect').mockReturnValue(
+        new DOMRect(0, 0, width, 24)
+      )
+
+      await user.pointer([
+        {
+          keys: '[MouseLeft>]',
+          target: row,
+          coords: { clientX: 20, clientY: 10 }
+        },
+        ...moves.map((clientX) => ({
+          target: row,
+          coords: { clientX, clientY: 10 }
+        })),
+        { keys: '[/MouseLeft]', target: row }
+      ])
+
+      expect(
+        Number(screen.getByRole('spinbutton').getAttribute('aria-valuenow'))
+      ).toBeCloseTo(expected, 12)
+    }
+  )
+
+  it('focuses the numeric input when its label is clicked', async () => {
+    const user = userEvent.setup()
+    renderComponent(createNumberInputWidget(37, 'int'), 37)
+
+    await user.click(screen.getByText('test_input_number'))
+
+    expect(screen.getByRole('spinbutton')).toHaveFocus()
+  })
+
   it('displays initial value in input field', () => {
     const widget = createNumberInputWidget(42, 'int')
-    const { container } = renderComponent(widget, 42)
+    renderComponent(widget, 42)
 
-    const input = getNumberInput(container)
-    expect(input.value).toBe('42')
+    expect(screen.getByLabelText('test_input_number')).toHaveValue('42')
   })
 
   it('emits update:modelValue when value changes', () => {
@@ -152,23 +486,30 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 
-  it('hides buttons for unsafe large integer values', () => {
+  it('disables unsafe stepping but keeps direct editing available', async () => {
     renderComponent(
       createNumberInputWidget(UNSAFE_LARGE_INTEGER, 'int'),
       UNSAFE_LARGE_INTEGER
     )
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
+    expect(screen.getByRole('spinbutton')).toBeEnabled()
+
+    await userEvent.click(screen.getByTestId('widget-number-row'))
+
+    expect(screen.getByRole('spinbutton')).toHaveFocus()
   })
 
-  it('hides buttons for unsafe negative integer values', () => {
+  it('disables buttons for unsafe negative integer values', () => {
     const unsafeNegative = -UNSAFE_LARGE_INTEGER
     renderComponent(
       createNumberInputWidget(unsafeNegative, 'int'),
       unsafeNegative
     )
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 
   it('shows tooltip for disabled buttons due to precision limits', async () => {
@@ -198,11 +539,12 @@ describe('WidgetInputNumberInput Large Integer Precision Handling', () => {
     expect(screen.getAllByRole('button')).toHaveLength(2)
   })
 
-  it('hides buttons for unsafe floating point values', () => {
+  it('disables buttons for unsafe floating point values', () => {
     const unsafeFloat = UNSAFE_LARGE_INTEGER + 0.5
     renderComponent(createNumberInputWidget(unsafeFloat, 'float'), unsafeFloat)
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 })
 
@@ -216,18 +558,21 @@ describe('WidgetInputNumberInput Edge Cases for Precision Handling', () => {
   it('handles NaN values gracefully', () => {
     renderComponent(createNumberInputWidget(NaN, 'int'), NaN)
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 
   it('handles Infinity values', () => {
     renderComponent(createNumberInputWidget(Infinity, 'int'), Infinity)
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 
   it('handles negative Infinity values', () => {
     renderComponent(createNumberInputWidget(-Infinity, 'int'), -Infinity)
 
-    expect(screen.queryAllByRole('button')).toHaveLength(0)
+    expect(screen.getByTestId('increment')).toBeDisabled()
+    expect(screen.getByTestId('decrement')).toBeDisabled()
   })
 })

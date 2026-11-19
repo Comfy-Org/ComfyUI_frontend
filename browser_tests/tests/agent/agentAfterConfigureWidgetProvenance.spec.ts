@@ -43,8 +43,7 @@ test.describe(
       await expect(
         agentConversation.vueNodes
           .getNodeLocator('3')
-          .getByLabel('steps', { exact: true })
-          .getByRole('spinbutton')
+          .getByRole('spinbutton', { name: 'steps', exact: true })
       ).toHaveValue('47')
 
       await page.getByTestId('crdt-dev-panel-tab-log').click()
