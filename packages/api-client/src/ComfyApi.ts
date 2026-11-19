@@ -1913,7 +1913,10 @@ export class ComfyApi extends EventTarget {
         signal,
         timeout: FETCH_RESPONSE_HEADERS_TIMEOUT_MS
       })
-      .catch(() => null)
+      .catch((error: unknown) => {
+        if (signal?.aborted) throw error
+        return null
+      })
     if (!response) {
       return {}
     }

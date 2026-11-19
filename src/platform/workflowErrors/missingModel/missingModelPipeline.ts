@@ -1,5 +1,3 @@
-import { isEmpty } from 'es-toolkit/compat'
-
 import { st } from '@/i18n'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -244,10 +242,11 @@ export async function runMissingModelPipeline({
       await api
         .getFolderPaths({ signal: controller.signal })
         .then((paths) => {
-          if (controller.signal.aborted || isEmpty(paths)) return
+          if (controller.signal.aborted) return
           missingModelStore.setFolderPaths(paths)
         })
         .catch((err) => {
+          if (controller.signal.aborted) return
           console.warn(
             '[Missing Model Pipeline] Failed to fetch folder paths:',
             err

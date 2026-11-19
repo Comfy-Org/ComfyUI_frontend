@@ -40,4 +40,17 @@ describe('getFolderPaths', () => {
       }
     )
   })
+
+  it('rejects when the caller aborts the request', async () => {
+    const controller = new AbortController()
+    const canceled = new Error('canceled')
+    vi.mocked(axios.get).mockImplementationOnce(async () => {
+      controller.abort()
+      throw canceled
+    })
+
+    await expect(
+      api.getFolderPaths({ signal: controller.signal })
+    ).rejects.toBe(canceled)
+  })
 })
