@@ -197,6 +197,25 @@ describe('node menus and colors', () => {
       expect(reportError).toHaveBeenCalledTimes(3)
     })
 
+    it('reports an entry whose test rejects, once, and does not show it', async () => {
+      const broken = new Error('when rejected')
+      withUntypedItems({
+        label: 'Async',
+        when: () => Promise.reject(broken),
+        run: () => {}
+      })
+      const node = added()
+
+      expect(menuOf(node)).toEqual([])
+      expect(menuOf(node)).toEqual([])
+      await Promise.resolve()
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        broken,
+        expect.objectContaining({ tags: { event: 'addMenuItem' } })
+      )
+    })
+
     it('reports an entry that throws when run', () => {
       const broken = new Error('run failed')
       withItems({

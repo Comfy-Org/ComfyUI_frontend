@@ -70,14 +70,23 @@ export function createHookDispatch(
     return false
   }
 
+  function reportMenuItemOnce(item: CheckedMenuItem, error: unknown): void {
+    if (failedMenuItems.has(item)) return
+    failedMenuItems.add(item)
+    reportListenerFailure('addMenuItem', error)
+  }
+
   function menuEntryReportedOnce(item: CheckedMenuItem, handle: NodeHandle) {
-    try {
-      return menuEntry(item, handle)
-    } catch (error) {
-      if (!failedMenuItems.has(item)) {
-        failedMenuItems.add(item)
-        reportListenerFailure('addMenuItem', error)
+    const asked = <T>(answer: T): T => {
+      if (answer instanceof Promise) {
+        answer.catch((error: unknown) => reportMenuItemOnce(item, error))
       }
+      return answer
+    }
+    try {
+      return menuEntry(item, handle, asked)
+    } catch (error) {
+      reportMenuItemOnce(item, error)
       return undefined
     }
   }
