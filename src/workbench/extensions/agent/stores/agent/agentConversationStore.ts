@@ -378,6 +378,7 @@ interface SubmittedAskAnswer {
   messageId?: TurnId
   awaitingResolution?: 'accepted' | 'conflict'
   onResolutionExpired?: () => boolean | void
+  resolutionDeadline?: number
 }
 
 export const useAgentConversationStore = defineStore(
@@ -817,13 +818,17 @@ export const useAgentConversationStore = defineStore(
       if (!submitted) return
       submitted.awaitingResolution = kind
       submitted.onResolutionExpired = onExpired
+      submitted.resolutionDeadline ??= Date.now() + ASK_RESOLUTION_GRACE_MS
       clearAskResolutionReportWatchdog(askId)
       askResolutionReportWatchdogs.set(
         askId,
-        setTimeout(() => {
-          clearAskResolutionReportWatchdog(askId)
-          expireAskResolution(askId)
-        }, ASK_RESOLUTION_GRACE_MS)
+        setTimeout(
+          () => {
+            clearAskResolutionReportWatchdog(askId)
+            expireAskResolution(askId)
+          },
+          Math.max(0, submitted.resolutionDeadline - Date.now())
+        )
       )
     }
 
@@ -846,13 +851,25 @@ export const useAgentConversationStore = defineStore(
       if (submitted) {
         submitted.awaitingResolution = undefined
         submitted.onResolutionExpired = undefined
+        submitted.resolutionDeadline = undefined
+      }
+    }
+
+    function completeAskResolutionReport(askId: string): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (!submitted) return
+      clearAskAwaitingResolution(askId)
+      clearAskResolutionReportWatchdog(askId)
+      if (isAskRetired(askId, submitted.owner)) {
+        submittedAskAnswers.delete(askId)
+        setAskAnswering(askId, false)
       }
     }
 
     function expireAskResolution(askId: string): void {
       const onExpired = submittedAskAnswers.get(askId)?.onResolutionExpired
       if (onExpired?.() === false) return
-      clearAskAwaitingResolution(askId)
+      completeAskResolutionReport(askId)
     }
 
     function clearSettledAskState(turn: LiveTurn): void {
@@ -1937,6 +1954,7 @@ export const useAgentConversationStore = defineStore(
       markAskAwaitingResolution,
       asksAwaitingResolution,
       clearAskAwaitingResolution,
+      completeAskResolutionReport,
       askKind,
       commitAsk,
       retireAsk,
