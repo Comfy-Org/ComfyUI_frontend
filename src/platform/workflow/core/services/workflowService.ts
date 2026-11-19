@@ -170,8 +170,11 @@ function resetAndRestoreTracker(
       ? captureSavedBaseline(workflow)
       : undefined
   tracker.reset(ensureWorkflowId(workflowData, activeStateFallbackId(workflow)))
-  tracker.restore()
-  if (saved) restoreSavedBaseline(workflow, saved)
+  try {
+    tracker.restore()
+  } finally {
+    if (saved) restoreSavedBaseline(workflow, saved)
+  }
   return true
 }
 
@@ -195,6 +198,7 @@ function restoreSavedBaseline(
   if (
     tracker &&
     saved.state &&
+    Array.isArray(saved.state.nodes) &&
     tracker.initialState !== saved.state &&
     workflow.originalContent === saved.content
   ) {
