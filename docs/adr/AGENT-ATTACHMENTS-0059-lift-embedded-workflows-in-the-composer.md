@@ -4,8 +4,11 @@ Date: 2026-11-19
 
 ## Status
 
-Accepted. Implemented by
-[#23804](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23804).
+Accepted. The behaviour below is implemented by
+[#23804](https://github.com/Comfy-Org/ComfyUI_frontend/pull/23804) and does not
+describe `main` until that lands. Nothing on the attach path calls the metadata
+parsers before it; today they serve the asset menus, linear preview and the
+assets sidebar through `workflowExtractionUtil`.
 
 ## Context
 
@@ -55,11 +58,11 @@ at all for png, webp or avif — so it would not have helped the common case.
 Lift the workflow in the composer, and hand it to the existing backend import
 path as a derived `.json` attachment. No backend change.
 
-On attach, the metadata parsers already in `src/scripts/metadata/` read the
-container. If it yields an editor-format `workflow`, that workflow is staged
-beside the image as its own visible, removable attachment chip and uploaded
-through the same endpoint every attachment uses. Cloud's reader then treats it
-as an ordinary attached workflow file.
+On attach, the metadata parsers already in `src/scripts/metadata/` will read the
+container. Where it yields an editor-format `workflow`, that workflow is to be
+staged beside the image as its own visible, removable attachment chip and
+uploaded through the same endpoint every attachment uses. Cloud's reader then
+treats it as an ordinary attached workflow file.
 
 The scope is deliberately narrower than placement A: **no model-callable tool.**
 The agent sees embedded workflows only from assets attached in the browser.
