@@ -8,7 +8,6 @@ import { useApp } from '@/scripts/appInstance'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useKeyedMembership } from '@/platform/workflowErrors/keyedMembership'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { getAncestorExecutionIds } from '@comfyorg/graph-model/nodeIdentification'
@@ -64,9 +63,6 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     }
     return keys
   })
-  const hasMissingModelWidgetKey = useKeyedMembership(
-    () => missingModelWidgetKeys.value
-  )
 
   /**
    * Set of all execution ID prefixes derived from missing model node IDs,
@@ -250,7 +246,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
   }
 
   function isWidgetMissingModel(nodeId: string, widgetName: string): boolean {
-    return hasMissingModelWidgetKey(`${nodeId}::${widgetName}`)
+    return missingModelWidgetKeys.value.has(`${nodeId}::${widgetName}`)
   }
 
   function isContainerWithMissingModel(node: LGraphNode): boolean {

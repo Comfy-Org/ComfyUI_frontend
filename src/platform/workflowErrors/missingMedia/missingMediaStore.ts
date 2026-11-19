@@ -4,7 +4,6 @@ import { computed, ref } from 'vue'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
-import { useKeyedMembership } from '@/platform/workflowErrors/keyedMembership'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -63,9 +62,6 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     }
     return keys
   })
-  const hasMissingMediaWidgetKey = useKeyedMembership(
-    () => missingMediaWidgetKeys.value
-  )
 
   /**
    * Set of all execution ID prefixes derived from missing media node IDs,
@@ -119,7 +115,7 @@ export const useMissingMediaStore = defineStore('missingMedia', () => {
     nodeId: NodeExecutionId,
     widgetName: string
   ): boolean {
-    return hasMissingMediaWidgetKey(`${String(nodeId)}::${widgetName}`)
+    return missingMediaWidgetKeys.value.has(`${String(nodeId)}::${widgetName}`)
   }
 
   function removeMissingMediaByWidget(nodeId: string, widgetName: string) {
