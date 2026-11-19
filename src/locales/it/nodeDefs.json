@@ -8465,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "Genera un video parlato di un avatar HeyGen con HeyGen Avatar 6, guidato da uno script di testo o dal tuo audio.",
+    "display_name": "HeyGen Avatar 6 da identità a video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapporto d'aspetto",
+        "tooltip": "'auto' segue il filmato sorgente dell'avatar."
+      },
+      "avatar": {
+        "name": "avatar"
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "motion_expressiveness": {
+        "name": "espressività del movimento",
+        "tooltip": "'less' produce gesti meno numerosi e più piccoli. Il prompt di movimento ha la precedenza nelle aree in cui si sovrappongono."
+      },
+      "motion_prompt": {
+        "name": "prompt di movimento",
+        "tooltip": "Gesti, espressione, postura e movimento della videocamera."
+      },
+      "resolution": {
+        "name": "risoluzione"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Il seed controlla se il nodo deve essere rieseguito; i risultati non sono deterministici indipendentemente dal seed."
+      },
+      "speech": {
+        "name": "parlato",
+        "tooltip": "Guida l'avatar con uno script di testo (sintesi vocale HeyGen) o con il tuo audio."
+      },
+      "speech_custom_voice_id": {
+        "name": "ID voce personalizzata"
+      },
+      "speech_text": {
+        "name": "testo"
+      },
+      "speech_voice": {
+        "name": "voce"
+      },
+      "speech_voice_speed": {
+        "name": "velocità della voce"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "Fai parlare una persona o un personaggio in una foto o in un video usando l'audio collegato con HeyGen Avatar 6. Collega un'immagine, un video o entrambi.",
+    "display_name": "HeyGen Avatar 6 da riferimento a video",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello"
+      },
+      "model_aspect_ratio": {
+        "name": "rapporto d'aspetto"
+      },
+      "model_motion_expressiveness": {
+        "name": "espressività del movimento"
+      },
+      "model_motion_prompt": {
+        "name": "prompt di movimento"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "Genera un video con presentatore parlante da un avatar HeyGen. Include gli avatar pubblici più popolari di HeyGen; è possibile fornire qualsiasi look ID come override.",
     "display_name": "Video Avatar HeyGen",
@@ -10645,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "Genera o modifica immagini da un prompt di testo e fino a 10 immagini di riferimento, come immagine singola o serie di immagini correlate.",
+    "display_name": "Kling 4.0 Immagine",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "rapporto d'aspetto",
+        "tooltip": "auto segue le immagini di riferimento, altrimenti il prompt."
+      },
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Fai riferimento alle immagini di riferimento come @Image1, @Image2, ..."
+      },
+      "reference_images": {
+        "name": "immagini di riferimento"
+      },
+      "resolution": {
+        "name": "risoluzione"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Il seed controlla se il nodo deve essere rieseguito; i risultati non sono deterministici indipendentemente dal seed."
+      },
+      "series_amount": {
+        "name": "numero di immagini nella serie",
+        "tooltip": "Genera una serie di immagini correlate che mantengono gli stessi personaggi e lo stesso stile. auto consente al modello di scegliere 2-10 immagini."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "Genera un video con audio usando fino a 10 fotogrammi chiave su kling-4.0, oppure da un primo fotogramma su kling-4.0-flash. I fotogrammi intermedi sono distribuiti uniformemente; il video adotta le proporzioni del primo fotogramma chiave.",
     "display_name": "Kling 4.0 Da immagine a video",
@@ -10666,6 +10789,32 @@
       },
       "model_seed": {
         "name": "seme"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "Genera un'unica immagine alta: il design di una pagina web o una pagina di dettaglio di un prodotto e-commerce.",
+    "display_name": "Kling 4.0 Immagine lunga",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "skill": {
+        "name": "abilità"
+      },
+      "skill_prompt": {
+        "name": "prompt"
+      },
+      "skill_resolution": {
+        "name": "risoluzione"
+      },
+      "skill_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -25291,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "Codifica immagini di riferimento, ragionamento sulle immagini, testo intercalato o autocorrezione con CLIP. Collega le immagini di riferimento HiDream-O1 prima di questo nodo e usa un campionatore standard per le immagini. La generazione da testo a immagine senza ragionamento richiede solo CLIP Text Encode; per l'output solo testo puoi usare Generate Text.",
+    "display_name": "Condizionamento SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "condizionamento"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "Numero massimo di token generati durante questa chiamata."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "task": {
+        "name": "attività",
+        "tooltip": "Seleziona l'attività. Il relativo modello di prompt e il comportamento di arresto vengono impostati automaticamente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "condizionamento",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "Testo generato da questa chiamata. Usa SenseNova Interleave Decode per il risultato completo."
+      },
+      "2": {
+        "name": "negativo",
+        "tooltip": "Condizionamento negativo aggiornato per l'intercalamento e l'autocorrezione."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "Estrae testo, immagini e ragionamento dalla cronologia di intercalamento prodotta da SenseNova Conditioning, inclusa l'autocorrezione U1.6. Con i cicli, usa End Loop con accumulate disabilitato. Le immagini di riferimento in ingresso sono escluse. I nodi che utilizzano immagini vengono ignorati quando non sono state generate immagini.",
+    "display_name": "Decodifica intercalata SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "condizionamento"
+      },
+      "samples": {
+        "name": "campioni",
+        "tooltip": "Ultimo latent di pixel di KSampler, se il ciclo si è concluso con una richiesta di immagine."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "testo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "immagini",
+        "tooltip": null
+      },
+      "2": {
+        "name": "ragionamento",
         "tooltip": null
       }
     }

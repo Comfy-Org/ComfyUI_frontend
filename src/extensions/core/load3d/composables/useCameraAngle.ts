@@ -40,7 +40,7 @@ export interface UseCameraAngleOptions {
 }
 
 export function useCameraAngle(
-  nodeRef: MaybeRef<LGraphNode | null>,
+  nodeRef: MaybeRef<LGraphNode | undefined>,
   options: UseCameraAngleOptions = {}
 ) {
   const nodeOutputStore = useNodeOutputStore()

@@ -288,7 +288,7 @@ vi.mock(
       const selectedModels = ref<string[]>([])
       const selectedUseCases = ref<string[]>([])
       const selectedRunsOn = ref<string[]>([])
-      const selectedSort = ref<TemplateSortMode>('default')
+      const selectedSort = ref<TemplateSortMode>('newest')
       const sortSelection = computed({
         get: () => selectedSort.value,
         set: (value: TemplateSortMode) => {
@@ -301,8 +301,9 @@ vi.mock(
         selectedModels,
         selectedUseCases,
         selectedRunsOn,
-        sortBy: ref<Exclude<TemplateSortMode, 'relevance'>>('default'),
+        sortBy: ref<Exclude<TemplateSortMode, 'relevance'>>('newest'),
         sortSelection,
+        categorySort: ref<Exclude<TemplateSortMode, 'relevance'> | null>(null),
         hasActiveQuery: computed(() => false),
         activeModels: computed(() => selectedModels.value),
         activeUseCases: computed(() => selectedUseCases.value),

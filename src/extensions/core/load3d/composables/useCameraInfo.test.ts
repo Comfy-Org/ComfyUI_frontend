@@ -71,7 +71,7 @@ function widget(node: TestNode, name: string): IBaseWidget {
 }
 
 function nodeRef(node: TestNode) {
-  return shallowRef<LGraphNode | null>(node)
+  return shallowRef<LGraphNode | undefined>(node)
 }
 
 beforeEach(() => {
@@ -99,7 +99,7 @@ describe('useCameraInfo', () => {
   })
 
   it('does nothing when the node is null', () => {
-    const camera = useCameraInfo(ref(null))
+    const camera = useCameraInfo(ref())
     camera.initialize(document.createElement('div'))
 
     expect(ViewportMock).not.toHaveBeenCalled()

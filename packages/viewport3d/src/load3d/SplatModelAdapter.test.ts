@@ -102,6 +102,30 @@ describe('SplatModelAdapter', () => {
     expect(splat.quaternion.w).toBe(0)
   })
 
+  it('keeps SPZ v4 (raw NGSP header) splats unrotated since they are stored Y-up', async () => {
+    const v4Bytes = new Uint8Array([0x4e, 0x47, 0x53, 0x50, 4, 0, 0, 0]).buffer
+    const result = await new SplatModelAdapter().load(
+      makeContext(),
+      '/api/view?',
+      'scene.spz',
+      () => Promise.resolve(v4Bytes)
+    )
+
+    expect(result.object.children[0].quaternion.toArray()).toEqual([0, 0, 0, 1])
+  })
+
+  it('still rotates gzip-wrapped SPZ (v1-3) splats 180° around X', async () => {
+    const gzipBytes = new Uint8Array([0x1f, 0x8b, 0x08, 0x00]).buffer
+    const result = await new SplatModelAdapter().load(
+      makeContext(),
+      '/api/view?',
+      'scene.spz',
+      () => Promise.resolve(gzipBytes)
+    )
+
+    expect(result.object.children[0].quaternion.toArray()).toEqual([1, 0, 0, 0])
+  })
+
   it('propagates fetch errors', async () => {
     const adapter = new SplatModelAdapter()
     await expect(

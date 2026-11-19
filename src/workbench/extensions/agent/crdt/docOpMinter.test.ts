@@ -217,6 +217,16 @@ function dynamicComboScenario(graph: LGraph) {
             }
           ]
         }
+      ],
+      images: [
+        'COMFY_AUTOGROW_V3',
+        {
+          template: {
+            input: { required: { image: ['IMAGE', {}] } },
+            names: ['image_1', 'image_2', 'image_3'],
+            min: 0
+          }
+        }
       ]
     }
   }
@@ -240,6 +250,10 @@ function dynamicComboScenario(graph: LGraph) {
     transformInputSpecV1ToV2(resizeType.required!.resize_type, {
       name: 'resize_type'
     })
+  )
+  useLitegraphService().addNodeInput(
+    resize,
+    transformInputSpecV1ToV2(resizeType.required!.images, { name: 'images' })
   )
   withGraphIntentSource('load', () => {
     graph.add(source)
@@ -931,33 +945,35 @@ describe('attachDocOpMinter', () => {
       withGraphIntentSource('load', () => {
         for (const source of sources) graph.add(source)
         graph.add(sink)
-        sources[0].connect(0, sink, 0)
+        sources[0].connect(0, sink, 1)
       })
       const doc = mintDocFrom(graph)
       docInputNames = (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs')
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
         { name: `${IMAGES_GROUP}.image_2`, link: null }
       ])
 
-      sources[1].connect(0, sink, 1)
+      sources[1].connect(0, sink, 2)
       await afterFlush()
       expect(minted).toEqual([
-        expect.objectContaining({ op: 'connect', to_slot: 1 })
+        expect.objectContaining({ op: 'connect', to_slot: 2 })
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       minted.length = 0
 
       expect(sink.inputs.map(({ name }) => name)).toEqual([
+        IMAGES_GROUP,
         `${IMAGES_GROUP}.image_1`,
         `${IMAGES_GROUP}.image_2`,
         `${IMAGES_GROUP}.image_3`
       ])
-      sources[2].connect(0, sink, 2)
+      sources[2].connect(0, sink, 3)
       await afterFlush()
 
-      const handWired = sink.inputs[2].link
+      const handWired = sink.inputs[3].link
       expect(minted).toEqual([
         {
           op: 'connect',
@@ -972,8 +988,9 @@ describe('attachDocOpMinter', () => {
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
-        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[1].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
+        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[2].link },
         { name: `${IMAGES_GROUP}.image_3`, link: handWired }
       ])
       doc.destroy()
@@ -1382,6 +1399,101 @@ describe('attachDocOpMinter', () => {
 
       expect(minted).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('cancels an unsent dynamic-combo grow when its added source is removed in the same tick', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      const unsentSource = new TestSource()
+      graph.add(unsentSource)
+      unsentSource.connect(0, resize, match)
+      graph.remove(unsentSource)
+      await afterFlush()
+      expect(minted).toEqual([])
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          from_node: source.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('keeps an autogrow edit off an in-flight dynamic-combo grow on the same node', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      source.connect(0, resize, resize.findInputSlot('images.image_1'))
+      await afterFlush()
+      source.connect(0, resize, resize.findInputSlot('images.image_2'))
+      await afterFlush()
+      resize.disconnectInput(resize.findInputSlot('images.image_2'))
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog)).toEqual([
+        'applied',
+        'applied',
+        'applied'
+      ])
+      minted.length = 0
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog, 2)).toEqual(['applied'])
+
+      expect(docInputs(doc, resize.id, catalog)).toEqual([
+        { name: 'resize_type.multiplier', link: null },
+        { name: 'resize_type', link: null },
+        { name: 'images', link: null },
+        {
+          name: 'images.image_1',
+          link: resize.inputs[resize.findInputSlot('images.image_1')].link
+        },
+        { name: 'resize_type.match', link: resize.inputs[match].link },
+        { name: 'images.image_2', link: null }
+      ])
     })
 
     it('drops a deferred dynamic-combo operation when its grow never lands', async () => {

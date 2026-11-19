@@ -1211,7 +1211,7 @@ export class ComfyApp implements IComfyApp {
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     return this.enqueueGraphLoad(async () =>
-      options.isCurrent?.() === false
+      options.isCurrent?.() === false || options.isReady?.() === false
         ? false
         : this.loadGraphDataNow(
             graphData,
@@ -1241,12 +1241,31 @@ export class ComfyApp implements IComfyApp {
       skipAssetScans = false,
       silentAssetErrors = false,
       workflowNavigationId,
-      isCurrent
+      isCurrent,
+      isReady,
+      resolveGraphData
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    const skipUnreadyLoad = async () => {
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Workflow load was replaced', 'AbortError')
+      )
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
+      return false
+    }
+    if (isReady?.() === false) return skipUnreadyLoad()
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
+      if (resolveGraphData) {
+        const resolved = resolveGraphData()
+        if (!resolved) return await skipUnreadyLoad()
+        graphData = resolved
+      }
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
       replaceCanvas()
       ChangeTracker.isLoadingGraph = true

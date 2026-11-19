@@ -80,7 +80,7 @@ function widget(node: TestNode, name: string): IBaseWidget {
 }
 
 function nodeRef(node: TestNode) {
-  return shallowRef<LGraphNode | null>(node)
+  return shallowRef<LGraphNode | undefined>(node)
 }
 
 function ctorState(instance: ViewportInstance) {
@@ -137,7 +137,7 @@ describe('useCameraAngle', () => {
   })
 
   it('does nothing when the node is null', () => {
-    const camera = useCameraAngle(ref(null))
+    const camera = useCameraAngle(ref())
     camera.initialize(document.createElement('div'))
 
     expect(ViewportMock).not.toHaveBeenCalled()

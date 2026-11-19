@@ -1,5 +1,6 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
+import { watch } from 'vue'
 
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
@@ -156,6 +157,21 @@ describe('useMissingMediaStore', () => {
     store.removeMissingMediaByWidget('99', 'image')
 
     expect(store.missingMediaCandidates).toHaveLength(1)
+  })
+
+  it('does not notify readers when a removal matches nothing', () => {
+    const store = useMissingMediaStore()
+    store.setMissingMedia([makeCandidate('1', 'photo.png')])
+    const onChange = vi.fn()
+    const stop = watch(() => store.missingMediaCandidates, onChange, {
+      flush: 'sync'
+    })
+
+    store.removeMissingMediaByWidget('99', 'image')
+    store.removeMissingMediaByNodeId('99')
+    stop()
+
+    expect(onChange).not.toHaveBeenCalled()
   })
 
   it('createVerificationAbortController aborts previous controller', () => {

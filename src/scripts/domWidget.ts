@@ -238,7 +238,10 @@ export const addWidget = <V extends object | string>(
   })
 
   node.onRemoved = useChainCallback(node.onRemoved, () => {
-    widget.onRemove?.()
+    const stillOwned =
+      node.widgets?.includes(widget) ||
+      useDomWidgetStore().widgetStates.has(widget.id)
+    if (stillOwned) widget.onRemove?.()
   })
 
   node.onResize = useChainCallback(node.onResize, () => {
