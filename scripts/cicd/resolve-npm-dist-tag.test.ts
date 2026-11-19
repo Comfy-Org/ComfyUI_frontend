@@ -109,7 +109,7 @@ const stepsSchema = z.array(
 
 it.for(publishers)(
   '$file publishes only with a guarded tag in a per-package queue',
-  ({ source }) => {
+  ({ file, source }) => {
     const workflow = z
       .object({
         concurrency: z.object({
@@ -129,7 +129,14 @@ it.for(publishers)(
     )
     expect(publish?.env?.DIST_TAG).toBe('${{ steps.dist_tag.outputs.tag }}')
     expect(steps.find((step) => step.id === 'dist_tag')?.run).toBe(
-      'pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts'
+      {
+        'release-npm-types.yaml':
+          'pnpm exec tsx release-scripts/scripts/cicd/resolve-npm-dist-tag.ts',
+        'publish-design-system.yaml':
+          'pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts',
+        'publish-package.yaml':
+          'pnpm exec tsx scripts/cicd/resolve-npm-dist-tag.ts'
+      }[file]
     )
   }
 )
