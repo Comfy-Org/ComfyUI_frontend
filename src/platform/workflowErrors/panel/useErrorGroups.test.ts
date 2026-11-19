@@ -699,6 +699,7 @@ describe('useErrorGroups', () => {
         details: 'line 1\nline 2',
         isRuntimeError: true,
         exceptionType: 'RuntimeError',
+        jobId: 'test-prompt',
         catalogId: 'execution_failed',
         displayTitle: 'Execution failed',
         displayMessage: 'Node threw an error during execution.',
