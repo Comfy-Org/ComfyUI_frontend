@@ -372,6 +372,40 @@ class DeltaGate(unittest.TestCase):
                 )
 
 
+class NewHookDeltaGate(unittest.TestCase):
+    BASELINE = {'entryPct': 100.0, 'newHookFreePct': 100.0, 'runId': 'run-1'}
+
+    def test_a_pack_newly_failing_a_new_hook_breaches(self) -> None:
+        cases = (
+            ('setup throws', lambda r: add_hook_error(r, 'setup')),
+            ('setup hangs', lambda r: r.update(
+                lifecycle={'init': 'OK', 'setup': 'setup did not settle'})),
+        )
+        for name, mutate in cases:
+            with self.subTest(name):
+                v = sm.evaluate(broken(1, mutate), {}, self.BASELINE, 'run-2')
+                self.assertEqual(v.code, 1, v.lines)
+                self.assertEqual(
+                    v.breaches,
+                    ['packs free of new-hook errors dropped 1.0pp'
+                     ' (from 100.0% to 99.0%)'],
+                )
+
+    def test_an_unchanged_new_hook_rate_passes(self) -> None:
+        rows = broken(30, lambda r: add_hook_error(r, 'setup'))
+        prev = {**self.BASELINE, 'newHookFreePct': 70.0}
+        v = sm.evaluate(rows, {}, prev, 'run-2')
+        self.assertEqual(v.code, 0, v.lines)
+        self.assertEqual(v.metrics['newHookFreePct'], 70.0)
+
+    def test_a_baseline_without_the_rate_skips_only_this_delta(self) -> None:
+        rows = broken(30, lambda r: add_hook_error(r, 'setup'))
+        v = sm.evaluate(rows, {}, {'entryPct': 100.0, 'runId': 'run-1'},
+                        'run-2')
+        self.assertEqual(v.code, 0, v.lines)
+        self.assertIn('previous run predates it', '\n'.join(v.lines))
+
+
 class StaleRegistry(unittest.TestCase):
     def test_stale_marker_reaches_report_and_metrics(self) -> None:
         v = sm.evaluate(
