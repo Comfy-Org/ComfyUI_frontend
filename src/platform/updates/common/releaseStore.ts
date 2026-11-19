@@ -94,7 +94,12 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
-    // Only show on desktop version
+    // Still gated on the legacy desktop build, unlike the red dot and the
+    // What's New popup. The toast is the only surface with an Update action,
+    // and that action is only correct where `Comfy-Desktop.CheckForUpdates`
+    // exists. Everywhere else it would send the user to the generic OSS
+    // update docs, which are wrong for a launcher-managed install. Ungating
+    // it needs a host capability check first.
     if (!isDesktop || isCloud) {
       return false
     }
@@ -126,8 +131,8 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
-    // Only show on desktop version
-    if (!isDesktop || isCloud) {
+    // Cloud is always current, so an update indicator there is meaningless.
+    if (isCloud) {
       return false
     }
 
@@ -180,10 +185,6 @@ export const useReleaseStore = defineStore('release', () => {
     }
 
     if (onboardingOverlayStore.active) {
-      return false
-    }
-
-    if (!isDesktop && !isCloud) {
       return false
     }
 
