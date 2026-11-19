@@ -81,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onScopeDispose } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -134,6 +134,10 @@ function trackPlatformClick() {
 const { needsSave, saveActiveWorkflow } = useRunOnCloudHandoff()
 
 const toast = useToast()
+let isActive = true
+onScopeDispose(() => {
+  isActive = false
+})
 
 function openSavedPlatform(): boolean {
   if (handsPopupsToSystemBrowser()) {
@@ -158,7 +162,7 @@ async function openPlatform(event: MouseEvent, closes = true) {
     return
   }
   event.preventDefault()
-  if (!(await saveActiveWorkflow())) return
+  if (!(await saveActiveWorkflow()) || !isActive) return
   if (!openSavedPlatform()) {
     toast.info(t('openOnCloud.deploySetupDialog.platformTabBlocked'))
     return
