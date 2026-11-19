@@ -70,9 +70,7 @@ const RESTART_WINDOW_MS = 10 * 60_000
  * either may come first: every reconnect within the window refreshes,
  * including one that came just before the report. An unrelated reconnect in
  * the window refreshes too, which is harmless, and leaves the restart's own
- * reconnect to refresh again. When the server reports a boot id, the core
- * reconnect refresh already refreshes once per restart, so this store leaves
- * restarts to it and only handles catalog refreshes.
+ * reconnect to refresh again.
  */
 export const useAgentNodeDefinitionRefreshStore = defineStore(
   'agentNodeDefinitionRefresh',

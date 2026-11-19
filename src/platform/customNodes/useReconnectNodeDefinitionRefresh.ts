@@ -88,15 +88,8 @@ async function refreshNodeDefinitions(): Promise<void> {
 }
 
 /**
- * Returns the `reconnected` handler that keeps node definitions current after
- * a local ComfyUI restart.
- *
- * When the server reports a boot id, a new id in its feature flags means it
- * restarted: node definitions are refreshed and the open workflow reloaded,
- * which also picks up packs whose existing nodes changed. A reconnect to the
- * same server does nothing. A server without a boot id is checked on every
- * reconnect instead: node types it lists that the page lacks are loaded, and
- * the open workflow's missing nodes are rebuilt from them.
+ * Returns the `reconnected` handler that refreshes node definitions and the
+ * open workflow after a local ComfyUI restart.
  */
 export function useReconnectNodeDefinitionRefresh() {
   if (isCloud) return async () => {}
@@ -140,8 +133,6 @@ export function useReconnectNodeDefinitionRefresh() {
       try {
         await refreshAndRebuild(restarted)
       } catch (error) {
-        // Keep a failed restart refresh for the next reconnect: with a boot id
-        // nothing else would refresh until the server restarts again.
         if (restarted) restartPending = true
         reportError(error, {
           surface: 'graph',

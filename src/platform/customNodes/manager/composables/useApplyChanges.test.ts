@@ -2,28 +2,19 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useApplyChanges } from '@/platform/customNodes/manager/composables/useApplyChanges'
+import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
+import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { api } from '@/scripts/api'
 
-const runFullConflictAnalysis = vi.hoisted(() => vi.fn(async () => {}))
-
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
-vi.mock(
-  import('@/platform/customNodes/manager/services/comfyManagerService'),
-  () => ({
-    useComfyManagerService: () =>
-      ({
-        rebootComfyUI: vi.fn(async () => null),
-        listInstalledPacks: vi.fn(async () => null)
-      }) as never
-  })
-)
+vi.mock(import('@/platform/customNodes/manager/services/comfyManagerService'), {
+  spy: true
+})
 vi.mock(
   import('@/platform/customNodes/manager/composables/useConflictDetection'),
-  () => ({
-    useConflictDetection: () => ({ runFullConflictAnalysis }) as never
-  })
+  { spy: true }
 )
 
 function registerRefreshCommand() {
@@ -39,19 +30,36 @@ async function applyAndReconnect() {
   vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
   const scope = effectScope()
   onTestFinished(() => scope.stop())
-  const applyChanges = scope.run(() => useApplyChanges())
-  if (!applyChanges) throw new Error('useApplyChanges did not run')
-  await applyChanges.applyChanges()
+  const started = scope.run(() => {
+    const service = useComfyManagerService()
+    vi.spyOn(service, 'rebootComfyUI').mockResolvedValue(null)
+    vi.spyOn(service, 'listInstalledPacks').mockResolvedValue(null)
+    vi.mocked(useComfyManagerService).mockReturnValue(service)
+
+    const detection = useConflictDetection()
+    const runFullConflictAnalysis = vi
+      .spyOn(detection, 'runFullConflictAnalysis')
+      .mockResolvedValue({ success: true, results: [] })
+    vi.mocked(useConflictDetection).mockReturnValue(detection)
+
+    return { applyChanges: useApplyChanges(), runFullConflictAnalysis }
+  })
+  if (!started) throw new Error('useApplyChanges did not run')
+  await started.applyChanges.applyChanges()
   api.dispatchCustomEvent('reconnected')
   await vi.advanceTimersByTimeAsync(0)
-  return applyChanges
+  return {
+    isRestartCompleted: started.applyChanges.isRestartCompleted,
+    runFullConflictAnalysis: started.runFullConflictAnalysis
+  }
 }
 
 describe('useApplyChanges', () => {
   it('refreshes node definitions and reloads the workflow after the restart', async () => {
     const refresh = registerRefreshCommand()
 
-    const { isRestartCompleted } = await applyAndReconnect()
+    const { isRestartCompleted, runFullConflictAnalysis } =
+      await applyAndReconnect()
 
     expect(refresh).toHaveBeenCalledOnce()
     expect(useWorkflowService().reloadCurrentWorkflow).toHaveBeenCalledOnce()
@@ -66,7 +74,8 @@ describe('useApplyChanges', () => {
     })
     const refresh = registerRefreshCommand()
 
-    const { isRestartCompleted } = await applyAndReconnect()
+    const { isRestartCompleted, runFullConflictAnalysis } =
+      await applyAndReconnect()
 
     expect(refresh).not.toHaveBeenCalled()
     expect(useWorkflowService().reloadCurrentWorkflow).not.toHaveBeenCalled()

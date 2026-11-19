@@ -30,8 +30,6 @@ export const useApplyChanges = createSharedComposable(() => {
     const onReconnect = async () => {
       try {
         comfyManagerStore.setStale()
-        // With a boot id the core reconnect refresh refreshes node
-        // definitions and reloads the workflow once for this restart.
         if (!serverReportsBootId()) {
           await useCommandStore().execute('Comfy.RefreshNodeDefinitions')
           await useWorkflowService().reloadCurrentWorkflow()
