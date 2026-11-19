@@ -22,6 +22,13 @@ function renderPanel() {
   return render(ExtensionPanel, { global: { plugins: [testI18n] } })
 }
 
+function loadDisabledExtensionNames(names: string[]) {
+  useSettingStore().$patch({
+    settingValues: { 'Comfy.Extension.Disabled': names }
+  })
+  useExtensionStore().loadDisabledExtensionNames(names)
+}
+
 function loadExtensionPaths(paths: string[], disabledAtBoot: string[]) {
   useSettingStore().$patch({
     settingValues: {
@@ -87,7 +94,8 @@ describe('ExtensionPanel', () => {
   it('toggles selection from anywhere on the row, including cell padding, except its enable switch', async () => {
     const user = userEvent.setup()
     registerExtensions('Alpha')
-    vi.spyOn(useSettingStore(), 'set').mockResolvedValue(undefined)
+    loadDisabledExtensionNames([])
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
     renderPanel()
     const checkbox = screen.getByRole('checkbox', { name: 'Select Alpha' })
     const [checkboxCell, nameCell, switchCell] = within(
@@ -113,9 +121,8 @@ describe('ExtensionPanel', () => {
   it('replaces the selection with the visible rows on select all and clears it on unselect', async () => {
     const user = userEvent.setup()
     registerExtensions('Alpha', 'Zebra')
-    const setSetting = vi
-      .spyOn(useSettingStore(), 'set')
-      .mockResolvedValue(undefined)
+    loadDisabledExtensionNames([])
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
     renderPanel()
     const search = screen.getByRole('combobox', {
       name: 'Search Extensions...'
@@ -136,9 +143,7 @@ describe('ExtensionPanel', () => {
     await user.click(
       await screen.findByRole('menuitem', { name: 'Disable Selected' })
     )
-    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [
-      'Zebra'
-    ])
+    expect(useSettingStore().get('Comfy.Extension.Disabled')).toEqual(['Zebra'])
 
     await user.click(screen.getByRole('checkbox', { name: 'Select Alpha' }))
     await user.type(search, 'Zebra')
@@ -156,9 +161,8 @@ describe('ExtensionPanel', () => {
   it('toggles only the selected extensions and offers a reload while they differ', async () => {
     const user = userEvent.setup()
     registerExtensions('Alpha', 'Zebra')
-    const setSetting = vi
-      .spyOn(useSettingStore(), 'set')
-      .mockResolvedValue(undefined)
+    loadDisabledExtensionNames([])
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
     const reload = vi.spyOn(window.location, 'reload').mockReturnValue()
 
     renderPanel()
@@ -172,9 +176,7 @@ describe('ExtensionPanel', () => {
 
     expect(screen.getByRole('switch', { name: 'Alpha' })).not.toBeChecked()
     expect(screen.getByRole('switch', { name: 'Zebra' })).toBeChecked()
-    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [
-      'Alpha'
-    ])
+    expect(useSettingStore().get('Comfy.Extension.Disabled')).toEqual(['Alpha'])
     await user.click(
       screen.getByRole('button', { name: 'Reload to apply changes' })
     )
@@ -186,7 +188,7 @@ describe('ExtensionPanel', () => {
     )
 
     expect(screen.getByRole('switch', { name: 'Alpha' })).toBeChecked()
-    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [])
+    expect(useSettingStore().get('Comfy.Extension.Disabled')).toEqual([])
     expect(
       screen.queryByRole('button', { name: 'Reload to apply changes' })
     ).not.toBeInTheDocument()
@@ -236,6 +238,8 @@ describe('ExtensionPanel', () => {
 
   it('keeps pending extension state across panel remounts', async () => {
     const user = userEvent.setup()
+    registerExtensions('Alpha')
+    loadDisabledExtensionNames([])
     loadExtensionPaths(['/extensions/agent-cushions/'], [])
     vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
 
@@ -243,6 +247,7 @@ describe('ExtensionPanel', () => {
     await user.click(
       screen.getByRole('switch', { name: 'Extension folder agent-cushions' })
     )
+    await user.click(screen.getByRole('switch', { name: 'Alpha' }))
     firstPanel.unmount()
     renderPanel()
 
@@ -250,6 +255,8 @@ describe('ExtensionPanel', () => {
       screen.getByRole('switch', { name: 'Extension folder agent-cushions' })
     ).not.toBeChecked()
     expect(pendingChangeFor('agent-cushions')).toContain('[-]')
+    expect(screen.getByRole('switch', { name: 'Alpha' })).not.toBeChecked()
+    expect(pendingChangeFor('Alpha')).toContain('[-]')
   })
 
   it('keeps extension controls unavailable until the setting persists', async () => {
@@ -301,6 +308,40 @@ describe('ExtensionPanel', () => {
       expect.objectContaining({
         kind: 'warning',
         title: 'Warning',
+        description: 'The extension change was not saved. Please try again.'
+      })
+    )
+  })
+
+  it('restores a refused extension toggle and warns without offering reload', async () => {
+    const user = userEvent.setup()
+    registerExtensions('Alpha')
+    loadDisabledExtensionNames([])
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(
+      new Response(null, { status: 400, statusText: 'Bad Request' })
+    )
+
+    renderPanel()
+    const extensionSwitch = screen.getByRole('switch', { name: 'Alpha' })
+    await user.click(extensionSwitch)
+
+    await vi.waitFor(() => expect(extensionSwitch).toBeChecked())
+    expect(useSettingStore().get('Comfy.Extension.Disabled')).toEqual([])
+    expect(
+      screen.queryByRole('button', { name: 'Reload to apply changes' })
+    ).not.toBeInTheDocument()
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        message: 'Failed to store disabled extension names: 400 Bad Request'
+      }),
+      {
+        errorType: 'failure_saving_extension_name_setting',
+        surface: 'platform'
+      }
+    )
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        kind: 'warning',
         description: 'The extension change was not saved. Please try again.'
       })
     )
@@ -430,7 +471,8 @@ describe('ExtensionPanel', () => {
         summary: 'Adds cushion controls'
       }
     })
-    const setSetting = vi.spyOn(useSettingStore(), 'set').mockResolvedValue()
+    loadDisabledExtensionNames([])
+    vi.spyOn(api, 'storeSetting').mockResolvedValue(new Response())
 
     renderPanel()
     expect(screen.getAllByText('Created by agent')).toHaveLength(2)
@@ -451,7 +493,7 @@ describe('ExtensionPanel', () => {
       })
     )
 
-    expect(setSetting).toHaveBeenLastCalledWith('Comfy.Extension.Disabled', [
+    expect(useSettingStore().get('Comfy.Extension.Disabled')).toEqual([
       'agent.cushions.toolbar',
       'agent-made.standalone'
     ])
@@ -499,16 +541,15 @@ describe('ExtensionPanel', () => {
   })
 
   it.for([
-    { disabled: false, checked: true },
-    { disabled: true, checked: false }
+    { disabled: false, disabledNames: [], checked: true },
+    { disabled: true, disabledNames: ['Late.Toolbar'], checked: false }
   ])(
     'seeds a late extension switch when disabled is $disabled',
-    async ({ disabled, checked }) => {
-      const extensionStore = useExtensionStore()
-      if (disabled) extensionStore.loadDisabledExtensionNames(['Late.Toolbar'])
+    async ({ disabledNames, checked }) => {
+      loadDisabledExtensionNames(disabledNames)
       renderPanel()
 
-      extensionStore.registerExtension({ name: 'Late.Toolbar' })
+      useExtensionStore().registerExtension({ name: 'Late.Toolbar' })
 
       expect(
         await screen.findByRole('switch', { name: 'Late.Toolbar' })

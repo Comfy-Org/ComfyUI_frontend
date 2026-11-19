@@ -22,13 +22,18 @@ import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { tagPlatformUrl } from '@/platform/workspace/utils/platformLink'
 import { useAuthStore } from '@/stores/authStore'
 
 const ISSUE_TIMEOUT_MS = 15_000
 
 /** The billing flow billing-web opens after the exchange, or Platform's billing page, which takes none. */
 export type BillingHandoffRequest =
-  | { readonly intent: 'top-up'; readonly amountCents: number }
+  | {
+      readonly intent: 'top-up'
+      readonly amountCents: number
+      readonly autoTopUp?: BillingHandoffCreateRequest['auto_top_up']
+    }
   | { readonly intent: 'subscription' }
   | { readonly receiver: 'platform' }
 
@@ -75,6 +80,9 @@ function issueBody(
       ? { receiver: request.receiver }
       : { receiver: 'billing_web', intent: request.intent }),
     ...('amountCents' in request ? { amount_cents: request.amountCents } : {}),
+    ...('autoTopUp' in request && request.autoTopUp !== undefined
+      ? { auto_top_up: request.autoTopUp }
+      : {}),
     client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
   }
 }
@@ -346,7 +354,9 @@ export async function openPlatformBillingHandoff(
     new AbortController().signal
   )
   const target =
-    issued.status === 'ok' ? withPlatformView(issued.url, view) : undefined
+    issued.status === 'ok'
+      ? withPlatformView(tagPlatformUrl(issued.url), view)
+      : undefined
   if (target !== undefined) return tab.navigate(target)
   tab.close()
   useToast().error(

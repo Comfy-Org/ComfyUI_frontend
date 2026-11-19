@@ -1,13 +1,14 @@
 import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { readonly, shallowRef, watch } from 'vue'
-import { z } from 'zod'
+import type { z } from 'zod'
 
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 
-const zOpenOnCloudRollout = z.object({
-  open_on_cloud_enabled: z.boolean(),
-  open_on_cloud_use_local_agent_enabled: z.boolean().optional()
+const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
+  open_on_cloud_enabled: true,
+  open_on_cloud_use_local_agent_enabled: true
 })
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
@@ -26,19 +27,19 @@ function reportRolloutReadFailure(cause: unknown): void {
 }
 
 async function readRollout(
-  getToken: () => Promise<string | undefined>,
+  getToken: (() => Promise<string | undefined>) | undefined,
   signal: AbortSignal
 ): Promise<void> {
   try {
-    const token = await getToken()
-    if (!token) return
+    const token = await getToken?.()
+    signal.throwIfAborted()
 
     const endpoint = new URL('/api/features', getBuildTimeComfyCloudBaseUrl())
     if (endpoint.protocol !== 'https:') return
     const response = await fetch(endpoint, {
       cache: 'no-store',
       credentials: 'omit',
-      headers: { Authorization: `Bearer ${token}` },
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       redirect: 'error',
       signal: combineAbortSignals([signal, AbortSignal.timeout(5_000)])
     })
@@ -49,7 +50,7 @@ async function readRollout(
       return
     }
     const served = zOpenOnCloudRollout.safeParse(await response.json())
-    if (signal.aborted) return
+    signal.throwIfAborted()
     if (served.success) rollout.value = served.data
     else reportRolloutReadFailure(new Error('Invalid Cloud rollout response'))
   } catch (error) {
@@ -67,7 +68,7 @@ export function startLocalOpenOnCloudRollout(
       const controller = new AbortController()
       onCleanup(() => controller.abort())
       rollout.value = undefined
-      if (userId) void readRollout(getToken, controller.signal)
+      void readRollout(userId ? getToken : undefined, controller.signal)
     },
     { immediate: true, flush: 'sync' }
   )

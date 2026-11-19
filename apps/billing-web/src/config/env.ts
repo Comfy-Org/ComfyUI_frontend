@@ -77,6 +77,12 @@ export function cloudBaseUrlFor(env: BillingWebEnv): string {
   return CLOUD_BASE_URLS[env]
 }
 
+const PLATFORM_BASE_URLS: Record<BillingWebEnv, string> = {
+  production: 'https://platform.comfy.org',
+  staging: 'https://stagingplatform.comfy.org',
+  test: 'https://testplatform.comfy.org'
+}
+
 type EnvSource = Record<string, unknown>
 
 function readString(source: EnvSource, name: string): string | undefined {
@@ -91,6 +97,8 @@ export const BILLING_WEB_ENV: BillingEnvironment = resolveDeployedBillingWebEnv(
 )
 
 export const CLOUD_BASE_URL = cloudBaseUrlFor(BILLING_WEB_ENV)
+
+export const PLATFORM_BASE_URL = PLATFORM_BASE_URLS[BILLING_WEB_ENV]
 
 /**
  * Absent in a deployment that configures no key: the checkout form then
