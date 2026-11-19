@@ -146,24 +146,48 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
   const signIn = new SignInDialog(page)
   await signIn.emailInput.fill(email)
   await signIn.passwordInput.fill(password)
-  const workspaceFeatures = page.waitForResponse(
-    async (response) =>
-      response.url() === `${staging}/api/features` &&
-      response.ok() &&
-      !!(await response.request().headerValue('authorization'))
-  )
+  const workspaceFeatures = new Array<Response>()
+  page.on('response', (response) => {
+    const url = new URL(response.url())
+    if (url.origin === staging && url.pathname === '/api/features') {
+      console.log(`Staging feature response HTTP ${response.status()}`)
+      workspaceFeatures.push(response)
+    }
+  })
+  page.on('requestfailed', (request) => {
+    const url = new URL(request.url())
+    if (url.origin === staging || url.origin === firebaseAuth)
+      console.log(`Browser request failed for ${url.origin}${url.pathname}`)
+  })
   const loginResponse = page.waitForResponse(
     (response) =>
       new URL(response.url()).origin === firebaseAuth &&
       new URL(response.url()).pathname === '/v1/accounts:signInWithPassword' &&
-      response.request().method() === 'POST'
+      response.request().method() === 'POST',
+    { timeout: 25_000 }
   )
   await signIn.signInButton.click()
   const login = await loginResponse
+  console.log(`Staging Firebase sign-in responded HTTP ${login.status()}`)
   if (!login.ok())
     throw new Error(`Managed staging sign-in failed (HTTP ${login.status()})`)
-  await expect(signIn.emailInput).toBeHidden()
-  const features = await workspaceFeatures
+  await expect(signIn.emailInput).toBeHidden({ timeout: 25_000 })
+  console.log('Local editor accepted the sign-in')
+  let features: Response | undefined
+  await expect
+    .poll(
+      async () => {
+        for (const response of workspaceFeatures) {
+          if (await response.request().headerValue('authorization')) {
+            features = response
+            return response.status()
+          }
+        }
+      },
+      { timeout: 25_000, message: 'Authorized staging API features' }
+    )
+    .toBe(200)
+  if (!features) throw new Error('No authorized staging feature response')
   const auth = await verifyWorkspace(request, features)
   console.log('Verified managed account and eligible staging workspace')
   approved.authorization = auth
