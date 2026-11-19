@@ -1,0 +1,75 @@
+name: 'One-time staging model upload smoke'
+
+on:
+  push:
+    branches: [codex/dplat-3611-staging-upload-smoke]
+    paths:
+      - '.github/workflows/ci-dplat-3611-staging-upload-smoke.yaml'
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  upload-one-synthetic-model:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.actor == 'huang47' && github.run_attempt == 1
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    container:
+      image: ghcr.io/comfy-org/comfyui-ci-container:0.0.28
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+      - name: Build the editor configured for staging
+        shell: bash
+        run: pnpm exec vite build --config vite.config.mts
+        env:
+          USE_PROD_CONFIG: 'false'
+          VITE_STAGING_CLOUD_BASE_URL: https://testcloud.comfy.org
+          VITE_STAGING_API_BASE_URL: https://stagingapi.comfy.org
+          VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
+      - name: Start single-user Core with the synthetic LoRA
+        working-directory: /ComfyUI
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p models/loras "$RUNNER_TEMP/comfyui-smoke-user"
+          printf '%s' 'iAAAAAAAAAB7Il9fbWV0YWRhdGFfXyI6eyJwdXJwb3NlIjoiRFBMQVQtMzYxMSBzdGFnaW5nIHNtb2tlIHRlc3QifSwibG9yYV91bmV0X3Ntb2tlLmFscGhhIjp7ImR0eXBlIjoiRjMyIiwic2hhcGUiOlsxXSwiZGF0YV9vZmZzZXRzIjpbMCw0XX19ICAgAACAPw==' \
+            | base64 -d > models/loras/dplat3611-staging-smoke-20261119-172601.safetensors
+          python3 main.py --cpu --listen 127.0.0.1 \
+            --user-directory "$RUNNER_TEMP/comfyui-smoke-user" \
+            --front-end-root "$GITHUB_WORKSPACE/dist" --disable-all-custom-nodes \
+            >"$RUNNER_TEMP/comfyui-staging-smoke.log" 2>&1 &
+          wait-for-it --service 127.0.0.1:8188 -t 90
+          curl -fsS http://127.0.0.1:8188/api/experiment/models/loras \
+            | python3 -c 'import json, sys; assert any(m.get("name") == "dplat3611-staging-smoke-20261119-172601.safetensors" and m.get("size") == 148 for m in json.load(sys.stdin))'
+      - name: Install Chromium
+        run: pnpm exec playwright install chromium
+      - name: Verify staging sign-in, store one model, and check compatibility
+        shell: bash
+        run: |
+          pnpm exec playwright test browser_tests/tests/liveCloud/dplat3611StagingUpload.spec.ts \
+            --project=cloud-live --workers=1 --retries=0 --trace=off --reporter=line \
+            --output="$RUNNER_TEMP/dplat3611-staging-smoke"
+        env:
+          SMOKE_ACCOUNT_EMAIL: ${{ vars.OPEN_ON_CLOUD_PREVIEW_SMOKE_EMAIL }}
+          SMOKE_ACCOUNT_PASSWORD: ${{ secrets.OPEN_ON_CLOUD_PREVIEW_SMOKE_PASSWORD }}
+          STAGING_SMOKE_FIXTURE: /ComfyUI/models/loras
+          PLAYWRIGHT_CLOUD_LIVE: '1'
+          PLAYWRIGHT_TEST_URL: http://127.0.0.1:8188
+          PLAYWRIGHT_SETUP_API_URL: http://127.0.0.1:8188
+      - name: Save the verified end-state
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f
+        with:
+          name: staging-model-upload-proof
+          path: ${{ runner.temp }}/dplat3611-staging-smoke/**/staging-upload-verified.png
+          if-no-files-found: error
+          retention-days: 7

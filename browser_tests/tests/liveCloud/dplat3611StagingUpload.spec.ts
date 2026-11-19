@@ -1,0 +1,200 @@
+import { expect } from '@playwright/test'
+import type { APIRequestContext, Response } from '@playwright/test'
+import { join } from 'node:path'
+
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
+import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationFixture'
+
+const editor = 'http://127.0.0.1:8188'
+const cloud = 'https://testcloud.comfy.org'
+const staging = 'https://stagingapi.comfy.org'
+const firebaseAuth = 'https://identitytoolkit.googleapis.com'
+const filename = 'dplat3611-staging-smoke-20261119-172601.safetensors'
+
+function smokeInputs() {
+  const email = process.env.SMOKE_ACCOUNT_EMAIL
+  const password = process.env.SMOKE_ACCOUNT_PASSWORD
+  const localFixture = process.env.STAGING_SMOKE_FIXTURE
+  if (!email || !password || !localFixture)
+    throw new Error('Managed smoke sign-in or model fixture is unavailable')
+
+  return { email, password, localFixture }
+}
+
+async function readStagingFirebaseKey(request: APIRequestContext) {
+  const config = await request.get(`${cloud}/api/features`, { maxRedirects: 0 })
+  expect(config.status()).toBe(200)
+  const firebase = (await config.json()).firebase_config
+  if (
+    firebase?.projectId !== 'dreamboothy-dev' ||
+    typeof firebase?.apiKey !== 'string'
+  )
+    throw new Error('Staging Firebase project could not be verified')
+  return firebase.apiKey as string
+}
+
+async function verifyWorkspace(request: APIRequestContext, features: Response) {
+  const auth = await features.request().headerValue('authorization')
+  if (!auth) throw new Error('Workspace authorization unavailable')
+  const current = await request.get(`${staging}/api/workspaces/current`, {
+    headers: { Authorization: auth },
+    maxRedirects: 0
+  })
+  if (!current.ok())
+    throw new Error(
+      `Staging workspace could not be verified (HTTP ${current.status()})`
+    )
+  const workspace = await current.json()
+  if (workspace.type !== 'personal' || workspace.role !== 'owner')
+    throw new Error(
+      'The managed account must be scoped to its own staging workspace'
+    )
+  const folders = (await features.json()).model_upload_folders
+  if (!Array.isArray(folders) || !folders.includes('loras'))
+    throw new Error('LoRA uploads are disabled for the staging smoke account')
+  return auth
+}
+
+const allowed = [
+  editor,
+  cloud,
+  staging,
+  firebaseAuth,
+  'https://securetoken.googleapis.com',
+  'https://dreamboothy-dev.firebaseapp.com',
+  'https://www.gstatic.com',
+  'https://apis.google.com',
+  'https://fonts.googleapis.com',
+  'https://fonts.gstatic.com',
+  'https://media.comfy.org',
+  'https://storage.googleapis.com'
+]
+
+test.use({
+  baseURL: editor,
+  serviceWorkers: 'block',
+  billingNewUx: false,
+  liveNetworkOrigins: allowed
+})
+
+test('stores one synthetic model in the managed staging smoke workspace', async ({
+  context,
+  page,
+  request
+}, info) => {
+  test.setTimeout(240_000)
+  const { email, password, localFixture } = smokeInputs()
+  const firebaseKey = await readStagingFirebaseKey(request)
+
+  const approved = { authorization: undefined as string | undefined }
+  let starts = 0
+  const apiUpload = '/api/assets/uploads'
+
+  await context.route('**/*', async (route) => {
+    const req = route.request()
+    const url = new URL(req.url())
+    if (
+      url.origin === firebaseAuth &&
+      url.searchParams.get('key') !== firebaseKey
+    ) {
+      await route.abort('blockedbyclient')
+      return
+    }
+    if (url.pathname.startsWith(apiUpload) && req.method() === 'POST') {
+      const auth = await req.headerValue('authorization')
+      if (
+        url.origin !== staging ||
+        !approved.authorization ||
+        auth !== approved.authorization
+      ) {
+        await route.abort('blockedbyclient')
+        return
+      }
+      if (url.pathname === apiUpload && starts++ !== 0) {
+        await route.abort('blockedbyclient')
+        return
+      }
+    }
+    const storage =
+      starts === 1 &&
+      url.protocol === 'https:' &&
+      /(?:^|\.)storage\.googleapis\.com$/.test(url.hostname)
+    if (allowed.includes(url.origin) || storage) await route.fallback()
+    else await route.abort('blockedbyclient')
+  })
+
+  const comfyPage = new ComfyPage(page, request)
+  await comfyPage.goto()
+  await comfyPage.waitForAppReady()
+  const templates = page.getByRole('dialog', {
+    name: 'Get Started with a Template',
+    exact: true
+  })
+  if (await templates.isVisible())
+    await templates
+      .getByRole('button', { name: 'Close dialog', exact: true })
+      .press('Escape')
+  await comfyPage.workflow.loadWorkflow('openOnCloud/dplat3611-staging-upload')
+
+  await page.getByTestId('cloud-button').click()
+  const card = page.getByTestId('missing-models-card')
+  await expect(card.getByText(filename)).toBeVisible()
+  await card
+    .getByRole('button', { name: 'Sign in to upload', exact: true })
+    .click()
+  const signIn = new SignInDialog(page)
+  await signIn.emailInput.fill(email)
+  await signIn.passwordInput.fill(password)
+  const workspaceFeatures = page.waitForResponse(
+    async (response) =>
+      response.url() === `${staging}/api/features` &&
+      response.ok() &&
+      !!(await response.request().headerValue('authorization'))
+  )
+  const loginResponse = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).origin === firebaseAuth &&
+      new URL(response.url()).pathname === '/v1/accounts:signInWithPassword' &&
+      response.request().method() === 'POST'
+  )
+  await signIn.signInButton.click()
+  const login = await loginResponse
+  if (!login.ok())
+    throw new Error(`Managed staging sign-in failed (HTTP ${login.status()})`)
+  await expect(signIn.emailInput).toBeHidden()
+  const features = await workspaceFeatures
+  const auth = await verifyWorkspace(request, features)
+  console.log('Verified managed account and eligible staging workspace')
+  approved.authorization = auth
+
+  await expect(
+    card.getByRole('heading', { name: 'Upload 1 model', exact: true })
+  ).toBeVisible()
+  await card
+    .getByLabel(`Choose file for ${filename}`)
+    .setInputFiles(join(localFixture, filename))
+  const accepted = page.waitForResponse(
+    (response) =>
+      new URL(response.url()).origin === staging &&
+      new URL(response.url()).pathname.startsWith(`${apiUpload}/`) &&
+      new URL(response.url()).pathname.endsWith('/complete') &&
+      response.request().method() === 'POST'
+  )
+  await card.getByTestId('missing-models-upload').click()
+  const completed = await accepted
+  if (!completed.ok())
+    throw new Error(`Staging completion failed (HTTP ${completed.status()})`)
+  console.log('Staging accepted the synthetic model upload')
+  await expect(card.getByLabel('Uploaded', { exact: true })).toBeVisible({
+    timeout: 90_000
+  })
+  console.log('Staging confirmed the stored model')
+  await card.getByRole('button', { name: 'Check again', exact: true }).click()
+  const ready = page.getByTestId('run-on-cloud-card')
+  await expect(ready).toBeVisible()
+  expect(starts).toBe(1)
+  await ready.screenshot({
+    path: info.outputPath('staging-upload-verified.png')
+  })
+})
