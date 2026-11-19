@@ -20,8 +20,7 @@ import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOu
 import {
   isSubgraphInput,
   reorderSubgraphInputs,
-  reorderSubgraphOutputs,
-  subgraphInputHasWidget
+  reorderSubgraphOutputs
 } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -38,6 +37,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 import SubgraphInputValue from './SubgraphInputValue.vue'
 import { useSubgraphIoLayout } from './useSubgraphIoLayout'
 import { useSubgraphIoReorder } from './useSubgraphIoReorder'
+
+type Port = TNode['allSlots'][number]
 
 const { ioNode } = defineProps<{ ioNode: TNode }>()
 
@@ -125,7 +126,7 @@ function sourceTitleOf(source: EditableInputValueSource | undefined) {
     : t('subgraphInputValues.locateSource')
 }
 
-function portFieldsOf(port: TNode['allSlots'][number]) {
+function portFieldsOf(port: Port) {
   const { direction } = side.value
   const isAddPort = port === ioNode.emptySlot
   return {
@@ -158,26 +159,33 @@ function sourceFieldsOf(
 }
 
 const sections = computed(() => {
-  const ports: TNode['allSlots'][number][] = [...slots.value]
+  const ports: Port[] = [...slots.value]
   const [addPort, interfacePorts] = partition(
     ports,
     (port) => port === ioNode.emptySlot
   )
-  return [
+  const groups = [
     ...partition(
       interfacePorts,
-      (port) => !isSubgraphInput(port) || !subgraphInputHasWidget(port)
+      (port) =>
+        !isSubgraphInput(port) || port.getConnectedWidgets().length === 0
     ),
     addPort
   ]
+  return groups.map((group, index) => {
+    const first = groups
+      .slice(0, index)
+      .reduce((count, earlier) => count + earlier.length, 0)
+    return { ports: group, first, last: first + group.length - 1 }
+  })
 })
 
 const rows = computed(() => {
   const editedWidgets = new Set<WidgetId>()
-  const ports: TNode['allSlots'][number][] = [...slots.value]
-  return sections.value.flatMap((section, sectionIndex) =>
-    section.map((port) => ({
-      section: sectionIndex,
+  const ports: Port[] = [...slots.value]
+  return sections.value.flatMap(({ ports: group, first, last }) =>
+    group.map((port) => ({
+      section: { first, last },
       slotIndex: ports.indexOf(port),
       ...portFieldsOf(port),
       ...sourceFieldsOf(
@@ -209,7 +217,7 @@ const linkDragSource = computed(() =>
     ? canvasStore.canvas?.linkConnector.renderLinks[0]?.fromSlot
     : undefined
 )
-function isDimmed(port: TNode['allSlots'][number]) {
+function isDimmed(port: Port) {
   const from = linkDragSource.value
   return !!from && !port.isValidTarget(from)
 }
@@ -242,22 +250,17 @@ const { draggingIndex, rowStyle, startDrag, stepWithKeyboard, cancelDrag } =
         ) ?? [])
       ].slice(0, ioNode.slots.length),
     panel,
-    sectionOf,
+    (index) => rows.value[index].section,
     reorder
   )
 
 watch(
-  () => rows.value.map(({ port, section }) => `${port.id}:${section}`).join(),
+  () =>
+    rows.value
+      .map(({ port, section }) => `${port.id}:${section.first}:${section.last}`)
+      .join(),
   cancelDrag
 )
-
-function sectionOf(index: number) {
-  const { section } = rows.value[index]
-  return {
-    first: rows.value.findIndex((row) => row.section === section),
-    last: rows.value.findLastIndex((row) => row.section === section)
-  }
-}
 
 function isDragged(index: number) {
   return draggingIndex.value === index || undefined
