@@ -373,6 +373,7 @@ export function useAgentConsent() {
       panelStore.open('error_context')
       panelStore.pendingErrorContext = errorContext
     }
+    if (errorContext && saved && identity.value !== saved) return
     if (
       draft &&
       !composerStore.draft &&

@@ -1515,7 +1515,7 @@ describe('useAgentConsent', () => {
       expect(panel.pendingErrorContext).toEqual(ERROR_CONTEXT)
     })
 
-    it('drops the error chip when another account takes over while the workflow restores', async () => {
+    it('drops the error chip and the draft when another account takes over while the workflow restores', async () => {
       signedIn()
       const userId = ref('account-a')
       useCurrentUser().resolvedUserInfo = computed(() => ({
@@ -1527,7 +1527,7 @@ describe('useAgentConsent', () => {
       const consentStore = useAgentConsentStore()
 
       const resume = useAgentConsent().resumeAcceptAfterReload({
-        draft: '',
+        draft: 'make it blue',
         errorContext: ERROR_CONTEXT
       })
       await vi.waitFor(() => expect(consentStore.accepted).toBe(true))
@@ -1540,6 +1540,7 @@ describe('useAgentConsent', () => {
 
       expect(panel.isOpen).toBe(false)
       expect(panel.pendingErrorContext).toBeNull()
+      expect(useAgentComposerStore().draft).toBe('')
     })
 
     it('leaves the panel closed and drops the error chip when the post-reload save fails', async () => {
