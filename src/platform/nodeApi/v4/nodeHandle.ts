@@ -7,10 +7,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { isReissuable } from '@/platform/nodeApi/shared/documentHandles'
-import type {
-  DocumentHandles,
-  GraphResolver
-} from '@/platform/nodeApi/shared/documentHandles'
+import type { DocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { savedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
@@ -45,20 +42,21 @@ export function createNodeHandles(
   membersFor: (handle: NodeHandleReads) => NodeHandleMembers
 ): NodeHandles {
   const copyOfSaved = savedCopier()
-  const cache = handles.createCache<NodeHandle>(
-    (graph, id) => graph.getNodeById(toNodeId(id)) !== null,
-    (graph, id) => isReissuable(id, graph.state.lastNodeId)
+  const cache = handles.createCache<NodeHandle, LiveNode>((graph, id) =>
+    isReissuable(id, graph.state.lastNodeId)
   )
-  const liveNodes = new WeakMap<object, () => LiveNode | undefined>()
 
   function handleFor(graph: LGraph, node: LGraphNode): NodeHandle {
-    return cache.handleFor(graph, node.id, (resolveGraph) => {
-      const locate = locator(resolveGraph, node.id)
-      const reads = nodeReads(graph.id, node.id, locate, copyOfSaved)
-      const handle = Object.freeze(Object.assign(reads, membersFor(reads)))
-      liveNodes.set(handle, locate)
-      return handle
-    })
+    const { id } = node
+    return cache.handleFor(
+      graph,
+      String(id),
+      (current) => liveNode(current, id),
+      (locate) => {
+        const reads = nodeReads(graph.id, id, locate, copyOfSaved)
+        return Object.freeze(Object.assign(reads, membersFor(reads)))
+      }
+    )
   }
 
   return {
@@ -74,22 +72,13 @@ export function createNodeHandles(
         )
       )
     },
-    locator: (value) =>
-      typeof value === 'object' && value !== null
-        ? liveNodes.get(value)
-        : undefined
+    locator: cache.locator
   }
 }
 
-function locator(
-  resolveGraph: GraphResolver,
-  id: NodeId
-): () => LiveNode | undefined {
-  return () => {
-    const graph = resolveGraph()
-    const node = graph?.getNodeById(id)
-    return graph && node ? { graph, node } : undefined
-  }
+function liveNode(graph: LGraph, id: NodeId): LiveNode | undefined {
+  const node = graph.getNodeById(id)
+  return node ? { graph, node } : undefined
 }
 
 function nodeReads(

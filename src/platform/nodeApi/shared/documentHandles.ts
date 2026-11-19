@@ -3,18 +3,26 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 /** Finds a handle's graph again, or nothing once its document or graph is gone. */
 export type GraphResolver = () => LGraph | undefined
 
-interface Entry<THandle extends object> {
+interface Entry<THandle extends object, TLive> {
   readonly handle: THandle
   readonly resolveGraph: GraphResolver
+  readonly locate: () => TLive | undefined
   retire(): void
 }
 
-interface HandleCache<THandle extends object> {
+interface HandleCache<THandle extends object, TLive> {
+  /** The one handle for `key` in `graph`. `find` looks for the entity in a graph; `make` builds the handle from what finds it again. */
   handleFor(
     graph: LGraph,
     key: string,
-    create: (resolveGraph: GraphResolver) => THandle
+    find: (graph: LGraph) => TLive | undefined,
+    make: (
+      locate: () => TLive | undefined,
+      resolveGraph: GraphResolver
+    ) => THandle
   ): THandle
+  /** For a handle made here, what finds its entity in the handle's own graph and document; `undefined` for anything else. */
+  locator(value: unknown): (() => TLive | undefined) | undefined
 }
 
 interface Retirable {
@@ -27,14 +35,10 @@ export interface DocumentHandles {
   beginDocument(): void
   /** Retires each handle whose entity is gone and whose key the graph could give to a new entity. */
   afterHistoryRestore(): void
-  /**
-   * `exists` says whether the entity named `key` is still in a graph; `reissuable`, whether the
-   * graph could give `key` to a new entity. Unless it says no, a restore retires a handle whose entity is gone.
-   */
-  createCache<THandle extends object>(
-    exists: (graph: LGraph, key: string) => boolean,
+  /** `reissuable` says whether the graph could give `key` to a new entity; unless it says no, a restore retires a handle whose entity is gone. */
+  createCache<THandle extends object, TLive>(
     reissuable?: (graph: LGraph, key: string) => boolean
-  ): HandleCache<THandle>
+  ): HandleCache<THandle, TLive>
   /** True if `value` is a handle made here. */
   owns(value: unknown): boolean
 }
@@ -69,19 +73,22 @@ export function createDocumentHandles(): DocumentHandles {
     afterHistoryRestore() {
       for (const cache of caches) cache.retireGone()
     },
-    createCache<THandle extends object>(
-      exists: (graph: LGraph, key: string) => boolean,
+    createCache<THandle extends object, TLive>(
       reissuable: (graph: LGraph, key: string) => boolean = () => true
-    ): HandleCache<THandle> {
-      const entriesByGraph = new Map<string, Map<string, Entry<THandle>>>()
+    ): HandleCache<THandle, TLive> {
+      const entriesByGraph = new Map<
+        string,
+        Map<string, Entry<THandle, TLive>>
+      >()
+      const locators = new WeakMap<object, () => TLive | undefined>()
       caches.add({
         clear: () => entriesByGraph.clear(),
         retireGone() {
           for (const entries of entriesByGraph.values()) {
             for (const [key, entry] of entries) {
+              if (entry.locate() !== undefined) continue
               const graph = entry.resolveGraph()
-              if (graph && (exists(graph, key) || !reissuable(graph, key)))
-                continue
+              if (graph && !reissuable(graph, key)) continue
               entry.retire()
               entries.delete(key)
             }
@@ -89,7 +96,7 @@ export function createDocumentHandles(): DocumentHandles {
         }
       })
       return {
-        handleFor(graph, key, create) {
+        handleFor(graph, key, find, make) {
           let entries = entriesByGraph.get(graph.id)
           if (!entries) {
             entries = new Map()
@@ -99,11 +106,20 @@ export function createDocumentHandles(): DocumentHandles {
           if (existing) return existing.handle
 
           const { resolveGraph, retire } = followGraph(graph)
-          const handle = create(resolveGraph)
+          const locate = () => {
+            const current = resolveGraph()
+            return current && find(current)
+          }
+          const handle = make(locate, resolveGraph)
           handlesMade.add(handle)
-          entries.set(key, { handle, resolveGraph, retire })
+          locators.set(handle, locate)
+          entries.set(key, { handle, resolveGraph, locate, retire })
           return handle
-        }
+        },
+        locator: (value) =>
+          typeof value === 'object' && value !== null
+            ? locators.get(value)
+            : undefined
       }
     },
     owns: (value) =>
