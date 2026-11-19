@@ -4599,6 +4599,12 @@ export const zAgentTurnAccepted = z.object({
 export const zAgentToolCallData = z.object({
   doc_lineage_seq: z.int().gte(1).optional(),
   doc_seq: z.int().gte(1).optional(),
+  download: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(/^[^\x00\n\r\t]+$/)
+    .optional(),
   duration_ms: z.int().optional(),
   error_code: z.string().optional(),
   job_id: z
