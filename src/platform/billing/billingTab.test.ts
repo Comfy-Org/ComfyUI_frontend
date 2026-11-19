@@ -155,7 +155,7 @@ describe('reserveSinglePurchaseTab', () => {
       closed: false,
       focus: vi.fn(),
       close: vi.fn(),
-      location: { href: '' }
+      location: { href: '', origin: 'https://billing.comfy.org' }
     }
   }
 
@@ -206,4 +206,20 @@ describe('reserveSinglePurchaseTab', () => {
       expect(opened[0].focus.mock.calls.length > 0).toBe(tabs === 1)
     }
   )
+
+  it('sends the reused tab back to the purchase page after its Back left it on this app', () => {
+    const opened = stubOpenTabs()
+    const reserve = reserveSinglePurchaseTab(() => true)
+
+    reserve()?.navigate(checkoutUrl)
+    opened[0].location = {
+      href: window.location.href,
+      origin: window.location.origin
+    }
+    reserve()?.navigate(checkoutUrl)
+
+    expect(opened).toHaveLength(1)
+    expect(opened[0].location.href).toBe(checkoutUrl)
+    expect(opened[0].focus).toHaveBeenCalled()
+  })
 })

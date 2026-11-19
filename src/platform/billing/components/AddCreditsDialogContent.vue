@@ -182,13 +182,24 @@ async function createHandoffCheckout(
 }
 
 let billingWebOpened = false
-const reservePurchaseTab = reserveSinglePurchaseTab(() => billingWebOpened)
+let popupBlocked = false
+const reserveReusedTab = reserveSinglePurchaseTab(() => billingWebOpened)
+
+function reservePurchaseTab() {
+  const tab = reserveReusedTab()
+  if (tab === null) popupBlocked = true
+  return tab
+}
 
 function billingWebUrl(
   amountCents: number,
   autoTopUp: AutoTopUpActivation | undefined
 ): string | undefined {
-  if (!flags.unifiedBillingSettingsEnabled || handsPopupsToSystemBrowser())
+  if (
+    popupBlocked ||
+    !flags.unifiedBillingSettingsEnabled ||
+    handsPopupsToSystemBrowser()
+  )
     return undefined
   return billingWebTopupUrl(
     amountCents,

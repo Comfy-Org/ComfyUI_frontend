@@ -737,6 +737,48 @@ describe('FullPageTopupView paying once', () => {
     }
   )
 
+  it.for<{ name: string; payment: 'saved card' | 'new card' }>([
+    { name: 'a saved card', payment: 'saved card' },
+    { name: 'a new card', payment: 'new card' }
+  ])(
+    'a reload after an unanswered Pay with $name resends that purchase under its key before offering Pay, and charges nothing new',
+    async ({ payment }) => {
+      const methods = {
+        status: 'ok' as const,
+        value: payment === 'saved card' ? [VISA, MASTERCARD] : []
+      }
+      const fake = renderTopup({
+        topupQuote: PAYS_ONCE,
+        paymentMethods: methods
+      })
+      fake.createInteractiveTopup.mockResolvedValueOnce(NO_ANSWER)
+      await screen.findByText('Add credits · Acme Team')
+      if (payment === 'saved card') await userEvent.click(payButton())
+      else {
+        readyCardForm()
+        form.emit('confirm', 'ctoken_1', 'card')
+      }
+      await waitFor(() =>
+        expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+      )
+
+      cleanup()
+      const reloaded = renderTopup({
+        topupQuote: PAYS_ONCE,
+        paymentMethods: methods,
+        topup: SUCCEEDED
+      })
+
+      expect(
+        await screen.findByRole('heading', { name: '5,275 credits added' })
+      ).toBeInTheDocument()
+      expect(reloaded.createInteractiveTopup).toHaveBeenCalledOnce()
+      const [sent] = fake.createInteractiveTopup.mock.calls[0]
+      const [resent] = reloaded.createInteractiveTopup.mock.calls[0]
+      expect(resent).toStrictEqual(sent)
+    }
+  )
+
   it.for<{ name: string; answer: TopupResult }>([
     { name: 'a 503', answer: NO_ANSWER },
     {
@@ -1149,6 +1191,27 @@ describe('FullPageTopupView paying once', () => {
       )
     }
   )
+
+  it('charges the method on file, never in this page, when the tab cannot keep an unanswered purchase through a reload', async () => {
+    const refuse = vi
+      .spyOn(sessionStorage, 'setItem')
+      .mockImplementation(() => {
+        throw new DOMException('blocked', 'SecurityError')
+      })
+    const fake = renderTopup({
+      topupQuote: PAYS_ONCE,
+      topup: SUCCEEDED,
+      paymentMethods: { status: 'ok', value: [{ ...VISA, is_default: true }] }
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    expect(form.mounts).toBe(0)
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(fake.createTopupCheckout).toHaveBeenCalledOnce())
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+    refuse.mockRestore()
+  })
 
   it('keeps charging the method on file when the quote names no payment configuration', async () => {
     const fake = renderTopup({

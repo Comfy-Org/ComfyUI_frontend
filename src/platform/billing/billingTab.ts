@@ -64,9 +64,23 @@ function navigableTab(tab: Window): BillingTab {
   }
 }
 
+function showsThisOrigin(tab: Window): boolean {
+  try {
+    return tab.location.origin === window.location.origin
+  } catch {
+    return false
+  }
+}
+
 function focusedTab(tab: Window): BillingTab {
   tab.focus()
-  return { navigate: () => tab.focus(), close: () => {} }
+  return {
+    navigate: (url) => {
+      if (showsThisOrigin(tab)) tab.location.href = url
+      tab.focus()
+    },
+    close: () => {}
+  }
 }
 
 const SYSTEM_BROWSER_TAB: BillingTab = {

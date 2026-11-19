@@ -919,6 +919,26 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
     }
   )
 
+  it('recovers a blocked popup on the hosted checkout, so following its link and then Reopen leave no second billing-web page to pay on', async () => {
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
+    vi.mocked(window.open).mockReturnValueOnce(null)
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    const link = await screen.findByTestId('add-credits-open-checkout')
+    expect(link).toHaveAttribute('href', CHECKOUT_URL)
+    await user.click(link)
+    await user.click(
+      await screen.findByRole('button', { name: 'Reopen checkout' })
+    )
+
+    await waitFor(() =>
+      expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(CHECKOUT_URL)
+    )
+    expect(hoisted.createHostedCheckout).toHaveBeenCalledTimes(2)
+    expect(hoisted.cloudTabNavigate).not.toHaveBeenCalledWith(TOPUP_PAGE)
+  })
+
   it('keeps the hosted checkout on Desktop, where the browser tab it opens cannot be found again', async () => {
     vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
     vi.stubGlobal('__comfyDesktop2', {})
