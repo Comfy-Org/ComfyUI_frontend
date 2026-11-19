@@ -382,15 +382,57 @@ describe('useLocalModelUploadStore', () => {
     expect(store.upload).toEqual({
       phase: 'failed',
       reason: 'storagePending',
-      message: undefined
+      message: undefined,
+      models
     })
+    expect(store.activeModels).toEqual(models)
 
+    store.checkAgain()
+    store.reset([ckpt])
+    expect(store.pickOf(lora).status).toBe('submitted')
     store.reset([lora])
     await store.prepare([lora])
     await store.start([lora])
 
     expect(transfer).toHaveBeenCalledOnce()
     expect(poll.mock.calls.map(([id]) => id)).toEqual([TASK_ID, TASK_ID])
+    expect(store.pickOf(lora).status).toBe('stored')
+  })
+
+  it('retries completion with the same staged upload after a lost response', async () => {
+    const staged = { uploadId: 'staged-upload', resumed: true }
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockImplementationOnce(async (_file, options) => {
+        options.onCompleting?.(staged)
+        return { ok: false, reason: 'failed' }
+      })
+      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    const models = [lora]
+    const store = await prepared(models)
+    store.choose(lora, loraFile)
+
+    await store.start(models)
+    expect(store.upload).toMatchObject({
+      phase: 'failed',
+      reason: 'storagePending'
+    })
+    expect(store.pickOf(lora)).toEqual({
+      status: 'staged',
+      file: loraFile,
+      staged
+    })
+
+    store.checkAgain()
+    store.reset([ckpt])
+    store.reset(models)
+    await store.prepare(models)
+    await store.start(models)
+
+    expect(transfer.mock.calls[1][1].resumeFrom).toBe(staged)
     expect(store.pickOf(lora).status).toBe('stored')
   })
 

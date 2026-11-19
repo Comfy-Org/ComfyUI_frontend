@@ -3,6 +3,7 @@ import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import type {
   ExecutableLGraphNode,
@@ -209,7 +210,10 @@ async function postCompatibilityCheck(
   const models = await collectModels(nodes)
   if (!models) return null
   const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
+  const { isLoggedIn } = useCurrentUser()
   const auth = await useAuthStore().getWorkspaceAuthHeader()
+  if (!auth && isLoggedIn.value)
+    return giveUp(new Error('Workspace authorization unavailable'))
   return fetch(new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...auth },

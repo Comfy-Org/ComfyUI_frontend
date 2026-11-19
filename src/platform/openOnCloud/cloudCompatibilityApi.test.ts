@@ -83,6 +83,13 @@ describe(checkCloudCompatibility, () => {
     })
   })
 
+  it('keeps a signed-in workflow unchecked when workspace authorization is missing', async () => {
+    Object.assign(useAuthStore(), { isAuthenticated: true })
+
+    await expect(checkCloudCompatibility()).resolves.toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('lists the node packs Cloud is missing', async () => {
     cloudAnswers(
       Response.json({ cloud: { missing_node_types: ['ImpactWildcard'] } })

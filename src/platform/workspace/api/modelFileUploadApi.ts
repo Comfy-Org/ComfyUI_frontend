@@ -1,3 +1,7 @@
+import {
+  combineAbortSignals,
+  createTimeoutSignal
+} from '@comfyorg/api-client/abortSignal'
 import type { z } from 'zod'
 
 import type {
@@ -36,7 +40,8 @@ const FAILURE_BY_CODE: Partial<Record<string, ModelFileUploadFailure>> = {
   UNSUPPORTED_FILE_TYPE: 'unsupportedFile',
   UNSUPPORTED_MODEL_TYPE: 'unsupportedType',
   PRIVATE_MODELS_DISABLED: 'privateModelsDisabled',
-  PRIVATE_MODELS_UNAVAILABLE: 'planUnavailable'
+  PRIVATE_MODELS_UNAVAILABLE: 'planUnavailable',
+  UPLOAD_NOT_FOUND: 'sessionExpired'
 }
 
 interface ModelFileUploadStopped {
@@ -62,7 +67,9 @@ interface ModelFileUploadOptions {
   signal: AbortSignal
   onProgress: (sentBytes: number) => void
   onReconnecting?: (reconnecting: boolean) => void
-  onCompleting?: () => void
+  onCompleting?: (staged: StagedModelFile) => void
+  resumeFrom?: StagedModelFile
+  completionTimeoutMs?: number
   request?: UploadRouteRequest
 }
 
@@ -373,7 +380,7 @@ function reportTransferStop(
     .finally(() => clearTimeout(timer))
 }
 
-interface StagedFile {
+export interface StagedModelFile {
   uploadId: string
   resumed?: boolean
 }
@@ -381,7 +388,7 @@ interface StagedFile {
 async function stageFile(
   file: File,
   options: ModelFileUploadOptions
-): Promise<StagedFile | ModelFileUploadStopped> {
+): Promise<StagedModelFile | ModelFileUploadStopped> {
   const startRes = await startFileUpload(file, options)
   if (!startRes.ok) return await readFailure(startRes)
   const start = zStartModelUploadResponse.safeParse(await startRes.json())
@@ -416,10 +423,17 @@ async function uploadModelFile(
 ): Promise<ModelFileUploadResult> {
   const { tags, signal } = options
   try {
-    const staged = await stageFile(file, options)
+    const staged = options.resumeFrom ?? (await stageFile(file, options))
     if ('ok' in staged) return staged
     if (signal.aborted) return { ok: false, reason: 'cancelled' }
-    options.onCompleting?.()
+    options.onCompleting?.(staged)
+    const completionSignal =
+      options.completionTimeoutMs === undefined
+        ? signal
+        : combineAbortSignals([
+            signal,
+            createTimeoutSignal(options.completionTimeoutMs)
+          ])
 
     const completeRes = await postJson(
       `${UPLOADS_ENDPOINT}/${encodeURIComponent(staged.uploadId)}/complete`,
@@ -428,7 +442,7 @@ async function uploadModelFile(
         tags,
         upload_analytics: { client: UPLOAD_CLIENT, resumed: staged.resumed }
       } satisfies z.input<typeof zCompleteModelUploadBody>,
-      signal,
+      completionSignal,
       options.request
     )
     if (!completeRes.ok) return await readFailure(completeRes)

@@ -17,6 +17,7 @@ import {
 } from '@/platform/workspace/api/modelFileUploadApi'
 import type {
   ModelFileUploadResult,
+  StagedModelFile,
   UploadRouteRequest
 } from '@/platform/workspace/api/modelFileUploadApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -36,17 +37,25 @@ export type ModelPick =
   | { status: 'chosen'; file: File }
   | { status: 'wrongFile'; file: File }
   | { status: 'stored' }
+  | StagedModel
   | SubmittedModel
 
+type StagedModel = { status: 'staged'; file: File; staged: StagedModelFile }
 type SubmittedModel = { status: 'submitted'; file: File; taskId: string }
 type UploadableModelPick = Extract<
   ModelPick,
-  { status: 'chosen' | 'submitted' }
+  { status: 'chosen' | 'staged' | 'submitted' }
 >
 
 function isUploadablePick(pick: ModelPick): pick is UploadableModelPick {
-  return pick.status === 'chosen' || pick.status === 'submitted'
+  return pick.status === 'chosen' || isPendingPick(pick)
 }
+
+function isPendingPick(pick: ModelPick): pick is StagedModel | SubmittedModel {
+  return pick.status === 'staged' || pick.status === 'submitted'
+}
+
+const COMPLETION_TIMEOUT_MS = 20_000
 
 export type ModelUploadBlock = 'folder' | 'subfolder' | 'fileType' | 'size'
 
@@ -59,7 +68,12 @@ type LocalModelUpload =
       models: MissingModel[]
       canCancel: boolean
     }
-  | { phase: 'failed'; reason: LocalModelUploadFailure; message?: string }
+  | {
+      phase: 'failed'
+      reason: LocalModelUploadFailure
+      message?: string
+      models?: MissingModel[]
+    }
   | { phase: 'done' }
 
 type UploadStop = Extract<LocalModelUpload, { phase: 'failed' }>
@@ -101,7 +115,9 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
 
   const isUploading = computed(() => upload.value.phase === 'uploading')
   const activeModels = computed(() =>
-    upload.value.phase === 'uploading' ? upload.value.models : undefined
+    upload.value.phase === 'uploading' || upload.value.phase === 'failed'
+      ? upload.value.models
+      : undefined
   )
   const canCancel = computed(
     () => upload.value.phase === 'uploading' && upload.value.canCancel
@@ -120,6 +136,9 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         batch.controller.abort()
       }
       picks.value = new Map()
+      if (upload.value.phase === 'failed' && upload.value.models) {
+        upload.value = { phase: 'failed', reason: 'accountChanged' }
+      }
       clearPreparation()
     },
     { flush: 'sync' }
@@ -157,16 +176,12 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function blockedBy(model: MissingModel): ModelUploadBlock | undefined {
+    const pick = pickOf(model)
+    if (isPendingPick(pick)) return
     if (!uploadFolders.value?.includes(model.folder)) return 'folder'
     if (/[\\/]/.test(model.name)) return 'subfolder'
     if (!isSupportedModelFileName(model.name)) return 'fileType'
-    const { status } = pickOf(model)
-    if (
-      sizeOf(model) === undefined &&
-      status !== 'stored' &&
-      status !== 'submitted'
-    )
-      return 'size'
+    if (sizeOf(model) === undefined && pick.status !== 'stored') return 'size'
   }
 
   function canTake(model: MissingModel): boolean {
@@ -186,11 +201,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function choose(model: MissingModel, file: File): void {
-    if (
-      isUploading.value ||
-      !canTake(model) ||
-      pickOf(model).status === 'submitted'
-    )
+    if (isUploading.value || !canTake(model) || isPendingPick(pickOf(model)))
       return
     setPick(model, { status: 'chosen', file })
     if (upload.value.phase === 'failed') upload.value = { phase: 'idle' }
@@ -220,17 +231,25 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
 
   async function submitModel(
     model: MissingModel,
-    file: File,
+    pick: Exclude<UploadableModelPick, SubmittedModel>,
     progress: (sent: number) => void,
     signal: AbortSignal,
     request: UploadRouteRequest
   ): Promise<SubmittedModel | UploadStop> {
+    const { file } = pick
+    let staged = pick.status === 'staged' ? pick.staged : undefined
     const result = await modelFileUploadApi.uploadModelFile(file, {
       tags: ['models', model.folder],
       signal,
       request,
       onProgress: progress,
-      onCompleting: disableCancel
+      resumeFrom: staged,
+      completionTimeoutMs: COMPLETION_TIMEOUT_MS,
+      onCompleting: (upload) => {
+        disableCancel()
+        staged = upload
+        if (!signal.aborted) setPick(model, { status: 'staged', file, staged })
+      }
     })
     if (!result.ok) {
       if (result.reason === 'failed')
@@ -239,6 +258,9 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
           errorType: 'error_uploading_local_model_to_cloud',
           level: 'warning'
         })
+      if (staged && result.reason === 'failed')
+        return { phase: 'failed', reason: 'storagePending' }
+      if (staged && !signal.aborted) setPick(model, { status: 'chosen', file })
       return { phase: 'failed', reason: result.reason, message: result.message }
     }
     const submitted: SubmittedModel = {
@@ -261,7 +283,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const submitted =
       pick.status === 'submitted'
         ? pick
-        : await submitModel(model, pick.file, progress, signal, request)
+        : await submitModel(model, pick, progress, signal, request)
     if ('phase' in submitted) return submitted
 
     disableCancel()
@@ -302,7 +324,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         current
       )
       if (signal.aborted) return { phase: 'failed', reason: 'cancelled' }
-      if (stop) return stop
+      if (stop)
+        return stop.reason === 'storagePending' ? { ...stop, models } : stop
       setPick(model, { status: 'stored' })
       if (pick.status === 'chosen') done += pick.file.size
     }
@@ -348,6 +371,13 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     if (canCancel.value) batch?.controller.abort()
   }
 
+  function checkAgain(): void {
+    if (upload.value.phase === 'failed' && upload.value.models) {
+      upload.value = { phase: 'idle' }
+    }
+    void useCloudWorkflowCheckStore().check()
+  }
+
   function reset(models: MissingModel[]): void {
     if (isUploading.value) return
     clearPreparation()
@@ -357,8 +387,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     picks.value = new Map(
       [...picks.value].filter(
         ([key, pick]) =>
-          keys.has(key) &&
-          (pick.status === 'stored' || pick.status === 'submitted')
+          isPendingPick(pick) || (keys.has(key) && pick.status === 'stored')
       )
     )
     modelSnapshot = models
@@ -381,6 +410,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     canUpload,
     start,
     cancel,
+    checkAgain,
     reset
   }
 })

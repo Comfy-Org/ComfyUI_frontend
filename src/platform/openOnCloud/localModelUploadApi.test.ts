@@ -58,9 +58,11 @@ function answers(
 describe('cloudUploadRequest', () => {
   it('sends uploads to the Cloud API origin with workspace authorization', async () => {
     stubFirebaseAuthHarness()
-    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockResolvedValue({
-      Authorization: 'Bearer workspace-token'
-    })
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockResolvedValue(
+      {
+        Authorization: 'Bearer workspace-token'
+      }
+    )
     vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 201 }))
 
     const response = await cloudUploadRequest('/assets/uploads', {
@@ -76,6 +78,18 @@ describe('cloudUploadRequest', () => {
       }
     )
   })
+
+  it('never sends an upload without workspace authorization', async () => {
+    stubFirebaseAuthHarness()
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockRejectedValue(
+      new Error('Workspace authorization unavailable')
+    )
+
+    await expect(
+      cloudUploadRequest('/assets/uploads', { method: 'POST' })
+    ).rejects.toThrow('Workspace authorization unavailable')
+    expect(fetch).not.toHaveBeenCalled()
+  })
 })
 
 describe('readCloudUploadFolders', () => {
@@ -85,7 +99,11 @@ describe('readCloudUploadFolders', () => {
       'timeout'
     )
     stubFirebaseAuthHarness()
-    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockResolvedValue(null)
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeaderOrThrow').mockResolvedValue(
+      {
+        Authorization: 'Bearer workspace-token'
+      }
+    )
     vi.useFakeTimers()
     vi.mocked(fetch).mockResolvedValue(
       Response.json({ model_upload_folders: ['loras'] })

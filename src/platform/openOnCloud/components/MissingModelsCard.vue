@@ -66,7 +66,7 @@
           v-if="isPrepared && !uploads.isUploading"
           variant="secondary"
           size="lg"
-          @click="cloudCheck.check"
+          @click="uploads.checkAgain"
         >
           {{ $t('openOnCloud.missingModels.checkAgain') }}
         </Button>
@@ -88,7 +88,13 @@
           :disabled="footer === 'upload' && !uploads.canUpload(models)"
           @click="onPrimary"
         >
-          {{ $t(PRIMARY_COPY[footer]) }}
+          {{
+            footer === 'upload' &&
+            upload.phase === 'failed' &&
+            upload.reason === 'storagePending'
+              ? $t('g.retry')
+              : $t(PRIMARY_COPY[footer])
+          }}
         </Button>
       </footer>
     </section>
@@ -105,7 +111,6 @@ import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import MissingModelRow from '@/platform/openOnCloud/components/MissingModelRow.vue'
-import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import {
   modelKey,
   useLocalModelUploadStore
@@ -152,7 +157,6 @@ const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
 
 const { t } = useI18n()
 const uploads = useLocalModelUploadStore()
-const cloudCheck = useCloudWorkflowCheckStore()
 const { upload, uploadFolders, owner } = storeToRefs(uploads)
 
 watch(

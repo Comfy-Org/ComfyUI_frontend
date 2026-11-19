@@ -18,7 +18,12 @@
         :aria-label="$t('openOnCloud.missingModels.uploaded')"
       />
       <label
-        v-if="choosable && size !== undefined && pick.status !== 'submitted'"
+        v-if="
+          choosable &&
+          size !== undefined &&
+          pick.status !== 'staged' &&
+          pick.status !== 'submitted'
+        "
         class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-foreground hover:bg-accent has-focus-visible:ring-2 has-focus-visible:ring-ring has-disabled:cursor-default has-disabled:opacity-50"
       >
         <i

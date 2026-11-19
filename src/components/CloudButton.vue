@@ -47,9 +47,11 @@ const { t } = useI18n()
 const toast = useToast()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
-const { isUploading, percent: uploadPercent } = storeToRefs(
-  useLocalModelUploadStore()
-)
+const {
+  isUploading,
+  activeModels,
+  percent: uploadPercent
+} = storeToRefs(useLocalModelUploadStore())
 
 const isChecking = computed(() => check.value.phase === 'checking')
 const opensWhenAnswered = ref(false)
@@ -63,13 +65,14 @@ const tooltip = computed(() => {
     return t('openOnCloud.cloudButton.uploading', {
       percent: uploadPercent.value
     })
+  if (activeModels.value) return t('openOnCloud.cloudButton.resumeUpload')
   return isChecking.value
     ? t('openOnCloud.cloudButton.checking')
     : t('openOnCloud.cloudButton.tooltip')
 })
 
 function prefetch() {
-  if (!isUploading.value && check.value.phase === 'idle')
+  if (!activeModels.value && check.value.phase === 'idle')
     void checkStore.check()
 }
 
@@ -93,8 +96,8 @@ function openModal() {
     button_id: 'run_bar_cloud_clicked',
     element_group: 'top_menu'
   })
-  if (isUploading.value) {
-    void openRunOnCloudDialog(() => isMounted && isUploading.value)
+  if (activeModels.value) {
+    void openRunOnCloudDialog(() => isMounted && !!activeModels.value)
     return
   }
   const { phase } = check.value
@@ -109,6 +112,7 @@ function openModal() {
 watch(
   () => check.value.phase,
   (phase) => {
+    if (activeModels.value) return
     if (phase === 'idle') {
       opensWhenAnswered.value = false
       closeRunOnCloudDialog()

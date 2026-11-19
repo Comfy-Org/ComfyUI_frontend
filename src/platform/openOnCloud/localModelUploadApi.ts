@@ -26,9 +26,8 @@ const zLocalModelFiles = z.array(
 
 async function cloudHeaders(headers?: HeadersInit): Promise<Headers> {
   const merged = new Headers(headers)
-  const auth = await useAuthStore().getWorkspaceAuthHeader()
-  for (const [name, value] of Object.entries(auth ?? {}))
-    merged.set(name, value)
+  const auth = await useAuthStore().getWorkspaceAuthHeaderOrThrow()
+  for (const [name, value] of Object.entries(auth)) merged.set(name, value)
   return merged
 }
 
@@ -37,11 +36,11 @@ function cloudUploadUrl(route: string): string {
 }
 
 /** Sends an upload route to Comfy Cloud as the signed-in workspace. */
-export const cloudUploadRequest: UploadRouteRequest = async (route, init) =>
-  fetch(cloudUploadUrl(route), {
-    ...init,
-    headers: await cloudHeaders(init.headers)
-  })
+export const cloudUploadRequest: UploadRouteRequest = async (route, init) => {
+  const headers = await cloudHeaders(init.headers)
+  init.signal?.throwIfAborted()
+  return fetch(cloudUploadUrl(route), { ...init, headers })
+}
 
 /** The model folders Comfy Cloud takes uploads into; empty when it takes none. */
 export async function readCloudUploadFolders(): Promise<string[]> {

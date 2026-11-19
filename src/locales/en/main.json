@@ -4380,7 +4380,8 @@
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
       "checking": "Checking Comfy Cloud…",
-      "uploading": "Uploading models to Comfy Cloud, {percent}%"
+      "uploading": "Uploading models to Comfy Cloud, {percent}%",
+      "resumeUpload": "Resume model upload"
     },
     "runDialog": {
       "title": "Run on Comfy Cloud",
