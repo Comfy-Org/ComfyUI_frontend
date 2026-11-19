@@ -21,13 +21,16 @@ export function useCompositedProgress(
   keyframes: Keyframe[]
 ) {
   const motionPreference = usePreferredReducedMotion()
-  const eased = useTransition(
-    () => Math.min(Math.max(toValue(progress), 0), 1),
-    {
-      duration: EASE_DURATION_MS,
-      transition: TransitionPresets.easeOutCubic,
-      disabled: computed(() => motionPreference.value === 'reduce')
-    }
+  const clamped = computed(() => {
+    const value = toValue(progress)
+    return Number.isNaN(value) ? 0 : Math.min(Math.max(value, 0), 1)
+  })
+  const eased = useTransition(clamped, {
+    duration: EASE_DURATION_MS,
+    transition: TransitionPresets.easeOutCubic
+  })
+  const shown = computed(() =>
+    motionPreference.value === 'reduce' ? clamped.value : eased.value
   )
 
   let animation: Animation | undefined
@@ -40,7 +43,7 @@ export function useCompositedProgress(
   }
 
   watch(
-    [() => toValue(target), eased],
+    [() => toValue(target), shown],
     ([element, value]) => {
       if (!element) {
         release()

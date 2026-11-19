@@ -2,6 +2,7 @@ import { expect, mergeTests } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 const wstest = mergeTests(test, webSocketFixture)
@@ -131,6 +132,41 @@ wstest.describe('Queue progress overlay', { tag: ['@ui'] }, () => {
           )
         )
         .toBe(initialLayoutWidth)
+    }
+  )
+})
+
+wstest.describe('Node progress bar', { tag: ['@ui', '@vue-nodes'] }, () => {
+  wstest(
+    'fills the track in proportion to the node progress and stops at the end',
+    async ({ comfyPage, getWebSocket }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const nodeId = await comfyPage.page.evaluate(() =>
+        String(window.app!.graph.nodes[0].id)
+      )
+      const jobId = await execution.run()
+      execution.executionStart(jobId)
+      execution.nodeRunning(jobId, nodeId, 5, 20)
+
+      const fill = comfyPage.vueNodes
+        .getNodeLocator(nodeId)
+        .getByTestId(TestIds.node.progressFill)
+      await expect(fill).toBeVisible()
+
+      const filledFraction = () =>
+        fill.evaluate((element) => {
+          const track = element.parentElement!.getBoundingClientRect()
+          return (
+            (element.getBoundingClientRect().right - track.left) / track.width
+          )
+        })
+      await expect.poll(filledFraction).toBeCloseTo(0.25, 2)
+
+      execution.nodeRunning(jobId, nodeId, 18, 20)
+      await expect.poll(filledFraction).toBeCloseTo(0.9, 2)
+
+      execution.nodeRunning(jobId, nodeId, 25, 20)
+      await expect.poll(filledFraction).toBeCloseTo(1, 2)
     }
   )
 })
