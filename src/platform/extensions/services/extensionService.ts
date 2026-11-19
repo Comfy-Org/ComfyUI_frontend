@@ -413,14 +413,18 @@ export const useExtensionService = () => {
         if (method === 'setup') {
           legacyMenuCompat.setCurrentExtension(extension.name)
           await sidebarTabStore.attributeRegistrationsTo(extension.name, () =>
-            fn.call(
-              extension,
-              ...args,
-              createSetupHookApp(useApp(), extension.name)
+            captureLegacyGraphPatches(useApp(), extension, method, () =>
+              fn.call(
+                extension,
+                ...args,
+                createSetupHookApp(useApp(), extension.name)
+              )
             )
           )
         } else {
-          await fn.call(extension, ...args, useApp())
+          await captureLegacyGraphPatches(useApp(), extension, method, () =>
+            fn.call(extension, ...args, useApp())
+          )
         }
       } catch (error) {
         failures.push({ extension, method, error })
