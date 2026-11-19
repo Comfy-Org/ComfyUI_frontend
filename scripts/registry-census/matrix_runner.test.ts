@@ -665,6 +665,32 @@ describe('form proof, hooks that rewrite in place', () => {
   )
 
   it(
+    'allows a non-serializing widget to move around enabled widgets',
+    { timeout: 60_000 },
+    async () => {
+      const { formProof } = await rowFor(
+        'form-disabled-widget-moved',
+        serializingPack(
+          'form-disabled-widget-moved',
+          function (this: LGraphNode) {
+            const widgets = this.widgets
+            const index = widgets?.findIndex(
+              (widget) => widget.name === 'steps'
+            )
+            if (!widgets || index == null || index < 0) return
+            const [disabled] = widgets.splice(index, 1)
+            disabled.serialize = false
+            if (index === 0) widgets.push(disabled)
+            else widgets.unshift(disabled)
+          }
+        )
+      )
+
+      expect(verdictFor(formProof, 'KSampler')).toBe('provable')
+    }
+  )
+
+  it(
     'measures a class whose onSerialize hook is read-only',
     { timeout: 60_000 },
     async () => {
