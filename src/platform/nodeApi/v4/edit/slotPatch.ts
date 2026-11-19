@@ -3,7 +3,7 @@ import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
+import { checkedFields, isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import type {
   InputSlotPatch,
   SlotOptions,
@@ -74,10 +74,7 @@ export function checkedSlotType(member: string, value: unknown): string {
   return names
     .map((name) => {
       const type = checkedString(member, 'type', name)
-      if (
-        type === '' ||
-        type.split(',').some((part) => part in Object.prototype)
-      ) {
+      if (!type.split(',').every(isStoreKey)) {
         throw invalidArgument(member, 'a type name', name)
       }
       return type

@@ -1,11 +1,12 @@
 import type { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
-import { isEqual, isPlainObject } from 'es-toolkit'
+import { isEqual } from 'es-toolkit'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
+import { isPlainData } from '@/platform/nodeApi/shared/savableValue'
+import { checkedFields, isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import { MODE_NAMES } from '@/platform/nodeApi/v4/nodeHandle'
 import type {
   NodeMode,
@@ -171,11 +172,11 @@ function fieldChecks(
 }
 
 function checkedProperties(member: string, value: unknown): NodeWrite {
-  if (!isPlainObject(value)) {
+  if (!isPlainData(value)) {
     throw invalidArgument(member, 'properties as a plain object', value)
   }
   const entries = Object.entries(value).map(([name, property]) => {
-    if (name === '__proto__') {
+    if (!isStoreKey(name)) {
       throw invalidArgument(member, 'a property name', name)
     }
     return [

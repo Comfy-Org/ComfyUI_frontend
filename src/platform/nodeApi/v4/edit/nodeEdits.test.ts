@@ -364,6 +364,11 @@ describe('node edits', () => {
       ['a prototype key as a shape', { shape: 'toString' }],
       ['properties that are not an object', { properties: [1] }],
       ['a __proto__ property', { properties: JSON.parse('{"__proto__":1}') }],
+      [
+        'a property named as an Object member',
+        { properties: { constructor: 1 } }
+      ],
+      ['an empty property name', { properties: { '': 1 } }],
       ['a property the workflow cannot save', { properties: { f: () => 1 } }],
       ['a circular property', { properties: { loop: circular() } }],
       ['serializeWidgets that is not a boolean', { serializeWidgets: 'yes' }],

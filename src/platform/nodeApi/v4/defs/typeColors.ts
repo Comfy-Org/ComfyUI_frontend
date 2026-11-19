@@ -1,3 +1,4 @@
+import { isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import { once } from 'es-toolkit'
 
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -51,7 +52,7 @@ export function createTypeColors(): TypeColors {
 
     setTypeColor(type, color): Unsubscribe {
       checkedText('setTypeColor', 'a type name', type)
-      if (type in Object.prototype) {
+      if (!isStoreKey(type)) {
         throw invalidArgument('setTypeColor', 'a type name', type)
       }
       checkedText('setTypeColor', 'a color', color)

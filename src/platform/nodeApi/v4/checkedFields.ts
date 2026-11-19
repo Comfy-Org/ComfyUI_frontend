@@ -1,6 +1,13 @@
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { isPlainData } from '@/platform/nodeApi/shared/savableValue'
 
+/** True for a name a host plain object can use as a key: a non-empty string that no object inherits. */
+export function isStoreKey(value: unknown): value is string {
+  return (
+    typeof value === 'string' && value !== '' && !(value in Object.prototype)
+  )
+}
+
 /**
  * The own fields of a plain object a pack passed, each read once. Refuses any
  * other value, and a field not in `known`; a field in `ignored` reads as absent.
