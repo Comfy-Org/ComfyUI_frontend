@@ -33,9 +33,11 @@
               :class="
                 cn(
                   'size-full shrink-0 cursor-default text-foreground transition-colors hover:bg-accent',
-                  row.job.state === 'running' && 'bg-secondary'
+                  row.job.state === 'running' && 'bg-secondary',
+                  getDraggableOutput(row.job) && 'cursor-grab'
                 )
               "
+              :draggable="!!getDraggableOutput(row.job)"
               :preview-url="getJobPreviewUrl(row.job)"
               :is-video-preview="isVideoPreviewJob(row.job)"
               :preview-alt="row.job.title"
@@ -45,6 +47,7 @@
               :secondary-text="row.job.meta"
               :progress-total-percent="row.job.progressTotalPercent"
               :progress-current-percent="row.job.progressCurrentPercent"
+              @dragstart="onJobDragStart(row.job, $event)"
               @contextmenu.prevent.stop="$emit('menu', row.job, $event)"
               @dblclick.stop="emitViewItem(row.job)"
               @preview-click="emitViewItem(row.job)"
@@ -117,6 +120,10 @@ import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 import { isImageResult, isVideoResult } from '@/utils/resultItem'
 import AssetsListItem from '@/platform/assets/components/AssetsListItem.vue'
+import {
+  isDraggableResultItem,
+  startResultItemDrag
+} from '@/platform/assets/utils/assetDragUtil'
 import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
@@ -357,6 +364,20 @@ function isVideoPreviewJob(job: JobListItem) {
 
 function isPreviewableCompletedJob(job: JobListItem) {
   return job.state === 'completed' && !!getPreviewOutput(job)
+}
+
+function getDraggableOutput(job: JobListItem) {
+  const preview = getPreviewOutput(job)
+  return job.state === 'completed' && preview && isDraggableResultItem(preview)
+    ? preview
+    : undefined
+}
+
+function onJobDragStart(job: JobListItem, event: DragEvent) {
+  const output = getDraggableOutput(job)
+  if (!output) return
+  resetActiveDetails()
+  startResultItemDrag(event, output)
 }
 
 function emitViewItem(job: JobListItem) {

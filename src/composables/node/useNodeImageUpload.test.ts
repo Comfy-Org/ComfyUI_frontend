@@ -15,13 +15,18 @@ let mockInvalidateInputs: Mock<
 >
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
+let capturedResultItemDrop: (item: ResultItem) => void
 
 vi.mock<unknown>(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (
     _node: LGraphNode,
-    opts: { onDrop: typeof capturedDragOnDrop }
+    opts: {
+      onDrop: typeof capturedDragOnDrop
+      onResultItemDrop: typeof capturedResultItemDrop
+    }
   ) => {
     capturedDragOnDrop = opts.onDrop
+    capturedResultItemDrop = opts.onResultItemDrop
   }
 }))
 
@@ -83,6 +88,26 @@ describe('useNodeImageUpload', () => {
       folder: 'input'
     })
   })
+
+  it.for([
+    { label: 'a loadable', loadable: true, completes: 1, warns: 0 },
+    { label: 'an unloadable', loadable: false, completes: 0, warns: 1 }
+  ])(
+    'references $label dropped output without uploading it',
+    ({ loadable, completes, warns }) => {
+      const item: ResultItem = { filename: 'clip.mp4', type: 'output' }
+      useNodeImageUpload(node, {
+        onUploadComplete,
+        resultItemFilter: () => loadable
+      })
+
+      capturedResultItemDrop(item)
+
+      expect(onUploadComplete).toHaveBeenCalledTimes(completes)
+      expect(useToast().warning).toHaveBeenCalledTimes(warns)
+      expect(api.fetchApi).not.toHaveBeenCalled()
+    }
+  )
 
   it('uploads image.png with the configured destination', async () => {
     const { handleUpload } = useNodeImageUpload(node, {

@@ -154,6 +154,30 @@ describe('useImageUploadWidget', () => {
     ).toBe(true)
   })
 
+  it.for([
+    { node: 'image', filename: 'frame.png', loadable: true },
+    { node: 'image', filename: 'clip.mp4', loadable: false },
+    { node: 'image', filename: 'voice.wav', loadable: false },
+    { node: 'image', filename: 'mesh.glb', loadable: false },
+    { node: 'image', filename: 'scan.unknownext', loadable: true },
+    { node: 'video', filename: 'clip.mp4', loadable: true },
+    { node: 'video', filename: 'frame.png', loadable: false }
+  ] as const)(
+    'lets a dropped $filename output onto an $node loader: $loadable',
+    ({ node: kind, filename, loadable }) => {
+      const { node } = createUploadNode()
+      if (kind === 'video') constructVideo(node)
+      else construct(node)
+
+      expect(
+        mocks.capturedUploadOptions?.resultItemFilter?.({
+          filename,
+          type: 'output'
+        })
+      ).toBe(loadable)
+    }
+  )
+
   it('claims and alerts only when a video lacks an extension', () => {
     const { node } = createUploadNode()
     constructVideo(node)

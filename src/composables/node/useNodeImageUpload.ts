@@ -70,6 +70,7 @@ const uploadFile = async (
 
 interface ImageUploadOptions {
   fileFilter?: (file: File) => boolean
+  resultItemFilter?: (item: ResultItem) => boolean
   onUploadComplete: (paths: (string | ResultItem)[]) => void
   allow_batch?: boolean
   /**
@@ -94,7 +95,13 @@ export const useNodeImageUpload = (
   node: LGraphNode,
   options: ImageUploadOptions
 ) => {
-  const { fileFilter, onUploadComplete, allow_batch, accept } = options
+  const {
+    fileFilter,
+    resultItemFilter = () => true,
+    onUploadComplete,
+    allow_batch,
+    accept
+  } = options
 
   const handleUpload = async (file: File) => {
     try {
@@ -147,7 +154,10 @@ export const useNodeImageUpload = (
     fileFilter,
     onReject: options.onReject,
     onDrop: handleUploadBatch,
-    onResultItemDrop: (item) => onUploadComplete([item])
+    onResultItemDrop: (item) => {
+      if (resultItemFilter(item)) onUploadComplete([item])
+      else useToast().warning(t('mediaAsset.unsupportedFileType'))
+    }
   })
 
   // Handle paste

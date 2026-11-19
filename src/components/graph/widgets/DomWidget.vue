@@ -6,6 +6,8 @@
     :data-widget-id="widget.id"
     :title="tooltip"
     :style="style"
+    @dragover="onDragOver"
+    @dragleave="onDragLeave"
   >
     <component
       :is="widget.component"
@@ -30,6 +32,7 @@ import { useDomClipping } from '@/composables/element/useDomClipping'
 import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useApp } from '@/scripts/appInstance'
 import { isComponentWidget, isDOMWidget } from '@/scripts/domWidget'
 import type { DomWidgetState } from '@/stores/domWidgetStore'
 
@@ -45,6 +48,24 @@ const emit = defineEmits<{
 }>()
 
 const widgetElement = ref<HTMLElement | undefined>()
+
+function onDragOver(event: DragEvent) {
+  const { node } = widget
+  if (!node.onDragOver?.(event)) return
+  event.preventDefault()
+  const app = useApp()
+  if (app.dragOverNode === node) return
+  app.dragOverNode = node
+  node.setDirtyCanvas(true, false)
+}
+
+function onDragLeave() {
+  const { node } = widget
+  const app = useApp()
+  if (app.dragOverNode !== node) return
+  app.dragOverNode = null
+  node.setDirtyCanvas(true, false)
+}
 const { style: positionStyle, updatePosition } = useAbsolutePosition({
   useTransform: true
 })
