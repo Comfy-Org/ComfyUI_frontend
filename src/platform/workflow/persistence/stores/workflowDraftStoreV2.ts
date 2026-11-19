@@ -55,6 +55,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   // Key is workspaceId, value is the cached index
   const indexCacheByWorkspace = ref<Record<string, DraftIndexV2>>({})
   const lineageByDraft = new Map<string, DraftLineage>()
+  const reportedQuotaByDraft = new Set<string>()
   const authSubject = ref<string | null | undefined>(undefined)
 
   /**
@@ -180,7 +181,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     )
 
     if (!payloadWritten) {
-      reportQuotaExhausted(index, payloadByteSize(data))
+      reportQuotaExhausted(
+        lineageKey(workspaceId, draftKey),
+        index,
+        payloadByteSize(data)
+      )
       return false
     }
 
@@ -209,9 +214,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   }
 
   function reportQuotaExhausted(
+    draftId: string,
     index: DraftIndexV2,
     payloadBytes: number
   ): void {
+    if (reportedQuotaByDraft.has(draftId)) return
+    reportedQuotaByDraft.add(draftId)
+
     reportError(
       new Error('localStorage quota exhausted while saving workflow draft'),
       {

@@ -335,6 +335,32 @@ describe('workflowDraftStoreV2', () => {
   })
 
   describe('quota reporting', () => {
+    it('reports once per draft while failed saves keep retrying', () => {
+      const store = useWorkflowDraftStoreV2()
+      failPayloadWrites()
+
+      expect(
+        store.saveDraft('workflows/retrying.json', '{"version":1}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(false)
+      expect(
+        store.saveDraft('workflows/retrying.json', '{"version":2}', {
+          name: 'retrying',
+          isTemporary: true
+        })
+      ).toBe(false)
+      expect(
+        store.saveDraft('workflows/other.json', '{"version":1}', {
+          name: 'other',
+          isTemporary: true
+        })
+      ).toBe(false)
+
+      expect(reportErrorMock).toHaveBeenCalledTimes(2)
+    })
+
     it('reports exhaustion without evicting existing drafts', () => {
       const store = useWorkflowDraftStoreV2()
       store.saveDraft('workflows/a.json', '{"id":"a"}', {
