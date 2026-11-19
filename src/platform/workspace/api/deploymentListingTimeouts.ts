@@ -41,5 +41,8 @@ export const DEPLOYMENT_LISTING_FOCUS_RETRY_MS = 60_000
 /** How long a Start request may take once sent. */
 export const DEPLOYMENT_START_TIMEOUT_MS = 30_000
 
+/** How long saving the editor GPU settings may take once sent, so the toggle never stays disabled on a stalled save. */
+export const EDITOR_GPU_SAVE_TIMEOUT_MS = 15_000
+
 /** How often the open menu refreshes the listing while a deployment starts. */
 export const DEPLOYMENT_START_POLL_MS = 5_000

@@ -529,6 +529,21 @@ describe('workspaceApi', () => {
       expect(result).toEqual(data)
     })
 
+    it('setEditorGpu() sends PUT /workspaces/:id/deployments/:deployment/editor-gpu with a 15 second timeout', async () => {
+      mockAxiosInstance.put.mockResolvedValue({ data: { gpu: 'starting' } })
+
+      const gpu = await workspaceApi.setEditorGpu('ws-1', 'dep-1/x', {
+        on: true
+      })
+
+      expect(mockAxiosInstance.put).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployments/dep-1%2Fx/editor-gpu',
+        { on: true },
+        { headers: AUTH_HEADER, timeout: 15_000 }
+      )
+      expect(gpu).toBe('starting')
+    })
+
     it('startDeployment() rejects an answer that does not say the status', async () => {
       mockAxiosInstance.post.mockResolvedValue({
         data: { deployment_id: 'dep-1' }
