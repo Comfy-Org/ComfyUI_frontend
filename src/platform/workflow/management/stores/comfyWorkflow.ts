@@ -87,7 +87,9 @@ export interface WorkflowRuntime {
   ): WorkflowChangeTracker
   /** `ChangeTracker.graphEqual`: the comparison that decides unsaved changes. */
   graphEqual(a: ComfyWorkflowJSON, b: ComfyWorkflowJSON): boolean
+  getDraftScope(): string
   getDraft(path: string): WorkflowDraft | null
+  saveDraft(workflow: ComfyWorkflow, state: ComfyWorkflowJSON): void
   removeDraft(path: string): void
   markDraftUsed(path: string): void
   isDraftPersistenceEnabled(): boolean
@@ -456,14 +458,19 @@ export class ComfyWorkflow extends UserFile {
     const savedState = cloneDeep(
       requireActiveStateForSave(this, 'ComfyWorkflow.save')
     )
+    const runtime = workflowRuntime()
+    const draftScope = runtime.getDraftScope()
     this.content = JSON.stringify(savedState)
     const savedFile = await super.save({ force: true })
-    if (tracker && this.changeTracker === tracker) {
-      const runtime = workflowRuntime()
-      tracker.prepareForSave()
-      tracker.initialState = savedState
-      this.isModified = !runtime.graphEqual(savedState, tracker.activeState)
+    if (!tracker || this.changeTracker !== tracker) return savedFile
+
+    tracker.prepareForSave()
+    tracker.initialState = savedState
+    this.isModified = !runtime.graphEqual(savedState, tracker.activeState)
+    if (draftScope === runtime.getDraftScope()) {
       if (!this.isModified) runtime.removeDraft(this.path)
+      else if (runtime.isDraftPersistenceEnabled())
+        runtime.saveDraft(this, tracker.activeState)
     }
     return savedFile
   }

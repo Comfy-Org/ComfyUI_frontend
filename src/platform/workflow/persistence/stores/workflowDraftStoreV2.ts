@@ -141,12 +141,17 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
    * Saves a draft (data + metadata).
    * Primes index cache, writes payload, then persists updated index.
    */
-  function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
+  function saveDraft(
+    path: string,
+    data: string,
+    meta: DraftMeta,
+    minUpdatedAt = 0
+  ): boolean {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
-    const now = Date.now()
+    const now = Math.max(Date.now(), minUpdatedAt)
 
     const index = loadIndex()
 
@@ -157,7 +162,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     )
 
     if (!payloadWritten) {
-      return handleQuotaExceeded(path, data, meta)
+      return handleQuotaExceeded(path, data, meta, now)
     }
     const { index: newIndex, evicted } = upsertEntry(
       index,
@@ -193,7 +198,8 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
   function handleQuotaExceeded(
     path: string,
     data: string,
-    meta: DraftMeta
+    meta: DraftMeta,
+    updatedAt: number
   ): boolean {
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
@@ -219,18 +225,17 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
         evictedCount++
       }
 
-      const now = Date.now()
       if (
         writePayload(
           workspaceId,
           draftKey,
-          payloadFor(workspaceId, draftKey, data, now)
+          payloadFor(workspaceId, draftKey, data, updatedAt)
         )
       ) {
         const { index: finalIndex } = upsertEntry(
           currentIndex,
           path,
-          { ...meta, updatedAt: now },
+          { ...meta, updatedAt },
           MAX_DRAFTS
         )
         if (!persistIndex(finalIndex)) {
@@ -486,6 +491,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   return {
     setAuthSubject,
+    getScope: currentWorkspaceId,
     saveDraft,
     removeDraft,
     moveDraft,

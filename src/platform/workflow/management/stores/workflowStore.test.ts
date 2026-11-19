@@ -1081,6 +1081,46 @@ describe('useWorkflowStore', () => {
         expect(workflow.isModified).toBe(false)
       }
     )
+
+    it('restores edits made during a save even when the server timestamp is ahead', async () => {
+      enableWorkflowPersistence()
+      const path = 'workflows/test.json'
+      await syncRemoteWorkflows(['test.json'])
+      const workflow = store.getWorkflowByPath(path)
+      assert.exists(workflow)
+      const savedState = { ...defaultGraph, extra: { note: 'being saved' } }
+      const editedState = { ...defaultGraph, extra: { note: 'new edit' } }
+      const tracker = createMockChangeTracker({
+        workflow,
+        activeState: savedState
+      })
+      workflow.changeTracker = tracker
+      workflow.isModified = true
+      const modified = Date.now() + 60_000
+      let finishSave = () => {}
+      vi.mocked(api.storeUserData).mockReturnValueOnce(
+        new Promise((resolve) => {
+          finishSave = () => resolve(Response.json({ path, modified, size: 1 }))
+        })
+      )
+
+      const saving = workflow.save()
+      tracker.activeState = editedState
+      saveV2Draft(path, { data: JSON.stringify(editedState) })
+      finishSave()
+      await saving
+
+      vi.mocked(api.getUserData).mockResolvedValueOnce(
+        Response.json(savedState)
+      )
+      const reopened = await new ComfyWorkflow({
+        path,
+        modified,
+        size: 1
+      }).load()
+      expect(reopened.activeState.extra?.note).toBe('new edit')
+      expect(reopened.isModified).toBe(true)
+    })
   })
 
   describe('saveAs', () => {
