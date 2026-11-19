@@ -64,7 +64,7 @@ for (const { name, query } of [
     query: 'product=comfyui&return_to=elsewhere&plan=pro_monthly'
   }
 ]) {
-  test(`a link with ${name} still checks out, and the back arrow goes to Plan & Credits`, async ({
+  test(`a link with ${name} still checks out, and the back arrow goes to Platform Billing`, async ({
     page,
     cloud,
     signIn
@@ -78,7 +78,7 @@ for (const { name, query } of [
     await page.getByRole('button', { name: 'Back' }).click()
 
     await expect(page).toHaveURL(
-      'https://testcloud.comfy.org/?settings=plan-credits&workspace=ws_e2e'
+      'https://testplatform.comfy.org/profile/billing?workspace=ws_e2e'
     )
   })
 }

@@ -975,6 +975,30 @@ describe('AddCreditsDialog auto top-up with the purchase', () => {
     expect(emitted().close).toBeUndefined()
   })
 
+  it('sends the owner to Billing to check auto top-up when the host cannot read whether it turned on', async () => {
+    const { user, ports, emitted } = renderOffered()
+    ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
+    await user.click(checkbox())
+    await user.click(continueButton())
+
+    ports.landed?.({ status: 'unconfirmed' })
+
+    expect(
+      await screen.findByRole('heading', { name: 'Credits added' })
+    ).toBeVisible()
+    expect(
+      screen.getByText('Open Billing to check that auto top-up is on.')
+    ).toBeVisible()
+    expect(screen.getByRole('link', { name: 'Manage' })).toHaveAttribute(
+      'href',
+      BILLING_URL
+    )
+    expect(
+      screen.queryByRole('heading', { name: "Auto top-up didn't turn on" })
+    ).toBeNull()
+    expect(emitted().close).toBeUndefined()
+  })
+
   it('a checked purchase that lands without an outcome closes without claiming a failure', async () => {
     const { user, ports, emitted } = renderOffered()
     ports.autoTopUpSetupUrl = () => Promise.resolve(AUTO_TOP_UP_SETUP_URL)
