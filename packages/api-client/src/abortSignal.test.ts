@@ -108,6 +108,20 @@ describe('throwIfAborted', () => {
     expect(() => throwIfAborted(controller.signal)).toThrow(reason)
   })
 
+  it('throws a null abort reason as is, like the native method', () => {
+    removeThrowIfAborted()
+    const controller = new AbortController()
+    controller.abort(null)
+
+    let thrown: unknown = 'nothing thrown'
+    try {
+      throwIfAborted(controller.signal)
+    } catch (error) {
+      thrown = error
+    }
+    expect(thrown).toBeNull()
+  })
+
   it('throws an AbortError when the runtime records no abort reason', () => {
     const signal = { aborted: true, reason: undefined } as AbortSignal
 
