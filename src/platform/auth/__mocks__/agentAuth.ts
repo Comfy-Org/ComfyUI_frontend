@@ -6,7 +6,7 @@ import type {
   ensureSignedIn as realEnsureSignedIn,
   hasAgentCredential as realHasAgentCredential,
   withAgentAuth as realWithAgentAuth
-} from '@/workbench/extensions/agent/services/agent/agentAuth'
+} from '@/platform/auth/agentAuth'
 
 export const withAgentAuth = vi.fn<typeof realWithAgentAuth>(
   async (init) => init

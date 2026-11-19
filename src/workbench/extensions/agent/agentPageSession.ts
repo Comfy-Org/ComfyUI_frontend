@@ -5,7 +5,7 @@ import { assert } from '@/base/assert'
 
 import type { AgentDocFrameTransport } from './crdt/agentDocFrameTransport'
 import { createAgentDocFrameTransport } from './crdt/agentDocFrameTransport'
-import { agentSocketAuthParams } from './services/agent/agentAuth'
+import { agentSocketAuthParams } from '@/platform/auth/agentAuth'
 import type { AgentEventSocket } from './services/agent/agentEventSource'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 

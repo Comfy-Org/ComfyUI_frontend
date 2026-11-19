@@ -26,7 +26,7 @@ import { api } from '@/scripts/api'
 import type { AuthCredential, AuthScheme } from '@comfyorg/api-client/authTypes'
 
 import { refusedAttachmentsMessage } from '@/workbench/extensions/agent/utils/attachmentMessages'
-import { withAgentAuth } from './agentAuth'
+import { withAgentAuth } from '@/platform/auth/agentAuth'
 
 import {
   agentRequestFailureFingerprint,

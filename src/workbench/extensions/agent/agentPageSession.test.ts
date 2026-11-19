@@ -12,7 +12,7 @@ import {
 import { createAgentEventSource } from './services/agent/agentEventSource'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('./services/agent/agentAuth'))
+vi.mock(import('@/platform/auth/agentAuth'))
 vi.mock(import('./services/agent/agentEventSource'), { spy: true })
 
 let agentSocket: ReturnType<typeof createFakeAgentSocket>

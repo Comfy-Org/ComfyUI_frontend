@@ -9,7 +9,7 @@ import type { AuthCredential, AuthScheme } from '@comfyorg/api-client/authTypes'
 import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
-import { withAgentAuth } from './agentAuth'
+import { withAgentAuth } from '@/platform/auth/agentAuth'
 
 import type {
   AgentThreadSummary,
@@ -17,7 +17,7 @@ import type {
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 vi.mock(import('@/scripts/api'))
-vi.mock(import('./agentAuth'))
+vi.mock(import('@/platform/auth/agentAuth'))
 
 import {
   AgentApiError,
