@@ -1003,7 +1003,7 @@ describe('LGraphNode renderingColor', () => {
     ({ color }) => {
       const node = new LGraphNode('Colored')
       const defaultNode = new LGraphNode('Default')
-      node.color = color as unknown as string
+      Reflect.set(node, 'color', color)
 
       expect(node.renderingColor).toBe(defaultNode.renderingColor)
       expect(typeof node.renderingColor).toBe('string')
