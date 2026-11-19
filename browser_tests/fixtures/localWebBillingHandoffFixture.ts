@@ -20,6 +20,15 @@ import { mockTopupQuote } from '@e2e/fixtures/utils/topupQuoteRoute'
 const CLOUD_BASE_URL = 'https://cloud.local-billing.test'
 const BILLING_WEB_ORIGIN = 'https://billing.local-billing.test'
 export const ENTRY_URL = `${BILLING_WEB_ORIGIN}/handoff#token=one-time-handoff`
+
+/** `ENTRY_URL` as the app opens it: tagged with the local build, on the page `view` names. */
+export function taggedEntryUrl(view?: string): string {
+  const url = new URL(ENTRY_URL)
+  url.searchParams.set('utm_source', 'comfyui')
+  url.searchParams.set('utm_medium', 'app')
+  if (view) url.searchParams.set('view', view)
+  return url.href
+}
 export const WORKSPACE_ID = 'ws-personal'
 export const OWNER_ONLY_MESSAGE = 'Only the workspace owner can open billing'
 

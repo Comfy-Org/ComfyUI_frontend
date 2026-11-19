@@ -1,4 +1,5 @@
 import { useEventListener } from '@vueuse/core'
+import { attempt } from 'es-toolkit'
 import { ref } from 'vue'
 
 import type {
@@ -6,7 +7,6 @@ import type {
   Point2D as Point,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
@@ -16,7 +16,11 @@ import {
   hasNorthEdge,
   hasWestEdge
 } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+
+interface ResizeOrigin {
+  element: HTMLElement
+  position: Point
+}
 
 export interface ResizeCallbackPayload {
   size: Size
@@ -41,24 +45,19 @@ export function useNodeResize(
   const resizeStartPosition = ref<Point | null>(null)
   const resizeCorner = ref<CompassCorners>('SE')
 
-  // Snap-to-grid functionality
   const { shouldSnap, applySnapToPosition, applySnapToSize } = useNodeSnap()
 
-  // Shift key sync for LiteGraph canvas preview
   const { trackShiftKey } = useShiftKeySync()
 
-  const startResize = (event: PointerEvent, corner: CompassCorners = 'SE') => {
+  const startResize = (
+    event: PointerEvent,
+    corner: CompassCorners,
+    { element: nodeElement, position }: ResizeOrigin
+  ) => {
     event.stopPropagation()
 
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
-
-    const nodeElement = target.closest('[data-node-id]')
-    if (!(nodeElement instanceof HTMLElement)) return
-
-    const rawNodeId = nodeElement.dataset.nodeId
-    if (!rawNodeId) return
-    const nodeId = toNodeId(rawNodeId)
 
     const rect = nodeElement.getBoundingClientRect()
     const scale = transformState.camera.z
@@ -80,21 +79,12 @@ export function useNodeResize(
       return measured / currentScale
     }
 
-    const { rootGraphId } = useCanvasStore()
-    const nodeLayout = rootGraphId
-      ? layoutStore.getNodeLayout(rootGraphId, nodeId)
-      : null
-    const startPosition: Point = nodeLayout
-      ? { ...nodeLayout.position }
-      : { x: 0, y: 0 }
+    const startPosition: Point = { ...position }
 
-    // Track shift key state and sync to canvas for snap preview
     const stopShiftSync = trackShiftKey(event.shiftKey)
 
-    // Capture pointer to ensure we get all move/up events
     target.setPointerCapture(event.pointerId)
 
-    // Mark as resizing to prevent drag from activating
     layoutStore.isResizingVueNodes.value = true
     isResizing.value = true
     resizeStartPointer.value = { x: event.clientX, y: event.clientY }
@@ -141,7 +131,7 @@ export function useNodeResize(
           newWidth = resizeStartSize.value.width - deltaX
           newHeight = resizeStartSize.value.height - deltaY
           break
-        default: // SE
+        default:
           newWidth = resizeStartSize.value.width + deltaX
           newHeight = resizeStartSize.value.height + deltaY
           break
@@ -150,9 +140,7 @@ export function useNodeResize(
       const isWestCorner = hasWestEdge(activeCorner)
       const isNorthCorner = hasNorthEdge(activeCorner)
 
-      // Apply snap-to-grid
       if (shouldSnap(moveEvent)) {
-        // Snap position first for N/W corners, then compensate size
         if (isNorthCorner || isWestCorner) {
           const originalX = newX
           const originalY = newY
@@ -176,7 +164,6 @@ export function useNodeResize(
         newHeight = snappedSize.height
       }
 
-      // Enforce minimum size with position compensation (matching litegraph)
       const minWidth =
         parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
         MIN_NODE_WIDTH
@@ -187,11 +174,6 @@ export function useNodeResize(
         }
         newWidth = minWidth
       }
-      // Re-measure on each move with the candidate width applied: widget
-      // content (e.g. painter controls) can re-flow taller as width shrinks,
-      // raising the true minimum. Probing with newWidth — not the DOM's
-      // current width — keeps the clamp accurate on the frame that crosses
-      // a responsive breakpoint.
       const minContentHeight = measureMinContentHeight(newWidth)
       if (newHeight < minContentHeight) {
         if (isNorthCorner) {
@@ -207,15 +189,11 @@ export function useNodeResize(
         size: { width: newWidth, height: newHeight }
       }
 
-      // Only include position for non-SE corners
       if (activeCorner !== 'SE') {
         payload.position = { x: newX, y: newY }
       }
 
-      const targetNodeElement = target.closest('[data-node-id]')
-      if (targetNodeElement instanceof HTMLElement) {
-        resizeCallback(payload, targetNodeElement)
-      }
+      resizeCallback(payload, nodeElement)
     }
 
     const cleanup = () => {
@@ -226,7 +204,6 @@ export function useNodeResize(
       resizeStartSize.value = null
       resizeStartPosition.value = null
 
-      // Stop tracking shift key state
       stopShiftSync()
 
       stopMoveListen()
@@ -236,11 +213,7 @@ export function useNodeResize(
 
     const handlePointerUp = (upEvent: PointerEvent) => {
       if (isResizing.value) {
-        try {
-          target.releasePointerCapture(upEvent.pointerId)
-        } catch {
-          // Pointer capture may already be released
-        }
+        attempt(() => target.releasePointerCapture(upEvent.pointerId))
         cleanup()
       }
     }

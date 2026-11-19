@@ -69,7 +69,6 @@ interface WidgetErrorTarget {
 }
 
 export interface ProcessedWidget extends WidgetGridItem {
-  handleContextMenu: (e: PointerEvent) => void
   hasError: boolean
   tooltipText: string
   updateHandler: (value: WidgetValue) => void
@@ -78,7 +77,7 @@ export interface ProcessedWidget extends WidgetGridItem {
 
 export interface WidgetUiCallbacks {
   getTooltipText: (widget: WidgetTooltipSource, fullValue?: string) => string
-  handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
+  handleNodeRightClick?: (e: PointerEvent, nodeId: NodeId) => void
 }
 
 export interface ComputeProcessedWidgetsOptions {
@@ -357,6 +356,20 @@ interface WidgetProcessingContext {
   ui: WidgetUiCallbacks
 }
 
+function widgetContextMenu(
+  ctx: WidgetProcessingContext,
+  widgetName: string
+): ((e: PointerEvent) => void) | undefined {
+  const { handleNodeRightClick } = ctx.ui
+  if (!handleNodeRightClick) return undefined
+  return (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    handleNodeRightClick(e, ctx.nodeData.id)
+    showNodeOptions(e, { nodeId: ctx.nodeData.id, widgetName })
+  }
+}
+
 function processWidget(
   id: WidgetId,
   ctx: WidgetProcessingContext
@@ -427,18 +440,9 @@ function processWidget(
     { name: widgetState.name, tooltip: renderState?.tooltip },
     fullValue
   )
-  const handleContextMenu = (e: PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    ctx.ui.handleNodeRightClick(e, ctx.nodeData.id)
-    showNodeOptions(e, {
-      nodeId: ctx.nodeData.id,
-      widgetName: widgetState.name
-    })
-  }
 
   return {
-    handleContextMenu,
+    handleContextMenu: widgetContextMenu(ctx, widgetState.name),
     get sizing() {
       return live ? getWidgetSizing(live.widget, live.node) : undefined
     },

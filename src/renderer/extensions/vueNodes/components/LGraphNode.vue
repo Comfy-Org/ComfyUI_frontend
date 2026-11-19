@@ -235,42 +235,13 @@
           !isSelectMode
         "
       >
-        <div
+        <NodeResizeHandle
           v-for="handle in RESIZE_HANDLES"
           :key="handle.corner"
-          role="button"
-          :data-corner="handle.corner"
-          :aria-label="t(handle.i18nKey)"
-          :class="
-            cn(
-              baseResizeHandleClasses,
-              handle.positionClasses,
-              handle.cursorClass,
-              'group-hover/node:opacity-100'
-            )
-          "
-          @pointerdown.stop="handleResizePointerDown($event, handle.corner)"
-          @dblclick.stop="handleResizeDoubleClick"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 12 12"
-            :class="cn('absolute size-2/5', handle.svgPositionClasses)"
-            :style="
-              handle.svgTransform
-                ? { transform: handle.svgTransform }
-                : undefined
-            "
-          >
-            <path
-              d="M11 1L1 11M11 6L6 11"
-              stroke="var(--color-muted-foreground)"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            />
-          </svg>
-        </div>
+          :handle
+          @resize="handleResizePointerDown"
+          @fit="handleResizeDoubleClick"
+        />
       </template>
     </div>
   </div>
@@ -367,6 +338,7 @@ import GrowableRegionHandle from './GrowableRegionHandle.vue'
 import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
+import NodeResizeHandle from './NodeResizeHandle.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 import {
@@ -521,9 +493,6 @@ const handleContextMenu = (event: MouseEvent) => {
   showNodeOptions(event, { nodeId: nodeData.id })
 }
 
-const baseResizeHandleClasses =
-  'absolute z-30 h-5 w-5 opacity-0 pointer-events-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/40 touch-none'
-
 function resizeNodeTo(
   height: number,
   width = size.value.width,
@@ -577,7 +546,8 @@ const handleResizePointerDown = (
   corner: CompassCorners
 ) => {
   if (event.button !== 0 || !canResizeNode.value) return
-  startResize(event, corner)
+  const element = nodeRef.value
+  if (element) startResize(event, corner, { element, position: position.value })
 }
 
 const mediaRegions = computed(() => [
