@@ -204,6 +204,7 @@ describe('the payment watch', () => {
     tabs: (AddCreditsCheckoutTab | null)[]
     checkouts: AddCreditsCheckoutResult[]
     owns?: () => boolean
+    checkoutOpened?: () => void
   }) {
     let landed: (() => void) | undefined
     const watchPayment = vi.fn((onPayment: () => void) => {
@@ -221,7 +222,10 @@ describe('the payment watch', () => {
           reserveTab: () => options.tabs.shift() ?? null,
           watchPayment,
           singleUseCheckout: true,
-          ...(options.owns ? { ownsCheckout: options.owns } : {})
+          ...(options.owns ? { ownsCheckout: options.owns } : {}),
+          ...(options.checkoutOpened
+            ? { checkoutOpened: options.checkoutOpened }
+            : {})
         },
         facts: { bounds: ADD_CREDITS_FALLBACK_BOUNDS, canTopUp: true },
         initialAmount: initialAddCreditsAmount(null),
@@ -233,6 +237,25 @@ describe('the payment watch', () => {
   }
 
   const FAILED = { kind: 'checkout_failed' } as const
+
+  it('tells the host a checkout opened only when its tab navigated or the blocked link was followed', async () => {
+    const checkoutOpened = vi.fn()
+    const { dialog } = watchedDialog({
+      tabs: [tab(), null],
+      checkouts: [OPENED],
+      checkoutOpened
+    })
+
+    await dialog.continueToCheckout()
+    expect(checkoutOpened).toHaveBeenCalledOnce()
+
+    await dialog.reopenCheckout()
+    expect(dialog.state.value.step).toBe('checkout_blocked')
+    expect(checkoutOpened).toHaveBeenCalledOnce()
+
+    dialog.followBlockedLink()
+    expect(checkoutOpened).toHaveBeenCalledTimes(2)
+  })
 
   it('still closes the dialog when the first checkout is paid after a blocked reopen is refused', async () => {
     const { dialog, onLanded, land } = watchedDialog({

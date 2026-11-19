@@ -36,8 +36,7 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   AddCreditsTranslate,
-  AutoTopUpActivation,
-  BillingOperationTerminal
+  AutoTopUpActivation
 } from '@comfyorg/account-core/billing'
 import { addCreditsRefusalFor } from '@comfyorg/account-core/billing'
 import type { AddCreditsPorts } from '@comfyorg/account-ui/billing'
@@ -73,8 +72,8 @@ import { useBillingDialogsAccess } from '@/platform/billing/subscription/composa
 import { useAddCreditsPlanLine } from '@/platform/billing/composables/useTopUpPlanCreditCopy'
 import { useTopupOperation } from '@/platform/billing/composables/useTopupOperation'
 import { topupCheckoutReturnUrl } from '@/platform/billing/topupCheckoutReturnUrl'
+import type { CheckoutJourneyRecord } from '@/platform/billing/utils/checkoutJourney'
 import {
-  clearCheckoutJourney,
   getActiveCheckoutJourney,
   resolveCheckoutAssignment,
   resolveCheckoutJourney,
@@ -117,13 +116,8 @@ const { canTopUp, topUpDenial } = useBillingCapabilities()
 const autoTopUpOffer = useAutoTopUpSetupOffer()
 const autoTopUpChoice = useAddCreditsAutoTopUpOffer()
 const { payment: processingPayment } = useProcessingTopupPayment()
-const {
-  billingClient,
-  topupOperation,
-  createHostedCheckout,
-  openTopupPurchase,
-  quoteTopup
-} = useTopupOperation()
+const { topupOperation, createHostedCheckout, openTopupPurchase, quoteTopup } =
+  useTopupOperation()
 const planLine = useAddCreditsPlanLine()
 
 const negativeBalanceCredits = computed(() => {
@@ -139,8 +133,15 @@ const pendingTopup = computed(() =>
 )
 
 let paymentWatched = false
-let purchaseStartedAt: number | undefined
 const readingActivation = shallowRef(false)
+let ownedJourney: CheckoutJourneyRecord | null = null
+
+function activeOwnedJourney(): CheckoutJourneyRecord | null {
+  const active = getActiveCheckoutJourney()
+  return ownedJourney !== null && active?.journey_id === ownedJourney.journey_id
+    ? active
+    : null
+}
 
 function trackTopupStarted(amountCents: number): void {
   telemetry?.trackBillingEvent({
@@ -150,57 +151,19 @@ function trackTopupStarted(amountCents: number): void {
     payment_intent_source: source,
     amount_cents: amountCents
   })
-  telemetry?.trackBillingEvent({
-    operation: 'operation',
-    stage: 'started',
-    outcome: 'pending',
-    operation_type: 'topup',
-    billing_client: billingClient
-  })
-  const journey = getActiveCheckoutJourney()
+  const journey = activeOwnedJourney()
   if (journey) trackCheckoutJourneyPhase(journey, { phase: 'submitted' })
 }
 
-function trackTopupTerminal(
-  startedAt: number,
-  terminal: BillingOperationTerminal
-): void {
-  const duration_ms = Date.now() - startedAt
-  telemetry?.trackBillingEvent(
-    terminal.stage === 'succeeded'
-      ? {
-          operation: 'topup',
-          stage: 'succeeded',
-          outcome: 'success',
-          payment_intent_source: source,
-          duration_ms
-        }
-      : {
-          operation: 'topup',
-          stage: 'failed',
-          outcome: 'failure',
-          payment_intent_source: source,
-          failure_category: terminal.failure_category,
-          duration_ms
-        }
-  )
+function trackTopupCheckoutFailed(startedAt: number): void {
   telemetry?.trackBillingEvent({
-    operation: 'operation',
-    operation_type: 'topup',
-    billing_client: billingClient,
-    ...terminal,
-    duration_ms
+    operation: 'topup',
+    stage: 'failed',
+    outcome: 'failure',
+    payment_intent_source: source,
+    failure_category: 'unknown',
+    duration_ms: Date.now() - startedAt
   })
-}
-
-function trackTopupLanded(): void {
-  if (purchaseStartedAt === undefined) return
-  trackTopupTerminal(purchaseStartedAt, {
-    stage: 'succeeded',
-    outcome: 'success'
-  })
-  purchaseStartedAt = undefined
-  clearCheckoutJourney()
 }
 
 interface OwnedCheckout {
@@ -371,16 +334,7 @@ const ports: AddCreditsPorts = {
       : opensBillingWeb(amountCents)
         ? openBillingWebCheckout(amountCents, signal, autoTopUp)
         : createHostedTopupCheckout(amountCents, signal, autoTopUp))
-    if (result.status === 'ok') {
-      purchaseStartedAt = startedAt
-      handOffCheckoutJourney()
-    } else {
-      trackTopupTerminal(startedAt, {
-        stage: 'failed',
-        outcome: 'failure',
-        failure_category: 'unknown'
-      })
-    }
+    if (result.status === 'error') trackTopupCheckoutFailed(startedAt)
     return result
   },
   reserveTab: opensHandoff ? reserveBillingHandoffTab : reservePurchaseTab,
@@ -397,7 +351,6 @@ const ports: AddCreditsPorts = {
       onBalanceIncreased: async () => {
         const checkout = ownedCheckout
         if (!ownsCheckout(checkout)) return
-        trackTopupLanded()
         const { activationSessionId } = checkout
         if (activationSessionId === undefined)
           return landed(
@@ -432,7 +385,10 @@ const ports: AddCreditsPorts = {
     }
   },
   autoTopUpSetupUrl: autoTopUpOffer.setupUrl,
-  ownsCheckout: () => ownsCheckout(ownedCheckout)
+  ownsCheckout: () => ownsCheckout(ownedCheckout),
+  checkoutOpened() {
+    if (activeOwnedJourney()) handOffCheckoutJourney()
+  }
 }
 
 function close() {
@@ -457,7 +413,9 @@ function enterTopupJourney(): void {
     intent: entrySource,
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })
-  if (resolved.status === 'blocked' || resolved.resumed) return
+  if (resolved.status === 'blocked') return
+  ownedJourney = resolved.record
+  if (resolved.resumed) return
 
   trackCheckoutJourneyPhase(resolved.record, { phase: 'entered' })
 }
