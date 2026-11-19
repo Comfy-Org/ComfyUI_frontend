@@ -4,7 +4,6 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  CreateTopupCheckoutResponse,
   Plan,
   PreviewSubscribeResponse,
   SavedPaymentMethod,
@@ -20,35 +19,20 @@ import {
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { CancelSubscriptionDialog } from '@e2e/fixtures/components/CancelSubscriptionDialog'
-import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
+import { billingClient } from '@e2e/fixtures/utils/billingClient'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { keepPricingTableInApp } from '@e2e/fixtures/utils/platformPlans'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-/**
- * Subscription outcomes the other SDK-rail specs leave uncovered: leaving a
- * team plan for a personal one, a subscribe parked on a hosted payment page,
- * a session where only the subscription rail is on, and the end date a
- * cancelled plan shows once the page is reloaded.
- *
- * As in `planChangeSdkRail.spec.ts`, the transport is what tells the rails
- * apart: the SDK runs on `fetch` and keys every write, the legacy workspace
- * client runs on axios' XHR adapter and keys none.
- */
-const SUBSCRIPTION_RAIL_ONLY = {
-  billing_control_enabled: true,
-  unified_cloud_auth: true,
-  billing_sdk_subscription_enabled: true,
-  billing_sdk_topup_enabled: false
+const RAIL_FEATURES = {
+  billing_control_enabled: true
 } satisfies RemoteConfig
 
 const OPERATION_ID = 'op-e2e-outcome'
-const TOPUP_CHECKOUT_URL = 'https://checkout.stripe.com/c/pay/cs_test_outcome'
 const HOSTED_PAYMENT_URL = 'https://checkout.stripe.example/pay/op-e2e-outcome'
 
 const STANDARD_ANNUAL_PLAN = createPlan({
@@ -136,7 +120,6 @@ interface RailRoutes {
   readonly previewRequests: Request[]
   readonly opsRequests: Request[]
   readonly cancelRequests: Request[]
-  readonly topupRequests: Request[]
   readonly statusRequests: Request[]
   readonly memberRemovals: Request[]
   openedUrls: () => Promise<string[]>
@@ -158,7 +141,6 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
     previewRequests: [] as Request[],
     opsRequests: [] as Request[],
     cancelRequests: [] as Request[],
-    topupRequests: [] as Request[],
     statusRequests: [] as Request[],
     memberRemovals: [] as Request[]
   }
@@ -192,12 +174,8 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
         is_original_owner: true
       })
     ],
-    features: SUBSCRIPTION_RAIL_ONLY,
+    features: RAIL_FEATURES,
     billingCapabilities: createWorkspaceBillingCapabilities(setup.workspace)
-  })
-  await new FeatureFlagHelper(page).seedServerFlags({
-    billing_sdk_subscription_enabled: true,
-    billing_sdk_topup_enabled: false
   })
 
   await page.route('**/api/settings', (route) =>
@@ -245,14 +223,6 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
       jsonRoute({ billing_op_id: OPERATION_ID, status: 'pending' })
     )
   })
-  await page.route('**/api/billing/topup/checkout', (route) => {
-    routes.topupRequests.push(route.request())
-    return route.fulfill(
-      jsonRoute({
-        checkout_url: TOPUP_CHECKOUT_URL
-      } satisfies CreateTopupCheckoutResponse)
-    )
-  })
   await page.route('**/api/billing/ops/**', (route) => {
     routes.opsRequests.push(route.request())
     return route.fulfill(jsonRoute(setup.operation?.() ?? SETTLED_OPERATION))
@@ -275,11 +245,6 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
 /** The SDK transport sends this header; the legacy axios client never does. */
 function idempotencyKey(request: Request): string | undefined {
   return request.headers()['idempotency-key']
-}
-
-/** Which transport issued the request, and so which rail served it. */
-function transport(request: Request): string {
-  return request.resourceType()
 }
 
 /** Settings ▸ Workspace ▸ Plan & Credits. */
@@ -339,15 +304,14 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     await cloudAppExpect(successHeading(page)).toBeVisible()
     expect(routes.subscribeRequests).toHaveLength(1)
     const [issued] = routes.subscribeRequests
-    expect(transport(issued)).toBe('fetch')
+    expect(billingClient(issued)).toBe('sdk')
     expect(idempotencyKey(issued)).toBeTruthy()
     expect(issued.postDataJSON()).toMatchObject({
       plan_slug: 'creator-annual',
       idempotency_key: idempotencyKey(issued)
     })
     expect(routes.previewRequests.length).toBeGreaterThan(0)
-    expect(routes.previewRequests.map(transport)).not.toContain('xhr')
-    // The owner is the only member, so nothing is removed before billing.
+    expect(routes.previewRequests.map(billingClient)).not.toContain('legacy')
     expect(routes.memberRemovals).toHaveLength(0)
   })
 
@@ -380,12 +344,11 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
 
     await expect.poll(() => routes.openedUrls()).toEqual([HOSTED_PAYMENT_URL])
     expect(routes.subscribeRequests).toHaveLength(1)
-    expect(transport(routes.subscribeRequests[0])).toBe('fetch')
+    expect(billingClient(routes.subscribeRequests[0])).toBe('sdk')
     await expect(
       toast.withText('Verify your payment to finish setting up your workspace')
     ).toBeVisible()
 
-    // A poll that still reports the same parked step must not offer it again.
     const pollsBefore = routes.opsRequests.length
     await returnToTab(page)
     await expect
@@ -400,7 +363,7 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     await expect(successHeading(page)).toBeVisible()
     expect(await routes.openedUrls()).toEqual([HOSTED_PAYMENT_URL])
     expect(routes.subscribeRequests).toHaveLength(1)
-    expect(routes.opsRequests.map(transport)).not.toContain('xhr')
+    expect(routes.opsRequests.map(billingClient)).not.toContain('legacy')
   })
 
   test('shows the progress toast while a subscribe processes, and clears it when it settles', async ({
@@ -441,38 +404,6 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     await expect(progressToast).toBeHidden()
   })
 
-  test('keeps each write on its own rail when only the subscription rail is on', async ({
-    page
-  }) => {
-    const routes = await setupRail(page, {
-      workspace: workspace('personal', 'owner'),
-      billingStatus: () => ACTIVE_STANDARD_STATUS
-    })
-    await page.goto(APP_URL)
-    await waitForCloudApp(page)
-
-    const cancelDialog = new CancelSubscriptionDialog(page)
-    await cancelDialog.open('2099-02-20T00:00:00Z')
-    await cancelDialog.confirmCancel()
-
-    const topUp = new TopUpCreditsDialog(page)
-    await topUp.open()
-    await topUp.continueButton.click()
-
-    await expect.poll(() => routes.topupRequests.length).toBe(1)
-    await expect.poll(() => routes.openedUrls()).toContain(TOPUP_CHECKOUT_URL)
-    expect(routes.cancelRequests).toHaveLength(1)
-    const [cancel] = routes.cancelRequests
-    expect(transport(cancel)).toBe('fetch')
-    expect(idempotencyKey(cancel)).toBeTruthy()
-    const [topup] = routes.topupRequests
-    expect(transport(topup)).toBe('xhr')
-    expect(idempotencyKey(topup)).toBeUndefined()
-    expect(topup.postDataJSON()).toMatchObject({
-      idempotency_key: expect.stringMatching(/^[0-9a-f-]{36}$/i)
-    })
-  })
-
   test('shows the server end date for a cancelled plan after a reload', async ({
     page
   }) => {
@@ -497,7 +428,7 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
     const cancelDialog = new CancelSubscriptionDialog(page)
     await cancelDialog.open('2099-03-15T10:00:00Z')
     await cancelDialog.confirmCancel()
-    expect(transport(routes.cancelRequests[0])).toBe('fetch')
+    expect(billingClient(routes.cancelRequests[0])).toBe('sdk')
 
     const statusReadsBeforeReload = routes.statusRequests.length
     await page.reload()
@@ -510,6 +441,6 @@ test.describe('Subscription rail outcomes', { tag: '@cloud' }, () => {
       statusReadsBeforeReload
     )
     expect(readsAfterReload.length).toBeGreaterThan(0)
-    expect(readsAfterReload.map(transport)).not.toContain('xhr')
+    expect(readsAfterReload.map(billingClient)).not.toContain('legacy')
   })
 })

@@ -23,7 +23,7 @@
           cn(
             WidgetInputBaseClass,
             'h-auto min-w-[4ch] truncate',
-            size === 'large' ? 'py-3 text-sm' : 'py-2 text-xs',
+            size === 'large' ? 'py-3' : 'text-xs',
             'h-full px-2 text-right not-disabled:bg-transparent focus-visible:ring-0 aria-invalid:ring-0',
             loading && 'pl-9'
           )

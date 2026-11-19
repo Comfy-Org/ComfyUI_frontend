@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "双击节点标题以编辑"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "缩小大型图像预览",
+    "tooltip": "在节点 2.0 中，将节点上的大型图像显示为副本，其最长边最大为 1024px，以便在显示多个大型预览时仍保持流畅。关闭此选项将始终显示原始图像。"
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "中键单击创建新的转接点"
   },

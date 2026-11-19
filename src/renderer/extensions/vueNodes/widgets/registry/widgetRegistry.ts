@@ -3,6 +3,7 @@
  */
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
+import type { WidgetSizing } from '@comfyorg/graph-model/widgets'
 
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 
@@ -400,7 +401,8 @@ const EXPANDING_TYPES = [
   'videoconcat'
 ] as const
 
-export function shouldExpand(type: string): boolean {
+export function shouldExpand(type: string, sizing?: WidgetSizing): boolean {
+  if (sizing) return sizing.kind === 'growable'
   const canonicalType = getCanonicalType(type)
   return EXPANDING_TYPES.includes(
     canonicalType as (typeof EXPANDING_TYPES)[number]

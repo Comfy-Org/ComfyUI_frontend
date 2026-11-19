@@ -235,6 +235,37 @@ describe(useMissingModelDownloadStore, () => {
     expect(hostDownloadModel).not.toHaveBeenCalled()
   })
 
+  it('resumes a paused download instead of starting another', () => {
+    installDesktopHost()
+    const resumeDownload = vi.fn().mockResolvedValue(true)
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, resumeDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('paused')
+
+    store.download(model)
+
+    expect(resumeDownload).toHaveBeenCalledWith('job-1')
+    expect(hostDownloadModel).not.toHaveBeenCalled()
+  })
+
+  it('does not resume a paused download of another source to the same file', () => {
+    installDesktopHost()
+    const resumeDownload = vi.fn().mockResolvedValue(true)
+    window.__comfyDesktop2 = { ...window.__comfyDesktop2, resumeDownload }
+    const store = useMissingModelDownloadStore()
+    store.startTracking()
+    emitHostProgress('paused', {
+      url: 'https://huggingface.co/other/repo/resolve/main/model.safetensors'
+    })
+
+    store.download(model)
+
+    expect(store.canResume(model)).toBe(false)
+    expect(resumeDownload).not.toHaveBeenCalled()
+    expect(hostDownloadModel).not.toHaveBeenCalled()
+  })
+
   it('does not fail a retry when the earlier request is refused late', async () => {
     installDesktopHost()
     let refuse: (accepted: boolean) => void = () => {}

@@ -8,7 +8,7 @@ tools: [Read, Grep]
 Check changed code against the repository's conventions.
 
 1. Read the root `AGENTS.md`, every `AGENTS.md` above each changed file, and the `docs/guidance/*.md` files whose globs match it.
-2. Flag violations in changed code. Lint already rejects `any`, `@ts-ignore`, mixed type imports, `dark:` classes, raw template text, `v-html`, `console.log`, `throw new Error` in `src/`, and PrimeVue imports; do not repeat those.
+2. Flag violations in changed code. Lint already rejects `any`, `@ts-ignore`, mixed type imports, `dark:` in `.vue` class strings, template literals, object keys, and array elements, raw template text, `v-html` in `src/`, `console.log`, `throw new Error` in `src/`, and PrimeVue imports; do not repeat those.
 
 Pay particular attention to these rules, which no lint rule enforces:
 
@@ -28,6 +28,8 @@ Pay particular attention to these rules, which no lint rule enforces:
 ### Tailwind
 
 - Class arrays (`:class="[]"`) instead of `cn()` from `@comfyorg/tailwind-utils`.
+- `dark:` in any `:class` expression lint cannot read statically, including `cn()` and other calls and ternaries, and in class strings in `.ts` modules.
+- CSS variable references written as `h-[--my-var]` instead of `h-(--my-var)`.
 - `!important` or the `!` prefix.
 - `<style>` blocks in SFCs.
 - Arbitrary values where a semantic token or fraction utility exists.

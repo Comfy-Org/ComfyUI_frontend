@@ -128,6 +128,7 @@ export type Settings = {
   'Comfy.OnboardingCoachmarks.Seen': Array<string>
   'Comfy.InstalledVersion': string | null
   'Comfy.Node.AllowImageSizeDraw': boolean
+  'Comfy.Node.DownscaleImagePreviews': boolean
   'Comfy.Minimap.Visible': boolean
   'Comfy.Minimap.NodeColors': boolean
   'Comfy.Minimap.ShowLinks': boolean
