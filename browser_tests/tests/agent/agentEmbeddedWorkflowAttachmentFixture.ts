@@ -24,7 +24,7 @@ import {
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-import MARKER_WORKFLOW_ASSET from '@e2e/assets/agent/embedded-workflow-marker.json'
+import MARKER_WORKFLOW_ASSET from '@e2e/assets/agent/embedded-workflow-marker.json' with { type: 'json' }
 import { createWorkflowBearingPng } from '@e2e/fixtures/data/agent/workflowBearingPng'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
