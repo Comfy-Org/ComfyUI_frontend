@@ -431,6 +431,19 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     return quoted.status === 'ok' ? quoted.value.credits : null
   }
 
+  async function openTopupPurchase(
+    amountCents: number,
+    signal: AbortSignal,
+    autoTopUp: TopupAutoTopUpSettings | undefined
+  ): Promise<string | undefined> {
+    const opened = await sdk.topup.createTopupPurchase({
+      amountCents,
+      signal,
+      ...(autoTopUp === undefined ? {} : { autoTopUp })
+    })
+    return opened.status === 'ok' ? opened.value.purchaseId : undefined
+  }
+
   async function createHostedTopupCheckout(
     amountCents: number,
     returnUrl: string,
@@ -655,6 +668,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     recoverPendingOperation,
     createTopup,
     createHostedTopupCheckout,
+    openTopupPurchase,
     quoteTopup,
     subscribe,
     previewSubscribe,

@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { cleanup, render, screen, waitFor } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { assert } from 'vitest'
 import type { VNode } from 'vue'
 
@@ -12,6 +12,7 @@ import type {
   PendingBillingOperation,
   SavedPaymentMethod,
   SucceededBillingOperation,
+  TopupPurchaseResult,
   TopupQuoteResult,
   TopupResult
 } from '@comfyorg/account-core/billing'
@@ -523,16 +524,6 @@ const SUCCEEDED: TopupResult = {
   creditsReconciled: true
 }
 
-const DECLINED: TopupResult = {
-  status: 'declined',
-  operation: {
-    ...failedOperation('card_declined', 'op_topup'),
-    phase: 'failed',
-    declineReason: 'card_declined',
-    retryable: true
-  }
-}
-
 const NO_ANSWER: TopupResult = {
   status: 'error',
   code: 'REQUEST_FAILED',
@@ -672,112 +663,6 @@ describe('FullPageTopupView paying once', () => {
     expect(fresh.idempotencyKey).not.toBe(first.idempotencyKey)
     expect(fresh.payment).toStrictEqual({ savedPaymentMethodId: 'pm_mc' })
   })
-
-  it.for<{
-    name: string
-    first: TopupResult
-    next: 'same card' | 'other card' | 'reload'
-  }>([
-    {
-      name: 'a decline, then the same card',
-      first: DECLINED,
-      next: 'same card'
-    },
-    {
-      name: 'a decline, then another card',
-      first: DECLINED,
-      next: 'other card'
-    },
-    { name: 'a decline, then a reload', first: DECLINED, next: 'reload' },
-    {
-      name: 'an unanswered Pay the re-read found uncharged, then another card',
-      first: NO_ANSWER,
-      next: 'other card'
-    }
-  ])(
-    'after $name, the next Pay is a new purchase under a new key',
-    async ({ first, next }) => {
-      const methods = { status: 'ok' as const, value: [VISA, MASTERCARD] }
-      const fake = renderTopup({
-        topupQuote: PAYS_ONCE,
-        paymentMethods: methods
-      })
-      fake.createInteractiveTopup.mockResolvedValueOnce(first)
-      await screen.findByText('Add credits · Acme Team')
-      await userEvent.click(payButton())
-      await waitFor(() => expect(payButton()).toBeEnabled())
-
-      let retried = fake
-      if (next === 'reload') {
-        cleanup()
-        retried = renderTopup({
-          topupQuote: PAYS_ONCE,
-          paymentMethods: methods
-        })
-        await screen.findByText('Add credits · Acme Team')
-      }
-      retried.createInteractiveTopup.mockResolvedValueOnce(SUCCEEDED)
-      if (next === 'other card') {
-        await userEvent.click(savedPicker())
-        await userEvent.click(
-          await screen.findByRole('option', { name: /4402/ })
-        )
-      }
-      await userEvent.click(payButton())
-
-      await waitFor(() =>
-        expect(retried.createInteractiveTopup).toHaveBeenCalledTimes(
-          next === 'reload' ? 1 : 2
-        )
-      )
-      const [before] = fake.createInteractiveTopup.mock.calls[0]
-      const after = retried.createInteractiveTopup.mock.lastCall?.[0]
-      expect(after?.idempotencyKey).toEqual(expect.any(String))
-      expect(after?.idempotencyKey).not.toBe(before.idempotencyKey)
-    }
-  )
-
-  it.for<{ name: string; payment: 'saved card' | 'new card' }>([
-    { name: 'a saved card', payment: 'saved card' },
-    { name: 'a new card', payment: 'new card' }
-  ])(
-    'a reload after an unanswered Pay with $name resends that purchase under its key before offering Pay, and charges nothing new',
-    async ({ payment }) => {
-      const methods = {
-        status: 'ok' as const,
-        value: payment === 'saved card' ? [VISA, MASTERCARD] : []
-      }
-      const fake = renderTopup({
-        topupQuote: PAYS_ONCE,
-        paymentMethods: methods
-      })
-      fake.createInteractiveTopup.mockResolvedValueOnce(NO_ANSWER)
-      await screen.findByText('Add credits · Acme Team')
-      if (payment === 'saved card') await userEvent.click(payButton())
-      else {
-        readyCardForm()
-        form.emit('confirm', 'ctoken_1', 'card')
-      }
-      await waitFor(() =>
-        expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
-      )
-
-      cleanup()
-      const reloaded = renderTopup({
-        topupQuote: PAYS_ONCE,
-        paymentMethods: methods,
-        topup: SUCCEEDED
-      })
-
-      expect(
-        await screen.findByRole('heading', { name: '5,275 credits added' })
-      ).toBeInTheDocument()
-      expect(reloaded.createInteractiveTopup).toHaveBeenCalledOnce()
-      const [sent] = fake.createInteractiveTopup.mock.calls[0]
-      const [resent] = reloaded.createInteractiveTopup.mock.calls[0]
-      expect(resent).toStrictEqual(sent)
-    }
-  )
 
   it.for<{ name: string; answer: TopupResult }>([
     { name: 'a 503', answer: NO_ANSWER },
@@ -1192,27 +1077,6 @@ describe('FullPageTopupView paying once', () => {
     }
   )
 
-  it('charges the method on file, never in this page, when the tab cannot keep an unanswered purchase through a reload', async () => {
-    const refuse = vi
-      .spyOn(sessionStorage, 'setItem')
-      .mockImplementation(() => {
-        throw new DOMException('blocked', 'SecurityError')
-      })
-    const fake = renderTopup({
-      topupQuote: PAYS_ONCE,
-      topup: SUCCEEDED,
-      paymentMethods: { status: 'ok', value: [{ ...VISA, is_default: true }] }
-    })
-    await screen.findByText('Add credits · Acme Team')
-
-    expect(form.mounts).toBe(0)
-    await userEvent.click(payButton())
-
-    await waitFor(() => expect(fake.createTopupCheckout).toHaveBeenCalledOnce())
-    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
-    refuse.mockRestore()
-  })
-
   it('keeps charging the method on file when the quote names no payment configuration', async () => {
     const fake = renderTopup({
       topup: SUCCEEDED,
@@ -1265,6 +1129,223 @@ describe('FullPageTopupView paying once', () => {
       expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
     }
   )
+})
+
+const PURCHASE_PATH = `${TOPUP_PATH}&purchase=tpp_1`
+
+const purchaseRead = (
+  status: 'open' | 'processing' | 'paid' | 'superseded' | 'expired',
+  billingOpId?: string
+): TopupPurchaseResult => ({
+  status: 'ok',
+  value: {
+    purchaseId: 'tpp_1',
+    status,
+    ...(billingOpId === undefined ? {} : { billingOpId })
+  }
+})
+
+const purchaseRefused = (
+  code: string,
+  httpStatus: number
+): TopupPurchaseResult => ({
+  status: 'error',
+  code: 'REQUEST_FAILED',
+  httpStatus,
+  serverCode: readBillingErrorCode({ code, message: 'refused' })
+})
+
+function renderPurchase(
+  initial: TopupPurchaseResult,
+  options: FakeBillingClientOptions = {}
+) {
+  const purchase = { read: initial }
+  const readTopupPurchase = vi.fn<
+    FakeBillingClient['client']['topup']['readTopupPurchase']
+  >(async () => purchase.read)
+  const fake = renderTopup(
+    {
+      topupQuote: PAYS_ONCE,
+      paymentMethods: { status: 'ok', value: [VISA, MASTERCARD] },
+      ...options
+    },
+    PURCHASE_PATH,
+    (built) => {
+      built.client.topup.readTopupPurchase = readTopupPurchase
+    }
+  )
+  return { fake, purchase, readTopupPurchase }
+}
+
+describe('FullPageTopupView paying a Cloud purchase', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
+  it('pays through the purchase the link names', async () => {
+    const { fake } = renderPurchase(purchaseRead('open'), {
+      topup: SUCCEEDED
+    })
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    )
+    expect(fake.createInteractiveTopup.mock.calls[0][0]).toMatchObject({
+      purchaseId: 'tpp_1',
+      payment: { savedPaymentMethodId: 'pm_visa' }
+    })
+  })
+
+  it.for<{ name: string; read: TopupPurchaseResult; heading: string }>([
+    {
+      name: 'a newer Continue replaced it',
+      read: purchaseRead('superseded'),
+      heading: 'Checkout not available'
+    },
+    {
+      name: 'it expired',
+      read: purchaseRead('expired'),
+      heading: 'Checkout not available'
+    },
+    {
+      name: 'it belongs to the account signed in before',
+      read: purchaseRefused('PURCHASE_NOT_FOUND', 404),
+      heading: 'Checkout not available'
+    },
+    {
+      name: 'it cannot be read, so money may still be moving',
+      read: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      heading: "Couldn't load your checkout"
+    }
+  ])('offers no Pay on arrival when $name', async ({ read, heading }) => {
+    const { fake } = renderPurchase(read)
+
+    expect(await screen.findByRole('heading', { name: heading })).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Pay' })).toBeNull()
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+    expect(fake.recover).not.toHaveBeenCalled()
+  })
+
+  it.for<{ name: string; read: TopupPurchaseResult; heading: string }>([
+    {
+      name: 'a reload after the purchase was paid, though the page kept no pointer',
+      read: purchaseRead('paid', 'op_topup'),
+      heading: 'Already completed'
+    },
+    {
+      name: 'a reload while its attempt is still unresolved',
+      read: purchaseRead('processing', 'op_topup'),
+      heading: 'Payment in progress'
+    }
+  ])(
+    'follows the purchase’s own attempt on $name, and resends nothing',
+    async ({ read, heading }) => {
+      const operation =
+        heading === 'Already completed'
+          ? settledTopup({ amountChargedCents: 2500, creditsAdded: 5275 })
+          : topupInFlight({
+              authenticationState: 'processing',
+              serverPhase: 'in_progress'
+            })
+      const { fake } = renderPurchase(read, {
+        recover: { status: 'ok', value: operation }
+      })
+
+      expect(
+        await screen.findByRole('heading', { name: heading })
+      ).toBeVisible()
+      expect(fake.recover).toHaveBeenCalledWith(
+        expect.objectContaining({
+          operation: { id: 'op_topup', kind: 'topup' }
+        })
+      )
+      expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+    }
+  )
+
+  it('after an unanswered Pay, a Pay with another card that Cloud refuses for the unresolved attempt follows that attempt instead of charging', async () => {
+    const { fake, purchase } = renderPurchase(purchaseRead('open'))
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce(NO_ANSWER)
+      .mockResolvedValueOnce({
+        status: 'error',
+        code: 'CONFLICT',
+        httpStatus: 409,
+        serverCode: readBillingErrorCode({
+          code: 'PURCHASE_ATTEMPT_IN_PROGRESS',
+          message: 'refused'
+        })
+      })
+    await screen.findByText('Add credits · Acme Team')
+    await userEvent.click(payButton())
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    purchase.read = purchaseRead('processing', 'op_topup')
+    fake.recover.mockResolvedValue({
+      status: 'ok',
+      value: topupInFlight({
+        authenticationState: 'processing',
+        serverPhase: 'in_progress'
+      })
+    })
+
+    await userEvent.click(savedPicker())
+    await userEvent.click(await screen.findByRole('option', { name: /4402/ }))
+    await userEvent.click(payButton())
+
+    expect(
+      await screen.findByRole('heading', { name: 'Payment in progress' })
+    ).toBeVisible()
+    expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
+    expect(fake.recover).toHaveBeenLastCalledWith(
+      expect.objectContaining({ operation: { id: 'op_topup', kind: 'topup' } })
+    )
+  })
+
+  it('says a newer purchase replaced this one when Cloud refuses a stale page’s Pay', async () => {
+    const { fake, purchase } = renderPurchase(purchaseRead('open'))
+    fake.createInteractiveTopup.mockResolvedValueOnce({
+      status: 'error',
+      code: 'CONFLICT',
+      httpStatus: 409,
+      serverCode: readBillingErrorCode({
+        code: 'PURCHASE_SUPERSEDED',
+        message: 'refused'
+      })
+    })
+    await screen.findByText('Add credits · Acme Team')
+    purchase.read = purchaseRead('superseded')
+
+    await userEvent.click(payButton())
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'A newer purchase replaced this one'
+    )
+    expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+  })
+
+  it('pays on the hosted checkout, never the method on file, when the quote names no payment configuration', async () => {
+    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+    const { fake } = renderPurchase(purchaseRead('open'), {
+      topupQuote: QUOTED
+    })
+    const hosted = vi
+      .spyOn(fake.client.topup, 'createHostedTopupCheckout')
+      .mockResolvedValue({
+        status: 'ok',
+        url: 'https://checkout.stripe.com/c/pay/cs_1'
+      })
+    await screen.findByText('Add credits · Acme Team')
+
+    await userEvent.click(payButton())
+
+    await waitFor(() => expect(hosted).toHaveBeenCalledOnce())
+    expect(hosted.mock.calls[0][0]).not.toHaveProperty('autoTopUp')
+    expect(fake.createTopupCheckout).not.toHaveBeenCalled()
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
 })
 
 const AUTO_TOP_UP_PATH = `${TOPUP_PATH}&auto_top_up_threshold_credits=1055&auto_top_up_target_credits=11605`

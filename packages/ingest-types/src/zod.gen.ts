@@ -5664,7 +5664,30 @@ export const zInteractiveTopupRequest = z.object({
   make_default: z.boolean().optional().default(false),
   return_url: z.string().min(1).max(2048).optional(),
   save_payment_method: z.boolean().optional().default(false),
-  saved_payment_method_id: z.string().min(1).max(255).optional()
+  saved_payment_method_id: z.string().min(1).max(255).optional(),
+  purchase_id: z.string().min(1).max(64).optional()
+})
+
+export const zCreateTopupPurchaseRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(99999999)),
+  auto_top_up: zTopupAutoTopUpSettings.optional()
+})
+
+export const zTopupPurchase = z.object({
+  amount_cents: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      error: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      error: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  auto_top_up: zTopupAutoTopUpSettings.optional(),
+  billing_op_id: z.string().optional(),
+  billing_op_status: z.string().optional(),
+  expires_at: z.iso.datetime(),
+  purchase_id: z.string(),
+  status: z.enum(['open', 'processing', 'paid', 'superseded', 'expired'])
 })
 
 /**

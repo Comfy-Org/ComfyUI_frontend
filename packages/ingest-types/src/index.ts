@@ -1217,6 +1217,8 @@ export type {
   InputUploadResponse,
   InputUploadUrlRequest,
   InteractiveTopupRequest,
+  CreateTopupPurchaseRequest,
+  TopupPurchase,
   InterruptJobData,
   InterruptJobError,
   InterruptJobErrors,

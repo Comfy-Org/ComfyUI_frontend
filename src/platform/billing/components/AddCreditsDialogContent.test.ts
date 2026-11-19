@@ -65,12 +65,21 @@ const hoisted = vi.hoisted(() => ({
   openPlatformBilling: vi.fn<() => Promise<void>>(async () => undefined),
   reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined),
   cloudTabNavigate: vi.fn<(url: string) => void>(),
+  openTopupPurchase:
+    vi.fn<
+      (
+        amountCents: number,
+        signal: AbortSignal,
+        autoTopUp: unknown
+      ) => Promise<string | undefined>
+    >(),
   billingWebTopupUrl:
     vi.fn<
       (
         amountCents: number,
         autoTopUp: unknown,
-        workspaceId: string | undefined
+        workspaceId: string | undefined,
+        purchaseId: string
       ) => string | undefined
     >()
 }))
@@ -100,6 +109,7 @@ vi.mock(
         createHostedCheckout: hoisted.createHostedCheckout,
         dismissOperation: vi.fn(),
         adoptPendingOperation: vi.fn(),
+        openTopupPurchase: hoisted.openTopupPurchase,
         quoteTopup: async () => 10_550
       })
     }
@@ -782,6 +792,11 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
       sessionId: 'cs_1'
     })
     hoisted.billingWebTopupUrl.mockReturnValue(TOPUP_PAGE)
+    hoisted.openTopupPurchase.mockReset()
+    let purchases = 0
+    hoisted.openTopupPurchase.mockImplementation(
+      async () => `tpp_${++purchases}`
+    )
   })
 
   afterEach(() => {
@@ -793,6 +808,7 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
     on: boolean
     page: string | undefined
     opens: string
+    noPurchase?: boolean
   }>([
     {
       name: 'unified_billing_settings on',
@@ -811,21 +827,32 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
       on: true,
       page: undefined,
       opens: CHECKOUT_URL
+    },
+    {
+      name: 'unified_billing_settings on but Cloud opened no purchase',
+      on: true,
+      page: TOPUP_PAGE,
+      opens: CHECKOUT_URL,
+      noPurchase: true
     }
-  ])('Continue opens $opens with $name', async ({ on, page, opens }) => {
-    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = on
-    hoisted.billingWebTopupUrl.mockReturnValue(page)
-    const { user } = renderDialog({ atCheckout: false })
+  ])(
+    'Continue opens $opens with $name',
+    async ({ on, page, opens, noPurchase }) => {
+      vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = on
+      hoisted.billingWebTopupUrl.mockReturnValue(page)
+      if (noPurchase) hoisted.openTopupPurchase.mockResolvedValue(undefined)
+      const { user } = renderDialog({ atCheckout: false })
 
-    await user.click(continueButton())
+      await user.click(continueButton())
 
-    await waitFor(() =>
-      expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(opens)
-    )
-    expect(hoisted.createHostedCheckout).toHaveBeenCalledTimes(
-      opens === CHECKOUT_URL ? 1 : 0
-    )
-  })
+      await waitFor(() =>
+        expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(opens)
+      )
+      expect(hoisted.createHostedCheckout).toHaveBeenCalledTimes(
+        opens === CHECKOUT_URL ? 1 : 0
+      )
+    }
+  )
 
   it('carries the ticked auto top-up to billing-web and watches the balance for the payment', async () => {
     vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = true
@@ -839,13 +866,21 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
     await waitFor(() =>
       expect(hoisted.cloudTabNavigate).toHaveBeenCalledWith(TOPUP_PAGE)
     )
-    expect(hoisted.billingWebTopupUrl.mock.calls[0].slice(0, 2)).toEqual([
+    const ticked = {
+      threshold_credits: 1000,
+      target_credits: 11_550,
+      monthly_budget_cents: null
+    }
+    expect(hoisted.openTopupPurchase).toHaveBeenCalledExactlyOnceWith(
       5000,
-      {
-        threshold_credits: 1000,
-        target_credits: 11_550,
-        monthly_budget_cents: null
-      }
+      expect.any(AbortSignal),
+      ticked
+    )
+    expect(hoisted.billingWebTopupUrl.mock.calls[0]).toEqual([
+      5000,
+      ticked,
+      undefined,
+      'tpp_1'
     ])
     expect(hoisted.createHostedCheckout).not.toHaveBeenCalled()
     await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
@@ -876,46 +911,29 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
   })
 
   it.for([
-    {
-      name: 'billing-web page still open',
-      on: true,
-      closed: false,
-      pages: 1
-    },
-    {
-      name: 'billing-web page the customer closed',
-      on: true,
-      closed: true,
-      pages: 2
-    },
-    {
-      name: 'hosted checkout',
-      on: false,
-      closed: false,
-      pages: 2
-    }
+    { name: 'billing-web', on: true },
+    { name: 'hosted checkout', on: false }
   ])(
-    'Reopen with the $name leaves $pages payable page(s)',
-    async ({ on, closed, pages }) => {
+    'Reopen on $name opens a new page on a new purchase, which Cloud makes the only payable one',
+    async ({ on }) => {
       vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = on
       const { user } = renderDialog({ atCheckout: false })
 
       await user.click(continueButton())
       await waitFor(() => expect(hoisted.cloudTabNavigate).toHaveBeenCalled())
-      openedTabs[0].closed = closed
       await user.click(
         await screen.findByRole('button', { name: 'Reopen checkout' })
       )
 
+      await waitFor(() => expect(openedTabs).toHaveLength(2))
       await waitFor(() =>
-        expect(
-          hoisted.billingWebTopupUrl.mock.calls.length +
-            hoisted.createHostedCheckout.mock.calls.length
-        ).toBe(2)
+        expect(hoisted.cloudTabNavigate).toHaveBeenCalledTimes(2)
       )
-      expect(openedTabs).toHaveLength(pages)
-      expect(openedTabs[0].close).not.toHaveBeenCalled()
-      expect(openedTabs[0].focus.mock.calls.length > 0).toBe(pages === 1)
+      if (on)
+        expect(
+          hoisted.billingWebTopupUrl.mock.calls.map(([, , , id]) => id)
+        ).toEqual(['tpp_1', 'tpp_2'])
+      else expect(hoisted.createHostedCheckout).toHaveBeenCalledTimes(2)
     }
   )
 

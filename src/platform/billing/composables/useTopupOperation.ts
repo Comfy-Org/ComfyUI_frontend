@@ -105,6 +105,22 @@ export function useTopupOperation() {
       : { url: checkout_url, sessionId: session_id }
   }
 
+  async function openTopupPurchase(
+    amountCents: number,
+    signal: AbortSignal,
+    autoTopUp: TopupAutoTopUpSettings | undefined
+  ): Promise<string | undefined> {
+    if (sdkStore)
+      return sdkStore.openTopupPurchase(amountCents, signal, autoTopUp)
+    try {
+      return (
+        await billingApi.createTopupPurchase(amountCents, signal, autoTopUp)
+      ).purchase_id
+    } catch {
+      return undefined
+    }
+  }
+
   async function quoteTopup(
     amountCents: number,
     signal: AbortSignal
@@ -141,6 +157,7 @@ export function useTopupOperation() {
     createHostedCheckout,
     dismissOperation,
     adoptPendingOperation,
+    openTopupPurchase,
     quoteTopup
   }
 }

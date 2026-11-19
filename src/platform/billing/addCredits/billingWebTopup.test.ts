@@ -48,7 +48,7 @@ describe('billingWebTopupUrl', () => {
       }
     }
   ])('opens the top-up page with $name', ({ autoTopUp, expected }) => {
-    const url = billingWebTopupUrl(5000, autoTopUp, 'ws-1')
+    const url = billingWebTopupUrl(5000, autoTopUp, 'ws-1', 'tpp_1')
 
     expect(url?.startsWith('https://billing.comfy.org/v1/top-up?')).toBe(true)
     expect(query(url)).toEqual({
@@ -56,6 +56,7 @@ describe('billingWebTopupUrl', () => {
       return_to: 'comfyui_workspace',
       amount_cents: '5000',
       workspace: 'ws-1',
+      purchase: 'tpp_1',
       ...expected
     })
   })
@@ -63,6 +64,6 @@ describe('billingWebTopupUrl', () => {
   it('has no page when this host has no billing-web origin', () => {
     remoteConfig.value = {}
 
-    expect(billingWebTopupUrl(5000, undefined, 'ws-1')).toBeUndefined()
+    expect(billingWebTopupUrl(5000, undefined, 'ws-1', 'tpp_1')).toBeUndefined()
   })
 })

@@ -54,7 +54,7 @@ import {
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { billingWebTopupUrl } from '@/platform/billing/addCredits/billingWebTopup'
-import { reserveSinglePurchaseTab } from '@/platform/billing/billingTab'
+import { reserveBillingTab } from '@/platform/billing/billingTab'
 import {
   issueLocalBillingHandoff,
   reserveBillingHandoffTab
@@ -113,7 +113,8 @@ const { canTopUp, topUpDenial } = useBillingCapabilities()
 const autoTopUpOffer = useAutoTopUpSetupOffer()
 const autoTopUpChoice = useAddCreditsAutoTopUpOffer()
 const { payment: processingPayment } = useProcessingTopupPayment()
-const { topupOperation, createHostedCheckout, quoteTopup } = useTopupOperation()
+const { topupOperation, createHostedCheckout, openTopupPurchase, quoteTopup } =
+  useTopupOperation()
 const planLine = useAddCreditsPlanLine()
 
 const negativeBalanceCredits = computed(() => {
@@ -181,35 +182,40 @@ async function createHandoffCheckout(
   return { status: 'ok', url: issued.url }
 }
 
-let billingWebOpened = false
 let popupBlocked = false
-const reserveReusedTab = reserveSinglePurchaseTab(() => billingWebOpened)
 
 function reservePurchaseTab() {
-  const tab = reserveReusedTab()
+  const tab = reserveBillingTab()
   if (tab === null) popupBlocked = true
   return tab
 }
 
-function billingWebUrl(
-  amountCents: number,
-  autoTopUp: AutoTopUpActivation | undefined
-): string | undefined {
-  if (
-    popupBlocked ||
-    !flags.unifiedBillingSettingsEnabled ||
-    handsPopupsToSystemBrowser()
+function opensBillingWeb(): boolean {
+  return (
+    !popupBlocked &&
+    flags.unifiedBillingSettingsEnabled &&
+    !handsPopupsToSystemBrowser()
   )
-    return undefined
+}
+
+async function billingWebPurchaseUrl(
+  amountCents: number,
+  signal: AbortSignal,
+  autoTopUp: AutoTopUpActivation | undefined
+): Promise<string | undefined> {
+  const purchaseId = await openTopupPurchase(amountCents, signal, autoTopUp)
+  if (purchaseId === undefined) return undefined
   return billingWebTopupUrl(
     amountCents,
     autoTopUp,
-    workspaceIdentity.activeWorkspaceId ?? undefined
+    workspaceIdentity.activeWorkspaceId ?? undefined,
+    purchaseId
   )
 }
 
 async function openBillingWebCheckout(
-  url: string,
+  amountCents: number,
+  signal: AbortSignal,
   autoTopUp: AutoTopUpActivation | undefined
 ): ReturnType<AddCreditsPorts['createCheckout']> {
   const checkout = {
@@ -217,11 +223,13 @@ async function openBillingWebCheckout(
     activationUnreadable: autoTopUp !== undefined
   }
   if (!balance.value) await Promise.allSettled([fetchBalance()])
+  const url = await billingWebPurchaseUrl(amountCents, signal, autoTopUp)
+  if (url === undefined)
+    return createHostedTopupCheckout(amountCents, signal, autoTopUp)
   if (!ownsCheckout(checkout)) {
     return { status: 'error', refusal: { kind: 'checkout_failed' } }
   }
   ownedCheckout = checkout
-  billingWebOpened = true
   return { status: 'ok', url }
 }
 
@@ -282,9 +290,8 @@ const ports: AddCreditsPorts = {
     }
     if (opensHandoff)
       return createHandoffCheckout(amountCents, signal, autoTopUp)
-    const billingWeb = billingWebUrl(amountCents, autoTopUp)
-    return billingWeb
-      ? openBillingWebCheckout(billingWeb, autoTopUp)
+    return opensBillingWeb()
+      ? openBillingWebCheckout(amountCents, signal, autoTopUp)
       : createHostedTopupCheckout(amountCents, signal, autoTopUp)
   },
   reserveTab: opensHandoff ? reserveBillingHandoffTab : reservePurchaseTab,

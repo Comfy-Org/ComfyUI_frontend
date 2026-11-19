@@ -14,6 +14,7 @@ import type {
   BillingRecoverOptions,
   BillingResult,
   CapabilitiesSnapshot,
+  InteractiveTopupPayment,
   SavedPaymentMethod,
   TopupQuote,
   TopupQuoteResult,
@@ -37,13 +38,6 @@ import {
   railAcceptsPay,
   reduceCheckoutPage
 } from '@/checkout/checkoutPage'
-import type { HeldTopupAttempt } from '@/checkout/heldTopupAttempt'
-import {
-  canHoldTopupAttempt,
-  heldTopupAttempt,
-  holdTopupAttempt,
-  releaseTopupAttempt
-} from '@/checkout/heldTopupAttempt'
 import type { PayVerdict } from '@/checkout/payVerdict'
 import {
   outcomeFor,
@@ -52,6 +46,8 @@ import {
   topupVerdictOf
 } from '@/checkout/payVerdict'
 import { platformBillingUrl } from '@/checkout/platformLinks'
+import type { PurchaseRecovery } from '@/checkout/topupPurchase'
+import { purchaseRecovery } from '@/checkout/topupPurchase'
 import {
   TOPUP_RETURN_PATH,
   autoTopUpConsentOf,
@@ -97,6 +93,11 @@ function eligibleCards(
   return methods.filter((method) => method.type === CARD_METHOD_TYPE)
 }
 
+interface HeldAttempt {
+  readonly payment: InteractiveTopupPayment
+  readonly idempotencyKey: string
+}
+
 function awaitedOperationOf(
   current: CheckoutPage
 ): Pick<BillingRecoverOptions, 'operation'> {
@@ -133,9 +134,7 @@ export function useFullPageTopup() {
 
   const amountCents = entry.value?.amountCents
   const autoTopUp = entry.value?.autoTopUp
-  const billedWorkspace = useBilledWorkspace()
-  const purchaseRequest = () =>
-    JSON.stringify({ amountCents, autoTopUp, workspace: billedWorkspace() })
+  const purchaseId = entry.value?.purchaseId
   const page = shallowRef<CheckoutPage>(arrivalPage())
 
   const autoTopUpCeilingCents = shallowRef<number>()
@@ -203,7 +202,7 @@ export function useFullPageTopup() {
     ...(amountCents === undefined ? {} : { initialAmountCents: amountCents })
   })
 
-  let held: HeldTopupAttempt | undefined
+  let held: HeldAttempt | undefined
 
   function dispatch(event: CheckoutPageEvent) {
     const before = page.value
@@ -215,11 +214,34 @@ export function useFullPageTopup() {
   let generation = 0
   let latest: Promise<void> = Promise.resolve()
 
+  async function recoveryOf(): Promise<PurchaseRecovery> {
+    if (purchaseId === undefined)
+      return { kind: 'follow', options: awaitedOperationOf(page.value) }
+    return purchaseRecovery(await topup.readTopupPurchase(purchaseId))
+  }
+
+  function endPurchase(code: string) {
+    if (page.value.kind === 'resolving')
+      return dispatch({ type: 'notAllowed', server: { code } })
+    dispatch({ type: 'reconciled', operation: undefined, follows: 'topup' })
+    dispatch({ type: 'payFailed', outcome: { kind: 'processing_error', code } })
+  }
+
   async function reconcileOnce(): Promise<RecoveredOperation | undefined> {
     const mine = ++generation
+    const recovery = await recoveryOf()
+    if (mine !== generation) return undefined
+    if (recovery.kind === 'ended') {
+      endPurchase(recovery.code)
+      return undefined
+    }
+    if (recovery.kind === 'unreadable') {
+      dispatch(recovery.event)
+      return undefined
+    }
     const recovered = await lifecycle.recover({
       includeSettled: true,
-      ...awaitedOperationOf(page.value)
+      ...recovery.options
     })
     if (mine !== generation) return undefined
     dispatch(reconciledEvent(recovered, 'topup'))
@@ -263,18 +285,6 @@ export function useFullPageTopup() {
     }
   }
 
-  let arriving = true
-
-  function resendUnansweredOnArrival(amount: number) {
-    const unanswered =
-      arriving && paysOnce.value
-        ? heldTopupAttempt(purchaseRequest())
-        : undefined
-    arriving = false
-    if (unanswered !== undefined && page.value.kind === 'capture')
-      void resend(unanswered, amount)
-  }
-
   async function readCapture() {
     if (amountCents === undefined) return
     const saved = readSaved()
@@ -283,12 +293,11 @@ export function useFullPageTopup() {
       topup.quoteTopup({ amountCents }),
       inPageTopup
     ])
-    interactiveAllowed.value = inPage && canHoldTopupAttempt()
+    interactiveAllowed.value = inPage
     if (quoted.status === 'ok') quote.value = quoted.value
     const event = capabilityStop(allowed) ?? (await quoteEvent(quoted, saved))
     await latest
     dispatch(revisited(page.value) ? { type: 'notAllowed' } : event)
-    resendUnansweredOnArrival(amountCents)
   }
 
   async function retrySaved() {
@@ -371,10 +380,9 @@ export function useFullPageTopup() {
 
   let payGeneration = 0
   onScopeDispose(() => payGeneration++)
+  const billedWorkspace = useBilledWorkspace()
 
-  function attemptFor(
-    choice: NonNullable<PayChoice>
-  ): HeldTopupAttempt | undefined {
+  function attemptFor(choice: NonNullable<PayChoice>): HeldAttempt | undefined {
     const returnUrl =
       arrival &&
       topupReturnUrl(arrival, billedWorkspace(), window.location.origin)
@@ -386,21 +394,19 @@ export function useFullPageTopup() {
   }
 
   async function send(
-    attempt: HeldTopupAttempt,
+    attempt: HeldAttempt,
     amount: number
   ): Promise<TopupResult> {
-    holdTopupAttempt(purchaseRequest(), attempt)
     const result = await topup.createInteractiveTopup({
       amountCents: amount,
       payment: attempt.payment,
       idempotencyKey: attempt.idempotencyKey,
+      ...(purchaseId === undefined ? {} : { purchaseId }),
       ...(autoTopUp === undefined
         ? {}
         : { autoTopUp: topupAutoTopUpOf(autoTopUp) })
     })
-    if (!settlesAttempt(result)) return result
-    releaseTopupAttempt(attempt.idempotencyKey)
-    if (held === attempt) held = undefined
+    if (held === attempt && settlesAttempt(result)) held = undefined
     return result
   }
 
@@ -430,13 +436,13 @@ export function useFullPageTopup() {
     dispatch({ type: 'payFailed', outcome })
   }
 
-  async function payWithAutoTopUp(amount: number, choice: EntryAutoTopUp) {
+  async function payHosted(amount: number, choice: EntryAutoTopUp | undefined) {
     const mine = ++payGeneration
     dispatch({ type: 'paySubmitted' })
     const result = await topup.createHostedTopupCheckout({
       amountCents: amount,
       returnUrl: new URL(TOPUP_RETURN_PATH, window.location.origin).href,
-      autoTopUp: topupAutoTopUpOf(choice)
+      ...(choice === undefined ? {} : { autoTopUp: topupAutoTopUpOf(choice) })
     })
     if (mine !== payGeneration) return
     if (result.status === 'ok') return window.location.assign(result.url)
@@ -446,7 +452,9 @@ export function useFullPageTopup() {
   async function pay(choice: PayChoice) {
     if (!canPay.value || amountCents === undefined) return
     if (autoTopUp !== undefined && autoTopUpPayGoesHosted.value)
-      return payWithAutoTopUp(amountCents, autoTopUp)
+      return payHosted(amountCents, autoTopUp)
+    if (purchaseId !== undefined && !paysOnce.value)
+      return payHosted(amountCents, undefined)
     const run = sendFor(choice, amountCents)
     if (run === undefined) return
     if (run === CARD_REQUIRED)
@@ -454,10 +462,6 @@ export function useFullPageTopup() {
         type: 'payFailed',
         outcome: { kind: 'processing_error', code: CARD_REQUIRED }
       })
-    return submit(run)
-  }
-
-  async function submit(run: () => Promise<TopupResult>) {
     const mine = ++payGeneration
     dispatch({ type: 'paySubmitted' })
     await stripeKeyRead
@@ -466,11 +470,6 @@ export function useFullPageTopup() {
       ? interactiveVerdictOf(result)
       : topupVerdictOf(result)
     if (mine === payGeneration) await follow(verdict)
-  }
-
-  function resend(attempt: HeldTopupAttempt, amount: number) {
-    held = attempt
-    return submit(() => send(attempt, amount))
   }
 
   const { returnLink, openedByScript, close } = useCheckoutExit(page)
