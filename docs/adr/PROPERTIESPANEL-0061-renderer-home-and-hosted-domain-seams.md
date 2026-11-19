@@ -1,4 +1,4 @@
-# ADR-PROPERTIESPANEL-0056: Renderer home and hosted-domain seams
+# ADR-PROPERTIESPANEL-0061: Renderer home and hosted-domain seams
 
 Date: 2026-11-12
 

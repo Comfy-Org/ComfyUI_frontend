@@ -58,7 +58,7 @@
     }
   ],
   "adrs": [
-    "docs/adr/PROPERTIESPANEL-0056-renderer-home-and-hosted-domain-seams.md"
+    "docs/adr/PROPERTIESPANEL-0061-renderer-home-and-hosted-domain-seams.md"
   ],
   "compatibilityPromises": [
     "Other modules open, toggle, and focus the panel only through the panel store and mount it only through PropertiesPanel.vue.",

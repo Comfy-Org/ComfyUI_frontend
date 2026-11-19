@@ -1,4 +1,4 @@
-# ADR-WORKFLOW-PERSISTENCE-0056: Warn on unload when workflow recovery is uncertain
+# ADR-WORKFLOW-PERSISTENCE-0062: Warn on unload when workflow recovery is uncertain
 
 Date: 2026-11-12
 

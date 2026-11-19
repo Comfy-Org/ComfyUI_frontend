@@ -1,4 +1,4 @@
-# ADR-WIDGET-LAYOUT-0057: User-sized widget heights are durable widget intent
+# ADR-WIDGET-LAYOUT-0063: User-sized widget heights are durable widget intent
 
 Date: 2026-11-15
 

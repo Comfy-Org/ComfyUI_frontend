@@ -1,4 +1,4 @@
-# ADR-RELEASES-0059: Core backports follow the consumer pin
+# ADR-RELEASES-0064: Core backports follow the consumer pin
 
 Date: 2026-11-19
 
