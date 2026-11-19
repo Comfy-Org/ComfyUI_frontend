@@ -1,6 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+import { h, ref } from 'vue'
 
 import SliderControl from './SliderControl.vue'
 
@@ -101,17 +102,35 @@ describe('SliderControl', () => {
       expect(onUpdate).not.toHaveBeenCalled()
     })
 
-    it('should clamp a typed value to the range and show the clamped value once committed', async () => {
-      const onUpdate = vi.fn()
-      renderComponent({ max: 100, modelValue: 100, showInput: true }, onUpdate)
-      const user = userEvent.setup()
+    it.for([
+      { from: 'below the max', start: 50, keys: '{Control>}a{/Control}999' },
+      { from: 'at the max', start: 100, keys: '0' }
+    ])(
+      'should clamp a value typed from $from and show the clamped value once committed',
+      async ({ start, keys }) => {
+        const model = ref(start)
+        render(() =>
+          h(SliderControl, {
+            label: 'Tolerance',
+            min: 0,
+            max: 100,
+            showInput: true,
+            modelValue: model.value,
+            'onUpdate:modelValue': (value: number) => {
+              model.value = value
+            }
+          })
+        )
+        const user = userEvent.setup()
 
-      await user.clear(screen.getByRole('spinbutton'))
-      await user.type(screen.getByRole('spinbutton'), '999')
-      await user.tab()
+        await user.type(screen.getByRole('spinbutton'), keys)
+        await user.tab()
 
-      expect(onUpdate).toHaveBeenLastCalledWith(100)
-      expect(screen.getByRole<HTMLInputElement>('spinbutton').value).toBe('100')
-    })
+        expect(model.value).toBe(100)
+        expect(screen.getByRole<HTMLInputElement>('spinbutton').value).toBe(
+          '100'
+        )
+      }
+    )
   })
 })
