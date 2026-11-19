@@ -562,12 +562,10 @@ describe('useWorkflowService', () => {
       )
     })
 
-    it('keeps the draft of a saved workflow opened from unsaved changes', () => {
+    it('keeps the draft of a modified saved workflow whose baseline is its draft', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation(
         (key: string) => key === 'Comfy.Workflow.Persist'
       )
-      // Opening a draft makes it the tracker baseline, so only the modified
-      // flag says the canvas differs from the saved file.
       const activeWorkflow = createModeTestWorkflow({
         path: 'workflows/test.json'
       })
