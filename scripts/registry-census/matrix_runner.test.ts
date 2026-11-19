@@ -55,6 +55,60 @@ describe('matrix runner', () => {
     }
   )
 
+  it.for([
+    { shape: 'patches the setup-time graph instance', matches: true },
+    {
+      shape: 'keys its patch to the setup-time graph',
+      matches: false
+    }
+  ])(
+    'loads a second workflow after setup and records whether a pack that $shape still serialises it the same',
+    { timeout: 30_000 },
+    async ({ matches }) => {
+      outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
+      vi.stubEnv('MATRIX_OUT', outputDir)
+      vi.stubEnv('MATRIX_VUE', '')
+      const { app } = await import('@/scripts/app')
+
+      await runPack(
+        'setup-patcher',
+        {
+          entry: async () => {
+            app.registerExtension({
+              name: 'matrix.setupPatcher',
+              setup() {
+                const bootGraph = app.rootGraph
+                const serialize = bootGraph.serialize
+                bootGraph.serialize = function (...args) {
+                  const data = serialize.apply(this, args)
+                  data.extra = {
+                    ...data.extra,
+                    patched: matches || this === bootGraph
+                  }
+                  return data
+                }
+              }
+            })
+          }
+        },
+        ['entry'],
+        'setup-patcher'
+      )
+
+      const row = JSON.parse(
+        fs.readFileSync(path.join(outputDir, 'setup-patcher.json'), 'utf8')
+      ) as {
+        lifecycle?: Record<string, string>
+        serialized?: string
+        secondRoot?: { serialisationMatches?: boolean }
+      }
+
+      expect(row.lifecycle?.setup).toBe('OK')
+      expect(JSON.parse(row.serialized ?? '{}').extra.patched).toBe(true)
+      expect(row.secondRoot?.serialisationMatches).toBe(matches)
+    }
+  )
+
   it('drives more than eight frontend-registered node types from one pack', async () => {
     outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'matrix-runner-'))
     vi.stubEnv('MATRIX_OUT', outputDir)

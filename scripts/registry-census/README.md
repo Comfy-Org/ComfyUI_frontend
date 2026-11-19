@@ -128,24 +128,28 @@ This is the scope of every number below. `ComfyApp.setup()` non-null-asserts
 five DOM elements and needs a 2D canvas context, so the real boot cannot run
 under happy-dom and the lifecycle is simulated.
 
-| extension hook                                                                                                                                                                                                                                                 | driven                      |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
-| `beforeRegisterNodeDef`                                                                                                                                                                                                                                        | yes, via `registerNodeDef`  |
-| `registerCustomNodes`                                                                                                                                                                                                                                          | yes                         |
-| `onNodeCreated`, `onSerialize`, `onConfigure`, `onConnectionsChange`                                                                                                                                                                                           | indirectly, via the battery |
-| `init`, `setup`, `addCustomNodeDefs`, `beforeRegisterVueAppNodeDefs`, `beforeConfigureGraph`, `loadedGraphNode`, `afterConfigureGraph`, `refreshComboInNodes`, `onNodeOutputsUpdated`, `getCanvasMenuItems`, `getNodeMenuItems`, `getSelectionToolboxCommands` | **no**                      |
+| extension hook                                                                                                                                         | driven                      |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------- |
+| `init`, `addCustomNodeDefs`, `setup`                                                                                                                   | yes, in the app's order     |
+| `beforeRegisterNodeDef`                                                                                                                                | yes, via `registerNodeDef`  |
+| `registerCustomNodes`                                                                                                                                  | yes                         |
+| `beforeLoadGraph`, `beforeConfigureGraph`, `loadedGraphNode`, `afterConfigureGraph`, `afterLoadGraph`                                                  | yes, for two workflow loads |
+| `onNodeCreated`, `onSerialize`, `onConfigure`, `onConnectionsChange`                                                                                   | indirectly, via the battery |
+| `beforeRegisterVueAppNodeDefs`, `refreshComboInNodes`, `onNodeOutputsUpdated`, `getCanvasMenuItems`, `getNodeMenuItems`, `getSelectionToolboxCommands` | **no**                      |
 
-The order also differs from the app. Real order is `init` →
-`addCustomNodeDefs(defs)` → `registerNodeDef` → `registerCustomNodes` →
-`setup` (`src/scripts/app.ts`). Here `registerNodeDef` runs first against a
-hardcoded set of defs, so a pack that mutates `defs` in `addCustomNodeDefs`
-has that mutation discarded before the defs it meant to change are
-registered.
+Boot runs `init` → `addCustomNodeDefs(defs)` → `registerNodeDef` →
+`registerCustomNodes` → `setup` against a root graph seeded before `init`, as
+`ComfyApp.setup()` does. Defs a pack adds in `addCustomNodeDefs` are not
+registered; changes it makes to the battery defs are.
 
-**Consequences to read every green run against:** a pack whose only code path
-is `setup(app)` — `api.addEventListener`, patching `LGraphCanvas.prototype`,
-wrapping `app.graphToPrompt`, adding canvas menus — scores as a fully clean
-row. A green matrix did not catch a `setup`-dispatch regression, and cannot.
+The battery workflow is loaded with the load and configure hooks around
+`configure`. After the battery, a second load of the same workflow goes to a
+new root graph where the app gives each workflow its own (`createRootGraph`),
+and to the reconfigured shared root otherwise. `secondRoot` records whether
+that load serialises and prompts the same as the first, so a setup-time patch
+that reaches only the first workflow shows up as a mismatch on the
+per-workflow arm. Canvas work (`activateRootGraph`, camera restore) is not
+driven.
 
 ### PASS criteria
 

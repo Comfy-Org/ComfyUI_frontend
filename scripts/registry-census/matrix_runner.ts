@@ -179,6 +179,134 @@ async function installGlobals() {
   return { lg, app: appMod.app }
 }
 
+type MatrixApp = Awaited<ReturnType<typeof installGlobals>>['app']
+type Op = (name: string, fn: () => unknown) => Promise<void>
+
+async function createLifecycle(app: MatrixApp, GraphClass: new () => LGraph) {
+  const { useExtensionService } =
+    await import('@/platform/extensions/services/extensionService')
+  const service = useExtensionService()
+  const invoke = service.invokeExtensionsAsync as (
+    method: string,
+    ...args: unknown[]
+  ) => Promise<unknown>
+  const createRootGraph: unknown = Reflect.get(app, 'createRootGraph')
+  const perWorkflowRoots = typeof createRootGraph === 'function'
+  const record: Record<string, string> = {}
+  return {
+    service,
+    invoke,
+    perWorkflowRoots,
+    record,
+    newRootGraph: (): LGraph =>
+      typeof createRootGraph === 'function'
+        ? Reflect.apply(createRootGraph, app, [])
+        : new GraphClass(),
+    configureArgs: (target: LGraph): unknown[] =>
+      perWorkflowRoots ? [{ graph: target, workflow: null }] : [],
+    async run(method: string, ...args: unknown[]) {
+      try {
+        await invoke(method, ...args)
+        record[method] = 'OK'
+      } catch (e) {
+        record[method] = errMsg(e)
+      }
+    }
+  }
+}
+
+type Lifecycle = Awaited<ReturnType<typeof createLifecycle>>
+
+function defaultGraphData() {
+  return structuredClone(defaultWorkflow) as unknown as Parameters<
+    LGraph['configure']
+  >[0]
+}
+
+async function loadWithHooks(
+  lifecycle: Lifecycle,
+  op: Op,
+  target: LGraph,
+  phase: string
+) {
+  const { invoke, configureArgs, service } = lifecycle
+  await op(`${phase}:beforeLoadGraph`, () => invoke('beforeLoadGraph'))
+  const data = defaultGraphData()
+  await op(`${phase}:beforeConfigureGraph`, () =>
+    invoke('beforeConfigureGraph', data, [], ...configureArgs(target))
+  )
+  await op(phase, () => target.configure(data))
+  await op(`${phase}:loadedGraphNode`, () => {
+    for (const node of target._nodes)
+      service.invokeExtensions('loadedGraphNode', node)
+  })
+  await op(`${phase}:afterConfigureGraph`, () =>
+    invoke('afterConfigureGraph', [], ...configureArgs(target))
+  )
+  await op(`${phase}:afterLoadGraph`, () => invoke('afterLoadGraph'))
+}
+
+async function snapshotLoad(app: MatrixApp, target: LGraph) {
+  const serialised = S({ ...target.serialize(), id: undefined })
+  try {
+    return { serialised, prompt: S((await app.graphToPrompt(target)).output) }
+  } catch (e) {
+    return { serialised, prompt: 'THREW ' + errMsg(e) }
+  }
+}
+
+type LoadSnapshot = Awaited<ReturnType<typeof snapshotLoad>>
+
+function compareLoads(first: LoadSnapshot, second: LoadSnapshot) {
+  const serialisationMatches = first.serialised === second.serialised
+  const promptMatches = first.prompt === second.prompt
+  return {
+    serialisationMatches,
+    promptMatches,
+    ...(serialisationMatches
+      ? {}
+      : {
+          firstSerialised: first.serialised,
+          secondSerialised: second.serialised
+        }),
+    ...(promptMatches
+      ? {}
+      : { firstPrompt: first.prompt, secondPrompt: second.prompt })
+  }
+}
+
+async function loadSecondWorkflow(
+  lifecycle: Lifecycle,
+  op: Op,
+  app: MatrixApp,
+  firstRoot: LGraph,
+  firstLoad: LoadSnapshot,
+  createNode: (type: string) => LGraphNode | null
+) {
+  const secondRoot = lifecycle.perWorkflowRoots
+    ? lifecycle.newRootGraph()
+    : firstRoot
+  Reflect.set(app, 'rootGraphInternal', secondRoot)
+  await loadWithHooks(lifecycle, op, secondRoot, 'secondRoot')
+  const secondLoad = await snapshotLoad(app, secondRoot)
+  await op('secondRoot:addRemove', () => {
+    const node = createNode('EmptyLatentImage')
+    if (!node) return
+    secondRoot.add(node)
+    secondRoot.remove(node)
+  })
+  if (lifecycle.perWorkflowRoots) {
+    await op('switchBack:beforeLoadGraph', () =>
+      lifecycle.invoke('beforeLoadGraph')
+    )
+    Reflect.set(app, 'rootGraphInternal', firstRoot)
+    await op('switchBack:afterLoadGraph', () =>
+      lifecycle.invoke('afterLoadGraph')
+    )
+  }
+  return compareLoads(firstLoad, secondLoad)
+}
+
 interface FormRow {
   t: string
   v: string
@@ -406,6 +534,16 @@ export async function runPack(
   row.load = load
   row.loadedOk = Object.values(load).filter((v) => v === 'OK').length
 
+  const lifecycle = await createLifecycle(app, LGraph)
+  const graph = lifecycle.newRootGraph()
+  // ComfyApp.setup() non-null-asserts five DOM elements and needs a 2D
+  // context, so it cannot boot here. DOM widgets read app.rootGraph while
+  // graph.configure runs, so the private field has to be seeded directly.
+  Reflect.set(app, 'rootGraphInternal', graph)
+  row.perWorkflowRoots = lifecycle.perWorkflowRoots
+
+  await lifecycle.run('init')
+
   // ---- register battery defs (invokes pack beforeRegisterNodeDef) -------
   const { useLitegraphService } = await import('@/services/litegraphService')
   const svc = useLitegraphService()
@@ -420,7 +558,10 @@ export async function runPack(
     output_node: name === 'SaveImage',
     ...d
   }))
-  for (const nodeDef of batteryDefs) {
+  const defsByName: Record<string, (typeof batteryDefs)[number]> =
+    Object.fromEntries(batteryDefs.map((d) => [d.name, d]))
+  await lifecycle.run('addCustomNodeDefs', defsByName)
+  for (const nodeDef of batteryDefs.map((d) => defsByName[d.name] ?? d)) {
     try {
       await svc.registerNodeDef(nodeDef.name, nodeDef)
     } catch (e) {
@@ -433,9 +574,7 @@ export async function runPack(
 
   // ---- registerCustomNodes (frontend-only pack node types) --------------
   try {
-    const { useExtensionService } =
-      await import('@/platform/extensions/services/extensionService')
-    await useExtensionService().invokeExtensionsAsync('registerCustomNodes')
+    await lifecycle.service.invokeExtensionsAsync('registerCustomNodes')
     row.registerCustomNodes = 'OK'
   } catch (e) {
     row.registerCustomNodes = errMsg(e)
@@ -455,12 +594,9 @@ export async function runPack(
     row.extTotal = errMsg(e)
   }
 
+  await lifecycle.run('setup')
+
   // ---- graph + boot-order fidelity --------------------------------------
-  const graph = new LGraph()
-  // ComfyApp.setup() non-null-asserts five DOM elements and needs a 2D
-  // context, so it cannot boot here. DOM widgets read app.rootGraph while
-  // graph.configure runs, so the private field has to be seeded directly.
-  Reflect.set(app, 'rootGraphInternal', graph)
   const byType = (t: string) => graph._nodes.find((n) => n.type === t)
 
   let wvStore: WidgetValueStore | undefined
@@ -580,13 +716,8 @@ export async function runPack(
   }
 
   // ---- the user-operation battery ---------------------------------------
-  await op('load', () =>
-    graph.configure(
-      structuredClone(defaultWorkflow) as unknown as Parameters<
-        typeof graph.configure
-      >[0]
-    )
-  )
+  await loadWithHooks(lifecycle, op, graph, 'load')
+  const firstRootLoad = await snapshotLoad(app, graph)
   // Harness self-check: if the default workflow did not materialize, the
   // if-guarded ops below would all no-op and report a vacuously clean pack.
   // The summarizer withholds the verdict when this fails broadly. Floors of
@@ -839,6 +970,16 @@ export async function runPack(
     const p = await app.graphToPrompt(graph)
     row.prompt = S(p.output)
   })
+
+  row.secondRoot = await loadSecondWorkflow(
+    lifecycle,
+    op,
+    app,
+    graph,
+    firstRootLoad,
+    (type) => LiteGraph.createNode(type)
+  )
+  row.lifecycle = lifecycle.record
 
   row.ops = ops
   row.storeReadErrors = storeReadErrors
