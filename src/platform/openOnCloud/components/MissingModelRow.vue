@@ -71,6 +71,7 @@ const { t } = useI18n()
 const BLOCKED_COPY = {
   folder: 'openOnCloud.missingModels.folderUnsupported',
   subfolder: 'openOnCloud.missingModels.subfolderUnsupported',
+  fileType: 'assetBrowser.fileUpload.notSafetensors',
   size: 'openOnCloud.missingModels.sizeUnavailable'
 } as const satisfies Record<ModelUploadBlock, string>
 

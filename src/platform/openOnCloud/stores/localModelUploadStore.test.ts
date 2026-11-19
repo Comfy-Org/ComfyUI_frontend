@@ -125,6 +125,30 @@ describe('useLocalModelUploadStore', () => {
     expect(store.canUpload([model])).toBe(false)
   })
 
+  it('rejects a mixed-format batch before sending a supported model', async () => {
+    const other = { folder: 'loras', name: 'style.gguf' }
+    const otherFile = new File(['data'], other.name)
+    const models = [lora, other]
+    const upload = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValue({ ok: false, reason: 'unsupportedFile' })
+    const store = await prepared(
+      models,
+      ['loras'],
+      [
+        [lora.name, loraFile.size],
+        [other.name, otherFile.size]
+      ]
+    )
+    store.choose(lora, loraFile)
+    store.choose(other, otherFile)
+
+    await store.start(models)
+
+    expect(store.blockedBy(other)).toBe('fileType')
+    expect(upload).not.toHaveBeenCalled()
+  })
+
   it('clears readiness while the next dialog loads and ignores the older reply', async () => {
     const store = await prepared()
     let finishFirst: (folders: string[]) => void = () => {}

@@ -18,6 +18,10 @@ const STORAGE_OBJECT_ALREADY_WRITTEN = 412
 const UPLOAD_CLIENT = 'editor'
 const TRANSFER_REPORT_TIMEOUT_MS = 5_000
 
+export function isSupportedModelFileName(name: string): boolean {
+  return name.toLowerCase().endsWith('.safetensors')
+}
+
 type ModelFileUploadFailure =
   | 'unsupportedFile'
   | 'unsupportedType'

@@ -11,7 +11,10 @@ import {
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import type { CloudWorkflowGaps } from '@/platform/openOnCloud/cloudWorkflowCheck'
-import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
+import {
+  isSupportedModelFileName,
+  modelFileUploadApi
+} from '@/platform/workspace/api/modelFileUploadApi'
 import type {
   ModelFileUploadResult,
   UploadRouteRequest
@@ -33,7 +36,7 @@ export type ModelPick =
   | { status: 'wrongFile'; file: File }
   | { status: 'stored' }
 
-export type ModelUploadBlock = 'folder' | 'subfolder' | 'size'
+export type ModelUploadBlock = 'folder' | 'subfolder' | 'fileType' | 'size'
 
 type LocalModelUpload =
   | { phase: 'idle' }
@@ -127,6 +130,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   function blockedBy(model: MissingModel): ModelUploadBlock | undefined {
     if (!uploadFolders.value?.includes(model.folder)) return 'folder'
     if (/[\\/]/.test(model.name)) return 'subfolder'
+    if (!isSupportedModelFileName(model.name)) return 'fileType'
     if (sizeOf(model) === undefined && pickOf(model).status !== 'stored')
       return 'size'
   }
