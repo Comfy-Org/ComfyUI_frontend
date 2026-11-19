@@ -109,12 +109,20 @@ describe('deriveWorkflowFile', () => {
     await expect(deriveWorkflowFile(imageFile())).resolves.toBeUndefined()
   })
 
-  it('skips a .json source, which the backend already imports directly', async () => {
-    const json = new File(['{}'], 'graph.json', { type: 'application/json' })
+  it.for([
+    { name: 'graph.json', type: 'application/json' },
+    { name: 'clip.mp4', type: 'video/mp4' },
+    { name: 'clip.png', type: 'video/mp4' },
+    { name: 'sound.png', type: 'audio/mpeg' }
+  ])(
+    'excludes $name with MIME $type despite valid metadata',
+    async ({ name, type }) => {
+      mockParser.mockResolvedValue({ workflow: JSON.stringify(WORKFLOW) })
+      const file = new File(['{}'], name, { type })
 
-    await expect(deriveWorkflowFile(json)).resolves.toBeUndefined()
-    expect(mockParser).not.toHaveBeenCalled()
-  })
+      await expect(deriveWorkflowFile(file)).resolves.toBeUndefined()
+    }
+  )
 
   it('skips its own output, so derivation cannot recurse', async () => {
     mockParser.mockResolvedValue({ workflow: JSON.stringify(WORKFLOW) })

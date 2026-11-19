@@ -139,7 +139,6 @@ function uploadedPreview(
 export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
   const deriving = ref(new Set<string>())
-  const derivingCancelled = new Set<string>()
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
   const waiting: Array<() => void> = []
@@ -196,20 +195,6 @@ export function useAttachment(options: UseAttachmentOptions) {
     pending.delete(id)
     inFlight.delete(id)
     cancelled.delete(id)
-  }
-
-  function markDeriving(id: string, active: boolean): void {
-    const next = new Set(deriving.value)
-    if (active) next.add(id)
-    else {
-      next.delete(id)
-      derivingCancelled.delete(id)
-    }
-    deriving.value = next
-  }
-
-  function isDerivationCancelled(id: string): boolean {
-    return derivingCancelled.has(id) || cancelled.has(id)
   }
 
   function exceedsAttachmentLimit(file: File): boolean {
@@ -326,7 +311,8 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   async function uploadStagedFile(
     id: string,
-    file: File
+    file: File,
+    notify = true
   ): Promise<UploadFileResult> {
     if (activeUploads === MAX_CONCURRENT_UPLOADS)
       await new Promise<void>((resolve) => waiting.push(resolve))
@@ -361,7 +347,13 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'uploaded'
     } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
-      failAttachment(id, file, 'agent_attachment_upload_failed', cause)()
+      failAttachment(
+        id,
+        file,
+        'agent_attachment_upload_failed',
+        cause,
+        notify
+      )()
       return 'failed'
     } finally {
       settle(id)
@@ -384,7 +376,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelUpload(id: string): void {
-    if (deriving.value.has(id)) derivingCancelled.add(id)
+    deriving.value.delete(id)
     if (!pending.has(id)) return
     cancelled.add(id)
     options.remove(id)
@@ -392,8 +384,18 @@ export function useAttachment(options: UseAttachmentOptions) {
   }
 
   function cancelAllUploads(): void {
-    for (const id of Array.from(deriving.value)) derivingCancelled.add(id)
+    deriving.value.clear()
     for (const id of Array.from(pending)) cancelUpload(id)
+  }
+
+  async function uploadSourceFile(
+    id: string,
+    file: File
+  ): Promise<UploadFileResult> {
+    if (canCarryEmbeddedWorkflow(file)) deriving.value.add(id)
+    const result = await uploadStagedFile(id, file)
+    if (result !== 'uploaded') deriving.value.delete(id)
+    return result
   }
 
   async function uploadDeferredFile(
@@ -432,7 +434,7 @@ export function useAttachment(options: UseAttachmentOptions) {
         options.remove(id)
         return 'failed'
       }
-      const result = await uploadStagedFile(id, file)
+      const result = await uploadSourceFile(id, file)
       if (result === 'uploaded') {
         void attachDerivedWorkflows([{ id, file }])
         options.onUploaded?.()
@@ -502,13 +504,10 @@ export function useAttachment(options: UseAttachmentOptions) {
 
   async function attachDerivedWorkflows(
     sources: readonly { id: string; file: File }[]
-  ): Promise<boolean> {
-    const candidates = sources.filter(
-      ({ id, file }) => !cancelled.has(id) && canCarryEmbeddedWorkflow(file)
-    )
-    if (!candidates.length) return false
+  ): Promise<void> {
+    const candidates = sources.filter(({ id }) => deriving.value.has(id))
+    if (!candidates.length) return
 
-    for (const { id } of candidates) markDeriving(id, true)
     let lifted: Array<{ id: string; file: File }>
     try {
       lifted = (
@@ -519,12 +518,12 @@ export function useAttachment(options: UseAttachmentOptions) {
           }))
         )
       ).flatMap(({ id, file }) =>
-        file && !isDerivationCancelled(id) ? [{ id, file }] : []
+        file && deriving.value.has(id) ? [{ id, file }] : []
       )
     } finally {
-      for (const { id } of candidates) markDeriving(id, false)
+      for (const { id } of candidates) deriving.value.delete(id)
     }
-    if (!lifted.length) return false
+    if (!lifted.length) return
 
     const staged = lifted.flatMap(({ id, file }) => {
       const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${id}`
@@ -537,12 +536,11 @@ export function useAttachment(options: UseAttachmentOptions) {
     let uploaded = 0
     await Promise.all(
       staged.map(async (item) => {
-        if ((await uploadStagedFile(item.id, item.file)) === 'uploaded')
+        if ((await uploadStagedFile(item.id, item.file, false)) === 'uploaded')
           uploaded += 1
       })
     )
     if (uploaded > 0) options.onUploaded?.()
-    return uploaded > 0
   }
 
   async function addFiles(files: Iterable<File>): Promise<boolean> {
@@ -558,7 +556,7 @@ export function useAttachment(options: UseAttachmentOptions) {
     await Promise.all(
       staged.map(async (item) => {
         if (item.outcome !== 'upload') return
-        if ((await uploadStagedFile(item.id, item.file)) === 'uploaded') {
+        if ((await uploadSourceFile(item.id, item.file)) === 'uploaded') {
           uploaded += 1
           sources.push({ id: item.id, file: item.file })
         }

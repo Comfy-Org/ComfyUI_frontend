@@ -93,6 +93,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { startAssetDrag } from '@/platform/assets/utils/assetDragUtil'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
+import * as derivedWorkflowAttachment from './utils/derivedWorkflowAttachment'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
@@ -4995,6 +4996,65 @@ describe('AgentPanelRoot attach flow', () => {
       expect(screen.getByRole('button', { name: 'Send' })).toBeEnabled()
     }
   )
+
+  it('does not send a completed image until its embedded workflow is attached', async () => {
+    let finishExtraction: (file: File) => void = () => {}
+    const extraction = new Promise<File>((resolve) => {
+      finishExtraction = resolve
+    })
+    const derive = vi
+      .spyOn(derivedWorkflowAttachment, 'deriveWorkflowFile')
+      .mockReturnValue(extraction)
+    onTestFinished(() => derive.mockRestore())
+    respondToFetch({}, () => json(200, agentThreadList()))
+    respondToFetch({ method: 'POST', url: /\/messages$/ }, () =>
+      json(202, { thread_id: 'th-1', message_id: 'm-1' })
+    )
+    respondToFetch(/\/api\/upload\/image$/, (_input, init) => {
+      const file =
+        init?.body instanceof FormData ? init.body.get('image') : undefined
+      assert(file instanceof File)
+      return json(200, { name: file.name, subfolder: '', type: 'input' })
+    })
+    renderWithSelectedTarget()
+
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['image'], 'photo.png', { type: 'image/png' })
+    )
+    await vi.waitFor(() =>
+      expect(useAgentComposerStore().attachments[0]?.uploading).toBe(false)
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Edit the embedded workflow')
+    await userEvent.keyboard('{Enter}')
+
+    expect(fetchRequests({ method: 'POST', url: /\/messages$/ })).toEqual([])
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'Edit the embedded workflow'
+    )
+
+    finishExtraction(
+      new File(['{"nodes":[]}'], 'photo.workflow.json', {
+        type: 'application/json'
+      })
+    )
+    await vi.waitFor(() =>
+      expect(
+        useAgentComposerStore().attachments.map((chip) => chip.ref)
+      ).toEqual(['photo.png', 'photo.workflow.json'])
+    )
+    await userEvent.keyboard('{Enter}')
+    await vi.waitFor(() =>
+      expect(
+        fetchRequests({ method: 'POST', url: /\/messages$/ })
+      ).toHaveLength(1)
+    )
+    const [request] = fetchRequests({ method: 'POST', url: /\/messages$/ })
+    expect(JSON.parse(String(request.body))).toMatchObject({
+      attachments: ['photo.png', 'photo.workflow.json']
+    })
+  })
 
   it('shows an uploading chip and blocks send until the upload settles', async () => {
     let settleUpload: () => void = () => {}

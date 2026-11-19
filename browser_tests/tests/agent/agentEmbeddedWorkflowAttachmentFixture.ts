@@ -9,6 +9,7 @@ import type {
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import { zComfyWorkflow } from '@comfyorg/graph-model/workflowSchema'
 
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -67,14 +68,13 @@ function markerWorkflow(
   id: number,
   title: string
 ): WorkflowJSON & ComfyWorkflowJSON {
-  const asset = structuredClone(
-    MARKER_WORKFLOW_ASSET
-  ) as unknown as WorkflowJSON & ComfyWorkflowJSON
-  asset.last_node_id = id
-  const [node] = asset.nodes
-  node.id = id
-  node.title = title
-  return asset
+  const asset = zComfyWorkflow.parse(MARKER_WORKFLOW_ASSET)
+  return {
+    ...asset,
+    last_node_id: id,
+    extra: asset.extra ?? undefined,
+    nodes: asset.nodes.map((node) => ({ ...node, id, title }))
+  }
 }
 
 const CURRENT_WORKFLOW = markerWorkflow(

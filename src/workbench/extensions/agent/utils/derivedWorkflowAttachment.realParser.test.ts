@@ -28,11 +28,23 @@ async function parsedWorkflow(file: File): Promise<unknown> {
 }
 
 describe('deriveWorkflowFile against a real PNG', () => {
-  it('lifts the workflow out of a tEXt chunk', async () => {
-    const file = pngFile(createWorkflowBearingPng({ workflow: WORKFLOW }))
+  it.for([
+    { name: 'portrait.png', type: 'image/png' },
+    { name: 'portrait.webp', type: 'image/png' },
+    { name: 'portrait.PNG', type: '' },
+    { name: 'portrait.png', type: 'application/octet-stream' }
+  ])(
+    'lifts the workflow from $name with MIME "$type"',
+    async ({ name, type }) => {
+      const file = new File(
+        [new Uint8Array(createWorkflowBearingPng({ workflow: WORKFLOW }))],
+        name,
+        { type }
+      )
 
-    expect(await parsedWorkflow(file)).toEqual(WORKFLOW)
-  })
+      expect(await parsedWorkflow(file)).toEqual(WORKFLOW)
+    }
+  )
 
   it('names the derived file after the image', async () => {
     const derived = await deriveWorkflowFile(

@@ -17,9 +17,13 @@ export function derivedWorkflowName(sourceName: string): string {
 
 const WORKFLOW_BEARING_IMAGE = /\.(png|webp|avif)$/i
 
-/** Whether `file` is an image container that can carry a workflow at all. */
 export function canCarryEmbeddedWorkflow(file: File): boolean {
-  return WORKFLOW_BEARING_IMAGE.test(file.name)
+  return (
+    WORKFLOW_BEARING_IMAGE.test(file.name) &&
+    (file.type === '' ||
+      file.type === 'application/octet-stream' ||
+      /^image\/(png|webp|avif)$/.test(file.type))
+  )
 }
 
 function looksLikeEditorWorkflow(value: unknown): boolean {
@@ -32,15 +36,22 @@ function parseWorkflow(raw: string | object): unknown {
   return typeof raw === 'string' ? parseJsonWithNonFinite(raw) : raw
 }
 
-/** Lifts an embedded editor workflow out of `file`, or undefined if there is none. */
 export async function deriveWorkflowFile(
   file: File
 ): Promise<File | undefined> {
   if (!canCarryEmbeddedWorkflow(file)) return undefined
 
+  const parserFile =
+    file.type === '' || file.type === 'application/octet-stream'
+      ? new File([file], file.name, {
+          type: `image/${file.name.slice(file.name.lastIndexOf('.') + 1).toLowerCase()}`,
+          lastModified: file.lastModified
+        })
+      : file
+
   let metadata
   try {
-    metadata = await getWorkflowDataFromFile(file)
+    metadata = await getWorkflowDataFromFile(parserFile)
   } catch {
     return undefined
   }
