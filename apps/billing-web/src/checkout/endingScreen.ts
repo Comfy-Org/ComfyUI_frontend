@@ -37,7 +37,8 @@ type RefusalCopy =
 const ENDED_PURCHASE_CODES: ReadonlySet<string> = new Set([
   'PURCHASE_SUPERSEDED',
   'PURCHASE_EXPIRED',
-  'PURCHASE_NOT_FOUND'
+  'PURCHASE_NOT_FOUND',
+  'PURCHASE_NOT_PAYABLE_HERE'
 ])
 
 const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {

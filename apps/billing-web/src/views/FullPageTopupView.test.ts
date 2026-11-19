@@ -1357,25 +1357,41 @@ describe('FullPageTopupView paying a Cloud purchase', () => {
     expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
   })
 
-  it('pays on the hosted checkout, never the method on file, when the quote names no payment configuration', async () => {
-    vi.spyOn(window.location, 'assign').mockImplementation(() => {})
+  it('offers no Pay and creates no unbound checkout when the quote names no payment configuration, so a stale page cannot pay beside its replacement', async () => {
     const { fake } = renderPurchase(purchaseRead('open'), {
       topupQuote: QUOTED
     })
-    const hosted = vi
-      .spyOn(fake.client.topup, 'createHostedTopupCheckout')
-      .mockResolvedValue({
-        status: 'ok',
-        url: 'https://checkout.stripe.com/c/pay/cs_1'
-      })
-    await screen.findByText('Add credits · Acme Team')
+    const hosted = vi.spyOn(fake.client.topup, 'createHostedTopupCheckout')
 
-    await userEvent.click(payButton())
-
-    await waitFor(() => expect(hosted).toHaveBeenCalledOnce())
-    expect(hosted.mock.calls[0][0]).not.toHaveProperty('autoTopUp')
+    expect(
+      await screen.findByRole('heading', { name: 'Checkout not available' })
+    ).toBeVisible()
+    expect(screen.getByText(/Start Add credits again in Comfy/)).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Pay' })).toBeNull()
+    expect(hosted).not.toHaveBeenCalled()
     expect(fake.createTopupCheckout).not.toHaveBeenCalled()
     expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('sends a new card’s bank check back to the same purchase, so the returned page recovers it without a stored pointer', async () => {
+    const { fake } = renderPurchase(purchaseRead('open'), {
+      paymentMethods: { status: 'ok', value: [] },
+      topup: SUCCEEDED
+    })
+    await screen.findByText('Add credits · Acme Team')
+    readyCardForm()
+
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledOnce()
+    )
+    const { payment, purchaseId } = fake.createInteractiveTopup.mock.calls[0][0]
+    assert('returnUrl' in payment)
+    expect(purchaseId).toBe('tpp_1')
+    expect(new URL(payment.returnUrl).searchParams.get('purchase')).toBe(
+      'tpp_1'
+    )
   })
 })
 
@@ -1429,7 +1445,8 @@ function renderAutoTopUp(
     status: 'ok',
     value: []
   },
-  topupQuote: TopupQuoteResult = QUOTED
+  topupQuote: TopupQuoteResult = QUOTED,
+  purchase?: TopupPurchaseResult
 ) {
   recordBillingEntry(parseBillingEntry(path))
   const fake = createFakeBillingClient({
@@ -1438,6 +1455,8 @@ function renderAutoTopUp(
     topup: SUCCEEDED,
     paymentMethods
   })
+  if (purchase !== undefined)
+    fake.client.topup.readTopupPurchase = async () => purchase
   const createHostedTopupCheckout = vi
     .spyOn(fake.client.topup, 'createHostedTopupCheckout')
     .mockResolvedValue({
@@ -1457,6 +1476,10 @@ function renderAutoTopUp(
 }
 
 describe('FullPageTopupView with auto top-up from the link', () => {
+  beforeEach(() => {
+    form.mounts = 0
+  })
+
   it('shows the consent with the chosen monthly limit and pays on the hosted checkout with the settings', async () => {
     const assign = vi
       .spyOn(window.location, 'assign')
@@ -1643,6 +1666,28 @@ describe('FullPageTopupView with auto top-up from the link', () => {
         autoTopUp: { threshold_credits: 1055, target_credits: 11605 }
       })
     )
+    expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
+  })
+
+  it('refuses a purchase’s new card instead of opening an unbound hosted checkout when the saved-card read failed', async () => {
+    const { fake, createHostedTopupCheckout } = renderAutoTopUp(
+      `${AUTO_TOP_UP_PATH}&purchase=tpp_1`,
+      { status: 'error', code: 'REQUEST_FAILED' },
+      PAYS_ONCE,
+      purchaseRead('open')
+    )
+    await userEvent.click(
+      await screen.findByRole('tab', { name: 'Add new payment' })
+    )
+    readyCardForm()
+    await waitFor(() => expect(payButton()).toBeEnabled())
+
+    form.emit('confirm', 'ctoken_1', 'card')
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'This page can’t take this purchase’s payment'
+    )
+    expect(createHostedTopupCheckout).not.toHaveBeenCalled()
     expect(fake.createInteractiveTopup).not.toHaveBeenCalled()
   })
 
