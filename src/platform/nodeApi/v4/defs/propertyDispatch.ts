@@ -2,8 +2,7 @@ import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 
 import { once } from 'es-toolkit'
 
-import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { savedValue } from '@/platform/nodeApi/shared/savedCopy'
+import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 import type { PropertyChangeEvent } from '@/platform/nodeApi/v4/types'
 import type { DispatchContext, MethodInstaller } from './dispatchContext'
 
@@ -72,17 +71,5 @@ export function propertyInstallers({
 }
 
 function storableProperty(replacement: unknown): NodeProperty {
-  const saved = savedValue(replacement)
-  if (!saved.ok || !isNodeProperty(saved.value)) {
-    throw invalidArgument(
-      'setValue',
-      'a value a workflow can save',
-      replacement
-    )
-  }
-  return saved.value
-}
-
-function isNodeProperty(value: unknown): value is NodeProperty {
-  return value !== undefined
+  return savableValue('setValue', replacement)
 }
