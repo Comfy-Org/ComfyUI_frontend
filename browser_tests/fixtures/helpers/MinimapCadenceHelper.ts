@@ -27,16 +27,20 @@ export function expectFramesToSpanMeasurementWindow(
 export async function measureCadence(
   comfyPage: ComfyPage,
   measurementKey: string,
-  applyUpdate: (update: number) => Promise<unknown>
+  applyUpdate: (update: number) => Promise<unknown>,
+  {
+    updates = CADENCE_UPDATES,
+    intervalMs = CADENCE_INTERVAL_MS
+  }: { updates?: number; intervalMs?: number } = {}
 ) {
   await comfyPage.perf.startMeasuring()
-  for (let update = 0; update < CADENCE_UPDATES; update++) {
+  for (let update = 0; update < updates; update++) {
     await applyUpdate(update)
     await comfyPage.nextFrame()
     await comfyPage.page.evaluate(
-      (intervalMs) =>
-        new Promise((resolve) => window.setTimeout(resolve, intervalMs)),
-      CADENCE_INTERVAL_MS
+      (delayMs) =>
+        new Promise((resolve) => window.setTimeout(resolve, delayMs)),
+      intervalMs
     )
   }
   return await comfyPage.perf.stopMeasuring(measurementKey)

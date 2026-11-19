@@ -6,12 +6,18 @@ import {
   measureProgress,
   measureZoom,
   reportPerf,
+  SLOW_PROGRESS_CADENCE,
   trimGraphTo,
   waitForMeasuredVueNodes
 } from '@e2e/fixtures/helpers/PanZoomPerfHelper'
 
 const NODE_COUNTS = [60, 245] as const
 const TEST_TIMEOUT_MS = 300_000
+const QUEUE_PANEL_SETTING = 'Comfy.Queue.QPOV2'
+const QUEUE_LAYOUTS = [
+  { name: 'floating-queue', docked: false },
+  { name: 'docked-queue', docked: true }
+] as const
 
 function definePanZoomTests(renderer: 'vue' | 'litegraph') {
   for (const nodeCount of NODE_COUNTS) {
@@ -38,6 +44,21 @@ function definePanZoomTests(renderer: 'vue' | 'litegraph') {
         `${prefix} progress`,
         await measureProgress(comfyPage, `${prefix}-progress`)
       )
+      reportPerf(
+        `${prefix} progress slow`,
+        await measureProgress(
+          comfyPage,
+          `${prefix}-progress-slow`,
+          SLOW_PROGRESS_CADENCE
+        )
+      )
+      for (const { name, docked } of QUEUE_LAYOUTS) {
+        await comfyPage.settings.setSetting(QUEUE_PANEL_SETTING, docked)
+        reportPerf(
+          `${prefix} progress ${name}`,
+          await measureProgress(comfyPage, `${prefix}-progress-${name}`)
+        )
+      }
     })
   }
 }

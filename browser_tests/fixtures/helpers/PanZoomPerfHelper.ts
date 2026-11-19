@@ -191,8 +191,19 @@ export async function measureSelectAll(comfyPage: ComfyPage, name: string) {
 }
 
 const PROGRESS_JOB_ID = 'pan-zoom-perf-job'
+const PROGRESS_MAX = 20
 
-export async function measureProgress(comfyPage: ComfyPage, name: string) {
+/**
+ * Updates further apart than the progress bars' 300ms easing, so each update
+ * starts and finishes its own animation instead of retargeting a running one.
+ */
+export const SLOW_PROGRESS_CADENCE = { updates: 10, intervalMs: 400 }
+
+export async function measureProgress(
+  comfyPage: ComfyPage,
+  name: string,
+  cadence?: { updates: number; intervalMs: number }
+) {
   const nodeIds = await comfyPage.page.evaluate(() =>
     window.app!.graph.nodes.slice(0, 8).map((node) => String(node.id))
   )
@@ -203,29 +214,39 @@ export async function measureProgress(comfyPage: ComfyPage, name: string) {
     })
   }, PROGRESS_JOB_ID)
   try {
-    return await measureCadence(comfyPage, name, (update) =>
-      comfyPage.page.evaluate(
-        ({ nodeIds, update, jobId }) => {
-          const nodes = Object.fromEntries(
-            nodeIds.map((nodeId) => [
-              nodeId,
-              {
-                value: update,
-                max: 20,
-                state: 'running' as const,
-                node_id: nodeId,
-                display_node_id: nodeId,
-                prompt_id: jobId
-              }
-            ])
-          )
-          window.app!.api.dispatchCustomEvent('progress_state', {
-            prompt_id: jobId,
-            nodes
-          })
-        },
-        { nodeIds, update, jobId: PROGRESS_JOB_ID }
-      )
+    const step = PROGRESS_MAX / (cadence?.updates ?? PROGRESS_MAX)
+    return await measureCadence(
+      comfyPage,
+      name,
+      (update) =>
+        comfyPage.page.evaluate(
+          ({ nodeIds, value, max, jobId }) => {
+            const nodes = Object.fromEntries(
+              nodeIds.map((nodeId) => [
+                nodeId,
+                {
+                  value,
+                  max,
+                  state: 'running' as const,
+                  node_id: nodeId,
+                  display_node_id: nodeId,
+                  prompt_id: jobId
+                }
+              ])
+            )
+            window.app!.api.dispatchCustomEvent('progress_state', {
+              prompt_id: jobId,
+              nodes
+            })
+          },
+          {
+            nodeIds,
+            value: update * step,
+            max: PROGRESS_MAX,
+            jobId: PROGRESS_JOB_ID
+          }
+        ),
+      cadence
     )
   } finally {
     await comfyPage.page.evaluate(() => {
