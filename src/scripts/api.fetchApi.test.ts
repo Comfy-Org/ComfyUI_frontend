@@ -515,6 +515,92 @@ describe('api.fetchApi', () => {
     )
   })
 
+  describe('request auth headers for extensions', () => {
+    afterEach(() => {
+      mockDistribution.isCloud = false
+    })
+
+    function installTokenProvider(authHeader: Record<string, string> | null) {
+      mockDistribution.isCloud = true
+      const provider: ApiAuthProvider = {
+        ...anonymousApiAuthProvider,
+        getAuthHeader: vi.fn().mockResolvedValue(authHeader),
+        getAuthToken: vi.fn().mockResolvedValue('token'),
+        fetch: vi.fn().mockResolvedValue(new Response())
+      }
+      api.setAuthProvider(provider)
+      return provider
+    }
+
+    it('returns the token header fetchApi attaches', async () => {
+      const provider = installTokenProvider({ Authorization: 'Bearer token' })
+
+      await api.fetchApi('/upload/image', { method: 'POST' })
+      const [, init] = vi.mocked(provider.fetch).mock.calls[0]
+
+      expect(
+        new Headers(await api.getRequestAuthHeaders({ method: 'POST' })).get(
+          'Authorization'
+        )
+      ).toBe(new Headers(init.headers).get('Authorization'))
+    })
+
+    it('returns no headers off-cloud or signed out', async () => {
+      expect(await api.getRequestAuthHeaders()).toEqual({})
+      installTokenProvider(null)
+      expect(await api.getRequestAuthHeaders()).toEqual({})
+    })
+
+    it('returns the session headers for the method on a web-session tab', async () => {
+      installTokenProvider({ Authorization: 'Bearer token' })
+      const scope = { session: fromPartial({}), epoch: 1, workspaceId: 'ws' }
+      const ingestHeaders = vi.fn().mockResolvedValue({
+        'X-Comfy-Client': 'client',
+        'X-CSRF-Token': 'csrf'
+      })
+      onTestFinished(
+        provideWebSessionRequests(
+          fromPartial<WebSessionRequests>({
+            scope: async () => scope,
+            send: vi.fn(),
+            ingestHeaders
+          })
+        )
+      )
+
+      expect(await api.getRequestAuthHeaders({ method: 'POST' })).toEqual({
+        'X-Comfy-Client': 'client',
+        'X-CSRF-Token': 'csrf'
+      })
+      expect(ingestHeaders).toHaveBeenCalledExactlyOnceWith(scope, 'POST')
+    })
+
+    describe('deprecated getAuthStore', () => {
+      it('resolves undefined off-cloud, as before', async () => {
+        expect(await api.getAuthStore()).toBeUndefined()
+      })
+
+      it('gives the upload header as the old auth store did', async () => {
+        installTokenProvider({ Authorization: 'Bearer token' })
+
+        const authStore = await api.getAuthStore()
+
+        expect(await authStore?.getAuthHeader()).toEqual({
+          Authorization: 'Bearer token'
+        })
+        expect(await authStore?.getAuthToken()).toBe('token')
+      })
+
+      it('gives a null header when signed out, as before', async () => {
+        installTokenProvider(null)
+
+        const authStore = await api.getAuthStore()
+
+        expect(await authStore?.getAuthHeader()).toBeNull()
+      })
+    })
+  })
+
   describe('socketAuthParams', () => {
     it.for([
       {

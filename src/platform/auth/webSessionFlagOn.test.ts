@@ -1068,6 +1068,36 @@ describe('cloud API requests on the shared web session', () => {
     expect(onAuthHeader).toHaveBeenCalledExactlyOnceWith(true)
   })
 
+  it('gives an extension sending its own upload the session headers fetchApi sends', async () => {
+    const ingest = await bootOnSession()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    await postPrompt()
+    const {
+      'comfy-user': _,
+      'content-type': __,
+      ...sent
+    } = ingest.requests.at(-1)!.headers
+
+    const authStore = await api.getAuthStore()
+    const extensionHeaders = await authStore?.getAuthHeader()
+
+    expect(sent).toMatchObject({
+      'x-csrf-token': 'csrf-1',
+      'x-comfy-workspace-id': 'ws-team'
+    })
+    expect(
+      Object.fromEntries(
+        Object.entries(extensionHeaders ?? {}).map(([name, value]) => [
+          name.toLowerCase(),
+          value
+        ])
+      )
+    ).toEqual(sent)
+    expect(await api.getRequestAuthHeaders({ method: 'POST' })).toEqual(
+      extensionHeaders
+    )
+  })
+
   it('refuses a switch into a workspace the session cannot enter', async () => {
     await bootOnSession()
     const workspaceAuth = useWorkspaceAuthStore()
