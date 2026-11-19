@@ -39,7 +39,7 @@
     },
     {
       "name": "node-api-host-entry",
-      "comment": "The host reaches the node API at run time only through its store and the always-enabled extension name (ADR 0070 d7, ADR 0071 Consequences).",
+      "comment": "The host reaches the node API at run time only through its store and the always-enabled extension name (ADR-EXTENSIONS-NODE-API-0070 decision 7, ADR-EXTENSIONS-NODE-API-0071 Consequences).",
       "severity": "error",
       "from": { "pathNot": "^src/platform/nodeApi/" },
       "to": {
