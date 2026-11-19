@@ -22,6 +22,15 @@ const CITED_PROPOSALS_AWAITING_OWNER_STATUS = new Set([
   'PACKAGES-ACCOUNT-UI-payment-ui-belongs-to-the-shared-account-ui-package',
   'PERF-BENCHMARKS-performance-evidence-and-regression-framework'
 ])
+const NUMBERED_ADR_CITATION_PATTERN =
+  /(?<![A-Za-z0-9-])ADR-([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{4})(?![0-9])/g
+const NUMBERED_ADR_FILENAME_PATTERN =
+  /(?<![A-Za-z0-9-])(([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{4})-[a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.md/g
+const EXTERNAL_ADR_IDS = new Set(['ORDERING-0005'])
+const STALE_REFERENCE_FIXTURE_FILES = new Set([
+  'scripts/check-adrs.test.ts',
+  'scripts/cicd/check-adr-links.test.ts'
+])
 const LEGACY_REFERENCE_PATTERN =
   /ADR(?:[- ]?\d{4}(?!-\d{2})|(?:-[A-Z][A-Z0-9]*)?\s*(?:\/\s*|\(\s*)\d{4}(?!-\d{2}))|(?:docs\/)?adr\/\d{4}-/
 
@@ -40,6 +49,12 @@ type TextFile = {
   filename: string
 }
 
+type StaleReference = {
+  lineNumber: number
+  reference: string
+  replacement: string | undefined
+}
+
 type LegacyReference = {
   line: string
   lineNumber: number
@@ -50,6 +65,39 @@ export const findLegacyAdrReferences = (contents: string): LegacyReference[] =>
     .split('\n')
     .map((line, index) => ({ line, lineNumber: index + 1 }))
     .filter(({ line }) => LEGACY_REFERENCE_PATTERN.test(line))
+
+export const findStaleAdrReferences = (
+  contents: string,
+  adrFilenames: string[],
+  renames: Record<string, string>
+): StaleReference[] => {
+  const currentStems = new Set(
+    adrFilenames.map((filename) => filename.replace(/\.md$/, ''))
+  )
+  const currentNumberedIds = new Set(
+    adrFilenames.flatMap(
+      (filename) => /^([A-Z][A-Z0-9-]*?-\d{4})-[a-z]/.exec(filename)?.[1] ?? []
+    )
+  )
+  return contents.split('\n').flatMap((line, index) => [
+    ...[...line.matchAll(NUMBERED_ADR_CITATION_PATTERN)]
+      .filter(
+        ([, id]) => !currentNumberedIds.has(id) && !EXTERNAL_ADR_IDS.has(id)
+      )
+      .map(([reference, id]) => ({
+        lineNumber: index + 1,
+        reference,
+        replacement: renames[id] && `ADR-${renames[id]}`
+      })),
+    ...[...line.matchAll(NUMBERED_ADR_FILENAME_PATTERN)]
+      .filter(([, stem]) => !currentStems.has(stem))
+      .map(([reference, , id]) => ({
+        lineNumber: index + 1,
+        reference,
+        replacement: renames[id] && `${renames[id]}.md`
+      }))
+  ])
+}
 
 const readAdr = (directory: string, filename: string): Adr | undefined => {
   const match = ADR_FILE_PATTERN.exec(filename)
@@ -181,6 +229,25 @@ const checkLegacyReferences = (files: TextFile[]): void => {
   }
 }
 
+const checkStaleReferences = (
+  files: TextFile[],
+  adrFilenames: string[],
+  renames: Record<string, string>
+): void => {
+  const problems = files
+    .filter(({ filename }) => !STALE_REFERENCE_FIXTURE_FILES.has(filename))
+    .flatMap(({ contents, filename }) =>
+      findStaleAdrReferences(contents, adrFilenames, renames).map(
+        ({ lineNumber, reference, replacement }) =>
+          `${filename}:${lineNumber}: ${reference} names no current ADR${replacement ? `; use ${replacement}` : ''}`
+      )
+    )
+
+  if (problems.length) {
+    throw new Error(`Stale ADR references found:\n${problems.join('\n')}`)
+  }
+}
+
 const readTextFiles = (repositoryRoot: string): TextFile[] =>
   execFileSync(
     'git',
@@ -208,5 +275,14 @@ if (
     files.filter(({ filename }) => basename(filename) === 'AGENTS.md')
   )
   checkLegacyReferences(files)
+  checkStaleReferences(
+    files,
+    readdirSync(join(repositoryRoot, 'docs/adr')).filter((filename) =>
+      filename.endsWith('.md')
+    ),
+    JSON.parse(
+      readFileSync(join(repositoryRoot, 'scripts/adr-renames.json'), 'utf8')
+    )
+  )
   process.stdout.write('ADR validation passed\n')
 }

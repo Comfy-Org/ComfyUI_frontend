@@ -3,7 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, test } from 'vitest'
 
-import { findLegacyAdrReferences, validateAdrDirectory } from './check-adrs'
+import {
+  findLegacyAdrReferences,
+  findStaleAdrReferences,
+  validateAdrDirectory
+} from './check-adrs'
 
 const temporaryDirectories: string[] = []
 
@@ -222,5 +226,56 @@ describe('findLegacyAdrReferences', () => {
     expect(
       findLegacyAdrReferences('ADR-CRDT-LAYOUT-0003 amendment (2026-08-23)')
     ).toEqual([])
+  })
+})
+
+describe('findStaleAdrReferences', () => {
+  const adrFilenames = ['UI-decision.md', 'UI-0003-plan.md', 'UI-0007-plan.md']
+  const renames = { 'UI-0042': 'UI-decision' }
+
+  test.for([
+    {
+      name: 'an old citation of a renamed ADR',
+      line: 'Follows ADR-UI-0042.',
+      expected: [
+        {
+          lineNumber: 1,
+          reference: 'ADR-UI-0042',
+          replacement: 'ADR-UI-decision'
+        }
+      ]
+    },
+    {
+      name: 'an old link to a renamed ADR',
+      line: 'See [the decision](UI-0042-decision.md).',
+      expected: [
+        {
+          lineNumber: 1,
+          reference: 'UI-0042-decision.md',
+          replacement: 'UI-decision.md'
+        }
+      ]
+    },
+    {
+      name: 'a numbered citation no ADR ever had',
+      line: 'Follows ADR-UI-0099.',
+      expected: [
+        { lineNumber: 1, reference: 'ADR-UI-0099', replacement: undefined }
+      ]
+    },
+    {
+      name: 'a current numbered ADR',
+      line: 'Follows [ADR-UI-0003-plan](UI-0003-plan.md).',
+      expected: []
+    },
+    {
+      name: 'an external ADR',
+      line: 'comfy-multi-player ADR-ORDERING-0005',
+      expected: []
+    }
+  ])('reports $name', ({ line, expected }) => {
+    expect(findStaleAdrReferences(line, adrFilenames, renames)).toEqual(
+      expected
+    )
   })
 })
