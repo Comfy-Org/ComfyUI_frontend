@@ -370,7 +370,9 @@ export async function fetchObservations(
       }))
     )
     const next = parsed.meta?.cursor ?? undefined
-    if (next === undefined || parsed.data.length === 0) return observations
+    // v2 may return an empty page while meta.cursor is still present; only an
+    // absent cursor ends the read.
+    if (next === undefined) return observations
     if (next === cursor)
       refuse(
         `Langfuse ${OBSERVATIONS_PATH} page ${page} repeated cursor ${next}`
