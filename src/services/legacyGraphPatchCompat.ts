@@ -27,6 +27,9 @@ interface GraphPatch {
 
 const capturedHooks = new Set(['init', 'setup'])
 
+const perWorkflowGraphTroubleshootingUrl =
+  'https://github.com/Comfy-Org/ComfyUI_frontend/blob/main/docs/extensions/core.md#per-workflow-graphs-troubleshooting'
+
 const bridges = new WeakMap<
   GraphPatchHost,
   { patches: GraphPatch[]; reported: Set<string> }
@@ -124,7 +127,7 @@ export function captureLegacyGraphPatches<T>(
         bridge.reported.add(extension.name)
         reportError(
           new Error(
-            `${extension.name} patches app.graph during ${hook}. Temporary compatibility is deprecated. Update the extension to install hooks once per graph from beforeConfigureGraph.`
+            `${extension.name} patches app.graph during ${hook}. Temporary compatibility is deprecated. Update the extension to patch each graph it receives in beforeConfigureGraph. See ${perWorkflowGraphTroubleshootingUrl}`
           ),
           {
             errorType: 'deprecated_extension_graph_patch',
