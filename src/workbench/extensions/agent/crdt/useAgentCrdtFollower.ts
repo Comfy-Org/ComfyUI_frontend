@@ -484,6 +484,15 @@ function startAgentCrdtFollower(
     catchUpAwaitingProjectionFor = null
   }
 
+  function recoverReadableSchema(): boolean {
+    if (!schemaRecoveryPending || !bridge.isSubscribeBaselineIntegrated)
+      return false
+    schemaRecoveryPending = false
+    connected.value = true
+    terminal.value = null
+    return true
+  }
+
   const applyRejectedOps = (
     workflowId: string,
     rejected: readonly Op[],
@@ -863,16 +872,10 @@ function startAgentCrdtFollower(
     ) {
       clearProjectionStaleness(update.workflowId)
     }
-    const recoveredSchema =
-      schemaRecoveryPending && bridge.isSubscribeBaselineIntegrated
+    const recoveredSchema = recoverReadableSchema()
     if (!update.catchUp && !recoveredSchema) return
     if (outcome.applied) clearSyncStaleness()
     else catchUpAwaitingProjectionFor = update.workflowId
-    if (recoveredSchema) {
-      schemaRecoveryPending = false
-      connected.value = true
-      terminal.value = null
-    }
     sender.retryTransport()
   }
   const onUpdate: EventListener = (event) => {
