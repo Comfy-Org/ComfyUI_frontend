@@ -1,11 +1,15 @@
-# In-App Agent doc-frame type-generation contract
+# @comfyorg/ingest-types
+
+TypeScript types and Zod schemas generated from Comfy Cloud's ingest API spec.
+
+## In-App Agent doc-frame contract
 
 The CRDT doc-frame wire contract is owned by Comfy Cloud's ingest service. The frontend imports its
 generated types and schemas. Its production WebSocket boundary remains a handwritten adapter that
 independently validates raw JSON before exposing frontend domain objects; a compatibility test feeds
 generated schema output through that adapter to detect disagreement between the two representations.
 
-## Contract
+### Contract
 
 ```text
 cloud services/ingest/openapi.yaml          (authority)
@@ -30,7 +34,7 @@ cloud services/ingest/openapi.yaml          (authority)
   generated outputs through that adapter and assert their complete mapped payloads; they do not
   claim that the handwritten parser accepts every value admitted by the generated schema.
 
-## Validation the generated schema cannot provide
+### Validation the generated schema cannot provide
 
 `update_b64` is an unconstrained string in the authoritative OpenAPI contract, so its generated Zod
 schema also accepts malformed payloads. Cloud validates base64 in code (`validateB64` in
@@ -41,14 +45,14 @@ adapter accepts some raw frames that the generated schema rejects, such as a `do
 pins representative generated outputs plus these intentional boundary differences rather than
 treating schema conformance as a prerequisite for adapter acceptance.
 
-## References
+### References
 
 - Cloud PR [#7730](https://github.com/Comfy-Org/cloud/pull/7730) — generated CRDT doc-frame wire types.
 - `docs/guidance/typescript.md` — server/API response types come from the generated shared packages.
 - `docs/adr/CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md` —
   frontend follower boundary.
 
-## Glossary
+### Glossary
 
 - **Doc frame:** a CRDT message carried by the WebSocket `{type,data}` envelope.
 - **Wire spelling:** the serialized field name shared by all producers and consumers.
