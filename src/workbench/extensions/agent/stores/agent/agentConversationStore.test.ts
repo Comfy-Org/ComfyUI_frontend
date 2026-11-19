@@ -4649,5 +4649,202 @@ describe('useAgentConversationStore', () => {
       expect(store.activeBlankChatId).toBe('blank:tab-b')
       expect(store.entries).toEqual([])
     })
+
+    it('skips a chat with a live turn during known-chat eviction and keeps its stream and tab spinner intact', () => {
+      const liveWorkflow = fromPartial<LoadedComfyWorkflow>({
+        path: 'workflows/live.json',
+        instanceId: 'workflow-live'
+      })
+      useWorkflowStore().attachWorkflow(liveWorkflow, 0)
+      const store = useAgentConversationStore()
+      store.setTurnTabResolver(() => ({
+        status: 'known',
+        workflowInstanceId: liveWorkflow.instanceId
+      }))
+
+      store.setThreadId('th-live')
+      const liveTurnId = toTurnId('msg-live')
+      store.recordUser(liveTurnId, 'Keep streaming')
+      store.startTurn(liveTurnId)
+      store.recordAcceptedTurn({
+        threadId: 'th-live',
+        turnId: liveTurnId,
+        createdHere: true,
+        workflowId: 'wf-live',
+        text: 'Keep streaming'
+      })
+      store.ingest(delta('msg-live', 'First part'))
+      store.stashActiveTurn()
+
+      for (let i = 1; i <= 13; i += 1) {
+        const id = `th-other-${i}`
+        store.setThreadId(id)
+        const history: AgentMessages = [
+          {
+            ...historyRow(1, 'user', `turn-${i}`, `Prompt ${i}`, `u-${i}`),
+            thread_id: id
+          }
+        ]
+        store.hydrate(history)
+        store.recordHydratedChat(id, history)
+      }
+
+      expect(store.isKnownChat('th-live')).toBe(true)
+      expect(store.isKnownChat('th-other-1')).toBe(false)
+      expect(store.isKnownChat('th-other-13')).toBe(true)
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/live.json', awaitingApproval: false }
+      ])
+
+      store.ingest(
+        chat({
+          type: 'agent_message_delta',
+          data: {
+            thread_id: 'th-live',
+            message_id: 'msg-live',
+            delta: ' + still alive'
+          }
+        })
+      )
+      store.setThreadId('th-live')
+      expect(store.hydrateKnownChat('th-live')).toBe(true)
+      expect(store.isStreaming).toBe(true)
+      expect(store.messages[0].parts).toEqual([
+        { type: 'text', text: 'First part + still alive', state: 'streaming' }
+      ])
+      expect(store.turnTabs).toEqual([
+        { path: 'workflows/live.json', awaitingApproval: false }
+      ])
+    })
+
+    it('isolates known-chat snapshots from live streaming, retireAsk, reset, and active message mutations', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th')
+      store.recordUser(T1, 'First prompt')
+      store.startTurn(T1)
+      store.ingest(delta('t1', 'Initial'))
+      store.recordAcceptedTurn({
+        threadId: 'th',
+        turnId: T1,
+        createdHere: true,
+        text: 'First prompt'
+      })
+      store.stashActiveTurn()
+
+      store.setThreadId('th')
+      expect(store.hydrateKnownChat('th')).toBe(true)
+      const resumedSnapshot = store.messages[0]
+      expect(resumedSnapshot.parts).toEqual([
+        { type: 'text', text: 'Initial', state: 'streaming' }
+      ])
+
+      store.ingest(delta('t1', ' + uncommitted'))
+      store.ingest(runApproval('t1', 'ask-live'))
+      store.retireAsk('ask-live', { status: 'closed' })
+      store.reset()
+
+      expect(resumedSnapshot.parts).toEqual([
+        { type: 'text', text: 'Initial', state: 'streaming' }
+      ])
+
+      store.setThreadId('th')
+      expect(store.hydrateKnownChat('th')).toBe(true)
+      expect(store.messages[0]).not.toBe(resumedSnapshot)
+      expect(store.messages[0].parts).not.toBe(resumedSnapshot.parts)
+      expect(store.messages[0].streaming).toBe(false)
+      expect(store.messages[0].parts).toEqual([
+        { type: 'text', text: 'Initial', state: 'streaming' }
+      ])
+    })
+
+    it('isolates settled known-chat snapshots across publishMessage and hydrateKnownChat in both directions', () => {
+      const store = useAgentConversationStore()
+      store.setCanvasSyncGate(() => 'awaiting')
+      store.setThreadId('th')
+      store.recordUser(T1, 'Run tool')
+      store.startTurn(T1)
+      store.recordAcceptedTurn({
+        threadId: 'th',
+        turnId: T1,
+        createdHere: true,
+        text: 'Run tool'
+      })
+      store.ingest(
+        toolCall('t1', 'add_node', 'success', {
+          workflow_id: 'wf',
+          op_ids: ['op-1']
+        })
+      )
+      store.ingest(delta('t1', 'Done'))
+      store.ingest(runApproval('t1', 'ask-settled'))
+      store.ingest(done('t1'))
+
+      store.notifyCanvasCaughtUp(liveCanvasEvidence('wf', ['op-1']))
+      const activeAfterPublish = store.messages[0]
+      const textPart = activeAfterPublish.parts.find(
+        (part) => part.type === 'text'
+      )
+      expect(textPart?.text).toBe('Done')
+      if (textPart) textPart.text = 'corrupted'
+      activeAfterPublish.parts.push({
+        type: 'text',
+        text: 'extra',
+        state: 'done'
+      })
+
+      store.reset()
+      store.setThreadId('th')
+      expect(store.hydrateKnownChat('th')).toBe(true)
+      const hydrated = store.messages[0]
+      expect(hydrated).not.toBe(activeAfterPublish)
+      expect(hydrated.parts).not.toBe(activeAfterPublish.parts)
+      expect(hydrated.parts).toMatchObject([
+        {
+          type: 'tool',
+          name: 'add_node',
+          state: 'done',
+          canvasConfirmed: true
+        },
+        { type: 'text', text: 'Done', state: 'done' },
+        { type: 'runApproval', askId: 'ask-settled' }
+      ])
+
+      store.reset()
+      store.retireAsk('ask-settled', { status: 'closed' }, 'th')
+      expect(hydrated.parts).toMatchObject([
+        {
+          type: 'tool',
+          name: 'add_node',
+          state: 'done',
+          canvasConfirmed: true
+        },
+        { type: 'text', text: 'Done', state: 'done' },
+        { type: 'runApproval', askId: 'ask-settled' }
+      ])
+
+      const hydratedTextPart = hydrated.parts.find(
+        (part) => part.type === 'text'
+      )
+      if (hydratedTextPart) hydratedTextPart.text = 'mutated-after-hydrate'
+      hydrated.parts.push({
+        type: 'text',
+        text: 'hydrated-extra',
+        state: 'done'
+      })
+
+      store.setThreadId('th')
+      expect(store.hydrateKnownChat('th')).toBe(true)
+      expect(store.messages[0]).not.toBe(hydrated)
+      expect(store.messages[0].parts).not.toBe(hydrated.parts)
+      expect(store.messages[0].parts).toMatchObject([
+        {
+          type: 'tool',
+          name: 'add_node',
+          state: 'done',
+          canvasConfirmed: true
+        },
+        { type: 'text', text: 'Done', state: 'done' }
+      ])
+    })
   })
 })

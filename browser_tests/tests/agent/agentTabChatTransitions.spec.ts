@@ -175,5 +175,108 @@ test.describe(
       ])
       expect(tabChats.posted).toHaveLength(2)
     })
+
+    test('kept chat with a newer turn in this page shows at once on return without duplicates (TC-17, TC-18)', async ({
+      tabChats
+    }) => {
+      await tabChats.panel.sendMessage('New prompt in A')
+      await expect.poll(() => tabChats.posted).toHaveLength(1)
+      tabChats.sendDelta(0, 'Reply in A')
+      await expect(tabChats.panel.conversation).toContainText('Reply in A')
+
+      await tabChats.tab(1).click()
+      await tabChats.panel.sendMessage('New prompt in B')
+      await expect.poll(() => tabChats.posted).toHaveLength(2)
+      await expect(tabChats.working(1)).toBeVisible()
+
+      const pendingA = tabChats.holdMessages(0)
+      await tabChats.tab(0).click()
+
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Portrait existing request',
+        'New prompt in A'
+      ])
+      await expect(tabChats.panel.conversation).toContainText('Reply in A')
+      await expect(tabChats.panel.stopButton).toBeVisible()
+      await expect(tabChats.opening(0)).toHaveCount(0)
+
+      tabChats.complete(0)
+      await pendingA.entered
+      await pendingA.release()
+
+      await expect(tabChats.panel.userMessageBubbles).toHaveText([
+        'Portrait existing request',
+        'New prompt in A'
+      ])
+      await expect(tabChats.panel.conversation).toContainText('Reply in A')
+      await expect(tabChats.panel.sendButton).toBeVisible()
+    })
+
+    test('Ryan sequence: two blank tabs create chats and returning to each shows at once without loading or duplicates (TC-15, TC-16, TC-18)', async ({
+      blankTabChats
+    }) => {
+      await test.step('send hi in blank tab A', async () => {
+        await blankTabChats.panel.sendMessage('hi')
+        await expect.poll(() => blankTabChats.posted).toHaveLength(1)
+        blankTabChats.sendDelta(0, 'Reply in A')
+        await expect(blankTabChats.panel.conversation).toContainText(
+          'Reply in A'
+        )
+        await expect(blankTabChats.panel.stopButton).toBeVisible()
+      })
+
+      await test.step('switch to blank tab B and send hi', async () => {
+        await blankTabChats.tab(1).click()
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveCount(0)
+
+        await blankTabChats.panel.sendMessage('hi')
+        await expect.poll(() => blankTabChats.posted).toHaveLength(2)
+        blankTabChats.sendDelta(1, 'Reply in B')
+        blankTabChats.complete(1)
+      })
+
+      await test.step('return to A while A runs and verify no loading or duplicates', async () => {
+        const pendingA = blankTabChats.holdMessages(0)
+        await blankTabChats.tab(0).click()
+
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveText(['hi'])
+        await expect(blankTabChats.panel.conversation).toContainText(
+          'Reply in A'
+        )
+        await expect(blankTabChats.panel.stopButton).toBeVisible()
+        await expect(blankTabChats.opening(0)).toHaveCount(0)
+
+        blankTabChats.sendDelta(0, '!')
+        blankTabChats.complete(0)
+        await pendingA.entered
+        await pendingA.release()
+
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveText(['hi'])
+        await expect(blankTabChats.panel.conversation).toContainText(
+          'Reply in A!'
+        )
+        await expect(blankTabChats.panel.sendButton).toBeVisible()
+      })
+
+      await test.step('return to B after B finished and verify no loading or duplicates', async () => {
+        const pendingB = blankTabChats.holdMessages(1)
+        await blankTabChats.tab(1).click()
+        await pendingB.entered
+
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveText(['hi'])
+        await expect(blankTabChats.panel.conversation).toContainText(
+          'Reply in B'
+        )
+        await expect(blankTabChats.panel.stopButton).toHaveCount(0)
+        await expect(blankTabChats.opening(1)).toHaveCount(0)
+
+        await pendingB.release()
+
+        await expect(blankTabChats.panel.userMessageBubbles).toHaveText(['hi'])
+        await expect(blankTabChats.panel.conversation).toContainText(
+          'Reply in B'
+        )
+      })
+    })
   }
 )

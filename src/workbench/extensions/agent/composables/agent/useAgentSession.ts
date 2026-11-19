@@ -2,7 +2,7 @@ import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useIntervalFn } from '@vueuse/core'
-import { delay, isEqual, xor } from 'es-toolkit'
+import { delay, xor } from 'es-toolkit'
 import { computed, ref, watch } from 'vue'
 import { ZodError } from 'zod'
 
@@ -68,6 +68,7 @@ import {
   isAttachmentKind,
   normalizeAgentTranscript
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
+import { latestWorkflowIdOf } from '@/workbench/extensions/agent/services/agent/agentKnownChat'
 import type { TranscriptRead } from '@/workbench/extensions/agent/services/agent/agentTranscriptCache'
 import { createTranscriptCache } from '@/workbench/extensions/agent/services/agent/agentTranscriptCache'
 import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
@@ -200,9 +201,15 @@ const PREPARE_TIMEOUT_MS = 3000
 const MAX_CANVAS_SELECTION_IDS = 20
 const RECONCILE_TIMEOUT_MS = 5000
 
+interface BufferedHydrationEvent {
+  event: AgentWsEvent
+  /** Delivered live by this session; retained only so a stale hydrate or remounted successor can still settle the turn. */
+  deliveredByGeneration?: number
+}
+
 interface HydrationBuffer {
   threadId: string
-  events: AgentWsEvent[]
+  events: BufferedHydrationEvent[]
   /**
    * Whether this buffer's own GET is still in flight. Both mailbox bounds
    * respect it: a queue whose hydrate has not come back is the one case where
@@ -409,8 +416,6 @@ const ANSWER_FAILURE_ERROR_TYPES: Record<AnswerFailure, string> = {
 const FRAMES_THAT_LEAVE_TRANSCRIPTS_ALONE: ReadonlySet<string> = new Set([
   'agent_active_tab'
 ])
-
-const leaveChatAsItIs = (): void => undefined
 
 function classifyAnswerFailure(error: unknown): AnswerFailure {
   if (!(error instanceof AgentApiError)) return 'unconfirmed'
@@ -1080,15 +1085,32 @@ export function useAgentSession(deps: AgentSessionDeps) {
    * late would otherwise unregister the buffer that replaced it, leaving the
    * live hydrate's frames with nowhere to be held.
    */
+  function replayHydrationEvent({
+    event,
+    deliveredByGeneration
+  }: BufferedHydrationEvent): void {
+    if (
+      deliveredByGeneration === ownedGeneration &&
+      !hasRoutableLiveTurn(event.data.thread_id, event.data.message_id)
+    )
+      return
+    try {
+      handleAgentEvent(event)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_hydration_replay_failed'
+      })
+    }
+  }
+
   function drainHydration(buffer: HydrationBuffer): void {
     // Unregistering is not gated on `stopped`. The mailbox TTL is one-shot
     // and returns early while this buffer is pending, so settling is the
     // only remaining owner of the registration -- returning first would
     // strand the entry, and its frames, for the life of the page.
     buffer.pending = false
-    if (buffer.retirement !== undefined) clearTimeout(buffer.retirement)
-    if (buffer.mailboxRetirement !== undefined)
-      clearTimeout(buffer.mailboxRetirement)
+    clearHydrationTimers(buffer)
     if (hydrationBuffers.get(buffer.threadId) === buffer)
       hydrationBuffers.delete(buffer.threadId)
     if (hydrationMailboxes.get(buffer.threadId) === buffer)
@@ -1104,16 +1126,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       mailboxHydration(buffer)
       return
     }
-    for (const event of events) {
-      try {
-        handleAgentEvent(event)
-      } catch (error) {
-        reportError(error, {
-          surface: 'agent',
-          errorType: 'agent_hydration_replay_failed'
-        })
-      }
-    }
+    for (const entry of events) replayHydrationEvent(entry)
   }
 
   /**
@@ -1131,6 +1144,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (turnId !== null) snapshotTurns.add(turnId)
   }
 
+  function installHydration(threadId: string, history: AgentMessages): void {
+    deletedThreads.delete(threadId)
+    conversationStore.hydrate(history)
+    conversationStore.recordHydratedChat(
+      threadId,
+      history,
+      conversationStore.latestWorkflowId
+    )
+    rememberSnapshotTurn(conversationStore.activeTurnId)
+    reconcileLiveTurns('hydrate')
+    readyThreadId.value = threadId
+  }
+
+  function handleFailedWorkflowRestore(threadId: string): false {
+    invalidateChat(threadId)
+    if (readyThreadId.value === threadId) readyThreadId.value = null
+    return false
+  }
+
   async function applyHydration(
     threadId: string,
     history: AgentMessages,
@@ -1139,25 +1171,37 @@ export function useAgentSession(deps: AgentSessionDeps) {
     restoreWorkflow = true
   ): Promise<boolean> {
     if (conversationStore.threadId !== threadId || !isCurrent()) return false
-    deletedThreads.delete(threadId)
-    conversationStore.hydrate(history)
-    rememberSnapshotTurn(conversationStore.activeTurnId)
-    reconcileLiveTurns('hydrate')
-    readyThreadId.value = threadId
+    installHydration(threadId, history)
     drainHydration(buffer)
     if (!restoreWorkflow) return true
     const workflowReady = await workflow?.restored?.(
       conversationStore.latestWorkflowId,
       isCurrent
     )
-    return (
-      workflowReady !== false &&
-      conversationStore.threadId === threadId &&
-      isCurrent()
-    )
+    if (workflowReady === false) return handleFailedWorkflowRestore(threadId)
+    return conversationStore.threadId === threadId && isCurrent()
   }
 
   const transcripts = createTranscriptCache()
+  const deferredRechecks = new Set<string>()
+
+  function hasLiveTurnForThread(threadId: string): boolean {
+    return conversationStore
+      .liveTurns()
+      .some((turn) => turn.threadId === threadId)
+  }
+
+  function invalidateChat(threadId: string): void {
+    deferredRechecks.delete(threadId)
+    transcripts.touch(threadId)
+    conversationStore.invalidateKnownChat(threadId)
+  }
+
+  function invalidateAllChats(): void {
+    deferredRechecks.clear()
+    transcripts.touchAll()
+    conversationStore.invalidateAllKnownChats()
+  }
 
   function readTranscript(threadId: string): TranscriptRead {
     return transcripts.fetch(threadId, () => rest.getMessages(threadId))
@@ -1167,20 +1211,77 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return readTranscript(threadId).answer
   }
 
-  function warmTranscript(threadId: string | null): void {
-    if (threadId === null || stopped) return
-    const alreadyKept = transcripts.has(threadId)
-    const alreadyBeingRead = transcripts.isFetching(threadId)
-    const turnStillRunning = conversationStore
-      .liveTurns()
-      .some((turn) => turn.threadId === threadId)
+  function settleReconciledTurns(
+    settled: ReadonlyArray<{
+      turn: LiveTurn
+      persistedParts: AssistantMessage['parts'] | undefined
+      ending: 'completed' | 'failed'
+    }>
+  ): void {
+    for (const item of settled) {
+      const key = recoveryKey(item.turn)
+      recoveringTurns.get(key)?.controller.abort()
+      recoveringTurns.delete(key)
+      settleTerminalTurn(item.turn, item.persistedParts, item.ending)
+      conversationStore.retireSettledBackgroundTurn(
+        item.turn.threadId,
+        item.turn.messageId
+      )
+    }
+  }
+
+  function applyWarmedHistory(threadId: string, history: AgentMessages): void {
+    if (conversationStore.isKnownChat(threadId)) {
+      const result = conversationStore.reconcileKnownChat(
+        threadId,
+        history,
+        false
+      )
+      if (result.status === 'applied')
+        settleReconciledTurns(result.settledLiveTurns)
+      return
+    }
+    conversationStore.recordHydratedChat(
+      threadId,
+      history,
+      latestWorkflowIdOf(history)
+    )
+  }
+
+  function canWarmTranscript(threadId: string | null): threadId is string {
+    if (threadId === null || stopped) return false
+    if (deletedThreads.has(threadId) || isDeletedThread?.(threadId))
+      return false
+    if (
+      conversationStore.isKnownChatSettledFromServer(threadId) ||
+      transcripts.isFetching(threadId)
+    )
+      return false
+    const turnStillRunning = hasLiveTurnForThread(threadId)
     const sendInFlight = conversationStore.hasSendingForOrigin({
       kind: 'thread',
       threadId
     })
-    if (alreadyKept || alreadyBeingRead || turnStillRunning || sendInFlight)
-      return
-    void fetchTranscript(threadId).catch(() => undefined)
+    return !turnStillRunning && !sendInFlight
+  }
+
+  function warmTranscript(threadId: string | null): void {
+    if (!canWarmTranscript(threadId)) return
+    const read = readTranscript(threadId)
+    void read.answer.then(
+      (history) => {
+        if (
+          stopped ||
+          read.isOutdated() ||
+          conversationStore.threadId === threadId ||
+          deletedThreads.has(threadId) ||
+          isDeletedThread?.(threadId)
+        )
+          return
+        applyWarmedHistory(threadId, history)
+      },
+      () => undefined
+    )
   }
 
   function warmLeftChat(threadId: string | null): void {
@@ -1190,28 +1291,68 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!beingReadBack) warmTranscript(threadId)
   }
 
-  async function recheckTranscript(
+  function dropFailedRecheckIfNeeded(threadId: string): void {
+    const recalled = conversationStore.recallKnownChat(threadId)
+    if (!recalled || (!recalled.createdHere && !recalled.hasLocalTurns))
+      invalidateChat(threadId)
+  }
+
+  function hasRecheckSupersededSend(
     threadId: string,
-    shown: AgentMessages,
-    generation: number
-  ): Promise<void> {
-    const isStillShown = () =>
-      generation === loadGeneration &&
-      ownedGeneration === sessionGeneration &&
-      conversationStore.threadId === threadId &&
-      !conversationStore.hasPendingSendForOrigin({
+    versionAtFetchStart: number
+  ): boolean {
+    return (
+      conversationStore.hasPendingSendForOrigin({
         kind: 'thread',
         threadId
-      }) &&
-      conversationStore.activeTurnId === null
+      }) || conversationStore.knownChatVersion(threadId) !== versionAtFetchStart
+    )
+  }
+
+  function applyRecheckResult(
+    threadId: string,
+    fresh: AgentMessages,
+    buffer: HydrationBuffer,
+    onScreen: boolean
+  ): void {
+    const result = conversationStore.reconcileKnownChat(
+      threadId,
+      fresh,
+      onScreen
+    )
+    if (result.status === 'applied') {
+      settleReconciledTurns(result.settledLiveTurns)
+      return
+    }
+    if (!onScreen) return
+    invalidateChat(threadId)
+    if (result.status === 'ambiguous') return
+    if (conversationStore.activeTurnId !== null)
+      conversationStore.stashActiveTurn()
+    installHydration(threadId, fresh)
+    conversationStore.resumeBackgroundTurn()
+    drainHydration(buffer)
+  }
+
+  async function recheckKnownTranscript(
+    threadId: string,
+    versionAtFetchStart: number,
+    generation: number
+  ): Promise<void> {
     const buffer = armHydration(threadId)
     try {
       const read = readTranscript(threadId)
       const fresh = await read.answer
-      if (!read.isOutdated() && !isEqual(fresh, shown) && isStillShown())
-        await applyHydration(threadId, fresh, buffer, isStillShown, false)
+      if (read.isOutdated()) return
+      if (hasRecheckSupersededSend(threadId, versionAtFetchStart)) return
+      if (!conversationStore.isKnownChat(threadId)) return
+      const onScreen =
+        generation === loadGeneration &&
+        ownedGeneration === sessionGeneration &&
+        conversationStore.threadId === threadId
+      applyRecheckResult(threadId, fresh, buffer, onScreen)
     } catch {
-      leaveChatAsItIs()
+      dropFailedRecheckIfNeeded(threadId)
     } finally {
       drainHydration(buffer)
     }
@@ -1225,20 +1366,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
       forThreadLoad = false,
       openThread,
       failureNotice = 'error_overlay',
-      cached
+      restoreWorkflow = true
     }: {
       stashedTurn?: boolean
       forThreadLoad?: boolean
       openThread?: () => void
       failureNotice?: 'error_overlay' | 'inline_notice'
-      cached?: AgentMessages
+      restoreWorkflow?: boolean
     } = {}
   ): Promise<boolean> {
     const buffer = armHydration(threadId, forThreadLoad)
     try {
-      const history = cached ?? (await fetchTranscript(threadId))
+      const history = await fetchTranscript(threadId)
       if (openThread && isCurrent()) openThread()
-      return await applyHydration(threadId, history, buffer, isCurrent)
+      return await applyHydration(
+        threadId,
+        history,
+        buffer,
+        isCurrent,
+        restoreWorkflow
+      )
     } catch (error) {
       return handleHistoryLoadError(
         error,
@@ -1261,6 +1408,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): false {
     if (!isCurrent()) return false
     if (error instanceof AgentApiError && error.status === 404) {
+      invalidateChat(threadId)
       deletedThreads.add(threadId)
       if (conversationStore.threadId === threadId)
         conversationStore.setThreadId(null)
@@ -1290,7 +1438,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function stop(): void {
     stopped = true
-    transcripts.clear()
+    invalidateAllChats()
     readyThreadId.value = null
     inFlightSends.clear()
     pendingSendEvents.length = 0
@@ -1674,7 +1822,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       outcomeAtStart?: number
       evidence?: readonly CanvasSyncEvidence[]
     },
-    missedCause: RecoveryCause | null = null
+    missedCause: RecoveryCause | null = null,
+    clientMessageId?: string
   ): void {
     transcripts.touch(ack.thread_id)
     const startsThread = conversationStore.threadId === null
@@ -1689,15 +1838,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
           workflow?.adopted(workflowId, wfContext, boundAtAck)
     }
     const turnId = toTurnId(ack.message_id)
+    const userAttachments = toUserAttachments(attachments)
+    const userTags = toTagStrings(tags)
     conversationStore.recordUser(
       turnId,
       text,
-      toUserAttachments(attachments),
-      toTagStrings(tags),
+      userAttachments,
+      userTags,
       workflowReferences
     )
     conversationStore.startTurn(turnId, canvasBaseline)
     if (missedCause !== null) conversationStore.markActiveTurnMissedFrames()
+    conversationStore.recordAcceptedTurn({
+      threadId: ack.thread_id,
+      turnId,
+      clientMessageId,
+      createdHere: startsThread,
+      workflowId: ack.workflow_id ?? wfContext?.id,
+      text,
+      attachments: userAttachments,
+      tags: userTags,
+      workflowReferences
+    })
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
     consumeThreadSource(origin)
@@ -1783,7 +1945,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     boundAtSend,
     stopped,
     canvasBaseline,
-    missedCause = null
+    missedCause = null,
+    clientMessageId
   }: {
     sendId: string
     ack: AgentTurnAccepted
@@ -1803,6 +1966,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       evidence?: readonly CanvasSyncEvidence[]
     }
     missedCause?: RecoveryCause | null
+    clientMessageId?: string
   }): void {
     transcripts.touch(ack.thread_id)
     const turnId = toTurnId(ack.message_id)
@@ -1810,15 +1974,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
     adoptBackgroundWorkflow(workflowId, wfContext, boundAtSend)
     const tabWorkflowId = resolveAcceptedTabWorkflowId(ack, wfContext)
     notifyBlankSendAccepted(origin, ack.thread_id)
+    const userAttachments = toUserAttachments(attachments)
+    const userTags = toTagStrings(tags)
     conversationStore.startBackgroundTurn({
       threadId: ack.thread_id,
       turnId,
       text,
-      attachments: toUserAttachments(attachments),
-      tags: toTagStrings(tags),
+      attachments: userAttachments,
+      tags: userTags,
       workflowReferences,
       tab: workflow?.turnTab?.(turnOrigin, workflowId) ?? { status: 'unknown' },
       canvasBaseline
+    })
+    conversationStore.recordAcceptedTurn({
+      threadId: ack.thread_id,
+      turnId,
+      clientMessageId,
+      createdHere: origin.kind === 'blank',
+      workflowId: ack.workflow_id ?? wfContext?.id,
+      text,
+      attachments: userAttachments,
+      tags: userTags,
+      workflowReferences
     })
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     consumeThreadSource(origin)
@@ -2276,7 +2453,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         params.threadSourceAtSend,
         stoppedRequest,
         canvasBaseline,
-        missedCause
+        missedCause,
+        input.clientMessageId
       )
     } else {
       acceptBackgroundTurn({
@@ -2294,7 +2472,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         boundAtSend,
         stopped: stoppedRequest,
         canvasBaseline,
-        missedCause
+        missedCause,
+        clientMessageId: input.clientMessageId
       })
     }
     rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
@@ -2468,7 +2647,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function touchSendOrigin(origin: PendingSendOrigin): void {
-    if (origin.kind === 'thread') transcripts.touch(origin.threadId)
+    if (origin.kind === 'thread') {
+      transcripts.touch(origin.threadId)
+      conversationStore.bumpKnownChatVersion(origin.threadId)
+    }
   }
 
   async function sendMessage(
@@ -3005,11 +3187,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   let loadGeneration = 0
   let refusedTurnReattachGeneration = 0
 
-  function newChat(
-    source?: Exclude<AgentSessionThreadStartSource, 'first_open'>,
-    blankChatId?: string
-  ): void {
-    warmLeftChat(conversationStore.threadId)
+  function resetToBlankChat(blankChatId?: string): void {
     readyThreadId.value = null
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
@@ -3021,6 +3199,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pendingWorkflowBind = null
     malformedStreamReports.clear()
     localStorage.removeItem(threadStorageKey)
+  }
+
+  function newChat(
+    source?: Exclude<AgentSessionThreadStartSource, 'first_open'>,
+    blankChatId?: string
+  ): void {
+    warmLeftChat(conversationStore.threadId)
+    resetToBlankChat(blankChatId)
     if (source !== undefined)
       pendingThreadSources.set(conversationStore.activeBlankChatId, source)
   }
@@ -3029,6 +3215,211 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!conversationStore.hasPendingSendForBlankChat(blankChatId)) return false
     newChat(undefined, blankChatId)
     return true
+  }
+
+  function activateLoadedThread(threadId: string): void {
+    localStorage.setItem(threadStorageKey, threadId)
+    onThreadActivated?.(threadId)
+  }
+
+  function tryHydrateKnownChat(threadId: string): boolean {
+    const buffer = armHydration(threadId)
+    try {
+      const hydrated = conversationStore.hydrateKnownChat(threadId)
+      if (hydrated) readyThreadId.value = threadId
+      return hydrated
+    } finally {
+      drainHydration(buffer)
+    }
+  }
+
+  function scheduleKnownRecheck(threadId: string, generation: number): void {
+    if (hasLiveTurnForThread(threadId)) {
+      deferredRechecks.add(threadId)
+      return
+    }
+    deferredRechecks.delete(threadId)
+    void recheckKnownTranscript(
+      threadId,
+      conversationStore.knownChatVersion(threadId),
+      generation
+    )
+  }
+
+  function loadKnownThread(
+    threadId: string,
+    known: {
+      latestWorkflowId?: string
+    },
+    stashedTurn: () => boolean,
+    keepOpenChatUntilLoaded: boolean,
+    generation: () => number,
+    openThread: () => void,
+    isLoadCurrent: () => boolean,
+    isNavigationCurrent: () => boolean,
+    isCurrent: () => boolean,
+    outlivedItsNavigation: () => boolean
+  ): Promise<boolean> {
+    const previousBlankChatId =
+      conversationStore.threadId === null
+        ? conversationStore.activeBlankChatId
+        : undefined
+    const ownsUnloadedThread = () =>
+      isLoadCurrent() && conversationStore.threadId === threadId
+    const stillOwned = () =>
+      ownsUnloadedThread() && (isNavigationCurrent() || keepOpenChatUntilLoaded)
+
+    function clearUnloadedThread(): void {
+      if (ownsUnloadedThread()) resetToBlankChat(previousBlankChatId)
+    }
+
+    function failKnownRestore(): false {
+      handleFailedWorkflowRestore(threadId)
+      clearUnloadedThread()
+      return false
+    }
+
+    function finishAfterRestore(): Promise<boolean> | boolean {
+      if (!stillOwned()) {
+        clearUnloadedThread()
+        return false
+      }
+      if (!tryHydrateKnownChat(threadId)) {
+        if (!isCurrent()) {
+          clearUnloadedThread()
+          return false
+        }
+        return loadServerThread(
+          threadId,
+          stashedTurn,
+          keepOpenChatUntilLoaded,
+          openThread,
+          isCurrent,
+          outlivedItsNavigation,
+          { alreadyOpened: true, restoreWorkflow: false }
+        )
+      }
+      const opened = isCurrent()
+      if (opened || outlivedItsNavigation()) activateLoadedThread(threadId)
+      if (opened) scheduleKnownRecheck(threadId, generation())
+      return opened
+    }
+
+    function handleRestoreError(error: unknown): false {
+      invalidateChat(threadId)
+      const owned = ownsUnloadedThread()
+      handleHistoryLoadError(
+        error,
+        threadId,
+        isCurrent,
+        stashedTurn(),
+        keepOpenChatUntilLoaded ? 'inline_notice' : 'error_overlay'
+      )
+      if (owned) resetToBlankChat(previousBlankChatId)
+      return false
+    }
+
+    openThread()
+    let restored: Promise<boolean> | boolean | undefined
+    try {
+      restored = workflow?.restored?.(known.latestWorkflowId, isCurrent)
+    } catch (error) {
+      return Promise.resolve(handleRestoreError(error))
+    }
+    if (restored === undefined || typeof restored === 'boolean') {
+      if (restored === false) return Promise.resolve(failKnownRestore())
+      return Promise.resolve(finishAfterRestore())
+    }
+
+    return restored.then(
+      (workflowReady) => {
+        if (!workflowReady) return failKnownRestore()
+        return finishAfterRestore()
+      },
+      (error) => handleRestoreError(error)
+    )
+  }
+
+  function serverHydrateOptions(
+    stashedTurn: () => boolean,
+    keepOpenChatUntilLoaded: boolean,
+    openThread: () => void,
+    alreadyOpened: boolean,
+    restoreWorkflow: boolean
+  ) {
+    if (alreadyOpened)
+      return {
+        stashedTurn: stashedTurn(),
+        failureNotice: keepOpenChatUntilLoaded
+          ? ('inline_notice' as const)
+          : ('error_overlay' as const),
+        forThreadLoad: true,
+        restoreWorkflow
+      }
+    return keepOpenChatUntilLoaded
+      ? {
+          openThread,
+          failureNotice: 'inline_notice' as const,
+          forThreadLoad: true,
+          restoreWorkflow
+        }
+      : { stashedTurn: stashedTurn(), forThreadLoad: true, restoreWorkflow }
+  }
+
+  async function loadServerThread(
+    threadId: string,
+    stashedTurn: () => boolean,
+    keepOpenChatUntilLoaded: boolean,
+    openThread: () => void,
+    isCurrent: () => boolean,
+    outlivedItsNavigation: () => boolean,
+    {
+      alreadyOpened = false,
+      restoreWorkflow = true
+    }: { alreadyOpened?: boolean; restoreWorkflow?: boolean } = {}
+  ): Promise<boolean> {
+    if (!alreadyOpened && !keepOpenChatUntilLoaded) openThread()
+    const hydrated = await hydrateFromServer(
+      threadId,
+      isCurrent,
+      serverHydrateOptions(
+        stashedTurn,
+        keepOpenChatUntilLoaded,
+        openThread,
+        alreadyOpened,
+        restoreWorkflow
+      )
+    )
+    const opened = hydrated && isCurrent()
+    if (opened || outlivedItsNavigation()) {
+      activateLoadedThread(threadId)
+      conversationStore.resumeBackgroundTurn()
+    }
+    return opened
+  }
+
+  function isUnverifiedClosedWorkflow(
+    known: { hasBaseHistory: boolean; latestWorkflowId?: string },
+    keepOpenChatUntilLoaded: boolean
+  ): boolean {
+    if (keepOpenChatUntilLoaded || known.hasBaseHistory) return false
+    if (known.latestWorkflowId === undefined || !workflow?.ownsWorkflowId)
+      return false
+    return !workflow.ownsWorkflowId(known.latestWorkflowId)
+  }
+
+  function canLoadKnownChat(
+    threadId: string,
+    switchingChats: boolean,
+    keepOpenChatUntilLoaded: boolean
+  ) {
+    if (!switchingChats || deletedThreads.has(threadId)) return undefined
+    if (isDeletedThread?.(threadId)) return undefined
+    const known = conversationStore.recallKnownChat(threadId)
+    if (known === undefined) return undefined
+    return isUnverifiedClosedWorkflow(known, keepOpenChatUntilLoaded)
+      ? undefined
+      : known
   }
 
   async function loadThread(
@@ -3041,7 +3432,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
       stashedTurn: false,
       switched: false
     }
-    const cached = transcripts.recall(threadId)
+    const known = canLoadKnownChat(
+      threadId,
+      conversationStore.threadId !== threadId,
+      keepOpenChatUntilLoaded
+    )
     const isLoadCurrent = () =>
       load.generation === loadGeneration &&
       ownedGeneration === sessionGeneration
@@ -3065,28 +3460,27 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.setThreadId(threadId)
       load.switched = keepOpenChatUntilLoaded
     }
-    if (!keepOpenChatUntilLoaded) openThread()
-    const hydrated = await hydrateFromServer(
+    if (known !== undefined)
+      return loadKnownThread(
+        threadId,
+        known,
+        () => load.stashedTurn,
+        keepOpenChatUntilLoaded,
+        () => load.generation,
+        openThread,
+        isLoadCurrent,
+        isNavigationCurrent,
+        isCurrent,
+        outlivedItsNavigation
+      )
+    return loadServerThread(
       threadId,
+      () => load.stashedTurn,
+      keepOpenChatUntilLoaded,
+      openThread,
       isCurrent,
-      keepOpenChatUntilLoaded
-        ? {
-            openThread,
-            failureNotice: 'inline_notice',
-            forThreadLoad: true,
-            cached
-          }
-        : { stashedTurn: load.stashedTurn, forThreadLoad: true, cached }
+      outlivedItsNavigation
     )
-    const opened = hydrated && isCurrent()
-    if (opened || outlivedItsNavigation()) {
-      localStorage.setItem(threadStorageKey, threadId)
-      onThreadActivated?.(threadId)
-      conversationStore.resumeBackgroundTurn()
-    }
-    if (opened && cached !== undefined)
-      void recheckTranscript(threadId, cached, load.generation)
-    return opened
   }
 
   function malformedEventTurnId(raw: object): TurnId | undefined {
@@ -3130,6 +3524,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
         reportedTurnId =
           conversationStore.settleBackgroundTurn(turnId) ?? reportedTurnId
       }
+      const malformedThreadId = malformedEventThreadId(raw)
+      if (malformedThreadId !== undefined) invalidateChat(malformedThreadId)
+      else invalidateAllChats()
     }
     trackMalformedStreamEvent(error, type, reportedTurnId, uiTreatment)
   }
@@ -3145,8 +3542,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadId: event.data.thread_id,
       messageId: toTurnId(event.data.message_id)
     })
-    if (event.data.thread_id !== conversationStore.threadId)
+    if (event.data.thread_id !== conversationStore.threadId) {
+      deferredRechecks.delete(event.data.thread_id)
       warmTranscript(event.data.thread_id)
+      return
+    }
+    if (
+      deferredRechecks.delete(event.data.thread_id) &&
+      !hasLiveTurnForThread(event.data.thread_id) &&
+      conversationStore.isKnownChat(event.data.thread_id)
+    )
+      void recheckKnownTranscript(
+        event.data.thread_id,
+        conversationStore.knownChatVersion(event.data.thread_id),
+        loadGeneration
+      )
   }
 
   /**
@@ -3197,12 +3607,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (routable && !terminal) return false
     if (buffer.events.length >= MAX_HYDRATION_EVENTS) {
       const replace = buffer.events.findIndex(
-        (held) => held.type !== 'agent_message_done'
+        (held) => held.event.type !== 'agent_message_done'
       )
       if (replace === -1 && !terminal) return true
       buffer.events.splice(Math.max(0, replace), 1)
     }
-    buffer.events.push(event)
+    buffer.events.push(
+      routable ? { event, deliveredByGeneration: ownedGeneration } : { event }
+    )
     return !routable
   }
 
@@ -3301,6 +3713,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function heldForPendingSend(event: AgentWsEvent): boolean {
     if (!shouldBufferPendingSendEvent(event)) return false
+    if (
+      !FRAMES_THAT_LEAVE_TRANSCRIPTS_ALONE.has(event.type) &&
+      typeof event.data.thread_id === 'string' &&
+      !conversationStore.hasSendingForOrigin({
+        kind: 'thread',
+        threadId: event.data.thread_id
+      })
+    )
+      conversationStore.invalidateKnownChat(event.data.thread_id)
     if (pendingSendEvents.length >= MAX_HYDRATION_EVENTS) {
       const replace = pendingSendEvents.findIndex(
         (held) => !isProtectedPendingSendEvent(held)
@@ -3375,13 +3796,42 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function handleAgentEvent(event: AgentWsEvent): void {
     if (heldForPendingSend(event) || heldForHydration(event)) return
+    invalidateIfUnroutedChatActivity(
+      event.type,
+      event.data.thread_id,
+      event.data.message_id
+    )
     dispatchAgentEvent(event)
   }
 
-  function noteTranscriptActivity(type: string, threadId?: unknown): void {
+  function invalidateIfUnroutedChatActivity(
+    type: string,
+    threadId: unknown,
+    messageId: unknown
+  ): void {
     if (FRAMES_THAT_LEAVE_TRANSCRIPTS_ALONE.has(type)) return
-    if (typeof threadId === 'string') transcripts.touch(threadId)
-    else transcripts.touchAll()
+    if (typeof threadId !== 'string') {
+      conversationStore.invalidateAllKnownChats()
+      return
+    }
+    const id = typeof messageId === 'string' ? messageId : undefined
+    if (!hasRoutableLiveTurn(threadId, id))
+      conversationStore.invalidateKnownChat(threadId)
+  }
+
+  function noteTranscriptActivity(
+    type: string,
+    threadId?: unknown,
+    invalidateKnown = false
+  ): void {
+    if (FRAMES_THAT_LEAVE_TRANSCRIPTS_ALONE.has(type)) return
+    if (typeof threadId === 'string') {
+      if (invalidateKnown) invalidateChat(threadId)
+      else transcripts.touch(threadId)
+    } else {
+      if (invalidateKnown) invalidateAllChats()
+      else transcripts.touchAll()
+    }
   }
 
   function onRaw(raw: unknown): void {
@@ -3390,7 +3840,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (typeof type !== 'string' || !isAgentEvent(type)) return
     const parsed = parseAgentWsEvent(raw)
     if (!parsed.success) {
-      noteTranscriptActivity(type, malformedEventThreadId(raw))
+      noteTranscriptActivity(type, malformedEventThreadId(raw), true)
       handleMalformedEvent(type, raw, parsed.error)
       return
     }
@@ -3430,13 +3880,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     if (reconnected) {
       conversationStore.markActiveTurnMissedFrames()
+      invalidateAllChats()
       reconcileLiveTurns('reconnect')
     } else if (firstLive) reconcileLiveTurns('hydrate')
   }
 
   function reconcileLiveTurns(cause: RecoveryCause): void {
-    for (const turn of conversationStore.liveTurns())
+    for (const turn of conversationStore.liveTurns()) {
+      if (cause === 'reconnect') invalidateChat(turn.threadId)
       void reconcileTurn(turn, cause)
+    }
   }
 
   async function reconcileTurn(
@@ -3976,7 +4429,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   function forgetDeletedThread(turn: LiveTurn): void {
-    transcripts.touch(turn.threadId)
+    invalidateChat(turn.threadId)
     deletedThreads.add(turn.threadId)
     skillTurnUsage.delete(recoveryKey(turn))
     recoveryPendingAskObservations.delete(recoveryKey(turn))
@@ -4006,6 +4459,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     rememberedWorkflowId = workflowId
   }
 
+  function forgetChat(threadId: string): void {
+    invalidateChat(threadId)
+  }
+
   return {
     boundWorkflowId: computed(() => boundWorkflowId.value),
     bindWorkflow,
@@ -4027,6 +4484,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     openBlankChat,
     loadThread,
     isThreadDeleted: (id: string) => deletedThreads.has(id),
+    forgetChat,
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),
