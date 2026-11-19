@@ -331,6 +331,17 @@ function recoveryKey(turn: LiveTurn): string {
   return JSON.stringify([turn.threadId, turn.messageId])
 }
 
+function recoveryKeyThreadId(key: string): string | undefined {
+  try {
+    const parsed: unknown = JSON.parse(key)
+    return Array.isArray(parsed) && typeof parsed[0] === 'string'
+      ? parsed[0]
+      : undefined
+  } catch {
+    return undefined
+  }
+}
+
 function turnOutcomeFromError(error: unknown): TurnOutcome {
   if (error instanceof AgentApiError && error.status === 404)
     return { kind: 'thread-missing' }
@@ -4985,16 +4996,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function discardThread(targetThreadId: string): void {
     for (const [key, running] of recoveringTurns) {
-      if (!key.startsWith(`${targetThreadId}\u0000`)) continue
+      if (recoveryKeyThreadId(key) !== targetThreadId) continue
       running.controller.abort()
       recoveringTurns.delete(key)
     }
     for (const key of recoveryPendingAskObservations.keys()) {
-      if (key.startsWith(`${targetThreadId}\u0000`))
+      if (recoveryKeyThreadId(key) === targetThreadId)
         recoveryPendingAskObservations.delete(key)
     }
     for (const key of recoveryThreadMissingCounts.keys()) {
-      if (key.startsWith(`${targetThreadId}\u0000`))
+      if (recoveryKeyThreadId(key) === targetThreadId)
         recoveryThreadMissingCounts.delete(key)
     }
     clearLateAskReports(targetThreadId)

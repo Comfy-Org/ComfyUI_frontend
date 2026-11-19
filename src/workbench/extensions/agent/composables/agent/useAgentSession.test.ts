@@ -15477,3 +15477,47 @@ describe('useAgentSession transcript cache (TC-01..TC-14)', () => {
     session.stop()
   })
 })
+
+describe('useAgentSession discardThread', () => {
+  it('aborts active turn recovery and stops further /messages fetches when discardThread is called', async () => {
+    let recoverySignal: AbortSignal | undefined
+    const getMessages = vi
+      .fn<AgentRestClient['getMessages']>()
+      .mockResolvedValueOnce([
+        historyRow(1, 'user', 'turn-1', 'add an audio output node'),
+        {
+          ...historyRow(2, 'assistant', 'turn-1', '', 'msg-1'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      .mockImplementationOnce((threadId, options) => {
+        recoverySignal = options?.signal
+        return hangingGetMessages(threadId, options)
+      })
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-1')
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    await vi.waitFor(() => expect(getMessages).toHaveBeenCalledTimes(2))
+    assert.exists(recoverySignal)
+    expect(recoverySignal.aborted).toBe(false)
+
+    vi.useFakeTimers()
+    try {
+      session.discardThread('th-1')
+      expect(recoverySignal.aborted).toBe(true)
+      expect(conversation.liveTurns()).toEqual([])
+
+      await vi.advanceTimersByTimeAsync(40_000)
+      expect(getMessages).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+      session.stop()
+    }
+  })
+})

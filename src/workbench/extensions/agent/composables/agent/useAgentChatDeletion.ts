@@ -4,8 +4,10 @@ import { AgentApiError } from '@/workbench/extensions/agent/services/agent/agent
 import type { ChatDeleteSnapshot } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
 const MAX_RETRY_AFTER_RETRIES = 2
+const MAX_RETRY_AFTER_MS = 30_000
 
 interface HistoryDeleteStore {
+  activeId: string | null
   beginDelete: (id: string) => ChatDeleteSnapshot
   commitDelete: (id: string, options?: { tombstone?: boolean }) => void
   restoreDelete: (id: string, snapshot: ChatDeleteSnapshot) => void
@@ -14,8 +16,10 @@ interface HistoryDeleteStore {
 interface UseAgentChatDeletionOptions {
   deleteThread: (id: string) => Promise<void>
   history: HistoryDeleteStore
-  onOptimisticDelete: (id: string) => void
-  onRestoreDelete: (id: string) => void
+  onOptimisticDelete: (
+    id: string,
+    context: { previousActiveId: string | null }
+  ) => void
   onDeleteFailed: (id: string, retry: () => void, error: unknown) => void
   onFallbackRefresh?: () => void
 }
@@ -44,7 +48,8 @@ function retryAfterDelayMs(
     retryCount >= MAX_RETRY_AFTER_RETRIES
   )
     return undefined
-  return error.retryAfterSeconds * 1000
+  const delayMs = error.retryAfterSeconds * 1000
+  return delayMs >= 0 && delayMs <= MAX_RETRY_AFTER_MS ? delayMs : undefined
 }
 
 function waitForRetryDelay(
@@ -69,7 +74,6 @@ export function useAgentChatDeletion({
   deleteThread,
   history,
   onOptimisticDelete,
-  onRestoreDelete,
   onDeleteFailed,
   onFallbackRefresh
 }: UseAgentChatDeletionOptions) {
@@ -102,7 +106,7 @@ export function useAgentChatDeletion({
     error: unknown
   ): void {
     history.restoreDelete(id, snapshot)
-    onRestoreDelete(id)
+    if (isDisposed()) return
     if (snapshot.session === undefined) onFallbackRefresh?.()
     onDeleteFailed(
       id,
@@ -116,13 +120,17 @@ export function useAgentChatDeletion({
   async function deleteChat(id: string): Promise<void> {
     if (isDisposed() || inFlight.has(id)) return
     inFlight.add(id)
+    const previousActiveId = history.activeId
     const snapshot = history.beginDelete(id)
-    onOptimisticDelete(id)
+    onOptimisticDelete(id, { previousActiveId })
 
     try {
-      for (let retryCount = 0; !isDisposed(); retryCount += 1) {
+      for (
+        let retryCount = 0;
+        retryCount <= MAX_RETRY_AFTER_RETRIES;
+        retryCount += 1
+      ) {
         const outcome = await tryDeleteOnce(id, retryCount)
-        if (isDisposed()) return
         if (outcome.kind === 'deleted') {
           history.commitDelete(id)
           return
@@ -135,8 +143,12 @@ export function useAgentChatDeletion({
           handleFailure(id, snapshot, outcome.error)
           return
         }
-        if (await waitForRetryDelay(outcome.delayMs, disposeController.signal))
+        if (
+          await waitForRetryDelay(outcome.delayMs, disposeController.signal)
+        ) {
+          history.restoreDelete(id, snapshot)
           return
+        }
       }
     } finally {
       inFlight.delete(id)

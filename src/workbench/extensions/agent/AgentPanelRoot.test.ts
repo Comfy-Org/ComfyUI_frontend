@@ -7310,7 +7310,7 @@ describe('AgentPanelRoot history', () => {
         ],
         { 'th-first': { workflowId: 'wf-first' } }
       )
-      renderWithSelectedTarget()
+      const rendered = renderWithSelectedTarget()
       await userEvent.click(
         screen.getByRole('button', {
           name: i18n.global.t('agent.showChatHistory')
@@ -7321,7 +7321,7 @@ describe('AgentPanelRoot history', () => {
         expect(userPrompts()).toEqual(['Prompt in th-first'])
       )
       await settleFollow()
-      return { first, second, loadedThreads }
+      return { first, second, loadedThreads, rendered }
     }
 
     it.for([
@@ -10702,6 +10702,92 @@ describe('AgentPanelRoot history', () => {
         expect(
           fetchRequests({ method: 'DELETE', url: /\/api\/agent\/threads\// })
         ).toEqual([])
+      })
+
+      it('dismisses the delete-failure toast when the panel unmounts', async () => {
+        const { rendered } = await openFirstChatWithHistory([])
+        const delegate = vi.mocked(fetch).getMockImplementation()!
+        vi.mocked(fetch).mockImplementation(async (input, init) => {
+          if (
+            init?.method === 'DELETE' &&
+            String(input).endsWith('/api/agent/threads/th-first')
+          ) {
+            return json(500, { error: 'boom' })
+          }
+          return delegate(input, init)
+        })
+
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('g.delete')
+          })
+        )
+
+        await vi.waitFor(() =>
+          expect(useToast().toasts).toContainEqual(
+            expect.objectContaining({
+              kind: 'error',
+              title: "Couldn't delete the chat"
+            })
+          )
+        )
+
+        rendered.unmount()
+        expect(useToast().toasts).toEqual([])
+      })
+
+      it('ends the active chat even when threadId holds another chat that failed to load', async () => {
+        await openFirstChatWithHistory([
+          agentThread({
+            id: 'th-failed',
+            title: 'Failed chat',
+            last_message_at: '2026-09-22T08:00:00Z',
+            workflow_id: 'wf-first'
+          })
+        ])
+        const delegate = vi.mocked(fetch).getMockImplementation()!
+        vi.mocked(fetch).mockImplementation(async (input, init) => {
+          const url = String(input)
+          if (url.includes('/th-failed/messages'))
+            return json(500, { error: 'boom' })
+          if (
+            init?.method === 'DELETE' &&
+            url.endsWith('/api/agent/threads/th-first')
+          )
+            return new Response(null, { status: 204 })
+          return delegate(input, init)
+        })
+
+        await userEvent.click(
+          screen.getByRole('button', {
+            name: i18n.global.t('agent.showChatHistory')
+          })
+        )
+        await userEvent.click(
+          await screen.findByRole('button', { name: 'Failed chat' })
+        )
+        await screen.findByRole('alert')
+        expect(useAgentChatHistoryStore().activeId).toBe('th-first')
+        expect(useAgentConversationStore().threadId).toBe('th-failed')
+
+        await userEvent.click(
+          screen.getAllByRole('button', {
+            name: i18n.global.t('agent.chatOptions')
+          })[0]
+        )
+        await userEvent.click(
+          await screen.findByRole('menuitem', {
+            name: i18n.global.t('g.delete')
+          })
+        )
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(useAgentChatHistoryStore().activeId).toBeNull()
       })
     })
   })

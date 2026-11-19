@@ -3043,22 +3043,40 @@ function onRenameHistory(id: string, title: string): void {
   history.rename(id, title)
 }
 
+function forgetChatLocally(
+  id: string,
+  { discardLiveThread = true }: { discardLiveThread?: boolean } = {}
+): void {
+  forgetChat(id)
+  if (discardLiveThread) discardThread(id)
+  openChats.forget(id)
+  chatDrafts.discardChatDraft(id)
+}
+
+const deleteFailureToastIds = new Map<string, ToastId>()
+
+onBeforeUnmount(() => {
+  for (const toastId of deleteFailureToastIds.values()) toast.dismiss(toastId)
+  deleteFailureToastIds.clear()
+})
+
 const { deleteChat } = useAgentChatDeletion({
   deleteThread: (id) => rest.deleteThread(id),
   history,
-  onOptimisticDelete: (id) => {
+  onOptimisticDelete: (id, { previousActiveId }) => {
+    const failureToastId = deleteFailureToastIds.get(id)
+    if (failureToastId !== undefined) {
+      deleteFailureToastIds.delete(id)
+      toast.dismiss(failureToastId)
+    }
     const isCurrent =
-      id === history.activeId ||
-      (history.activeId === null && id === threadId.value)
-    forgetChat(id)
-    discardThread(id)
-    openChats.forget(id)
-    chatDrafts.discardChatDraft(id)
+      id === previousActiveId ||
+      (previousActiveId === null && id === threadId.value)
+    forgetChatLocally(id)
     // Deleting the open chat also ends it; a dead thread must not stay editable.
     if (isCurrent) onNewChat('history_delete')
   },
-  onRestoreDelete: () => {},
-  onDeleteFailed: (_id, retry, error) => {
+  onDeleteFailed: (id, retry, error) => {
     const diagnostics = describeAgentRequestFailure(error)
     reportError(error, {
       surface: 'agent',
@@ -3069,20 +3087,25 @@ const { deleteChat } = useAgentChatDeletion({
         diagnostics
       )
     })
-    notifyDeleteChatFailed(retry)
+    notifyDeleteChatFailed(id, retry)
   },
   onFallbackRefresh: () => {
     void refreshHistory('none')
   }
 })
 
-function notifyDeleteChatFailed(retry: () => void): void {
+function notifyDeleteChatFailed(id: string, retry: () => void): void {
+  const previous = deleteFailureToastIds.get(id)
+  if (previous !== undefined) toast.dismiss(previous)
   const toastId = createToastId()
+  deleteFailureToastIds.set(id, toastId)
   toast.error(t('agent.deleteFailed'), {
     id: toastId,
     action: {
       label: t('g.retry'),
       onClick: () => {
+        if (deleteFailureToastIds.get(id) === toastId)
+          deleteFailureToastIds.delete(id)
         toast.dismiss(toastId)
         retry()
       }
@@ -3109,17 +3132,15 @@ onBeforeUnmount(
       forgetCloudWorkflowId(deletedWorkflowId)
       bindingStore.unbindWorkflow(deletedWorkflowId)
       for (const session of history.dropByWorkflow(deletedWorkflowId)) {
-        forgetChat(session.id)
-        openChats.forget(session.id)
-        chatDrafts.discardChatDraft(session.id)
-        if (session.id !== threadId.value) discardThread(session.id)
+        forgetChatLocally(session.id, {
+          discardLiveThread: session.id !== threadId.value
+        })
       }
       const remembered = openChats.recall(deletedWorkflowId)
       if (remembered !== undefined) {
-        forgetChat(remembered)
-        openChats.forget(remembered)
-        chatDrafts.discardChatDraft(remembered)
-        if (remembered !== threadId.value) discardThread(remembered)
+        forgetChatLocally(remembered, {
+          discardLiveThread: remembered !== threadId.value
+        })
       }
     })
   })
