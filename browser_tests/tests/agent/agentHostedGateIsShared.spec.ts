@@ -55,9 +55,6 @@ test.describe(
         exact: true
       })
 
-      // The boot mocks seed `agent: { state: 'ready' }`, and the browser
-      // fixtures disable PostHog flags, so ComfyUI's agent feature is the only
-      // thing that can enable either surface here.
       await test.step('a ready agent opens the panel and offers the skill', async () => {
         await agentPanel.open()
         await agentPanel.selectWorkflow()
@@ -96,8 +93,6 @@ test.describe(
       const ws = await getWebSocket()
       await expect(agentPanel.openButton).toBeVisible()
 
-      // One reader validates the payload for both surfaces, so a reason the
-      // server did not send as a string is dropped instead of stringified.
       ws.send(
         JSON.stringify({
           type: 'agent_status',
