@@ -3148,9 +3148,7 @@ describe('ComfyApp', () => {
       }
 
       async function addedProbe(comfy: Comfy): Promise<NodeHandle> {
-        const root = comfy.graph.root()
-        assert(root)
-        const added = comfy.edit.addNode(root, 'HandleProbe')
+        const added = comfy.graph.add('HandleProbe')
         assert(added)
         return added
       }

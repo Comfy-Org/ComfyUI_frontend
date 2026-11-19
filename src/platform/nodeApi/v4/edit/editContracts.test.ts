@@ -8,11 +8,13 @@ import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
 
 describe('edit contracts', () => {
   let graph: LGraph
   let comfy: Comfy
+  let edit: EditCore
   let steps: string[]
   let node: LGraphNode
   let handle: NodeHandle
@@ -20,7 +22,7 @@ describe('edit contracts', () => {
   beforeEach(() => {
     graph = new LGraph()
     steps = []
-    ;({ comfy } = createComfyApi({
+    ;({ comfy, edit } = createComfyApi({
       getGraph: () => graph,
       history: () => ({
         beforeChange: () => steps.push('before'),
@@ -47,7 +49,7 @@ describe('edit contracts', () => {
       const version = graph._version
 
       expect(() =>
-        comfy.edit.updateNode(handle, {
+        edit.updateNode(handle, {
           title: 'Applied',
           size: { width: 222, height: 111 }
         })
@@ -73,7 +75,7 @@ describe('edit contracts', () => {
       node.onPropertyChanged = (name) => name !== 'locked'
 
       expect(
-        comfy.edit.updateNode(handle, { properties: { free: 1, locked: 2 } })
+        edit.updateNode(handle, { properties: { free: 1, locked: 2 } })
       ).toBe(false)
       expect(node.properties.free).toBe(1)
     })
@@ -314,25 +316,22 @@ describe('edit contracts', () => {
 
   describe('values the core keeps or refuses exactly', () => {
     it('freezes comfy.edit, so no pack can replace an edit another pack calls', () => {
-      expect(Object.isFrozen(comfy.edit)).toBe(true)
+      expect(Object.isFrozen(edit)).toBe(true)
     })
 
     it.for(['constructor', 'toString', 'hasOwnProperty'])(
       'refuses %s as a patch field, though every object inherits it',
       (field) => {
         expect(() =>
-          Reflect.apply(comfy.edit.updateNode, undefined, [
-            handle,
-            { [field]: 1 }
-          ])
+          Reflect.apply(edit.updateNode, undefined, [handle, { [field]: 1 }])
         ).toThrow(TypeError)
       }
     )
 
     it('names updateNode when it refuses something that is not a node handle', () => {
-      expect(() =>
-        Reflect.apply(comfy.edit.updateNode, undefined, [{}, {}])
-      ).toThrow(/^updateNode needs a node handle/)
+      expect(() => Reflect.apply(edit.updateNode, undefined, [{}, {}])).toThrow(
+        /^updateNode needs a node handle/
+      )
     })
 
     it('stores a title exactly as given, and refuses one that is not text', () => {

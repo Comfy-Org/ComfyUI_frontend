@@ -26,6 +26,7 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
 
@@ -34,6 +35,7 @@ const TYPE = 'EditTest/Sampler'
 describe('edits and what a load keeps of them', () => {
   let graph: LGraph
   let comfy: Comfy
+  let edit: EditCore
   let sampler: LGraphNode
   let handle: NodeHandle
 
@@ -53,7 +55,7 @@ describe('edits and what a load keeps of them', () => {
       })
     )
     graph = new LGraph()
-    ;({ comfy } = createComfyApi({ getGraph: () => graph }))
+    ;({ comfy, edit } = createComfyApi({ getGraph: () => graph }))
     const created = LiteGraph.createNode(TYPE)
     assert(created)
     sampler = created
@@ -312,7 +314,7 @@ describe('edits and what a load keeps of them', () => {
         }
       }
 
-      expect(() => comfy.edit.updateNode(noteHandle, patch)).toThrow(TypeError)
+      expect(() => edit.updateNode(noteHandle, patch)).toThrow(TypeError)
       expect(reads).toBe(1)
       expect(note.serialize_widgets).toBe(true)
     })
@@ -461,7 +463,7 @@ describe('edits and what a load keeps of them', () => {
 
       expect(() => subgraphHandle.inputs.add('third', 'INT')).toThrow(TypeError)
       expect(() => subgraphHandle.outputs.add('more', 'INT')).toThrow(TypeError)
-      expect(() => comfy.edit.removeSlot(first)).toThrow(TypeError)
+      expect(() => edit.removeSlot(first)).toThrow(TypeError)
       expect(() => first.modify({ label: 'Shown' })).toThrow(TypeError)
       expect(subgraphNode.outputs).toHaveLength(1)
       expect(() =>

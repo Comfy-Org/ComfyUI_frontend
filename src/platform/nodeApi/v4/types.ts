@@ -20,18 +20,16 @@ export interface Comfy {
   /** The graph on screen, and the way to every node in the open document. */
   readonly graph: GraphHandle
   /**
-   * True if `a` and `b` are handles to the same entity. There is one handle
-   * per entity, so `a === b` gives the same answer for two handles.
+   * True if `a` and `b` are the same node, graph, group or slot handle; `false` for anything else.
+   * There is one such handle per entity, so `a === b` gives the same answer for two of them.
    */
   sameEntity(a: unknown, b: unknown): boolean
   /** Node types: their definitions, and the hooks a pack adds to them. */
   readonly defs: DefRegistry
-  /** Every change a pack makes to the document. */
-  readonly edit: Edits
 }
 
 /** The graph on screen. An argument a member cannot use throws a `TypeError`. */
-export interface GraphHandle extends GraphHandleEdits {
+export interface GraphHandle {
   /** The id of the graph on screen, or `undefined` before there is one. */
   readonly id: string | undefined
   /** The node with this id in the graph on screen. */
@@ -46,14 +44,28 @@ export interface GraphHandle extends GraphHandleEdits {
   /** Every subgraph definition in the open document. */
   subgraphs(): readonly GraphScopeHandle[]
   /**
-   * Advances with each `comfy.edit` call that is applied and when nodes or links come or go; host moves,
+   * Advances with each edit a handle applies and when nodes or links come or go; host moves,
    * colors and widget values leave it, and undo or a load sets it back. A different reading means a change.
    */
   readonly version: number | undefined
+  /**
+   * Adds a node of a registered type to the graph on screen, placed before it joins.
+   * `undefined` before there is a graph, or if no such type is registered.
+   */
+  add(type: string, init?: NodeInit): NodeHandle | undefined
+  /**
+   * Runs `edits` now as one undo step, which re-reads the whole graph once, and returns its result.
+   * Edits made before a throw stay; edits after it returns are not in the step. Loop inside one batch.
+   */
+  batch<T>(edits: () => T): T
+  /** Every link in the graph on screen, in id order; none before there is one. */
+  links(): readonly LinkInfo[]
+  /** The groups in the graph on screen, in draw order; none before there is one. */
+  groups(): readonly GroupHandle[]
 }
 
 /** One particular graph: the root graph, or a subgraph definition. */
-export interface GraphScopeHandle extends GraphScopeHandleMembers {
+export interface GraphScopeHandle {
   readonly id: string
   /**
    * True while the entity is gone, and every other read is `undefined`. Undo
@@ -65,6 +77,8 @@ export interface GraphScopeHandle extends GraphScopeHandleMembers {
   /** The node with this id in this graph. */
   node(id: string): NodeHandle | undefined
   nodes(): readonly NodeHandle[] | undefined
+  /** The groups in this graph, in draw order. */
+  groups(): readonly GroupHandle[] | undefined
 }
 
 /**
@@ -81,7 +95,11 @@ export interface NodeQuery {
   readonly type?: string | readonly string[]
 }
 
-export interface NodeHandle extends NodeHandleEdits {
+/**
+ * Each change is one undo step, or part of `graph.batch`'s, and is `false` once the node is gone; an unusable
+ * argument throws first. A node whose type is not installed saves only its mode and position.
+ */
+export interface NodeHandle {
   /** The node's id. Another document will use the same ids. */
   readonly id: string
   /** The id of the graph the node is in. With `id`, this names the node. */
@@ -115,130 +133,57 @@ export interface NodeHandle extends NodeHandleEdits {
   getSize(): Size | undefined
   /** The rectangle the node occupies in graph space, title bar included. */
   getBounds(): Bounds | undefined
+
+  setTitle(title: string): boolean
+  setMode(mode: NodeMode): boolean
+  setCollapsed(collapsed: boolean): boolean
+  /** The title-bar color; `undefined` or `null` restores the default. */
+  setColor(color: string | null | undefined): boolean
+  /** The body color; `undefined` or `null` restores the default. */
+  setBgColor(color: string | null | undefined): boolean
+  setShape(shape: NodeShape): boolean
+  /**
+   * Stores a copy of `value` as the workflow saves it; `undefined` deletes the property. A value the
+   * workflow cannot save unchanged throws a `TypeError`. `false` too if a pack's hook kept the old value.
+   */
+  setProperty(name: string, value: unknown): boolean
+  /** Not saved: a load gives the type's own. `false` throws on a Note, MarkdownNote or PrimitiveNode. */
+  setSerializeWidgets(serialize: boolean): boolean
+  isSerializingWidgets(): boolean | undefined
+  /** The top-left corner of the node's body, in graph space. */
+  setPosition(position: Point): boolean
+  /** The size of the node's body, title bar excluded. */
+  setSize(size: Size): boolean
+  /** Resizes the node to fit them, once. A later resize is not held to them. */
+  setSizeConstraints(constraints: SizeConstraints): boolean
+  /** Not saved. A pinned node cannot be resized, and unpinning makes it resizable whatever was chosen. */
+  setResizable(resizable: boolean): boolean
+  /** Removes the node and its links. `false` too if it cannot be removed. */
+  remove(): boolean
+  /** The node's state now, frozen. */
+  snapshot(): NodeSnapshot | undefined
+  readonly inputs: SlotCollection<InputSlotHandle>
+  readonly outputs: SlotCollection<OutputSlotHandle>
+  /**
+   * Adds a badge until the disposer is called or undo rebuilds the node; not an edit. Under Vue nodes, a badge
+   * added or removed after the node is first drawn shows or goes only when its badges are next recomputed.
+   */
+  addBadge(badge: BadgeDef | (() => BadgeDef)): Unsubscribe
 }
 
 export type NodeMode = 'always' | 'never' | 'bypass' | 'on-event' | 'on-trigger'
 
-interface Point {
+export interface Point {
   readonly x: number
   readonly y: number
 }
 
-interface Size {
+export interface Size {
   readonly width: number
   readonly height: number
 }
 
 export interface Bounds extends Point, Size {}
-
-/**
- * The one place a pack changes the document. Each call is one undo step, or part of `batch`'s;
- * a node whose type is not installed saves only its mode and position.
- */
-export interface Edits {
-  /**
-   * Changes the fields `patch` names; an unusable one throws first. False if the node
-   * is gone (nothing changed) or kept a property's old value (the rest applied).
-   */
-  updateNode(node: NodeHandle, patch: NodePatch): boolean
-  /** Removes the node and its links. False if it is gone or cannot be removed. */
-  removeNode(node: NodeHandle): boolean
-  /**
-   * Adds a node of a registered type to `graph`, placed before it joins.
-   * `undefined` if the graph is gone or no such type is registered.
-   */
-  addNode(
-    graph: GraphScopeHandle,
-    type: string,
-    init?: NodeInit
-  ): NodeHandle | undefined
-  /**
-   * Changes the fields `patch` names on a slot; not a subgraph node's. Throws first for a taken name (any slot may
-   * be `''`) or a missing widget. A load gives back some fields of a slot the node's type makes (see `SlotPatch`).
-   */
-  updateSlot(slot: InputSlotHandle, patch: InputSlotPatch): boolean
-  updateSlot(slot: OutputSlotHandle, patch: SlotPatch): boolean
-  /** Adds an input after the others; not to a subgraph node. `undefined` if the node is gone. */
-  addInput(
-    node: NodeHandle,
-    name: string,
-    type: SlotType,
-    options?: SlotOptions
-  ): InputSlotHandle | undefined
-  /** Adds an output after the others; not to a subgraph node. `undefined` if the node is gone. */
-  addOutput(
-    node: NodeHandle,
-    name: string,
-    type: SlotType,
-    options?: SlotOptions
-  ): OutputSlotHandle | undefined
-  /** Removes a slot and its links; not a subgraph node's. False if it is gone. */
-  removeSlot(slot: InputSlotHandle | OutputSlotHandle): boolean
-  /**
-   * Puts a node's inputs or outputs in the order `names` gives, with their links.
-   * Names each slot once. A load puts slots the node's type makes back in its order.
-   */
-  reorderSlots(
-    node: NodeHandle,
-    side: SlotSide,
-    names: readonly string[]
-  ): boolean
-  /**
-   * Links an output to an input of the same graph. `undefined` if either is
-   * gone or the host refuses the link, as for types that do not match.
-   */
-  connect(
-    output: OutputSlotHandle,
-    input: InputSlotHandle
-  ): LinkInfo | undefined
-  /** Removes an input's link, or an output's links, to `target` only if given. */
-  disconnect(
-    slot: InputSlotHandle | OutputSlotHandle,
-    target?: NodeHandle
-  ): boolean
-  /**
-   * Moves every link of an output to another output of its node, keeping the
-   * links' ids, and gives the links moved. Their types are not checked again.
-   */
-  moveLinks(
-    from: OutputSlotHandle,
-    to: OutputSlotHandle
-  ): readonly LinkInfo[] | undefined
-  /**
-   * Changes the fields `patch` names; an unusable one throws first. The nodes inside stay where they are, and a
-   * size below the editor's minimum group size is raised to it. False if the group is gone (nothing changed).
-   */
-  updateGroup(group: GroupHandle, patch: GroupPatch): boolean
-  /**
-   * Runs `edits` now as one undo step, which re-reads the whole graph once, and returns its result.
-   * Edits made before a throw stay; edits after it returns are not in the step. Loop inside one batch.
-   */
-  batch<T>(edits: () => T): T
-}
-
-/** What `updateNode` changes. A field left out stays as it is. */
-export interface NodePatch {
-  readonly title?: string
-  readonly mode?: NodeMode
-  readonly collapsed?: boolean
-  /** The title-bar color. `undefined` restores the default. */
-  readonly color?: string | undefined
-  /** The body color. `undefined` restores the default. */
-  readonly bgColor?: string | undefined
-  readonly shape?: NodeShape
-  /** Saved properties, by name. Each value is stored as the workflow saves it; `undefined` deletes one. */
-  readonly properties?: Readonly<Record<string, unknown>>
-  /** Not saved: a load gives the type's own. `false` throws on a Note, MarkdownNote or PrimitiveNode. */
-  readonly serializeWidgets?: boolean
-  /** The top-left corner of the node's body, in graph space. */
-  readonly position?: Point
-  /** The size of the node's body, title bar excluded. */
-  readonly size?: Size
-  /** Resizes the node to fit them, once. A later resize is not held to them. */
-  readonly sizeConstraints?: SizeConstraints
-  /** Not saved. A pinned node cannot be resized, and unpinning makes it resizable whatever was chosen. */
-  readonly resizable?: boolean
-}
 
 export type NodeShape = 'default' | 'box' | 'round' | 'circle' | 'card'
 
@@ -276,36 +221,6 @@ export interface BadgeDef {
   onClick?(): void
 }
 
-/** Each edit method, and each edit of `inputs` and `outputs`, is a call to `comfy.edit`; `addBadge` is not an edit. */
-export interface NodeHandleEdits {
-  setTitle(title: string): boolean
-  setMode(mode: NodeMode): boolean
-  setCollapsed(collapsed: boolean): boolean
-  setColor(color: string | undefined): boolean
-  setBgColor(color: string | undefined): boolean
-  setShape(shape: NodeShape): boolean
-  /** `undefined` deletes the property. A name that is not a string throws a `TypeError`. */
-  setProperty(name: string, value: unknown): boolean
-  setSerializeWidgets(serialize: boolean): boolean
-  isSerializingWidgets(): boolean | undefined
-  setPosition(position: Point): boolean
-  setSize(size: Size): boolean
-  setSizeConstraints(constraints: SizeConstraints): boolean
-  setResizable(resizable: boolean): boolean
-  /** False while the node is pinned, or after `setResizable(false)` until the node is unpinned. */
-  isResizable(): boolean | undefined
-  remove(): boolean
-  /** The node's state now, frozen. */
-  snapshot(): NodeSnapshot | undefined
-  readonly inputs: SlotCollection<InputSlotHandle>
-  readonly outputs: SlotCollection<OutputSlotHandle>
-  /**
-   * Adds a badge until the disposer is called or undo rebuilds the node. Under Vue nodes, a badge added
-   * or removed after the node is first drawn shows or goes only when its badges are next recomputed.
-   */
-  addBadge(badge: BadgeDef | (() => BadgeDef)): Unsubscribe
-}
-
 /** How `addNode` starts a node. */
 export interface NodeInit {
   /** The type's own title when left out. */
@@ -329,23 +244,6 @@ export interface LinkInfo {
   readonly type: string
 }
 
-/** Each edit method is a call to `comfy.edit` on the graph on screen. */
-export interface GraphHandleEdits {
-  /** `comfy.edit.addNode` on the graph on screen. */
-  add(type: string, init?: NodeInit): NodeHandle | undefined
-  /** `comfy.edit.batch`. */
-  batch<T>(edits: () => T): T
-  /** Every link in the graph on screen, in id order. */
-  links(): readonly LinkInfo[] | undefined
-  /** The groups in the graph on screen, in draw order. */
-  groups(): readonly GroupHandle[] | undefined
-}
-
-export interface GraphScopeHandleMembers {
-  /** The groups in this graph, in draw order. */
-  groups(): readonly GroupHandle[] | undefined
-}
-
 /** A group: a titled rectangle. Which nodes it holds follows from where they are. */
 export interface GroupHandle {
   /** The group's id in its graph. */
@@ -362,7 +260,10 @@ export interface GroupHandle {
   getBounds(): Bounds | undefined
   /** The nodes whose center is inside the group now, in the graph's order. */
   nodes(): readonly NodeHandle[] | undefined
-  /** `comfy.edit.updateGroup(this, { bounds })`. The nodes inside do not move. */
+  /**
+   * Moves and resizes the group, as one undo step; the nodes inside do not move, and a size below the
+   * editor's minimum group size is raised to it. `false` if the group is gone. Width and height are zero or more.
+   */
   setBounds(bounds: Bounds): boolean
 }
 
@@ -379,7 +280,7 @@ export type SlotDirection = 'none' | 'up' | 'down' | 'left' | 'right' | 'center'
 export type SlotType = string | readonly string[]
 
 /**
- * What `updateSlot` changes; a subgraph node's slots take no patch. A load gives a slot its type
+ * What `modify` changes; a subgraph node's slots take no patch. A load gives a slot its type
  * makes its name, type, shape, localizedName, widget and place back, and brings a removed one back.
  */
 export interface SlotPatch {
@@ -446,9 +347,9 @@ export interface InputSlotHandle extends SlotHandle {
   source():
     | { readonly nodeId: string; readonly outputIndex: number }
     | undefined
-  /** `comfy.edit.updateSlot(this, patch)`. */
+  /** Changes the fields `patch` names; not a subgraph node's. A taken name or a missing widget throws first. */
   modify(patch: InputSlotPatch): boolean
-  /** `comfy.edit.disconnect(this)`. */
+  /** Removes the input's link. */
   disconnect(): boolean
 }
 
@@ -457,19 +358,26 @@ export interface OutputSlotHandle extends SlotHandle {
   targets():
     | readonly { readonly nodeId: string; readonly inputIndex: number }[]
     | undefined
-  /** `comfy.edit.updateSlot(this, patch)`. */
+  /** Changes the fields `patch` names; not a subgraph node's. A taken name throws first. */
   modify(patch: SlotPatch): boolean
-  /** `comfy.edit.connect` to the input `input` names on the node with this id in this slot's graph. */
+  /**
+   * Links this output to the input `input` names on the node with this id in this slot's graph.
+   * `undefined` if either is gone or the host refuses the link, as for types that do not match.
+   */
   connectTo(targetNodeId: string, input: SlotRef): LinkInfo | undefined
-  /** `comfy.edit.disconnect`, from the node with this id in this slot's graph, or from all. */
+  /** Removes this output's links to the node with this id in this slot's graph, or all its links. */
   disconnect(targetNodeId?: string): boolean
-  /** `comfy.edit.moveLinks` to the output `target` names on this node. */
+  /**
+   * Moves every link of this output to the output `target` names on this node, keeping the links' ids,
+   * and gives the links moved. Their types are not checked again.
+   */
   moveLinksTo(target: SlotRef): readonly LinkInfo[] | undefined
 }
 
 /** A node's inputs or outputs. Reads are `undefined` once the node is gone. */
 export interface SlotCollection<THandle> {
   readonly length: number | undefined
+  /** The slot at `index`. A negative index counts back from the end. */
   at(index: number): THandle | undefined
   all(): readonly THandle[] | undefined
   /** `undefined` too when more than one slot has the name. */
@@ -477,11 +385,14 @@ export interface SlotCollection<THandle> {
   byId(id: string): THandle | undefined
   names(): readonly string[] | undefined
   [Symbol.iterator](): Iterator<THandle>
-  /** `comfy.edit.addInput` or `addOutput` on this node. */
+  /** Adds a slot after the others; not to a subgraph node. `undefined` if the node is gone. */
   add(name: string, type: SlotType, options?: SlotOptions): THandle | undefined
-  /** `comfy.edit.removeSlot` on the slot `ref` names. False if none does. */
+  /** Removes the slot `ref` names, and its links; not a subgraph node's. `false` if none does. */
   remove(ref: SlotRef): boolean
-  /** `comfy.edit.reorderSlots` on this node and side. */
+  /**
+   * Puts the slots in the order `names` gives, with their links; names each slot once. Refused on a subgraph
+   * node's outputs, and on its inputs while its subgraph is placed more than once. A load restores a type's order.
+   */
   reorder(names: readonly string[]): boolean
 }
 
@@ -507,14 +418,14 @@ export interface DefRegistry {
   refresh(): Promise<boolean>
   /** Calls `listener` after each reload of the node definitions, whoever asked. */
   onRefreshed(listener: () => void): Unsubscribe
-  /** The colour links of a data type are drawn in, or `undefined` if nothing colours the type. */
+  /** The color links of a data type are drawn in, or `undefined` if nothing colors the type. */
   typeColor(type: string): string | undefined
   /**
-   * Colours the links of a data type the palette leaves uncoloured, such as one
-   * the pack introduces. A type's newest colour wins until it is unsubscribed.
+   * Colors the links of a data type the palette leaves uncolored, such as one
+   * the pack introduces. A type's newest color wins until it is unsubscribed.
    */
   setTypeColor(type: string, color: string): Unsubscribe
-  /** The colours of an entry of the node colour menu, such as `red`. */
+  /** The colors of an entry of the node color menu, such as `red`. */
   nodeColor(name: string): NodeColor | undefined
   /** True if an output of `outputType` may link to an input of `inputType`. */
   isTypeCompatible(outputType: string, inputType: string): boolean
@@ -632,7 +543,7 @@ export interface NodeCreatedEvent {
 }
 
 export interface ConnectionChangeEvent {
-  readonly side: 'input' | 'output'
+  readonly side: SlotSide
   /** The slot's index when the link changed. */
   readonly index: number
   /**
@@ -648,7 +559,7 @@ export interface ConnectionChangeEvent {
 
 export interface BeforeConnectEvent {
   /** Which of the node's own slots the link would use. */
-  readonly side: 'input' | 'output'
+  readonly side: SlotSide
   readonly index: number
 }
 
@@ -740,12 +651,6 @@ export interface NodePresentation {
    * resizable again, as the host does, and a load or undo sets it back to `false`.
    */
   readonly resizable?: boolean
-  /** `false` stops the user collapsing the nodes. `comfy.edit` can still collapse one. */
+  /** `false` stops the user collapsing the nodes. `setCollapsed` can still collapse one. */
   readonly collapsible?: boolean
-}
-
-/** What `updateGroup` changes. A field left out stays as it is. */
-export interface GroupPatch {
-  /** The group's rectangle in graph space, title bar included; width and height zero or more. */
-  readonly bounds?: Bounds
 }

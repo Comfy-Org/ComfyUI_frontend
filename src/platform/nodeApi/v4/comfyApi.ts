@@ -6,6 +6,7 @@ import { API_VERSION, isApiVersionAtLeast } from './apiVersion'
 import { createAppLifecycle } from './appLifecycle'
 import type { EditHistory } from './edit/editRunner'
 import { createEdits } from './edit/edits'
+import type { EditCore } from './edit/edits'
 import { graphHandleMembers } from './edit/graphHandleMembers'
 import { groupHandleMembers } from './edit/groupHandleMembers'
 import { createGroupHandles } from './edit/groupHandles'
@@ -39,14 +40,19 @@ export interface ComfyApiHost {
   afterHistoryRestore(): void
   /** The extension through which the host tells the API about node types. */
   readonly nodeTypeHooks: NodeTypeHooks
-  /** Puts back the colours packs gave their types, after a palette cleared them. */
+  /** Puts back the colors packs gave their types, after a palette cleared them. */
   reapplyTypeColors(): void
 }
 
-export function createComfyApi(services: ComfyApiServices): {
+/** The published API, the host's side of it, and the edit core every handle edit runs through. */
+export interface ComfyApi {
   comfy: Comfy
   host: ComfyApiHost
-} {
+  /** Not published (ADR 0073 decision 1); the core's own tests drive it. */
+  edit: EditCore
+}
+
+export function createComfyApi(services: ComfyApiServices): ComfyApi {
   const lifecycle = createAppLifecycle()
   const handles = createDocumentHandles()
   const nodes = createNodeHandles(handles, (handle) =>
@@ -80,12 +86,12 @@ export function createComfyApi(services: ComfyApiServices): {
       services.getGraph,
       (visible) => graphHandleMembers(visible, scopes.scopeFor, edit, groupsOf)
     ),
-    sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a),
-    edit
+    sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
   })
 
   return {
     comfy,
+    edit,
     host: {
       nodeTypeHooks: definitions.nodeTypeHooks,
       reapplyTypeColors: definitions.reapplyTypeColors,

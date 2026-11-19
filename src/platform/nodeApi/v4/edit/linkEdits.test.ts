@@ -13,12 +13,14 @@ import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtu
 import { useLinkStore } from '@/stores/linkStore'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
 
 describe('link edits', () => {
   let graph: LGraph
   let comfy: Comfy
+  let edit: EditCore
   let host: ComfyApiHost
   let steps: string[]
   let source: LGraphNode
@@ -37,7 +39,7 @@ describe('link edits', () => {
   beforeEach(() => {
     graph = new LGraph()
     steps = []
-    ;({ comfy, host } = createComfyApi({
+    ;({ comfy, host, edit } = createComfyApi({
       getGraph: () => graph,
       history: () => ({
         beforeChange: () => steps.push('before'),
@@ -74,10 +76,7 @@ describe('link edits', () => {
     it('links an output to an input as one undo step and gives the link', () => {
       const version = graph._version
 
-      const link = comfy.edit.connect(
-        out('image'),
-        into(targetHandle, 'pixels')
-      )
+      const link = edit.connect(out('image'), into(targetHandle, 'pixels'))
 
       expect(link).toMatchObject({
         sourceNodeId: String(source.id),
@@ -93,7 +92,7 @@ describe('link edits', () => {
 
     it('gives nothing when the host refuses the link', () => {
       expect(
-        comfy.edit.connect(out('mask'), into(targetHandle, 'pixels'))
+        edit.connect(out('mask'), into(targetHandle, 'pixels'))
       ).toBeUndefined()
       expect(target.isInputConnected(0)).toBe(false)
     })
@@ -148,7 +147,7 @@ describe('link edits', () => {
             ? [sourceHandle, into(targetHandle, 'pixels')]
             : [out('image'), undefined]
 
-      expect(() => Reflect.apply(comfy.edit.connect, undefined, args)).toThrow(
+      expect(() => Reflect.apply(edit.connect, undefined, args)).toThrow(
         TypeError
       )
       expect(steps).toEqual([])
@@ -175,16 +174,14 @@ describe('link edits', () => {
       const innerInput = innerHandle.inputs.at(0)
       assert(innerInput)
 
-      expect(() => comfy.edit.connect(out('image'), innerInput)).toThrow(
-        TypeError
-      )
+      expect(() => edit.connect(out('image'), innerInput)).toThrow(TypeError)
     })
 
     it('gives nothing for a slot that is gone', () => {
       const pixels = into(targetHandle, 'pixels')
       graph.remove(target)
 
-      expect(comfy.edit.connect(out('image'), pixels)).toBeUndefined()
+      expect(edit.connect(out('image'), pixels)).toBeUndefined()
       expect(
         out('image').connectTo(String(target.id), 'pixels')
       ).toBeUndefined()
@@ -224,7 +221,7 @@ describe('link edits', () => {
         false
       ])
 
-      expect(comfy.edit.disconnect(out('image'))).toBe(true)
+      expect(edit.disconnect(out('image'))).toBe(true)
       expect(target.isInputConnected(0)).toBe(false)
     })
 
@@ -249,7 +246,7 @@ describe('link edits', () => {
       const pixels = into(targetHandle, 'pixels')
       graph.remove(other)
 
-      expect(comfy.edit.disconnect(out('image'), otherHandle)).toBe(false)
+      expect(edit.disconnect(out('image'), otherHandle)).toBe(false)
       graph.remove(target)
       expect(pixels.disconnect()).toBe(false)
     })
@@ -272,7 +269,7 @@ describe('link edits', () => {
       const call =
         name === 'an id that is not text'
           ? () => Reflect.apply(out('image').disconnect, undefined, [5])
-          : () => Reflect.apply(comfy.edit.disconnect, undefined, [...args()])
+          : () => Reflect.apply(edit.disconnect, undefined, [...args()])
 
       expect(call).toThrow(TypeError)
       expect([target.isInputConnected(0), other.isInputConnected(0)]).toEqual([
@@ -290,7 +287,7 @@ describe('link edits', () => {
         .queryNodes({ scope: 'root-and-subgraphs' })
         .filter((node) => node.graphId !== graph.id)
 
-      expect(() => comfy.edit.disconnect(out('image'), innerHandle)).toThrow(
+      expect(() => edit.disconnect(out('image'), innerHandle)).toThrow(
         TypeError
       )
     })
@@ -338,7 +335,7 @@ describe('link edits', () => {
       const copy = out('copy')
       source.removeOutput(1)
 
-      expect(comfy.edit.moveLinks(out('image'), copy)).toBeUndefined()
+      expect(edit.moveLinks(out('image'), copy)).toBeUndefined()
     })
 
     it('gives nothing when the link store refuses', () => {
@@ -358,11 +355,9 @@ describe('link edits', () => {
       const otherOutput = elsewhere.outputs.at(0)
       assert(otherOutput)
 
-      expect(() => comfy.edit.moveLinks(out('image'), otherOutput)).toThrow(
-        TypeError
-      )
+      expect(() => edit.moveLinks(out('image'), otherOutput)).toThrow(TypeError)
       expect(() =>
-        Reflect.apply(comfy.edit.moveLinks, undefined, [
+        Reflect.apply(edit.moveLinks, undefined, [
           out('image'),
           into(targetHandle, 'pixels')
         ])

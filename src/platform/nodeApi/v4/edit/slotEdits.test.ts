@@ -9,12 +9,14 @@ import {
 import { useLinkStore } from '@/stores/linkStore'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
 
 describe('slot edits', () => {
   let graph: LGraph
   let comfy: Comfy
+  let edit: EditCore
   let host: ComfyApiHost
   let steps: string[]
   let source: LGraphNode
@@ -25,7 +27,7 @@ describe('slot edits', () => {
   beforeEach(() => {
     graph = new LGraph()
     steps = []
-    ;({ comfy, host } = createComfyApi({
+    ;({ comfy, host, edit } = createComfyApi({
       getGraph: () => graph,
       history: () => ({
         beforeChange: () => steps.push('before'),
@@ -255,7 +257,7 @@ describe('slot edits', () => {
       const slot = given === 'node' ? targetHandle : given
 
       expect(() =>
-        Reflect.apply(comfy.edit.updateSlot, undefined, [slot, { label: 'x' }])
+        Reflect.apply(edit.updateSlot, undefined, [slot, { label: 'x' }])
       ).toThrow('updateSlot needs a slot handle')
     })
   })
@@ -280,7 +282,7 @@ describe('slot edits', () => {
 
     it('add slots with an empty name, as many as asked', () => {
       const first = sourceHandle.outputs.add('', 'INT')
-      const second = comfy.edit.addOutput(sourceHandle, '', 'INT')
+      const second = edit.addOutput(sourceHandle, '', 'INT')
       const input = targetHandle.inputs.add('', '*')
 
       expect([first?.name, second?.name, input?.name]).toEqual(['', '', ''])
@@ -296,7 +298,7 @@ describe('slot edits', () => {
     it('add an input that is the socket form of a widget', () => {
       target.addWidget('number', 'steps', 1, () => {})
 
-      const added = comfy.edit.addInput(targetHandle, 'steps', 'INT', {
+      const added = edit.addInput(targetHandle, 'steps', 'INT', {
         widget: 'steps'
       })
 
@@ -332,7 +334,7 @@ describe('slot edits', () => {
       graph.remove(target)
 
       expect(targetHandle.inputs.add('w', 'INT')).toBeUndefined()
-      expect(comfy.edit.addOutput(targetHandle, 'o', 'INT')).toBeUndefined()
+      expect(edit.addOutput(targetHandle, 'o', 'INT')).toBeUndefined()
     })
   })
 
@@ -368,7 +370,7 @@ describe('slot edits', () => {
       const slot = input('z')
       target.removeInput(2)
 
-      expect(comfy.edit.removeSlot(slot)).toBe(false)
+      expect(edit.removeSlot(slot)).toBe(false)
     })
 
     it.for([[3], [{ index: -1 }], [{ index: 1.5 }], [{}], [null]])(
@@ -443,7 +445,7 @@ describe('slot edits', () => {
         const saved = JSON.stringify(graph.serialize().links)
         const version = graph._version
 
-        expect(comfy.edit.reorderSlots(node, side, names)).toBe(true)
+        expect(edit.reorderSlots(node, side, names)).toBe(true)
 
         expect(JSON.stringify(graph.serialize().links)).toBe(saved)
         expect(steps).toEqual([])
@@ -466,7 +468,7 @@ describe('slot edits', () => {
       const node = side === 'output' ? sourceHandle : targetHandle
 
       expect(() =>
-        Reflect.apply(comfy.edit.reorderSlots, undefined, [node, side, names])
+        Reflect.apply(edit.reorderSlots, undefined, [node, side, names])
       ).toThrow(TypeError)
       expect([
         target.inputs.map(({ name }) => name),
@@ -498,7 +500,7 @@ describe('slot edits', () => {
 
         const names = side === 'input' ? ['z', 'y', 'x'] : ['c', 'b', 'a']
         const node = side === 'input' ? targetHandle : sourceHandle
-        expect(comfy.edit.reorderSlots(node, side, names)).toBe(false)
+        expect(edit.reorderSlots(node, side, names)).toBe(false)
 
         expect([
           target.inputs.map(({ name }) => name),

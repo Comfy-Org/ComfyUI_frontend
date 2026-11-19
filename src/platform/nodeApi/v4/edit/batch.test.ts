@@ -3,11 +3,13 @@ import { assert, beforeEach, describe, expect, it } from 'vitest'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
 
 describe('batch', () => {
   let graph: LGraph
   let comfy: Comfy
+  let edit: EditCore
   let handle: NodeHandle
   let node: LGraphNode
   let steps: string[]
@@ -17,7 +19,7 @@ describe('batch', () => {
     graph = new LGraph()
     steps = []
     open = 0
-    ;({ comfy } = createComfyApi({
+    ;({ comfy, edit } = createComfyApi({
       getGraph: () => graph,
       history: () => ({
         beforeChange: () => {
@@ -36,7 +38,7 @@ describe('batch', () => {
   })
 
   it('makes one undo step of several edits, captured once they are all made', () => {
-    comfy.edit.batch(() => {
+    edit.batch(() => {
       handle.setTitle('One')
       handle.setColor('#1')
       handle.setTitle('Two')
@@ -46,14 +48,14 @@ describe('batch', () => {
   })
 
   it('returns what the edits return', () => {
-    expect(comfy.edit.batch(() => handle.setTitle('Done'))).toBe(true)
+    expect(edit.batch(() => handle.setTitle('Done'))).toBe(true)
   })
 
   it('closes the step and passes the error on when the edits throw, keeping what they did', () => {
     const failure = new Error('pack failed')
 
     expect(() =>
-      comfy.edit.batch(() => {
+      edit.batch(() => {
         handle.setTitle('Kept')
         throw failure
       })
@@ -64,8 +66,8 @@ describe('batch', () => {
   })
 
   it('nests inside another batch as part of its step', () => {
-    comfy.edit.batch(() => {
-      comfy.edit.batch(() => handle.setTitle('Inner'))
+    edit.batch(() => {
+      edit.batch(() => handle.setTitle('Inner'))
       handle.setTitle('Outer')
     })
 
@@ -77,7 +79,7 @@ describe('batch', () => {
     ['nothing', undefined],
     ['a value', 3]
   ])('refuses %s before running anything', ([, edits]) => {
-    expect(() => Reflect.apply(comfy.edit.batch, undefined, [edits])).toThrow(
+    expect(() => Reflect.apply(edit.batch, undefined, [edits])).toThrow(
       TypeError
     )
     expect(steps).toEqual([])
@@ -85,7 +87,7 @@ describe('batch', () => {
   })
 
   it('keeps edits made before a returned promise, and leaves later ones out of the step', async () => {
-    const result = comfy.edit.batch(() => {
+    const result = edit.batch(() => {
       handle.setTitle('Before')
       return Promise.resolve().then(() => handle.setTitle('After'))
     })
@@ -96,8 +98,8 @@ describe('batch', () => {
   })
 
   it('applies edits with no undo history when the host has none', () => {
-    const bare = createComfyApi({ getGraph: () => graph }).comfy
-    const bareHandle = bare.graph.node(String(node.id))
+    const bare = createComfyApi({ getGraph: () => graph })
+    const bareHandle = bare.comfy.graph.node(String(node.id))
     assert(bareHandle)
 
     bare.edit.batch(() => bareHandle.setTitle('Applied'))

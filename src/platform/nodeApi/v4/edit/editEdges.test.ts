@@ -15,17 +15,19 @@ import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
+import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
 
 describe('edit edges', () => {
   let graph: LGraph
   let comfy: Comfy
+  let edit: EditCore
   let node: LGraphNode
   let handle: NodeHandle
 
   beforeEach(() => {
     graph = new LGraph()
-    ;({ comfy } = createComfyApi({ getGraph: () => graph }))
+    ;({ comfy, edit } = createComfyApi({ getGraph: () => graph }))
     node = new LGraphNode('Node')
     node.addInput('first', 'INT')
     node.addInput('second', 'INT')
@@ -62,7 +64,7 @@ describe('edit edges', () => {
 
   it('names the point it could not read', () => {
     expect(() => Reflect.apply(handle.setPosition, undefined, [null])).toThrow(
-      'setPosition needs position as an object, not null.'
+      'setPosition needs position as a plain object, not null.'
     )
   })
 
@@ -78,7 +80,7 @@ describe('edit edges', () => {
     node.onPropertyChanged = () => false
 
     expect(
-      comfy.edit.updateNode(handle, { title: 'Applied', properties: { p: 1 } })
+      edit.updateNode(handle, { title: 'Applied', properties: { p: 1 } })
     ).toBe(false)
     expect(node.title).toBe('Applied')
   })
@@ -174,7 +176,7 @@ describe('edit edges', () => {
     assert(link)
     link.type = 0
 
-    expect(comfy.graph.links()?.[0].type).toBe('0')
+    expect(comfy.graph.links()[0].type).toBe('0')
   })
 
   it('shifts the links of the later outputs when an output is removed', () => {
@@ -214,7 +216,7 @@ describe('edit edges', () => {
     assert(output && innerHandle)
 
     expect(output.isConnected).toBe(false)
-    expect(() => comfy.edit.disconnect(output, innerHandle)).toThrow(TypeError)
+    expect(() => edit.disconnect(output, innerHandle)).toThrow(TypeError)
   })
 
   it('starts version again on a reload, so a later reading can repeat an earlier one', () => {

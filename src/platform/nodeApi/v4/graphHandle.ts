@@ -3,18 +3,26 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { GraphScopeFor } from './graphScopeHandle'
 import type { NodeHandles } from './nodeHandle'
 import { checkedNodeQuery, nodeOfExactType } from './nodeQuery'
-import type {
-  GraphHandle,
-  GraphHandleEdits,
-  NodeQuery,
-  NodeQueryScope
-} from './types'
+import type { GraphHandle, NodeQuery, NodeQueryScope } from './types'
+
+type GraphHandleReads =
+  | 'id'
+  | 'version'
+  | 'node'
+  | 'nodes'
+  | 'nodesOfType'
+  | 'queryNodes'
+  | 'root'
+  | 'subgraphs'
+
+/** The graph handle members other modules own. */
+export type GraphHandleMembers = Omit<GraphHandle, GraphHandleReads>
 
 export function createGraphHandle(
   nodes: NodeHandles,
   graphScopeFor: GraphScopeFor,
   getVisibleGraph: () => LGraph | null,
-  members: (visible: () => LGraph | undefined) => GraphHandleEdits
+  members: (visible: () => LGraph | undefined) => GraphHandleMembers
 ): GraphHandle {
   const visible = () => getVisibleGraph() ?? undefined
 
