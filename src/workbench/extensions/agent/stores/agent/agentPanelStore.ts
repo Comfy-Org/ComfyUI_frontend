@@ -1,3 +1,4 @@
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import { useEventListener, useLocalStorage, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
@@ -103,7 +104,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const reservedWorkspaceWidth = ref(SIDE_TOOLBAR_WIDTH + SIDEBAR_MIN_WIDTH)
   const reportedExhaustionIdentity = ref<string | null>(null)
   const billingRefreshedAcceptances = ref(0)
-  const reportedFreeUseExposure = ref(false)
   const reportedFreeUseImpression = ref(false)
   const reportedCreditUsageExposure = ref(false)
   const fundsRechecks = ref(new Map<number, string>())
@@ -113,6 +113,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const creditTransitionNotice = shallowRef<CreditTransitionNoticeState | null>(
     null
   )
+  const pendingCloudHandoff = ref<string | null>(null)
+  const pendingErrorContext = shallowRef<AgentErrorContext | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -243,7 +245,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   function startOpenEpoch(): void {
     openedAt = Date.now()
     teardownReported = false
-    reportedFreeUseExposure.value = false
     reportedFreeUseImpression.value = false
     reportedCreditUsageExposure.value = false
   }
@@ -423,7 +424,6 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     comfyAgent,
     reportedExhaustionIdentity,
     billingRefreshedAcceptances,
-    reportedFreeUseExposure,
     reportedFreeUseImpression,
     reportedCreditUsageExposure,
     creditTransitionNotice: readonly(creditTransitionNotice),
@@ -442,6 +442,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     open,
     targetTracking,
     followsVisibleWorkflow,
+    pendingErrorContext,
+    pendingCloudHandoff,
     initializeTargetTracking,
     retainWorkflowTarget,
     startFollowingVisibleWorkflow,

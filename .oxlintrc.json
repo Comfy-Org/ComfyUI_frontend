@@ -3,7 +3,6 @@
   "ignorePatterns": [
     "**/vite.config.*.timestamp*",
     "**/vitest.config.*.timestamp*",
-    ".agents/checks/eslint.strict.config.js",
     "ComfyUI/**",
     "apps/*/coverage/**",
     "apps/*/dist/**",
@@ -284,6 +283,13 @@
       }
     },
     {
+      "files": ["src/**/*.{ts,vue}"],
+      "excludeFiles": ["src/**/*.{test,stories}.ts", "src/**/__mocks__/**"],
+      "rules": {
+        "comfy/no-app-singleton-import": "error"
+      }
+    },
+    {
       "files": [
         "apps/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
         "src/**/*.{js,mjs,cjs,ts,mts,cts,vue}",
@@ -291,7 +297,8 @@
       ],
       "excludeFiles": [
         "**/*.{test,spec}.{ts,tsx}",
-        "packages/api-client/src/abortSignal.ts"
+        "packages/api-client/src/abortSignal.ts",
+        "apps/billing-web/src/handoff/timeoutSignal.ts"
       ],
       "rules": {
         "no-restricted-properties": [
@@ -302,6 +309,15 @@
             "message": "Crashes on Chrome < 116. Use combineAbortSignals from @comfyorg/api-client/abortSignal."
           },
           {
+            "object": "AbortSignal",
+            "property": "timeout",
+            "message": "Crashes on Chrome < 103 and Safari < 16. Use createTimeoutSignal from @comfyorg/api-client/abortSignal."
+          },
+          {
+            "property": "throwIfAborted",
+            "message": "Crashes on Chrome < 100 and Safari < 15.4. Use throwIfAborted(signal) from @comfyorg/api-client/abortSignal, or check signal.aborted in packages."
+          },
+          {
             "object": "URL",
             "property": "parse",
             "message": "Crashes on Chrome < 126. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
@@ -310,6 +326,11 @@
             "object": "URL",
             "property": "canParse",
             "message": "Crashes on Chrome < 120. Use parseUrl from @/utils/urlSafety, or try/catch around new URL() in packages."
+          },
+          {
+            "object": "Intl",
+            "property": "Segmenter",
+            "message": "Missing on Firefox < 125 (Firefox 115 ESR is still in use). Read Intl.Segmenter once into a local under a one-line disable, typeof-check the local and fall back, as graphemeSegmenter in src/workbench/extensions/agent/utils/sessionTitle.ts does."
           }
         ]
       }
@@ -351,6 +372,23 @@
       ],
       "rules": {
         "comfy/no-direct-selection-write": "error"
+      }
+    },
+    {
+      "files": [
+        "src/components/graph/**/*.{ts,vue}",
+        "src/composables/canvas/**/*.{ts,vue}",
+        "src/composables/graph/**/*.{ts,vue}",
+        "src/renderer/**/*.{ts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/renderer/core/layout/transform/useCompositedTransform.ts",
+        "src/renderer/core/canvas/workflowImage/rasterizeElement.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-transform-write": "error"
       }
     },
     {
@@ -780,9 +818,12 @@
         "playwright/no-eval": "error",
         "playwright/no-focused-test": "error",
         "playwright/no-force-option": "error",
+        "playwright/no-identical-title": "error",
+        "playwright/no-export": "error",
         "playwright/no-networkidle": "error",
         "playwright/no-page-pause": "error",
         "playwright/no-skipped-test": "error",
+        "playwright/no-test-return-statement": "error",
         "playwright/no-unsafe-references": "error",
         "playwright/no-unused-locators": "error",
         "playwright/no-useless-await": "error",
@@ -796,6 +837,7 @@
         "playwright/prefer-to-have-length": "error",
         "playwright/prefer-web-first-assertions": "error",
         "playwright/prefer-native-locators": "error",
+        "playwright/require-annotation-reason": "error",
         "playwright/require-to-pass-timeout": "error",
         "playwright/valid-expect": "error",
         "playwright/valid-expect-in-promise": "error",

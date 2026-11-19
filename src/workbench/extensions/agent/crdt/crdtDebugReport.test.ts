@@ -48,6 +48,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     enabled: true,
     connected: true,
     canvasMayBeStale: false,
+    canvasStaleCause: null,
     terminal: null,
     workflowId: 'doc-1',
     updatesApplied: 3,
@@ -138,6 +139,25 @@ describe('collectCrdtDebugReport', () => {
     expect(report).toContain('doc_update')
     expect(report).toContain('Document stamps')
     expect(report).toContain('Canvas may be stale:** false')
+    expect(report).toContain('Stale cause:** none')
+  })
+
+  it('names the stale cause when the canvas may be stale', async () => {
+    const report = await collectCrdtDebugReport({
+      crdt: {
+        ...SNAPSHOT,
+        status: {
+          ...SNAPSHOT.status,
+          canvasMayBeStale: true,
+          canvasStaleCause: 'doc_gap'
+        }
+      },
+      sources: ALL_SOURCES,
+      events: []
+    })
+
+    expect(report).toContain('Canvas may be stale:** true')
+    expect(report).toContain('Stale cause:** doc_gap')
   })
 
   it('includes privacy-safe media UI state without selected values or URLs', async () => {
@@ -703,15 +723,12 @@ describe('collectCrdtDebugReport', () => {
         {
           ...createAssistantMessage(toTurnId('turn-older')),
           parts: [
-            ...Array.from(
-              { length: 500 },
-              (): MessagePart => ({
-                type: 'thinking',
-                text: '',
-                state: 'done',
-                durationMs: 1
-              })
-            ),
+            ...Array.from({ length: 500 }, (): MessagePart => ({
+              type: 'thinking',
+              text: '',
+              state: 'done',
+              durationMs: 1
+            })),
             ...toolCalls('older', 1)
           ]
         },
@@ -743,15 +760,12 @@ describe('collectCrdtDebugReport', () => {
         {
           ...createAssistantMessage(toTurnId('turn-latest')),
           parts: [
-            ...Array.from(
-              { length: 20_000 },
-              (_, index): MessagePart => ({
-                type: 'thinking',
-                text: '',
-                state: 'done',
-                durationMs: index + 1
-              })
-            ),
+            ...Array.from({ length: 20_000 }, (_, index): MessagePart => ({
+              type: 'thinking',
+              text: '',
+              state: 'done',
+              durationMs: index + 1
+            })),
             ...toolCalls('latest', 1)
           ]
         }

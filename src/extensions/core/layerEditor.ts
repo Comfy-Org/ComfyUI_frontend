@@ -1,4 +1,4 @@
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -10,7 +10,7 @@ export const layerEditorExtension: ComfyExtension = {
       icon: 'icon-[lucide--images]',
       label: 'Open Layer Editor for Selected Node',
       function: async () => {
-        const selectedNodes = selectedCanvasNodes(app.canvas)
+        const selectedNodes = selectedCanvasNodes(useApp().canvas)
         if (selectedNodes.length !== 1) return
 
         const [selectedNode] = selectedNodes

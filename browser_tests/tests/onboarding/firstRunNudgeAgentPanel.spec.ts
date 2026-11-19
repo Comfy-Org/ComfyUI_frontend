@@ -9,6 +9,8 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { OnboardingCoachmarks } from '@e2e/fixtures/components/Tour'
+import { expectRegionScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
+import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
 
 const GETTING_STARTED_TITLE = enMessages.gettingStarted.title
 
@@ -42,9 +44,15 @@ async function skipTheFirstRunTour(page: Page): Promise<void> {
   await expect(card).toBeHidden()
 }
 
+async function hideServerTemplateGraph(page: Page): Promise<void> {
+  await page.addStyleTag({
+    content: `#graph-canvas, [data-testid="transform-pane"], [data-testid="minimap-container"] { visibility: hidden !important; }`
+  })
+}
+
 test.describe(
   'First-run nudge beside the Agent panel',
-  { tag: ['@cloud', '@agent', '@ui'] },
+  { tag: ['@cloud', '@agent', '@ui', '@screenshot'] },
   () => {
     test.use({ viewport: SIGNUP_VIEWPORT })
 
@@ -85,6 +93,21 @@ test.describe(
           nudgeBox.x + nudgeBox.width,
           'the nudge must sit left of the docked Agent panel, not over its starter prompts and composer (PM-1872)'
         ).toBeLessThanOrEqual(panelBox.x)
+
+        await hideServerTemplateGraph(page)
+
+        await expectRegionScreenshot(
+          page,
+          [
+            new OnboardingCoachmarks(page).coachAnchor(
+              FIRST_RUN_COACH_IDS.templatesButton
+            ),
+            nudge,
+            agentPanel.dockedPanel
+          ],
+          'first-run-nudge-beside-agent-panel.png',
+          { padding: 0 }
+        )
       }
     )
   }

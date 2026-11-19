@@ -25,6 +25,7 @@ export class AgentPanel {
   public readonly activityRows: Locator
   public readonly attachmentChips: Locator
   public readonly closeButton: Locator
+  public readonly chatControls: Locator
   public readonly composer: Locator
   public readonly composerAssetSection: Locator
   public readonly composerPromptArea: Locator
@@ -43,11 +44,14 @@ export class AgentPanel {
   public readonly dockedPanelShell: Locator
   public readonly feedbackButton: Locator
   public readonly fileInput: Locator
+  public readonly footer: Locator
   public readonly historyButton: Locator
+  public readonly hostFenceNotice: Locator
   public readonly loadFailedMessage: Locator
   public readonly loadRetryButton: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly referenceMenu: Locator
   public readonly replyAssetThumbnails: Locator
   public readonly replyAssetTiles: Locator
   public readonly resizeHandle: Locator
@@ -58,6 +62,7 @@ export class AgentPanel {
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
   public readonly suggestedPrompts: Locator
+  public readonly thinkingShortenedNotices: Locator
   public readonly userMessageBubbles: Locator
   private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
@@ -80,6 +85,7 @@ export class AgentPanel {
           exact: true
         })
       )
+    this.chatControls = this.root.getByTestId('agent-panel-chat-controls')
     this.composer = this.root.getByRole('textbox', {
       name: AGENT_COMPOSER_LABEL
     })
@@ -116,9 +122,11 @@ export class AgentPanel {
       name: enMessages.agent.feedbackCaption
     })
     this.fileInput = this.root.getByTestId('agent-file-input')
+    this.footer = this.root.getByTestId('agent-panel-footer')
     this.historyButton = this.root.getByRole('button', {
       name: enMessages.agent.showChatHistory
     })
+    this.hostFenceNotice = this.root.getByTestId('agent-host-fence-notice')
     this.loadFailedMessage = this.dockedPanelShell.getByText(
       enMessages.agent.loadFailed
     )
@@ -130,6 +138,7 @@ export class AgentPanel {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.referenceMenu = this.root.getByTestId('agent-reference-menu')
     this.replyAssetThumbnails = this.root.getByRole('img', {
       name: /^mesh-\d+/
     })
@@ -152,6 +161,9 @@ export class AgentPanel {
     this.suggestedPrompts = this.root
       .getByTestId('suggested-prompts')
       .getByRole('button', { includeHidden: true })
+    this.thinkingShortenedNotices = this.root.getByTestId(
+      TestIds.agent.thinkingShortened
+    )
     this.userMessageBubbles = this.root.getByTestId('user-message-bubble')
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
@@ -199,6 +211,12 @@ export class AgentPanel {
         .toBeCloseTo(target, 0)
     }
     await expect(this.scrollAssetsRight).toBeDisabled()
+  }
+
+  thinkingShortenedNoticeIn(roundText: string): Locator {
+    return this.activityRows
+      .filter({ hasText: roundText })
+      .getByTestId(TestIds.agent.thinkingShortened)
   }
 
   activityRow(label: string): Locator {
@@ -280,6 +298,27 @@ export class AgentPanel {
       generatedFile,
       await this.dropOptions()
     )
+  }
+
+  /** Drops a file on the panel without the canvas drag-and-drop harness. */
+  async dispatchFileDrop(file: {
+    name: string
+    type: string
+    contents: string
+  }): Promise<void> {
+    const dataTransfer = await this.page.evaluateHandle(
+      ({ name, type, contents }) => {
+        const transfer = new DataTransfer()
+        transfer.items.add(new File([contents], name, { type }))
+        return transfer
+      },
+      file
+    )
+    try {
+      await this.root.dispatchEvent('drop', { dataTransfer })
+    } finally {
+      await dataTransfer.dispose()
+    }
   }
 
   async handOverAttachment(

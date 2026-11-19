@@ -17,11 +17,11 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
-import { useColorPaletteService } from '@/services/colorPaletteService'
+import { useThemeService } from '@/platform/theme/themeService'
 import { useErrorOverlayState } from '@/platform/workflowErrors/overlay/useErrorOverlayState'
 import { useQueueStore } from '@/stores/queueStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const tabs = [
@@ -31,8 +31,8 @@ const tabs = [
 ]
 
 const canvasStore = useCanvasStore()
-const colorPaletteService = useColorPaletteService()
-const colorPaletteStore = useColorPaletteStore()
+const themeService = useThemeService()
+const themeStore = useThemeStore()
 const { isLoggedIn } = useCurrentUser()
 const { isVisible: isErrorOverlayVisible } = useErrorOverlayState()
 const { t } = useI18n()
@@ -134,13 +134,11 @@ const menuEntries = computed<MenuItem[]>(() => [
   { separator: true },
   {
     label: t('menu.theme'),
-    items: colorPaletteStore.palettes.map((palette) => ({
+    items: themeStore.presets.map((palette) => ({
       label: palette.name,
       icon:
-        colorPaletteStore.activePaletteId === palette.id
-          ? 'icon-[lucide--check]'
-          : '',
-      command: () => colorPaletteService.loadColorPalette(palette.id)
+        themeStore.activePresetId === palette.id ? 'icon-[lucide--check]' : '',
+      command: () => themeService.setActiveTheme(palette.id)
     }))
   },
   { separator: true },

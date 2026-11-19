@@ -225,10 +225,8 @@ Creating mock node definitions for testing:
 ```typescript
 // Example from a colocated schema unit test
 import { describe, expect, it } from 'vitest'
-import {
-  type ComfyNodeDef,
-  validateComfyNodeDef
-} from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+import { validateComfyNodeDef } from '@comfyorg/object-info-parser'
 
 // Create a complete mock node definition
 const EXAMPLE_NODE_DEF: ComfyNodeDef = {

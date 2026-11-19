@@ -30,7 +30,7 @@ import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
@@ -86,6 +86,11 @@ export interface LoadGraphDataOptions {
   skipAssetScans?: boolean
   silentAssetErrors?: boolean
   workflowNavigationId?: number
+  isCurrent?: () => boolean
+  /** Checked once when the load reaches the front of the queue; false skips it. */
+  isReady?: () => boolean
+  /** Graph to load, produced at the front of the queue; undefined skips the load. */
+  resolveGraphData?: () => ComfyWorkflowJSON | undefined
 }
 
 /**

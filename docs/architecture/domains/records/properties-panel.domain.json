@@ -1,72 +1,69 @@
 {
   "id": "properties-panel",
   "capability": "Properties panel",
-  "description": "Right-side properties panel state and presentation: selected-node targeting, favorited widgets, parameters, node settings, hierarchy, and node information. Workflow errors and subgraph promotion remain separate.",
+  "description": "The properties panel: selected-node targeting, favorited widgets, parameter tabs, node settings, node information, and the panel store that opens it on a tab. The panel hosts the workflow errors tab and the subgraph editor, which remain separate.",
   "modules": [
     {
-      "path": "src/components/rightSidePanel/**",
-      "role": "presentation"
-    },
-    {
-      "path": "src/components/rightSidePanel/rightSidePanelTabTelemetry.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/components/rightSidePanel/shared.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/composables/graph/useGraphHierarchy.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/favoritedWidgetsStore.ts",
-      "role": "application"
-    },
-    {
-      "path": "src/stores/workspace/rightSidePanelStore.ts",
-      "role": "application"
+      "path": "src/renderer/extensions/propertiesPanel/**"
     }
   ],
-  "publicEntryPoints": [],
+  "publicEntryPoints": [
+    "src/renderer/extensions/propertiesPanel/PropertiesPanel.vue",
+    "src/renderer/extensions/propertiesPanel/propertiesPanelStore.ts",
+    "src/renderer/extensions/propertiesPanel/favoritedWidgetsStore.ts"
+  ],
   "characterizationScenarios": [
     {
       "name": "Panel routes between tabs for the current selection and reports tab telemetry",
       "checks": [
-        "src/components/rightSidePanel/RightSidePanel.test.ts",
-        "src/components/rightSidePanel/rightSidePanelTabTelemetry.test.ts"
+        "src/renderer/extensions/propertiesPanel/PropertiesPanel.test.ts",
+        "src/renderer/extensions/propertiesPanel/propertiesPanelTabTelemetry.test.ts",
+        "src/renderer/extensions/propertiesPanel/propertiesPanelStore.test.ts"
+      ]
+    },
+    {
+      "name": "Favorited widgets persist in workflow.extra, including the legacy nodeId format",
+      "checks": [
+        "src/renderer/extensions/propertiesPanel/favoritedWidgetsStore.test.ts"
       ]
     },
     {
       "name": "Parameter tabs search, group, and edit widgets for nodes and subgraph inputs",
       "checks": [
-        "src/components/rightSidePanel/parameters/TabNodes.test.ts",
-        "src/components/rightSidePanel/parameters/TabNormalInputs.test.ts",
-        "src/components/rightSidePanel/parameters/TabSubgraphInputs.test.ts",
-        "src/components/rightSidePanel/parameters/SectionWidgets.test.ts",
-        "src/components/rightSidePanel/parameters/WidgetItem.test.ts",
-        "src/components/rightSidePanel/shared.test.ts"
+        "src/renderer/extensions/propertiesPanel/parameters/TabNodes.test.ts",
+        "src/renderer/extensions/propertiesPanel/parameters/TabNormalInputs.test.ts",
+        "src/renderer/extensions/propertiesPanel/parameters/TabSubgraphInputs.test.ts",
+        "src/renderer/extensions/propertiesPanel/parameters/SectionWidgets.test.ts",
+        "src/renderer/extensions/propertiesPanel/parameters/WidgetItem.test.ts",
+        "src/renderer/extensions/propertiesPanel/parameters/widgetSearch.test.ts",
+        "src/renderer/extensions/propertiesPanel/parameters/widgetSections.test.ts",
+        "src/renderer/extensions/propertiesPanel/selectedItems.test.ts",
+        "src/renderer/extensions/propertiesPanel/parentGroup.test.ts"
       ]
     },
     {
       "name": "Settings tab changes node color and toggles node and canvas settings",
       "checks": [
-        "src/components/rightSidePanel/settings/SetNodeColor.test.ts",
+        "src/renderer/extensions/propertiesPanel/settings/SetNodeColor.test.ts",
         "packages/design-system/src/components/field/FieldSwitch.test.ts"
       ]
     },
     {
       "name": "Properties panel opens, switches tabs, and keeps favorited widget actions",
       "checks": [
-        "browser_tests/tests/rightSidePanelTabs.spec.ts",
+        "browser_tests/tests/propertiesPanel/nodeSelection.spec.ts",
         "browser_tests/tests/propertiesPanel/openClose.spec.ts",
         "browser_tests/tests/propertiesPanel/widgetActionsMenu.spec.ts"
       ]
     }
   ],
-  "adrs": [],
-  "compatibilityPromises": [
-    "Inventory preserves existing exports and runtime behavior without granting public entry points or cross-module dependency permissions."
+  "adrs": [
+    "docs/adr/PROPERTIESPANEL-0056-renderer-home-and-hosted-domain-seams.md"
   ],
-  "deepImports": "inventory"
+  "compatibilityPromises": [
+    "Other modules open, toggle, and focus the panel only through the panel store and mount it only through PropertiesPanel.vue.",
+    "Favorited widgets keep the workflow.extra.favoritedWidgets format, including legacy entries.",
+    "Setting ids, telemetry identifiers, and locale keys named rightSidePanel keep their names."
+  ],
+  "deepImports": "enforced"
 }

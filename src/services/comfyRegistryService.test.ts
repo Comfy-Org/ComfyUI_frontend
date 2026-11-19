@@ -42,6 +42,25 @@ describe('useComfyRegistryService', () => {
       expect(mockAxiosInstance.get).not.toHaveBeenCalled()
     })
 
+    it.for([
+      { case: 'null', nodeName: null },
+      { case: 'undefined', nodeName: undefined },
+      { case: 'an empty string', nodeName: '' },
+      { case: 'the string "undefined"', nodeName: 'undefined' }
+    ])(
+      'inferPackFromNodeName does not query for node name $case',
+      async ({ nodeName }) => {
+        const result = await Reflect.apply(
+          service.inferPackFromNodeName,
+          undefined,
+          [nodeName]
+        )
+
+        expect(result).toBeNull()
+        expect(mockAxiosInstance.get).not.toHaveBeenCalled()
+      }
+    )
+
     it('search hits the search endpoint', async () => {
       await service.search({ search: 'sampler' })
 

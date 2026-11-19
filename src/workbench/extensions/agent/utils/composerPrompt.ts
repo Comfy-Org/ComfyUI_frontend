@@ -73,7 +73,7 @@ export function composerPromptForSend(prompt: ComposerPrompt): PromptSnapshot {
         textOffset: text.length,
         workflowIndex: workflowReferences.length
       }
-    } else {
+    } else if (reference.kind !== 'error') {
       const name = composerReferenceName(reference)
       text +=
         reference.kind === 'node'

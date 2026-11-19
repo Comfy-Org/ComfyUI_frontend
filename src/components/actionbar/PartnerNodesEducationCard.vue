@@ -27,7 +27,7 @@
               :base-muted="audibleSide !== 'partner'"
               :overlay-muted="audibleSide !== 'open'"
               :label="t('partnerNodesEducation.sliderLabel')"
-              class="relative z-2 -mb-5 flex-1 rounded-t-xl"
+              class="z-2 -mb-5 flex-1 rounded-t-xl"
             >
               <Button
                 v-for="control in audioControls"
@@ -178,7 +178,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
 import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
-import { usePartnerNodesRunGate } from '@/platform/billing/composables/usePartnerNodesRunGate'
+import { usePartnerNodesRunGate } from '@/platform/auth/partnerNode/usePartnerNodesRunGate'
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'

@@ -1,6 +1,7 @@
 import { paymentRecoveryAvailableFact } from '@/platform/billing/composables/__mocks__/useBillingCapabilities'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
+import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -19,6 +20,7 @@ import { useSubscription } from '@/platform/billing/subscription/composables/use
 import { useTelemetry } from '@comfyorg/telemetry'
 import type {
   BillingEventsResponse,
+  BillingTopUpDenial,
   TeamCreditStopSummary
 } from '@comfyorg/billing-core'
 import { readWorkspaceBillingEvents } from '@/platform/billing/composables/readWorkspaceBillingEvents'
@@ -56,6 +58,7 @@ const state = vi.hoisted(() => ({
   tier: null as SubscriptionInfo['tier'],
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
+  balanceReadFailed: false,
   type: 'workspace' as 'workspace' | 'unknown',
   telemetryUnavailable: false
 }))
@@ -69,6 +72,8 @@ vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/billing/subscription/composables/useSubscription'))
 
 vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
+
+vi.mock(import('@/platform/billing/composables/usePaymentRecoveryDialog'))
 
 vi.mock(import('@comfyorg/telemetry'))
 
@@ -90,6 +95,22 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
+      credits: {
+        addCreditsRefusal: {
+          topupPurchasesPaused:
+            "Buying credits isn't available right now. Try again later.",
+          paymentPastDue: 'Update your payment method to add credits.',
+          unavailable:
+            "Adding credits isn't available for this workspace right now."
+        }
+      },
+      workspacePanel: {
+        billingStatus: { updatePayment: 'Update payment' },
+        billingTab: { tryAgain: 'Try again' }
+      },
+      profileMenu: {
+        balanceUnavailable: "Couldn't load your balance."
+      },
       subscription: {
         totalCredits: 'Total credits',
         remaining: 'remaining',
@@ -216,6 +237,7 @@ describe('CreditsTile', () => {
     billing.tier = computed(() => state.tier)
     billing.currentTeamCreditStop = computed(() => state.currentTeamCreditStop)
     billing.isLoading = computed(() => state.isLoading)
+    billing.balanceReadFailed = computed(() => state.balanceReadFailed)
     billing.type = computed(() => state.type)
     useSubscription().isYearlySubscription = computed(
       () => state.personalIsYearly
@@ -235,10 +257,19 @@ describe('CreditsTile', () => {
     state.tier = null
     state.currentTeamCreditStop = null
     state.isLoading = false
+    state.balanceReadFailed = false
 
     state.type = 'workspace'
     state.telemetryUnavailable = false
     mockIsCloud.value = true
+    useBillingCapabilities().topUpDenial = computed(() => 'not_workspace_owner')
+    vi.mocked(usePaymentRecoveryDialog).mockReturnValue({
+      showPaymentRecoveryDialog: vi.fn(),
+      updatePayment: vi.fn(),
+      isUpdatingPayment: computed(() => false),
+      paymentRecoveryLock: computed(() => null),
+      refreshCapabilities: vi.fn(async () => undefined)
+    })
   })
 
   it('renders the total balance (cents converted to credits) with the remaining suffix', () => {
@@ -551,18 +582,73 @@ describe('CreditsTile', () => {
     }
   )
 
-  it('keeps Add credits when top-up is refused because payment is past due', async () => {
+  it.for<{ denial: BillingTopUpDenial | undefined; reason: string }>([
+    {
+      denial: 'topup_purchases_paused',
+      reason: "Buying credits isn't available right now. Try again later."
+    },
+    {
+      denial: 'payment_past_due',
+      reason: 'Update your payment method to add credits.'
+    },
+    {
+      denial: 'creator_only_provisioning',
+      reason: "Adding credits isn't available for this workspace right now."
+    },
+    {
+      denial: undefined,
+      reason: "Adding credits isn't available for this workspace right now."
+    }
+  ])(
+    'shows Add credits disabled with the reason for a $denial refusal',
+    ({ denial, reason }) => {
+      activeProSubscription()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+      renderTile()
+
+      const addCredits = screen.getByRole('button', { name: 'Add credits' })
+      expect(addCredits).toBeDisabled()
+      expect(addCredits).toHaveAccessibleDescription(reason)
+    }
+  )
+
+  it.for(['not_workspace_owner', 'not_a_member'] as const)(
+    'hides Add credits for a %s refusal',
+    (denial) => {
+      activeProSubscription()
+      useBillingCapabilities().canTopUp = computed(() => false)
+      useBillingCapabilities().topUpDenial = computed(() => denial)
+      renderTile()
+
+      expect(
+        screen.queryByRole('button', { name: 'Add credits' })
+      ).not.toBeInTheDocument()
+    }
+  )
+
+  it('enables Add credits when the server allows a top-up', () => {
+    activeProSubscription()
+    useBillingCapabilities().canTopUp = computed(() => true)
+    renderTile()
+
+    expect(screen.getByRole('button', { name: 'Add credits' })).toBeEnabled()
+  })
+
+  it('keeps a past-due owner a way to update payment', async () => {
     activeProSubscription()
     useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().topUpDenial = computed(() => 'payment_past_due')
     useBillingCapabilities().paymentRecoveryAvailable =
       paymentRecoveryAvailableFact(true)
     renderTile()
 
-    await userEvent.click(screen.getByText('Add credits'))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
 
-    expect(
-      useBillingDialogs().showTopUpCreditsDialog
-    ).toHaveBeenCalledExactlyOnceWith({ source: 'settings_billing_panel' })
+    expect(usePaymentRecoveryDialog().updatePayment).toHaveBeenCalledOnce()
+    expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
   })
 
   it('gives an inactive sales-managed plan the disabled shape with account-manager copy', () => {
@@ -718,6 +804,100 @@ describe('CreditsTile', () => {
     expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
       'bg-foreground'
     )
+  })
+
+  it('shows a failed balance read as unavailable, not as 0 credits', () => {
+    activeProSubscription()
+    state.balance = null
+    state.balanceReadFailed = true
+    renderTile()
+    expect(screen.getByTestId('credits-total-unavailable')).toHaveTextContent(
+      '—'
+    )
+    expect(screen.getByText("Couldn't load your balance.")).toBeInTheDocument()
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument()
+    expect(screen.queryByText(/left of/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Additional credits')).not.toBeInTheDocument()
+  })
+
+  it('shows the balance once Try again reads it', async () => {
+    activeProSubscription()
+    const loaded = state.balance
+    const readBalance = ref<Balance | null>(null)
+    const readFailed = ref(true)
+    const billing = useBillingContext()
+    billing.balance = computed(() =>
+      readBalance.value ? { currency: 'USD', ...readBalance.value } : null
+    )
+    billing.balanceReadFailed = computed(() => readFailed.value)
+    renderTile()
+    vi.mocked(billing.fetchBalance).mockImplementation(async () => {
+      readBalance.value = loaded
+      readFailed.value = false
+    })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(await screen.findByText('1,055')).toBeInTheDocument()
+    expect(
+      screen.queryByText("Couldn't load your balance.")
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not report an unread balance as failed before any read failed', () => {
+    activeProSubscription()
+    state.balance = null
+    renderTile()
+    expect(
+      screen.queryByTestId('credits-total-unavailable')
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows a failed balance read as unavailable in the zero state too', () => {
+    activeProSubscription()
+    state.balance = null
+    state.balanceReadFailed = true
+    renderTile({ zeroState: true })
+    expect(screen.getByTestId('credits-total-unavailable')).toHaveTextContent(
+      '—'
+    )
+  })
+
+  it('does not tell an inactive plan its credits ended when the read failed', () => {
+    activeProSubscription()
+    state.balance = null
+    state.balanceReadFailed = true
+    renderTile({ inactivePlan: true })
+    expect(screen.getByTestId('credits-total-unavailable')).toBeInTheDocument()
+    expect(
+      screen.queryByText('Reactivate your plan to use these credits')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps the skeleton, not the unavailable state, while the balance loads', () => {
+    activeProSubscription()
+    state.balance = null
+    state.balanceReadFailed = true
+    state.isLoading = true
+    renderTile()
+    expect(
+      screen.queryByTestId('credits-total-unavailable')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps a known zero balance as 0', () => {
+    activeProSubscription()
+    state.balance = {
+      amountMicros: 0,
+      cloudCreditBalanceMicros: 0,
+      prepaidBalanceMicros: 0
+    }
+    renderTile()
+    expect(
+      screen.queryByTestId('credits-total-unavailable')
+    ).not.toBeInTheDocument()
+    expect(screen.getAllByText('0').length).toBeGreaterThan(0)
   })
 
   it('suppresses the depletion notice until the balance has loaded', () => {

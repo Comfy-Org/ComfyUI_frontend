@@ -22,7 +22,8 @@ vi.mock(import('./agentAuth'))
 import {
   AgentApiError,
   AgentResponseUnreadableError,
-  createAgentRestClient
+  createAgentRestClient,
+  isLoopbackOnlyRefusal
 } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
 
@@ -143,9 +144,18 @@ describe('agentRestClient route + method', () => {
     expect(lastCall().route).toBe('/agent/threads/t1%2Fx/messages')
   })
 
-  it.for([undefined, [], [{ workflow_id: 'ref', name: 'Reference' }]])(
-    'serializes explicit workflow references independently of open tabs: %j',
-    async (workflowReferences) => {
+  it.for<
+    [
+      string,
+      Parameters<AgentRestClient['postMessage']>[1]['workflowReferences']
+    ]
+  >([
+    ['omitted references', undefined],
+    ['an empty reference list', []],
+    ['one reference', [{ workflow_id: 'ref', name: 'Reference' }]]
+  ])(
+    'serializes explicit workflow references independently of open tabs: %s',
+    async ([, workflowReferences]) => {
       respond(jsonResponse(202, turnAccepted))
       const input = {
         content: 'compare',
@@ -650,6 +660,24 @@ describe('postMessage wire body', () => {
       client_version: buildVersion
     })
     expect(contentType(init)).toBe('application/json')
+  })
+
+  it('sends a plain canvas selection as canvas_selection, apart from selection', async () => {
+    respond(jsonResponse(202, turnAccepted))
+    await makeClient().postMessage('t1', {
+      content: 'what is this',
+      canvasSelection: { node_ids: ['7'], workflow_id: 'wf-9' }
+    })
+
+    const parsed = JSON.parse(String(lastCall().init.body)) as Record<
+      string,
+      unknown
+    >
+    expect(parsed.canvas_selection).toEqual({
+      node_ids: ['7'],
+      workflow_id: 'wf-9'
+    })
+    expect(parsed).not.toHaveProperty('selection')
   })
 
   it('sends current_tab_unbound when the turn comes from a tab with no workflow', async () => {
@@ -1440,6 +1468,73 @@ describe('error mapping', () => {
     expect(markErrorReported).toHaveBeenCalledExactlyOnceWith(error)
   })
 
+  describe("the local host's loopback-fence refusal (cloud#14874)", () => {
+    const refusal = {
+      error:
+        'The agent only works when ComfyUI is opened on the computer it runs on, by a local address. Open http://127.0.0.1:8188 in a browser on that computer to use the agent.',
+      code: 'agent_loopback_only'
+    }
+
+    it('does not report it as an auth rejection', async () => {
+      respondWithAuthScheme(jsonResponse(403, refusal), 'web-session')
+
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(markErrorReported).not.toHaveBeenCalled()
+      expect(error).toBeInstanceOf(AgentApiError)
+    })
+
+    it("carries the host's own sentence to the caller for display", async () => {
+      respondWithAuthScheme(jsonResponse(403, refusal), 'web-session')
+
+      const error = await makeClient()
+        .listThreads()
+        .then((listing) => (listing.status === 'failed' ? listing.cause : null))
+
+      expect(error).toMatchObject({ status: 403, message: refusal.error })
+      expect(isLoopbackOnlyRefusal(error)).toBe(true)
+    })
+
+    it.for([
+      ['a 403 with no code at all', 403, { error: 'access denied' }],
+      ['another 403 code', 403, { error: 'nope', code: 'origin_not_allowed' }],
+      ['the same code on a 401', 401, refusal],
+      [
+        'the code with no message',
+        403,
+        { error: '', code: 'agent_loopback_only' }
+      ]
+    ] as const)(
+      'still reports %s as an auth rejection',
+      async ([, status, body]) => {
+        respondWithAuthScheme(jsonResponse(status, body), 'web-session')
+
+        const error = await makeClient()
+          .getRunMode()
+          .catch((e: unknown) => e)
+
+        expect(reportedTags()).toMatchObject({
+          operation: 'get_run_mode',
+          status
+        })
+        expect(isLoopbackOnlyRefusal(error)).toBe(false)
+      }
+    )
+
+    it.for([
+      ['undefined', undefined],
+      ['null', null],
+      ['the bare code string', 'agent_loopback_only'],
+      ['a number', 42],
+      ['an empty object', {}]
+    ] as const)('is false for %s rather than throwing', ([, value]) => {
+      expect(isLoopbackOnlyRefusal(value)).toBe(false)
+    })
+  })
+
   it('does not report auth telemetry for a non-auth error status', async () => {
     respond(jsonResponse(503, { error: 'unavailable' }))
 
@@ -1471,7 +1566,7 @@ describe('error mapping', () => {
     new TypeError('Failed to fetch'),
     new DOMException('The operation was aborted', 'AbortError')
   ])(
-    'preserves transport failure identity after response headers',
+    'preserves $name transport failure identity after response headers',
     async (cause) => {
       const response = jsonResponse(200, [])
       vi.spyOn(response, 'json').mockRejectedValueOnce(cause)
@@ -1713,5 +1808,36 @@ describe('user auth on agent requests', () => {
     expect(new Headers(lastCall().init.headers).has('Authorization')).toBe(
       false
     )
+  })
+})
+
+describe('usage status', () => {
+  it('reads whether the agent has been used from the usage-status endpoint', async () => {
+    respond(jsonResponse(200, { has_used_agent: false }))
+
+    await expect(makeClient().getUsageStatus()).resolves.toEqual({
+      has_used_agent: false
+    })
+    expect(lastCall().route).toBe('/agent/usage-status')
+  })
+
+  it('rejects a successful response missing has_used_agent', async () => {
+    respond(jsonResponse(200, {}))
+
+    await expect(makeClient().getUsageStatus()).rejects.toMatchObject({
+      name: 'ZodError',
+      issues: expect.arrayContaining([
+        expect.objectContaining({ path: ['has_used_agent'] })
+      ])
+    })
+  })
+
+  it('rejects with the HTTP status when the request fails', async () => {
+    respond(jsonResponse(500, { error: 'unavailable' }))
+
+    await expect(makeClient().getUsageStatus()).rejects.toMatchObject({
+      name: 'AgentApiError',
+      status: 500
+    })
   })
 })

@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@comfyorg/account-core": "workspace:*",
+    "@comfyorg/comfyui-api-types": "workspace:*",
     "@comfyorg/graph-model": "workspace:*",
     "@comfyorg/ingest-types": "workspace:*",
     "@comfyorg/object-info-parser": "workspace:*",

@@ -1,4 +1,8 @@
-import type { AgentAskConflict, AgentAskOption } from '@comfyorg/ingest-types'
+import type {
+  AgentAskConflict,
+  AgentAskOption,
+  AgentExtensionChangedData
+} from '@comfyorg/ingest-types'
 import {
   zAgentDeleteApprovalContext,
   zAgentPausedContext,
@@ -27,6 +31,8 @@ export interface ToolPart {
   callId: string
   name: string
   skill?: string
+  /** The model file a bash `comfy model download` call fetches, named live. */
+  download?: string
   state: PartState
   ok?: boolean
   durationMs?: number
@@ -47,6 +53,8 @@ export interface ThinkingPart {
   text: string
   state: PartState
   durationMs?: number
+  /** The stored reasoning stops being whole here. */
+  truncated?: boolean
 }
 
 export interface NoticePart {
@@ -73,6 +81,14 @@ export interface TabLinkPart {
   workflowId: string
   locatorId?: string
   name?: string
+}
+
+export interface ExtensionChangePart {
+  type: 'extensionChange'
+  action: AgentExtensionChangedData['action']
+  pack: string
+  agentCreated: boolean
+  restartRequired: boolean
 }
 
 export interface RunApprovalPart {
@@ -388,6 +404,7 @@ export type MessagePart =
   | NoticePart
   | AskUnavailablePart
   | TabLinkPart
+  | ExtensionChangePart
   | RunApprovalPart
   | AskUserPart
   | DeleteApprovalPart

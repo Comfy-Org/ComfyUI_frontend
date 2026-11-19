@@ -4,28 +4,22 @@
   "description": "The error, URL, web-session adapter, and capability-revision contracts extracted from the workspace and billing clients. Also the generated @comfyorg/ingest-types API types and Zod schemas. ComfyUI backend wire schemas remain in comfyui-api. Other ingest transport files remain unclassified.",
   "modules": [
     {
-      "path": "src/platform/remote/ingest/ingestApiError.ts",
-      "role": "domain"
+      "path": "src/platform/remote/ingest/ingestApiError.ts"
     },
     {
-      "path": "src/platform/remote/ingest/ingestApiUrl.ts",
-      "role": "infrastructure"
+      "path": "src/platform/remote/ingest/ingestApiUrl.ts"
     },
     {
-      "path": "src/platform/remote/ingest/webSessionAdapter.ts",
-      "role": "infrastructure"
+      "path": "src/platform/remote/ingest/webSessionAdapter.ts"
     },
     {
-      "path": "src/platform/remote/ingest/capabilityRevision.ts",
-      "role": "infrastructure"
+      "path": "src/platform/remote/ingest/capabilityRevision.ts"
     },
     {
-      "path": "packages/ingest-types/src/**",
-      "role": "domain"
+      "path": "packages/ingest-types/src/**"
     },
     {
-      "path": "src/platform/remote/ingest/ingestTypesContract.test.ts",
-      "role": "domain"
+      "path": "src/platform/remote/ingest/ingestTypesContract.test.ts"
     }
   ],
   "publicEntryPoints": [

@@ -640,6 +640,39 @@ describe('agentEventTransport text and tool parts', () => {
     }
   )
 
+  it('keeps the download file name from the running frame through completion', () => {
+    const running = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'bash',
+        status: 'running',
+        download: 'flux1-dev.safetensors',
+        message_id: 'm',
+        thread_id: 't'
+      }
+    })
+    const completed = zAgentWsEvent.parse({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-1',
+        tool_name: 'bash',
+        status: 'success',
+        message_id: 'm',
+        thread_id: 't'
+      }
+    })
+
+    const message = drive([running, completed])
+
+    expect(toolParts(message)[0]).toMatchObject({
+      name: 'bash',
+      download: 'flux1-dev.safetensors',
+      state: 'done',
+      ok: true
+    })
+  })
+
   it('stamps a tool part with the client clock of its first frame only', () => {
     const message = createAssistantMessage(T)
     const transport = createAgentEventTransport(message, vi.fn())
@@ -2138,6 +2171,49 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     vi.advanceTimersByTime(STALE_AFTER_MS)
     expect(emit.mock.calls.length).toBe(callsAfterDispose)
   })
+
+  it('settles a never-resolved tool call without inventing an outcome', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'running'))
+    transport.settle()
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+    expect(toolParts(message)[0].ok).toBeUndefined()
+  })
+
+  it('does not mutate a detached tool part during settlement or disposal', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'running'))
+    const detached = toolParts(message)[0]
+    message.parts = []
+    transport.settle()
+    transport.dispose()
+
+    expect(detached).toMatchObject({ state: 'streaming' })
+    expect(detached.ok).toBeUndefined()
+    expect(emit.mock.calls.at(-1)?.[0].parts).toEqual([])
+  })
+
+  it('ignores terminal frames after disposal', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit)
+
+    transport.ingest(toolCall('run', 'running'))
+    transport.dispose()
+    const callsAfterDispose = emit.mock.calls.length
+    transport.ingest(toolCall('run', 'success'))
+
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+    expect(toolParts(message)[0].ok).toBeUndefined()
+    expect(emit).toHaveBeenCalledTimes(callsAfterDispose)
+  })
 })
 
 describe('agentEventTransport canvas confirmation is positive, not assumed (PM-1343)', () => {
@@ -2383,5 +2459,82 @@ describe('agentEventTransport CANVAS_MUTATING_TOOLS pinning (PM-1575)', () => {
     expect([...toolNamesInFixtures()].sort()).toEqual(
       [...REVIEWED_TOOL_NAMES].sort()
     )
+  })
+})
+
+describe('agent_extension_changed', () => {
+  function extensionChanged(data: Record<string, unknown>): AgentChatEvent {
+    return zAgentWsEvent.parse({
+      type: 'agent_extension_changed',
+      data: { message_id: 'm', thread_id: 't', ...data }
+    })
+  }
+
+  it.for([
+    {
+      data: {
+        action: 'disabled',
+        pack: 'pack-a',
+        agent_created: false,
+        restart_required: true
+      },
+      expected: {
+        type: 'extensionChange',
+        action: 'disabled',
+        pack: 'pack-a',
+        agentCreated: false,
+        restartRequired: true
+      }
+    },
+    {
+      data: {
+        action: 'removed',
+        pack: 'pack-b',
+        agent_created: true,
+        restart_required: false
+      },
+      expected: {
+        type: 'extensionChange',
+        action: 'removed',
+        pack: 'pack-b',
+        agentCreated: true,
+        restartRequired: false
+      }
+    }
+  ])(
+    'shows $data.pack in place with its server flags',
+    ({ data, expected }) => {
+      const message = drive([
+        delta('Changing it.'),
+        extensionChanged(data),
+        delta('Done.')
+      ])
+
+      expect(message.parts.map((part) => part.type)).toEqual([
+        'text',
+        'extensionChange',
+        'text'
+      ])
+      expect(message.parts[1]).toEqual(expected)
+    }
+  )
+
+  it('stops showing the agent as thinking once the card arrives', () => {
+    const message = drive([
+      thinking('Finding the pack.'),
+      extensionChanged({
+        action: 'enabled',
+        pack: 'comfy-cushions',
+        agent_created: false,
+        restart_required: true
+      })
+    ])
+
+    expect(message.thinking).toBe(false)
+    expect(message.thinkingText).toBeUndefined()
+    expect(message.parts).toMatchObject([
+      { type: 'thinking', text: 'Finding the pack.', state: 'done' },
+      { type: 'extensionChange', action: 'enabled' }
+    ])
   })
 })

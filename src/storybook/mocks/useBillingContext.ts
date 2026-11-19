@@ -58,11 +58,14 @@ export function useBillingContext(): BillingContext {
     plans: computed(() => []),
     currentPlanSlug: computed(() => null),
     teamCreditStops: computed(() => null),
+    subscriptionPaymentRecovery: computed(() => null),
+    statusPaymentRecovery: computed(() => null),
     currentTeamCreditStop: computed(() => null),
     maxSeats: computed(() => state.value.maxSeats),
     occupiedSeats: computed(() => state.value.occupiedSeats),
     isLoading: ref(false),
     error: ref<string | null>(null),
+    balanceReadFailed: computed(() => false),
     canAccessSubscriptionFeatures: computed(
       () => state.value.canAccessSubscriptionFeatures
     ),
@@ -80,6 +83,7 @@ export function useBillingContext(): BillingContext {
     renewalDate: computed(() => state.value.renewalDate),
     renewalInvoice: computed(() => null),
     periodCreditGrant: computed(() => null),
+    nextCreditRefillAt: computed(() => null),
     getMaxSeats: (tierKey: string) => ({ creator: 5, pro: 20 })[tierKey] ?? 1,
     initialize: async () => {},
     fetchStatus: async () => {},

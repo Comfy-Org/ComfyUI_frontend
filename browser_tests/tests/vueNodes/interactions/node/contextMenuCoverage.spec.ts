@@ -320,7 +320,7 @@ test.describe(
         const nodeRef = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
         await comfyPage.nodeOps.panToNode(nodeRef)
 
-        const widgetLocator = comfyPage.vueNodes.getWidgetByName(
+        const widgetLocator = comfyPage.vueNodes.getWidgetRowByLabel(
           'KSampler',
           'seed'
         )

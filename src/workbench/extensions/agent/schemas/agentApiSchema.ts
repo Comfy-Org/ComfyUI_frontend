@@ -6,6 +6,7 @@ import {
   zAgentAttachmentRejected,
   zAgentCancelAccepted,
   zAgentError as zGeneratedAgentError,
+  zAgentExtensionChangedData as zGeneratedAgentExtensionChangedData,
   zAgentIdentity as zGeneratedAgentIdentity,
   zAgentMessage as zGeneratedAgentMessage,
   zAgentPendingAskBase,
@@ -109,6 +110,10 @@ const zSkillName = z
   .transform((skill) => Array.from(skill).slice(0, SKILL_NAME_MAX).join(''))
   .nullish()
 
+const zDownloadName = zGeneratedAgentToolCallData.shape.download
+  .refine((name) => name === undefined || !/\p{Cc}/u.test(name))
+  .catch(undefined)
+
 /**
  * One entry of a persisted assistant row's `content.tool_calls` (see
  * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
@@ -148,11 +153,12 @@ export type PersistedToolCallSummary = z.infer<typeof zPersistedToolCallSummary>
 
 /**
  * One persisted `content.thinking` entry: a model round's thinking text,
- * anchored to that round's first tool call when it made one.
+ * anchored to that round's first tool call, `truncated` where it was cut.
  */
 export const zPersistedThinkingEntry = zAgentThinkingEntry
-  .pick({ text: true })
+  .pick({ text: true, truncated: true })
   .extend({ tool_call_id: z.string().nullish() })
+export type PersistedThinkingEntry = z.infer<typeof zPersistedThinkingEntry>
 
 /**
  * The message-parse boundary's `content.tool_calls` field is deliberately
@@ -214,6 +220,13 @@ export const zAttachmentRejection = zAgentAttachmentRejected.pick({
   type: true
 })
 
+export const zLoopbackOnlyRefusal = zGeneratedAgentError
+  .extend({
+    error: z.string().trim().min(1),
+    code: z.literal('agent_loopback_only')
+  })
+  .passthrough()
+
 /**
  * The 403 body the agent service returns when it will not serve the turn's
  * `workflow_id` to the caller's workspace, whether the row is gone or belongs
@@ -255,6 +268,7 @@ const zAgentThinkingData = z
 const zAgentToolCallData = zGeneratedAgentToolCallData
   .extend({
     skill: zSkillName,
+    download: zDownloadName,
     args: z.never().optional(),
     workflow_id: zGeneratedAgentToolCallData.shape.workflow_id.catch(undefined),
     op_ids: zGeneratedAgentToolCallData.shape.op_ids.catch(undefined),
@@ -375,6 +389,17 @@ const zAgentAskResolvedEvent = z.object({
   data: zAgentAskResolvedData
 })
 
+const zAgentExtensionChangedEvent = z.object({
+  type: z.literal('agent_extension_changed'),
+  data: zGeneratedAgentExtensionChangedData
+    .extend({
+      pack: zGeneratedAgentExtensionChangedData.shape.pack
+        .max(256)
+        .refine((pack) => !/[\p{Cc}\p{Cf}]/u.test(pack))
+    })
+    .passthrough()
+})
+
 export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
@@ -384,7 +409,8 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,
-  zAgentAskResolvedEvent
+  zAgentAskResolvedEvent,
+  zAgentExtensionChangedEvent
 ])
 export type AgentWsEvent = z.infer<typeof zAgentWsEvent>
 

@@ -32,7 +32,8 @@ export interface Finding {
   message: string
 }
 
-const GATED_PATH = /^(?:src|apps\/[^/]+\/src)\/.*\.(?:ts|vue)$/
+const GATED_PATH =
+  /^(?:src|apps\/[^/]+\/src|packages\/account-(?:core|ui)\/src)\/.*\.(?:ts|vue)$/
 const UNGATED_PATH =
   /\.(?:test|spec|stories)\.ts$|(?:^|\/)__mocks__\/|(?:^|\/)storybook\//
 const ESCAPING_PATH = /^\/|(?:^|\/)\.\.(?:\/|$)/

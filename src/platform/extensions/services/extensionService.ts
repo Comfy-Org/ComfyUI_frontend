@@ -12,6 +12,7 @@ import { useKeybindingStore } from '@comfyorg/keybindings/keybindingStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import { useApp } from '@/scripts/appInstance'
@@ -142,6 +143,7 @@ export const useExtensionService = () => {
   const extensionStore = useExtensionStore()
   const settingStore = useSettingStore()
   const keybindingStore = useKeybindingStore()
+  const sidebarTabStore = useSidebarTabStore()
   const {
     wrapWithErrorHandling,
     wrapWithErrorHandlingAsync,
@@ -352,10 +354,9 @@ export const useExtensionService = () => {
             (async () => {
               legacyMenuCompat.setCurrentExtension(ext.name)
               try {
-                return await fn.call(
-                  ext,
-                  ...args,
-                  createSetupHookApp(app, ext.name)
+                return await sidebarTabStore.attributeRegistrationsTo(
+                  ext.name,
+                  () => fn.call(ext, ...args, createSetupHookApp(app, ext.name))
                 )
               } finally {
                 legacyMenuCompat.setCurrentExtension(null)
@@ -394,15 +395,18 @@ export const useExtensionService = () => {
       try {
         const fn: unknown = extension[method]
         if (typeof fn !== 'function') continue
-        if (method === 'setup')
+        if (method === 'setup') {
           legacyMenuCompat.setCurrentExtension(extension.name)
-        await fn.call(
-          extension,
-          ...args,
-          method === 'setup'
-            ? createSetupHookApp(useApp(), extension.name)
-            : useApp()
-        )
+          await sidebarTabStore.attributeRegistrationsTo(extension.name, () =>
+            fn.call(
+              extension,
+              ...args,
+              createSetupHookApp(useApp(), extension.name)
+            )
+          )
+        } else {
+          await fn.call(extension, ...args, useApp())
+        }
       } catch (error) {
         failures.push({ extension, method, error })
       } finally {

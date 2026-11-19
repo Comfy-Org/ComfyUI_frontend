@@ -22,8 +22,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -216,6 +216,16 @@ function dynamicComboScenario(graph: LGraph) {
             }
           ]
         }
+      ],
+      images: [
+        'COMFY_AUTOGROW_V3',
+        {
+          template: {
+            input: { required: { image: ['IMAGE', {}] } },
+            names: ['image_1', 'image_2', 'image_3'],
+            min: 0
+          }
+        }
       ]
     }
   }
@@ -239,6 +249,10 @@ function dynamicComboScenario(graph: LGraph) {
     transformInputSpecV1ToV2(resizeType.required!.resize_type, {
       name: 'resize_type'
     })
+  )
+  useLitegraphService().addNodeInput(
+    resize,
+    transformInputSpecV1ToV2(resizeType.required!.images, { name: 'images' })
   )
   withGraphIntentSource('load', () => {
     graph.add(source)
@@ -301,6 +315,8 @@ describe('attachDocOpMinter', () => {
   let refusals: Array<[string, string]>
   let seededPromotedDocs: Set<ReturnType<typeof mint>>
   let dynamicComboDocs: Set<ReturnType<typeof mint>>
+  let unboundLocalIntents: number
+  let unboundVisibleIntents: number
 
   function registeredDynamicComboScenario() {
     const scenario = dynamicComboScenario(graph)
@@ -324,9 +340,13 @@ describe('attachDocOpMinter', () => {
     refusals = []
     seededPromotedDocs = new Set()
     dynamicComboDocs = new Set()
+    unboundLocalIntents = 0
+    unboundVisibleIntents = 0
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
+      onUnboundLocalIntent: () => unboundLocalIntents++,
+      onUnboundVisibleIntent: () => unboundVisibleIntents++,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => (graphAvailable ? graph : null),
       boundRootGraphId: () => (unbound ? null : rootGraphId),
@@ -373,6 +393,88 @@ describe('attachDocOpMinter', () => {
           operations: ['add_node']
         })
       })
+    )
+  })
+
+  describe('FRONT-3756: positional values a pack hook appends', () => {
+    function packNode(type: string, appendPositional: boolean): LGraphNode {
+      const node = new LGraphNode(type)
+      node.type = type
+      node.serialize_widgets = true
+      node.addWidget('text', 'prompt', 'a', () => {})
+      if (appendPositional)
+        node.onSerialize = (data: ISerialisedNode) => {
+          data.widgets_values = [...(data.widgets_values ?? []), 'pack-private']
+        }
+      return node
+    }
+
+    function droppedReports() {
+      return vi
+        .mocked(reportError)
+        .mock.calls.filter(
+          ([, meta]) =>
+            meta.errorType === 'agent_wire_positional_values_dropped'
+        )
+    }
+
+    it('reports each dropping node type once per session, across flushes', async () => {
+      graph.add(packNode('PositionalPack', true))
+      await afterFlush()
+      graph.add(packNode('OtherPositionalPack', true))
+      await afterFlush()
+      graph.add(packNode('PositionalPack', true))
+      graph.add(packNode('OtherPositionalPack', true))
+      await afterFlush()
+
+      expect(minted.length).toBeGreaterThan(0)
+      expect(droppedReports()).toEqual(
+        ['PositionalPack', 'OtherPositionalPack'].map((nodeType) => [
+          new Error('agent_wire_positional_values_dropped'),
+          expect.objectContaining({
+            surface: 'agent',
+            context: { nodeType, positional: 2, named: 1 }
+          })
+        ])
+      )
+    })
+
+    it('stays silent when positional and named values line up', async () => {
+      graph.add(packNode('PlainPack', false))
+      await afterFlush()
+
+      expect(droppedReports()).toEqual([])
+    })
+
+    it.for([
+      {
+        case: 'a virtual node with duplicate widget names',
+        build: () => {
+          const note = new TestNote()
+          note.addWidget('text', 'text', 'b', () => {})
+          return note
+        }
+      },
+      {
+        case: 'a subgraph host',
+        build: () => seedPromotedHost().host
+      }
+    ])(
+      'keeps the positional payload and stays silent for $case',
+      ({ build }) => {
+        const node = build()
+        node.onSerialize = (data: ISerialisedNode) => {
+          data.widgets_values = [...(data.widgets_values ?? []), 'pack-private']
+        }
+        const dropped = vi.fn()
+
+        const snapshot = wireNodeSnapshot(node, dropped)
+
+        expect(dropped).not.toHaveBeenCalled()
+        expect(snapshot?.widgets_values).toEqual(
+          node.serialize().widgets_values
+        )
+      }
     )
   })
 
@@ -569,6 +671,33 @@ describe('attachDocOpMinter', () => {
 
     expect(source.widgets![0].value).toBe(6)
     expect(minted).toEqual([])
+    expect(unboundLocalIntents).toBe(1)
+  })
+
+  it('marks only edits to the bound workflow while its document is unconfirmed', async () => {
+    const { source } = seedGraph(graph)
+    bound = false
+    source.widgets![0].value = 5
+    unbound = true
+    source.widgets![0].value = 6
+    await afterFlush()
+
+    expect(unboundLocalIntents).toBe(1)
+    expect(minted).toEqual([])
+  })
+
+  it('marks an unbound edit to the visible workflow while another one is bound', async () => {
+    const { source } = seedGraph(graph)
+    bound = false
+    rootGraphId = toRootGraphId('other-root-graph')
+    source.widgets![0].value = 5
+    unbound = true
+    source.widgets![0].value = 6
+    await afterFlush()
+
+    expect(unboundLocalIntents).toBe(0)
+    expect(unboundVisibleIntents).toBe(2)
+    expect(minted).toEqual([])
   })
 
   it('snapshots a pasted node after its same-tick configure, folding the widget and field writes into add_node', async () => {
@@ -694,10 +823,7 @@ describe('attachDocOpMinter', () => {
     ).not.toHaveProperty('ghost')
   })
 
-  // Note, PrimitiveNode, Get/Set nodes and blueprint hosts have no catalog
-  // entry: the applier rejects a name-keyed record for them and stores a
-  // positional array opaquely.
-  it('keeps add_node widgets_values positional for a frontend-only node, and the applier takes it', async () => {
+  it('declares a frontend-only node own widget form, so the applier takes a later widget write', async () => {
     const note = new TestNote()
     graph.add(note)
     await afterFlush()
@@ -706,7 +832,10 @@ describe('attachDocOpMinter', () => {
       expect.objectContaining({
         op: 'add_node',
         class_type: 'TestNote',
-        node: expect.objectContaining({ widgets_values: ['a note'] })
+        node: expect.objectContaining({
+          widgets_values: { text: 'a note' },
+          widgets_values_form: { order: ['text'] }
+        })
       })
     ])
     const doc = mint({ nodes: [], links: [] }, CATALOG)
@@ -716,6 +845,22 @@ describe('attachDocOpMinter', () => {
       CATALOG
     )
     expect(outcomes).toEqual([expect.objectContaining({ outcome: 'applied' })])
+
+    expect(
+      applyOutcomes(
+        doc,
+        [
+          {
+            op: 'set_widget',
+            node_id: note.id,
+            widget: 'text',
+            value: 'edited'
+          }
+        ],
+        CATALOG,
+        2
+      )
+    ).toEqual([expect.objectContaining({ outcome: 'applied' })])
     doc.destroy()
   })
 
@@ -799,33 +944,35 @@ describe('attachDocOpMinter', () => {
       withGraphIntentSource('load', () => {
         for (const source of sources) graph.add(source)
         graph.add(sink)
-        sources[0].connect(0, sink, 0)
+        sources[0].connect(0, sink, 1)
       })
       const doc = mintDocFrom(graph)
       docInputNames = (nodeId) =>
         readDocSlotNames(doc, String(nodeId), 'inputs')
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
         { name: `${IMAGES_GROUP}.image_2`, link: null }
       ])
 
-      sources[1].connect(0, sink, 1)
+      sources[1].connect(0, sink, 2)
       await afterFlush()
       expect(minted).toEqual([
-        expect.objectContaining({ op: 'connect', to_slot: 1 })
+        expect.objectContaining({ op: 'connect', to_slot: 2 })
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       minted.length = 0
 
       expect(sink.inputs.map(({ name }) => name)).toEqual([
+        IMAGES_GROUP,
         `${IMAGES_GROUP}.image_1`,
         `${IMAGES_GROUP}.image_2`,
         `${IMAGES_GROUP}.image_3`
       ])
-      sources[2].connect(0, sink, 2)
+      sources[2].connect(0, sink, 3)
       await afterFlush()
 
-      const handWired = sink.inputs[2].link
+      const handWired = sink.inputs[3].link
       expect(minted).toEqual([
         {
           op: 'connect',
@@ -840,8 +987,9 @@ describe('attachDocOpMinter', () => {
       ])
       expect(applyMinted(doc, minted)).toEqual(['applied'])
       expect(docInputs(doc, sink.id)).toEqual([
-        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
-        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[1].link },
+        { name: IMAGES_GROUP, link: null },
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[1].link },
+        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[2].link },
         { name: `${IMAGES_GROUP}.image_3`, link: handWired }
       ])
       doc.destroy()
@@ -1250,6 +1398,101 @@ describe('attachDocOpMinter', () => {
 
       expect(minted).toEqual([])
       expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('cancels an unsent dynamic-combo grow when its added source is removed in the same tick', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      const unsentSource = new TestSource()
+      graph.add(unsentSource)
+      unsentSource.connect(0, resize, match)
+      graph.remove(unsentSource)
+      await afterFlush()
+      expect(minted).toEqual([])
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({
+          op: 'connect',
+          from_node: source.id,
+          to_slot: null,
+          grow: { name: 'resize_type.match', type: 'IMAGE,MASK' }
+        })
+      ])
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('keeps an autogrow edit off an in-flight dynamic-combo grow on the same node', async () => {
+      const { source, resize, doc, catalog, match } =
+        registeredDynamicComboScenario()
+      expect(
+        applyMinted(
+          doc,
+          [
+            {
+              op: 'set_widget',
+              node_id: resize.id,
+              widget: 'resize_type',
+              value: 'match size'
+            }
+          ],
+          catalog
+        )
+      ).toEqual(['applied'])
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      docWidgetValue = (nodeId, widgetName) =>
+        readDocWidgetValue(doc, String(nodeId), widgetName)
+
+      source.connect(0, resize, match)
+      await afterFlush()
+      source.connect(0, resize, resize.findInputSlot('images.image_1'))
+      await afterFlush()
+      source.connect(0, resize, resize.findInputSlot('images.image_2'))
+      await afterFlush()
+      resize.disconnectInput(resize.findInputSlot('images.image_2'))
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog)).toEqual([
+        'applied',
+        'applied',
+        'applied'
+      ])
+      minted.length = 0
+      await vi.advanceTimersByTimeAsync(PROMOTED_WRITE_RETRY_MS)
+      await afterFlush()
+      expect(applyMinted(doc, minted, catalog, 2)).toEqual(['applied'])
+
+      expect(docInputs(doc, resize.id, catalog)).toEqual([
+        { name: 'resize_type.multiplier', link: null },
+        { name: 'resize_type', link: null },
+        { name: 'images', link: null },
+        {
+          name: 'images.image_1',
+          link: resize.inputs[resize.findInputSlot('images.image_1')].link
+        },
+        { name: 'resize_type.match', link: resize.inputs[match].link },
+        { name: 'images.image_2', link: null }
+      ])
     })
 
     it('drops a deferred dynamic-combo operation when its grow never lands', async () => {

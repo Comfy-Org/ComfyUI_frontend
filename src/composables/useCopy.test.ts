@@ -120,22 +120,43 @@ describe('useCopy', () => {
     )
   })
 
-  it('writes to the clipboard when localStorage throws', () => {
-    const graph = createTestRootGraph()
-    const node = createTestNode(graph)
-    const canvas = createTestCanvas(graph, createMockCanvasRenderingContext2D())
-    canvas.selectItems([node])
-    useCanvasStore().canvas = canvas
-    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
-      throw new DOMException('Quota exceeded', 'QuotaExceededError')
-    })
+  it.for([
+    { methods: ['setItem'], fault: 'QuotaExceededError' },
+    {
+      methods: ['getItem', 'setItem', 'removeItem'],
+      fault: 'SecurityError'
+    }
+  ] satisfies {
+    methods: ('getItem' | 'setItem' | 'removeItem')[]
+    fault: string
+  }[])(
+    'writes current clipboard metadata when localStorage throws $fault',
+    ({ methods, fault }) => {
+      const graph = createTestRootGraph()
+      const node = createTestNode(graph)
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
+      canvas.selectItems([node])
+      useCanvasStore().canvas = canvas
+      const spies = methods.map((method) =>
+        vi.spyOn(Storage.prototype, method).mockImplementation(() => {
+          throw new DOMException('Storage unavailable', fault)
+        })
+      )
 
-    const dataTransfer = dispatchCopy()
+      try {
+        const dataTransfer = dispatchCopy()
 
-    expect(readClipboardPayload(dataTransfer)).toMatchObject({
-      nodes: [{ type: node.type }]
-    })
-  })
+        expect(readClipboardPayload(dataTransfer)).toMatchObject({
+          nodes: [{ id: Number(node.id), type: node.type }]
+        })
+      } finally {
+        for (const spy of spies) spy.mockRestore()
+      }
+    }
+  )
 
   describe('copy on a target the canvas ignores', () => {
     const keyboardNode = '{"nodes":[{"type":"LoadImage"}]}'

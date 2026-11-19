@@ -25,6 +25,50 @@ const CLOSE_LINE =
 type Action = 'Close' | 'Try again' | 'View plans' | 'Add credits'
 
 describe('CheckoutEnding', () => {
+  it.for([
+    {
+      activation: 'failed' as const,
+      note: "Your credits were added, but auto top-up couldn't be turned on.",
+      opensBilling: true
+    },
+    {
+      activation: 'pending' as const,
+      note: 'Turning on auto top-up…',
+      opensBilling: false
+    }
+  ])(
+    'a top-up whose auto top-up is $activation says so apart from the payment',
+    async ({ activation, note, opensBilling }) => {
+      const { emitted } = renderEnding({
+        kind: 'success',
+        purchase: 'credits',
+        receipt: { creditsAdded: 10, autoTopUpActivation: activation }
+      })
+
+      expect(
+        screen.getByTestId('checkout-ending-auto-top-up')
+      ).toHaveTextContent(note)
+      const billing = screen.queryByRole('button', {
+        name: 'Turn it on in Billing settings'
+      })
+      expect(billing !== null).toBe(opensBilling)
+      if (billing) await userEvent.click(billing)
+      expect('addCredits' in emitted()).toBe(opensBilling)
+    }
+  )
+
+  it('a top-up whose auto top-up came on shows no auto top-up note', () => {
+    renderEnding({
+      kind: 'success',
+      purchase: 'credits',
+      receipt: { creditsAdded: 10, autoTopUpActivation: 'on' }
+    })
+
+    expect(
+      screen.queryByTestId('checkout-ending-auto-top-up')
+    ).not.toBeInTheDocument()
+  })
+
   const UNKNOWN =
     'Checkout isn’t available for this workspace right now. Contact support with the code below.'
 

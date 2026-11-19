@@ -28,6 +28,19 @@ function render(args: string[]): string {
 }
 
 describe('unified-report', () => {
+  it.for(['skip', 'ready'])('omits size without data for %s', (sizeStatus) => {
+    expect(
+      render([`--size-status=${sizeStatus}`, '--perf-status=skip'])
+    ).not.toContain('Bundle')
+  })
+
+  it('reports pending size collection', () => {
+    const output = render(['--size-status=pending', '--perf-status=skip'])
+
+    expect(output).toContain('## 📦 Bundle:')
+    expect(output).toContain('Size data collection in progress')
+  })
+
   it('separates each section from the one before it with a blank line', () => {
     const output = render([
       '--size-status=failed',

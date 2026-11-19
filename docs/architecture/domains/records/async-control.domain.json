@@ -4,20 +4,16 @@
   "description": "Shared technical module for paged asynchronous work, cancellation, animation-frame coalescing, and idle scheduling. These utilities control when work runs; feature-specific fetches and stores remain external.",
   "modules": [
     {
-      "path": "src/base/common/async.ts",
-      "role": "application"
+      "path": "src/base/common/async.ts"
     },
     {
-      "path": "src/utils/createCancelToken.ts",
-      "role": "application"
+      "path": "src/utils/createCancelToken.ts"
     },
     {
-      "path": "src/utils/pagedList.ts",
-      "role": "application"
+      "path": "src/utils/pagedList.ts"
     },
     {
-      "path": "src/utils/rafBatch.ts",
-      "role": "application"
+      "path": "src/utils/rafBatch.ts"
     }
   ],
   "publicEntryPoints": [],

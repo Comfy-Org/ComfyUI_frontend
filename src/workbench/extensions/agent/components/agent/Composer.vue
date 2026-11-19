@@ -19,6 +19,7 @@ import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSubmission } from '@/workbench/extensions/agent/utils/composerPrompt'
+import { formatAgentErrorContext } from '@/workbench/extensions/agent/utils/formatAgentErrorContext'
 import type { AgentStarterPromptAttribution } from '@/workbench/extensions/agent/utils/starterPrompts'
 import { useAgentMentionPicker } from '@/workbench/extensions/agent/composables/agent/useAgentMentionPicker'
 import { useSkillMenuDescription } from '@/workbench/extensions/agent/composables/agent/useSkillMenuDescription'
@@ -118,7 +119,7 @@ const composer = useComposer({
       const end = Math.max(draft.trimEnd().length, ...offsets)
       emit(
         'send',
-        draft.slice(start, end),
+        withErrorContext(draft.slice(start, end)),
         attachments,
         references.map((reference) => ({
           ...reference,
@@ -128,7 +129,7 @@ const composer = useComposer({
           )
         }))
       )
-    } else emit('send', prepared.text.trim(), attachments)
+    } else emit('send', withErrorContext(prepared.text.trim()), attachments)
   },
   isRunning: () => running.value,
   onStop: () => emit('stop', 'button')
@@ -142,6 +143,12 @@ watch(
   { immediate: true, flush: 'sync' }
 )
 const { workflowReferences } = composer
+
+function withErrorContext(text: string): string {
+  const context = composer.errorContext.value
+  return context ? formatAgentErrorContext(context, text) : text
+}
+
 const placeholderLabel = computed(() =>
   t(
     openingChat
@@ -281,6 +288,7 @@ function onMentionHover(index: number): void {
 }
 
 function onEditorInput(): void {
+  prefillFadeMs.value = null
   syncMention()
   if (mentionVisible.value) requestDescription('input')
 }
@@ -328,6 +336,8 @@ function stopRunOnEscape(event: KeyboardEvent): void {
 }
 
 function onComposerKeydown(event: KeyboardEvent): void {
+  prefillFadeMs.value = null
+  if (event.key === 'Enter') event.stopPropagation()
   if (openingChat) {
     event.preventDefault()
     return
@@ -449,7 +459,7 @@ const composerContainerRef = useTemplateRef<HTMLDivElement>(
   'composerContainerRef'
 )
 
-function focusAllowsComposerStop(): boolean {
+function focusIsWithinComposerOrUnset(): boolean {
   const active = document.activeElement
   return (
     active === null ||
@@ -468,7 +478,7 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
     return false
   if (event.defaultPrevented) return false
 
-  if (!focusAllowsComposerStop()) return false
+  if (!focusIsWithinComposerOrUnset()) return false
 
   event.preventDefault()
   if (!event.repeat) emit('stop', 'escape')
@@ -483,6 +493,35 @@ onMounted(() => {
 onUnmounted(() => {
   unregisterEscapeOverride?.()
 })
+
+const prefillFadeMs = ref<number | null>(null)
+const prefillFade = computed(() =>
+  prefillFadeMs.value === null
+    ? {}
+    : {
+        class: 'agent-talk-fade',
+        style: { '--talk-delay': `${prefillFadeMs.value}ms` }
+      }
+)
+
+function focusIsWithinEditorOrUnset(): boolean {
+  const active = document.activeElement
+  return (
+    active === null ||
+    active === document.body ||
+    (editorHostRef.value?.contains(active) === true &&
+      active.getAttribute('contenteditable') === 'true')
+  )
+}
+
+async function focusPrefill(delayMs: number): Promise<void> {
+  const prefilled = composer.prompt.value
+  prefillFadeMs.value = delayMs
+  await nextTick()
+  if (composer.prompt.value !== prefilled || !focusIsWithinEditorOrUnset())
+    return
+  editorRef.value?.focusAtEnd()
+}
 
 function insert(
   text: string,
@@ -504,6 +543,7 @@ function removeAttachment(id: string): void {
 
 defineExpose({
   insert,
+  focusPrefill,
   replaceDraft,
   addAttachment: composer.addAttachment,
   updateAttachment: composer.updateAttachment,
@@ -621,6 +661,8 @@ defineExpose({
         <div class="grid flex-1">
           <div
             ref="editorHostRef"
+            data-testid="composer-editor"
+            v-bind="prefillFade"
             class="col-start-1 row-start-1 flex flex-col"
           >
             <InlinePromptEditor
@@ -632,10 +674,12 @@ defineExpose({
               :active-descendant="activeMentionDescendant"
               :search-hint="skillSearchHint"
               :history-epoch="composer.promptEpoch.value"
+              :caret-request="composer.pendingCaret.value"
               :editable-workflow-id
               :skill-scope="skills.scope"
               @keydown="onComposerKeydown"
               @update:model-value="composer.applyEditorPrompt"
+              @caret-request-handled="composer.clearPendingCaret"
               @resolve-skill-metadata="composer.resolveSkillMetadata"
               @keyup="onComposerKeyup"
               @input="onEditorInput"
