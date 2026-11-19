@@ -36,6 +36,55 @@
       "severity": "error",
       "from": { "path": "^src/platform/remote/ingest/" },
       "to": { "path": "^src/platform/(workspace|billing|account)/" }
+    },
+    {
+      "name": "node-api-host-entry",
+      "comment": "The host reaches the node API at run time only through its store and the always-enabled extension name (ADR 0070 d7, ADR 0071 Consequences).",
+      "severity": "error",
+      "from": { "pathNot": "^src/platform/nodeApi/" },
+      "to": {
+        "path": "^src/platform/nodeApi/",
+        "pathNot": "^src/platform/nodeApi/v4/(comfyApiStore|defs/nodeTypeHooksName|types)\\.ts$"
+      }
+    },
+    {
+      "name": "node-api-host-types-only",
+      "comment": "The host reads the published types, and does not import them at run time.",
+      "severity": "error",
+      "from": { "pathNot": "^src/platform/nodeApi/" },
+      "to": {
+        "path": "^src/platform/nodeApi/v4/types\\.ts$",
+        "dependencyTypesNot": ["type-only"]
+      }
+    },
+    {
+      "name": "node-api-store-is-host-only",
+      "severity": "error",
+      "from": { "path": "^src/platform/nodeApi/" },
+      "to": { "path": "^src/platform/nodeApi/v4/comfyApiStore\\.ts$" }
+    },
+    {
+      "name": "node-api-shared-is-version-free",
+      "severity": "error",
+      "from": { "path": "^src/platform/nodeApi/shared/" },
+      "to": { "path": "^src/platform/nodeApi/v[0-9]+/" }
+    },
+    {
+      "name": "node-api-only-the-root-composes",
+      "comment": "Only comfyApi.ts imports the feature folders; the other root files are the read layer every feature uses.",
+      "severity": "error",
+      "from": {
+        "path": "^src/platform/nodeApi/v4/[^/]+\\.ts$",
+        "pathNot": "^src/platform/nodeApi/v4/(comfyApi|comfyApiStore)\\.ts$"
+      },
+      "to": { "path": "^src/platform/nodeApi/v4/[^/]+/" }
+    },
+    {
+      "name": "node-api-edit-layer",
+      "comment": "Features import downward only: edit, then defs.",
+      "severity": "error",
+      "from": { "path": "^src/platform/nodeApi/v4/edit/" },
+      "to": { "path": "^src/platform/nodeApi/v4/defs/" }
     }
   ],
   "options": {
