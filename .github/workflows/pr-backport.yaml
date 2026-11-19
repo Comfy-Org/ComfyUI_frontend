@@ -75,6 +75,13 @@ jobs:
           # which silently aborted the whole job (see PR #12804 backport).
           token: ${{ secrets.PR_GH_TOKEN }}
 
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Resolve viable release targets
+        id: viable
+        uses: ./.github/actions/core-release-targets
+
       - name: Configure git
         run: |
           git config user.name "github-actions[bot]"
@@ -84,7 +91,9 @@ jobs:
         id: targets
         env:
           GH_REPO: ${{ github.repository }}
+          ACTIVE_CORE_TARGETS: ${{ steps.viable.outputs.active }}
         run: |
+          set -euo pipefail
           TARGETS=()
           declare -A SEEN=()
 
@@ -104,16 +113,14 @@ jobs:
 
             target=$(echo "$target" | xargs)
 
-            if [ -z "$target" ] || [ -n "${SEEN[$target]}" ]; then
+            if [ -z "$target" ] || [ -n "${SEEN[$target]:-}" ]; then
               return
             fi
 
-            if git ls-remote --exit-code origin "$target" >/dev/null 2>&1; then
-              TARGETS+=("$target")
-              SEEN["$target"]=1
-            else
-              echo "::warning::Label '${label}' references missing branch '${target}'"
-            fi
+            case " $ACTIVE_CORE_TARGETS " in
+              *" $target "*) TARGETS+=("$target"); SEEN["$target"]=1 ;;
+              *) echo "::warning::Label '${label}' references nonviable target '${target}'" ;;
+            esac
           }
 
           while IFS= read -r label; do
@@ -127,17 +134,13 @@ jobs:
               SAFE_MAJOR="${BASH_REMATCH[1]}"
               SAFE_MINOR="${BASH_REMATCH[2]}"
               add_target "$label" "core/${SAFE_MAJOR}.${SAFE_MINOR}"
-            elif [[ "$label" =~ ^cloud\/([0-9]+)\.([0-9]+)$ ]]; then
-              SAFE_MAJOR="${BASH_REMATCH[1]}"
-              SAFE_MINOR="${BASH_REMATCH[2]}"
-              add_target "$label" "cloud/${SAFE_MAJOR}.${SAFE_MINOR}"
             elif [[ "$label" =~ ^[0-9]+\.[0-9]+$ ]]; then
               add_target "$label" "core/${label}"
             fi
           done <<< "$LABELS"
 
           if [ "${#TARGETS[@]}" -eq 0 ]; then
-            echo "::error::No backport targets found (use labels like '1.24' or 'branch:release/hotfix')"
+            echo "::error::No viable core release targets found"
             exit 1
           fi
 
@@ -631,7 +634,7 @@ jobs:
             exit 0
           fi
 
-          RELEASE_LABEL='^(core|cloud)/[0-9]+\.[0-9]+$'
+          RELEASE_LABEL='^core/[0-9]+\.[0-9]+$'
 
           # Most merges carry no release label. Stop before the comment
           # lookup so they cost one call against the shared token's limit.

@@ -127,6 +127,8 @@ export const TestIds = {
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
+    topMenuActions: 'top-menu-actionbars',
+    cloudButton: 'cloud-button',
     freeTierQuota: 'free-tier-quota',
     queueInlineProgress: 'queue-inline-progress',
     queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
@@ -168,6 +170,14 @@ export const TestIds = {
     widgetItem: 'subgraph-widget-item',
     widgetLabel: 'subgraph-widget-label',
     widgetToggle: 'subgraph-widget-toggle'
+  },
+  subgraphIo: {
+    inputPanel: 'subgraph-input-values',
+    outputPanel: 'subgraph-output-ports',
+    inputPort: 'subgraph-input-port',
+    outputPort: 'subgraph-output-port',
+    addInput: 'subgraph-add-input',
+    addOutput: 'subgraph-add-output'
   },
   node: {
     titleInput: 'node-title-input',

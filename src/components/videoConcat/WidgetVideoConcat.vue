@@ -26,8 +26,8 @@ const modelValue = defineModel<VideoConcatValue>({
 })
 
 const node = useWidgetHostNode(
-  () => widget.nodeLocatorId,
-  () => nodeId
+  () => nodeId,
+  () => widget.nodeLocatorId
 )
 
 const clips = useVideoConcatClips(node, () => widget.options?.source ?? '')

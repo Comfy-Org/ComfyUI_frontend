@@ -30,7 +30,7 @@ catalog:
   '@playwright/test': ^1.63.0
   '@sentry/vite-plugin': ^11.10.0
   '@sentry/vue': ^10.32.1
-  '@sparkjsdev/spark': ^2.3.1
+  '@sparkjsdev/spark': ^2.4.0
   '@storybook/addon-docs': ^10.6.5
   '@storybook/addon-mcp': 10.6.5
   '@storybook/vue3': ^10.6.5

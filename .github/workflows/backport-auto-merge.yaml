@@ -11,16 +11,6 @@ name: Backport Auto-Merge
 # directly (a plain `gh pr merge --squash`, which does not depend on that
 # setting) once GitHub itself reports the PR as ready to merge.
 #
-# Safety: branch protection on core/** and cloud/** is the hard gate — it
-# unconditionally requires an approval + the required status checks and cannot
-# be bypassed, and GitHub's merge API re-enforces it at merge time. This
-# workflow can only ever complete a merge that already satisfies those rules;
-# the eligibility check below only avoids pointless merge attempts.
-#
-# The merge uses PR_GH_TOKEN (not the default GITHUB_TOKEN) on purpose: a merge
-# performed by the default token does not emit events that trigger other
-# workflows, which would silently starve cloud-backport-tag.yaml (it runs on the
-# backport PR's `pull_request: closed` event to create the release tag).
 
 on:
   # Fires when someone approves — if the required checks are already green, the
@@ -94,15 +84,30 @@ jobs:
           echo "numbers=${numbers}" >> "$GITHUB_OUTPUT"
           echo "Candidate PRs: '${numbers:-<none>}'"
 
+      - name: Checkout trusted release policy
+        if: steps.candidates.outputs.numbers != ''
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+
+      - name: Setup frontend
+        if: steps.candidates.outputs.numbers != ''
+        uses: ./.github/actions/setup-frontend
+
+      - name: Resolve viable release targets
+        if: steps.candidates.outputs.numbers != ''
+        id: viable
+        uses: ./.github/actions/core-release-targets
+
       - name: Merge eligible backport PRs
         if: steps.candidates.outputs.numbers != ''
         env:
           GH_REPO: ${{ github.repository }}
-          # Read with the default token; merge with PR_GH_TOKEN so the merge emits
-          # the events that downstream workflows (cloud-backport-tag.yaml) rely on.
           READ_TOKEN: ${{ github.token }}
           MERGE_TOKEN: ${{ secrets.PR_GH_TOKEN }}
           CANDIDATES: ${{ steps.candidates.outputs.numbers }}
+          ACTIVE_CORE_TARGETS: ${{ steps.viable.outputs.active }}
         run: |
           set -euo pipefail
 
@@ -138,8 +143,8 @@ jobs:
               echo "Not an actionable backport or Release PR (state=$state draft=$is_draft eligible=$has_supported_label) — skipping."
               echo "::endgroup::"; continue
             fi
-            case "$base" in
-              cloud/1.56|core/1.56|cloud/1.57|core/1.57|cloud/1.58|core/1.58|cloud/1.59|core/1.59) : ;;
+            case " $ACTIVE_CORE_TARGETS " in
+              *" $base "*) : ;;
               *) echo "Base '$base' is not an active release branch — skipping."; echo "::endgroup::"; continue ;;
             esac
 

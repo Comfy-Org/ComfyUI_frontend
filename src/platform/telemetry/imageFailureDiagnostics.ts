@@ -1,3 +1,4 @@
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
 import type { ImageLoadFailureMetadata } from '@comfyorg/telemetry/types'
 
 /**
@@ -102,7 +103,7 @@ async function probeStatus(
       // status of wherever `/api/view` sent us — a signed storage URL answering
       // 200 or 403 on its own terms — and attribute it to our endpoint.
       redirect: 'manual',
-      signal: AbortSignal.timeout(PROBE_TIMEOUT_MS)
+      signal: createTimeoutSignal(PROBE_TIMEOUT_MS)
     })
     // A manual-redirect response is opaque: status reads 0 and no header is
     // legible. That the endpoint redirected is still the answer, so it gets its

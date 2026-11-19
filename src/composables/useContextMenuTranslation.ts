@@ -143,7 +143,7 @@ export const useContextMenuTranslation = () => {
   const OriginalContextMenu = LiteGraph.ContextMenu
   function ContextMenu(
     values: (IContextMenuValue | string)[],
-    options: IContextMenuOptions
+    options: IContextMenuOptions = {}
   ) {
     if (options.title) {
       options.title = resolveNodeDefText('display_name', options.title)
