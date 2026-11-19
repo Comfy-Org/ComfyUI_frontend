@@ -245,27 +245,15 @@ export class BootstrapTracer {
     return durationMs
   }
 
-  /**
-   * Time `work` and record the phase whether it resolves or rejects, then
-   * re-settle exactly as `work` did.
-   *
-   * A phase stopped only on the success path goes unrecorded precisely when
-   * startup went wrong, so the surviving sessions are the fast ones and every
-   * percentile reads better than reality.
-   *
-   * Each error keeps the first phase it was seen in. Nested same-error
-   * rethrows are no-ops here since the inner `settle()` already recorded it,
-   * so the innermost phase sticks. Distinct errors each keep their own
-   * phase, so `complete()` can look the terminal error's phase up by
-   * identity even when an unrelated error (a sibling, or one a caller
-   * handled without letting it become terminal) was recorded first.
-   */
+  /** Time `work`, record its phase, and preserve its settlement. */
   async settle<T>(phase: BootstrapPhase, work: () => Promise<T>): Promise<T> {
     const span = this.startPhase(phase)
     try {
       return await work()
     } catch (error) {
-      if (!this._failurePhases.has(error)) this._failurePhases.set(error, phase)
+      if (!this._completed && !this._failurePhases.has(error)) {
+        this._failurePhases.set(error, phase)
+      }
       throw error
     } finally {
       span.stop()
@@ -273,7 +261,9 @@ export class BootstrapTracer {
   }
 
   noteFailure(phase: BootstrapPhase, error: unknown): void {
-    if (!this._failurePhases.has(error)) this._failurePhases.set(error, phase)
+    if (!this._completed && !this._failurePhases.has(error)) {
+      this._failurePhases.set(error, phase)
+    }
   }
 
   /**
@@ -322,13 +312,6 @@ export class BootstrapTracer {
     return this._outcome ?? (this._timeoutReported ? 'timed_out' : 'pending')
   }
 
-  /**
-   * Close out startup: stop any phase still open, emit one aggregate event
-   * carrying total wall-clock and the per-phase breakdown, and log the trace
-   * locally. Idempotent — only the first call reports. A failed startup may
-   * pass the error that ended it, so a rejection the caller handled earlier is
-   * not blamed for it.
-   */
   complete(
     outcome: 'completed' | 'failed' = 'completed',
     terminal?: { error: unknown }
