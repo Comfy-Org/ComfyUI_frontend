@@ -3709,6 +3709,50 @@ describe('useWorkflowService', () => {
       expect(tempWorkflow.shareId).toBe('share-1')
     })
 
+    describe('a saved workflow opened with an unsaved draft', () => {
+      function restoreDraft() {
+        const saved = makeWorkflowData({ saved: true })
+        const draft = makeWorkflowData({ saved: true, draftEdit: true })
+        existingWorkflow.changeTracker = new ChangeTracker(
+          existingWorkflow,
+          saved
+        )
+        existingWorkflow.changeTracker.activeState = draft
+        existingWorkflow.isModified = true
+        return { saved, draft }
+      }
+
+      it('keeps the saved file as the baseline when opened as a tab', async () => {
+        const { saved, draft } = restoreDraft()
+
+        await useWorkflowService().afterLoadNewGraph(existingWorkflow, draft)
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(true)
+      })
+
+      it('keeps the saved file as the baseline when restored by path', async () => {
+        const { saved, draft } = restoreDraft()
+
+        await useWorkflowService().afterLoadNewGraph('repeat', draft)
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(true)
+      })
+
+      it('marks a draft that matches the saved file as saved', async () => {
+        const { saved } = restoreDraft()
+
+        await useWorkflowService().afterLoadNewGraph(
+          existingWorkflow,
+          structuredClone(saved)
+        )
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+        expect(existingWorkflow.isModified).toBe(false)
+      })
+    })
+
     /**
      * SEN-5 / CLOUD-FRONTEND-PROD-1MB: `LoadedComfyWorkflow` declares
      * `activeState: ComfyWorkflowJSON`, but it is produced by an unchecked
