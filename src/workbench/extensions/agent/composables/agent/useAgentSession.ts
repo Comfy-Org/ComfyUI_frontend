@@ -69,6 +69,7 @@ import {
   normalizeAgentTranscript
 } from '@/workbench/extensions/agent/services/agent/agentTranscript'
 import { TURN_RECOVERY_DELAYS_MS } from '@/workbench/extensions/agent/services/agent/turnRecoverySchedule'
+import type { CanvasSyncEvidence } from '@/workbench/extensions/agent/services/agent/agentEventTransport'
 import type {
   LiveTurn,
   PendingSendFailure,
@@ -140,6 +141,7 @@ export interface AgentSessionDeps {
   events: AgentEventSource
   onThreadStarted?: (source: AgentSessionThreadStartSource) => void
   onBackgroundTurnAccepted?: (ack: AgentTurnAccepted, text: string) => void
+  onBlankTurnAccepted?: (ack: AgentTurnAccepted, blankChatId: string) => void
   onOffscreenBlankSendFailed?: (failure: OffscreenBlankSendFailure) => void
   isDeletedThread?: (threadId: string) => boolean
   onAgentEvent?: (event: AgentWsEvent) => void
@@ -178,6 +180,7 @@ export interface AgentSessionDeps {
     turnTab?(origin?: TurnOrigin, workflowId?: string): TurnTab
     /** Node ids selected on the target canvas, outside node selection mode. */
     canvasSelection?(origin?: TurnOrigin): string[]
+    hasTab?(origin?: TurnOrigin): boolean
   }
 }
 
@@ -506,6 +509,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     events,
     onThreadStarted,
     onBackgroundTurnAccepted,
+    onBlankTurnAccepted,
     onOffscreenBlankSendFailed,
     isDeletedThread,
     onAgentEvent,
@@ -621,9 +625,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const readyThreadId = ref<string | null>(null)
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const answeringAskIds = computed(() => conversationStore.answeringAskIds)
-  const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
-    'first_open'
-  )
+  const pendingThreadSources = new Map<string, AgentSessionThreadStartSource>([
+    [conversationStore.activeBlankChatId, 'first_open']
+  ])
 
   useIntervalFn(() => {
     if (!refreshCredentialDuringTurns) return
@@ -637,11 +641,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }, CREDENTIAL_REFRESH_INTERVAL_MS)
 
-  function nextLocalErrorId(): TurnId {
-    return toTurnId(`local-error-${createUuidv4()}`)
-  }
-
   const inFlightSends = new Set<string>()
+  const pendingThreadLoads = new Set<string>()
   const pendingSendEvents: AgentWsEvent[] = []
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
@@ -861,9 +862,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const isCurrent = () =>
       generation === loadGeneration && ownedGeneration === sessionGeneration
     const stashedTurn = beginInitialThread(initialThreadId, surviving)
-    const ready = await hydrateFromServer(initialThreadId, isCurrent, {
-      stashedTurn
-    })
+    pendingThreadLoads.add(initialThreadId)
+    let ready = false
+    try {
+      ready = await hydrateFromServer(initialThreadId, isCurrent, {
+        stashedTurn
+      })
+    } finally {
+      pendingThreadLoads.delete(initialThreadId)
+    }
     if (isCurrent()) settleInitialThread(initialThreadId, surviving, ready)
   }
 
@@ -888,7 +895,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   ): void {
     if (ready) onThreadActivated?.(initialThreadId)
     else if (conversationStore.threadId === null) onThreadActivated?.(null)
-    if (surviving !== null && conversationStore.threadId === surviving)
+    if (
+      (surviving !== null && conversationStore.threadId === surviving) ||
+      (ready && conversationStore.threadId === initialThreadId)
+    )
       conversationStore.resumeBackgroundTurn()
   }
 
@@ -1074,6 +1084,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     isCurrent: () => boolean
   ): Promise<boolean> {
     if (conversationStore.threadId !== threadId || !isCurrent()) return false
+    deletedThreads.delete(threadId)
     conversationStore.hydrate(history)
     rememberSnapshotTurn(conversationStore.activeTurnId)
     reconcileLiveTurns('hydrate')
@@ -1252,9 +1263,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     wfContext: WorkflowTurnContext | undefined,
     draft: DraftSnapshot | undefined,
     clientMessageId: string | undefined,
-    boundAtSend: string | null
+    boundAtSend: string | null,
+    tabStillOpen: boolean
   ): boolean {
-    if (workflowTargetChanged(originContext, wfContext)) {
+    if (workflowTargetChanged(originContext, wfContext, tabStillOpen)) {
       failTargetUnavailable(
         sendId,
         origin,
@@ -1452,7 +1464,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function recordTurnStarted(
     turnId: TurnId,
     startsThread: boolean,
-    source: AgentSessionThreadStartSource | null = pendingThreadSource.value
+    source: AgentSessionThreadStartSource | null = null
   ): void {
     turnStartedAt.set(turnId, Date.now())
     if (startsThread && source !== null) {
@@ -1505,6 +1517,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function acceptTurn(
     ack: AgentTurnAccepted,
+    origin: PendingSendOrigin,
     text: string,
     wfContext: WorkflowTurnContext | undefined,
     attachments: SentAttachment[] | undefined,
@@ -1512,7 +1525,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences: WorkflowReference[] | undefined,
     skillScope: string,
     threadSourceAtSend: AgentSessionThreadStartSource | null,
-    stopped?: { method?: AgentStopMethod }
+    stopped?: { method?: AgentStopMethod },
+    canvasBaseline?: {
+      outcomeAtStart?: number
+      evidence?: readonly CanvasSyncEvidence[]
+    }
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
@@ -1533,9 +1550,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
       toTagStrings(tags),
       workflowReferences
     )
-    conversationStore.startTurn(turnId)
+    conversationStore.startTurn(turnId, canvasBaseline)
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
+    consumeThreadSource(origin)
     recordTurnStarted(turnId, startsThread, threadSourceAtSend)
     if (stopped !== undefined) void stopTurn(stopped.method)
     runAcceptedTurnSideEffect(
@@ -1551,7 +1569,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
         adoptWorkflow,
         'agent_workflow_adoption_callback_failed'
       )
+    drainAcceptedTurnHydrationEvents(ack.thread_id, turnId)
     drainPendingSendEvents(ack.thread_id, turnId)
+  }
+
+  function cancelBackgroundTurn(threadId: string, turnId: TurnId): void {
+    void rest.cancelMessage(threadId, turnId).catch((error: unknown) => {
+      const status = error instanceof AgentApiError ? error.status : undefined
+      if (status === 404 || status === 409) return
+      reportStopFailure(
+        error,
+        status === undefined ? true : isRetryableRequestFailure(error, false)
+      )
+    })
   }
 
   function acceptBackgroundTurn({
@@ -1566,7 +1596,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     skillScope,
     threadSourceAtSend,
     boundAtSend,
-    stopped
+    stopped,
+    canvasBaseline
   }: {
     ack: AgentTurnAccepted
     origin: PendingSendOrigin
@@ -1580,7 +1611,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     threadSourceAtSend: AgentSessionThreadStartSource | null
     boundAtSend: string | null
     stopped?: { method?: AgentStopMethod }
+    canvasBaseline?: {
+      outcomeAtStart?: number
+      evidence?: readonly CanvasSyncEvidence[]
+    }
   }): void {
+    const turnId = toTurnId(ack.message_id)
+    if (isDeletedThread?.(ack.thread_id)) {
+      if (stopped !== undefined)
+        void rest.cancelMessage(ack.thread_id, turnId).catch(() => undefined)
+      return
+    }
     const workflowId = ack.workflow_id
     if (
       workflowId !== undefined &&
@@ -1591,12 +1632,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         'agent_workflow_adoption_callback_failed'
       )
     }
-    const turnId = toTurnId(ack.message_id)
-    if (isDeletedThread?.(ack.thread_id)) {
-      if (stopped !== undefined)
-        void rest.cancelMessage(ack.thread_id, turnId).catch(() => undefined)
-      return
-    }
     conversationStore.startBackgroundTurn({
       threadId: ack.thread_id,
       turnId,
@@ -1604,16 +1639,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       attachments: toUserAttachments(attachments),
       tags: toTagStrings(tags),
       workflowReferences,
-      tab: workflow?.turnTab?.(turnOrigin, workflowId) ?? { status: 'unknown' }
+      tab: workflow?.turnTab?.(turnOrigin, workflowId) ?? { status: 'unknown' },
+      canvasBaseline
     })
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
+    consumeThreadSource(origin)
     recordTurnStarted(turnId, origin.kind === 'blank', threadSourceAtSend)
-    runAcceptedTurnSideEffect(
-      () => onBackgroundTurnAccepted?.(ack, text),
-      'agent_thread_activated_callback_failed'
-    )
-    if (stopped !== undefined)
-      void rest.cancelMessage(ack.thread_id, turnId).catch(() => undefined)
+    runAcceptedTurnSideEffect(() => {
+      onBackgroundTurnAccepted?.(ack, text)
+      if (origin.kind === 'blank')
+        onBlankTurnAccepted?.(ack, origin.blankChatId)
+    }, 'agent_thread_activated_callback_failed')
+    if (stopped !== undefined) cancelBackgroundTurn(ack.thread_id, turnId)
+    drainAcceptedTurnHydrationEvents(ack.thread_id, turnId)
     drainPendingSendEvents(ack.thread_id, turnId)
   }
 
@@ -1655,6 +1693,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return {
         kind: 'request',
         message: `${i18n.global.t('agent.sendFailed')}: ${message}`,
+        retryable: false
+      }
+    }
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      return {
+        kind: 'request',
+        message: i18n.global.t('agent.sendFailedUncertain'),
         retryable: false
       }
     }
@@ -1748,14 +1793,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendId,
     origin,
     error,
-    text,
     threadAtSend,
     generation
   }: {
     sendId: string
     origin: PendingSendOrigin
     error: unknown
-    text: string
     threadAtSend: string
     generation: number
   }): Promise<boolean> {
@@ -1767,13 +1810,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reattached = onScreen
       ? await reattachRefusedTurn(error, threadAtSend, generation)
       : false
+    if (isDeletedThreadOrigin(origin)) {
+      conversationStore.takePendingSend(sendId)
+      return true
+    }
     if (reattached) {
-      const pending = conversationStore.takePendingSend(sendId)
-      conversationStore.recordFailedSend(
-        nextLocalErrorId(),
-        text,
-        i18n.global.t('agent.sendTurnInProgress')
-      )
+      const pending = conversationStore.getPendingSend(sendId)
+      recordFailedPendingSend(sendId, origin, {
+        kind: 'turn_in_progress',
+        message: i18n.global.t('agent.sendTurnInProgress')
+      })
       if (pending?.stopRequested) void stopTurn(pending.stopRequested.method)
     } else {
       recordFailedPendingSend(sendId, origin, {
@@ -1788,7 +1834,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendId,
     origin,
     error,
-    text,
     sentContext,
     accepted,
     threadAtSend,
@@ -1797,7 +1842,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sendId: string
     origin: PendingSendOrigin
     error: unknown
-    text: string
     sentContext: WorkflowTurnContext | undefined
     accepted: boolean
     threadAtSend: string
@@ -1811,7 +1855,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         sendId,
         origin,
         error,
-        text,
         threadAtSend,
         generation
       }))
@@ -1856,13 +1899,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return { originContext, turnOrigin }
   }
 
-  function consumeThreadSource(
+  function readThreadSource(
     origin: PendingSendOrigin
   ): AgentSessionThreadStartSource | null {
     if (origin.kind !== 'blank') return null
-    const source = pendingThreadSource.value
-    pendingThreadSource.value = null
-    return source
+    return pendingThreadSources.get(origin.blankChatId) ?? null
+  }
+
+  function consumeThreadSource(origin: PendingSendOrigin): void {
+    if (origin.kind === 'blank') pendingThreadSources.delete(origin.blankChatId)
   }
 
   function finalizeStoppedSessionAcceptance({
@@ -1901,15 +1946,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     }
     rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
+    consumeThreadSource(origin)
     recordTurnStarted(
       toTurnId(ack.message_id),
       origin.kind === 'blank',
       threadSourceAtSend
     )
-    runAcceptedTurnSideEffect(
-      () => onBackgroundTurnAccepted?.(ack, text),
-      'agent_thread_activated_callback_failed'
-    )
+    runAcceptedTurnSideEffect(() => {
+      onBackgroundTurnAccepted?.(ack, text)
+      if (origin.kind === 'blank')
+        onBlankTurnAccepted?.(ack, origin.blankChatId)
+    }, 'agent_thread_activated_callback_failed')
     return false
   }
 
@@ -1935,19 +1982,33 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.takePendingSend(sendId)
       return false
     }
-    const stoppedRequest =
-      conversationStore.takePendingSend(sendId)?.stopRequested
-    if (conversationStore.isOriginOnScreen(origin)) {
+    const pending = conversationStore.takePendingSend(sendId)
+    const stoppedRequest = pending?.stopRequested
+    const attachments = pending?.sentAttachments.length
+      ? pending.sentAttachments
+      : params.attachments
+    const canvasBaseline = pending
+      ? {
+          outcomeAtStart: pending.canvasOutcomeAtStart,
+          evidence: pending.canvasEvidence
+        }
+      : undefined
+    if (
+      conversationStore.isOriginOnScreen(origin) &&
+      !pendingThreadLoads.has(ack.thread_id)
+    ) {
       acceptTurn(
         ack,
+        origin,
         params.text,
         wfContext,
-        params.attachments,
+        attachments,
         params.tags,
         params.workflowReferences,
         params.skillScopeAtSend,
         params.threadSourceAtSend,
-        stoppedRequest
+        stoppedRequest,
+        canvasBaseline
       )
     } else {
       acceptBackgroundTurn({
@@ -1956,13 +2017,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         turnOrigin: params.turnOrigin,
         text: params.text,
         wfContext,
-        attachments: params.attachments,
+        attachments,
         tags: params.tags,
         workflowReferences: params.workflowReferences,
         skillScope: params.skillScopeAtSend,
         threadSourceAtSend: params.threadSourceAtSend,
         boundAtSend,
-        stopped: stoppedRequest
+        stopped: stoppedRequest,
+        canvasBaseline
       })
     }
     rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
@@ -1972,8 +2034,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function finishInFlightSend(sendId: string): void {
     inFlightSends.delete(sendId)
     if (inFlightSends.size > 0) return
-    conversationStore.clearPendingSendCanvasEvidence()
-    for (const event of pendingSendEvents.splice(0)) handleAgentEvent(event)
+    if (!conversationStore.hasAnySendingPendingSend())
+      conversationStore.clearPendingSendCanvasEvidence()
+    for (const event of pendingSendEvents.splice(0))
+      dispatchPendingSendEvent(event)
   }
 
   async function performSend({
@@ -2011,7 +2075,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const threadAtSend = origin.kind === 'thread' ? origin.threadId : 'new'
     const canvasNodeIds = workflow?.canvasSelection?.(resolved.turnOrigin)
     const boundAtSend = boundWorkflowId.value
-    const threadSourceAtSend = consumeThreadSource(origin)
+    const threadSourceAtSend = readThreadSource(origin)
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
     inFlightSends.add(sendId)
@@ -2027,7 +2091,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
           wfContext,
           draft,
           clientMessageId,
-          boundAtSend
+          boundAtSend,
+          workflow?.hasTab?.(resolved.turnOrigin) ?? false
         )
       )
         return false
@@ -2072,7 +2137,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
         sendId,
         origin,
         error,
-        text,
         sentContext,
         accepted,
         threadAtSend,
@@ -2085,8 +2149,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
-    current: WorkflowTurnContext | undefined
+    current: WorkflowTurnContext | undefined,
+    tabStillOpen: boolean
   ): boolean {
+    if (origin !== undefined && current === undefined && !tabStillOpen)
+      return true
     if (origin?.id === undefined) return false
     return current?.id !== origin.id
   }
@@ -2641,7 +2708,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pendingWorkflowBind = null
     malformedStreamReports.clear()
     localStorage.removeItem(threadStorageKey)
-    pendingThreadSource.value = source ?? null
+    if (source !== undefined)
+      pendingThreadSources.set(conversationStore.activeBlankChatId, source)
   }
 
   function openBlankChat(blankChatId: string): boolean {
@@ -2682,13 +2750,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       load.switched = keepOpenChatUntilLoaded
     }
     if (!keepOpenChatUntilLoaded) openThread()
-    const hydrated = await hydrateFromServer(
-      threadId,
-      isCurrent,
-      keepOpenChatUntilLoaded
-        ? { openThread, failureNotice: 'inline_notice' }
-        : { stashedTurn: load.stashedTurn }
-    )
+    pendingThreadLoads.add(threadId)
+    let hydrated = false
+    try {
+      hydrated = await hydrateFromServer(
+        threadId,
+        isCurrent,
+        keepOpenChatUntilLoaded
+          ? { openThread, failureNotice: 'inline_notice' }
+          : { stashedTurn: load.stashedTurn }
+      )
+    } finally {
+      pendingThreadLoads.delete(threadId)
+    }
     const opened = hydrated && isCurrent()
     if (opened || outlivedItsNavigation()) {
       localStorage.setItem(threadStorageKey, threadId)
@@ -2881,13 +2955,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return true
   }
 
+  function isProtectedPendingSendEvent(event: AgentWsEvent): boolean {
+    return (
+      event.type === 'agent_message_done' ||
+      event.type === 'agent_ask' ||
+      event.type === 'agent_ask_resolved'
+    )
+  }
+
   function heldForPendingSend(event: AgentWsEvent): boolean {
     if (!shouldBufferPendingSendEvent(event)) return false
     if (pendingSendEvents.length >= MAX_HYDRATION_EVENTS) {
       const replace = pendingSendEvents.findIndex(
-        (held) => held.type !== 'agent_message_done'
+        (held) => !isProtectedPendingSendEvent(held)
       )
-      pendingSendEvents.splice(Math.max(0, replace), 1)
+      if (replace !== -1) {
+        pendingSendEvents.splice(replace, 1)
+      } else if (!isProtectedPendingSendEvent(event)) {
+        return true
+      } else {
+        pendingSendEvents.shift()
+        reconcileLiveTurns('reconnect')
+      }
     }
     pendingSendEvents.push(event)
     return true
@@ -2904,6 +2993,39 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return event.type === 'agent_active_tab'
   }
 
+  function dispatchPendingSendEvent(event: AgentWsEvent): void {
+    try {
+      dispatchAgentEvent(event)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'agent_pending_send_replay_failed'
+      })
+    }
+  }
+
+  function drainAcceptedTurnHydrationEvents(
+    threadId: string,
+    turnId: TurnId
+  ): void {
+    for (const buffer of [
+      hydrationBuffers.get(threadId),
+      hydrationMailboxes.get(threadId)
+    ]) {
+      if (!buffer || buffer.events.length === 0) continue
+      const remaining: AgentWsEvent[] = []
+      const matched: AgentWsEvent[] = []
+      for (const event of buffer.events) {
+        if (matchesAcceptedTurn(event, threadId, turnId)) matched.push(event)
+        else remaining.push(event)
+      }
+      if (matched.length === 0) continue
+      buffer.events.length = 0
+      buffer.events.push(...remaining)
+      for (const event of matched) dispatchPendingSendEvent(event)
+    }
+  }
+
   function drainPendingSendEvents(threadId: string, turnId: TurnId): void {
     if (pendingSendEvents.length === 0) return
     const remaining: AgentWsEvent[] = []
@@ -2914,7 +3036,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     pendingSendEvents.length = 0
     pendingSendEvents.push(...remaining)
-    for (const event of matched) dispatchAgentEvent(event)
+    for (const event of matched) dispatchPendingSendEvent(event)
   }
 
   function dispatchAgentEvent(event: AgentWsEvent): void {

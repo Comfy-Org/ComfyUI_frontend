@@ -108,6 +108,7 @@ interface PendingSentTag {
 interface PendingSend {
   clientMessageId: string
   origin: PendingSendOrigin
+  workspaceId?: string | null
   rawText: string
   text: string
   attachments: UserAttachment[]
@@ -122,7 +123,10 @@ interface PendingSend {
   starterPrompt?: AgentStarterPromptSource | null
   status: PendingSendStatus
   failure?: PendingSendFailure
+  paywallResolved?: boolean
   stopRequested?: PendingSendStop
+  canvasOutcomeAtStart?: number
+  canvasEvidence?: CanvasSyncEvidence[]
 }
 
 interface UserEntry {
@@ -601,8 +605,6 @@ export const useAgentConversationStore = defineStore(
     const shownApprovalIds = new Set<string>()
     const undeliverableAskReporter = createUndeliverableAskReporter()
     const departedTurns = new Map<string, 'no-live-turn' | 'settled-turn'>()
-    let pendingSendOutcomeAtStart: number | undefined
-    const pendingSendCanvasEvidence: CanvasSyncEvidence[] = []
     const activeTurnId = computed(() => activeSlot.value?.turnId ?? null)
 
     function setTurnTabResolver(resolve: () => TurnTab): void {
@@ -791,9 +793,9 @@ export const useAgentConversationStore = defineStore(
           resolved.add(message.id)
         }
       }
-      for (const send of pendingSends.values()) {
-        if (send.failure?.kind === 'paywall') {
-          resolved.add(toTurnId(send.clientMessageId))
+      for (const [id, send] of pendingSends) {
+        if (send.failure?.kind === 'paywall' && !send.paywallResolved) {
+          pendingSends.set(id, { ...send, paywallResolved: true })
         }
       }
       resolvedPaywallIds.value = resolved
@@ -1043,6 +1045,7 @@ export const useAgentConversationStore = defineStore(
     function startPendingSend(input: {
       clientMessageId: string
       origin?: PendingSendOrigin
+      workspaceId?: string | null
       rawText?: string
       text: string
       attachments: UserAttachment[]
@@ -1068,10 +1071,10 @@ export const useAgentConversationStore = defineStore(
         text: parsed.text,
         workflowReferences: parsed.workflowReferences,
         skillReference: parsed.skillReference,
-        status: 'sending'
+        status: 'sending',
+        canvasOutcomeAtStart: canvasSyncOutcomeCount(),
+        canvasEvidence: []
       }
-      if (pendingSendOutcomeAtStart === undefined)
-        pendingSendOutcomeAtStart = canvasSyncOutcomeCount()
       pendingSends.set(record.clientMessageId, record)
       return record
     }
@@ -1083,8 +1086,18 @@ export const useAgentConversationStore = defineStore(
     }
 
     function clearPendingSendCanvasEvidence(): void {
-      pendingSendCanvasEvidence.length = 0
-      pendingSendOutcomeAtStart = undefined
+      for (const [id, send] of pendingSends) {
+        if (
+          send.canvasOutcomeAtStart !== undefined ||
+          send.canvasEvidence !== undefined
+        ) {
+          pendingSends.set(id, {
+            ...send,
+            canvasOutcomeAtStart: undefined,
+            canvasEvidence: undefined
+          })
+        }
+      }
     }
 
     function failPendingSend(
@@ -1104,9 +1117,11 @@ export const useAgentConversationStore = defineStore(
       pendingSends.set(clientMessageId, {
         ...existing,
         status: 'failed',
-        failure: normalizedFailure
+        failure: normalizedFailure,
+        paywallResolved: undefined,
+        canvasOutcomeAtStart: undefined,
+        canvasEvidence: undefined
       })
-      if (!hasAnySendingPendingSend()) clearPendingSendCanvasEvidence()
       return true
     }
 
@@ -1121,7 +1136,10 @@ export const useAgentConversationStore = defineStore(
         clientMessageId: newClientMessageId,
         status: 'sending',
         failure: undefined,
-        stopRequested: undefined
+        paywallResolved: undefined,
+        stopRequested: undefined,
+        canvasOutcomeAtStart: canvasSyncOutcomeCount(),
+        canvasEvidence: []
       }
       const entriesInOrder = [...pendingSends.entries()]
       pendingSends.clear()
@@ -1132,8 +1150,6 @@ export const useAgentConversationStore = defineStore(
           pendingSends.set(key, value)
         }
       }
-      if (pendingSendOutcomeAtStart === undefined)
-        pendingSendOutcomeAtStart = canvasSyncOutcomeCount()
       return updated
     }
 
@@ -1199,6 +1215,10 @@ export const useAgentConversationStore = defineStore(
       tags?: string[]
       workflowReferences?: WorkflowReference[]
       tab: TurnTab
+      canvasBaseline?: {
+        outcomeAtStart?: number
+        evidence?: readonly CanvasSyncEvidence[]
+      }
     }): void {
       const parsed = parseSkillReferenceText(
         input.text,
@@ -1217,9 +1237,9 @@ export const useAgentConversationStore = defineStore(
         (workflowId) => canvasSyncGate(workflowId),
         () => canvasSyncOutcomeCount(),
         reportUndeliverableAskData,
-        pendingSendOutcomeAtStart
+        input.canvasBaseline?.outcomeAtStart
       )
-      for (const evidence of pendingSendCanvasEvidence)
+      for (const evidence of input.canvasBaseline?.evidence ?? [])
         transport.notifyCanvasCaughtUp(evidence)
       backgroundTurns.set(input.turnId, {
         threadId: input.threadId,
@@ -1237,7 +1257,13 @@ export const useAgentConversationStore = defineStore(
       })
     }
 
-    function startTurn(turnId: TurnId): void {
+    function startTurn(
+      turnId: TurnId,
+      canvasBaseline?: {
+        outcomeAtStart?: number
+        evidence?: readonly CanvasSyncEvidence[]
+      }
+    ): void {
       if (activeSlot.value) abortActiveTurn()
       const message = createAssistantMessage(turnId)
       const transport = createAgentEventTransport(
@@ -1246,9 +1272,9 @@ export const useAgentConversationStore = defineStore(
         (workflowId) => canvasSyncGate(workflowId),
         () => canvasSyncOutcomeCount(),
         reportUndeliverableAskData,
-        pendingSendOutcomeAtStart
+        canvasBaseline?.outcomeAtStart
       )
-      for (const evidence of pendingSendCanvasEvidence)
+      for (const evidence of canvasBaseline?.evidence ?? [])
         transport.notifyCanvasCaughtUp(evidence)
       activeSlot.value = {
         origin: 'local',
@@ -1462,10 +1488,13 @@ export const useAgentConversationStore = defineStore(
     }
 
     function notifyCanvasCaughtUp(evidence?: CanvasSyncEvidence): void {
-      if (evidence !== undefined && hasAnySendingPendingSend()) {
-        if (pendingSendCanvasEvidence.length >= 256)
-          pendingSendCanvasEvidence.shift()
-        pendingSendCanvasEvidence.push(evidence)
+      if (evidence !== undefined) {
+        for (const send of pendingSends.values()) {
+          if (send.status !== 'sending') continue
+          send.canvasEvidence ??= []
+          if (send.canvasEvidence.length >= 256) send.canvasEvidence.shift()
+          send.canvasEvidence.push(evidence)
+        }
       }
       activeSlot.value?.transport.notifyCanvasCaughtUp(evidence)
       for (const settledTransport of settledActiveTransports) {
@@ -1682,12 +1711,18 @@ export const useAgentConversationStore = defineStore(
 
     function restoreBackgroundUserText(entry: BackgroundTurn): void {
       const id = entry.message.id
-      if (entry.userText === undefined || userTexts.value.has(id)) return
-      userTexts.value.set(id, entry.userText)
-      setIfNonEmpty(userAttachments.value, id, entry.attachments)
-      setIfNonEmpty(userTags.value, id, entry.tags)
-      setIfNonEmpty(userWorkflowReferences.value, id, entry.workflowReferences)
-      if (entry.skillReference)
+      if (entry.userText === undefined) return
+      if (!userTexts.value.has(id)) userTexts.value.set(id, entry.userText)
+      if (!userAttachments.value.has(id))
+        setIfNonEmpty(userAttachments.value, id, entry.attachments)
+      if (!userTags.value.has(id)) setIfNonEmpty(userTags.value, id, entry.tags)
+      if (!userWorkflowReferences.value.has(id))
+        setIfNonEmpty(
+          userWorkflowReferences.value,
+          id,
+          entry.workflowReferences
+        )
+      if (entry.skillReference && !userSkillReferences.value.has(id))
         userSkillReferences.value.set(id, entry.skillReference)
     }
 
@@ -1981,7 +2016,6 @@ export const useAgentConversationStore = defineStore(
       reportedPaywallImpressions.clear()
       undeliverableAskReporter.reset()
       departedTurns.clear()
-      clearPendingSendCanvasEvidence()
       clearActive()
     }
 
@@ -2157,9 +2191,7 @@ export const useAgentConversationStore = defineStore(
           failure: send.failure,
           ...(send.failure?.kind === 'paywall'
             ? {
-                paywallResolved: resolvedPaywallIds.value.has(
-                  toTurnId(send.clientMessageId)
-                )
+                paywallResolved: send.paywallResolved === true
               }
             : {})
         }
@@ -2273,10 +2305,12 @@ export const useAgentConversationStore = defineStore(
       moveTurnToTab,
       adoptThreadTab,
       threadId,
+      activeBlankChatId,
       currentOrigin,
       isOriginOnScreen,
       hasSendingPendingSend,
       hasSendingForOrigin,
+      hasAnySendingPendingSend,
       hasLiveTurnForOrigin,
       startPendingSend,
       failPendingSend,

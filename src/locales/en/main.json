@@ -6532,6 +6532,7 @@
     "sendFailedOffscreen": "Your message couldn't be sent",
     "sendFailedOffscreenShow": "Show",
     "sendFailedNetwork": "Message didn't reach the server. Check your connection and try again.",
+    "sendFailedUncertain": "Could not confirm whether the server received your message. Check your chat before sending again.",
     "sendFailedDisownedWorkflow": "This workflow is no longer available.",
     "sendFailedTurnInProgress": "A reply was still running in this chat.",
     "sendingMessage": "Sending…",

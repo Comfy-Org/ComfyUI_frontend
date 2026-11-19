@@ -1212,6 +1212,14 @@ const {
     })
     void refreshHistory('none')
   },
+  onBlankTurnAccepted: (ack, blankChatId) => {
+    if (history.isDeleted(ack.thread_id)) return
+    const title = provisionalTitles.value.get(blankChatId)
+    if (title !== undefined) {
+      history.rename(ack.thread_id, title)
+      provisionalTitles.value.delete(blankChatId)
+    }
+  },
   onOffscreenBlankSendFailed: notifyOffscreenBlankSendFailed,
   isDeletedThread: history.isDeleted,
   onAgentEvent: observeAgentEvent,
@@ -1243,7 +1251,8 @@ const {
         (origin !== null &&
           workflowStore.activeWorkflow?.path === origin.tabPath))
         ? selectedNodes.value.map((node) => node.id)
-        : []
+        : [],
+    hasTab: (origin) => originWorkflow(origin) !== undefined
   }
 })
 
@@ -2048,7 +2057,12 @@ async function refreshHistory(
   return outcome
 }
 
-const provisionalTitle = ref<string>()
+const provisionalTitles = ref(new Map<string, string>())
+const sendWorkspaces = new Map<string, string | null>()
+const offscreenFailureToasts = new Map<
+  ToastId,
+  { clientMessageId: string; workspaceId: string | null }
+>()
 
 void refreshHistory()
 
@@ -2100,15 +2114,13 @@ const {
 watch(
   threadId,
   (id, previousId) => {
-    if (
-      id === null ||
-      previousId !== null ||
-      provisionalTitle.value === undefined
+    if (id === null || previousId !== null) return
+    const title = provisionalTitles.value.get(
+      conversationStore.activeBlankChatId
     )
-      return
-    if (!workflowChatFollow.isOpeningThread(id))
-      history.rename(id, provisionalTitle.value)
-    provisionalTitle.value = undefined
+    if (title === undefined) return
+    if (!workflowChatFollow.isOpeningThread(id)) history.rename(id, title)
+    provisionalTitles.value.delete(conversationStore.activeBlankChatId)
   },
   { immediate: true, flush: 'sync' }
 )
@@ -2123,7 +2135,12 @@ async function onSelectHistory(
   isCurrent: () => boolean
 ): Promise<boolean> {
   retireFollow()
-  provisionalTitle.value = undefined
+  if (
+    !conversationStore.hasPendingSendForBlankChat(
+      conversationStore.activeBlankChatId
+    )
+  )
+    provisionalTitles.value.delete(conversationStore.activeBlankChatId)
   if (currentChatReady.value && id === threadId.value)
     return onShowTarget(isCurrent, warnRestoreFailed)
   promptQueueStore.clear()
@@ -2410,6 +2427,10 @@ async function sendTurn(
     return 'withdrawn'
   armPendingSend(attachments, sentNodes, meta)
   releaseGate?.()
+  sendWorkspaces.set(
+    meta.clientMessageId,
+    workspaceStore.activeWorkspaceId ?? null
+  )
   const sentUsageScope = proactive.scope.value
   try {
     const sent = await sendWithFundsRecheck((onAccepted) =>
@@ -2503,6 +2524,7 @@ void until(currentChatReady)
   })
 
 function onDeletePendingSend(clientMessageId: string): void {
+  sendWorkspaces.delete(clientMessageId)
   conversationStore.takePendingSend(clientMessageId)
   composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
 }
@@ -2603,6 +2625,10 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
   if (!hasAgentCredential() && !(await ensureSignedIn())) return
 
   const retryClientMessageId = uuidv4()
+  const priorWorkspace = sendWorkspaces.get(clientMessageId)
+  sendWorkspaces.delete(clientMessageId)
+  if (priorWorkspace !== undefined)
+    sendWorkspaces.set(retryClientMessageId, priorWorkspace)
   const retried = conversationStore.retryPendingSend(
     clientMessageId,
     retryClientMessageId
@@ -2637,7 +2663,8 @@ function onStop(method: AgentStopMethod): void {
 }
 
 function onRenameChat(title: string): void {
-  if (threadId.value === null) provisionalTitle.value = title
+  if (threadId.value === null)
+    provisionalTitles.value.set(conversationStore.activeBlankChatId, title)
   else history.rename(threadId.value, title)
 }
 
@@ -2655,11 +2682,20 @@ function onDeleteHistory(id: string): void {
 }
 
 function resetComposerForChatSwitch(): void {
-  provisionalTitle.value = undefined
   promptQueueStore.clear()
+  if (
+    !conversationStore.hasPendingSendForBlankChat(
+      conversationStore.activeBlankChatId
+    )
+  )
+    provisionalTitles.value.delete(conversationStore.activeBlankChatId)
   const cancelled = composerStore.cancelGateHold()
   if (cancelled !== null)
-    withdrawSubmission(cancelled.clientMessageId, cancelled.snapshot)
+    withdrawSubmission(
+      cancelled.clientMessageId,
+      cancelled.snapshot,
+      cancelled.revision
+    )
   cancelWorkflowSelection()
   canvasStore.stopNodePicking()
   attachment.cancelAllUploads()
@@ -2669,9 +2705,16 @@ function resetComposerForChatSwitch(): void {
   composerStore.clearDraft()
 }
 
-function showOffscreenBlankSend(blankChatId: string, toastId: ToastId): void {
+function showOffscreenBlankSend(
+  blankChatId: string,
+  toastId: ToastId,
+  originWorkspaceId: string | null
+): void {
   toast.dismiss(toastId)
+  offscreenFailureToasts.delete(toastId)
+  if ((workspaceStore.activeWorkspaceId ?? null) !== originWorkspaceId) return
   if (!conversationStore.hasPendingSendForBlankChat(blankChatId)) return
+  agentPanelStore.open()
   agentPanelStore.view = { screen: 'chat' }
   retireFollow()
   resetComposerForChatSwitch()
@@ -2682,14 +2725,30 @@ function showOffscreenBlankSend(blankChatId: string, toastId: ToastId): void {
 }
 
 function notifyOffscreenBlankSendFailed({
+  clientMessageId,
   blankChatId
 }: OffscreenBlankSendFailure): void {
+  const originWorkspaceId =
+    sendWorkspaces.get(clientMessageId) ??
+    workspaceStore.activeWorkspaceId ??
+    null
+  if ((workspaceStore.activeWorkspaceId ?? null) !== originWorkspaceId) {
+    sendWorkspaces.delete(clientMessageId)
+    conversationStore.takePendingSend(clientMessageId)
+    composerStore.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
+    return
+  }
   const toastId = createToastId()
+  offscreenFailureToasts.set(toastId, {
+    clientMessageId,
+    workspaceId: originWorkspaceId
+  })
   toast.error(t('agent.sendFailedOffscreen'), {
     id: toastId,
     action: {
       label: t('agent.sendFailedOffscreenShow'),
-      onClick: () => showOffscreenBlankSend(blankChatId, toastId)
+      onClick: () =>
+        showOffscreenBlankSend(blankChatId, toastId, originWorkspaceId)
     }
   })
 }
@@ -2832,6 +2891,29 @@ watch(
     () => assetsStore.deletingAssetIds.size
   ],
   attachment.forgetUploads
+)
+
+watch(
+  () => workspaceStore.activeWorkspaceId,
+  (nextWorkspaceId) => {
+    const activeWorkspace = nextWorkspaceId ?? null
+    for (const [toastId, entry] of offscreenFailureToasts) {
+      if (entry.workspaceId === activeWorkspace) continue
+      toast.dismiss(toastId)
+      offscreenFailureToasts.delete(toastId)
+    }
+    for (const [clientMessageId, workspaceId] of sendWorkspaces) {
+      if (workspaceId === activeWorkspace) continue
+      sendWorkspaces.delete(clientMessageId)
+      const pending = conversationStore.getPendingSend(clientMessageId)
+      if (pending?.origin.kind === 'blank') {
+        conversationStore.takePendingSend(clientMessageId)
+        composerStore.releaseRetainedAssets(
+          pendingAssetOwnerKey(clientMessageId)
+        )
+      }
+    }
+  }
 )
 
 function notifyDuplicateAttachments(names: string[]): void {
@@ -3063,7 +3145,9 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         history.titleFor(threadId) ??
         historyGroups.current.find((session) => session.id === threadId)
           ?.title ??
-        provisionalTitle
+        (threadId === null
+          ? provisionalTitles.get(conversationStore.activeBlankChatId)
+          : undefined)
       "
       :selection-tags="selectionTags"
       :has-node-selection-mode-addition="hasNodeSelectionModeAddition"

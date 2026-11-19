@@ -1297,14 +1297,16 @@ describe('useAgentSession (v1 composition root)', () => {
     await vi.waitFor(() => expect(session.isStreaming.value).toBe(true))
     expect(conversation.activeTurnId).toBe('msg-2')
     expect(session.entries.value.at(-1)).toMatchObject({
-      role: 'assistant',
-      parts: [
-        {
-          type: 'notice',
-          level: 'error',
-          text: 'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+      role: 'user',
+      text: 'and now add a save node',
+      pending: {
+        status: 'failed',
+        failure: {
+          kind: 'turn_in_progress',
+          message:
+            'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
         }
-      ]
+      }
     })
   })
 
@@ -4694,14 +4696,16 @@ describe('useAgentSession (v1 composition root)', () => {
 
     expect(cancelMessage).toHaveBeenCalledExactlyOnceWith('th-1', 'msg-2')
     expect(session.entries.value.at(-1)).toMatchObject({
-      role: 'assistant',
-      parts: [
-        {
-          type: 'notice',
-          level: 'error',
-          text: 'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
+      role: 'user',
+      text: 'refused',
+      pending: {
+        status: 'failed',
+        failure: {
+          kind: 'turn_in_progress',
+          message:
+            'This chat still has a response running. Wait for it to finish, or stop it, then send again.'
         }
-      ]
+      }
     })
   })
 
