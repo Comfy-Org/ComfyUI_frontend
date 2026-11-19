@@ -463,10 +463,13 @@ export class AgentConversationHarness {
     const { content } = this.conversation.turns[turn].request
     await this.composer.fill(content)
     await this.panel.getByRole('button', { name: SEND_LABEL }).click()
-    // Replay frames are dropped until the page has applied the ack's thread id.
-    // useAgentSession records the user turn straight after storing that id, so
-    // the rendered turn says the ack landed without reading private storage.
+    // Replay frames are dropped until the page has applied the ack's thread id,
+    // and canvas catch-up baselines start right before POST /messages. Waiting
+    // for the posted turn and its cleared spinner proves the ack landed before
+    // replayResponse starts emitting server/canvas frames.
+    await expect.poll(() => this.postedTurns).toBeGreaterThanOrEqual(turn + 1)
     await expect(this.panel.getByText(content).first()).toBeVisible()
+    await expect(this.panel.getByTestId('pending-send-spinner')).toHaveCount(0)
   }
 
   private async waitForRecordedOffset(
