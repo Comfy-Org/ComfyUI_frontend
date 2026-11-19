@@ -49,7 +49,8 @@ function readCorpus(dir: string): Corpus {
     try {
       graph = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf-8'))
     } catch (error) {
-      unreadable.push(`${file}: ${(error as Error).message}`)
+      const message = error instanceof Error ? error.message : String(error)
+      unreadable.push(`${file}: ${message}`)
       continue
     }
     if (
