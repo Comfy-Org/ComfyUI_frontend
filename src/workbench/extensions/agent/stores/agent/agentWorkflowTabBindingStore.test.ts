@@ -722,6 +722,82 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.tabPathFor('wf-1')).toBe('workflows/a.json')
   })
 
+  it('keeps a verified open draft when another tab publishes its expired record', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+    const confirmedAt = Date.now()
+
+    vi.setSystemTime(confirmedAt + 31 * DAY_MS)
+    seedBindings({
+      'wf-draft': { tabPath: draft.path, graphId: DRAFT_GRAPH_ID, confirmedAt },
+      'wf-other': {
+        tabPath: 'workflows/other.json',
+        graphId: null,
+        confirmedAt: Date.now()
+      }
+    })
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
+    expect(bindings.tabPathFor('wf-other')).toBe('workflows/other.json')
+  })
+
+  it('does not rewrite storage when adopting open drafts from another tab', async () => {
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    const seeded = {
+      'wf-draft': {
+        tabPath: draft.path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now() - DAY_MS
+      }
+    }
+    seedBindings(seeded)
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
+    expect(storedBindings()).toEqual(seeded)
+  })
+
+  it('keeps its bindings when storage access throws during a storage event', async () => {
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-1', 'workflows/a.json')
+    await nextTick()
+
+    const event = new StorageEvent('storage', {
+      key: STORAGE_KEY,
+      storageArea: localStorage
+    })
+    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+      throw new DOMException('denied', 'SecurityError')
+    })
+    expect(() => window.dispatchEvent(event)).not.toThrow()
+    vi.restoreAllMocks()
+    await nextTick()
+
+    expect(bindings.tabPathFor('wf-1')).toBe('workflows/a.json')
+  })
+
   it('resolves both directions after a bind', () => {
     const store = useAgentWorkflowTabBindingStore()
     store.bind('wf-1', 'workflows/a.json')
