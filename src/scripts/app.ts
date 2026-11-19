@@ -1823,6 +1823,10 @@ export class ComfyApp implements IComfyApp {
         })
         graphsAwaitingNodeTypes.delete(graph)
         return { loaded: activatedWorkflow ?? true, surfaceWarnings }
+      } catch (error) {
+        restoreContentsBeforeReload()
+        if (clean) graphsAwaitingNodeTypes.add(graph)
+        throw error
       } finally {
         void useSubgraphNavigationStore().updateHash(
           'workflow-load',

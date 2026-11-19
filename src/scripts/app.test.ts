@@ -649,7 +649,7 @@ describe('ComfyApp', () => {
       )
     })
 
-    it('keeps the graph awaiting node types when post-configure node resizing fails', async () => {
+    it('keeps the graph contents and awaiting node types when post-configure node resizing fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const workflow = markLoaded(
         new ComfyWorkflow({
@@ -659,6 +659,7 @@ describe('ComfyApp', () => {
         })
       )
       const graph = new LGraph()
+      graph.add(new LGraphNode('existing'))
       workflow.adoptGraph(graph)
       useWorkflowStore().attachWorkflow(workflow)
       Reflect.set(app, 'rootGraphInternal', graph)
@@ -693,6 +694,7 @@ describe('ComfyApp', () => {
         app.loadGraphData(data, true, false, workflow)
       ).rejects.toThrow('node resize failed')
 
+      expect(graph.nodes.map((node) => node.title)).toEqual(['existing'])
       expect(graphsAwaitingNodeTypes.has(graph)).toBe(true)
     })
 
