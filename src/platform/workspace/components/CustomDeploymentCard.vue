@@ -15,7 +15,7 @@
         muted
         loop
         plays-inline
-        playback-control
+        :playback-labels="{ play: $t('g.play'), pause: $t('g.pause') }"
         class="aspect-video w-full rounded-lg object-cover"
       >
         <template #fallback>
