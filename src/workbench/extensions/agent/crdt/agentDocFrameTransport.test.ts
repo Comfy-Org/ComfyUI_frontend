@@ -68,4 +68,19 @@ describe('createAgentDocFrameTransport', () => {
 
     expect(fake.listenerCount()).toBe(0)
   })
+
+  it('stays destroyed when a late listener arrives', () => {
+    const fake = createFakeAgentSocket()
+    fake.transport.addEventListener('doc_update', vi.fn())
+    fake.transport.destroy()
+    expect(fake.listenerCount()).toBe(0)
+
+    const late = vi.fn()
+    fake.transport.addEventListener('doc_update', late)
+
+    expect(fake.listenerCount()).toBe(0)
+
+    fake.receive('doc_update', { v: 1 })
+    expect(late).not.toHaveBeenCalled()
+  })
 })

@@ -17,9 +17,10 @@ export function createAgentDocFrameTransport(
 ): AgentDocFrameTransport {
   const target = new EventTarget()
   let unsubscribe: (() => void) | null = null
+  let destroyed = false
 
   function tap(): void {
-    if (unsubscribe !== null) return
+    if (destroyed || unsubscribe !== null) return
     unsubscribe = source.subscribe((raw) => {
       if (typeof raw !== 'object' || raw === null || !('type' in raw)) return
       const { type } = raw
@@ -34,6 +35,11 @@ export function createAgentDocFrameTransport(
       return source.send(frame)
     },
     addEventListener(type, listener) {
+      // Without the latch a listener added after destroy() re-tapped the socket,
+      // because tap() only checked whether a subscription was currently open. The
+      // panel destroys this on unmount, so any async callback landing after that
+      // resurrected the transport and held the subscription open for good.
+      if (destroyed) return
       tap()
       target.addEventListener(type, listener)
     },
@@ -52,6 +58,7 @@ export function createAgentDocFrameTransport(
       source.reconnect()
     },
     destroy() {
+      destroyed = true
       unsubscribe?.()
       unsubscribe = null
     }
