@@ -294,7 +294,18 @@ export const useWorkflowService = () => {
     const activeState = activeWorkflow.activeState
     if (!activeState) return
 
+    const savedState = activeWorkflow.changeTracker?.initialState
     try {
+      if (
+        activeWorkflow.isPersisted &&
+        !activeWorkflow.isModified &&
+        savedState &&
+        ChangeTracker.graphEqual(savedState, activeState)
+      ) {
+        workflowDraftStore.removeDraft(activeWorkflow.path)
+        return
+      }
+
       const saved = workflowDraftStore.saveDraft(
         activeWorkflow.path,
         JSON.stringify(activeState),
