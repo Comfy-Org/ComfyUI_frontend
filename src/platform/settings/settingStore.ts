@@ -11,6 +11,7 @@ export const useSettingStore = defineStore('setting', () => {
   let editorSignal: AbortSignal | undefined
 
   function deferExtensionSettingCallbacks(signal: AbortSignal) {
+    if (signal.aborted) return
     editorSignal = signal
     pendingCallbacks = new Map()
     signal.addEventListener(

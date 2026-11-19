@@ -73,6 +73,29 @@ describe('useSettingStore', () => {
       expect(extensionCallback).toHaveBeenLastCalledWith(false, true)
     })
 
+    it('preserves the current editor callbacks when an aborted loader resumes', async () => {
+      const staleEditor = new AbortController()
+      staleEditor.abort()
+      store.deferExtensionSettingCallbacks(new AbortController().signal)
+      const onChange = vi.fn()
+      store.addExtensionSetting({
+        id: 'Comfy.Validation.Workflows',
+        name: 'Validation',
+        type: 'boolean',
+        defaultValue: false,
+        onChange
+      })
+
+      store.deferExtensionSettingCallbacks(staleEditor.signal)
+      await store.activateExtensionSettingCallbacks()
+
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(false, undefined)
+
+      await store.applySettingLocally('Comfy.Validation.Workflows', true)
+
+      expect(onChange).toHaveBeenLastCalledWith(true, false)
+    })
+
     it('activates late registrations immediately', async () => {
       store.deferExtensionSettingCallbacks(new AbortController().signal)
       await store.activateExtensionSettingCallbacks()
