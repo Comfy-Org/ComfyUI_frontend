@@ -1072,6 +1072,26 @@ describe('useWorkflowPersistenceV2', () => {
     })
   })
 
+  it('drops the outgoing pending edit when the logout fence completes', async () => {
+    const workflowStore = useWorkflowStore()
+    const workflow = await workflowStore
+      .createTemporary('LogoutCompleted.json')
+      .load()
+    workflowStore.activeWorkflow = workflow
+    mountWorkflowPersistence()
+
+    mocks.state.currentGraph = { nodes: [], extra: { marker: 'outgoing' } }
+    apiEvents.dispatchEvent(new Event('graphChanged'))
+
+    const transition = storageIO.prepareWorkflowLogoutTransition()
+    storageIO.completeWorkflowLogoutTransition(transition)
+    await vi.runAllTimersAsync()
+
+    expect(
+      localStorage.getItem(StorageKeys.draftPayload(workflow.path, 'personal'))
+    ).toBeNull()
+  })
+
   it('adopts and releases a logout fence started before the graph mounts', () => {
     distributionMocks.isCloud = true
     Object.assign(useTeamWorkspaceStore(), {
