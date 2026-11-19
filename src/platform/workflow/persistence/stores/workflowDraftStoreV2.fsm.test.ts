@@ -289,8 +289,6 @@ class StoreResetCommand implements Command<PersistenceModel, PersistenceReal> {
 // ── Test Suite ──────────────────────────────────────────────────────
 
 describe('workflowDraftStoreV2 FSM', () => {
-  // 33+ unique paths protect the regression where the production store used
-  // to evict the oldest parked workflow at a fixed count limit.
   const pathPool = fc.constantFrom(
     ...Array.from({ length: 35 }, (_, i) => `workflows/${i}.json`)
   )
