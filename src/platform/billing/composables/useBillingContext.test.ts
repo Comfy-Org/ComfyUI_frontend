@@ -466,20 +466,28 @@ describe('useBillingContext', () => {
       })
     })
 
-    it('leaves a push before initialization to the initial read', async () => {
+    it('reads again once initialization settles when a push arrived during it', async () => {
       useFakeClock()
-      vi.mocked(billingApi.getBillingStatus).mockReturnValue(
-        new Promise(() => {})
+      let settleInitialStatus!: (status: BillingStatusResponse) => void
+      vi.mocked(billingApi.getBillingStatus).mockReturnValueOnce(
+        new Promise((resolve) => {
+          settleInitialStatus = resolve
+        })
       )
       const { context } = runContext()
       await vi.advanceTimersByTimeAsync(0)
       expect(context.isInitialized.value).toBe(false)
-      expect(billingApi.getBillingStatus).toHaveBeenCalledOnce()
 
       api.dispatchCustomEvent('billing_status', push)
       await vi.advanceTimersByTimeAsync(1_000)
-
       expect(billingApi.getBillingStatus).toHaveBeenCalledOnce()
+
+      settleInitialStatus({ ...DEFAULT_BILLING_STATUS })
+      await vi.advanceTimersByTimeAsync(0)
+      expect(context.isInitialized.value).toBe(true)
+      await vi.advanceTimersByTimeAsync(1_000)
+
+      expect(billingApi.getBillingStatus).toHaveBeenCalledTimes(2)
     })
 
     it('drops a pending push read once its scope stops', async () => {

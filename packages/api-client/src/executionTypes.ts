@@ -1,5 +1,5 @@
 import type { PromptWorkflowMetadata } from '@comfyorg/comfyui-api-types'
-import type { PromptInfo } from '@comfyorg/ingest-types'
+import type { BillingStatusResponse, PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@comfyorg/graph-model/workflowSchema'
 import type { TaskStatus } from './taskSchema'
@@ -147,11 +147,12 @@ export interface AgentStatusWsMessage {
  * not the system of record: clients reconcile by reading billing status.
  */
 export interface BillingStatusWsMessage {
-  billing_status?: {
-    has_funds?: boolean
-    scoped_has_funds?: Record<string, boolean>
-    scoped_effective_has_funds?: Record<string, boolean>
-  }
+  billing_status?: Partial<
+    Pick<
+      BillingStatusResponse,
+      'has_funds' | 'scoped_has_funds' | 'scoped_effective_has_funds'
+    >
+  >
 }
 export interface AssetDownloadWsMessage {
   task_id: string

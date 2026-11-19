@@ -47,8 +47,6 @@ const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
 
 const ROUTING_WAIT_TIMEOUT_MS = 10_000
 
-// Coalesces a burst of Cloud billing_status pushes into one read, and still
-// reads at least this often while pushes keep arriving.
 const BILLING_PUSH_DEBOUNCE_MS = 1_000
 const BILLING_PUSH_MAX_WAIT_MS = 5_000
 
@@ -425,16 +423,16 @@ function useBillingContextInternal(): BillingContext {
 
   onScopeDispose(provideCheckoutOperationReader(readCheckoutOperation))
 
-  // Cloud pushes billing_status when funds change (grant, top-up, admin
-  // credit, Agent grant used up). The push is only a hint, so read the
-  // system of record instead of applying it; that also makes out-of-order
-  // pushes harmless. Pushes before initialization are skipped: initialize()
-  // reads fresh state itself, and a racing read would supersede its reads.
   if (isCloud) {
     let disposed = false
+    let pushReadOwedFor: string | undefined
     const readAfterPush = useDebounceFn(
       async () => {
-        if (disposed || !isInitialized.value || type.value === 'unknown') return
+        if (disposed) return
+        if (!isInitialized.value || type.value === 'unknown') {
+          pushReadOwedFor = store.activeWorkspace?.id
+          return
+        }
         const account = activeContext.value
         await Promise.all([
           reportPushedReadFailure(
@@ -450,10 +448,17 @@ function useBillingContextInternal(): BillingContext {
       BILLING_PUSH_DEBOUNCE_MS,
       { maxWait: BILLING_PUSH_MAX_WAIT_MS }
     )
+    watch(isInitialized, (ready) => {
+      if (!ready || pushReadOwedFor === undefined) return
+      const owedFor = pushReadOwedFor
+      pushReadOwedFor = undefined
+      if (owedFor === store.activeWorkspace?.id) void readAfterPush()
+    })
     const onBillingStatusPush = () => void readAfterPush()
     api.addEventListener('billing_status', onBillingStatusPush)
     onScopeDispose(() => {
       disposed = true
+      readAfterPush.cancel()
       api.removeEventListener('billing_status', onBillingStatusPush)
     })
   }
