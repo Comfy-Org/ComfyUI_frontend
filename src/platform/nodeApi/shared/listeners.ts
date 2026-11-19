@@ -1,7 +1,11 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import { invalidArgument } from './invalidArgument'
+
 interface Listeners {
   add(listener: () => void): () => void
+  /** `add` for a listener a pack passed; anything but a function throws, naming the event. */
+  subscribe(listener: unknown): () => void
   drain(): void
   notify(): void
 }
@@ -52,13 +56,21 @@ export function createListeners(event: string): Listeners {
   const registrations = new Set<{ readonly listener: () => void }>()
   const call = (listener: () => void) => callListener(event, listener)
 
+  function add(listener: () => void): () => void {
+    const registration = { listener }
+    registrations.add(registration)
+    return () => {
+      registrations.delete(registration)
+    }
+  }
+
   return {
-    add(listener) {
-      const registration = { listener }
-      registrations.add(registration)
-      return () => {
-        registrations.delete(registration)
+    add,
+    subscribe(listener) {
+      if (typeof listener !== 'function') {
+        throw invalidArgument(event, 'a function to call', listener)
       }
+      return add(() => Reflect.apply(listener, undefined, []))
     },
 
     drain() {

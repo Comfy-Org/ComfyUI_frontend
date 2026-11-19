@@ -126,12 +126,7 @@ export function createDefRegistry(nodes: NodeHandles): DefRegistryParts {
       extensions.nodeType(checkedTypeName('has', type)) !== undefined,
     all: () => Object.freeze(extensions.nodeTypes().map(({ def }) => def())),
     refresh: () => useApp().reloadNodeDefs(),
-    onRefreshed(listener: () => void) {
-      if (typeof listener !== 'function') {
-        throw invalidArgument('onRefreshed', 'a function to call', listener)
-      }
-      return refreshed.add(listener)
-    },
+    onRefreshed: refreshed.subscribe,
     typeColor: colors.typeColor,
     setTypeColor: colors.setTypeColor,
     nodeColor: colors.nodeColor,
