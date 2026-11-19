@@ -400,6 +400,31 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     ])
   })
 
+  it('sends every route through the given request instead of this server', async () => {
+    const answers = [
+      json(201, started),
+      json(202, { task_id: TASK_ID, status: 'created' })
+    ]
+    const request = vi.fn((_route: string, _init: RequestInit) =>
+      Promise.resolve(answers.shift()!)
+    )
+    const result = modelFileUploadApi.uploadModelFile(file, {
+      tags,
+      signal: new AbortController().signal,
+      onProgress: vi.fn(),
+      request
+    })
+
+    ;(await storageRequest()).finish(200)
+
+    await expect(result).resolves.toEqual({ ok: true, taskId: TASK_ID })
+    expect(request.mock.calls.map(([route]) => route)).toEqual([
+      '/assets/uploads',
+      `/assets/uploads/${UPLOAD_ID}/complete`
+    ])
+    expect(api.fetchApi).not.toHaveBeenCalled()
+  })
+
   it('fails without completing when storage refuses the bytes', async () => {
     const calls = serverAnswers(json(201, started))
     const { result } = upload()

@@ -12,7 +12,17 @@
     @keydown.space="prefetch"
     @click="openModal"
   >
-    <ProgressRing v-if="isChecking" :percent="25" class="size-4 animate-spin" />
+    <ProgressRing
+      v-if="isUploading"
+      :percent="uploadPercent"
+      class="size-4"
+      data-testid="cloud-button-upload-progress"
+    />
+    <ProgressRing
+      v-else-if="isChecking"
+      :percent="25"
+      class="size-4 animate-spin"
+    />
     <i v-else class="icon-[lucide--cloud]" aria-hidden="true" />
   </Button>
 </template>
@@ -31,11 +41,15 @@ import {
   openRunOnCloudDialog
 } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 
 const { t } = useI18n()
 const toast = useToast()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
+const { isUploading, percent: uploadPercent } = storeToRefs(
+  useLocalModelUploadStore()
+)
 
 const isChecking = computed(() => check.value.phase === 'checking')
 const opensWhenAnswered = ref(false)
@@ -44,11 +58,15 @@ onBeforeUnmount(() => {
   isMounted = false
 })
 
-const tooltip = computed(() =>
-  isChecking.value
+const tooltip = computed(() => {
+  if (isUploading.value)
+    return t('openOnCloud.cloudButton.uploading', {
+      percent: uploadPercent.value
+    })
+  return isChecking.value
     ? t('openOnCloud.cloudButton.checking')
     : t('openOnCloud.cloudButton.tooltip')
-)
+})
 
 function prefetch() {
   if (check.value.phase === 'idle') void checkStore.check()

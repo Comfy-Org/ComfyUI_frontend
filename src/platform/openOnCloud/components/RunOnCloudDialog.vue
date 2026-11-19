@@ -2,6 +2,7 @@
   <MissingModelsCard
     v-if="state.kind === 'missingModels'"
     :models="state.models"
+    :signed-in="isLoggedIn"
     @dismiss="emit('dismiss')"
   />
   <DeploySetupCard

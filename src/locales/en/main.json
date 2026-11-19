@@ -4379,7 +4379,8 @@
     "downloadedDetail": "Drop it onto Comfy Cloud in your browser to open it there.",
     "cloudButton": {
       "tooltip": "Run on Comfy Cloud",
-      "checking": "Checking Comfy Cloud…"
+      "checking": "Checking Comfy Cloud…",
+      "uploading": "Uploading models to Comfy Cloud, {percent}%"
     },
     "runDialog": {
       "title": "Run on Comfy Cloud",
@@ -4396,7 +4397,22 @@
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
-      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable."
+      "unavailable": "Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable.",
+      "uploadTitle": "Upload {count} model | Upload {count} models",
+      "chooseFiles": "Comfy Cloud needs these models to run this workflow. Choose each file from your models folder to upload it to your workspace.",
+      "signedOut": "Comfy Cloud needs these models to run this workflow. Sign in to upload them to your workspace.",
+      "signInToUpload": "Sign in to upload",
+      "chooseFile": "Choose file",
+      "chosen": "File chosen",
+      "wrongFile": "Choose {name} from your models folder.",
+      "folderUnsupported": "Comfy Cloud does not take uploads into this folder yet.",
+      "total": "Total {size}",
+      "progress": "{sent} of {total}",
+      "upload": "Upload",
+      "cancelUpload": "Cancel upload",
+      "hide": "Hide",
+      "cancelled": "Upload cancelled.",
+      "failed": "Upload failed. Try again."
     },
     "checkFailed": "Could not check this workflow on Comfy Cloud. Try again.",
     "missingLocalModelLoader": "Could not read the model settings for {nodeType}. Install the node pack that provides it, then try again."

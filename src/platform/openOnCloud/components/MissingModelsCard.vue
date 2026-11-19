@@ -1,31 +1,83 @@
 <template>
-  <DeploymentDialogFrame @dismiss="emit('dismiss')">
+  <DeploymentDialogFrame
+    data-testid="missing-models-card"
+    @dismiss="emit('dismiss')"
+  >
     <section class="flex flex-col gap-4 px-9 pt-9 pb-8">
       <DialogTitle class="my-0 pr-8 text-2xl/8 font-bold tracking-tight">
-        {{ $t('openOnCloud.missingModels.title', models.length) }}
+        {{ $t(copy.title, models.length) }}
       </DialogTitle>
       <p class="my-0 text-sm/5 text-muted-foreground">
-        {{ $t('openOnCloud.missingModels.unavailable') }}
+        {{ $t(copy.description) }}
       </p>
       <ul class="my-0 flex list-none flex-col gap-1.5 p-0">
-        <li
+        <MissingModelRow
           v-for="model in models"
-          :key="`${model.folder}/${model.name}`"
-          class="flex items-center gap-2 rounded-lg bg-secondary px-2.5 py-2 text-xs"
-        >
-          <i
-            class="icon-[lucide--package] text-muted-foreground"
-            aria-hidden="true"
-          />
-          <span class="min-w-0 flex-1 break-all text-foreground">{{
-            model.name
-          }}</span>
-          <span class="shrink-0 text-muted-foreground">{{ model.folder }}</span>
-        </li>
+          :key="modelKey(model)"
+          :model
+          :pick="uploads.pickOf(model)"
+          :size="uploads.sizeOf(model)"
+          :choosable="canOffer && uploads.takesFolder(model.folder)"
+          :unsupported="canOffer && !uploads.takesFolder(model.folder)"
+          :locked="uploads.isUploading"
+          @choose="(file) => uploads.choose(model, file)"
+        />
       </ul>
-      <footer class="flex justify-end pt-3">
-        <Button variant="secondary" size="lg" @click="emit('dismiss')">
-          {{ $t('g.close') }}
+      <p v-if="totalSize" class="my-0 text-sm text-muted-foreground">
+        {{ $t('openOnCloud.missingModels.total', { size: totalSize }) }}
+      </p>
+      <div
+        v-if="upload.phase === 'uploading'"
+        class="flex flex-col gap-1.5"
+        data-testid="missing-models-progress"
+      >
+        <div
+          class="h-1.5 overflow-hidden rounded-full bg-secondary"
+          role="progressbar"
+          :aria-valuenow="uploads.percent"
+          aria-valuemin="0"
+          aria-valuemax="100"
+        >
+          <div
+            class="h-full bg-foreground transition-[width]"
+            :style="{ width: `${uploads.percent}%` }"
+          />
+        </div>
+        <p class="my-0 text-xs text-muted-foreground">
+          {{
+            $t('openOnCloud.missingModels.progress', {
+              sent: formatSize(upload.sent),
+              total: formatSize(upload.total)
+            })
+          }}
+        </p>
+      </div>
+      <p
+        v-else-if="upload.phase === 'failed'"
+        class="my-0 text-sm text-destructive"
+        role="alert"
+      >
+        {{ failureText(upload.reason, upload.message) }}
+      </p>
+      <footer class="flex justify-end gap-2.5 pt-3">
+        <Button
+          variant="secondary"
+          size="lg"
+          @click="footer === 'uploading' ? uploads.cancel() : emit('dismiss')"
+        >
+          {{ $t(SECONDARY_COPY[footer]) }}
+        </Button>
+        <Button
+          v-if="footer !== 'close'"
+          variant="inverted"
+          size="lg"
+          :data-testid="
+            footer === 'upload' ? 'missing-models-upload' : undefined
+          "
+          :disabled="footer === 'upload' && !uploads.canUpload(models)"
+          @click="onPrimary"
+        >
+          {{ $t(PRIMARY_COPY[footer]) }}
         </Button>
       </footer>
     </section>
@@ -33,13 +85,118 @@
 </template>
 
 <script setup lang="ts">
-import type { CompatibilityModel } from '@comfyorg/ingest-types'
+import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
+import { storeToRefs } from 'pinia'
+import { computed, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import MissingModelRow from '@/platform/openOnCloud/components/MissingModelRow.vue'
+import {
+  modelKey,
+  useLocalModelUploadStore
+} from '@/platform/openOnCloud/stores/localModelUploadStore'
+import type {
+  LocalModelUploadFailure,
+  MissingModel
+} from '@/platform/openOnCloud/stores/localModelUploadStore'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
-defineProps<{ models: CompatibilityModel[] }>()
+const { models, signedIn } = defineProps<{
+  models: MissingModel[]
+  signedIn: boolean
+}>()
 
 const emit = defineEmits<{ dismiss: [] }>()
+
+type Footer = 'uploading' | 'signIn' | 'upload' | 'close'
+
+const SECONDARY_COPY: Record<Footer, string> = {
+  uploading: 'openOnCloud.missingModels.cancelUpload',
+  signIn: 'g.cancel',
+  upload: 'g.cancel',
+  close: 'g.close'
+}
+
+const PRIMARY_COPY: Record<Footer, string> = {
+  uploading: 'openOnCloud.missingModels.hide',
+  signIn: 'openOnCloud.missingModels.signInToUpload',
+  upload: 'openOnCloud.missingModels.upload',
+  close: 'g.close'
+}
+
+const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
+  cancelled: 'openOnCloud.missingModels.cancelled',
+  privateModelsDisabled: 'assetBrowser.fileUpload.privateModelsDisabled',
+  planUnavailable: 'assetBrowser.fileUpload.planUnavailable',
+  sessionExpired: 'assetBrowser.fileUpload.sessionExpired',
+  unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
+  unsupportedType: 'openOnCloud.missingModels.folderUnsupported'
+}
+
+const { t } = useI18n()
+const uploads = useLocalModelUploadStore()
+const { upload, uploadFolders } = storeToRefs(uploads)
+
+watch(
+  () => [signedIn, models] as const,
+  () => {
+    uploads.reset()
+    if (signedIn) void uploads.prepare(models)
+  },
+  { immediate: true }
+)
+
+const canOffer = computed(
+  () =>
+    signedIn &&
+    uploadFolders.value !== null &&
+    models.some((model) => uploads.takesFolder(model.folder))
+)
+
+const copy = computed(() => {
+  if (!signedIn)
+    return {
+      title: 'openOnCloud.missingModels.title',
+      description: 'openOnCloud.missingModels.signedOut'
+    }
+  if (canOffer.value)
+    return {
+      title: 'openOnCloud.missingModels.uploadTitle',
+      description: 'openOnCloud.missingModels.chooseFiles'
+    }
+  return {
+    title: 'openOnCloud.missingModels.title',
+    description: 'openOnCloud.missingModels.unavailable'
+  }
+})
+
+const footer = computed<Footer>(() => {
+  if (upload.value.phase === 'uploading') return 'uploading'
+  if (!signedIn) return 'signIn'
+  return canOffer.value ? 'upload' : 'close'
+})
+
+const totalSize = computed(() => {
+  if (!canOffer.value) return ''
+  const bytes = models.reduce(
+    (sum, model) => sum + (uploads.sizeOf(model) ?? 0),
+    0
+  )
+  return bytes > 0 ? formatSize(bytes) : ''
+})
+
+function failureText(reason: LocalModelUploadFailure, message?: string) {
+  const key = FAILURE_COPY[reason]
+  if (key) return t(key)
+  return message ?? t('openOnCloud.missingModels.failed')
+}
+
+function onPrimary() {
+  if (footer.value === 'uploading') emit('dismiss')
+  else if (footer.value === 'signIn') void useAuthDialogs().showSignInDialog()
+  else void uploads.start(models)
+}
 </script>

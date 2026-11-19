@@ -47,11 +47,18 @@ export type ModelFileUploadResult =
   | { ok: true; taskId: string }
   | ModelFileUploadStopped
 
+/** Sends one JSON request to an upload route, such as `/assets/uploads`. */
+export type UploadRouteRequest = (
+  route: string,
+  init: RequestInit
+) => Promise<Response>
+
 interface ModelFileUploadOptions {
   tags: string[]
   signal: AbortSignal
   onProgress: (sentBytes: number) => void
   onReconnecting?: (reconnecting: boolean) => void
+  request?: UploadRouteRequest
 }
 
 async function readFailure(res: Response): Promise<ModelFileUploadStopped> {
@@ -280,8 +287,16 @@ async function putOnce(
   }
 }
 
-async function postJson(route: string, body: unknown, signal: AbortSignal) {
-  return api.fetchApi(route, {
+const sameServer: UploadRouteRequest = (route, init) =>
+  api.fetchApi(route, init)
+
+async function postJson(
+  route: string,
+  body: unknown,
+  signal: AbortSignal,
+  request: UploadRouteRequest = sameServer
+) {
+  return request(route, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -300,7 +315,12 @@ async function startFileUpload(
     tags: options.tags,
     upload_analytics: { client: UPLOAD_CLIENT }
   } satisfies z.input<typeof zStartModelUploadBody>
-  const response = await postJson(UPLOADS_ENDPOINT, body, options.signal)
+  const response = await postJson(
+    UPLOADS_ENDPOINT,
+    body,
+    options.signal,
+    options.request
+  )
   if (response.status !== 403) return response
   const refusal = zErrorResponse.safeParse(
     await response
@@ -313,7 +333,8 @@ async function startFileUpload(
   return postJson(
     UPLOADS_ENDPOINT,
     { ...body, resumable: false },
-    options.signal
+    options.signal,
+    options.request
   )
 }
 
@@ -330,13 +351,18 @@ function transferReason({
   return status[1] === '0' ? 'network' : 'http'
 }
 
-function reportTransferStop(uploadId: string, report: TransferReport): void {
+function reportTransferStop(
+  uploadId: string,
+  report: TransferReport,
+  request?: UploadRouteRequest
+): void {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), TRANSFER_REPORT_TIMEOUT_MS)
   void postJson(
     `${UPLOADS_ENDPOINT}/${encodeURIComponent(uploadId)}/events`,
     report,
-    controller.signal
+    controller.signal,
+    request
   )
     .catch(() => undefined)
     .finally(() => clearTimeout(timer))
@@ -364,13 +390,17 @@ async function stageFile(
       : await putOnce(start.data, file, options)
   if (!stopped) return { uploadId, resumed }
   if (start.data.upload_analytics_version === 1) {
-    reportTransferStop(uploadId, {
-      client: UPLOAD_CLIENT,
-      size_bytes: file.size,
-      model_folder: options.tags.find((tag) => tag !== 'models') ?? '',
-      reason: transferReason(stopped),
-      resumed
-    })
+    reportTransferStop(
+      uploadId,
+      {
+        client: UPLOAD_CLIENT,
+        size_bytes: file.size,
+        model_folder: options.tags.find((tag) => tag !== 'models') ?? '',
+        reason: transferReason(stopped),
+        resumed
+      },
+      options.request
+    )
   }
   return stopped
 }
@@ -391,7 +421,8 @@ async function uploadModelFile(
         tags,
         upload_analytics: { client: UPLOAD_CLIENT, resumed: staged.resumed }
       } satisfies z.input<typeof zCompleteModelUploadBody>,
-      signal
+      signal,
+      options.request
     )
     if (!completeRes.ok) return await readFailure(completeRes)
     const task = zCompleteModelUploadResponse.safeParse(
