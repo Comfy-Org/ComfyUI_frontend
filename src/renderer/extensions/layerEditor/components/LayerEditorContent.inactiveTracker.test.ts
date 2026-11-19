@@ -17,25 +17,22 @@ vi.mock(import('@/scripts/api'), () => ({
     removeEventListener: vi.fn()
   })
 }))
-vi.mock(
-  import('@/renderer/extensions/layerEditor/composables/useLayerEditorSession'),
-  () => ({
-    isTextEditingTarget: () => false,
-    useLayerEditorSession: () =>
-      fromPartial<ReturnType<typeof useLayerEditorSession>>({
-        canUndo: { value: false },
-        dispose: vi.fn(),
-        editor: {
-          floating: () => null,
-          history: { canUndo: () => false, canRedo: () => false }
-        }
-      })
-  })
-)
+vi.mock<unknown>(import('@comfyorg/layer-editor/vue'), () => ({
+  isTextEditingTarget: () => false,
+  useLayerEditorSession: () =>
+    fromPartial<ReturnType<typeof useLayerEditorSession>>({
+      canUndo: { value: false },
+      dispose: vi.fn(),
+      editor: {
+        floating: () => null,
+        history: { canUndo: () => false, canRedo: () => false }
+      }
+    })
+}))
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import LayerEditorContent from '@/renderer/extensions/layerEditor/components/LayerEditorContent.vue'
-import type { useLayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
+import type { useLayerEditorSession } from '@comfyorg/layer-editor/vue'
 import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
