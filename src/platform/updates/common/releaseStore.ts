@@ -189,7 +189,10 @@ export const useReleaseStore = defineStore('release', () => {
     }
 
     const skipVersionCheck = isCloud && !valid(currentVersion.value)
-    if (!skipVersionCheck && !isLatestVersion.value) {
+    if (
+      !skipVersionCheck &&
+      (!versionsComparable.value || !isLatestVersion.value)
+    ) {
       return false
     }
 

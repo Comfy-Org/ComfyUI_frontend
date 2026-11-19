@@ -753,7 +753,11 @@ describe('useReleaseStore', () => {
 
     describe('when the running version is not semver', () => {
       beforeEach(() => {
-        vi.mocked(valid).mockReturnValue(null)
+        const systemStatsStore = useSystemStatsStore()
+        systemStatsStore.systemStats!.system.comfyui_version = 'deadbeef'
+        vi.mocked(valid).mockImplementation((v) =>
+          v === 'deadbeef' ? null : '1.0.0'
+        )
       })
 
       it('withholds the red dot instead of claiming a permanent update', () => {
@@ -770,6 +774,30 @@ describe('useReleaseStore', () => {
         vi.mocked(compare).mockReturnValue(1)
 
         expect(store.shouldShowPopup).toBe(false)
+      })
+
+      it('withholds the popup when the versions match as the same hash', () => {
+        const store = useReleaseStore()
+        store.releases = [{ ...mockRelease, version: 'deadbeef' }]
+        vi.mocked(compare).mockReturnValue(0)
+
+        expect(store.shouldShowPopup).toBe(false)
+      })
+    })
+
+    describe('when the release version is not semver', () => {
+      beforeEach(() => {
+        vi.mocked(valid).mockImplementation((v) =>
+          v === 'nightly' ? null : '1.0.0'
+        )
+      })
+
+      it('withholds the red dot', () => {
+        const store = useReleaseStore()
+        store.releases = [{ ...mockRelease, version: 'nightly' }]
+        vi.mocked(compare).mockReturnValue(1)
+
+        expect(store.shouldShowRedDot).toBe(false)
       })
     })
 

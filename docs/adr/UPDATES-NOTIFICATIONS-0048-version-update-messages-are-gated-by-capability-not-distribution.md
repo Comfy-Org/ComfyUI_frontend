@@ -56,7 +56,8 @@ into.
 continues to suppress every surface when a user turns it off.
 
 Both ungated surfaces additionally require the running version and the release version to be
-comparable semver. `compareVersions` otherwise treats any difference as newer and substitutes
+comparable semver, with one exception: Cloud keeps its existing bypass, because a Cloud
+deployment has no meaningful `comfyui_version` and its popup must still appear. `compareVersions` otherwise treats any difference as newer and substitutes
 `0.0.0` for a missing version, which behind the old desktop-only gate was unreachable in
 practice. On a git install reporting a commit hash it would mean a permanent update dot, and a
 popup showing release notes the user never received.
