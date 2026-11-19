@@ -18,7 +18,7 @@ import BillingStatusBanner from './BillingStatusBanner.vue'
 /**
  * The single billing banner slot for team and personal plans (FE-1246), rendered in
  * priority order: paused > payment declined > out of credits > ending. At most
- * one state shows at a time. Each story drives the real `deriveBillingBanner`
+ * one state shows at a time. Each story drives the real `deriveBillingStatusBanner`
  * through the stubbed billing context, so these are the states the backend can
  * actually emit — not hand-set banner kinds.
  *

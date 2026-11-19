@@ -29,7 +29,7 @@ export function useAskAgentAboutIssues() {
       if (!panelStore.enabled) return
       panelStore.view = { screen: 'chat' }
       panelStore.open('error_context')
-      if (workflowStore.activeWorkflow?.path !== origin?.path) return
+      if (!origin && workflowStore.activeWorkflow) return
       panelStore.pendingErrorContext = request
     }
 

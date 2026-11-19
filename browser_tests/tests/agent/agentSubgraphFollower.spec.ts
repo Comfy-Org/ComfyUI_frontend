@@ -216,7 +216,7 @@ test.describe(
           AGENT_SUBGRAPH_INITIAL_TEXT
         )
         await expect(
-          node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+          node.getByRole('spinbutton', { name: 'seed', exact: true })
         ).toHaveValue(String(AGENT_SUBGRAPH_EDITED_SEED))
         await expect
           .poll(() =>
@@ -332,7 +332,7 @@ test.describe(
           AGENT_SUBGRAPH_INITIAL_TEXT
         )
         await expect(
-          reused.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+          reused.getByRole('spinbutton', { name: 'seed', exact: true })
         ).toHaveValue(String(AGENT_SUBGRAPH_INITIAL_SEED))
 
         const secondInstanceText = 'a photo of a lighthouse'
@@ -506,8 +506,7 @@ test.describe(
         const nodes = new VueNodeHelpers(page)
         const interiorSteps = nodes
           .getNodeByTitle('KSampler')
-          .getByLabel('steps', { exact: true })
-          .getByRole('spinbutton')
+          .getByRole('spinbutton', { name: 'steps', exact: true })
 
         await test.step('open the agent-enabled workflow', async () => {
           await page.setViewportSize({ width: 1920, height: 1280 })
@@ -665,7 +664,9 @@ test.describe(
         const innerHost = nodes.getNodeLocator(String(AGENT_INNER_HOST_ID))
         await expect(innerHost).toBeVisible()
         await expect(innerHost).toContainText('New Subgraph')
-        await expect(page.getByText('Outer Agent Subgraph')).toBeVisible()
+        await expect(
+          page.getByText('Outer Agent Subgraph', { exact: true })
+        ).toBeVisible()
         await expect(page.getByText('New Subgraph')).toBeVisible()
       })
     })
@@ -722,7 +723,7 @@ test.describe(
         AGENT_SUBGRAPH_INITIAL_TEXT
       )
       await expect(
-        node.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+        node.getByRole('spinbutton', { name: 'seed', exact: true })
       ).toHaveValue(String(AGENT_SUBGRAPH_INITIAL_SEED))
     })
   }

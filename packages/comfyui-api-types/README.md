@@ -18,11 +18,18 @@ changed value type fail as well. Both failure modes are checked below.
 One endpoint: `POST /api/prompt`. `openapi-ts.config.ts` filters to it, so the
 generated surface is ~125 lines out of a spec describing 68 paths.
 
-Nothing imports this package yet. `QueuePromptRequestBody` in
-`packages/api-client` is still hand-written, and that package does not depend on
-this one — `ComfyApi` is where the request body is built, so the dependency
-belongs there rather than on the app when it is added. That wiring is #22013,
-which cannot reference this package until it is on `main`.
+The consumer is `packages/api-client`, which depends on this package rather than
+the app depending on it, because `ComfyApi` is where the request body is built.
+Two members derive from `PromptWorkflowMetadata`: `workflow_metadata` on
+`QueuePromptRequestBody`, narrowed to the one key the client sends, and
+`workflow_id` on the websocket frame types, which takes the map's value type
+because core echoes the map's _contents_ onto the frame rather than the map.
+
+`tsconfig.types.json` bundles this package into `dist/index.d.ts`. That is
+load-bearing, not incidental: the frame types are re-exported from
+`@comfyorg/comfyui-frontend-types`, and this package is `private`, so without
+the bundle entry the published declarations carry an import no external consumer
+can resolve and `pnpm check:types-consumer` fails.
 
 Widening the filter to the rest of the API, and deriving the remaining members
 of `QueuePromptRequestBody` from it, is deliberately not done here — it is
@@ -87,7 +94,7 @@ node -e "const{createHash}=require('node:crypto'),{readFileSync,writeFileSync}=r
 # 3. Regenerate, and commit the result — stale committed output is what
 #    check:generated exists to catch.
 pnpm --filter @comfyorg/comfyui-api-types generate
-oxfmt --write src/generated
+pnpm exec oxfmt --write src/generated
 # 4. Update the commit, date and sha256 in the table above.
 ```
 
