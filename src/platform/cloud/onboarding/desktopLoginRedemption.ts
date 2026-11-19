@@ -1,3 +1,4 @@
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
 import { watch } from 'vue'
 import type { Router } from 'vue-router'
 
@@ -192,7 +193,7 @@ async function redeemCode(code: string): Promise<void> {
       // TODO(@comfyorg/ingest-types): type the payload with the generated
       // request type once the desktop-login-codes openapi addition propagates.
       body: JSON.stringify({ code }),
-      signal: AbortSignal.timeout(REDEEM_TIMEOUT_MS)
+      signal: createTimeoutSignal(REDEEM_TIMEOUT_MS)
     })
   } catch (error) {
     handleTransientFailure(

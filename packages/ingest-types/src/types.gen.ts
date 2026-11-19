@@ -3162,6 +3162,10 @@ export type BillingHandoffCreateRequest = {
    */
   amount_cents?: number
   /**
+   * Auto top-up settings the top-up checkout turns on with its payment, as chosen in the issuing app's Add credits. Allowed only with intent top-up and amount_cents, else 400 INVALID_REQUEST; each count must be positive. Sent in the entry URL's query after amount_cents as auto_top_up_threshold_credits, auto_top_up_target_credits and, when set, auto_top_up_monthly_budget_cents. A choice, not a credential: the checkout shows the consent and the purchase validates the settings again.
+   */
+  auto_top_up?: TopupAutoTopUpSettings
+  /**
    * Version of the issuing app, for logs.
    */
   client_version: string
@@ -3188,7 +3192,7 @@ export type BillingHandoffCreateRequest = {
  */
 export type BillingHandoffCreateResponse = {
   /**
-   * The receiver's handoff page, with the intent and amount_cents (if any) in the query and the token in the fragment. Open it, never display it.
+   * The receiver's handoff page, with the intent, amount_cents and auto top-up settings (if any) in the query and the token in the fragment. Open it, never display it.
    */
   entry_url: string
   /**
@@ -6350,6 +6354,45 @@ export type InteractiveTopupRequest = {
    * Explicit attached card selection, at most 255 UTF-8 bytes. Valid only on the dedicated interactive route; never changes the invoice default.
    */
   saved_payment_method_id?: string
+  /**
+   * Pays the purchase opened by POST /api/billing/topup/purchases. amount_cents and auto_top_up must equal the purchase's.
+   * Refused unless the caller opened it in this workspace and it is still payable (see 404 and 409). Absent keeps the unbound top-up.
+   *
+   */
+  purchase_id?: string
+}
+
+export type CreateTopupPurchaseRequest = {
+  /**
+   * Nominal credit purchase in USD cents, excluding tax and discounts.
+   */
+  amount_cents: number
+  auto_top_up?: TopupAutoTopUpSettings
+}
+
+export type TopupPurchase = {
+  purchase_id: string
+  /**
+   * open: payable, by a first attempt or after the latest attempt failed. processing: an attempt is unresolved.
+   * paid: an attempt succeeded; never payable again. superseded: replaced by a newer purchase or hosted checkout.
+   * expired: past expires_at. A purchase superseded or expired while an attempt was in flight reports that attempt's outcome.
+   *
+   */
+  status: 'open' | 'processing' | 'paid' | 'superseded' | 'expired'
+  amount_cents: number
+  /**
+   * The settings the payment must carry; absent for a plain purchase. An absent monthly_budget_cents means the default budget.
+   */
+  auto_top_up?: TopupAutoTopUpSettings
+  expires_at: string
+  /**
+   * The latest payment attempt; read GET /api/billing/ops/{id} for its details.
+   */
+  billing_op_id?: string
+  /**
+   * The latest attempt's operation status.
+   */
+  billing_op_status?: string
 }
 
 /**
@@ -19553,7 +19596,18 @@ export type ListCccWebsiteCardsData = {
     kind: 'MODEL' | 'WORKFLOW' | 'APP'
     limit?: number
     cursor?: string
-    locale?: 'en' | 'zh-CN' | 'ja'
+    locale?:
+      | 'en'
+      | 'zh-CN'
+      | 'ja'
+      | 'zh-TW'
+      | 'ko'
+      | 'es'
+      | 'pt-BR'
+      | 'ru'
+      | 'fr'
+      | 'tr'
+      | 'ar'
     q?: string
     /**
      * newest orders by the time each page first went live on the Hub, newest first, then title and uid; pages with no recorded time come last.
@@ -20814,7 +20868,18 @@ export type ListCccWebsiteModelDirectoryData = {
   }
   path?: never
   query?: {
-    locale?: 'en' | 'zh-CN' | 'ja'
+    locale?:
+      | 'en'
+      | 'zh-CN'
+      | 'ja'
+      | 'zh-TW'
+      | 'ko'
+      | 'es'
+      | 'pt-BR'
+      | 'ru'
+      | 'fr'
+      | 'tr'
+      | 'ar'
   }
   url: '/api/v1/catalog/model-directory'
 }
@@ -21332,7 +21397,18 @@ export type GetCccWebsiteRootPresentationData = {
   path?: never
   query: {
     path: '/hub/models/' | '/hub/workflows/' | '/hub/apps/'
-    locale?: 'en' | 'zh-CN' | 'ja'
+    locale?:
+      | 'en'
+      | 'zh-CN'
+      | 'ja'
+      | 'zh-TW'
+      | 'ko'
+      | 'es'
+      | 'pt-BR'
+      | 'ru'
+      | 'fr'
+      | 'tr'
+      | 'ar'
     /**
      * Live revision selected once at page entry. Redis requires both this revision and the selected authority pin. On an origin miss the revision must match current Live.
      */
