@@ -24,22 +24,19 @@ const SPACED_QUERY_URL_PATTERN = new RegExp(
 )
 
 const QUOTE_IMMEDIATE_END = `\\s|$`
-// Cheap stand-in for "a new URL-shaped token starts here" — used only to tell
-// a closing quote (next array element re-opens with a quote) apart from an
-// apostrophe that is itself query-value content. Deliberately not the full
-// URL_START grammar: that pulls in nested quantifiers that would multiply out
-// across every QUERY_VALUE_RUN use site below.
-const QUOTED_URL_RESTART = `(?:https?:)?\\/\\/|\\/?[A-Z0-9_~%-]`
-const QUOTE_CLOSES_RUN = `${QUOTE_IMMEDIATE_END}|[)\\]}.,;!:>](?:${QUOTE_IMMEDIATE_END}|'(?=${QUOTED_URL_RESTART}))`
-const QUERY_VALUE_UNIT = `[^\\s"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
-const QUERY_VALUE_RUN = `(?:${QUERY_VALUE_UNIT})*`
-const QUERY_VALUE_RUN_PLUS = `(?:${QUERY_VALUE_UNIT})+`
+const QUOTE_TRAILING_PUNCTUATION = /[)\]}.,;!:>]/.source
+const QUOTED_URL_RESTART = `(?:https?:)?\\/\\/|\\/[A-Z0-9._~%/-]*[?#]|[A-Z0-9_~%-]+[./][A-Z0-9._~%/-]*#|[A-Z0-9_~%-]+(?:[./][A-Z0-9._~%/-]*)?[?#][A-Z0-9_~%-]+=`
+const QUOTED_DIAGNOSTIC = `[^\\n'<>]+'(?=${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION})`
+const QUOTE_CLOSES_RUN = `${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION}+(?:${QUOTE_IMMEDIATE_END}|'(?=${QUOTED_URL_RESTART}|${QUOTED_DIAGNOSTIC}))`
+const URL_TOKEN_UNIT = `[^\\s"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
+const URL_TOKEN_REMAINDER = `(?:${URL_TOKEN_UNIT})*`
+const NONEMPTY_URL_TOKEN_REMAINDER = `(?:${URL_TOKEN_UNIT})+`
 const URL_TOKEN_PATTERN = new RegExp(
-  `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})${QUERY_VALUE_RUN}` +
-    `|${RELATIVE_URL_START}\\?${QUERY_VALUE_RUN}=${QUERY_VALUE_RUN}` +
-    `|${RELATIVE_URL_START_WITH_SEPARATOR}#${QUERY_VALUE_RUN_PLUS}` +
-    `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=${QUERY_VALUE_RUN}` +
-    `|(?<![A-Z0-9._~%/-])[?#][A-Z0-9_~%-]+=${QUERY_VALUE_RUN}`,
+  `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})${URL_TOKEN_REMAINDER}` +
+    `|${RELATIVE_URL_START}\\?${URL_TOKEN_REMAINDER}=${URL_TOKEN_REMAINDER}` +
+    `|${RELATIVE_URL_START_WITH_SEPARATOR}#${NONEMPTY_URL_TOKEN_REMAINDER}` +
+    `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}` +
+    `|(?<![A-Z0-9._~%/-])[?#][A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}`,
   'gi'
 )
 
@@ -57,7 +54,7 @@ function redactUrlToken(token: string): string {
     redacted += token.slice(separator, nextUrl)
     tokenStart = nextUrl
   }
-  return redacted.replace(/(?<![A-Z0-9._~%-])\/\/[^/\s"'<>]*@/gi, '//')
+  return redacted
 }
 
 function redactSingleUrlToken(token: string): string {
@@ -82,10 +79,14 @@ function findGluedUrlBoundary(
   for (const match of token.matchAll(urlStartPattern)) {
     const nextUrl = match.index
     let separator = nextUrl
-    while (separator > 0 && /[[\](){};,]/.test(token[separator - 1])) {
+    while (separator > 0 && /[[\](){};,|]/.test(token[separator - 1])) {
       separator--
     }
-    if (separator < nextUrl || token[nextUrl - 1] === '/') {
+    if (
+      match[0] !== '//' ||
+      separator < nextUrl ||
+      token[nextUrl - 1] === '/'
+    ) {
       return {
         separator: token[nextUrl - 1] === '/' ? nextUrl - 1 : separator,
         nextUrl
@@ -414,21 +415,42 @@ function readErrorString(
   }
 }
 
-const NATIVE_ACCESSOR_PATTERN =
-  /^function\s*\w*\s*\(\s*\)\s*\{\s*\[native code\]\s*\}$/
+const NATIVE_STACK_GETTER = Object.getOwnPropertyDescriptor(
+  new Error(),
+  'stack'
+)?.get
+const INITIAL_STACK_FORMATTER: unknown = Object.getOwnPropertyDescriptor(
+  Error,
+  'prepareStackTrace'
+)?.value
 
-function isNativeAccessor(fn: unknown): fn is (this: Error) => unknown {
-  return (
-    typeof fn === 'function' &&
-    NATIVE_ACCESSOR_PATTERN.test(Function.prototype.toString.call(fn))
-  )
+function hasCustomStackFormatter(): boolean {
+  let current: object | null = Error
+  while (current) {
+    const descriptor = Object.getOwnPropertyDescriptor(
+      current,
+      'prepareStackTrace'
+    )
+    if (descriptor) {
+      return (
+        !('value' in descriptor) || descriptor.value !== INITIAL_STACK_FORMATTER
+      )
+    }
+    current = Object.getPrototypeOf(current)
+  }
+  return INITIAL_STACK_FORMATTER !== undefined
 }
 
-function hasAccessorInChain(value: object, key: string): boolean {
+function hasUnsafeStackHeader(value: object, key: string): boolean {
   let current: object | null = value
   while (current) {
     const descriptor = Object.getOwnPropertyDescriptor(current, key)
-    if (descriptor) return !('value' in descriptor)
+    if (descriptor) {
+      return (
+        !('value' in descriptor) ||
+        (descriptor.value !== undefined && typeof descriptor.value !== 'string')
+      )
+    }
     current = Object.getPrototypeOf(current)
   }
   return false
@@ -439,15 +461,13 @@ function readOwnAccessor(
   key: 'message' | 'name' | 'stack',
   descriptor: PropertyDescriptor
 ): string {
-  if (key !== 'stack' || !isNativeAccessor(descriptor.get)) {
-    return REDACTION_SENTINEL
-  }
-  // V8's native stack getter formats its first line from `name`/`message`, so
-  // a tampered accessor on either (own or inherited) can still leak through
-  // the stack text even though the getter itself is native.
   if (
-    hasAccessorInChain(source, 'message') ||
-    hasAccessorInChain(source, 'name')
+    key !== 'stack' ||
+    !descriptor.get ||
+    descriptor.get !== NATIVE_STACK_GETTER ||
+    hasUnsafeStackHeader(source, 'message') ||
+    hasUnsafeStackHeader(source, 'name') ||
+    hasCustomStackFormatter()
   ) {
     return REDACTION_SENTINEL
   }

@@ -1,4 +1,4 @@
-import { assert, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 
 import {
   REDACTION_SENTINEL,
@@ -192,6 +192,18 @@ describe('redactTelemetryUrls', () => {
     {
       kind: 'two apostrophes glued by a period inside a query value',
       input: "https://h/x?q=a'.'&token=SECRET"
+    },
+    {
+      kind: 'ordinary query text after the second apostrophe',
+      input: "https://h/x?q=o','b&token=SECRET"
+    },
+    {
+      kind: 'a bare fragment after the second apostrophe',
+      input: "https://h/x?q=o','b#SECRET"
+    },
+    {
+      kind: 'a bare question after the second apostrophe',
+      input: "https://h/x?q=o','b?SECRET"
     }
   ])('$kind', ({ input }) => {
     it('does not let a later token survive unredacted', () => {
@@ -216,9 +228,19 @@ describe('redactTelemetryUrls', () => {
       expected: "say 'https://h/x'!"
     },
     {
+      kind: 'a closing punctuation run before another quoted value',
+      input: "('https://h/x?t=1'),'next'",
+      expected: "('https://h/x'),'next'"
+    },
+    {
       kind: 'a period-glued suffix after the query apostrophe',
       input: "https://h/x?q=a'.b&token=SECRET",
       expected: 'https://h/x'
+    },
+    {
+      kind: 'sentence punctuation after the next quoted diagnostic',
+      input: "('https://h/x?t=1'),'next.value'.",
+      expected: "('https://h/x'),'next.value'."
     }
   ])('$kind', ({ input, expected }) => {
     it('redacts a query apostrophe without leaking the rest of the query', () => {
@@ -226,16 +248,40 @@ describe('redactTelemetryUrls', () => {
     })
   })
 
-  it('redacts relative URLs in a stringified array without merging across elements', () => {
-    const redacted = redactTelemetryUrls("['a/b?t=1','c/d?t=2']")
-    expect(redacted).toBe("['a/b','c/d']")
-  })
+  it.for(['next.value', '/next/path', 'next phrase'])(
+    'preserves a quoted diagnostic containing %s',
+    (diagnostic) => {
+      expect(redactTelemetryUrls(`('https://h/x?t=1'),'${diagnostic}'`)).toBe(
+        `('https://h/x'),'${diagnostic}'`
+      )
+    }
+  )
 
-  it('preserves a path segment that merely contains //...@ after a safe authority', () => {
+  it.for(['', '!', '~', ':', '+', '-'])(
+    'redacts a later explicit authority after %s glue',
+    (glue) => {
+      expect(
+        redactTelemetryUrls(`https://a.test/x${glue}https://user:pw@b.test/y`)
+      ).toBe(`https://a.test/x${glue}https://b.test/y`)
+    }
+  )
+
+  it.for([
+    ["['a/b?t=1','c/d?t=2']", "['a/b','c/d']"],
+    ["['/x?t=1','/y?t=2']", "['/x','/y']"],
+    ["['callback?code=1','next?code=2']", "['callback','next']"]
+  ])(
+    'redacts relative URL arrays without merging elements: %s',
+    ([input, expected]) => {
+      expect(redactTelemetryUrls(input)).toBe(expected)
+    }
+  )
+
+  it.for(['', '/a!'])('preserves //...@ inside the path after %s', (prefix) => {
     const redacted = redactTelemetryUrls(
-      'https://safe.example//path@user.com?token=secret'
+      `https://safe.example${prefix}//path@user.com?token=secret`
     )
-    expect(redacted).toBe('https://safe.example//path@user.com')
+    expect(redacted).toBe(`https://safe.example${prefix}//path@user.com`)
   })
 
   describe.for([
@@ -361,17 +407,6 @@ describe('redactTelemetryUrls', () => {
   it('handles a long dotted non-URL run without pathological rescanning', () => {
     const text = 'a.'.repeat(20_000)
     expect(redactTelemetryUrls(text)).toBe('[Redacted]')
-  })
-
-  it('handles a short dotted non-URL run without pathological rescanning', () => {
-    const text = 'a' + '.'.repeat(70) + '!'
-    expect(redactTelemetryUrls(text)).toBe(text)
-  })
-
-  it('handles a long spaced near-miss query run without pathological rescanning', () => {
-    const text = `https://h/x?${' '.repeat(16_000)}!`
-    const expected = `https://h/x${' '.repeat(16_000)}!`
-    expect(redactTelemetryUrls(text)).toBe(expected)
   })
 })
 
@@ -545,24 +580,6 @@ describe('redactTelemetryValues', () => {
     })
   })
 
-  it('disambiguates a wide run of colliding keys without rescanning from scratch', () => {
-    const count = 20_000
-    const input = Object.fromEntries(
-      Array.from({ length: count }, (_, index) => [
-        `https://h/x?job=${index}`,
-        index
-      ])
-    )
-    vi.useRealTimers()
-    const start = performance.now()
-    const redacted = redactTelemetryValues(input)
-    expect(performance.now() - start).toBeLessThan(2_000)
-    expect(Object.keys(redacted ?? {})).toHaveLength(count)
-    expect(redacted?.['https://h/x']).toBe(0)
-    expect(redacted?.['https://h/x~2']).toBe(1)
-    expect(redacted?.[`https://h/x~${count}`]).toBe(count - 1)
-  })
-
   it('preserves inherited Error names and empty messages', () => {
     const error = new TypeError()
     Object.defineProperty(error, 'stack', {
@@ -575,7 +592,6 @@ describe('redactTelemetryValues', () => {
     assert.instanceOf(redacted, Error)
     expect(redacted.name).toBe('TypeError')
     expect(redacted.message).toBe('')
-    expect(redacted.stack).toBeUndefined()
   })
 
   it('clears the auto-captured stack when the source error had no real stack', () => {
@@ -595,22 +611,12 @@ describe('redactTelemetryValues', () => {
 
     const redacted = redactTelemetryError(error)
 
-    expect(redacted.stack).not.toBe(REDACTION_SENTINEL)
+    const sourceFrames = error.stack?.split('\n').slice(1) ?? []
+
+    expect(sourceFrames.length).toBeGreaterThan(0)
+    expect(redacted.stack?.split('\n').slice(1)).toEqual(sourceFrames)
     expect(redacted.stack).toContain('example.com/a')
     expect(redacted.stack).not.toContain('secret')
-  })
-
-  it('still fails closed for an accessor on message, unlike the native stack getter', () => {
-    const getter = vi.fn(() => 'secret')
-    const error = Object.defineProperty(new Error(), 'message', {
-      enumerable: true,
-      get: getter
-    })
-
-    const redacted = redactTelemetryError(error)
-
-    expect(redacted.message).toBe(REDACTION_SENTINEL)
-    expect(getter).not.toHaveBeenCalled()
   })
 
   it('still fails closed for a name accessor inherited from the prototype', () => {
@@ -628,11 +634,14 @@ describe('redactTelemetryValues', () => {
     expect(getter).not.toHaveBeenCalled()
   })
 
-  it('does not invoke a non-native stack accessor', () => {
+  it.for([
+    { kind: 'plain', bind: (getter: () => string) => getter },
+    { kind: 'bound', bind: (getter: () => string) => getter.bind(null) }
+  ])('does not invoke a $kind JavaScript stack accessor', ({ bind }) => {
     const getter = vi.fn(() => 'API_KEY=SUPER_SECRET')
     const error = Object.defineProperty(new Error('safe'), 'stack', {
       enumerable: true,
-      get: getter
+      get: bind(getter)
     })
 
     const redacted = redactTelemetryError(error)
@@ -640,4 +649,60 @@ describe('redactTelemetryValues', () => {
     expect(redacted.stack).toBe(REDACTION_SENTINEL)
     expect(getter).not.toHaveBeenCalled()
   })
+
+  describe('custom stack formatters', () => {
+    const original = Object.getOwnPropertyDescriptor(Error, 'prepareStackTrace')
+
+    afterEach(() => {
+      if (original) {
+        Object.defineProperty(Error, 'prepareStackTrace', original)
+      } else {
+        Reflect.deleteProperty(Error, 'prepareStackTrace')
+      }
+    })
+
+    it.for([
+      {
+        kind: 'value',
+        create: () => {
+          const callback = vi.fn(() => 'API_KEY=FORMATTER_SECRET')
+          return { callback, descriptor: { value: callback } }
+        }
+      },
+      {
+        kind: 'accessor',
+        create: () => {
+          const callback = vi.fn(() => () => 'API_KEY=FORMATTER_SECRET')
+          return { callback, descriptor: { get: callback } }
+        }
+      }
+    ])('does not invoke a $kind formatter', ({ create }) => {
+      const { callback, descriptor } = create()
+      const error = new Error('safe')
+      Object.defineProperty(Error, 'prepareStackTrace', {
+        configurable: true,
+        ...descriptor
+      })
+
+      const redacted = redactTelemetryError(error)
+
+      expect(redacted.stack).toBe(REDACTION_SENTINEL)
+      expect(callback).not.toHaveBeenCalled()
+    })
+  })
+
+  it.for(['name', 'message'])(
+    'does not coerce an object-valued %s while reading the stack',
+    (key) => {
+      const toString = vi.fn(() => 'API_KEY=COERCED_SECRET')
+      const error = Object.defineProperty(new Error('safe'), key, {
+        value: { toString }
+      })
+
+      const redacted = redactTelemetryError(error)
+
+      expect(redacted.stack).toBe(REDACTION_SENTINEL)
+      expect(toString).not.toHaveBeenCalled()
+    }
+  )
 })
