@@ -141,19 +141,22 @@ function captureDynamicSubmenu(
   let capturedItems: readonly (IContextMenuValue | string | null)[] | undefined
   let capturedOptions: IContextMenuOptions | undefined
   const OriginalContextMenu = LiteGraph.ContextMenu
+  const mockMenu = {
+    close: () => {},
+    root: document.createElement('div')
+  } as ContextMenu
 
   try {
-    LiteGraph.ContextMenu = class extends OriginalContextMenu {
-      constructor(
-        items: readonly (IContextMenuValue | string | null)[],
-        options?: IContextMenuOptions
+    LiteGraph.ContextMenu = new Proxy(OriginalContextMenu, {
+      construct(
+        _target,
+        [items, options]: ConstructorParameters<typeof ContextMenu>
       ) {
         capturedItems = items
         capturedOptions = options
-        super([], options)
-        this.close()
+        return mockMenu
       }
-    }
+    })
 
     try {
       const mockEvent = new MouseEvent('click', {
@@ -162,11 +165,6 @@ function captureDynamicSubmenu(
         clientX: 0,
         clientY: 0
       })
-
-      const mockMenu = {
-        close: () => {},
-        root: document.createElement('div')
-      } as ContextMenu
 
       void item.callback?.call(
         createContextMenuTarget(item),
