@@ -11,7 +11,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import MaskEditorContent from './MaskEditorContent.vue'
 
-const mockBrushPersistence = vi.hoisted(() => ({
+const mockPreferences = vi.hoisted(() => ({
   loadAndApply: vi.fn(),
   save: vi.fn()
 }))
@@ -21,8 +21,8 @@ const mockLoader = vi.hoisted(() => ({
 }))
 
 vi.mock(
-  import('@/renderer/extensions/maskEditor/composables/useBrushPersistence'),
-  () => ({ useBrushPersistence: () => mockBrushPersistence })
+  import('@/renderer/extensions/maskEditor/composables/useMaskEditorPreferences'),
+  () => ({ useMaskEditorPreferences: () => mockPreferences })
 )
 
 vi.mock(
@@ -123,14 +123,14 @@ describe('MaskEditorContent', () => {
     expect(await screen.findByRole('img', { name: 'Base' })).toBeInTheDocument()
   })
 
-  it('restores brush settings and saves them while clearing app data on unmount', () => {
+  it('restores preferences and saves them while clearing app data on unmount', () => {
     const dataStore = useMaskEditorDataStore()
     const { unmount } = renderContent()
 
-    expect(mockBrushPersistence.loadAndApply).toHaveBeenCalledTimes(1)
+    expect(mockPreferences.loadAndApply).toHaveBeenCalledTimes(1)
     unmount()
 
-    expect(mockBrushPersistence.save).toHaveBeenCalledTimes(1)
+    expect(mockPreferences.save).toHaveBeenCalledTimes(1)
     expect(dataStore.reset).toHaveBeenCalledTimes(1)
   })
 

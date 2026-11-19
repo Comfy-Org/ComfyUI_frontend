@@ -17,7 +17,7 @@ import LoadingOverlay from '@comfyorg/design-system/common/LoadingOverlay'
 import EditorCanvas from '@comfyorg/mask-editor/ui/EditorCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useBrushPersistence } from '@/renderer/extensions/maskEditor/composables/useBrushPersistence'
+import { useMaskEditorPreferences } from '@/renderer/extensions/maskEditor/composables/useMaskEditorPreferences'
 import { useMaskEditorLoader } from '@/renderer/extensions/maskEditor/composables/useMaskEditorLoader'
 import { useMaskEditorDataStore } from '@/renderer/extensions/maskEditor/stores/maskEditorDataStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -27,7 +27,7 @@ const dataStore = useMaskEditorDataStore()
 const dialogStore = useDialogStore()
 const loader = useMaskEditorLoader()
 const settings = useSettingStore()
-const brushPersistence = useBrushPersistence()
+const preferences = useMaskEditorPreferences()
 const loadController = new AbortController()
 const loaded = ref(false)
 const brushAdjustment = {
@@ -35,7 +35,7 @@ const brushAdjustment = {
   brushAdjustmentSpeed: settings.get('Comfy.MaskEditor.BrushAdjustmentSpeed')
 }
 
-brushPersistence.loadAndApply()
+preferences.loadAndApply()
 
 function handleError(error: unknown) {
   console.error('[MaskEditorContent] Initialization failed:', error)
@@ -50,7 +50,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   loadController.abort()
-  brushPersistence.save()
+  preferences.save()
   dataStore.reset()
 })
 </script>
