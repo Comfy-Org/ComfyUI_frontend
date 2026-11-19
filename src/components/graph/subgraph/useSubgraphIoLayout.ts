@@ -62,8 +62,8 @@ export function useSubgraphIoLayout(
     layoutStore.updateNodeSlotOffsets(
       graphId,
       node.id,
-      rows.value.map((row, index) => ({
-        index,
+      rows.value.map((row) => ({
+        index: Number(row.dataset.subgraphPort),
         type: node.slotDirection,
         bounds: portHitRect(
           row.querySelector('[data-port-anchor]') ?? row,

@@ -594,6 +594,16 @@ function isPermutation(indices: readonly number[], length: number): boolean {
   )
 }
 
+/** Whether instances show the input as a widget row, below every widgetless input. */
+export function subgraphInputHasWidget(input: SubgraphInput): boolean {
+  const { subgraph } = input.parent
+  return input.linkIds.some((id) => {
+    const { inputNode, input: target } =
+      subgraph.getLink(id)?.resolve(subgraph) ?? {}
+    return !!target && !!inputNode?.getWidgetFromSlot(target)
+  })
+}
+
 /** Reorders the subgraph's inputs; every instance follows on `inputs-reordered`. */
 export function reorderSubgraphInputs(
   subgraph: Subgraph,
