@@ -689,6 +689,28 @@ describe('form proof, hooks that rewrite in place', () => {
   )
 
   it(
+    'measures a node whose own onSerialize hook is writable but fixed in place',
+    { timeout: 60_000 },
+    async () => {
+      function fixedHook(this: LGraphNode) {
+        if (Object.hasOwn(this, 'onSerialize')) return
+        Object.defineProperty(this, 'onSerialize', {
+          value: fixedHook,
+          writable: true,
+          configurable: false
+        })
+      }
+      const { formProof } = await rowFor(
+        'form-fixed-own-hook',
+        serializingPack('form-fixed-own-hook', fixedHook)
+      )
+
+      expect(formProof.err).toBeUndefined()
+      expect(verdictFor(formProof, 'KSampler')).toBe('provable')
+    }
+  )
+
+  it(
     'refuses a class whose prototype serialize a pack replaced, even in place',
     { timeout: 60_000 },
     async () => {

@@ -126,11 +126,14 @@ function captureSerialization(node: LGraphNode): Capture | null {
     inherited?.call(this, serialised)
   }
   try {
-    Object.defineProperty(node, 'onSerialize', {
-      value: capture,
-      writable: true,
-      configurable: true
-    })
+    const captureDescriptor =
+      descriptor &&
+      'value' in descriptor &&
+      descriptor.configurable === false &&
+      descriptor.writable
+        ? { ...descriptor, value: capture }
+        : { value: capture, writable: true, configurable: true }
+    Object.defineProperty(node, 'onSerialize', captureDescriptor)
     const serialised = node.serialize()
     const reordered =
       produced !== NOT_CAPTURED &&
