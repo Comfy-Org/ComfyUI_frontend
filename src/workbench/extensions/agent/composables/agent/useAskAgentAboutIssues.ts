@@ -40,7 +40,7 @@ export function useAskAgentAboutIssues() {
 
     panelStore.suppressRestoredOpen()
     try {
-      await withConsent('button_click', attach)
+      await withConsent('button_click', attach, { errorContext: request })
     } catch (error) {
       reportError(error, {
         surface: 'agent',
