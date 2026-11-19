@@ -34,11 +34,21 @@ follow-up for a command interface.
 
 ### One place where an edit happens
 
-1. `comfy.edit` holds every edit the API can make. Each function takes handles
-   and plain data, and nothing else. A node edit names its node by graph id
-   and node id, which a command could carry; a slot handle's id is a number
-   this session gives the slot object, and `batch` takes a function, so those
-   are not yet the data of a command (decision 27).
+1. Every edit the API makes runs through one edit core, `edit/edits.ts`.
+   Packs reach it through handle methods (`node.setTitle`, `slot.modify`,
+   `inputs.reorder`, `graph.add`, `graph.batch`, `group.setBounds`); the core
+   itself is not published. Each core function takes handles and plain data,
+   and nothing else. A node edit names its node by graph id and node id, which
+   a command could carry; a slot handle's id is a number this session gives
+   the slot object, and `batch` takes a function, so those are not yet the
+   data of a command (decision 27). The core is published later, as a patch
+   (ADR-EXTENSIONS-NODE-API-0070 decision 2), once
+   [#16852](https://github.com/Comfy-Org/ComfyUI_frontend/issues/16852) gives
+   it command data: published now, its unfinished shape would be permanent
+   (ADR-EXTENSIONS-NODE-API-0070 decision 4), and it would be a second
+   spelling of every handle method, which no stored pack calls.
+   `createComfyApi` hands the core back beside `comfy` and `host`, for the
+   core's own contract tests; the host does not use it.
 2. Each edit runs in four steps, in this order:
    1. It checks every argument a pack passed, and throws a `TypeError` from
       `invalidArgument` for the first it cannot use. Numbers must be finite.
@@ -56,7 +66,11 @@ follow-up for a command interface.
    each field read once, before it is checked, so a field behind a getter
    cannot pass a check with one value and be written with another. An argument that is unusable is refused even when the
    entity is gone, so a mistake in a pack shows whatever state the document is
-   in. A hook on the node (`onResize`, `onConnectionsChange`, `onInputAdded`
+   in. A refusal that depends on the entity (a slot name the node already
+   has, a widget it lacks, a subgraph node, a Note's widget saving, a reorder
+   that does not name the node's slots, slots in two graphs) can only be made
+   once step 2 has found it, so for an entity that is gone the call answers
+   `false` or `undefined` instead. A hook on the node (`onResize`, `onConnectionsChange`, `onInputAdded`
    and the like) that throws during step 3 stops the edit part way: what was
    applied stays, step 4 still runs, the transaction closes, and the error
    reaches the caller.
@@ -75,11 +89,10 @@ follow-up for a command interface.
    edit and one `serialize()` of the graph alone is 4.5, 8.8, 17 and 33 ms,
    so the cost is the host's capture, the same as for an edit the editor
    makes. The `batch` JSDoc tells a pack to loop inside one batch.
-4. The handle methods packs call are kept, and each is one call into
-   `comfy.edit`: `node.setTitle(title)` is `comfy.edit.updateNode(node,
-   { title })`. They hold no edit logic. Their types say which call they are.
-   A refusal names the handle method the pack called (`setTitle needs ...`),
-   which passes its name to the `comfy.edit` call.
+4. Each handle method packs call is one call into the core:
+   `node.setTitle(title)` is `updateNode(node, { title })`. They hold no edit
+   logic. A refusal names the handle method the pack called
+   (`setTitle needs ...`), which passes its name to the core.
 5. Edits are not replayable commands of their own. They call the same host
    methods the editor's own UI calls, so an edit raises the graph intent or
    layout operation that method raises, and no other (decision 27). What undo
@@ -95,18 +108,22 @@ follow-up for a command interface.
    the new size to the constraints.
    - `mode` is a name (`'always'`, `'bypass'`, ...); a number is refused, as
      the reads never return one.
-   - `color` and `bgColor` take a string, or `undefined` to restore the
-     default. `shape` takes `'default'` to restore it.
+   - `color` and `bgColor` take a string, or `undefined` or `null` to restore
+     the default. `shape` takes `'default'` to restore it.
    - `collapsed` collapses or expands the node even when it is pinned, as the
      earlier API did; nothing happens if it is already as asked.
    - `properties` sets each named property through `node.setProperty`, so the
      node's `onPropertyChanged` and property widgets see it. Each value is
-     stored as the workflow saves it (a JSON copy), so a pack cannot keep a
-     reference into the node; a value JSON cannot hold (a function, a cycle, a
-     BigInt) is refused, and `__proto__` is refused as a name. A node may keep
+     stored as a copy the workflow saves unchanged (`savableValue`,
+     ADR-EXTENSIONS-NODE-API-0070 decision 13), so a pack cannot keep a
+     reference into the node: `NaN`, a nested function or `undefined`, a
+     `Date`, a `toJSON`, a class instance, a cycle and a getter (not called)
+     are refused, naming the path, and a name must be a non-empty string that
+     is not an `Object.prototype` member. A node may keep
      a property's old value (its `onPropertyChanged` answers `false`, or a
-     pack's hook rejects it); `updateNode` then answers `false`, and the rest
-     of the patch stays applied.
+     pack's hook rejects it), or store another (a pack's hook gives one with
+     `setValue`); `updateNode` then answers `false`, and the rest of the
+     patch stays applied.
    - `undefined` as a property's value deletes the property, as
      `setProperty(name, undefined)` cleared it in V2 (5 stored calls in
      cg-use-everywhere and kjnodes). The edit goes through
@@ -161,7 +178,7 @@ follow-up for a command interface.
     not be installed, so a missing type is a state of the app, not a mistake in
     the pack.
 12. `comfy.graph.add(type, init?)` is `addNode` on the graph on screen, and
-    `comfy.graph.batch` is `comfy.edit.batch`. With no graph on screen, `add`
+    `comfy.graph.batch` is the core's `batch`. With no graph on screen, `add`
     still checks its arguments and returns `undefined`.
 13. `comfy.graph.links()` lists the links of the graph on screen as frozen
     `LinkInfo` records, sorted by link id so the order does not depend on how
@@ -219,8 +236,8 @@ follow-up for a command interface.
     widget and does not save its position, so the edit would answer `true`
     and change nothing; rgthree gives 25 such positions at run time, which
     the host would place by the widget anyway. A type name that is an `Object.prototype` member
-    (`__proto__`, `constructor`, `toString`, alone or in a list) is refused
-    for every slot edit, as `defs.define` refuses it: the host's slot-type
+    (`__proto__`, `constructor`, `toString`, alone or in a list), or empty,
+    is refused for every slot edit, as `defs.define` refuses it: the host's slot-type
     registry would add the slot and then fail. An output's new type is applied through
     `setOutputDataType`, which retypes its links; an input's link is kept. A
     type given as several names is stored as the host compares it, joined by
@@ -243,7 +260,8 @@ follow-up for a command interface.
     with them, as part of the API's own output reorder; floating links of
     reordered inputs keep their slot index, as the host's `replaceNodeInputs`
     leaves them (#23466). If the store refuses, nothing moves and
-    the call answers `false`. Decision 24 says what a load gives back.
+    the call answers `false`. An order the slots already have answers `true`
+    with no step, and the version does not advance. Decision 24 says what a load gives back.
 19. `connect(output, input)` links two slots of one graph through
     `LGraphNode.connect`, so the host's type check and the nodes' connection
     hooks apply; it gives the new link, or `undefined` if the host refused.
@@ -357,12 +375,16 @@ leaves the graph feeding execution the wrong data.
     it. `reorderSlots` on a subgraph node's inputs goes through the host's own
     `reorderSubgraphInputs`, which reorders the subgraph's inputs and the
     node's together; the node's floating links keep their slot index, as the
-    host leaves them (#23466). Every
+    host leaves them (#23466). That reorder is refused while another node in
+    the document (the root graph or any subgraph definition) places the same
+    subgraph, because the host's reorder would leave that node in the old
+    order with its links feeding other inputs ("Core limitations"); a
+    subgraph placed once inside a subgraph that is itself placed several
+    times is one node, and is reordered. Every
     other slot edit on a subgraph node is refused; a pack edits the subgraph's
     inputs and outputs in the subgraph. No stored V2 conversion reaches it: a
     pack extends a type by name, and a subgraph node's type is its
-    subgraph's id. The host's reorder leaves other instances of the same
-    subgraph in the old order ("Core limitations").
+    subgraph's id.
 
 ### Graph intents and the command future
 
@@ -384,7 +406,7 @@ leaves the graph feeding execution the wrong data.
     happen. An intent kind for endpoint changes and for slot fields and slot
     structure is a change in core, owned by the core maintainers. The API does
     not fix this bug; once core fixes it, these calls are correct with no change
-    to the API. For `comfy.edit` to
+    to the API. For the core to
     be a command interface, slot handles would also need an id that a saved
     document carries, which the host does not have (decision 14).
 
@@ -439,30 +461,30 @@ unusable argument leaves: always the document unchanged, with a `TypeError`.
 "Gone" is what a call does with a handle whose entity is deleted or whose
 document is no longer open.
 
-| Edit                                     | Host owner it goes through                                                                                            | Step                                                                   | Gone                                   |
-| ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------- |
-| `updateNode` `title`                     | `LGraphNode.title` setter: node state store and a `set_node_field` graph intent                                       | One step                                                               | `false`, nothing changed               |
-| `updateNode` `mode`                      | `LGraphNode.mode` setter: node state store and a `set_node_field` graph intent                                        | One step                                                               | `false`                                |
-| `updateNode` `collapsed`                 | `LGraphNode.collapse(true)`: flag and a `set_node_field` graph intent                                                 | One step                                                               | `false`                                |
-| `updateNode` `color`, `bgColor`, `shape` | `LGraphNode` setters: node state store                                                                                | One step                                                               | `false`                                |
-| `updateNode` `properties`                | `LGraphNode.setProperty` per name: `onPropertyChanged`, property widgets; `undefined` then deletes the name           | One step                                                               | `false`                                |
-| `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`; `false` refused on a Note, MarkdownNote or PrimitiveNode (decision 25)                | One step; a load gives the type's own value                            | `false`                                |
-| `updateNode` `position`                  | `LGraphNode.pos` setter: a `moveNode` layout operation                                                                | One step                                                               | `false`                                |
-| `updateNode` `size`, `sizeConstraints`   | `LGraphNode.setSize`: a `resizeNode` layout operation, then `onResize`                                                | One step                                                               | `false`                                |
-| `updateNode` `resizable`                 | `LGraphNode.resizable` (node state store); the host's unpin sets it to `true`                                         | No step: not saved                                                     | `false`                                |
-| `updateNode` with several fields         | All of the above in one transaction                                                                                   | One step for the patch                                                 | `false`                                |
-| `removeNode`                             | `LGraph.remove`: links, stores, selection, `node:removed`, `remove_node` graph intent                                 | One step                                                               | `false`                                |
-| `addNode`                                | `LiteGraph.createNode`, then `LGraph.add`: id, stores, layout, `onNodeAdded`, `add_node` graph intent                 | One step                                                               | `undefined`, nothing added             |
-| `updateSlot`                             | The slot's own fields; `setOutputDataType` for an output's type; refused on a subgraph node (decision 26)             | One step                                                               | `false`                                |
-| `addInput`, `addOutput`                  | `LGraphNode.addInput`, `addOutput`; refused on a subgraph node                                                        | One step                                                               | `undefined`, nothing added             |
-| `removeSlot`                             | `LGraphNode.removeInput`, `removeOutput`; refused on a subgraph node                                                  | One step                                                               | `false`                                |
-| `reorderSlots`                           | Inputs: `replaceNodeInputs`, or `reorderSubgraphInputs` on a subgraph node; outputs: `updateEndpoints`, then the list | One step; `false` if the link store refuses, slots and links unchanged | `false`                                |
-| `connect`                                | `LGraphNode.connect`: the type check, `onConnectInput`, `onConnectionsChange`, a `connect` graph intent               | One step; `undefined` if the host refuses                              | `undefined`                            |
-| `disconnect`                             | `LGraphNode.disconnectInput`, `disconnectOutput`: `onConnectionsChange`, a `disconnect` graph intent                  | One step; `false` and no step for a slot with no link                  | `false`                                |
-| `moveLinks`                              | The link store's `updateEndpoints`, all links validated before any moves                                              | One step; `undefined` if the store refuses, links unchanged            | `undefined`                            |
-| `batch`                                  | The change tracker's transaction around the pack's function                                                           | One step for all edits inside                                          | Each edit inside answers for itself    |
-| `updateGroup` `bounds`                   | `LGraphGroup.pos`, then `size`: two `setGroupBounds` layout operations; the nodes inside stay (decision 28)           | One step                                                               | `false`                                |
-| `addBadge` (registration)                | `LGraphNode.badges`                                                                                                   | No step: not saved                                                     | No badge, a disposer that does nothing |
+| Edit                                     | Host owner it goes through                                                                                                                                              | Step                                                                   | Gone                                   |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------- | -------------------------------------- |
+| `updateNode` `title`                     | `LGraphNode.title` setter: node state store and a `set_node_field` graph intent                                                                                         | One step                                                               | `false`, nothing changed               |
+| `updateNode` `mode`                      | `LGraphNode.mode` setter: node state store and a `set_node_field` graph intent                                                                                          | One step                                                               | `false`                                |
+| `updateNode` `collapsed`                 | `LGraphNode.collapse(true)`: flag and a `set_node_field` graph intent                                                                                                   | One step                                                               | `false`                                |
+| `updateNode` `color`, `bgColor`, `shape` | `LGraphNode` setters: node state store                                                                                                                                  | One step                                                               | `false`                                |
+| `updateNode` `properties`                | `LGraphNode.setProperty` per name: `onPropertyChanged`, property widgets; `undefined` then deletes the name                                                             | One step                                                               | `false`                                |
+| `updateNode` `serializeWidgets`          | `LGraphNode.serialize_widgets`; `false` refused on a Note, MarkdownNote or PrimitiveNode (decision 25)                                                                  | One step; a load gives the type's own value                            | `false`                                |
+| `updateNode` `position`                  | `LGraphNode.pos` setter: a `moveNode` layout operation                                                                                                                  | One step                                                               | `false`                                |
+| `updateNode` `size`, `sizeConstraints`   | `LGraphNode.setSize`: a `resizeNode` layout operation, then `onResize`                                                                                                  | One step                                                               | `false`                                |
+| `updateNode` `resizable`                 | `LGraphNode.resizable` (node state store); the host's unpin sets it to `true`                                                                                           | No step: not saved                                                     | `false`                                |
+| `updateNode` with several fields         | All of the above in one transaction                                                                                                                                     | One step for the patch                                                 | `false`                                |
+| `removeNode`                             | `LGraph.remove`: links, stores, selection, `node:removed`, `remove_node` graph intent                                                                                   | One step                                                               | `false`                                |
+| `addNode`                                | `LiteGraph.createNode`, then `LGraph.add`: id, stores, layout, `onNodeAdded`, `add_node` graph intent                                                                   | One step                                                               | `undefined`, nothing added             |
+| `updateSlot`                             | The slot's own fields; `setOutputDataType` for an output's type; refused on a subgraph node (decision 26)                                                               | One step                                                               | `false`                                |
+| `addInput`, `addOutput`                  | `LGraphNode.addInput`, `addOutput`; refused on a subgraph node                                                                                                          | One step                                                               | `undefined`, nothing added             |
+| `removeSlot`                             | `LGraphNode.removeInput`, `removeOutput`; refused on a subgraph node                                                                                                    | One step                                                               | `false`                                |
+| `reorderSlots`                           | Inputs: `replaceNodeInputs`, or `reorderSubgraphInputs` on a subgraph node placed once; outputs: `updateEndpoints`, then the list; refused on a subgraph node's outputs | One step; `false` if the link store refuses, slots and links unchanged | `false`                                |
+| `connect`                                | `LGraphNode.connect`: the type check, `onConnectInput`, `onConnectionsChange`, a `connect` graph intent                                                                 | One step; `undefined` if the host refuses                              | `undefined`                            |
+| `disconnect`                             | `LGraphNode.disconnectInput`, `disconnectOutput`: `onConnectionsChange`, a `disconnect` graph intent                                                                    | One step; `false` and no step for a slot with no link                  | `false`                                |
+| `moveLinks`                              | The link store's `updateEndpoints`, all links validated before any moves                                                                                                | One step; `undefined` if the store refuses, links unchanged            | `undefined`                            |
+| `batch`                                  | The change tracker's transaction around the pack's function                                                                                                             | One step for all edits inside                                          | Each edit inside answers for itself    |
+| `updateGroup` `bounds`                   | `LGraphGroup.pos`, then `size`: two `setGroupBounds` layout operations; the nodes inside stay (decision 28)                                                             | One step                                                               | `false`                                |
+| `addBadge` (registration)                | `LGraphNode.badges`                                                                                                                                                     | No step: not saved                                                     | No badge, a disposer that does nothing |
 
 Every other group member reads.
 
@@ -479,7 +501,7 @@ contract. A member no stored pack calls is cut.
 
 | Member                                                                                                                                                      |               Packs, sites | Why                                                                                                                                                                                                                     |
 | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------: | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GraphHandle.remove(id)`                                                                                                                                    |                       0, 0 | `node.remove()` and `comfy.edit.removeNode` cover it                                                                                                                                                                    |
+| `GraphHandle.remove(id)`                                                                                                                                    |                       0, 0 | `node.remove()` covers it                                                                                                                                                                                               |
 | `NodeHandle.setPinned`, `getShape`, `getSizeConstraints`, `isResizable`                                                                                     |                       0, 0 | No use; `snapshot()` reads the shape                                                                                                                                                                                    |
 | `GroupHandle.setTitle`, `setColor`                                                                                                                          |                       0, 0 | No use, so `bounds` is the only field `updateGroup` takes                                                                                                                                                               |
 | `SlotCollection.get`, `ids`; `SlotOptions.localizedName`, `position`, `direction`                                                                           |                       0, 0 | No use; `byId`, `at` and `byName` remain                                                                                                                                                                                |
@@ -507,8 +529,12 @@ ADR-EXTENSIONS-NODE-API-0070.
 - **One function per field** (`setTitle(node, title)`). A patch per kind of
   entity is the smaller surface, carries several fields as one step, and is
   already the shape of a command's data.
-- **Edits on `comfy.graph`.** `comfy.graph` reads and `comfy.edit` writes, so a
-  reader can find every write in one place.
+- **Publishing the core as `comfy.edit`.** All 13 functions and the patch
+  fields have no stored use (census 0, 0; 130 converted packs, 0 sites); each
+  is a second spelling of a handle method a pack uses. What only the core can
+  do (add a node to a subgraph that is not on screen, set several fields in
+  one patch outside `batch`) has no stored use either. It is published as a
+  patch once it carries command data (decision 1).
 - **Rolling back a failed batch.** Main has no inverse for most edits, and
   restoring the tracker's last snapshot would also discard edits the user made
   before the batch. A thrown batch keeps its edits as one step.
@@ -531,14 +557,15 @@ ADR-EXTENSIONS-NODE-API-0070.
 
 ## What this feature replaces or duplicates, and why
 
-- **Argument checks** (`edit/checkedArguments.ts`). The repository has no
-  validator for untyped values that names the call and the field, and the
-  checks must run before any write. `isPlainObject` comes from `es-toolkit`.
-- **A JSON copy of a property value.** A second JSON round trip beside
-  `shared/savedCopy.ts`, which reads properties: that one reports a value that
-  cannot be saved once and reads it as `undefined`, and freezes the copy; a
-  write must refuse such a value at the call and store an unfrozen copy, so
-  the two do not share code.
+- **Argument checks** (`v4/checkedFields.ts`, `edit/checkedArguments.ts`).
+  The repository has no validator for untyped values that names the call and
+  the field, and the checks must run before any write. The plain-object test
+  is the API's own (`isPlainData`): `es-toolkit`'s `isPlainObject` accepts an
+  object whose prototype has a `null` prototype, and types its fields `any`.
+- **The savable walk** (`shared/savableValue.ts`). A JSON round trip would
+  silently drop a nested function and turn `NaN` into `null`, which hides the
+  mistake, so one walk checks and copies a value to be stored, and gives the
+  frozen copy a read hands back.
 - **Clamping.** `fitToConstraints` uses `clamp` from `es-toolkit`.
 - **Mode names.** The table `nodeHandle.ts` reads modes with is reused in both
   directions. The shape names are new: LiteGraph's `NAMED_SHAPES` maps names to
@@ -590,7 +617,9 @@ ADR-EXTENSIONS-NODE-API-0070.
   instances in the old order". _Reproduction:_ place a subgraph twice, call
   `reorderSubgraphInputs` on one instance with a new order: the other
   instance's inputs keep the old order while the subgraph's change.
-  _Direction:_ reorder every instance's inputs in the same call.
+  _Direction:_ reorder every instance's inputs in the same call. Until then
+  `reorderSlots` refuses the reorder while the subgraph is placed more than
+  once (decision 26).
 - **Slot identity across undo.** Undo and redo rebuild slots, and the host
   has no slot id to find them by, so slot handles do not survive them (decision
   14). Ticket draft: _Title:_ "Give node slots an id that survives

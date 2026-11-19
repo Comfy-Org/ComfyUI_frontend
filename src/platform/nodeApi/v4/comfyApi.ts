@@ -48,7 +48,7 @@ export interface ComfyApiHost {
 export interface ComfyApi {
   comfy: Comfy
   host: ComfyApiHost
-  /** Not published (ADR 0073 decision 1); the core's own tests drive it. */
+  /** Not published (ADR-EXTENSIONS-NODE-API-0073 decision 1); the core's own tests drive it. */
   edit: EditCore
 }
 

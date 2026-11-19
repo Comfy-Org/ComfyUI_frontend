@@ -20,7 +20,7 @@ export interface Comfy {
   /** The graph on screen, and the way to every node in the open document. */
   readonly graph: GraphHandle
   /**
-   * True if `a` and `b` are the same node, graph, group or slot handle; `false` for anything else.
+   * True if `a` and `b` are the same node, group, slot or graph-scope handle; `false` for anything else.
    * There is one such handle per entity, so `a === b` gives the same answer for two of them.
    */
   sameEntity(a: unknown, b: unknown): boolean
@@ -399,8 +399,8 @@ export interface SlotCollection<THandle> {
 /** Node types: read their definitions, define new ones, and extend those the host registers. */
 export interface DefRegistry {
   /**
-   * Calls `apply` once for each node type `selector` picks, now and as types
-   * register; its hooks reach the nodes that join a graph after this call, not those already there.
+   * Calls `apply` for each node type `selector` picks, now and each time a type registers, a reload of the
+   * definitions included; its hooks reach the nodes that join a graph after this call, not those already there.
    * Unsubscribing removes them.
    */
   extend(

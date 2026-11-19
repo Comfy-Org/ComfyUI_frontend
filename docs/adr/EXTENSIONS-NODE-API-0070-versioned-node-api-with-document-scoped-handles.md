@@ -92,7 +92,13 @@ a reference that is the node object dies on every undo.
    copied as the workflow would save it. Reading a handle never changes the
    node: its bounds are measured from where the node is now, as the canvas
    draws it. The Vue canvas sizes a collapsed node from its DOM, so until it
-   has drawn one the width is LiteGraph's default collapsed width.
+   has drawn one the width is LiteGraph's default collapsed width. Identity
+   (`id`, `graphId`, `isDeleted`, `type`) is a property; a node's and a
+   widget's live state is read through a method (`getTitle()`, `isPinned()`).
+   The fields of slots, graph scopes and documents that V2 exposed as
+   properties (`slot.name`, `scope.name`, `graph.version`) stay properties, so
+   about 380 stored reads keep their spelling; a read that copies or computes
+   (`snapshot()`, `links()`) is a method.
 10. A handle names one entity in one graph of one loaded document.
     - It finds its graph by id under the root it came from, so it survives
       undo and redo, which rebuild the graph as new objects.
@@ -149,7 +155,9 @@ a reference that is the node object dies on every undo.
 11. There is one handle per entity for as long as it stays valid, until a load
     replaces the document or an undo or redo retires it (decision 10), however
     a pack reaches it. Two handles to one entity are the same object, `sameEntity` equals
-    `===`, and a handle is a stable `Map` or `WeakMap` key.
+    `===` for node, group, slot and graph-scope handles (it answers `false`
+    for `comfy.graph`, a document handle and any other value), and a handle is
+    a stable `Map` or `WeakMap` key.
 12. Once an entity is gone its handle still gives its identity and reports
     `isDeleted`. Every other read returns `undefined`, a list included, and
     the types say so. A node that an undo or redo restores is the same handle
@@ -161,16 +169,46 @@ a reference that is the node object dies on every undo.
     member, what it needs, and what it received, before it reads or changes
     anything: a node id and a property name must be strings, a query must be a
     plain object of `scope` and `type`, a type must be a name or a list of
-    names. An argument beyond those a member takes is ignored, as in any
-    JavaScript call. `docs/guidance/error-handling.md` says never to throw
-    across an extension-facing API, because existing packs depend on existing
-    calls not throwing. No pack depended on these calls before this API, and a
-    wrong argument is a mistake in the pack's code that a placeholder result
-    would hide, so this is an exception to that guidance. A missing or deleted
-    entity is `undefined`, never a throw. A property value the workflow could
-    not save, such as a circular or BigInt one, reads as `undefined`. Each
-    member reports the first one it meets and no more, as the guidance asks
-    for a call over data a pack supplies.
+    names. A positional argument beyond those a member takes is ignored, as in
+    any JavaScript call. Every member follows the same rules for what a pack
+    passes:
+    - An object argument (options, patch, definition, item) is a plain object,
+      its prototype `Object.prototype` or `null`; a list, a class instance or
+      `Object.create(proto)` is refused (`checkedFields` in
+      `v4/checkedFields.ts`). It is read once, as a snapshot of its own
+      enumerable fields, so a getter is called once, and an inherited or
+      non-enumerable field is not read.
+    - A field the member does not take is refused, `__proto__` included, so a
+      misspelled or cut field shows at the call. A member may list a field it
+      accepts and ignores.
+    - A field set to `undefined` is absent, unless the contract gives it a
+      meaning: a cleared color restores the default, and a property set to
+      `undefined` is deleted. `null` restores a default wherever `undefined`
+      does.
+    - A callback is checked once, when it is passed.
+    - A value to be stored is one the workflow saves unchanged: text, a finite
+      number, a boolean, `null`, or a plain object or list of those, at most
+      1000 deep. A cycle, a getter, a function, `undefined` inside an object,
+      `NaN`, a `Date`, a `toJSON` and a class instance are refused, naming the
+      path (`value.list[0]`). One walk checks and copies it
+      (`shared/savableValue.ts`), and the stored copy is not frozen.
+    - A name used as a key of a host object (a type, a property, a color's
+      type) is a non-empty string that is not an `Object.prototype` member
+      (`isStoreKey`).
+    - A refusal is one `TypeError` from `shared/invalidArgument.ts`, worded
+      `<member> needs <what>, not <received>.`, where `<received>` names the
+      kind (a list, a function, an instance of `Date`, `10n`) and is cut to 80
+      characters. A member called at a time it cannot run says
+      `<member> can only be called <when>.` Both carry the brand
+      `isInvalidArgument` tests. `docs/guidance/error-handling.md` says never to throw
+      across an extension-facing API, because existing packs depend on existing
+      calls not throwing. No pack depended on these calls before this API, and a
+      wrong argument is a mistake in the pack's code that a placeholder result
+      would hide, so this is an exception to that guidance. A missing or deleted
+      entity is `undefined`, never a throw. A property value the workflow could
+      not save, such as a circular or BigInt one, reads as `undefined`. Each
+      member reports the first one it meets and no more, as the guidance asks
+      for a call over data a pack supplies.
 14. Every listener the API calls goes through one primitive. Listeners run in
     registration order. One that throws is reported through `reportError` and
     does not stop the host or another pack. A disposer removes only its own
@@ -343,10 +381,14 @@ run. No core listener cancels. If an extension does, the handles to the
 document that stays on screen are retired, and a pack takes fresh ones.
 
 Handles are kept until their document is replaced, so memory grows with the
-number of entities packs have asked about in the open document, and is
-released on the next load. An undo or redo releases the handles it retires; a
-handle to a node that is gone but may come back is held until a load, or a
-restore that retires it. API-JSON and A1111 imports clear the graph without a
+number of live entities packs have asked about in the open document, and is
+released on the next load. An undo or redo releases the handles it retires. A
+handle to a node that is gone but may come back is held only weakly once an
+undo or redo, or a sweep when the cache has doubled, finds it gone: a pack
+that holds it gets it back when the node returns, and one nobody holds is
+collected. So memory and the walk each undo makes follow the live entities
+plus the handles packs still hold; measured with 10,000 nodes made and
+deleted, held strongly they cost 14.3 KB each until the next load. API-JSON and A1111 imports clear the graph without a
 load, so handles taken before one stay held until a load, undo or redo.
 
 Adding a version adds wiring beside this one: an import map entry in
