@@ -63,6 +63,11 @@ export function createWidgetEdits(
         addWidget(node, widget)
         node.expandToFitContent()
       }),
+    setHeight: (node, widget, height) =>
+      saved(node, () => {
+        fixHeight(widget, height)
+        node.expandToFitContent()
+      }),
     removeWidget: (node, widget) =>
       saved(node, () => node.removeWidget(widget)),
     reorderWidgets: (node, ordered) =>
@@ -74,12 +79,7 @@ export function createWidgetEdits(
 
 function displayEdits(): Pick<
   WidgetEdits,
-  | 'setOption'
-  | 'setLabel'
-  | 'setHidden'
-  | 'setDisabled'
-  | 'setHeight'
-  | 'setLinked'
+  'setOption' | 'setLabel' | 'setHidden' | 'setDisabled' | 'setLinked'
 > {
   function shown(node: LGraphNode, edit: () => void): void {
     edit()
@@ -97,11 +97,6 @@ function displayEdits(): Pick<
     setDisabled: (node, widget, disabled) =>
       shown(node, () => {
         widget.disabled = disabled
-      }),
-    setHeight: (node, widget, height) =>
-      shown(node, () => {
-        fixHeight(widget, height)
-        node.expandToFitContent()
       }),
     setLinked: (node, widget, linked) =>
       shown(node, () => {
