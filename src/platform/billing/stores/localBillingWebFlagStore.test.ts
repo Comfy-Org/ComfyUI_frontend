@@ -19,7 +19,10 @@ import {
   startDesktopHostSession,
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { showsCloudBillingNewUxOnLocal } from '@/platform/billing/localBillingWebEnabled'
+import {
+  offersAutoTopUpAtLocalCheckout,
+  showsCloudBillingNewUxOnLocal
+} from '@/platform/billing/localBillingWebEnabled'
 import { useLocalBillingWebFlagStore as defineFlagStore } from '@/platform/billing/stores/localBillingWebFlagStore'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -183,6 +186,25 @@ describe('useLocalBillingWebFlagStore', () => {
 
       expect(store.enabled).toBe(true)
       expect(showsCloudBillingNewUxOnLocal()).toBe(false)
+    }
+  )
+
+  it.for([
+    { served: true, expected: true },
+    { served: false, expected: false },
+    { served: 'true', expected: false }
+  ])(
+    'reads auto top-up at checkout served as $served from the same request as the handoff flag',
+    async ({ served, expected }) => {
+      serveFlags({
+        local_billing_web: true,
+        billing_auto_top_up_at_checkout_enabled: served
+      })
+
+      await signInAndRead()
+
+      expect(offersAutoTopUpAtLocalCheckout()).toBe(expected)
+      expect(fetchRequests(FEATURES)).toHaveLength(1)
     }
   )
 

@@ -30,7 +30,10 @@ import {
 import { useBillingAutoTopUpCard } from '@/platform/billing/composables/useBillingAutoTopUpCard'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
-import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
+import {
+  setLocalAutoTopUpAtCheckoutEnabled,
+  setLocalBillingWebEnabled
+} from '@/platform/billing/localBillingWebEnabled'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
@@ -540,6 +543,55 @@ describe('AddCreditsDialogContent on local web with local_billing_web on', () =>
       expect(checkbox()).toBeNull()
     }
   )
+
+  it('offers the checkbox when Cloud serves auto top-up at checkout to the local account, carries the ticked settings through the handoff, and after paying sends the owner to Billing instead of claiming it turned on', async () => {
+    hoisted.balanceIncreased = undefined
+    hoisted.handoffTabs = [handoffTab()]
+    setLocalAutoTopUpAtCheckoutEnabled(true)
+    onTestFinished(() => setLocalAutoTopUpAtCheckoutEnabled(false))
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(
+      await screen.findByRole('checkbox', { name: /Turn on auto top-up/ })
+    )
+    await user.click(continueButton())
+
+    expect(hoisted.issueHandoff).toHaveBeenCalledExactlyOnceWith(
+      {
+        intent: 'top-up',
+        amountCents: 5000,
+        autoTopUp: {
+          threshold_credits: 1000,
+          target_credits: 11_550,
+          monthly_budget_cents: null
+        }
+      },
+      expect.any(AbortSignal)
+    )
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    await hoisted.balanceIncreased!()
+
+    expect(
+      await screen.findByRole('heading', { name: 'Credits added' })
+    ).toBeVisible()
+    expect(
+      screen.getByText('Open Billing to check that auto top-up is on.')
+    ).toBeVisible()
+    expect(screen.getByRole('button', { name: /Manage/ })).toBeVisible()
+    expect(
+      screen.queryByRole('heading', { name: 'Auto top-up is on' })
+    ).toBeNull()
+    expect(hoisted.setupUrl).not.toHaveBeenCalled()
+    expect(hoisted.createHostedCheckout).not.toHaveBeenCalled()
+  })
+
+  it('offers no checkbox on local when Cloud does not serve auto top-up at checkout, even with the flag on for Cloud', async () => {
+    renderDialog({ atCheckout: true })
+    await nextTick()
+
+    expect(billingApi.listSavedPaymentMethods).not.toHaveBeenCalled()
+    expect(checkbox()).toBeNull()
+  })
 
   it('issues a fresh handoff from the blocked step instead of showing a link', async () => {
     const tab = handoffTab()

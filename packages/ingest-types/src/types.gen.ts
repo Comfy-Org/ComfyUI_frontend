@@ -3162,6 +3162,10 @@ export type BillingHandoffCreateRequest = {
    */
   amount_cents?: number
   /**
+   * Auto top-up settings the top-up checkout turns on with its payment, as chosen in the issuing app's Add credits. Allowed only with intent top-up and amount_cents, else 400 INVALID_REQUEST; each count must be positive. Sent in the entry URL's query after amount_cents as auto_top_up_threshold_credits, auto_top_up_target_credits and, when set, auto_top_up_monthly_budget_cents. A choice, not a credential: the checkout shows the consent and the purchase validates the settings again.
+   */
+  auto_top_up?: TopupAutoTopUpSettings
+  /**
    * Version of the issuing app, for logs.
    */
   client_version: string
@@ -3188,7 +3192,7 @@ export type BillingHandoffCreateRequest = {
  */
 export type BillingHandoffCreateResponse = {
   /**
-   * The receiver's handoff page, with the intent and amount_cents (if any) in the query and the token in the fragment. Open it, never display it.
+   * The receiver's handoff page, with the intent, amount_cents and auto top-up settings (if any) in the query and the token in the fragment. Open it, never display it.
    */
   entry_url: string
   /**

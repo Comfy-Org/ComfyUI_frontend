@@ -1360,7 +1360,7 @@ describe('UnifiedPricingTable unpaid signup invoice notice', () => {
 
     expect(screen.getByRole('link', { name: 'questions' })).toHaveAttribute(
       'href',
-      'https://portal.usepylon.com/comfy-org/forms/question?email=a%2Bb%40example.com'
+      'https://comfysupport.portal.usepylon.com/forms/question?email=a%2Bb%40example.com'
     )
   })
 
