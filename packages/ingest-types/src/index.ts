@@ -233,6 +233,7 @@ export type {
   BillingTaxId,
   Budget,
   BudgetAlert,
+  BudgetAlertStatus,
   BudgetChange,
   BudgetCreateRequest,
   BudgetHistory,
