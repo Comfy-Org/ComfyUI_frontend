@@ -7,7 +7,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 export type ArrangeLayout = 'vertical' | 'horizontal' | 'grid'
@@ -182,7 +182,7 @@ export function useArrangeNodes() {
     if (updates.length === 0) return
 
     mutations.batchMoveNodes(rootGraphId, updates)
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
     if (captureUndo) {
       workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
     }

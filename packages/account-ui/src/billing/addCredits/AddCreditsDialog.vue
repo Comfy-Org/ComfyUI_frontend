@@ -1,13 +1,11 @@
 <template>
   <div
-    ref="root"
     :class="
       cn(
         'flex max-h-[calc(100dvh-2rem)] min-h-0 w-[min(400px,95vw)] flex-col rounded-2xl border bg-background text-sm text-foreground shadow-md',
         ui.root
       )
     "
-    :style="{ transform: `translateY(${growth / 2}px)` }"
     data-testid="add-credits-dialog"
     :data-step="state.step"
   >
@@ -117,18 +115,8 @@
       @close="emit('close')"
     />
     <AddCreditsAutoTopUpResultStep
-      v-else-if="state.step === 'auto_top_up_on'"
-      :settings="state.settings"
-      :link-url="billingLink"
-      :translate
-      :format
-      :ui
-      @close="emit('close')"
-      @open-billing="openBilling"
-    />
-    <AddCreditsAutoTopUpResultStep
-      v-else-if="state.step === 'auto_top_up_failed'"
-      :link-url="linkTo(failedSetupUrl)"
+      v-else-if="autoTopUpResult"
+      v-bind="autoTopUpResult"
       :translate
       :format
       :ui
@@ -147,9 +135,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef, watch } from 'vue'
+import { computed, watch } from 'vue'
 import type { Component } from 'vue'
-import { useResizeObserver, useWindowSize } from '@vueuse/core'
 
 import type {
   AddCreditsAutoTopUpOffer,
@@ -289,11 +276,18 @@ const dialog = useAddCreditsDialog({
 })
 const state = dialog.state
 
-const failedSetupUrl = computed(() =>
-  state.value.step === 'auto_top_up_failed' && !autoTopUpSetupHidden
-    ? state.value.setupUrl
-    : undefined
-)
+const autoTopUpResult = computed(() => {
+  const current = state.value
+  if (current.step === 'auto_top_up_on')
+    return { settings: current.settings, linkUrl: billingLink.value }
+  if (current.step === 'auto_top_up_unconfirmed')
+    return { unconfirmed: true, linkUrl: billingLink.value }
+  if (current.step === 'auto_top_up_failed')
+    return {
+      linkUrl: linkTo(autoTopUpSetupHidden ? undefined : current.setupUrl)
+    }
+  return undefined
+})
 const offerSetupUrl = computed(() =>
   state.value.step === 'auto_top_up_offer' && !autoTopUpSetupHidden
     ? state.value.setupUrl
@@ -309,21 +303,6 @@ watch(
 
 const format = computed(() => addCreditsFormat(locale))
 
-const VIEWPORT_GUTTER_PX = 16
-const root = useTemplateRef('root')
-const defaultHeight = ref<number>()
-const height = ref(0)
-const { height: viewportHeight } = useWindowSize()
-useResizeObserver(root, ([entry]) => {
-  height.value = entry.borderBoxSize[0]?.blockSize ?? entry.contentRect.height
-  defaultHeight.value ??= height.value
-})
-const growth = computed(() => {
-  if (defaultHeight.value === undefined) return 0
-  const room = viewportHeight.value - 2 * VIEWPORT_GUTTER_PX - height.value
-  return Math.max(0, Math.min(height.value - defaultHeight.value, room))
-})
-
 const blockedUrl = computed(() => {
   const current = state.value
   if (current.step === 'checkout_blocked') return current.checkoutUrl
@@ -336,6 +315,9 @@ const title = computed(() => {
   }
   if (state.value.step === 'auto_top_up_failed') {
     return translate('autoTopUpFailed.title')
+  }
+  if (state.value.step === 'auto_top_up_unconfirmed') {
+    return translate('autoTopUpUnconfirmed.title')
   }
   if (state.value.step === 'checkout_opened') {
     return translate(

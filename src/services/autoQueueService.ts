@@ -1,6 +1,6 @@
-import { partnerRunGateBlocksAutoQueue } from '@/platform/billing/composables/usePartnerNodesRunGate'
+import { partnerRunGateBlocksAutoQueue } from '@/platform/auth/partnerNode/usePartnerNodesRunGate'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import {
   isInstantRunningMode,
   useQueueSettingsStore
@@ -24,7 +24,7 @@ export function setupAutoQueueHandler() {
       } else {
         graphHasChanged = false
         // Queue the prompt in the background
-        void app.queuePrompt(0, queueSettingsStore.batchCount, {
+        void useApp().queuePrompt(0, queueSettingsStore.batchCount, {
           intent: { trigger_source: 'auto_queue' }
         })
         internalCount++
@@ -37,7 +37,7 @@ export function setupAutoQueueHandler() {
       internalCount = queueCountStore.count
       if (
         !internalCount &&
-        !app.lastExecutionError &&
+        !useApp().lastExecutionError &&
         !partnerRunGateBlocksAutoQueue()
       ) {
         if (
@@ -45,7 +45,7 @@ export function setupAutoQueueHandler() {
           (queueSettingsStore.mode === 'change' && graphHasChanged)
         ) {
           graphHasChanged = false
-          await app.queuePrompt(0, queueSettingsStore.batchCount, {
+          await useApp().queuePrompt(0, queueSettingsStore.batchCount, {
             intent: { trigger_source: 'auto_queue' }
           })
         }

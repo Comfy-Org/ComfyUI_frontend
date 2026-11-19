@@ -40,6 +40,8 @@ export interface LineInput {
   latestTag: string
   publishedVersion: string | null
   commits: Commit[]
+  /** Tag whose GitHub release triggered this run, if any; empty on the daily cron. */
+  justPublishedTag?: string | null
 }
 
 // Conventional `fix:` / `fix(scope):`, plus a bare `Fix ...` / `Fixes ...` lead —
@@ -70,7 +72,8 @@ export function evaluateLine(input: LineInput): {
   findings: Finding[]
   failed: boolean
 } {
-  const { branch, latestTag, publishedVersion, commits } = input
+  const { branch, latestTag, publishedVersion, commits, justPublishedTag } =
+    input
   const findings: Finding[] = []
   const { fixes } = classifyCommits(commits)
 
@@ -90,21 +93,26 @@ export function evaluateLine(input: LineInput): {
     })
   }
 
+  const publishInFlight = justPublishedTag === latestTag
+  const inFlightNote = publishInFlight
+    ? ` ${latestTag} was released moments ago and PyPI publishing runs after that, so this is not a failure yet; the daily run re-checks.`
+    : ''
+
   if (publishedVersion === null) {
     findings.push({
       kind: 'published-version-missing',
       branch,
-      severity: 'failure',
+      severity: publishInFlight ? 'notice' : 'failure',
       strandedFixCount: 0,
-      message: `No published version found for ${branch}; cannot prove ${latestTag} reached users.`
+      message: `No published version found for ${branch}; cannot prove ${latestTag} reached users.${inFlightNote}`
     })
   } else if (publishedVersion !== latestTag.replace(/^v/, '')) {
     findings.push({
       kind: 'published-version-lag',
       branch,
-      severity: 'failure',
+      severity: publishInFlight ? 'notice' : 'failure',
       strandedFixCount: 0,
-      message: `${branch} is tagged ${latestTag} but the published version is ${publishedVersion}.`
+      message: `${branch} is tagged ${latestTag} but the published version is ${publishedVersion}.${inFlightNote}`
     })
   }
 
@@ -258,6 +266,8 @@ async function main(): Promise<void> {
   console.error(`PyPI latest: ${published}`)
   console.error(`Checking: ${linesToCheck.join(', ')}\n`)
 
+  const justPublishedTag = process.env.RELEASE_TAG?.trim() || null
+
   const allFindings: Finding[] = []
 
   for (const branch of linesToCheck) {
@@ -279,7 +289,8 @@ async function main(): Promise<void> {
       branch,
       latestTag,
       publishedVersion: publishedOnLine,
-      commits: commitsPastTag(latestTag, branch)
+      commits: commitsPastTag(latestTag, branch),
+      justPublishedTag
     })
     allFindings.push(...findings)
   }

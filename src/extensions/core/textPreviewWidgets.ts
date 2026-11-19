@@ -2,7 +2,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
 import WidgetTextPreview from '@/renderer/extensions/vueNodes/widgets/components/WidgetTextPreview.vue'
 import type { CustomInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -23,7 +23,7 @@ export function addTextPreviewWidgets(node: LGraphNode) {
 
   const previewWidgetId = () =>
     widgetId(
-      resolveNodeRootGraphId(node, app.rootGraph.id),
+      resolveNodeRootGraphId(node, useApp().rootGraph.id),
       node.id,
       PREVIEW_WIDGET_NAME
     )
@@ -59,7 +59,7 @@ export function addTextPreviewWidgets(node: LGraphNode) {
       'BOOLEAN',
       { label_on: 'Markdown', label_off: 'Plain text', default: false }
     ],
-    app
+    useApp()
   ).widget
 
   modeWidget.options.serialize = false

@@ -1,3 +1,4 @@
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -12,7 +13,7 @@ import {
   ExecutableNodeDTO,
   LGraphEventMode
 } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useAuthStore } from '@/stores/authStore'
 import { useModelStore } from '@/stores/modelStore'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -216,7 +217,7 @@ async function postCompatibilityCheck(
       node_types: nodeTypes,
       models
     }),
-    signal: AbortSignal.timeout(10_000)
+    signal: createTimeoutSignal(10_000)
   })
 }
 
@@ -232,7 +233,7 @@ function giveUp(cause: unknown): null {
 export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResult> {
   let body: unknown
   try {
-    const nodes = checkedNodes(app.rootGraph)
+    const nodes = checkedNodes(useApp().rootGraph)
     const unreadableLoader = nodes.find((node) => node.hasUnreadableModels)
     if (unreadableLoader)
       return {

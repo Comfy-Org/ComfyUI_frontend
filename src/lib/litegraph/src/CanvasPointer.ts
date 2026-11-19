@@ -6,11 +6,7 @@ import type {
   GesturePolicy,
   GestureState
 } from './canvas/reduceGesture'
-import {
-  doubleClickedClick,
-  idleGesture,
-  reduceGesture
-} from './canvas/reduceGesture'
+import { idleGesture, reduceGesture } from './canvas/reduceGesture'
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 
@@ -71,11 +67,6 @@ export class CanvasPointer {
     return this.state.phase === 'dragging'
   }
 
-  /** The `timeStamp` of the press that the current press double-clicks, if any. */
-  get doubleClickedTimeStamp(): number | undefined {
-    return doubleClickedClick(this.state)?.timeStamp
-  }
-
   private state: GestureState = idleGesture
   private releaseCapture?: () => void
 
@@ -108,6 +99,9 @@ export class CanvasPointer {
   eMove?: CanvasPointerEvent
   /** The last pointerup event for the primary button */
   eUp?: CanvasPointerEvent
+
+  /** Screen-space travel already applied by canvas panning since the last pointerdown */
+  panTravel: [number, number] = [0, 0]
 
   /** Currently detected input device type */
   detectedDevice: 'mouse' | 'trackpad' = 'mouse'
@@ -477,6 +471,7 @@ export class CanvasPointer {
         this.isDown = false
         this.isDouble = false
         this.resizeDirection = undefined
+        this.panTravel = [0, 0]
 
         if (this.clearEventsOnReset) {
           this.eDown = undefined

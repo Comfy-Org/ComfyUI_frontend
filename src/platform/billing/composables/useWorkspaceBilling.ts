@@ -209,6 +209,7 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const isInitialized = ref(false)
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const lastBalanceReadFailed = ref(false)
 
   const statusData = shallowRef<BillingStatusResponse | null>(null)
   const statusReadAuthoritative = ref(true)
@@ -296,6 +297,9 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   const teamCreditStops = computed(() => billingPlans.teamCreditStops.value)
   const subscriptionPaymentRecovery = computed(
     () => billingPlans.subscriptionPaymentRecovery.value
+  )
+  const statusPaymentRecovery = computed(
+    () => statusData.value?.subscription_payment_recovery ?? null
   )
   const currentTeamCreditStop = computed(
     () => statusData.value?.team_credit_stop ?? null
@@ -418,9 +422,11 @@ export function useWorkspaceBilling(): WorkspaceBilling {
         !isStaleBillingRead('balance', requestId, workspaceId)
       ) {
         balanceData.value = balance
+        lastBalanceReadFailed.value = false
       }
     } catch (err) {
       if (isStaleBillingRead('balance', requestId, workspaceId)) return
+      lastBalanceReadFailed.value = true
       error.value =
         err instanceof Error ? err.message : 'Failed to fetch balance'
       throw err
@@ -858,11 +864,13 @@ export function useWorkspaceBilling(): WorkspaceBilling {
     currentPlanSlug,
     teamCreditStops,
     subscriptionPaymentRecovery,
+    statusPaymentRecovery,
     currentTeamCreditStop,
     maxSeats,
     occupiedSeats,
     isLoading,
     error,
+    balanceReadFailed: computed(() => lastBalanceReadFailed.value),
     canAccessSubscriptionFeatures,
     isFreeTier,
     billingStatus,

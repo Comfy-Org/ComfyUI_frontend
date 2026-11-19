@@ -11,6 +11,7 @@ export class TopUpCreditsDialog extends BaseDialog {
   readonly openedHeading: Locator
   readonly blockedHeading: Locator
   readonly description: Locator
+  readonly presets: Locator
   readonly preset10: Locator
   readonly preset25: Locator
   readonly preset50: Locator
@@ -45,6 +46,7 @@ export class TopUpCreditsDialog extends BaseDialog {
     this.description = this.root.getByText(
       "You don't have enough credits to run this workflow."
     )
+    this.presets = this.root.getByRole('radiogroup', { name: 'Add credits' })
     this.preset10 = this.root.getByRole('radio', { name: '$10', exact: true })
     this.preset25 = this.root.getByRole('radio', { name: '$25', exact: true })
     this.preset50 = this.root.getByRole('radio', { name: '$50', exact: true })
