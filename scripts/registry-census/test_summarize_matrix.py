@@ -398,6 +398,21 @@ class NewHookDeltaGate(unittest.TestCase):
         self.assertEqual(v.code, 0, v.lines)
         self.assertEqual(v.metrics['newHookFreePct'], 70.0)
 
+    def test_a_drop_of_exactly_the_tolerance_passes(self) -> None:
+        def rows_with_failures(failing: int) -> list[dict]:
+            rows = population(600)
+            for r in rows[:failing]:
+                add_hook_error(r, 'setup')
+            return rows
+
+        baseline = sm.evaluate(rows_with_failures(2), {}).metrics
+        for failing, code in ((5, 0), (6, 1)):
+            with self.subTest(failing=failing):
+                v = sm.evaluate(
+                    rows_with_failures(failing), {}, baseline, 'run-2'
+                )
+                self.assertEqual(v.code, code, v.lines)
+
     def test_a_baseline_without_the_rate_skips_only_this_delta(self) -> None:
         rows = broken(30, lambda r: add_hook_error(r, 'setup'))
         v = sm.evaluate(rows, {}, {'entryPct': 100.0, 'runId': 'run-1'},
