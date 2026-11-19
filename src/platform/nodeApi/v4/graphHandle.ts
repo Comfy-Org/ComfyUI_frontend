@@ -2,8 +2,8 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 
 import type { GraphScopeFor } from './graphScopeHandle'
 import type { NodeHandles } from './nodeHandle'
-import { checkedNodeQuery, nodeOfExactType } from './nodeQuery'
-import type { GraphHandle, NodeQuery, NodeQueryScope } from './types'
+import { checkedNodeQuery, graphsIn, nodeOfExactType } from './nodeQuery'
+import type { GraphHandle, NodeQuery } from './types'
 
 type GraphHandleReads =
   | 'id'
@@ -26,13 +26,6 @@ export function createGraphHandle(
 ): GraphHandle {
   const visible = () => getVisibleGraph() ?? undefined
 
-  function graphsIn(scope: NodeQueryScope): LGraph[] {
-    const graph = visible()
-    if (!graph) return []
-    if (scope === 'visible') return [graph]
-    return [graph.rootGraph, ...graph.rootGraph.subgraphs.values()]
-  }
-
   const reads = {
     get id() {
       return visible()?.id
@@ -42,12 +35,12 @@ export function createGraphHandle(
     },
 
     node: (id: string) => nodes.find(visible(), id),
-    nodes: () => nodes.list(graphsIn('visible')),
+    nodes: () => nodes.list(graphsIn('visible', visible())),
     nodesOfType: (type: string) =>
-      nodes.list(graphsIn('visible'), nodeOfExactType(type)),
+      nodes.list(graphsIn('visible', visible()), nodeOfExactType(type)),
     queryNodes(query: NodeQuery = {}) {
       const { scope, selects } = checkedNodeQuery(query)
-      return nodes.list(graphsIn(scope), selects)
+      return nodes.list(graphsIn(scope, visible()), selects)
     },
 
     root() {
