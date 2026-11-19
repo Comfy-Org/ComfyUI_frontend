@@ -2039,7 +2039,10 @@ async function openChatForErroredWorkflow(
 async function attachErrorContext(context: AgentErrorContext): Promise<void> {
   const run = ++errorAttachRun
   const workflow = workflowStore.activeWorkflow
-  if (context.workflowPath && workflow?.path !== context.workflowPath) {
+  if (
+    context.workflowPath !== undefined &&
+    (workflow?.path ?? null) !== context.workflowPath
+  ) {
     warnWorkflowChanged()
     return
   }

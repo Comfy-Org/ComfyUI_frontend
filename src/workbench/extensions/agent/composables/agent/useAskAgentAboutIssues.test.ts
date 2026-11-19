@@ -169,6 +169,23 @@ describe('useAskAgentAboutIssues', () => {
     )
   })
 
+  it('states that no workflow was open rather than leaving the path out', async () => {
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    Object.defineProperty(useWorkflowStore(), 'activeWorkflow', {
+      configurable: true,
+      value: null
+    })
+    const { askAgentAboutIssues } = useAskAgentAboutIssues()
+
+    await askAgentAboutIssues(CONTEXT)
+
+    // `null` and absent read the same to a caller that only checks for a path,
+    // and the panel's guard skipped an absent one, so a failure raised with
+    // nothing open attached itself to whatever opened next.
+    expect(panel.pendingErrorContext?.workflowPath).toBeNull()
+  })
+
   it('never leaves later clicks dead when an earlier consent request stays pending', async () => {
     const panel = useAgentPanelStore()
     panel.enabled = true

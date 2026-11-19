@@ -474,6 +474,29 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     expect(useAgentComposerStore().errorContext).toBeNull()
   })
 
+  it('does not attach diagnostics that started with no open workflow once one is open', async () => {
+    respondWithChats([
+      { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
+    ])
+    renderPanel()
+    await send('add an upscaler')
+
+    // A queue or app-mode failure can be raised with nothing open, so the
+    // handoff records `null` rather than omitting the path. Omitting it used to
+    // skip this guard and attach the failure to whichever workflow was open.
+    useAgentPanelStore().pendingErrorContext = {
+      ...errorContext,
+      workflowPath: null
+    }
+
+    await vi.waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these errors is no longer open, so nothing was attached.'
+      )
+    )
+    expect(useAgentComposerStore().errorContext).toBeNull()
+  })
+
   it('keeps an attached chip with its workflow when the user switches tabs before sending', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
     respondWithChats([

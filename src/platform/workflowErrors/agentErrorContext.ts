@@ -24,5 +24,11 @@ export interface AgentErrorContext {
   label: string
   severity: AgentErrorContextSeverity
   workflowName?: string
-  workflowPath?: string
+  /**
+   * Where the problems came from. `null` says there was no open workflow, which
+   * is not the same as `undefined`: a request that originated with no workflow
+   * must still be refused once some workflow is open, so the absence has to be
+   * stated rather than left out. Surfaces leave this unset; the handoff sets it.
+   */
+  workflowPath?: string | null
 }
