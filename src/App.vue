@@ -19,7 +19,7 @@ import { computed, onMounted, provide, watch } from 'vue'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import { useAgentExtensionNotices } from '@/composables/useAgentExtensionNotices'
 import { AskAgentPortKey } from '@/platform/workflowErrors/askAgentPort'
-import { useAskAgentAboutIssues } from '@/workbench/extensions/agent/composables/agent/useAskAgentAboutIssues'
+import { createAskAgentPort } from '@/workbench/extensions/agent/composables/agent/createAskAgentPort'
 import config from '@/config'
 import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 import SessionReconnecting from '@/platform/auth/session/components/SessionReconnecting.vue'
@@ -39,10 +39,7 @@ import { parsePreloadError } from '@/utils/preloadErrorUtil'
 import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
 
 registerExtensionDialogService(createExtensionDialogService())
-// Error surfaces live in sibling subtrees: the Issues panel under `router-view`,
-// the execution-error dialog under `GlobalDialog`. Providing the port here is
-// what makes it reachable from both, and keeps one instance of it.
-provide(AskAgentPortKey, useAskAgentAboutIssues())
+provide(AskAgentPortKey, createAskAgentPort())
 const workspaceStore = useWorkspaceStore()
 useApp().extensionManager = useWorkspaceStore()
 
