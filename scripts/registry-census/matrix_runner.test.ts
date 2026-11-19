@@ -691,6 +691,38 @@ describe('form proof, hooks that rewrite in place', () => {
   )
 
   it(
+    'refuses a hook that swaps which widgets serialize',
+    { timeout: 60_000 },
+    async () => {
+      const initialized = new WeakSet<LGraphNode>()
+      const { formProof } = await rowFor(
+        'form-serialize-flags-swapped',
+        serializingPack(
+          'form-serialize-flags-swapped',
+          function (this: LGraphNode) {
+            const first = this.widgets?.find(
+              (widget) => widget.name === 'steps'
+            )
+            const second = this.widgets?.find((widget) => widget.name === 'cfg')
+            if (!first || !second) return
+            if (!initialized.has(this)) {
+              initialized.add(this)
+              first.serialize = false
+              second.serialize = true
+              return
+            }
+            const firstSerializes = first.serialize
+            first.serialize = second.serialize
+            second.serialize = firstSerializes
+          }
+        )
+      )
+
+      expect(verdictFor(formProof, 'KSampler')).toBe('values_replaced')
+    }
+  )
+
+  it(
     'measures a class whose onSerialize hook is read-only',
     { timeout: 60_000 },
     async () => {
