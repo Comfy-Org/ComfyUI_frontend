@@ -46,6 +46,7 @@ const TRANSFORM_STYLE_PROPERTIES = new Set([
 const TRANSFORM_WRITE_MESSAGE =
   'Do not write a transform straight to element.style on the graph canvas - Chrome recomposites the whole page on every change. Use useCompositedTransform from @/renderer/core/layout/transform/useCompositedTransform.'
 const TEST_APIS = new Set(['describe', 'it', 'suite', 'test'])
+const HOISTED_VITEST_METHODS = new Set(['hoisted', 'mock'])
 const DISABLING_CONDITION = new Map([
   ['skipIf', true],
   ['runIf', false]
@@ -146,6 +147,14 @@ interface PendingAssertion {
   readonly inner: TypeAssertion
 }
 
+interface Scope {
+  readonly set: ReadonlyMap<
+    string,
+    { readonly defs: readonly { readonly type: string }[] }
+  >
+  readonly upper: Scope | null
+}
+
 interface RuleFixer {
   insertTextBefore(node: Node, text: string): unknown
   replaceText(node: Node, text: string): unknown
@@ -155,6 +164,7 @@ interface RuleContext {
   readonly filename: string
   readonly sourceCode: {
     getAncestors(node: Node): readonly Node[]
+    getScope(node: Node): Scope
     getText(node: Node): string
   }
   report(descriptor: {
@@ -220,6 +230,50 @@ function importedLocalName(
   return specifier && isImportSpecifier(specifier)
     ? specifier.local.name
     : undefined
+}
+
+function resolvesToImport(
+  context: RuleContext,
+  node: Node,
+  name: string
+): boolean {
+  for (
+    let scope: Scope | null = context.sourceCode.getScope(node);
+    scope;
+    scope = scope.upper
+  ) {
+    const variable = scope.set.get(name)
+    if (variable) {
+      return variable.defs.some(({ type }) => type === 'ImportBinding')
+    }
+  }
+  return false
+}
+
+function isHoistedVitestCall(node: Node): node is CallExpression {
+  if (node.type !== 'CallExpression') return false
+  const { callee } = node as CallExpression
+  if (callee.type !== 'MemberExpression') return false
+  const { computed, object, property } = callee as MemberExpression
+  const method = identifierName(property)
+  return (
+    !computed &&
+    identifierName(object) === 'vi' &&
+    method !== undefined &&
+    HOISTED_VITEST_METHODS.has(method)
+  )
+}
+
+function runsInHoistedVitestCallback(
+  context: RuleContext,
+  node: Node
+): boolean {
+  const lineage = [...context.sourceCode.getAncestors(node), node]
+  return lineage.some(
+    (ancestor, index) =>
+      isHoistedVitestCall(ancestor) &&
+      ancestor.arguments.includes(lineage[index + 1])
+  )
 }
 
 function availableHelperName(usedNames: ReadonlySet<string>): string {
@@ -368,7 +422,7 @@ export const noUnknownDoubleAssertion = {
   create(context: RuleContext) {
     let fromAny: string | undefined
     let program: Node
-    const withoutHelper: PendingAssertion[] = []
+    const assertions: PendingAssertion[] = []
     const usedNames = new Set<string>()
     const filename = context.filename.replaceAll('\\', '/')
     const canInsertHelper =
@@ -383,29 +437,50 @@ export const noUnknownDoubleAssertion = {
       return `${helper}<${context.sourceCode.getText(node.typeAnnotation)}, unknown>(${context.sourceCode.getText(inner.expression)})`
     }
 
+    const canCallHelper = (node: TypeAssertion, helper: string) =>
+      !runsInHoistedVitestCallback(context, node) &&
+      (helper !== fromAny || resolvesToImport(context, node, helper))
+
     return {
       Program(node: Node) {
         program = node
       },
       'Program:exit'() {
-        if (fromAny || withoutHelper.length === 0 || !canInsertHelper) return
+        const helper =
+          fromAny ??
+          (canInsertHelper ? availableHelperName(usedNames) : undefined)
+        if (!helper) {
+          assertions.forEach(({ node }) =>
+            context.report({ node, message: DOUBLE_ASSERTION_MESSAGE })
+          )
+          return
+        }
 
-        const helper = availableHelperName(usedNames)
-        withoutHelper.forEach(({ node }, index) => {
-          const fix =
-            index === 0
-              ? (fixer: RuleFixer) => [
-                  fixer.insertTextBefore(
-                    program,
-                    `import { fromAny${helper === 'fromAny' ? '' : ` as ${helper}`} } from '@total-typescript/shoehorn'\n`
-                  ),
-                  ...withoutHelper.map(({ node, inner }) =>
-                    fixer.replaceText(node, replacement(node, inner, helper))
-                  )
-                ]
-              : undefined
-          context.report({ node, message: DOUBLE_ASSERTION_MESSAGE, fix })
-        })
+        const fixable = assertions.filter(({ node }) =>
+          canCallHelper(node, helper)
+        )
+        const rewrite = (fixer: RuleFixer, { node, inner }: PendingAssertion) =>
+          fixer.replaceText(node, replacement(node, inner, helper))
+        const fixFor = (assertion: PendingAssertion) => {
+          if (!fixable.includes(assertion)) return undefined
+          if (fromAny) return (fixer: RuleFixer) => rewrite(fixer, assertion)
+          if (assertion !== fixable[0]) return undefined
+          return (fixer: RuleFixer) => [
+            fixer.insertTextBefore(
+              program,
+              `import { fromAny${helper === 'fromAny' ? '' : ` as ${helper}`} } from '@total-typescript/shoehorn'\n`
+            ),
+            ...fixable.map((pending) => rewrite(fixer, pending))
+          ]
+        }
+
+        assertions.forEach((assertion) =>
+          context.report({
+            node: assertion.node,
+            message: DOUBLE_ASSERTION_MESSAGE,
+            fix: fixFor(assertion)
+          })
+        )
       },
       Identifier(node: Identifier) {
         usedNames.add(node.name)
@@ -419,21 +494,7 @@ export const noUnknownDoubleAssertion = {
         if (!isTypeAssertion(node.expression)) return
         const inner = node.expression
         if (inner.typeAnnotation.type !== 'TSUnknownKeyword') return
-
-        if (!fromAny) {
-          if (canInsertHelper) {
-            withoutHelper.push({ node, inner })
-            return
-          }
-        }
-
-        const helper = fromAny
-        const fix = helper
-          ? (fixer: RuleFixer) =>
-              fixer.replaceText(node, replacement(node, inner, helper))
-          : undefined
-
-        context.report({ node, message: DOUBLE_ASSERTION_MESSAGE, fix })
+        assertions.push({ node, inner })
       }
     }
   }

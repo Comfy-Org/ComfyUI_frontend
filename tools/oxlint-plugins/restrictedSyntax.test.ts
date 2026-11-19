@@ -140,6 +140,30 @@ void fixture
 `
   },
   {
+    file: path.join(probeDirs.source, 'helperImportedLater.test.ts'),
+    source: `const fixture = value as unknown as Fixture
+import { fromAny } from '@total-typescript/shoehorn'
+void fixture
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'shadowedHelper.test.ts'),
+    source: `import { fromAny } from '@total-typescript/shoehorn'
+export function build(fromAny: string) {
+  return value as unknown as Fixture
+}
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'hoistedDoubleAssertion.test.ts'),
+    source: `const mocks = vi.hoisted(() => ({ hoisted: value as unknown as Fixture }))
+vi.mock('./module', () => ({ mocked: value as unknown as MockedFixture }))
+const fixture = other as unknown as OtherFixture
+void mocks
+void fixture
+`
+  },
+  {
     file: path.join(probeDirs.source, 'doubleAssertion.ts'),
     source: `const fixture = value as unknown as Fixture
 void fixture
@@ -491,7 +515,7 @@ describe('restricted syntax rules', () => {
 
   it('rejects unknown double assertions', () => {
     const doubleAssertionFindings = findingsFor('no-unknown-double-assertion')
-    expect(doubleAssertionFindings).toHaveLength(9)
+    expect(doubleAssertionFindings).toHaveLength(14)
     expect(
       doubleAssertionFindings.every(({ severity }) => severity === 'error')
     ).toBe(true)
@@ -545,6 +569,26 @@ describe('restricted syntax rules', () => {
         "import { fromAny as fromAnyRuntime2 } from '@total-typescript/shoehorn'",
         'const fixture = fromAnyRuntime2<Fixture, unknown>(value)'
       ]
+    },
+    {
+      filename: 'helperImportedLater.test.ts',
+      status: 0,
+      expectedLines: ['const fixture = fromAny<Fixture, unknown>(value)']
+    },
+    {
+      filename: 'shadowedHelper.test.ts',
+      status: 1,
+      expectedLines: ['return value as unknown as Fixture']
+    },
+    {
+      filename: 'hoistedDoubleAssertion.test.ts',
+      status: 1,
+      expectedLines: [
+        "import { fromAny } from '@total-typescript/shoehorn'",
+        'hoisted: value as unknown as Fixture',
+        'mocked: value as unknown as MockedFixture',
+        'const fixture = fromAny<OtherFixture, unknown>(other)'
+      ]
     }
   ])(
     'fixes double assertions in $filename',
@@ -570,6 +614,7 @@ describe('restricted syntax rules', () => {
       filename: 'C:\\repo\\browser_tests\\workflow.spec.ts',
       sourceCode: {
         getAncestors: () => [],
+        getScope: () => ({ set: new Map(), upper: null }),
         getText: () => 'value'
       },
       report: ({ fix }) => {
