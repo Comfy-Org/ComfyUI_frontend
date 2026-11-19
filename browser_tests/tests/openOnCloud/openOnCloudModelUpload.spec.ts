@@ -36,10 +36,11 @@ test.describe('Open on Cloud: upload the models Comfy Cloud lacks', () => {
     await expect(upload).toBeDisabled()
 
     await card
-      .getByTestId(`choose-model-${LOCAL_MODEL_FILE.name}`)
+      .getByLabel(`Choose file for ${LOCAL_MODEL_FILE.name}`)
       .setInputFiles(LOCAL_MODEL_FILE)
     await upload.click()
 
+    await card.getByRole('button', { name: 'Check again' }).click()
     await expect(page.getByTestId('run-on-cloud-card')).toBeVisible()
     expect(cloudTraffic.starts).toHaveLength(1)
     expect(cloudTraffic.starts[0].postDataJSON()).toMatchObject({
@@ -81,7 +82,7 @@ test.describe('Open on Cloud: upload the models Comfy Cloud lacks', () => {
     ).toBeVisible()
 
     await card
-      .getByTestId(`choose-model-${LOCAL_MODEL_FILE.name}`)
+      .getByLabel(`Choose file for ${LOCAL_MODEL_FILE.name}`)
       .setInputFiles({
         ...LOCAL_MODEL_FILE,
         name: 'another_lora.safetensors'

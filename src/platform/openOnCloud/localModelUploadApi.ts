@@ -65,7 +65,8 @@ export async function readLocalModelSizes(
 ): Promise<Map<string, number>> {
   try {
     const response = await api.fetchApi(
-      `/experiment/models/${encodeURIComponent(folder)}`
+      `/experiment/models/${encodeURIComponent(folder)}`,
+      { signal: createTimeoutSignal(READ_TIMEOUT_MS) }
     )
     if (!response.ok) return new Map()
     const files = zLocalModelFiles.safeParse(await response.json())

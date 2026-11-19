@@ -7,7 +7,7 @@
       <DialogTitle class="my-0 pr-8 text-2xl/8 font-bold tracking-tight">
         {{ $t(copy.title, models.length) }}
       </DialogTitle>
-      <p class="my-0 text-sm/5 text-muted-foreground">
+      <p class="my-0 text-sm/5 text-muted-foreground" role="status">
         {{ $t(copy.description) }}
       </p>
       <ul class="my-0 flex list-none flex-col gap-1.5 p-0">
@@ -61,6 +61,14 @@
       </p>
       <footer class="flex justify-end gap-2.5 pt-3">
         <Button
+          v-if="isPrepared && !uploads.isUploading"
+          variant="secondary"
+          size="lg"
+          @click="cloudCheck.check"
+        >
+          {{ $t('openOnCloud.missingModels.checkAgain') }}
+        </Button>
+        <Button
           variant="secondary"
           size="lg"
           @click="footer === 'uploading' ? uploads.cancel() : emit('dismiss')"
@@ -94,6 +102,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import MissingModelRow from '@/platform/openOnCloud/components/MissingModelRow.vue'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import {
   modelKey,
   useLocalModelUploadStore
@@ -139,6 +148,7 @@ const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
 
 const { t } = useI18n()
 const uploads = useLocalModelUploadStore()
+const cloudCheck = useCloudWorkflowCheckStore()
 const { upload, uploadFolders, owner } = storeToRefs(uploads)
 
 watch(
@@ -148,6 +158,14 @@ watch(
     if (signedIn) void uploads.prepare(models)
   },
   { immediate: true }
+)
+
+watch(
+  () =>
+    upload.value.phase === 'failed' && upload.value.reason === 'accountChanged',
+  (accountChanged) => {
+    if (accountChanged && signedIn) void uploads.prepare(models)
+  }
 )
 
 const isPrepared = computed(() => signedIn && uploadFolders.value !== null)
@@ -160,6 +178,11 @@ const copy = computed(() => {
     return {
       title: 'openOnCloud.missingModels.title',
       description: 'openOnCloud.missingModels.signedOut'
+    }
+  if (!isPrepared.value)
+    return {
+      title: 'openOnCloud.missingModels.title',
+      description: 'openOnCloud.missingModels.preparing'
     }
   if (canOffer.value)
     return {

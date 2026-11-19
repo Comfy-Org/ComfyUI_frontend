@@ -106,6 +106,25 @@ describe('readCloudUploadFolders', () => {
 })
 
 describe('readLocalModelSizes', () => {
+  it('settles when a local model-list response body stalls', async () => {
+    const timeout = new AbortController()
+    const timer = vi
+      .spyOn(AbortSignal, 'timeout')
+      .mockReturnValue(timeout.signal)
+    const answer = answers('hangBody')
+    vi.mocked(api.fetchApi).mockImplementation((route, init) =>
+      answer(route, init ?? {})
+    )
+
+    try {
+      const sizes = readLocalModelSizes('loras')
+      timeout.abort()
+      await expect(sizes).resolves.toEqual(new Map())
+    } finally {
+      timer.mockRestore()
+    }
+  })
+
   it('uses the same model as Core when two local roots contain the same filename', async () => {
     vi.mocked(api.fetchApi).mockResolvedValue(
       Response.json([

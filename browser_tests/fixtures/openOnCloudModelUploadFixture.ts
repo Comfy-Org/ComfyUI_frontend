@@ -35,6 +35,7 @@ function onCloud(page: Page, path: string) {
 async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
   const traffic: CloudTraffic = { starts: [], stored: [], completes: [] }
   let stored = false
+  let checksAfterStorage = 0
 
   await page.route(onCloud(page, '/api/features'), (route) =>
     route.fulfill({
@@ -51,9 +52,10 @@ async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
       json: {
         cloud: {
           missing_node_types: [],
-          missing_models: stored
-            ? []
-            : [{ folder: 'loras', name: LOCAL_MODEL_FILE.name }]
+          missing_models:
+            stored && ++checksAfterStorage > 1
+              ? []
+              : [{ folder: 'loras', name: LOCAL_MODEL_FILE.name }]
         }
       } satisfies CheckCloudCompatibilityResponse
     })

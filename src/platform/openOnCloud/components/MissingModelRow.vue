@@ -19,7 +19,7 @@
       />
       <label
         v-else-if="choosable"
-        class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-foreground hover:bg-accent has-disabled:cursor-default has-disabled:opacity-50"
+        class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-foreground hover:bg-accent has-focus-visible:ring-2 has-focus-visible:ring-ring has-disabled:cursor-default has-disabled:opacity-50"
       >
         <i
           v-if="pick.status === 'chosen'"
@@ -34,6 +34,9 @@
           accept=".safetensors"
           class="sr-only"
           :disabled="locked"
+          :aria-label="
+            $t('openOnCloud.missingModels.chooseFileFor', { name: model.name })
+          "
           :data-testid="`choose-model-${model.name}`"
           @change="onChoose"
         />
