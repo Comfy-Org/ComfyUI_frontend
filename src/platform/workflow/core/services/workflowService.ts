@@ -628,8 +628,13 @@ export const useWorkflowService = () => {
         isCurrent?.() === false ||
         workflow.graph !== graph ||
         graphsAwaitingNodeTypes.has(graph)
-      )
+      ) {
+        await useExtensionService().invokeExtensionsAsync(
+          'onGraphLoadError',
+          new DOMException('Workflow load was replaced', 'AbortError')
+        )
         return false
+      }
       try {
         beforeLoadNewGraph(true)()
         const app = useApp()

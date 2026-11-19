@@ -847,15 +847,29 @@ describe('useWorkflowService', () => {
       onTestFinished(() => {
         graphsAwaitingNodeTypes.delete(graph)
       })
+      const calls: string[] = []
       useExtensionStore().registerExtension({
         name: 'Test.LateTypesDuringSwitch',
         beforeLoadGraph: () => {
+          calls.push('beforeLoadGraph')
           graphsAwaitingNodeTypes.add(graph)
+        },
+        onGraphLoadError: (error) => {
+          calls.push(`onGraphLoadError:${(error as Error).name}`)
         }
+      })
+      vi.mocked(app.loadGraphData).mockImplementationOnce(async () => {
+        calls.push('loadGraphData')
+        return true
       })
 
       await useWorkflowService().openWorkflow(next)
 
+      expect(calls).toEqual([
+        'beforeLoadGraph',
+        'onGraphLoadError:AbortError',
+        'loadGraphData'
+      ])
       expect(app.activateRootGraph).not.toHaveBeenCalled()
       expect(app.loadGraphData).toHaveBeenCalledWith(
         expect.anything(),
