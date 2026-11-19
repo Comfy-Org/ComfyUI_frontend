@@ -104,7 +104,7 @@
           target="_blank"
           :rel="platformLinkRel()"
           data-testid="custom-deployment-platform"
-          @click="emit('done')"
+          @click="createOnPlatform"
         >
           {{ pitch.platformLabel }}
           <i
@@ -133,14 +133,17 @@ import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable
 import { useDeploymentBriefHandoff } from '@/platform/workspace/composables/useDeploymentBriefHandoff'
 import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
+import { openPlatformWithWorkflow } from '@/platform/workspace/platformWorkflowHandoff'
 import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const {
   pitch,
   videoSources = [],
-  posterSrc = ''
+  posterSrc = '',
+  handsOverWorkflow = false
 } = defineProps<{
   pitch: CustomDeploymentPitch
+  handsOverWorkflow?: boolean
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
 }>()
@@ -157,4 +160,18 @@ const { copyBrief, openBriefIn } = useDeploymentBriefHandoff(() => pitch)
 const createDeploymentUrl = computed(() =>
   customDeploymentCreateUrl('custom-deployment-card')
 )
+
+function asksForItsOwnTab(event: MouseEvent): boolean {
+  return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey
+}
+
+function createOnPlatform(event: MouseEvent) {
+  if (
+    handsOverWorkflow &&
+    !asksForItsOwnTab(event) &&
+    openPlatformWithWorkflow('custom-deployment-card')
+  )
+    event.preventDefault()
+  emit('done')
+}
 </script>

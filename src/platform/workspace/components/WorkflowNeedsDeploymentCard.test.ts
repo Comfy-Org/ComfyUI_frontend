@@ -174,6 +174,31 @@ describe('WorkflowNeedsDeploymentCard', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('opens the platform build wizard for the open workflow from Build on Platform on Cloud', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const user = renderCard()
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait',
+      activeState: { nodes: [{ id: 1, type: 'BiRefNet' }] },
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    let reads = 0
+    const open = vi.spyOn(window, 'open').mockReturnValue(
+      fromPartial<Window>({
+        get closed() {
+          return reads++ > 0
+        }
+      })
+    )
+
+    await user.click(screen.getByRole('link', { name: /Build on Platform/ }))
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('/profile/builds/new?step=import&handoff='),
+      '_blank'
+    )
+  })
+
   it('shows names as written in a row that lists more than three', () => {
     renderCard({
       nodeTypes: [

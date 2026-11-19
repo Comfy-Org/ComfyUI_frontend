@@ -58,6 +58,10 @@
       "summary": "{threshold} kredinin altına düştüğünde {target} seviyesine kadar yükler.",
       "title": "Otomatik yükleme açık"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "Otomatik kredi yüklemenin açık olduğunu kontrol etmek için Faturalandırma'yı açın.",
+      "title": "Krediler eklendi"
+    },
     "blocked": {
       "action": "Ödeme sayfasını aç",
       "body": "Tarayıcınız yeni sekmeyi engelledi. Ödemeyi tamamlamak için ödeme sayfasını açın.",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}, ödeme sırasında ödenir",
     "planLine": {
       "ended": "Kredi satın almak Cloud planınızı yeniden başlatmaz. İş akışlarını Cloud üzerinde çalıştırmak için yeniden abone olun.",
+      "ended_sales_managed": "Kredi satın almak Cloud planınızı yeniden başlatmaz. Yenilemek için satış ekibiyle iletişime geçin.",
       "free_runs": "Kredi satın almak bir Cloud planı başlatmaz. Ücretsiz çalıştırma haklarınız tükendiğinde iş akışlarını çalıştırmaya devam etmek için abone olun.",
       "no_plan": "Kredi satın almak bir Cloud planı başlatmaz. İş akışlarını Cloud üzerinde çalıştırmak için abone olun."
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "Yanıtınızın ajana ulaştığını doğrulayamadık."
     },
     "assetFetchFailed": "{name} alınamadı",
+    "assetLoadFailed": "{name} yüklenemedi",
     "assetNotAttachable": "Görüntüler, videolar, sesler, 3D modeller ve metin dosyaları eklenebilir",
     "attach": "Dosya ekle",
     "attachFiles": "Görüntü veya dosya yükleyin",
@@ -337,6 +343,36 @@
     "placeholder": "Ne oluşturmak istediğinizi açıklayın",
     "placeholderWithoutSkills": "Ne oluşturmak istediğinizi açıklayın",
     "previewAsset": "{name} önizlemesi",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "Comfy Agent'a ne oluşturmak istediğinizi söyleyin.",
+        "title": "Aklınızda bir şey var mı?"
+      },
+      "firstOpen": {
+        "description": "Nereden başlayacağınızdan emin değil misiniz? Aşağıdaki soruyu gönderin veya kendi sorunuzu yazın.",
+        "prompt": "Bana ne konuda yardımcı olabilirsin?",
+        "title": "Başlamanıza yardımcı olacak küçük bir destek!"
+      },
+      "workflowOpen": {
+        "description": "Comfy Agent, iş akışınızdaki herhangi bir şey değişmeden önce ne yapmayı planladığını gösterir.",
+        "prompt": "Bu iş akışını geliştirmeme yardım et",
+        "title": "Bir soru sorun veya bir değişikliği açıklayın."
+      }
+    },
     "recoveredTurnFailed": "Ajan bu yanıtı tamamlayamadı.",
     "reference": "Referans",
     "remove": "Kaldır",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "Hedef iş akışı açılamadı.",
     "targetWorkflowUnavailable": "Hedef iş akışı artık kullanılamıyor.",
     "thinking": "Düşünüyor...",
+    "thinkingShortened": "Akıl yürütme kısaltıldı: geri kalanı kaydedilemeyecek kadar uzundu.",
     "title": "Comfy Agent",
     "toolFailed": "{tool} başarısız oldu",
     "toolFailedSkill": "{skill} yüklenemedi",
@@ -1485,6 +1522,7 @@
       "paymentProcessingFlyout": "Ödeme işleniyor. Tekrar ödeme yapmanız gerekmez.",
       "paymentProcessingTitle": "{amount} tutarındaki ödeme hâlâ işleniyor",
       "paymentProcessingTitleNoAmount": "Bir ödeme hâlâ işleniyor",
+      "planRequiredContactSales": "Kredi satın almak Cloud planınızı yeniden başlatmaz. Yenilemek için satış ekibiyle iletişime geçin.",
       "planRequiredFreeRuns": "Kredi satın almak Cloud planını başlatmaz. Ücretsiz çalıştırma haklarınız tükendiğinde iş akışlarını çalıştırmaya devam etmek için abone olun.",
       "planRequiredResubscribe": "Kredi satın almak Cloud planınızı yeniden başlatmaz. İş akışlarını Cloud üzerinde çalıştırmak için yeniden abone olun.",
       "planRequiredSubscribe": "Kredi satın almak Cloud planını başlatmaz. İş akışlarını Cloud üzerinde çalıştırmak için abone olun.",
@@ -2685,6 +2723,9 @@
     "resizeFromBottomRight": "Sağ alt köşeden yeniden boyutlandır",
     "resizeFromTopLeft": "Sol üst köşeden yeniden boyutlandır",
     "resizeFromTopRight": "Sağ üst köşeden yeniden boyutlandır",
+    "resizeNumberedPreviewHeight": "{index} numaralı önizlemenin yüksekliğini yeniden boyutlandır",
+    "resizePreviewHeight": "Önizleme yüksekliğini yeniden boyutlandır",
+    "resizeWidgetHeight": "{name} yüksekliğini yeniden boyutlandır",
     "restart": "Yeniden Başlat",
     "restore": "Geri yükle",
     "restoreDialog": "Diyaloğu geri yükle",
@@ -3752,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "Deneysel: Nodes 2.0'ı Etkinleştir",
     "Export": "Dışa Aktar",
     "Export (API)": "Dışa Aktar (API)",
+    "Export (Workflow Image)": "Dışa aktar (İş Akışı Görseli)",
     "File": "Dosya",
     "Fit Group To Contents": "Grubu İçeriğe Sığdır",
     "Focus Mode": "Odak Modu",
@@ -4323,6 +4365,7 @@
     "handoffFailed": "İş akışı bilgisayarınızdaki ComfyUI'den açılamadı",
     "handoffMissing": "İş akışınız ulaşmadı",
     "handoffMissingDetail": "ComfyUI, 10 dakika sonra beklemeyi bırakır. ComfyUI'de Comfy Cloud'da Aç'a tekrar tıklayın.",
+    "missingLocalModelLoader": "{nodeType} için model ayarları okunamadı. Bunu sağlayan düğüm paketini yükleyin, ardından yeniden deneyin.",
     "missingModels": {
       "title": "Eksik {count} model | Eksik {count} model",
       "unavailable": "Bu iş akışını çalıştırmak için bu modelleri Comfy Cloud'a ekleyin. Bu ComfyUI'den yüklemeler şu anda kullanılamıyor."
@@ -5220,6 +5263,16 @@
     "triggerLinePlaceholder": "Kullanıcı çözünürlük yükseltme hakkında soru sorduğunda beni yükle",
     "yourPacks": "Paketleriniz"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Değerlerini düzenlemek için bu alt grafiğe bir Alt Grafik Düğümü aracılığıyla girin.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "Bağlı değer · salt okunur",
+    "locateSource": "Kaynak düğümünü bul",
+    "sharedSource": "Paylaşılan kaynak",
+    "sourceHint": "Bu kaynağı düzenlemek, ona bağlı diğer girdileri de değiştirir.",
+    "unavailable": "Değer kullanılamıyor"
+  },
   "subgraphStore": {
     "blueprintName": "Alt Grafik adı",
     "blueprintNamePrompt": "Alt grafik adı:",
@@ -5469,18 +5522,28 @@
       "subscriptionChangeInProgress": "Zaten planlanmış bir plan değişikliğiniz var. Yürürlüğe girdikten sonra başka bir plan seçebilirsiniz.",
       "subscriptionChangeScheduled": "Planınızda planlanan değişiklik {date} tarihinde yürürlüğe girer. Bundan sonra başka bir plan seçebilirsiniz."
     },
+    "planWithPeriod": {
+      "annual": "{plan} yıllık",
+      "monthly": "{plan} aylık"
+    },
     "plansAndCredits": "Planlar ve krediler",
     "plansAndPricing": "Planlar ve fiyatlandırma",
     "plansForWorkspace": "{workspace} için planlar",
     "plansLink": {
       "blockedBody": "Tarayıcınız yeni sekmeyi engelledi. Bir plan seçmek için Planlar sayfasını açın.",
       "blockedTitle": "Planlar sayfası açılmadı",
+      "checkoutUnfinishedBody": "Tekrar denemek için Planlar sayfasını açın. Tarayıcınız sayfanın kendi kendine açılmasını engelledi.",
+      "checkoutUnfinishedTitle": "Ödeme işleminiz tamamlanmadı",
       "choosePlan": "Bir plan seçin",
       "openPlansPage": "Planlar sayfasını aç",
       "runRefusedEnded": "Planınız sona erdi. Cloud'da iş akışlarını çalıştırmaya devam etmek için yeniden abone olun.",
       "runRefusedFreeRunsUsed": "Tüm {total} ücretsiz çalıştırma hakkınızı kullandınız. Cloud'da iş akışlarını çalıştırmaya devam etmek için abone olun.",
+      "runRefusedManualBlock": "Bu çalışma alanı engellendi. Destek ile iletişime geçin.",
       "runRefusedNoPlan": "Cloud'da iş akışlarını çalıştırmak için bir plan gerekir.",
-      "runRefusedTitle": "İş akışınız çalışmadı"
+      "runRefusedProjectCap": "Bu proje harcama limitine ulaştı.",
+      "runRefusedTitle": "İş akışınız çalışmadı",
+      "runRefusedUserCap": "Bu çalışma alanındaki harcama limitinize ulaştınız.",
+      "runRefusedWorkspaceCap": "Bu çalışma alanı harcama limitine ulaştı."
     },
     "plansLoadFailed": "Planlar yüklenemedi",
     "prepaidCreditsInfo": "Ayrıca satın alınan ve son kullanma tarihi olmayan krediler",
@@ -5918,6 +5981,7 @@
     "failedToConvertToSubgraph": "Öğeler alt grafiğe dönüştürülemedi",
     "failedToCreateCustomer": "Müşteri oluşturulamadı: {error}",
     "failedToExportModel": "Model {format} olarak dışa aktarılamadı",
+    "failedToExportWorkflowImage": "İş akışı görseli dışa aktarılamadı",
     "failedToFetchLogs": "Sunucu günlükleri alınamadı",
     "failedToFetchSubscription": "Abonelik durumu alınamadı: {error}",
     "failedToInitializeCameraAngleViewer": "Kamera Açısı görüntüleyicisi başlatılamadı. Sayfayı yeniden yüklemeyi deneyin.",
@@ -6109,12 +6173,14 @@
     "undo": "Geri al"
   },
   "widgets": {
+    "backFromFolder": "Geri: {name}",
     "boolean": {
       "false": "yanlış",
       "true": "doğru"
     },
     "node2only": "Yalnızca Node 2.0",
     "precisionLimit": "Artırma/azaltma devre dışı: değer JavaScript hassasiyet sınırını aşıyor (±2^53)",
+    "selectFolder": "Klasör: {name}",
     "selectModel": "Model seç",
     "uploadSelect": {
       "maxSelectionReached": "Maksimum seçim sınırına ulaşıldı",
@@ -6287,7 +6353,15 @@
         "salesMemberBody": "Çalışma alanı sahibinizden satış ekibiyle iletişime geçmesini isteyin.",
         "teamBody": "İş akışlarını çalıştırmak ve yeniden paylaşılan krediler almak için tekrar abone olun.",
         "teamMemberBody": "Çalışma alanı sahibinizden tekrar abone olmasını isteyin.",
+        "teamNotCreatorBody": "Bu çalışma alanının planı sona erdi. Yeniden abone olması için çalışma alanının oluşturucusuna danışın.",
         "teamTitle": "Team planınız {date} tarihinde sona erdi"
+      },
+      "planNotStarted": {
+        "body": "Başlatmak için ödemeyi tamamlayın.",
+        "bodyUnavailable": "Planınız, ödeme gerçekleştiğinde başlar.",
+        "title": "{plan} planınız henüz başlamadı",
+        "titleNoPlan": "Planınız henüz başlamadı",
+        "viewPlans": "Planlar'da görüntüle"
       },
       "updatePayment": "Ödemeyi güncelle"
     },

@@ -8,6 +8,7 @@ import { downloadBlob } from '@/base/common/downloadUtil'
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
 import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
 
 import CustomDeploymentCard from './CustomDeploymentCard.vue'
@@ -20,6 +21,8 @@ vi.mock(import('@/platform/workflow/deploy/utils/agentApps'), () => ({
   openAgentApp: vi.fn()
 }))
 
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.comfy.org'
 }))
@@ -39,7 +42,8 @@ const i18n = createI18n({
 
 function renderCard(
   pitch: Partial<CustomDeploymentPitch> = {},
-  videoSources: { src: string; type: string }[] = []
+  videoSources: { src: string; type: string }[] = [],
+  handsOverWorkflow = false
 ) {
   const user = userEvent.setup({ pointerEventsCheck: 0 })
   const onDone = vi.fn()
@@ -55,6 +59,7 @@ function renderCard(
         ...pitch
       },
       videoSources,
+      handsOverWorkflow,
       onDone,
       onDismiss
     },
@@ -66,6 +71,36 @@ function renderCard(
 async function pickRow(user: ReturnType<typeof userEvent.setup>, name: string) {
   await user.click(screen.getByTestId('custom-deployment-agent'))
   await user.click(await screen.findByRole('menuitem', { name }))
+}
+
+function openWorkflow() {
+  useWorkflowStore().activeWorkflow = fromPartial({
+    filename: 'portrait',
+    activeState: { nodes: [] },
+    changeTracker: { prepareForSave: vi.fn() }
+  })
+}
+
+function windowThatClosesAfterOpening(): Window {
+  let reads = 0
+  return fromPartial<Window>({
+    get closed() {
+      return reads++ > 0
+    }
+  })
+}
+
+function linkFollowedOnNextClick(): () => boolean {
+  const followed: boolean[] = []
+  document.addEventListener(
+    'click',
+    (event) => {
+      followed.push(!event.defaultPrevented)
+      event.preventDefault()
+    },
+    { once: true }
+  )
+  return () => followed.length === 1 && followed[0]
 }
 
 describe('CustomDeploymentCard', () => {
@@ -87,7 +122,7 @@ describe('CustomDeploymentCard', () => {
     ).toEqual(['Deploy your node packs', 'Work on the GPU you choose'])
   })
 
-  it('creates it on the platform in a new tab that sends no referrer from a local build, and reports done', async () => {
+  it('links to the platform in a new tab that sends no referrer from a local build, and reports done', async () => {
     const { onDone, user } = renderCard()
     const link = screen.getByRole('link', { name: 'Deploy on Platform' })
 
@@ -97,9 +132,62 @@ describe('CustomDeploymentCard', () => {
     )
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
+    const followsLink = linkFollowedOnNextClick()
     await user.click(link)
+    expect(followsLink()).toBe(true)
     expect(onDone).toHaveBeenCalledOnce()
   })
+
+  it('opens the build wizard itself on Cloud, in place of the link, when it hands over the open workflow', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    openWorkflow()
+    const open = vi
+      .spyOn(window, 'open')
+      .mockReturnValue(windowThatClosesAfterOpening())
+    const { onDone, user } = renderCard({}, [], true)
+
+    const followsLink = linkFollowedOnNextClick()
+    await user.click(screen.getByRole('link', { name: 'Deploy on Platform' }))
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      expect.stringMatching(
+        /^https:\/\/platform\.comfy\.org\/profile\/builds\/new\?step=import&handoff=[A-Za-z0-9_-]{16,64}&utm_source=comfy_cloud&utm_medium=app&utm_content=custom-deployment-card$/
+      ),
+      '_blank'
+    )
+    expect(followsLink()).toBe(false)
+    expect(onDone).toHaveBeenCalledOnce()
+  })
+
+  it('leaves the click to the link when it does not hand over the workflow', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    openWorkflow()
+    const open = vi.spyOn(window, 'open')
+    const { user } = renderCard()
+
+    const followsLink = linkFollowedOnNextClick()
+    await user.click(screen.getByRole('link', { name: 'Deploy on Platform' }))
+
+    expect(open).not.toHaveBeenCalled()
+    expect(followsLink()).toBe(true)
+  })
+
+  it.for(['Meta', 'Control', 'Shift', 'Alt'])(
+    'leaves a %s click to the link',
+    async (key) => {
+      vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+      openWorkflow()
+      const open = vi.spyOn(window, 'open')
+      const { user } = renderCard({}, [], true)
+
+      const followsLink = linkFollowedOnNextClick()
+      await user.keyboard(`{${key}>}`)
+      await user.click(screen.getByRole('link', { name: 'Deploy on Platform' }))
+
+      expect(open).not.toHaveBeenCalled()
+      expect(followsLink()).toBe(true)
+    }
+  )
 
   it.for([
     {

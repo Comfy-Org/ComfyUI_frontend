@@ -1314,8 +1314,7 @@
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "modelSizeLowToHigh": "Model Size (Low to High)",
-      "default": "Default"
+      "modelSizeLowToHigh": "Model Size (Low to High)"
     },
     "error": {
       "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",
@@ -1376,6 +1375,16 @@
     "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows.",
     "unsavedChangesLostTitle": "Unsaved changes were not saved",
     "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
+  },
+  "subgraphInputValues": {
+    "instance": "{title} · #{id}",
+    "enterInstanceHint": "Enter this subgraph through a Subgraph Node to edit its values.",
+    "linked": "Linked value · read-only",
+    "fromSource": "← {title} #{id}",
+    "sourceHint": "Editing this source also changes the other inputs connected to it.",
+    "sharedSource": "Shared source",
+    "locateSource": "Locate source node",
+    "unavailable": "Value unavailable"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
