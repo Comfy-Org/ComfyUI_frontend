@@ -27,6 +27,7 @@ import { useLinkStore } from '@/stores/linkStore'
 
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 import { hostNodeDef } from '@/platform/nodeApi/v4/defs/__fixtures__/hostNodeTypes'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
 
@@ -396,8 +397,9 @@ describe('edits and what a load keeps of them', () => {
       assert(feeding)
       feeding.connect(0, other, 0)
 
-      expect(() => subgraphHandle.inputs.reorder(['second', 'first'])).toThrow(
-        TypeError
+      expectRefusal(
+        () => subgraphHandle.inputs.reorder(['second', 'first']),
+        'reorder'
       )
       expect(names(subgraphNode.subgraph.inputs)).toEqual(['first', 'second'])
       expect(inputLink(graph, other.id, 0)?.origin_id).toBe(feeding.id)
@@ -413,8 +415,9 @@ describe('edits and what a load keeps of them', () => {
       assert(nested)
       outer.subgraph.add(nested)
 
-      expect(() => subgraphHandle.inputs.reorder(['second', 'first'])).toThrow(
-        TypeError
+      expectRefusal(
+        () => subgraphHandle.inputs.reorder(['second', 'first']),
+        'reorder'
       )
       expect(names(subgraphNode.subgraph.inputs)).toEqual(['first', 'second'])
     })
@@ -461,14 +464,15 @@ describe('edits and what a load keeps of them', () => {
       const first = subgraphHandle.inputs.byName('first')
       assert(first)
 
-      expect(() => subgraphHandle.inputs.add('third', 'INT')).toThrow(TypeError)
-      expect(() => subgraphHandle.outputs.add('more', 'INT')).toThrow(TypeError)
-      expect(() => edit.removeSlot(first)).toThrow(TypeError)
-      expect(() => first.modify({ label: 'Shown' })).toThrow(TypeError)
+      expectRefusal(() => subgraphHandle.inputs.add('third', 'INT'), 'add')
+      expectRefusal(() => subgraphHandle.outputs.add('more', 'INT'), 'add')
+      expectRefusal(() => edit.removeSlot(first), 'removeSlot')
+      expectRefusal(() => first.modify({ label: 'Shown' }), 'modify')
       expect(subgraphNode.outputs).toHaveLength(1)
-      expect(() =>
-        subgraphHandle.outputs.reorder([subgraphNode.outputs[0].name])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => subgraphHandle.outputs.reorder([subgraphNode.outputs[0].name]),
+        'reorder'
+      )
       expect(names(subgraphNode.inputs)).toEqual(
         names(subgraphNode.subgraph.inputs)
       )
