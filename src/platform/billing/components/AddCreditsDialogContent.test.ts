@@ -15,6 +15,8 @@ import { createI18n } from 'vue-i18n'
 
 import type { HostedTopupCheckout } from '@comfyorg/ingest-types'
 
+import { useTelemetry } from '@comfyorg/telemetry'
+
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { readAutoTopUpActivation } from '@/platform/billing/addCredits/autoTopUpActivation'
@@ -38,6 +40,8 @@ import {
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
+import { clearCheckoutJourney } from '@/platform/billing/utils/checkoutJourney'
+import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import type { BillingTab } from '@/platform/billing/billingTab'
@@ -983,5 +987,104 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
       expect(window.open).toHaveBeenCalledWith(CHECKOUT_URL, '_blank')
     )
     expect(hoisted.billingWebTopupUrl).not.toHaveBeenCalled()
+  })
+})
+
+describe('AddCreditsDialogContent top-up telemetry', () => {
+  beforeEach(() => {
+    stubFirebaseAuthHarness()
+    hoisted.balanceIncreased = undefined
+    hoisted.setupUrl.mockResolvedValue(null)
+    vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = false
+    Object.assign(useAuthStore(), { userId: 'user-1' })
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
+    clearCheckoutJourney()
+    vi.mocked(useTelemetry()!.trackBillingEvent).mockClear()
+    vi.mocked(useTelemetry()!.trackCheckoutJourneyEvent).mockClear()
+  })
+
+  function trackedBillingEvents() {
+    return vi
+      .mocked(useTelemetry()!.trackBillingEvent)
+      .mock.calls.map(([event]) =>
+        'operation_type' in event
+          ? `operation.${event.stage}`
+          : `${event.operation}.${event.stage}`
+      )
+  }
+
+  function trackedJourneyPhases() {
+    return vi
+      .mocked(useTelemetry()!.trackCheckoutJourneyEvent)
+      .mock.calls.map(([event]) => event.phase)
+  }
+
+  it('reports the top-up started when its checkout opens and succeeded once the balance shows the payment', async () => {
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+
+    expect(useTelemetry()!.trackBillingEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        operation: 'topup',
+        stage: 'started',
+        amount_cents: 5000
+      })
+    )
+    expect(trackedBillingEvents()).toEqual([
+      'topup.intent',
+      'topup.started',
+      'operation.started'
+    ])
+
+    await hoisted.balanceIncreased!()
+    unmount()
+
+    expect(trackedBillingEvents()).toEqual([
+      'topup.intent',
+      'topup.started',
+      'operation.started',
+      'topup.succeeded',
+      'operation.succeeded'
+    ])
+    expect(trackedJourneyPhases()).not.toContain('abandoned')
+  })
+
+  it('does not count closing the dialog on the opened checkout as abandoning it', async () => {
+    hoisted.createHostedCheckout.mockResolvedValue({
+      url: CHECKOUT_URL,
+      sessionId: 'cs_1'
+    })
+    const { user, unmount } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+    await waitFor(() => expect(hoisted.balanceIncreased).toBeDefined())
+    unmount()
+
+    expect(trackedJourneyPhases()).toEqual(['entered', 'submitted'])
+    expect(trackedBillingEvents()).not.toContain('topup.succeeded')
+  })
+
+  it('reports the top-up failed when its checkout cannot open', async () => {
+    hoisted.createHostedCheckout.mockRejectedValue(new Error('offline'))
+    const { user } = renderDialog({ atCheckout: false })
+
+    await user.click(continueButton())
+
+    await waitFor(() =>
+      expect(trackedBillingEvents()).toEqual([
+        'topup.intent',
+        'topup.started',
+        'operation.started',
+        'topup.failed',
+        'operation.failed'
+      ])
+    )
+    expect(hoisted.balanceIncreased).toBeUndefined()
   })
 })
