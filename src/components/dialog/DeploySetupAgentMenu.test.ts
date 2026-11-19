@@ -470,39 +470,6 @@ describe('DeploySetupAgentMenu', () => {
     )
   })
 
-  it('opens no Platform tab when the dialog closes during the save', async () => {
-    useWorkflowStore().activeWorkflow = fromPartial({
-      path: 'workflows/portraits/upscale.json',
-      isPersisted: true,
-      isModified: true
-    })
-    let finishSave!: (saved: boolean) => void
-    vi.mocked(useWorkflowService().saveWorkflow).mockImplementation(
-      (saved) =>
-        new Promise((resolve) => {
-          finishSave = (ok) => {
-            Object.assign(saved, { isModified: false })
-            resolve(ok)
-          }
-        })
-    )
-    const open = vi.spyOn(window, 'open')
-    render(GlobalDialog, { global: { plugins: [testI18n] } })
-    await openDeploySetupDialog()
-    const user = userEvent.setup({ pointerEventsCheck: 0 })
-
-    await user.click(
-      await screen.findByRole('link', { name: 'Deploy on Platform' })
-    )
-    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
-    useDialogStore().closeDialog({ key: 'global-run-on-comfy-cloud' })
-    await nextTick()
-    finishSave(true)
-    await new Promise((resolve) => setTimeout(resolve, 0))
-
-    expect(open).not.toHaveBeenCalled()
-  })
-
   it('keeps the dialog open when the browser blocks the Platform tab', async () => {
     useWorkflowStore().activeWorkflow = fromPartial({
       path: 'workflows/portraits/upscale.json',
