@@ -4,6 +4,7 @@
   generic="TNode extends SubgraphInputNode | SubgraphOutputNode"
 >
 import { computedWithControl, useEventListener } from '@vueuse/core'
+import { partition } from 'es-toolkit'
 import { computed, nextTick, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -17,8 +18,10 @@ import { SubgraphIONodeBase } from '@/lib/litegraph/src/subgraph/SubgraphIONodeB
 import type { SubgraphInputNode } from '@/lib/litegraph/src/subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from '@/lib/litegraph/src/subgraph/SubgraphOutputNode'
 import {
+  isSubgraphInput,
   reorderSubgraphInputs,
-  reorderSubgraphOutputs
+  reorderSubgraphOutputs,
+  subgraphInputHasWidget
 } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -64,6 +67,8 @@ useEventListener(
     'removing-output',
     'renaming-output',
     'outputs-reordered',
+    'widget-promoted',
+    'widget-demoted',
     'configured'
   ],
   slots.trigger
@@ -152,15 +157,35 @@ function sourceFieldsOf(
   }
 }
 
+const sections = computed(() => {
+  const ports: TNode['allSlots'][number][] = [...slots.value]
+  const [addPort, interfacePorts] = partition(
+    ports,
+    (port) => port === ioNode.emptySlot
+  )
+  return [
+    ...partition(
+      interfacePorts,
+      (port) => !isSubgraphInput(port) || !subgraphInputHasWidget(port)
+    ),
+    addPort
+  ]
+})
+
 const rows = computed(() => {
   const editedWidgets = new Set<WidgetId>()
-  return slots.value.map((port) => ({
-    ...portFieldsOf(port),
-    ...sourceFieldsOf(
-      isInputNode.value ? sources.value.get(port.name) : undefined,
-      editedWidgets
-    )
-  }))
+  const ports: TNode['allSlots'][number][] = [...slots.value]
+  return sections.value.flatMap((section, sectionIndex) =>
+    section.map((port) => ({
+      section: sectionIndex,
+      slotIndex: ports.indexOf(port),
+      ...portFieldsOf(port),
+      ...sourceFieldsOf(
+        isInputNode.value ? sources.value.get(port.name) : undefined,
+        editedWidgets
+      )
+    }))
+  )
 })
 const hint = computed(() =>
   isInputNode.value && !navigationStore.currentHost
@@ -198,7 +223,9 @@ const { style, startResize } = useSubgraphIoLayout(
 
 function reorder(from: number, to: number) {
   if (canvasStore.isReadOnly) return
-  const order = [...ioNode.slots.keys()]
+  const order = rows.value
+    .filter(({ isAddPort }) => !isAddPort)
+    .map(({ slotIndex }) => slotIndex)
   order.splice(to, 0, ...order.splice(from, 1))
   const applied = isInputNode.value
     ? reorderSubgraphInputs(ioNode.subgraph, order)
@@ -215,8 +242,17 @@ const { draggingIndex, rowStyle, startDrag, stepWithKeyboard } =
         ) ?? [])
       ].slice(0, ioNode.slots.length),
     panel,
+    sectionOf,
     reorder
   )
+
+function sectionOf(index: number) {
+  const { section } = rows.value[index]
+  return {
+    first: rows.value.findIndex((row) => row.section === section),
+    last: rows.value.findLastIndex((row) => row.section === section)
+  }
+}
 
 function isDragged(index: number) {
   return draggingIndex.value === index || undefined
@@ -230,7 +266,7 @@ function dragRowClass(index: number) {
 }
 
 async function stepHandle(event: KeyboardEvent, index: number, id: string) {
-  if (!stepWithKeyboard(event, index, ioNode.slots.length)) return
+  if (!stepWithKeyboard(event, index)) return
   await nextTick()
   panel.value
     ?.querySelector<HTMLElement>(`[data-reorder-handle="${CSS.escape(id)}"]`)
@@ -290,7 +326,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
       <div
         v-for="(row, index) in rows"
         :key="row.port.id"
-        data-subgraph-port
+        :data-subgraph-port="row.slotIndex"
         :class="
           cn(
             'relative flex min-w-0 items-center has-data-expands:min-h-0 has-data-expands:flex-1',
