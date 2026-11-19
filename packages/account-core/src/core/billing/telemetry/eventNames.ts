@@ -46,5 +46,6 @@ export const BILLING_TELEMETRY_EVENTS = {
   BILLING_AUTO_TOP_UP_CARD_VIEWED: 'billing.auto_top_up_card.viewed',
   BILLING_AUTO_TOP_UP_OFFER_VIEWED: 'billing.auto_top_up_offer.viewed',
   BILLING_AUTO_TOP_UP_OFFER_DECLINED: 'billing.auto_top_up_offer.declined',
-  BILLING_PLATFORM_HANDOFF_OPENED: 'billing.platform_handoff.opened'
+  BILLING_PLATFORM_HANDOFF_OPENED: 'billing.platform_handoff.opened',
+  BILLING_LOCAL_HANDOFF_LAUNCHED: 'billing.local_handoff.launched'
 } as const satisfies Record<string, BillingTelemetryEventName>

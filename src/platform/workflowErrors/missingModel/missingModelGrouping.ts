@@ -50,8 +50,8 @@ export function groupMissingModelCandidates(
     })
     .map(([key, { candidates: groupCandidates, isAssetSupported }]) => ({
       directory: typeof key === 'string' ? key : null,
-      models: groupCandidatesByName(groupCandidates),
-      isAssetSupported
+      isAssetSupported,
+      models: groupCandidatesByName(groupCandidates)
     }))
 }
 
@@ -62,6 +62,9 @@ function groupCandidatesByName(
   for (const c of candidates) {
     const existing = map.get(c.name)
     if (existing) {
+      existing.replacements = existing.replacements?.filter((replacement) =>
+        c.replacements?.includes(replacement)
+      )
       if (c.nodeId) {
         existing.referencingNodes.push({
           nodeId: c.nodeId,
@@ -72,6 +75,7 @@ function groupCandidatesByName(
       map.set(c.name, {
         name: c.name,
         representative: c,
+        replacements: c.replacements,
         referencingNodes: c.nodeId
           ? [{ nodeId: c.nodeId, widgetName: c.widgetName }]
           : []

@@ -59,8 +59,7 @@ test.describe('Local workspace switcher', { tag: '@auth' }, () => {
     const panel = page.getByTestId('workspace-switcher-panel')
     await expect(panel.getByText(PERSONAL_WORKSPACE_NAME)).toBeVisible()
     await expect(panel.getByText(TEAM_WORKSPACE_NAME)).toBeVisible()
-    await expect(panel.getByText('Owner')).toHaveCount(2)
-    await expect(panel.getByText('Member')).toHaveCount(1)
+    await expect(panel.getByText(/^(Owner|Member)$/)).toHaveCount(0)
     const scopeCaption = panel.getByText(
       'Workspaces only affect which credits you use.'
     )

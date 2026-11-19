@@ -17,6 +17,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { api } from '@/scripts/api'
 import { blankGraph } from '@/scripts/defaultGraph'
+import { isValidUuid } from '@/utils/formatUtil'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -25,6 +26,7 @@ import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import * as storageIO from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowPersistenceV2 } from './useWorkflowPersistenceV2'
+import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
 
 const apiEvents: EventTarget = api
 
@@ -60,6 +62,23 @@ vi.mock(
       loadTemplateFromUrl: vi.fn()
     })
   })
+)
+
+const workflowLinkUrlLoader = vi.hoisted(() => ({
+  openWorkflowLinkFromUrl: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['openWorkflowLinkFromUrl']
+  >(async () => 'absent'),
+  isLinkSettled: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['isLinkSettled']
+  >(() => false),
+  hasLinkInFlight: vi.fn<
+    ReturnType<typeof useWorkflowLinkUrlLoader>['hasLinkInFlight']
+  >(() => false)
+}))
+
+vi.mock(
+  import('@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'),
+  () => ({ useWorkflowLinkUrlLoader: () => workflowLinkUrlLoader })
 )
 
 const folderWorkflowsUrlLoader = vi.hoisted(() => ({
@@ -593,6 +612,51 @@ describe('useWorkflowPersistenceV2', () => {
       expect(draftStore.getDraft(draftPath)?.data).toBe(draftGraph)
     })
 
+    it.for([
+      ['no id', {}],
+      ['a legacy id', { id: 'legacy-workflow-id' }]
+    ] as const)(
+      'keeps the draft of an unsaved background tab with %s when it is first loaded',
+      async ([, idFields]) => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        onTestFinished(() => {
+          vi.useRealTimers()
+        })
+        const workflowStore = useWorkflowStore()
+        vi.spyOn(workflowStore, 'loadWorkflows').mockResolvedValue()
+        const draftStore = useWorkflowDraftStoreV2()
+        const draftPath = 'workflows/Background.json'
+        draftStore.saveDraft(
+          draftPath,
+          JSON.stringify({ ...blankGraph, ...idFields, extra: { a: 1 } }),
+          { name: 'Background.json', isTemporary: true }
+        )
+        const stored = draftStore.getDraft(draftPath)
+        const active = workflowStore.createTemporary('Active.json')
+        writeTabState([draftPath, active.path], 1)
+        vi.advanceTimersByTime(60_000)
+
+        const { restoreWorkflowTabsState } = mountWorkflowPersistence()
+        await restoreWorkflowTabsState()
+        const background = workflowStore.getWorkflowByPath(draftPath)
+        expect(background?.isLoaded).toBe(false)
+        expect(draftStore.getDraft(draftPath)).toMatchObject({
+          data: stored!.data,
+          updatedAt: stored!.updatedAt
+        })
+
+        await background!.load()
+
+        expect(JSON.parse(draftStore.getDraft(draftPath)!.data).extra).toEqual({
+          a: 1
+        })
+        expect(background!.activeState?.extra).toEqual({ a: 1 })
+        const tabId = background!.initialState?.id
+        expect(isValidUuid(tabId)).toBe(true)
+        expect(background!.activeState?.id).toBe(tabId)
+      }
+    )
+
     it('leaves a reused workflow outside the workflows folder unstamped', async () => {
       vi.useFakeTimers({ toFake: ['Date'] })
       onTestFinished(() => {
@@ -872,6 +936,48 @@ describe('useWorkflowPersistenceV2', () => {
         await expect(initializeWorkflow()).resolves.toBe(outcome)
       }
     )
+  })
+
+  describe('a workflow-id link', () => {
+    it('defers Getting Started while a workflow-id link waits for navigation', async () => {
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('pending')
+      vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+
+      await expect(
+        mountWorkflowPersistence().initializeWorkflow()
+      ).resolves.toBe('url-intent')
+    })
+
+    it.for(['opened', 'failed', 'pending'] as const)(
+      'does not fall back to a folder when the workflow-id link result is %s',
+      async (status) => {
+        workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue(status)
+        vi.spyOn(useWorkflowStore(), 'loadWorkflows').mockResolvedValue()
+        const { initializeWorkflow } = mountWorkflowPersistence()
+
+        await initializeWorkflow()
+
+        expect(
+          folderWorkflowsUrlLoader.openFolderWorkflowsFromUrl
+        ).not.toHaveBeenCalled()
+      }
+    )
+
+    it('keeps restored tabs behind the linked workflow without replacing the active tab', async () => {
+      const store = useWorkflowStore()
+      vi.spyOn(store, 'loadWorkflows').mockResolvedValue()
+      const previous = store.createTemporary('Previous.json')
+      writeTabState([previous.path], 0)
+      workflowLinkUrlLoader.openWorkflowLinkFromUrl.mockResolvedValue('opened')
+      const { initializeWorkflow, restoreWorkflowTabsState } =
+        mountWorkflowPersistence()
+
+      await initializeWorkflow()
+      await restoreWorkflowTabsState()
+
+      expect(store.openWorkflows).toEqual([previous])
+      expect(openWorkflowMock).not.toHaveBeenCalled()
+    })
   })
 
   describe('a link that names a workflows folder', () => {

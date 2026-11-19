@@ -1,53 +1,78 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { ComfyPage, comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import {
   DESKTOP_RELAY_NONCE,
   recordOpenOnCloudTraffic
 } from '@e2e/fixtures/helpers/openOnCloudTraffic'
 
+const test = comfyPageFixture.extend<{ traffic: string[] }>({
+  traffic: [
+    async ({ page }, use) => {
+      await use(recordOpenOnCloudTraffic(page))
+    },
+    { auto: true }
+  ]
+})
+
 test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
-  test('boots, loads and hovers the top menu without any Open on Cloud surface or traffic while the gate is off', async ({
-    comfyPage
-  }) => {
-    await comfyPage.featureFlags.seedServerFlags({
-      open_on_cloud_enabled: false
+  test.describe('disabled menu', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route(
+        (url) => url.protocol === 'https:' && url.pathname === '/api/features',
+        (route) =>
+          route.fulfill({
+            headers: { 'access-control-allow-origin': '*' },
+            json: { open_on_cloud_enabled: false }
+          })
+      )
     })
-    const traffic = recordOpenOnCloudTraffic(comfyPage.page)
 
-    await comfyPage.workflow.reloadAndWaitForApp()
-    await comfyPage.workflow.loadWorkflow('openOnCloud/01-runnable-on-cloud')
-    await comfyPage.page.getByTestId('top-menu-actionbars').hover()
+    test('boots, loads and hovers the top menu without a Cloud button or handoff traffic when Cloud disables it', async ({
+      comfyPage,
+      traffic
+    }) => {
+      await comfyPage.workflow.loadWorkflow('openOnCloud/01-runnable-on-cloud')
+      await comfyPage.page.getByTestId('top-menu-actionbars').hover()
 
-    await expect(comfyPage.page.getByTestId('cloud-button')).toHaveCount(0)
-    expect(traffic).toEqual([])
+      await expect(comfyPage.page.getByTestId('cloud-button')).toHaveCount(0)
+      expect(traffic).toEqual([])
+    })
   })
 
   for (const nonce of [DESKTOP_RELAY_NONCE, 'not-a-uuid']) {
-    test(`boots the editor from a Desktop relay link (${nonce}) without touching the transfer while the gate is off`, async ({
-      comfyPage
-    }) => {
-      await comfyPage.featureFlags.mergeServerFeatures({
-        open_on_cloud_enabled: false
+    test.describe(`disabled relay ${nonce}`, () => {
+      test.use({
+        initialUrl: `/?desktop_workflow=${nonce}&user=e2e-relay-user`
       })
-      const traffic = recordOpenOnCloudTraffic(comfyPage.page)
 
-      await comfyPage.goto({
-        url: `/?desktop_workflow=${nonce}&user=e2e-relay-user`
+      test.beforeEach(async ({ page }) => {
+        await new FeatureFlagHelper(page).mergeServerFeatures({
+          open_on_cloud_enabled: false
+        })
       })
-      await comfyPage.waitForAppReady()
 
-      expect(traffic).toEqual([])
+      test(`boots the editor from a Desktop relay link (${nonce}) without touching the transfer while the gate is off`, async ({
+        comfyPage,
+        traffic
+      }) => {
+        await comfyPage.waitForAppReady()
+
+        expect(traffic).toEqual([])
+      })
     })
   }
 
   test('reads the staged transfer from a Desktop relay link while the gate is on, proving the gate-off check watches the right request', async ({
-    comfyPage
+    page,
+    request,
+    traffic
   }) => {
+    const comfyPage = new ComfyPage(page, request)
     await comfyPage.featureFlags.mergeServerFeatures({
       open_on_cloud_enabled: true
     })
-    const traffic = recordOpenOnCloudTraffic(comfyPage.page)
 
     await comfyPage.goto({
       url: `/?desktop_workflow=${DESKTOP_RELAY_NONCE}&user=e2e-relay-user`
@@ -60,15 +85,24 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
       )
   })
 
-  test('shows the Cloud button while the gate is on, proving the gate-off check looks at the right control', async ({
-    comfyPage
-  }) => {
-    await comfyPage.featureFlags.seedServerFlags({
-      open_on_cloud_enabled: true
+  test.describe('enabled menu', () => {
+    test.beforeEach(async ({ page }) => {
+      await page.route(
+        (url) => url.protocol === 'https:' && url.pathname === '/api/features',
+        (route) => {
+          expect(route.request().headers().authorization).toBeUndefined()
+          return route.fulfill({
+            headers: { 'access-control-allow-origin': '*' },
+            json: { open_on_cloud_enabled: true }
+          })
+        }
+      )
     })
 
-    await comfyPage.workflow.reloadAndWaitForApp()
-
-    await expect(comfyPage.page.getByTestId('cloud-button')).toBeVisible()
+    test('shows the Cloud button before sign-in when Cloud returns the existing flag', async ({
+      comfyPage
+    }) => {
+      await expect(comfyPage.page.getByTestId('cloud-button')).toBeVisible()
+    })
   })
 })
