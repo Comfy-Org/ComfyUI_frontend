@@ -186,6 +186,21 @@ describe('redactTelemetryUrls', () => {
 
   describe.for([
     {
+      kind: 'two apostrophes glued by a comma inside a query value',
+      input: "https://h/x?q=o','&token=SECRET"
+    },
+    {
+      kind: 'two apostrophes glued by a period inside a query value',
+      input: "https://h/x?q=a'.'&token=SECRET"
+    }
+  ])('$kind', ({ input }) => {
+    it('does not let a later token survive unredacted', () => {
+      expect(redactTelemetryUrls(input)).toBe('https://h/x')
+    })
+  })
+
+  describe.for([
+    {
       kind: 'a semicolon-glued suffix after the query apostrophe',
       input: "https://h/x?q=o';token=SECRET",
       expected: 'https://h/x'

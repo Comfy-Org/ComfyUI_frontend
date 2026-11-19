@@ -24,7 +24,13 @@ const SPACED_QUERY_URL_PATTERN = new RegExp(
 )
 
 const QUOTE_IMMEDIATE_END = `\\s|$`
-const QUOTE_CLOSES_RUN = `${QUOTE_IMMEDIATE_END}|[)\\]}.,;!:>](?:${QUOTE_IMMEDIATE_END}|')`
+// Cheap stand-in for "a new URL-shaped token starts here" — used only to tell
+// a closing quote (next array element re-opens with a quote) apart from an
+// apostrophe that is itself query-value content. Deliberately not the full
+// URL_START grammar: that pulls in nested quantifiers that would multiply out
+// across every QUERY_VALUE_RUN use site below.
+const QUOTED_URL_RESTART = `(?:https?:)?\\/\\/|\\/?[A-Z0-9_~%-]`
+const QUOTE_CLOSES_RUN = `${QUOTE_IMMEDIATE_END}|[)\\]}.,;!:>](?:${QUOTE_IMMEDIATE_END}|'(?=${QUOTED_URL_RESTART}))`
 const QUERY_VALUE_UNIT = `[^\\s"'<>]|'(?!(?:${QUOTE_CLOSES_RUN}))`
 const QUERY_VALUE_RUN = `(?:${QUERY_VALUE_UNIT})*`
 const QUERY_VALUE_RUN_PLUS = `(?:${QUERY_VALUE_UNIT})+`
