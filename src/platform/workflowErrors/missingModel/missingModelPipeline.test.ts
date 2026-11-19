@@ -1138,6 +1138,42 @@ describe('missingModelPipeline', () => {
         useExecutionErrorStore().surfaceMissingModels
       ).not.toHaveBeenCalled()
     })
+
+    it('cancels the folder path request when the verification is aborted', async () => {
+      const controller = new AbortController()
+      mockHandles.state.enrichedCandidates = [
+        {
+          nodeId: '1',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          directory: 'checkpoints',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ]
+      vi.mocked(
+        useMissingModelStore().createVerificationAbortController
+      ).mockReturnValueOnce(controller)
+      const requestSignal = new Promise<AbortSignal | undefined>((resolve) => {
+        vi.mocked(api.getFolderPaths).mockImplementationOnce(
+          ({ signal } = {}) => {
+            resolve(signal)
+            return new Promise(() => {})
+          }
+        )
+      })
+
+      await runMissingModelPipeline({
+        graph: createGraph(),
+        graphData: createWorkflowGraphData(),
+        missingModelStore: useMissingModelStore()
+      })
+      const signal = await requestSignal
+      controller.abort()
+
+      expect(signal?.aborted).toBe(true)
+    })
   })
 })
 
