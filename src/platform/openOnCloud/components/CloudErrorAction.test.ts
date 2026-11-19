@@ -81,6 +81,55 @@ describe('Cloud deployment from an out-of-memory error', () => {
     expect(useTelemetry()?.trackRunOnCloudEvent).not.toHaveBeenCalled()
   })
 
+  it('reports one dialog shown when clicked again while the dialog is still loading', async () => {
+    let finishOpening: (opened: boolean) => void = () => {}
+    vi.mocked(openDeploySetupDialog).mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishOpening = resolve
+        })
+    )
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
+    render(CloudErrorAction, {
+      props: { catalogId: 'out_of_memory' },
+      global: { plugins: [testI18n] }
+    })
+    const action = screen.getByRole('button', {
+      name: 'Deploy your setup to Comfy Cloud'
+    })
+
+    await userEvent.click(action)
+    await userEvent.click(action)
+    finishOpening(true)
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackRunOnCloudEvent).toHaveBeenCalledOnce()
+    )
+    expect(openDeploySetupDialog).toHaveBeenCalledOnce()
+  })
+
+  it('opens again after a failed load', async () => {
+    vi.mocked(openDeploySetupDialog)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(true)
+    vi.mocked(useFeatureFlags().flags).openOnCloudEnabled = true
+    render(CloudErrorAction, {
+      props: { catalogId: 'out_of_memory' },
+      global: { plugins: [testI18n] }
+    })
+    const action = screen.getByRole('button', {
+      name: 'Deploy your setup to Comfy Cloud'
+    })
+
+    await userEvent.click(action)
+    await userEvent.click(action)
+
+    await waitFor(() =>
+      expect(useTelemetry()?.trackRunOnCloudEvent).toHaveBeenCalledOnce()
+    )
+    expect(openDeploySetupDialog).toHaveBeenCalledTimes(2)
+  })
+
   it.for([
     { catalogId: 'out_of_memory', enabled: false },
     { catalogId: 'image_not_loaded', enabled: true }
