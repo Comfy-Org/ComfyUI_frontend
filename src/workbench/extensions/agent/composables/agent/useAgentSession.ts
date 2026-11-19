@@ -30,6 +30,7 @@ import type {
   AgentMessages,
   AgentTurnAccepted,
   AgentWsEvent,
+  RenderedAskKind,
   TurnId
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import {
@@ -384,13 +385,11 @@ type AnswerReceiptSource =
 
 function namesCommittedAnswer(
   { selected, other_text }: CommittedAnswerSource,
-  submitted?: AgentAnswerRequest
+  askKind?: RenderedAskKind | 'unknown'
 ): boolean {
   if (other_text) return true
   if (!Array.isArray(selected)) return false
-  const submittedWasNonEmpty =
-    (submitted?.selected.length ?? 0) > 0 || Boolean(submitted?.other_text)
-  return selected.length > 0 || !submittedWasNonEmpty
+  return askKind !== 'run_approval' || selected.length > 0
 }
 
 function diffAnswers(
@@ -1843,7 +1842,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     receipt: AgentAnswerReceipt
     resolutionChannelDropped: () => boolean
   }): boolean {
-    if (!receiptNamesCommittedAnswer(receipt, answer))
+    if (!receiptNamesCommittedAnswer(receipt, askId))
       return commitStatusOnlyAskReceipt({
         askId,
         answer,
@@ -1863,10 +1862,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function receiptNamesCommittedAnswer(
     receipt: AnswerReceiptSource,
-    submitted?: AgentAnswerRequest
+    askId: string
   ): boolean {
     if (receipt.status !== 'answered') return false
-    return namesCommittedAnswer(receipt, submitted)
+    return namesCommittedAnswer(
+      receipt,
+      conversationStore.submittedAskKind(askId)
+    )
   }
 
   function commitStatusOnlyAskReceipt({
@@ -1897,11 +1899,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
         askKind,
         askMessageId
       )
-      conversationStore.markAskAwaitingResolution(
-        askId,
-        'accepted',
-        () => !stopped && reportAcceptedRecoveredAnswer(askId, true)
-      )
+      conversationStore.markAskAwaitingResolution(askId, 'accepted', () => {
+        if (stopped) return false
+        reportAcceptedRecoveredAnswer(
+          askId,
+          true,
+          conversationStore.threadId === currentThreadId
+        )
+        return true
+      })
     }
     return !supersededAnswerReports.has(askId)
   }
@@ -1918,7 +1924,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function reportAcceptedRecoveredAnswer(
     askId: string,
-    resolutionChannelWasLost: boolean
+    resolutionChannelWasLost: boolean,
+    showNotice = true
   ): void {
     if (
       !resolutionChannelWasLost ||
@@ -1929,16 +1936,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
       surface: 'agent',
       errorType: 'agent_ask_answer_winner_unconfirmed'
     })
-    pushError(i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed'))
+    if (showNotice)
+      pushError(i18n.global.t('agent.runApproval.answerAcceptedUnconfirmed'))
   }
 
-  function reportUnconfirmedConflict(askId: string): void {
+  function reportUnconfirmedConflict(askId: string, showNotice = true): void {
     if (!recordAnswerReport(conflictUnconfirmedReports, askId)) return
     reportError(new Error('restored approval conflict cannot be verified'), {
       surface: 'agent',
       errorType: 'agent_ask_answer_unconfirmed'
     })
-    pushError(i18n.global.t('agent.runApproval.answerUncertain'))
+    if (showNotice)
+      pushError(i18n.global.t('agent.runApproval.answerUncertain'))
   }
 
   function handleAnswerFailure(
@@ -2005,10 +2014,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return false
     }
     const submitted = conversationStore.submittedAskAnswer(askId)
-    if (
-      conflict.success &&
-      receiptNamesCommittedAnswer(conflict.data, submitted)
-    ) {
+    if (conflict.success && receiptNamesCommittedAnswer(conflict.data, askId)) {
       const committed = toAskResolution(conflict.data)
       const superseded =
         submitted !== undefined &&
@@ -2056,11 +2062,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
           askKind,
           askMessageId
         )
-        conversationStore.markAskAwaitingResolution(
-          askId,
-          'conflict',
-          () => !stopped && reportUnconfirmedConflict(askId)
-        )
+        conversationStore.markAskAwaitingResolution(askId, 'conflict', () => {
+          if (stopped) return false
+          reportUnconfirmedConflict(
+            askId,
+            conversationStore.threadId === threadId
+          )
+          return true
+        })
       }
       return
     }
@@ -2075,8 +2084,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     askId: string,
     source: CommittedAnswerSource
   ): void {
-    const submittedAnswer = conversationStore.submittedAskAnswer(askId)
-    if (!namesCommittedAnswer(source, submittedAnswer)) return
+    if (
+      !namesCommittedAnswer(source, conversationStore.submittedAskKind(askId))
+    )
+      return
     const committed = toAskResolution(source)
     if (committed.status !== 'answered') return
     const submitted = conversationStore.takeSubmittedAskAnswer(askId)
@@ -2583,12 +2594,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const running = recoveringTurns.get(key)
     if (running === undefined) return false
     if (cause !== 'reconnect') {
-      if (running.settledSnapshot) {
-        running.rerun = true
-      }
-      if (!running.settledSnapshot && running.cause === 'reconnect') {
-        running.rerun = true
-      }
+      running.rerun = true
       return true
     }
     if (running.cause === 'reconnect') {
@@ -2686,10 +2692,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     state.sawStreamingObservation = true
     const pendingAskId = streamingPendingAskId(outcome)
-    trackDeliveredAsksAwaitingSnapshot(state, pendingAskId)
     const pendingAskConfirmed =
       state.previousObservation !== undefined &&
       state.previousObservation.pendingAskId === pendingAskId
+    trackDeliveredAsksAwaitingSnapshot(state, pendingAskId, pendingAskConfirmed)
     state.hasUnconfirmedObservation = !pendingAskConfirmed
     reconcileStreamingApproval(
       turn,
@@ -2708,12 +2714,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function trackDeliveredAsksAwaitingSnapshot(
     state: RecoveryObservationState,
-    pendingAskId: string | undefined
+    pendingAskId: string | undefined,
+    pendingAskConfirmed: boolean
   ): void {
-    if (pendingAskId !== undefined && deliveredAsks.has(pendingAskId)) {
+    if (pendingAskId !== undefined) {
       state.snapshotNamedDeliveredAsks.add(pendingAskId)
       state.deliveredAsksAwaitingSnapshot.delete(pendingAskId)
     }
+    if (pendingAskConfirmed)
+      for (const askId of state.deliveredAsksAwaitingSnapshot)
+        if (askId !== pendingAskId)
+          state.deliveredAsksAwaitingSnapshot.delete(askId)
     for (const askId of deliveredAsks)
       if (
         !state.deliveredAtRecoveryStart.has(askId) &&
