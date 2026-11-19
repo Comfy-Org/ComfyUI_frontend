@@ -56,7 +56,32 @@ async function verifyWorkspace(request: APIRequestContext, features: Response) {
   const folders = (await features.json()).model_upload_folders
   if (!Array.isArray(folders) || !folders.includes('loras'))
     throw new Error('LoRA uploads are disabled for the staging smoke account')
-  return auth
+  if (typeof workspace.id !== 'string')
+    throw new Error('No staging workspace ID')
+  return { auth, id: workspace.id }
+}
+
+async function requestBelongsToWorkspace(
+  request: APIRequestContext,
+  auth: string,
+  workspaceId: string
+): Promise<boolean> {
+  try {
+    const response = await request.get(`${cloud}/api/workspaces/current`, {
+      headers: { Authorization: auth },
+      maxRedirects: 0,
+      timeout: 10_000
+    })
+    if (!response.ok()) {
+      console.log(
+        `Upload authorization could not be scoped (HTTP ${response.status()})`
+      )
+      return false
+    }
+    return (await response.json()).id === workspaceId
+  } catch {
+    return false
+  }
 }
 
 const allowed = [
@@ -91,7 +116,8 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
   const { email, password, localFixture } = smokeInputs()
   const firebaseKey = await readStagingFirebaseKey(request)
 
-  const approved = { authorization: undefined as string | undefined }
+  const workspace = { id: undefined as string | undefined }
+  const verifiedAuthorizations = new Set<string>()
   let starts = 0
   const apiUpload = '/api/assets/uploads'
 
@@ -107,13 +133,19 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
     }
     if (url.pathname.startsWith(apiUpload) && req.method() === 'POST') {
       const auth = await req.headerValue('authorization')
-      if (
-        url.origin !== cloud ||
-        !approved.authorization ||
-        auth !== approved.authorization
-      ) {
+      const workspaceId = workspace.id
+      if (url.origin !== cloud || !auth || !workspaceId) {
+        console.log('Blocked model upload without verified staging scope')
         await route.abort('blockedbyclient')
         return
+      }
+      if (!verifiedAuthorizations.has(auth)) {
+        if (!(await requestBelongsToWorkspace(request, auth, workspaceId))) {
+          console.log('Blocked model upload for a different workspace')
+          await route.abort('blockedbyclient')
+          return
+        }
+        verifiedAuthorizations.add(auth)
       }
       if (url.pathname === apiUpload && starts++ !== 0) {
         await route.abort('blockedbyclient')
@@ -167,11 +199,15 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
       }
       workspaceFeatures.push(response)
     }
+    if (url.origin === cloud && url.pathname === apiUpload)
+      console.log(`Cloud upload start responded HTTP ${response.status()}`)
   })
   page.on('requestfailed', (request) => {
     const url = new URL(request.url())
     if (url.origin === cloud || url.origin === firebaseAuth)
-      console.log(`Browser request failed for ${url.origin}${url.pathname}`)
+      console.log(
+        `Browser request failed for ${url.origin}${url.pathname}: ${request.failure()?.errorText ?? 'unknown'}`
+      )
   })
   const loginResponse = page.waitForResponse(
     (response) =>
@@ -202,9 +238,10 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
     )
     .toBe(200)
   if (!features) throw new Error('No authorized staging feature response')
-  const auth = await verifyWorkspace(request, features)
+  const verified = await verifyWorkspace(request, features)
   console.log('Verified managed account and eligible staging workspace')
-  approved.authorization = auth
+  workspace.id = verified.id
+  verifiedAuthorizations.add(verified.auth)
 
   await expect(
     card.getByRole('heading', { name: 'Upload 1 model', exact: true })
@@ -217,7 +254,8 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
       new URL(response.url()).origin === cloud &&
       new URL(response.url()).pathname.startsWith(`${apiUpload}/`) &&
       new URL(response.url()).pathname.endsWith('/complete') &&
-      response.request().method() === 'POST'
+      response.request().method() === 'POST',
+    { timeout: 35_000 }
   )
   await card.getByTestId('missing-models-upload').click()
   const completed = await accepted
