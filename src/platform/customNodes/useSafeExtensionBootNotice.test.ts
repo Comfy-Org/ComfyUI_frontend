@@ -27,10 +27,9 @@ describe('useSafeExtensionBootNotice', () => {
   it('says custom extensions are off for this load and offers a reload with them on', () => {
     bootWith('/?safe&workflow=a')
     const reload = vi.fn()
-    vi.spyOn(window, 'location', 'get').mockReturnValue({
-      ...window.location,
-      reload
-    })
+    vi.spyOn(window, 'location', 'get').mockReturnValue(
+      Object.assign(Object.create(Location.prototype), { reload })
+    )
 
     renderNotice()
 
