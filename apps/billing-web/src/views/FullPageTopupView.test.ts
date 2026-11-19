@@ -1304,6 +1304,37 @@ describe('FullPageTopupView paying a Cloud purchase', () => {
     )
   })
 
+  it('after an unanswered Pay whose attempt the purchase reports failed, the same card pays again under a new key', async () => {
+    const { fake, purchase } = renderPurchase(purchaseRead('open'))
+    fake.createInteractiveTopup
+      .mockResolvedValueOnce(NO_ANSWER)
+      .mockResolvedValueOnce(SUCCEEDED)
+    await screen.findByText('Add credits · Acme Team')
+    purchase.read = purchaseRead('open', 'op_topup')
+    fake.recover.mockResolvedValue({
+      status: 'ok',
+      value: {
+        ...failedOperation('card_declined', 'op_topup'),
+        phase: 'failed',
+        declineReason: 'card_declined',
+        retryable: true
+      }
+    })
+
+    await userEvent.click(payButton())
+    await waitFor(() => expect(payButton()).toBeEnabled())
+    await userEvent.click(payButton())
+
+    await waitFor(() =>
+      expect(fake.createInteractiveTopup).toHaveBeenCalledTimes(2)
+    )
+    const [first, next] = fake.createInteractiveTopup.mock.calls.map(
+      ([request]) => request
+    )
+    expect(next.payment).toStrictEqual(first.payment)
+    expect(next.idempotencyKey).not.toBe(first.idempotencyKey)
+  })
+
   it('says a newer purchase replaced this one when Cloud refuses a stale page’s Pay', async () => {
     const { fake, purchase } = renderPurchase(purchaseRead('open'))
     fake.createInteractiveTopup.mockResolvedValueOnce({

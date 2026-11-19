@@ -98,6 +98,10 @@ interface HeldAttempt {
   readonly idempotencyKey: string
 }
 
+function failedAttempt(recovered: RecoveredOperation): boolean {
+  return recovered.status === 'ok' && recovered.value?.phase === 'failed'
+}
+
 function awaitedOperationOf(
   current: CheckoutPage
 ): Pick<BillingRecoverOptions, 'operation'> {
@@ -244,6 +248,7 @@ export function useFullPageTopup() {
       ...recovery.options
     })
     if (mine !== generation) return undefined
+    if (purchaseId !== undefined && failedAttempt(recovered)) held = undefined
     dispatch(reconciledEvent(recovered, 'topup'))
     return recovered
   }
