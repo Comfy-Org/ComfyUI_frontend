@@ -1,3 +1,4 @@
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
@@ -68,4 +69,15 @@ function checkedScope(member: string, scope: unknown): NodeQueryScope {
 
 function isScope(scope: unknown): scope is NodeQueryScope {
   return typeof scope === 'string' && Object.hasOwn(SCOPES, scope)
+}
+
+/** The graphs a scope covers, given the graph on screen: none without one. */
+export function graphsIn(
+  scope: NodeQueryScope,
+  visible: LGraph | null | undefined
+): readonly LGraph[] {
+  if (!visible) return []
+  if (scope === 'visible') return [visible]
+  const { rootGraph } = visible
+  return [rootGraph, ...rootGraph.subgraphs.values()]
 }
