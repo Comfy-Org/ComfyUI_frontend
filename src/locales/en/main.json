@@ -6626,7 +6626,8 @@
         "howConnect": "How do these connect?",
         "combine": "Combine these into one workflow",
         "explainGroup": "Explain this group"
-      }
+      },
+      "busy": "Comfy Agent is still working. Send your question when it's done."
     }
   },
   "skillPacks": {

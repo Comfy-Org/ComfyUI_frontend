@@ -17281,3 +17281,117 @@ describe('AgentPanelRoot node ask from the selection toolbox', () => {
     expect(bodies).toHaveLength(0)
   })
 })
+
+describe('AgentPanelRoot node ask while the chat is busy', () => {
+  const KSAMPLER = { id: '7', title: 'KSampler' }
+  const QUESTION = 'What does this node do?'
+
+  beforeEach(() => {
+    useAgentPanelStore().enabled = true
+  })
+
+  function makeBoundTab(): LoadedComfyWorkflow {
+    const tab = addTab('workflows/current.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-42' })
+    })
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
+    useAgentConversationStore().setThreadId('th-1')
+    return tab
+  }
+
+  function posts(): string[] {
+    return vi
+      .mocked(fetch)
+      .mock.calls.filter(([, init]) => init?.method === 'POST')
+      .map(([url]) => String(url))
+  }
+
+  it('puts the question in the panel composer with its nodes while the agent works', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    useAgentConversationStore().startTurn(toTurnId('m-live'))
+    await nextTick()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      workflowPath: tab.path
+    }
+
+    await waitFor(() =>
+      expect(useAgentComposerStore().draft.trim()).toBe(QUESTION)
+    )
+    expect(useAgentComposerStore().nodes).toEqual([
+      expect.objectContaining({ id: '7', title: 'KSampler' })
+    ])
+    expect(posts()).toEqual([])
+  })
+
+  it('keeps an existing panel draft and says the question was not sent', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    useAgentComposerStore().setText('half-written thought')
+    useAgentConversationStore().startTurn(toTurnId('m-live'))
+    await nextTick()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [KSAMPLER],
+      workflowPath: tab.path
+    }
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        "Comfy Agent is still working. Send your question when it's done."
+      )
+    )
+    expect(useAgentComposerStore().draft).toBe('half-written thought')
+    expect(useAgentComposerStore().nodes).toEqual([])
+    expect(posts()).toEqual([])
+  })
+
+  it('holds a second question while the first one is still being sent', async () => {
+    const tab = makeBoundTab()
+    mockMessagesEndpoint('wf-42')
+    const base = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      String(input).includes('/messages') && init?.method === 'POST'
+        ? new Promise(() => {})
+        : base(input, init)
+    )
+    renderWithSelectedTarget()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'Explain these settings',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path
+    }
+    await waitFor(() => expect(posts()).toHaveLength(1))
+    useAgentPanelStore().pendingNodeAsk = {
+      text: QUESTION,
+      nodes: [{ id: '8', title: 'VAE Decode' }],
+      workflowPath: tab.path
+    }
+
+    await waitFor(() =>
+      expect(useAgentComposerStore().draft.trim()).toBe(QUESTION)
+    )
+    expect(posts()).toHaveLength(1)
+  })
+
+  it('puts the question in the panel composer when the send is refused', async () => {
+    workflowStore.activeWorkflow = null
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    useAgentPanelStore().pendingNodeAsk = { text: QUESTION, nodes: [KSAMPLER] }
+
+    await waitFor(() =>
+      expect(useAgentComposerStore().draft.trim()).toBe(QUESTION)
+    )
+    expect(posts()).toEqual([])
+  })
+})

@@ -2111,6 +2111,22 @@ function nodeAskWorkflowOpen(ask: AgentNodeAsk): boolean {
   return false
 }
 
+let nodeAskRejected = false
+
+function holdNodeAsk(ask: AgentNodeAsk, hasDraft: boolean): void {
+  if (hasDraft) {
+    toast.warning(t('agent.nodeAsk.busy'), { duration: 5000 })
+    return
+  }
+  replaceSelectionTags(ask.nodes)
+  const staged = composerStore.prompt
+  const gap = !staged.text || staged.text.endsWith(' ') ? '' : ' '
+  composerStore.restorePrompt(
+    { text: `${staged.text}${gap}${ask.text}`, references: staged.references },
+    []
+  )
+}
+
 async function sendNodeAsk(ask: AgentNodeAsk): Promise<void> {
   const workflow = workflowStore.activeWorkflow
   if (!nodeAskWorkflowOpen(ask)) return
@@ -2119,9 +2135,14 @@ async function sendNodeAsk(ask: AgentNodeAsk): Promise<void> {
   agentPanelStore.retainWorkflowTarget()
   const keptPrompt = composerStore.hasDraft ? composerStore.prompt : null
   const keptAttachments = composerStore.attachments
+  if (isStreaming.value || isSending.value || status.value === 'thinking')
+    return holdNodeAsk(ask, keptPrompt !== null)
   replaceSelectionTags(ask.nodes)
+  nodeAskRejected = false
   const sending = onSend(ask.text, [])
+  const rejected = nodeAskRejected
   if (keptPrompt) composerStore.restorePrompt(keptPrompt, keptAttachments)
+  if (rejected) holdNodeAsk(ask, keptPrompt !== null)
   await sending
 }
 
@@ -2245,7 +2266,10 @@ async function consentAllowsSubmission(
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
-  onRejected: sendGates.rejectDraft,
+  onRejected: (reason) => {
+    if (reason !== 'empty') nodeAskRejected = true
+    sendGates.rejectDraft(reason)
+  },
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
