@@ -248,7 +248,8 @@ describe('useLocalModelUploadStore', () => {
     store.reset(missingAgain)
     await store.prepare(missingAgain)
 
-    expect(store.pickOf(lora).status).toBe('unchosen')
+    expect(store.pickOf(lora).status).toBe('stored')
+    expect(store.canUpload(missingAgain)).toBe(false)
     store.choose(lora, loraFile)
     expect(store.canUpload(missingAgain)).toBe(true)
   })
@@ -335,6 +336,35 @@ describe('useLocalModelUploadStore', () => {
     expect(store.percent).toBe(50)
     finish({ ok: false, reason: 'cancelled' })
     await started
+  })
+
+  it('keeps tracking an accepted storage task after a cancellation attempt', async () => {
+    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValue({
+      ok: true,
+      taskId: TASK_ID
+    })
+    let finish: () => void = () => {}
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          finish = () => resolve({ ok: true })
+        })
+    )
+    const store = await prepared()
+    const models = [lora]
+    store.choose(lora, loraFile)
+
+    const started = store.start(models)
+    await vi.waitFor(() => expect(store.canCancel).toBe(false))
+    expect(store.activeModels).toEqual(models)
+    store.cancel()
+    finish()
+    await started
+
+    expect(store.upload).toEqual({ phase: 'done' })
+    expect(store.pickOf(lora).status).toBe('stored')
+    expect(store.activeModels).toBeUndefined()
+    expect(check).toHaveBeenCalledOnce()
   })
 
   it('stops on cancel and does not check again', async () => {

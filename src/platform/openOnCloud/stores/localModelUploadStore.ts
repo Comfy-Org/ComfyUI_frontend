@@ -40,7 +40,13 @@ export type ModelUploadBlock = 'folder' | 'subfolder' | 'fileType' | 'size'
 
 type LocalModelUpload =
   | { phase: 'idle' }
-  | { phase: 'uploading'; sent: number; total: number }
+  | {
+      phase: 'uploading'
+      sent: number
+      total: number
+      models: MissingModel[]
+      canCancel: boolean
+    }
   | { phase: 'failed'; reason: LocalModelUploadFailure; message?: string }
   | { phase: 'done' }
 
@@ -82,6 +88,12 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   let modelSnapshot: MissingModel[] | undefined
 
   const isUploading = computed(() => upload.value.phase === 'uploading')
+  const activeModels = computed(() =>
+    upload.value.phase === 'uploading' ? upload.value.models : undefined
+  )
+  const canCancel = computed(
+    () => upload.value.phase === 'uploading' && upload.value.canCancel
+  )
   const percent = computed(() => {
     const current = upload.value
     if (current.phase !== 'uploading' || current.total === 0) return 0
@@ -202,6 +214,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         })
       return { phase: 'failed', reason: result.reason, message: result.message }
     }
+    if (upload.value.phase === 'uploading')
+      upload.value = { ...upload.value, canCancel: false }
     const stored = await waitForStoredModel(result.taskId, signal, request)
     return stored.ok
       ? undefined
@@ -209,20 +223,28 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   async function sendAll(
+    models: MissingModel[],
     queue: { model: MissingModel; file: File }[],
     current: NonNullable<typeof batch>
   ): Promise<UploadStop | undefined> {
     const total = queue.reduce((sum, { file }) => sum + file.size, 0)
     let done = 0
     const { signal } = current.controller
-    upload.value = { phase: 'uploading', sent: 0, total }
     for (const { model, file } of queue) {
+      upload.value = {
+        phase: 'uploading',
+        sent: done,
+        total,
+        models,
+        canCancel: true
+      }
       const stop = await sendOne(
         model,
         file,
         (sent) => {
-          if (!signal.aborted && isUploading.value)
-            upload.value = { phase: 'uploading', sent: done + sent, total }
+          const state = upload.value
+          if (!signal.aborted && state.phase === 'uploading')
+            upload.value = { ...state, sent: done + sent }
         },
         current
       )
@@ -230,7 +252,6 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       if (stop) return stop
       setPick(model, { status: 'stored' })
       done += file.size
-      upload.value = { phase: 'uploading', sent: done, total }
     }
     return undefined
   }
@@ -248,7 +269,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     }
     batch = current
     try {
-      const stop = await sendAll(queue, current)
+      const stop = await sendAll(models, queue, current)
       if (current.ownerChanged) {
         upload.value = { phase: 'failed', reason: 'accountChanged' }
         return
@@ -271,7 +292,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function cancel(): void {
-    batch?.controller.abort()
+    if (canCancel.value) batch?.controller.abort()
   }
 
   function reset(models: MissingModel[]): void {
@@ -279,12 +300,12 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     clearPreparation()
     if (modelSnapshot === models && upload.value.phase === 'failed') return
     upload.value = { phase: 'idle' }
-    picks.value =
-      modelSnapshot === models
-        ? new Map(
-            [...picks.value].filter(([, pick]) => pick.status === 'stored')
-          )
-        : new Map()
+    const keys = new Set(models.map(modelKey))
+    picks.value = new Map(
+      [...picks.value].filter(
+        ([key, pick]) => keys.has(key) && pick.status === 'stored'
+      )
+    )
     modelSnapshot = models
   }
 
@@ -293,6 +314,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     upload,
     uploadFolders,
     isUploading,
+    activeModels,
+    canCancel,
     percent,
     prepare,
     sizeOf,

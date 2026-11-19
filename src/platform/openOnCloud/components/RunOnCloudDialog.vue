@@ -31,6 +31,7 @@ import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue
 import MissingModelsCard from '@/platform/openOnCloud/components/MissingModelsCard.vue'
 import { runOnCloudModalState } from '@/platform/openOnCloud/runOnCloudModalState'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import {
   DEPLOY_VIDEO_POSTER_SRC,
   DEPLOY_VIDEO_SOURCES
@@ -42,10 +43,11 @@ const emit = defineEmits<{
 }>()
 
 const { state: check } = storeToRefs(useCloudWorkflowCheckStore())
+const { activeModels } = storeToRefs(useLocalModelUploadStore())
 const { isLoggedIn } = useCurrentUser()
-const state = computed(() =>
-  runOnCloudModalState(check.value, {
-    signedIn: isLoggedIn.value
-  })
-)
+const state = computed(() => {
+  if (activeModels.value)
+    return { kind: 'missingModels' as const, models: activeModels.value }
+  return runOnCloudModalState(check.value, { signedIn: isLoggedIn.value })
+})
 </script>

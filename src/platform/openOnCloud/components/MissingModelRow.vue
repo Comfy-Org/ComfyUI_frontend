@@ -18,7 +18,7 @@
         :aria-label="$t('openOnCloud.missingModels.uploaded')"
       />
       <label
-        v-else-if="choosable"
+        v-if="choosable && size !== undefined"
         class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-foreground hover:bg-accent has-focus-visible:ring-2 has-focus-visible:ring-ring has-disabled:cursor-default has-disabled:opacity-50"
       >
         <i
@@ -27,7 +27,11 @@
           :aria-label="$t('openOnCloud.missingModels.chosen')"
         />
         <template v-else>{{
-          $t('openOnCloud.missingModels.chooseFile')
+          $t(
+            pick.status === 'stored'
+              ? 'openOnCloud.missingModels.chooseAgain'
+              : 'openOnCloud.missingModels.chooseFile'
+          )
         }}</template>
         <input
           type="file"

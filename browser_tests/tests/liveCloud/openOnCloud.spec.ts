@@ -118,7 +118,7 @@ test.describe(
       })
     })
 
-    test('lists the real missing model when local uploads are unavailable', async ({
+    test('lists the real missing model and offers sign-in for upload', async ({
       comfyPage,
       cloudOrigin
     }) => {
@@ -149,7 +149,7 @@ test.describe(
         ])
       })
 
-      await test.step('Identify the missing model and the upload limitation', async () => {
+      await test.step('Identify the missing model and its sign-in action', async () => {
         const dialog = comfyPage.page.getByRole('dialog')
         await expect(
           dialog.getByRole('heading', { name: 'Missing 1 model', exact: true })
@@ -158,10 +158,7 @@ test.describe(
           dialog.getByText('3Guofeng3_v32Light.safetensors', { exact: true })
         ).toBeVisible()
         await expect(
-          dialog.getByText(
-            'Add these models to Comfy Cloud to run this workflow. Uploads from this ComfyUI are currently unavailable.',
-            { exact: true }
-          )
+          dialog.getByRole('button', { name: 'Sign in to upload', exact: true })
         ).toBeVisible()
         await expect(
           dialog.getByRole('button', { name: 'Upload', exact: true })

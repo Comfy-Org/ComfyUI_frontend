@@ -69,6 +69,7 @@
           {{ $t('openOnCloud.missingModels.checkAgain') }}
         </Button>
         <Button
+          v-if="footer !== 'uploading' || uploads.canCancel"
           variant="secondary"
           size="lg"
           @click="footer === 'uploading' ? uploads.cancel() : emit('dismiss')"

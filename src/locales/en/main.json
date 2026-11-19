@@ -4404,6 +4404,7 @@
       "signInToUpload": "Sign in to upload",
       "chooseFile": "Choose file",
       "chooseFileFor": "Choose file for {name}",
+      "chooseAgain": "Choose again",
       "preparing": "Checking which models can be uploaded…",
       "checkAgain": "Check again",
       "chosen": "File chosen",

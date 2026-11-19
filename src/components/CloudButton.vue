@@ -69,7 +69,8 @@ const tooltip = computed(() => {
 })
 
 function prefetch() {
-  if (check.value.phase === 'idle') void checkStore.check()
+  if (!isUploading.value && check.value.phase === 'idle')
+    void checkStore.check()
 }
 
 function showModal() {
@@ -92,6 +93,10 @@ function openModal() {
     button_id: 'run_bar_cloud_clicked',
     element_group: 'top_menu'
   })
+  if (isUploading.value) {
+    void openRunOnCloudDialog(() => isMounted && isUploading.value)
+    return
+  }
   const { phase } = check.value
   if (phase === 'answered') {
     showModal()
