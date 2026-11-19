@@ -693,21 +693,24 @@ export const useWorkflowService = () => {
       if (!ready) attempt.skipped = true
       return ready
     }
-    const loaded = await useApp()
-      .loadGraphData(queued, true, true, workflow, {
-        checkForRerouteMigration: false,
-        deferWarnings: true,
-        skipAssetScans,
-        workflowNavigationId: navigationIntentId,
-        isCurrent: reloadsCanvas ? undefined : isCurrent,
-        ...(reloadsCanvas && {
-          isReady: readyAtTurn,
-          resolveGraphData: snapshotAtTurn
+    const loadAtTurn = async () => {
+      try {
+        return await useApp().loadGraphData(queued, true, true, workflow, {
+          checkForRerouteMigration: false,
+          deferWarnings: true,
+          skipAssetScans,
+          workflowNavigationId: navigationIntentId,
+          isCurrent: reloadsCanvas ? undefined : isCurrent,
+          ...(reloadsCanvas && {
+            isReady: readyAtTurn,
+            resolveGraphData: snapshotAtTurn
+          })
         })
-      })
-      .finally(() => {
+      } finally {
         if (saved && !attempt.skipped) restoreSavedBaseline(workflow, saved)
-      })
+      }
+    }
+    const loaded = await loadAtTurn()
     if (loaded === false && options.loadFromRemote && isCurrent?.() === false)
       discardSupersededLoad(workflow, options.wasModified)
     return loaded
