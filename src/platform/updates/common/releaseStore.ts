@@ -94,12 +94,9 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
-    // Still gated on the legacy desktop build, unlike the red dot and the
-    // What's New popup. The toast is the only surface with an Update action,
-    // and that action is only correct where `Comfy-Desktop.CheckForUpdates`
-    // exists. Everywhere else it would send the user to the generic OSS
-    // update docs, which are wrong for a launcher-managed install. Ungating
-    // it needs a host capability check first.
+    // Unlike the red dot and the popup, this stays on the legacy build: it is
+    // the only surface with an Update action, and that action is correct
+    // nowhere else yet. See ADR-UPDATES-NOTIFICATIONS-0048.
     if (!isDesktop || isCloud) {
       return false
     }

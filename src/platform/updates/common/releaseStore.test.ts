@@ -723,19 +723,35 @@ describe('useReleaseStore', () => {
       expect(store.shouldShowPopup).toBe(true)
     })
 
-    it('still honours the ShowVersionUpdates setting', () => {
-      const settingStore = useSettingStore()
-      vi.mocked(settingStore.get).mockImplementation((key: string) => {
-        if (key === 'Comfy.Notification.ShowVersionUpdates') return false
-        return null
+    describe('with ShowVersionUpdates turned off', () => {
+      beforeEach(() => {
+        const settingStore = useSettingStore()
+        vi.mocked(settingStore.get).mockImplementation((key: string) => {
+          if (key === 'Comfy.Notification.ShowVersionUpdates') return false
+          return null
+        })
       })
 
-      const store = useReleaseStore()
-      store.releases = [mockRelease]
-      vi.mocked(compare).mockReturnValue(1)
+      // Each case puts the surface in the state where it WOULD show, so the
+      // setting is the only thing left that can hide it. The two surfaces need
+      // opposite version states, so they cannot share one case.
+      it('hides the red dot that a new version would otherwise show', () => {
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
+        vi.mocked(compare).mockReturnValue(1)
 
-      expect(store.shouldShowRedDot).toBe(false)
-      expect(store.shouldShowPopup).toBe(false)
+        expect(store.shouldShowRedDot).toBe(false)
+      })
+
+      it('hides the popup that the latest version would otherwise show', () => {
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
+        const systemStatsStore = useSystemStatsStore()
+        systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
+        vi.mocked(compare).mockReturnValue(0)
+
+        expect(store.shouldShowPopup).toBe(false)
+      })
     })
 
     it('withholds the toast, whose Update action has no correct target here', () => {
@@ -747,17 +763,19 @@ describe('useReleaseStore', () => {
       expect(store.shouldShowToast).toBe(false)
     })
 
-    it('withholds the toast regardless of attention level', () => {
-      const store = useReleaseStore()
-      vi.mocked(compare).mockReturnValue(1)
+    // One release per case: `recentRelease` reads only the first entry, so a
+    // two-element array would leave the second attention level unexercised.
+    it.for(['high', 'medium'] as const)(
+      'withholds the toast for a %s attention release',
+      (attention) => {
+        const store = useReleaseStore()
+        vi.mocked(compare).mockReturnValue(1)
 
-      store.releases = [
-        { ...mockRelease, id: 2, attention: 'high' as const },
-        { ...mockRelease, id: 3, attention: 'medium' as const }
-      ]
+        store.releases = [{ ...mockRelease, attention }]
 
-      expect(store.shouldShowToast).toBe(false)
-    })
+        expect(store.shouldShowToast).toBe(false)
+      }
+    )
   })
 
   describe('on Cloud', () => {
