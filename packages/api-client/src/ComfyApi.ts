@@ -36,6 +36,7 @@ import type {
   AssetDownloadWsMessage,
   AssetExportWsMessage,
   AssetSeedCompletedWsMessage,
+  BillingStatusWsMessage,
   ExecutedWsMessage,
   ExecutingWsMessage,
   ExecutionCachedWsMessage,
@@ -225,6 +226,7 @@ interface BackendApiCalls {
   progress_state: ProgressStateWsMessage
   feature_flags: FeatureFlagsWsMessage
   agent_status: AgentStatusWsMessage
+  billing_status: BillingStatusWsMessage
   asset_download: AssetDownloadWsMessage
   model_download: ModelDownloadData
   asset_export: AssetExportWsMessage
@@ -1160,6 +1162,7 @@ export class ComfyApi extends EventTarget {
             case 'logs':
             case 'b_preview':
             case 'notification':
+            case 'billing_status':
               this.dispatchCustomEvent(msg.type, msg.data)
               break
             case 'graphChanged':

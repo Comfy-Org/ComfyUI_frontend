@@ -5,7 +5,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { isAuthenticatedConfigLoaded } from '@/platform/remoteConfig/remoteConfig'
 import { computed, onScopeDispose, ref, shallowRef, toValue, watch } from 'vue'
-import { createSharedComposable, until } from '@vueuse/core'
+import { createSharedComposable, until, useDebounceFn } from '@vueuse/core'
 
 import {
   KEY_TO_TIER,
@@ -24,6 +24,7 @@ import {
 } from '@/platform/billing/billingRefresh'
 import type { BillingRefreshScope } from '@/platform/billing/billingRefresh'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { api } from '@/scripts/api'
 
 import type {
   BalanceInfo,
@@ -45,6 +46,9 @@ const LEGACY_TEAM_PLAN_SLUG_PREFIX = 'team-'
 const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
 
 const ROUTING_WAIT_TIMEOUT_MS = 10_000
+
+// Coalesces a burst of Cloud billing_status pushes into one read.
+const BILLING_PUSH_DEBOUNCE_MS = 1_000
 
 class BillingRoutingUnavailableError extends Error {}
 
@@ -416,6 +420,36 @@ function useBillingContextInternal(): BillingContext {
   }
 
   onScopeDispose(onBillingRefresh(refreshFor))
+
+  // Cloud pushes billing_status when funds change (grant, top-up, admin
+  // credit, Agent grant used up). The push is only a hint, so read the
+  // system of record instead of applying it; that also makes out-of-order
+  // pushes harmless.
+  if (isCloud) {
+    const readAfterPush = useDebounceFn(async () => {
+      if (type.value === 'unknown') return
+      await Promise.allSettled([
+        runPushedStatusRead(),
+        activeContext.value.fetchBalance()
+      ])
+    }, BILLING_PUSH_DEBOUNCE_MS)
+    const onBillingStatusPush = () => void readAfterPush()
+    api.addEventListener('billing_status', onBillingStatusPush)
+    onScopeDispose(() =>
+      api.removeEventListener('billing_status', onBillingStatusPush)
+    )
+  }
+
+  async function runPushedStatusRead(): Promise<void> {
+    try {
+      await activeContext.value.fetchStatus({ fresh: true })
+    } catch (err) {
+      reportError(err, {
+        surface: 'billing',
+        errorType: 'error_refreshing_billing_status_after_push'
+      })
+    }
+  }
   onScopeDispose(provideCheckoutOperationReader(readCheckoutOperation))
 
   async function subscribe(planSlug: string, options?: SubscribeOptions) {

@@ -142,6 +142,18 @@ export interface AgentStatusWsMessage {
   state: 'starting' | 'ready' | 'failed'
   reason?: string | null
 }
+/**
+ * Cloud pushes this when shared or Agent-scoped funds change. It is a hint,
+ * not the system of record: clients reconcile by reading billing status.
+ */
+export interface BillingStatusWsMessage {
+  as_of_ns?: number
+  billing_status?: {
+    has_funds?: boolean
+    scoped_has_funds?: Record<string, boolean>
+    scoped_effective_has_funds?: Record<string, boolean>
+  }
+}
 export interface AssetDownloadWsMessage {
   task_id: string
   asset_name: string
