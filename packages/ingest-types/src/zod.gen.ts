@@ -350,7 +350,7 @@ export const zAgentPostMessageRequest = z.object({
 })
 
 /**
- * Identity-bound user-by-workspace assignment for the proactive greeting experiment. Absent when disabled, unauthenticated or unavailable. Reading this assignment does not enroll the caller; enrollment requires the frontend's first-use eligibility gate. The canonical user identity is preserved; group_key is the compact JSON array [user_id,workspace_id] for the PostHog user_workspace group.
+ * User-by-workspace assignment for the proactive greeting experiment.
  */
 export const zAgentProactiveGreetingAssignment = z.object({
   group_key: z.string().min(1),
