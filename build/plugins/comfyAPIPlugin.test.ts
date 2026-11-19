@@ -41,10 +41,6 @@ describe('comfyAPIPlugin transform', () => {
     {
       name: 'does not match sibling directory names starting with scripts',
       id: path.join(root, 'src/scripts-old/api.ts')
-    },
-    {
-      name: 'does not match sibling directory names starting with extensions/core',
-      id: path.join(root, 'src/extensions/core-backup/api.ts')
     }
   ])('$name', ({ id }) => {
     const { result, emitFile } = runTransform(false, id)

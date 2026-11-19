@@ -3,6 +3,7 @@ import { ComfyDialog } from '@/scripts/ui'
 import { $el } from '@/scripts/ui/utils'
 import type { ComfyExtension } from '@/types/comfy'
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export class ClipspaceDialog extends ComfyDialog {
   static items: Array<
     HTMLButtonElement & {

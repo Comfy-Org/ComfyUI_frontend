@@ -1,6 +1,5 @@
+import path from 'path'
 import type { Plugin } from 'vite'
-
-import { getComfyAPIRelativePath } from '../comfyAPISurface'
 
 interface ShimResult {
   code: string
@@ -33,6 +32,22 @@ function getWarningMessage(
   }
 
   return `[ComfyUI Notice] "${shimFileName}" is an internal module, not part of the public API. Future updates may break this import.`
+}
+
+function getLegacyRelativePath(id: string): string | null {
+  if (!id.endsWith('.ts')) return null
+
+  const relativePath = path
+    .relative(path.join(process.cwd(), 'src'), id)
+    .replace(/\\/g, '/')
+
+  if (relativePath.startsWith('..')) return null
+
+  const isLegacyFile =
+    relativePath.startsWith('extensions/core/') ||
+    relativePath.startsWith('scripts/')
+
+  return isLegacyFile ? relativePath : null
 }
 
 function transformExports(code: string, id: string): ShimResult {
@@ -78,7 +93,7 @@ export function comfyAPIPlugin(isDev: boolean) {
     transform(code: string, id: string) {
       if (isDev) return null
 
-      const relativePath = getComfyAPIRelativePath(id)
+      const relativePath = getLegacyRelativePath(id)
       if (relativePath) {
         const result = transformExports(code, id)
 

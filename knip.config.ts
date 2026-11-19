@@ -1,13 +1,8 @@
 import type { KnipConfig } from 'knip'
 
-import { COMFY_API_SOURCE_GLOBS } from './build/comfyAPISurface'
-
 const config: KnipConfig = {
   treatConfigHintsAsErrors: true,
   treatTagHintsAsErrors: true,
-  ignoreIssues: Object.fromEntries(
-    COMFY_API_SOURCE_GLOBS.map((glob) => [glob, ['exports']])
-  ),
   workspaces: {
     '.': {
       entry: [

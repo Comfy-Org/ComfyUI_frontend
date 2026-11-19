@@ -50,6 +50,7 @@ export function calculateImageGrid(
   return { cellWidth, cellHeight, cols, rows, shiftX }
 }
 
+/** @knipIgnoreUnusedButUsedByCustomNodes */
 export function createImageHost(node: LGraphNode) {
   const el = $el('div.comfy-img-preview')
   let currentImgs: HTMLImageElement[] | undefined
