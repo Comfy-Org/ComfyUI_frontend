@@ -3482,6 +3482,7 @@
     "Node Library": "节点库",
     "Node Links": "节点连接",
     "Open": "打开",
+    "Open 3D Viewer (Beta) for Selected Node": "为所选节点打开 3D 查看器（测试版）",
     "Open Color Picker in MaskEditor": "在 MaskEditor 中打开取色器",
     "Open Custom Nodes Folder": "打开自定义节点文件夹",
     "Open DevTools": "打开开发者工具",
