@@ -132,16 +132,11 @@
           />
         </div>
 
-        <div
+        <NodeProgressBar
           v-if="isCollapsed && executing && progress !== undefined"
-          class="absolute -bottom-px left-4 h-2 w-full translate-y-1/2 overflow-hidden rounded-full"
-        >
-          <div
-            data-testid="node-progress-fill"
-            :class="cn('rounded-full', progressClasses)"
-            :style="progressStyle"
-          />
-        </div>
+          :progress
+          collapsed
+        />
 
         <template v-if="!isCollapsed && isRerouteNode">
           <NodeSlots :node-data />
@@ -149,16 +144,10 @@
 
         <template v-else-if="!isCollapsed">
           <div class="relative">
-            <div
+            <NodeProgressBar
               v-if="executing && progress !== undefined"
-              class="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 overflow-hidden"
-            >
-              <div
-                data-testid="node-progress-fill"
-                :class="cn(progress < 1 && 'rounded-r-full', progressClasses)"
-                :style="progressStyle"
-              />
-            </div>
+              :progress
+            />
           </div>
 
           <div
@@ -345,6 +334,7 @@ import NodeContent from './NodeContent.vue'
 import NodeHeader from './NodeHeader.vue'
 import NodeFooter from './NodeFooter.vue'
 import NodeResizeHandle from './NodeResizeHandle.vue'
+import NodeProgressBar from './NodeProgressBar.vue'
 import NodeSlots from './NodeSlots.vue'
 import NodeWidgets from './NodeWidgets.vue'
 import {
@@ -594,13 +584,6 @@ const mediaRegions = computed(() => [
     growsIntoLeftover: false
   }))
 ])
-
-// Computed classes and conditions for better reusability
-const progressClasses =
-  'size-full bg-primary transition-[translate] duration-300 [translate:calc(var(--node-progress)-100%)]'
-const progressStyle = computed(() => ({
-  '--node-progress': `${Math.min((progress.value ?? 0) * 100, 100)}%`
-}))
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,

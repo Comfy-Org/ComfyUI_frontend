@@ -28,8 +28,8 @@
 
       <QueueOverlayActive
         v-else-if="hasActiveJob"
-        :total-progress-style="totalProgressStyle"
-        :current-node-progress-style="currentNodeProgressStyle"
+        :total-percent
+        :current-node-percent
         :total-percent-formatted="totalPercentFormatted"
         :current-node-percent-formatted="currentNodePercentFormatted"
         :current-node-name="currentNodeName"
@@ -94,10 +94,10 @@ const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { trackFeatureUsed } = useSurveyFeatureTracking('queue-progress-overlay')
 
 const {
+  totalPercent,
   totalPercentFormatted,
-  currentNodePercentFormatted,
-  totalProgressStyle,
-  currentNodeProgressStyle
+  currentNodePercent,
+  currentNodePercentFormatted
 } = useQueueProgress()
 const isHovered = ref(false)
 const isOverlayHovered = computed(() => isHovered.value || menuHovered)
