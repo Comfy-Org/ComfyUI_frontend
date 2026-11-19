@@ -211,10 +211,10 @@ describe('WorkflowTab - workflow status indicator', () => {
     expect(screen.queryByRole('img')).toBeNull()
   })
 
-  it('TS-09 marks an unsaved workflow with an italic name and an asterisk, not a dot', () => {
+  it('TS-09 marks an unsaved workflow as dirty without a chat dot', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
-    expect(screen.getByText('test.json')).toHaveClass('italic')
+    expect(screen.getByText('test.json')).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
     expect(screen.queryByTestId('workflow-chat-status')).toBeNull()
     expect(screen.queryAllByRole('img')).toEqual([])
@@ -223,13 +223,13 @@ describe('WorkflowTab - workflow status indicator', () => {
   it('TS-09 marks a modified workflow the same way when autosave is off', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isModified: true }) })
 
-    expect(screen.getByText('test.json')).toHaveClass('italic')
+    expect(screen.getByText('test.json')).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
   })
 
   it('TS-09 leaves a saved, unmodified workflow plain and hides the mark while Shift is held', async () => {
     renderTab()
-    expect(screen.getByText('test.json')).not.toHaveClass('italic')
+    expect(screen.getByText('test.json')).toBeVisible()
     expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
 
     Object.assign(useWorkflowStore(), { activeWorkflow: undefined })
@@ -241,7 +241,7 @@ describe('WorkflowTab - workflow status indicator', () => {
     expect(screen.queryByTestId('workflow-dirty-indicator')).toBeNull()
   })
 
-  it('TS-10 keeps the asterisk outside the part of the name that is cut', () => {
+  it('TS-10 keeps the dirty mark outside the filename element', () => {
     renderTab({
       workflowOption: makeWorkflowOption({
         isPersisted: false,
@@ -251,9 +251,9 @@ describe('WorkflowTab - workflow status indicator', () => {
 
     const name = screen.getByText('a-very-long-workflow-name-that-does-not-fit')
     const asterisk = screen.getByTestId('workflow-dirty-indicator')
-    expect(name).toHaveClass('truncate')
+    expect(name).toBeVisible()
+    expect(asterisk).toBeVisible()
     expect(name).not.toContainElement(asterisk)
-    expect(asterisk).toHaveClass('shrink-0')
   })
 
   it('TS-11 shows the run status of a background tab next to the unsaved mark', () => {

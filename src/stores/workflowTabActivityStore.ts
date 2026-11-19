@@ -54,7 +54,10 @@ export const useWorkflowTabActivityStore = defineStore(
       const unchanged =
         next.size === chatPaths.value.size &&
         paths.every((path) => chatPaths.value.has(path))
-      if (!unchanged) chatPaths.value = next
+      if (unchanged) return
+      for (const path of chatPaths.value)
+        if (!next.has(path)) unseenModifiedPaths.value.delete(path)
+      chatPaths.value = next
     }
 
     function markModified(path: string): void {

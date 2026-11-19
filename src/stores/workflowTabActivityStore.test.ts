@@ -120,6 +120,23 @@ describe('useWorkflowTabActivityStore', () => {
       expect(store.chatStatusFor('workflows/open.json')).toBe('seen')
     })
 
+    it('clears the unseen marker when a tab loses its last chat but keeps unseen tabs that still have a chat', () => {
+      const store = useWorkflowTabActivityStore()
+      const other = 'workflows/b.json'
+      store.setChatPaths([path, other])
+      store.markModified(path)
+      store.markModified(other)
+      expect(store.chatStatusFor(path)).toBe('unseen')
+      expect(store.chatStatusFor(other)).toBe('unseen')
+
+      store.setChatPaths([other])
+
+      expect(store.unseenModifiedPaths.has(path)).toBe(false)
+      expect(store.chatStatusFor(path)).toBeUndefined()
+      expect(store.unseenModifiedPaths.has(other)).toBe(true)
+      expect(store.chatStatusFor(other)).toBe('unseen')
+    })
+
     it('TS-14 clears chat paths together with the rest of the agent activity', () => {
       const store = useWorkflowTabActivityStore()
       store.setChatPaths([path])

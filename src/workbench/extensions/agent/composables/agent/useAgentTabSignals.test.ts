@@ -3,7 +3,6 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -35,7 +34,7 @@ function chatOf(workflowId: string, id = `chat-of-${workflowId}`): ChatSession {
   }
 }
 
-function openTab(path: string): ComfyWorkflow {
+function openTab(path: string) {
   const workflowStore = useWorkflowStore()
   const tab = createMockLoadedWorkflow({
     instanceId: path,
@@ -159,7 +158,7 @@ describe('useAgentTabSignals: tabs that have a chat', () => {
     const workflowStore = useWorkflowStore()
     const a = openTab(tabA)
     const b = openTab(tabB)
-    workflowStore.activeWorkflow = a as never
+    workflowStore.activeWorkflow = a
     const conversation = useAgentConversationStore()
     conversation.setTurnTabResolver(() => ({
       status: 'known',
@@ -177,7 +176,7 @@ describe('useAgentTabSignals: tabs that have a chat', () => {
     expect(activity.unseenModifiedPaths.has(tabA)).toBe(false)
 
     conversation.startTurn(toTurnId('m-2'))
-    workflowStore.activeWorkflow = b as never
+    workflowStore.activeWorkflow = b
     conversation.ingest({
       type: 'agent_message_done',
       data: { thread_id: 'th-a', message_id: 'm-2', usage: null }
@@ -187,9 +186,32 @@ describe('useAgentTabSignals: tabs that have a chat', () => {
     )
   })
 
+  it('clears the unseen marker only when a workflow deletes its last chat', async () => {
+    const activity = useWorkflowTabActivityStore()
+    const history = useAgentChatHistoryStore()
+    const a = openTab(tabA)
+    openTab(tabB)
+    useWorkflowStore().activeWorkflow = a
+    history.replaceAll([chatOf('wf-b', 'one'), chatOf('wf-b', 'two')])
+    mountSignals({ [tabA]: 'wf-a', [tabB]: 'wf-b' })
+    await nextTick()
+
+    activity.markModified(tabB)
+    expect(activity.chatStatusFor(tabB)).toBe('unseen')
+
+    history.remove('one')
+    await nextTick()
+    expect(activity.chatStatusFor(tabB)).toBe('unseen')
+
+    history.remove('two')
+    await nextTick()
+    expect(activity.unseenModifiedPaths.has(tabB)).toBe(false)
+    expect(activity.chatStatusFor(tabB)).toBeUndefined()
+  })
+
   it('keeps the ask title hold on clearTurnSignals while an approval ask is pending', () => {
     const a = openTab(tabA)
-    useWorkflowStore().activeWorkflow = a as never
+    useWorkflowStore().activeWorkflow = a
     const conversation = useAgentConversationStore()
     conversation.setThreadId('th-a')
     conversation.startTurn(toTurnId('m-1'))

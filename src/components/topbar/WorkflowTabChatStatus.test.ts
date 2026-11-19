@@ -48,11 +48,9 @@ describe('WorkflowTabChatStatus', () => {
     useWorkflowTabActivityStore().setChatPaths([path])
     renderStatus()
 
-    expect(screen.getByRole('img', { name: labels.seen })).toHaveClass(
-      'size-2',
-      'rounded-full',
-      'bg-muted-foreground'
-    )
+    const status = screen.getByRole('img', { name: labels.seen })
+    expect(status).toBeVisible()
+    expect(status).toHaveAttribute('data-status', 'seen')
   })
 
   it('TS-03 shows a spinner while a turn runs', () => {
@@ -61,10 +59,9 @@ describe('WorkflowTabChatStatus', () => {
     ])
     renderStatus()
 
-    expect(screen.getByRole('img', { name: labels.working })).toHaveClass(
-      'motion-safe:animate-spin',
-      'text-muted-foreground'
-    )
+    const status = screen.getByRole('img', { name: labels.working })
+    expect(status).toBeVisible()
+    expect(status).toHaveAttribute('data-status', 'in-progress')
   })
 
   it('TS-04 shows a yellow dot while the chat waits for an answer', () => {
@@ -73,22 +70,18 @@ describe('WorkflowTabChatStatus', () => {
     ])
     renderStatus()
 
-    expect(screen.getByRole('img', { name: labels.waiting })).toHaveClass(
-      'size-2',
-      'rounded-full',
-      'bg-warning'
-    )
+    const status = screen.getByRole('img', { name: labels.waiting })
+    expect(status).toBeVisible()
+    expect(status).toHaveAttribute('data-status', 'waiting')
   })
 
   it('TS-05 shows a green dot for a finished turn that was not seen', () => {
     useWorkflowTabActivityStore().markModified(path)
     renderStatus()
 
-    expect(screen.getByRole('img', { name: labels.unseen })).toHaveClass(
-      'size-2',
-      'rounded-full',
-      'bg-success'
-    )
+    const status = screen.getByRole('img', { name: labels.unseen })
+    expect(status).toBeVisible()
+    expect(status).toHaveAttribute('data-status', 'unseen')
   })
 
   it('TS-07 shows one indicator and follows the most urgent state', async () => {
