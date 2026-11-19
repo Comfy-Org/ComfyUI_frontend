@@ -62,11 +62,15 @@ describe('widgets in node definitions', () => {
     })
 
     it.for([
-      ['not an object', 'steps', 'addWidget needs a definition object'],
+      [
+        'not an object',
+        'steps',
+        'addWidget needs a widget definition as a plain object'
+      ],
       [
         'an unknown field',
         { type: 'number', name: 's', label: 'S' },
-        'addWidget needs a definition of'
+        'addWidget needs a widget definition of'
       ]
     ] as const)('refuses a definition with %s', ([, def, message]) => {
       let refusal: unknown

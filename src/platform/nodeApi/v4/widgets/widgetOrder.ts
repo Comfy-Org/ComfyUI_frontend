@@ -25,7 +25,9 @@ export function orderMembers(
     reorder(names: unknown) {
       const checked = nameList('reorder', names)
       const found = access.live()
-      if (found) edits.reorderWidgets(found.node, ordered(found, checked))
+      if (!found) return false
+      edits.reorderWidgets(found.node, ordered(found, checked))
+      return true
     },
     move(name: unknown, index: unknown) {
       if (typeof name !== 'string') {
@@ -35,7 +37,10 @@ export function orderMembers(
         throw invalidArgument('move', 'a whole number', index)
       }
       const found = access.live()
-      if (found) edits.reorderWidgets(found.node, moved(found, name, index))
+      const order = found && moved(found, name, index)
+      if (!found || !order) return false
+      edits.reorderWidgets(found.node, order)
+      return true
     }
   }
 }
@@ -61,11 +66,9 @@ function moved(
   found: NodeWithWidgets,
   name: string,
   index: number
-): IBaseWidget[] {
+): IBaseWidget[] | undefined {
   const widget = found.widgets.find((candidate) => candidate.name === name)
-  if (!widget) {
-    throw invalidArgument('move', 'the name of a widget on this node', name)
-  }
+  if (!widget) return undefined
   const others = found.widgets.filter((candidate) => candidate !== widget)
   const to = Math.min(Math.max(index, 0), others.length)
   return [

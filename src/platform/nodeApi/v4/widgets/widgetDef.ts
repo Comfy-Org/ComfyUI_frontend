@@ -1,31 +1,28 @@
 import { isPlainObject, omit } from 'es-toolkit'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
+import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 import {
   callIsolated,
   reportListenerFailure
 } from '@/platform/nodeApi/shared/listeners'
 import type { WidgetDef, WidgetOptions } from '@/platform/nodeApi/v4/types'
-import {
-  definitionFields,
-  optionalFlag,
-  requiredName
-} from './definitionFields'
-import { assertSavable, savableValue } from './savableValue'
+import { optionalFlag, requiredName } from './definitionFields'
 
-const FIELDS = [
-  'type',
-  'name',
-  'value',
-  'options',
-  'serialize',
-  'disabled',
-  'hidden'
-] as const satisfies readonly (keyof WidgetDef)[]
+const FIELDS = {
+  type: true,
+  name: true,
+  value: true,
+  options: true,
+  serialize: true,
+  disabled: true,
+  hidden: true
+} satisfies Record<keyof WidgetDef, true>
 
 /** A copy of a widget definition from a pack, or a `TypeError` for what it got wrong. */
 export function checkedWidgetDef(def: unknown, member = 'add'): WidgetDef {
-  const fields = definitionFields(member, def, FIELDS)
+  const fields = checkedFields(member, 'a widget definition', def, FIELDS)
   const type = requiredName(member, fields.type).toLowerCase()
   return {
     type,
@@ -78,9 +75,8 @@ function computedValues(options: object): (() => unknown) | undefined {
     : undefined
 }
 
-function savableOptions<T extends object>(member: string, options: T): T {
-  assertSavable(member, options, 'options')
-  return structuredClone(options)
+function savableOptions(member: string, options: object): WidgetOptions {
+  return savableValue(member, options, 'options') as WidgetOptions
 }
 
 function listedValues(

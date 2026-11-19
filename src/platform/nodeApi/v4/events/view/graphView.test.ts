@@ -143,7 +143,7 @@ describe('graph.groupSelection', () => {
   it('reads the groups the canvas selected, in draw order, frozen, apart from the nodes', () => {
     const { root, first, canvas, comfy, handle } = documentOnScreen()
     const [back, middle, front] = addGroups(root, 'Back', 'Middle', 'Front')
-    const groups = comfy.graph.groups() ?? []
+    const groups = comfy.graph.groups()
 
     canvas.select(front)
     canvas.select(first)
@@ -209,12 +209,12 @@ describe('graph.centerOn', () => {
 
     expect(comfy.graph.centerOn(handle(first))).toBe(true)
 
-    const centre = canvas.ds.convertOffsetToCanvas([
+    const center = canvas.ds.convertOffsetToCanvas([
       first.pos[0] + first.size[0] / 2,
       first.pos[1] + first.size[1] / 2
     ])
-    expect(centre[0] * canvas.dpr).toBeCloseTo(SCREEN.width / 2)
-    expect(centre[1] * canvas.dpr).toBeCloseTo(SCREEN.height / 2)
+    expect(center[0] * canvas.dpr).toBeCloseTo(SCREEN.width / 2)
+    expect(center[1] * canvas.dpr).toBeCloseTo(SCREEN.height / 2)
     expect(canvas.ds.scale).toBe(2)
     expect(canvas.dirty_canvas).toBe(true)
     expect(changed).toHaveBeenCalledOnce()
@@ -357,7 +357,7 @@ describe('group.centerOn', () => {
     group.pos = [300, 400]
     group.size = [200, 100]
     root.add(group)
-    const [handle] = comfy.graph.groups() ?? []
+    const [handle] = comfy.graph.groups()
     assert(handle)
     canvas.ds.scale = 2
     const changed = vi.fn()
@@ -365,9 +365,9 @@ describe('group.centerOn', () => {
 
     expect(handle.centerOn()).toBe(true)
 
-    const centre = canvas.ds.convertOffsetToCanvas([400, 450])
-    expect(centre[0] * canvas.dpr).toBeCloseTo(SCREEN.width / 2)
-    expect(centre[1] * canvas.dpr).toBeCloseTo(SCREEN.height / 2)
+    const center = canvas.ds.convertOffsetToCanvas([400, 450])
+    expect(center[0] * canvas.dpr).toBeCloseTo(SCREEN.width / 2)
+    expect(center[1] * canvas.dpr).toBeCloseTo(SCREEN.height / 2)
     expect(changed).toHaveBeenCalledOnce()
   })
 
@@ -378,7 +378,7 @@ describe('group.centerOn', () => {
     const elsewhere = comfy.graph.subgraphs()[0].groups()?.[0]
     const leaving = new LGraphGroup('Leaving')
     root.add(leaving)
-    const gone = comfy.graph.groups()?.[0]
+    const gone = comfy.graph.groups()[0]
     assert(elsewhere && gone)
     root.remove(leaving)
     const before = [...canvas.ds.offset]

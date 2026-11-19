@@ -33,15 +33,11 @@ export function createWorkflowHandle(
       const saved: unknown = copyOfSaved('workflow.snapshot', root.serialize())
       return isPlainObject(saved) ? saved : undefined
     },
-    async open(data: WorkflowData) {
-      const workflow = isPlainObject(data)
-        ? await validateComfyWorkflow(data)
-        : null
-      if (!workflow) {
+    open(data: WorkflowData) {
+      if (!isPlainObject(data)) {
         throw invalidArgument('workflow.open', 'ComfyUI workflow data', data)
       }
-      const opened = await useApp().loadGraphData(workflow)
-      return opened !== false && opened !== undefined
+      return openWorkflow(data)
     },
     applyTextReplacements(value: string) {
       if (typeof value !== 'string') {
@@ -57,4 +53,11 @@ export function createWorkflowHandle(
     registerImporter: importers.register,
     ...extra
   })
+}
+
+async function openWorkflow(data: Record<string, unknown>): Promise<boolean> {
+  const workflow = await validateComfyWorkflow(data)
+  if (!workflow) return false
+  const opened = await useApp().loadGraphData(workflow)
+  return opened !== false && opened !== undefined
 }

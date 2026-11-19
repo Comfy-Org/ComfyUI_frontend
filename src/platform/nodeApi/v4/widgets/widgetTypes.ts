@@ -7,25 +7,21 @@ import type { CustomComfyWidgetConstructor } from '@/types/comfy'
 import type { DOMWidgetValue } from '@/types/domWidget'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type {
   DefRegistry,
   WidgetTypeContext,
   WidgetTypeDef
 } from '@/platform/nodeApi/v4/types'
-import {
-  definitionFields,
-  optionalFlag,
-  optionalSize,
-  requiredName
-} from './definitionFields'
+import { optionalFlag, optionalSize, requiredName } from './definitionFields'
 import {
   createMountedWidget,
   mountedData,
   renderMounted
 } from './mountedWidget'
 import type { MountSpec } from './mountedWidget'
-import { isSavable } from './savableValue'
+import { isSavable } from '@/platform/nodeApi/shared/savableValue'
 import { fixHeight } from './widgetEdits'
 import type { WidgetEdits } from './widgetEdits'
 
@@ -34,13 +30,13 @@ export interface WidgetTypes {
   define: DefRegistry['defineWidgetType']
 }
 
-const FIELDS = [
-  'render',
-  'defaultValue',
-  'height',
-  'minHeight',
-  'serialize'
-] as const satisfies readonly (keyof WidgetTypeDef)[]
+const FIELDS = {
+  render: true,
+  defaultValue: true,
+  height: true,
+  minHeight: true,
+  serialize: true
+} satisfies Record<keyof WidgetTypeDef, true>
 
 interface CheckedWidgetType {
   readonly render: (...args: unknown[]) => unknown
@@ -74,7 +70,12 @@ export function createWidgetTypes(
 }
 
 function checkedWidgetType(def: unknown): CheckedWidgetType {
-  const fields = definitionFields('defineWidgetType', def, FIELDS)
+  const fields = checkedFields(
+    'defineWidgetType',
+    'a widget type definition',
+    def,
+    FIELDS
+  )
   if (typeof fields.render !== 'function') {
     throw invalidArgument(
       'defineWidgetType',

@@ -18,7 +18,6 @@ import type {
   NodeHandle
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
-import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 vi.mock(import('@/lib/litegraph/src/graphIntents'), { spy: true })
 

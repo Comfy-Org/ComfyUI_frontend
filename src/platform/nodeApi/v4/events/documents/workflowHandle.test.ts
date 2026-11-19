@@ -91,15 +91,25 @@ describe('workflow.open', () => {
 
   it.for([
     ['a string', '{}'],
-    ['null', null],
-    ['an object with no version', { nodes: [] }]
-  ] as const)('refuses %s without loading anything', async ([, data]) => {
+    ['null', null]
+  ] as const)(
+    'refuses %s at the call, without loading anything',
+    ([, data]) => {
+      const { comfy } = graphWithNode('Before')
+      const load = vi.spyOn(app, 'loadGraphData')
+
+      expect(() =>
+        Reflect.apply(comfy.workflow.open, comfy.workflow, [data])
+      ).toThrow(TypeError)
+      expect(load).not.toHaveBeenCalled()
+    }
+  )
+
+  it('resolves false for an object that is not a workflow, without loading it', async () => {
     const { comfy } = graphWithNode('Before')
     const load = vi.spyOn(app, 'loadGraphData')
 
-    await expect(
-      Reflect.apply(comfy.workflow.open, comfy.workflow, [data])
-    ).rejects.toThrow(TypeError)
+    await expect(comfy.workflow.open({ nodes: [] })).resolves.toBe(false)
     expect(load).not.toHaveBeenCalled()
   })
 })

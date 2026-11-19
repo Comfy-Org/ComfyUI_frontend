@@ -213,7 +213,7 @@ describe('workflow extra', () => {
       const [node] = comfy.graph.root()?.nodes() ?? []
       assert(node)
 
-      comfy.edit.batch(() => {
+      comfy.graph.batch(() => {
         comfy.workflow.setExtra(document, 'note', 'batched')
         node.setTitle('Batched')
       })
@@ -270,7 +270,7 @@ describe('workflow extra', () => {
       [
         'a value the workflow cannot save',
         ['note', 1n],
-        'needs a value the workflow can save'
+        'needs a value as a string, a finite number'
       ]
     ] as const)('refuses %s and changes nothing', ([, args, message]) => {
       expect(() =>

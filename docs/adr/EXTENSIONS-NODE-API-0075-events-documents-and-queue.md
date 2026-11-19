@@ -213,9 +213,10 @@ review finding requires it. The counts below are packs, then call sites.
       worker; it is synchronous here, and a pack that awaits it still works.
     - `open(data)` (4 packs) opens the data as a new document on screen
       through the host's `loadGraphData`, as opening a file does. It checks
-      the data with `validateComfyWorkflow` first and rejects with a
-      `TypeError` if it is not a workflow, before anything loads. It
-      resolves `true` once the host has loaded it and `false` when the host
+      the data with `validateComfyWorkflow` first. Data that is not an
+      object throws a `TypeError` at the call, as every other member's
+      refusal does; an object the schema refuses resolves `false` and nothing
+      loads. It resolves `true` once the host has loaded it and `false` when the host
       reports the load did not happen (A-13, and the review finding that it
       reported success for a failed load). The old contract resolved
       nothing; the packs that call it await it and ignore the value. A

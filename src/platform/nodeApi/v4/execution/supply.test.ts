@@ -686,7 +686,7 @@ describe('a supplier', () => {
       source.connect(1, addEverywhere(), 0)
       addBackendNode(graph, 'Consumer', { inputs: ['x'] })
 
-      expect(comfy.graph.resolvedSupplies()?.[0].from).toEqual({
+      expect(comfy.graph.resolvedSupplies()[0].from).toEqual({
         kind: 'output',
         nodeId: String(source.id),
         output: 1
@@ -711,7 +711,7 @@ describe('a supplier', () => {
       wire.connect(0, supplier, 0)
       addBackendNode(graph, 'Consumer', { inputs: ['x'] })
 
-      expect(comfy.graph.resolvedSupplies()?.[0].from).toEqual({
+      expect(comfy.graph.resolvedSupplies()[0].from).toEqual({
         kind: 'output',
         nodeId: String(source.id),
         output: 0
@@ -736,7 +736,7 @@ describe('a supplier', () => {
         answering.connect(0, supplier, 0)
         addBackendNode(graph, 'Consumer', { inputs: ['x'] })
 
-        const from = comfy.graph.resolvedSupplies()?.[0].from
+        const from = comfy.graph.resolvedSupplies()[0].from
         expect(from).toEqual({ kind })
         expect(Object.isFrozen(from)).toBe(true)
       }
@@ -756,7 +756,7 @@ describe('a supplier', () => {
       answering.connect(0, supplier, 0)
       addBackendNode(graph, 'Consumer', { inputs: ['x'] })
 
-      expect(comfy.graph.resolvedSupplies()?.[0].from).toEqual({
+      expect(comfy.graph.resolvedSupplies()[0].from).toEqual({
         kind: 'output',
         nodeId: String(answering.id),
         output: 0
@@ -768,7 +768,7 @@ describe('a supplier', () => {
       addEverywhere()
       addBackendNode(graph, 'Consumer', { inputs: ['x'] })
 
-      expect(comfy.graph.resolvedSupplies()?.[0].from).toEqual({
+      expect(comfy.graph.resolvedSupplies()[0].from).toEqual({
         kind: 'omitted'
       })
     })
@@ -791,7 +791,7 @@ describe('a supplier', () => {
       first.connect(0, addEverywhere(), 0)
       addBackendNode(graph, 'Consumer', { inputs: ['x'] })
 
-      expect(comfy.graph.resolvedSupplies()?.[0].from).toEqual({
+      expect(comfy.graph.resolvedSupplies()[0].from).toEqual({
         kind: 'omitted'
       })
     })
@@ -846,7 +846,7 @@ describe('a supplier', () => {
       graph = replaced
       expect(comfy.graph.resolvedSupplies()).toEqual([])
       ;({ comfy } = createComfyApi({ getGraph: () => null }))
-      expect(comfy.graph.resolvedSupplies()).toBeUndefined()
+      expect(comfy.graph.resolvedSupplies()).toEqual([])
     })
   })
 

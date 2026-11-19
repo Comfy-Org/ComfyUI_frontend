@@ -1,5 +1,3 @@
-import { isPlainObject } from 'es-toolkit'
-
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -7,6 +5,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { getExecutionIdsForSelectedNodes } from '@/utils/graphTraversalUtil'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 
 const RUN = 'queue.run'
@@ -20,10 +19,9 @@ export function executionIdsToRun(
   nodes: NodeHandles
 ): NodeExecutionId[] | undefined | null {
   if (options === undefined) return undefined
-  if (!isPlainObject(options)) {
-    throw invalidArgument(RUN, 'an options object', options)
-  }
-  const { nodes: handles } = options
+  const { nodes: handles } = checkedFields(RUN, 'options', options, {
+    nodes: true
+  })
   if (handles === undefined) return undefined
   if (!Array.isArray(handles) || handles.length === 0) {
     throw invalidArgument(RUN, 'nodes as a list of node handles', handles)

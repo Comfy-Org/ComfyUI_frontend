@@ -137,8 +137,7 @@ describe('widget handles', () => {
       node.onWidgetChanged = onWidgetChanged
       const version = graph._version
 
-      handle.setValue(7)
-
+      expect(handle.setValue(7)).toBe(true)
       expect(widget.value).toBe(7)
       expect(callback).toHaveBeenCalledWith(
         7,
@@ -215,7 +214,7 @@ describe('widget handles', () => {
       [
         { list: [{ when: new Date(0) }] },
         'value.list[0].when',
-        'a value of type object'
+        'an instance of Date'
       ]
     ] as const)(
       'names the part of a value it cannot save, and what it found there: %o',
@@ -245,7 +244,7 @@ describe('widget handles', () => {
       Object.defineProperty(value, 'field', { get: read, enumerable: true })
 
       expect(() => handle.setValue(value)).toThrow(
-        /^setValue needs value\.field as a string.*, not a value of type function\.$/
+        /^setValue needs value\.field as a string.*, not a function\.$/
       )
       expect(read).not.toHaveBeenCalled()
       expect(widget.value).toBe(1)
@@ -331,7 +330,7 @@ describe('widget handles', () => {
       expect(() =>
         Reflect.apply(handle.setOption, handle, ['max', () => 1])
       ).toThrow(
-        /^setOption needs options\.max as a string.*, not a value of type function\.$/
+        /^setOption needs options\.max as a string.*, not a function\.$/
       )
       expect(widget.options.max).toBeUndefined()
     })
@@ -503,13 +502,15 @@ describe('widget handles', () => {
       node.removeWidget(widget)
 
       expectGone(handle)
-      handle.setValue(9)
-      handle.setOption('max', 1)
-      handle.setLabel('x')
-      handle.setHidden(true)
-      handle.setDisabled(true)
-      handle.setHeight(4)
-      handle.setLinked(['steps'])
+      expect([
+        handle.setValue(9),
+        handle.setOption('max', 1),
+        handle.setLabel('x'),
+        handle.setHidden(true),
+        handle.setDisabled(true),
+        handle.setHeight(4),
+        handle.setLinked(['steps'])
+      ]).toEqual([false, false, false, false, false, false, false])
       expect(callback).not.toHaveBeenCalled()
       expect(widget.value).toBe(1)
       expect(changes).toEqual([])

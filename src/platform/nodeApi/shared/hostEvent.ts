@@ -1,7 +1,6 @@
 import { effectScope, onScopeDispose } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { invalidArgument } from './invalidArgument'
 import { createListeners } from './listeners'
 
 /** Starts following the host and returns what stops it. */
@@ -21,10 +20,7 @@ export function createHostEvent<TArgs extends unknown[] = []>(
   let following: EffectScope | undefined
 
   return (listener) => {
-    if (typeof listener !== 'function') {
-      throw invalidArgument(member, 'a function to call', listener)
-    }
-    const remove = listeners.add(listener)
+    const remove = listeners.subscribe(listener)
     following ??= followDetached(() => follow(listeners.notify))
     return () => {
       remove()

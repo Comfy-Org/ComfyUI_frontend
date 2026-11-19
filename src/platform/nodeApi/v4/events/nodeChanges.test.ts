@@ -34,7 +34,7 @@ function heard(events: NodeChangeEvent[]) {
 }
 
 describe('onNodeChanged', () => {
-  it('reports a title, mode or colour change with the value its read returns', () => {
+  it('reports a title, mode or color change with the value its read returns', () => {
     const { root, outer, comfy } = documentOnScreen()
     const events: NodeChangeEvent[] = []
     comfy.onNodeChanged((event) => events.push(event))
@@ -209,7 +209,8 @@ describe('onNodeChanged', () => {
     ['a non-object', 'visible'],
     ['null', null],
     ['an unknown scope', { scope: 'document' }],
-    ['a scope that is not a string', { scope: 1 }]
+    ['a scope that is not a string', { scope: 1 }],
+    ['a field queryNodes would refuse', { scope: 'visible', typ: 'x' }]
   ] as const)('refuses %s as options before listening', ([, options]) => {
     const { outer, comfy } = documentOnScreen()
     const listener = vi.fn()

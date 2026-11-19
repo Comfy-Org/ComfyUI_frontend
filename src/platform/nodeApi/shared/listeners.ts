@@ -1,7 +1,11 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import { invalidArgument } from './invalidArgument'
+
 interface Listeners<TArgs extends unknown[]> {
   add(listener: (...args: TArgs) => void): () => void
+  /** `add` for a listener a pack passed; anything but a function throws, naming the event. */
+  subscribe(listener: unknown): () => void
   drain(...args: TArgs): void
   notify(...args: TArgs): void
   isEmpty(): boolean
@@ -59,7 +63,7 @@ export function createListeners<TArgs extends unknown[] = []>(
   const call = (listener: (...args: TArgs) => void, args: TArgs) =>
     callListener(event, () => listener(...args))
 
-  function add(listener: () => void): () => void {
+  function add(listener: (...args: TArgs) => void): () => void {
     const registration = { listener }
     registrations.add(registration)
     return () => {
@@ -73,7 +77,7 @@ export function createListeners<TArgs extends unknown[] = []>(
       if (typeof listener !== 'function') {
         throw invalidArgument(event, 'a function to call', listener)
       }
-      return add(() => Reflect.apply(listener, undefined, []))
+      return add((...args) => Reflect.apply(listener, undefined, args))
     },
 
     drain(...args) {

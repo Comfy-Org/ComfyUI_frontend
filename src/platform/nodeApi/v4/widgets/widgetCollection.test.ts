@@ -169,8 +169,8 @@ describe('a node’s widgets', () => {
       graph.remove(node)
 
       expectGone(widgets)
-      widgets.reorder(['steps', 'seed'])
-      widgets.move('seed', 1)
+      expect(widgets.reorder(['steps', 'seed'])).toBe(false)
+      expect(widgets.move('seed', 1)).toBe(false)
       expect(node.widgets?.map(({ name }) => name)).toEqual(['seed', 'steps'])
       expect(changes).toEqual([])
     })
@@ -298,7 +298,7 @@ describe('a node’s widgets', () => {
       const { widgets } = nodeWith()
 
       expect(() => Reflect.apply(widgets.add, widgets, ['number'])).toThrow(
-        "add needs a definition object, not 'number'."
+        "add needs a widget definition as a plain object, not 'number'."
       )
     })
 
@@ -464,11 +464,7 @@ describe('a node’s widgets', () => {
 
     it.for([
       [{ value: [1, Number.NaN] }, 'value[1]', 'NaN'],
-      [
-        { options: { format: () => '' } },
-        'options.format',
-        'a value of type function'
-      ],
+      [{ options: { format: () => '' } }, 'options.format', 'a function'],
       [
         { options: { steps: [1, { at: Infinity }] } },
         'options.steps[1].at',
@@ -568,8 +564,7 @@ describe('a node’s widgets', () => {
       ([index, order]) => {
         const { widgets } = nodeWith('a', 'b', 'c')
 
-        widgets.move('c', index)
-
+        expect(widgets.move('c', index)).toBe(true)
         expect(widgets.names()).toEqual(order)
       }
     )
@@ -582,8 +577,14 @@ describe('a node’s widgets', () => {
       expect(widgets.names()).toEqual(['b', 'a', 'c'])
     })
 
+    it('does not move a widget the node lacks, and says so', () => {
+      const { widgets } = nodeWith('a', 'b')
+
+      expect(widgets.move('d', 0)).toBe(false)
+      expect(widgets.names()).toEqual(['a', 'b'])
+    })
+
     it.for([
-      ['a name the node lacks', 'd', 0, 'move needs the name of a widget'],
       ['a name that is not a string', 1, 0, 'move needs a widget name'],
       ['an index that is not whole', 'a', 1.5, 'move needs a whole number']
     ] as const)('refuses a move with %s', ([, name, index, message]) => {
