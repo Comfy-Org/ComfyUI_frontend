@@ -4,6 +4,7 @@ import {
   zBillingHandoffCreateResponse,
   zErrorResponse
 } from '@comfyorg/ingest-types/zod'
+import { parseUrl } from '@comfyorg/shared-frontend-utils/urlSafety'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { watch } from 'vue'
 
@@ -21,13 +22,18 @@ import { reserveBillingTab } from '@/platform/billing/billingTab'
 import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { tagPlatformUrl } from '@/platform/workspace/utils/platformLink'
 import { useAuthStore } from '@/stores/authStore'
 
 const ISSUE_TIMEOUT_MS = 15_000
 
 /** The billing flow billing-web opens after the exchange, or Platform's billing page, which takes none. */
 export type BillingHandoffRequest =
-  | { readonly intent: 'top-up'; readonly amountCents: number }
+  | {
+      readonly intent: 'top-up'
+      readonly amountCents: number
+      readonly autoTopUp?: BillingHandoffCreateRequest['auto_top_up']
+    }
   | { readonly intent: 'subscription' }
   | { readonly receiver: 'platform' }
 
@@ -74,6 +80,9 @@ function issueBody(
       ? { receiver: request.receiver }
       : { receiver: 'billing_web', intent: request.intent }),
     ...('amountCents' in request ? { amount_cents: request.amountCents } : {}),
+    ...('autoTopUp' in request && request.autoTopUp !== undefined
+      ? { auto_top_up: request.autoTopUp }
+      : {}),
     client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
   }
 }
@@ -316,8 +325,24 @@ export async function issueLocalBillingHandoff(
   }
 }
 
-/** Opens Platform billing through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
-export async function openPlatformBillingHandoff(): Promise<void> {
+/** A Platform page a handoff opens instead of its billing page; Platform reads it from the entry URL's query. */
+export type PlatformHandoffView = 'plans'
+
+function withPlatformView(
+  entryUrl: string,
+  view: PlatformHandoffView | undefined
+): string | undefined {
+  if (view === undefined) return entryUrl
+  const url = parseUrl(entryUrl)
+  if (!url) return undefined
+  url.searchParams.set('view', view)
+  return url.href
+}
+
+/** Opens Platform billing, or the page `view` names, through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
+export async function openPlatformBillingHandoff(
+  view?: PlatformHandoffView
+): Promise<void> {
   if (inFlight) return
   const tab = reserveBillingHandoffTab()
   if (!tab) {
@@ -328,7 +353,14 @@ export async function openPlatformBillingHandoff(): Promise<void> {
     { receiver: 'platform' },
     new AbortController().signal
   )
-  if (issued.status === 'ok') return tab.navigate(issued.url)
+  const target =
+    issued.status === 'ok'
+      ? withPlatformView(tagPlatformUrl(issued.url), view)
+      : undefined
+  if (target !== undefined) return tab.navigate(target)
   tab.close()
-  useToast().error(issued.message ?? t('subscription.billingPortalUnavailable'))
+  useToast().error(
+    (issued.status === 'error' && issued.message) ||
+      t('subscription.billingPortalUnavailable')
+  )
 }

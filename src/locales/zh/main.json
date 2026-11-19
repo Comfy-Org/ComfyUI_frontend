@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "正在打开结账页面…",
     "openingDetail": "这需要几秒钟。",
+    "openingTabTitle": "正在打开结账页面 · Comfy",
     "signInAgain": "请重新登录以打开账单。",
     "superseded": "打开账单时，您的账户或工作区已更改。请重试。"
   },
@@ -1379,6 +1380,8 @@
     "Search": "搜索",
     "Shape": "形状",
     "Shapes": "形状",
+    "Show Downscaled Preview": "显示降采样预览",
+    "Show Full Resolution": "显示完整分辨率",
     "Show Link": "显示连线",
     "Show Links": "显示连线",
     "Title": "标题",
@@ -1718,6 +1721,12 @@
     "reload": "重新加载",
     "retry": "重试",
     "retryLabel": "重试启动 {deployment}",
+    "runBlocked": {
+      "failed": "此部署失败了。点击以切换。",
+      "notReady": "此部署尚未就绪。点击以切换。",
+      "starting": "此部署正在启动。点击以切换。",
+      "stopped": "此部署已停止。点击以切换。"
+    },
     "runOn": "运行于",
     "runningOn": "运行于",
     "runsThisWorkflow": "运行此工作流",
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "复制提示词",
       "openInClaude": "在 Claude 桌面版中打开",
-      "openInCodex": "在 Codex 中打开"
+      "openInCodex": "在 Codex 中打开",
+      "saveFirst": "在将此工作流发送给代理之前，请先保存。",
+      "useLocalAgent": "使用本地代理"
     },
     "checkFailed": "无法在 Comfy Cloud 上检查此工作流。请重试。",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "将您的配置部署到 Comfy Cloud",
     "deploySetupDialog": {
-      "body": "这会在 Comfy Cloud 上创建您设置的部署。您可通过 Comfy Platform 管理它。",
-      "pointApi": "从您的产品中将其作为可自动扩缩的 API 调用",
-      "pointGpu": "在您选择的 GPU 上使用 ComfyUI 工作",
-      "pointNodes": "带上您的自定义节点和模型"
+      "body": "将你的本地设置作为构建部署到 Comfy Cloud，然后在 ComfyUI 中使用，或将其作为自动扩缩 API 调用。",
+      "pointGpu": "在强大的云端 GPU 上运行",
+      "pointNodes": "带上您的自定义节点和模型",
+      "pointPricing": "仅在 GPU 工作器运行期间付费，另加存储费用",
+      "title": "在 Comfy Cloud 上运行你的工作流"
     },
     "deployWithAgent": "使用您的代理部署",
     "desktopTransferFailed": "无法传输您的工作流。请再次在桌面版中点击“在 Comfy Cloud 上打开”。",
@@ -4392,6 +4404,7 @@
       "paused": "已暂停",
       "paymentDue": "付款到期"
     },
+    "purchasesStopped": "目前无法购买积分",
     "switchWorkspace": "切换工作区",
     "topUpCredits": "充值积分"
   },
@@ -6359,6 +6372,7 @@
         }
       },
       "loadError": "无法加载你的套餐。",
+      "localLoadError": "无法加载你的账单详情。请检查连接后重试。",
       "plan": {
         "actions": {
           "choosePlan": "选择套餐",
@@ -6382,6 +6396,7 @@
           "freeRunsLeft": "你还剩 {total} 次免费运行中的 {remaining} 次。在此之后，请订阅以继续运行工作流。",
           "freeRunsUsed": "你已用完全部 {total} 次免费运行。请订阅以继续运行工作流。",
           "line": "订阅以在云端运行工作流。",
+          "localLine": "订阅以获取每月积分。你也可以随时添加积分。",
           "title": "此工作区没有有效套餐"
         },
         "paused": "已暂停。续费付款未成功。",

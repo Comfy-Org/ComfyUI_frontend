@@ -10,11 +10,13 @@ export type WebEntryErrorCode =
   | 'UNKNOWN_PRODUCT'
   | 'UNKNOWN_RETURN_TARGET'
   | 'INVALID_AMOUNT'
+  | 'INVALID_AUTO_TOP_UP'
   | 'INVALID_PLAN'
   | 'INVALID_CORRELATION_ID'
   | 'INVALID_WORKSPACE_ID'
   | 'INVALID_TEAM_CREDIT_STOP_ID'
   | 'INVALID_PROMOTION_CODE'
+  | 'INVALID_OPERATION_ID'
 
 export type WebEntryBounceReason =
   | 'pricing_link'

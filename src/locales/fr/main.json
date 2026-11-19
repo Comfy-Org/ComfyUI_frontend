@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "Ouverture du paiement…",
     "openingDetail": "Cela prend quelques secondes.",
+    "openingTabTitle": "Ouverture du paiement · Comfy",
     "signInAgain": "Reconnectez-vous pour ouvrir la facturation.",
     "superseded": "Votre compte ou espace de travail a changé pendant l’ouverture de la facturation. Réessayez."
   },
@@ -1379,6 +1380,8 @@
     "Search": "Recherche",
     "Shape": "Forme",
     "Shapes": "Formes",
+    "Show Downscaled Preview": "Afficher l’aperçu réduit",
+    "Show Full Resolution": "Afficher en pleine résolution",
     "Show Link": "Afficher le lien",
     "Show Links": "Afficher les liens",
     "Title": "Titre",
@@ -1718,6 +1721,12 @@
     "reload": "Recharger",
     "retry": "Réessayer",
     "retryLabel": "Réessayer de démarrer {deployment}",
+    "runBlocked": {
+      "failed": "Ce déploiement a échoué. Cliquez pour changer.",
+      "notReady": "Ce déploiement n’est pas prêt. Cliquez pour changer.",
+      "starting": "Ce déploiement démarre. Cliquez pour changer.",
+      "stopped": "Ce déploiement est arrêté. Cliquez pour changer."
+    },
     "runOn": "Exécuter sur",
     "runningOn": "Exécuté sur",
     "runsThisWorkflow": "Exécute ce workflow",
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "Copier le prompt",
       "openInClaude": "Ouvrir dans Claude desktop",
-      "openInCodex": "Ouvrir dans Codex"
+      "openInCodex": "Ouvrir dans Codex",
+      "saveFirst": "Enregistrez ce workflow avant de l’envoyer à un agent.",
+      "useLocalAgent": "Utiliser l’agent local"
     },
     "checkFailed": "Impossible de vérifier ce workflow sur Comfy Cloud. Réessayez.",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "Déployez votre configuration sur Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Cela crée un déploiement de votre configuration sur Comfy Cloud. Vous le gérez depuis Comfy Platform.",
-      "pointApi": "Appelez-le depuis votre produit en tant qu’API à mise à l’échelle automatique",
-      "pointGpu": "Travaillez dans ComfyUI sur le GPU de votre choix",
-      "pointNodes": "Apportez vos nœuds personnalisés et vos modèles"
+      "body": "Déployez votre configuration locale sur Comfy Cloud sous forme de Build, puis utilisez-la dans ComfyUI ou appelez-la comme une API à mise à l’échelle automatique.",
+      "pointGpu": "Exécutez sur de puissants GPU dans le cloud",
+      "pointNodes": "Apportez vos nœuds personnalisés et vos modèles",
+      "pointPricing": "Payez uniquement lorsque vos workers GPU sont actifs, plus le stockage",
+      "title": "Exécutez vos workflows sur Comfy Cloud"
     },
     "deployWithAgent": "Déployer avec votre agent",
     "desktopTransferFailed": "Votre workflow n’a pas pu être transféré. Cliquez de nouveau sur Ouvrir dans Comfy Cloud dans Desktop.",
@@ -4392,6 +4404,7 @@
       "paused": "En pause",
       "paymentDue": "Paiement dû"
     },
+    "purchasesStopped": "L’achat de crédits n’est pas disponible pour le moment",
     "switchWorkspace": "Changer d’espace de travail",
     "topUpCredits": "Recharger des crédits"
   },
@@ -6359,6 +6372,7 @@
         }
       },
       "loadError": "Nous n’avons pas pu charger votre forfait.",
+      "localLoadError": "Nous n’avons pas pu charger vos informations de facturation. Vérifiez votre connexion, puis réessayez.",
       "plan": {
         "actions": {
           "choosePlan": "Choisir un forfait",
@@ -6382,6 +6396,7 @@
           "freeRunsLeft": "Il vous reste {remaining} exécutions gratuites sur {total}. Abonnez-vous pour continuer à exécuter des workflows après cela.",
           "freeRunsUsed": "Vous avez utilisé les {total} exécutions gratuites. Abonnez-vous pour continuer à exécuter des workflows.",
           "line": "Abonnez-vous pour exécuter des workflows sur le Cloud.",
+          "localLine": "Abonnez-vous pour recevoir des crédits mensuels. Vous pouvez également ajouter des crédits à tout moment.",
           "title": "Cet espace de travail n’a aucun forfait actif"
         },
         "paused": "En pause. Le paiement du renouvellement n’a pas été effectué.",

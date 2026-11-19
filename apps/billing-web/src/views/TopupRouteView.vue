@@ -4,7 +4,6 @@ import { useI18n } from 'vue-i18n'
 
 import type { CheckoutUiState } from '@/config/checkoutUi'
 import { awaitCheckoutUiVariant, settleCheckoutUi } from '@/config/checkoutUi'
-import EntryErrorView from '@/views/EntryErrorView.vue'
 import FullPageTopupView from '@/views/FullPageTopupView.vue'
 
 const { t } = useI18n()
@@ -16,10 +15,7 @@ void awaitCheckoutUiVariant().then((variant) => {
 </script>
 
 <template>
-  <FullPageTopupView
-    v-if="state.phase === 'settled' && state.variant === 'full_page'"
-  />
-  <EntryErrorView v-else-if="state.phase === 'settled'" />
+  <FullPageTopupView v-if="state.phase === 'settled'" />
   <main
     v-else
     class="fixed inset-0 overflow-auto bg-charcoal-950 px-4 py-6 font-inter sm:px-6 sm:py-10"

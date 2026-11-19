@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "チェックアウトを開いています…",
     "openingDetail": "数秒かかります。",
+    "openingTabTitle": "チェックアウトを開いています · Comfy",
     "signInAgain": "請求を開くには、もう一度サインインしてください。",
     "superseded": "請求を開いている間に、アカウントまたはワークスペースが変更されました。もう一度お試しください。"
   },
@@ -1379,6 +1380,8 @@
     "Search": "検索",
     "Shape": "形状",
     "Shapes": "形",
+    "Show Downscaled Preview": "縮小プレビューを表示",
+    "Show Full Resolution": "フル解像度で表示",
     "Show Link": "リンクを表示",
     "Show Links": "リンクを表示",
     "Title": "タイトル",
@@ -1718,6 +1721,12 @@
     "reload": "再読み込み",
     "retry": "再試行",
     "retryLabel": "{deployment} の起動を再試行",
+    "runBlocked": {
+      "failed": "このデプロイメントは失敗しました。クリックして切り替えます。",
+      "notReady": "このデプロイメントは準備ができていません。クリックして切り替えます。",
+      "starting": "このデプロイメントは起動中です。クリックして切り替えます。",
+      "stopped": "このデプロイメントは停止中です。クリックして切り替えます。"
+    },
     "runOn": "実行先",
     "runningOn": "実行環境",
     "runsThisWorkflow": "このワークフローを実行できます",
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "プロンプトをコピー",
       "openInClaude": "Claude desktop で開く",
-      "openInCodex": "Codex で開く"
+      "openInCodex": "Codex で開く",
+      "saveFirst": "エージェントに送信する前に、このワークフローを保存してください。",
+      "useLocalAgent": "ローカルエージェントを使用"
     },
     "checkFailed": "Comfy Cloud でこのワークフローを確認できませんでした。もう一度お試しください。",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "セットアップをComfy Cloudにデプロイ",
     "deploySetupDialog": {
-      "body": "これにより、Comfy Cloud 上にセットアップがデプロイされます。Comfy Platform から管理できます。",
-      "pointApi": "オートスケーリング API として製品から呼び出す",
-      "pointGpu": "選択した GPU で ComfyUI を使用する",
-      "pointNodes": "カスタムノードとモデルを持ち込む"
+      "body": "ローカルセットアップを Build として Comfy Cloud にデプロイし、ComfyUI で使用するか、自動スケーリング API として呼び出せます。",
+      "pointGpu": "高性能なクラウド GPU で実行",
+      "pointNodes": "カスタムノードとモデルを持ち込む",
+      "pointPricing": "GPU ワーカーの稼働中とストレージに対してのみ料金をお支払いいただきます",
+      "title": "Comfy Cloud でワークフローを実行"
     },
     "deployWithAgent": "エージェントでデプロイ",
     "desktopTransferFailed": "ワークフローを転送できませんでした。Desktop でもう一度「Comfy Cloud で開く」をクリックしてください。",
@@ -4392,6 +4404,7 @@
       "paused": "一時停止中",
       "paymentDue": "支払い期限超過"
     },
+    "purchasesStopped": "現在、クレジットの購入はご利用いただけません",
     "switchWorkspace": "ワークスペースを切り替え",
     "topUpCredits": "クレジットを追加購入"
   },
@@ -6359,6 +6372,7 @@
         }
       },
       "loadError": "プランを読み込めませんでした。",
+      "localLoadError": "請求情報を読み込めませんでした。接続を確認してから、もう一度お試しください。",
       "plan": {
         "actions": {
           "choosePlan": "プランを選択",
@@ -6382,6 +6396,7 @@
           "freeRunsLeft": "無料実行回数は{total}回中{remaining}回残っています。その後もワークフローを実行するには登録してください。",
           "freeRunsUsed": "{total}回の無料実行をすべて使用しました。ワークフローを実行し続けるには登録してください。",
           "line": "Cloudでワークフローを実行するには登録してください。",
+          "localLine": "月額クレジットに登録できます。クレジットはいつでも追加できます。",
           "title": "このワークスペースには有効なプランがありません"
         },
         "paused": "一時停止中です。更新の支払いが完了しませんでした。",

@@ -9,8 +9,12 @@ import {
   stopDesktopHostSession
 } from '@/platform/auth/desktopHost/desktopHostSession'
 import {
+  offersAutoTopUpAtLocalCheckout,
   opensLocalBillingHandoff,
-  setLocalBillingWebEnabled
+  setLocalAutoTopUpAtCheckoutEnabled,
+  setLocalBillingNewUxEnabled,
+  setLocalBillingWebEnabled,
+  showsCloudBillingNewUxOnLocal
 } from '@/platform/billing/localBillingWebEnabled'
 
 const distribution = vi.hoisted(() => ({ isCloud: false, isDesktop: false }))
@@ -135,6 +139,142 @@ describe('opensLocalBillingHandoff', () => {
       setLocalBillingWebEnabled(flag)
 
       expect(opensLocalBillingHandoff()).toBe(expected)
+    }
+  )
+})
+
+describe('showsCloudBillingNewUxOnLocal', () => {
+  beforeEach(() => {
+    Object.assign(distribution, { isCloud: false, isDesktop: false })
+  })
+
+  afterEach(() => {
+    stopDesktopHostSession()
+    setLocalBillingWebEnabled(false)
+    setLocalBillingNewUxEnabled(false)
+  })
+
+  it.for<{
+    name: string
+    handoffFlag: boolean
+    newUx: boolean
+    isCloud?: boolean
+    isDesktop?: boolean
+    expected: boolean
+  }>([
+    {
+      name: 'local web with the handoff and the new UX on',
+      handoffFlag: true,
+      newUx: true,
+      expected: true
+    },
+    {
+      name: 'local web with the new UX on and the handoff off',
+      handoffFlag: false,
+      newUx: true,
+      expected: false
+    },
+    {
+      name: 'local web with the handoff on and the new UX off',
+      handoffFlag: true,
+      newUx: false,
+      expected: false
+    },
+    {
+      name: 'a Desktop that cannot issue a handoff, with both on',
+      handoffFlag: true,
+      newUx: true,
+      isDesktop: true,
+      expected: false
+    },
+    {
+      name: 'Cloud with both on',
+      handoffFlag: true,
+      newUx: true,
+      isCloud: true,
+      expected: false
+    }
+  ])(
+    'is $expected on $name',
+    ({ handoffFlag, newUx, isCloud = false, isDesktop = false, expected }) => {
+      Object.assign(distribution, { isCloud, isDesktop })
+      setLocalBillingWebEnabled(handoffFlag)
+      setLocalBillingNewUxEnabled(newUx)
+
+      expect(showsCloudBillingNewUxOnLocal()).toBe(expected)
+    }
+  )
+})
+
+describe('offersAutoTopUpAtLocalCheckout', () => {
+  beforeEach(() => {
+    Object.assign(distribution, { isCloud: false, isDesktop: false })
+  })
+
+  afterEach(() => {
+    stopDesktopHostSession()
+    setLocalBillingWebEnabled(false)
+    setLocalAutoTopUpAtCheckoutEnabled(false)
+  })
+
+  it.for<{
+    name: string
+    handoffFlag: boolean
+    atCheckout: boolean
+    isCloud?: boolean
+    isDesktop?: boolean
+    host?: Host
+    expected: boolean
+  }>([
+    {
+      name: 'local web with the handoff and auto top-up at checkout served',
+      handoffFlag: true,
+      atCheckout: true,
+      expected: true
+    },
+    {
+      name: 'local web with auto top-up at checkout not served',
+      handoffFlag: true,
+      atCheckout: false,
+      expected: false
+    },
+    {
+      name: 'local web with the handoff off',
+      handoffFlag: false,
+      atCheckout: true,
+      expected: false
+    },
+    {
+      name: 'Desktop, whose handoff bridge carries no auto top-up settings',
+      handoffFlag: true,
+      atCheckout: true,
+      isDesktop: true,
+      host: 'signed_in',
+      expected: false
+    },
+    {
+      name: 'Cloud',
+      handoffFlag: true,
+      atCheckout: true,
+      isCloud: true,
+      expected: false
+    }
+  ])(
+    'is $expected on $name',
+    async ({
+      handoffFlag,
+      atCheckout,
+      isCloud = false,
+      isDesktop = false,
+      host = 'none',
+      expected
+    }) => {
+      Object.assign(distribution, { isCloud, isDesktop })
+      await startHost(host, true)
+      setLocalBillingWebEnabled(handoffFlag)
+      setLocalAutoTopUpAtCheckoutEnabled(atCheckout)
+
+      expect(offersAutoTopUpAtLocalCheckout()).toBe(expected)
     }
   )
 })

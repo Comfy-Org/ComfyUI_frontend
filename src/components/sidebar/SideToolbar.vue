@@ -62,8 +62,13 @@
         <CurrentUserButton
           v-if="showProfileButton"
           :show-arrow="false"
-          :side="sidebarLocation === 'left' ? 'right' : 'left'"
+          :side="profileSide"
           class="flex w-full shrink-0 justify-center pb-1"
+        />
+        <LoginButton
+          v-else-if="showLoginButton"
+          :side="profileSide"
+          class="mb-1 shrink-0"
         />
       </div>
     </div>
@@ -94,6 +99,7 @@ import SidebarBottomPanelToggleButton from '@/components/sidebar/SidebarBottomPa
 import SidebarSettingsButton from '@/components/sidebar/SidebarSettingsButton.vue'
 import SidebarShortcutsToggleButton from '@/components/sidebar/SidebarShortcutsToggleButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
+import LoginButton from '@/components/topbar/LoginButton.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
@@ -138,6 +144,9 @@ const { flags } = useFeatureFlags()
 const showProfileButton = computed(
   () => flags.billingNewUxEnabled && isLoggedIn.value
 )
+const showLoginButton = computed(
+  () => flags.billingNewUxEnabled && !isLoggedIn.value && !isCloud
+)
 const commandStore = useCommandStore()
 const canvasStore = useCanvasStore()
 const sideToolbarRef = ref<HTMLElement>()
@@ -149,6 +158,9 @@ const isSmall = computed(
 )
 const sidebarLocation = computed<'left' | 'right'>(() =>
   settingStore.get('Comfy.Sidebar.Location')
+)
+const profileSide = computed(() =>
+  sidebarLocation.value === 'left' ? 'right' : 'left'
 )
 const sidebarStyle = computed(() => settingStore.get('Comfy.Sidebar.Style'))
 const isConnected = computed(
@@ -272,7 +284,7 @@ onMounted(() => {
   )
 
   checkOverflow()
-  watch(showProfileButton, checkOverflow)
+  watch([showProfileButton, showLoginButton], checkOverflow)
 
   onBeforeUnmount(() => {
     overflowObserver.stop()
@@ -304,11 +316,6 @@ onMounted(() => {
 </script>
 
 <style>
-/* Global CSS variables for sidebar
- * These variables need to be global (not scoped) because they are used by
- * teleported components like WhatsNewPopup that render outside the sidebar
- * but need to reference sidebar dimensions for proper positioning.
- */
 :root {
   --sidebar-padding: 4px;
   --sidebar-icon-size: 1rem;
@@ -329,16 +336,16 @@ onMounted(() => {
   --sidebar-item-height: var(--sidebar-default-item-height);
 }
 
-:root:has(.side-tool-bar-container.small-sidebar) {
+.side-tool-bar-container.small-sidebar {
   --sidebar-width: var(--sidebar-small-floating-width);
   --sidebar-item-height: var(--sidebar-small-item-height);
 }
 
-:root:has(.side-tool-bar-container.connected-sidebar) {
+.side-tool-bar-container.connected-sidebar {
   --sidebar-width: var(--sidebar-default-connected-width);
 }
 
-:root:has(.side-tool-bar-container.small-sidebar.connected-sidebar) {
+.side-tool-bar-container.small-sidebar.connected-sidebar {
   --sidebar-width: var(--sidebar-small-connected-width);
 }
 </style>

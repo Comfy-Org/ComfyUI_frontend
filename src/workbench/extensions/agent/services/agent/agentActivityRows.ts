@@ -1,4 +1,9 @@
-import type { ActivityPart, PartState, ToolPart } from './agentMessageParts'
+import type {
+  ActivityPart,
+  PartState,
+  ThinkingPart,
+  ToolPart
+} from './agentMessageParts'
 
 interface ToolRow {
   kind: 'tool'
@@ -14,6 +19,7 @@ interface ThinkingRow {
   kind: 'thinking'
   text: string
   state: PartState
+  truncated?: boolean
 }
 
 export type ActivityRow = ToolRow | ThinkingRow
@@ -39,15 +45,21 @@ function foldCanvasConfirmed(
   return previous ?? next
 }
 
+function thinkingRow(part: ThinkingPart): ThinkingRow {
+  const row: ThinkingRow = {
+    kind: 'thinking',
+    text: part.text,
+    state: part.state
+  }
+  if (part.truncated) row.truncated = true
+  return row
+}
+
 export function foldActivity(parts: readonly ActivityPart[]): ActivityRow[] {
   const rows: ActivityRow[] = []
   for (const part of parts) {
     if (part.type === 'thinking') {
-      rows.push({
-        kind: 'thinking',
-        text: part.text,
-        state: part.state
-      })
+      rows.push(thinkingRow(part))
       continue
     }
     const previous = matchingToolStep(rows.at(-1), part)

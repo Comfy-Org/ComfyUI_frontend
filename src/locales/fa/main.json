@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "در حال باز کردن پرداخت…",
     "openingDetail": "این کار چند ثانیه طول می‌کشد.",
+    "openingTabTitle": "در حال باز کردن پرداخت · Comfy",
     "signInAgain": "برای باز کردن صورت‌حساب، دوباره وارد شوید.",
     "superseded": "حساب یا فضای کاری شما هنگام باز شدن صورت‌حساب تغییر کرد. دوباره تلاش کنید."
   },
@@ -1379,6 +1380,8 @@
     "Search": "جستجو",
     "Shape": "شکل",
     "Shapes": "اشکال",
+    "Show Downscaled Preview": "نمایش پیش‌نمایش با وضوح کاهش‌یافته",
+    "Show Full Resolution": "نمایش با وضوح کامل",
     "Show Link": "نمایش پیوند",
     "Show Links": "نمایش پیوندها",
     "Title": "عنوان",
@@ -1718,6 +1721,12 @@
     "reload": "بارگذاری مجدد",
     "retry": "تلاش مجدد",
     "retryLabel": "تلاش مجدد برای راه‌اندازی {deployment}",
+    "runBlocked": {
+      "failed": "این deployment ناموفق بود. برای تغییر کلیک کنید.",
+      "notReady": "این deployment آماده نیست. برای تغییر کلیک کنید.",
+      "starting": "این deployment در حال راه‌اندازی است. برای تغییر کلیک کنید.",
+      "stopped": "این deployment متوقف است. برای تغییر کلیک کنید."
+    },
     "runOn": "اجرا در",
     "runningOn": "در حال اجرا روی",
     "runsThisWorkflow": "این workflow را اجرا می‌کند",
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "کپی prompt",
       "openInClaude": "باز کردن در Claude desktop",
-      "openInCodex": "باز کردن در Codex"
+      "openInCodex": "باز کردن در Codex",
+      "saveFirst": "پیش از ارسال این workflow به یک agent، آن را ذخیره کنید.",
+      "useLocalAgent": "استفاده از agent محلی"
     },
     "checkFailed": "بررسی این workflow در Comfy Cloud ممکن نشد. دوباره تلاش کنید.",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "راه‌اندازی خود را در Comfy Cloud مستقر کنید",
     "deploySetupDialog": {
-      "body": "با این کار، پیکربندی شما در Comfy Cloud مستقر می‌شود. آن را از Comfy Platform مدیریت می‌کنید.",
-      "pointApi": "آن را از محصول خود به‌صورت یک API با مقیاس‌پذیری خودکار فراخوانی کنید",
-      "pointGpu": "در ComfyUI با GPU انتخابی خود کار کنید",
-      "pointNodes": "nodeها و مدل‌های سفارشی خود را بیاورید"
+      "body": "راه‌اندازی محلی خود را به‌صورت یک Build در Comfy Cloud مستقر کنید، سپس از آن در ComfyUI استفاده کنید یا آن را به‌عنوان یک API با مقیاس‌پذیری خودکار فراخوانی کنید.",
+      "pointGpu": "با GPUهای قدرتمند ابری اجرا کنید",
+      "pointNodes": "nodeها و مدل‌های سفارشی خود را بیاورید",
+      "pointPricing": "فقط در زمانی که workerهای GPU شما فعال هستند، به‌علاوه هزینهٔ فضای ذخیره‌سازی، پرداخت کنید",
+      "title": "workflowهای خود را در Comfy Cloud اجرا کنید"
     },
     "deployWithAgent": "با عامل خود مستقر کنید",
     "desktopTransferFailed": "انتقال workflow شما ممکن نشد. دوباره در Desktop روی «Open on Comfy Cloud» کلیک کنید.",
@@ -4392,6 +4404,7 @@
       "paused": "متوقف‌شده",
       "paymentDue": "پرداخت سررسیدشده"
     },
+    "purchasesStopped": "خرید اعتبار در حال حاضر در دسترس نیست",
     "switchWorkspace": "تغییر فضای کاری",
     "topUpCredits": "افزایش اعتبار"
   },
@@ -6359,6 +6372,7 @@
         }
       },
       "loadError": "نتوانستیم طرح شما را بارگیری کنیم.",
+      "localLoadError": "جزئیات صورت‌حساب شما بارگیری نشد. اتصال خود را بررسی کنید، سپس دوباره تلاش کنید.",
       "plan": {
         "actions": {
           "choosePlan": "انتخاب طرح",
@@ -6382,6 +6396,7 @@
           "freeRunsLeft": "{remaining} از {total} اجرای رایگان شما باقی مانده است. برای ادامهٔ اجرای workflowها پس از آن، اشتراک بگیرید.",
           "freeRunsUsed": "از همهٔ {total} اجرای رایگان استفاده کرده‌اید. برای ادامهٔ اجرای workflowها اشتراک بگیرید.",
           "line": "برای اجرای workflowها در Cloud اشتراک بگیرید.",
+          "localLine": "برای دریافت اعتبار ماهانه اشتراک بگیرید. همچنین هر زمان می‌توانید اعتبار اضافه کنید.",
           "title": "این workspace هیچ طرح فعالی ندارد"
         },
         "paused": "متوقف شده است. پرداخت تمدید انجام نشد.",

@@ -78,6 +78,8 @@ async function signIn(
 const HANDOFFS = /\/api\/auth\/handoffs$/
 const ENTRY_URL =
   'https://billing.comfy.org/handoff?intent=top-up&amount_cents=2500#token=abc'
+const TAGGED_ENTRY_URL =
+  'https://billing.comfy.org/handoff?intent=top-up&amount_cents=2500&utm_source=comfyui&utm_medium=app#token=abc'
 const TOP_UP = { intent: 'top-up', amountCents: 2500 } as const
 const live = new AbortController().signal
 
@@ -142,6 +144,26 @@ describe('issueLocalBillingHandoff', () => {
       surface: 'local_web',
       result: 'opened'
     })
+  })
+
+  it.for([
+    {
+      name: 'the auto top-up the user ticked',
+      autoTopUp: {
+        threshold_credits: 1000,
+        target_credits: 11_550,
+        monthly_budget_cents: 5000
+      }
+    },
+    { name: 'no auto top-up when none was ticked', autoTopUp: undefined }
+  ])('sends $name with the top-up', async ({ autoTopUp }) => {
+    respondToFetch(HANDOFFS, issued)
+
+    await issueLocalBillingHandoff({ ...TOP_UP, autoTopUp }, live)
+
+    const body = JSON.parse(String(fetchRequests(HANDOFFS)[0].body))
+    expect(body.amount_cents).toBe(2500)
+    expect(body.auto_top_up).toEqual(autoTopUp)
   })
 
   it('sends no amount for a subscription', async () => {
@@ -302,13 +324,50 @@ describe('issueLocalBillingHandoff', () => {
       expect(tab.location.href).toBe('')
       await opening
 
-      expect(tab.location.href).toBe(ENTRY_URL)
+      expect(tab.location.href).toBe(TAGGED_ENTRY_URL)
       expect(tab.close).not.toHaveBeenCalled()
       const [request] = fetchRequests(HANDOFFS)
       const body = JSON.parse(String(request.body))
       expect(body.receiver).toBe('platform')
       expect(body).not.toHaveProperty('intent')
       expect(useToast().error).not.toHaveBeenCalled()
+    })
+
+    it('opens the Platform page a view names, with the token still in the fragment', async () => {
+      const { tab } = reservedTab()
+      respondToFetch(HANDOFFS, issued)
+
+      await openPlatformBillingHandoff('plans')
+
+      const opened = new URL(tab.location.href)
+      expect(opened.searchParams.get('view')).toBe('plans')
+      expect(opened.hash).toBe('#token=abc')
+      const [request] = fetchRequests(HANDOFFS)
+      const body = JSON.parse(String(request.body))
+      expect(body.receiver).toBe('platform')
+      expect(body).not.toHaveProperty('intent')
+    })
+
+    it('closes the tab and shows the generic message when the issued URL cannot carry the view', async () => {
+      const { tab } = reservedTab()
+      respondToFetch(HANDOFFS, () =>
+        Response.json(
+          {
+            entry_url: 'https://',
+            expires_at: '2026-11-11T00:01:00Z',
+            request_id: 'req-1'
+          },
+          { status: 201 }
+        )
+      )
+
+      await openPlatformBillingHandoff('plans')
+
+      expect(tab.close).toHaveBeenCalledOnce()
+      expect(tab.location.href).toBe('')
+      expect(useToast().error).toHaveBeenCalledExactlyOnceWith(
+        'subscription.billingPortalUnavailable'
+      )
     })
 
     it.for([
@@ -348,7 +407,7 @@ describe('issueLocalBillingHandoff', () => {
 
       expect(open).toHaveBeenCalledOnce()
       expect(fetchRequests(HANDOFFS)).toHaveLength(1)
-      expect(tab.location.href).toBe(ENTRY_URL)
+      expect(tab.location.href).toBe(TAGGED_ENTRY_URL)
       expect(tab.close).not.toHaveBeenCalled()
       expect(useToast().error).not.toHaveBeenCalled()
     })
@@ -451,8 +510,29 @@ describe('issueLocalBillingHandoff', () => {
         undefined,
         undefined
       )
-      expect(open).toHaveBeenCalledExactlyOnceWith(ENTRY_URL, '_blank')
+      expect(open).toHaveBeenCalledExactlyOnceWith(
+        TAGGED_ENTRY_URL.replace('comfyui', 'comfy_desktop'),
+        '_blank'
+      )
       expect(fetchRequests(HANDOFFS)).toHaveLength(0)
+    })
+
+    it('opens the Platform page a view names in the system browser, through the same Platform handoff', async () => {
+      const open = vi.spyOn(window, 'open').mockReturnValue(null)
+      issue.mockResolvedValue({ status: 'issued', entryUrl: ENTRY_URL })
+
+      await openPlatformBillingHandoff('plans')
+
+      expect(issue).toHaveBeenCalledExactlyOnceWith(
+        'ws-1',
+        'platform',
+        undefined,
+        undefined
+      )
+      const [[url]] = open.mock.calls
+      const opened = new URL(String(url))
+      expect(opened.searchParams.get('view')).toBe('plans')
+      expect(opened.hash).toBe('#token=abc')
     })
 
     it.for([

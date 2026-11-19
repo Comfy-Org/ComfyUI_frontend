@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "Checkout wird geöffnet…",
     "openingDetail": "Dies dauert einige Sekunden.",
+    "openingTabTitle": "Checkout wird geöffnet · Comfy",
     "signInAgain": "Melden Sie sich erneut an, um die Abrechnung zu öffnen.",
     "superseded": "Ihr Konto oder Workspace wurde geändert, während die Abrechnung geöffnet wurde. Versuchen Sie es erneut."
   },
@@ -1379,6 +1380,8 @@
     "Search": "Suchen",
     "Shape": "Form",
     "Shapes": "Formen",
+    "Show Downscaled Preview": "Herunterskalierte Vorschau anzeigen",
+    "Show Full Resolution": "Volle Auflösung anzeigen",
     "Show Link": "Verknüpfung anzeigen",
     "Show Links": "Verbindungen anzeigen",
     "Title": "Titel",
@@ -1718,6 +1721,12 @@
     "reload": "Neu laden",
     "retry": "Erneut versuchen",
     "retryLabel": "Starten von {deployment} erneut versuchen",
+    "runBlocked": {
+      "failed": "Dieses Deployment ist fehlgeschlagen. Klicken Sie, um zu wechseln.",
+      "notReady": "Dieses Deployment ist nicht bereit. Klicken Sie, um zu wechseln.",
+      "starting": "Dieses Deployment wird gestartet. Klicken Sie, um zu wechseln.",
+      "stopped": "Dieses Deployment ist gestoppt. Klicken Sie, um zu wechseln."
+    },
     "runOn": "Ausführen auf",
     "runningOn": "Wird ausgeführt auf",
     "runsThisWorkflow": "Führt diesen Workflow aus",
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "Prompt kopieren",
       "openInClaude": "In Claude Desktop öffnen",
-      "openInCodex": "In Codex öffnen"
+      "openInCodex": "In Codex öffnen",
+      "saveFirst": "Speichern Sie diesen Workflow, bevor Sie ihn an einen Agent senden.",
+      "useLocalAgent": "Lokalen Agent verwenden"
     },
     "checkFailed": "Dieser Workflow konnte nicht auf Comfy Cloud überprüft werden. Versuchen Sie es erneut.",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "Stellen Sie Ihr Setup in Comfy Cloud bereit",
     "deploySetupDialog": {
-      "body": "Dadurch wird Ihre Einrichtung auf Comfy Cloud bereitgestellt. Sie verwalten sie über die Comfy Platform.",
-      "pointApi": "Rufen Sie es aus Ihrem Produkt als automatisch skalierende API auf",
-      "pointGpu": "Arbeiten Sie in ComfyUI auf der GPU Ihrer Wahl",
-      "pointNodes": "Bringen Sie Ihre benutzerdefinierten Nodes und Modelle mit"
+      "body": "Stellen Sie Ihre lokale Einrichtung als Build auf Comfy Cloud bereit und nutzen Sie sie dann in ComfyUI oder rufen Sie sie als automatisch skalierende API auf.",
+      "pointGpu": "Auf leistungsstarken Cloud-GPUs ausführen",
+      "pointNodes": "Bringen Sie Ihre benutzerdefinierten Nodes und Modelle mit",
+      "pointPricing": "Zahlen Sie nur, während Ihre GPU-Worker laufen, zuzüglich Speicher",
+      "title": "Führen Sie Ihre Workflows auf Comfy Cloud aus"
     },
     "deployWithAgent": "Mit Ihrem Agent bereitstellen",
     "desktopTransferFailed": "Ihr Workflow konnte nicht übertragen werden. Klicken Sie in Desktop erneut auf „Auf Comfy Cloud öffnen“.",
@@ -4392,6 +4404,7 @@
       "paused": "Pausiert",
       "paymentDue": "Zahlung fällig"
     },
+    "purchasesStopped": "Der Kauf von Credits ist derzeit nicht verfügbar",
     "switchWorkspace": "Workspace wechseln",
     "topUpCredits": "Guthaben aufladen"
   },
@@ -6359,6 +6372,7 @@
         }
       },
       "loadError": "Ihr Plan konnte nicht geladen werden.",
+      "localLoadError": "Ihre Zahlungsdetails konnten nicht geladen werden. Prüfen Sie Ihre Verbindung und versuchen Sie es dann erneut.",
       "plan": {
         "actions": {
           "choosePlan": "Plan auswählen",
@@ -6382,6 +6396,7 @@
           "freeRunsLeft": "Sie haben noch {remaining} von {total} kostenlosen Ausführungen. Abonnieren Sie, um danach weiterhin Workflows auszuführen.",
           "freeRunsUsed": "Sie haben alle {total} kostenlosen Ausführungen genutzt. Abonnieren Sie, um weiterhin Workflows auszuführen.",
           "line": "Abonnieren Sie, um Workflows in Cloud auszuführen.",
+          "localLine": "Abonnieren Sie monatliche Credits. Sie können jederzeit weitere Credits hinzufügen.",
           "title": "Dieser Workspace hat keinen aktiven Plan"
         },
         "paused": "Pausiert. Die Verlängerungszahlung ist nicht eingegangen.",

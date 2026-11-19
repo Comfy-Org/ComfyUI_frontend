@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "결제 페이지를 여는 중…",
     "openingDetail": "몇 초 정도 걸립니다.",
+    "openingTabTitle": "결제 페이지 여는 중 · Comfy",
     "signInAgain": "결제를 열려면 다시 로그인하세요.",
     "superseded": "결제를 여는 동안 계정 또는 워크스페이스가 변경되었습니다. 다시 시도하세요."
   },
@@ -1379,6 +1380,8 @@
     "Search": "검색",
     "Shape": "형태",
     "Shapes": "형태",
+    "Show Downscaled Preview": "축소된 미리보기 표시",
+    "Show Full Resolution": "전체 해상도로 보기",
     "Show Link": "링크 표시",
     "Show Links": "링크 표시",
     "Title": "제목",
@@ -1718,6 +1721,12 @@
     "reload": "다시 로드",
     "retry": "재시도",
     "retryLabel": "{deployment} 시작 재시도",
+    "runBlocked": {
+      "failed": "이 배포는 실패했습니다. 클릭하여 전환하세요.",
+      "notReady": "이 배포는 준비되지 않았습니다. 클릭하여 전환하세요.",
+      "starting": "이 배포는 시작 중입니다. 클릭하여 전환하세요.",
+      "stopped": "이 배포는 중지되었습니다. 클릭하여 전환하세요."
+    },
     "runOn": "실행 위치",
     "runningOn": "실행 위치",
     "runsThisWorkflow": "이 워크플로를 실행합니다",
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "프롬프트 복사",
       "openInClaude": "Claude desktop에서 열기",
-      "openInCodex": "Codex에서 열기"
+      "openInCodex": "Codex에서 열기",
+      "saveFirst": "에이전트로 보내기 전에 이 워크플로를 저장하세요.",
+      "useLocalAgent": "로컬 에이전트 사용"
     },
     "checkFailed": "Comfy Cloud에서 이 워크플로를 확인할 수 없습니다. 다시 시도하세요.",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "설정을 Comfy Cloud에 배포",
     "deploySetupDialog": {
-      "body": "Comfy Cloud에서 설정을 배포합니다. Comfy Platform에서 관리할 수 있습니다.",
-      "pointApi": "제품에서 자동 확장 API로 호출",
-      "pointGpu": "선택한 GPU에서 ComfyUI로 작업",
-      "pointNodes": "사용자 지정 노드와 모델 가져오기"
+      "body": "로컬 설정을 Build로 Comfy Cloud에 배포한 다음, ComfyUI에서 사용하거나 자동 확장 API로 호출하세요.",
+      "pointGpu": "강력한 클라우드 GPU에서 실행",
+      "pointNodes": "사용자 지정 노드와 모델 가져오기",
+      "pointPricing": "GPU 워커가 실행 중인 동안과 스토리지에 대해서만 비용을 지불하세요",
+      "title": "Comfy Cloud에서 워크플로 실행"
     },
     "deployWithAgent": "에이전트로 배포",
     "desktopTransferFailed": "워크플로를 전송할 수 없습니다. Desktop에서 Comfy Cloud에서 열기를 다시 클릭하세요.",
@@ -4392,6 +4404,7 @@
       "paused": "일시 중지됨",
       "paymentDue": "결제 예정"
     },
+    "purchasesStopped": "현재는 크레딧을 구매할 수 없습니다",
     "switchWorkspace": "워크스페이스 전환",
     "topUpCredits": "크레딧 충전"
   },
@@ -6359,6 +6372,7 @@
         }
       },
       "loadError": "요금제를 불러올 수 없습니다.",
+      "localLoadError": "청구 정보를 불러올 수 없습니다. 연결 상태를 확인한 후 다시 시도하세요.",
       "plan": {
         "actions": {
           "choosePlan": "요금제 선택",
@@ -6382,6 +6396,7 @@
           "freeRunsLeft": "무료 실행이 {total}회 중 {remaining}회 남았습니다. 이후에도 워크플로를 실행하려면 구독하세요.",
           "freeRunsUsed": "무료 실행 {total}회를 모두 사용했습니다. 워크플로를 계속 실행하려면 구독하세요.",
           "line": "Cloud에서 워크플로를 실행하려면 구독하세요.",
+          "localLine": "월간 크레딧을 구독하세요. 언제든지 크레딧을 추가할 수도 있습니다.",
           "title": "이 워크스페이스에는 활성 요금제가 없습니다"
         },
         "paused": "일시 중지됨. 갱신 결제가 처리되지 않았습니다.",

@@ -402,6 +402,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: true
   },
   {
+    id: 'Comfy.Node.DownscaleImagePreviews',
+    category: ['LiteGraph', 'Node Widget', 'DownscaleImagePreviews'],
+    name: 'Downscale large image previews',
+    tooltip:
+      'In Nodes 2.0, show large images on nodes as a copy at most 1024px on the longest side so many large previews stay responsive. Turn off to always show the original.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
+  },
+  {
     id: 'Comfy.Group.DoubleClickTitleToEdit',
     category: ['LiteGraph', 'Group', 'DoubleClickTitleToEdit'],
     name: 'Double click group title to edit',

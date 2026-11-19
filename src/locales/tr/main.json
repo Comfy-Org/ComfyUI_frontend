@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "Ödeme işlemi açılıyor…",
     "openingDetail": "Bu işlem birkaç saniye sürer.",
+    "openingTabTitle": "Ödeme açılıyor · Comfy",
     "signInAgain": "Faturalandırmayı açmak için yeniden oturum açın.",
     "superseded": "Faturalandırma açılırken hesabınız veya çalışma alanınız değişti. Yeniden deneyin."
   },
@@ -1379,6 +1380,8 @@
     "Search": "Ara",
     "Shape": "Şekil",
     "Shapes": "Şekiller",
+    "Show Downscaled Preview": "Ölçek Küçültülmüş Önizlemeyi Göster",
+    "Show Full Resolution": "Tam Çözünürlüğü Göster",
     "Show Link": "Bağlantıyı Göster",
     "Show Links": "Bağlantıları Göster",
     "Title": "Başlık",
@@ -1718,6 +1721,12 @@
     "reload": "Yeniden yükle",
     "retry": "Yeniden dene",
     "retryLabel": "{deployment} başlatma işlemini yeniden dene",
+    "runBlocked": {
+      "failed": "Bu dağıtım başarısız oldu. Geçiş yapmak için tıklayın.",
+      "notReady": "Bu dağıtım hazır değil. Geçiş yapmak için tıklayın.",
+      "starting": "Bu dağıtım başlatılıyor. Geçiş yapmak için tıklayın.",
+      "stopped": "Bu dağıtım durduruldu. Geçiş yapmak için tıklayın."
+    },
     "runOn": "Şurada çalıştır",
     "runningOn": "Şurada çalışıyor",
     "runsThisWorkflow": "Bu iş akışını çalıştırır",
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "İstemi kopyala",
       "openInClaude": "Claude masaüstü uygulamasında aç",
-      "openInCodex": "Codex'te aç"
+      "openInCodex": "Codex'te aç",
+      "saveFirst": "Bir aracıya göndermeden önce bu iş akışını kaydedin.",
+      "useLocalAgent": "Yerel aracıyı kullan"
     },
     "checkFailed": "Bu iş akışı Comfy Cloud'da denetlenemedi. Tekrar deneyin.",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "Kurulumunuzu Comfy Cloud'a dağıtın",
     "deploySetupDialog": {
-      "body": "Bu, kurulumunuzu Comfy Cloud'a dağıtır. Bunu Comfy Platform'dan yönetirsiniz.",
-      "pointApi": "Ürününüzden otomatik ölçeklenen bir API olarak çağırın",
-      "pointGpu": "Seçtiğiniz GPU'da ComfyUI ile çalışın",
-      "pointNodes": "Özel düğümlerinizi ve modellerinizi getirin"
+      "body": "Yerel kurulumunuzu Comfy Cloud'a bir Build olarak dağıtın, ardından ComfyUI'de kullanın veya otomatik ölçeklenen bir API olarak çağırın.",
+      "pointGpu": "Güçlü bulut GPU'larında çalıştırın",
+      "pointNodes": "Özel düğümlerinizi ve modellerinizi getirin",
+      "pointPricing": "Yalnızca GPU çalışanlarınız aktifken ve depolama için ödeme yapın",
+      "title": "İş akışlarınızı Comfy Cloud'da çalıştırın"
     },
     "deployWithAgent": "Aracınızla dağıtın",
     "desktopTransferFailed": "İş akışınız aktarılamadı. Desktop'ta Comfy Cloud'da Aç'a tekrar tıklayın.",
@@ -4392,6 +4404,7 @@
       "paused": "Duraklatıldı",
       "paymentDue": "Ödeme bekliyor"
     },
+    "purchasesStopped": "Şu anda kredi satın alma seçeneği mevcut değil",
     "switchWorkspace": "Çalışma alanını değiştir",
     "topUpCredits": "Kredi yükle"
   },
@@ -6359,6 +6372,7 @@
         }
       },
       "loadError": "Planınız yüklenemedi.",
+      "localLoadError": "Fatura bilgilerinizi yükleyemedik. Bağlantınızı kontrol edip tekrar deneyin.",
       "plan": {
         "actions": {
           "choosePlan": "Plan seçin",
@@ -6382,6 +6396,7 @@
           "freeRunsLeft": "{total} ücretsiz çalıştırmadan {remaining} hakkınız kaldı. Sonrasında iş akışlarını çalıştırmaya devam etmek için abone olun.",
           "freeRunsUsed": "{total} ücretsiz çalıştırmanın tamamını kullandınız. İş akışlarını çalıştırmaya devam etmek için abone olun.",
           "line": "Cloud'da iş akışlarını çalıştırmak için abone olun.",
+          "localLine": "Aylık krediler için abone olun. İstediğiniz zaman kredi de ekleyebilirsiniz.",
           "title": "Bu çalışma alanının etkin bir planı yok"
         },
         "paused": "Duraklatıldı. Yenileme ödemesi gerçekleşmedi.",

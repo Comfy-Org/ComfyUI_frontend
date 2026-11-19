@@ -434,15 +434,22 @@ function identifiersSection(identifiers: ReportIdentifiers): string {
   ].join('\n')
 }
 
+function crdtStatusLines(status: CrdtDebugSnapshot['status']): string[] {
+  return [
+    `- **Enabled:** ${status.enabled}`,
+    `- **Connected:** ${status.connected}`,
+    `- **Canvas may be stale:** ${status.canvasMayBeStale}`,
+    `- **Stale cause:** ${status.canvasStaleCause ?? 'none'}`,
+    `- **Doc id:** ${status.workflowId ?? 'none'}`,
+    `- **Updates applied:** ${status.updatesApplied}`,
+    `- **Last frame:** ${status.lastFrameType ?? 'none'}`
+  ]
+}
+
 function crdtSection(crdt: CrdtDebugSnapshot): string {
   return [
     `- **Schema version:** ${crdt.meta.schema_version ?? 'unknown'}`,
-    `- **Enabled:** ${crdt.status.enabled}`,
-    `- **Connected:** ${crdt.status.connected}`,
-    `- **Canvas may be stale:** ${crdt.status.canvasMayBeStale}`,
-    `- **Doc id:** ${crdt.status.workflowId ?? 'none'}`,
-    `- **Updates applied:** ${crdt.status.updatesApplied}`,
-    `- **Last frame:** ${crdt.status.lastFrameType ?? 'none'}`,
+    ...crdtStatusLines(crdt.status),
     `- **Tab id:** ${crdt.tabId ?? 'unknown'}`,
     `- **Last seq:** ${crdt.lastSeq ?? 'none'}`,
     `- **Schema error:** ${crdt.schemaError ?? 'none'}`,

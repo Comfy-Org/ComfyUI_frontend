@@ -8,6 +8,12 @@ import type {
   SessionSnapshot
 } from '#/core/session'
 import type { AccountCredential, SessionResult } from '#/core/sessionContracts'
+import { makeClient } from '#/core/__fixtures__/sessionClientFixture'
+import {
+  manualIdentity,
+  mintBody,
+  testUser
+} from '#/core/__fixtures__/sessionFakes'
 import type { BillingHttpResponse, BillingResult } from './billingContracts'
 import type { BillingScope, BillingScopeSource } from './billingScope'
 import { createCredentialedBillingTransport } from './credentialedTransport'
@@ -231,6 +237,40 @@ describe('createSessionBillingTransport', () => {
       undefined,
       expect.objectContaining({ workspaceId: 'ws-7' })
     )
+  })
+
+  it('keeps a still-valid session when a read cannot refresh it', async () => {
+    const identity = manualIdentity()
+    const { client } = makeClient(
+      {
+        fetchImpl: vi
+          .fn<typeof fetch>()
+          .mockResolvedValueOnce(
+            jsonResponse(
+              200,
+              mintBody({
+                expires_at: new Date(Date.now() + 60_000).toISOString()
+              })
+            )
+          )
+          .mockImplementation(async () => jsonResponse(503, {}))
+      },
+      identity.port
+    )
+    identity.fire(testUser())
+    await vi.waitFor(() => expect(client.getToken()).toBe('workspace-jwt'))
+    const billingFetch = vi.fn<typeof fetch>()
+    const transport = createSessionBillingTransport({
+      session: client,
+      resolveUrl: (route) => `${BASE}${route}`,
+      fetchImpl: billingFetch
+    })
+
+    const result = await transport({ method: 'GET', route: '/billing/status' })
+
+    expect(result).toMatchObject({ status: 'error', httpStatus: 503 })
+    expect(billingFetch).not.toHaveBeenCalled()
+    expect(client.getToken()).toBe('workspace-jwt')
   })
 
   it('reports NOT_AUTHENTICATED without sending a request', async () => {

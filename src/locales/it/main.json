@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "Apertura della pagina di pagamento in corso…",
     "openingDetail": "L'operazione richiede alcuni secondi.",
+    "openingTabTitle": "Apertura del checkout · Comfy",
     "signInAgain": "Accedi di nuovo per aprire la fatturazione.",
     "superseded": "Il tuo account o spazio di lavoro è cambiato durante l'apertura della fatturazione. Riprova."
   },
@@ -1379,6 +1380,8 @@
     "Search": "Cerca",
     "Shape": "Forma",
     "Shapes": "Forme",
+    "Show Downscaled Preview": "Mostra anteprima ridotta",
+    "Show Full Resolution": "Mostra a risoluzione completa",
     "Show Link": "Mostra collegamento",
     "Show Links": "Mostra collegamenti",
     "Title": "Titolo",
@@ -1718,6 +1721,12 @@
     "reload": "Ricarica",
     "retry": "Riprova",
     "retryLabel": "Riprova ad avviare {deployment}",
+    "runBlocked": {
+      "failed": "Questa distribuzione non è riuscita. Fai clic per cambiare.",
+      "notReady": "Questa distribuzione non è pronta. Fai clic per cambiare.",
+      "starting": "Questa distribuzione è in avvio. Fai clic per cambiare.",
+      "stopped": "Questa distribuzione è arrestata. Fai clic per cambiare."
+    },
     "runOn": "Esegui su",
     "runningOn": "In esecuzione su",
     "runsThisWorkflow": "Esegue questo workflow",
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "Copia prompt",
       "openInClaude": "Apri in Claude desktop",
-      "openInCodex": "Apri in Codex"
+      "openInCodex": "Apri in Codex",
+      "saveFirst": "Salva questo workflow prima di inviarlo a un agente.",
+      "useLocalAgent": "Usa agente locale"
     },
     "checkFailed": "Impossibile verificare questo workflow su Comfy Cloud. Riprova.",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "Distribuisci la tua configurazione su Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Questo crea un deployment della tua configurazione su Comfy Cloud. Lo gestisci da Comfy Platform.",
-      "pointApi": "Richiamalo dal tuo prodotto come API con scalabilità automatica",
-      "pointGpu": "Lavora in ComfyUI sulla GPU che scegli",
-      "pointNodes": "Porta i tuoi nodi e modelli personalizzati"
+      "body": "Distribuisci la tua configurazione locale su Comfy Cloud come Build, quindi usala in ComfyUI o richiamala come API con scalabilità automatica.",
+      "pointGpu": "Esegui su potenti GPU cloud",
+      "pointNodes": "Porta i tuoi nodi e modelli personalizzati",
+      "pointPricing": "Paga solo mentre i tuoi worker GPU sono attivi, più lo spazio di archiviazione",
+      "title": "Esegui i tuoi workflow su Comfy Cloud"
     },
     "deployWithAgent": "Distribuisci con il tuo agente",
     "desktopTransferFailed": "Impossibile trasferire il tuo workflow. Fai di nuovo clic su Apri su Comfy Cloud in Desktop.",
@@ -4392,6 +4404,7 @@
       "paused": "In pausa",
       "paymentDue": "Pagamento in sospeso"
     },
+    "purchasesStopped": "L'acquisto di crediti non è disponibile al momento",
     "switchWorkspace": "Cambia spazio di lavoro",
     "topUpCredits": "Ricarica crediti"
   },
@@ -6359,6 +6372,7 @@
         }
       },
       "loadError": "Impossibile caricare il tuo piano.",
+      "localLoadError": "Non siamo riusciti a caricare i dettagli di fatturazione. Controlla la connessione, quindi riprova.",
       "plan": {
         "actions": {
           "choosePlan": "Scegli un piano",
@@ -6382,6 +6396,7 @@
           "freeRunsLeft": "Ti restano {remaining} di {total} esecuzioni gratuite. Abbonati per continuare a eseguire workflow dopo.",
           "freeRunsUsed": "Hai usato tutte le {total} esecuzioni gratuite. Abbonati per continuare a eseguire workflow.",
           "line": "Abbonati per eseguire workflow su Cloud.",
+          "localLine": "Abbonati per ottenere crediti mensili. Puoi anche aggiungere crediti in qualsiasi momento.",
           "title": "Questo spazio di lavoro non ha un piano attivo"
         },
         "paused": "In pausa. Il pagamento per il rinnovo non è andato a buon fine.",

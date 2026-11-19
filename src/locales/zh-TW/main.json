@@ -910,6 +910,7 @@
   "billingHandoff": {
     "opening": "正在開啟結帳頁面…",
     "openingDetail": "這需要幾秒鐘。",
+    "openingTabTitle": "正在開啟結帳頁面 · Comfy",
     "signInAgain": "請重新登入以開啟帳務。",
     "superseded": "開啟帳務時，您的帳戶或工作區已變更。請再試一次。"
   },
@@ -1379,6 +1380,8 @@
     "Search": "搜尋",
     "Shape": "形狀",
     "Shapes": "形狀",
+    "Show Downscaled Preview": "顯示縮小預覽",
+    "Show Full Resolution": "顯示完整解析度",
     "Show Link": "顯示連線",
     "Show Links": "顯示連線",
     "Title": "標題",
@@ -1718,6 +1721,12 @@
     "reload": "重新載入",
     "retry": "重試",
     "retryLabel": "重試啟動 {deployment}",
+    "runBlocked": {
+      "failed": "此部署失敗。點擊以切換。",
+      "notReady": "此部署尚未就緒。點擊以切換。",
+      "starting": "此部署正在啟動。點擊以切換。",
+      "stopped": "此部署已停止。點擊以切換。"
+    },
     "runOn": "執行於",
     "runningOn": "執行於",
     "runsThisWorkflow": "可執行此工作流程",
@@ -4290,7 +4299,9 @@
     "agentMenu": {
       "copyPrompt": "複製提示詞",
       "openInClaude": "在 Claude 桌面版中開啟",
-      "openInCodex": "在 Codex 中開啟"
+      "openInCodex": "在 Codex 中開啟",
+      "saveFirst": "傳送至代理程式前，請先儲存此工作流程。",
+      "useLocalAgent": "使用本機代理程式"
     },
     "checkFailed": "無法在 Comfy Cloud 上檢查此工作流程。請再試一次。",
     "cloudButton": {
@@ -4299,10 +4310,11 @@
     },
     "deploySetup": "將您的設定部署到 Comfy Cloud",
     "deploySetupDialog": {
-      "body": "這會在 Comfy Cloud 上建立您的設定部署。您可以從 Comfy Platform 管理它。",
-      "pointApi": "從您的產品中將其作為自動擴展 API 呼叫",
-      "pointGpu": "在您選擇的 GPU 上使用 ComfyUI 工作",
-      "pointNodes": "帶上您的自訂節點與模型"
+      "body": "將您的本機設定部署至 Comfy Cloud 作為 Build，然後在 ComfyUI 中使用，或將其作為可自動擴展的 API 呼叫。",
+      "pointGpu": "在強大的雲端 GPU 上執行",
+      "pointNodes": "帶上您的自訂節點與模型",
+      "pointPricing": "僅在您的 GPU 工作程序運作期間付費，另加儲存空間費用",
+      "title": "在 Comfy Cloud 上執行您的工作流程"
     },
     "deployWithAgent": "使用您的代理程式部署",
     "desktopTransferFailed": "無法傳輸您的工作流程。請在 Desktop 中再次點擊「在 Comfy Cloud 開啟」。",
@@ -4392,6 +4404,7 @@
       "paused": "已暫停",
       "paymentDue": "付款到期"
     },
+    "purchasesStopped": "目前無法購買點數",
     "switchWorkspace": "切換工作區",
     "topUpCredits": "儲值點數"
   },
@@ -6359,6 +6372,7 @@
         }
       },
       "loadError": "無法載入您的方案。",
+      "localLoadError": "無法載入您的帳單詳細資料。請檢查網路連線後再試一次。",
       "plan": {
         "actions": {
           "choosePlan": "選擇方案",
@@ -6382,6 +6396,7 @@
           "freeRunsLeft": "您還有 {total} 次免費執行中的 {remaining} 次。之後請訂閱以繼續執行工作流程。",
           "freeRunsUsed": "您已用完全部 {total} 次免費執行。請訂閱以繼續執行工作流程。",
           "line": "訂閱即可在雲端執行工作流程。",
+          "localLine": "訂閱以取得每月點數。您也可以隨時加購點數。",
           "title": "此工作區沒有有效方案"
         },
         "paused": "已暫停。續訂付款未成功。",

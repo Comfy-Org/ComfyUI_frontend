@@ -154,6 +154,7 @@ export type {
 } from './operationState'
 export {
   isBlockedOnCustomerPhase,
+  isAutoTopUpActivating,
   isGrantLanding,
   isTerminal,
   reduceBillingOperation,
@@ -417,6 +418,13 @@ export type {
 export { deriveCreditsFlyout } from './billingTab/creditsFlyout'
 export type { PlanCheckoutBanner } from './billingTab/planCheckoutBanner'
 export { planCheckoutBannerFor } from './billingTab/planCheckoutBanner'
+export type {
+  PlanNotStartedBanner,
+  PlanNotStartedFacts,
+  RecoveryPaymentPage,
+  SubscriptionPaymentRecovery
+} from './billingTab/planNotStartedBanner'
+export { planNotStartedBannerFor } from './billingTab/planNotStartedBanner'
 export type {
   TopupCheckoutBanner,
   TopupCheckoutSnapshot
