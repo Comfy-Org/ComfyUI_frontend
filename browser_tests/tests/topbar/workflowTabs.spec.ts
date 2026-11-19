@@ -297,9 +297,7 @@ test.describe('Workflow tabs', () => {
             .toEqual({ fits: true, scrollLeft: 0 })
         })
 
-        await test.step('scroll after inactive tabs reach 90px', async () => {
-          // Two more tabs, not one: how close six inactive tabs come to the
-          // floor depends on the active tab's label width.
+        await test.step('scroll after two more tabs push every inactive tab to 90px', async () => {
           await topbar.openBlankWorkflows(2)
           await expect
             .poll(async () => {
