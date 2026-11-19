@@ -16,8 +16,20 @@ import {
   isGeneratedTempOutput
 } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import type {
+  DraggedAssetInfo,
+  MediaKind
+} from '@/platform/assets/schemas/mediaAssetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
 import { getStoredOutputIdentity } from '@/platform/assets/utils/outputAssetUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import {
+  is3DResult,
+  isAudioResult,
+  isImageResult,
+  isVideoResult
+} from '@/utils/resultItem'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import {
   getAssetStoredFilename,
   getOutputSubfolder
@@ -80,7 +92,7 @@ export function startAssetDrag(
   if (!dataTransfer) return
 
   const storedHash = asset.hash ?? getStoredOutputIdentity(asset)?.hash
-  const assetInfo = {
+  const assetInfo: DraggedAssetInfo = {
     filename: getAssetStoredFilename(asset, storedHash),
     subfolder: getOutputSubfolder(asset),
     type: isGeneratedTempOutput(asset) ? 'temp' : getAssetType(asset.tags),
@@ -88,10 +100,62 @@ export function startAssetDrag(
     attachment_ref: storedHash ?? asset.name,
     ...assetMediaSources(asset)
   }
-  dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(assetInfo))
+  writeAssetDrag(
+    dataTransfer,
+    assetInfo,
+    parseUrl(getAssetFileUrl(asset), location.href)
+  )
+}
 
-  const fileUrl = parseUrl(getAssetFileUrl(asset), location.href)
-  if (!fileUrl) return
+function writeAssetDrag(
+  dataTransfer: DataTransfer,
+  info: DraggedAssetInfo,
+  fileUrl: URL | null
+): void {
+  dataTransfer.setData(MIME_ASSET_INFO, JSON.stringify(info))
+  if (fileUrl) dataTransfer.setData('text/uri-list', fileUrl.toString())
+}
 
-  dataTransfer.setData('text/uri-list', fileUrl.toString())
+function resultItemMediaKind(item: AugmentedResultItem): MediaKind | undefined {
+  if (!item.filename) return undefined
+  if (isImageResult(item)) return 'image'
+  if (isVideoResult(item)) return 'video'
+  if (isAudioResult(item)) return 'audio'
+  if (is3DResult(item)) return '3D'
+  return undefined
+}
+
+/** Whether {@link startResultItemDrag} can carry `item`: a stored image, video, audio or 3D file. */
+export function isDraggableResultItem(item: AugmentedResultItem): boolean {
+  return resultItemMediaKind(item) !== undefined
+}
+
+/** Start a native drag carrying a job's output file, under the same contract as {@link startAssetDrag}. */
+export function startResultItemDrag(
+  event: DragEvent,
+  item: AugmentedResultItem
+): void {
+  const { dataTransfer } = event
+  const mediaKind = resultItemMediaKind(item)
+  const fileUrl = parseUrl(resultItemUrl(item), location.href)
+  if (!dataTransfer || !mediaKind || !fileUrl) return
+
+  const playable = mediaKind === 'video' || mediaKind === 'audio'
+  writeAssetDrag(
+    dataTransfer,
+    {
+      filename: item.filename,
+      subfolder: item.subfolder,
+      type: item.type,
+      display_name: item.display_name ?? item.filename,
+      attachment_ref: item.hash ?? item.filename,
+      media_kind: mediaKind,
+      preview_url:
+        mediaKind === 'image'
+          ? parseUrl(resultItemPreviewUrl(item), location.href)?.toString()
+          : undefined,
+      media_url: playable ? fileUrl.toString() : undefined
+    },
+    fileUrl
+  )
 }

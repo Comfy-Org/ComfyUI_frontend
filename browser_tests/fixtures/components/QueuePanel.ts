@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position } from '@e2e/fixtures/types'
 
 export class QueuePanel {
   readonly overlayToggle: Locator
@@ -73,6 +74,13 @@ export class QueuePanel {
     await expect(addToWorkflowButton).toBeVisible()
     await addToWorkflowButton.click()
     await expect(addToWorkflowButton).toBeHidden()
+  }
+
+  async dragOutputTo(jobId: string, target: Position) {
+    await this.jobRow(jobId).hover()
+    await this.page.mouse.down()
+    await this.page.mouse.move(target.x, target.y, { steps: 10 })
+    await this.page.mouse.up()
   }
 
   async openClearHistoryDialog() {

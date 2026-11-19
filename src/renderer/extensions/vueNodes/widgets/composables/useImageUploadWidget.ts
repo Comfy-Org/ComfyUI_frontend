@@ -13,6 +13,7 @@ import type { ComfyWidgetConstructor } from '@/types/comfy'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isImageUploadInput } from '@/types/nodeDefAugmentation'
 import { createAnnotatedPath } from '@/utils/createAnnotatedPath'
+import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { addToComboValues } from '@/utils/litegraphUtil'
 
 import {
@@ -63,6 +64,11 @@ export const useImageUploadWidget = () => {
     }
 
     const fileFilter = isVideo ? isUploadableVideo : isImageFile
+    const loadableKind = isVideo ? 'video' : 'image'
+    function isLoadableOutput({ filename }: ResultItem) {
+      const kind = getMediaTypeFromFilename(filename)
+      return kind === 'other' || kind === loadableKind
+    }
     function alertExtensionlessVideo(files: File[]) {
       if (!files.some(isUntypedOrVideoWithoutExtension)) return false
       useToast().warning(t('g.videoFilenameExtensionRequired'))
@@ -83,6 +89,7 @@ export const useImageUploadWidget = () => {
     const { openFileSelection } = useNodeImageUpload(node, {
       allow_batch,
       fileFilter,
+      resultItemFilter: isLoadableOutput,
       accept,
       folder,
       onReject: isVideo ? alertExtensionlessVideo : undefined,
