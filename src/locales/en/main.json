@@ -1314,8 +1314,7 @@
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "modelSizeLowToHigh": "Model Size (Low to High)",
-      "default": "Default"
+      "modelSizeLowToHigh": "Model Size (Low to High)"
     },
     "error": {
       "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",

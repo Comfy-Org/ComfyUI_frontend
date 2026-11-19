@@ -415,7 +415,11 @@ describe('ComfyApp', () => {
           async ({ onVerified }) => {
             finishModels = onVerified
             if (verification === 'immediate') onVerified?.([])
-            return { missingModels: [], confirmedCandidates: [] }
+            return {
+              missingModels: [],
+              confirmedCandidates: [],
+              surfaced: Promise.resolve()
+            }
           }
         )
         vi.spyOn(
@@ -471,7 +475,11 @@ describe('ComfyApp', () => {
       vi.mocked(runMissingModelPipeline).mockImplementation(
         async ({ onVerified }) => {
           onVerified?.([])
-          return { missingModels: [], confirmedCandidates: [] }
+          return {
+            missingModels: [],
+            confirmedCandidates: [],
+            surfaced: Promise.resolve()
+          }
         }
       )
       vi.spyOn(missingMediaScan, 'scanAllMediaCandidates').mockReturnValue([
@@ -1450,7 +1458,11 @@ describe('ComfyApp', () => {
       })
       vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
         await modelsPending
-        return { missingModels: [], confirmedCandidates: [] }
+        return {
+          missingModels: [],
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
+        }
       })
       const load = app.loadGraphData(createWorkflowGraphData(), false, false)
       try {
