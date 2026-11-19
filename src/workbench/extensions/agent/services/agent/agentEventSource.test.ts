@@ -785,22 +785,26 @@ describe('createAgentEventSource send', () => {
     expect(reportFailure).toHaveBeenCalledTimes(2)
   })
 
-  it('survives a reporter that throws', async () => {
+  it('keeps recovering after a reporter throws', async () => {
+    const getAuthParams = vi
+      .fn<() => Promise<URLSearchParams | null>>()
+      .mockRejectedValueOnce(new Error('refresh rejected'))
+      .mockResolvedValue(tokenParams('recovered'))
     const source = createSource({
-      getAuthParams: () => Promise.reject(new Error('refresh rejected')),
+      getAuthParams,
       reportFailure: () => {
         throw new Error('reporter exploded')
       }
     })
 
-    const status = vi.fn()
-    source.onStatus(status)
     source.subscribe(() => {})
     await connected()
+    expect(sockets()).toHaveLength(0)
 
-    // The source must still be alive: a reporter that throws used to reject
-    // connect() with `connecting` latched, killing every later attempt.
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(status).toHaveBeenLastCalledWith(false)
+
+    // The throw used to reject connect() with `connecting` still latched, so no
+    // later attempt could ever open a socket.
+    expect(lastSocket().url).toContain('token=recovered')
   })
 })
