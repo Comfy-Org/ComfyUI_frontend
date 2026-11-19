@@ -79,7 +79,7 @@ const AGENT_APP_BUTTON_IDS: Record<AgentApp, string> = {
 
 function pickAgentApp(app: AgentApp) {
   track(AGENT_APP_BUTTON_IDS[app])
-  openBriefIn(app)
+  void openBriefIn(app)
 }
 
 function copyPrompt() {
