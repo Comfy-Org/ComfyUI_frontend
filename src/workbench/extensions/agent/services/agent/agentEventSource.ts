@@ -17,15 +17,12 @@ interface AgentEventSourceOptions {
   reconnectDelayMs?: number
   maxReconnectDelayMs?: number
   random?: () => number
-  /**
-   * Reports a failure that keeps the socket from opening. This source stays
-   * telemetry-free and the caller owns reporting, so the error reaches whatever
-   * reporter the caller already uses.
-   */
   reportFailure?: (error: unknown, failure: AgentSocketFailure) => void
 }
 
-type AuthRead = { ok: true; params: URLSearchParams | null } | { ok: false }
+type AuthRead =
+  | { ok: true; params: URLSearchParams | null }
+  | { ok: false; error: unknown }
 
 export function createAgentEventSource({
   endpoint,
@@ -72,27 +69,32 @@ export function createAgentEventSource({
     reconnectTimer.start()
   }
 
-  // Both failure paths below retry on the backoff forever, so without this the only
-  // record of a credential that never mints, or a URL the browser refuses outright,
-  // was a socket that silently never opened. Reported once per run of failures so a
-  // panel left open overnight does not send one report per backoff interval.
-  let reportedFailure: AgentSocketFailure | null = null
+  const reportedFailures = new Set<AgentSocketFailure>()
 
-  function reportFailureOncePerRun(
+  function endFailureRun(): void {
+    reportedFailures.clear()
+  }
+
+  function reportFailureOnce(
     error: unknown,
     failure: AgentSocketFailure
   ): void {
-    if (reportedFailure === failure) return
-    reportedFailure = failure
-    reportFailure(error, failure)
+    if (reportedFailures.has(failure)) return
+    reportedFailures.add(failure)
+    try {
+      reportFailure(error, failure)
+    } catch {
+      // A reporter that throws must not take the socket down with it: the throw
+      // would reject connect() with `connecting` still latched, and every later
+      // connect() would return early for the life of the page.
+    }
   }
 
   async function readAuth(): Promise<AuthRead> {
     try {
       return { ok: true, params: await getAuthParams() }
     } catch (error) {
-      reportFailureOncePerRun(error, 'auth_read')
-      return { ok: false }
+      return { ok: false, error }
     }
   }
 
@@ -114,6 +116,10 @@ export function createAgentEventSource({
     // A credential that cannot be read right now — a rejected refresh, or a
     // token the provider has not minted yet — is retried on the backoff rather
     // than leaving the source dead until something else calls `reconnect()`.
+    // Reported here, not in `readAuth`, so a read superseded by `reconnect()` or
+    // `disconnect()` cannot file a failure against the generation that replaced it
+    // and latch away the real one.
+    if (!auth.ok) reportFailureOnce(auth.error, 'auth_read')
     if (!auth.ok || auth.params === null) {
       notifyStatus(false)
       scheduleReconnect()
@@ -127,9 +133,16 @@ export function createAgentEventSource({
     try {
       current = new WebSocket(url)
     } catch (error) {
-      // A SecurityError for an insecure ws: URL on an https page, or a SyntaxError
-      // for a malformed one, never resolves itself: the same URL is retried forever.
-      reportFailureOncePerRun(error, 'socket_construct')
+      // The browser puts the whole URL in this message -- Chromium's SyntaxError is
+      // "The URL '...' is invalid." -- and that URL carries the socket credential, so
+      // the name is reported and the original error is not. SecurityError vs
+      // SyntaxError is the diagnostic value here; the URL is not.
+      reportFailureOnce(
+        new Error(
+          `The browser refused the agent socket URL: ${error instanceof Error ? error.name : 'unknown error'}`
+        ),
+        'socket_construct'
+      )
       notifyStatus(false)
       scheduleReconnect()
       return
@@ -138,8 +151,6 @@ export function createAgentEventSource({
     let openedAt: number | null = null
     current.addEventListener('open', () => {
       if (socket !== current) return
-      // A socket that opened ends the failure run, so a later outage reports again.
-      reportedFailure = null
       openedAt = Date.now()
       notifyStatus(true)
     })
@@ -163,8 +174,12 @@ export function createAgentEventSource({
       // Only a connection that lasted clears the backoff. A server that
       // accepts the upgrade, writes a frame and hangs up must not reset it, or
       // the panel reconnects in a tight loop that never widens.
-      if (openedAt !== null && Date.now() - openedAt >= maxReconnectDelayMs)
+      if (openedAt !== null && Date.now() - openedAt >= maxReconnectDelayMs) {
         failedConnects = 0
+        // Same evidence the backoff trusts: a connection that lasted. An open the
+        // server accepts and drops immediately is a failure, not the end of a run.
+        endFailureRun()
+      }
       socket = null
       notifyStatus(false)
       scheduleReconnect()
@@ -173,6 +188,9 @@ export function createAgentEventSource({
 
   function disconnect(): void {
     connectGeneration++
+    // An identity change or a last unsubscribe starts a new run, so the next
+    // failure reports instead of being suppressed by the previous identity's.
+    endFailureRun()
     // An auth read that never settles would otherwise latch `connecting` and
     // make every later `connect()` — `reconnect()` included — a no-op.
     connecting = false

@@ -83,7 +83,7 @@ function create(readIdentity: SocketIdentitySource): PageSessionInternals {
       reportFailure: (error, failure) =>
         reportError(error, {
           surface: 'agent',
-          errorType: 'agent_socket_unavailable',
+          errorType: 'failure_opening_agent_socket',
           level: 'warning',
           tags: { failure }
         })
