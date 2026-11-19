@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useStorage } from '@vueuse/core'
+import { useLocalStorage } from '@vueuse/core'
 import { computed } from 'vue'
 
 import Button from '@comfyorg/design-system/button/Button'
@@ -9,24 +9,21 @@ import RunNoticeAction from './RunNoticeAction.vue'
 const {
   expanded = false,
   workflowName,
-  hasWorkflowTarget = false,
   genericNoticeReady = false,
   hideIntro = false,
   context
 } = defineProps<{
   expanded?: boolean
   workflowName?: string
-  hasWorkflowTarget?: boolean
   genericNoticeReady?: boolean
   hideIntro?: boolean
   context?: 'mismatch' | 'unavailable' | 'emptyCanvas'
 }>()
 
 const emit = defineEmits<{ showTarget: []; newChat: [] }>()
-const dismissed = useStorage(
+const dismissed = useLocalStorage(
   'Comfy.AgentPanel.runNoticeDismissed',
   false,
-  localStorage,
   { writeDefaults: false }
 )
 const contextMessages = {
@@ -38,7 +35,7 @@ const defaultNotice = computed(() =>
   expanded ? 'agent.runNoticeExpanded' : 'agent.runNotice'
 )
 const canShowGenericNotice = computed(
-  () => !context && !hasWorkflowTarget && !hideIntro && genericNoticeReady
+  () => !context && !hideIntro && genericNoticeReady
 )
 
 const visible = computed(
@@ -51,6 +48,7 @@ const contextAction = computed(() => {
       return {
         label: 'agent.showTarget',
         name: 'agent.showTargetWorkflow',
+        workflowName,
         icon: 'icon-[lucide--arrow-up-right]',
         run: () => emit('showTarget')
       }
@@ -80,11 +78,10 @@ const contextAction = computed(() => {
     />
     <p class="my-0 min-w-0 flex-1 text-sm">
       <template v-if="context">
-        {{ $t(contextMessages[context], { workflowName }) }}
+        {{ $t(contextMessages[context]) }}
         <RunNoticeAction
           v-if="contextAction"
           v-bind="contextAction"
-          :workflow-name="workflowName"
           @run="contextAction.run"
         />
       </template>
