@@ -58,6 +58,10 @@
       "summary": "Sous {threshold} crédits, recharge jusqu’à {target}.",
       "title": "La recharge automatique est activée"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "Ouvrez la section Facturation pour vérifier que la recharge automatique est activée.",
+      "title": "Crédits ajoutés"
+    },
     "blocked": {
       "action": "Ouvrir le paiement",
       "body": "Votre navigateur a bloqué le nouvel onglet. Ouvrez le paiement pour finaliser le règlement.",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}, payé lors du paiement",
     "planLine": {
       "ended": "L’achat de crédits ne réactive pas votre abonnement Cloud. Réabonnez-vous pour exécuter des workflows sur Cloud.",
+      "ended_sales_managed": "L’achat de crédits ne redémarre pas votre plan Cloud. Contactez le service commercial pour le renouveler.",
       "free_runs": "L’achat de crédits ne démarre pas d’abonnement Cloud. Abonnez-vous pour continuer à exécuter des workflows une fois vos exécutions gratuites épuisées.",
       "no_plan": "L’achat de crédits ne démarre pas d’abonnement Cloud. Abonnez-vous pour exécuter des workflows sur Cloud."
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "Nous n’avons pas pu confirmer que votre réponse est parvenue à l’agent."
     },
     "assetFetchFailed": "Impossible de récupérer {name}",
+    "assetLoadFailed": "Impossible de charger {name}",
     "assetNotAttachable": "Il est possible de joindre des images, vidéos, fichiers audio, modèles 3D et fichiers texte",
     "attach": "Joindre un fichier",
     "attachFiles": "Téléverser des images ou des fichiers",
@@ -337,6 +343,36 @@
     "placeholder": "Décrivez ce que vous souhaitez créer",
     "placeholderWithoutSkills": "Décrivez ce que vous souhaitez créer",
     "previewAsset": "Aperçu de {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "Dites à Comfy Agent ce que vous aimeriez créer.",
+        "title": "Vous avez une idée en tête ?"
+      },
+      "firstOpen": {
+        "description": "Vous ne savez pas par où commencer ? Envoyez la question ci-dessous ou écrivez la vôtre.",
+        "prompt": "En quoi pouvez-vous m’aider ?",
+        "title": "Un peu d’aide pour vous lancer !"
+      },
+      "workflowOpen": {
+        "description": "Comfy Agent vous montre ce qu’il prévoit de faire avant toute modification de votre workflow.",
+        "prompt": "Aidez-moi à améliorer ce workflow",
+        "title": "Posez une question ou décrivez une modification."
+      }
+    },
     "recoveredTurnFailed": "L’agent n’a pas pu terminer cette réponse.",
     "reference": "Référence",
     "remove": "Supprimer",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "Impossible d'ouvrir le workflow cible.",
     "targetWorkflowUnavailable": "Le workflow cible n'est plus disponible.",
     "thinking": "Réflexion...",
+    "thinkingShortened": "Raisonnement raccourci : le reste était trop long pour être enregistré.",
     "title": "Comfy Agent",
     "toolFailed": "Échec de {tool}",
     "toolFailedSkill": "Échec du chargement de {skill}",
@@ -742,7 +779,7 @@
       "auth/account-exists-with-different-credential": "Nous n’avons pas pu vous connecter avec cette méthode. Essayez une autre option de connexion ou réinitialisez votre mot de passe pour continuer.",
       "auth/cancelled-popup-request": "Une autre fenêtre de connexion était déjà ouverte, celle-ci a donc été annulée. Veuillez réessayer.",
       "auth/email-already-in-use": "Nous n’avons pas pu créer de compte avec cette adresse e-mail. Essayez plutôt de vous connecter ou de réinitialiser votre mot de passe.",
-      "auth/invalid-credential": "Identifiants de connexion invalides. Veuillez vérifier votre e-mail et votre mot de passe.",
+      "auth/invalid-credential": "Identifiants de connexion non valides. Veuillez vérifier votre e-mail et votre mot de passe. Si vous vous êtes déjà connecté avec Google ou GitHub, utilisez plutôt cette méthode.",
       "auth/invalid-email": "Veuillez entrer une adresse e-mail valide.",
       "auth/network-request-failed": "Erreur réseau. Veuillez vérifier votre connexion et réessayer.",
       "auth/operation-not-allowed": "Cette méthode de connexion n'est actuellement pas prise en charge.",
@@ -803,6 +840,7 @@
       "userAvatar": "Avatar utilisateur"
     },
     "loginButton": {
+      "signInToUsePartnerNodes": "Connectez-vous pour utiliser les nœuds partenaires",
       "tooltipHelp": "Connectez-vous pour pouvoir utiliser les \"Nœuds API\"",
       "tooltipLearnMore": "En savoir plus..."
     },
@@ -909,6 +947,7 @@
   "billingHandoff": {
     "opening": "Ouverture du paiement…",
     "openingDetail": "Cela prend quelques secondes.",
+    "openingTabTitle": "Ouverture du paiement · Comfy",
     "signInAgain": "Reconnectez-vous pour ouvrir la facturation.",
     "superseded": "Votre compte ou espace de travail a changé pendant l’ouverture de la facturation. Réessayez."
   },
@@ -1378,6 +1417,8 @@
     "Search": "Recherche",
     "Shape": "Forme",
     "Shapes": "Formes",
+    "Show Downscaled Preview": "Afficher l’aperçu réduit",
+    "Show Full Resolution": "Afficher en pleine résolution",
     "Show Link": "Afficher le lien",
     "Show Links": "Afficher les liens",
     "Title": "Titre",
@@ -1481,6 +1522,7 @@
       "paymentProcessingFlyout": "Paiement en cours de traitement. Vous n’avez pas besoin de payer à nouveau.",
       "paymentProcessingTitle": "Un paiement de {amount} est toujours en cours de traitement",
       "paymentProcessingTitleNoAmount": "Un paiement est toujours en cours de traitement",
+      "planRequiredContactSales": "L’achat de crédits ne redémarre pas votre plan Cloud. Contactez le service commercial pour le renouveler.",
       "planRequiredFreeRuns": "L’achat de crédits ne démarre pas d’abonnement Cloud. Abonnez-vous pour continuer à exécuter des workflows une fois vos exécutions gratuites utilisées.",
       "planRequiredResubscribe": "L’achat de crédits ne redémarre pas votre abonnement Cloud. Réabonnez-vous pour exécuter des workflows sur Cloud.",
       "planRequiredSubscribe": "L’achat de crédits ne démarre pas d’abonnement Cloud. Abonnez-vous pour exécuter des workflows sur Cloud.",
@@ -1588,9 +1630,7 @@
     "LOAD_3D": "CHARGER_3D",
     "LORA_MODEL": "MODÈLE_LORA",
     "LOSS_MAP": "CARTE_PERTES",
-    "LUMA_CONCEPTS": "Concepts Luma",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "Référence Luma",
     "MASK": "MASQUE",
     "MESH": "MAILLAGE",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -1719,6 +1759,12 @@
     "reload": "Recharger",
     "retry": "Réessayer",
     "retryLabel": "Réessayer de démarrer {deployment}",
+    "runBlocked": {
+      "failed": "Ce déploiement a échoué. Cliquez pour basculer.",
+      "notReady": "Ce déploiement n’est pas prêt. Cliquez pour basculer.",
+      "starting": "Ce déploiement démarre. Cliquez pour basculer.",
+      "stopped": "Ce déploiement est arrêté. Cliquez pour basculer."
+    },
     "runOn": "Exécuter sur",
     "runningOn": "Exécuté sur",
     "runsThisWorkflow": "Exécute ce workflow",
@@ -2677,6 +2723,9 @@
     "resizeFromBottomRight": "Redimensionner depuis le coin inférieur droit",
     "resizeFromTopLeft": "Redimensionner depuis le coin supérieur gauche",
     "resizeFromTopRight": "Redimensionner depuis le coin supérieur droit",
+    "resizeNumberedPreviewHeight": "Redimensionner la hauteur de l’aperçu {index}",
+    "resizePreviewHeight": "Redimensionner la hauteur de l’aperçu",
+    "resizeWidgetHeight": "Redimensionner la hauteur de {name}",
     "restart": "Redémarrer",
     "restore": "Restaurer",
     "restoreDialog": "Restaurer la boîte de dialogue",
@@ -2766,6 +2815,7 @@
     "versionMismatchWarning": "Avertissement de compatibilité de version",
     "videoFailedToLoad": "Échec du chargement de la vidéo",
     "videoFilenameExtensionRequired": "Le nom du fichier vidéo doit se terminer par une extension telle que .mp4. Renommez le fichier et réessayez.",
+    "videoFormatNotSupported": "Cette vidéo ne peut pas être lue dans le navigateur.",
     "videoPreview": "Aperçu de la vidéo - Utilisez les flèches pour naviguer entre les vidéos",
     "viewGrid": "Vue grille",
     "viewImageOfTotal": "Voir l'image {index} sur {total}",
@@ -3743,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "Expérimental : Activer Nodes 2.0",
     "Export": "Exporter",
     "Export (API)": "Exporter (API)",
+    "Export (Workflow Image)": "Exporter (image du workflow)",
     "File": "Fichier",
     "Fit Group To Contents": "Ajuster le groupe au contenu",
     "Focus Mode": "Mode focus",
@@ -4146,6 +4197,7 @@
       "errorUnavailable": "Cette fonctionnalité n’est pas disponible pour le moment. Veuillez contacter le support si le problème persiste.",
       "genericError": "La demande OAuth a échoué. Veuillez redémarrer depuis l’application cliente.",
       "loading": "Chargement de la demande d’autorisation…",
+      "loginRequired": "Connectez-vous pour continuer.",
       "missingRequest": "Cette demande d’autorisation est manquante. Veuillez redémarrer depuis l’application cliente.",
       "noWorkspaces": "Aucun espace de travail éligible n’est disponible pour cette demande.",
       "notYou": "Ce n’est pas vous ?",
@@ -4154,6 +4206,7 @@
       "resourceFallback": "cette application",
       "sessionError": "Échec de l’établissement de la session. Veuillez réessayer.",
       "sessionErrorToastSummary": "Impossible de poursuivre la connexion OAuth",
+      "signInAgain": "Se reconnecter",
       "signedInAs": "Connecté en tant que",
       "subtitle": "Connectez-vous à {resource} pour continuer",
       "switchAccount": "Changer de compte",
@@ -4161,6 +4214,7 @@
       "unverifiedBadge": "Nom non vérifié",
       "unverifiedNotice": "Ce nom a été fourni par la personne ayant enregistré cette application. Après avoir continué, votre navigateur sera envoyé vers {host} : assurez-vous de le reconnaître.",
       "unverifiedNoticeNoHost": "Ce nom a été fourni par la personne ayant enregistré cette application et n'a pas été vérifié par Comfy.",
+      "verifiedNotice": "Nom non vérifié · Destination vérifiée : {platform} · vous retournerez à {host}",
       "workspaceLabel": "Espace de travail"
     },
     "scopes": {
@@ -4287,7 +4341,9 @@
     "agentMenu": {
       "copyPrompt": "Copier le prompt",
       "openInClaude": "Ouvrir dans Claude desktop",
-      "openInCodex": "Ouvrir dans Codex"
+      "openInCodex": "Ouvrir dans Codex",
+      "saveFirst": "Enregistrez ce workflow avant de l’envoyer à un agent.",
+      "useLocalAgent": "Utiliser l’agent local"
     },
     "checkFailed": "Impossible de vérifier ce workflow sur Comfy Cloud. Réessayez.",
     "cloudButton": {
@@ -4296,10 +4352,11 @@
     },
     "deploySetup": "Déployez votre configuration sur Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Cela crée un déploiement de votre configuration sur Comfy Cloud. Vous le gérez depuis Comfy Platform.",
-      "pointApi": "Appelez-le depuis votre produit en tant qu’API à mise à l’échelle automatique",
-      "pointGpu": "Travaillez dans ComfyUI sur le GPU de votre choix",
-      "pointNodes": "Apportez vos nœuds personnalisés et vos modèles"
+      "body": "Déployez votre configuration locale sur Comfy Cloud sous forme de Build, puis utilisez-la dans ComfyUI ou appelez-la comme une API à mise à l’échelle automatique.",
+      "pointGpu": "Exécutez sur de puissants GPU dans le cloud",
+      "pointNodes": "Apportez vos nœuds personnalisés et vos modèles",
+      "pointPricing": "Payez uniquement lorsque vos workers GPU sont actifs, plus le stockage",
+      "title": "Exécutez vos workflows sur Comfy Cloud"
     },
     "deployWithAgent": "Déployer avec votre agent",
     "desktopTransferFailed": "Votre workflow n’a pas pu être transféré. Cliquez de nouveau sur Ouvrir dans Comfy Cloud dans Desktop.",
@@ -4308,6 +4365,7 @@
     "handoffFailed": "Impossible d’ouvrir le workflow depuis ComfyUI sur votre ordinateur",
     "handoffMissing": "Votre workflow n’est pas arrivé",
     "handoffMissingDetail": "ComfyUI cesse d’attendre après 10 minutes. Cliquez de nouveau sur Ouvrir dans Comfy Cloud dans ComfyUI.",
+    "missingLocalModelLoader": "Impossible de lire les paramètres du modèle pour {nodeType}. Installez le pack de nœuds qui le fournit, puis réessayez.",
     "missingModels": {
       "title": "{count} modèle manquant | {count} modèles manquants",
       "unavailable": "Ajoutez ces modèles à Comfy Cloud pour exécuter ce workflow. Les envois depuis cette instance de ComfyUI ne sont actuellement pas disponibles."
@@ -4381,13 +4439,17 @@
     "balanceUnavailable": "Impossible de charger votre solde.",
     "billingSettings": "Paramètres de facturation",
     "credits": "Crédits",
+    "paymentProcessing": "Traitement du paiement…",
+    "planCredits": "Crédits du forfait",
     "planStatus": {
       "ended": "Forfait terminé",
       "noPlan": "Aucun forfait",
       "paused": "En pause",
       "paymentDue": "Paiement dû"
     },
-    "switchWorkspace": "Changer d’espace de travail"
+    "purchasesStopped": "L’achat de crédits n’est pas disponible pour le moment",
+    "switchWorkspace": "Changer d’espace de travail",
+    "topUpCredits": "Recharger des crédits"
   },
   "progressToast": {
     "allDownloadsCompleted": "Tous les téléchargements sont terminés",
@@ -5201,6 +5263,16 @@
     "triggerLinePlaceholder": "Charge-moi lorsque l’utilisateur pose une question sur l’agrandissement",
     "yourPacks": "Vos packs"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Accédez à ce sous-graphe via un nœud de sous-graphe pour modifier ses valeurs.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "Valeur liée · lecture seule",
+    "locateSource": "Localiser le nœud source",
+    "sharedSource": "Source partagée",
+    "sourceHint": "La modification de cette source modifie également les autres entrées qui y sont connectées.",
+    "unavailable": "Valeur indisponible"
+  },
   "subgraphStore": {
     "blueprintName": "Nom du sous-graphe",
     "blueprintNamePrompt": "Nom du sous-graphe :",
@@ -5450,18 +5522,28 @@
       "subscriptionChangeInProgress": "Vous avez déjà une modification de forfait prévue. Vous pourrez choisir un autre forfait après sa prise d’effet.",
       "subscriptionChangeScheduled": "La modification de forfait prévue prendra effet le {date}. Vous pourrez choisir un autre forfait après cette date."
     },
+    "planWithPeriod": {
+      "annual": "{plan} annuel",
+      "monthly": "{plan} mensuel"
+    },
     "plansAndCredits": "Forfaits et crédits",
     "plansAndPricing": "Forfaits & tarifs",
     "plansForWorkspace": "Formules pour {workspace}",
     "plansLink": {
       "blockedBody": "Votre navigateur a bloqué le nouvel onglet. Ouvrez la page des forfaits pour choisir un forfait.",
       "blockedTitle": "La page des forfaits ne s’est pas ouverte",
+      "checkoutUnfinishedBody": "Ouvrez la page des plans pour réessayer. Votre navigateur a empêché son ouverture automatique.",
+      "checkoutUnfinishedTitle": "Votre paiement n’a pas été finalisé",
       "choosePlan": "Choisir un forfait",
       "openPlansPage": "Ouvrir la page des forfaits",
       "runRefusedEnded": "Votre forfait a pris fin. Réabonnez-vous pour continuer à exécuter des workflows sur le Cloud.",
       "runRefusedFreeRunsUsed": "Vous avez utilisé vos {total} exécutions gratuites. Abonnez-vous pour continuer à exécuter des workflows sur le Cloud.",
+      "runRefusedManualBlock": "Cet espace de travail a été bloqué. Contactez l’assistance.",
       "runRefusedNoPlan": "L’exécution de workflows sur le Cloud nécessite un forfait.",
-      "runRefusedTitle": "Votre workflow ne s’est pas exécuté"
+      "runRefusedProjectCap": "Ce projet a atteint sa limite de dépenses.",
+      "runRefusedTitle": "Votre workflow ne s’est pas exécuté",
+      "runRefusedUserCap": "Vous avez atteint votre limite de dépenses dans cet espace de travail.",
+      "runRefusedWorkspaceCap": "Cet espace de travail a atteint sa limite de dépenses."
     },
     "plansLoadFailed": "Échec du chargement des forfaits",
     "prepaidCreditsInfo": "Crédits achetés séparément qui n'expirent pas",
@@ -5899,6 +5981,7 @@
     "failedToConvertToSubgraph": "Échec de la conversion des éléments en sous-graphe",
     "failedToCreateCustomer": "Échec de la création du client : {error}",
     "failedToExportModel": "Échec de l'exportation du modèle en {format}",
+    "failedToExportWorkflowImage": "Échec de l’exportation de l’image du workflow",
     "failedToFetchLogs": "Échec de la récupération des journaux du serveur",
     "failedToFetchSubscription": "Échec de la récupération du statut d'abonnement : {error}",
     "failedToInitializeCameraAngleViewer": "Échec de l’initialisation de la visionneuse d’angle de caméra. Essayez de recharger la page.",
@@ -6090,12 +6173,14 @@
     "undo": "Annuler"
   },
   "widgets": {
+    "backFromFolder": "Retour : {name}",
     "boolean": {
       "false": "faux",
       "true": "vrai"
     },
     "node2only": "Node 2.0 uniquement",
     "precisionLimit": "Incrémentation/décrémentation désactivée : la valeur dépasse la limite de précision de JavaScript (±2^53)",
+    "selectFolder": "Dossier : {name}",
     "selectModel": "Sélectionner un modèle",
     "uploadSelect": {
       "maxSelectionReached": "Limite maximale de sélection atteinte",
@@ -6268,7 +6353,15 @@
         "salesMemberBody": "Demandez au propriétaire de votre espace de travail de contacter le service commercial.",
         "teamBody": "Réabonnez-vous pour exécuter des workflows et récupérer des crédits partagés.",
         "teamMemberBody": "Demandez au propriétaire de votre espace de travail de se réabonner.",
+        "teamNotCreatorBody": "Le plan de cet espace de travail est terminé. Demandez à son créateur de se réabonner.",
         "teamTitle": "Votre forfait Team a pris fin le {date}"
+      },
+      "planNotStarted": {
+        "body": "Terminez le paiement pour le démarrer.",
+        "bodyUnavailable": "Votre plan commencera une fois le paiement effectué.",
+        "title": "Votre plan {plan} n’a pas commencé",
+        "titleNoPlan": "Votre plan n’a pas commencé",
+        "viewPlans": "Voir dans les plans"
       },
       "updatePayment": "Mettre à jour le paiement"
     },
@@ -6353,6 +6446,7 @@
         }
       },
       "loadError": "Nous n’avons pas pu charger votre forfait.",
+      "localLoadError": "Nous n’avons pas pu charger vos informations de facturation. Vérifiez votre connexion, puis réessayez.",
       "plan": {
         "actions": {
           "choosePlan": "Choisir un forfait",
@@ -6376,6 +6470,7 @@
           "freeRunsLeft": "Il vous reste {remaining} exécutions gratuites sur {total}. Abonnez-vous pour continuer à exécuter des workflows après cela.",
           "freeRunsUsed": "Vous avez utilisé les {total} exécutions gratuites. Abonnez-vous pour continuer à exécuter des workflows.",
           "line": "Abonnez-vous pour exécuter des workflows sur le Cloud.",
+          "localLine": "Abonnez-vous pour recevoir des crédits mensuels. Vous pouvez également ajouter des crédits à tout moment.",
           "title": "Cet espace de travail n’a aucun forfait actif"
         },
         "paused": "En pause. Le paiement du renouvellement n’a pas été effectué.",
@@ -6660,16 +6755,22 @@
   "workspaceSwitcher": {
     "cannotCreateWorkspace": "Vous ne pouvez pas créer d’espace de travail avec ce compte pour le moment.",
     "createWorkspace": "Créer un nouvel espace de travail",
+    "createWorkspaceAction": "Créer un espace de travail",
     "failedToSwitch": "Échec du changement d’espace de travail",
+    "loadFailed": "Impossible de charger vos espaces de travail.",
     "managedByOrganization": "Votre organisation gère vos espaces de travail, vous ne pouvez donc pas en créer.",
     "maxWorkspacesReached": "Vous ne pouvez posséder que {max} espace de travail. Supprimez-le pour en créer un nouveau. | Vous ne pouvez posséder que {max} espaces de travail. Supprimez-en un pour en créer un nouveau.",
+    "noResults": "Aucun espace de travail ne correspond à « {query} ».",
+    "ownedLimit": "Vous pouvez posséder jusqu’à {max}.",
     "personal": "Personnel",
     "roleMember": "Membre",
     "roleOwner": "Propriétaire",
     "scopeCaption": "Les espaces de travail déterminent uniquement les crédits que vous utilisez.",
     "scopeTooltip": "Les exécutions qui utilisent des nœuds partenaires dépensent les crédits de cet espace de travail. Contrairement au Cloud, chaque espace de travail enregistre dans votre dossier de sortie habituel.",
+    "searchPlaceholder": "Rechercher un espace de travail...",
     "subscribe": "S’abonner",
-    "switchWorkspace": "Changer d’espace de travail"
+    "switchWorkspace": "Changer d’espace de travail",
+    "tryAgain": "Réessayer"
   },
   "zoomControls": {
     "hideMinimap": "Masquer la mini-carte",

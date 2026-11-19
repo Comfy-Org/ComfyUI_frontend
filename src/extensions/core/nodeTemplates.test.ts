@@ -1,6 +1,7 @@
 import { expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useApp } from '@/scripts/appInstance'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
@@ -37,6 +38,7 @@ async function importNodeTemplates(getUserData: () => Promise<Response>) {
   document.body.replaceChildren()
   const { api } = await import('@/scripts/api')
   const { app } = await import('@/scripts/app')
+  vi.mocked(useApp().canvas.copyToClipboard).mockReturnValue('{"nodes":[]}')
   const { reportError } = await import('@comfyorg/telemetry/reportError')
   vi.mocked(api.getUserData).mockImplementation(getUserData)
   const { nodeTemplatesExtension: extension } = await import('./nodeTemplates')
@@ -142,7 +144,7 @@ it('keeps stored templates when saving before the initial load finishes', async 
   )
   expect(written).toEqual([
     { name: 'Stored', data: '{}' },
-    { name: 'New template', data: '{}' }
+    { name: 'New template', data: '{"nodes":[]}' }
   ])
 })
 
@@ -167,7 +169,7 @@ it('keeps both templates when two saves overlap', async () => {
     String(vi.mocked(api.storeUserData).mock.calls.at(-1)?.[1])
   )
   expect(written).toEqual([
-    { name: 'First', data: '{}' },
-    { name: 'Second', data: '{}' }
+    { name: 'First', data: '{"nodes":[]}' },
+    { name: 'Second', data: '{"nodes":[]}' }
   ])
 })

@@ -30,11 +30,8 @@
         <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
       </Button>
       <Button
-        v-else-if="action && plansAvailable"
-        as="a"
-        :href="plansHref"
-        target="_blank"
-        rel="noopener"
+        v-else-if="action"
+        v-bind="plansButton"
         :variant="
           action === 'manage' || addCreditsVariant === 'inverted'
             ? 'secondary'
@@ -42,7 +39,7 @@
         "
         size="md"
         class="shrink-0 no-underline"
-        @click="trackPlans"
+        @click="openPlans"
       >
         {{ $t(`workspacePanel.billingTab.plan.actions.${action}`) }}
         <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
@@ -61,7 +58,8 @@ import {
   CONTACT_SALES_URL,
   formatPlanDate
 } from '@/platform/billing/legacy160/platform/billing/components/billingTab/planRow'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformPlansLink } from '@/platform/billing/composables/usePlatformHandoff'
+import { isCloud } from '@/platform/distribution/types'
 import type {
   PlanRowAction,
   PlanRowState
@@ -81,11 +79,7 @@ const {
   addCreditsVariant?: 'inverted' | 'secondary'
 }>()
 
-const {
-  href: plansHref,
-  track: trackPlans,
-  available: plansAvailable
-} = usePlatformHandoff('/profile/billing/plans', { target: 'plans' })
+const { button: plansButton, open: openPlans } = usePlatformPlansLink()
 
 const { t, locale } = useI18n()
 
@@ -127,7 +121,7 @@ function activeLine(state: Extract<PlanRowState, { kind: 'active' }>) {
 function noPlanLine(state: Extract<PlanRowState, { kind: 'noPlan' }>) {
   const key = 'workspacePanel.billingTab.plan.noPlan'
   if (!canManageSubscription) return ''
-  if (!state.freeRuns) return t(`${key}.line`)
+  if (!state.freeRuns) return t(isCloud ? `${key}.line` : `${key}.localLine`)
   const { remaining, total } = state.freeRuns
   return remaining > 0
     ? t(`${key}.freeRunsLeft`, { remaining, total })

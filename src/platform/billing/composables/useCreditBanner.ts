@@ -26,7 +26,7 @@ import {
   isTopUpDeniedPastDue,
   usePaymentRecoveryDialog
 } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 import { isCloud } from '@/platform/distribution/types'
 
 type CreditAction = 'addCredits' | 'updatePayment' | null
@@ -53,10 +53,10 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   const outOfCreditsDismissed = ref(false)
   const lowCreditsDismissed = ref(false)
 
-  const { subscription, balance, isTeamPlan } = billing
+  const { subscription, subscriptionState, balance, isTeamPlan } = billing
 
   const autoTopUp = useAutoTopUpBannerKind()
-  const { href, track, available } = usePlatformHandoff('/profile/billing', {
+  const { href, open } = usePlatformBillingLink('/profile/billing', {
     target: 'auto_top_up',
     action: 'update_payment'
   })
@@ -69,6 +69,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
       unifiedBillingSettingsEnabled: flags.unifiedBillingSettingsEnabled,
       isCloud,
       isActive: subscription.value?.isActive === true,
+      subscriptionState: subscriptionState.value,
       hasFunds: subscription.value?.hasFunds ?? null,
       lowBalance: balance.value?.lowBalance,
       outOfCreditsDismissed: outOfCreditsDismissed.value,
@@ -227,9 +228,8 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
         kind: 'autoTopUp',
         title: t(`${bs}.${shown}.title`),
         body: t(`${bs}.${shown}.body`),
-        ...(available.value
-          ? { action: 'updatePayment', href: href.value }
-          : { action: null, href: null })
+        action: 'updatePayment',
+        href: href.value ?? null
       }
     }
     if (shown === 'outOfCredits') return outOfCreditsView()
@@ -246,7 +246,9 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
       contactSupport: t(`${bs}.parked.contactSupport`),
       resumePlan: t(`${bs}.ending.reactivate`),
       choosePlan: t('workspacePanel.billingTab.plan.actions.choosePlan'),
-      contactSales: t(`${bs}.ending.contactSales`)
+      contactSales: t(`${bs}.ending.contactSales`),
+      finishPayment: t('subscription.signupPaymentRecovery.finishPayment'),
+      viewPlans: t(`${bs}.planNotStarted.viewPlans`)
     }
   }))
 
@@ -261,7 +263,7 @@ export function useCreditBanner(suppressed: MaybeRefOrGetter<boolean>) {
   }
 
   function act(action: BillingBannerAction) {
-    if (view.value?.kind === 'autoTopUp') track()
+    if (view.value?.kind === 'autoTopUp') open()
     else if (action === 'addCredits') void showTopUpCreditsDialog()
     else if (action === 'updatePayment') void updatePayment()
   }

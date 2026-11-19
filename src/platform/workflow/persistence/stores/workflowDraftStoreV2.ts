@@ -137,18 +137,50 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     return writeIndex(workspaceId, index)
   }
 
-  /**
-   * Saves a draft (data + metadata).
-   * Primes index cache, writes payload, then persists updated index.
-   */
-  function saveDraft(path: string, data: string, meta: DraftMeta): boolean {
+  function commitDraftIndex(
+    index: DraftIndexV2,
+    previousIndex: DraftIndexV2,
+    draftKey: string,
+    previousPayload: DraftPayloadV2 | null
+  ): boolean {
+    let written = false
+    try {
+      written = persistIndex(index)
+      return written
+    } finally {
+      if (!written) {
+        const workspaceId = currentWorkspaceId()
+        if (previousPayload)
+          writePayload(workspaceId, draftKey, previousPayload)
+        else deletePayload(workspaceId, draftKey)
+        persistIndex(previousIndex)
+      }
+    }
+  }
+
+  function saveDraft(
+    path: string,
+    data: string,
+    meta: DraftMeta,
+    { evict = true } = {}
+  ): boolean {
     if (!isStorageAvailable()) return false
 
     const workspaceId = currentWorkspaceId()
     const draftKey = hashPath(path)
     const now = Date.now()
 
-    const index = loadIndex()
+    const index = evict
+      ? loadIndex()
+      : (readIndex(workspaceId) ?? createEmptyIndex())
+    const { index: newIndex, evicted } = upsertEntry(
+      index,
+      path,
+      { ...meta, updatedAt: now },
+      MAX_DRAFTS
+    )
+    if (!evict && evicted.length > 0) return false
+    const previousPayload = readPayload(workspaceId, draftKey)
 
     const payloadWritten = writePayload(
       workspaceId,
@@ -157,20 +189,11 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     )
 
     if (!payloadWritten) {
-      return handleQuotaExceeded(path, data, meta)
+      return evict && handleQuotaExceeded(path, data, meta)
     }
-    const { index: newIndex, evicted } = upsertEntry(
-      index,
-      path,
-      { ...meta, updatedAt: now },
-      MAX_DRAFTS
-    )
 
-    if (!persistIndex(newIndex)) {
-      deletePayload(workspaceId, draftKey)
-      persistIndex(index)
+    if (!commitDraftIndex(newIndex, index, draftKey, previousPayload))
       return false
-    }
 
     deletePayloads(workspaceId, evicted)
     deleteLineages(workspaceId, evicted)
@@ -345,10 +368,10 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     }
   }
 
-  /**
-   * Gets draft data by path.
-   */
-  function getDraft(path: string): {
+  function getDraft(
+    path: string,
+    { fresh = false } = {}
+  ): {
     data: string
     name: string
     isTemporary: boolean
@@ -356,14 +379,16 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     lineage?: DraftLineage
   } | null {
     const workspaceId = currentWorkspaceId()
-    const index = loadIndex()
+    const index = fresh ? readIndex(workspaceId) : loadIndex()
+    if (!index) return null
     const entry = getEntryByPath(index, path)
-    if (!entry) return null
+    if (entry?.path !== path) return null
 
     const draftKey = hashPath(path)
+    if (!index.order.includes(draftKey)) return null
     const payload = readPayload(workspaceId, draftKey)
     if (!payload) {
-      removeDraft(path)
+      if (!fresh) removeDraft(path)
       return null
     }
     if (payload.lineage)
