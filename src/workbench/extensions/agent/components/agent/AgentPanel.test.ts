@@ -756,6 +756,37 @@ describe('AgentPanel', () => {
     expect(emitted().newChat).toEqual([['new_chat_button']])
   })
 
+  it('shows the unavailable notice with New chat when an existing chat is detached from a closed tab, but not while restoring', async () => {
+    const pinia = getActivePinia()
+    assert.exists(pinia)
+    const { rerender, emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        sessionId: 'th-closed-tab',
+        historyGroups: createHistoryGroups(),
+        workflowDetached: true,
+        targetRestoring: true
+      },
+      global: { plugins: [pinia, i18n] }
+    })
+
+    expect(
+      screen.queryByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).toBeNull()
+
+    await rerender({ targetRestoring: false })
+
+    expect(
+      screen.getByText(i18n.global.t('agent.targetWorkflowUnavailable'))
+    ).toBeVisible()
+    await userEvent.click(
+      within(screen.getByRole('note')).getByRole('button', {
+        name: i18n.global.t('agent.startNewChat')
+      })
+    )
+    expect(emitted().newChat).toEqual([['new_chat_button']])
+  })
+
   it('shows the mismatch notice and emits showTarget when viewing a different workflow', async () => {
     const { emitted } = render(AgentPanel, {
       props: {

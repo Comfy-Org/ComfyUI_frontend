@@ -37,51 +37,42 @@ const { t } = useI18n()
 
 const openingTabChat = computed(() => openingWorkflowName !== undefined)
 
+const retryImmediate = ref(false)
 const {
   ready: loadingStateReady,
   start: startLoadingDelay,
   stop: stopLoadingDelay
 } = useTimeout(LOADING_STATE_DELAY_MS, { controls: true, immediate: false })
-watch(
-  openingTabChat,
-  (opening) => {
-    if (opening) startLoadingDelay()
-    else stopLoadingDelay()
-  },
-  { immediate: true, flush: 'sync' }
-)
-
-const retryImmediate = ref(false)
-const {
-  ready: landingDelayReady,
-  start: startLandingDelay,
-  stop: stopLandingDelay
-} = useTimeout(LOADING_STATE_DELAY_MS, { controls: true, immediate: false })
 const showLandingLoading = computed(
   () =>
     landing?.status === 'loading' &&
-    (landingDelayReady.value || retryImmediate.value)
+    (loadingStateReady.value || retryImmediate.value)
 )
 watch(
-  () => landing,
-  (next, prev) => {
-    if (next === null) {
-      retryImmediate.value = false
-      stopLandingDelay()
+  [openingTabChat, () => landing],
+  ([opening, nextLanding], [prevOpening, prevLanding] = [false, undefined]) => {
+    if (opening) {
+      if (!prevOpening) startLoadingDelay()
       return
     }
-    if (next.status === 'failed') {
-      stopLandingDelay()
+    if (nextLanding === null) {
+      retryImmediate.value = false
+      stopLoadingDelay()
+      return
+    }
+    if (nextLanding.status === 'failed') {
+      stopLoadingDelay()
       retryImmediate.value = true
       return
     }
     if (
-      prev === null ||
-      prev === undefined ||
-      prev.workflowName !== next.workflowName
+      prevOpening ||
+      prevLanding === null ||
+      prevLanding === undefined ||
+      prevLanding.workflowName !== nextLanding.workflowName
     ) {
       retryImmediate.value = false
-      startLandingDelay()
+      startLoadingDelay()
     }
   },
   { immediate: true, flush: 'sync' }

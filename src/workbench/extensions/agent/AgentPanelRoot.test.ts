@@ -8300,15 +8300,11 @@ describe('AgentPanelRoot history', () => {
         expect(screen.getByRole('textbox')).toHaveTextContent('draft on second')
         expect(userPrompts()).toEqual([])
 
-        vi.mocked(useWorkflowService().openWorkflow).mockClear()
         useToast().toasts[0].actions[0].onClick()
 
         await vi.waitFor(() => {
           expect(workflowStore.activeWorkflow?.path).toBe(first.path)
           expect(userPrompts()).toEqual(['will fail on first'])
-        })
-        expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(first, {
-          initiator: 'user'
         })
         expect(useToast().toasts).toHaveLength(0)
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(first.path)
@@ -8385,6 +8381,53 @@ describe('AgentPanelRoot history', () => {
         )
         expect(workflowStore.activeWorkflow.path).toBe(second.path)
         expect(useToast().toasts).toHaveLength(0)
+        expect(await screen.findByTestId('pending-send-error')).toBeVisible()
+      })
+
+      it('O0-15: pressing New chat while viewing a thread does not discard a failed offscreen blank send on that tab so Show still opens it', async () => {
+        const first = addTab('workflows/first.json')
+        workflowStore.activeWorkflow = first
+        let failFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first-existing',
+              title: 'Existing first chat',
+              workflow_id: 'wf-first',
+              last_message_at: '2026-06-15T10:00:00Z'
+            })
+          ],
+          { 'th-first-existing': { workflowId: 'wf-first' } },
+          {
+            post: () =>
+              new Promise<Response>((_, reject) => {
+                failFirstPost = () => reject(new TypeError('Failed to fetch'))
+              })
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await sendFromComposer('blank send on first')
+
+        await openHistory()
+        await userEvent.click(
+          await screen.findByRole('button', { name: /Existing first chat/ })
+        )
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['Prompt in th-first-existing'])
+        )
+
+        failFirstPost()
+        await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        expect(userPrompts()).toEqual([])
+
+        useToast().toasts[0].actions[0].onClick()
+        await vi.waitFor(() =>
+          expect(userPrompts()).toEqual(['blank send on first'])
+        )
         expect(await screen.findByTestId('pending-send-error')).toBeVisible()
       })
 

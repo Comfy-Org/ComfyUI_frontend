@@ -79,7 +79,6 @@ test.describe(
       }) => {
         await page.clock.install()
         await agentPanel.open()
-        await agentPanel.selectWorkflow()
         await page.clock.pauseAt(Date.now() + 1_000)
 
         await agentPanel.composer.fill(prompt)

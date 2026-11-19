@@ -111,7 +111,7 @@ export function useAgentWorkflowSelection({
   )
   let composerContextGeneration = 0
 
-  const savingReference = ref(false)
+  const savingReferenceDraftKey = ref<string | null>(null)
   let restorationGeneration = 0
 
   function commitWorkflowTarget(
@@ -170,10 +170,19 @@ export function useAgentWorkflowSelection({
     toast.warning(t('shareWorkflow.saveFailedTitle'), { description: detail })
   }
 
+  function savingReferenceFor(draftKey: string): boolean {
+    return savingReferenceDraftKey.value === draftKey
+  }
+
+  function rekeySavingReference(from: string, to: string): void {
+    if (savingReferenceDraftKey.value === from)
+      savingReferenceDraftKey.value = to
+  }
+
   async function onSelectWorkflowReference(
-    option: WorkflowReferenceOption
+    option: WorkflowReferenceOption,
+    draftKey: string
   ): Promise<WorkflowReferenceMetadata | undefined> {
-    if (savingReference.value) return undefined
     if (option.id !== undefined) {
       if (
         option.id === editableWorkflowId.value ||
@@ -182,9 +191,10 @@ export function useAgentWorkflowSelection({
         return undefined
       return option
     }
+    if (savingReferenceDraftKey.value !== null) return undefined
     const tab = workflowStore.getWorkflowByPath(option.tabPath)
     if (!tab || !workflowStore.openWorkflows.includes(tab)) return undefined
-    savingReference.value = true
+    savingReferenceDraftKey.value = draftKey
     const generation = composerContextGeneration
     const isCurrent = () =>
       generation === composerContextGeneration &&
@@ -209,12 +219,12 @@ export function useAgentWorkflowSelection({
         )
       return undefined
     } finally {
-      savingReference.value = false
+      savingReferenceDraftKey.value = null
     }
   }
 
   function onRequestWorkflowReferences(): void {
-    if (!savingReference.value) void refreshCloudWorkflowIds()
+    if (savingReferenceDraftKey.value === null) void refreshCloudWorkflowIds()
   }
 
   /**
@@ -356,7 +366,8 @@ export function useAgentWorkflowSelection({
   onScopeDispose(cancelSelection)
 
   return {
-    savingReference: computed(() => savingReference.value),
+    savingReferenceFor,
+    rekeySavingReference,
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,
     adoptTarget,

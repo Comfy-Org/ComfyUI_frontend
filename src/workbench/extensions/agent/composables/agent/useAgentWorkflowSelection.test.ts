@@ -928,10 +928,13 @@ describe('picking a workflow reference', () => {
     )
 
     expect(
-      await selection.selectReference({
-        name: 'Restored',
-        tabPath: restored.path
-      })
+      await selection.selectReference(
+        {
+          name: 'Restored',
+          tabPath: restored.path
+        },
+        'thread:1'
+      )
     ).toMatchObject({ id: 'wf-restored' })
 
     expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
@@ -962,13 +965,82 @@ describe('picking a workflow reference', () => {
     )
 
     expect(
-      await selection.selectReference({
-        name: 'Reference',
-        tabPath: restored.path
-      })
+      await selection.selectReference(
+        {
+          name: 'Reference',
+          tabPath: restored.path
+        },
+        'thread:1'
+      )
     ).toMatchObject({ id: 'wf-reference' })
 
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('tracks saving state per draft, allows already-saved picks, and rekeys when a blank chat becomes a thread', async () => {
+    const { selection, workflows, listCloudWorkflows } = setup()
+    const scratch = workflows.createTemporary('Scratch.json', {
+      ...blankGraph,
+      id: '7d2b4e6f-1a3c-4b5d-8e9f-0a1b2c3d4e5f'
+    })
+    const otherScratch = workflows.createTemporary('Other.json', {
+      ...blankGraph,
+      id: '8e3c5f7a-2b4d-5c6e-9f0a-1b2c3d4e5f60'
+    })
+    workflows.openWorkflowsInBackground({
+      right: [scratch.path, otherScratch.path]
+    })
+    let finishSave!: () => void
+    let saved = false
+    vi.spyOn(scratch, 'isTemporary', 'get').mockImplementation(() => !saved)
+    vi.mocked(useWorkflowService().saveWorkflowAs).mockImplementationOnce(
+      () =>
+        new Promise<boolean>((resolve) => {
+          finishSave = () => {
+            saved = true
+            resolve(true)
+          }
+        })
+    )
+    listCloudWorkflows.mockImplementation(async () =>
+      listing([
+        { id: 'wf-current', name: 'current' },
+        { id: 'wf-saved', name: 'saved' },
+        ...(saved ? [{ id: 'wf-scratch', name: 'Scratch' }] : [])
+      ])
+    )
+
+    const saving = selection.selectReference(
+      { name: 'Scratch', tabPath: scratch.path },
+      'blank:tab-a'
+    )
+    await waitFor(() => expect(finishSave).toBeTypeOf('function'))
+    expect(selection.savingReferenceFor('blank:tab-a')).toBe(true)
+    expect(selection.savingReferenceFor('thread:b')).toBe(false)
+
+    expect(
+      await selection.selectReference(
+        { id: 'wf-saved', name: 'saved' },
+        'thread:b'
+      )
+    ).toEqual({ id: 'wf-saved', name: 'saved' })
+    expect(selection.savingReferenceFor('blank:tab-a')).toBe(true)
+
+    expect(
+      await selection.selectReference(
+        { name: 'Other', tabPath: otherScratch.path },
+        'thread:b'
+      )
+    ).toBeUndefined()
+    expect(selection.savingReferenceFor('blank:tab-a')).toBe(true)
+
+    selection.rekeySavingReference('blank:tab-a', 'thread:a')
+    expect(selection.savingReferenceFor('blank:tab-a')).toBe(false)
+    expect(selection.savingReferenceFor('thread:a')).toBe(true)
+
+    finishSave()
+    expect(await saving).toMatchObject({ id: 'wf-scratch' })
+    expect(selection.savingReferenceFor('thread:a')).toBe(false)
   })
 })

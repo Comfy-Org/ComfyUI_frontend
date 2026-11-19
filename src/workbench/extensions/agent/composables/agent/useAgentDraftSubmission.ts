@@ -17,6 +17,7 @@ import type { WorkflowReference } from '@/workbench/extensions/agent/types/workf
 import type { AgentStarterPromptSource } from '@/workbench/extensions/agent/utils/starterPrompts'
 import type { SelectedNode, useCanvasSelection } from './useCanvasSelection'
 import { selectedNodeKey } from './useCanvasSelection'
+import { draftKeyForOrigin } from './useAgentChatDrafts'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 export type DraftSendOutcome = 'sent' | 'withdrawn' | 'failed'
@@ -80,16 +81,6 @@ function toUserAttachments(
       ? { kind: mediaKind }
       : {})
   }))
-}
-
-function draftKeyForOrigin(
-  origin: ReturnType<
-    ReturnType<typeof useAgentConversationStore>['currentOrigin']
-  >
-): string {
-  return origin.kind === 'blank'
-    ? origin.blankChatId
-    : `thread:${origin.threadId}`
 }
 
 export function useAgentDraftSubmission(

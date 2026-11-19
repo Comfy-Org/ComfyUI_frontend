@@ -43,6 +43,7 @@ export function useAgentWorkflowResolver({
   const listedCloudIds = ref<ReadonlySet<string>>(new Set())
   const listingComplete = ref(false)
   let refreshGeneration = 0
+  let latestRefreshPromise: Promise<CloudWorkflowRefreshOutcome> | null = null
   const cloudIdsByName = computed(() => {
     const counts = new Map<string, number>()
     for (const { name } of cloudIndex.value)
@@ -54,25 +55,31 @@ export function useAgentWorkflowResolver({
     )
   })
 
-  async function refreshCloudWorkflowListing(): Promise<CloudWorkflowRefreshOutcome> {
+  function refreshCloudWorkflowListing(): Promise<CloudWorkflowRefreshOutcome> {
     const generation = ++refreshGeneration
-    try {
-      const { entries, complete } = await listCloudWorkflows()
-      if (generation !== refreshGeneration) return 'failed'
-      listedCloudIds.value = new Set(entries.map(({ id }) => id))
-      listingComplete.value = complete
-      cloudIndex.value = entries.flatMap(({ id, name }) =>
-        name === undefined ? [] : [{ id, name }]
-      )
-      return complete ? 'complete' : 'incomplete'
-    } catch (error) {
-      if (generation !== refreshGeneration) return 'failed'
-      reportError(error, {
-        surface: 'agent',
-        errorType: 'agent_cloud_workflow_ids_refresh_failed'
-      })
-      return 'failed'
-    }
+    const run = (async (): Promise<CloudWorkflowRefreshOutcome> => {
+      try {
+        const { entries, complete } = await listCloudWorkflows()
+        if (generation !== refreshGeneration)
+          return await (latestRefreshPromise ?? Promise.resolve('failed'))
+        listedCloudIds.value = new Set(entries.map(({ id }) => id))
+        listingComplete.value = complete
+        cloudIndex.value = entries.flatMap(({ id, name }) =>
+          name === undefined ? [] : [{ id, name }]
+        )
+        return complete ? 'complete' : 'incomplete'
+      } catch (error) {
+        if (generation !== refreshGeneration)
+          return await (latestRefreshPromise ?? Promise.resolve('failed'))
+        reportError(error, {
+          surface: 'agent',
+          errorType: 'agent_cloud_workflow_ids_refresh_failed'
+        })
+        return 'failed'
+      }
+    })()
+    latestRefreshPromise = run
+    return run
   }
 
   async function refreshCloudWorkflowIds(): Promise<boolean> {

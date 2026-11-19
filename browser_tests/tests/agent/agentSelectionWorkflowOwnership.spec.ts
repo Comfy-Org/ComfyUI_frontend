@@ -12,7 +12,6 @@ import {
 } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import type { WorkspaceStore } from '@e2e/types/globals'
 
 test.use({
   connectWebSocketToServer: false,
@@ -68,11 +67,7 @@ test(
     await panel.getByRole('menuitem', { name: /Color balance/ }).click()
     await expect(editor).toHaveText('Warm up Color balance #12 ')
 
-    await page.evaluate(async () => {
-      const store = (window.app!.extensionManager as WorkspaceStore).workflow
-      const blank = store.createTemporary('Unsaved Workflow (2).json')
-      await store.openWorkflow(blank)
-    })
+    await workflowSelection.openTemporaryTab('Unsaved Workflow (2).json')
     await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
     await expect(panel.getByRole('note')).toContainText(
       enMessages.agent.viewingDifferentWorkflow

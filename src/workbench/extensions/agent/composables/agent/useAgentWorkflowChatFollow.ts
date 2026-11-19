@@ -5,9 +5,7 @@ import type { CloudWorkflowRefreshOutcome } from '@/workbench/extensions/agent/c
 import type { ThreadListing } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { ChatSession } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 
-type OpeningSource = 'resume' | 'latest_chat'
-
-type Opening = { threadId: string; workflowId: string; source: OpeningSource }
+type Opening = { threadId: string; workflowId: string }
 
 type OpeningOutcome = 'settled' | 'failed'
 
@@ -19,7 +17,6 @@ type FollowState =
       status: 'following'
       generation: number
       workflow: ComfyWorkflow
-      workflowId: string | null
       list: ListPhase
       opening: Opening | null
     }
@@ -44,7 +41,6 @@ type FollowEvent =
   | {
       type: 'list_changed'
       generation: number
-      workflowId: string | null
       list: ListPhase
     }
   | { type: 'opening_started'; generation: number; opening: Opening }
@@ -62,7 +58,7 @@ type FollowDeps = {
   forgetOpenChat: (threadId: string) => void
   followsVisibleWorkflow: () => boolean
   userEngaged: () => boolean
-  hasBlankPendingSend?: (workflow: ComfyWorkflow) => boolean
+  hasBlankPendingSend: (workflow: ComfyWorkflow) => boolean
   cloudIdFor: (workflow: ComfyWorkflow) => string | undefined
   refreshCloudWorkflowListing: () => Promise<CloudWorkflowRefreshOutcome>
   refreshHistory: (
@@ -95,7 +91,6 @@ function requestedState(
         status: 'following',
         generation,
         workflow: event.workflow,
-        workflowId: null,
         list: 'hidden',
         opening: null
       }
@@ -107,7 +102,7 @@ function listChangedState(
 ): FollowState {
   if (state.status !== 'following' || state.generation !== event.generation)
     return state
-  return { ...state, workflowId: event.workflowId, list: event.list }
+  return { ...state, list: event.list }
 }
 
 function openingStartedState(
@@ -191,22 +186,23 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     )
   }
 
-  function isUntouched(operation: FollowOperation): boolean {
-    return (
-      isCurrent(operation) &&
-      deps.currentThreadId() === null &&
-      !deps.userEngaged()
-    )
+  function canOpen(
+    operation: FollowOperation,
+    ignoreDraftGate = false
+  ): boolean {
+    if (!isCurrent(operation) || deps.currentThreadId() !== null) return false
+    return ignoreDraftGate || !deps.userEngaged()
   }
 
   function isOpeningWanted(
     operation: FollowOperation,
-    threadId: string
+    threadId: string,
+    ignoreDraftGate = false
   ): boolean {
     if (!isCurrent(operation)) return false
     const activeThreadId = deps.currentThreadId()
     if (activeThreadId === threadId) return true
-    return activeThreadId === null && !deps.userEngaged()
+    return activeThreadId === null && (ignoreDraftGate || !deps.userEngaged())
   }
 
   function isUnsavedTabWithoutBinding(workflow: ComfyWorkflow): boolean {
@@ -260,15 +256,10 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     return threadId === undefined ? undefined : { threadId, workflowId }
   }
 
-  function showList(
-    operation: FollowOperation,
-    workflowId: string | null,
-    list: ListPhase
-  ): void {
+  function showList(operation: FollowOperation, list: ListPhase): void {
     dispatch({
       type: 'list_changed',
       generation: operation.generation,
-      workflowId,
       list
     })
   }
@@ -283,30 +274,37 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
   async function openLatestChat(
     operation: FollowOperation,
     workflowId: string,
-    threadId: string
+    threadId: string,
+    ignoreDraftGate = false
   ): Promise<void> {
     const outcome = await openFollowedChat(
       operation,
-      { threadId, workflowId, source: 'latest_chat' },
-      () => isOpeningWanted(operation, threadId)
+      { threadId, workflowId },
+      () => isOpeningWanted(operation, threadId, ignoreDraftGate)
     )
-    if (outcome === 'failed') showList(operation, workflowId, 'failed')
+    if (outcome === 'failed') showList(operation, 'failed')
   }
 
   async function landOnKnownChats(
     operation: FollowOperation,
     workflowId: string,
-    failedThreadId?: string
+    failedThreadId?: string,
+    ignoreDraftGate = false
   ): Promise<void> {
     const candidate = nextCandidateChat(workflowId, failedThreadId)
     if (candidate === undefined)
-      return landOnFreshChats(operation, workflowId, failedThreadId)
-    if (!isUntouched(operation)) {
+      return landOnFreshChats(
+        operation,
+        workflowId,
+        failedThreadId,
+        ignoreDraftGate
+      )
+    if (!canOpen(operation, ignoreDraftGate)) {
       retireIfCurrent(operation)
       return
     }
     void deps.refreshHistory('none', workflowId)
-    await openLatestChat(operation, workflowId, candidate.id)
+    await openLatestChat(operation, workflowId, candidate.id, ignoreDraftGate)
   }
 
   function retireIfCurrent(operation: FollowOperation): void {
@@ -316,51 +314,52 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
   async function landOnFreshChats(
     operation: FollowOperation,
     workflowId: string,
-    failedThreadId?: string
+    failedThreadId?: string,
+    ignoreDraftGate = false
   ): Promise<void> {
-    showList(operation, workflowId, 'loading')
+    showList(operation, 'loading')
     const outcome = await deps.refreshHistory('none', workflowId)
     if (!isCurrent(operation)) return
-    if (outcome === 'failed' || outcome === 'incomplete')
-      return showList(operation, workflowId, 'failed')
-    const chats = deps.chatsFor(workflowId)
-    if (chats.length === 0) {
+    if (outcome !== 'complete') {
+      const candidate = nextCandidateChat(workflowId, failedThreadId)
+      if (candidate !== undefined && canOpen(operation, ignoreDraftGate)) {
+        await openLatestChat(
+          operation,
+          workflowId,
+          candidate.id,
+          ignoreDraftGate
+        )
+        return
+      }
+      showList(operation, 'failed')
+      return
+    }
+    if (deps.chatsFor(workflowId).length === 0) {
       dispatch({ type: 'opening_done', generation: operation.generation })
       return
     }
     const candidate = nextCandidateChat(workflowId, failedThreadId)
-    if (candidate === undefined || outcome !== 'complete')
-      return showList(operation, workflowId, 'failed')
-    if (!isUntouched(operation)) {
+    if (candidate === undefined) return showList(operation, 'failed')
+    if (!canOpen(operation, ignoreDraftGate)) {
       retireIfCurrent(operation)
       return
     }
-    await openLatestChat(operation, workflowId, candidate.id)
+    await openLatestChat(operation, workflowId, candidate.id, ignoreDraftGate)
   }
 
   function hasImmediateBlankLanding(workflow: ComfyWorkflow): boolean {
     return (
-      isUnsavedTabWithoutBinding(workflow) ||
-      Boolean(deps.hasBlankPendingSend?.(workflow))
+      isUnsavedTabWithoutBinding(workflow) || deps.hasBlankPendingSend(workflow)
     )
-  }
-
-  async function landAfterLookup(
-    operation: FollowOperation,
-    workflowId: string,
-    failedThreadId?: string
-  ): Promise<void> {
-    if (deps.chatsFor(workflowId).length > 0)
-      return landOnKnownChats(operation, workflowId, failedThreadId)
-    await landOnFreshChats(operation, workflowId, failedThreadId)
   }
 
   async function showLanding(
     workflow: ComfyWorkflow,
     operation: FollowOperation,
-    failedThreadId?: string
+    failedThreadId?: string,
+    ignoreDraftGate = false
   ): Promise<void> {
-    if (!isUntouched(operation)) {
+    if (!canOpen(operation, ignoreDraftGate)) {
       retireIfCurrent(operation)
       return
     }
@@ -368,18 +367,31 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       dispatch({ type: 'opening_done', generation: operation.generation })
       return
     }
-    const known = deps.cloudIdFor(workflow)
-    if (known !== undefined && deps.chatsFor(known).length > 0)
-      return landOnKnownChats(operation, known, failedThreadId)
-    showList(operation, known ?? null, 'loading')
-    const lookup = await lookUpWorkflow(workflow)
-    if (!isCurrent(operation)) return
-    if (lookup.status === 'none') {
-      dispatch({ type: 'opening_done', generation: operation.generation })
-      return
+    let workflowId = deps.cloudIdFor(workflow)
+    if (workflowId === undefined) {
+      showList(operation, 'loading')
+      const lookup = await lookUpWorkflow(workflow)
+      if (!isCurrent(operation)) return
+      if (lookup.status === 'none') {
+        dispatch({ type: 'opening_done', generation: operation.generation })
+        return
+      }
+      if (lookup.status === 'unknown') return showList(operation, 'failed')
+      workflowId = lookup.workflowId
     }
-    if (lookup.status === 'unknown') return showList(operation, null, 'failed')
-    await landAfterLookup(operation, lookup.workflowId, failedThreadId)
+    if (deps.chatsFor(workflowId).length > 0)
+      return landOnKnownChats(
+        operation,
+        workflowId,
+        failedThreadId,
+        ignoreDraftGate
+      )
+    await landOnFreshChats(
+      operation,
+      workflowId,
+      failedThreadId,
+      ignoreDraftGate
+    )
   }
 
   async function followTab(workflow: ComfyWorkflow): Promise<void> {
@@ -393,11 +405,9 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     }
     deps.showBlankChat()
     let failedThreadId: string | undefined
-    if (remembered !== undefined && isUntouched(operation)) {
-      const outcome = await openFollowedChat(
-        operation,
-        { ...remembered, source: 'resume' },
-        () => isOpeningWanted(operation, remembered.threadId)
+    if (remembered !== undefined && canOpen(operation)) {
+      const outcome = await openFollowedChat(operation, remembered, () =>
+        isOpeningWanted(operation, remembered.threadId)
       )
       if (outcome === 'settled') return
       deps.forgetOpenChat(remembered.threadId)
@@ -414,7 +424,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
   function retryFollow(): void {
     const failed = state.value
     if (failed.status === 'following' && failed.list === 'failed')
-      void showLanding(failed.workflow, failed)
+      void showLanding(failed.workflow, failed, undefined, true)
   }
 
   function activeWorkflowChanged(workflow: ComfyWorkflow | null): void {

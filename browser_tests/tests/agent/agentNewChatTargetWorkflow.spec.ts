@@ -1,4 +1,6 @@
 import { expect, mergeTests } from '@playwright/test'
+import type { Page } from '@playwright/test'
+import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -8,9 +10,37 @@ import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/age
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { agentUserTranscript } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
+
+async function acceptPostedMessages(page: Page) {
+  const posted: AgentPostMessageRequest[] = []
+  await page.route('**/api/agent/threads/*/messages', (route) => {
+    if (route.request().method() === 'GET') {
+      return route.fulfill(
+        jsonRoute(
+          agentUserTranscript(
+            'th-a',
+            posted[0]?.workflow_id ?? '',
+            posted[0]?.content ?? ''
+          )
+        )
+      )
+    }
+    if (route.request().method() !== 'POST') return route.fallback()
+    const body = zAgentPostMessageRequest.parse(route.request().postDataJSON())
+    posted.push(body)
+    const accepted: AgentTurnAccepted = {
+      thread_id: 'th-a',
+      message_id: 'msg-a',
+      workflow_id: body.workflow_id ?? undefined
+    }
+    return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+  })
+  return posted
+}
 
 // PM-1321 (parent) / PM-1322 (tab switch) / PM-1415 (tab creation): New Chat
 // used to keep whatever tab the previous chat was pinned to instead of
@@ -43,18 +73,7 @@ test.describe(
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
-      await page.route('**/api/agent/threads/*/messages', (route) => {
-        if (route.request().method() !== 'POST') return route.fallback()
-        const body = zAgentPostMessageRequest.parse(
-          route.request().postDataJSON()
-        )
-        const accepted: AgentTurnAccepted = {
-          thread_id: 'th-a',
-          message_id: 'msg-a',
-          workflow_id: body.workflow_id ?? undefined
-        }
-        return route.fulfill({ ...jsonRoute(accepted), status: 202 })
-      })
+      const posted = await acceptPostedMessages(page)
       const postAccepted = page.waitForResponse(
         (response) =>
           response.request().method() === 'POST' &&
@@ -97,8 +116,8 @@ test.describe(
       await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       await composer.fill('Edit workflow B')
       await composer.press('Enter')
-      await expect.poll(() => workflowSelection.postedMessages.length).toBe(2)
-      expect(JSON.parse(workflowSelection.postedMessages[1])).toMatchObject({
+      await expect.poll(() => posted.length).toBe(2)
+      expect(posted[1]).toMatchObject({
         current_tab_unbound: true
       })
 
@@ -132,18 +151,7 @@ test.describe(
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
-      await page.route('**/api/agent/threads/*/messages', (route) => {
-        if (route.request().method() !== 'POST') return route.fallback()
-        const body = zAgentPostMessageRequest.parse(
-          route.request().postDataJSON()
-        )
-        const accepted: AgentTurnAccepted = {
-          thread_id: 'th-a',
-          message_id: 'msg-a',
-          workflow_id: body.workflow_id ?? undefined
-        }
-        return route.fulfill({ ...jsonRoute(accepted), status: 202 })
-      })
+      const posted = await acceptPostedMessages(page)
       const postAccepted = page.waitForResponse(
         (response) =>
           response.request().method() === 'POST' &&
@@ -176,8 +184,8 @@ test.describe(
       await expect(composer).toHaveText('')
       await composer.fill('Ask on new tab')
       await composer.press('Enter')
-      await expect.poll(() => workflowSelection.postedMessages.length).toBe(2)
-      expect(JSON.parse(workflowSelection.postedMessages[1])).toMatchObject({
+      await expect.poll(() => posted.length).toBe(2)
+      expect(posted[1]).toMatchObject({
         current_tab_unbound: true
       })
     })

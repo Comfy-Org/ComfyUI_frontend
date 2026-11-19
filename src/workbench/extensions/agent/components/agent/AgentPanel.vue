@@ -63,6 +63,7 @@ const {
   visibleTabPath = null,
   followsVisibleWorkflow = false,
   workflowDetached = false,
+  targetRestoring = false,
   targetUnavailable = false,
   canvasEmptyAfterTurn = false,
   getMentionNodes = () => [],
@@ -103,6 +104,7 @@ const {
   visibleTabPath?: string | null
   followsVisibleWorkflow?: boolean
   workflowDetached?: boolean
+  targetRestoring?: boolean
   targetUnavailable?: boolean
   canvasEmptyAfterTurn?: boolean
   getMentionNodes?: () => SelectedNode[]
@@ -170,10 +172,14 @@ const emit = defineEmits<{
 
 const openingChat = computed(() => openingWorkflowName !== undefined)
 
+const detachedChatUnavailable = computed(
+  () => workflowDetached && sessionId !== null && !targetRestoring
+)
+
 const targetNotice = computed(() => {
   if (openingChat.value) return undefined
   if (canvasEmptyAfterTurn) return 'emptyCanvas'
-  if (targetUnavailable) return 'unavailable'
+  if (targetUnavailable || detachedChatUnavailable.value) return 'unavailable'
   if (workflowDetached || activeTab === null) return undefined
   if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
     return 'mismatch'
@@ -305,6 +311,9 @@ function onComposerFocus(): void {
 }
 
 const footerInert = computed(() => openingChat.value || blocked)
+const runNoticeWorkflowName = computed(() =>
+  workflowDetached ? undefined : activeTab?.name
+)
 
 function addAttachment(attachment: ComposerAttachment): boolean {
   return composerRef.value?.addAttachment(attachment) ?? false
@@ -453,7 +462,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           <RunNoticeBanner
             :hide-intro="greetingReplacesIntro"
             :expanded="isMaximized"
-            :workflow-name="workflowDetached ? undefined : activeTab?.name"
+            :workflow-name="runNoticeWorkflowName"
             :follows-visible-workflow
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"

@@ -623,7 +623,7 @@ describe('composer drafts per chat', () => {
       prompt: store.prompt,
       attachments: [],
       nodes: [],
-      targetPath: 'workflows/target.json',
+      targetInstanceId: 'inst-target',
       promptOrigin: 'typed',
       starterPrompt: null
     })
@@ -659,6 +659,68 @@ describe('composer drafts per chat', () => {
     expect(store.workflowReferences).toEqual([
       { id: 'wf-ref', name: 'Ref workflow', textOffset: 4 }
     ])
+  })
+
+  it('inserts a workflow reference into the active draft after a tab round-trip back to it', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('Use @ after')
+    const captured = store.captureReferenceInsertion(4, 5)
+
+    store.activateDraft('thread:b')
+    store.activateDraft('thread:a')
+    expect(store.isCapturedInsertionLive(captured)).toBe(false)
+
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-roundtrip',
+      name: 'Roundtrip'
+    })
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-roundtrip', name: 'Roundtrip', textOffset: 4 }
+    ])
+  })
+
+  it('resolves a captured reference target across a blank-to-thread rekey', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('blank:tab-a')
+    store.setText('Use @ after')
+    const captured = store.captureReferenceInsertion(4, 5)
+
+    store.rekeyDraft('blank:tab-a', 'thread:a')
+    expect(store.isCapturedInsertionLive(captured)).toBe(true)
+
+    store.activateDraft('thread:b')
+    store.insertWorkflowReferenceInDraft(captured, {
+      id: 'wf-rekeyed',
+      name: 'Rekeyed'
+    })
+    expect(store.workflowReferences).toEqual([])
+
+    store.activateDraft('thread:a')
+    expect(store.workflowReferences).toEqual([
+      { id: 'wf-rekeyed', name: 'Rekeyed', textOffset: 4 }
+    ])
+  })
+
+  it('releases unused attachment assets when evicting the oldest kept draft', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:0')
+    store.addAttachment({
+      id: 'att-evicted',
+      name: 'evicted.png',
+      ref: 'evicted.png',
+      previewUrl: 'blob:evicted'
+    })
+
+    for (let index = 1; index <= 21; index++) {
+      store.activateDraft(`thread:${index}`)
+      store.setText(`draft ${index}`)
+    }
+    store.activateDraft('thread:22')
+
+    expect(revoke).toHaveBeenCalledWith('blob:evicted')
+    revoke.mockRestore()
   })
 
   it('keeps how a draft started, so a chip stays a chip', () => {

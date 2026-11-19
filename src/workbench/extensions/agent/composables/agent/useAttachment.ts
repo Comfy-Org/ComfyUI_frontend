@@ -32,6 +32,8 @@ interface UploadResult {
 
 type UploadFileResult = 'uploaded' | 'cancelled' | 'failed'
 
+type UploadQueue = { active: number; waiting: Array<() => void> }
+
 type Admission = 'admitted' | 'duplicate' | 'too_many'
 
 type FileStaging =
@@ -132,10 +134,7 @@ export function useAttachment(options: UseAttachmentOptions) {
   const pending = new Set<string>()
   const inFlight = new Map<string, AbortController>()
   const cancelled = new Set<string>()
-  const uploadQueues = new Map<
-    string,
-    { active: number; waiting: Array<() => void> }
-  >()
+  const uploadQueues = new Map<string, UploadQueue>()
   const uploaded = new Map<string, Map<string, UploadResult>>()
   const contentHashes = new WeakMap<File, Promise<string>>()
   let uploadGeneration = 0
@@ -307,22 +306,22 @@ export function useAttachment(options: UseAttachmentOptions) {
     uploadGeneration += 1
   }
 
-  function waitForUploadSlot(queue: {
-    active: number
-    waiting: Array<() => void>
-  }): Promise<void> {
+  function waitForUploadSlot(queue: UploadQueue): Promise<void> {
     return new Promise((resolve) => queue.waiting.push(resolve))
   }
 
-  function releaseUploadSlot(scope: string): void {
-    const queue = queueFor(scope)
+  function releaseUploadSlot(scope: string, queue: UploadQueue): void {
     const next = queue.waiting.shift()
     if (next) {
       next()
       return
     }
     queue.active -= 1
-    if (queue.active === 0 && queue.waiting.length === 0)
+    if (
+      queue.active === 0 &&
+      queue.waiting.length === 0 &&
+      uploadQueues.get(scope) === queue
+    )
       uploadQueues.delete(scope)
   }
 
@@ -376,7 +375,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       return 'failed'
     } finally {
       settle(id)
-      releaseUploadSlot(scope)
+      releaseUploadSlot(scope, queue)
     }
   }
 

@@ -8,6 +8,7 @@ import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/ag
 import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 type WorkflowSelection = {
   savedPaths: string[]
@@ -18,6 +19,8 @@ type WorkflowSelection = {
   pauseWorkflowLookups: () => void
   resumeWorkflowLookups: () => void
   workflowLookups: () => number
+  openTemporaryTab: (filename: string) => Promise<void>
+  suppressActivationNudge: () => Promise<void>
 }
 
 function moveSavedWorkflow(
@@ -193,7 +196,20 @@ export const workflowSelectionTest = base.extend<{
         })
       },
       resumeWorkflowLookups: () => resumeWorkflowLookups(),
-      workflowLookups: () => lookupCount
+      workflowLookups: () => lookupCount,
+      openTemporaryTab: async (filename: string) => {
+        await page.evaluate(async (name) => {
+          const store = (window.app!.extensionManager as WorkspaceStore)
+            .workflow
+          const blank = store.createTemporary(name)
+          await store.openWorkflow(blank)
+        }, filename)
+      },
+      suppressActivationNudge: async () => {
+        await page.evaluate(() =>
+          localStorage.setItem('Comfy.AgentPanel.activationVisits', '2')
+        )
+      }
     })
     finishSave(false)
     resumeWorkflowLookups()

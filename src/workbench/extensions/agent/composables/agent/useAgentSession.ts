@@ -145,7 +145,6 @@ export interface AgentSessionDeps {
   onBackgroundTurnAccepted?: (
     ack: AgentTurnAccepted,
     text: string,
-    origin: PendingSendOrigin,
     workflowId?: string
   ) => void
   onBlankTurnAccepted?: (ack: AgentTurnAccepted, blankChatId: string) => void
@@ -1746,7 +1745,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     consumeThreadSource(origin)
     recordTurnStarted(turnId, origin.kind === 'blank', threadSourceAtSend)
     runAcceptedTurnSideEffect(() => {
-      onBackgroundTurnAccepted?.(ack, text, origin, tabWorkflowId)
+      onBackgroundTurnAccepted?.(ack, text, tabWorkflowId)
       if (origin.kind === 'blank')
         onBlankTurnAccepted?.(ack, origin.blankChatId)
     }, 'agent_thread_activated_callback_failed')
@@ -2088,8 +2087,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     }
     const tabWorkflowId = resolveAcceptedTabWorkflowId(ack, wfContext)
-    if (origin.kind === 'blank')
-      onBlankSendAccepted?.(origin.blankChatId, ack.thread_id)
+    notifyBlankSendAccepted(origin, ack.thread_id)
     rememberMint(input, wfContext, ack.workflow_id, boundAtSend)
     consumeThreadSource(origin)
     recordTurnStarted(
@@ -2098,7 +2096,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       threadSourceAtSend
     )
     runAcceptedTurnSideEffect(() => {
-      onBackgroundTurnAccepted?.(ack, text, origin, tabWorkflowId)
+      onBackgroundTurnAccepted?.(ack, text, tabWorkflowId)
       if (origin.kind === 'blank')
         onBlankTurnAccepted?.(ack, origin.blankChatId)
     }, 'agent_thread_activated_callback_failed')

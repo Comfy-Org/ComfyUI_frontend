@@ -125,9 +125,7 @@ test.describe(
           'true',
           { timeout: 15_000 }
         )
-        await page.evaluate(() =>
-          localStorage.setItem('Comfy.AgentPanel.activationVisits', '2')
-        )
+        await workflowSelection.suppressActivationNudge()
         await agentPanel.open()
         await agentPanel.close()
         const saving = topbar.saveWorkflowAs(SAVED_TAB)

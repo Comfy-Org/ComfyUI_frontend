@@ -312,13 +312,34 @@ describe('Agent workflow resolution', () => {
       if (outcome === 'success')
         resolveFirst(listing([{ id: 'stale', name: 'Current' }]))
       else rejectFirst(new Error('Stale failure'))
-      expect(await first).toBe(false)
+      expect(await first).toBe(true)
       expect(resolver.availableWorkflowReferences.value).toEqual([
         { id: 'latest', name: 'Current' }
       ])
       expect(reportError).not.toHaveBeenCalled()
     }
   )
+
+  it('returns the newer refresh listing outcome to a superseded refreshCloudWorkflowListing caller', async () => {
+    const { resolver, listCloudWorkflows } = setup([
+      workflow('workflows/current.json', 'Current')
+    ])
+    let resolveFirst: (listed: CloudWorkflowListing) => void = () => {}
+    listCloudWorkflows.mockReturnValueOnce(
+      new Promise((resolve) => {
+        resolveFirst = resolve
+      })
+    )
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'latest', name: 'Current' }], true)
+    )
+
+    const first = resolver.refreshCloudWorkflowListing()
+    const second = resolver.refreshCloudWorkflowListing()
+    expect(await second).toBe('complete')
+    resolveFirst(listing([{ id: 'stale', name: 'Current' }], false))
+    expect(await first).toBe('complete')
+  })
 
   it('preserves known identities on refresh failure and recovers on retry', async () => {
     const { resolver, listCloudWorkflows } = setup(

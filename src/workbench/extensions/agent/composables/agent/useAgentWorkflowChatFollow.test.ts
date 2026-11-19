@@ -73,6 +73,7 @@ function createHarness(
     forgetOpenChat,
     followsVisibleWorkflow: () => follows,
     userEngaged: () => engaged,
+    hasBlankPendingSend: () => false,
     cloudIdFor: (workflow) =>
       workflow.path === workflowA.path ? 'wf-a' : 'wf-b',
     refreshCloudWorkflowListing,
@@ -280,7 +281,11 @@ describe('useAgentWorkflowChatFollow', () => {
     expect(h.loadThread).not.toHaveBeenCalled()
   })
 
-  it.for([{ outcome: 'failed' as const }, { outcome: 'incomplete' as const }])(
+  it.for([
+    { outcome: 'failed' as const },
+    { outcome: 'incomplete' as const },
+    { outcome: 'superseded' as const }
+  ])(
     'T1-09: shows failed landing when history refresh returns $outcome and retries on retryFollow',
     async ({ outcome }) => {
       const h = createHarness()
@@ -506,6 +511,26 @@ describe('useAgentWorkflowChatFollow', () => {
 
     expect(h.showBlankChat).toHaveBeenCalledOnce()
     expect(h.loadThread).not.toHaveBeenCalled()
+    expect(h.follow.landing.value).toBeNull()
+  })
+
+  it('opens the tab chat on explicit Retry even when the user has typed a draft in the failure view', async () => {
+    const h = createHarness()
+    h.refreshHistory.mockResolvedValueOnce('failed')
+    h.setActive(h.workflowB)
+
+    await h.follow.followTab(h.workflowB)
+    expect(h.follow.landing.value).toEqual({
+      workflowName: 'beta',
+      status: 'failed'
+    })
+
+    h.setEngaged(true)
+    h.chats.set('wf-b', [chat('th-b-retry', 'wf-b', 100)])
+    h.refreshHistory.mockResolvedValueOnce('complete')
+
+    h.follow.retryFollow()
+    await vi.waitFor(() => expect(h.getThreadId()).toBe('th-b-retry'))
     expect(h.follow.landing.value).toBeNull()
   })
 })

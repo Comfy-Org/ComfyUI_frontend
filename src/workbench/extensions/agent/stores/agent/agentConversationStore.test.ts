@@ -4604,7 +4604,7 @@ describe('useAgentConversationStore', () => {
 
     it('tracks per-tab blank chat ids and discards only failed pending sends for an origin', () => {
       const store = useAgentConversationStore()
-      store.setActiveBlankChatId('blank:tab-a')
+      store.adoptInitialBlankTab('tab-a')
       expect(store.activeBlankChatId).toBe('blank:tab-a')
       expect(store.currentOrigin()).toEqual({
         kind: 'blank',

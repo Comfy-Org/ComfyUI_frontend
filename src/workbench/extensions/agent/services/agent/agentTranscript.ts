@@ -664,27 +664,18 @@ export function normalizeAgentTranscript(
   isAskUnavailable: (askId: string) => boolean = () => false,
   isAskRetired: (askId: string) => boolean = () => false
 ): NormalizedAgentTranscript {
-  const userTexts = new Map<TurnId, string>()
-  const userAttachments = new Map<TurnId, UserAttachment[]>()
-  const userWorkflowReferences = new Map<TurnId, WorkflowReference[]>()
-  const userSkillReferences = new Map<TurnId, SkillReference>()
-  const assistants = new Map<TurnId, AssistantMessage>()
-  const turnOrder: TurnId[] = []
-  const seenTurns = new Set<TurnId>()
-  const rowIds = new Set<string>()
-  const pendingByTurn = new Map<TurnId, NormalizedAgentTranscript['pending']>()
   let latestWorkflowId: string | undefined
 
   const state = {
-    turnOrder,
-    seenTurns,
-    rowIds,
-    userTexts,
-    userAttachments,
-    userWorkflowReferences,
-    userSkillReferences,
-    assistants,
-    pendingByTurn,
+    turnOrder: [] as TurnId[],
+    seenTurns: new Set<TurnId>(),
+    rowIds: new Set<string>(),
+    userTexts: new Map<TurnId, string>(),
+    userAttachments: new Map<TurnId, UserAttachment[]>(),
+    userWorkflowReferences: new Map<TurnId, WorkflowReference[]>(),
+    userSkillReferences: new Map<TurnId, SkillReference>(),
+    assistants: new Map<TurnId, AssistantMessage>(),
+    pendingByTurn: new Map<TurnId, NormalizedAgentTranscript['pending']>(),
     isAskUnavailable,
     isAskRetired
   }
@@ -694,9 +685,10 @@ export function normalizeAgentTranscript(
     if (workflowId) latestWorkflowId = workflowId
   }
 
-  const live = liveTranscriptTurn(pendingByTurn, assistants)
-  const messages = turnOrder.map((turnId) => {
-    const message = assistants.get(turnId) ?? createAssistantMessage(turnId)
+  const live = liveTranscriptTurn(state.pendingByTurn, state.assistants)
+  const messages = state.turnOrder.map((turnId) => {
+    const message =
+      state.assistants.get(turnId) ?? createAssistantMessage(turnId)
     if (message === live?.message) message.streaming = true
     else settleLiveMessage(message)
     return message
@@ -704,13 +696,13 @@ export function normalizeAgentTranscript(
 
   return {
     messages,
-    userTexts,
-    userAttachments,
-    userWorkflowReferences,
-    userSkillReferences,
+    userTexts: state.userTexts,
+    userAttachments: state.userAttachments,
+    userWorkflowReferences: state.userWorkflowReferences,
+    userSkillReferences: state.userSkillReferences,
     latestWorkflowId,
-    rowIds,
-    assistantTurnIds: new Set(assistants.keys()),
+    rowIds: state.rowIds,
+    assistantTurnIds: new Set(state.assistants.keys()),
     pending: live
   }
 }

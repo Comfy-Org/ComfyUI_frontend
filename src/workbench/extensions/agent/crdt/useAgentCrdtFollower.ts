@@ -1192,6 +1192,11 @@ function startAgentCrdtFollower(
     if (next !== null) projection.bind(next, bridge.follower)
     subscribedWorkflowId.value = next
   }
+  // The bound workflow whose tab went inactive while the sender still held
+  // batches for it. Leaving its tab—or detaching while unconfirmed edits
+  // remain—suspends the sender instead of aborting those batches (see
+  // ADR-CRDT-WRITE-0035); retargeting to another workflow releases them into
+  // the normal abort path.
   let heldForWorkflowId: string | null = null
   const releaseHeldOps = (): void => {
     heldForWorkflowId = null
