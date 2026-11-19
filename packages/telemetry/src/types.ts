@@ -125,6 +125,8 @@ export interface ImageLoadFailureMetadata {
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
   timed_out?: boolean
+  /** `MediaError.code` of the failed load. Code 4 alone does not prove a format failure; see `status`. */
+  media_error_code?: number
   /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
   status?: number
   probe_outcome?:
@@ -1243,6 +1245,16 @@ export type AgentErrorClass =
   | 'ask_answer_failed'
   | 'thread_list_load_failed'
   | 'workflow_open_failed'
+  | 'workflow_sync_failed'
+
+/** Why an agent workflow sync failed; codes outside this set are `other`. */
+export type AgentWorkflowSyncErrorCode =
+  | 'schema_version_mismatch'
+  | 'catalog_mismatch'
+  | 'unsupported'
+  | 'stale_client_schema'
+  | 'stale_host_schema'
+  | 'other'
 
 export type AgentRequestPath =
   | '/agent/threads'
@@ -1286,6 +1298,8 @@ export interface AgentErrorMetadata extends Record<string, unknown> {
   request_path?: AgentRequestPath
   request_status?: number
   request_error?: AgentRequestErrorName
+  /** Only on `workflow_sync_failed`: the closed-set reason sync stopped. */
+  sync_error_code?: AgentWorkflowSyncErrorCode
 }
 
 /**

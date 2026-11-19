@@ -1,4 +1,3 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -31,7 +30,7 @@ import { useQueueCommands } from '@/platform/queue/commands/useQueueCommands'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildSupportUrl } from '@/platform/support/config'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -42,6 +41,7 @@ import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
+import { renderWorkflowImage } from '@/renderer/core/canvas/workflowImage/renderWorkflowImage'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -224,6 +224,17 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Export (API)',
       function: async () => {
         await workflowService.exportWorkflow('workflow_api', 'output')
+      }
+    },
+    {
+      id: 'Comfy.ExportWorkflowImage',
+      icon: 'icon-[lucide--image-down]',
+      label: 'Export Workflow Image',
+      menubarLabel: 'Export (Workflow Image)',
+      function: async () => {
+        await workflowService.exportWorkflowImage('workflow', () =>
+          renderWorkflowImage(useApp().canvas)
+        )
       }
     },
     {
@@ -744,12 +755,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        const { userEmail, resolvedUserInfo } = useCurrentUser()
-        const supportUrl = buildSupportUrl({
-          userEmail: userEmail.value,
-          userId: resolvedUserInfo.value?.id
-        })
-        window.open(supportUrl, '_blank', 'noopener,noreferrer')
+        openSupportForm('question')
       }
     },
     {
@@ -1256,6 +1262,6 @@ export function useCoreCommands(): ComfyCommand[] {
   ]
 
   return commands
-    .concat(useQueueCommands())
+    .concat(useQueueCommands(() => canvasStore.isPickingNodes))
     .map((command) => ({ ...command, source: 'System' }))
 }

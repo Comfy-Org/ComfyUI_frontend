@@ -222,12 +222,14 @@ const handleVideoError = (event: Event) => {
 
   const failedUrl = currentVideoUrl.value
   if (!failedUrl || failedUrl === stallReportedUrl) return
+  const mediaErrorCode = errorCode.value
   void describeImageLoadFailure(failedUrl).then((metadata) => {
     useTelemetry()?.trackImageLoadFailed({
       ...metadata,
       source: 'node_video_preview',
       attempts: 1,
-      timed_out: false
+      timed_out: false,
+      media_error_code: mediaErrorCode
     })
   })
 }

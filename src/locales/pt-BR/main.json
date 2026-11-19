@@ -1721,6 +1721,12 @@
     "reload": "Recarregar",
     "retry": "Tentar novamente",
     "retryLabel": "Tentar iniciar {deployment} novamente",
+    "runBlocked": {
+      "failed": "Esta implantação falhou. Clique para alternar.",
+      "notReady": "Esta implantação não está pronta. Clique para alternar.",
+      "starting": "Esta implantação está iniciando. Clique para alternar.",
+      "stopped": "Esta implantação está parada. Clique para alternar."
+    },
     "runOn": "Executar em",
     "runningOn": "Em execução em",
     "runsThisWorkflow": "Executa este fluxo de trabalho",

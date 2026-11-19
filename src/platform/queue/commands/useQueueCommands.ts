@@ -17,13 +17,17 @@ import {
   useQueueUIStore
 } from '@/platform/queue/stores/queueStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useUnreadyDeploymentRun } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
 import { useExecutionStore } from '@/stores/executionStore'
 import { getExecutionIdsForSelectedNodes } from '@/utils/graphTraversalUtil'
 import { filterOutputNodes } from '@/utils/nodeFilterUtil'
 
-export function useQueueCommands(): ComfyCommand[] {
+export function useQueueCommands(
+  isPickingNodes: () => boolean
+): ComfyCommand[] {
   const {
     canAccessSubscriptionFeatures,
     subscription,
@@ -38,6 +42,31 @@ export function useQueueCommands(): ComfyCommand[] {
   const { trackRunButton } = useRunButtonTelemetry()
   const { getSelectedNodes } = useSelectedLiteGraphItems()
   const settingStore = useSettingStore()
+  const workflowStore = useWorkflowStore()
+  const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+
+  function activeWorkflowTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow]
+  }
+
+  function selectedNodesTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow, ...getSelectedNodes()]
+  }
+
+  async function deploymentStopsRun(
+    runTarget: () => readonly unknown[]
+  ): Promise<boolean> {
+    if (isPickingNodes()) return false
+    const asked = runTarget()
+    return openSwitcherInsteadOfRun(() => {
+      if (isPickingNodes()) return false
+      const now = runTarget()
+      return (
+        asked.length === now.length &&
+        asked.every((item, index) => item === now[index])
+      )
+    })
+  }
 
   async function blockRunWithoutSubscription(): Promise<boolean> {
     if (!isCloud) return false
@@ -117,6 +146,7 @@ export function useQueueCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -137,6 +167,7 @@ export function useQueueCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -156,6 +187,7 @@ export function useQueueCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(selectedNodesTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 

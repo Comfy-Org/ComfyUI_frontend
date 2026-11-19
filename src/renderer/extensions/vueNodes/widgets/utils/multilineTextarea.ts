@@ -26,6 +26,34 @@ export function createMultilineInputElement(
   return element
 }
 
+function mirrorElementValueWrites(
+  widget: BaseDOMWidget<string>,
+  element: HTMLTextAreaElement
+) {
+  const native = Object.getOwnPropertyDescriptor(
+    HTMLTextAreaElement.prototype,
+    'value'
+  )
+  const nativeGet = native?.get
+  const nativeSet = native?.set
+  if (!nativeGet || !nativeSet) return
+  let mirroring = false
+  Object.defineProperty(element, 'value', {
+    configurable: true,
+    get: () => nativeGet.call(element),
+    set: (value: string) => {
+      nativeSet.call(element, value)
+      if (mirroring) return
+      mirroring = true
+      try {
+        widget.options.setValue?.(nativeGet.call(element))
+      } finally {
+        mirroring = false
+      }
+    }
+  })
+}
+
 /**
  * Wires textarea value propagation, trackpad gestures, and middle-button canvas
  * panning onto a `customtext` DOM widget, torn down via the widget's `onRemove`.
@@ -36,6 +64,8 @@ export function bindMultilineTextareaWidget(
 ): void {
   const controller = new AbortController()
   const { signal } = controller
+
+  mirrorElementValueWrites(widget, element)
 
   element.addEventListener(
     'input',

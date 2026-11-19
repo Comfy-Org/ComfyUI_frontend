@@ -87,6 +87,10 @@ export interface LoadGraphDataOptions {
   silentAssetErrors?: boolean
   workflowNavigationId?: number
   isCurrent?: () => boolean
+  /** Checked once when the load reaches the front of the queue; false skips it. */
+  isReady?: () => boolean
+  /** Graph to load, produced at the front of the queue; undefined skips the load. */
+  resolveGraphData?: () => ComfyWorkflowJSON | undefined
 }
 
 /**

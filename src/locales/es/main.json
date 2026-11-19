@@ -1721,6 +1721,12 @@
     "reload": "Recargar",
     "retry": "Reintentar",
     "retryLabel": "Reintentar el inicio de {deployment}",
+    "runBlocked": {
+      "failed": "Esta implementación falló. Haz clic para cambiar.",
+      "notReady": "Esta implementación no está lista. Haz clic para cambiar.",
+      "starting": "Esta implementación se está iniciando. Haz clic para cambiar.",
+      "stopped": "Esta implementación está detenida. Haz clic para cambiar."
+    },
     "runOn": "Ejecutar en",
     "runningOn": "En ejecución en",
     "runsThisWorkflow": "Ejecuta este flujo de trabajo",
