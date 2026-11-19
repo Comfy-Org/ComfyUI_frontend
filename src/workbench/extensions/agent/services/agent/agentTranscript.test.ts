@@ -738,6 +738,22 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.pending?.messageId).toBe('row-1')
   })
 
+  it('keeps one authoritative card when multiple rows repeat the same ask', () => {
+    const first = row(1, 'assistant', 'turn-a', '', 'row-1')
+    const second = row(2, 'assistant', 'turn-a', '', 'row-2')
+
+    const transcript = normalizeAgentTranscript(
+      zAgentMessages.parse([
+        { ...first, status: 'streaming', pending_ask: pendingAsk('ask_user') },
+        { ...second, status: 'streaming', pending_ask: pendingAsk('ask_user') }
+      ])
+    )
+
+    expect(
+      transcript.messages[0].parts.filter((part) => part.type === 'askUser')
+    ).toHaveLength(1)
+  })
+
   it('drops a pending ask_user card from a streaming row a later turn retired', () => {
     const asked = row(1, 'assistant', 'turn-a', '', 'row-1')
     const transcript = normalizeAgentTranscript([

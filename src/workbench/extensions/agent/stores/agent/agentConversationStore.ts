@@ -28,6 +28,7 @@ import type {
 import {
   askIdOf,
   askKindOf,
+  askMinSelectionsOf,
   createAssistantMessage,
   isOpenAskPart,
   isPendingAskPart,
@@ -389,10 +390,12 @@ function finishWithPersistedParts(
 }
 
 const MAX_DEPARTED_TURNS = 32
+const MAX_RETIRED_ASKS_PER_THREAD = 128
 
 interface SubmittedAskAnswer {
   answer: AgentAnswerRequest
   kind: RenderedAskKind | 'unknown'
+  minSelections?: number
   owner: string
   messageId?: TurnId
   awaitingResolution?: 'accepted' | 'conflict'
@@ -702,12 +705,16 @@ export const useAgentConversationStore = defineStore(
         const provisional = provisionalRetiredAsksFor(owner)
         provisional.delete(askId)
         provisional.set(askId, askTurnId ?? '')
+        while (provisional.size > MAX_RETIRED_ASKS_PER_THREAD)
+          provisional.delete(provisional.keys().next().value!)
         return
       }
       const retired = retiredAsksFor(owner)
       const prior = retired.get(askId)
       retired.delete(askId)
       retired.set(askId, settleResolution(prior, resolution))
+      while (retired.size > MAX_RETIRED_ASKS_PER_THREAD)
+        retired.delete(retired.keys().next().value!)
       provisionalRetiredAsksFor(owner).delete(askId)
     }
 
@@ -767,7 +774,8 @@ export const useAgentConversationStore = defineStore(
       answer: AgentAnswerRequest,
       owner?: string,
       knownKind?: RenderedAskKind | 'unknown',
-      knownMessageId?: TurnId
+      knownMessageId?: TurnId,
+      knownMinSelections?: number
     ): void {
       const prior = submittedAskAnswers.get(askId)
       const kind =
@@ -779,6 +787,12 @@ export const useAgentConversationStore = defineStore(
       submittedAskAnswers.set(askId, {
         answer,
         kind,
+        minSelections:
+          knownMinSelections ??
+          messages.value
+            .map((message) => askMinSelectionsOf(message.parts, askId))
+            .find((found) => found !== undefined) ??
+          prior?.minSelections,
         owner: threadKey(owner),
         messageId:
           knownMessageId ?? askOwnerMessageId(askId, owner) ?? prior?.messageId
@@ -816,6 +830,10 @@ export const useAgentConversationStore = defineStore(
 
     function submittedAskMessageId(askId: string): TurnId | undefined {
       return submittedAskAnswers.get(askId)?.messageId
+    }
+
+    function submittedAskMinSelections(askId: string): number | undefined {
+      return submittedAskAnswers.get(askId)?.minSelections
     }
 
     function takeSubmittedAskAnswer(
@@ -919,7 +937,10 @@ export const useAgentConversationStore = defineStore(
       for (const owner of provisionalRetiredAsks.keys())
         if (!retainedThreads.has(owner)) provisionalRetiredAsks.delete(owner)
       for (const [askId, submitted] of submittedAskAnswers)
-        if (!retainedThreads.has(submitted.owner))
+        if (
+          !retainedThreads.has(submitted.owner) &&
+          submitted.awaitingResolution === undefined
+        )
           submittedAskAnswers.delete(askId)
     }
 
@@ -1976,6 +1997,7 @@ export const useAgentConversationStore = defineStore(
       submittedAskAnswer,
       submittedAskKind,
       submittedAskMessageId,
+      submittedAskMinSelections,
       takeSubmittedAskAnswer,
       markAskAwaitingResolution,
       asksAwaitingResolution,
