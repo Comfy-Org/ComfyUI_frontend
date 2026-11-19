@@ -164,8 +164,8 @@ function checkedRegistration(importer: unknown): Registration {
       extension.replace(/^\./, '').toLowerCase()
     ),
     isEnabled: () =>
-      enabled === undefined || Reflect.apply(enabled, importer, []),
-    parse: (bytes, context) => Reflect.apply(parse, importer, [bytes, context])
+      enabled === undefined || Reflect.apply(enabled, undefined, []),
+    parse: (bytes, context) => Reflect.apply(parse, undefined, [bytes, context])
   }
 }
 
