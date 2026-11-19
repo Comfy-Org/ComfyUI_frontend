@@ -871,13 +871,24 @@ export const useAgentConversationStore = defineStore(
         submitted.onResolutionExpired = undefined
         submitted.resolutionDeadline = undefined
       }
+      clearAskResolutionReportWatchdog(askId)
+    }
+
+    function deferSubmittedAskCleanup(askId: string): void {
+      clearAskResolutionReportWatchdog(askId)
+      askResolutionReportWatchdogs.set(
+        askId,
+        setTimeout(
+          () => completeAskResolutionReport(askId),
+          ASK_RESOLUTION_GRACE_MS
+        )
+      )
     }
 
     function completeAskResolutionReport(askId: string): void {
       const submitted = submittedAskAnswers.get(askId)
       if (!submitted) return
       clearAskAwaitingResolution(askId)
-      clearAskResolutionReportWatchdog(askId)
       submittedAskAnswers.delete(askId)
       setAskAnswering(askId, false)
     }
@@ -1997,6 +2008,7 @@ export const useAgentConversationStore = defineStore(
       asksAwaitingResolution,
       clearAskAwaitingResolution,
       completeAskResolutionReport,
+      deferSubmittedAskCleanup,
       askKind,
       commitAsk,
       retireAsk,
