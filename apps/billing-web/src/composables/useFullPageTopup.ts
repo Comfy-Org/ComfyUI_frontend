@@ -265,6 +265,16 @@ export function useFullPageTopup() {
 
   let arriving = true
 
+  function resendUnansweredOnArrival(amount: number) {
+    const unanswered =
+      arriving && paysOnce.value
+        ? heldTopupAttempt(purchaseRequest())
+        : undefined
+    arriving = false
+    if (unanswered !== undefined && page.value.kind === 'capture')
+      void resend(unanswered, amount)
+  }
+
   async function readCapture() {
     if (amountCents === undefined) return
     const saved = readSaved()
@@ -278,13 +288,7 @@ export function useFullPageTopup() {
     const event = capabilityStop(allowed) ?? (await quoteEvent(quoted, saved))
     await latest
     dispatch(revisited(page.value) ? { type: 'notAllowed' } : event)
-    const unanswered =
-      arriving && paysOnce.value
-        ? heldTopupAttempt(purchaseRequest())
-        : undefined
-    arriving = false
-    if (unanswered !== undefined && page.value.kind === 'capture')
-      void resend(unanswered, amountCents)
+    resendUnansweredOnArrival(amountCents)
   }
 
   async function retrySaved() {
