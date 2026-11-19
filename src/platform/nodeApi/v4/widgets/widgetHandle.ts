@@ -6,6 +6,7 @@ import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 
 import type { DocumentHandles } from '@/platform/nodeApi/shared/documentHandles'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import type { SavedCopier } from '@/platform/nodeApi/shared/savedCopy'
 import type { WidgetHandle, WidgetOptions } from '@/platform/nodeApi/v4/types'
 import { requiredFlag, requiredSize } from './definitionFields'
@@ -209,10 +210,8 @@ function linkMembers(
   }
 }
 
-const REFUSED_OPTION_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
-
 function optionKey(key: unknown): string {
-  if (typeof key !== 'string' || !key || REFUSED_OPTION_KEYS.has(key)) {
+  if (!isStoreKey(key)) {
     throw invalidArgument('setOption', 'an option name', key)
   }
   return key

@@ -1,3 +1,4 @@
+import { isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { canCaptureCanvas } from '@/platform/workflow/core/canvasTrackerOwnership'
 import type { WorkflowChangeTracker } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -42,7 +43,7 @@ export function createWorkflowExtra(
 
     setExtra(document, key, value) {
       const name = checkedKey('workflow.setExtra', key)
-      if (name === '__proto__') {
+      if (!isStoreKey(name)) {
         throw invalidArgument('workflow.setExtra', 'a key', name)
       }
       const saved =

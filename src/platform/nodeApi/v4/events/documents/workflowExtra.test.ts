@@ -268,6 +268,11 @@ describe('workflow extra', () => {
       ['a key that is not a string', [1, 'x'], 'needs a key, not 1.'],
       ['the key __proto__', ['__proto__', {}], "needs a key, not '__proto__'."],
       [
+        'a key named as an Object member',
+        ['constructor', {}],
+        "needs a key, not 'constructor'."
+      ],
+      [
         'a value the workflow cannot save',
         ['note', 1n],
         'needs a value as a string, a finite number'

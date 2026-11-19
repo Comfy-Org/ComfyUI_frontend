@@ -312,7 +312,7 @@ describe('widget handles', () => {
       expect(handle.isHidden()).toBe(true)
     })
 
-    it.for([[''], ['__proto__'], ['constructor'], ['prototype'], [1]])(
+    it.for([[''], ['__proto__'], ['constructor'], ['toString'], [1]])(
       'refuses an option name it cannot use: %o',
       ([key]) => {
         const { widget, handle } = nodeWithWidget()
