@@ -12,6 +12,7 @@ import {
   checkedString
 } from '@/platform/nodeApi/v4/edit/checkedArguments'
 import { chooseResizable } from '@/platform/nodeApi/v4/edit/nodeSizing'
+import { checkedSlotType } from '@/platform/nodeApi/v4/edit/slotPatch'
 import { SLOT_SHAPES } from '@/platform/nodeApi/v4/edit/slotVocabulary'
 import type {
   NodeDef,
@@ -227,7 +228,10 @@ function checkedSlots(
           ]
     return Object.freeze({
       name: checkedString('define', `${field}[${index}].name`, slot.name),
-      type: checkedString('define', `${field}[${index}].type`, slot.type),
+      type: checkedSlotType(
+        'define',
+        checkedString('define', `${field}[${index}].type`, slot.type)
+      ),
       shape
     })
   })
