@@ -1386,6 +1386,36 @@ describe('createBillingOperationLifecycle', () => {
       })
     })
 
+    it('re-reads a success whose auto top-up is still turning on, when asked for settled operations', async () => {
+      const charged = {
+        status: 'succeeded' as const,
+        amount_charged_cents: 3250,
+        credits_added: 6858
+      }
+      const { lifecycle } = harness({
+        retainSettled: true,
+        answers: [
+          httpOk(opStatus({ ...charged, auto_top_up_activation: 'pending' })),
+          httpOk(opStatus({ ...charged, auto_top_up_activation: 'failed' }))
+        ]
+      })
+      await lifecycle.begin('topup', issued())
+      await flush()
+      expect(lifecycle.get('op-1')).toMatchObject({
+        receipt: { autoTopUpActivation: 'pending' }
+      })
+
+      await expect(
+        lifecycle.recover({ includeSettled: true })
+      ).resolves.toMatchObject({
+        status: 'ok',
+        value: {
+          phase: 'succeeded',
+          receipt: { creditsAdded: 6858, autoTopUpActivation: 'failed' }
+        }
+      })
+    })
+
     it('keeps a success whose credits already landed as it was', async () => {
       const landed = {
         status: 'succeeded' as const,
