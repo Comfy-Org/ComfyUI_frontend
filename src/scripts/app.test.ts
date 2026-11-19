@@ -6071,7 +6071,11 @@ describe('ComfyApp', () => {
       )
       vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
         workflowStore.activeWorkflow = other
-        return { missingModels: [], confirmedCandidates: [] }
+        return {
+          missingModels: [],
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
+        }
       })
       const activated = vi.fn()
       workflowStore.onUserActivation(activated)
