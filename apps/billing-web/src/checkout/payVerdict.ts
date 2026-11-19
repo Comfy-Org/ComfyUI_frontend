@@ -1,4 +1,5 @@
 import type {
+  BillingOperationKind,
   BillingOperationState,
   BillingResult,
   PaymentProjection,
@@ -155,7 +156,8 @@ export function outcomeFor(operation: BillingOperationState) {
  * money it cannot see.
  */
 export function reconciledEvent(
-  recovered: BillingResult<BillingOperationState | undefined>
+  recovered: BillingResult<BillingOperationState | undefined>,
+  follows: BillingOperationKind
 ): CheckoutPageEvent {
   if (recovered.status === 'error')
     return { type: 'recheckFailed', code: recovered.code }
@@ -163,6 +165,7 @@ export function reconciledEvent(
   return {
     type: 'reconciled',
     operation,
+    follows,
     ...(operation === undefined ? {} : outcomeFor(operation))
   }
 }

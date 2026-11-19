@@ -173,7 +173,7 @@ export function useFullPageTopup() {
     const mine = ++generation
     const recovered = await lifecycle.recover({ includeSettled: true })
     if (mine !== generation) return undefined
-    dispatch(reconciledEvent(recovered))
+    dispatch(reconciledEvent(recovered, 'topup'))
     return recovered
   }
 

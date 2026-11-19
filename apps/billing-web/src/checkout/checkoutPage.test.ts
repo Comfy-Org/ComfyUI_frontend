@@ -633,6 +633,7 @@ const reconciled = (
 ): CheckoutPageEvent => ({
   type: 'reconciled',
   operation,
+  follows: 'subscription',
   ...(outcome === undefined ? {} : { outcome })
 })
 const changed = (
@@ -2211,5 +2212,75 @@ describe('reduceCheckoutPage keeps the quote its own Pay was priced on', () => {
 
     expect(page).toMatchObject({ kind: 'terminal', attribution: 'settled' })
     expect(page).not.toHaveProperty('quote')
+  })
+})
+
+describe('reduceCheckoutPage recovering a payment of the other kind', () => {
+  const topupChallenge: PendingBillingOperation = {
+    ...challengeRequired,
+    id: 'op_topup',
+    kind: 'topup'
+  }
+  const onTopUpPage = (
+    operation: BillingOperationState
+  ): CheckoutPageEvent => ({
+    type: 'reconciled',
+    operation,
+    follows: 'topup'
+  })
+  const unansweredOnTopUp = (because: 'unanswered' | 'rate_limited') => [
+    ...live,
+    submitted,
+    { type: 'payRejectedAsPending', because } as const,
+    recheckFailed
+  ]
+
+  it.for(['unanswered', 'rate_limited'] as const)(
+    'a top-up page whose %s Pay recovers a subscription challenge keeps re-reading until it completes',
+    (because) => {
+      const reading = replay([
+        ...unansweredOnTopUp(because),
+        onTopUpPage(challengeRequired)
+      ])
+
+      expect(reading.kind).toBe('unconfirmed')
+      expect(awaitingServer(reading)).toBe(true)
+      expect(
+        reduceCheckoutPage(reading, onTopUpPage(succeededOperation()))
+      ).toMatchObject({ kind: 'terminal', operation: succeededOperation() })
+    }
+  )
+
+  it('a top-up page reading no authentication state first keeps re-reading on a later subscription challenge', () => {
+    const page = replay([
+      ...unansweredOnTopUp('unanswered'),
+      onTopUpPage(pendingOperation()),
+      onTopUpPage(challengeRequired)
+    ])
+
+    expect(page.kind).toBe('unconfirmed')
+    expect(awaitingServer(page)).toBe(true)
+  })
+
+  it('a subscription page recovering a top-up challenge keeps re-reading', () => {
+    const page = replay([
+      ...live,
+      submitted,
+      collided,
+      recheckFailed,
+      reconciled(topupChallenge)
+    ])
+
+    expect(page).toEqual({ kind: 'unconfirmed', sibling: true })
+    expect(awaitingServer(page)).toBe(true)
+  })
+
+  it('a top-up page recovering its own kind of challenge waits on it', () => {
+    expect(
+      replay([
+        ...unansweredOnTopUp('rate_limited'),
+        onTopUpPage(topupChallenge)
+      ])
+    ).toEqual({ kind: 'waiting', operation: topupChallenge })
   })
 })

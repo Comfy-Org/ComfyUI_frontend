@@ -1,4 +1,5 @@
 import type {
+  BillingOperationKind,
   BillingOperationState,
   BillingPlansData,
   CancelRefusalCode,
@@ -278,11 +279,12 @@ export type CheckoutPageEvent =
     }
   /** The mandatory re-quote failed, so the refused price cannot be paid again. */
   | { readonly type: 'requoteFailed'; readonly code: string }
-  /** The lifecycle's answer to "what is this workspace waiting on": an operation, or nothing. */
+  /** The lifecycle's answer to "what is this workspace waiting on"; `follows` is the payment kind this page is bound to. */
   | {
       readonly type: 'reconciled'
       readonly operation: BillingOperationState | undefined
       readonly outcome?: OperationOutcome
+      readonly follows: BillingOperationKind
     }
   /** A followed operation moved; `outcome` is its verdict once it has one. */
   | {
@@ -473,9 +475,14 @@ export function reduceCheckoutPage(
     case 'reconciled':
       return event.operation === undefined
         ? nothingPending(page)
-        : followed(page, event.operation, event.outcome)
+        : followed(
+            page,
+            event.operation,
+            event.outcome,
+            event.operation.kind === event.follows
+          )
     case 'operationChanged':
-      return followed(page, event.operation, event.outcome)
+      return followed(page, event.operation, event.outcome, true)
   }
 }
 
@@ -946,7 +953,8 @@ function ownsVerdict(page: Watching, operation: BillingOperationState) {
 function followed(
   page: CheckoutPage,
   operation: BillingOperationState,
-  outcome: OperationOutcome | undefined
+  outcome: OperationOutcome | undefined,
+  bound: boolean
 ): CheckoutPage {
   if (isCanceledHere(page, operation) || heldForCancel(page, outcome))
     return page
@@ -955,7 +963,7 @@ function followed(
   if (page.kind === 'capture')
     return followedInCapture(page, operation, outcome)
   if (page.kind === 'waiting' || page.kind === 'unconfirmed')
-    return watched(page, operation, outcome)
+    return watched(page, operation, outcome, bound)
   return page
 }
 
@@ -1007,7 +1015,8 @@ function arrivedOn(
 function watched(
   page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>,
   operation: BillingOperationState,
-  outcome: OperationOutcome | undefined
+  outcome: OperationOutcome | undefined,
+  bound: boolean
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
     return {
@@ -1021,18 +1030,20 @@ function watched(
       ? { kind: 'resolving', outcome }
       : RESOLVING
   return page.kind === 'unconfirmed'
-    ? watchedUnconfirmed(page, operation)
+    ? watchedUnconfirmed(page, operation, bound)
     : watchedWaiting(page, operation)
 }
 
-/** A charge the server now says went through, or a challenge it says waits on the customer, moves the page forward to waiting. */
+/** A charge that went through, or a challenge on a payment this page is `bound` to, moves the page forward to waiting. */
 function watchedUnconfirmed(
   page: Extract<CheckoutPage, { kind: 'unconfirmed' }>,
-  operation: BillingOperationState
+  operation: BillingOperationState,
+  bound: boolean
 ): CheckoutPage {
   if (
     isInFlight(operation) &&
-    (waitingOn(operation) === 'received' || isChallengePending(operation))
+    (waitingOn(operation) === 'received' ||
+      (bound && isChallengePending(operation)))
   )
     return { kind: 'waiting', operation, ...provenanceOf(page) }
   return isInFlight(operation) || operation.phase === 'timed_out'
