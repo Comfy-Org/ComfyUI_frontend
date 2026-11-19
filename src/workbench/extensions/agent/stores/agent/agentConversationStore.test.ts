@@ -510,6 +510,41 @@ describe('useAgentConversationStore', () => {
     }
   })
 
+  it('cancels the report watchdog when an authoritative frame clears the marker', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th-A')
+      const onExpired = vi.fn()
+      store.markAskAwaitingResolution('ask-1', 'accepted', onExpired)
+
+      store.clearAskAwaitingResolution('ask-1')
+      vi.advanceTimersByTime(60_000)
+
+      expect(onExpired).not.toHaveBeenCalled()
+      expect(store.submittedAskAnswer('ask-1')).toEqual({ selected: ['run'] })
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('bounds a retained conflict submission when no resolution frame follows', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th-A')
+
+      store.deferSubmittedAskCleanup('ask-1')
+      vi.advanceTimersByTime(60_000)
+
+      expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('keeps the original answer-report deadline when a successor rebinds it', () => {
     vi.useFakeTimers()
     try {
