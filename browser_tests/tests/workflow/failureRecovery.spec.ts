@@ -187,6 +187,9 @@ test.describe('Workflow failure recovery', () => {
     await comfyPage.confirmDialog.delete.click()
 
     expect((await request).method()).toBe('DELETE')
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      "Failed to delete file 'workflows/delete.json'"
+    )
     await expect(workflow).toBeVisible()
     await expect(
       comfyPage.toast.toastSuccesses.filter({ hasText: 'Workflow deleted' })
@@ -205,6 +208,9 @@ test.describe('Workflow failure recovery', () => {
     await tab.insertWorkflow(tab.getPersistedItem('unavailable'))
 
     expect((await request).method()).toBe('GET')
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      'Failed to load file: 503'
+    )
     await expect
       .poll(() => comfyPage.nodeOps.getNodeCount())
       .toBe(originalNodeCount)
@@ -223,6 +229,9 @@ test.describe('Workflow failure recovery', () => {
     await comfyPage.contextMenu.clickMenuItem('Duplicate')
 
     expect((await request).method()).toBe('GET')
+    await expect(comfyPage.toast.toastErrors).toContainText(
+      'Failed to load file: 503'
+    )
     await expect.poll(() => tab.getOpenedWorkflowNames()).toEqual(originalNames)
   })
 

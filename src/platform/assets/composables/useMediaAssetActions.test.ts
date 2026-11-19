@@ -2989,7 +2989,7 @@ describe('useMediaAssetActions', () => {
       mockAppGraph.value = { nodes: [] }
     })
 
-    it.fails('keeps a failed asset listed and removes it once a retry succeeds', async () => {
+    it('keeps a failed asset listed and removes it once a retry succeeds', async () => {
       mockDeleteAsset
         .mockRejectedValueOnce(new Error('503 Service Unavailable'))
         .mockResolvedValueOnce(true)
@@ -2997,7 +2997,7 @@ describe('useMediaAssetActions', () => {
       const asset = createMockAsset({ id: 'asset-503', name: 'retry.png' })
       mockInputAssets.items = [asset]
 
-      await expect(actions.deleteAssets(asset)).resolves.toBe(false)
+      await actions.deleteAssets(asset)
 
       expect(mockInputAssets.items.map((item) => item.id)).toEqual([
         'asset-503'
@@ -3024,6 +3024,14 @@ describe('useMediaAssetActions', () => {
           duration: 2000
         }
       )
+    })
+
+    it.fails('returns false when asset deletion fails', async () => {
+      mockDeleteAsset.mockRejectedValue(new Error('503 Service Unavailable'))
+
+      await expect(
+        useMediaAssetActions().deleteAssets(createMockAsset())
+      ).resolves.toBe(false)
     })
 
     it('cleans up only the succeeded assets and clears every overlay when part of a batch fails', async () => {

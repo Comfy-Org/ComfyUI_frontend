@@ -803,11 +803,19 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       )
       await page.route('**/api/billing/ops/**', (route) => {
         operationPollRequests.push(route.request())
-        return route.fulfill(jsonRoute(UNEXPECTED_OPERATION_RESPONSE))
+        return route.fulfill(
+          jsonRoute({
+            id: PAYMENT_METHOD_URL_MISSING_RESPONSE.billing_op_id,
+            status: 'failed',
+            error_message: 'Payment page was not opened',
+            started_at: '2026-07-20T00:00:00Z',
+            completed_at: '2026-07-20T00:00:01Z'
+          } satisfies BillingOpStatusResponse)
+        )
       })
     })
 
-    test('retains the operation and stops checkout', async ({
+    test('rejects checkout without adopting the operation', async ({
       page,
       toast
     }) => {
@@ -819,8 +827,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
 
       await expect(
         toast.toastErrors.filter({
-          hasText:
-            'Payment options are unavailable. Please refresh and try again.'
+          hasText: "We couldn't update your subscription. Please try again."
         })
       ).toBeVisible()
       await expect
@@ -829,7 +836,7 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
             sessionStorage.getItem('comfy:pending-subscription-checkout')
           )
         )
-        .toContain(PAYMENT_METHOD_URL_MISSING_RESPONSE.billing_op_id)
+        .toBeNull()
       expect(operationPollRequests).toHaveLength(0)
       expect(
         await page.evaluate(() =>

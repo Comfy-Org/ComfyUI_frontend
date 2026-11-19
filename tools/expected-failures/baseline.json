@@ -124,7 +124,7 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/assets/composables/useMediaAssetActions.test.ts:keeps a failed asset listed and removes it once a retry succeeds:1",
+    "id": "vitest:src/platform/assets/composables/useMediaAssetActions.test.ts:returns false when asset deletion fails:1",
     "classification": "live-defect"
   },
   {
@@ -152,19 +152,15 @@
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/keybindings/presetService.test.ts:calls deleteUserData and resets to default if active:1",
+    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns true after deleting a preset:1",
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/keybindings/presetService.test.ts:does not reset to default when deleting a non-active preset:1",
+    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns false when the backend refuses deletion:1",
     "classification": "live-defect"
   },
   {
-    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns false without changing state when the backend refuses deletion:1",
-    "classification": "live-defect"
-  },
-  {
-    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns false without changing state when user cancels confirmation:1",
+    "id": "vitest:src/platform/keybindings/presetService.test.ts:returns false when user cancels confirmation:1",
     "classification": "live-defect"
   },
   {

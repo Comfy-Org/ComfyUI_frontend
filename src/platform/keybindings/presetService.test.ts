@@ -161,7 +161,7 @@ describe('useKeybindingPresetService', () => {
   })
 
   describe('deletePreset', () => {
-    it.fails('calls deleteUserData and resets to default if active', async () => {
+    it('calls deleteUserData and resets to default if active', async () => {
       vi.mocked(api.deleteUserData).mockResolvedValue(
         new Response(null, { status: 200 })
       )
@@ -175,9 +175,8 @@ describe('useKeybindingPresetService', () => {
       )
 
       const service = await getPresetService()
-      const deleted = await service.deletePreset('vim')
+      await service.deletePreset('vim')
 
-      expect(deleted).toBe(true)
       expect(api.deleteUserData).toHaveBeenCalledWith('keybindings/vim.json')
       expect(store.currentPresetName).toBe('default')
       expect(Object.keys(store.getUserKeybindings())).toHaveLength(0)
@@ -187,7 +186,7 @@ describe('useKeybindingPresetService', () => {
       )
     })
 
-    it.fails('returns false without changing state when the backend refuses deletion', async () => {
+    it('rejects without changing state when the backend refuses deletion', async () => {
       vi.mocked(api.deleteUserData).mockResolvedValue(
         new Response(null, { status: 500 })
       )
@@ -195,28 +194,23 @@ describe('useKeybindingPresetService', () => {
       store.currentPresetName = 'vim'
 
       const service = await getPresetService()
-      const deleted = await service.deletePreset('vim')
 
-      expect(deleted).toBe(false)
+      await expect(service.deletePreset('vim')).rejects.toThrow(
+        'g.keybindingPresets.deletePresetFailed'
+      )
+
+      expect(api.deleteUserData).toHaveBeenCalledWith('keybindings/vim.json')
       expect(store.currentPresetName).toBe('vim')
       expect(mockPersistUserKeybindings).not.toHaveBeenCalled()
-      expect(useToast().error).toHaveBeenCalledWith('g.error', {
-        description: 'g.keybindingPresets.deletePresetFailed'
-      })
-      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
-        errorType: 'keybinding_preset_deletion_http_failure',
-        tags: { status: 500 }
-      })
     })
 
-    it.fails('returns false without changing state when user cancels confirmation', async () => {
+    it('does not change state when user cancels confirmation', async () => {
       vi.mocked(useDialogService()).confirm.mockResolvedValueOnce(false)
       store.currentPresetName = 'vim'
 
       const service = await getPresetService()
-      const deleted = await service.deletePreset('vim')
+      await service.deletePreset('vim')
 
-      expect(deleted).toBe(false)
       expect(api.deleteUserData).not.toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
       expect(useToast().toasts).toHaveLength(0)
@@ -235,7 +229,7 @@ describe('useKeybindingPresetService', () => {
       expect(useToast().toasts).toHaveLength(0)
     })
 
-    it.fails('does not reset to default when deleting a non-active preset', async () => {
+    it('does not reset to default when deleting a non-active preset', async () => {
       vi.mocked(api.deleteUserData).mockResolvedValue(
         new Response(null, { status: 200 })
       )
@@ -243,11 +237,40 @@ describe('useKeybindingPresetService', () => {
       store.currentPresetName = 'emacs'
 
       const service = await getPresetService()
-      const deleted = await service.deletePreset('vim')
+      await service.deletePreset('vim')
 
-      expect(deleted).toBe(true)
       expect(store.currentPresetName).toBe('emacs')
       expect(mockPersistUserKeybindings).not.toHaveBeenCalled()
+    })
+
+    it.fails('returns true after deleting a preset', async () => {
+      vi.mocked(api.deleteUserData).mockResolvedValue(new Response())
+      const service = await getPresetService()
+
+      await expect(service.deletePreset('vim')).resolves.toBe(true)
+    })
+
+    it.fails('returns false when the backend refuses deletion', async () => {
+      vi.mocked(api.deleteUserData).mockResolvedValue(
+        new Response(null, { status: 500 })
+      )
+      const service = await getPresetService()
+
+      await expect(service.deletePreset('vim')).resolves.toBe(false)
+      expect(useToast().error).toHaveBeenCalledWith('g.error', {
+        description: 'g.keybindingPresets.deletePresetFailed'
+      })
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'keybinding_preset_deletion_http_failure',
+        tags: { status: 500 }
+      })
+    })
+
+    it.fails('returns false when user cancels confirmation', async () => {
+      vi.mocked(useDialogService()).confirm.mockResolvedValueOnce(false)
+      const service = await getPresetService()
+
+      await expect(service.deletePreset('vim')).resolves.toBe(false)
     })
   })
 
