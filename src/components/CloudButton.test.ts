@@ -12,6 +12,7 @@ import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibili
 import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/components/CloudButton.vue'
+import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -150,6 +151,34 @@ describe('Cloud button compatibility checks', () => {
     expect(
       await screen.findByRole('dialog', { name: 'Run on Comfy Cloud' })
     ).toBeVisible()
+  })
+
+  it('keeps upload recovery available beside the current workflow check', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    const model = { folder: 'loras', name: 'unfinished.safetensors' }
+    useLocalModelUploadStore().upload = {
+      phase: 'failed',
+      reason: 'storagePending',
+      models: [model]
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByTestId('cloud-button'))
+    expect(await screen.findByTestId('run-on-cloud-card')).toBeVisible()
+    useDialogStore().closeDialog({ key: 'global-run-on-comfy-cloud' })
+    await nextTick()
+
+    await user.click(
+      screen.getByRole('button', { name: 'Resume model upload' })
+    )
+    expect(await screen.findByText(model.name)).toBeVisible()
   })
 
   it('waits for the pending hover request when clicked', async () => {

@@ -8,6 +8,7 @@ import {
   readLocalModelSizes,
   waitForStoredModel
 } from '@/platform/openOnCloud/localModelUploadApi'
+import { checkCloudModelAvailable } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import type { CloudWorkflowGaps } from '@/platform/openOnCloud/cloudWorkflowCheck'
@@ -204,7 +205,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     if (isUploading.value || !canTake(model) || isPendingPick(pickOf(model)))
       return
     setPick(model, { status: 'chosen', file })
-    if (upload.value.phase === 'failed') upload.value = { phase: 'idle' }
+    if (upload.value.phase === 'failed' && !upload.value.models)
+      upload.value = { phase: 'idle' }
   }
 
   function canUpload(models: MissingModel[]): boolean {
@@ -260,7 +262,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         })
       if (staged && result.reason === 'failed')
         return { phase: 'failed', reason: 'storagePending' }
-      if (staged && !signal.aborted) setPick(model, { status: 'chosen', file })
+      if (staged && result.reason !== 'storageLimit' && !signal.aborted)
+        setPick(model, { status: 'chosen', file })
       return { phase: 'failed', reason: result.reason, message: result.message }
     }
     const submitted: SubmittedModel = {
@@ -289,9 +292,26 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     disableCancel()
     const stored = await waitForStoredModel(submitted.taskId, signal, request)
     if (stored.ok) return
+    if (stored.reason === 'taskUnavailable')
+      return await recheckMissingTask(model, submitted, signal)
     if (!signal.aborted && stored.reason !== 'storagePending')
       setPick(model, { status: 'chosen', file: submitted.file })
     return { phase: 'failed', reason: stored.reason, message: stored.message }
+  }
+
+  async function recheckMissingTask(
+    model: MissingModel,
+    submitted: SubmittedModel,
+    signal: AbortSignal
+  ): Promise<UploadStop | undefined> {
+    const available = await checkCloudModelAvailable(model)
+    if (signal.aborted) return { phase: 'failed', reason: 'cancelled' }
+    if (available) return
+    if (available === false) {
+      setPick(model, { status: 'chosen', file: submitted.file })
+      return { phase: 'failed', reason: 'sessionExpired' }
+    }
+    return { phase: 'failed', reason: 'storagePending' }
   }
 
   async function sendAll(
@@ -324,8 +344,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         current
       )
       if (signal.aborted) return { phase: 'failed', reason: 'cancelled' }
-      if (stop)
-        return stop.reason === 'storagePending' ? { ...stop, models } : stop
+      if (stop) return stop.reason === 'cancelled' ? stop : { ...stop, models }
       setPick(model, { status: 'stored' })
       if (pick.status === 'chosen') done += pick.file.size
     }
@@ -360,7 +379,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       })
       upload.value = {
         phase: 'failed',
-        reason: current.ownerChanged ? 'accountChanged' : 'failed'
+        reason: current.ownerChanged ? 'accountChanged' : 'failed',
+        ...(current.ownerChanged ? {} : { models })
       }
     } finally {
       if (batch === current) batch = undefined
@@ -371,23 +391,21 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     if (canCancel.value) batch?.controller.abort()
   }
 
-  function checkAgain(): void {
-    if (upload.value.phase === 'failed' && upload.value.models) {
-      upload.value = { phase: 'idle' }
-    }
-    void useCloudWorkflowCheckStore().check()
-  }
-
   function reset(models: MissingModel[]): void {
     if (isUploading.value) return
     clearPreparation()
-    if (modelSnapshot === models && upload.value.phase === 'failed') return
-    upload.value = { phase: 'idle' }
+    const current = upload.value
+    if (current.phase === 'failed' && modelSnapshot === models) return
+    const recovery = current.phase === 'failed' ? current.models : undefined
+    if (!recovery) upload.value = { phase: 'idle' }
     const keys = new Set(models.map(modelKey))
+    const recoverableKeys = new Set(recovery?.map(modelKey))
     picks.value = new Map(
       [...picks.value].filter(
         ([key, pick]) =>
-          isPendingPick(pick) || (keys.has(key) && pick.status === 'stored')
+          recoverableKeys.has(key) ||
+          isPendingPick(pick) ||
+          (keys.has(key) && pick.status === 'stored')
       )
     )
     modelSnapshot = models
@@ -410,7 +428,6 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     canUpload,
     start,
     cancel,
-    checkAgain,
     reset
   }
 })

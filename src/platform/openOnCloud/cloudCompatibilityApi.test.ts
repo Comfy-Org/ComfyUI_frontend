@@ -2,7 +2,10 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import {
+  checkCloudCompatibility,
+  checkCloudModelAvailable
+} from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -88,6 +91,27 @@ describe(checkCloudCompatibility, () => {
 
     await expect(checkCloudCompatibility()).resolves.toBeNull()
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('checks a previous upload by model in the signed-in workspace', async () => {
+    const model = { folder: 'loras', name: 'model.safetensors' }
+    vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
+      Authorization: 'Bearer workspace'
+    })
+    cloudAnswers(
+      Response.json({
+        cloud: {
+          missing_node_types: [],
+          missing_models: [model]
+        }
+      })
+    )
+
+    await expect(checkCloudModelAvailable(model)).resolves.toBe(false)
+    expect(requestBody()).toEqual({ node_types: [], models: [model] })
+    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
+      Authorization: 'Bearer workspace'
+    })
   })
 
   it('lists the node packs Cloud is missing', async () => {
