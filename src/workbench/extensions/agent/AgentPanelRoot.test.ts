@@ -323,6 +323,7 @@ import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivitySto
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
+import { useAgentCanvasPinStore } from './stores/agent/agentCanvasPinStore'
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { destroyAgentPageSession } from './agentPageSession'
@@ -17200,5 +17201,95 @@ describe('AgentPanelRoot proactive qualification', () => {
       await screen.findByRole('heading', { name: 'What do you want to make?' })
     ).toBeVisible()
     expect(fetchRequests('/api/agent/usage-status')).toHaveLength(1)
+  })
+})
+
+describe('AgentPanelRoot node ask from the selection toolbox', () => {
+  const KSAMPLER = { id: '7', title: 'KSampler' }
+
+  beforeEach(() => {
+    useAgentPanelStore().enabled = true
+  })
+
+  function makeBoundTab(): LoadedComfyWorkflow {
+    const tab = addTab('workflows/current.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-42' })
+    })
+    workflowStore.activeWorkflow = tab
+    useAgentWorkflowTabBindingStore().bind('wf-42', tab.path)
+    return tab
+  }
+
+  it('sends the question to the current chat with the nodes as references', async () => {
+    const tab = makeBoundTab()
+    useAgentConversationStore().setThreadId('th-1')
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'What does this node do?',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path
+    }
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(
+      vi
+        .mocked(fetch)
+        .mock.calls.filter(([, init]) => init?.method === 'POST')
+        .map(([url]) => String(url))
+    ).toEqual(['/api/agent/threads/th-1/messages'])
+    expect(bodies[0]).toMatchObject({
+      content: 'What does this node do?',
+      selection: { node_ids: ['7'] }
+    })
+    expect(useAgentPanelStore().pendingNodeAsk).toBeNull()
+    await waitFor(() =>
+      expect(useAgentCanvasPinStore().pins).toEqual([
+        expect.objectContaining({
+          threadId: 'th-1',
+          turnId: 'm-1',
+          nodeIds: ['7'],
+          workflowPath: tab.path,
+          seen: false
+        })
+      ])
+    )
+  })
+
+  it('keeps the draft in the panel composer', async () => {
+    const tab = makeBoundTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    useAgentComposerStore().setText('half-written thought')
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'Explain these settings',
+      nodes: [KSAMPLER],
+      workflowPath: tab.path
+    }
+
+    await waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({ content: 'Explain these settings' })
+    expect(useAgentComposerStore().draft).toBe('half-written thought')
+  })
+
+  it('sends nothing when the workflow with the nodes is no longer open', async () => {
+    makeBoundTab()
+    const bodies = mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+
+    useAgentPanelStore().pendingNodeAsk = {
+      text: 'What does this node do?',
+      nodes: [KSAMPLER],
+      workflowPath: 'workflows/closed.json'
+    }
+
+    await waitFor(() =>
+      expect(useToast().toasts.map((toast) => toast.title)).toContain(
+        'The workflow with these nodes is no longer open, so nothing was sent.'
+      )
+    )
+    expect(bodies).toHaveLength(0)
   })
 })

@@ -130,6 +130,7 @@ export type Settings = {
   'Comfy.Node.AllowImageSizeDraw': boolean
   'Comfy.Node.DownscaleImagePreviews': boolean
   'Comfy.Minimap.Visible': boolean
+  'Comfy.Agent.CanvasPinsHidden': boolean
   'Comfy.Minimap.NodeColors': boolean
   'Comfy.Minimap.ShowLinks': boolean
   'Comfy.Minimap.ShowGroups': boolean

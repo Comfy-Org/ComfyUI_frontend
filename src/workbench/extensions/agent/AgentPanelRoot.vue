@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import type { AgentNodeAsk } from '@/workbench/extensions/agent/types/agentNodeAsk'
+import { useAgentCanvasPinStore } from '@/workbench/extensions/agent/stores/agent/agentCanvasPinStore'
 import './agentPanel.css'
 import type { AgentGreetingAssignment } from './types/proactiveGreeting'
 import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
@@ -228,6 +230,7 @@ const {
   fetchStatus: refreshBillingStatus
 } = useBillingContext()
 const conversationStore = useAgentConversationStore()
+const canvasPinStore = useAgentCanvasPinStore()
 const history = useAgentChatHistoryStore()
 const { accepted: consentAccepted, identity: consentIdentity } = storeToRefs(
   useAgentConsentStore()
@@ -2100,6 +2103,56 @@ watch(
     if (!context) return
     agentPanelStore.pendingErrorContext = null
     void attachErrorContext(context)
+  },
+  { immediate: true }
+)
+
+function nodeAskWorkflowOpen(ask: AgentNodeAsk): boolean {
+  if (workflowStore.activeWorkflow?.path === ask.workflowPath) return true
+  toast.warning(t('agent.nodeAsk.workflowChanged'), { duration: 5000 })
+  return false
+}
+
+async function sendNodeAsk(ask: AgentNodeAsk): Promise<void> {
+  const workflow = workflowStore.activeWorkflow
+  if (!nodeAskWorkflowOpen(ask)) return
+  if (workflow) await followTab(workflow)
+  if (!nodeAskWorkflowOpen(ask)) return
+  agentPanelStore.retainWorkflowTarget()
+  const keptPrompt = composerStore.hasDraft ? composerStore.prompt : null
+  const keptAttachments = composerStore.attachments
+  replaceSelectionTags(ask.nodes)
+  const turnBefore = conversationStore.activeTurnId
+  const sending = onSend(ask.text, [])
+  if (keptPrompt) composerStore.restorePrompt(keptPrompt, keptAttachments)
+  await sending
+  const turnId = conversationStore.activeTurnId
+  const sentThread = conversationStore.threadId
+  if (turnId === null || turnId === turnBefore || sentThread === null) return
+  canvasPinStore.add({
+    threadId: sentThread,
+    turnId,
+    nodeIds: ask.nodes.map((node) => node.id),
+    workflowPath: ask.workflowPath ?? ''
+  })
+}
+
+watch(
+  () => agentPanelStore.pendingChatOpen,
+  (chatId) => {
+    if (!chatId) return
+    agentPanelStore.pendingChatOpen = null
+    if (chatId !== threadId.value) void onSelectHistory(chatId, () => true)
+  },
+  { immediate: true }
+)
+
+watch(
+  () => agentPanelStore.pendingNodeAsk,
+  (ask) => {
+    if (!ask) return
+    agentPanelStore.pendingNodeAsk = null
+    void sendNodeAsk(ask)
   },
   { immediate: true }
 )

@@ -45,6 +45,7 @@
     <template v-if="comfyAppReady">
       <TitleEditor />
       <SelectionToolbox v-if="selectionToolboxEnabled" />
+      <AgentCanvasPins v-if="agentPanelStore.enabled" />
       <NodeContextMenu />
       <DomWidgets v-if="!shouldRenderVueNodes" />
     </template>
@@ -153,9 +154,11 @@ import NodeContextMenu from '@/components/graph/NodeContextMenu.vue'
 import NodeDragPreview from '@/components/graph/NodeDragPreview.vue'
 import NodeSelectionModeBanner from '@/components/graph/NodeSelectionModeBanner.vue'
 import SelectionToolbox from '@/components/graph/SelectionToolbox.vue'
+import AgentCanvasPins from '@/components/graph/agentPins/AgentCanvasPins.vue'
 import TitleEditor from '@/components/graph/TitleEditor.vue'
 import PropertiesPanel from '@/renderer/extensions/propertiesPanel/PropertiesPanel.vue'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import NodeSearchboxPopover from '@/components/searchbox/NodeSearchBoxPopover.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
@@ -258,6 +261,7 @@ const openSubgraph = computed(() =>
   isSubgraph(canvasStore.currentGraph) ? canvasStore.currentGraph : undefined
 )
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
+const agentPanelStore = useAgentPanelStore()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
 const toast = useToast()

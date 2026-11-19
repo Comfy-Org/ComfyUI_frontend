@@ -73,6 +73,20 @@
         >
           <i class="icon-[lucide--route-off]" aria-hidden="true" />
         </Button>
+
+        <Button
+          v-if="agentPanelStore.enabled"
+          :tooltip="pinsLabel"
+          variant="textonly"
+          :class="cn('size-8 p-0', pinsHidden && 'not-active:bg-muted')"
+          :aria-label="pinsLabel"
+          :aria-pressed="pinsHidden"
+          data-testid="toggle-agent-pins-button"
+          :style="stringifiedMinimapStyles.buttonStyles"
+          @click="commandStore.execute('Comfy.Canvas.ToggleAgentPins')"
+        >
+          <i class="icon-[lucide--message-square-off]" aria-hidden="true" />
+        </Button>
       </div>
     </div>
     <ZoomControlsModal :visible="isModalVisible" @close="hideModal" />
@@ -93,6 +107,7 @@ import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteracti
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { cn } from '@comfyorg/tailwind-utils'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import CanvasModeSelector from './CanvasModeSelector.vue'
 import ZoomControlsModal from './modals/ZoomControlsModal.vue'
@@ -162,6 +177,14 @@ const linkVisibilityLabel = computed(() =>
     ? t('graphCanvasMenu.showLinks')
     : t('graphCanvasMenu.hideLinks')
 )
+const agentPanelStore = useAgentPanelStore()
+const pinsHidden = computed(() =>
+  settingStore.get('Comfy.Agent.CanvasPinsHidden')
+)
+const pinsLabel = computed(() =>
+  pinsHidden.value ? t('agent.nodeAsk.showPins') : t('agent.nodeAsk.hidePins')
+)
+
 onMounted(() => {
   canvasStore.initScaleSync()
 })

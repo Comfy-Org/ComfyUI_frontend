@@ -8,7 +8,12 @@
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <TooltipProvider :delay-duration="1000">
-          <div class="flex h-8 gap-1">
+          <AskAgentComposer
+            v-if="agentComposerOpen && canAskAgent"
+            :from-width="agentComposerFromWidth"
+            @close="agentComposerOpen = false"
+          />
+          <div v-else class="flex h-8 gap-1">
             <template v-if="hasLinkSelection">
               <ToolboxButton
                 v-if="linksHidden"
@@ -126,6 +131,7 @@
                 :icon="command.icon"
                 @click="commandStore.execute(command.id)"
               />
+              <AskAgentButton v-if="canAskAgent" @click="openAgentComposer" />
               <ExecuteButton v-if="hasOutputNodesSelected" />
               <ToolboxButton
                 :label="$t('g.moreOptions')"
@@ -141,9 +147,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import ArrangeButton from '@/components/graph/selectionToolbox/ArrangeButton.vue'
+import AskAgentButton from '@/components/graph/selectionToolbox/AskAgentButton.vue'
+import AskAgentComposer from '@/components/graph/selectionToolbox/AskAgentComposer.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
 import ToolboxButton from '@/components/graph/selectionToolbox/ToolboxButton.vue'
@@ -164,6 +172,8 @@ import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'
 
@@ -178,6 +188,12 @@ const { isRefreshable, refreshSelected } = useRefreshableSelection()
 
 const toolboxRef = ref<HTMLElement | undefined>()
 const { visible } = useSelectionToolboxPosition(toolboxRef)
+const agentPanelStore = useAgentPanelStore()
+const agentComposerOpen = ref(false)
+const agentComposerFromWidth = ref<number>()
+watch(visible, (shown) => {
+  if (!shown) agentComposerOpen.value = false
+})
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
@@ -216,6 +232,30 @@ const showBypass = computed(
     hasMultipleSelection.value ||
     hasGroupedNodesSelection.value
 )
+const hasAnyNodeSelected = computed(() =>
+  selectedItems.value.some(isLGraphNode)
+)
+const canAskAgent = computed(
+  () => agentPanelStore.enabled && hasAnyNodeSelected.value
+)
+
+watch(
+  () =>
+    selectedItems.value
+      .filter(isLGraphNode)
+      .map((node) => node.id)
+      .join(),
+  () => (agentComposerOpen.value = false)
+)
+
+function openAgentComposer(): void {
+  agentComposerFromWidth.value =
+    toolboxRef.value?.querySelector<HTMLElement>(
+      '.selection-toolbox'
+    )?.clientWidth
+  agentComposerOpen.value = true
+}
+
 const hasLinkSelection = computed(
   () => !hasAnySelection.value && linkSelectionStore.selection !== null
 )

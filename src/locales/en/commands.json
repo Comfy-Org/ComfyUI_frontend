@@ -101,6 +101,9 @@
   "Comfy_Canvas_ToggleMinimap": {
     "label": "Canvas Toggle Minimap"
   },
+  "Comfy_Canvas_ToggleAgentPins": {
+    "label": "Canvas Toggle Agent Pins"
+  },
   "Comfy_Canvas_ToggleSelected_Pin": {
     "label": "Pin/Unpin Selected Items"
   },
