@@ -119,20 +119,17 @@ describe('composer shared video thumbnail lifetime', () => {
     ).toBe(false)
     retainPendingVideo('cm-2', store)
     const secondGate = store.startGateHold('cm-2')
+    const previews: string[] = []
+    store.onAssetPreviewUpdated(({ previewUrl }) => previews.push(previewUrl))
     expect(
       vi.mocked(videoThumbnail.createVideoThumbnail).mock.calls[0][1].aborted
     ).toBe(false)
     expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
     result.resolve('blob:retained-poster')
     await result.promise
+    expect(previews).toEqual(['blob:retained-poster'])
     store.releaseGateHold(secondGate)
-    store.restorePrompt(snapshot.prompt, [
-      {
-        ...video,
-        mediaUrl: 'blob:retained-video',
-        previewUrl: 'blob:retained-poster'
-      }
-    ])
+    store.restorePrompt(snapshot.prompt, snapshot.attachments)
     expect(store.attachments[0].previewUrl).toBe('blob:retained-poster')
     expect(URL.revokeObjectURL).not.toHaveBeenCalled()
   })

@@ -79,11 +79,24 @@ test.describe(
         postedMessages
       }) => {
         await page.clock.install()
-        await rejectOneSend({ agentPanel, postedMessages })
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+        await page.clock.pauseAt(Date.now())
+
+        await agentPanel.composer.fill(prompt)
+        await agentPanel.composer.press('Enter')
+        await expect(agentPanel.pendingSendError).toContainText(
+          FUNDS_UNAVAILABLE_MESSAGE
+        )
+        await expect(agentPanel.composer).toHaveText('')
+        await expect(agentPanel.retryPendingButton).toBeDisabled()
+        await expect(agentPanel.deletePendingButton).toBeEnabled()
+        await expect.poll(() => postedMessages).toHaveLength(1)
 
         await expect(agentPanel.retryPendingButton).toBeDisabled()
         await page.clock.runFor(1_100)
         await expect(agentPanel.retryPendingButton).toBeEnabled()
+        await page.clock.resume()
         await agentPanel.retryPendingButton.click()
 
         await expect.poll(() => postedMessages).toHaveLength(2)

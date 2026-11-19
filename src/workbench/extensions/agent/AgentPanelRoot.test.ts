@@ -17545,11 +17545,63 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     expect(useAgentComposerStore().gateHold).not.toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
     expect(useAgentComposerStore().gateHold).toBeNull()
-    acceptConsent()
+    await acceptConsent()
     await settleFollow()
     expect(screen.queryByTestId('user-message-bubble')).toBeNull()
     expect(useAgentComposerStore().draft).toBe('Draft during consent')
     expect(bodies).toHaveLength(0)
+  })
+
+  it('withdraws a node-tagged held send when selectedTarget changes during consent (Item 17)', async () => {
+    bindTab('wf-42')
+    const tabB = addTab('workflows/b.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-b', nodes: [] })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-b', tabB.path)
+
+    const bodies: Record<string, unknown>[] = []
+    respondToFetch(
+      { method: 'POST', url: /\/messages$/ },
+      async (_url, init) => {
+        bodies.push(JSON.parse(String(init?.body)) as Record<string, unknown>)
+        return json(202, ack('wf-42', 'm-node-hold'))
+      }
+    )
+    Object.assign(useAgentConsentStore(), { accepted: false })
+    let acceptConsent = () => {}
+    withConsent.mockImplementation(
+      (_trigger, onAccept) =>
+        new Promise<void>((resolve) => {
+          acceptConsent = () => {
+            Object.assign(useAgentConsentStore(), { accepted: true })
+            onAccept()
+            resolve()
+          }
+        })
+    )
+
+    renderWithSelectedTarget()
+    const composer = useAgentComposerStore()
+    composer.setNodes([{ id: '12', title: 'KSampler' }])
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Explain this node')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() => expect(composer.gateHold).not.toBeNull())
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Explain this node'
+    )
+
+    useAgentPanelStore().setWorkflowTarget(tabB)
+    acceptConsent()
+    await settleFollow()
+
+    expect(bodies).toHaveLength(0)
+    expect(screen.queryByTestId('user-message-bubble')).toBeNull()
+    expect(composer.gateHold).toBeNull()
+    expect(composer.draft.trim()).toBe('Explain this node')
+    expect(composer.nodes).toEqual([])
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(tabB.path)
   })
 
   it('keeps a deleted History thread deleted when its pending send later accepts (O0-08)', async () => {
@@ -17976,43 +18028,58 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
       vi.mocked(fetch).mockImplementation(fetchImpl)
 
       vi.mocked(reportError).mockClear()
-      renderWithSelectedTarget()
-      await vi.waitFor(() => expect(workflowCalls).toBe(1))
+      vi.useFakeTimers({ shouldAdvanceTime: true })
+      try {
+        renderWithSelectedTarget()
+        await vi.waitFor(() => expect(workflowCalls).toBe(1))
 
-      await userEvent.click(
-        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
-      )
-      await userEvent.click(screen.getByRole('textbox'))
-      await userEvent.paste('Guard prompt')
-      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
-      await vi.waitFor(() => expect(workflowCalls).toBe(2))
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await userEvent.click(screen.getByRole('textbox'))
+        await userEvent.paste('Guard prompt')
+        await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+        await vi.waitFor(() => expect(workflowCalls).toBe(2))
 
-      await userEvent.click(
-        screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
-      )
-      expect(bodies).toHaveLength(0)
-      releaseWorkflows()
-
-      await vi.waitFor(() => expect(bodies).toHaveLength(1))
-      if (boundId === null) {
-        expect(bodies[0]).toMatchObject({
-          current_tab_unbound: true,
-          draft: { content: { id: 'temp-draft' } }
+        // Freeze the 3 s PREPARE_TIMEOUT_MS timer so the hold stays active until New chat runs.
+        vi.useFakeTimers({ shouldAdvanceTime: false })
+        const fakeTimerUser = userEvent.setup({
+          advanceTimers: (ms) => vi.advanceTimersByTimeAsync(ms)
         })
-      } else {
-        expect(bodies[0]).toMatchObject({
-          workflow_id: boundId,
-          draft: { content: { id: 'temp-draft' } }
-        })
+        await vi.advanceTimersByTimeAsync(2_000)
+        expect(bodies).toHaveLength(0)
+
+        await fakeTimerUser.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await vi.advanceTimersByTimeAsync(2_000)
+        expect(bodies).toHaveLength(0)
+        vi.useFakeTimers({ shouldAdvanceTime: true })
+        releaseWorkflows()
+
+        await vi.waitFor(() => expect(bodies).toHaveLength(1))
+        if (boundId === null) {
+          expect(bodies[0]).toMatchObject({
+            current_tab_unbound: true,
+            draft: { content: { id: 'temp-draft' } }
+          })
+        } else {
+          expect(bodies[0]).toMatchObject({
+            workflow_id: boundId,
+            draft: { content: { id: 'temp-draft' } }
+          })
+        }
+        await vi.waitFor(() =>
+          expect(
+            useAgentChatHistoryStore().sessions.some(
+              ({ id }) => id === 'th-guard-7'
+            )
+          ).toBe(true)
+        )
+        expect(reportError).not.toHaveBeenCalled()
+      } finally {
+        vi.useRealTimers()
       }
-      await vi.waitFor(() =>
-        expect(
-          useAgentChatHistoryStore().sessions.some(
-            ({ id }) => id === 'th-guard-7'
-          )
-        ).toBe(true)
-      )
-      expect(reportError).not.toHaveBeenCalled()
     }
   )
 
@@ -18291,6 +18358,49 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
 
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     await vi.waitFor(() => expect(useToast().toasts).toHaveLength(0))
+  })
+
+  it('drops failed thread-origin pending sends when workspace changes so Retry cannot fire across workspaces (Item 7)', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
+    bindTab('wf-42')
+    let shouldFail = true
+    let postCalls = 0
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        postCalls += 1
+        if (postCalls === 1) return json(202, ack('wf-42', 'm-seed'))
+        if (shouldFail) throw new TypeError('Failed to fetch')
+        return json(202, ack('wf-42', 'm-retry'))
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Seed thread')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(postCalls).toBe(1))
+    dispatchApiEvent('agent_message_done', {
+      thread_id: 'th-1',
+      message_id: 'm-seed',
+      usage: null
+    })
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Thread send in workspace A')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByTestId('pending-send-error')
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled()
+
+    shouldFail = false
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    await vi.waitFor(() =>
+      expect(screen.queryByTestId('pending-send-error')).toBeNull()
+    )
+    expect(postCalls).toBe(2)
   })
 })
 

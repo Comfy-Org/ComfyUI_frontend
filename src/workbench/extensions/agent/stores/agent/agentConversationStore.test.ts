@@ -4299,5 +4299,102 @@ describe('useAgentConversationStore', () => {
         tags: ['KSampler #1']
       })
     })
+
+    it('drops cross-workspace pending sends across blank and thread origins while preserving an excluded gate hold (Item 7)', () => {
+      const store = useAgentConversationStore()
+      const blankId = store.activeBlankChatId
+      expect(blankId).toBeTruthy()
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-a-blank',
+        text: 'Blank in A',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.setThreadId('th-ws-a')
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-a-thread',
+        text: 'Thread in A',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-b-held',
+        text: 'Held in A during switch',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-a'
+      })
+      store.startPendingSend({
+        clientMessageId: 'cm-ws-b-stay',
+        text: 'Already in B',
+        attachments: [],
+        tags: [],
+        workflowReferences: [],
+        workspaceId: 'ws-b'
+      })
+
+      const dropped = store.discardPendingSendsOutsideWorkspace(
+        'ws-b',
+        'cm-ws-b-held'
+      )
+
+      expect(dropped).toEqual(['cm-ws-a-blank', 'cm-ws-a-thread'])
+      expect(store.hasPendingSendForBlankChat(blankId, 'ws-a')).toBe(false)
+      expect(store.getPendingSend('cm-ws-a-blank')).toBeUndefined()
+      expect(store.getPendingSend('cm-ws-a-thread')).toBeUndefined()
+      expect(store.getPendingSend('cm-ws-b-held')).toBeDefined()
+      expect(store.getPendingSend('cm-ws-b-stay')).toBeDefined()
+    })
+
+    it('captures canvas baseline right before postTurn and keeps per-send canvas evidence across reset (Item 10)', () => {
+      const store = useAgentConversationStore()
+      let outcomeCount = 1
+      store.setCanvasSyncGate(
+        () => 'awaiting',
+        () => outcomeCount
+      )
+      store.startPendingSend({
+        clientMessageId: 'cm-canvas',
+        text: 'Canvas send',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      expect(
+        store.getPendingSend('cm-canvas')?.canvasOutcomeAtStart
+      ).toBeUndefined()
+
+      // Before postTurn, canvas catch-up notifications must not attach to a pre-post send.
+      store.notifyCanvasCaughtUp({
+        workflowId: 'wf-before',
+        opIds: ['op-before'],
+        isLive: true
+      })
+      expect(store.getPendingSend('cm-canvas')?.canvasEvidence).toBeUndefined()
+
+      outcomeCount = 4
+      store.capturePendingSendCanvasBaseline('cm-canvas')
+      expect(store.getPendingSend('cm-canvas')?.canvasOutcomeAtStart).toBe(4)
+
+      store.notifyCanvasCaughtUp({
+        workflowId: 'wf-live',
+        opIds: ['op-live'],
+        isLive: true
+      })
+      expect(store.getPendingSend('cm-canvas')?.canvasEvidence).toEqual([
+        { workflowId: 'wf-live', opIds: ['op-live'], isLive: true }
+      ])
+
+      store.reset()
+      expect(store.getPendingSend('cm-canvas')?.canvasOutcomeAtStart).toBe(4)
+      expect(store.getPendingSend('cm-canvas')?.canvasEvidence).toEqual([
+        { workflowId: 'wf-live', opIds: ['op-live'], isLive: true }
+      ])
+    })
   })
 })

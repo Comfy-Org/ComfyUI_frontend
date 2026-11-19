@@ -425,7 +425,38 @@ describe('UserMessage', () => {
     expect(
       screen.getByRole('status', { name: t('agent.sendingMessage') })
     ).toBeVisible()
+    expect(screen.getByTestId('pending-send-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
     expect(screen.queryByTestId('pending-send-error')).toBeNull()
+  })
+
+  it('keeps a persistent role="status" container mounted while toggling sr-only text on state change', async () => {
+    const view = renderMessage({
+      text: 'sending prompt',
+      pending: { clientMessageId: 'cm-live', status: 'sending' }
+    })
+
+    const status = screen.getByRole('status', {
+      name: t('agent.sendingMessage')
+    })
+    expect(status).toHaveTextContent(t('agent.sendingMessage'))
+    expect(status).toHaveClass('sr-only')
+    expect(screen.getByTestId('pending-send-spinner')).toHaveAttribute(
+      'aria-hidden',
+      'true'
+    )
+
+    await view.rerender({
+      text: 'sending prompt',
+      pending: undefined
+    })
+
+    expect(status).toBeInTheDocument()
+    expect(status).toHaveTextContent('')
+    expect(status).not.toHaveAttribute('aria-label')
+    expect(screen.queryByTestId('pending-send-spinner')).toBeNull()
   })
 
   it('shows a sending spinner even on an attachment-only pending send (O0-01)', () => {

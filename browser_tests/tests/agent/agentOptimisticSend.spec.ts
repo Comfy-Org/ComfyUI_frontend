@@ -24,6 +24,17 @@ import {
 
 const test = mergeTests(baseAgentTest, webSocketFixture)
 
+const heldRouteGates: Array<() => void> = []
+
+function trackHeldRouteGate(release: () => void): () => void {
+  heldRouteGates.push(release)
+  return release
+}
+
+test.afterEach(() => {
+  while (heldRouteGates.length > 0) heldRouteGates.pop()?.()
+})
+
 test.describe(
   'Agent optimistic and chat-owned sends',
   { tag: ['@cloud', '@ui'] },
@@ -36,7 +47,7 @@ test.describe(
     }) => {
       let releasePost: () => void = () => {}
       const postPending = new Promise<void>((resolve) => {
-        releasePost = resolve
+        releasePost = trackHeldRouteGate(resolve)
       })
       let markPostEntered: () => void = () => {}
       const postEntered = new Promise<void>((resolve) => {
@@ -81,7 +92,7 @@ test.describe(
       let createdOnServer = false
       let releasePost: () => void = () => {}
       const postPending = new Promise<void>((resolve) => {
-        releasePost = resolve
+        releasePost = trackHeldRouteGate(resolve)
       })
       let markPostEntered: () => void = () => {}
       const postEntered = new Promise<void>((resolve) => {
@@ -262,7 +273,7 @@ test.describe(
         const request = route.request()
         if (request.method() === 'POST') {
           await new Promise<void>((resolve) => {
-            resolvers.push(resolve)
+            resolvers.push(trackHeldRouteGate(resolve))
           })
           if (request.url().includes(`/threads/${existingThreadId}/messages`)) {
             const accepted: AgentTurnAccepted = {
@@ -342,7 +353,7 @@ test.describe(
         if (route.request().method() !== 'POST') return route.fallback()
         if (failNextPost) {
           await new Promise<void>((resolve) => {
-            rejectPost = resolve
+            rejectPost = trackHeldRouteGate(resolve)
           })
           return route.abort('failed')
         }

@@ -11,6 +11,7 @@ import { api } from '@/scripts/api'
 
 import { withAgentAuth } from './agentAuth'
 import { rememberPreviousCredentialForHandoff } from './agentOwnerHandoff'
+import { describeAgentRequestFailure } from './agentRequestFailure'
 
 import type {
   AgentThreadSummary,
@@ -1957,5 +1958,44 @@ describe('usage status', () => {
       name: 'AgentApiError',
       status: 500
     })
+  })
+})
+
+describe('postMessage request timeout', () => {
+  it('aborts a stalled body read at 60s, records failure diagnostics, and rejects with AgentResponseUnreadableError', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(api.fetchApi).mockImplementationOnce(async (_route, init) => {
+        const signal = init?.signal
+        return {
+          ok: true,
+          status: 202,
+          json: () =>
+            new Promise((_resolve, reject) => {
+              signal?.addEventListener('abort', () => reject(signal.reason), {
+                once: true
+              })
+            })
+        } as Response
+      })
+
+      const sending = makeClient().postMessage('new', { content: 'stalled' })
+      const caught = sending.catch((error: unknown) => error)
+
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      const failure = await caught
+      expect(failure).toBeInstanceOf(AgentResponseUnreadableError)
+      expect((failure as Error).cause).toMatchObject({
+        name: 'TimeoutError'
+      })
+      expect(lastCall().init.signal?.aborted).toBe(true)
+      expect(describeAgentRequestFailure(failure)).toEqual({
+        request_path: '/agent/threads/{threadId}/messages',
+        request_error: 'AgentResponseUnreadableError'
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 })

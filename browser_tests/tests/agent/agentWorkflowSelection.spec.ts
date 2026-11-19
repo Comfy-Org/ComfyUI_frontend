@@ -168,9 +168,11 @@ test.describe(
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         'Start in this workflow'
       ])
+      await expect(panel.getByTestId('pending-send-error')).toBeVisible()
       await expect(panel.getByTestId('pending-send-error')).toContainText(
         enMessages.agent.sendFailed
       )
@@ -259,9 +261,11 @@ test.describe(
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         'Start in this workflow'
       ])
+      await expect(panel.getByTestId('pending-send-error')).toBeVisible()
       await expect(panel.getByTestId('pending-send-error')).toContainText(
         enMessages.agent.sendFailed
       )
@@ -455,9 +459,11 @@ test.describe(
       await composer.press('Enter')
       await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
       await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         'Find a workflow for skin upscaling'
       ])
+      await expect(panel.getByTestId('pending-send-error')).toBeVisible()
       await expect(panel.getByTestId('pending-send-error')).toContainText(
         enMessages.agent.sendFailed
       )

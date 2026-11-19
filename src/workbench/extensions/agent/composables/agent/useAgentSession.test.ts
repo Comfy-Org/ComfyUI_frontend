@@ -11202,4 +11202,202 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
       parts: [{ type: 'text', text: 'First Second', state: 'done' }]
     })
   })
+
+  it('marks postMessage TimeoutError as non-retryable in both UI failure and telemetry (Item 2)', async () => {
+    const unreadableTimeout = new AgentResponseUnreadableError(
+      new DOMException('Agent post message timeout', 'TimeoutError')
+    )
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi.fn(async () => {
+          throw unreadableTimeout
+        })
+      }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('Timed out ack')).toBe(false)
+
+    expect(session.entries.value[0]).toMatchObject({
+      role: 'user',
+      pending: {
+        status: 'failed',
+        failure: {
+          kind: 'request',
+          retryable: false
+        }
+      }
+    })
+    expect(telemetry.trackAgentError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        retryable: false
+      })
+    )
+  })
+
+  it.for([
+    { status: 409, reportsFailure: false },
+    { status: 404, reportsFailure: true },
+    { status: 500, reportsFailure: true }
+  ])(
+    'cancelBackgroundTurn handles HTTP $status ($reportsFailure)',
+    async ({ status, reportsFailure }) => {
+      let resolvePost!: (ack: AgentTurnAccepted) => void
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            resolvePost = resolve
+          })
+      )
+      const cancelMessage = vi.fn(async () => {
+        throw new AgentApiError(`status ${status}`, status, null)
+      })
+      const session = useAgentSession({
+        rest: fakeRest({ postMessage, cancelMessage }),
+        events: fakeEvents().source
+      })
+      session.start()
+
+      const sending = session.sendMessage('Cancel me before ack')
+      await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+      await session.stopTurn()
+      resolvePost({ thread_id: 'th-bg-cancel', message_id: 'msg-bg-cancel' })
+      await sending
+      await vi.waitFor(() =>
+        expect(cancelMessage).toHaveBeenCalledExactlyOnceWith(
+          'th-bg-cancel',
+          'msg-bg-cancel'
+        )
+      )
+      await Promise.resolve()
+
+      if (reportsFailure) {
+        expect(reportError).toHaveBeenCalledWith(
+          expect.objectContaining({ status }),
+          expect.objectContaining({ errorType: 'agent_cancel_turn_failed' })
+        )
+      } else {
+        expect(reportError).not.toHaveBeenCalled()
+      }
+    }
+  )
+
+  it('captures canvasOutcomeAtStart after workflow preparation and preserves evidence across stop() (Item 10)', async () => {
+    let outcomeCount = 1
+    let resolvePrepare!: () => void
+    let resolvePost!: (ack: AgentTurnAccepted) => void
+    const conversation = useAgentConversationStore()
+    conversation.setCanvasSyncGate(
+      () => 'awaiting',
+      () => outcomeCount
+    )
+    const postMessage = vi.fn(
+      () =>
+        new Promise<AgentTurnAccepted>((resolve) => {
+          resolvePost = resolve
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: source,
+      workflow: {
+        current: () => ({ id: 'wf-prep', tabPath: 'workflows/prep.json' }),
+        adopted: vi.fn(),
+        prepare: () =>
+          new Promise<void>((resolve) => {
+            resolvePrepare = resolve
+          })
+      }
+    })
+    session.start()
+
+    const sending = session.sendMessage(
+      'Wait for prepare',
+      [],
+      [],
+      [],
+      () => undefined
+    )
+    await vi.waitFor(() => expect(resolvePrepare).toBeTypeOf('function'))
+
+    // Simulate a canvas sync completion while workflow preparation is still waiting.
+    outcomeCount = 5
+    resolvePrepare()
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+
+    const clientMessageId = (
+      conversation.entries[0] as { pending?: { clientMessageId: string } }
+    ).pending!.clientMessageId
+    expect(
+      conversation.getPendingSend(clientMessageId)?.canvasOutcomeAtStart
+    ).toBe(5)
+
+    // Canvas catch-up arriving before acceptance confirms the tool call once accepted.
+    outcomeCount = 6
+    conversation.notifyCanvasCaughtUp({
+      workflowId: 'wf-prep',
+      opIds: ['op-during-prep'],
+      isLive: true
+    })
+
+    emit({
+      type: 'agent_tool_call',
+      data: {
+        thread_id: 'th-prep-canvas',
+        message_id: 'msg-prep-canvas',
+        tool_call_id: 'call-prep-1',
+        tool_name: 'add_node',
+        status: 'success',
+        duration_ms: 15,
+        workflow_id: 'wf-prep',
+        op_ids: ['op-during-prep']
+      }
+    })
+    emit({
+      type: 'agent_message_done',
+      data: {
+        thread_id: 'th-prep-canvas',
+        message_id: 'msg-prep-canvas',
+        usage: null
+      }
+    })
+    resolvePost({ thread_id: 'th-prep-canvas', message_id: 'msg-prep-canvas' })
+    expect(await sending).toBe(true)
+    expect(session.entries.value[1]).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'tool',
+          callId: 'call-prep-1',
+          canvasConfirmed: true
+        }
+      ]
+    })
+
+    // Stopping the session must not wipe per-send canvas evidence for a surviving pending send.
+    conversation.startPendingSend({
+      clientMessageId: 'cm-surviving-stop',
+      text: 'Still sending across stop',
+      attachments: [],
+      tags: [],
+      workflowReferences: []
+    })
+    conversation.capturePendingSendCanvasBaseline('cm-surviving-stop')
+    conversation.notifyCanvasCaughtUp({
+      workflowId: 'wf-prep',
+      opIds: ['op-during-stop'],
+      isLive: true
+    })
+    session.stop()
+    expect(
+      conversation.getPendingSend('cm-surviving-stop')?.canvasOutcomeAtStart
+    ).toBe(6)
+    expect(
+      conversation.getPendingSend('cm-surviving-stop')?.canvasEvidence
+    ).toEqual([
+      { workflowId: 'wf-prep', opIds: ['op-during-stop'], isLive: true }
+    ])
+  })
 })
