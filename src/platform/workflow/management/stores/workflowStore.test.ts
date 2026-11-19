@@ -41,6 +41,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
 import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { isValidUuid } from '@/utils/formatUtil'
 import { syncEntities } from '@/utils/syncUtil'
 import { isSubgraph } from '@/utils/typeGuardUtil'
@@ -77,12 +78,14 @@ vi.mock(import('@/base/assert'), () => ({
 
 const BOOKMARK_INDEX = 'workflows/.index.json'
 
+type BookmarkReadFailure = number | Error | { malformedBody: string }
+
 function serveBookmarkIndex(
   favorites?: string[],
   otherFields: Record<string, unknown> = {}
 ) {
   let stored = favorites && JSON.stringify({ ...otherFields, favorites })
-  let readFailure: number | undefined
+  let readFailure: BookmarkReadFailure | undefined
   let writeFailure: number | Error | undefined
   let holdingWrites = false
   const heldWrites: Array<() => void> = []
@@ -90,10 +93,13 @@ function serveBookmarkIndex(
 
   vi.mocked(api.getUserData).mockImplementation(async (file) => {
     if (file !== BOOKMARK_INDEX) return new Response(null, { status: 404 })
-    if (readFailure) {
-      const status = readFailure
+    if (readFailure !== undefined) {
+      const failure = readFailure
       readFailure = undefined
-      return new Response(null, { status })
+      if (failure instanceof Error) throw failure
+      return typeof failure === 'number'
+        ? new Response(null, { status: failure })
+        : new Response(failure.malformedBody, { status: 200 })
     }
     return stored === undefined
       ? new Response(null, { status: 404 })
@@ -136,8 +142,8 @@ function serveBookmarkIndex(
     storeContent: (content: string) => {
       stored = content
     },
-    failNextRead: (status: number) => {
-      readFailure = status
+    failNextRead: (failure: BookmarkReadFailure) => {
+      readFailure = failure
     },
     failWrites: (failure: number | Error) => {
       writeFailure = failure
@@ -2085,20 +2091,35 @@ describe('useWorkflowBookmarkStore', () => {
     }
   )
 
-  it('refuses a change when it cannot read the saved bookmarks first', async () => {
-    const server = serveBookmarkIndex([x, y])
-    const store = useWorkflowBookmarkStore()
-    server.failNextRead(503)
+  it.for([
+    { name: 'answers with an error status', failure: 503 },
+    {
+      name: 'answers with malformed JSON',
+      failure: { malformedBody: '{"favorites": [' }
+    },
+    { name: 'cannot be reached', failure: new TypeError('Failed to fetch') }
+  ] satisfies { name: string; failure: BookmarkReadFailure }[])(
+    'refuses a change and reports it when reading the saved bookmarks first $name',
+    async ({ failure }) => {
+      const server = serveBookmarkIndex([x, y])
+      const store = useWorkflowBookmarkStore()
+      server.failNextRead(failure)
 
-    const saved = await store.toggleBookmarked(p)
+      const saved = await store.toggleBookmarked(p)
 
-    expect(saved).toBe(false)
-    expect(store.isBookmarked(p)).toBe(false)
-    expect(server.favorites()).toEqual([x, y])
-    expect(useToast().toasts).toEqual([
-      expect.objectContaining({ kind: 'error' })
-    ])
-  })
+      expect(saved).toBe(false)
+      expect(store.isBookmarked(p)).toBe(false)
+      expect(server.favorites()).toEqual([x, y])
+      expect(api.storeUserData).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'error' })
+      ])
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'failure_loading_workflow_bookmarks',
+        surface: 'platform'
+      })
+    }
+  )
 
   it('keeps a bookmark another tab added when this tab removes one', async () => {
     const server = serveBookmarkIndex([x])
@@ -2113,11 +2134,27 @@ describe('useWorkflowBookmarkStore', () => {
   })
 
   it.for([
-    { name: 'answers with an error status', failure: 500 },
-    { name: 'cannot be reached', failure: new TypeError('Failed to fetch') }
+    {
+      name: 'answers with an error status',
+      failure: 500,
+      bookmarkReports: []
+    },
+    {
+      name: 'cannot be reached',
+      failure: new TypeError('Failed to fetch'),
+      bookmarkReports: [
+        [
+          expect.any(TypeError),
+          {
+            errorType: 'failure_saving_workflow_bookmarks',
+            surface: 'platform'
+          }
+        ]
+      ]
+    }
   ])(
-    'shows the bookmark as unset and resolves false when the server $name',
-    async ({ failure }) => {
+    'shows the bookmark as unset, keeps the others and resolves false when the server $name',
+    async ({ failure, bookmarkReports }) => {
       const server = serveBookmarkIndex([x])
       const store = useWorkflowBookmarkStore()
       await store.loadBookmarks()
@@ -2127,9 +2164,11 @@ describe('useWorkflowBookmarkStore', () => {
 
       expect(saved).toBe(false)
       expect(store.isBookmarked(p)).toBe(false)
+      expect(store.isBookmarked(x)).toBe(true)
       expect(useToast().toasts).toEqual([
         expect.objectContaining({ kind: 'error' })
       ])
+      expect(vi.mocked(reportError).mock.calls).toEqual(bookmarkReports)
     }
   )
 
