@@ -8465,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "Создаёт говорящее видео с аватаром HeyGen Avatar 6 на основе текстового сценария или собственного аудио.",
+    "display_name": "HeyGen Avatar 6: идентичность в видео",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "«auto» использует соотношение сторон исходного видео аватара."
+      },
+      "avatar": {
+        "name": "avatar"
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "motion_expressiveness": {
+        "name": "motion_expressiveness",
+        "tooltip": "«less» задаёт меньшее количество и меньшую амплитуду жестов. В пересекающихся аспектах motion_prompt имеет приоритет."
+      },
+      "motion_prompt": {
+        "name": "motion_prompt",
+        "tooltip": "Жесты, выражение лица, поза и движение камеры."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, следует ли повторно запускать ноду; результаты недетерминированы независимо от seed."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "Управляйте аватаром с помощью текстового сценария (синтез речи HeyGen) или собственного аудио."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "Заставляет человека или персонажа с фото или видео говорить подключённое аудио с помощью HeyGen Avatar 6. Подключите изображение, видео или оба варианта.",
+    "display_name": "HeyGen Avatar 6: референс в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_motion_expressiveness": {
+        "name": "motion_expressiveness"
+      },
+      "model_motion_prompt": {
+        "name": "motion_prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "Создайте видео с говорящим ведущим на основе аватара HeyGen. Включает самые популярные публичные аватары HeyGen; можно указать любой look ID для замены.",
     "display_name": "HeyGen Аватар Видео",
@@ -10645,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "Создаёт или редактирует изображения по текстовому запросу и до 10 референсных изображений: одно изображение или серию связанных изображений.",
+    "display_name": "Kling 4.0: изображение",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto использует референсные изображения, в противном случае — prompt."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ссылайтесь на референсные изображения как @Image1, @Image2, ..."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, следует ли узлу запускаться повторно; результаты недетерминированы независимо от seed."
+      },
+      "series_amount": {
+        "name": "series_amount",
+        "tooltip": "Создаёт серию связанных изображений с теми же персонажами и стилем. auto позволяет модели выбрать от 2 до 10 изображений."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "Создавайте видео с аудио по не более чем 10 ключевым кадрам в kling-4.0 или по первому кадру в kling-4.0-flash. Промежуточные кадры располагаются равномерно; видео принимает соотношение сторон первого ключевого кадра.",
     "display_name": "Kling 4.0 Изображение в видео",
@@ -10665,6 +10788,32 @@
         "name": "разрешение"
       },
       "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "Создайте одно высокое изображение: дизайн веб-страницы или страницу сведений о товаре для электронной коммерции.",
+    "display_name": "Kling 4.0: длинное изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "skill": {
+        "name": "навык"
+      },
+      "skill_prompt": {
+        "name": "промпт"
+      },
+      "skill_resolution": {
+        "name": "разрешение"
+      },
+      "skill_seed": {
         "name": "seed"
       }
     },
@@ -25291,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "Кодирует эталонные изображения, размышления об изображении, чередующийся текст или самокоррекцию с помощью CLIP. Подключите эталонные изображения HiDream-O1 перед этим узлом и используйте стандартный сэмплер для изображений. Для преобразования текста в изображение без размышлений требуется только CLIP Text Encode; для вывода только текста можно использовать Generate Text.",
+    "display_name": "Кондиционирование SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "кондиционирование"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "Максимальное количество токенов, генерируемых во время этого вызова."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "task": {
+        "name": "задача",
+        "tooltip": "Выберите задачу. Её шаблон промпта и поведение остановки задаются автоматически."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "кондиционирование",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "Текст, сгенерированный этим вызовом. Используйте SenseNova Interleave Decode для получения полного результата."
+      },
+      "2": {
+        "name": "негативный",
+        "tooltip": "Обновлённое негативное кондиционирование для чередования и самокоррекции."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "Извлекает сгенерированные текст, изображения и размышления из истории чередования, созданной SenseNova Conditioning, включая самокоррекцию U1.6. В циклах используйте End Loop с отключённым накоплением. Входные эталонные изображения исключаются. Потребители изображений пропускаются, если изображения не были сгенерированы.",
+    "display_name": "Декодирование чередования SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "кондиционирование"
+      },
+      "samples": {
+        "name": "сэмплы",
+        "tooltip": "Последний пиксельный latent KSampler, если цикл завершился запросом изображения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "текст",
+        "tooltip": null
+      },
+      "1": {
+        "name": "изображения",
+        "tooltip": null
+      },
+      "2": {
+        "name": "размышления",
         "tooltip": null
       }
     }

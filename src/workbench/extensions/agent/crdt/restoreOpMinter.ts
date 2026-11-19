@@ -15,10 +15,11 @@
  */
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
 
+import { documentInputIndex } from '@/core/graph/widgets/documentSlots'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
 
-import { docInputIndex, wireNodeSnapshot } from './docOpMinter'
+import { wireNodeSnapshot } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
 
 export interface RestoreOpMinterDeps {
@@ -159,7 +160,11 @@ function addedLinkOperations(
         : undefined
     const toSlot = targetAdded
       ? link.target_slot
-      : docInputIndex(deps.docInputNames(targetId), input, link.target_slot)
+      : documentInputIndex(
+          deps.docInputNames(targetId),
+          input,
+          link.target_slot
+        )
     if (toSlot === undefined) return []
     return [
       {

@@ -31,23 +31,18 @@ const mergeScript =
 
 const HEAD = 'b'.repeat(40)
 const OLD = 'a'.repeat(40)
-const AUTHORIZED_BASES = [
-  'cloud/1.56',
-  'core/1.56',
-  'cloud/1.57',
-  'core/1.57',
-  'cloud/1.58',
-  'core/1.58',
-  'cloud/1.59',
-  'core/1.59'
-]
+const AUTHORIZED_BASES = ['core/1.59', 'core/1.60', 'core/2.0']
 const UNAUTHORIZED_BASES = [
+  'cloud/1.56',
+  'cloud/1.57',
+  'cloud/1.58',
+  'cloud/1.59',
   'cloud/1.54',
   'core/1.54',
   'cloud/1.55',
   'core/1.55',
   'cloud/1.60',
-  'core/1.60'
+  'core/1.58'
 ]
 
 const fakeGh = `#!/usr/bin/env bash
@@ -92,6 +87,7 @@ function runMerge(
   reviews: Review[],
   {
     baseRefName = 'core/1.59',
+    activeTargets = AUTHORIZED_BASES.join(' '),
     permissionFail = false,
     reviewsFail = false
   } = {}
@@ -137,6 +133,7 @@ function runMerge(
     encoding: 'utf8',
     env: {
       ...process.env,
+      ACTIVE_CORE_TARGETS: activeTargets,
       CANDIDATES: '22422',
       FAKE_CALLS: calls,
       FAKE_PR: join(directory, 'pr.json'),
@@ -156,6 +153,16 @@ function runMerge(
 }
 
 describe('backport auto-merge', () => {
+  it('does not merge without a viable-target decision', () => {
+    const { result, merges } = runMerge(
+      [{ state: 'APPROVED', commit_id: HEAD }],
+      { activeTargets: '' }
+    )
+
+    expect(result.status).toBe(0)
+    expect(merges).toEqual([])
+  })
+
   it('merges a ready backport approved at its current head', () => {
     const { result, merges } = runMerge([
       { state: 'APPROVED', commit_id: HEAD }

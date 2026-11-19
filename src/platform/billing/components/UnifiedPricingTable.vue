@@ -523,8 +523,8 @@ import { formatSubscriptionDate } from '@/platform/billing/components/subscripti
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
 import { useScheduledPlanChange } from '@/platform/billing/composables/useScheduledPlanChange'
+import { buildSupportUrl } from '@/platform/support/config'
 import { useAuthStore } from '@/stores/authStore'
-import { buildSupportFormUrl } from '@/utils/supportFormUrl'
 
 type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
 
@@ -590,11 +590,9 @@ const planMode = ref<'personal' | 'team'>(initialPlanMode)
 const VIDEO_TEMPLATE_URL =
   'https://cloud.comfy.org/?template=video_wan2_2_14B_i2v'
 
-/** External footnote destinations — rendered as real links (open in a new tab). */
-const QUESTIONS_URL = 'https://portal.usepylon.com/comfy-org/forms/question'
 const authStore = useAuthStore()
 const questionsUrl = computed(() =>
-  buildSupportFormUrl(QUESTIONS_URL, { email: authStore.userEmail })
+  buildSupportUrl('question', { email: authStore.userEmail })
 )
 const CONTACT_SUPPORT_URL = 'https://comfy.org/contact/'
 const PRICING_URL = 'https://comfy.org/cloud/pricing/'

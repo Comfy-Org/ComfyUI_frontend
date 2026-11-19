@@ -1605,6 +1605,7 @@
           "src/schemas/subgraphIdSchema.ts",
           "src/schemas/subgraphIdSchema.test.ts",
           "src/stores/subgraphNavigationStore.ts",
+          "src/stores/subgraphNavigationStore.host.test.ts",
           "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
           "src/stores/subgraphNavigationStore.test.ts",
           "src/stores/subgraphNavigationStore.viewport.test.ts",
