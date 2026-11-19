@@ -185,10 +185,9 @@ test.describe('Advanced socket-only input', { tag: '@vue-nodes' }, () => {
       'Node With Advanced Socket Input'
     )
     const maskRow = comfyPage.vueNodes.getInputSlotRow(String(nodeRef.id), 1)
-    // A widget type forced to a socket, as in `io.Int.Input(...,
-    // force_input=True, advanced=True)`, is hidden the same way.
     const intRow = comfyPage.vueNodes.getInputSlotRow(String(nodeRef.id), 2)
 
+    await expect(node.getByText(SHOW_ADVANCED_INPUTS)).toBeVisible()
     await expect(maskRow).toHaveCount(0)
     await expect(intRow).toHaveCount(0)
     await node.getByText(SHOW_ADVANCED_INPUTS).click()
