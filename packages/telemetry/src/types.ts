@@ -173,6 +173,8 @@ export interface BootstrapCompleteMetadata {
   untraced_ms: number
   /** Wall-clock ms the tab was hidden during startup. */
   hidden_ms: number
+  /** Wall-clock ms the tab was visible during startup: `total_ms - hidden_ms`. */
+  visible_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
