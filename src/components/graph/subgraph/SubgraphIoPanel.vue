@@ -223,7 +223,7 @@ function isDimmed(port: Port) {
 }
 
 const panel = useTemplateRef('panel')
-const { style, startResize } = useSubgraphIoLayout(
+const { style, startResize, resizeHeight } = useSubgraphIoLayout(
   () => ioNode,
   panel,
   () => slots.value
@@ -306,6 +306,7 @@ function forwardUnlessOnButton(event: PointerEvent) {
   <div
     ref="panel"
     :data-testid="side.testId"
+    data-subgraph-io-panel
     :inert="canvasStore.isPickingNodes"
     role="group"
     :aria-label="title"
@@ -389,6 +390,9 @@ function forwardUnlessOnButton(event: PointerEvent) {
             :source="row.editable"
             :label="row.port.displayName"
             :status="row.status"
+            :resizable="!canvasStore.isReadOnly && !ioNode.pinned"
+            @resize="resizeHeight"
+            @commit="captureEdits"
           />
         </div>
         <div

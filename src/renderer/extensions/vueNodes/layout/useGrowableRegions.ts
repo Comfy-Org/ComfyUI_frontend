@@ -91,13 +91,6 @@ function textFitHeight(textarea: HTMLTextAreaElement) {
   return height
 }
 
-function closestNodeElement(event: Event) {
-  const handle = event.currentTarget
-  if (!(handle instanceof HTMLElement)) return undefined
-  const nodeElement = handle.closest<HTMLElement>('[data-node-id]')
-  return nodeElement ? { handle, nodeElement } : undefined
-}
-
 interface RegionTarget {
   nodeElement: HTMLElement
   region: HTMLElement
@@ -107,24 +100,33 @@ interface RegionTarget {
 type FitMediaRegion = Omit<RegionTarget, 'nodeElement'> &
   NonNullable<ReturnType<typeof soleMediaAspectRatio>>
 
-function regionAt(event: Event, key: string) {
-  const target = closestNodeElement(event)
-  const region = target?.handle.parentElement
-  return target && region ? { ...target, region, key } : undefined
-}
-
-/** Sizes a Vue node's growable regions, each named by its widget or preview and holding the user's height in {@link useWidgetHeightStore}. */
+/** Sizes the growable regions inside the element matching `rootSelector`, each named by its widget or preview and holding the user's height in {@link useWidgetHeightStore}. */
 export function useGrowableRegions({
   regionId,
   resizeNode,
-  onCommit
+  onCommit,
+  rootSelector = '[data-node-id]'
 }: {
   regionId: (name: string) => WidgetId | undefined
   resizeNode: (height: number, width?: number) => void
   onCommit: () => void
+  rootSelector?: string
 }) {
   const transformState = useTransformState()
   const heightStore = useWidgetHeightStore()
+
+  function closestNodeElement(event: Event) {
+    const handle = event.currentTarget
+    if (!(handle instanceof HTMLElement)) return undefined
+    const nodeElement = handle.closest<HTMLElement>(rootSelector)
+    return nodeElement ? { handle, nodeElement } : undefined
+  }
+
+  function regionAt(event: Event, key: string) {
+    const target = closestNodeElement(event)
+    const region = target?.handle.parentElement
+    return target && region ? { ...target, region, key } : undefined
+  }
 
   function heightOf(name: string) {
     const id = regionId(name)
