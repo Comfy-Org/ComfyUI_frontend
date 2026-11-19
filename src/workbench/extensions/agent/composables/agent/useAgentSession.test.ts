@@ -6322,6 +6322,38 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([])
   })
 
+  it('(g39g) a channel-lost receipt after switching chats does not show there', async () => {
+    let accept: (receipt: AgentAnswerAccepted) => void = () => {}
+    const rest = fakeRest({
+      answerAsk: vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((resolve) => {
+            accept = resolve
+          })
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+    await session.sendMessage('go')
+    emit(runApproval('msg-1'))
+
+    const answering = session.answerAsk('turn-1:call-1', {
+      selected: ['run']
+    })
+    status(false)
+    session.newChat()
+    accept({ status: 'answered', selected: [] })
+    await answering
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      surface: 'agent',
+      errorType: 'agent_ask_answer_winner_unconfirmed'
+    })
+    expect(session.notices.value).toEqual([])
+  })
+
   it('(g38) a remount does not restore an ask the prior session retired', async () => {
     vi.useFakeTimers()
     try {
