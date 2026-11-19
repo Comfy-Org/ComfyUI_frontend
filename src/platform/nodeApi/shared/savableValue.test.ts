@@ -58,4 +58,15 @@ describe('a value the workflow saves unchanged', () => {
     expect(Object.isFrozen(copy)).toBe(true)
     expect(frozenSavable({ run: () => 1 })).toBeUndefined()
   })
+
+  it('refuses a value nested deeper than a thousand levels, instead of overflowing the stack', () => {
+    let deep: unknown = 1
+    for (let depth = 0; depth < 5000; depth++) deep = [deep]
+
+    expect(() => savableValue('setProperty', deep)).toThrow(
+      'setProperty needs value nested at most 1000 deep, not a list.'
+    )
+    expect(isSavable(deep)).toBe(false)
+    expect(frozenSavable(deep)).toBeUndefined()
+  })
 })
