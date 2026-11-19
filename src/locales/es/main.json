@@ -49,6 +49,7 @@
     "backToPreviousChat": "Volver al chat anterior",
     "beta": "BETA",
     "canvasIsEmptyAfterTurn": "Este lienzo está vacío; no se agregó nada. Aún no hay nada que ejecutar, guardar ni exportar.",
+    "canvasNotReadyForSend": "El lienzo de esta pestaña aún no está listo, por lo que tu mensaje no se envió. Inténtalo de nuevo en un momento.",
     "changeWorkflowForChat": "Cambia el flujo de trabajo que el agente puede editar",
     "chatOptions": "Opciones de chat",
     "chooseWorkflow": "Elige un flujo de trabajo",
@@ -175,7 +176,7 @@
     "paywall": {
       "addCredits": "Añadir créditos",
       "body": {
-        "local": "Ha agotado su saldo de créditos. Añada créditos para mantener el agente en funcionamiento.",
+        "local": "Tu cuenta no tiene créditos disponibles para el agente. Añade créditos para usarlo.",
         "member": "Este espacio de trabajo ha usado todos sus créditos. Pida al propietario del espacio de trabajo que añada más.",
         "salesManaged": "Este espacio de trabajo se factura a través de su equipo de cuentas de Comfy. Contáctelos para añadir créditos.",
         "subscribed": "Este espacio de trabajo ha gastado sus créditos mensuales y su saldo de recarga. Añada créditos para mantener el agente en funcionamiento.",

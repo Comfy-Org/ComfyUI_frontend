@@ -49,6 +49,7 @@
     "backToPreviousChat": "Zum vorherigen Chat zurück",
     "beta": "BETA",
     "canvasIsEmptyAfterTurn": "Dieses Canvas ist leer — es wurde nichts hinzugefügt. Es gibt noch nichts zum Ausführen, Speichern oder Exportieren.",
+    "canvasNotReadyForSend": "Der Canvas dieses Tabs ist noch nicht bereit, daher wurde Ihre Nachricht nicht gesendet. Versuchen Sie es gleich noch einmal.",
     "changeWorkflowForChat": "Ändern Sie den Workflow, den der Agent bearbeiten kann",
     "chatOptions": "Chatoptionen",
     "chooseWorkflow": "Workflow auswählen",
@@ -175,7 +176,7 @@
     "paywall": {
       "addCredits": "Credits hinzufügen",
       "body": {
-        "local": "Sie haben Ihr Credit-Guthaben aufgebraucht. Fügen Sie Credits hinzu, damit der Agent weiterläuft.",
+        "local": "Für den Agenten sind in Ihrem Konto keine Credits verfügbar. Fügen Sie Credits hinzu, um ihn zu verwenden.",
         "member": "Dieser Workspace hat alle seine Credits verwendet. Bitten Sie den Inhaber Ihres Workspace, weitere Credits hinzuzufügen.",
         "salesManaged": "Dieser Workspace wird über Ihr Comfy-Kontoteam abgerechnet. Wenden Sie sich an dieses Team, um Credits hinzuzufügen.",
         "subscribed": "Dieser Workspace hat seine monatlichen Credits und sein Aufladeguthaben aufgebraucht. Fügen Sie Credits hinzu, damit der Agent weiterläuft.",
