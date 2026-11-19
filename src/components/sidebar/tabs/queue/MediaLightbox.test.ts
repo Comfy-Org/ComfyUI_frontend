@@ -407,7 +407,7 @@ describe('MediaLightbox', () => {
   /* oxlint-enable testing-library/no-node-access */
 
   describe('image zoom', () => {
-    const wheelUp = () => {
+    function wheelUp() {
       const event = new WheelEvent('wheel', {
         bubbles: true,
         cancelable: true,

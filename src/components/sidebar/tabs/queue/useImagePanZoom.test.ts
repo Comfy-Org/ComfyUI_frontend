@@ -29,7 +29,7 @@ function doubleClick(clientX: number, clientY: number) {
 }
 
 describe('useImagePanZoom', () => {
-  it('should zoom in by 10% toward the cursor on wheel up', () => {
+  it('zooms in by 10% toward the cursor on wheel up', () => {
     const panZoom = setup()
 
     panZoom.handleWheel(wheel(-1, 100, 50))
@@ -41,7 +41,7 @@ describe('useImagePanZoom', () => {
     })
   })
 
-  it('should not zoom out past the fitted size', () => {
+  it('does not zoom out past the fitted size', () => {
     const panZoom = setup()
 
     panZoom.handleWheel(wheel(1, 100, 50))
@@ -50,7 +50,7 @@ describe('useImagePanZoom', () => {
     expect(panZoom.scale.value).toBe(1)
   })
 
-  it('should recenter when zooming back out to the fitted size', () => {
+  it('recenters when zooming back out to the fitted size', () => {
     const panZoom = setup()
 
     panZoom.handleWheel(wheel(-1, 100, 50))
@@ -60,7 +60,7 @@ describe('useImagePanZoom', () => {
     expect(panZoom.offset.value).toEqual({ x: 0, y: 0 })
   })
 
-  it('should zoom to 2x at the cursor on double-click', () => {
+  it('zooms to 2x at the cursor on double-click', () => {
     const panZoom = setup()
 
     panZoom.handleDoubleClick(doubleClick(100, 50))
@@ -71,7 +71,7 @@ describe('useImagePanZoom', () => {
     })
   })
 
-  it('should return to the fitted size on double-click while zoomed in', () => {
+  it('returns to the fitted size on double-click while zoomed in', () => {
     const panZoom = setup()
     panZoom.handleDoubleClick(doubleClick(100, 50))
 
@@ -81,7 +81,7 @@ describe('useImagePanZoom', () => {
     expect(panZoom.offset.value).toEqual({ x: 0, y: 0 })
   })
 
-  it('should pan by the drag distance while zoomed in', () => {
+  it('pans by the drag distance while zoomed in', () => {
     const panZoom = setup()
     panZoom.handleDoubleClick(doubleClick(0, 0))
 
@@ -91,7 +91,7 @@ describe('useImagePanZoom', () => {
     expect(panZoom.offset.value).toEqual({ x: 30, y: 20 })
   })
 
-  it('should not pan at the fitted size', () => {
+  it('does not pan at the fitted size', () => {
     const panZoom = setup()
 
     panZoom.handlePointerDown(pointer(1, 10, 10))
@@ -100,7 +100,7 @@ describe('useImagePanZoom', () => {
     expect(panZoom.offset.value).toEqual({ x: 0, y: 0 })
   })
 
-  it('should stop panning after the pointer is released', () => {
+  it('stops panning after the pointer is released', () => {
     const panZoom = setup()
     panZoom.handleDoubleClick(doubleClick(0, 0))
 
@@ -111,7 +111,7 @@ describe('useImagePanZoom', () => {
     expect(panZoom.offset.value).toEqual({ x: 0, y: 0 })
   })
 
-  it('should pinch-zoom around the midpoint and cap at 10x', () => {
+  it('pinch-zooms around the midpoint and caps at 10x', () => {
     const panZoom = setup()
 
     panZoom.handlePointerDown(pointer(1, 0, 0))
@@ -122,7 +122,7 @@ describe('useImagePanZoom', () => {
     expect(panZoom.offset.value).toEqual({ x: -900, y: 0 })
   })
 
-  it('should return to the fitted size on reset', () => {
+  it('returns to the fitted size on reset', () => {
     const panZoom = setup()
     panZoom.handleWheel(wheel(-1, 100, 50))
 
