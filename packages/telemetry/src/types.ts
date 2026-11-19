@@ -125,6 +125,8 @@ export interface ImageLoadFailureMetadata {
   attempts?: number
   /** True when the load timed out rather than erroring — a stall, not a rejection. */
   timed_out?: boolean
+  /** `MediaError.code` of the failed load. Code 4 alone does not prove a format failure; see `status`. */
+  media_error_code?: number
   /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
   status?: number
   probe_outcome?:
@@ -478,6 +480,24 @@ export interface EnterLinearMetadata {
   source?: string
 }
 
+export type WorkflowLinkOutOfSyncReason =
+  | 'no_sidebar_path'
+  | 'name_ambiguous'
+  | 'file_missing'
+  | 'content_mismatch'
+  | 'unknown'
+
+export type WorkflowLinkOpenedMetadata =
+  | {
+      outcome: 'opened' | 'not_found' | 'error'
+      workspace_id: string | null
+    }
+  | {
+      outcome: 'out_of_sync'
+      reason: WorkflowLinkOutOfSyncReason
+      workspace_id: string | null
+    }
+
 export interface WorkflowSavedMetadata {
   is_app: boolean
   is_new: boolean
@@ -675,6 +695,7 @@ export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
     | 'automatic_consent'
     | 'activation'
     | 'error_context'
+    | 'cloud_button'
 }
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
@@ -1224,6 +1245,16 @@ export type AgentErrorClass =
   | 'ask_answer_failed'
   | 'thread_list_load_failed'
   | 'workflow_open_failed'
+  | 'workflow_sync_failed'
+
+/** Why an agent workflow sync failed; codes outside this set are `other`. */
+export type AgentWorkflowSyncErrorCode =
+  | 'schema_version_mismatch'
+  | 'catalog_mismatch'
+  | 'unsupported'
+  | 'stale_client_schema'
+  | 'stale_host_schema'
+  | 'other'
 
 export type AgentRequestPath =
   | '/agent/threads'
@@ -1267,6 +1298,8 @@ export interface AgentErrorMetadata extends Record<string, unknown> {
   request_path?: AgentRequestPath
   request_status?: number
   request_error?: AgentRequestErrorName
+  /** Only on `workflow_sync_failed`: the closed-set reason sync stopped. */
+  sync_error_code?: AgentWorkflowSyncErrorCode
 }
 
 /**
@@ -1637,6 +1670,7 @@ export interface TelemetryProvider {
   // Workflow management events
   trackWorkflowImported?(metadata: WorkflowImportMetadata): void
   trackWorkflowOpened?(metadata: WorkflowImportMetadata): void
+  trackWorkflowLinkOpened?(metadata: WorkflowLinkOpenedMetadata): void
   trackWorkflowSaved?(metadata: WorkflowSavedMetadata): void
   trackDefaultViewSet?(metadata: DefaultViewSetMetadata): void
   trackEnterLinear?(metadata: EnterLinearMetadata): void
@@ -1838,6 +1872,7 @@ export const TelemetryEvents = {
   // Workflow Management
   WORKFLOW_IMPORTED: 'app:workflow_imported',
   WORKFLOW_OPENED: 'app:workflow_opened',
+  WORKFLOW_LINK_OPENED: 'app:workflow_link_opened',
   ENTER_LINEAR_MODE: 'app:app_mode_opened',
   SHARE_FLOW: 'app:share_flow',
   SHARE_LINK_OPENED: 'app:share_link_opened',
@@ -2025,6 +2060,7 @@ export type TelemetryEventProperties =
   | EnterLinearMetadata
   | ShareFlowMetadata
   | ShareLinkOpenedMetadata
+  | WorkflowLinkOpenedMetadata
   | WorkflowSavedMetadata
   | DefaultViewSetMetadata
   | SubscriptionMetadata

@@ -28,8 +28,26 @@ export async function expectPlatformPlansOpened(
   return plans
 }
 
-/** Blocks only the Plans tab, so the app falls back to the in-app pricing table; a `window.open` stub installed later still handles every other URL. */
+/** Turns the pricing table fallback on and blocks only the Plans tab, so the app opens the in-app pricing table; a `window.open` stub installed later still handles every other URL. */
 export async function keepPricingTableInApp(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const fetchFeatures = window.fetch.bind(window)
+    window.fetch = async (input, init) => {
+      const response = await fetchFeatures(input, init)
+      const url = new URL(
+        input instanceof Request ? input.url : String(input),
+        location.href
+      )
+      if (!url.pathname.endsWith('/api/features') || !response.ok) {
+        return response
+      }
+      const features: Record<string, unknown> = await response.json()
+      return new Response(
+        JSON.stringify({ ...features, pricing_table_fallback: true }),
+        { status: response.status, headers: response.headers }
+      )
+    }
+  })
   await page.addInitScript((plansPath) => {
     let open = window.open.bind(window)
     const openUnlessPlans: typeof window.open = (url, target, features) =>

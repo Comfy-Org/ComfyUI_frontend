@@ -6,6 +6,7 @@ import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
 import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMultiAutogrowRealignHarness'
 import { COMFY_SOCKET_SID } from '@e2e/fixtures/agentFollowerHostSocket'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import {
   SOURCE_NODE_ID,
   TARGET_ID
@@ -38,7 +39,6 @@ export interface AgentLocalRunRig {
   finishRunForUser: (jobId: string) => Promise<void>
   /** {@link startRunForUser} then {@link finishRunForUser}. */
   runWorkflowForUser: (jobId: string) => Promise<void>
-  /** The executing class on the running node root, independent of selection. */
   runningOutline: Locator
   /** The run's output as rendered on the output node. */
   outputImage: Locator
@@ -150,7 +150,7 @@ async function createAgentLocalRunRig(
       await startRunForUser(jobId)
       await finishRunForUser(jobId)
     },
-    runningOutline: harness.targetNode.locator(':scope.outline-primary'),
+    runningOutline: new VueNodeFixture(harness.targetNode).executionOutline,
     outputImage: harness.outputImage(SOURCE_NODE_ID),
     outputFilename,
     openPeer

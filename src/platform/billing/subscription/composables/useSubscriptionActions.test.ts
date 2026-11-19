@@ -1,11 +1,13 @@
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { provideCurrentUser } from '@/platform/auth/currentUserAccess'
 
 import { useSubscriptionActions } from '@/platform/billing/subscription/composables/useSubscriptionActions'
 import { useTelemetry } from '@comfyorg/telemetry'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 const { mockReportError } = vi.hoisted(() => ({
   mockReportError: vi.fn()
@@ -16,6 +18,12 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 }))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+beforeEach(() => {
+  provideCurrentUser(useCurrentUser)
+})
 
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 
@@ -60,7 +68,7 @@ describe('useSubscriptionActions', () => {
   })
 
   describe('handleMessageSupport', () => {
-    it('should execute support command and manage loading state', async () => {
+    it('opens the billing support form and manages loading state', async () => {
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
@@ -70,8 +78,10 @@ describe('useSubscriptionActions', () => {
       expect(isLoadingSupport.value).toBe(true)
 
       await promise
-      expect(useCommandStore().execute).toHaveBeenCalledWith(
-        'Comfy.ContactSupport'
+      expect(mockOpen).toHaveBeenCalledExactlyOnceWith(
+        'https://comfysupport.portal.usepylon.com/forms/billing-refund-issue',
+        '_blank',
+        'noopener,noreferrer'
       )
       expect(isLoadingSupport.value).toBe(false)
     })
@@ -100,9 +110,9 @@ describe('useSubscriptionActions', () => {
     })
 
     it('tells the user when contacting support fails, and stops loading', async () => {
-      vi.mocked(useCommandStore().execute).mockRejectedValueOnce(
-        new Error('Command failed')
-      )
+      mockOpen.mockImplementationOnce(() => {
+        throw new Error('Popup blocked')
+      })
       const { handleMessageSupport, isLoadingSupport } =
         useSubscriptionActions()
 
@@ -111,38 +121,22 @@ describe('useSubscriptionActions', () => {
       expect(isLoadingSupport.value).toBe(false)
       expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          description: 'Command failed',
+          description: 'Popup blocked',
           kind: 'error'
         })
       ])
     })
 
     it('reports a failed support request so it is visible without the user', async () => {
-      const failure = new Error('Command failed')
-      vi.mocked(useCommandStore().execute).mockRejectedValueOnce(failure)
+      const failure = new Error('Popup blocked')
+      mockOpen.mockImplementationOnce(() => {
+        throw failure
+      })
       const { handleMessageSupport } = useSubscriptionActions()
 
       await handleMessageSupport()
 
       expect(mockReportError).toHaveBeenCalledWith(failure, {
-        surface: 'billing',
-        errorType: 'contact_support_failed'
-      })
-    })
-
-    // Commands run arbitrary registered functions, including ones contributed
-    // by extensions, so the rejected value is not guaranteed to be an Error.
-    // Normalizing it is reportError's job, covered in reportError.test.ts; what
-    // matters here is that the raw cause reaches the reporter at all.
-    it('reports a thrown non-Error', async () => {
-      vi.mocked(useCommandStore().execute).mockRejectedValueOnce(
-        'Command failed'
-      )
-      const { handleMessageSupport } = useSubscriptionActions()
-
-      await handleMessageSupport()
-
-      expect(mockReportError).toHaveBeenCalledWith('Command failed', {
         surface: 'billing',
         errorType: 'contact_support_failed'
       })

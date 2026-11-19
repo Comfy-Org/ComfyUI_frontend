@@ -154,6 +154,7 @@ export type {
 } from './operationState'
 export {
   isBlockedOnCustomerPhase,
+  isAutoTopUpActivating,
   isGrantLanding,
   isTerminal,
   reduceBillingOperation,
@@ -162,6 +163,7 @@ export {
 export {
   OPERATION_POLL_BUDGET,
   OPERATION_POLL_TIMING,
+  backoffDelayMs,
   customerCanActHere,
   hasExhaustedPollBudget,
   isParkedOnCustomer,
@@ -196,6 +198,11 @@ export {
   failureCategoryFor,
   operationRoute
 } from './operationLifecycle'
+export type {
+  OperationOutcomeRead,
+  OperationOutcomeReadOptions
+} from './operationOutcome'
+export { operationOutcomeRoute, readOperationOutcome } from './operationOutcome'
 export {
   BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT,
   BILLING_OPERATION_TELEMETRY_EVENT
@@ -224,12 +231,39 @@ export {
   addCreditsWait
 } from './addCredits/addCreditsRefusal'
 export type {
+  AddCreditsAutoTopUpFacts,
+  AddCreditsAutoTopUpOffer,
+  AutoTopUpActivation,
+  AutoTopUpDefaultCard,
+  AutoTopUpErrors,
+  AutoTopUpField,
+  AutoTopUpFieldError,
+  AutoTopUpFormInput,
+  AutoTopUpFormValues,
+  AutoTopUpRules
+} from './addCredits/addCreditsAutoTopUp'
+export {
+  AUTO_TOP_UP_STARTING_LIMIT_CENTS,
+  AUTO_TOP_UP_STARTING_THRESHOLD_CREDITS,
+  CREDITS_PER_USD,
+  addCreditsAutoTopUpOffer,
+  autoTopUpActivationFor,
+  autoTopUpTargetFor,
+  creditsToCents,
+  eachTopUpAtLeastCents,
+  parseAutoTopUpForm,
+  smallestTopUpCents,
+  startAutoTopUpForm,
+  validateAutoTopUp
+} from './addCredits/addCreditsAutoTopUp'
+export type {
   AddCreditsAmountView,
   AddCreditsEvent,
   AddCreditsFacts,
   AddCreditsNotice,
   AddCreditsPendingTopup,
-  AddCreditsState
+  AddCreditsState,
+  AutoTopUpActivationOutcome
 } from './addCredits/addCreditsDialog'
 export {
   addCreditsRefusalBlocks,
@@ -376,8 +410,21 @@ export type {
   PlanCreditsState
 } from './billingTab/creditsCard'
 export { addCreditsEmphasis, deriveCreditsCard } from './billingTab/creditsCard'
+export type {
+  CreditsFlyoutFacts,
+  CreditsFlyoutPlan,
+  CreditsFlyoutState
+} from './billingTab/creditsFlyout'
+export { deriveCreditsFlyout } from './billingTab/creditsFlyout'
 export type { PlanCheckoutBanner } from './billingTab/planCheckoutBanner'
 export { planCheckoutBannerFor } from './billingTab/planCheckoutBanner'
+export type {
+  PlanNotStartedBanner,
+  PlanNotStartedFacts,
+  RecoveryPaymentPage,
+  SubscriptionPaymentRecovery
+} from './billingTab/planNotStartedBanner'
+export { planNotStartedBannerFor } from './billingTab/planNotStartedBanner'
 export type {
   TopupCheckoutBanner,
   TopupCheckoutSnapshot
@@ -392,13 +439,33 @@ export type {
   AutoTopUpOffView,
   AutoTopUpOffViewFacts,
   AutoTopUpSection,
-  AutoTopUpSectionFacts
+  AutoTopUpSectionFacts,
+  AutoTopUpSetupFacts
 } from './billingTab/autoTopUpCard'
 export {
   autoTopUpOffView,
+  canSetUpAutoTopUp,
+  isAutoTopUpNotAvailable,
   deriveAutoTopUpCard,
   deriveAutoTopUpSection
 } from './billingTab/autoTopUpCard'
+export type {
+  AutoTopUpBannerInput,
+  AutoTopUpBannerKind
+} from './billingTab/autoTopUpBanner'
+export { deriveAutoTopUpBanner } from './billingTab/autoTopUpBanner'
+export type {
+  LocalCreditBannerInput,
+  LocalCreditBannerKind
+} from './billingTab/creditBanner'
+export { deriveLocalCreditBanner } from './billingTab/creditBanner'
+export type {
+  BillingStatusBannerAudience,
+  BillingStatusBannerFacts,
+  BillingStatusBannerKind,
+  EnterpriseEndingNotice
+} from './billingTab/billingStatusBanner'
+export { deriveBillingStatusBanner } from './billingTab/billingStatusBanner'
 export type {
   AddCreditsAvailability,
   BillingTopUpDenial

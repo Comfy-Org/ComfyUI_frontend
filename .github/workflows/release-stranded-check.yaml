@@ -36,6 +36,8 @@ jobs:
 
       - name: Check consumed release lines
         id: check
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
         run: |
           set -o pipefail
           pnpm exec tsx scripts/cicd/check-stranded-release-commits.ts 2>&1 | tee report.txt
