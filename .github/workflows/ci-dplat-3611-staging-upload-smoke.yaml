@@ -46,7 +46,7 @@ jobs:
         env:
           USE_PROD_CONFIG: 'false'
           VITE_STAGING_CLOUD_BASE_URL: https://testcloud.comfy.org
-          VITE_STAGING_API_BASE_URL: https://testapi.comfy.org
+          VITE_STAGING_API_BASE_URL: https://testcloud.comfy.org
           VITE_STAGING_PLATFORM_BASE_URL: https://testplatform.comfy.org
           VITE_USE_LEGACY_DEFAULT_GRAPH: 'true'
       - name: Start single-user Core with the synthetic LoRA

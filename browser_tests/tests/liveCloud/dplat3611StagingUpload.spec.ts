@@ -8,7 +8,7 @@ import { networkIsolationFixture as test } from '@e2e/fixtures/networkIsolationF
 
 const editor = 'http://127.0.0.1:8188'
 const cloud = 'https://testcloud.comfy.org'
-const staging = 'https://testapi.comfy.org'
+const apiGateway = 'https://testapi.comfy.org'
 const firebaseAuth = 'https://identitytoolkit.googleapis.com'
 const filename = 'dplat3611-staging-smoke-20261119-172601.safetensors'
 
@@ -26,7 +26,7 @@ async function readStagingFirebaseKey(request: APIRequestContext) {
   const config = await request.get(`${cloud}/api/features`, { maxRedirects: 0 })
   expect(config.status()).toBe(200)
   const features = await config.json()
-  if (features.comfy_api_base_url !== staging)
+  if (features.comfy_api_base_url !== apiGateway)
     throw new Error('Cloud and API test environments do not match')
   const firebase = features.firebase_config
   if (
@@ -40,7 +40,7 @@ async function readStagingFirebaseKey(request: APIRequestContext) {
 async function verifyWorkspace(request: APIRequestContext, features: Response) {
   const auth = await features.request().headerValue('authorization')
   if (!auth) throw new Error('Workspace authorization unavailable')
-  const current = await request.get(`${staging}/api/workspaces/current`, {
+  const current = await request.get(`${cloud}/api/workspaces/current`, {
     headers: { Authorization: auth },
     maxRedirects: 0
   })
@@ -62,7 +62,7 @@ async function verifyWorkspace(request: APIRequestContext, features: Response) {
 const allowed = [
   editor,
   cloud,
-  staging,
+  apiGateway,
   firebaseAuth,
   'https://securetoken.googleapis.com',
   'https://dreamboothy-dev.firebaseapp.com',
@@ -108,7 +108,7 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
     if (url.pathname.startsWith(apiUpload) && req.method() === 'POST') {
       const auth = await req.headerValue('authorization')
       if (
-        url.origin !== staging ||
+        url.origin !== cloud ||
         !approved.authorization ||
         auth !== approved.authorization
       ) {
@@ -153,7 +153,7 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
   const workspaceFeatures = new Array<Response>()
   page.on('response', (response) => {
     const url = new URL(response.url())
-    if (url.origin === staging && url.pathname === '/api/features') {
+    if (url.origin === cloud && url.pathname === '/api/features') {
       console.log(`Staging feature response HTTP ${response.status()}`)
       if (!response.ok()) {
         void response
@@ -170,7 +170,7 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
   })
   page.on('requestfailed', (request) => {
     const url = new URL(request.url())
-    if (url.origin === staging || url.origin === firebaseAuth)
+    if (url.origin === cloud || url.origin === firebaseAuth)
       console.log(`Browser request failed for ${url.origin}${url.pathname}`)
   })
   const loginResponse = page.waitForResponse(
@@ -214,7 +214,7 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
     .setInputFiles(join(localFixture, filename))
   const accepted = page.waitForResponse(
     (response) =>
-      new URL(response.url()).origin === staging &&
+      new URL(response.url()).origin === cloud &&
       new URL(response.url()).pathname.startsWith(`${apiUpload}/`) &&
       new URL(response.url()).pathname.endsWith('/complete') &&
       response.request().method() === 'POST'
@@ -223,12 +223,18 @@ test('stores one synthetic model in the managed staging smoke workspace', async 
   const completed = await accepted
   if (!completed.ok())
     throw new Error(`Staging completion failed (HTTP ${completed.status()})`)
+  const { task_id: taskId } = await completed.json()
+  if (typeof taskId !== 'string')
+    throw new Error('Staging returned no storage task')
   console.log('Staging accepted the synthetic model upload')
-  await expect(card.getByLabel('Uploaded', { exact: true })).toBeVisible({
-    timeout: 90_000
-  })
+  await page.waitForResponse(
+    async (response) =>
+      response.ok() &&
+      response.url() === `${cloud}/api/tasks/${encodeURIComponent(taskId)}` &&
+      (await response.json()).status === 'completed',
+    { timeout: 90_000 }
+  )
   console.log('Staging confirmed the stored model')
-  await card.getByRole('button', { name: 'Check again', exact: true }).click()
   const ready = page.getByTestId('run-on-cloud-card')
   await expect(ready).toBeVisible()
   expect(starts).toBe(1)
