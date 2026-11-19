@@ -247,11 +247,16 @@ async function loadWithHooks(
 }
 
 async function snapshotLoad(app: MatrixApp, target: LGraph) {
-  const serialised = S({ ...target.serialize(), id: undefined })
-  try {
-    return { serialised, prompt: S((await app.graphToPrompt(target)).output) }
-  } catch (e) {
-    return { serialised, prompt: 'THREW ' + errMsg(e) }
+  const capture = async (read: () => unknown) => {
+    try {
+      return S(await read())
+    } catch (e) {
+      return 'THREW ' + errMsg(e)
+    }
+  }
+  return {
+    serialised: await capture(() => ({ ...target.serialize(), id: undefined })),
+    prompt: await capture(async () => (await app.graphToPrompt(target)).output)
   }
 }
 
