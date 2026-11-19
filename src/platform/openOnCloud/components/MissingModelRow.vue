@@ -12,8 +12,13 @@
       <span v-if="size !== undefined" class="shrink-0 text-muted-foreground">{{
         formatSize(size)
       }}</span>
+      <i
+        v-if="pick.status === 'stored'"
+        class="icon-[lucide--check] text-foreground"
+        :aria-label="$t('openOnCloud.missingModels.uploaded')"
+      />
       <label
-        v-if="choosable"
+        v-else-if="choosable"
         class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-foreground hover:bg-accent has-disabled:cursor-default has-disabled:opacity-50"
       >
         <i
@@ -49,12 +54,12 @@ import type {
   ModelPick
 } from '@/platform/openOnCloud/stores/localModelUploadStore'
 
-const { model, pick, size, choosable, unsupported, locked } = defineProps<{
+const { model, pick, size, choosable, blocked, locked } = defineProps<{
   model: MissingModel
   pick: ModelPick
   size?: number
   choosable: boolean
-  unsupported: boolean
+  blocked?: 'folder' | 'subfolder'
   locked: boolean
 }>()
 
@@ -62,19 +67,19 @@ const emit = defineEmits<{ choose: [file: File] }>()
 
 const { t } = useI18n()
 
+const BLOCKED_COPY = {
+  folder: 'openOnCloud.missingModels.folderUnsupported',
+  subfolder: 'openOnCloud.missingModels.subfolderUnsupported'
+} as const
+
 const note = computed(() => {
   if (pick.status === 'wrongFile')
     return {
       tone: 'text-destructive',
-      text: t('openOnCloud.missingModels.wrongFile', {
-        name: model.name.replaceAll('\\', '/').split('/').pop() ?? model.name
-      })
+      text: t('openOnCloud.missingModels.wrongFile', { name: model.name })
     }
-  if (unsupported)
-    return {
-      tone: 'text-muted-foreground',
-      text: t('openOnCloud.missingModels.folderUnsupported')
-    }
+  if (blocked)
+    return { tone: 'text-muted-foreground', text: t(BLOCKED_COPY[blocked]) }
   return null
 })
 

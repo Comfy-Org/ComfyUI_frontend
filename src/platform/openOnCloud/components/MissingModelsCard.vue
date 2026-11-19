@@ -17,8 +17,8 @@
           :model
           :pick="uploads.pickOf(model)"
           :size="uploads.sizeOf(model)"
-          :choosable="canOffer && uploads.takesFolder(model.folder)"
-          :unsupported="canOffer && !uploads.takesFolder(model.folder)"
+          :choosable="canOffer && uploads.canTake(model)"
+          :blocked="canOffer ? blockedBy(model) : undefined"
           :locked="uploads.isUploading"
           @choose="(file) => uploads.choose(model, file)"
         />
@@ -95,6 +95,7 @@ import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import MissingModelRow from '@/platform/openOnCloud/components/MissingModelRow.vue'
 import {
+  keepsModelPath,
   modelKey,
   useLocalModelUploadStore
 } from '@/platform/openOnCloud/stores/localModelUploadStore'
@@ -133,7 +134,8 @@ const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
   planUnavailable: 'assetBrowser.fileUpload.planUnavailable',
   sessionExpired: 'assetBrowser.fileUpload.sessionExpired',
   unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
-  unsupportedType: 'openOnCloud.missingModels.folderUnsupported'
+  unsupportedType: 'openOnCloud.missingModels.folderUnsupported',
+  accountChanged: 'openOnCloud.missingModels.accountChanged'
 }
 
 const { t } = useI18n()
@@ -153,7 +155,7 @@ const canOffer = computed(
   () =>
     signedIn &&
     uploadFolders.value !== null &&
-    models.some((model) => uploads.takesFolder(model.folder))
+    models.some((model) => uploads.canTake(model))
 )
 
 const copy = computed(() => {
@@ -187,6 +189,11 @@ const totalSize = computed(() => {
   )
   return bytes > 0 ? formatSize(bytes) : ''
 })
+
+function blockedBy(model: MissingModel) {
+  if (!uploads.takesFolder(model.folder)) return 'folder'
+  return keepsModelPath(model) ? undefined : 'subfolder'
+}
 
 function failureText(reason: LocalModelUploadFailure, message?: string) {
   const key = FAILURE_COPY[reason]

@@ -4,6 +4,7 @@ import * as localModelUploadApi from '@/platform/openOnCloud/localModelUploadApi
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
 import type { ModelFileUploadResult } from '@/platform/workspace/api/modelFileUploadApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useLocalModelUploadStore } from './localModelUploadStore'
 
@@ -16,17 +17,31 @@ vi.mock(import('@/platform/openOnCloud/cloudCompatibilityApi'))
 
 const TASK_ID = '8c2d4e6f-1a3b-4c5d-9e7f-0a1b2c3d4e5f'
 const lora = { folder: 'loras', name: 'retro_anime_style.safetensors' }
-const loraFile = new File(['0123456789'], 'retro_anime_style.safetensors')
+const loraFile = new File(['0123456789'], lora.name)
+const ckpt = { folder: 'checkpoints', name: 'base.safetensors' }
+const ckptFile = new File(['01234'], ckpt.name)
+const nested = { folder: 'loras', name: 'styles/retro.safetensors' }
 
-async function prepared(folders = ['loras', 'checkpoints']) {
+function setWorkspace(id: string | null) {
+  Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: id })
+}
+
+async function prepared(
+  models = [lora],
+  folders = ['loras', 'checkpoints'],
+  sizes: [string, number][] = [
+    [lora.name, loraFile.size],
+    [ckpt.name, ckptFile.size]
+  ]
+) {
   vi.mocked(localModelUploadApi.readCloudUploadFolders).mockResolvedValue(
     folders
   )
   vi.mocked(localModelUploadApi.readLocalModelSizes).mockResolvedValue(
-    new Map([[lora.name, loraFile.size]])
+    new Map(sizes)
   )
   const store = useLocalModelUploadStore()
-  await store.prepare([lora])
+  await store.prepare(models)
   return store
 }
 
@@ -34,6 +49,7 @@ describe('useLocalModelUploadStore', () => {
   let check: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    setWorkspace('ws-1')
     check = vi
       .spyOn(useCloudWorkflowCheckStore(), 'check')
       .mockResolvedValue(undefined)
@@ -60,22 +76,52 @@ describe('useLocalModelUploadStore', () => {
     expect(store.canUpload([lora])).toBe(status === 'chosen')
   })
 
-  it('offers no upload into a folder Comfy Cloud does not take', async () => {
-    const store = await prepared(['checkpoints'])
-
+  it('rechecks a chosen file when the local size changes', async () => {
+    const store = await prepared()
     store.choose(lora, loraFile)
 
-    expect(store.takesFolder('loras')).toBe(false)
+    await prepared([lora], ['loras'], [[lora.name, loraFile.size + 1]])
+
+    expect(store.pickOf(lora).status).toBe('wrongFile')
     expect(store.canUpload([lora])).toBe(false)
   })
 
+  it('forgets an unsent pick when the dialog opens again', async () => {
+    const store = await prepared()
+    store.choose(lora, loraFile)
+
+    store.reset()
+
+    expect(store.pickOf(lora).status).toBe('unchosen')
+  })
+
+  it.for([
+    {
+      label: 'a folder Comfy Cloud does not take',
+      model: lora,
+      folders: ['checkpoints']
+    },
+    {
+      label: 'a subfolder the upload cannot keep',
+      model: nested,
+      folders: ['loras']
+    }
+  ])('offers no upload for $label', async ({ model, folders }) => {
+    const store = await prepared([model], folders, [
+      [model.name, loraFile.size]
+    ])
+
+    store.choose(model, new File(['0123456789'], model.name))
+
+    expect(store.canTake(model)).toBe(false)
+    expect(store.canUpload([model])).toBe(false)
+  })
+
   it('uploads to Comfy Cloud, waits for the stored model, then checks again', async () => {
-    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockImplementation(
-      async (_file, options) => {
-        options.onProgress(5)
-        return { ok: true, taskId: TASK_ID }
-      }
-    )
+    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValue({
+      ok: true,
+      taskId: TASK_ID
+    })
     vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
       ok: true
     })
@@ -88,13 +134,66 @@ describe('useLocalModelUploadStore', () => {
       .calls[0]
     expect(file).toBe(loraFile)
     expect(options.tags).toEqual(['models', 'loras'])
-    expect(options.request).toBe(localModelUploadApi.cloudUploadRequest)
     expect(localModelUploadApi.waitForStoredModel).toHaveBeenCalledWith(
       TASK_ID,
-      expect.any(AbortSignal)
+      expect.any(AbortSignal),
+      expect.any(Function)
     )
     expect(store.upload).toEqual({ phase: 'done' })
     expect(check).toHaveBeenCalledOnce()
+  })
+
+  it('retries only the models that did not reach Comfy Cloud', async () => {
+    const upload = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+      .mockResolvedValueOnce({ ok: false, reason: 'failed' })
+      .mockResolvedValueOnce({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    const store = await prepared([lora, ckpt])
+    store.choose(lora, loraFile)
+    store.choose(ckpt, ckptFile)
+
+    await store.start([lora, ckpt])
+    expect(store.upload).toMatchObject({ phase: 'failed' })
+    expect(store.pickOf(lora).status).toBe('stored')
+    store.reset()
+    store.choose(ckpt, ckptFile)
+    await store.start([lora, ckpt])
+
+    expect(upload.mock.calls.map(([file]) => file)).toEqual([
+      loraFile,
+      ckptFile,
+      ckptFile
+    ])
+    expect(store.upload).toEqual({ phase: 'done' })
+  })
+
+  it('stops the upload and sends nothing more when the workspace changes', async () => {
+    const routes: string[] = []
+    vi.mocked(localModelUploadApi.cloudUploadRequest).mockImplementation(
+      async (route) => {
+        routes.push(route)
+        return new Response()
+      }
+    )
+    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockImplementation(
+      async (_file, options) => {
+        setWorkspace('ws-2')
+        await options.request?.('/assets/uploads', {}).catch(() => undefined)
+        return { ok: false, reason: 'cancelled' }
+      }
+    )
+    const store = await prepared()
+    store.choose(lora, loraFile)
+
+    await store.start([lora])
+
+    expect(routes).toEqual([])
+    expect(store.upload).toEqual({ phase: 'failed', reason: 'accountChanged' })
+    expect(check).not.toHaveBeenCalled()
   })
 
   it('reports progress across the whole upload', async () => {
@@ -132,11 +231,7 @@ describe('useLocalModelUploadStore', () => {
     store.cancel()
     await started
 
-    expect(store.upload).toEqual({
-      phase: 'failed',
-      reason: 'cancelled',
-      message: undefined
-    })
+    expect(store.upload).toMatchObject({ phase: 'failed', reason: 'cancelled' })
     expect(check).not.toHaveBeenCalled()
   })
 
@@ -157,26 +252,35 @@ describe('useLocalModelUploadStore', () => {
     expect(localModelUploadApi.waitForStoredModel).not.toHaveBeenCalled()
   })
 
-  it('fails when Comfy Cloud cannot store the uploaded model', async () => {
+  it.for([
+    {
+      label: 'Comfy Cloud cannot store the uploaded model',
+      stored: () =>
+        Promise.resolve({
+          ok: false as const,
+          reason: 'failed' as const,
+          message: 'Not a safetensors file'
+        }),
+      expected: { reason: 'failed', message: 'Not a safetensors file' }
+    },
+    {
+      label: 'waiting for the stored model throws',
+      stored: () => Promise.reject(new Error('task poll broke')),
+      expected: { reason: 'failed' }
+    }
+  ])('fails cleanly when $label', async ({ stored, expected }) => {
     vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValue({
       ok: true,
       taskId: TASK_ID
     })
-    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
-      ok: false,
-      reason: 'failed',
-      message: 'Not a safetensors file'
-    })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockImplementation(stored)
     const store = await prepared()
     store.choose(lora, loraFile)
 
     await store.start([lora])
 
-    expect(store.upload).toEqual({
-      phase: 'failed',
-      reason: 'failed',
-      message: 'Not a safetensors file'
-    })
+    expect(store.upload).toMatchObject({ phase: 'failed', ...expected })
+    expect(store.isUploading).toBe(false)
     expect(check).not.toHaveBeenCalled()
   })
 })

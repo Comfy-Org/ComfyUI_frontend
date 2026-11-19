@@ -1,0 +1,86 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
+
+import { waitForStoredModel } from './localModelUploadApi'
+
+vi.mock(import('@/scripts/api'))
+
+const TASK_ID = '8c2d4e6f-1a3b-4c5d-9e7f-0a1b2c3d4e5f'
+
+function task(status: string, extra: Record<string, unknown> = {}) {
+  return Response.json({
+    id: TASK_ID,
+    idempotency_key: 'upload',
+    task_name: 'model_upload',
+    status,
+    payload: {},
+    create_time: '2026-11-18T00:00:00Z',
+    update_time: '2026-11-18T00:00:01Z',
+    ...extra
+  })
+}
+
+function answers(...responses: Array<Response | 'hang'>): UploadRouteRequest {
+  return vi.fn((_route: string, init: RequestInit) => {
+    const next = responses.length > 1 ? responses.shift() : responses[0]
+    if (next !== 'hang') return Promise.resolve(next!.clone())
+    return new Promise<Response>((_resolve, reject) =>
+      init.signal?.addEventListener('abort', () =>
+        reject(new DOMException('Aborted', 'AbortError'))
+      )
+    )
+  })
+}
+
+describe('waitForStoredModel', () => {
+  beforeEach(() => vi.useFakeTimers())
+
+  async function outcome(request: UploadRouteRequest, advanceMs: number) {
+    const result = waitForStoredModel(
+      TASK_ID,
+      new AbortController().signal,
+      request
+    )
+    await vi.advanceTimersByTimeAsync(advanceMs)
+    return result
+  }
+
+  it.for([
+    {
+      label: 'the task completes after a busy answer',
+      responses: [new Response(null, { status: 503 }), task('completed')],
+      expected: { ok: true }
+    },
+    {
+      label: 'the task fails',
+      responses: [task('failed', { error_message: 'bad file' })],
+      expected: { ok: false, reason: 'failed', message: 'bad file' }
+    },
+    {
+      label: 'the answer is not JSON',
+      responses: [new Response('<html>', { status: 200 })],
+      expected: { ok: false, reason: 'failed' }
+    }
+  ])('settles when $label', async ({ responses, expected }) => {
+    await expect(outcome(answers(...responses), 10_000)).resolves.toEqual(
+      expected
+    )
+  })
+
+  it('gives up on one hung poll and asks again', async () => {
+    const request = answers('hang', task('completed'))
+
+    await expect(outcome(request, 20_000)).resolves.toEqual({ ok: true })
+    expect(request).toHaveBeenCalledTimes(2)
+  })
+
+  it('fails once the task stays unreachable past the deadline', async () => {
+    const request = answers(new Response(null, { status: 503 }))
+
+    await expect(outcome(request, 31 * 60_000)).resolves.toEqual({
+      ok: false,
+      reason: 'failed'
+    })
+  })
+})

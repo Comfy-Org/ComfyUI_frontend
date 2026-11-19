@@ -1,6 +1,6 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { defineStore } from 'pinia'
-import { computed, shallowRef } from 'vue'
+import { computed, shallowRef, watch } from 'vue'
 
 import {
   cloudUploadRequest,
@@ -8,25 +8,30 @@ import {
   readLocalModelSizes,
   waitForStoredModel
 } from '@/platform/openOnCloud/localModelUploadApi'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import type { CloudWorkflowGaps } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import { modelFileUploadApi } from '@/platform/workspace/api/modelFileUploadApi'
-import type { ModelFileUploadResult } from '@/platform/workspace/api/modelFileUploadApi'
+import type {
+  ModelFileUploadResult,
+  UploadRouteRequest
+} from '@/platform/workspace/api/modelFileUploadApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 /** A model Comfy Cloud lacks: its folder and name. */
 export type MissingModel = CloudWorkflowGaps['models'][number]
 
 /** Why an upload stopped: the server's refusal, a cancel, or a failure. */
-export type LocalModelUploadFailure = Extract<
-  ModelFileUploadResult,
-  { ok: false }
->['reason']
+export type LocalModelUploadFailure =
+  | Extract<ModelFileUploadResult, { ok: false }>['reason']
+  | 'accountChanged'
 
 /** The file chosen for a missing model, if any. */
 export type ModelPick =
   | { status: 'unchosen' }
   | { status: 'chosen'; file: File }
   | { status: 'wrongFile'; file: File }
+  | { status: 'stored' }
 
 type LocalModelUpload =
   | { phase: 'idle' }
@@ -34,13 +39,16 @@ type LocalModelUpload =
   | { phase: 'failed'; reason: LocalModelUploadFailure; message?: string }
   | { phase: 'done' }
 
+type UploadStop = Extract<LocalModelUpload, { phase: 'failed' }>
+
 /** Keys a missing model the way the check names it. */
 export function modelKey({ folder, name }: MissingModel): string {
   return `${folder}/${name}`
 }
 
-function baseName(name: string): string {
-  return name.replaceAll('\\', '/').split('/').pop() ?? name
+/** Whether the upload can keep the model's path; one in a subfolder cannot. */
+export function keepsModelPath({ name }: MissingModel): boolean {
+  return !/[\\/]/.test(name)
 }
 
 function matchesModel(
@@ -48,23 +56,37 @@ function matchesModel(
   model: MissingModel,
   size: number | undefined
 ): boolean {
-  if (file.name !== baseName(model.name)) return false
-  return size === undefined || file.size === size
+  return file.name === model.name && (size === undefined || file.size === size)
+}
+
+function useUploadOwner() {
+  const { resolvedUserInfo } = useCurrentUser()
+  const workspaces = useTeamWorkspaceStore()
+  return computed(
+    () =>
+      `${resolvedUserInfo.value?.id ?? ''}|${workspaces.activeWorkspaceId ?? ''}`
+  )
 }
 
 /** Uploads the models Comfy Cloud lacks into the workspace library. */
 export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
+  const owner = useUploadOwner()
   const uploadFolders = shallowRef<string[] | null>(null)
   const sizes = shallowRef(new Map<string, number>())
   const picks = shallowRef(new Map<string, ModelPick>())
   const upload = shallowRef<LocalModelUpload>({ phase: 'idle' })
-  let controller: AbortController | undefined
+  let batch: { controller: AbortController; owner: string } | undefined
 
   const isUploading = computed(() => upload.value.phase === 'uploading')
   const percent = computed(() => {
     const current = upload.value
     if (current.phase !== 'uploading' || current.total === 0) return 0
     return Math.min(100, Math.round((current.sent / current.total) * 100))
+  })
+
+  watch(owner, (next) => {
+    if (batch && batch.owner !== next) batch.controller.abort()
+    if (!isUploading.value) picks.value = new Map()
   })
 
   async function prepare(models: MissingModel[]): Promise<void> {
@@ -93,95 +115,140 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     return uploadFolders.value?.includes(folder) ?? false
   }
 
+  function canTake(model: MissingModel): boolean {
+    return takesFolder(model.folder) && keepsModelPath(model)
+  }
+
   function pickOf(model: MissingModel): ModelPick {
-    return picks.value.get(modelKey(model)) ?? { status: 'unchosen' }
+    const pick = picks.value.get(modelKey(model))
+    if (pick?.status !== 'chosen') return pick ?? { status: 'unchosen' }
+    return matchesModel(pick.file, model, sizeOf(model))
+      ? pick
+      : { status: 'wrongFile', file: pick.file }
+  }
+
+  function setPick(model: MissingModel, pick: ModelPick): void {
+    picks.value = new Map(picks.value).set(modelKey(model), pick)
   }
 
   function choose(model: MissingModel, file: File): void {
-    const next = new Map(picks.value)
-    next.set(
-      modelKey(model),
-      matchesModel(file, model, sizeOf(model))
-        ? { status: 'chosen', file }
-        : { status: 'wrongFile', file }
-    )
-    picks.value = next
+    if (isUploading.value || !canTake(model)) return
+    setPick(model, { status: 'chosen', file })
     if (upload.value.phase === 'failed') upload.value = { phase: 'idle' }
   }
 
   function canUpload(models: MissingModel[]): boolean {
+    const statuses = models.map((model) => canTake(model) && pickOf(model))
     return (
-      models.length > 0 &&
-      models.every(
-        (model) =>
-          takesFolder(model.folder) && pickOf(model).status === 'chosen'
+      statuses.some((pick) => pick && pick.status === 'chosen') &&
+      statuses.every(
+        (pick) => pick && (pick.status === 'chosen' || pick.status === 'stored')
       )
     )
   }
 
-  async function start(models: MissingModel[]): Promise<void> {
-    if (isUploading.value || !canUpload(models)) return
-    controller = new AbortController()
+  function boundRequest(startedBy: string): UploadRouteRequest {
+    return (route, init) =>
+      owner.value === startedBy
+        ? cloudUploadRequest(route, init)
+        : Promise.reject(new DOMException('Account changed', 'AbortError'))
+  }
+
+  async function sendOne(
+    model: MissingModel,
+    file: File,
+    progress: (sent: number) => void,
+    { controller, owner: startedBy }: NonNullable<typeof batch>
+  ): Promise<UploadStop | undefined> {
     const { signal } = controller
-    const files = models.map((model) => {
-      const pick = pickOf(model)
-      return { model, file: pick.status === 'chosen' ? pick.file : null }
+    const request = boundRequest(startedBy)
+    const result = await modelFileUploadApi.uploadModelFile(file, {
+      tags: ['models', model.folder],
+      signal,
+      request,
+      onProgress: progress
     })
-    const total = files.reduce((sum, { file }) => sum + (file?.size ?? 0), 0)
+    if (!result.ok) {
+      if (result.reason === 'failed')
+        reportError(result.cause, {
+          surface: 'platform',
+          errorType: 'error_uploading_local_model_to_cloud',
+          level: 'warning'
+        })
+      return { phase: 'failed', reason: result.reason, message: result.message }
+    }
+    const stored = await waitForStoredModel(result.taskId, signal, request)
+    return stored.ok
+      ? undefined
+      : { phase: 'failed', reason: stored.reason, message: stored.message }
+  }
+
+  async function sendAll(
+    queue: { model: MissingModel; file: File }[],
+    current: NonNullable<typeof batch>
+  ): Promise<UploadStop | undefined> {
+    const total = queue.reduce((sum, { file }) => sum + file.size, 0)
     let done = 0
     upload.value = { phase: 'uploading', sent: 0, total }
-
-    for (const { model, file } of files) {
-      if (!file) continue
-      const result = await modelFileUploadApi.uploadModelFile(file, {
-        tags: ['models', model.folder],
-        signal,
-        request: cloudUploadRequest,
-        onProgress: (sent) => {
-          if (upload.value.phase !== 'uploading') return
-          upload.value = { phase: 'uploading', sent: done + sent, total }
-        }
-      })
-      if (!result.ok) {
-        if (result.reason === 'failed') {
-          reportError(result.cause, {
-            surface: 'platform',
-            errorType: 'error_uploading_local_model_to_cloud',
-            level: 'warning'
-          })
-        }
-        upload.value = {
-          phase: 'failed',
-          reason: result.reason,
-          message: result.message
-        }
-        return
-      }
-      const stored = await waitForStoredModel(result.taskId, signal)
-      if (!stored.ok) {
-        upload.value = {
-          phase: 'failed',
-          reason: stored.reason,
-          message: stored.message
-        }
-        return
-      }
+    for (const { model, file } of queue) {
+      const stop = await sendOne(
+        model,
+        file,
+        (sent) => {
+          if (isUploading.value)
+            upload.value = { phase: 'uploading', sent: done + sent, total }
+        },
+        current
+      )
+      if (stop) return stop
+      setPick(model, { status: 'stored' })
       done += file.size
       upload.value = { phase: 'uploading', sent: done, total }
     }
+    return undefined
+  }
 
-    upload.value = { phase: 'done' }
-    picks.value = new Map()
-    void useCloudWorkflowCheckStore().check()
+  async function start(models: MissingModel[]): Promise<void> {
+    if (isUploading.value || !canUpload(models)) return
+    const queue = models.flatMap((model) => {
+      const pick = pickOf(model)
+      return pick.status === 'chosen' ? [{ model, file: pick.file }] : []
+    })
+    const current = { controller: new AbortController(), owner: owner.value }
+    batch = current
+    try {
+      const stop = await sendAll(queue, current)
+      if (stop) {
+        upload.value =
+          current.owner === owner.value
+            ? stop
+            : { phase: 'failed', reason: 'accountChanged' }
+        return
+      }
+      upload.value = { phase: 'done' }
+      void useCloudWorkflowCheckStore().check()
+    } catch (cause) {
+      reportError(cause, {
+        surface: 'platform',
+        errorType: 'error_uploading_local_model_to_cloud',
+        level: 'warning'
+      })
+      upload.value = { phase: 'failed', reason: 'failed' }
+    } finally {
+      if (batch === current) batch = undefined
+    }
   }
 
   function cancel(): void {
-    controller?.abort()
+    batch?.controller.abort()
   }
 
   function reset(): void {
     if (isUploading.value) return
     upload.value = { phase: 'idle' }
+    picks.value = new Map(
+      [...picks.value].filter(([, pick]) => pick.status === 'stored')
+    )
   }
 
   return {
@@ -192,6 +259,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     prepare,
     sizeOf,
     takesFolder,
+    canTake,
     pickOf,
     choose,
     canUpload,

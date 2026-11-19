@@ -1,3 +1,4 @@
+import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
 import { zGetTaskResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
@@ -8,6 +9,7 @@ import { useAuthStore } from '@/stores/authStore'
 
 const TASK_POLL_MS = 2_000
 const READ_TIMEOUT_MS = 10_000
+const STORE_DEADLINE_MS = 30 * 60_000
 
 const zUploadFolders = z.object({
   model_upload_folders: z.array(z.string()).optional()
@@ -90,12 +92,26 @@ const TASK_OUTCOMES: Partial<Record<string, StoredTaskOutcome>> = {
 
 async function taskAnswer(
   taskId: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  request: UploadRouteRequest
 ): Promise<Response | null> {
+  const timeout = new AbortController()
+  const timer = setTimeout(() => timeout.abort(), READ_TIMEOUT_MS)
   try {
-    return await cloudUploadRequest(`/tasks/${encodeURIComponent(taskId)}`, {
-      signal
+    return await request(`/tasks/${encodeURIComponent(taskId)}`, {
+      signal: combineAbortSignals([signal, timeout.signal])
     })
+  } catch {
+    return null
+  } finally {
+    clearTimeout(timer)
+  }
+}
+
+async function taskBody(response: Response) {
+  if (!response.ok) return null
+  try {
+    return zGetTaskResponse.safeParse(await response.json())
   } catch {
     return null
   }
@@ -103,14 +119,13 @@ async function taskAnswer(
 
 async function readStoredTask(
   taskId: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  request: UploadRouteRequest
 ): Promise<StoredTaskOutcome | undefined> {
-  const response = await taskAnswer(taskId, signal)
+  const response = await taskAnswer(taskId, signal, request)
   if (!response || response.status >= 500 || response.status === 429)
     return undefined
-  const task = response.ok
-    ? zGetTaskResponse.safeParse(await response.json())
-    : null
+  const task = await taskBody(response)
   if (!task?.success) return { ok: false, reason: 'failed' }
   if (task.data.status === 'failed')
     return { ok: false, reason: 'failed', message: task.data.error_message }
@@ -120,11 +135,14 @@ async function readStoredTask(
 /** Polls the Comfy Cloud task that stores an uploaded file until it ends. */
 export async function waitForStoredModel(
   taskId: string,
-  signal: AbortSignal
+  signal: AbortSignal,
+  request: UploadRouteRequest = cloudUploadRequest
 ): Promise<StoredTaskOutcome> {
+  const deadline = Date.now() + STORE_DEADLINE_MS
   while (await wait(TASK_POLL_MS, signal)) {
-    const outcome = await readStoredTask(taskId, signal)
+    const outcome = await readStoredTask(taskId, signal, request)
     if (outcome) return outcome
+    if (Date.now() >= deadline) return { ok: false, reason: 'failed' }
   }
   return { ok: false, reason: 'cancelled' }
 }
