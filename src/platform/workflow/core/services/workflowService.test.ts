@@ -110,6 +110,12 @@ function makeWorkflowData(
   }
 }
 
+function createEditedWorkflow(path: string): LoadedComfyWorkflow {
+  const workflow = createModeTestWorkflow({ path })
+  workflow.changeTracker.activeState = makeWorkflowData({ edited: true })
+  return workflow
+}
+
 function makeWorkflowDataWithId(id: string): ComfyWorkflowJSON {
   return { ...makeWorkflowData(), id }
 }
@@ -523,9 +529,7 @@ describe('useWorkflowService', () => {
       vi.spyOn(useSettingStore(), 'get').mockImplementation((key: string) => {
         return key === 'Comfy.Workflow.Persist'
       })
-      const activeWorkflow = createModeTestWorkflow({
-        path: 'workflows/test.json'
-      })
+      const activeWorkflow = createEditedWorkflow('workflows/test.json')
       workflowStore.activeWorkflow = activeWorkflow
 
       useWorkflowService().beforeLoadNewGraph()
@@ -538,6 +542,63 @@ describe('useWorkflowService', () => {
           isTemporary: activeWorkflow.isTemporary
         }
       )
+    })
+
+    it('removes the draft of a saved workflow that matches its saved file', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(useWorkflowDraftStoreV2().saveDraft).not.toHaveBeenCalled()
+      expect(useWorkflowDraftStoreV2().removeDraft).toHaveBeenCalledWith(
+        activeWorkflow.path
+      )
+    })
+
+    it('keeps the draft of a modified saved workflow whose baseline is its draft', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      activeWorkflow.isModified = true
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(useWorkflowDraftStoreV2().saveDraft).toHaveBeenCalledWith(
+        activeWorkflow.path,
+        JSON.stringify(activeWorkflow.activeState),
+        { name: activeWorkflow.key, isTemporary: false }
+      )
+      expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalled()
+    })
+
+    it('saves a draft of a temporary workflow even when unedited', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/Unsaved Workflow.json'
+      })
+      activeWorkflow.size = -1
+      workflowStore.activeWorkflow = activeWorkflow
+
+      useWorkflowService().beforeLoadNewGraph()
+
+      expect(useWorkflowDraftStoreV2().saveDraft).toHaveBeenCalledWith(
+        activeWorkflow.path,
+        JSON.stringify(activeWorkflow.activeState),
+        { name: activeWorkflow.key, isTemporary: true }
+      )
+      expect(useWorkflowDraftStoreV2().removeDraft).not.toHaveBeenCalled()
     })
 
     it('persists the displayed state when Undo fails before graph configuration', async () => {
@@ -574,9 +635,7 @@ describe('useWorkflowService', () => {
         return key === 'Comfy.Workflow.Persist'
       })
       vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockReturnValue(false)
-      const activeWorkflow = createModeTestWorkflow({
-        path: 'workflows/test.json'
-      })
+      const activeWorkflow = createEditedWorkflow('workflows/test.json')
       workflowStore.activeWorkflow = activeWorkflow
 
       useWorkflowService().beforeLoadNewGraph()
@@ -597,13 +656,43 @@ describe('useWorkflowService', () => {
       vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockImplementation(() => {
         throw error
       })
+      const activeWorkflow = createEditedWorkflow('workflows/test.json')
+      workflowStore.activeWorkflow = activeWorkflow
+
+      try {
+        useWorkflowService().beforeLoadNewGraph()
+
+        expect(console.error).toHaveBeenCalledWith(
+          'Failed to persist active workflow draft',
+          error
+        )
+        expect(useToast().error).toHaveBeenCalledWith(
+          t('g.error'),
+          expect.objectContaining({
+            description: t('toastMessages.failedToSaveDraft')
+          })
+        )
+      } finally {
+        vi.mocked(console.error).mockRestore()
+      }
+    })
+    it('should log and show an error toast when removing an unedited draft throws', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      const error = new Error('storage unavailable')
+      vi.mocked(useWorkflowDraftStoreV2().removeDraft).mockImplementation(
+        () => {
+          throw error
+        }
+      )
       const activeWorkflow = createModeTestWorkflow({
         path: 'workflows/test.json'
       })
       workflowStore.activeWorkflow = activeWorkflow
 
       try {
-        useWorkflowService().beforeLoadNewGraph()
+        expect(() => useWorkflowService().beforeLoadNewGraph()).not.toThrow()
 
         expect(console.error).toHaveBeenCalledWith(
           'Failed to persist active workflow draft',

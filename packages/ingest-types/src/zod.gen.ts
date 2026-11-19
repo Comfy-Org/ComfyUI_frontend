@@ -8144,7 +8144,22 @@ export const zListCccWebsiteCardsQuery = z.object({
   kind: z.enum(['MODEL', 'WORKFLOW', 'APP']),
   limit: z.int().gte(1).lte(24).optional().default(24),
   cursor: z.string().max(4096).optional(),
-  locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en'),
+  locale: z
+    .enum([
+      'en',
+      'zh-CN',
+      'ja',
+      'zh-TW',
+      'ko',
+      'es',
+      'pt-BR',
+      'ru',
+      'fr',
+      'tr',
+      'ar'
+    ])
+    .optional()
+    .default('en'),
   q: z.string().max(300).optional(),
   sort: z
     .enum(['popular', 'name', 'newest', 'priceAsc', 'priceDesc'])
@@ -8536,7 +8551,22 @@ export const zListCccWebsiteModelDirectoryHeaders = z.object({
 })
 
 export const zListCccWebsiteModelDirectoryQuery = z.object({
-  locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en')
+  locale: z
+    .enum([
+      'en',
+      'zh-CN',
+      'ja',
+      'zh-TW',
+      'ko',
+      'es',
+      'pt-BR',
+      'ru',
+      'fr',
+      'tr',
+      'ar'
+    ])
+    .optional()
+    .default('en')
 })
 
 /**
@@ -8695,7 +8725,22 @@ export const zGetCccWebsiteRootPresentationHeaders = z.object({
 
 export const zGetCccWebsiteRootPresentationQuery = z.object({
   path: z.enum(['/hub/models/', '/hub/workflows/', '/hub/apps/']),
-  locale: z.enum(['en', 'zh-CN', 'ja']).optional().default('en'),
+  locale: z
+    .enum([
+      'en',
+      'zh-CN',
+      'ja',
+      'zh-TW',
+      'ko',
+      'es',
+      'pt-BR',
+      'ru',
+      'fr',
+      'tr',
+      'ar'
+    ])
+    .optional()
+    .default('en'),
   revision_id: z.coerce
     .bigint()
     .gte(BigInt(1))

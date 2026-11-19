@@ -19596,7 +19596,18 @@ export type ListCccWebsiteCardsData = {
     kind: 'MODEL' | 'WORKFLOW' | 'APP'
     limit?: number
     cursor?: string
-    locale?: 'en' | 'zh-CN' | 'ja'
+    locale?:
+      | 'en'
+      | 'zh-CN'
+      | 'ja'
+      | 'zh-TW'
+      | 'ko'
+      | 'es'
+      | 'pt-BR'
+      | 'ru'
+      | 'fr'
+      | 'tr'
+      | 'ar'
     q?: string
     /**
      * newest orders by the time each page first went live on the Hub, newest first, then title and uid; pages with no recorded time come last.
@@ -20857,7 +20868,18 @@ export type ListCccWebsiteModelDirectoryData = {
   }
   path?: never
   query?: {
-    locale?: 'en' | 'zh-CN' | 'ja'
+    locale?:
+      | 'en'
+      | 'zh-CN'
+      | 'ja'
+      | 'zh-TW'
+      | 'ko'
+      | 'es'
+      | 'pt-BR'
+      | 'ru'
+      | 'fr'
+      | 'tr'
+      | 'ar'
   }
   url: '/api/v1/catalog/model-directory'
 }
@@ -21375,7 +21397,18 @@ export type GetCccWebsiteRootPresentationData = {
   path?: never
   query: {
     path: '/hub/models/' | '/hub/workflows/' | '/hub/apps/'
-    locale?: 'en' | 'zh-CN' | 'ja'
+    locale?:
+      | 'en'
+      | 'zh-CN'
+      | 'ja'
+      | 'zh-TW'
+      | 'ko'
+      | 'es'
+      | 'pt-BR'
+      | 'ru'
+      | 'fr'
+      | 'tr'
+      | 'ar'
     /**
      * Live revision selected once at page entry. Redis requires both this revision and the selected authority pin. On an origin miss the revision must match current Live.
      */
