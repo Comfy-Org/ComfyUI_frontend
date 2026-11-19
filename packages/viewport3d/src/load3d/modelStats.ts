@@ -1,5 +1,12 @@
 import * as THREE from 'three'
 
+function throwIfSignalAborted(signal: AbortSignal | undefined): void {
+  if (!signal?.aborted) return
+  throw signal.reason === undefined
+    ? new DOMException('This operation was aborted', 'AbortError')
+    : signal.reason
+}
+
 export interface ModelStats {
   vertices: number
   edges: number
@@ -16,7 +23,7 @@ const CHUNK_SIZE = 50_000
 
 async function yieldToEventLoop(signal?: AbortSignal): Promise<void> {
   await new Promise<void>((resolve) => setTimeout(resolve, 0))
-  signal?.throwIfAborted()
+  throwIfSignalAborted(signal)
 }
 
 async function weldByPosition(
@@ -116,7 +123,7 @@ export async function computeModelStats(
   root: THREE.Object3D,
   signal?: AbortSignal
 ): Promise<ModelStats> {
-  signal?.throwIfAborted()
+  throwIfSignalAborted(signal)
   const meshes: THREE.Mesh[] = []
   let total = EMPTY_STATS
   root.traverse((child) => {
@@ -128,7 +135,7 @@ export async function computeModelStats(
   })
   for (const mesh of meshes) {
     const stats = await meshStats(mesh, signal)
-    signal?.throwIfAborted()
+    throwIfSignalAborted(signal)
     total = addStats(total, stats)
   }
   return total
