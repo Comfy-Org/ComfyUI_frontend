@@ -318,7 +318,7 @@ describe('edit contracts', () => {
   })
 
   describe('values the core keeps or refuses exactly', () => {
-    it('freezes comfy.edit, so no pack can replace an edit another pack calls', () => {
+    it('freezes the edit core, so nothing can replace an edit a handle calls', () => {
       expect(Object.isFrozen(edit)).toBe(true)
     })
 
