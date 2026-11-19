@@ -2198,7 +2198,11 @@ describe('ComfyApp', () => {
       })
       vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
         await modelsPending
-        return { missingModels: [], confirmedCandidates: [] }
+        return {
+          missingModels: [],
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
+        }
       })
       const load = app.loadGraphData(createWorkflowGraphData(), false, false)
       await vi.waitFor(() =>
