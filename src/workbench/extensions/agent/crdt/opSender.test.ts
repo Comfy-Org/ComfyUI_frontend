@@ -690,7 +690,7 @@ describe('createOpSender', () => {
     ).toBeLessThanOrEqual(WIRE_MAX_BATCH_BYTES)
   })
 
-  it('leaves a batch as minted when lifting it would leave the safe integers', () => {
+  it('settles a held batch when the observed counter exhausts safe integers', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
     vi.advanceTimersByTime(500 * 6)
@@ -699,7 +699,13 @@ describe('createOpSender', () => {
     transportUp = true
     sender.retryTransport()
 
-    expect(sent[0].ops[0].base_version).toBe(41)
+    expect(sent).toEqual([])
+    expect(settled.map(summarizeSettlement)).toEqual([
+      { state: 'undeliverable', nodeIds: [1] }
+    ])
+    expect(reportsOfType('failure_minting_agent_op_counter')).toEqual([
+      [expect.any(RangeError), expect.objectContaining({ surface: 'agent' })]
+    ])
   })
 
   it('leaves a held batch as minted when only its highest op would overflow', () => {

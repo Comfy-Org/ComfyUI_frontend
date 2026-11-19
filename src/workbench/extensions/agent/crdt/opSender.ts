@@ -245,13 +245,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const mayReportSerializationFailure = createReportBudget()
   const mayReportCounterExhaustion = createReportBudget()
 
-  function observedFloor(): number {
-    const floor = (deps.observedCounter() ?? -1) + 1
-    return Number.isSafeInteger(floor) ? floor : 0
+  function observedFloor(): number | null {
+    const observed = deps.observedCounter()
+    if (observed === undefined) return 0
+    if (!Number.isSafeInteger(observed) || observed >= Number.MAX_SAFE_INTEGER)
+      return null
+    return observed + 1
   }
 
-  function mintBaseVersion(workflowId: string | null): number {
-    const observed = Math.max(deps.baseVersion(), observedFloor())
+  function mintBaseVersion(workflowId: string | null): number | null {
+    const floor = observedFloor()
+    if (floor === null) return null
+    const observed = Math.max(deps.baseVersion(), floor)
     if (workflowId === null) return observed
     const lastMinted = lastMintedVersions.get(workflowId)
     return lastMinted === undefined
@@ -278,6 +283,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       surface: 'agent',
       tags: { feature_area: 'agent', operation: 'sync', outcome: 'degraded' }
     })
+  }
+
+  function reportCounterExhaustion(): void {
+    if (!mayReportCounterExhaustion()) return
+    reportDegraded(
+      new RangeError(
+        'Agent human op counters left the safe integers; the edit was not sent'
+      ),
+      'failure_minting_agent_op_counter'
+    )
   }
 
   function guardedSettlementNotifier(
@@ -321,6 +336,11 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleUnbound(batch)
       return
     }
+    if (!stampAboveObserved(batch)) {
+      reportCounterExhaustion()
+      settle({ state: 'undeliverable', ops: batch.ops })
+      return
+    }
     if (!trySend(batch)) {
       if (attempt < SEND_RETRY_LIMIT) {
         // Tracked in the same slot as the result timer (they never overlap:
@@ -341,11 +361,13 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     armResultTimeout(batch)
   }
 
-  function stampAboveObserved(batch: InFlight): void {
-    if (batch.sends > 0 || batch.sendMayHaveLeft) return
+  function stampAboveObserved(batch: InFlight): boolean {
+    if (batch.sends > 0 || batch.sendMayHaveLeft) return true
     const counters = batch.ops.map((op) => op.base_version)
+    const observed = observedFloor()
+    if (observed === null) return false
     const floor = Math.max(
-      observedFloor(),
+      observed,
       (lastSentVersions.get(batch.workflowId) ?? -1) + 1
     )
     const shift = floor - Math.min(...counters)
@@ -357,6 +379,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         stamp: batch.ops[index].stamp
       }))
     }
+    return true
   }
 
   function recordSentCounters(batch: InFlight): void {
@@ -368,7 +391,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function trySend(batch: InFlight): boolean {
-    stampAboveObserved(batch)
     try {
       return deps.sendOps(batch.workflowId, deps.tab, batch.wire)
     } catch (error) {
@@ -527,6 +549,14 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   ): { minted: Op[]; exhausted: boolean } {
     const baseVersion = mintBaseVersion(workflowId)
     const actor = deps.actor()
+    if (baseVersion === null)
+      return {
+        minted: mintWireOps(operations, {
+          actor,
+          baseVersion: Number.MAX_SAFE_INTEGER
+        }),
+        exhausted: true
+      }
     const highest = baseVersion + (operations.length - 1)
     if (!Number.isSafeInteger(highest))
       return {
@@ -612,14 +642,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       return
     }
     if (exhausted) {
-      if (mayReportCounterExhaustion()) {
-        reportDegraded(
-          new RangeError(
-            'Agent human op counters left the safe integers; the edit was not sent'
-          ),
-          'failure_minting_agent_op_counter'
-        )
-      }
+      reportCounterExhaustion()
       settleUndeliverableInBoundedGroups(
         minted,
         guardedSettlementNotifier('failure_settling_agent_op_sender'),
