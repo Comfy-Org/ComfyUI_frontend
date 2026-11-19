@@ -2443,19 +2443,6 @@ export class LGraphNode
       widget.setNodeId(this.id)
     }
 
-    if (widget.serialize === false) return widget
-
-    const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
-    const restored = useWidgetValueStore().getRestoredWidgetValue(
-      this.graph?.rootGraph.id ?? zeroUuid,
-      this.id,
-      widget,
-      positionalIndex
-    )
-    if (restored) widget.value = restored.value
-
     return widget
   }
 
