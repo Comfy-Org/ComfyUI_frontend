@@ -347,7 +347,7 @@ describe('UnifiedPricingTable personal plan action', () => {
       copy: "This plan isn't available for your workspace."
     }
   ] as const)(
-    'disables the CTA and explains none for $denied_reason',
+    'disables the CTA and explains none for $denied_reason with $copy',
     async ({ copy, ...decision }) => {
       const user = userEvent.setup()
       mockApiPlans.value = standardYearlyCatalog({

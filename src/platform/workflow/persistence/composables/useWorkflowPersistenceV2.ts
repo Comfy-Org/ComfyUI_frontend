@@ -119,7 +119,7 @@ export function useWorkflowPersistenceV2() {
       workflowPath,
       workflowJson,
       { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary },
-      activeWorkflow.lastModified
+      { minUpdatedAt: activeWorkflow.lastModified }
     )
 
     if (!saved) {

@@ -2270,6 +2270,120 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.initializingJobIds.has('job-1')).toBe(false)
       expect(store.initializingJobIds.has('job-2')).toBe(true)
     })
+
+    describe('a run queued from another connection', () => {
+      const runningQueue = {
+        queue_running: [
+          [
+            0,
+            'job-1',
+            {
+              '1': {
+                inputs: {},
+                class_type: 'EmptyImage',
+                _meta: { title: 'Empty Image' }
+              },
+              '2': {
+                inputs: { image: ['1', 0] },
+                class_type: 'ImageBlur',
+                _meta: { title: 'Blur Image' }
+              },
+              '3': {
+                inputs: { images: ['2', 0] },
+                class_type: 'SaveImage',
+                _meta: { title: 'Save Image' }
+              }
+            },
+            {},
+            ['3']
+          ]
+        ],
+        queue_pending: []
+      }
+
+      it('counts its nodes and names the running one', async () => {
+        vi.mocked(api.fetchApi).mockResolvedValue(Response.json(runningQueue))
+
+        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+        await vi.waitFor(() => expect(store.totalNodesToExecute).toBe(3))
+        fire('executed', {
+          node: '1',
+          display_node: '1',
+          prompt_id: 'job-1',
+          output: {}
+        })
+
+        expect(api.fetchApi).toHaveBeenCalledWith('/queue')
+        expect(store.executionProgress).toBeCloseTo(1 / 3)
+        expect(store.activeJob?.nodeLookup?.['2']).toEqual({
+          title: 'Blur Image',
+          type: 'ImageBlur'
+        })
+      })
+
+      it('keeps nodes already reported done before the queue answered', async () => {
+        let answer: (res: Response) => void = () => {}
+        vi.mocked(api.fetchApi).mockReturnValue(
+          new Promise<Response>((resolve) => {
+            answer = resolve
+          })
+        )
+
+        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+        fire('execution_cached', {
+          prompt_id: 'job-1',
+          nodes: ['1'],
+          timestamp: 0
+        })
+        answer(Response.json(runningQueue))
+
+        await vi.waitFor(() => expect(store.totalNodesToExecute).toBe(3))
+        expect(store.activeJob?.nodes).toEqual({
+          '1': true,
+          '2': false,
+          '3': false
+        })
+      })
+
+      it.for([
+        {
+          label: 'the request fails',
+          answer: () => Promise.reject(new Error('offline'))
+        },
+        {
+          label: 'the server answers with an error',
+          answer: () => Promise.resolve(new Response('busy', { status: 503 }))
+        },
+        {
+          label: 'the body is not JSON',
+          answer: () => Promise.resolve(new Response('<html>', { status: 200 }))
+        }
+      ])(
+        'reports once and leaves the job as it was when $label',
+        async ({ answer }) => {
+          vi.mocked(api.fetchApi).mockImplementation(answer)
+
+          fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+          await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
+
+          const [, options] = vi.mocked(reportError).mock.calls[0]
+          expect(options).toMatchObject({
+            errorType: 'warning_queue_read_failed_for_adopted_run',
+            context: { jobId: 'job-1' }
+          })
+          expect(store.activeJob?.nodes).toEqual({})
+          expect(store.activeJob?.nodeLookup).toBeUndefined()
+        }
+      )
+
+      it('does not read the queue for a run this tab queued', () => {
+        storeVisibleJob('job-1')
+
+        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+        expect(api.fetchApi).not.toHaveBeenCalled()
+      })
+    })
   })
 
   describe('execution_cached', () => {

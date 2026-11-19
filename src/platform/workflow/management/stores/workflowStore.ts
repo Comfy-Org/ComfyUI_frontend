@@ -65,7 +65,7 @@ registerWorkflowRuntime({
         workflow.path,
         JSON.stringify(state),
         { name: workflow.key, isTemporary: workflow.isTemporary },
-        workflow.lastModified
+        { minUpdatedAt: workflow.lastModified }
       )
       if (saved) return
     } catch (error) {

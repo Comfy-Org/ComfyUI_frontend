@@ -29,7 +29,6 @@ export function useRunOnCloudHandoff(
     useWorkflowService().saveWorkflow
   )
 
-  /** Whether the open workflow must be saved before it can be handed off. */
   function needsSave(): boolean {
     const workflow = workflowStore.activeWorkflow
     return (
@@ -39,7 +38,6 @@ export function useRunOnCloudHandoff(
     )
   }
 
-  /** Saves the open workflow, asking for a name if it is new; false if it stays unsaved. */
   async function saveActiveWorkflow(): Promise<boolean> {
     const workflow = workflowStore.activeWorkflow
     if (!workflow || !needsSave()) return true
@@ -103,7 +101,7 @@ export function useRunOnCloudHandoff(
   }
 
   async function prepareBrief(): Promise<string | null> {
-    if (!(await saveActiveWorkflow())) return null
+    if (needsSave() && !(await saveActiveWorkflow())) return null
     try {
       const handoff = prepareHandoff()
       if (!handoff) return null
@@ -117,7 +115,7 @@ export function useRunOnCloudHandoff(
   }
 
   async function copyBrief(): Promise<boolean> {
-    if (!(await saveActiveWorkflow())) return false
+    if (needsSave() && !(await saveActiveWorkflow())) return false
     try {
       const handoff = prepareHandoff()
       if (
@@ -135,13 +133,19 @@ export function useRunOnCloudHandoff(
   }
 
   async function openBriefIn(app: AgentApp): Promise<void> {
-    if (!(await saveActiveWorkflow())) return
+    if (needsSave() && !(await saveActiveWorkflow())) return
     try {
       const handoff = prepareHandoff()
       if (!handoff) return
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
+      const copying = copyToClipboard(handoff.brief, {
+        toastOnSuccess: false,
+        toastOnError: false
+      })
       openAgentApp(app, handoff.brief)
+      if (await copying)
+        toast.info(t('openOnCloud.agentMenu.promptCopiedForSignIn'))
     } catch (error) {
       reportHandoffFailure(error)
     }

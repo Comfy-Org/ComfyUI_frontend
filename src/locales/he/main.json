@@ -58,6 +58,10 @@
       "summary": "מתחת ל-{threshold} קרדיטים, תתבצע טעינה עד {target}.",
       "title": "הטעינה האוטומטית פעילה"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "פתח את החיוב כדי לבדוק שמילוי הקרדיטים האוטומטי מופעל.",
+      "title": "קרדיטים נוספו"
+    },
     "blocked": {
       "action": "פתיחת דף התשלום",
       "body": "הדפדפן שלך חסם את הלשונית החדשה. פתחו את דף התשלום כדי להשלים את התשלום.",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}, לתשלום בקופה",
     "planLine": {
       "ended": "רכישת קרדיטים אינה מפעילה מחדש את תוכנית ה-Cloud שלך. יש להירשם שוב כמנוי כדי להריץ תהליכי עבודה ב-Cloud.",
+      "ended_sales_managed": "רכישת קרדיטים אינה מחדשת את תוכנית ה-Cloud שלך. יש ליצור קשר עם מחלקת המכירות כדי לחדש אותה.",
       "free_runs": "רכישת קרדיטים אינה מפעילה תוכנית Cloud. יש להירשם כמנוי כדי להמשיך להריץ תהליכי עבודה לאחר שנוצלו ההרצות החינמיות שלך.",
       "no_plan": "רכישת קרדיטים אינה מפעילה תוכנית Cloud. יש להירשם כמנוי כדי להריץ תהליכי עבודה ב-Cloud."
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "לא הצלחנו לאשר שתשובתכם הגיעה לסוכן."
     },
     "assetFetchFailed": "לא ניתן היה לאחזר את {name}",
+    "assetLoadFailed": "לא ניתן היה לטעון את {name}",
     "assetNotAttachable": "ניתן לצרף תמונות, וידאו, שמע, מודלי 3D וקובצי טקסט",
     "attach": "צרף קובץ",
     "attachFiles": "העלאת תמונות או קבצים",
@@ -337,6 +343,36 @@
     "placeholder": "תארו מה ברצונכם ליצור",
     "placeholderWithoutSkills": "תארו מה ברצונכם ליצור",
     "previewAsset": "תצוגה מקדימה של {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "ספר ל-Comfy Agent מה ברצונך ליצור.",
+        "title": "יש לך רעיון?"
+      },
+      "firstOpen": {
+        "description": "לא בטוח מאיפה להתחיל? שלח את השאלה שלהלן, או כתוב שאלה משלך.",
+        "prompt": "במה תוכל לעזור לי?",
+        "title": "קצת עזרה כדי להתחיל!"
+      },
+      "workflowOpen": {
+        "description": "Comfy Agent מציג לך מה הוא מתכנן לעשות לפני שמשהו בתהליך העבודה שלך משתנה.",
+        "prompt": "עזור לי לשפר את תהליך העבודה הזה",
+        "title": "שאל שאלה או תאר שינוי."
+      }
+    },
     "recoveredTurnFailed": "הסוכן לא הצליח להשלים את התגובה הזו.",
     "reference": "הפניה",
     "remove": "הסר",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "לא ניתן היה לפתוח את תהליך העבודה המבוקש.",
     "targetWorkflowUnavailable": "תהליך העבודה המבוקש אינו זמין עוד.",
     "thinking": "חושב...",
+    "thinkingShortened": "תהליך החשיבה קוצר: היתר היה ארוך מדי לשמירה.",
     "title": "Comfy Agent",
     "toolFailed": "{tool} נכשל",
     "toolFailedSkill": "טעינת {skill} נכשלה",
@@ -1485,6 +1522,7 @@
       "paymentProcessingFlyout": "התשלום בעיבוד. אין צורך לשלם שוב.",
       "paymentProcessingTitle": "תשלום בסך {amount} עדיין בעיבוד",
       "paymentProcessingTitleNoAmount": "תשלום עדיין בעיבוד",
+      "planRequiredContactSales": "רכישת קרדיטים אינה מחדשת את תוכנית ה-Cloud שלך. יש ליצור קשר עם מחלקת המכירות כדי לחדש אותה.",
       "planRequiredFreeRuns": "רכישת קרדיטים אינה מפעילה תוכנית Cloud. הירשמו כדי להמשיך להריץ תהליכי עבודה לאחר ניצול ההרצות החינמיות.",
       "planRequiredResubscribe": "רכישת קרדיטים אינה מפעילה מחדש את תוכנית ה-Cloud שלך. הירשמו מחדש כדי להריץ תהליכי עבודה ב-Cloud.",
       "planRequiredSubscribe": "רכישת קרדיטים אינה מפעילה תוכנית Cloud. הירשמו כדי להריץ תהליכי עבודה ב-Cloud.",
@@ -1722,10 +1760,10 @@
     "retry": "ניסיון חוזר",
     "retryLabel": "ניסיון חוזר להפעלת {deployment}",
     "runBlocked": {
-      "failed": "הפריסה הזו נכשלה. לחצו כדי להחליף.",
-      "notReady": "הפריסה הזו אינה מוכנה. לחצו כדי להחליף.",
-      "starting": "הפריסה הזו מופעלת כעת. לחצו כדי להחליף.",
-      "stopped": "הפריסה הזו הופסקה. לחצו כדי להחליף."
+      "failed": "פריסה זו נכשלה. לחץ כדי לעבור.",
+      "notReady": "פריסה זו אינה מוכנה. לחץ כדי לעבור.",
+      "starting": "פריסה זו מתחילה. לחץ כדי לעבור.",
+      "stopped": "פריסה זו הופסקה. לחץ כדי לעבור."
     },
     "runOn": "הפעל ב-",
     "runningOn": "פועל על",
@@ -2685,6 +2723,9 @@
     "resizeFromBottomRight": "שינוי גודל מהפינה הימנית התחתונה",
     "resizeFromTopLeft": "שינוי גודל מהפינה השמאלית העליונה",
     "resizeFromTopRight": "שינוי גודל מהפינה הימנית העליונה",
+    "resizeNumberedPreviewHeight": "שינוי גובה התצוגה המקדימה {index}",
+    "resizePreviewHeight": "שינוי גובה התצוגה המקדימה",
+    "resizeWidgetHeight": "שינוי גובה {name}",
     "restart": "הפעלה מחדש",
     "restore": "שחזר",
     "restoreDialog": "שחזור החלון",
@@ -3752,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "ניסיוני: הפעלת Nodes 2.0",
     "Export": "ייצוא",
     "Export (API)": "ייצוא (API)",
+    "Export (Workflow Image)": "ייצוא (תמונת תהליך עבודה)",
     "File": "קובץ",
     "Fit Group To Contents": "התאמת הקבוצה לתוכן",
     "Focus Mode": "מצב מיקוד",
@@ -4323,6 +4365,7 @@
     "handoffFailed": "לא ניתן היה לפתוח את תהליך העבודה מ-ComfyUI במחשב שלכם",
     "handoffMissing": "תהליך העבודה שלכם לא הגיע",
     "handoffMissingDetail": "ComfyUI מפסיק להמתין לאחר 10 דקות. לחצו שוב על Open on Comfy Cloud ב-ComfyUI.",
+    "missingLocalModelLoader": "לא ניתן היה לקרוא את הגדרות המודל עבור {nodeType}. התקן את חבילת הצמתים שמספקת אותו ולאחר מכן נסה שוב.",
     "missingModels": {
       "title": "חסר מודל {count} | חסרים {count} מודלים",
       "unavailable": "הוסיפו את המודלים האלה ל-Comfy Cloud כדי להפעיל את תהליך העבודה הזה. העלאות מ-ComfyUI זה אינן זמינות כעת."
@@ -5220,6 +5263,16 @@
     "triggerLinePlaceholder": "טען אותי כאשר המשתמש שואל על הגדלת רזולוציה",
     "yourPacks": "החבילות שלך"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "היכנסו לתת-הגרף הזה דרך צומת תת-גרף כדי לערוך את הערכים שלו.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "ערך מקושר · לקריאה בלבד",
+    "locateSource": "איתור צומת המקור",
+    "sharedSource": "מקור משותף",
+    "sourceHint": "עריכת מקור זה משנה גם את הקלטים האחרים המחוברים אליו.",
+    "unavailable": "הערך אינו זמין"
+  },
   "subgraphStore": {
     "blueprintName": "שם תת-הגרף",
     "blueprintNamePrompt": "שם תת-הגרף:",
@@ -5469,18 +5522,28 @@
       "subscriptionChangeInProgress": "כבר מתוזמן עבורכם שינוי תוכנית. תוכלו לבחור תוכנית אחרת לאחר שהוא ייכנס לתוקף.",
       "subscriptionChangeScheduled": "שינוי התוכנית המתוזמן שלכם ייכנס לתוקף ב-{date}. תוכלו לבחור תוכנית אחרת לאחר מכן."
     },
+    "planWithPeriod": {
+      "annual": "תוכנית {plan} שנתית",
+      "monthly": "תוכנית {plan} חודשית"
+    },
     "plansAndCredits": "תוכניות וקרדיטים",
     "plansAndPricing": "מסלולים ותמחור",
     "plansForWorkspace": "מסלולים עבור {workspace}",
     "plansLink": {
       "blockedBody": "הדפדפן שלך חסם את הכרטיסייה החדשה. יש לפתוח את דף התוכניות כדי לבחור תוכנית.",
       "blockedTitle": "דף התוכניות לא נפתח",
+      "checkoutUnfinishedBody": "פתח את דף התוכניות כדי לנסות שוב. הדפדפן שלך חסם את פתיחתו האוטומטית.",
+      "checkoutUnfinishedTitle": "תהליך התשלום שלך לא הושלם",
       "choosePlan": "בחירת תוכנית",
       "openPlansPage": "פתיחת דף התוכניות",
       "runRefusedEnded": "התוכנית שלך הסתיימה. יש לחדש את המנוי כדי להמשיך להפעיל תהליכי עבודה ב-Cloud.",
       "runRefusedFreeRunsUsed": "ניצלת את כל {total} ההפעלות החינמיות. יש להירשם כמנוי כדי להמשיך להפעיל תהליכי עבודה ב-Cloud.",
+      "runRefusedManualBlock": "מרחב עבודה זה נחסם. יש ליצור קשר עם התמיכה.",
       "runRefusedNoPlan": "הפעלת תהליכי עבודה ב-Cloud מחייבת תוכנית.",
-      "runRefusedTitle": "תהליך העבודה שלך לא הופעל"
+      "runRefusedProjectCap": "פרויקט זה הגיע למגבלת ההוצאה שלו.",
+      "runRefusedTitle": "תהליך העבודה שלך לא הופעל",
+      "runRefusedUserCap": "הגעת למגבלת ההוצאה שלך במרחב עבודה זה.",
+      "runRefusedWorkspaceCap": "מרחב עבודה זה הגיע למגבלת ההוצאה שלו."
     },
     "plansLoadFailed": "טעינת התוכניות נכשלה",
     "prepaidCreditsInfo": "קרדיטים ששולמו מראש פגים שנה אחת מתאריך הרכישה.",
@@ -5918,6 +5981,7 @@
     "failedToConvertToSubgraph": "המרת הפריטים לתת-גרף נכשלה",
     "failedToCreateCustomer": "יצירת הלקוח נכשלה: {error}",
     "failedToExportModel": "ייצוא המודל כ-{format} נכשל",
+    "failedToExportWorkflowImage": "ייצוא תמונת תהליך העבודה נכשל",
     "failedToFetchLogs": "אחזור יומני השרת נכשל",
     "failedToFetchSubscription": "אחזור סטטוס המנוי נכשל: {error}",
     "failedToInitializeCameraAngleViewer": "אתחול מציג זווית המצלמה נכשל. נסה לטעון מחדש את הדף.",
@@ -6109,12 +6173,14 @@
     "undo": "בטל"
   },
   "widgets": {
+    "backFromFolder": "חזרה: {name}",
     "boolean": {
       "false": "שקר",
       "true": "אמת"
     },
     "node2only": "Nodes 2.0 בלבד",
     "precisionLimit": "ההגדלה/ההקטנה מושבתת: הערך חורג ממגבלת הדיוק של JavaScript ‏(±2^53)",
+    "selectFolder": "תיקייה: {name}",
     "selectModel": "בחירת מודל",
     "uploadSelect": {
       "maxSelectionReached": "הגעת למגבלת הבחירה המרבית",
@@ -6287,7 +6353,15 @@
         "salesMemberBody": "בקשו מבעל סביבת העבודה ליצור קשר עם מחלקת המכירות.",
         "teamBody": "הירשמו מחדש כדי להריץ תהליכי עבודה ולקבל שוב קרדיטים משותפים.",
         "teamMemberBody": "בקשו מבעל סביבת העבודה להירשם מחדש.",
+        "teamNotCreatorBody": "התוכנית של מרחב עבודה זה הסתיימה. בקש מיוצר מרחב העבודה להירשם מחדש.",
         "teamTitle": "תוכנית Team שלך הסתיימה ב־{date}"
+      },
+      "planNotStarted": {
+        "body": "יש להשלים את התשלום כדי להתחיל אותה.",
+        "bodyUnavailable": "התוכנית שלך תתחיל לאחר שהתשלום יעבור.",
+        "title": "תוכנית {plan} שלך טרם התחילה",
+        "titleNoPlan": "התוכנית שלך טרם התחילה",
+        "viewPlans": "הצג בדף התוכניות"
       },
       "updatePayment": "עדכן תשלום"
     },

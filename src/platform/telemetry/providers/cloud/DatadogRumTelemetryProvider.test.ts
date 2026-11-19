@@ -72,6 +72,7 @@ describe('DatadogRumTelemetryProvider', () => {
         phase_count: 0,
         untraced_ms: 123,
         hidden_ms: 0,
+        visible_ms: 123,
         phases: {}
       })
 
@@ -94,6 +95,7 @@ describe('DatadogRumTelemetryProvider', () => {
       phase_count: 0,
       untraced_ms: 123,
       hidden_ms: 0,
+      visible_ms: 123,
       phases: {}
     })
 
@@ -112,6 +114,7 @@ describe('DatadogRumTelemetryProvider', () => {
         phase_count: 0,
         untraced_ms: 123,
         hidden_ms: 0,
+        visible_ms: 123,
         phases: {}
       })
 

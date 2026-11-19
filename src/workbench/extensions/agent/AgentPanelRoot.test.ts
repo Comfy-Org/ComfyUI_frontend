@@ -8996,7 +8996,7 @@ describe('AgentPanelRoot workflow binding', () => {
   )
 
   it.for(['workspace', 'unknown'] as const)(
-    'leaves the $ post-consent billing refresh to the dock host on first send',
+    'leaves the %s post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')
       mockMessagesEndpoint('wf-42')
@@ -10804,7 +10804,7 @@ describe('AgentPanelRoot workflow binding', () => {
     { previous: 'th-current', outcome: 'pending' },
     { previous: 'th-current', outcome: 'failed' }
   ])(
-    'keeps an unfinished history selection hidden after remount: %o',
+    'keeps an unfinished history selection hidden after remount: previous=$previous, outcome=$outcome',
     async ({ previous, outcome }) => {
       makeTab('wf-current')
       const saved = addTab('workflows/portrait.json')

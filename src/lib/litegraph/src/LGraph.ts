@@ -24,6 +24,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   attachGroupLayout,
+  attachIoNodeLayout,
   attachNodeLayout,
   detachGraphLayouts,
   detachGroupLayout,
@@ -376,7 +377,9 @@ function teardownOwnedGraphs(owner: LGraph): void {
       node.graph = null
       node.order = order
     }
-    detachGraphLayouts([owner], { removeLayouts: !owner.isRootGraph })
+    detachGraphLayouts([owner], {
+      removeRootKeyedLayouts: !owner.isRootGraph
+    })
   }
 }
 
@@ -661,8 +664,11 @@ export class LGraph
     }
     raw._id.value = value
     if (registration) {
-      registration.rootGraph._subgraphs.delete(previousId)
-      registration.rootGraph._subgraphs.set(value, registration.subgraph)
+      const { rootGraph, subgraph } = registration
+      rootGraph._subgraphs.delete(previousId)
+      rootGraph._subgraphs.set(value, subgraph)
+      attachIoNodeLayout(subgraph.inputNode)
+      attachIoNodeLayout(subgraph.outputNode)
     }
   }
 

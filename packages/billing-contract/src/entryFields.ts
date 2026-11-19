@@ -23,6 +23,7 @@ export type OptionalEntryKey =
   | 'teamCreditStopId'
   | 'promotionCode'
   | 'operationId'
+  | 'purchaseId'
 
 export type InvalidIdentifierCode =
   | 'INVALID_PLAN'
@@ -31,6 +32,7 @@ export type InvalidIdentifierCode =
   | 'INVALID_TEAM_CREDIT_STOP_ID'
   | 'INVALID_PROMOTION_CODE'
   | 'INVALID_OPERATION_ID'
+  | 'INVALID_PURCHASE_ID'
 
 interface OptionalEntryField {
   readonly key: OptionalEntryKey
@@ -62,7 +64,9 @@ export const OPTIONAL_ENTRY_FIELDS: readonly OptionalEntryField[] = [
     key: 'operationId',
     param: ENTRY_PARAM_OPERATION,
     code: 'INVALID_OPERATION_ID'
-  }
+  },
+  /** The server-owned purchase a top-up pays; every Pay on the page goes through it. */
+  { key: 'purchaseId', param: 'purchase', code: 'INVALID_PURCHASE_ID' }
 ]
 
 export type OptionalEntryValues = {

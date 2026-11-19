@@ -1314,8 +1314,7 @@
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "modelSizeLowToHigh": "Model Size (Low to High)",
-      "default": "Default"
+      "modelSizeLowToHigh": "Model Size (Low to High)"
     },
     "error": {
       "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",
@@ -1376,6 +1375,16 @@
     "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows.",
     "unsavedChangesLostTitle": "Unsaved changes were not saved",
     "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
+  },
+  "subgraphInputValues": {
+    "instance": "{title} · #{id}",
+    "enterInstanceHint": "Enter this subgraph through a Subgraph Node to edit its values.",
+    "linked": "Linked value · read-only",
+    "fromSource": "← {title} #{id}",
+    "sourceHint": "Editing this source also changes the other inputs connected to it.",
+    "sharedSource": "Shared source",
+    "locateSource": "Locate source node",
+    "unavailable": "Value unavailable"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -4278,6 +4287,9 @@
     },
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a custom deployment",
+      "installTitle": "Install your missing custom nodes",
+      "installBody": "Deploy a custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "buildOnPlatform": "Build on Platform",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
@@ -4383,7 +4395,8 @@
       "openInCodex": "Open in Codex",
       "copyPrompt": "Copy prompt",
       "useLocalAgent": "Use local agent",
-      "saveFirst": "Save this workflow before sending it to an agent."
+      "saveFirst": "Save this workflow before sending it to an agent.",
+      "promptCopiedForSignIn": "Prompt copied. If the app asks you to sign in first, paste it after you sign in."
     },
     "missingModels": {
       "title": "Missing {count} model | Missing {count} models",
@@ -6509,6 +6522,9 @@
     "toolLoadedSkill": "Loaded {skill}",
     "toolFailedSkill": "Failed to load {skill}",
     "toolLoadingSkill": "Loading {skill}",
+    "toolDownloadingModel": "Downloading {file}",
+    "toolDownloadedModel": "Downloaded {file}",
+    "toolFailedDownload": "Failed to download {file}",
     "toolSwitchedTabs": "Switched tabs",
     "toolSwitchingTabs": "Switching tabs",
     "toolSavedPreference": "Saved a preference",
