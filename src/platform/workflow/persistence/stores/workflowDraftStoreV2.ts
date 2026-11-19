@@ -16,7 +16,6 @@ import type {
   DraftLineage,
   DraftPayloadV2
 } from '@/platform/workflow/persistence/base/draftTypes'
-import { MAX_DRAFTS } from '@/platform/workflow/persistence/base/draftTypes'
 import {
   createEmptyIndex,
   getEntryByPath,
@@ -32,10 +31,8 @@ import { getWorkspaceId } from '@/platform/workflow/persistence/base/storageKeys
 import {
   deleteOrphanPayloads,
   deletePayload,
-  deletePayloads,
   getPayloadKeys,
   isStorageAvailable,
-  markStorageUnavailable,
   readIndex,
   readPayload,
   writeIndex,
@@ -77,11 +74,6 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
 
   function lineageKey(workspaceId: string, draftKey: string): string {
     return `${workspaceId}:${draftKey}`
-  }
-
-  function deleteLineages(workspaceId: string, draftKeys: string[]): void {
-    for (const draftKey of draftKeys)
-      lineageByDraft.delete(lineageKey(workspaceId, draftKey))
   }
 
   function payloadFor(
@@ -149,6 +141,7 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const now = Date.now()
 
     const index = loadIndex()
+    const isExistingDraft = Boolean(index.entries[draftKey])
 
     const payloadWritten = writePayload(
       workspaceId,
@@ -157,95 +150,26 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     )
 
     if (!payloadWritten) {
-      return handleQuotaExceeded(path, data, meta)
+      reportQuotaExhausted(index, payloadByteSize(data))
+      return false
     }
-    const { index: newIndex, evicted } = upsertEntry(
+    const { index: newIndex } = upsertEntry(
       index,
       path,
       { ...meta, updatedAt: now },
-      MAX_DRAFTS
+      // A count limit cannot safely choose which unsaved work to destroy.
+      // Browser quota remains the hard bound, and failures are surfaced to
+      // the caller without deleting any existing draft.
+      Number.POSITIVE_INFINITY
     )
 
     if (!persistIndex(newIndex)) {
-      deletePayload(workspaceId, draftKey)
+      if (!isExistingDraft) deletePayload(workspaceId, draftKey)
       persistIndex(index)
       return false
     }
 
-    deletePayloads(workspaceId, evicted)
-    deleteLineages(workspaceId, evicted)
     return true
-  }
-
-  /**
-   * Handles quota exceeded by evicting oldest drafts until write succeeds.
-   *
-   * Tolerates index/payload desync: orphaned `order` keys with no matching
-   * entry in `entries` are stripped in-place and the loop continues, rather
-   * than bailing out and leaving evictable drafts behind.
-   *
-   * Recovery writes (`persistIndex(currentIndex)` after a failed write) are
-   * best-effort; their return value is intentionally ignored because there
-   * is no useful action to take when the recovery itself also fails — the
-   * caller will already see `false` and surface the toast. A subsequent
-   * `saveDraft` will re-converge the index via `removeOrphanedEntries`.
-   */
-  function handleQuotaExceeded(
-    path: string,
-    data: string,
-    meta: DraftMeta
-  ): boolean {
-    const workspaceId = currentWorkspaceId()
-    const draftKey = hashPath(path)
-
-    let currentIndex = loadIndex()
-    let evictedCount = 0
-
-    while (currentIndex.order.length > 0) {
-      const oldestKey = currentIndex.order.find((key) => key !== draftKey)
-      if (!oldestKey) break
-
-      const oldestEntry = currentIndex.entries[oldestKey]
-      if (!getIndexEntry(currentIndex, oldestKey)) {
-        currentIndex = stripOrderKey(currentIndex, oldestKey)
-        continue
-      }
-
-      const result = removeEntry(currentIndex, oldestEntry.path)
-      currentIndex = result.index
-      if (result.removedKey) {
-        deletePayload(workspaceId, result.removedKey)
-        deleteLineages(workspaceId, [result.removedKey])
-        evictedCount++
-      }
-
-      const now = Date.now()
-      if (
-        writePayload(
-          workspaceId,
-          draftKey,
-          payloadFor(workspaceId, draftKey, data, now)
-        )
-      ) {
-        const { index: finalIndex } = upsertEntry(
-          currentIndex,
-          path,
-          { ...meta, updatedAt: now },
-          MAX_DRAFTS
-        )
-        if (!persistIndex(finalIndex)) {
-          deletePayload(workspaceId, draftKey)
-          persistIndex(currentIndex)
-          return false
-        }
-        return true
-      }
-    }
-
-    persistIndex(currentIndex)
-    reportQuotaExhausted(currentIndex, evictedCount, payloadByteSize(data))
-    markStorageUnavailable()
-    return false
   }
 
   function getIndexEntry(
@@ -266,29 +190,20 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
       .length
   }
 
-  function stripOrderKey(index: DraftIndexV2, orphanKey: string): DraftIndexV2 {
-    return {
-      ...index,
-      updatedAt: Date.now(),
-      order: index.order.filter((key) => key !== orphanKey)
-    }
-  }
-
   function reportQuotaExhausted(
-    finalIndex: DraftIndexV2,
-    evicted: number,
+    index: DraftIndexV2,
     payloadBytes: number
   ): void {
     reportError(
-      new Error('localStorage quota exhausted after full draft eviction'),
+      new Error('localStorage quota exhausted while saving workflow draft'),
       {
         surface: 'graph',
         errorType: 'storage_quota_exhausted',
         level: 'warning',
         tags: { store: 'workflowDraftStoreV2' },
         context: {
-          evictedDrafts: evicted,
-          remainingDrafts: finalIndex.order.length,
+          evictedDrafts: 0,
+          remainingDrafts: index.order.length,
           incomingPayloadBytes: payloadBytes
         }
       }
