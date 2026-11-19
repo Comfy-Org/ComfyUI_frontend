@@ -154,7 +154,7 @@ def _delta(
     prev_pct = prev.get(key)
     if not isinstance(prev_pct, (int, float)):
         return f'  {label:42s}   n/a  (previous metrics malformed)', ''
-    delta = measured_pct - prev_pct
+    delta = round(round(measured_pct, 3) - prev_pct, 3)
     held = delta >= -tolerance
     line = (
         f'  {label:42s} {delta:+5.1f}pp'
