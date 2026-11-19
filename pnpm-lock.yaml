@@ -13,8 +13,8 @@ catalogs:
       specifier: ^4.14.0
       version: 4.14.0
     '@comfyorg/comfy-multi-player':
-      specifier: 0.3.13
-      version: 0.3.13
+      specifier: 0.3.14
+      version: 0.3.14
     '@comfyorg/comfyui-desktop-bridge-types':
       specifier: 0.5.0
       version: 0.5.0
@@ -456,7 +456,7 @@ importers:
         version: link:packages/billing-core
       '@comfyorg/comfy-multi-player':
         specifier: 'catalog:'
-        version: 0.3.13
+        version: 0.3.14
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.5.0
@@ -2149,8 +2149,8 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@0.3.13':
-    resolution: {integrity: sha512-/3mE4nICRIRwSApIWrkCBKesrL5YS0HCG0ZMgL/iaqtjaAoOHk6xKZ/LATEfX5vvNz78SHfUDENbmP3j8pmm1g==}
+  '@comfyorg/comfy-multi-player@0.3.14':
+    resolution: {integrity: sha512-JS2tsCPqjLOBdFhbiChb41bUvmr+aKIPwQdVQkCAc4fFIVrQEMpzpBaTcoLNWlSsJfCtslUPTq/IeVyKSVSOOQ==}
 
   '@comfyorg/comfyui-desktop-bridge-types@0.5.0':
     resolution: {integrity: sha512-IlLhbbNaDwTw1JjE+7Z2OlejrE4zcfzORJdaF3mtkzSjCFdK+j8Nuf9XYX78S3vz+uqmxXtn35gDR4amHv7shw==}
@@ -9437,7 +9437,7 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@0.3.13':
+  '@comfyorg/comfy-multi-player@0.3.14':
     dependencies:
       yjs: 13.6.32
 
