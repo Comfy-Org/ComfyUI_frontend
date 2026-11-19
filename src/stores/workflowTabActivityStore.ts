@@ -8,6 +8,14 @@ export interface AgentTurnTab {
 
 export type TabChatStatus = 'waiting' | 'in-progress' | 'unseen' | 'seen'
 
+/** Translation keys describing each semantic tab chat status for assistive tech. */
+export const TAB_CHAT_STATUS_I18N_KEYS: Record<TabChatStatus, string> = {
+  waiting: 'g.agentNeedsApproval',
+  'in-progress': 'g.agentWorking',
+  unseen: 'g.agentFinishedUnseen',
+  seen: 'g.agentChat'
+}
+
 /**
  * Cross-feature workflow-tab activity, keyed by tab path. Feature extensions
  * (the agent panel) write it; the topbar reads it, so the topbar never has to

@@ -51,16 +51,11 @@ const statusAriaLabels: Record<WorkflowExecutionStatus, string> = {
   failed: 'Failed'
 }
 
-const agentChatLabel =
-  'agentChat' in enMessages.g
-    ? String((enMessages.g as Record<string, unknown>).agentChat)
-    : 'Agent chat for this workflow'
-
 const agentAriaLabels = {
   agentWorking: enMessages.g.agentWorking,
-  agentModified: enMessages.g.agentModified,
+  agentFinishedUnseen: enMessages.g.agentFinishedUnseen,
   agentNeedsApproval: enMessages.g.agentNeedsApproval,
-  agentChat: agentChatLabel
+  agentChat: enMessages.g.agentChat
 }
 
 const i18n = createI18n({
@@ -72,8 +67,7 @@ const i18n = createI18n({
         close: 'Close',
         ...statusAriaLabels,
         ...agentAriaLabels
-      },
-      agent: { targetForThisChat: 'Agent target for this chat' }
+      }
     }
   }
 })
@@ -218,10 +212,7 @@ describe('WorkflowTab - workflow status indicator', () => {
     renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
 
     expect(screen.getByText('test.json')).toHaveClass('italic')
-    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'italic',
-      "after:content-['*']"
-    )
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
     expect(screen.queryByTestId('workflow-chat-status')).toBeNull()
     expect(screen.queryAllByRole('img')).toEqual([])
   })
@@ -292,7 +283,7 @@ describe('WorkflowTab - chat status', () => {
     { name: 'a background tab', activeWorkflowKey: 'other-key' },
     { name: 'the active tab', activeWorkflowKey: 'test-key' }
   ])(
-    'TS-02 shows a gray dot on $name that has a chat',
+    'TS-02 shows the seen chat status on $name that has a chat and announces filename first',
     async ({ activeWorkflowKey }) => {
       renderTab({ activeWorkflowKey })
       useWorkflowTabActivityStore().setChatPaths([path])
@@ -300,7 +291,10 @@ describe('WorkflowTab - chat status', () => {
 
       expect(
         screen.getByRole('img', { name: agentAriaLabels.agentChat })
-      ).toHaveClass('bg-muted-foreground')
+      ).toHaveAttribute('data-status', 'seen')
+      expect(screen.getByRole('tab')).toHaveAccessibleName(
+        `test.json ${agentAriaLabels.agentChat}`
+      )
     }
   )
 
@@ -313,10 +307,10 @@ describe('WorkflowTab - chat status', () => {
 
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
-    ).toBeTruthy()
+    ).toHaveAttribute('data-status', 'in-progress')
   })
 
-  it('TS-04 shows the waiting dot ahead of the spinner', async () => {
+  it('TS-04 shows the waiting status ahead of the in-progress status', async () => {
     renderTab()
     const activity = useWorkflowTabActivityStore()
     activity.setAgentTurnTabs([{ path, awaitingApproval: true }])
@@ -324,7 +318,7 @@ describe('WorkflowTab - chat status', () => {
 
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentNeedsApproval })
-    ).toHaveClass('bg-warning')
+    ).toHaveAttribute('data-status', 'waiting')
     expect(
       screen.queryByRole('img', { name: agentAriaLabels.agentWorking })
     ).toBeNull()
@@ -336,10 +330,10 @@ describe('WorkflowTab - chat status', () => {
     ).toBeNull()
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
-    ).toBeVisible()
+    ).toHaveAttribute('data-status', 'in-progress')
   })
 
-  it('TS-05 shows a green dot for a finished turn until the tab is seen, then a gray one', async () => {
+  it('TS-05 shows unseen status for a finished turn until the tab is seen, then seen', async () => {
     renderTab()
     const activity = useWorkflowTabActivityStore()
     activity.setChatPaths([path])
@@ -347,17 +341,17 @@ describe('WorkflowTab - chat status', () => {
     await nextTick()
 
     expect(
-      screen.getByRole('img', { name: agentAriaLabels.agentModified })
-    ).toHaveClass('bg-success')
+      screen.getByRole('img', { name: agentAriaLabels.agentFinishedUnseen })
+    ).toHaveAttribute('data-status', 'unseen')
 
     activity.markSeen(path)
     await nextTick()
     expect(
-      screen.queryByRole('img', { name: agentAriaLabels.agentModified })
+      screen.queryByRole('img', { name: agentAriaLabels.agentFinishedUnseen })
     ).toBeNull()
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentChat })
-    ).toBeVisible()
+    ).toHaveAttribute('data-status', 'seen')
   })
 
   it('TS-07 shows one chat indicator when several states hold', async () => {
@@ -371,10 +365,10 @@ describe('WorkflowTab - chat status', () => {
     expect(screen.getAllByTestId('workflow-chat-status')).toHaveLength(1)
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentWorking })
-    ).toBeVisible()
+    ).toHaveAttribute('data-status', 'in-progress')
   })
 
-  it('TS-08 never renders the target indicator even when a workflow is targeted', async () => {
+  it('TS-08 never renders the target icon even when a workflow is targeted', async () => {
     const workflowOption = makeWorkflowOption()
     renderTab({ workflowOption })
     const panel = useAgentPanelStore()
@@ -382,9 +376,9 @@ describe('WorkflowTab - chat status', () => {
     panel.setWorkflowTarget(workflowOption.workflow)
     await nextTick()
 
-    expect(
-      screen.queryByRole('img', { name: 'Agent target for this chat' })
-    ).toBeNull()
+    expect(screen.getByTestId('workflow-tab').innerHTML).not.toContain(
+      'icon-[comfy--comfy-c]'
+    )
   })
 
   it('TS-09 shows the chat status and the unsaved mark together, each once', async () => {
@@ -394,7 +388,7 @@ describe('WorkflowTab - chat status', () => {
 
     expect(
       screen.getByRole('img', { name: agentAriaLabels.agentChat })
-    ).toBeVisible()
+    ).toHaveAttribute('data-status', 'seen')
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
     expect(screen.getAllByRole('img')).toHaveLength(1)
   })
@@ -409,8 +403,8 @@ describe('WorkflowTab - chat status', () => {
       screen.getByRole('img', { name: statusAriaLabels.failed })
     ).toBeVisible()
     expect(
-      screen.getByRole('img', { name: agentAriaLabels.agentModified })
-    ).toBeVisible()
+      screen.getByRole('img', { name: agentAriaLabels.agentFinishedUnseen })
+    ).toHaveAttribute('data-status', 'unseen')
   })
 
   it('TS-14 shows no chat status once the agent activity is cleared', async () => {

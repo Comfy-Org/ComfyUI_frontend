@@ -20,22 +20,19 @@
           as-child
           class="h-full w-full py-2 pr-2 pl-3"
         >
-          <button :id="triggerId" type="button">
+          <button :id="resolvedTriggerId" type="button">
             <template v-if="showModeIcon">
               <i
                 v-if="isBuilderState"
                 data-testid="workflow-mode-icon"
-                class="icon-[lucide--hammer] bg-muted-foreground"
+                class="order-first icon-[lucide--hammer] bg-muted-foreground"
               />
               <i
                 v-else-if="workflowOption.workflow.initialMode === 'app'"
                 data-testid="workflow-mode-icon"
-                class="icon-[lucide--panels-top-left] bg-primary"
+                class="order-first icon-[lucide--panels-top-left] bg-primary"
               />
             </template>
-            <WorkflowTabChatStatus
-              :workflow-path="workflowOption.workflow.path"
-            />
             <span class="inline-flex min-w-0 items-center">
               <span
                 :class="
@@ -53,6 +50,10 @@
                 class="shrink-0 font-inter text-xs leading-4 text-inherit italic after:content-['*']"
               />
             </span>
+            <WorkflowTabChatStatus
+              class="order-first"
+              :workflow-path="workflowOption.workflow.path"
+            />
             <span
               :class="
                 cn(
@@ -151,12 +152,14 @@ const {
   workflowOption,
   isFirst,
   isLast,
-  compact = false
+  compact = false,
+  triggerId
 } = defineProps<{
   workflowOption: WorkflowOption
   isFirst: boolean
   isLast: boolean
   compact?: boolean
+  triggerId?: string
 }>()
 
 const emit = defineEmits<{
@@ -172,7 +175,8 @@ const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
-const triggerId = useId()
+const fallbackTriggerId = useId()
+const resolvedTriggerId = computed(() => triggerId ?? fallbackTriggerId)
 const popoverOpen = ref(false)
 const popoverHovered = ref(false)
 const popoverClicked = ref(false)

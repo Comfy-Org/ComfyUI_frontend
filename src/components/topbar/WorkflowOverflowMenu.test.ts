@@ -20,12 +20,7 @@ vi.mock<unknown>(
   () => ({ useWorkflowService: () => ({ openWorkflow }) })
 )
 
-const agentChatLabel =
-  'agentChat' in enMessages.g
-    ? String((enMessages.g as Record<string, unknown>).agentChat)
-    : 'Agent chat for this workflow'
-
-it('TS-08/TS-13 shows the chat status of each overflow workflow, apart from the active one', async () => {
+it('TS-08/TS-13 shows and announces the chat status of each overflow workflow, including the active one', async () => {
   const active = markRaw(
     new ComfyWorkflow({ path: 'workflows/active.json', modified: 0, size: 0 })
   )
@@ -55,7 +50,7 @@ it('TS-08/TS-13 shows the chat status of each overflow workflow, apart from the 
               g: {
                 moreWorkflows: 'More workflows',
                 agentNeedsApproval: enMessages.g.agentNeedsApproval,
-                agentChat: agentChatLabel
+                agentChat: enMessages.g.agentChat
               }
             }
           }
@@ -66,17 +61,32 @@ it('TS-08/TS-13 shows the chat status of each overflow workflow, apart from the 
 
   const user = userEvent.setup({ pointerEventsCheck: 0 })
   await user.click(screen.getByRole('button', { name: 'More workflows' }))
-  const waitingItem = await screen.findByRole('menuitem', { name: 'waiting' })
+  const activeItem = await screen.findByRole('menuitem', {
+    name: `active, ${enMessages.g.agentChat}`
+  })
+  expect(
+    within(activeItem).getByRole('img', {
+      name: enMessages.g.agentChat
+    })
+  ).toHaveAttribute('data-status', 'seen')
+
+  const waitingItem = screen.getByRole('menuitem', {
+    name: `waiting, ${enMessages.g.agentNeedsApproval}`
+  })
   expect(
     within(waitingItem).getByRole('img', {
       name: enMessages.g.agentNeedsApproval
     })
-  ).toHaveClass('bg-warning')
+  ).toHaveAttribute('data-status', 'waiting')
+
+  const quietItem = screen.getByRole('menuitem', {
+    name: `quiet, ${enMessages.g.agentChat}`
+  })
   expect(
-    within(screen.getByRole('menuitem', { name: 'quiet' })).getByRole('img', {
-      name: agentChatLabel
+    within(quietItem).getByRole('img', {
+      name: enMessages.g.agentChat
     })
-  ).toHaveClass('bg-muted-foreground')
+  ).toHaveAttribute('data-status', 'seen')
 
   await user.click(waitingItem)
   expect(openWorkflow).toHaveBeenCalledWith(waiting, { initiator: 'user' })

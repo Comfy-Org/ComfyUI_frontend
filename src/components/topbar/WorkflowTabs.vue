@@ -31,11 +31,16 @@
             )
           "
         >
-          <div role="none" :aria-orientation="undefined">
+          <div
+            data-testid="workflow-tabs-list"
+            :role="undefined"
+            :aria-orientation="undefined"
+          >
             <WorkflowTab
               v-for="(option, index) in options"
               :key="option.value"
               :workflow-option="option"
+              :trigger-id="tabTriggerId(index)"
               :is-first="index === 0"
               :is-last="index === options.length - 1"
               :compact="isOverflowing"
@@ -53,6 +58,14 @@
         </TabsList>
       </Tabs>
     </div>
+    <div
+      v-if="tabTriggerIds"
+      role="tablist"
+      :aria-label="$t('g.openWorkflows')"
+      aria-orientation="horizontal"
+      :aria-owns="tabTriggerIds"
+      class="sr-only"
+    />
     <WorkflowOverflowMenu
       v-if="isOverflowing"
       :workflows="workflowStore.openWorkflows"
@@ -70,13 +83,6 @@
     </Button>
     <TopbarActions />
     <div
-      v-if="tabTriggerIds"
-      role="tablist"
-      aria-orientation="horizontal"
-      :aria-owns="tabTriggerIds"
-      class="sr-only"
-    />
-    <div
       v-if="isDesktop"
       class="window-actions-spacer app-drag min-w-[min(75px,env(titlebar-area-width,0)*9999)] flex-auto shrink-0"
     />
@@ -86,7 +92,7 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, useId, watch } from 'vue'
 
 import TopbarActions from '@/components/TopbarActions.vue'
 import WorkflowTab from '@/components/topbar/WorkflowTab.vue'
@@ -122,7 +128,8 @@ const commandStore = useCommandStore()
 useWorkflowStatusDismissal()
 
 const tabStripRef = ref<HTMLElement | null>(null)
-const tabTriggerIds = ref('')
+const tabIdBase = useId()
+const tabTriggerId = (index: number) => `${tabIdBase}-${index}`
 
 const options = computed<WorkflowOption[]>(() =>
   workflowStore.openWorkflows.map((workflow) => ({
@@ -131,22 +138,9 @@ const options = computed<WorkflowOption[]>(() =>
   }))
 )
 
-function updateTabTriggerIds() {
-  const strip = tabStripRef.value
-  if (!strip) {
-    tabTriggerIds.value = ''
-    return
-  }
-  const ids = Array.from(
-    strip.querySelectorAll<HTMLElement>('[role="tab"][id]')
-  )
-    .map((el) => el.id)
-    .filter(Boolean)
-  tabTriggerIds.value = ids.join(' ')
-}
-
-onMounted(updateTabTriggerIds)
-watch(options, updateTabTriggerIds, { flush: 'post' })
+const tabTriggerIds = computed(() =>
+  options.value.map((_, index) => tabTriggerId(index)).join(' ')
+)
 
 async function openWorkflowByPath(path: string | number) {
   const option = options.value.find(({ value }) => value === path)

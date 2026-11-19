@@ -53,7 +53,7 @@ export function useAgentTabSignals({
         return hasChat ? [tab.path] : []
       }),
     (paths) => tabActivity.setChatPaths(paths),
-    { immediate: true, flush: 'sync' }
+    { immediate: true }
   )
   watch(
     () =>

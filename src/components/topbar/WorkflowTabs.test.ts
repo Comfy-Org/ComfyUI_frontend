@@ -121,6 +121,10 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
           workflow: { path: string; filename?: string }
         }>,
         required: true
+      },
+      triggerId: {
+        type: String,
+        default: undefined
       }
     },
     emits: ['closeOthers'],
@@ -128,8 +132,13 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
       return [
         h(
           TabsTrigger,
-          { value: this.workflowOption.workflow.path },
-          () => this.workflowOption.workflow.filename
+          { value: this.workflowOption.workflow.path, asChild: true },
+          () =>
+            h(
+              'button',
+              { id: this.triggerId, type: 'button' },
+              this.workflowOption.workflow.filename
+            )
         ),
         h(
           'button',
@@ -817,7 +826,7 @@ describe('WorkflowTabs selection and overflow', () => {
     expect(
       screen.queryByTestId('workflow-overflow-menu')
     ).not.toBeInTheDocument()
-    const tabList = screen.getByRole('none')
+    const tabList = screen.getByTestId('workflow-tabs-list')
     expect(tabList).not.toHaveClass('after:w-px')
 
     overflowObservers[0].isOverflowing.value = true
@@ -831,16 +840,35 @@ describe('WorkflowTabs selection and overflow', () => {
     renderComponent()
     await nextTick()
 
-    const tabListContainer = screen.getByRole('none')
+    const tabListContainer = screen.getByTestId('workflow-tabs-list')
     expect(tabListContainer).toHaveClass('workflow-tabs')
+    expect(tabListContainer).not.toHaveAttribute('role')
     expect(tabListContainer).not.toHaveAttribute('aria-orientation')
 
     const tabs = screen.getAllByRole('tab')
-    const tablist = screen.getByRole('tablist')
+    const tablist = screen.getByRole('tablist', {
+      name: enMessages.g.openWorkflows
+    })
+    const tabStrip = screen.getByTestId('workflow-tab-strip')
+    const newWorkflowButton = screen.getByRole('button', {
+      name: enMessages.sideToolbar.newBlankWorkflow
+    })
+    expect(
+      tabStrip.compareDocumentPosition(tablist) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).not.toBe(0)
+    expect(
+      tablist.compareDocumentPosition(newWorkflowButton) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).not.toBe(0)
     expect(tablist).toHaveAttribute(
       'aria-owns',
       tabs.map((tab) => tab.id).join(' ')
     )
+    for (const tab of tabs) {
+      expect(tab.id).not.toBe('')
+      expect(tab.id).not.toMatch(/\s/)
+    }
   })
 
   it('scrolls a newly active workflow into view', async () => {

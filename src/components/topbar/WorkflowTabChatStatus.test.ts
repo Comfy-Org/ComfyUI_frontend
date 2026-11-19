@@ -10,16 +10,13 @@ import WorkflowTabChatStatus from './WorkflowTabChatStatus.vue'
 
 const path = '/workflows/test.json'
 
-const { agentNeedsApproval, agentWorking, agentModified } = enMessages.g
-const agentChat =
-  'agentChat' in enMessages.g
-    ? String((enMessages.g as Record<string, unknown>).agentChat)
-    : 'Agent chat for this workflow'
+const { agentNeedsApproval, agentWorking, agentFinishedUnseen, agentChat } =
+  enMessages.g
 
 const labels = {
   waiting: agentNeedsApproval,
   working: agentWorking,
-  unseen: agentModified,
+  unseen: agentFinishedUnseen,
   seen: agentChat
 }
 
@@ -27,7 +24,9 @@ const i18n = createI18n({
   legacy: false,
   locale: 'en',
   messages: {
-    en: { g: { agentNeedsApproval, agentWorking, agentModified, agentChat } }
+    en: {
+      g: { agentNeedsApproval, agentWorking, agentFinishedUnseen, agentChat }
+    }
   }
 })
 

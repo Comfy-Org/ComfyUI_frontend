@@ -21,11 +21,16 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  TAB_CHAT_STATUS_I18N_KEYS,
+  useWorkflowTabActivityStore
+} from '@/stores/workflowTabActivityStore'
 
 import WorkflowTabChatStatus from './WorkflowTabChatStatus.vue'
 
@@ -34,19 +39,27 @@ const props = defineProps<{
   activeWorkflow: ComfyWorkflow | null
 }>()
 
+const { t } = useI18n()
 const workflowService = useWorkflowService()
+const tabActivity = useWorkflowTabActivityStore()
 
 const menuItems = computed(() =>
-  props.workflows.map((workflow: ComfyWorkflow) => ({
-    label: workflow.filename,
-    key: workflow.path,
-    icon:
-      props.activeWorkflow?.key === workflow.key
-        ? 'icon-[lucide--check]'
+  props.workflows.map((workflow: ComfyWorkflow) => {
+    const status = tabActivity.chatStatusFor(workflow.path)
+    return {
+      label: workflow.filename,
+      ariaLabel: status
+        ? `${workflow.filename}, ${t(TAB_CHAT_STATUS_I18N_KEYS[status])}`
         : undefined,
-    command: () => {
-      void workflowService.openWorkflow(workflow, { initiator: 'user' })
+      key: workflow.path,
+      icon:
+        props.activeWorkflow?.key === workflow.key
+          ? 'icon-[lucide--check]'
+          : undefined,
+      command: () => {
+        void workflowService.openWorkflow(workflow, { initiator: 'user' })
+      }
     }
-  }))
+  })
 )
 </script>
