@@ -31,8 +31,8 @@
     }
   ],
   "adrs": [
-    "docs/adr/CANVAS-SELECTION-0028-single-selection-store.md",
-    "docs/adr/CANVAS-SELECTION-0031-ordered-set-storage.md"
+    "docs/adr/CANVAS-SELECTION-single-selection-store.md",
+    "docs/adr/CANVAS-SELECTION-ordered-set-storage.md"
   ],
   "compatibilityPromises": [
     "canvas.selectedItems and entity selected flags keep reading from the selection store for existing extensions.",

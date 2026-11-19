@@ -93,7 +93,7 @@ This covers state the feature owns. A server fact (a permission, role, tier,
 plan status, seat count, readiness or server timestamp) is not derivable here.
 Render the field the API returns. If the API does not return it, ask the
 backend for it. See
-[ADR-API-SERVER-FACTS-0042](../adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md).
+[ADR-API-SERVER-FACTS-server-facts-are-rendered-not-derived](../adr/API-SERVER-FACTS-server-facts-are-rendered-not-derived.md).
 
 ## 5. Reserve effects for synchronising with the outside
 

@@ -336,19 +336,19 @@
     }
   ],
   "adrs": [
-    "docs/adr/BILLING-0049-billing-and-workspace-ownership.md",
-    "docs/adr/BILLING-WEB-0038-checkout-only-hosts-own-plan-selection.md",
-    "docs/adr/AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md",
-    "docs/adr/AUTH-BILLING-0032-billing-stays-outside-the-account-package-in-v1.md",
-    "docs/adr/BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md",
-    "docs/adr/BILLING-WEB-0031-static-spa-boundary.md",
-    "docs/adr/PACKAGES-ACCOUNT-UI-0034-payment-ui-belongs-to-the-shared-account-ui-package.md",
-    "docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md"
+    "docs/adr/BILLING-billing-and-workspace-ownership.md",
+    "docs/adr/BILLING-WEB-checkout-only-hosts-own-plan-selection.md",
+    "docs/adr/AUTH-BILLING-billing-attempt-context-and-workspace-scope.md",
+    "docs/adr/AUTH-BILLING-billing-stays-outside-the-account-package-in-v1.md",
+    "docs/adr/BILLING-CHECKOUT-checkout-journey-instrumentation-contract.md",
+    "docs/adr/BILLING-WEB-static-spa-boundary.md",
+    "docs/adr/PACKAGES-ACCOUNT-UI-payment-ui-belongs-to-the-shared-account-ui-package.md",
+    "docs/adr/API-SERVER-FACTS-server-facts-are-rendered-not-derived.md"
   ],
   "compatibilityPromises": [
     "Unclassified callers, authentication, workspace, and the cloud record may continue importing billing internals during inventory; imports from classified domains remain subject to cross-domain rules.",
     "useBillingContext remains the shared billing seam for workspace billing, and plan selection stays in the host app while hosted billing handles checkout only.",
-    "Billing owns the extracted client and SDK contract; mixed membership and billing views belong to account under ADR-BILLING-0049. Remaining cross-domain imports and dialog launchers that import presentation remain untracked boundary debt."
+    "Billing owns the extracted client and SDK contract; mixed membership and billing views belong to account under ADR-BILLING-billing-and-workspace-ownership. Remaining cross-domain imports and dialog launchers that import presentation remain untracked boundary debt."
   ],
   "deepImports": "inventory"
 }

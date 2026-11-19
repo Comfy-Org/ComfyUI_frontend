@@ -635,7 +635,7 @@ describe('ensureFresh', () => {
 
     expect(
       result?.status === 'ok' && result.session.token,
-      'the run path must carry the minted token, never the expired one (AUTH-CREDENTIALS-0011)'
+      'the run path must carry the minted token, never the expired one (AUTH-CREDENTIALS-cloud-credential-lifecycle-invariants)'
     ).toBe('workspace-jwt')
   })
 })
@@ -1434,7 +1434,7 @@ describe('sign-in state ownership', () => {
 
     expect(
       await explicit,
-      'resolving ok after sign-out is the AUTH-CREDENTIALS-0011 violation'
+      'resolving ok after sign-out is the AUTH-CREDENTIALS-cloud-credential-lifecycle-invariants violation'
     ).toBeUndefined()
     expect(client.getSnapshot().phase).toBe('signed-out')
     expect(client.getToken()).toBeUndefined()

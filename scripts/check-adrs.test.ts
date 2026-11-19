@@ -18,8 +18,8 @@ const createFixture = (files: Record<string, string> = {}): string => {
   mkdirSync(directory)
   temporaryDirectories.push(directory)
   writeFileSync(
-    join(directory, 'ECS-0008-entity-component-system.md'),
-    adr('ECS-0008', '2026-03-23', 'Proposed')
+    join(directory, 'ECS-entity-component-system.md'),
+    adr('ECS-entity-component-system', '2026-03-23', 'Proposed')
   )
   for (const [filename, contents] of Object.entries(files)) {
     writeFileSync(join(directory, filename), contents)
@@ -51,23 +51,27 @@ describe('validateAdrDirectory', () => {
   test.for([
     {
       name: 'a heading that is not the first line',
-      contents: `Intro\n\n${adr('UI-0060', '2026-01-01', 'Accepted')}`,
-      message: 'first line must be "# ADR-UI-0060: Title"'
+      contents: `Intro\n\n${adr('UI-decision', '2026-01-01', 'Accepted')}`,
+      message: 'first line must be "# ADR-UI-decision: Title"'
     },
     {
       name: 'a heading naming another identifier',
-      contents: adr('UI-0061', '2026-01-01', 'Accepted'),
-      message: 'first line must be "# ADR-UI-0060: Title"'
+      contents: adr('UI-other', '2026-01-01', 'Accepted'),
+      message: 'first line must be "# ADR-UI-decision: Title"'
     },
     {
       name: 'a Status with a second paragraph',
-      contents: adr('UI-0060', '2026-01-01', 'Accepted\n\nApproved in review.'),
+      contents: adr(
+        'UI-decision',
+        '2026-01-01',
+        'Accepted\n\nApproved in review.'
+      ),
       message: 'Status must be one line'
     },
     {
       name: 'prose on the Status line',
       contents: adr(
-        'UI-0060',
+        'UI-decision',
         '2026-01-01',
         'Accepted (2026-01-02). Approved.'
       ),
@@ -76,7 +80,7 @@ describe('validateAdrDirectory', () => {
     {
       name: 'a leftover template comment',
       contents: adr(
-        'UI-0060',
+        'UI-decision',
         '2026-01-01',
         'Accepted',
         '<!-- [Proposed | Accepted] -->'
@@ -84,70 +88,101 @@ describe('validateAdrDirectory', () => {
       message: 'remove the leftover template comment'
     }
   ])('rejects $name', ({ contents, message }) => {
-    const directory = createFixture({ 'UI-0060-decision.md': contents })
+    const directory = createFixture({ 'UI-decision.md': contents })
 
     expect(() => validateAdrDirectory(directory)).toThrow(
-      `UI-0060-decision.md: ${message}`
+      `UI-decision.md: ${message}`
     )
   })
 
   test('accepts a dated or linked one-line Status', () => {
     const directory = createFixture({
-      'UI-0060-decision.md': adr(
-        'UI-0060',
+      'UI-decision.md': adr(
+        'UI-decision',
         '2026-01-01',
         'Accepted (2026-01-02)'
       ),
-      'UI-0061-decision.md': adr(
-        'UI-0061',
+      'UX-decision.md': adr(
+        'UX-decision',
         '2026-01-01',
-        'Superseded by [ADR-UI-0060](UI-0060-decision.md)'
+        'Superseded by [ADR-UI-decision](UI-decision.md)'
       )
     })
 
     expect(() => validateAdrDirectory(directory)).not.toThrow()
   })
 
-  test('rejects a new ADR that reuses a sequence number', () => {
+  test('accepts numbers that tell apart ADRs with the same name', () => {
     const directory = createFixture({
-      'UI-0008-new-decision.md': adr('UI-0008', '2026-11-11', 'Accepted')
-    })
-
-    expect(() => validateAdrDirectory(directory)).toThrow(
-      'UI-0008-new-decision.md: sequence number 0008 is already used'
-    )
-  })
-
-  test('tolerates sequence numbers shared before the uniqueness rule', () => {
-    const directory = createFixture({
-      'UI-0008-old-decision.md': adr('UI-0008', '2026-11-10', 'Accepted')
+      'UI-0003-decision.md': adr('UI-0003-decision', '2026-01-01', 'Accepted'),
+      'UI-0007-decision.md': adr('UI-0007-decision', '2026-01-02', 'Accepted')
     })
 
     expect(() => validateAdrDirectory(directory)).not.toThrow()
+  })
+
+  test('rejects a number on an ADR whose name is unique', () => {
+    const directory = createFixture({
+      'UI-0003-decision.md': adr('UI-0003-decision', '2026-01-01', 'Accepted')
+    })
+
+    expect(() => validateAdrDirectory(directory)).toThrow(
+      'UI-0003-decision.md: no other ADR is named UI-decision; drop the sequence number'
+    )
+  })
+
+  test('rejects an unnumbered ADR whose name another ADR shares', () => {
+    const directory = createFixture({
+      'UI-decision.md': adr('UI-decision', '2026-01-01', 'Accepted'),
+      'UI-0007-decision.md': adr('UI-0007-decision', '2026-01-02', 'Accepted')
+    })
+
+    expect(() => validateAdrDirectory(directory)).toThrow(
+      'UI-decision.md: 2 ADRs are named UI-decision; give each a sequence number'
+    )
   })
 
   test('rejects an Accepted ADR that cites a Proposed one', () => {
     const directory = createFixture({
-      'UI-0060-decision.md': adr(
-        'UI-0060',
+      'UI-decision.md': adr(
+        'UI-decision',
         '2026-01-01',
         'Accepted',
-        'Builds on [ADR-ECS-0008](ECS-0008-entity-component-system.md).'
+        'Builds on [ADR-ECS-entity-component-system](ECS-entity-component-system.md).'
       )
     })
 
     expect(() => validateAdrDirectory(directory)).toThrow(
-      'UI-0060-decision.md: cites ADR-ECS-0008, which is still Proposed'
+      'UI-decision.md: cites ADR-ECS-entity-component-system, which is still Proposed'
+    )
+  })
+
+  test('does not read a longer identifier as a citation', () => {
+    const directory = createFixture({
+      'UI-plan.md': adr('UI-plan', '2026-01-01', 'Proposed'),
+      'UI-plan-b.md': adr('UI-plan-b', '2026-01-01', 'Proposed'),
+      'UI-decision.md': adr(
+        'UI-decision',
+        '2026-01-01',
+        'Accepted',
+        'Builds on ADR-UI-plan-b.'
+      )
+    })
+
+    expect(() => validateAdrDirectory(directory)).toThrow(
+      new Error(
+        'ADR check failed:\nUI-decision.md: cites ADR-UI-plan-b, which is still Proposed; settle its status first'
+      )
     )
   })
 
   test('allows a Proposed ADR to cite another Proposed ADR', () => {
     const directory = createFixture({
-      'UI-0060-decision.md': adr(
-        'UI-0060',
+      'UI-decision.md': adr(
+        'UI-decision',
         '2026-01-01',
         'Proposed',
-        'Builds on ADR-ECS-0008.'
+        'Builds on ADR-ECS-entity-component-system.'
       )
     })
 
@@ -157,9 +192,14 @@ describe('validateAdrDirectory', () => {
   test('rejects a guidance file that cites a Proposed ADR', () => {
     expect(() =>
       validateAdrDirectory(createFixture(), [
-        { filename: 'AGENTS.md', contents: 'Follow ADR-ECS-0008.' }
+        {
+          filename: 'AGENTS.md',
+          contents: 'Follow ADR-ECS-entity-component-system.'
+        }
       ])
-    ).toThrow('AGENTS.md: cites ADR-ECS-0008, which is still Proposed')
+    ).toThrow(
+      'AGENTS.md: cites ADR-ECS-entity-component-system, which is still Proposed'
+    )
   })
 })
 

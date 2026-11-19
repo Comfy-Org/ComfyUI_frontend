@@ -87,8 +87,8 @@
     }
   ],
   "adrs": [
-    "docs/adr/TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md",
-    "docs/adr/BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md"
+    "docs/adr/TELEMETRY-ROUTING-telemetry-routing-across-consumers.md",
+    "docs/adr/BILLING-CHECKOUT-checkout-journey-instrumentation-contract.md"
   ],
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",

@@ -194,13 +194,13 @@
     }
   ],
   "adrs": [
-    "docs/adr/DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md",
-    "docs/adr/ECS-0008-entity-component-system.md",
-    "docs/adr/ECS-SLOTS-0017-slot-records-as-the-source-of-truth.md",
-    "docs/adr/ECS-IDENTITY-0016-entity-id-collision-policy-and-recovery.md",
-    "docs/adr/CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md",
-    "docs/adr/CRDT-MINT-0018-merge-identity-for-node-transfers.md",
-    "docs/adr/GRAPH-DOCUMENT-0026-frontend-document-model.md"
+    "docs/adr/DEPS-LITEGRAPH-integrate-litegraph-into-the-frontend.md",
+    "docs/adr/ECS-entity-component-system.md",
+    "docs/adr/ECS-SLOTS-slot-records-as-the-source-of-truth.md",
+    "docs/adr/ECS-IDENTITY-entity-id-collision-policy-and-recovery.md",
+    "docs/adr/CRDT-LAYOUT-crdt-layout-intent-and-local-measurement.md",
+    "docs/adr/CRDT-MINT-merge-identity-for-node-transfers.md",
+    "docs/adr/GRAPH-DOCUMENT-frontend-document-model.md"
   ],
   "compatibilityPromises": [
     "Serialised workflow graph shapes (nodes, links, groups, reroutes, extra) stay compatible with existing workflows.",

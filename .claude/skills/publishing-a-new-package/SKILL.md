@@ -9,7 +9,7 @@ Getting a package onto npm is not done when the workflow goes green. It is done
 when someone in another repo can install it and it works. Most of the failures
 below happen after the "publish succeeded" line.
 
-`docs/adr/RELEASES-PACKAGES-0033-sdk-packages-release-through-version-bump-prs.md`
+`docs/adr/RELEASES-PACKAGES-sdk-packages-release-through-version-bump-prs.md`
 records the release model: packages release through version-bump PRs, not
 changesets.
 
@@ -52,7 +52,7 @@ an already-published version is a **no-op**: the `Check if version already on
 npm` step finds it and skips. To test the pipeline you need a new version
 number.
 
-Packages that ADR-RELEASES-PACKAGES-0033 holds on a prerelease line are gated
+Packages that ADR-RELEASES-PACKAGES-sdk-packages-release-through-version-bump-prs holds on a prerelease line are gated
 in `version-bump-package.yaml`; promoting one means amending that ADR and the
 gate.
 

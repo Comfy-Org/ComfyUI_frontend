@@ -99,8 +99,8 @@
     }
   ],
   "adrs": [
-    "docs/adr/TELEMETRY-DIAGNOSTICS-0019-recoverable-event-diagnostics.md",
-    "docs/adr/TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md"
+    "docs/adr/TELEMETRY-DIAGNOSTICS-recoverable-event-diagnostics.md",
+    "docs/adr/TELEMETRY-ROUTING-telemetry-routing-across-consumers.md"
   ],
   "compatibilityPromises": [
     "Unclassified callers may import these internals during inventory; imports from classified domains remain subject to cross-domain rules.",

@@ -100,7 +100,7 @@ export function addToComboValues(
 /**
  * True while the canvas is a picking surface rather than an editable one: its
  * own `selectOnly` flag is set, or the interaction mode the application
- * injected reads select-only (ADR-CANVAS-INTERACTION-0035).
+ * injected reads select-only (ADR-CANVAS-INTERACTION-agent-node-picking-policy).
  *
  * The canvas pointer and key dispatch and the command store read the mode
  * themselves. The document-level paste, drop and history listeners guard with

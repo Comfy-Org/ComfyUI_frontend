@@ -58,7 +58,7 @@ Cloud uses continuous delivery from `main`; numbered cloud release branches
 are retired. Core backports remain available for the current ComfyUI frontend
 pin, upcoming release lines, and previous lines within the 72-hour rollback
 window. Older lines are frozen and their target labels removed. See
-[the core backport policy](adr/RELEASES-0064-core-backports-follow-the-consumer-pin.md).
+[the core backport policy](adr/RELEASES-core-backports-follow-the-consumer-pin.md).
 
 1. Add `needs-backport` + version label to the merged PR
 2. `pr-backport.yaml` cherry-picks and creates a backport PR

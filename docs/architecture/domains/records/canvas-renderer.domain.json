@@ -143,14 +143,14 @@
     }
   ],
   "adrs": [
-    "docs/adr/DEPS-LITEGRAPH-0001-integrate-litegraph-into-the-frontend.md",
-    "docs/adr/CANVAS-VIEWPORT-0009-canvas-viewport-system.md",
-    "docs/adr/CANVAS-SELECTION-0028-single-selection-store.md",
-    "docs/adr/CANVAS-SELECTION-0031-ordered-set-storage.md",
-    "docs/adr/CANVAS-GESTURE-0029-pointer-gesture-state-machine.md",
-    "docs/adr/CANVAS-INTERACTION-0035-agent-node-picking-policy.md",
-    "docs/adr/RENDERING-ATOMICITY-0020-frame-atomic-rendering.md",
-    "docs/adr/RENDERING-INVALIDATION-0021-classified-frame-coalesced-canvas-invalidation.md"
+    "docs/adr/DEPS-LITEGRAPH-integrate-litegraph-into-the-frontend.md",
+    "docs/adr/CANVAS-VIEWPORT-canvas-viewport-system.md",
+    "docs/adr/CANVAS-SELECTION-single-selection-store.md",
+    "docs/adr/CANVAS-SELECTION-ordered-set-storage.md",
+    "docs/adr/CANVAS-GESTURE-pointer-gesture-state-machine.md",
+    "docs/adr/CANVAS-INTERACTION-agent-node-picking-policy.md",
+    "docs/adr/RENDERING-ATOMICITY-frame-atomic-rendering.md",
+    "docs/adr/RENDERING-INVALIDATION-classified-frame-coalesced-canvas-invalidation.md"
   ],
   "compatibilityPromises": [
     "Existing callers in the Vue node renderer, widget runtime, linear mode, minimap, onboarding, agent, workbench, and shared composables may continue importing canvas internals during inventory; this record grants no new cross-domain permissions.",

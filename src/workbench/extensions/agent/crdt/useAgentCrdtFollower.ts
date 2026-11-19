@@ -1181,7 +1181,7 @@ function startAgentCrdtFollower(
   // The bound workflow whose tab went inactive while the sender still held
   // batches for it. A tab switch pauses the subscription without rebinding
   // the session, so those batches are held rather than aborted (see
-  // ADR-CRDT-WRITE-0035); anything else that moves the binding releases
+  // ADR-CRDT-WRITE-hold-pending-human-ops-across-tab-suspension); anything else that moves the binding releases
   // them into the normal abort path.
   let heldForWorkflowId: string | null = null
   const releaseHeldOps = (): void => {

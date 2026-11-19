@@ -3,7 +3,7 @@
 Behind the `unified_web_session` flag, every Comfy site shares one sign-in:
 the host-only `__Host-comfy_session` cookie that ingest sets at `/api/auth/session`.
 The decision and its trade-offs are in
-[ADR-AUTH-SESSION-0037](../../../docs/adr/AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md).
+[ADR-AUTH-SESSION-shared-web-session-on-a-host-only-cookie](../../../docs/adr/AUTH-SESSION-shared-web-session-on-a-host-only-cookie.md).
 This package holds the parts every host reuses. Each host still decides when to
 start, and stays on its own sign-in while the flag is off.
 

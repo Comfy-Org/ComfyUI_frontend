@@ -21,7 +21,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 import { AGENT_COMPOSER_LABEL } from '@e2e/fixtures/utils/agentComposerLabel'
 
-// Agent template placement (ADR-CRDT-PLACEMENT-0035): when the in-app Comfy
+// Agent template placement (ADR-CRDT-PLACEMENT-agent-inserted-nodes-land-near-existing-content): when the in-app Comfy
 // Agent inserts a workflow template onto a canvas that already has a node on
 // it, the template's raw baked-in absolute coordinates must not be forwarded
 // verbatim -- a batch landing disconnected from and offscreen of existing

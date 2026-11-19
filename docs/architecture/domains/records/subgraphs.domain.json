@@ -94,9 +94,9 @@
     }
   ],
   "adrs": [
-    "docs/adr/GRAPH-DOCUMENT-0026-frontend-document-model.md",
-    "docs/adr/CRDT-INPUTS-0030-preserve-named-input-targets.md",
-    "docs/adr/SUBGRAPH-PROMOTION-0027-defer-promoted-widget-registration-to-onadded.md"
+    "docs/adr/GRAPH-DOCUMENT-frontend-document-model.md",
+    "docs/adr/CRDT-INPUTS-preserve-named-input-targets.md",
+    "docs/adr/SUBGRAPH-PROMOTION-defer-promoted-widget-registration-to-onadded.md"
   ],
   "compatibilityPromises": [
     "Serialised subgraph definitions and subgraph node instances stay compatible with saved workflows.",

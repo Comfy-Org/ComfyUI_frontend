@@ -4,26 +4,23 @@ import { basename, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const ADR_FILE_PATTERN =
-  /^([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-(\d{4}))-[a-z0-9]+(?:-[a-z0-9]+)*\.md$/
-const ADR_CITATION_PATTERN =
-  /(?:\bADR-)?\b([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*-\d{4})\b/g
+  /^([A-Z][A-Z0-9]*(?:-[A-Z][A-Z0-9]*)*(?:-(\d{4}))?-[a-z][a-z0-9]*(?:-[a-z0-9]+)*)\.md$/
 const STATUS_LINE_PATTERN =
-  /^(Proposed|Accepted|Rejected|Deprecated|Superseded)(?: \(\d{4}-\d{2}-\d{2}\))?(?: by \[ADR-[A-Z0-9-]+\]\([^)\s]+\.md\))?$/
+  /^(Proposed|Accepted|Rejected|Deprecated|Superseded)(?: \(\d{4}-\d{2}-\d{2}\))?(?: by \[ADR-[A-Za-z0-9-]+\]\([^)\s]+\.md\))?$/
 const STATUS_SECTION_PATTERN =
   /^## Status[ \t]*\n([\s\S]*?)(?=^## |(?![\s\S]))/m
-const LAST_DATE_WITH_SHARED_SEQUENCES = '2026-11-10'
 const CITED_PROPOSALS_AWAITING_OWNER_STATUS = new Set([
-  'AUTH-BILLING-0014',
-  'AUTH-SESSION-0037',
-  'CRDT-AUTHORITY-0035',
-  'CRDT-LAYOUT-0003',
-  'CRDT-RECONCILE-0035',
-  'CRDT-REPLAY-0039',
-  'ECS-IDENTITY-0016',
-  'GRAPH-DOCUMENT-0024',
-  'GRAPH-DOCUMENT-0026',
-  'PACKAGES-ACCOUNT-UI-0034',
-  'PERF-BENCHMARKS-0022'
+  'AUTH-BILLING-billing-attempt-context-and-workspace-scope',
+  'AUTH-SESSION-shared-web-session-on-a-host-only-cookie',
+  'CRDT-AUTHORITY-human-canvas-authority-and-draft-reconciliation',
+  'CRDT-LAYOUT-crdt-layout-intent-and-local-measurement',
+  'CRDT-RECONCILE-local-only-state-survives-authoritative-reconcile',
+  'CRDT-REPLAY-retain-exhausted-operations-for-same-page-replay',
+  'ECS-IDENTITY-entity-id-collision-policy-and-recovery',
+  'GRAPH-DOCUMENT-frontend-document-model',
+  'GRAPH-DOCUMENT-graph-activation-and-document-objects-for-in-app-agent-targets',
+  'PACKAGES-ACCOUNT-UI-payment-ui-belongs-to-the-shared-account-ui-package',
+  'PERF-BENCHMARKS-performance-evidence-and-regression-framework'
 ])
 const LEGACY_REFERENCE_PATTERN =
   /ADR(?:[- ]?\d{4}(?!-\d{2})|(?:-[A-Z][A-Z0-9]*)?\s*(?:\/\s*|\(\s*)\d{4}(?!-\d{2}))|(?:docs\/)?adr\/\d{4}-/
@@ -33,7 +30,8 @@ type Adr = {
   date: string
   filename: string
   id: string
-  sequence: string
+  name: string
+  sequence: string | undefined
   status: string
 }
 
@@ -64,6 +62,7 @@ const readAdr = (directory: string, filename: string): Adr | undefined => {
     date: /^Date: (\d{4}-\d{2}-\d{2})$/m.exec(contents)?.[1] ?? '',
     filename,
     id,
+    name: sequence ? id.replace(`-${sequence}-`, '-') : id,
     sequence,
     status: STATUS_LINE_PATTERN.exec(statusSection)?.[1] ?? ''
   }
@@ -87,22 +86,25 @@ const findFormatProblems = ({
     .filter((problem) => typeof problem === 'string')
     .map((problem) => `${filename}: ${problem}`)
 
-const findSequenceReuse = (adrs: Adr[]): string[] =>
-  adrs
-    .filter(
-      (adr) =>
-        adr.date > LAST_DATE_WITH_SHARED_SEQUENCES &&
-        adrs.some((other) => other !== adr && other.sequence === adr.sequence)
-    )
-    .map(
-      ({ filename, sequence }) =>
-        `${filename}: sequence number ${sequence} is already used; take the next unused number`
-    )
+const findNumberingProblems = (adrs: Adr[]): string[] =>
+  adrs.flatMap(({ filename, name, sequence }) => {
+    const sharing = adrs.filter((other) => other.name === name)
+    if (sharing.length === 1 && sequence) {
+      return `${filename}: no other ADR is named ${name}; drop the sequence number`
+    }
+    if (sharing.length > 1 && !sequence) {
+      return `${filename}: ${sharing.length} ADRs are named ${name}; give each a sequence number`
+    }
+    return []
+  })
+
+const cites = (contents: string, { filename, id }: Adr): boolean =>
+  contents.includes(filename) ||
+  new RegExp(`(?<![A-Za-z0-9-])ADR-${id}(?![A-Za-z0-9]|-[A-Za-z0-9])`).test(
+    contents
+  )
 
 const findProposedCitations = (adrs: Adr[], guides: TextFile[]): string[] => {
-  const proposedIds = new Set(
-    adrs.filter(({ status }) => status === 'Proposed').map(({ id }) => id)
-  )
   const settledAwaitingIds = adrs
     .filter(
       ({ id, status }) =>
@@ -112,25 +114,20 @@ const findProposedCitations = (adrs: Adr[], guides: TextFile[]): string[] => {
       ({ id }) =>
         `ADR-${id} is no longer Proposed; remove it from CITED_PROPOSALS_AWAITING_OWNER_STATUS`
     )
+  const proposals = adrs.filter(
+    ({ id, status }) =>
+      status === 'Proposed' && !CITED_PROPOSALS_AWAITING_OWNER_STATUS.has(id)
+  )
   const citingFiles = [
     ...adrs.filter(({ status }) => status === 'Accepted'),
     ...guides.map((guide) => ({ ...guide, id: '' }))
   ]
   const citations = citingFiles.flatMap(({ contents, filename, id }) =>
-    [
-      ...new Set(
-        [...contents.matchAll(ADR_CITATION_PATTERN)].map(([, cited]) => cited)
-      )
-    ]
-      .filter(
-        (cited) =>
-          cited !== id &&
-          proposedIds.has(cited) &&
-          !CITED_PROPOSALS_AWAITING_OWNER_STATUS.has(cited)
-      )
+    proposals
+      .filter((proposal) => proposal.id !== id && cites(contents, proposal))
       .map(
-        (cited) =>
-          `${filename}: cites ADR-${cited}, which is still Proposed; settle its status first`
+        (proposal) =>
+          `${filename}: cites ADR-${proposal.id}, which is still Proposed; settle its status first`
       )
   )
   return [...settledAwaitingIds, ...citations]
@@ -154,12 +151,6 @@ export const validateAdrDirectory = (
     ...adrs.flatMap(findFormatProblems)
   ]
 
-  const ids = adrs.map(({ id }) => id)
-  const duplicateIds = new Set(
-    ids.filter((id, index) => ids.indexOf(id) !== index)
-  )
-  for (const id of duplicateIds) errors.push(`Duplicate ADR identifier: ${id}`)
-
   for (const companion of entries.filter((entry) => entry.isDirectory())) {
     if (!markdownFiles.includes(`${companion.name}.md`)) {
       errors.push(
@@ -169,7 +160,7 @@ export const validateAdrDirectory = (
   }
 
   errors.push(
-    ...findSequenceReuse(adrs),
+    ...findNumberingProblems(adrs),
     ...findProposedCitations(adrs, guides)
   )
 
