@@ -1077,6 +1077,7 @@ test.describe('Workflow Persistence', () => {
     test.use({
       initialSettings: {
         'Comfy.UseNewMenu': 'Top',
+        'Comfy.Workflow.Persist': true,
         'Comfy.Workflow.WorkflowTabsPosition': 'Topbar'
       }
     })
@@ -1085,8 +1086,6 @@ test.describe('Workflow Persistence', () => {
 
     test.beforeEach(async ({ comfyPage }) => {
       test.setTimeout(45_000)
-      await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
-
       workflowA = generateUniqueFilename()
       const workflowB = generateUniqueFilename()
 
