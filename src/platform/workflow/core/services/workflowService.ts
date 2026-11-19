@@ -165,8 +165,16 @@ function resetAndRestoreTracker(
     )
     return false
   }
+  // A saved workflow opened with unsaved changes (a restored draft) keeps the
+  // saved file as its baseline; otherwise undoing a later edit would mark the
+  // draft as saved.
+  const saved =
+    workflow.isPersisted && workflow.isModified
+      ? captureSavedBaseline(workflow)
+      : undefined
   tracker.reset(ensureWorkflowId(workflowData, activeStateFallbackId(workflow)))
   tracker.restore()
+  if (saved) restoreSavedBaseline(workflow, saved)
   return true
 }
 
