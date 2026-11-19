@@ -13,6 +13,10 @@ import {
 } from '@/workbench/extensions/agent/services/agent/agentRestClient'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import { isAgentAttachable } from '@/workbench/extensions/agent/utils/attachableFiles'
+import {
+  DERIVED_WORKFLOW_SOURCE_PREFIX,
+  deriveWorkflowFile
+} from '@/workbench/extensions/agent/utils/derivedWorkflowAttachment'
 
 export const MAX_ATTACHMENT_BYTES = 20 * 1024 * 1024
 
@@ -398,7 +402,13 @@ export function useAttachment(options: UseAttachmentOptions) {
         return 'failed'
       }
       const result = await uploadStagedFile(id, file)
-      if (result === 'uploaded') options.onUploaded?.()
+      // Same derived-workflow pass as addFiles, so an image dropped from the
+      // asset library reaches the agent's workflow tools the same way a freshly
+      // picked file does. Outside uploadStagedFile for the same slot reason.
+      if (result === 'uploaded') {
+        await attachDerivedWorkflows([file])
+        options.onUploaded?.()
+      }
       return result
     } catch (cause) {
       if (cancelled.has(id)) return 'cancelled'
@@ -462,6 +472,42 @@ export function useAttachment(options: UseAttachmentOptions) {
     return id ? { file, outcome: 'upload', id } : { file, outcome: 'duplicate' }
   }
 
+  // Lifts an embedded workflow out of each uploaded file and stages it as its
+  // own attachment, so the agent's workflow tools can reach it.
+  //
+  // Runs as a pass AFTER its sources have finished uploading, never from inside
+  // uploadStagedFile. Deriving in there would have each upload wait on a
+  // concurrency slot while still holding one, which deadlocks the moment
+  // MAX_CONCURRENT_UPLOADS workflow-bearing images are attached together.
+  async function attachDerivedWorkflows(
+    sources: readonly File[]
+  ): Promise<boolean> {
+    const derived = await Promise.all(
+      sources.map(async (source) => ({
+        source,
+        file: await deriveWorkflowFile(source).catch(() => undefined)
+      }))
+    )
+
+    let uploaded = 0
+    await Promise.all(
+      derived.map(async ({ source, file }) => {
+        if (!file) return
+        // Charged against the per-turn attachment cap like any other file, but
+        // silently: the user did not ask for this one, so hitting the limit
+        // must not raise an error they cannot act on. The image they attached
+        // is already staged and still works.
+        const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${fileUploadKey(source)}`
+        if (admit(sourceKey) !== 'admitted') return
+        if (isTooLarge(file)) return
+        const id = stage(file.name, sourceKey)
+        if (!id) return
+        if ((await uploadStagedFile(id, file)) === 'uploaded') uploaded += 1
+      })
+    )
+    return uploaded > 0
+  }
+
   async function addFiles(files: Iterable<File>): Promise<boolean> {
     const staged = Array.from(files, stageFile)
     const duplicates = staged.flatMap(({ file, outcome }) =>
@@ -470,14 +516,20 @@ export function useAttachment(options: UseAttachmentOptions) {
     if (duplicates.length) options.onDuplicate?.(duplicates)
     if (staged.some(({ outcome }) => outcome === 'too_many')) reportTurnLimit()
     let uploaded = 0
+    const sources: File[] = []
     await Promise.all(
       staged.map(async (item) => {
         if (item.outcome !== 'upload') return
-        if ((await uploadStagedFile(item.id, item.file)) === 'uploaded')
+        if ((await uploadStagedFile(item.id, item.file)) === 'uploaded') {
           uploaded += 1
+          sources.push(item.file)
+        }
       })
     )
-    if (uploaded > 0) options.onUploaded?.()
+    const derived = sources.length
+      ? await attachDerivedWorkflows(sources)
+      : false
+    if (uploaded > 0 || derived) options.onUploaded?.()
     return uploaded > 0
   }
 
