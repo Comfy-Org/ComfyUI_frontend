@@ -460,10 +460,6 @@ export function useTemplateWorkflows() {
         ? api.fileURL(`/templates/${id}.json`)
         : api.apiURL(`/workflow_templates/${sourceModule}/${id}.json`)
 
-    // Every report below carries the template it is about. Without these tags
-    // the only identifying detail is whatever the message happens to contain,
-    // so the events cannot be grouped or counted per template, and the schema
-    // one carries no identity at all.
     const tags = { template_id: id, source_module: sourceModule }
 
     const response = await fetch(url, { signal })
