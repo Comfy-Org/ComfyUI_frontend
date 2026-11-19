@@ -74,6 +74,12 @@ for label in "${RETIRE_LABELS[@]}"; do
   done
 done
 
+LATEST_PIN_SHA=$(git ls-remote https://github.com/Comfy-Org/ComfyUI.git refs/heads/master | cut -f1)
+if [ "$LATEST_PIN_SHA" != "$COMFYUI_PIN_SHA" ]; then
+  echo '::error::ComfyUI changed during reconciliation; retry with fresh history.'
+  exit 1
+fi
+
 DELETED_LABELS=''
 for label in "${RETIRE_LABELS[@]}"; do
   gh label delete "$label" --repo "$GH_REPO" --yes

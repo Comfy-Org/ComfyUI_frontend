@@ -49,11 +49,12 @@ function reconciliation({
   writeFileSync(join(directory, 'comments.json'), '{}')
   writeFileSync(join(directory, 'output'), '')
   writeFileSync(join(directory, 'summary'), '')
+  writeFileSync(join(directory, 'pin-sha'), stale ? 'changed-pin' : 'pin-sha')
   if (failNotice) writeFileSync(join(directory, 'block-notice'), '')
   if (failDelete) writeFileSync(join(directory, 'block-delete'), '')
   writeFileSync(
     join(directory, 'git'),
-    '#!/bin/sh\nprintf "%s\\trefs/heads/master\\n" "$LATEST_SHA"\n',
+    '#!/bin/sh\nprintf "%s\\trefs/heads/master\\n" "$(cat "$STATE/pin-sha")"\n',
     { mode: 0o755 }
   )
   writeFileSync(
@@ -73,6 +74,9 @@ elif [ "$1 $2 $3" = 'api --method POST' ] && [[ "$4" == */comments ]]; then
   body="\${6#body=}"
   jq --arg number "$number" --arg body "$body" '.[$number] = ((.[$number] // []) + [{user: {login: "release-bot"}, body: $body}])' "$STATE/comments.json" > "$STATE/comments.next"
   mv "$STATE/comments.next" "$STATE/comments.json"
+  if [ -f "$STATE/change-pin-during-notice" ]; then
+    printf changed-pin > "$STATE/pin-sha"
+  fi
 elif [ "$1 $2" = 'api --method' ]; then
   [ "$FAIL_FREEZE" != true ] || exit 1
   cat > "$STATE/request.json"
@@ -125,7 +129,6 @@ fi
           RETIRED_CORE_TARGETS: retired,
           MINIMUM_CORE_TARGET: active.split(' ')[0],
           COMFYUI_PIN_SHA: 'pin-sha',
-          LATEST_SHA: stale ? 'changed-pin' : 'pin-sha',
           APPLY: String(apply),
           FAIL_FREEZE: String(failFreeze),
           GITHUB_OUTPUT: join(directory, 'output'),
@@ -242,6 +245,29 @@ describe('core retirement reconciliation', () => {
       'core/1.59',
       'core/1.9'
     ])
+  })
+
+  it('preserves target labels when ComfyUI changes during notices', () => {
+    const { directory, run } = reconciliation()
+    writeFileSync(join(directory, 'change-pin-during-notice'), '')
+
+    expect(run().status).toBe(1)
+
+    expect(
+      JSON.parse(readFileSync(join(directory, 'comments.json'), 'utf8'))['101']
+    ).toHaveLength(1)
+    expect(
+      JSON.parse(readFileSync(join(directory, 'labels.json'), 'utf8'))
+    ).toEqual(
+      expect.arrayContaining([
+        'core/1.9',
+        'core/1.59',
+        '1.59',
+        'branch:core/1.59',
+        'backport:core/1.59'
+      ])
+    )
+    expect(readFileSync(join(directory, 'output'), 'utf8')).toBe('')
   })
 
   it('reports only completed deletions when a later deletion fails', () => {
