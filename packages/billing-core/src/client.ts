@@ -500,7 +500,7 @@ export function createBillingApi({
       autoTopUp?: TopupAutoTopUpSettings
     ): Promise<TopupPurchase> {
       const auth = await requestAuth()
-      signal?.throwIfAborted()
+      throwIfSignalAborted(signal)
       try {
         const response = await client.post<TopupPurchase>(
           resolveUrl('/billing/topup/purchases'),
