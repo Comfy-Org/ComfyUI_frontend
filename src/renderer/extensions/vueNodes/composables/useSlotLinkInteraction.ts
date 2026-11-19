@@ -193,7 +193,6 @@ export function useSlotLinkInteraction({
     selectSlotLinks(useApp().canvas, node, type, index, layout.position)
   }
 
-  // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
   const dragReveal = useSlotLinkReveal({ nodeId, index, type, kind: 'drag' })
 
@@ -527,7 +526,6 @@ export function useSlotLinkInteraction({
     raf.schedule()
   }
 
-  // Attempt to finalize by connecting to a DOM slot candidate
   const tryConnectToCandidate = (
     candidate: SlotDropCandidate | null
   ): boolean => {
@@ -555,7 +553,6 @@ export function useSlotLinkInteraction({
     )
   }
 
-  // Attempt to finalize by dropping on a reroute under the pointer
   const tryConnectViaRerouteAtPointer = (): boolean => {
     const graph = useApp().canvas.graph
     const adapter = activeAdapter
@@ -649,7 +646,13 @@ export function useSlotLinkInteraction({
     )
     const hasConnected = connectByPriority(dropTarget, snappedCandidate)
 
-    if (!hasConnected && dropTarget === useApp().canvas.canvas) {
+    const isCanvasSurface =
+      dropTarget === useApp().canvas.canvas ||
+      !!useApp().canvas.subgraph?.getIoNodeOnPos(
+        canvasEvent.canvasX,
+        canvasEvent.canvasY
+      )
+    if (!hasConnected && isCanvasSurface) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }
 

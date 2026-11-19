@@ -118,23 +118,23 @@ export const useMissingModelStore = defineStore('missingModel', () => {
     nodeIds: Set<string>
   ) {
     if (!missingModelCandidates.value) return
-    missingModelCandidates.value = missingModelCandidates.value.filter(
+    const remaining = missingModelCandidates.value.filter(
       (m) =>
         m.name !== modelName ||
         m.nodeId == null ||
         !nodeIds.has(String(m.nodeId))
     )
-    if (!missingModelCandidates.value.length)
-      missingModelCandidates.value = null
+    if (remaining.length === missingModelCandidates.value.length) return
+    missingModelCandidates.value = remaining.length ? remaining : null
   }
 
   function removeMissingModelByWidget(nodeId: string, widgetName: string) {
     if (!missingModelCandidates.value) return
-    missingModelCandidates.value = missingModelCandidates.value.filter(
+    const remaining = missingModelCandidates.value.filter(
       (m) => !(String(m.nodeId) === nodeId && m.widgetName === widgetName)
     )
-    if (!missingModelCandidates.value.length)
-      missingModelCandidates.value = null
+    if (remaining.length === missingModelCandidates.value.length) return
+    missingModelCandidates.value = remaining.length ? remaining : null
   }
 
   function clearInteractionStateForName(name: string) {
@@ -150,6 +150,7 @@ export const useMissingModelStore = defineStore('missingModel', () => {
         .filter((m) => String(m.nodeId) === nodeId)
         .map((m) => m.name)
     )
+    if (removedNames.size === 0) return
     missingModelCandidates.value = missingModelCandidates.value.filter(
       (m) => String(m.nodeId) !== nodeId
     )

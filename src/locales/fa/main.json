@@ -1721,6 +1721,12 @@
     "reload": "بارگذاری مجدد",
     "retry": "تلاش مجدد",
     "retryLabel": "تلاش مجدد برای راه‌اندازی {deployment}",
+    "runBlocked": {
+      "failed": "این deployment ناموفق بود. برای تغییر کلیک کنید.",
+      "notReady": "این deployment آماده نیست. برای تغییر کلیک کنید.",
+      "starting": "این deployment در حال راه‌اندازی است. برای تغییر کلیک کنید.",
+      "stopped": "این deployment متوقف است. برای تغییر کلیک کنید."
+    },
     "runOn": "اجرا در",
     "runningOn": "در حال اجرا روی",
     "runsThisWorkflow": "این workflow را اجرا می‌کند",

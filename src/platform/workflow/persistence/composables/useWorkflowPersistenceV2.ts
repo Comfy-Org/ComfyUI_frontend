@@ -46,8 +46,6 @@ import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composab
 import { useTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { isValidUuid } from '@/utils/formatUtil'
 
 export function useWorkflowPersistenceV2() {
   const { t } = useI18n()
@@ -449,12 +447,9 @@ export function useWorkflowPersistenceV2() {
   const stampWithDraftTime = (
     restored: ComfyWorkflow,
     draftPath: string,
-    draftData: ComfyWorkflowJSON,
     draftUpdatedAt: number
   ) => {
-    const builtFromThisDraft =
-      restored.path === draftPath && isValidUuid(draftData.id)
-    if (builtFromThisDraft) restored.lastModified = draftUpdatedAt
+    if (restored.path === draftPath) restored.lastModified = draftUpdatedAt
   }
 
   const restoreSavedTabs = async () => {
@@ -491,7 +486,7 @@ export function useWorkflowPersistenceV2() {
       try {
         const workflowData = JSON.parse(draft.data)
         const restored = workflowStore.createTemporary(draft.name, workflowData)
-        stampWithDraftTime(restored, path, workflowData, draft.updatedAt)
+        stampWithDraftTime(restored, path, draft.updatedAt)
       } catch (err) {
         console.warn(
           'Failed to parse workflow draft, creating with default',
