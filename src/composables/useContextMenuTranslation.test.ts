@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type {
   IContextMenuOptions,
@@ -8,7 +8,12 @@ import type {
   IWidget
 } from '@/lib/litegraph/src/litegraph'
 
-import { translateContextMenuItems } from './useContextMenuTranslation'
+import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+
+import {
+  translateContextMenuItems,
+  useContextMenuTranslation
+} from './useContextMenuTranslation'
 
 vi.mock(import('@/i18n'), () => ({
   resolveNodeDefText: vi.fn(),
@@ -34,5 +39,21 @@ describe('translateContextMenuItems', () => {
     translateContextMenuItems(values, options)
 
     expect(values[0].content).toBe(expected)
+  })
+})
+
+describe('useContextMenuTranslation', () => {
+  it('opens a LiteGraph.ContextMenu constructed without options', () => {
+    const OriginalContextMenu = LiteGraph.ContextMenu
+    onTestFinished(() => {
+      LiteGraph.ContextMenu = OriginalContextMenu
+      document.body.replaceChildren()
+    })
+    useContextMenuTranslation()
+
+    const menu = new LiteGraph.ContextMenu(['First', 'Second'])
+
+    expect(menu).toBeInstanceOf(OriginalContextMenu)
+    expect(menu.root.textContent).toContain('Second')
   })
 })
