@@ -414,6 +414,16 @@ function readErrorString(
   }
 }
 
+const NATIVE_ACCESSOR_PATTERN =
+  /^function\s*\w*\s*\(\s*\)\s*\{\s*\[native code\]\s*\}$/
+
+function isNativeAccessor(fn: unknown): fn is (this: Error) => unknown {
+  return (
+    typeof fn === 'function' &&
+    NATIVE_ACCESSOR_PATTERN.test(Function.prototype.toString.call(fn))
+  )
+}
+
 function hasAccessorInChain(value: object, key: string): boolean {
   let current: object | null = value
   while (current) {
@@ -429,9 +439,12 @@ function readOwnAccessor(
   key: 'message' | 'name' | 'stack',
   descriptor: PropertyDescriptor
 ): string {
-  if (key !== 'stack' || typeof descriptor.get !== 'function') {
+  if (key !== 'stack' || !isNativeAccessor(descriptor.get)) {
     return REDACTION_SENTINEL
   }
+  // V8's native stack getter formats its first line from `name`/`message`, so
+  // a tampered accessor on either (own or inherited) can still leak through
+  // the stack text even though the getter itself is native.
   if (
     hasAccessorInChain(source, 'message') ||
     hasAccessorInChain(source, 'name')

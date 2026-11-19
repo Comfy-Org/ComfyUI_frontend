@@ -627,4 +627,17 @@ describe('redactTelemetryValues', () => {
     expect(redacted.stack).toBe(REDACTION_SENTINEL)
     expect(getter).not.toHaveBeenCalled()
   })
+
+  it('does not invoke a non-native stack accessor', () => {
+    const getter = vi.fn(() => 'API_KEY=SUPER_SECRET')
+    const error = Object.defineProperty(new Error('safe'), 'stack', {
+      enumerable: true,
+      get: getter
+    })
+
+    const redacted = redactTelemetryError(error)
+
+    expect(redacted.stack).toBe(REDACTION_SENTINEL)
+    expect(getter).not.toHaveBeenCalled()
+  })
 })
