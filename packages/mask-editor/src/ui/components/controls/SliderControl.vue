@@ -13,7 +13,7 @@
         :max="max"
         :step="step"
         :value="modelValue"
-        @input="emitValue"
+        @input="updateValue"
         @change="showModelValue"
       />
     </div>
@@ -24,7 +24,7 @@
       :max="max"
       :step="step"
       :value="modelValue"
-      @input="emitValue"
+      @input="updateValue"
     />
   </div>
 </template>
@@ -37,33 +37,23 @@ interface Props {
   min: number
   max: number
   step?: number
-  modelValue: number
   showInput?: boolean
 }
 
-const {
-  label,
-  min,
-  max,
-  step = 1,
-  modelValue,
-  showInput = false
-} = defineProps<Props>()
+const { label, min, max, step = 1, showInput = false } = defineProps<Props>()
 
-const emit = defineEmits<{
-  'update:modelValue': [value: number]
-}>()
+const modelValue = defineModel<number>({ required: true })
 
-function emitValue(event: Event) {
+function updateValue(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
   const value = event.target.valueAsNumber
   if (Number.isNaN(value)) return
-  emit('update:modelValue', clamp(value, min, max))
+  modelValue.value = clamp(value, min, max)
 }
 
 function showModelValue(event: Event) {
   if (event.target instanceof HTMLInputElement) {
-    event.target.value = String(modelValue)
+    event.target.value = String(modelValue.value)
   }
 }
 </script>
