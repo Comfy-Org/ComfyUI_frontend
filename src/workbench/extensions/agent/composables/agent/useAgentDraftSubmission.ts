@@ -40,7 +40,8 @@ interface UseAgentDraftSubmissionOptions {
     nodes: SelectedNode[],
     references: WorkflowReference[],
     meta: SubmissionMeta,
-    releaseGate: () => void
+    releaseGate: () => void,
+    target: ComfyWorkflow
   ) => Promise<DraftSendOutcome>
 }
 
@@ -106,7 +107,7 @@ export function useAgentDraftSubmission(
       composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
       return
     }
-    const targetPath = options.target()?.path ?? null
+    const targetInstanceId = options.target()?.instanceId ?? null
     composer.restorePrompt(
       {
         text: snapshot.prompt.text,
@@ -115,7 +116,7 @@ export function useAgentDraftSubmission(
             return reference.id !== options.editableWorkflowId()
           if (reference.kind === 'node')
             return (
-              targetPath === snapshot.targetPath &&
+              targetInstanceId === snapshot.targetInstanceId &&
               snapshot.nodes.some(
                 (node) =>
                   selectedNodeKey(node) === selectedNodeKey(reference.node)
@@ -130,7 +131,8 @@ export function useAgentDraftSubmission(
       snapshot.promptOrigin,
       snapshot.starterPrompt
     )
-    if (targetPath === snapshot.targetPath) selection.replace(snapshot.nodes)
+    if (targetInstanceId === snapshot.targetInstanceId)
+      selection.replace(snapshot.nodes)
     composer.markRejectedDraft()
     composer.releaseRetainedAssets(pendingAssetOwnerKey(clientMessageId))
   }
@@ -191,7 +193,7 @@ export function useAgentDraftSubmission(
       prompt,
       attachments: sentAttachments,
       nodes,
-      targetPath: target.path,
+      targetInstanceId: target.instanceId,
       promptOrigin: inputMethod,
       starterPrompt
     }
@@ -201,6 +203,7 @@ export function useAgentDraftSubmission(
       gateId,
       gateRevision: composer.draftRevision,
       snapshot,
+      target,
       sentAttachments,
       sentReferences,
       nodes,
@@ -251,7 +254,8 @@ export function useAgentDraftSubmission(
           inputMethod: staged.inputMethod,
           starterPrompt: staged.starterPrompt
         },
-        () => composer.releaseGateHold(staged.gateId)
+        () => composer.releaseGateHold(staged.gateId),
+        staged.target
       )
     } finally {
       settleSubmissionOutcome(outcome, staged)

@@ -104,7 +104,7 @@ describe('composer shared video thumbnail lifetime', () => {
       prompt: store.prompt,
       attachments: [...store.attachments],
       nodes: [],
-      targetPath: null,
+      targetInstanceId: null,
       promptOrigin: store.promptOrigin,
       starterPrompt: store.starterPrompt
     }

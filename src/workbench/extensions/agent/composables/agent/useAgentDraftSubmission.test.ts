@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick, ref, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 
@@ -29,7 +29,8 @@ type Send = (
   nodes: SelectedNode[],
   references: WorkflowReference[],
   meta: SubmissionMeta,
-  releaseGate: () => void
+  releaseGate: () => void,
+  target: ComfyWorkflow
 ) => Promise<DraftSendOutcome>
 
 const scopes: EffectScope[] = []
@@ -57,15 +58,23 @@ function setup() {
       ]
     })
     const target = shallowRef<ComfyWorkflow | null>(
-      createMockLoadedWorkflow({ path: 'workflows/target.json' })
+      createMockLoadedWorkflow({
+        path: 'workflows/target.json',
+        instanceId: 'inst-target'
+      })
     )
     const nodeWorkflow = shallowRef(target.value)
     const editableWorkflowId = ref<string | undefined>('wf-target')
     const canSubmit = ref(true)
-    watch(target, (workflow) => composer.setNodeScope(workflow?.path ?? null), {
-      immediate: true,
-      flush: 'sync'
-    })
+    watch(
+      target,
+      (workflow) =>
+        composer.setNodeScope(workflow?.instanceId ?? workflow?.path ?? null),
+      {
+        immediate: true,
+        flush: 'sync'
+      }
+    )
     const selection = useCanvasSelection({
       staged: computed({ get: () => composer.nodes, set: composer.setNodes }),
       selection: [],
@@ -196,6 +205,7 @@ describe('Agent draft submission', () => {
       conversation,
       selection,
       original,
+      target,
       submit,
       send,
       pending
@@ -221,7 +231,8 @@ describe('Agent draft submission', () => {
         inputMethod: 'typed',
         starterPrompt: null
       },
-      expect.any(Function)
+      expect.any(Function),
+      target.value
     )
     composer.setText('Next prompt')
     conversation.takePendingSend(send.mock.calls[0][4].clientMessageId)
@@ -466,11 +477,8 @@ describe('Agent draft submission', () => {
     const first = submit()
     remount()
     const firstCancelled = composer.cancelGateHold()
-    if (firstCancelled !== null)
-      withdrawSubmission(
-        firstCancelled.clientMessageId,
-        firstCancelled.snapshot
-      )
+    assert.exists(firstCancelled)
+    withdrawSubmission(firstCancelled.clientMessageId, firstCancelled.snapshot)
     composer.setText('New chat draft')
     let resolveNext: (sent: DraftSendOutcome) => void = () => {}
     const next = new Promise<DraftSendOutcome>((resolve) => {
@@ -529,10 +537,18 @@ describe('Agent draft submission', () => {
   })
 
   it('does not submit or recover nodes associated with a different workflow', async () => {
-    const { composer, selection, original, nodeWorkflow, submit, send } =
-      setup()
+    const {
+      composer,
+      selection,
+      original,
+      target,
+      nodeWorkflow,
+      submit,
+      send
+    } = setup()
     nodeWorkflow.value = createMockLoadedWorkflow({
-      path: 'workflows/other.json'
+      path: 'workflows/other.json',
+      instanceId: 'inst-other'
     })
     send.mockResolvedValue('withdrawn')
     await submit()
@@ -547,7 +563,8 @@ describe('Agent draft submission', () => {
         inputMethod: 'typed',
         starterPrompt: null
       },
-      expect.any(Function)
+      expect.any(Function),
+      target.value
     )
     expect(composer.draft).toBe(original.draft)
     expect(selection.staged.value).toEqual([])
@@ -643,5 +660,85 @@ describe('Agent draft submission', () => {
     expect(send.mock.calls[1][4].clientMessageId).not.toBe(
       send.mock.calls[0][4].clientMessageId
     )
+  })
+
+  it('restores node references only to the workflow instance that supplied them', async () => {
+    const { composer, selection, target, nodeWorkflow, submit, pending } =
+      setup()
+    const firstInstance = createMockLoadedWorkflow({
+      path: 'workflows/target.json',
+      instanceId: 'inst-1'
+    })
+    target.value = firstInstance
+    nodeWorkflow.value = firstInstance
+    composer.replaceDraft({
+      text: '  ',
+      attachments: [],
+      workflowReferences: []
+    })
+    composer.applyEditorPrompt({
+      text: '@KSampler ',
+      references: [
+        {
+          kind: 'node',
+          node: { id: '12', title: 'KSampler' },
+          scope: 'inst-1',
+          textOffset: 0
+        }
+      ]
+    })
+    selection.replace([{ id: '12', title: 'KSampler' }])
+
+    const sending = submit()
+    target.value = createMockLoadedWorkflow({
+      path: 'workflows/target.json',
+      instanceId: 'inst-2'
+    })
+    pending.resolve('withdrawn')
+    await sending
+
+    expect(composer.nodes).toEqual([])
+    expect(selection.staged.value).toEqual([])
+  })
+
+  it('retains node references on withdrawal when the same workflow instance is renamed', async () => {
+    const { composer, selection, target, nodeWorkflow, submit, pending } =
+      setup()
+    const instance = createMockLoadedWorkflow({
+      path: 'workflows/target.json',
+      instanceId: 'inst-1'
+    })
+    target.value = instance
+    nodeWorkflow.value = instance
+    composer.replaceDraft({
+      text: '  ',
+      attachments: [],
+      workflowReferences: []
+    })
+    selection.replace([{ id: '12', title: 'KSampler' }])
+
+    const sending = submit()
+    target.value = createMockLoadedWorkflow({
+      path: 'workflows/renamed.json',
+      instanceId: 'inst-1'
+    })
+    pending.resolve('withdrawn')
+    await sending
+
+    expect(selection.staged.value).toEqual([{ id: '12', title: 'KSampler' }])
+  })
+
+  it('restores promptOrigin and starterPrompt chip on gate withdrawal', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue('withdrawn')
+    composer.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-2' })
+
+    await submit()
+
+    expect(composer.promptOrigin).toBe('suggestion')
+    expect(composer.starterPrompt).toEqual({
+      id: 'slot_3',
+      clickId: 'click-2'
+    })
   })
 })

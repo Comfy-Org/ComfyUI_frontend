@@ -80,7 +80,7 @@ export interface GateHoldSnapshot {
   prompt: ComposerPrompt
   attachments: ComposerAttachment[]
   nodes: SelectedNode[]
-  targetPath: string | null
+  targetInstanceId: string | null
   promptOrigin: AgentInputMethod
   starterPrompt: AgentStarterPromptSource | null
 }
@@ -680,7 +680,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       prompt: prompt.value,
       attachments: [...attachments.value],
       nodes: [...nodes.value],
-      targetPath: null,
+      targetInstanceId: null,
       promptOrigin: promptOrigin.value,
       starterPrompt: starterPrompt.value
     }

@@ -34,6 +34,7 @@ const {
   workflowReferences = [],
   skillReference,
   pending,
+  retryDisabled = false,
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editable = false
 } = defineProps<{
@@ -43,6 +44,7 @@ const {
   workflowReferences?: WorkflowReference[]
   skillReference?: SkillReferenceData
   pending?: PendingSendEntryState
+  retryDisabled?: boolean
   paywallPresentation?: AgentPaywallPresentation
   editable?: boolean
 }>()
@@ -163,6 +165,7 @@ function forwardOpenReference(workflowId: string, workflowName: string): void {
       :pending="failedPending.pending"
       :failure="failedPending.failure"
       :just-failed="justFailed"
+      :retry-disabled="retryDisabled"
       :paywall-presentation="paywallPresentation"
       @retry-pending="emit('retryPending', $event)"
       @delete-pending="emit('deletePending', $event)"

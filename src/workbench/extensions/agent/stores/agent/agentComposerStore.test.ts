@@ -576,24 +576,6 @@ describe('composer prompt origin (PM-1474 F11)', () => {
     })
   })
 
-  it('restores the chip with the origin when a withdrawn gate hold returns the draft', () => {
-    const store = useAgentComposerStore()
-    store.setText('Find the best workflow for skin upscaling')
-    store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })
-    store.startGateHold('cm-1')
-    store.cancelGateHold()
-    store.restoreSubmissionMeta('suggestion', {
-      id: 'slot_3',
-      clickId: 'click-1'
-    })
-
-    expect(store.promptOrigin).toBe('suggestion')
-    expect(store.starterPrompt).toEqual({
-      id: 'slot_3',
-      clickId: 'click-1'
-    })
-  })
-
   it('drops the chip when the prompt is reopened through the edit action instead', () => {
     const store = useAgentComposerStore()
     store.markSuggestedPrompt({ id: 'slot_3', clickId: 'click-1' })

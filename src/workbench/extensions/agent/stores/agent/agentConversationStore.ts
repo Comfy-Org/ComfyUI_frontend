@@ -1035,6 +1035,11 @@ export const useAgentConversationStore = defineStore(
       return false
     }
 
+    function hasLiveTurnForOrigin(origin: PendingSendOrigin): boolean {
+      if (origin.kind !== 'thread') return false
+      return liveTurns().some((turn) => turn.threadId === origin.threadId)
+    }
+
     function startPendingSend(input: {
       clientMessageId: string
       origin?: PendingSendOrigin
@@ -2272,6 +2277,7 @@ export const useAgentConversationStore = defineStore(
       isOriginOnScreen,
       hasSendingPendingSend,
       hasSendingForOrigin,
+      hasLiveTurnForOrigin,
       startPendingSend,
       failPendingSend,
       retryPendingSend,

@@ -518,37 +518,6 @@ describe('UserMessage', () => {
     }
   )
 
-  it('disables Retry until retry_after elapses and keeps Delete enabled (O0-04)', async () => {
-    vi.useFakeTimers()
-    try {
-      renderMessage({
-        text: 'rate limited',
-        pending: {
-          clientMessageId: 'cm-ra',
-          status: 'failed',
-          failure: {
-            kind: 'retry_after',
-            message: 'Billing status is temporarily unavailable; please retry.',
-            retryAfterSeconds: 5,
-            retryAtMs: Date.now() + 5000
-          }
-        }
-      })
-
-      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
-        'You can try again in 5s.'
-      )
-      const retry = screen.getByRole('button', { name: t('g.retry') })
-      expect(retry).toBeDisabled()
-      expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
-
-      await vi.advanceTimersByTimeAsync(5000)
-      expect(retry).toBeEnabled()
-    } finally {
-      vi.useRealTimers()
-    }
-  })
-
   it.for(['disowned', 'target_unavailable'] as const)(
     'offers New chat and Delete instead of Retry for %s (O0-04)',
     async (kind) => {

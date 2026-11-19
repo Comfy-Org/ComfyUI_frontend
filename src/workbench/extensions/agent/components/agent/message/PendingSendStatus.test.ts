@@ -19,36 +19,7 @@ function renderStatus(props: ComponentProps<typeof PendingSendStatus>) {
 }
 
 describe('PendingSendStatus', () => {
-  it('switches from status to alert when a pending send transitions from sending to failed', async () => {
-    const view = renderStatus({
-      pending: { clientMessageId: 'cm-1', status: 'sending' },
-      failure: { kind: 'network', message: t('agent.sendFailedNetwork') }
-    })
-
-    expect(screen.getByTestId('pending-send-error')).toHaveAttribute(
-      'role',
-      'status'
-    )
-
-    await view.rerender({
-      pending: {
-        clientMessageId: 'cm-1',
-        status: 'failed',
-        failure: { kind: 'network', message: t('agent.sendFailedNetwork') }
-      },
-      failure: { kind: 'network', message: t('agent.sendFailedNetwork') }
-    })
-
-    expect(screen.getByTestId('pending-send-error')).toHaveAttribute(
-      'role',
-      'alert'
-    )
-    expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
-      t('agent.sendFailedNetwork')
-    )
-  })
-
-  it('disables Retry until retry_after elapses while keeping Delete enabled', async () => {
+  it('disables Retry until retry_after elapses while keeping Delete enabled, then clears the wait instruction', async () => {
     vi.useFakeTimers()
     try {
       renderStatus({
@@ -62,17 +33,40 @@ describe('PendingSendStatus', () => {
       })
 
       expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
-        'You can try again in 5s.'
+        'Billing status is temporarily unavailable; please retry. You can try again in 5s.'
       )
       const retry = screen.getByRole('button', { name: t('g.retry') })
       expect(retry).toBeDisabled()
       expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
 
-      await vi.advanceTimersByTimeAsync(5000)
+      await vi.advanceTimersByTimeAsync(4999)
+      expect(retry).toBeDisabled()
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        'You can try again in 5s.'
+      )
+
+      await vi.advanceTimersByTimeAsync(1)
       expect(retry).toBeEnabled()
+      expect(screen.getByTestId('pending-send-error')).toHaveTextContent(
+        'Billing status is temporarily unavailable; please retry.'
+      )
+      expect(screen.getByTestId('pending-send-error')).not.toHaveTextContent(
+        'You can try again in 5s.'
+      )
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('disables Retry when retryDisabled is true', () => {
+    renderStatus({
+      pending: { clientMessageId: 'cm-busy', status: 'failed' },
+      failure: { kind: 'network', message: t('agent.sendFailedNetwork') },
+      retryDisabled: true
+    })
+
+    expect(screen.getByRole('button', { name: t('g.retry') })).toBeDisabled()
+    expect(screen.getByRole('button', { name: t('g.delete') })).toBeEnabled()
   })
 
   it.for(['disowned', 'target_unavailable'] as const)(

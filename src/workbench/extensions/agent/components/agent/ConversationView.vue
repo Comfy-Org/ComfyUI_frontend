@@ -30,12 +30,14 @@ import UserMessage from './message/UserMessage.vue'
 const {
   entries,
   conversationId,
+  retryBlocked = false,
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
   entries: ConversationEntry[]
   conversationId?: string | null
+  retryBlocked?: boolean
   paywallPresentation?: AgentPaywallPresentation
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
@@ -56,6 +58,17 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const skills = useSkillPacksStore()
 const conversation = useAgentConversationStore()
+
+function isRetryDisabled(entry: ConversationEntry): boolean {
+  if (retryBlocked) return true
+  if (entry.role !== 'user' || entry.pending?.status !== 'failed') return false
+  const pending = conversation.getPendingSend(entry.pending.clientMessageId)
+  if (!pending) return false
+  return (
+    conversation.hasSendingForOrigin(pending.origin) ||
+    conversation.hasLiveTurnForOrigin(pending.origin)
+  )
+}
 const hasSkills = computed(() =>
   entries.some((entry) => entry.role === 'user' && entry.skillReference)
 )
@@ -243,6 +256,7 @@ watch(
               :workflow-references="entry.workflowReferences"
               :skill-reference="entry.skillReference"
               :pending="entry.pending"
+              :retry-disabled="isRetryDisabled(entry)"
               :paywall-presentation
               :editable="entry.id === editableTurnId"
               @edit="emit('editPrompt', $event)"

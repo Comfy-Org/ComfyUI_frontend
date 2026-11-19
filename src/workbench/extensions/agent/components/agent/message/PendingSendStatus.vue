@@ -21,11 +21,13 @@ const {
   pending,
   failure,
   justFailed = false,
+  retryDisabled = false,
   paywallPresentation = DEFAULT_AGENT_PAYWALL_PRESENTATION
 } = defineProps<{
   pending: PendingSendEntryState
   failure: PendingSendFailure
   justFailed?: boolean
+  retryDisabled?: boolean
   paywallPresentation?: AgentPaywallPresentation
 }>()
 
@@ -38,18 +40,7 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-const transitionedToFailed = ref(false)
-watch(
-  () => pending.status,
-  (current, previous) => {
-    if (previous === 'sending' && current === 'failed')
-      transitionedToFailed.value = true
-    else if (current !== 'failed') transitionedToFailed.value = false
-  }
-)
-const alertRole = computed(() =>
-  justFailed || transitionedToFailed.value ? 'alert' : 'status'
-)
+const alertRole = computed(() => (justFailed ? 'alert' : 'status'))
 
 const retryLocked = ref(false)
 let retryTimer: ReturnType<typeof setTimeout> | undefined
@@ -100,7 +91,11 @@ const showPaywallCard = computed(
 
 const failedStatusText = computed(() => {
   if (failure.kind === 'paywall') return t('agent.sendFailed')
-  if (failure.kind === 'retry_after' && failure.retryAfterSeconds !== undefined)
+  if (
+    failure.kind === 'retry_after' &&
+    retryLocked.value &&
+    failure.retryAfterSeconds !== undefined
+  )
     return `${failure.message} ${t('agent.retryAfterSeconds', { seconds: failure.retryAfterSeconds })}`
   return failure.message
 })
@@ -131,7 +126,7 @@ const failedStatusText = computed(() => {
         type="button"
         variant="secondary"
         size="sm"
-        :disabled="retryLocked"
+        :disabled="retryLocked || retryDisabled"
         @click="emit('retryPending', pending.clientMessageId)"
       >
         {{ t('g.retry') }}

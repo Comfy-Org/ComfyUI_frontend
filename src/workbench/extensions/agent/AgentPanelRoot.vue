@@ -1237,8 +1237,13 @@ const {
     activeTab: enqueueActiveTab,
     draft: targetWorkflowDraft,
     turnTab: (origin, workflowId) => turnTabForOrigin(origin, workflowId),
-    canvasSelection: () =>
-      canReferenceNodes.value ? selectedNodes.value.map((node) => node.id) : []
+    canvasSelection: (origin) =>
+      canReferenceNodes.value &&
+      (origin === undefined ||
+        (origin !== null &&
+          workflowStore.activeWorkflow?.path === origin.tabPath))
+        ? selectedNodes.value.map((node) => node.id)
+        : []
   }
 })
 
@@ -1889,7 +1894,11 @@ onBeforeUnmount(() => {
         })
         const cancelled = composerStore.cancelGateHold()
         if (cancelled !== null)
-          withdrawSubmission(cancelled.clientMessageId, cancelled.snapshot)
+          withdrawSubmission(
+            cancelled.clientMessageId,
+            cancelled.snapshot,
+            cancelled.revision
+          )
       }
     },
     detachDocOpMinter: () => {
@@ -2120,7 +2129,11 @@ async function onSelectHistory(
   promptQueueStore.clear()
   const cancelled = composerStore.cancelGateHold()
   if (cancelled !== null)
-    withdrawSubmission(cancelled.clientMessageId, cancelled.snapshot)
+    withdrawSubmission(
+      cancelled.clientMessageId,
+      cancelled.snapshot,
+      cancelled.revision
+    )
   errorAttachRun++
   composerStore.clearErrorContext()
   cancelWorkflowSelection()
@@ -2377,14 +2390,24 @@ async function sendTurn(
   references: WorkflowReference[],
   meta: SubmissionMeta,
   releaseGate?: () => void,
-  isCurrent: () => boolean = () => true
+  isCurrent: () => boolean = () => true,
+  stagedTarget?: ComfyWorkflow
 ): Promise<DraftSendOutcome> {
   const submissionId = composerStore.gateHold?.id
   if (!(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent)))
     return 'withdrawn'
-  const selectionWorkflow = selectedTarget.value
+  const selectionWorkflow =
+    typeof nodes !== 'function' && nodes.length > 0 && stagedTarget
+      ? stagedTarget
+      : selectedTarget.value
   const sentNodes =
     typeof nodes === 'function' ? nodes(selectionWorkflow) : nodes
+  if (
+    stagedTarget !== undefined &&
+    sentNodes.length > 0 &&
+    selectedTarget.value?.instanceId !== stagedTarget.instanceId
+  )
+    return 'withdrawn'
   armPendingSend(attachments, sentNodes, meta)
   releaseGate?.()
   const sentUsageScope = proactive.scope.value
@@ -2423,8 +2446,25 @@ const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: canvasStore.stopNodePicking
   },
-  send: (text, attachments, nodes, references, meta, releaseGate) =>
-    sendTurn(text, attachments, nodes, references, meta, releaseGate)
+  send: (
+    text,
+    attachments,
+    nodes,
+    references,
+    meta,
+    releaseGate,
+    stagedTarget
+  ) =>
+    sendTurn(
+      text,
+      attachments,
+      nodes,
+      references,
+      meta,
+      releaseGate,
+      undefined,
+      stagedTarget
+    )
 })
 
 const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
@@ -2483,7 +2523,8 @@ function retryablePendingSend(clientMessageId: string) {
   if (!canRetryPendingFailure(pending.failure)) return null
   if (
     workflowSelecting.value ||
-    conversationStore.hasSendingForOrigin(pending.origin)
+    conversationStore.hasSendingForOrigin(pending.origin) ||
+    conversationStore.hasLiveTurnForOrigin(pending.origin)
   )
     return null
   return pending
@@ -3048,6 +3089,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         crdtStatus.terminal === 'retry_exhausted' ||
         crdtStatus.terminal === 'timeout'
       "
+      :retry-blocked="workflowSelecting"
       :free-use-placement="freeUsePlacement"
       @free-use-notice="onFreeUseNotice"
       @send="handleComposerSend"

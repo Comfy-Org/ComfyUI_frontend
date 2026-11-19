@@ -177,7 +177,7 @@ export interface AgentSessionDeps {
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
     turnTab?(origin?: TurnOrigin, workflowId?: string): TurnTab
     /** Node ids selected on the target canvas, outside node selection mode. */
-    canvasSelection?(): string[]
+    canvasSelection?(origin?: TurnOrigin): string[]
   }
 }
 
@@ -2009,7 +2009,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const generation = loadGeneration
     const skillScopeAtSend = skillPacks.scope
     const threadAtSend = origin.kind === 'thread' ? origin.threadId : 'new'
-    const canvasNodeIds = workflow?.canvasSelection?.()
+    const canvasNodeIds = workflow?.canvasSelection?.(resolved.turnOrigin)
     const boundAtSend = boundWorkflowId.value
     const threadSourceAtSend = consumeThreadSource(origin)
     let sentContext: WorkflowTurnContext | undefined

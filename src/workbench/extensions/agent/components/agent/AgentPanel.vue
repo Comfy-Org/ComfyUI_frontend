@@ -82,6 +82,7 @@ const {
   answeringAskIds = new Set<string>(),
   freeUsePlacement = 'control',
   syncRetryAvailable = false,
+  retryBlocked = false,
   greeting,
   blocked = false
 } = defineProps<{
@@ -128,6 +129,7 @@ const {
   answeringAskIds?: ReadonlySet<string>
   freeUsePlacement?: FreeUseVariant
   syncRetryAvailable?: boolean
+  retryBlocked?: boolean
   greeting?: AgentGreeting
   blocked?: boolean
 }>()
@@ -435,6 +437,7 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
           :conversation-id="sessionId"
           :editable-turn-id
           :answering-ask-ids
+          :retry-blocked
           :paywall-presentation
           @edit-prompt="composerRef?.replaceDraft($event)"
           @feedback="(id, vote) => emit('feedback', id, vote)"
