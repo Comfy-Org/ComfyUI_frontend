@@ -820,14 +820,17 @@ export const useAuthStore = defineStore('auth', () => {
       })
     } catch (error) {
       if (persistenceTransition) {
-        if (currentUser.value) {
-          abortWorkflowLogoutTransition(persistenceTransition)
-        }
+        const persistenceResumed = userId.value
+          ? abortWorkflowLogoutTransition(persistenceTransition)
+          : false
         reportError(error, {
           surface: 'workspace',
-          errorType: 'workflow_persistence_logout_aborted',
+          errorType: 'failure_logging_out_workflow_persistence',
           level: 'warning',
-          tags: { outcome: 'degraded' }
+          tags: {
+            outcome: 'degraded',
+            persistence_resumed: String(persistenceResumed)
+          }
         })
       }
       throw error

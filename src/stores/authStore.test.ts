@@ -590,23 +590,29 @@ describe('useAuthStore', () => {
       expect(isStorageAvailable()).toBe(true)
       expect(mockReportError).toHaveBeenCalledWith(mockError, {
         surface: 'workspace',
-        errorType: 'workflow_persistence_logout_aborted',
+        errorType: 'failure_logging_out_workflow_persistence',
         level: 'warning',
-        tags: { outcome: 'degraded' }
+        tags: { outcome: 'degraded', persistence_resumed: 'true' }
       })
     })
 
-    it('leaves workflow storage open after a non-Cloud logout', async () => {
-      mockDistributionTypes.isCloud = false
-      try {
-        vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+    it('keeps workflow writes fenced when logout fails after Firebase signed out', async () => {
+      const mockError = new Error('Network error')
+      vi.mocked(firebaseAuth.signOut).mockImplementation(async () => {
+        authStateCallback(null)
+        throw mockError
+      })
 
-        await store.logout()
+      await expect(store.logout()).rejects.toThrow('Network error')
 
-        expect(isStorageAvailable()).toBe(true)
-      } finally {
-        mockDistributionTypes.isCloud = true
-      }
+      expect(store.currentUser).toBeNull()
+      expect(isStorageAvailable()).toBe(false)
+      expect(mockReportError).toHaveBeenCalledWith(mockError, {
+        surface: 'workspace',
+        errorType: 'failure_logging_out_workflow_persistence',
+        level: 'warning',
+        tags: { outcome: 'degraded', persistence_resumed: 'false' }
+      })
     })
   })
 
@@ -1456,6 +1462,7 @@ describe('useAuthStore in local/desktop distribution', () => {
   } as Partial<User> as MockUser
 
   beforeEach(async () => {
+    resetStorageAvailable()
     mockDistributionTypes.isCloud = false
     mockDistributionTypes.isDesktop = false
     mockDistributionTypes.DISTRIBUTION = 'localhost'
@@ -1492,6 +1499,14 @@ describe('useAuthStore in local/desktop distribution', () => {
 
     expect(result.user).toEqual(mockUser)
     expect(store.loading).toBe(false)
+  })
+
+  it('leaves workflow storage open after logout', async () => {
+    vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
+
+    await store.logout()
+
+    expect(isStorageAvailable()).toBe(true)
   })
 
   it('signs in with Google through the same package identity path as cloud', async () => {

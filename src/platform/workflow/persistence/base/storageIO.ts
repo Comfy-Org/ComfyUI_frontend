@@ -15,6 +15,13 @@ import type {
 import { StorageKeys } from './storageKeys'
 
 type StorageAvailability = 'available' | 'unavailable'
+interface WorkflowLogoutStorageState {
+  status: 'transitioning'
+  reason: 'logout'
+  resumeAvailability: StorageAvailability
+  ownerId: symbol
+  supersededTransition?: WorkflowLogoutStorageState
+}
 type WorkflowStorageState =
   | { status: 'ready'; availability: StorageAvailability }
   | {
@@ -23,12 +30,7 @@ type WorkflowStorageState =
       resumeAvailability: StorageAvailability
       ownerId: symbol
     }
-  | {
-      status: 'transitioning'
-      reason: 'logout'
-      resumeAvailability: StorageAvailability
-      ownerId: symbol
-    }
+  | WorkflowLogoutStorageState
 
 let workflowStorageState: WorkflowStorageState = {
   status: 'ready',
@@ -51,32 +53,35 @@ export function registerWorkflowPersistence(
   return () => pendingWorkflowPersistence.delete(pending)
 }
 
-function flushPendingWorkflowPersistence(): void {
-  for (const { flush } of pendingWorkflowPersistence) {
+function runPendingWorkflowPersistence(
+  operation: keyof PendingWorkflowPersistence,
+  errorType: string
+): void {
+  for (const pending of pendingWorkflowPersistence) {
     try {
-      flush()
+      pending[operation]()
     } catch (error) {
       reportError(error, {
         surface: 'workspace',
-        errorType: 'workflow_persistence_flush_failed',
+        errorType,
         level: 'error'
       })
     }
   }
 }
 
+function flushPendingWorkflowPersistence(): void {
+  runPendingWorkflowPersistence(
+    'flush',
+    'failure_flushing_workflow_persistence'
+  )
+}
+
 function cancelPendingWorkflowPersistence(): void {
-  for (const { cancel } of pendingWorkflowPersistence) {
-    try {
-      cancel()
-    } catch (error) {
-      reportError(error, {
-        surface: 'workspace',
-        errorType: 'workflow_persistence_cancel_failed',
-        level: 'error'
-      })
-    }
-  }
+  runPendingWorkflowPersistence(
+    'cancel',
+    'failure_cancelling_workflow_persistence'
+  )
 }
 
 export function isStorageAvailable(): boolean {
@@ -651,6 +656,11 @@ export function prepareWorkflowWorkspaceTransition(): () => void {
 
 export function prepareWorkflowLogoutTransition(): WorkflowLogoutTransition {
   const ownerId = Symbol('workflow-logout-transition')
+  const supersededTransition =
+    workflowStorageState.status === 'transitioning' &&
+    workflowStorageState.reason === 'logout'
+      ? workflowStorageState
+      : undefined
   workflowStorageState = {
     status: 'transitioning',
     reason: 'logout',
@@ -658,7 +668,8 @@ export function prepareWorkflowLogoutTransition(): WorkflowLogoutTransition {
       workflowStorageState.status === 'transitioning'
         ? workflowStorageState.resumeAvailability
         : workflowStorageState.availability,
-    ownerId
+    ownerId,
+    supersededTransition
   }
   cancelPendingWorkflowPersistence()
   return ownerId
@@ -693,19 +704,26 @@ export function completeWorkflowLogoutTransition(
 export function abortWorkflowLogoutTransition(
   transition: WorkflowLogoutTransition
 ): boolean {
-  if (!completeWorkflowLogoutTransition(transition)) return false
+  if (
+    workflowStorageState.status !== 'transitioning' ||
+    workflowStorageState.reason !== 'logout' ||
+    workflowStorageState.ownerId !== transition
+  )
+    return false
 
-  for (const { resumeAfterAbort } of pendingWorkflowPersistence) {
-    try {
-      resumeAfterAbort()
-    } catch (error) {
-      reportError(error, {
-        surface: 'workspace',
-        errorType: 'workflow_persistence_resume_failed',
-        level: 'error'
-      })
-    }
+  if (workflowStorageState.supersededTransition) {
+    workflowStorageState = workflowStorageState.supersededTransition
+    return false
   }
+
+  workflowStorageState = {
+    status: 'ready',
+    availability: workflowStorageState.resumeAvailability
+  }
+  runPendingWorkflowPersistence(
+    'resumeAfterAbort',
+    'failure_resuming_workflow_persistence'
+  )
   return true
 }
 

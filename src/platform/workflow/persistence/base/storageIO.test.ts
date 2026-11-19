@@ -608,7 +608,7 @@ describe('storageIO', () => {
       expect(localStorage.getItem('workflow')).toBeNull()
       expect(reportError).toHaveBeenCalledExactlyOnceWith(flushError, {
         surface: 'workspace',
-        errorType: 'workflow_persistence_flush_failed',
+        errorType: 'failure_flushing_workflow_persistence',
         level: 'error'
       })
       unregisterFailedFlush()
@@ -689,24 +689,21 @@ describe('storageIO', () => {
     it('fences logout writes before cancelling pending persistence', async () => {
       const isolatedStorageIO = await import('./storageIO')
       const writesDuringCancel: boolean[] = []
-      const pending = {
-        flush: vi.fn(),
-        cancel: vi.fn(() =>
+      const unregister = isolatedStorageIO.registerWorkflowPersistence({
+        flush: () => {},
+        cancel: () =>
           writesDuringCancel.push(
             isolatedStorageIO.writePayload('ws-1', 'stale', {
               data: '{}',
               updatedAt: 1
             })
-          )
-        ),
-        resumeAfterAbort: vi.fn()
-      }
-      const unregister = isolatedStorageIO.registerWorkflowPersistence(pending)
+          ),
+        resumeAfterAbort: () => {}
+      })
 
       isolatedStorageIO.prepareWorkflowLogoutTransition()
 
       expect(writesDuringCancel).toEqual([false])
-      expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       unregister()
     })
 
@@ -734,7 +731,7 @@ describe('storageIO', () => {
 
       expect(reportError).toHaveBeenCalledExactlyOnceWith(error, {
         surface: 'workspace',
-        errorType: 'workflow_persistence_cancel_failed',
+        errorType: 'failure_cancelling_workflow_persistence',
         level: 'error'
       })
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
@@ -743,7 +740,7 @@ describe('storageIO', () => {
       unregisterSuccessful()
     })
 
-    it('ignores stale logout completion and resumes aborted work', async () => {
+    it('hands an aborted replacement back to the transition it superseded', async () => {
       const isolatedStorageIO = await import('./storageIO')
       const resumeAfterAbort = vi.fn()
       const unregister = isolatedStorageIO.registerWorkflowPersistence({
@@ -758,15 +755,18 @@ describe('storageIO', () => {
       expect(
         isolatedStorageIO.completeWorkflowLogoutTransition(staleTransition)
       ).toBe(false)
-      expect(
-        isolatedStorageIO.abortWorkflowLogoutTransition(staleTransition)
-      ).toBe(false)
+      expect(isolatedStorageIO.abortWorkflowLogoutTransition(transition)).toBe(
+        false
+      )
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
       expect(resumeAfterAbort).not.toHaveBeenCalled()
-
-      expect(isolatedStorageIO.abortWorkflowLogoutTransition(transition)).toBe(
-        true
+      expect(isolatedStorageIO.currentWorkflowLogoutTransition()).toBe(
+        staleTransition
       )
+
+      expect(
+        isolatedStorageIO.abortWorkflowLogoutTransition(staleTransition)
+      ).toBe(true)
       expect(isolatedStorageIO.isStorageAvailable()).toBe(true)
       expect(resumeAfterAbort).toHaveBeenCalledOnce()
       unregister()

@@ -41,7 +41,6 @@ import {
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistence
 } from '@/platform/workflow/persistence/base/storageIO'
-import type { WorkflowLogoutTransition } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useWorkflowTabState } from './useWorkflowTabState'
 import { useSharedWorkflowUrlLoader } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -163,23 +162,11 @@ export function useWorkflowPersistenceV2() {
       teamWorkspaceStore.activeWorkspaceId !== null) ||
     teamWorkspaceStore.initState === 'error'
 
-  function beginLogoutTransition(): WorkflowLogoutTransition {
-    return prepareWorkflowLogoutTransition()
-  }
-
-  function completeLogoutTransition(
-    transition = currentWorkflowLogoutTransition()
-  ): void {
-    if (!transition) return
-    completeWorkflowLogoutTransition(transition)
-  }
-
-  function resumePersistenceWhenWorkspaceIsReady(
-    transition = currentWorkflowLogoutTransition()
-  ): void {
+  function resumePersistenceWhenWorkspaceIsReady(): void {
+    const transition = currentWorkflowLogoutTransition()
     if (!transition) return
     if (isWorkspaceInitConcluded()) {
-      completeLogoutTransition(transition)
+      completeWorkflowLogoutTransition(transition)
       return
     }
 
@@ -187,7 +174,7 @@ export function useWorkflowPersistenceV2() {
       isWorkspaceInitConcluded,
       () => {
         stopWorkspaceReadinessWatcher = undefined
-        completeLogoutTransition(transition)
+        completeWorkflowLogoutTransition(transition)
       },
       { once: true }
     )
@@ -212,7 +199,7 @@ export function useWorkflowPersistenceV2() {
     resolvedAuthSubject = null
     draftStore.setAuthSubject(null)
     stopPendingWorkspaceReadinessWatcher()
-    beginLogoutTransition()
+    prepareWorkflowLogoutTransition()
     clearAllWorkspaceStorage()
   })
   onUserResolved((user) => {
@@ -229,7 +216,7 @@ export function useWorkflowPersistenceV2() {
 
     const transitionVersion = ++authTransitionVersion
 
-    const transition = beginLogoutTransition()
+    const transition = prepareWorkflowLogoutTransition()
     clearWorkflowRestoreState()
     authTransition = authTransition
       .then(async () => {
@@ -241,14 +228,14 @@ export function useWorkflowPersistenceV2() {
           draftStore.setAuthSubject(user.id)
           await waitForWorkspaceInitialization()
           if (transitionVersion !== authTransitionVersion) return
-          completeLogoutTransition(transition)
+          completeWorkflowLogoutTransition(transition)
           await draftStore.loadPersistedWorkflow({
             fallbackToLatestDraft: true
           })
         } finally {
           if (transitionVersion === authTransitionVersion) {
             draftStore.setAuthSubject(user.id)
-            completeLogoutTransition(transition)
+            completeWorkflowLogoutTransition(transition)
           }
         }
       })

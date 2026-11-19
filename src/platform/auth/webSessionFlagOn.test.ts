@@ -97,10 +97,6 @@ import {
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
 
-vi.mock(import('@/platform/workflow/persistence/base/storageIO'), {
-  spy: true
-})
-
 type IdentityObserver = (user: User | null) => void
 
 const identity = vi.hoisted(() => {
@@ -532,6 +528,23 @@ describe('cloud app on the shared web session', () => {
       properties: { origin: location.origin }
     })
     expect(isStorageAvailable()).toBe(false)
+  })
+
+  it('leaves workflow storage open when a signed-in restore is refused', async () => {
+    const server = installServer({ userId: 'user-a' })
+    await refreshRemoteConfig({ useAuth: false })
+    identity.signIn(USER_A)
+    await useSessionCookie().ensureSessionCookie()
+
+    server.session = 'sso_required'
+    await vi.advanceTimersByTimeAsync(TEN_MINUTES_MS)
+
+    expect(useCloudWebSessionStore().state).toMatchObject({
+      phase: 'signed_out',
+      outcome: 'restore_failed'
+    })
+    expect(firebaseSignOut).not.toHaveBeenCalled()
+    expect(isStorageAvailable()).toBe(true)
   })
 
   it.for([
