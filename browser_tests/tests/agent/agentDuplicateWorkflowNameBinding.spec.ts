@@ -185,6 +185,9 @@ test(
     ])
 
     await expect(topbar.getActiveTab()).toContainText('Portrait')
+    await panel
+      .getByRole('textbox', { includeHidden: true })
+      .fill('Check workflow target')
     await expect(
       panel.getByRole('button', { name: enMessages.agent.send })
     ).toBeDisabled()

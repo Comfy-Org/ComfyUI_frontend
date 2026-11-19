@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
@@ -1617,92 +1617,113 @@ describe('useAttachment', () => {
   })
 
   describe('per-draft upload concurrency (T1-15)', () => {
-    it('UQ-01 UQ-02: starts a new upload in another draft at once while the left draft holds three in flight', async () => {
-      let currentDraft = 'thread:a'
+    let activeUploader:
+      | {
+          settleAll: () => Promise<void>
+        }
+      | undefined
+
+    function createDeferredUploader(
+      refFor: (name: string) => string = (name) => name
+    ) {
       const started: string[] = []
-      const pendingUploads = new Map<string, () => void>()
+      const pending = new Map<string, () => void>()
+      const batches: Promise<unknown>[] = []
       const upload = vi.fn(
         (file: File) =>
           new Promise<{ ref: string }>((resolve) => {
             started.push(file.name)
-            pendingUploads.set(file.name, () => resolve({ ref: file.name }))
+            pending.set(file.name, () => {
+              pending.delete(file.name)
+              resolve({ ref: refFor(file.name) })
+            })
           })
       )
+      const uploader = {
+        upload,
+        started,
+        pendingCount: () => pending.size,
+        track: <T>(batch: Promise<T>): Promise<T> => {
+          batches.push(batch)
+          return batch
+        },
+        finish: (name: string) => {
+          pending.get(name)?.()
+        },
+        settleAll: async () => {
+          for (const resolve of pending.values()) resolve()
+          await Promise.allSettled(batches)
+        }
+      }
+      activeUploader = uploader
+      return uploader
+    }
+
+    afterEach(async () => {
+      await activeUploader?.settleAll()
+      activeUploader = undefined
+    })
+
+    it('UQ-01 UQ-02: starts a new upload in another draft at once while the left draft holds three in flight', async () => {
+      let currentDraft = 'thread:a'
+      const uploader = createDeferredUploader()
       const registry = chipRegistry()
       const { addFiles } = useAttachment({
-        upload,
+        upload: uploader.upload,
         draftScope: () => currentDraft,
         ...registry
       })
 
-      const draftABatch = addFiles([
-        fileOfSize('a1.png', 1),
-        fileOfSize('a2.png', 1),
-        fileOfSize('a3.png', 1)
-      ])
+      void uploader.track(
+        addFiles([
+          fileOfSize('a1.png', 1),
+          fileOfSize('a2.png', 1),
+          fileOfSize('a3.png', 1)
+        ])
+      )
       await vi.waitFor(() =>
-        expect(started).toEqual(['a1.png', 'a2.png', 'a3.png'])
+        expect(uploader.started).toEqual(['a1.png', 'a2.png', 'a3.png'])
       )
 
       currentDraft = 'blank:tab-b'
-      const draftBBatch = addFiles([fileOfSize('b1.png', 1)])
+      void uploader.track(addFiles([fileOfSize('b1.png', 1)]))
       await Promise.resolve()
 
-      expect(started).toEqual(['a1.png', 'a2.png', 'a3.png', 'b1.png'])
-
-      for (const finish of pendingUploads.values()) finish()
-      await Promise.all([draftABatch, draftBBatch])
+      expect(uploader.started).toEqual(['a1.png', 'a2.png', 'a3.png', 'b1.png'])
     })
 
     it('UQ-03: caps concurrent uploads within one draft at three', async () => {
-      const started: string[] = []
-      const pendingUploads = new Map<string, () => void>()
-      const upload = vi.fn(
-        (file: File) =>
-          new Promise<{ ref: string }>((resolve) => {
-            started.push(file.name)
-            pendingUploads.set(file.name, () => resolve({ ref: file.name }))
-          })
-      )
+      const uploader = createDeferredUploader()
       const registry = chipRegistry()
       const { addFiles } = useAttachment({
-        upload,
+        upload: uploader.upload,
         draftScope: () => 'thread:a',
         ...registry
       })
 
-      const batch = addFiles([
-        fileOfSize('a1.png', 1),
-        fileOfSize('a2.png', 1),
-        fileOfSize('a3.png', 1),
-        fileOfSize('a4.png', 1)
-      ])
-      await vi.waitFor(() => expect(started).toHaveLength(3))
+      void uploader.track(
+        addFiles([
+          fileOfSize('a1.png', 1),
+          fileOfSize('a2.png', 1),
+          fileOfSize('a3.png', 1),
+          fileOfSize('a4.png', 1)
+        ])
+      )
+      await vi.waitFor(() => expect(uploader.started).toHaveLength(3))
       await Promise.resolve()
-      expect(started).toEqual(['a1.png', 'a2.png', 'a3.png'])
+      expect(uploader.started).toEqual(['a1.png', 'a2.png', 'a3.png'])
 
-      pendingUploads.get('a1.png')?.()
-      await vi.waitFor(() => expect(started).toHaveLength(4))
-      expect(started).toEqual(['a1.png', 'a2.png', 'a3.png', 'a4.png'])
-
-      for (const finish of pendingUploads.values()) finish()
-      await batch
+      uploader.finish('a1.png')
+      await vi.waitFor(() => expect(uploader.started).toHaveLength(4))
+      expect(uploader.started).toEqual(['a1.png', 'a2.png', 'a3.png', 'a4.png'])
     })
 
     it('UQ-04: delivers a kept draft upload completion only to its own draft', async () => {
       const store = useAgentComposerStore()
       let currentDraft = 'thread:a'
-      const pendingUploads = new Map<string, () => void>()
-      const upload = vi.fn(
-        (file: File) =>
-          new Promise<{ ref: string }>((resolve) => {
-            pendingUploads.set(file.name, () =>
-              resolve({ ref: `uploaded-${file.name}` })
-            )
-          })
-      )
+      const uploader = createDeferredUploader((name) => `uploaded-${name}`)
       const { addFiles } = useAttachment({
-        upload,
+        upload: uploader.upload,
         draftScope: () => currentDraft,
         staged: () => store.attachments,
         stage: store.addAttachment,
@@ -1710,26 +1731,28 @@ describe('useAttachment', () => {
         remove: store.removeAttachment
       })
       store.activateDraft('thread:a')
-      const batchA = addFiles([
-        fileOfSize('a1.png', 1),
-        fileOfSize('a2.png', 1),
-        fileOfSize('a3.png', 1)
-      ])
-      await vi.waitFor(() => expect(pendingUploads.size).toBe(3))
+      const batchA = uploader.track(
+        addFiles([
+          fileOfSize('a1.png', 1),
+          fileOfSize('a2.png', 1),
+          fileOfSize('a3.png', 1)
+        ])
+      )
+      await vi.waitFor(() => expect(uploader.pendingCount()).toBe(3))
 
       currentDraft = 'thread:b'
       store.activateDraft('thread:b')
-      const batchB = addFiles([fileOfSize('b1.png', 1)])
-      await vi.waitFor(() => expect(pendingUploads.size).toBe(4))
+      const batchB = uploader.track(addFiles([fileOfSize('b1.png', 1)]))
+      await vi.waitFor(() => expect(uploader.pendingCount()).toBe(4))
 
-      pendingUploads.get('a1.png')?.()
-      pendingUploads.get('a2.png')?.()
-      pendingUploads.get('a3.png')?.()
+      uploader.finish('a1.png')
+      uploader.finish('a2.png')
+      uploader.finish('a3.png')
       await batchA
 
       expect(store.attachments.map(({ name }) => name)).toEqual(['b1.png'])
 
-      pendingUploads.get('b1.png')?.()
+      uploader.finish('b1.png')
       await batchB
 
       store.activateDraft('thread:a')

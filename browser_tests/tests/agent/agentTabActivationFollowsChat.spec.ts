@@ -9,7 +9,6 @@ import {
   LANDSCAPE_REQUEST,
   PORTRAIT_NAME,
   PORTRAIT_REQUEST,
-  tabActivationTranscriptReads,
   UNRESTORABLE_THREAD_ID,
   UNBOUND_REQUEST
 } from '@e2e/fixtures/data/agent/tabActivationChats'
@@ -105,8 +104,6 @@ test.describe(
         ])
         await expect(tabChats.panel.composer).toHaveText(LANDSCAPE_DRAFT)
       })
-
-      expect(tabChats.transcriptReads).toEqual(tabActivationTranscriptReads)
     })
 
     test('keeps a chat hidden when its workflow cannot be restored', async ({

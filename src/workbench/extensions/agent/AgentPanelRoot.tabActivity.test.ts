@@ -483,11 +483,24 @@ describe('AgentPanelRoot Ask agent about errors', () => {
     respondWithChats([
       { id: 'th-1', title: 'Running chat', workflowId: 'wf-42' }
     ])
-    const postedToOther: unknown[] = []
-    respondToFetch({ method: 'POST', url: /\/messages/ }, (_url, init) => {
-      const body = JSON.parse(String(init?.body)) as { workflow_id?: string }
-      if (body.workflow_id === 'wf-other') {
-        postedToOther.push(body)
+    const postedToOther: {
+      pathname: string
+      body: { content?: string; workflow_id?: string }
+    }[] = []
+    respondToFetch({ method: 'POST', url: /\/messages/ }, (url, init) => {
+      const body = JSON.parse(String(init?.body)) as {
+        content?: string
+        workflow_id?: string
+      }
+      const pathname = new URL(
+        url instanceof Request ? url.url : url,
+        'http://localhost'
+      ).pathname
+      if (
+        body.workflow_id === 'wf-other' &&
+        pathname !== '/api/agent/threads/th-1/messages'
+      ) {
+        postedToOther.push({ pathname, body })
         return json(202, {
           thread_id: 'th-other-new',
           message_id: 'm-other-new',
@@ -520,7 +533,13 @@ describe('AgentPanelRoot Ask agent about errors', () => {
 
     await send('fix other workflow')
     await vi.waitFor(() => expect(postedToOther).toHaveLength(1))
-    expect(postedToOther[0]).toMatchObject({
+    expect(postedToOther[0].pathname).toMatch(
+      /^\/api\/agent\/threads\/[^/]+\/messages$/
+    )
+    expect(postedToOther[0].pathname).not.toBe(
+      '/api/agent/threads/th-1/messages'
+    )
+    expect(postedToOther[0].body).toMatchObject({
       content: 'fix other workflow',
       workflow_id: 'wf-other'
     })

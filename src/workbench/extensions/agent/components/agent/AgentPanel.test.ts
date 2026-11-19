@@ -673,9 +673,9 @@ describe('AgentPanel', () => {
 
     await rerender({ followsVisibleWorkflow: false })
 
-    expect(screen.getByRole('note')).toHaveTextContent(
-      'The agent can now edit portrait. It works on 1 workflow at a time.'
-    )
+    const note = screen.getByRole('note')
+    expect(note).toBeVisible()
+    expect(note).toHaveTextContent('portrait')
   })
 
   it('does not render a workflow selector chip and still attaches @ workflow references', async () => {

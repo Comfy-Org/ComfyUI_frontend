@@ -2683,7 +2683,7 @@ describe('useWorkflowService', () => {
         path: 'workflows/active.json'
       })
       const activeTracker = active.changeTracker
-      if (!activeTracker) throw new Error('Expected loaded workflow')
+      assert.exists(activeTracker)
       workflowStore.activeWorkflow = active as LoadedComfyWorkflow
       bindCanvasTracker(activeTracker)
       const service = useWorkflowService()
@@ -2941,14 +2941,14 @@ describe('useWorkflowService', () => {
         {
           name: 'reports the new tab when a user creates it',
           options: { initiator: 'user' as const },
-          reported: true
+          expectedPaths: ['Unsaved Workflow.json']
         },
         {
           name: 'does not report a blank tab loaded programmatically',
           options: {},
-          reported: false
+          expectedPaths: [] as string[]
         }
-      ])('$name', async ({ options, reported }) => {
+      ])('$name', async ({ options, expectedPaths }) => {
         const workflowStore = useWorkflowStore()
         const blank = newBlankTab()
         vi.mocked(app.loadGraphData).mockImplementation(async () => {
@@ -2961,7 +2961,9 @@ describe('useWorkflowService', () => {
         await useWorkflowService().loadBlankWorkflow(options)
 
         expect(app.loadGraphData).toHaveBeenCalledWith(blankGraph)
-        expect(activated.mock.calls).toEqual(reported ? [[blank]] : [])
+        expect(activated.mock.calls.map(([workflow]) => workflow.path)).toEqual(
+          expectedPaths
+        )
       })
 
       it.for([

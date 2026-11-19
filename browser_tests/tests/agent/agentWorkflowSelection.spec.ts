@@ -11,17 +11,21 @@ import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixtu
 const test = mergeTests(agentTest, workflowSelectionTest)
 
 test.describe('Agent workflow selection', { tag: ['@cloud', '@ui'] }, () => {
-  test('retains a closed-workflow reference across panel reopen, navigation, and removal', async ({
-    page,
-    workflowSelection
-  }, testInfo) => {
+  test.beforeEach(async ({ page, workflowSelection }) => {
     await new AgentPanel(page).open()
-    const panel = page.locator('#agent-panel-root')
     const topbar = new Topbar(page)
     const saving = topbar.saveWorkflowAs('Unsaved Workflow')
     await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
     workflowSelection.finishSave(true)
     await saving
+  })
+
+  test('retains a closed-workflow reference across panel reopen, navigation, and removal', async ({
+    page,
+    workflowSelection
+  }, testInfo) => {
+    const panel = page.locator('#agent-panel-root')
+    const topbar = new Topbar(page)
 
     await page
       .getByRole('button', {
@@ -124,13 +128,8 @@ test.describe('Agent workflow selection', { tag: ['@cloud', '@ui'] }, () => {
     page,
     workflowSelection
   }, testInfo) => {
-    await new AgentPanel(page).open()
     const panel = page.locator('#agent-panel-root')
     const topbar = new Topbar(page)
-    const saving = topbar.saveWorkflowAs('Unsaved Workflow')
-    await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
-    workflowSelection.finishSave(true)
-    await saving
 
     await page
       .getByRole('button', {
@@ -190,6 +189,13 @@ test.describe('Agent workflow selection', { tag: ['@cloud', '@ui'] }, () => {
     await expect(addToPrompt).toBeFocused()
 
     await composer.fill('@')
+    const referenceMenu = panel.getByTestId('agent-reference-menu')
+    await expect(referenceMenu).toBeVisible()
+    const menuBox = await referenceMenu.boundingBox()
+    const composerBox = await panel.getByTestId('agent-composer').boundingBox()
+    expect(menuBox).not.toBeNull()
+    expect(composerBox).not.toBeNull()
+    expect(menuBox!.y + menuBox!.height).toBeLessThanOrEqual(composerBox!.y)
     const nodes = panel.getByRole('menuitem', {
       name: enMessages.agent.nodes,
       exact: true

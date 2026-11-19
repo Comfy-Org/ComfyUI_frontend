@@ -1,5 +1,4 @@
 import { expect, mergeTests } from '@playwright/test'
-import type { Page } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
@@ -13,34 +12,41 @@ import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixtu
 import { agentUserTranscript } from '@e2e/fixtures/data/agent/agentThreadList'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-const test = mergeTests(agentTest, workflowSelectionTest)
-
-async function acceptPostedMessages(page: Page) {
-  const posted: AgentPostMessageRequest[] = []
-  await page.route('**/api/agent/threads/*/messages', (route) => {
-    if (route.request().method() === 'GET') {
-      return route.fulfill(
-        jsonRoute(
-          agentUserTranscript(
-            'th-a',
-            posted[0]?.workflow_id ?? '',
-            posted[0]?.content ?? ''
+const test = mergeTests(agentTest, workflowSelectionTest).extend<{
+  postedMessages: AgentPostMessageRequest[]
+}>({
+  postedMessages: async (
+    { page, workflowSelection: _workflowSelection },
+    use
+  ) => {
+    const posted: AgentPostMessageRequest[] = []
+    await page.route('**/api/agent/threads/*/messages', (route) => {
+      if (route.request().method() === 'GET') {
+        return route.fulfill(
+          jsonRoute(
+            agentUserTranscript(
+              'th-a',
+              posted[0]?.workflow_id ?? '',
+              posted[0]?.content ?? ''
+            )
           )
         )
+      }
+      if (route.request().method() !== 'POST') return route.fallback()
+      const body = zAgentPostMessageRequest.parse(
+        route.request().postDataJSON()
       )
-    }
-    if (route.request().method() !== 'POST') return route.fallback()
-    const body = zAgentPostMessageRequest.parse(route.request().postDataJSON())
-    posted.push(body)
-    const accepted: AgentTurnAccepted = {
-      thread_id: 'th-a',
-      message_id: 'msg-a',
-      workflow_id: body.workflow_id ?? undefined
-    }
-    return route.fulfill({ ...jsonRoute(accepted), status: 202 })
-  })
-  return posted
-}
+      posted.push(body)
+      const accepted: AgentTurnAccepted = {
+        thread_id: 'th-a',
+        message_id: 'msg-a',
+        workflow_id: body.workflow_id ?? undefined
+      }
+      return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+    })
+    await use(posted)
+  }
+})
 
 // PM-1321 (parent) / PM-1322 (tab switch) / PM-1415 (tab creation): New Chat
 // used to keep whatever tab the previous chat was pinned to instead of
@@ -57,7 +63,8 @@ test.describe(
   () => {
     test('PM-1322 / PM-2251: retargets to a tab the user switched to and starts with an empty composer', async ({
       page,
-      workflowSelection
+      workflowSelection,
+      postedMessages: posted
     }, testInfo) => {
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
@@ -73,7 +80,6 @@ test.describe(
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
-      const posted = await acceptPostedMessages(page)
       const postAccepted = page.waitForResponse(
         (response) =>
           response.request().method() === 'POST' &&
@@ -135,7 +141,8 @@ test.describe(
 
     test('PM-1415: retargets to a tab created for this session', async ({
       page,
-      workflowSelection
+      workflowSelection,
+      postedMessages: posted
     }) => {
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
@@ -151,7 +158,6 @@ test.describe(
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
-      const posted = await acceptPostedMessages(page)
       const postAccepted = page.waitForResponse(
         (response) =>
           response.request().method() === 'POST' &&
