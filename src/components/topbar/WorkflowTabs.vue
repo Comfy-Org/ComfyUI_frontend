@@ -129,7 +129,8 @@ useWorkflowStatusDismissal()
 
 const tabStripRef = ref<HTMLElement | null>(null)
 const tabIdBase = useId()
-const tabTriggerId = (index: number) => `${tabIdBase}-${index}`
+const tabTriggerId = (index: number) =>
+  `workflow-tab-trigger-${tabIdBase}-${index}`
 
 const options = computed<WorkflowOption[]>(() =>
   workflowStore.openWorkflows.map((workflow) => ({

@@ -175,7 +175,7 @@ const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
-const fallbackTriggerId = useId()
+const fallbackTriggerId = `workflow-tab-trigger-${useId()}`
 const resolvedTriggerId = computed(() => triggerId ?? fallbackTriggerId)
 const popoverOpen = ref(false)
 const popoverHovered = ref(false)

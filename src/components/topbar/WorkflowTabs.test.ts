@@ -849,6 +849,7 @@ describe('WorkflowTabs selection and overflow', () => {
     const tablist = screen.getByRole('tablist', {
       name: enMessages.g.openWorkflows
     })
+    expect(screen.getAllByRole('tablist')).toEqual([tablist])
     const tabStrip = screen.getByTestId('workflow-tab-strip')
     const newWorkflowButton = screen.getByRole('button', {
       name: enMessages.sideToolbar.newBlankWorkflow
@@ -861,13 +862,15 @@ describe('WorkflowTabs selection and overflow', () => {
       tablist.compareDocumentPosition(newWorkflowButton) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).not.toBe(0)
-    expect(tablist).toHaveAttribute(
-      'aria-owns',
-      tabs.map((tab) => tab.id).join(' ')
-    )
-    for (const tab of tabs) {
-      expect(tab.id).not.toBe('')
-      expect(tab.id).not.toMatch(/\s/)
+    const ownedIds = (tablist.getAttribute('aria-owns') ?? '')
+      .split(/\s+/)
+      .filter(Boolean)
+    expect(ownedIds).toEqual(tabs.map((tab) => tab.id))
+    expect(new Set(ownedIds).size).toBe(tabs.length)
+    for (const [index, id] of ownedIds.entries()) {
+      expect(id).toMatch(/^workflow-tab-trigger-\S+$/)
+      expect(tabs[index]).toHaveAttribute('id', id)
+      expect(tabs[index]).toHaveAttribute('role', 'tab')
     }
   })
 

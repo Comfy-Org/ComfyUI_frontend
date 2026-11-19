@@ -97,13 +97,15 @@ function renderTab({
   activeWorkflowKey = 'other-key',
   activeWorkflowPath,
   otherOpenWorkflows = [],
-  compact = false
+  compact = false,
+  triggerId
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
   activeWorkflowPath?: string
   otherOpenWorkflows?: Workflow[]
   compact?: boolean
+  triggerId?: string
 } = {}) {
   const resolvedActiveWorkflowPath =
     activeWorkflowPath ??
@@ -125,7 +127,8 @@ function renderTab({
               workflowOption,
               isFirst: false,
               isLast: false,
-              compact
+              compact,
+              triggerId
             })
           )
         )
@@ -491,8 +494,16 @@ describe('WorkflowTab - close button', () => {
     })
 
     const tab = screen.getByRole('tab')
-    expect(tab.id).not.toBe('')
-    expect(tab.id).not.toMatch(/\s/)
+    expect(tab.id).toMatch(/^workflow-tab-trigger-\S+$/)
+  })
+
+  it('applies an explicit triggerId to the rendered tab button', () => {
+    renderTab({
+      triggerId: 'workflow-tab-trigger-custom-0'
+    })
+
+    const tab = screen.getByRole('tab')
+    expect(tab).toHaveAttribute('id', 'workflow-tab-trigger-custom-0')
   })
 })
 
