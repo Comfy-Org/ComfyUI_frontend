@@ -833,7 +833,7 @@ export class LGraphNode
   declare isLoading?: boolean
   declare isUploading?: boolean
   declare previewMediaType?: 'image' | 'video' | 'audio' | 'model'
-  /** If true, output images are stored but not rendered below the node */
+  /** Only false enables the default executed-output preview in Vue mode. */
   declare hideOutputImages?: boolean
 
   declare preview?: string[]

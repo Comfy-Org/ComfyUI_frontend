@@ -61,7 +61,10 @@ const mockNodeEventHandlers = vi.hoisted(
 vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
   fromAny<LiteGraphNode, unknown>(
-    mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+    mockData.mockLgraphNode ?? {
+      hideOutputImages: false,
+      isSubgraphNode: () => false
+    }
   )
 )
 
@@ -250,7 +253,10 @@ describe('LGraphNode', () => {
   beforeEach(() => {
     vi.mocked(getNodeByLocatorId).mockImplementation(() =>
       fromAny<LiteGraphNode, unknown>(
-        mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
+        mockData.mockLgraphNode ?? {
+          hideOutputImages: false,
+          isSubgraphNode: () => false
+        }
       )
     )
     mockData.mockExecuting = false
@@ -428,7 +434,10 @@ describe('LGraphNode', () => {
       subgraphs: new Map()
     }
     fakeRootGraph.rootGraph = fakeRootGraph
-    mockData.mockLgraphNode = { isSubgraphNode: () => false }
+    mockData.mockLgraphNode = {
+      hideOutputImages: false,
+      isSubgraphNode: () => false
+    }
     useCanvasStore().currentGraph = fromAny(fakeRootGraph)
     useWidgetValueStore().registerWidget(
       widgetId('graph-test', mockNodeData.id, 'prompt'),
@@ -501,6 +510,7 @@ describe('LGraphNode', () => {
 
   it('hides a linked core LoadImage input preview', () => {
     mockData.mockLgraphNode = {
+      hideOutputImages: false,
       constructor: {
         comfyClass: 'LoadImage',
         nodeData: { isCoreNode: true }
@@ -520,6 +530,27 @@ describe('LGraphNode', () => {
 
     expect(screen.queryByTestId('node-content')).not.toBeInTheDocument()
   })
+
+  it.for([
+    { hideOutputImages: undefined, previewCount: 0 },
+    { hideOutputImages: true, previewCount: 0 },
+    { hideOutputImages: false, previewCount: 1 }
+  ])(
+    'renders $previewCount default previews with hideOutputImages=$hideOutputImages',
+    ({ hideOutputImages, previewCount }) => {
+      mockData.mockLgraphNode = {
+        hideOutputImages,
+        widgets: [{ name: 'custom_widget', type: 'custom' }],
+        onDrawBackground: vi.fn(),
+        isSubgraphNode: () => false
+      }
+      seedNodeOutputs([{ filename: 'comparison.png', type: 'temp' }])
+
+      renderLGraphNode({ nodeData: mockNodeData })
+
+      expect(screen.queryAllByTestId('node-content')).toHaveLength(previewCount)
+    }
+  )
 
   it('limits a generic image preview to the images output bucket', () => {
     const outputs = seedNodeOutputs([
@@ -554,6 +585,7 @@ describe('LGraphNode', () => {
 
   it('keeps an executed output preview when the LoadImage selector is linked', () => {
     mockData.mockLgraphNode = {
+      hideOutputImages: false,
       constructor: {
         comfyClass: 'LoadImage',
         nodeData: { isCoreNode: true }
@@ -593,6 +625,7 @@ describe('LGraphNode', () => {
       const nodeId = toNodeId(rawId)
       mockData.mockLgraphNode = {
         id: nodeId,
+        hideOutputImages: false,
         graph: fakeRootGraph,
         isSubgraphNode: () => false
       }
