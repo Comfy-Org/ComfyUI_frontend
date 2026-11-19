@@ -114,7 +114,11 @@ export function useTopupOperation() {
     autoTopUp: TopupAutoTopUpSettings | undefined
   ): Promise<string | undefined> {
     if (sdkStore)
-      return sdkStore.openTopupPurchase(amountCents, signal, autoTopUp)
+      return useBillingSdkStore().openTopupPurchase(
+        amountCents,
+        signal,
+        autoTopUp
+      )
     try {
       return (
         await billingApi.createTopupPurchase(amountCents, signal, autoTopUp)
