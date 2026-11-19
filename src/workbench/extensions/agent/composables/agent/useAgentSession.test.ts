@@ -269,7 +269,7 @@ function deleteApproval(id: string, askId = 'turn-1:call-1') {
     }
   })
 }
-const askUser = (id: string, askId = 'turn-1:call-1') =>
+const askUser = (id: string, askId = 'turn-1:call-1', minSelections = 1) =>
   wire({
     type: 'agent_ask',
     data: {
@@ -282,7 +282,7 @@ const askUser = (id: string, askId = 'turn-1:call-1') =>
         { id: 'sdxl', label: 'SDXL', description: 'Fast' },
         { id: 'flux', label: 'Flux' }
       ],
-      min_selections: 1,
+      min_selections: minSelections,
       max_selections: 2,
       allow_other: true
     }
@@ -2631,7 +2631,8 @@ describe('useAgentSession (v1 composition root)', () => {
 
   describe('ask_user', () => {
     const parkedOnQuestion = async (
-      receipt: AgentAnswerReceipt = { status: 'answered' }
+      receipt: AgentAnswerReceipt = { status: 'answered' },
+      minSelections = 1
     ) => {
       const answerAsk = vi.fn<AgentRestClient['answerAsk']>(async () => receipt)
       const { source, emit, status } = fakeEvents()
@@ -2641,7 +2642,7 @@ describe('useAgentSession (v1 composition root)', () => {
       })
       session.start()
       await session.sendMessage('pick for me')
-      emit(askUser('msg-1'))
+      emit(askUser('msg-1', 'turn-1:call-1', minSelections))
       return { session, answerAsk, emit, status }
     }
     const card = () =>
@@ -3047,11 +3048,34 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
     })
 
-    it('accepts an explicitly empty answer committed by the server', async () => {
+    it('treats an empty required-answer receipt as status-only', async () => {
       const { session } = await parkedOnQuestion({
         status: 'answered',
         selected: []
       })
+
+      const committed = await session.answerAsk('turn-1:call-1', {
+        selected: []
+      })
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(committed).toBe(true)
+      expect(card()).toMatchObject({
+        resolution: { status: 'answered', selected: [] }
+      })
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerAcceptedUnconfirmed
+        }
+      ])
+    })
+
+    it('accepts an explicitly empty answer when the ask allows it', async () => {
+      const { session } = await parkedOnQuestion(
+        { status: 'answered', selected: [] },
+        0
+      )
 
       const committed = await session.answerAsk('turn-1:call-1', {
         selected: []
@@ -3221,7 +3245,7 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
-  it('reports a live-socket 409 marker that expires unconfirmed', async () => {
+  it('retires a first-attempt live-socket 409 without false uncertainty', async () => {
     vi.useFakeTimers()
     try {
       const answerAsk = vi
@@ -3242,19 +3266,51 @@ describe('useAgentSession (v1 composition root)', () => {
       await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
 
       await vi.advanceTimersByTimeAsync(15_001)
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
-      )
+      expect(reportError).not.toHaveBeenCalled()
       status(false)
 
-      expect(reportError).toHaveBeenCalledTimes(1)
+      expect(reportError).not.toHaveBeenCalled()
       expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
       expect(
         useAgentConversationStore().messages[0].parts.some(
           (part) => part.type === 'runApproval'
         )
       ).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('reports a 409 after a retry because the first attempt may have landed', async () => {
+    vi.useFakeTimers()
+    try {
+      const answerAsk = vi
+        .fn<AgentRestClient['answerAsk']>()
+        .mockRejectedValueOnce(new TypeError('connection reset'))
+        .mockRejectedValueOnce(
+          new AgentApiError('already answered', 409, undefined)
+        )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it')
+      emit(runApproval('msg-1'))
+
+      const answering = session.answerAsk('turn-1:call-1', {
+        selected: ['cancel']
+      })
+      await vi.advanceTimersByTimeAsync(PAST_ANSWER_RETRY_BACKOFF_MS)
+      await answering
+      await vi.advanceTimersByTimeAsync(15_001)
+
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
+      )
     } finally {
       vi.useRealTimers()
     }
@@ -3377,7 +3433,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([])
     })
 
-    it('retires itself as unconfirmed when a 409 omits the committed answer', async () => {
+    it('retires a first-attempt 409 without claiming it may have landed', async () => {
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockRejectedValue(
@@ -3399,16 +3455,8 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
-      expect(session.notices.value).toEqual([
-        {
-          level: 'error',
-          text: 'Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.'
-        }
-      ])
-      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_unconfirmed'
-      })
+      expect(session.notices.value).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
     })
 
     it.for([403, 404] as const)(
@@ -6072,10 +6120,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(0)
-      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_unconfirmed'
-      })
+      expect(reportError).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6112,10 +6157,7 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(0)
-      expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
-        surface: 'agent',
-        errorType: 'agent_ask_answer_unconfirmed'
-      })
+      expect(reportError).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
@@ -6468,12 +6510,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(1)
       status(false)
       await session.answerAsk('turn-1:call-1', { selected: ['run'] })
-      expect(session.notices.value).toEqual([
-        {
-          level: 'error',
-          text: 'Could not confirm your answer reached the agent. It may still have been applied — reload the page to see where things stand.'
-        }
-      ])
+      expect(session.notices.value).toEqual([])
     } finally {
       vi.useRealTimers()
     }
@@ -6844,6 +6881,8 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(0)
 
       expect(approvalParts(session)).toHaveLength(1)
+      expect(reportError).not.toHaveBeenCalled()
+      await vi.advanceTimersByTimeAsync(2_001)
       expect(reportError).toHaveBeenCalledExactlyOnceWith(
         expect.any(Error),
         expect.objectContaining({
