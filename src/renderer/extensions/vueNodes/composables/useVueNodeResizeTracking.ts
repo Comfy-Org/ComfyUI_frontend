@@ -70,7 +70,7 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
     {
       dataAttribute: 'nodeId',
       updateHandler: (updates) => {
-        const { rootGraphId } = useCanvasStore()
+        const { rootGraphId, canvas } = useCanvasStore()
         if (!rootGraphId) return
 
         for (const { id, bounds } of updates) {
@@ -79,6 +79,7 @@ const trackingConfigs = new Map<string, ElementTrackingConfig>([
             height: removeNodeTitleHeight(bounds.height)
           })
         }
+        canvas?.setDirty(true, true)
       }
     }
   ],

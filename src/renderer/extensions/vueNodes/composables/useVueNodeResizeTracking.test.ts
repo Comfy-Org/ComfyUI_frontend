@@ -592,7 +592,7 @@ describe('useVueNodeResizeTracking', () => {
     expect(testState.reportContentSize).not.toHaveBeenCalled()
   })
 
-  it('reports the first measurement and skips repeated entries', () => {
+  it('reports and redraws the first measurement and skips repeated entries', () => {
     const nodeId = toNodeId('test-node')
     const width = 240
     const height = 180
@@ -610,8 +610,6 @@ describe('useVueNodeResizeTracking', () => {
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
-    // When layout store already has correct position, getBoundingClientRect
-    // is not needed — position is read from the store instead.
     expect(rectSpy).not.toHaveBeenCalled()
     expect(testState.reportContentSize).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
@@ -621,12 +619,14 @@ describe('useVueNodeResizeTracking', () => {
         height: height - LiteGraph.NODE_TITLE_HEIGHT
       }
     )
-    testState.reportContentSize.mockReset()
+    expect(testState.setDirty).toHaveBeenCalledWith(true, true)
+    vi.clearAllMocks()
 
     resizeObserverState.callback?.([entry], createObserverMock())
 
     expect(rectSpy).not.toHaveBeenCalled()
     expect(testState.reportContentSize).not.toHaveBeenCalled()
+    expect(testState.setDirty).not.toHaveBeenCalled()
   })
 
   it('reports size without replacing the stored position', () => {
