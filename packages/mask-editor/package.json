@@ -47,6 +47,11 @@
       "types": "./dist/maskEditorStore.d.ts",
       "default": "./src/maskEditorStore.ts"
     },
+    "./panZoomUtils": {
+      "@comfyorg/mask-editor": "./src/panZoomUtils.ts",
+      "types": "./dist/panZoomUtils.d.ts",
+      "default": "./src/panZoomUtils.ts"
+    },
     "./pngEncodeUtil": {
       "@comfyorg/mask-editor": "./src/pngEncodeUtil.ts",
       "types": "./dist/pngEncodeUtil.d.ts",
