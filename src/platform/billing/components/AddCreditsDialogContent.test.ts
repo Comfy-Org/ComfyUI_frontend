@@ -65,6 +65,7 @@ const hoisted = vi.hoisted(() => ({
   openPlatformBilling: vi.fn<() => Promise<void>>(async () => undefined),
   reopenTopUp: vi.fn<() => Promise<unknown>>(async () => undefined),
   cloudTabNavigate: vi.fn<(url: string) => void>(),
+  paymentConfigured: true,
   openTopupPurchase:
     vi.fn<
       (
@@ -110,7 +111,10 @@ vi.mock(
         dismissOperation: vi.fn(),
         adoptPendingOperation: vi.fn(),
         openTopupPurchase: hoisted.openTopupPurchase,
-        quoteTopup: async () => 10_550
+        quoteTopup: async () => ({
+          credits: 10_550,
+          paymentConfigured: hoisted.paymentConfigured
+        })
       })
     }
   }
@@ -792,6 +796,7 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
       sessionId: 'cs_1'
     })
     hoisted.billingWebTopupUrl.mockReturnValue(TOPUP_PAGE)
+    hoisted.paymentConfigured = true
     hoisted.openTopupPurchase.mockReset()
     let purchases = 0
     hoisted.openTopupPurchase.mockImplementation(
@@ -809,6 +814,7 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
     page: string | undefined
     opens: string
     noPurchase?: boolean
+    unconfigured?: boolean
   }>([
     {
       name: 'unified_billing_settings on',
@@ -834,12 +840,20 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
       page: TOPUP_PAGE,
       opens: CHECKOUT_URL,
       noPurchase: true
+    },
+    {
+      name: 'unified_billing_settings on but the quote names no payment configuration',
+      on: true,
+      page: TOPUP_PAGE,
+      opens: CHECKOUT_URL,
+      unconfigured: true
     }
   ])(
     'Continue opens $opens with $name',
-    async ({ on, page, opens, noPurchase }) => {
+    async ({ on, page, opens, noPurchase, unconfigured }) => {
       vi.mocked(useFeatureFlags().flags).unifiedBillingSettingsEnabled = on
       hoisted.billingWebTopupUrl.mockReturnValue(page)
+      hoisted.paymentConfigured = !unconfigured
       if (noPurchase) hoisted.openTopupPurchase.mockResolvedValue(undefined)
       const { user } = renderDialog({ atCheckout: false })
 
@@ -851,6 +865,7 @@ describe('AddCreditsDialogContent on Cloud with unified_billing_settings', () =>
       expect(hoisted.createHostedCheckout).toHaveBeenCalledTimes(
         opens === CHECKOUT_URL ? 1 : 0
       )
+      if (unconfigured) expect(hoisted.openTopupPurchase).not.toHaveBeenCalled()
     }
   )
 

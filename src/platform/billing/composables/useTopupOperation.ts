@@ -11,7 +11,10 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
-import type { HostedCheckoutSession } from '@/platform/billing/sdk/topupOperationView'
+import type {
+  HostedCheckoutSession,
+  TopupQuoteFacts
+} from '@/platform/billing/sdk/topupOperationView'
 import { useBillingOperationStore } from '@/platform/billing/stores/billingOperationStore'
 
 const RETRYABLE_CHECKOUT_REFUSALS: ReadonlyArray<readonly [number, string]> = [
@@ -124,10 +127,14 @@ export function useTopupOperation() {
   async function quoteTopup(
     amountCents: number,
     signal: AbortSignal
-  ): Promise<number | null> {
+  ): Promise<TopupQuoteFacts | null> {
     if (sdkStore) return sdkStore.quoteTopup(amountCents, signal)
     try {
-      return (await billingApi.quoteTopup(amountCents, signal)).credits
+      const quoted = await billingApi.quoteTopup(amountCents, signal)
+      return {
+        credits: quoted.credits,
+        paymentConfigured: quoted.payment_method_configuration_id !== undefined
+      }
     } catch {
       return null
     }

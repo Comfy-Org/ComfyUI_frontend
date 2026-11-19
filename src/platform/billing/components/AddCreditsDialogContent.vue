@@ -183,6 +183,7 @@ async function createHandoffCheckout(
 }
 
 let popupBlocked = false
+let quotedPayment: { amountCents: number; configured: boolean } | undefined
 
 function reservePurchaseTab() {
   const tab = reserveBillingTab()
@@ -190,9 +191,11 @@ function reservePurchaseTab() {
   return tab
 }
 
-function opensBillingWeb(): boolean {
+function opensBillingWeb(amountCents: number): boolean {
   return (
     !popupBlocked &&
+    quotedPayment?.amountCents === amountCents &&
+    quotedPayment.configured &&
     flags.unifiedBillingSettingsEnabled &&
     !handsPopupsToSystemBrowser()
   )
@@ -270,8 +273,10 @@ async function createHostedTopupCheckout(
 
 const ports: AddCreditsPorts = {
   async quote(amountCents, signal) {
-    const credits = await quoteTopup(amountCents, signal)
-    return credits === null ? { status: 'error' } : { status: 'ok', credits }
+    const quoted = await quoteTopup(amountCents, signal)
+    if (quoted === null) return { status: 'error' }
+    quotedPayment = { amountCents, configured: quoted.paymentConfigured }
+    return { status: 'ok', credits: quoted.credits }
   },
   get activatesAutoTopUp() {
     return autoTopUpChoice.activatesAtCheckout()
@@ -290,7 +295,7 @@ const ports: AddCreditsPorts = {
     }
     if (opensHandoff)
       return createHandoffCheckout(amountCents, signal, autoTopUp)
-    return opensBillingWeb()
+    return opensBillingWeb(amountCents)
       ? openBillingWebCheckout(amountCents, signal, autoTopUp)
       : createHostedTopupCheckout(amountCents, signal, autoTopUp)
   },
