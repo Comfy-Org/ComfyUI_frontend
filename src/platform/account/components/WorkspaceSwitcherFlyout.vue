@@ -1,5 +1,5 @@
 <template>
-  <div class="flex w-60 flex-col gap-1" :class="{ 'pt-1': showSearch }">
+  <div class="flex flex-col gap-1" :class="{ 'pt-1': showSearch }">
     <div v-if="showSearch" class="flex flex-col gap-2">
       <input
         v-model="searchQuery"
@@ -13,7 +13,7 @@
     </div>
 
     <div
-      class="flex scrollbar-custom max-h-[294px] min-h-0 flex-col gap-2 overflow-y-auto py-1"
+      class="flex scrollbar-custom max-h-72 min-h-0 flex-col gap-2 overflow-y-auto py-1"
       data-testid="workspace-switcher-list"
     >
       <template v-if="isFetchingWorkspaces">
@@ -63,6 +63,7 @@
           size="unset"
           class="w-full justify-start gap-3 p-1 text-left font-normal"
           :disabled="isSelectionDisabled"
+          :aria-current="workspace.ariaCurrent"
           @click="handleSelectWorkspace(workspace.id)"
         >
           <WorkspaceProfilePic
@@ -86,7 +87,7 @@
             </span>
           </span>
           <i
-            v-if="workspace.id === workspaceId"
+            v-if="workspace.ariaCurrent"
             class="icon-[lucide--check] text-foreground"
           />
         </Button>
@@ -140,7 +141,8 @@ const visibleWorkspaces = computed(() =>
         id: w.id,
         name: w.name,
         subscriptionTier: billingState.getSummary(w).subscriptionTier,
-        planLine: profileMenuPlanLabel(w.plan_summary, t)
+        planLine: profileMenuPlanLabel(w.plan_summary, t),
+        ariaCurrent: w.id === workspaceId.value ? ('true' as const) : undefined
       }))
 )
 

@@ -111,6 +111,12 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
   disable the control, never grant it. A missing fact is a backend ticket plus
   `pendingServerFact('BE-xxxx', expr)`, never another field. See
   `docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md`
+- NEVER change the `@comfyorg/comfy-multi-player` pin in `pnpm-workspace.yaml` by hand. Cloud opens the
+  `sync-multiplayer-pin-*` PR that moves it
+- NEVER approve or merge any PR that changes the `@comfyorg/comfy-multi-player` pin, manual or automated, unless its
+  `SCHEMA_VERSION` matches the one the cloud comfy-agent doc host runs: the CRDT follower refuses any other schema,
+  which breaks live multiplayer sync. When a required check fails on the sync PR, read the failure first; if it shows the
+  new version is incompatible with this repo, fix the frontend rather than merging past it
 - NEVER add `eslint-disable` or `oxlint-disable` as the first fix. Remove the
   directive and repair the type, API, component semantics, or test.
   - Before keeping a rare lint exception or specific type assertion, inspect

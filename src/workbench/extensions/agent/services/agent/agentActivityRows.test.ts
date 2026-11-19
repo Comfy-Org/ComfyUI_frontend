@@ -15,6 +15,18 @@ function tool(name: string, ok?: boolean, durationMs?: number): ToolPart {
 }
 
 describe('foldActivity', () => {
+  it('BE-24672: carries the truncated mark onto the thinking row', () => {
+    const rows = foldActivity([
+      { type: 'thinking', text: 'Whole.', state: 'done' },
+      { type: 'thinking', text: 'Cut…', state: 'done', truncated: true }
+    ])
+
+    expect(rows).toEqual([
+      { kind: 'thinking', text: 'Whole.', state: 'done' },
+      { kind: 'thinking', text: 'Cut…', state: 'done', truncated: true }
+    ])
+  })
+
   it('folds a consecutive re-run into one counted row', () => {
     const rows = foldActivity([
       tool('add_node', true, 1300),

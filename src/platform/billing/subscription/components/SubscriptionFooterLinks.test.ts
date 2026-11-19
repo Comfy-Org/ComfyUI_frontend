@@ -7,7 +7,7 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { mockBillingContext } from '@/platform/billing/__tests__/mockBillingContext'
 
 import SubscriptionFooterLinks from './SubscriptionFooterLinks.vue'
 
@@ -144,7 +144,7 @@ describe('SubscriptionFooterLinks', () => {
     )
 
     expect(openSpy).toHaveBeenCalledWith(
-      'https://platform.comfy.org/profile/usage?workspace=ws-team-1',
+      'https://platform.comfy.org/profile/usage?utm_source=comfyui&utm_medium=app&workspace=ws-team-1',
       '_blank',
       'noopener'
     )
