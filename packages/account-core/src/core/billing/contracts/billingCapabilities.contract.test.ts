@@ -71,6 +71,8 @@ expectTypeOf<keyof CapabilitiesResponse>().toEqualTypeOf<
   | 'auto_top_up_member_view'
   | 'auto_top_up_setup'
   | 'billing_notice_audience'
+  | 'billing_web_checkout_ui'
+  | 'cancel_takes_effect_immediately'
   | 'capabilities'
   | 'denied_reason_params'
   | 'denied_reasons'
