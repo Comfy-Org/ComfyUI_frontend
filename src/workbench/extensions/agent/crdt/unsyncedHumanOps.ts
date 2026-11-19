@@ -39,25 +39,25 @@ function unsyncedNow(): Set<string> {
   ])
 }
 
-/** Records this recorder's workflows whose canvas holds non-replayable unsynced edits. */
-export function recordUnsyncedHumanOps(
+function setRecorderWorkflows(
+  map: Map<string, ReadonlySet<string>>,
   recorder: string,
   workflowIds: Iterable<string>
 ): void {
   const ids = new Set(workflowIds)
-  if (ids.size === 0) unsyncedByRecorder.delete(recorder)
-  else unsyncedByRecorder.set(recorder, ids)
-  writeStored([...unsyncedNow()])
+  if (ids.size === 0) map.delete(recorder)
+  else map.set(recorder, ids)
 }
 
-/** Records this recorder's workflows with unsettled batches still queued in memory. */
-export function recordPendingHumanOps(
+/** Records this recorder's workflows with non-replayable unsynced edits and optional live pending batches. */
+export function recordUnsyncedHumanOps(
   recorder: string,
-  workflowIds: Iterable<string>
+  workflowIds: Iterable<string>,
+  pendingWorkflowIds?: Iterable<string>
 ): void {
-  const ids = new Set(workflowIds)
-  if (ids.size === 0) pendingByRecorder.delete(recorder)
-  else pendingByRecorder.set(recorder, ids)
+  setRecorderWorkflows(unsyncedByRecorder, recorder, workflowIds)
+  if (pendingWorkflowIds !== undefined)
+    setRecorderWorkflows(pendingByRecorder, recorder, pendingWorkflowIds)
   writeStored([...unsyncedNow()])
 }
 

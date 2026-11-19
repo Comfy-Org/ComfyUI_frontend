@@ -79,9 +79,12 @@ describe('unsyncedHumanOps', () => {
     expect(page.hasUnsyncedHumanOps('wf-a')).toBe(false)
   })
 
-  it('treats live pending ops as non-blocking only for their own recorder until reload or disposal', async () => {
+  it('treats live pending ops as non-blocking only for their own recorder until reload or disposal and persists once per update', async () => {
     const page = await loadPage()
-    page.recordPendingHumanOps('tab-1', ['wf-a'])
+    const setItem = vi.spyOn(sessionStorage, 'setItem')
+    page.recordUnsyncedHumanOps('tab-1', [], ['wf-a'])
+    expect(setItem).toHaveBeenCalledOnce()
+    setItem.mockRestore()
 
     expect(page.hasUnsyncedHumanOps('wf-a')).toBe(true)
     expect(page.hasBlockingUnsyncedHumanOps('wf-a', 'tab-1')).toBe(false)
@@ -100,7 +103,7 @@ describe('unsyncedHumanOps', () => {
     reloaded.forgetUnsyncedAtLoad('wf-a')
     expect(reloaded.hasUnsyncedHumanOps('wf-a')).toBe(false)
 
-    reloaded.recordPendingHumanOps('tab-1', ['wf-b'])
+    reloaded.recordUnsyncedHumanOps('tab-1', [], ['wf-b'])
     reloaded.releaseUnsyncedHumanOpsRecorder('tab-1')
     expect(reloaded.hasBlockingUnsyncedHumanOps('wf-b', 'tab-1')).toBe(true)
   })

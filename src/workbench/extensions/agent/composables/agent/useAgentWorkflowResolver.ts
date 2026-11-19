@@ -112,18 +112,33 @@ export function useAgentWorkflowResolver({
     )
   }
 
-  function cloudIdFor(workflow: ComfyWorkflow): string | undefined {
-    const name = cloudWorkflowName(workflow)
-    const saved =
-      !workflow.isTemporary &&
-      savedMatches(name, workflows.openWorkflows).length === 1
-        ? cloudIdsByName.value.get(name)
-        : undefined
-    if (saved !== undefined) return saved
+  function boundCloudIdFor(workflow: ComfyWorkflow): string | undefined {
     const bound = bindings.workflowIdFor(workflow.path)
     return bound !== undefined && bindings.matchesWorkflow(bound, workflow)
       ? bound
       : undefined
+  }
+
+  function namedCloudIdFor(workflow: ComfyWorkflow): string | undefined {
+    const name = cloudWorkflowName(workflow)
+    return !workflow.isTemporary &&
+      savedMatches(name, workflows.openWorkflows).length === 1
+      ? cloudIdsByName.value.get(name)
+      : undefined
+  }
+
+  function cloudIdFor(workflow: ComfyWorkflow): string | undefined {
+    return namedCloudIdFor(workflow) ?? boundCloudIdFor(workflow)
+  }
+
+  function authoritativeCloudIdFor(
+    workflow: ComfyWorkflow
+  ): string | undefined {
+    if (listingComplete.value) {
+      const saved = namedCloudIdFor(workflow)
+      if (saved !== undefined) return saved
+    }
+    return boundCloudIdFor(workflow)
   }
 
   function indexedNameFor(workflowId: string): string | undefined {
@@ -269,6 +284,7 @@ export function useAgentWorkflowResolver({
     refreshCloudWorkflowListing,
     forgetCloudWorkflowId,
     cloudIdFor,
+    authoritativeCloudIdFor,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
     cachedOpenWorkflowFor,

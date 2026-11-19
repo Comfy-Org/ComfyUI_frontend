@@ -5,6 +5,7 @@ import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent
 import type { PendingSendOrigin } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
 
 const THREAD_PREFIX = 'thread:'
+const MAX_UPLOAD_SCOPES = 64
 
 function threadDraftKey(threadId: string): string {
   return `${THREAD_PREFIX}${threadId}`
@@ -23,6 +24,28 @@ export function useAgentChatDrafts(options: {
   activeBlankChatId: Readonly<Ref<string>>
 }) {
   const composerStore = useAgentComposerStore()
+  const uploadScopes = new Map<string, string>()
+  let nextUploadScopeId = 0
+
+  function trimUploadScopes(): void {
+    for (const key of uploadScopes.keys()) {
+      if (uploadScopes.size <= MAX_UPLOAD_SCOPES) break
+      uploadScopes.delete(key)
+    }
+  }
+
+  function uploadScopeFor(key: string): string {
+    const existing = uploadScopes.get(key)
+    if (existing !== undefined) {
+      uploadScopes.delete(key)
+      uploadScopes.set(key, existing)
+      return existing
+    }
+    const token = `upload-scope:${++nextUploadScopeId}`
+    uploadScopes.set(key, token)
+    trimUploadScopes()
+    return token
+  }
 
   const draftKey = computed(() =>
     options.threadId.value === null
@@ -41,13 +64,36 @@ export function useAgentChatDrafts(options: {
     { immediate: true, flush: 'sync' }
   )
 
+  function uploadScope(): string {
+    return uploadScopeFor(draftKey.value)
+  }
+
+  function resetUploadScope(key: string): void {
+    uploadScopes.delete(key)
+  }
+
   function rekeyBlankDraft(blankChatId: string, threadId: string): void {
-    composerStore.rekeyDraft(blankChatId, threadDraftKey(threadId))
+    const nextKey = threadDraftKey(threadId)
+    const token = uploadScopes.get(blankChatId)
+    if (token !== undefined) {
+      uploadScopes.delete(blankChatId)
+      uploadScopes.set(nextKey, token)
+      trimUploadScopes()
+    }
+    composerStore.rekeyDraft(blankChatId, nextKey)
   }
 
   function discardChatDraft(threadId: string): void {
-    composerStore.discardDraft(threadDraftKey(threadId))
+    const key = threadDraftKey(threadId)
+    uploadScopes.delete(key)
+    composerStore.discardDraft(key)
   }
 
-  return { draftKey, rekeyBlankDraft, discardChatDraft }
+  return {
+    draftKey,
+    uploadScope,
+    resetUploadScope,
+    rekeyBlankDraft,
+    discardChatDraft
+  }
 }

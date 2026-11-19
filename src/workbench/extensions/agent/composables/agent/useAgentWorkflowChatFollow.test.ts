@@ -533,4 +533,67 @@ describe('useAgentWorkflowChatFollow', () => {
     await vi.waitFor(() => expect(h.getThreadId()).toBe('th-b-retry'))
     expect(h.follow.landing.value).toBeNull()
   })
+
+  it('stays on the blank chat with a pending send even when the tab also has an older remembered chat', async () => {
+    const h = createHarness({
+      hasBlankPendingSend: (workflow) => workflow.path === 'workflows/beta.json'
+    })
+    h.openChats.set('wf-b', 'th-remembered')
+    h.chats.set('wf-b', [chat('th-remembered', 'wf-b', 200)])
+    h.setActive(h.workflowB)
+
+    await h.follow.followTab(h.workflowB)
+
+    expect(h.showBlankChat).toHaveBeenCalledOnce()
+    expect(h.loadThread).not.toHaveBeenCalled()
+    expect(h.follow.landing.value).toBeNull()
+  })
+
+  it('advances to the next refreshed chat when the cached newest chat is missing (404)', async () => {
+    const missing = new Set<string>(['th-deleted'])
+    const h = createHarness({
+      isThreadMissing: (id) => missing.has(id)
+    })
+    h.chats.set('wf-b', [
+      chat('th-deleted', 'wf-b', 200),
+      chat('th-remaining', 'wf-b', 100)
+    ])
+    h.loadThread.mockImplementation(async (id: string) => {
+      if (id === 'th-deleted') return false
+      h.setThreadId(id)
+      return true
+    })
+    h.refreshHistory.mockImplementation(async () => {
+      h.chats.set('wf-b', [chat('th-remaining', 'wf-b', 100)])
+      return 'complete'
+    })
+    h.setActive(h.workflowB)
+
+    await h.follow.followTab(h.workflowB)
+
+    expect(h.loadThread.mock.calls.map(([id]) => id)).toEqual([
+      'th-deleted',
+      'th-remaining'
+    ])
+    expect(h.getThreadId()).toBe('th-remaining')
+    expect(h.follow.landing.value).toBeNull()
+  })
+
+  it('settles on blank when the cached newest chat is missing (404) and refresh confirms no chats remain', async () => {
+    const h = createHarness({
+      isThreadMissing: (id) => id === 'th-deleted'
+    })
+    h.chats.set('wf-b', [chat('th-deleted', 'wf-b', 200)])
+    h.loadThread.mockResolvedValueOnce(false)
+    h.refreshHistory.mockImplementation(async () => {
+      h.chats.set('wf-b', [])
+      return 'complete'
+    })
+    h.setActive(h.workflowB)
+
+    await h.follow.followTab(h.workflowB)
+
+    expect(h.getThreadId()).toBeNull()
+    expect(h.follow.landing.value).toBeNull()
+  })
 })

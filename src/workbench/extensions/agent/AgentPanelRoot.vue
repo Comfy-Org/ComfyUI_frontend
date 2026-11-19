@@ -607,6 +607,7 @@ const {
   refreshCloudWorkflowListing,
   forgetCloudWorkflowId,
   cloudIdFor,
+  authoritativeCloudIdFor,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
   openWorkflowFor,
@@ -1188,6 +1189,19 @@ function observeAgentEvent(event: AgentWsEvent): void {
   registerAgentRunJobOwner(event)
 }
 
+const pendingSendChatVersions = new Map<string, number>()
+
+function recordSendChatVersion(
+  clientMessageId: string,
+  workflow: ComfyWorkflow | undefined
+): void {
+  const workflowId = workflow ? cloudIdFor(workflow) : undefined
+  pendingSendChatVersions.set(
+    clientMessageId,
+    workflowId === undefined ? 0 : openChats.versionFor(workflowId)
+  )
+}
+
 const {
   sendMessage,
   stopTurn,
@@ -1204,6 +1218,7 @@ const {
   notices,
   threadId,
   loadThread,
+  isThreadDeleted,
   boundWorkflowId,
   bindWorkflow,
   reportWorkflowBound,
@@ -1221,9 +1236,15 @@ const {
       draftKeyForOrigin({ kind: 'thread', threadId: acceptedThreadId })
     )
   },
-  onBackgroundTurnAccepted: (ack, text, workflowId) => {
+  onBackgroundTurnAccepted: (ack, text, workflowId, sendId) => {
     if (history.isDeleted(ack.thread_id)) return
-    if (workflowId !== undefined) openChats.remember(workflowId, ack.thread_id)
+    if (workflowId !== undefined) {
+      const expectedVersion = pendingSendChatVersions.get(sendId)
+      if (expectedVersion === undefined)
+        openChats.remember(workflowId, ack.thread_id)
+      else
+        openChats.rememberIfCurrent(workflowId, ack.thread_id, expectedVersion)
+    }
     history.rememberSession({
       id: ack.thread_id,
       title:
@@ -1314,7 +1335,6 @@ const chatDrafts = useAgentChatDrafts({
 const savingReferenceForCurrentDraft = computed(() =>
   savingReferenceFor(chatDrafts.draftKey.value)
 )
-const blankUploadNonce = ref(0)
 
 const isBoundWorkflowActive = computed(() => {
   const bound = boundWorkflowId.value
@@ -1533,8 +1553,10 @@ function adoptRestoredWorkflowTab(workflowId: string): void {
     restored !== null &&
     threadId !== null &&
     bindingStore.tabPathFor(workflowId) === restored.path
-  )
+  ) {
     conversationStore.adoptThreadTab(threadId, restored.instanceId)
+    openChats.remember(workflowId, threadId)
+  }
 }
 
 async function restoreThreadWorkflow(
@@ -2163,10 +2185,11 @@ const workflowChatFollow = useAgentWorkflowChatFollow({
       kind: 'blank',
       blankChatId: blankChatIdFor(workflow)
     }),
-  cloudIdFor,
+  cloudIdFor: authoritativeCloudIdFor,
   refreshCloudWorkflowListing,
   refreshHistory,
   loadThread,
+  isThreadMissing: (id) => isThreadDeleted(id) || history.isDeleted(id),
   showBlankChat: showBlankChatForVisibleWorkflow,
   trackThreadStarted: () =>
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' }),
@@ -2184,9 +2207,10 @@ const {
 } = workflowChatFollow
 
 watch(
-  [threadId, boundWorkflowId],
-  ([id, workflowId]) => {
-    if (id !== null && workflowId !== null) openChats.remember(workflowId, id)
+  [threadId, boundWorkflowId, editableWorkflowId],
+  ([id, workflowId, targetWorkflowId]) => {
+    if (id !== null && workflowId !== null && workflowId === targetWorkflowId)
+      openChats.remember(workflowId, id)
   },
   { immediate: true, flush: 'sync' }
 )
@@ -2530,47 +2554,57 @@ async function sendTurn(
     ? stagedTarget.path
     : (selectedTarget.value?.path ?? null)
   const originThreadId = threadId.value
-  if (!(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent)))
-    return 'withdrawn'
-  const turnOrigin: TurnOrigin =
-    targetTabPath === null ? null : { tabPath: targetTabPath }
-  const selection = resolveSendSelection(
-    nodes,
-    originWorkflow(turnOrigin),
-    stagedTarget
+  recordSendChatVersion(
+    meta.clientMessageId,
+    stagedTarget ?? selectedTarget.value ?? undefined
   )
-  if (selection === null) return 'withdrawn'
-  const { selectionWorkflow, sentNodes } = selection
-  recordSendTelemetry(
-    turnOrigin,
-    originThreadId,
-    attachments.length,
-    sentNodes.length,
-    meta
-  )
-  releaseGate?.()
-  const sentUsageScope = proactive.scope.value
   try {
-    const sent = await sendWithFundsRecheck((onAccepted) =>
-      sendMessage(
-        text,
-        attachments,
-        sentNodes,
-        references,
-        () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
-        meta.clientMessageId,
-        () => {
-          composerStore.clearPendingSendDraft(meta.clientMessageId)
-          proactive.accepted(sentUsageScope)
-          onAccepted()
-        },
-        targetTabPath
-      )
+    if (
+      !(await ensureSendAllowed(submissionId, meta.clientMessageId, isCurrent))
     )
-    return sent ? 'sent' : 'failed'
+      return 'withdrawn'
+    const turnOrigin: TurnOrigin =
+      targetTabPath === null ? null : { tabPath: targetTabPath }
+    const selection = resolveSendSelection(
+      nodes,
+      originWorkflow(turnOrigin),
+      stagedTarget
+    )
+    if (selection === null) return 'withdrawn'
+    const { selectionWorkflow, sentNodes } = selection
+    recordSendTelemetry(
+      turnOrigin,
+      originThreadId,
+      attachments.length,
+      sentNodes.length,
+      meta
+    )
+    releaseGate?.()
+    const sentUsageScope = proactive.scope.value
+    try {
+      const sent = await sendWithFundsRecheck((onAccepted) =>
+        sendMessage(
+          text,
+          attachments,
+          sentNodes,
+          references,
+          () => (selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined),
+          meta.clientMessageId,
+          () => {
+            composerStore.clearPendingSendDraft(meta.clientMessageId)
+            proactive.accepted(sentUsageScope)
+            onAccepted()
+          },
+          targetTabPath
+        )
+      )
+      return sent ? 'sent' : 'failed'
+    } finally {
+      if (proactive.scope.value === sentUsageScope) void proactive.refresh()
+      reportPendingSend(meta.clientMessageId)
+    }
   } finally {
-    if (proactive.scope.value === sentUsageScope) void proactive.refresh()
-    reportPendingSend(meta.clientMessageId)
+    pendingSendChatVersions.delete(meta.clientMessageId)
   }
 }
 
@@ -2748,6 +2782,7 @@ async function dispatchRetryPendingSend(
     ? originWorkflow({ tabPath: retried.targetTabPath })
     : undefined
   const sentUsageScope = proactive.scope.value
+  recordSendChatVersion(retryClientMessageId, selectionWorkflow)
   try {
     await sendWithFundsRecheck((onAccepted) =>
       sendMessage(
@@ -2766,6 +2801,7 @@ async function dispatchRetryPendingSend(
       )
     )
   } finally {
+    pendingSendChatVersions.delete(retryClientMessageId)
     if (proactive.scope.value === sentUsageScope) void proactive.refresh()
     reportPendingSend(retryClientMessageId)
     if (!conversationStore.getPendingSend(retryClientMessageId))
@@ -2864,15 +2900,62 @@ function openFailedBlankTab(blankChatId: string): ComfyWorkflow | undefined {
   )
 }
 
-function activateFailedBlankTab(blankChatId: string): boolean {
-  const originTab = openFailedBlankTab(blankChatId)
-  if (originTab === undefined) return false
-  conversationStore.setBlankChatIdForTab(originTab.instanceId, blankChatId)
-  if (workflowStore.activeWorkflow?.path === originTab.path) return false
-  if (selectedTarget.value?.path === originTab.path)
+function dismissOffscreenFailureToast(toastId: ToastId): void {
+  toast.dismiss(toastId)
+  offscreenFailureToasts.delete(toastId)
+}
+
+function isOffscreenBlankSendCurrent(
+  blankChatId: string,
+  originWorkspaceId: string | null
+): boolean {
+  const activeWorkspace = workspaceStore.activeWorkspaceId ?? null
+  return (
+    activeWorkspace === originWorkspaceId &&
+    conversationStore.hasPendingSendForBlankChat(blankChatId, activeWorkspace)
+  )
+}
+
+function reopenOffscreenBlankFallback(
+  blankChatId: string,
+  toastId: ToastId
+): void {
+  if (!reopenBlankChat(blankChatId)) return
+  void proactive.refresh()
+  agentPanelStore.startFollowingVisibleWorkflow()
+  dismissOffscreenFailureToast(toastId)
+}
+
+async function activateAndShowFailedBlankTab(
+  originTab: ComfyWorkflow,
+  blankChatId: string,
+  toastId: ToastId,
+  originWorkspaceId: string | null
+): Promise<void> {
+  let activated: boolean
+  try {
+    activated = await workflowService.openWorkflow(originTab, {
+      initiator: 'user'
+    })
+  } catch {
+    activated = false
+  }
+  if (!isOffscreenBlankSendCurrent(blankChatId, originWorkspaceId)) {
+    dismissOffscreenFailureToast(toastId)
+    return
+  }
+  if (activated) {
+    retireFollow()
+    if (
+      threadId.value !== null ||
+      conversationStore.activeBlankChatId !== blankChatId
+    )
+      reopenBlankChat(blankChatId)
     agentPanelStore.startFollowingVisibleWorkflow()
-  void workflowService.openWorkflow(originTab, { initiator: 'user' })
-  return true
+    dismissOffscreenFailureToast(toastId)
+    return
+  }
+  reopenOffscreenBlankFallback(blankChatId, toastId)
 }
 
 function showOffscreenBlankSend(
@@ -2880,23 +2963,32 @@ function showOffscreenBlankSend(
   toastId: ToastId,
   originWorkspaceId: string | null
 ): void {
-  toast.dismiss(toastId)
-  offscreenFailureToasts.delete(toastId)
-  const activeWorkspace = workspaceStore.activeWorkspaceId ?? null
-  if (
-    activeWorkspace !== originWorkspaceId ||
-    !conversationStore.hasPendingSendForBlankChat(blankChatId, activeWorkspace)
-  )
+  if (!isOffscreenBlankSendCurrent(blankChatId, originWorkspaceId)) {
+    dismissOffscreenFailureToast(toastId)
     return
+  }
   agentPanelStore.open()
   agentPanelStore.view = { screen: 'chat' }
   retireFollow()
   resetComposerForChatSwitch()
-  if (activateFailedBlankTab(blankChatId)) return
-  if (reopenBlankChat(blankChatId)) {
-    void proactive.refresh()
-    agentPanelStore.startFollowingVisibleWorkflow()
+  const originTab = openFailedBlankTab(blankChatId)
+  if (originTab === undefined) {
+    reopenOffscreenBlankFallback(blankChatId, toastId)
+    return
   }
+  conversationStore.setBlankChatIdForTab(originTab.instanceId, blankChatId)
+  if (workflowStore.activeWorkflow?.path === originTab.path) {
+    reopenOffscreenBlankFallback(blankChatId, toastId)
+    return
+  }
+  if (selectedTarget.value?.path === originTab.path)
+    agentPanelStore.startFollowingVisibleWorkflow()
+  void activateAndShowFailedBlankTab(
+    originTab,
+    blankChatId,
+    toastId,
+    originWorkspaceId
+  )
 }
 
 function notifyOffscreenBlankSendFailed({
@@ -2943,7 +3035,7 @@ function discardBlankComposerBeforeNewChat(): void {
   ))
     composerStore.releaseRetainedAssets(pendingAssetOwnerKey(discardedId))
   for (const { id } of composerStore.attachments) attachment.cancelUpload(id)
-  blankUploadNonce.value += 1
+  chatDrafts.resetUploadScope(targetBlankOrigin.blankChatId)
 }
 
 function advanceBlankTabIfPending(): void {
@@ -3084,10 +3176,7 @@ const attachment = useAttachment({
   maxBytes: () => flags.maxUploadSize ?? MAX_ATTACHMENT_BYTES,
   onError: warnAttachment,
   onDuplicate: notifyDuplicateAttachments,
-  draftScope: () =>
-    threadId.value === null
-      ? `${chatDrafts.draftKey.value}:${blankUploadNonce.value}`
-      : chatDrafts.draftKey.value,
+  draftScope: () => chatDrafts.uploadScope(),
   staged: () => composerStore.attachments,
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,

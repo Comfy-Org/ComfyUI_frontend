@@ -70,6 +70,7 @@ type FollowDeps = {
     isCurrent: () => boolean,
     options: { keepOpenChatUntilLoaded: boolean }
   ) => Promise<boolean>
+  isThreadMissing?: (threadId: string) => boolean
   showBlankChat: () => void
   trackThreadStarted: () => void
   restoreThreadWorkflow: (
@@ -266,9 +267,11 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
 
   function nextCandidateChat(
     workflowId: string,
-    failedThreadId?: string
+    excludedThreadIds: ReadonlySet<string>
   ): ChatSession | undefined {
-    return deps.chatsFor(workflowId).find((chat) => chat.id !== failedThreadId)
+    return deps
+      .chatsFor(workflowId)
+      .find((chat) => !excludedThreadIds.has(chat.id))
   }
 
   async function openLatestChat(
@@ -285,13 +288,52 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     if (outcome === 'failed') showList(operation, 'failed')
   }
 
+  async function recoverMissingCachedChat(
+    operation: FollowOperation,
+    workflowId: string,
+    missingThreadId: string,
+    excluded: Set<string>,
+    refreshing: Promise<ThreadListing['status'] | 'superseded'>,
+    ignoreDraftGate: boolean
+  ): Promise<void> {
+    excluded.add(missingThreadId)
+    showList(operation, 'loading')
+    const refreshOutcome = await refreshing
+    if (!isCurrent(operation)) return
+    const next = nextCandidateChat(workflowId, excluded)
+    if (refreshOutcome !== 'complete') {
+      if (next !== undefined && canOpen(operation, ignoreDraftGate)) {
+        await openLatestChat(operation, workflowId, next.id, ignoreDraftGate)
+        return
+      }
+      showList(operation, 'failed')
+      return
+    }
+    const hasRemaining = deps
+      .chatsFor(workflowId)
+      .some((chat) => chat.id !== missingThreadId)
+    if (!hasRemaining) {
+      dispatch({ type: 'opening_done', generation: operation.generation })
+      return
+    }
+    if (next === undefined) return showList(operation, 'failed')
+    if (!canOpen(operation, ignoreDraftGate)) {
+      retireIfCurrent(operation)
+      return
+    }
+    await openLatestChat(operation, workflowId, next.id, ignoreDraftGate)
+  }
+
   async function landOnKnownChats(
     operation: FollowOperation,
     workflowId: string,
     failedThreadId?: string,
     ignoreDraftGate = false
   ): Promise<void> {
-    const candidate = nextCandidateChat(workflowId, failedThreadId)
+    const excluded = new Set(
+      failedThreadId === undefined ? [] : [failedThreadId]
+    )
+    const candidate = nextCandidateChat(workflowId, excluded)
     if (candidate === undefined)
       return landOnFreshChats(
         operation,
@@ -303,8 +345,25 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       retireIfCurrent(operation)
       return
     }
-    void deps.refreshHistory('none', workflowId)
-    await openLatestChat(operation, workflowId, candidate.id, ignoreDraftGate)
+    const refreshing = deps.refreshHistory('none', workflowId)
+    const outcome = await openFollowedChat(
+      operation,
+      { threadId: candidate.id, workflowId },
+      () => isOpeningWanted(operation, candidate.id, ignoreDraftGate)
+    )
+    if (outcome === 'settled') return
+    if (!deps.isThreadMissing?.(candidate.id)) {
+      showList(operation, 'failed')
+      return
+    }
+    await recoverMissingCachedChat(
+      operation,
+      workflowId,
+      candidate.id,
+      excluded,
+      refreshing,
+      ignoreDraftGate
+    )
   }
 
   function retireIfCurrent(operation: FollowOperation): void {
@@ -317,11 +376,14 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     failedThreadId?: string,
     ignoreDraftGate = false
   ): Promise<void> {
+    const excluded = new Set(
+      failedThreadId === undefined ? [] : [failedThreadId]
+    )
     showList(operation, 'loading')
     const outcome = await deps.refreshHistory('none', workflowId)
     if (!isCurrent(operation)) return
     if (outcome !== 'complete') {
-      const candidate = nextCandidateChat(workflowId, failedThreadId)
+      const candidate = nextCandidateChat(workflowId, excluded)
       if (candidate !== undefined && canOpen(operation, ignoreDraftGate)) {
         await openLatestChat(
           operation,
@@ -338,7 +400,7 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
       dispatch({ type: 'opening_done', generation: operation.generation })
       return
     }
-    const candidate = nextCandidateChat(workflowId, failedThreadId)
+    const candidate = nextCandidateChat(workflowId, excluded)
     if (candidate === undefined) return showList(operation, 'failed')
     if (!canOpen(operation, ignoreDraftGate)) {
       retireIfCurrent(operation)
@@ -394,10 +456,27 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     )
   }
 
+  async function openRemembered(
+    operation: FollowOperation,
+    remembered: Opening
+  ): Promise<string | null> {
+    const outcome = await openFollowedChat(operation, remembered, () =>
+      isOpeningWanted(operation, remembered.threadId)
+    )
+    if (outcome === 'settled') return null
+    deps.forgetOpenChat(remembered.threadId)
+    return remembered.threadId
+  }
+
   async function followTab(workflow: ComfyWorkflow): Promise<void> {
     dispatch({ type: 'requested', workflow, heldBack: heldBack(workflow) })
     const operation = state.value
     if (operation.status !== 'following') return
+    if (deps.hasBlankPendingSend(workflow)) {
+      deps.showBlankChat()
+      dispatch({ type: 'opening_done', generation: operation.generation })
+      return
+    }
     const remembered = rememberedChat(workflow)
     if (remembered?.threadId === deps.currentThreadId()) {
       dispatch({ type: 'retired' })
@@ -406,12 +485,9 @@ export function useAgentWorkflowChatFollow(deps: FollowDeps) {
     deps.showBlankChat()
     let failedThreadId: string | undefined
     if (remembered !== undefined && canOpen(operation)) {
-      const outcome = await openFollowedChat(operation, remembered, () =>
-        isOpeningWanted(operation, remembered.threadId)
-      )
-      if (outcome === 'settled') return
-      deps.forgetOpenChat(remembered.threadId)
-      failedThreadId = remembered.threadId
+      const failed = await openRemembered(operation, remembered)
+      if (failed === null) return
+      failedThreadId = failed
     }
     if (isCurrent(operation))
       await showLanding(workflow, operation, failedThreadId)

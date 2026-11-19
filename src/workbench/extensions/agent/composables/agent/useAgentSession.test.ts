@@ -10298,7 +10298,8 @@ describe('useAgentSession optimistic and chat-owned sends (PR 0)', () => {
     expect(onBackgroundTurnAccepted).toHaveBeenCalledWith(
       { thread_id: 'th-stopped', message_id: 'msg-stopped' },
       'Late unmount reply',
-      undefined
+      undefined,
+      'cm-stopped'
     )
   })
 

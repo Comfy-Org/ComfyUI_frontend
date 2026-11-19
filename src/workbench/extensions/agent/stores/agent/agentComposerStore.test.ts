@@ -599,20 +599,76 @@ describe('composer drafts per chat', () => {
     expect(store.hasDraft).toBe(false)
   })
 
+  function seedDrafts(
+    store: ReturnType<typeof useAgentComposerStore>,
+    keys: readonly string[]
+  ): void {
+    for (const key of keys) {
+      store.activateDraft(key)
+      store.setText(`draft ${key}`)
+    }
+  }
+
   it('PD-15: keeps the drafts of the twenty most recently left chats', () => {
     const store = useAgentComposerStore()
-    for (let chat = 0; chat <= 20; chat++) {
-      store.activateDraft(`thread:${chat}`)
-      store.setText(`draft ${chat}`)
-    }
+    seedDrafts(
+      store,
+      Array.from({ length: 21 }, (_, chat) => `thread:${chat}`)
+    )
     store.activateDraft('thread:other')
 
     store.activateDraft('thread:0')
     expect(store.hasDraft).toBe(false)
     store.activateDraft('thread:1')
-    expect(store.draft).toBe('draft 1')
+    expect(store.draft).toBe('draft thread:1')
     store.activateDraft('thread:20')
-    expect(store.draft).toBe('draft 20')
+    expect(store.draft).toBe('draft thread:20')
+  })
+
+  it('preserves the oldest kept draft and its attachment when returning to it from a nonempty active draft at the twenty-draft limit', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:0')
+    store.setText('oldest draft')
+    store.addAttachment({
+      id: 'att-oldest',
+      name: 'oldest.png',
+      ref: 'oldest.png',
+      previewUrl: 'blob:oldest'
+    })
+    seedDrafts(
+      store,
+      Array.from({ length: 20 }, (_, offset) => `thread:${offset + 1}`)
+    )
+
+    store.activateDraft('thread:0')
+
+    expect(store.draft).toBe('oldest draft')
+    expect(store.attachments.map(({ id }) => id)).toEqual(['att-oldest'])
+    expect(revoke).not.toHaveBeenCalledWith('blob:oldest')
+
+    store.activateDraft('thread:20')
+    expect(store.draft).toBe('draft thread:20')
+    revoke.mockRestore()
+  })
+
+  it('does not overwrite a newer kept draft when restoring a withdrawn snapshot off screen', () => {
+    const store = useAgentComposerStore()
+    store.activateDraft('thread:a')
+    store.setText('newer text typed on a')
+    store.activateDraft('thread:b')
+
+    store.restoreKeptDraftSnapshot('thread:a', {
+      prompt: { text: 'older withdrawn text', references: [] },
+      attachments: [],
+      nodes: [],
+      targetInstanceId: null,
+      promptOrigin: 'typed',
+      starterPrompt: null
+    })
+
+    store.activateDraft('thread:a')
+    expect(store.draft).toBe('newer text typed on a')
   })
 
   it('PD-09: does not bring a sent message back when its chat is active again', () => {
@@ -713,10 +769,10 @@ describe('composer drafts per chat', () => {
       previewUrl: 'blob:evicted'
     })
 
-    for (let index = 1; index <= 21; index++) {
-      store.activateDraft(`thread:${index}`)
-      store.setText(`draft ${index}`)
-    }
+    seedDrafts(
+      store,
+      Array.from({ length: 21 }, (_, offset) => `thread:${offset + 1}`)
+    )
     store.activateDraft('thread:22')
 
     expect(revoke).toHaveBeenCalledWith('blob:evicted')

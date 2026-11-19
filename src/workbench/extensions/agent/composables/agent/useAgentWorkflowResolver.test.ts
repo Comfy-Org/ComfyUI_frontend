@@ -540,6 +540,26 @@ describe('Cloud listing completeness', () => {
 
     expect(resolver.cloudListingOmits('cloud-a')).toBe(true)
   })
+
+  it('requires a complete listing before accepting a name match in authoritativeCloudIdFor while preserving verified bindings', async () => {
+    const portrait = workflow('workflows/portrait.json', 'Portrait')
+    const bound = workflow('workflows/bound.json', 'Bound')
+    const { resolver, bindings, listCloudWorkflows } = setup([portrait, bound])
+    bindings.bind('cloud-bound', bound.path)
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'cloud-portrait-other', name: 'Portrait' }], false)
+    )
+
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('incomplete')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBeUndefined()
+    expect(resolver.authoritativeCloudIdFor(bound)).toBe('cloud-bound')
+
+    listCloudWorkflows.mockResolvedValueOnce(
+      listing([{ id: 'cloud-portrait', name: 'Portrait' }], true)
+    )
+    expect(await resolver.refreshCloudWorkflowListing()).toBe('complete')
+    expect(resolver.authoritativeCloudIdFor(portrait)).toBe('cloud-portrait')
+  })
 })
 
 describe('Cloud workflow lifecycle', () => {

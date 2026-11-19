@@ -65,7 +65,6 @@ import type { LostEdits } from './rejectedOpNotice'
 import {
   forgetUnsyncedAtLoad,
   hasBlockingUnsyncedHumanOps,
-  recordPendingHumanOps,
   recordUnsyncedHumanOps,
   releaseUnsyncedHumanOpsRecorder
 } from './unsyncedHumanOps'
@@ -616,9 +615,9 @@ function startAgentCrdtFollower(
 
   const workflowsWithUnsyncedOps = new Set<string>()
   const recordUnsynced = (): void => {
-    recordUnsyncedHumanOps(tabId, workflowsWithUnsyncedOps)
-    recordPendingHumanOps(
+    recordUnsyncedHumanOps(
       tabId,
+      workflowsWithUnsyncedOps,
       sender.pendingOps().map(({ workflowId }) => workflowId)
     )
   }

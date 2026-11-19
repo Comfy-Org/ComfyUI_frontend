@@ -326,6 +326,7 @@ import { getMinimapDecorations } from '@/platform/canvas/minimapDecorationRegist
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useAgentOpenChatsStore } from './stores/agent/agentOpenChatsStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createFakeAgentSocket } from './crdt/__fixtures__/agentSocket'
 import { createAgentEventSource } from './services/agent/agentEventSource'
@@ -7987,11 +7988,14 @@ describe('AgentPanelRoot history', () => {
 
         await activateTabAsUser(second)
         await settleFollow()
+        expect(useAgentComposerStore().draft).toBe('')
+
         await activateTabAsUser(first)
         await vi.waitFor(() =>
           expect(useAgentConversationStore().threadId).toBe('th-first')
         )
 
+        expect(useAgentComposerStore().draft).toBe('')
         expect(useAgentComposerStore().hasDraft).toBe(false)
       })
 
@@ -8384,6 +8388,209 @@ describe('AgentPanelRoot history', () => {
         expect(await screen.findByTestId('pending-send-error')).toBeVisible()
       })
 
+      it('O0-14: Show opens the failed blank chat instead of an older remembered chat on the origin tab', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let failFirstPost!: () => void
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first-old',
+              title: 'Older chat',
+              last_message_at: '2026-09-22T08:00:00Z',
+              workflow_id: 'wf-first'
+            })
+          ],
+          { 'th-first-old': { workflowId: 'wf-first' } },
+          {
+            post: () =>
+              new Promise<Response>((_, reject) => {
+                failFirstPost = () => reject(new TypeError('Failed to fetch'))
+              })
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await openFromHistory('Older chat')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-old')
+        )
+
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+        )
+        await sendFromComposer('failed blank over remembered')
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        failFirstPost()
+        await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+        useToast().toasts[0].actions[0].onClick()
+
+        await vi.waitFor(() => {
+          expect(workflowStore.activeWorkflow?.path).toBe(first.path)
+          expect(useAgentConversationStore().threadId).toBeNull()
+          expect(userPrompts()).toEqual(['failed blank over remembered'])
+        })
+        expect(useToast().toasts).toHaveLength(0)
+      })
+
+      it.for([
+        {
+          name: 'returns false',
+          stubOpen: () =>
+            vi
+              .mocked(useWorkflowService().openWorkflow)
+              .mockResolvedValueOnce(false)
+        },
+        {
+          name: 'rejects',
+          stubOpen: () =>
+            vi
+              .mocked(useWorkflowService().openWorkflow)
+              .mockRejectedValueOnce(new Error('tab closing'))
+        }
+      ])(
+        'O0-14: Show falls back to reopening on the visible tab when openWorkflow $name',
+        async ({ stubOpen }) => {
+          const first = addTab('workflows/first.json')
+          const second = addTab('workflows/second.json')
+          workflowStore.activeWorkflow = first
+          let failFirstPost!: () => void
+          stubWorkflowBoundHistory(
+            [],
+            {},
+            {
+              post: () =>
+                new Promise<Response>((_, reject) => {
+                  failFirstPost = () => reject(new TypeError('Failed to fetch'))
+                })
+            }
+          )
+          render(AgentPanelRoot, { global: { plugins: [i18n] } })
+          await sendFromComposer('activation failure fallback')
+
+          await activateTabAsUser(second)
+          await settleFollow()
+
+          failFirstPost()
+          await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+          stubOpen()
+          useToast().toasts[0].actions[0].onClick()
+
+          await vi.waitFor(() =>
+            expect(userPrompts()).toEqual(['activation failure fallback'])
+          )
+          expect(workflowStore.activeWorkflow.path).toBe(second.path)
+          expect(useToast().toasts).toHaveLength(0)
+        }
+      )
+
+      it('does not let a late background ACK overwrite a newer chat selection on the same tab', async () => {
+        const first = addTab('workflows/first.json')
+        const second = addTab('workflows/second.json')
+        workflowStore.activeWorkflow = first
+        let acceptFirst!: () => void
+        stubWorkflowBoundHistory(
+          [
+            agentThread({
+              id: 'th-first-1',
+              title: 'First chat 1',
+              last_message_at: '2026-09-22T09:00:00Z',
+              workflow_id: 'wf-first'
+            }),
+            agentThread({
+              id: 'th-first-2',
+              title: 'First chat 2',
+              last_message_at: '2026-09-22T08:00:00Z',
+              workflow_id: 'wf-first'
+            })
+          ],
+          {
+            'th-first-1': { workflowId: 'wf-first' },
+            'th-first-2': { workflowId: 'wf-first' }
+          },
+          {
+            post: (threadId) =>
+              new Promise<Response>((resolve) => {
+                acceptFirst = () =>
+                  resolve(
+                    json(202, {
+                      thread_id: threadId,
+                      message_id: 'm-late-ack',
+                      workflow_id: 'wf-first'
+                    })
+                  )
+              })
+          }
+        )
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await openFromHistory('First chat 1')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-1')
+        )
+
+        await sendFromComposer('late ack from first chat 1')
+        await openFromHistory('First chat 2')
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-2')
+        )
+
+        await activateTabAsUser(second)
+        await settleFollow()
+
+        acceptFirst()
+        await settleFollow()
+
+        await activateTabAsUser(first)
+        await vi.waitFor(() =>
+          expect(useAgentConversationStore().threadId).toBe('th-first-2')
+        )
+      })
+
+      it('does not open a chat or adopt an id from a partial cloud workflow listing when following an unbound saved tab', async () => {
+        const first = addTab('workflows/first.json')
+        const portrait = addTab('workflows/portrait.json')
+        workflowStore.activeWorkflow = first
+        vi.mocked(fetch).mockImplementation(async (input) => {
+          const url = String(input)
+          if (url.includes('/api/workflows?'))
+            return json(200, {
+              data: [
+                { id: 'wf-first', name: 'first' },
+                { id: 'wf-portrait-other', name: 'portrait' }
+              ],
+              pagination: { offset: 0, limit: 100, total: 200, has_more: true }
+            })
+          if (url.includes('/api/agent/threads?'))
+            return json(
+              200,
+              agentThreadList([
+                agentThread({
+                  id: 'th-portrait-other',
+                  title: 'Other portrait chat',
+                  workflow_id: 'wf-portrait-other',
+                  last_message_at: '2026-09-22T09:00:00Z'
+                })
+              ])
+            )
+          if (url.includes('/api/agent/threads/th-portrait-other/messages'))
+            return transcriptFor('th-portrait-other', 'wf-portrait-other')
+          return json(200, {})
+        })
+        render(AgentPanelRoot, { global: { plugins: [i18n] } })
+        await settleFollow()
+
+        await activateTabAsUser(portrait)
+        await settleFollow()
+
+        expect(useAgentConversationStore().threadId).toBeNull()
+        expect(
+          useAgentWorkflowTabBindingStore().workflowIdFor(portrait.path)
+        ).toBeUndefined()
+      })
+
       it('O0-15: pressing New chat while viewing a thread does not discard a failed offscreen blank send on that tab so Show still opens it', async () => {
         const first = addTab('workflows/first.json')
         workflowStore.activeWorkflow = first
@@ -8570,9 +8777,31 @@ describe('AgentPanelRoot history', () => {
         expect(screen.getByRole('textbox')).toHaveTextContent('make it blue')
       })
 
-      it.for(['new_chat', 'tab_switch'] as const)(
-        'T1-15 UQ-01 UQ-02: starts a new upload after %s while three uploads keep running in the left draft',
-        async (action) => {
+      it.for([
+        {
+          action: 'new_chat',
+          leave: async () => {
+            await userEvent.click(
+              screen.getByRole('button', {
+                name: i18n.global.t('agent.newChat')
+              })
+            )
+            expect(useAgentConversationStore().threadId).toBeNull()
+          },
+          returnToFirst: async () => openFromHistory('First chat')
+        },
+        {
+          action: 'tab_switch',
+          leave: async (second: ComfyWorkflow) => {
+            await activateTabAsUser(second)
+            await settleFollow()
+          },
+          returnToFirst: async (first: ComfyWorkflow) =>
+            activateTabAsUser(first)
+        }
+      ])(
+        'T1-15 UQ-01 UQ-02: starts a new upload after $action while three uploads keep running in the left draft',
+        async ({ leave, returnToFirst }) => {
           const { first, second } = await openFirstChatWithHistory([])
           const pendingUploads = new Map<string, () => void>()
           const startedUploads: string[] = []
@@ -8613,17 +8842,7 @@ describe('AgentPanelRoot history', () => {
           ])
           await vi.waitFor(() => expect(startedUploads).toHaveLength(3))
 
-          if (action === 'new_chat') {
-            await userEvent.click(
-              screen.getByRole('button', {
-                name: i18n.global.t('agent.newChat')
-              })
-            )
-            expect(useAgentConversationStore().threadId).toBeNull()
-          } else {
-            await activateTabAsUser(second)
-            await settleFollow()
-          }
+          await leave(second)
           expect(useAgentComposerStore().attachments).toEqual([])
 
           await userEvent.upload(
@@ -8651,8 +8870,7 @@ describe('AgentPanelRoot history', () => {
             useAgentComposerStore().attachments.map(({ ref }) => ref)
           ).toEqual(['uploaded-next.png'])
 
-          if (action === 'new_chat') await openFromHistory('First chat')
-          else await activateTabAsUser(first)
+          await returnToFirst(first)
 
           await vi.waitFor(() =>
             expect(useAgentConversationStore().threadId).toBe('th-first')
@@ -8801,6 +9019,7 @@ describe('AgentPanelRoot history', () => {
         await vi.waitFor(() =>
           expect(useAgentConversationStore().threadId).toBeNull()
         )
+        expect(hasUnsyncedHumanOps('wf-first')).toBe(true)
         expect(lostEditReports()).toEqual([])
 
         await activateTabAsUser(first)
@@ -8813,6 +9032,7 @@ describe('AgentPanelRoot history', () => {
             sentFrames('doc_subscribe').map(({ data }) => data.workflow_id)
           ).toEqual(['wf-first', 'wf-first'])
         )
+        expect(hasUnsyncedHumanOps('wf-first')).toBe(true)
         ws.emit('doc_ops_result', {
           v: 1,
           workflow_id: 'wf-first',
@@ -8838,6 +9058,7 @@ describe('AgentPanelRoot history', () => {
         await vi.waitFor(() =>
           expect(useAgentConversationStore().threadId).toBeNull()
         )
+        expect(hasUnsyncedHumanOps('wf-first')).toBe(true)
         expect(lostEditReports()).toEqual([])
 
         await activateTabAsUser(first)
@@ -8850,6 +9071,7 @@ describe('AgentPanelRoot history', () => {
             sentFrames('doc_subscribe').map(({ data }) => data.workflow_id)
           ).toEqual(['wf-first', 'wf-first'])
         )
+        expect(hasUnsyncedHumanOps('wf-first')).toBe(true)
         ws.emit('doc_ops_result', {
           v: 1,
           workflow_id: 'wf-first',
@@ -14726,6 +14948,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[1]).not.toHaveProperty('workflow_id')
     expect(bodies[1]).toMatchObject({ current_tab_unbound: true })
     expect(bodies[1]).toHaveProperty('draft')
+    expect(useAgentOpenChatsStore().recall('wf-saved')).toBeUndefined()
   })
 
   it('agent_active_tab with a cloud id activates the open saved tab without minting', async () => {

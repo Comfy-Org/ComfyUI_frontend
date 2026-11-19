@@ -65,4 +65,32 @@ describe('useAgentChatDrafts', () => {
     threadId.value = 'th-a'
     expect(composer.draft).toBe('')
   })
+
+  it('keeps each draft upload scope stable across other drafts resetting and across blank-to-thread rekeying', () => {
+    const activeBlankChatId = ref('blank:tab-a')
+    const threadId = ref<string | null>(null)
+    const { uploadScope, resetUploadScope, rekeyBlankDraft, discardChatDraft } =
+      useAgentChatDrafts({
+        threadId,
+        activeBlankChatId
+      })
+
+    const scopeA = uploadScope()
+    activeBlankChatId.value = 'blank:tab-b'
+    const scopeB = uploadScope()
+    expect(scopeB).not.toBe(scopeA)
+
+    resetUploadScope('blank:tab-b')
+    expect(uploadScope()).not.toBe(scopeB)
+
+    activeBlankChatId.value = 'blank:tab-a'
+    expect(uploadScope()).toBe(scopeA)
+
+    rekeyBlankDraft('blank:tab-a', 'th-a')
+    threadId.value = 'th-a'
+    expect(uploadScope()).toBe(scopeA)
+
+    discardChatDraft('th-a')
+    expect(uploadScope()).not.toBe(scopeA)
+  })
 })
