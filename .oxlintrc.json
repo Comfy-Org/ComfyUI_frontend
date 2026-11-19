@@ -297,7 +297,8 @@
       ],
       "excludeFiles": [
         "**/*.{test,spec}.{ts,tsx}",
-        "packages/api-client/src/abortSignal.ts"
+        "packages/api-client/src/abortSignal.ts",
+        "apps/billing-web/src/handoff/timeoutSignal.ts"
       ],
       "rules": {
         "no-restricted-properties": [

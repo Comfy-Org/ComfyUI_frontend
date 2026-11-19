@@ -39,10 +39,9 @@ export function createTimeoutSignal(milliseconds: number): AbortSignal {
   return controller.signal
 }
 
-/** `signal.throwIfAborted()` without needing it: the method is missing on Chrome < 100 and Safari < 15.4. */
+/** Native `signal.throwIfAborted()` is missing on Chrome < 100 and Safari < 15.4. */
 export function throwIfAborted(signal: AbortSignal | undefined): void {
   if (!signal?.aborted) return
-  // Runtimes old enough to lack throwIfAborted may also leave reason undefined.
   throw signal.reason === undefined
     ? new DOMException('This operation was aborted', 'AbortError')
     : signal.reason

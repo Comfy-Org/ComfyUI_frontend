@@ -123,9 +123,11 @@ describe('throwIfAborted', () => {
   })
 
   it('throws an AbortError when the runtime records no abort reason', () => {
-    const signal = { aborted: true, reason: undefined } as AbortSignal
+    const controller = new AbortController()
+    controller.abort()
+    vi.spyOn(AbortSignal.prototype, 'reason', 'get').mockReturnValue(undefined)
 
-    expect(() => throwIfAborted(signal)).toThrow(
+    expect(() => throwIfAborted(controller.signal)).toThrow(
       expect.objectContaining({ name: 'AbortError' })
     )
   })

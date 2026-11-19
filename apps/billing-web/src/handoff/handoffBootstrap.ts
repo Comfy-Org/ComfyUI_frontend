@@ -9,6 +9,7 @@ import {
   writeHandoffState,
   writeTabMarker
 } from '@/handoff/handoffTab'
+import { createTimeoutSignal } from '@/handoff/timeoutSignal'
 
 export interface HandoffBootEnv {
   readonly capture: Extract<HandoffCapture, { kind: 'captured' }>
@@ -54,7 +55,7 @@ async function exchange(
         body: JSON.stringify({ token }),
         credentials: 'omit',
         cache: 'no-store',
-        signal: exchangeTimeoutSignal(env.exchangeTimeoutMs)
+        signal: createTimeoutSignal(env.exchangeTimeoutMs)
       }
     )
     if (!response.ok)
@@ -118,21 +119,4 @@ export async function runHandoffBootstrap(
   if (!storageWorks(env.storage) || !writeHandoffState(env.storage, lost))
     return settle(env, STORAGE_UNAVAILABLE)
   return settle(env, await exchange(env, token))
-}
-
-/** `AbortSignal.timeout` is missing on Chrome < 103 and Safari < 16, which then could never exchange. */
-function exchangeTimeoutSignal(milliseconds: number): AbortSignal {
-  // oxlint-disable-next-line no-restricted-properties -- feature-detected here
-  if (typeof AbortSignal.timeout === 'function')
-    // oxlint-disable-next-line no-restricted-properties -- feature-detected above
-    return AbortSignal.timeout(milliseconds)
-  const controller = new AbortController()
-  setTimeout(
-    () =>
-      controller.abort(
-        new DOMException('The operation timed out.', 'TimeoutError')
-      ),
-    milliseconds
-  )
-  return controller.signal
 }
