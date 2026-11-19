@@ -1,4 +1,5 @@
 import { expect } from '@playwright/test'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import {
@@ -62,6 +63,9 @@ test.describe(
       await agentPanel.composer.press('Enter')
 
       await expect.poll(() => postedMessages).toHaveLength(2)
+      expect(
+        zAgentPostMessageRequest.parse(JSON.parse(postedMessages[1]))
+      ).toMatchObject({ content: followUp })
       await expect(agentPanel.composer).toHaveText('')
       await expect(agentPanel.userMessageBubbles).toHaveText([prompt, followUp])
     })
@@ -71,13 +75,15 @@ test.describe(
 
       test('enables Retry after the delay and retries the failed message once', async ({
         agentPanel,
+        page,
         postedMessages
       }) => {
+        await page.clock.install()
         await rejectOneSend({ agentPanel, postedMessages })
 
-        await expect(agentPanel.retryPendingButton).toBeEnabled({
-          timeout: 5_000
-        })
+        await expect(agentPanel.retryPendingButton).toBeDisabled()
+        await page.clock.runFor(1_100)
+        await expect(agentPanel.retryPendingButton).toBeEnabled()
         await agentPanel.retryPendingButton.click()
 
         await expect.poll(() => postedMessages).toHaveLength(2)

@@ -1679,6 +1679,23 @@ describe('error mapping', () => {
       })
     }
   )
+
+  it('treats a non-SyntaxError body read failure after 202 headers on postMessage as unreadable', async () => {
+    const response = jsonResponse(202, {
+      thread_id: 't1',
+      message_id: 'm1'
+    })
+    vi.spyOn(response, 'json').mockRejectedValueOnce(
+      new TypeError('network stream dropped')
+    )
+    respond(response)
+
+    const error = await makeClient()
+      .postMessage('t1', { content: 'hi' })
+      .catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(AgentResponseUnreadableError)
+  })
 })
 
 describe('Retry-After contract', () => {

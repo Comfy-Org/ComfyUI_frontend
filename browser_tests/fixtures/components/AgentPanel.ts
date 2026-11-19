@@ -153,7 +153,7 @@ export class AgentPanel {
     this.loadRetryButton = this.dockedPanelShell.getByRole('button', {
       name: enMessages.g.retry
     })
-    this.newChatButton = this.root.getByRole('button', {
+    this.newChatButton = this.root.locator('header').getByRole('button', {
       name: enMessages.agent.newChat,
       exact: true
     })

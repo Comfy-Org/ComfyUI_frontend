@@ -98,9 +98,11 @@ test.describe(
       await expect(tabs).toHaveCount(1)
       workflowSelection.resumeWorkflowLookups()
       await expect(composer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         'Keep this interrupted draft'
       ])
+      await expect(panel.getByTestId('pending-send-error')).toBeVisible()
       await expect(panel.getByTestId('pending-send-error')).toContainText(
         enMessages.agent.targetNavigationUnavailable
       )

@@ -117,15 +117,24 @@ describe('composer shared video thumbnail lifetime', () => {
     expect(
       vi.mocked(videoThumbnail.createVideoThumbnail).mock.calls[0][1].aborted
     ).toBe(false)
-    result.resolve('blob:retained-poster')
-    await result.promise
-    expect(store.attachments[0].previewUrl).toBe('blob:retained-poster')
-    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
     retainPendingVideo('cm-2', store)
     const secondGate = store.startGateHold('cm-2')
-    store.releaseGateHold(secondGate)
-    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(videoThumbnail.createVideoThumbnail).mock.calls[0][1].aborted
+    ).toBe(false)
     expect(videoThumbnail.createVideoThumbnail).toHaveBeenCalledTimes(1)
+    result.resolve('blob:retained-poster')
+    await result.promise
+    store.releaseGateHold(secondGate)
+    store.restorePrompt(snapshot.prompt, [
+      {
+        ...video,
+        mediaUrl: 'blob:retained-video',
+        previewUrl: 'blob:retained-poster'
+      }
+    ])
+    expect(store.attachments[0].previewUrl).toBe('blob:retained-poster')
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
   })
 
   it('generates once for the included asset and shares the result with every occurrence', async () => {

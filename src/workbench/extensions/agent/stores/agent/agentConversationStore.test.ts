@@ -4153,20 +4153,29 @@ describe('useAgentConversationStore', () => {
         tags: [],
         workflowReferences: []
       })
-      store.failPendingSend('cm-1', { kind: 'paywall', message: 'no credits' })
-      store.failPendingSend('cm-2', {
-        kind: 'retry_after',
-        message: 'wait',
-        retryAfterSeconds: 10
-      })
+      vi.useFakeTimers()
+      vi.setSystemTime(1_700_000_000_000)
+      try {
+        store.failPendingSend('cm-1', {
+          kind: 'paywall',
+          message: 'no credits'
+        })
+        store.failPendingSend('cm-2', {
+          kind: 'retry_after',
+          message: 'wait',
+          retryAfterSeconds: 10
+        })
 
-      expect(store.entries[0]).toMatchObject({
-        id: 'cm-1',
-        pending: { paywallResolved: false }
-      })
-      expect(store.getPendingSend('cm-2')?.failure?.retryAtMs).toEqual(
-        expect.any(Number)
-      )
+        expect(store.entries[0]).toMatchObject({
+          id: 'cm-1',
+          pending: { paywallResolved: false }
+        })
+        expect(store.getPendingSend('cm-2')?.failure?.retryAtMs).toBe(
+          1_700_000_010_000
+        )
+      } finally {
+        vi.useRealTimers()
+      }
 
       store.resolvePaywalls()
       expect(store.entries[0]).toMatchObject({
@@ -4219,6 +4228,76 @@ describe('useAgentConversationStore', () => {
           parts: [{ type: 'text', text: 'Background reply', state: 'done' }]
         }
       ])
+    })
+
+    it('keeps a resolved pending paywall across reset and hydrate until retried', () => {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-pay')
+      store.startPendingSend({
+        clientMessageId: 'cm-pay',
+        text: 'paywall prompt',
+        attachments: [],
+        tags: [],
+        workflowReferences: []
+      })
+      store.failPendingSend('cm-pay', {
+        kind: 'paywall',
+        message: 'no credits'
+      })
+      store.resolvePaywalls()
+      expect(store.entries[0]).toMatchObject({
+        id: 'cm-pay',
+        pending: { paywallResolved: true }
+      })
+
+      store.reset()
+      store.setThreadId('th-pay')
+      store.hydrate([])
+
+      expect(store.entries[0]).toMatchObject({
+        id: 'cm-pay',
+        pending: { paywallResolved: true }
+      })
+
+      store.retryPendingSend('cm-pay', 'cm-pay-retry')
+      store.failPendingSend('cm-pay-retry', {
+        kind: 'paywall',
+        message: 'still out'
+      })
+      expect(store.entries[0]).toMatchObject({
+        id: 'cm-pay-retry',
+        pending: { paywallResolved: false }
+      })
+    })
+
+    it('restores background user tags and attachments even when history already holds the text', () => {
+      const store = useAgentConversationStore()
+      store.startBackgroundTurn({
+        threadId: 'th',
+        turnId: toTurnId('msg-bg-meta'),
+        text: 'Tag prompt',
+        attachments: [{ name: 'ref.png', kind: 'image' }],
+        tags: ['KSampler #1'],
+        tab: { status: 'unknown' }
+      })
+
+      store.setThreadId('th')
+      store.hydrate([
+        historyRow(1, 'user', 'msg-bg-meta', 'Tag prompt', 'u-meta'),
+        {
+          ...historyRow(2, 'assistant', 'msg-bg-meta', '', 'msg-bg-meta'),
+          content: {},
+          status: 'streaming'
+        }
+      ])
+      store.resumeBackgroundTurn()
+
+      expect(store.entries[0]).toMatchObject({
+        role: 'user',
+        text: 'Tag prompt',
+        attachments: [{ name: 'ref.png', kind: 'image' }],
+        tags: ['KSampler #1']
+      })
     })
   })
 })

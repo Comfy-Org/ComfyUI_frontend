@@ -1731,19 +1731,27 @@ describe('useAgentConsent', () => {
         workflowReferences: []
       })
       holdDraft('this gate message')
+      let resolveSignIn: (signedIn: boolean) => void = () => {}
       vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
-        new Promise(() => {})
+        new Promise<boolean>((resolve) => {
+          resolveSignIn = resolve
+        })
       )
 
-      void useAgentConsent().withConsent('first_message', vi.fn())
-      await startConsent()
-      await vi.waitFor(() =>
-        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
-      )
+      const request = useAgentConsent().withConsent('first_message', vi.fn())
+      try {
+        await startConsent()
+        await vi.waitFor(() =>
+          expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+        )
 
-      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
-        draft: 'this gate message'
-      })
+        expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toMatchObject({
+          draft: 'this gate message'
+        })
+      } finally {
+        resolveSignIn(false)
+        await request
+      }
     })
   })
 })

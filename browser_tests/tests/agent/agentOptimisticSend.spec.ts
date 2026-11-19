@@ -158,8 +158,13 @@ test.describe(
           response.request().method() === 'POST' &&
           /\/api\/agent\/threads\/[^/]+\/messages$/.test(response.url())
       )
+      const historyRefreshed = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'GET' &&
+          response.url().includes('/api/agent/threads?')
+      )
       releasePost()
-      await postAccepted
+      await Promise.all([postAccepted, historyRefreshed])
 
       await expect(agentPanel.userMessageBubbles).toHaveCount(0)
       const deltaEvent: AgentWsEvent = {
@@ -327,6 +332,7 @@ test.describe(
 
     test('O0-13 + O0-14: offers Show toast when a first message fails off screen and reopens it with Retry', async ({
       agentPanel,
+      comfyPage,
       page,
       postedMessages
     }) => {
@@ -356,9 +362,9 @@ test.describe(
       failNextPost = false
       rejectPost?.()
 
-      const toast = page
-        .getByTestId('toast')
-        .filter({ hasText: enMessages.agent.sendFailedOffscreen })
+      const toast = comfyPage.toast.withText(
+        enMessages.agent.sendFailedOffscreen
+      )
       await expect(toast).toBeVisible()
       await expect(agentPanel.composer).toHaveText('Draft in second chat')
       await expect(agentPanel.userMessageBubbles).toHaveCount(0)
@@ -381,6 +387,7 @@ test.describe(
 
       await agentPanel.retryPendingButton.click()
       await expect.poll(() => postedMessages).toHaveLength(1)
+      await expect(agentPanel.sendingSpinner).toHaveCount(0)
       await expect(agentPanel.pendingSendError).toHaveCount(0)
       await expect(agentPanel.userMessageBubbles).toHaveText([
         'Offscreen first message'

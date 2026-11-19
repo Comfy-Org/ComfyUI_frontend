@@ -17500,11 +17500,17 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     )
     Object.assign(useAgentConsentStore(), { accepted: false })
     let rejectConsent = () => {}
+    let acceptConsent = () => {}
     withConsent.mockImplementation(
-      (_trigger, _onAccept, hooks) =>
+      (_trigger, onAccept, hooks) =>
         new Promise<void>((resolve) => {
           rejectConsent = () => {
             hooks?.onExit?.('declined')
+            resolve()
+          }
+          acceptConsent = () => {
+            Object.assign(useAgentConsentStore(), { accepted: true })
+            onAccept()
             resolve()
           }
         })
@@ -17539,6 +17545,8 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     expect(useAgentComposerStore().gateHold).not.toBeNull()
     await userEvent.click(screen.getByRole('button', { name: 'Stop' }))
     expect(useAgentComposerStore().gateHold).toBeNull()
+    acceptConsent()
+    await settleFollow()
     expect(screen.queryByTestId('user-message-bubble')).toBeNull()
     expect(useAgentComposerStore().draft).toBe('Draft during consent')
     expect(bodies).toHaveLength(0)
@@ -17609,6 +17617,14 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     await userEvent.paste('Late send')
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await vi.waitFor(() => expect(postCall).toBe(1))
+    const pendingEntry = useAgentConversationStore().entries.find(
+      (entry) => entry.role === 'user' && entry.pending !== undefined
+    )
+    const pendingSendId =
+      pendingEntry?.role === 'user'
+        ? pendingEntry.pending?.clientMessageId
+        : undefined
+    expect(pendingSendId).toBeDefined()
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
@@ -17623,6 +17639,11 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
         message_id: 'msg-late',
         workflow_id: 'wf-42'
       })
+    )
+    await vi.waitFor(() =>
+      expect(
+        useAgentConversationStore().getPendingSend(pendingSendId!)
+      ).toBeUndefined()
     )
     await settleFollow()
 
@@ -17969,6 +17990,7 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
       await userEvent.click(
         screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
       )
+      expect(bodies).toHaveLength(0)
       releaseWorkflows()
 
       await vi.waitFor(() => expect(bodies).toHaveLength(1))
@@ -18068,6 +18090,9 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     allowRetry = true
     await userEvent.click(screen.getByRole('button', { name: 'Retry' }))
     await vi.waitFor(() =>
+      expect(useAgentConversationStore().threadId).toBe('th-1')
+    )
+    await vi.waitFor(() =>
       expect(screen.queryByTestId('pending-send-error')).toBeNull()
     )
 
@@ -18153,7 +18178,19 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     await vi.waitFor(() =>
       expect(useAgentConversationStore().entries).toHaveLength(0)
     )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Second chat'))
+    await screen.findByText('Thread offscreen fail')
+    expect(await screen.findByTestId('pending-send-error')).toBeVisible()
     expect(useToast().toasts).toHaveLength(0)
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
 
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('Gone before show')
@@ -18177,6 +18214,83 @@ describe('AgentPanelRoot optimistic and chat-owned sends (PR 0)', () => {
     useToast().toasts[0].actions[0].onClick()
     await vi.waitFor(() => expect(useToast().toasts).toHaveLength(0))
     expect(screen.getByRole('textbox')).toHaveTextContent('Current draft')
+  })
+
+  it('O0-13/14: keeps a provisional blank-chat rename across New chat and lets Show reopen a closed panel scoped to its workspace', async () => {
+    bindTab('wf-42')
+    const pendingPosts: Array<{
+      resolve: (res: Response) => void
+      reject: (error: unknown) => void
+    }> = []
+    vi.mocked(fetch).mockImplementation(async (input, init) => {
+      const url = String(input)
+      if (url.includes('/messages') && init?.method === 'POST') {
+        return await new Promise<Response>((resolve, reject) => {
+          pendingPosts.push({ resolve, reject })
+        })
+      }
+      if (url.includes('/messages')) return json(200, [])
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      return json(200, { data: [], pagination: { has_more: false } })
+    })
+
+    renderWithSelectedTarget()
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Named before ack')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(1))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Named before ack' })
+    )
+    const renameInput = screen.getByRole('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await userEvent.clear(renameInput)
+    await userEvent.type(renameInput, 'Renamed before ack{Enter}')
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    pendingPosts[0].resolve(json(202, ack('wf-42', 'm-renamed')))
+    await vi.waitFor(() =>
+      expect(useAgentChatHistoryStore().titleFor('th-1')).toBe(
+        'Renamed before ack'
+      )
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Closed panel offscreen fail')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(2))
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    useAgentPanelStore().close('close_button')
+    pendingPosts[1].reject(new TypeError('Failed to fetch'))
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+    useToast().toasts[0].actions[0].onClick()
+    await vi.waitFor(() => expect(useAgentPanelStore().isOpen).toBe(true))
+    expect(screen.getByTestId('user-message-bubble')).toHaveTextContent(
+      'Closed panel offscreen fail'
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('Workspace A only')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await vi.waitFor(() => expect(pendingPosts).toHaveLength(3))
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.newChat') })
+    )
+    pendingPosts[2].reject(new TypeError('Failed to fetch'))
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(0))
   })
 })
 

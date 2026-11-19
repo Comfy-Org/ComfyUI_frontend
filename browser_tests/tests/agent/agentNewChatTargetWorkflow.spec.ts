@@ -1,11 +1,14 @@
 import { expect, mergeTests } from '@playwright/test'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
 
@@ -45,15 +48,34 @@ test.describe(
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
+      await page.route('**/api/agent/threads/*/messages', (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        const body = zAgentPostMessageRequest.parse(
+          route.request().postDataJSON()
+        )
+        const accepted: AgentTurnAccepted = {
+          thread_id: 'th-a',
+          message_id: 'msg-a',
+          workflow_id: body.workflow_id ?? undefined
+        }
+        return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+      })
+      const postAccepted = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          /\/api\/agent\/threads\/[^/]+\/messages$/.test(response.url()) &&
+          response.status() === 202
+      )
       await initialComposer.press('Enter')
-      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      await postAccepted
       await expect(initialComposer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         'Start in this workflow'
       ])
-      await expect(panel.getByTestId('pending-send-error')).toContainText(
-        enMessages.agent.sendFailed
-      )
+      await expect(agentPanel.sendingSpinner).toHaveCount(0)
+      await expect(panel.getByTestId('pending-send-error')).toHaveCount(0)
+      await expect(agentPanel.stopButton).toBeVisible()
       await initialComposer.fill('Only edit workflow A')
 
       // Open a second workflow tab (B), then switch back to A so B is just
@@ -122,15 +144,34 @@ test.describe(
         includeHidden: true
       })
       await initialComposer.fill('Start in this workflow')
+      await page.route('**/api/agent/threads/*/messages', (route) => {
+        if (route.request().method() !== 'POST') return route.fallback()
+        const body = zAgentPostMessageRequest.parse(
+          route.request().postDataJSON()
+        )
+        const accepted: AgentTurnAccepted = {
+          thread_id: 'th-a',
+          message_id: 'msg-a',
+          workflow_id: body.workflow_id ?? undefined
+        }
+        return route.fulfill({ ...jsonRoute(accepted), status: 202 })
+      })
+      const postAccepted = page.waitForResponse(
+        (response) =>
+          response.request().method() === 'POST' &&
+          /\/api\/agent\/threads\/[^/]+\/messages$/.test(response.url()) &&
+          response.status() === 202
+      )
       await initialComposer.press('Enter')
-      await expect.poll(() => workflowSelection.postedMessages.length).toBe(1)
+      await postAccepted
       await expect(initialComposer).toHaveText('')
+      await expect(panel.getByTestId('user-message-bubble')).toBeVisible()
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         'Start in this workflow'
       ])
-      await expect(panel.getByTestId('pending-send-error')).toContainText(
-        enMessages.agent.sendFailed
-      )
+      await expect(agentPanel.sendingSpinner).toHaveCount(0)
+      await expect(panel.getByTestId('pending-send-error')).toHaveCount(0)
+      await expect(agentPanel.stopButton).toBeVisible()
 
       // Create a brand new, still-unsaved tab - it becomes the one on screen.
       await page
