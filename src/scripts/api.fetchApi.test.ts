@@ -538,11 +538,12 @@ describe('api.fetchApi', () => {
       await api.fetchApi('/upload/image', { method: 'POST' })
       const [, init] = vi.mocked(provider.fetch).mock.calls[0]
 
-      expect(
-        new Headers(await api.getRequestAuthHeaders({ method: 'POST' })).get(
-          'Authorization'
-        )
-      ).toBe(new Headers(init.headers).get('Authorization'))
+      expect(new Headers(init.headers).get('Authorization')).toBe(
+        'Bearer token'
+      )
+      expect(await api.getRequestAuthHeaders({ method: 'POST' })).toEqual({
+        Authorization: 'Bearer token'
+      })
     })
 
     it('returns no headers off-cloud or signed out', async () => {
