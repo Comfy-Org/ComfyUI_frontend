@@ -122,7 +122,7 @@ function captureSerialization(node: LGraphNode): Capture | null {
   function capture(this: LGraphNode, serialised: ISerialisedNode) {
     produced = serialised.widgets_values
     before = Array.isArray(produced) ? [...produced] : null
-    names = widgetNames(this)
+    names = Object.keys(serialised.widgets_values_named ?? {})
     inherited?.call(this, serialised)
   }
   try {
@@ -134,7 +134,7 @@ function captureSerialization(node: LGraphNode): Capture | null {
     const serialised = node.serialize()
     const reordered =
       produced !== NOT_CAPTURED &&
-      JSON.stringify(names) !== JSON.stringify(widgetNames(node))
+      JSON.stringify(names) !== JSON.stringify(serializingWidgetNames(node))
     return {
       serialised,
       produced:
@@ -153,8 +153,10 @@ function captureSerialization(node: LGraphNode): Capture | null {
   }
 }
 
-function widgetNames(node: LGraphNode): string[] {
-  return (node.widgets ?? []).map((widget) => widget.name)
+function serializingWidgetNames(node: LGraphNode): string[] {
+  return (node.widgets ?? [])
+    .filter((widget) => widget.serialize !== false)
+    .map((widget) => widget.name)
 }
 
 function rewrittenInPlace(

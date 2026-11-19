@@ -575,6 +575,51 @@ describe('form proof', () => {
 
 describe('form proof, hooks that rewrite in place', () => {
   it(
+    'refuses a form when value access changes the serializing widget set',
+    { timeout: 60_000 },
+    async () => {
+      const { formProof } = await rowFor(
+        'form-value-getter-mutates',
+        async () => {
+          const { useExtensionService } =
+            await import('@/platform/extensions/services/extensionService')
+          useExtensionService().registerExtension({
+            name: 'matrix.test.form-value-getter-mutates',
+            beforeRegisterNodeDef(nodeType: typeof LGraphNode) {
+              const configure = nodeType.prototype.configure
+              nodeType.prototype.configure = function (
+                this: LGraphNode,
+                info: ISerialisedNode
+              ) {
+                configure.call(this, info)
+                if (!this.widgets || this.widgets.length < 3) return
+                const [disabled, written, mutating] = this.widgets
+                disabled.serialize = false
+                written.serialize = true
+                mutating.serialize = true
+                let value = mutating.value
+                Object.defineProperty(mutating, 'value', {
+                  configurable: true,
+                  get() {
+                    disabled.serialize = disabled.serialize === false
+                    written.serialize = written.serialize === false
+                    return value
+                  },
+                  set(next) {
+                    value = next
+                  }
+                })
+              }
+            }
+          })
+        }
+      )
+
+      expect(verdictFor(formProof, 'KSampler')).toBe('values_replaced')
+    }
+  )
+
+  it(
     'refuses a hook that reorders the core array in place',
     { timeout: 60_000 },
     async () => {
