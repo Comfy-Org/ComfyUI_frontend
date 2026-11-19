@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { useCommandStore } from '@/stores/commandStore'
+import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 
 describe('menuItemStore', () => {

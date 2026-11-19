@@ -9,7 +9,8 @@ export const TestIds = {
   },
   agent: {
     conversationScroll: 'agent-conversation-scroll',
-    activityTrace: 'agent-activity-trace'
+    activityTrace: 'agent-activity-trace',
+    thinkingShortened: 'agent-thinking-shortened'
   },
   sidebar: {
     toolbar: 'side-toolbar',
@@ -47,6 +48,7 @@ export const TestIds = {
     zoomPercentageInput: 'zoom-percentage-input'
   },
   dialogs: {
+    creditsLockedNotice: 'credits-locked-notice',
     settings: 'settings-dialog',
     settingsContainer: 'settings-container',
     settingsTabAbout: 'settings-tab-about',
@@ -54,6 +56,7 @@ export const TestIds = {
     errorOverlaySeeErrors: 'error-overlay-see-errors',
     errorOverlayDismiss: 'error-overlay-dismiss',
     errorOverlayMessages: 'error-overlay-messages',
+    errorOverlayDownloadAll: 'error-overlay-download-all-models',
     runtimeErrorPanel: 'runtime-error-panel',
     missingNodeCard: 'missing-node-card',
     missingNodePackExpand: 'missing-node-pack-expand',
@@ -124,6 +127,8 @@ export const TestIds = {
     integratedTabBarActions: 'integrated-tab-bar-actions',
     actionBarButtons: 'action-bar-buttons',
     actionBarCard: 'action-bar-card',
+    topMenuActions: 'top-menu-actionbars',
+    cloudButton: 'cloud-button',
     freeTierQuota: 'free-tier-quota',
     queueInlineProgress: 'queue-inline-progress',
     queueInlineProgressNodeFill: 'queue-inline-progress-node-fill'
@@ -166,6 +171,14 @@ export const TestIds = {
     widgetLabel: 'subgraph-widget-label',
     widgetToggle: 'subgraph-widget-toggle'
   },
+  subgraphIo: {
+    inputPanel: 'subgraph-input-values',
+    outputPanel: 'subgraph-output-ports',
+    inputPort: 'subgraph-input-port',
+    outputPort: 'subgraph-output-port',
+    addInput: 'subgraph-add-input',
+    addOutput: 'subgraph-add-output'
+  },
   node: {
     titleInput: 'node-title-input',
     pinIndicator: 'node-pin-indicator',
@@ -176,15 +189,9 @@ export const TestIds = {
   },
   selectionToolbox: {
     root: 'selection-toolbox',
-    colorPickerButton: 'color-picker-button',
     colorPickerCurrentColor: 'color-picker-current-color',
     colorBlue: 'blue',
-    colorRed: 'red',
-    convertSubgraph: 'convert-to-subgraph-button',
-    bypass: 'bypass-button',
-    hideLinks: 'hide-links-button',
-    showLinks: 'show-links-button',
-    deleteLinks: 'delete-links-button'
+    colorRed: 'red'
   },
   helpCenter: {
     button: 'help-center-button',
@@ -196,6 +203,8 @@ export const TestIds = {
   widgets: {
     container: 'node-widgets',
     widget: 'node-widget',
+    legacyCanvas: 'legacy-widget-canvas',
+    numberRow: 'widget-number-row',
     layoutFieldLabel: 'widget-layout-field-label',
     formDropdownMenu: 'form-dropdown-menu',
     decrement: 'decrement',
@@ -347,6 +356,7 @@ export const TestIds = {
   searchBoxV2: {
     resultItem: 'result-item',
     filterOption: 'filter-option',
+    typeFilterPopover: 'type-filter-popover',
     filterChip: 'filter-chip',
     chipDelete: 'chip-delete',
     noResults: 'no-results',

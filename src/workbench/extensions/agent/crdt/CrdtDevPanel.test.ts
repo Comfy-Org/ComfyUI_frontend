@@ -18,7 +18,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
-vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
+  reportError
+}))
 
 import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
@@ -30,6 +32,7 @@ const STATUS: AgentCrdtStatus = {
   enabled: true,
   connected: true,
   canvasMayBeStale: false,
+  canvasStaleCause: null,
   terminal: null,
   workflowId: 'doc-1',
   updatesApplied: 4,

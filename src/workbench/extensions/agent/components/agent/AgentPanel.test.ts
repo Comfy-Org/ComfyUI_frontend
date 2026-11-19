@@ -290,14 +290,53 @@ describe('AgentPanel', () => {
     draftCalls.replaceDraft.length = 0
   })
 
-  it('renders and forwards the treatment starter prompt exposure', () => {
-    distribution.isCloud = true
-    const { emitted } = render(AgentPanel, {
+  it('locks immediately but only shows the conversation veil for a slow opening', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    const { rerender } = render(AgentPanel, {
       props: {
         entries: [],
         historyGroups: createHistoryGroups(),
-        starterPromptAssignment: 'test',
-        attributeStarterPromptExperiment: true
+        openingWorkflowName: 'portrait'
+      },
+      global: { plugins: [i18n], stubs: { Composer: true, EmptyState: true } }
+    })
+
+    expect(screen.getByTestId('agent-panel-footer')).toHaveAttribute('inert')
+    expect(screen.queryByRole('status')).toBeNull()
+    await vi.advanceTimersByTimeAsync(100)
+    await rerender({ openingWorkflowName: undefined })
+    await vi.advanceTimersByTimeAsync(20)
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+
+    await rerender({ openingWorkflowName: 'portrait' })
+    await vi.advanceTimersByTimeAsync(119)
+    expect(screen.queryByRole('status')).toBeNull()
+    await vi.advanceTimersByTimeAsync(1)
+    expect(
+      screen.getByRole('status', {
+        name: i18n.global.t('agent.openingWorkflowChat', {
+          workflowName: 'portrait'
+        })
+      })
+    ).toBeVisible()
+
+    await rerender({ openingWorkflowName: undefined })
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(screen.getByTestId('agent-panel-footer')).not.toHaveAttribute(
+      'inert'
+    )
+  })
+
+  it('renders the winning static Cloud starter prompts', () => {
+    distribution.isCloud = true
+    render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups()
       },
       global: {
         plugins: [i18n],
@@ -310,7 +349,32 @@ describe('AgentPanel', () => {
         name: i18n.global.t('agent.suggestedPrompts.treatment.cloud.0')
       })
     ).toBeVisible()
-    expect(emitted('starterPromptRendered')).toEqual([['test']])
+  })
+
+  it('shows a recoverable workflow sync failure and emits retry', async () => {
+    const { emitted } = render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        syncRetryAvailable: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.workflowSyncFailedTitle')
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('g.retry')
+      })
+    )
+
+    expect(emitted('retrySync')).toHaveLength(1)
   })
 
   it('keeps a failed opening in history and lets the user retry that row', async () => {
@@ -330,6 +394,30 @@ describe('AgentPanel', () => {
     await waitFor(() =>
       expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
     )
+    expect(
+      screen.getByRole('button', { name: 'Show chat history' })
+    ).toBeVisible()
+  })
+
+  it('leaves history on Back even when reopening the previous chat keeps failing', async () => {
+    const select = vi.fn().mockResolvedValue(false)
+    mountHistory(select)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show chat history' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'First chat' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      i18n.global.t('agent.historyOpenFailed')
+    )
+
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Back to previous chat' })
+    )
+
+    await waitFor(() =>
+      expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
+    )
+    expect(select.mock.calls.map(([id]) => id)).toEqual(['first', 'previous'])
     expect(
       screen.getByRole('button', { name: 'Show chat history' })
     ).toBeVisible()
@@ -403,7 +491,7 @@ describe('AgentPanel', () => {
     await pending
     await nextTick()
 
-    expect(emitted().newChat).toEqual([[]])
+    expect(emitted().newChat).toEqual([['new_chat_button']])
     expect(screen.queryByRole('heading', { name: 'Chat history' })).toBeNull()
     expect(screen.queryByRole('alert')).toBeNull()
     expect(
@@ -471,7 +559,7 @@ describe('AgentPanel', () => {
     await nextTick()
 
     expect(select.mock.calls.map(([id]) => id)).toEqual(['first'])
-    expect(emitted().newChat).toEqual([[]])
+    expect(emitted().newChat).toEqual([['history_back']])
     expect(
       screen.getByRole('button', { name: 'Show chat history' })
     ).toBeVisible()
@@ -542,6 +630,29 @@ describe('AgentPanel', () => {
 
     expect(screen.getByRole('note')).toHaveTextContent(
       i18n.global.t('agent.runNotice')
+    )
+  })
+
+  it('prioritizes an empty-canvas correction over target availability', () => {
+    render(AgentPanel, {
+      props: {
+        entries: [],
+        historyGroups: createHistoryGroups(),
+        activeTab: { path: 'workflows/portrait.json', name: 'portrait' },
+        canvasEmptyAfterTurn: true,
+        targetUnavailable: true
+      },
+      global: {
+        plugins: [i18n],
+        stubs: { Composer: true, EmptyState: true, PanelHeader: true }
+      }
+    })
+
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.canvasIsEmptyAfterTurn')
+    )
+    expect(screen.getByRole('note')).not.toHaveTextContent(
+      i18n.global.t('agent.targetWorkflowUnavailable')
     )
   })
 
@@ -1064,4 +1175,26 @@ describe('AgentPanel', () => {
     expect(draftCalls.replaceDraft).toEqual([[editedPrompt]])
     expect(draftCalls.insert).toEqual([])
   })
+})
+
+it('restores the intro once the greeting is no longer visible even if its prop remains', async () => {
+  const view = render(AgentPanel, {
+    props: {
+      entries: [],
+      historyGroups: createHistoryGroups(),
+      activeTab: { path: 'portrait.json', name: 'portrait' },
+      greeting: { variant: 'B', canvas: 'workflow' }
+    },
+    global: { plugins: [i18n] }
+  })
+  expect(screen.queryByRole('note')).not.toBeInTheDocument()
+  await view.rerender({
+    entries: [{ id: toTurnId('sent-message'), role: 'user', text: 'Help me' }]
+  })
+  expect(
+    screen.queryByRole('heading', { name: 'A little help to get you started!' })
+  ).not.toBeInTheDocument()
+  expect(screen.getByRole('note')).toHaveTextContent(
+    'The agent can now edit portrait.'
+  )
 })

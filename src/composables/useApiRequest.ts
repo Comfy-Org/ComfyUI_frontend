@@ -18,7 +18,6 @@ export type ApiErrorMapper = (
 export interface ExecuteRequestOptions {
   errorContext: string
   routeSpecificErrors?: Record<number, string>
-  isCurrent?: () => boolean
 }
 
 /**
@@ -41,7 +40,7 @@ export function useApiRequest({
     apiCall: (client: AxiosInstance) => Promise<AxiosResponse<T>>,
     options: ExecuteRequestOptions
   ): Promise<T | null> {
-    const { errorContext, routeSpecificErrors, isCurrent } = options
+    const { errorContext, routeSpecificErrors } = options
 
     pendingCount.value++
     error.value = null
@@ -50,8 +49,7 @@ export function useApiRequest({
       const response = await apiCall(client)
       return response.data
     } catch (err) {
-      if (isAbortError(err) || axios.isCancel(err) || isCurrent?.() === false)
-        return null
+      if (isAbortError(err) || axios.isCancel(err)) return null
 
       error.value = mapError(err, errorContext, routeSpecificErrors)
       return null

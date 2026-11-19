@@ -3,8 +3,8 @@ import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Input from '@/components/ui/input/Input.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Input from '@comfyorg/design-system/input/Input'
 
 import type { AskUserPart } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
 import { choosableCount } from '@/workbench/extensions/agent/services/agent/agentMessageParts'
@@ -151,7 +151,7 @@ function submit(): void {
     <div class="flex min-w-0 flex-col gap-0.5 text-sm/5">
       <p
         :id="promptId"
-        class="m-0 font-medium wrap-break-word whitespace-pre-line text-foreground"
+        class="m-0 font-medium wrap-break-word whitespace-pre-line"
       >
         {{ part.prompt }}
       </p>
@@ -190,7 +190,7 @@ function submit(): void {
       />
 
       <div v-if="part.allowOther" class="flex flex-col gap-1 px-2 text-sm/5">
-        <label :for="otherId" class="text-foreground">
+        <label :for="otherId">
           {{ t('agent.askUser.other') }}
         </label>
         <Input

@@ -5,7 +5,7 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock(import('@/platform/telemetry'), () => ({
+vi.mock(import('@comfyorg/telemetry'), () => ({
   useTelemetry: () => null
 }))
 

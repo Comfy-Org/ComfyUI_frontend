@@ -94,6 +94,7 @@ const BASE_STATUS: BillingStatusData = {
   is_active: false,
   max_seats: 1,
   occupied_seats: 1,
+  ended_at: null,
   scheduled_change: null,
   team_credit_stop: null
 }
@@ -205,12 +206,10 @@ function harness(options: {
     invalidate,
     dispose: () => {}
   }
-  const readCredits = vi.fn(
-    async (): Promise<BillingResult<never>> => ({
-      status: 'error',
-      code: 'REQUEST_FAILED'
-    })
-  )
+  const readCredits = vi.fn(async (): Promise<BillingResult<never>> => ({
+    status: 'error',
+    code: 'REQUEST_FAILED'
+  }))
   const credits: CreditsReader = {
     read: readCredits,
     getSnapshot: () => undefined,

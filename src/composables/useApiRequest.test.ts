@@ -105,19 +105,4 @@ describe('useApiRequest', () => {
     expect(mapError).not.toHaveBeenCalled()
     expect(error.value).toBeNull()
   })
-
-  it('does not publish an error once the request is no longer current', async () => {
-    const mapError = vi.fn(() => 'stale message')
-    const { error, executeRequest } = useApiRequest({ client, mapError })
-
-    const result = await executeRequest(
-      () => {
-        throw new Error('boom')
-      },
-      { errorContext: 'ctx', isCurrent: () => false }
-    )
-
-    expect(result).toBeNull()
-    expect(error.value).toBeNull()
-  })
 })

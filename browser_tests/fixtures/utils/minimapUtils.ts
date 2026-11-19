@@ -1,3 +1,4 @@
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
@@ -20,9 +21,7 @@ export const MINIMAP_POINTER_OPTS = {
   pointerId: 1
 } as const
 
-export async function readMainCanvasOffset(
-  page: Page
-): Promise<{ x: number; y: number }> {
+export async function readMainCanvasOffset(page: Page): Promise<Point2D> {
   return page.evaluate(() => ({
     x: window.app!.canvas.ds.offset[0],
     y: window.app!.canvas.ds.offset[1]

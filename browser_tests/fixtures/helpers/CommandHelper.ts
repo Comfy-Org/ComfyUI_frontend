@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 
-import type { KeyCombo } from '@/platform/keybindings/types'
+import type { KeyCombo } from '@comfyorg/keybindings/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class CommandHelper {

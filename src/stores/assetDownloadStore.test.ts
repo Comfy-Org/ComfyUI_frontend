@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { TaskResponse } from '@/platform/tasks/services/taskSchema'
+import type { TaskResponse } from '@comfyorg/api-client/taskSchema'
 import type {
   CancelTaskOutcome,
   TaskResult
@@ -9,7 +9,7 @@ import {
   TaskNotFoundError,
   taskService
 } from '@/platform/tasks/services/taskService'
-import type { AssetDownloadWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { AssetDownloadWsMessage } from '@comfyorg/api-client/executionTypes'
 import {
   isDownloadCancelled,
   useAssetDownloadStore
@@ -290,6 +290,21 @@ describe('useAssetDownloadStore', () => {
       expect(store.lastCompletedDownload).toMatchObject({
         taskId: 'task-123',
         modelType: 'checkpoints'
+      })
+    })
+
+    it('keeps a file upload marked as one through its progress and completion', () => {
+      const store = useAssetDownloadStore()
+
+      store.trackDownload('task-123', 'loras', 'my_style_v2.safetensors', {
+        source: 'upload'
+      })
+      dispatch(createDownloadMessage({ status: 'running' }))
+      dispatch(createDownloadMessage({ status: 'completed', progress: 100 }))
+
+      expect(store.downloadList[0]).toMatchObject({
+        status: 'completed',
+        source: 'upload'
       })
     })
 

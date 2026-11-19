@@ -3,13 +3,12 @@ import { fromAny } from '@total-typescript/shoehorn'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { Toast } from '@/components/ui/toast/toastStore'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ToastMessageOptions } from '@/types/extensionTypes'
 
 import { useWorkspaceStore } from './workspaceStore'
 
 vi.mock(import('firebase/auth'))
-vi.mock(import('@/platform/telemetry/reportError'))
 
 interface LegacyToastCase {
   expected: Partial<Toast>

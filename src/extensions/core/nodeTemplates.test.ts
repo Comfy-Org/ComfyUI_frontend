@@ -1,9 +1,13 @@
-import { fromAny } from '@total-typescript/shoehorn'
-import { expect, it, vi } from 'vitest'
+import { expect, it, onTestFinished, vi } from 'vitest'
+
+import { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useApp } from '@/scripts/appInstance'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/canvasTestUtils'
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -29,21 +33,26 @@ function createDeferred<T>() {
   return { promise, resolve }
 }
 
-async function importNodeTemplates(getUserData: Promise<Response>) {
+async function importNodeTemplates(getUserData: () => Promise<Response>) {
   vi.resetModules()
   document.body.replaceChildren()
   const { api } = await import('@/scripts/api')
   const { app } = await import('@/scripts/app')
-  const { reportError } = await import('@/platform/telemetry/reportError')
-  vi.mocked(api.getUserData).mockReturnValue(getUserData)
-  await import('./nodeTemplates')
-  const extension = vi.mocked(app.registerExtension).mock.calls[0][0]
-  return { api, app, reportError, extension }
+  vi.mocked(useApp().canvas.copyToClipboard).mockReturnValue('{"nodes":[]}')
+  const { reportError } = await import('@comfyorg/telemetry/reportError')
+  vi.mocked(api.getUserData).mockImplementation(getUserData)
+  const { nodeTemplatesExtension: extension } = await import('./nodeTemplates')
+  const canvas = createTestCanvas(
+    new LGraph(),
+    createMockCanvasRenderingContext2D()
+  )
+  onTestFinished(() => canvas.unbindEvents())
+  return { api, app, reportError, extension, canvas }
 }
 
 it('defers loading templates and creating the import input until setup', async () => {
   const { api, app, extension } = await importNodeTemplates(
-    Promise.resolve(new Response(null))
+    async () => new Response(null)
   )
 
   expect(api.getUserData).not.toHaveBeenCalled()
@@ -58,8 +67,8 @@ it('defers loading templates and creating the import input until setup', async (
 
 it('reports invalid persisted node templates before falling back to empty', async () => {
   const response = createDeferred<Response>()
-  const { app, reportError, extension } = await importNodeTemplates(
-    response.promise
+  const { app, reportError, extension, canvas } = await importNodeTemplates(
+    () => response.promise
   )
   await extension.setup?.(app)
   const error = new Error('invalid template JSON')
@@ -84,7 +93,7 @@ it('reports invalid persisted node templates before falling back to empty', asyn
   if (!extension.getCanvasMenuItems) {
     throw new Error('Comfy.NodeTemplates does not register canvas menu items')
   }
-  expect(extension.getCanvasMenuItems(fromAny({}))).toEqual([
+  expect(extension.getCanvasMenuItems(canvas)).toEqual([
     null,
     expect.objectContaining({ content: 'Save Selected as Template' }),
     {
@@ -93,5 +102,74 @@ it('reports invalid persisted node templates before falling back to empty', asyn
         options: [null, expect.objectContaining({ content: 'Manage' })]
       }
     }
+  ])
+})
+
+it('does not overwrite stored templates after the initial load fails', async () => {
+  const { api, app, reportError, extension, canvas } =
+    await importNodeTemplates(() => Promise.reject(new Error('offline')))
+  const { useDialogService } = await import('@/services/dialogService')
+  vi.mocked(useDialogService().prompt).mockResolvedValue('New template')
+  await extension.setup?.(app)
+  await vi.waitFor(() => expect(reportError).toHaveBeenCalled())
+
+  const saveItem = extension.getCanvasMenuItems?.(canvas)[1]
+  await saveItem?.callback?.call(document.createElement('div'))
+
+  expect(api.storeUserData).not.toHaveBeenCalled()
+  expect(extension.getCanvasMenuItems?.(canvas)[2]).toEqual({
+    content: 'Node Templates',
+    submenu: {
+      options: [null, expect.objectContaining({ content: 'Manage' })]
+    }
+  })
+})
+
+it('keeps stored templates when saving before the initial load finishes', async () => {
+  const response = createDeferred<Response>()
+  const { api, app, extension, canvas } = await importNodeTemplates(
+    () => response.promise
+  )
+  const { useDialogService } = await import('@/services/dialogService')
+  vi.mocked(useDialogService().prompt).mockResolvedValue('New template')
+  await extension.setup?.(app)
+
+  const saveItem = extension.getCanvasMenuItems?.(canvas)[1]
+  const saving = saveItem?.callback?.call(document.createElement('div'))
+  response.resolve(Response.json([{ name: 'Stored', data: '{}' }]))
+  await saving
+
+  const written: unknown = JSON.parse(
+    String(vi.mocked(api.storeUserData).mock.calls[0][1])
+  )
+  expect(written).toEqual([
+    { name: 'Stored', data: '{}' },
+    { name: 'New template', data: '{"nodes":[]}' }
+  ])
+})
+
+it('keeps both templates when two saves overlap', async () => {
+  const { api, app, extension, canvas } = await importNodeTemplates(async () =>
+    Response.json([])
+  )
+  const { useDialogService } = await import('@/services/dialogService')
+  vi.mocked(useDialogService().prompt)
+    .mockResolvedValueOnce('First')
+    .mockResolvedValueOnce('Second')
+  await extension.setup?.(app)
+
+  const saveItem = extension.getCanvasMenuItems?.(canvas)[1]
+  const receiver = document.createElement('div')
+  await Promise.all([
+    saveItem?.callback?.call(receiver),
+    saveItem?.callback?.call(receiver)
+  ])
+
+  const written: unknown = JSON.parse(
+    String(vi.mocked(api.storeUserData).mock.calls.at(-1)?.[1])
+  )
+  expect(written).toEqual([
+    { name: 'First', data: '{"nodes":[]}' },
+    { name: 'Second', data: '{"nodes":[]}' }
   ])
 })

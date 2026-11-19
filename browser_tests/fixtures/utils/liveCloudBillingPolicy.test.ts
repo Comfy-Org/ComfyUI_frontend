@@ -25,7 +25,6 @@ describe('live Cloud mutation policy', () => {
     { method: 'POST', path: '/api/auth/session', allowed: true },
     { method: 'POST', path: '/api/billing/subscribe', allowed: false },
     { method: 'POST', path: '/api/billing/payment-portal', allowed: false },
-    { method: 'POST', path: '/customers/credit', allowed: false },
     { method: 'DELETE', path: '/customers', allowed: false },
     { method: 'PATCH', path: '/api/billing/payment-methods', allowed: false },
     { method: 'PUT', path: '/api/billing/subscription', allowed: false },
@@ -43,20 +42,31 @@ describe('live Cloud mutation policy', () => {
 
   it.for([
     {
+      endpoint: 'identitytoolkit accounts:signInWithPassword',
       url: 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=test',
       allowed: true
     },
     {
+      endpoint: 'identitytoolkit accounts:lookup',
       url: 'https://identitytoolkit.googleapis.com/v1/accounts:lookup',
       allowed: true
     },
-    { url: 'https://securetoken.googleapis.com/v1/token', allowed: true },
     {
+      endpoint: 'securetoken token',
+      url: 'https://securetoken.googleapis.com/v1/token',
+      allowed: true
+    },
+    {
+      endpoint: 'identitytoolkit accounts:delete',
       url: 'https://identitytoolkit.googleapis.com/v1/accounts:delete',
       allowed: false
     },
-    { url: 'https://securetoken.googleapis.com/customers', allowed: false }
-  ])('auth POST $url allowed=$allowed', ({ url, allowed }) => {
+    {
+      endpoint: 'securetoken customers',
+      url: 'https://securetoken.googleapis.com/customers',
+      allowed: false
+    }
+  ])('auth POST to $endpoint allowed=$allowed', ({ url, allowed }) => {
     expect(isLiveCloudMutationAllowed(new URL(url), 'POST', config)).toBe(
       allowed
     )

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { QuadTree } from '@/renderer/core/spatial/QuadTree'
-import type { Bounds } from '@/types/spatialIndex'
+import type { Bounds } from '@comfyorg/shared-frontend-utils/geometry'
 
 describe('QuadTree', () => {
   let quadTree: QuadTree<string>

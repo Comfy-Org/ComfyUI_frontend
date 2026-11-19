@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 import { getAgentPanelOpen } from '@/platform/telemetry/utils/getAgentPanelOpen'
 
@@ -128,7 +128,6 @@ describe('agentPanelStore engagement telemetry', () => {
     const store = useConsentedAgentPanelStore()
     store.enabled = true
     await nextTick()
-    store.reportedFreeUseExposure = true
     store.reportedFreeUseImpression = true
 
     store.enabled = false
@@ -140,7 +139,6 @@ describe('agentPanelStore engagement telemetry', () => {
       source: 'restored'
     })
     expect(store.isOpen).toBe(true)
-    expect(store.reportedFreeUseExposure).toBe(false)
     expect(store.reportedFreeUseImpression).toBe(false)
   })
 

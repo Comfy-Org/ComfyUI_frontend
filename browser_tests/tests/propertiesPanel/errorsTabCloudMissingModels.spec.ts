@@ -23,8 +23,8 @@ import {
   selectVueAssetPromotedModel
 } from '@e2e/fixtures/utils/promotedMissingModel'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
 
@@ -152,7 +152,7 @@ test.describe(
     }) => {
       await comfyPage.workflow.loadWorkflow(WORKFLOW)
 
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       const errorOverlay = comfyPage.page.getByTestId(
         TestIds.dialogs.errorOverlay
       )
@@ -193,7 +193,7 @@ test.describe(
       comfyPage
     }) => {
       await loadWorkflowAndOpenErrorsTab(comfyPage, 'missing/missing_models')
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       const missingModelsGroup = comfyPage.page.getByTestId(
         TestIds.dialogs.missingModelsGroup
       )

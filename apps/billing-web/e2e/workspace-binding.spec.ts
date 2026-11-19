@@ -10,6 +10,7 @@ test('an entry link naming a workspace mints for it, names it in the shell, and 
     body: {
       token: 'e2e-team-jwt',
       expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+      user_id: 'uid-1',
       permissions: ['workspace:read', 'billing:write'],
       role: 'owner',
       workspace: { id: 'ws_team_e2e', name: 'Acme Team', type: 'team' }
@@ -93,6 +94,7 @@ test('reloading a tab whose workspace was deleted surfaces that reason instead o
     body: {
       token: 'e2e-team-jwt',
       expires_at: new Date(Date.now() + 3_600_000).toISOString(),
+      user_id: 'uid-1',
       permissions: ['workspace:read', 'billing:write'],
       role: 'owner',
       workspace: { id: 'ws_team_e2e', name: 'Acme Team', type: 'team' }

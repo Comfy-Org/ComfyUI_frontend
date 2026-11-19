@@ -39,10 +39,16 @@ test(
   'keeps a completed turn work summary, thinking included, after reload and chat switching',
   {
     tag: ['@cloud', '@ui'],
-    annotation: {
-      type: 'source',
-      description: 'https://linear.app/comfyorg/issue/PM-717'
-    }
+    annotation: [
+      {
+        type: 'source',
+        description: 'https://linear.app/comfyorg/issue/PM-717'
+      },
+      {
+        type: 'source',
+        description: 'https://linear.app/comfyorg/issue/FRONT-3803'
+      }
+    ]
   },
   async ({ page, promptHistory, workflowSelection }) => {
     await new AgentPanel(page).open()
@@ -152,6 +158,12 @@ test(
       exact: true
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
+    await expect(
+      reopenedPanel.getByText(enMessages.agent.workedNotConfirmedOnCanvas)
+    ).toHaveCount(0)
+    await expect(
+      reopenedPanel.getByTestId('agent-canvas-unconfirmed')
+    ).toHaveCount(0)
     await expect(summary).toHaveAttribute('aria-expanded', 'false')
     await expect(reopenedPanel.getByText('Search nodes')).toBeHidden()
 

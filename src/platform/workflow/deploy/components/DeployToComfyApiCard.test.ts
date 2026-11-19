@@ -8,7 +8,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
 import enMessages from '@/locales/en/main.json'
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useInstallationDeploy } from '@/platform/workflow/deploy/composables/useInstallationDeploy'
 import type { BuildInputs } from '@/platform/workflow/deploy/utils/buildInputs'
@@ -22,7 +22,7 @@ type InstallationDeployState = ReturnType<
 const BUILDER_URL =
   'https://platform.comfy.org/profile/builds/new?step=import&bundle=b-1&workspace=ws-1'
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(
   import('@/platform/workflow/deploy/composables/useAgentHandoff'),
@@ -36,7 +36,8 @@ vi.mock(
       workflowName: 'portrait-upscale'
     } satisfies BuildInputs
     return {
-      useAgentHandoff: () => ({ captureInputs: () => inputs, copyBrief })
+      useAgentHandoff: () =>
+        fromPartial({ captureInputs: () => inputs, copyBrief })
     }
   }
 )
@@ -148,11 +149,14 @@ describe('DeployToComfyApiCard', () => {
     expect(button).toHaveTextContent('Build with your agent')
   })
 
-  it('links to the developer platform in a new tab without a referrer, and reports done', async () => {
+  it('links to the Deploy page on the developer platform in a new tab that sends no referrer from a local build, and reports done', async () => {
     const { onDone, user } = renderCard()
     const link = screen.getByRole('link', { name: 'Deploy on Platform' })
 
-    expect(link).toHaveAttribute('href', 'https://platform.comfy.org')
+    expect(link).toHaveAttribute(
+      'href',
+      'https://platform.comfy.org/profile/deploy?onboarding=comfy_api&utm_source=comfyui&utm_medium=app&utm_content=deploy-to-comfy-api-card'
+    )
     expect(link).toHaveAttribute('target', '_blank')
     expect(link).toHaveAttribute('rel', 'noopener noreferrer')
     await user.click(link)

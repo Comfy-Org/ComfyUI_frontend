@@ -2,18 +2,25 @@
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
+import type { LocationQuery, LocationQueryValue } from 'vue-router'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import AppSpinner from '@/components/common/AppSpinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
+import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useBillingUI } from '@/platform/billing/composables/useBillingUI'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
-import { getPricingCheckoutSelection } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
-import type { CheckoutTierKey } from '@/composables/billing/types'
+import type { TierKey } from '@/platform/billing/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/billing/subscription/composables/useSubscriptionDialog'
+import { getPricingCheckoutSelection } from '@/platform/billing/subscription/composables/usePricingTableUrlLoader'
+import type {
+  CheckoutTierKey,
+  SubscriptionDialogOptions
+} from '@/platform/billing/composables/types'
 
-import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
+import type { BillingCycle } from '@/platform/billing/subscription/utils/subscriptionTierRank'
 
 function isBillingCycle(value: string): value is BillingCycle {
   return value === 'monthly' || value === 'yearly'
@@ -30,12 +37,44 @@ function isPaidPersonalTierKey(
   return isCheckoutTierKey(value) || value === 'founder'
 }
 
+function firstQueryValue(
+  value: LocationQueryValue | LocationQueryValue[] | undefined
+): string | null {
+  return (Array.isArray(value) ? value[0] : value) ?? null
+}
+
+type SubscribeLink =
+  | { tierKey: 'team'; stopId: string; billingCycle: BillingCycle }
+  | { tierKey: Exclude<TierKey, 'free'>; billingCycle: BillingCycle }
+
+function subscribeLinkFrom(query: LocationQuery): SubscribeLink | null {
+  const tierKey = firstQueryValue(query.tier)
+  const cycle = firstQueryValue(query.cycle)
+  const billingCycle: BillingCycle =
+    cycle && isBillingCycle(cycle) ? cycle : 'monthly'
+  if (tierKey === 'team') {
+    const stopId = firstQueryValue(query.stop)
+    return stopId ? { tierKey, stopId, billingCycle } : null
+  }
+  return tierKey && isPaidPersonalTierKey(tierKey)
+    ? { tierKey, billingCycle }
+    : null
+}
+
 const { t } = useI18n()
 const route = useRoute()
 const router = useRouter()
 const { reportError } = useAuthActions()
 const { wrapWithErrorHandlingAsync } = useErrorHandling()
 const { showPricingTable } = useSubscriptionDialog()
+const { flags } = useFeatureFlags()
+const { permissions } = useBillingUI()
+const {
+  canOpenPlans,
+  hasResolvedCapabilities,
+  initialize: initializeCapabilities,
+  refresh: refreshCapabilities
+} = useBillingCapabilities()
 
 const {
   canAccessSubscriptionFeatures,
@@ -66,94 +105,78 @@ const planLabel = computed(() =>
   isTeamCheckout.value ? t('subscription.teamPlan.name') : tierDisplayName.value
 )
 
+function personalPricingOptions(
+  tierKey: Exclude<TierKey, 'free'>,
+  billingCycle: BillingCycle
+): SubscriptionDialogOptions {
+  const options = {
+    reason: 'deep_link',
+    sameTab: true,
+    planMode: 'personal'
+  } as const
+  return isCheckoutTierKey(tierKey)
+    ? {
+        ...options,
+        initialCheckout: { planMode: 'personal', tierKey, billingCycle }
+      }
+    : options
+}
+
+async function teamPricingOptions(
+  stopId: string,
+  billingCycle: BillingCycle
+): Promise<SubscriptionDialogOptions> {
+  if (!teamCreditStops.value) await fetchPlans().catch(reportError)
+  return {
+    reason: 'deep_link',
+    sameTab: true,
+    planMode: 'team',
+    initialCheckout: getPricingCheckoutSelection(
+      'team',
+      stopId,
+      billingCycle,
+      teamCreditStops.value
+    )
+  }
+}
+
+async function leftWithoutPlans(): Promise<boolean> {
+  if (!flags.billingNewUxEnabled) {
+    if (!canAccessSubscriptionFeatures.value) return false
+    await manageSubscription()
+    return true
+  }
+  await initializeCapabilities()
+  if (!hasResolvedCapabilities.value) await refreshCapabilities()
+  if (canOpenPlans.value) return false
+  await router.replace('/')
+  return (
+    canAccessSubscriptionFeatures.value ||
+    permissions.value.canManageSubscription
+  )
+}
+
 const runRedirect = wrapWithErrorHandlingAsync(async () => {
-  const rawType = route.query.tier
-  const rawCycle = route.query.cycle
-  let tierKeyParam: string | null = null
-  let cycleParam = 'monthly'
-
-  if (typeof rawType === 'string') {
-    tierKeyParam = rawType
-  } else if (Array.isArray(rawType) && rawType[0]) {
-    tierKeyParam = rawType[0]
-  }
-
-  if (typeof rawCycle === 'string') {
-    cycleParam = rawCycle
-  } else if (Array.isArray(rawCycle) && rawCycle[0]) {
-    cycleParam = rawCycle[0]
-  }
-
-  if (!tierKeyParam) {
+  const link = subscribeLinkFrom(route.query)
+  if (!link) {
     await router.push('/')
     return
   }
 
-  const billingCycle: BillingCycle = isBillingCycle(cycleParam)
-    ? cycleParam
-    : 'monthly'
-
-  let stopId: string | null = null
-  if (tierKeyParam === 'team') {
-    const rawStop = route.query.stop
-    stopId =
-      typeof rawStop === 'string'
-        ? rawStop
-        : Array.isArray(rawStop)
-          ? rawStop[0]
-          : null
-    if (!stopId) {
-      await router.push('/')
-      return
-    }
-    isTeamCheckout.value = true
-  } else if (!isPaidPersonalTierKey(tierKeyParam)) {
-    await router.push('/')
-    return
-  } else {
-    selectedTierKey.value = tierKeyParam
-  }
+  if (link.tierKey === 'team') isTeamCheckout.value = true
+  else selectedTierKey.value = link.tierKey
 
   if (!isInitialized.value) {
     await initialize()
   }
 
-  if (canAccessSubscriptionFeatures.value) {
-    await manageSubscription()
-    return
-  }
+  if (await leftWithoutPlans()) return
 
-  if (isPaidPersonalTierKey(tierKeyParam)) {
-    if (!isCheckoutTierKey(tierKeyParam)) {
-      showPricingTable({ reason: 'deep_link', planMode: 'personal' })
-      return
-    }
-    showPricingTable({
-      reason: 'deep_link',
-      planMode: 'personal',
-      initialCheckout: {
-        planMode: 'personal',
-        tierKey: tierKeyParam,
-        billingCycle
-      }
-    })
-    return
-  }
-
-  if (!teamCreditStops.value) {
-    await fetchPlans().catch(reportError)
-  }
-  const initialCheckout = getPricingCheckoutSelection(
-    tierKeyParam,
-    stopId,
-    billingCycle,
-    teamCreditStops.value
+  showPricingTable(
+    link.tierKey === 'team'
+      ? await teamPricingOptions(link.stopId, link.billingCycle)
+      : personalPricingOptions(link.tierKey, link.billingCycle)
   )
-  showPricingTable({
-    reason: 'deep_link',
-    planMode: 'team',
-    initialCheckout
-  })
 }, reportError)
 
 onMounted(() => {

@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
 
 import {
   LINK_HIDE_TRANSITION,

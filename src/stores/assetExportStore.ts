@@ -4,16 +4,13 @@ import { computed, ref, watch } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
 import { useToast } from '@/components/ui/toast/toastStore'
-import type {
-  TaskResponse,
-  TaskStatus
-} from '@/platform/tasks/services/taskSchema'
+import type { TaskResponse, TaskStatus } from '@comfyorg/api-client/taskSchema'
 import type { TaskId, TaskResult } from '@/platform/tasks/services/taskService'
 import {
   TaskNotFoundError,
   taskService
 } from '@/platform/tasks/services/taskService'
-import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { AssetExportWsMessage } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
 import { t } from '@/i18n'
 
