@@ -504,28 +504,24 @@ describe('LGraphNode', () => {
     expect(overlay).toHaveClass('border-primary')
   })
 
-  it('moves the progress fill with a translate and leaves its size alone', () => {
+  it('shows execution progress by scrubbing the fill and leaves its size alone', async () => {
     mockData.mockExecuting = true
     mockData.mockProgress = 0.35
 
     renderLGraphNode({ nodeData: mockNodeData })
+    await nextTick()
 
     const fill = screen.getByTestId('node-progress-fill')
-    expect(fill.style.getPropertyValue('--node-progress')).toBe('35%')
+    expect(fill.getAnimations()[0].currentTime).toBe(350)
     expect(fill.style.width).toBe('')
   })
 
-  it('caps the progress fill at the full track', () => {
-    mockData.mockExecuting = true
-    mockData.mockProgress = 1.4
+  it('shows no progress fill while the node is not executing', () => {
+    mockData.mockProgress = 0.35
 
     renderLGraphNode({ nodeData: mockNodeData })
 
-    expect(
-      screen
-        .getByTestId('node-progress-fill')
-        .style.getPropertyValue('--node-progress')
-    ).toBe('100%')
+    expect(screen.queryByTestId('node-progress-fill')).not.toBeInTheDocument()
   })
 
   it('hides a linked core LoadImage input preview', () => {

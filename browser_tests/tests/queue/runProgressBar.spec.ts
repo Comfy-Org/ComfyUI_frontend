@@ -108,11 +108,10 @@ wstest.describe('Queue progress overlay', { tag: ['@ui'] }, () => {
         (element) => (element as HTMLElement).offsetWidth
       )
 
-      const transitionProperties = await progressNodeFill.evaluate((element) =>
-        getComputedStyle(element).transitionProperty.split(', ')
+      const animationStates = await progressNodeFill.evaluate((element) =>
+        element.getAnimations().map((animation) => animation.playState)
       )
-      expect(transitionProperties).toContain('transform')
-      expect(transitionProperties).not.toContain('width')
+      expect(animationStates).toEqual(['paused'])
 
       execution.nodeRunning(jobId, '3', 18, 20)
       await expect
