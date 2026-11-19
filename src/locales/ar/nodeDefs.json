@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "إزالة الخلفية من صورة باستخدام Bria RMBG 2.0.",
+    "description": "أزل الخلفية من صورة باستخدام Bria RMBG 2.0 أو RMBG 3.0.",
     "display_name": "Bria إزالة خلفية الصورة",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "صورة"
       },
+      "model": {
+        "name": "model"
+      },
       "moderation": {
         "name": "الإشراف",
         "tooltip": "إعدادات الإشراف"
       },
       "seed": {
         "name": "البذرة",
-        "tooltip": "تتحكم البذرة فيما إذا كان يجب إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذرة."
+        "tooltip": "يتحكم Seed في ما إذا كانت العقدة ستُعاد تشغيلها؛ إذ تعطي الصورة نفسها النتيجة نفسها دائمًا بغض النظر عن Seed."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير الإصدار النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد وأقلّه تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج وفيديوهات تصل إلى 30 ثانية وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id النتيجة النهائية بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.5 Flash لفيديوهات 480p و720p حتى 30 ثانية؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع إنشاء بأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير الإصدار النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد وأقلّه تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج وفيديوهات تصل إلى 30 ثانية وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id النتيجة النهائية بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.5 Flash لفيديوهات 480p و720p حتى 30 ثانية؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع إنشاء بأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "التقليل التلقائي للحجم"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير الإصدار النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد وأقلّه تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج وفيديوهات تصل إلى 30 ثانية وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id النتيجة النهائية بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.5 Flash لفيديوهات 480p و720p حتى 30 ثانية؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع إنشاء بأقل تكلفة."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "النموذج",
-        "tooltip": "Seedance 2.5 لأحدث نموذج، وفيديوهات تصل إلى 30 ثانية، وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يتيح draft_task_id الخاص بها تصيير الإصدار النهائي بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع توليد وأقلّه تكلفة."
+        "tooltip": "Seedance 2.5 لأحدث نموذج وفيديوهات تصل إلى 30 ثانية وإخراج 4k وmp4/mov؛ وSeedance 2.5 Draft لمعاينة سريعة بدقة 480p، حيث يعرض draft_task_id النتيجة النهائية بدقة 1080p أو 4k في عقدة Seedance 2.5 Draft to Final Video؛ وSeedance 2.5 Flash لفيديوهات 480p و720p حتى 30 ثانية؛ وSeedance 2.0 لأقصى جودة و4k؛ وFast لتحسين السرعة؛ وMini لأسرع إنشاء بأقل تكلفة."
       },
       "model_duration": {
         "name": "المدة"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "أنشئ camera_info. يوجّه الوضع 'orbit' الكاميرا باستخدام الانحراف/الميل/المسافة حول الهدف؛ بينما يضع 'look_at' الكاميرا في موضع عالمي. الإحداثيات هي فضاء العالم الخاص بالمشاهد (يميني اليد، والمحور Y للأعلى).",
+    "description": "أنشئ camera_info. يوجّه الوضع 'orbit' الكاميرا باستخدام الانحراف/الميل/المسافة حول الهدف؛ بينما يضع 'look_at' الكاميرا عند موضع في العالم. الإحداثيات هي فضاء العالم الخاص بالمشاهد (يميني الاتجاه، والمحور Y لأعلى)، أو عند توصيل mesh تكون ضمن إطار ذلك الـmesh، لذا تؤطّر الإعدادات نفسها أي mesh.",
     "display_name": "إنشاء معلومات الكاميرا",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "مجال الرؤية العمودي بالدرجات."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "أطّر هذا الـmesh: تُحتسب المواضع والهدف والمسافة من مركز صندوقه المحيط بوحدات قطر كرته المحيطة، لذا تؤطّر الإعدادات نفسها أي mesh."
       },
       "mode": {
         "name": "الوضع",
@@ -8458,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "أنشئ فيديو ناطقًا لأفاتار HeyGen باستخدام HeyGen Avatar 6، بالاعتماد على نص مكتوب أو صوتك الخاص.",
+    "display_name": "HeyGen Avatar 6 من الهوية إلى الفيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع 'auto' لقطات المصدر الخاصة بالأفاتار."
+      },
+      "avatar": {
+        "name": "الأفاتار"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "motion_expressiveness": {
+        "name": "motion_expressiveness",
+        "tooltip": "يمنح 'less' إيماءات أقل وأصغر. تكون لموجّه الحركة الأولوية في المواضع التي يتداخلان فيها."
+      },
+      "motion_prompt": {
+        "name": "motion_prompt",
+        "tooltip": "الإيماءات والتعبير والوضعية وحركة الكاميرا."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة في ما إذا كانت العقدة ستُشغَّل مجددًا؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "speech": {
+        "name": "الكلام",
+        "tooltip": "شغّل الأفاتار بنص مكتوب (تحويل النص إلى كلام من HeyGen) أو بصوتك الخاص."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "النص"
+      },
+      "speech_voice": {
+        "name": "الصوت"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "اجعل شخصًا أو شخصية من صورة أو فيديو يتحدث بالصوت المتصل باستخدام HeyGen Avatar 6. صِل صورةً أو فيديوً أو كليهما.",
+    "display_name": "HeyGen Avatar 6 من المرجع إلى الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_motion_expressiveness": {
+        "name": "motion_expressiveness"
+      },
+      "model_motion_prompt": {
+        "name": "motion_prompt"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "إنشاء فيديو مقدم يتحدث باستخدام HeyGen avatar. يتضمن أشهر الصور الرمزية العامة من HeyGen؛ يمكن تزويد معرف مظهر كبديل.",
     "display_name": "فيديو HeyGen Avatar",
@@ -10638,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "أنشئ الصور أو حرّرها انطلاقًا من موجّه نصي وما يصل إلى 10 صور مرجعية، كصورة واحدة أو كسلسلة من الصور المترابطة.",
+    "display_name": "Kling 4.0 صورة",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto الصور المرجعية، وإلا فيتبع الموجّه."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "أشر إلى الصور المرجعية باعتبارها @Image1, @Image2, ..."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "يتحكم البذر في ما إذا كان ينبغي إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذر."
+      },
+      "series_amount": {
+        "name": "series_amount",
+        "tooltip": "أنشئ سلسلة من الصور المترابطة التي تحافظ على الشخصيات والأسلوب نفسيهما. يتيح auto للنموذج اختيار 2-10 صور."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "أنشئ فيديو مع صوت باستخدام ما يصل إلى 10 إطارات رئيسية على kling-4.0، أو من إطار أول على kling-4.0-flash. تتباعد الإطارات الوسطى بالتساوي؛ ويأخذ الفيديو نسبة العرض إلى الارتفاع للإطار الرئيسي الأول.",
     "display_name": "Kling 4.0 صورة إلى فيديو",
@@ -10659,6 +10789,32 @@
       },
       "model_seed": {
         "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "ولّد صورة طويلة واحدة: تصميم صفحة ويب أو صفحة تفاصيل منتج للتجارة الإلكترونية.",
+    "display_name": "Kling 4.0 صورة طويلة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "skill": {
+        "name": "مهارة"
+      },
+      "skill_prompt": {
+        "name": "الموجّه"
+      },
+      "skill_resolution": {
+        "name": "الدقة"
+      },
+      "skill_seed": {
+        "name": "البذر"
       }
     },
     "outputs": {
@@ -19341,7 +19497,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "توليد ردود نصية عبر OpenRouter. يوجه إلى مجموعة مختارة من النماذج الشهيرة من xAI، DeepSeek، Qwen، Mistral، Z.AI (GLM)، Moonshot (Kimi)، وPerplexity Sonar.",
+    "description": "أنشئ استجابات نصية عبر OpenRouter. يوجّه إلى مجموعة منتقاة من النماذج الشائعة من Anthropic (Claude) وOpenAI (GPT) وGoogle (Gemini) وxAI (Grok) وMeta (Muse) وDeepSeek وQwen وMistral وZ.AI (GLM) وMoonshot (Kimi) وPerplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -25288,6 +25444,77 @@
       }
     }
   },
+  "SenseNovaConditioning": {
+    "description": "شفّر الصور المرجعية والتفكير الصوري والنص المتداخل أو التصحيح الذاتي باستخدام CLIP. صِل HiDream-O1 Reference Images قبل هذه العقدة واستخدم مُعيّنة قياسية للصور. لا يحتاج التحويل من نص إلى صورة دون تفكير إلا إلى CLIP Text Encode؛ ويمكن للمخرجات النصية فقط استخدام Generate Text.",
+    "display_name": "تكييف SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "التكييف"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "الحد الأقصى للرموز المولّدة خلال هذا الاستدعاء."
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "task": {
+        "name": "المهمة",
+        "tooltip": "حدّد المهمة. يُضبط قالب موجّهها وسلوك الإيقاف تلقائيًا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "التكييف",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "النص الذي ولّده هذا الاستدعاء. استخدم SenseNova Interleave Decode للحصول على النتيجة الكاملة."
+      },
+      "2": {
+        "name": "سلبي",
+        "tooltip": "تكييف سلبي محدّث للتداخل والتصحيح الذاتي."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "استخرج النص والصور والتفكير المُولَّدة من سجل التداخل الذي ينتجه SenseNova Conditioning، بما في ذلك التصحيح الذاتي U1.6. مع الحلقات، استخدم End Loop مع تعطيل التراكم. تُستثنى الصور المرجعية المُدخلة. تُتخطى مستهلكات الصور عند عدم توليد أي صور.",
+    "display_name": "فك ترميز التداخل لـ SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "التكييف"
+      },
+      "samples": {
+        "name": "عينات",
+        "tooltip": "الكامن البكسلي الأخير لـ KSampler، إذا انتهت الحلقة بطلب صورة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نص",
+        "tooltip": null
+      },
+      "1": {
+        "name": "صور",
+        "tooltip": null
+      },
+      "2": {
+        "name": "تفكير",
+        "tooltip": null
+      }
+    }
+  },
   "SenseNovaSamplingOptions": {
     "description": "تعيين إزاحة تدفق SenseNova.",
     "display_name": "خيارات أخذ العينات لـ SenseNova",
@@ -30305,6 +30532,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "اتساق زمني وفقًا لـ Bonneel وآخرين، 2015، مع حدّ مطابقة لمقاومة الانجراف: يحتفظ كل إطار بتفاصيله الخاصة مع اتباع الإطارات المجاورة له على طول التدفق البصري لفيديو الدليل.",
+    "display_name": "إزالة وميض الفيديو",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "يأخذ bidirectional متوسط تمرير أمامي وآخر خلفي، مما يتجنب التأخر خلف الحركة مقابل ضعف الوقت."
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "إطارات مصدر مستقرة لاتباع حركتها، بأي دقة. يكون الإعداد الافتراضي هو images، مما يزيل وميضًا أقل."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "إطارات متذبذبة، مثل فيديو تم رفع دقته أو معالجته إطارًا بإطار."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "مدى قوة اتباع كل إطار للإطارات المجاورة له. تزيد القيم الأعلى من إزالة الوميض وتخفف التفاصيل الدقيقة أكثر."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "تُعدّ التغييرات الأكبر من هذه القيمة بين إطار وإطاره المجاور المعوَّض عن الحركة حقيقية، وتُنعَّم بدرجة أقل. القيمة 0 تنعّم كل التغييرات بالتساوي."
       }
     },
     "outputs": {

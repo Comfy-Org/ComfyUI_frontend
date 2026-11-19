@@ -1,4 +1,3 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -32,10 +31,11 @@ import { openModelLibraryBrowser } from '@/platform/assets/composables/openModel
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 import { isCloud } from '@/platform/distribution/types'
+import { useUnreadyDeploymentRun } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildSupportUrl } from '@/platform/support/config'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ExecutionTriggerSource } from '@comfyorg/telemetry/types'
@@ -47,8 +47,9 @@ import {
   useCanvasStore,
   useTitleEditorStore
 } from '@/renderer/core/canvas/canvasStore'
+import { renderWorkflowImage } from '@/renderer/core/canvas/workflowImage/renderWorkflowImage'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogService } from '@/services/dialogService'
@@ -98,6 +99,31 @@ export function useCoreCommands(): ComfyCommand[] {
     type: billingType
   } = useBillingContext()
   const { showSubscriptionDialog } = useSubscriptionPaywall()
+  const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+
+  function activeWorkflowTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow]
+  }
+
+  function selectedNodesTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow, ...getSelectedNodes()]
+  }
+
+  async function deploymentStopsRun(
+    runTarget: () => readonly unknown[]
+  ): Promise<boolean> {
+    const canvasStore = useCanvasStore()
+    if (canvasStore.isPickingNodes) return false
+    const asked = runTarget()
+    return openSwitcherInsteadOfRun(() => {
+      if (canvasStore.isPickingNodes) return false
+      const now = runTarget()
+      return (
+        asked.length === now.length &&
+        asked.every((item, index) => item === now[index])
+      )
+    })
+  }
 
   async function blockRunWithoutSubscription(): Promise<boolean> {
     if (!isCloud) return false
@@ -163,7 +189,7 @@ export function useCoreCommands(): ComfyCommand[] {
     selectedNodes.forEach((node) => {
       node.pos = positionUpdater(node.pos, gridSize)
     })
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
   }
 
   const commands = [
@@ -174,7 +200,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'New',
       category: 'essentials' as const,
       function: async () => {
-        const previousWorkflowHadNodes = app.rootGraph._nodes.length > 0
+        const previousWorkflowHadNodes = useApp().rootGraph._nodes.length > 0
         await workflowService.loadBlankWorkflow()
         telemetry?.trackWorkflowCreated({
           workflow_type: 'blank',
@@ -189,7 +215,7 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Open',
       category: 'essentials' as const,
       function: () => {
-        app.ui.loadFile()
+        useApp().ui.loadFile()
       }
     },
     {
@@ -197,7 +223,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--code]',
       label: 'Load Default Workflow',
       function: async () => {
-        const previousWorkflowHadNodes = app.rootGraph._nodes.length > 0
+        const previousWorkflowHadNodes = useApp().rootGraph._nodes.length > 0
         await workflowService.loadDefaultWorkflow()
         telemetry?.trackWorkflowCreated({
           workflow_type: 'default',
@@ -279,6 +305,17 @@ export function useCoreCommands(): ComfyCommand[] {
       }
     },
     {
+      id: 'Comfy.ExportWorkflowImage',
+      icon: 'icon-[lucide--image-down]',
+      label: 'Export Workflow Image',
+      menubarLabel: 'Export (Workflow Image)',
+      function: async () => {
+        await workflowService.exportWorkflowImage('workflow', () =>
+          renderWorkflowImage(useApp().canvas)
+        )
+      }
+    },
+    {
       id: 'Comfy.Undo',
       icon: 'icon-[lucide--undo-2]',
       label: 'Undo',
@@ -318,12 +355,12 @@ export function useCoreCommands(): ComfyCommand[] {
           !settingStore.get('Comfy.ConfirmClear') ||
           confirm('Clear workflow?')
         ) {
-          if (app.canvas.subgraph) {
-            const subgraph = app.canvas.subgraph
+          const { subgraph } = useApp().canvas
+          if (subgraph) {
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
           } else {
-            app.clean()
+            useApp().clean()
           }
           api.dispatchCustomEvent('graphCleared')
         }
@@ -342,7 +379,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--clipboard]',
       label: 'Clipspace',
       function: () => {
-        app.openClipspace()
+        useApp().openClipspace()
       }
     },
     {
@@ -351,7 +388,10 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Refresh Node Definitions',
       category: 'essentials' as const,
       function: async () => {
-        await Promise.all([app.refreshComboInNodes(), modelStore.refresh()])
+        await Promise.all([
+          useApp().refreshComboInNodes(),
+          modelStore.refresh()
+        ])
         await useAssetsStore().invalidateAll()
         if (!isCloud) {
           await missingModelStore.refreshMissingModels({ reloadDefs: false })
@@ -403,12 +443,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Zoom In',
       category: 'view-controls' as const,
       function: () => {
-        const ds = app.canvas.ds
+        const ds = useApp().canvas.ds
         ds.changeScale(ds.scale * 1.1, [
           ds.element.width / 2,
           ds.element.height / 2
         ])
-        app.canvas.setDirty(true, true)
+        useApp().canvas.setDirty(true, true)
       }
     },
     {
@@ -417,12 +457,12 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Zoom Out',
       category: 'view-controls' as const,
       function: () => {
-        const ds = app.canvas.ds
+        const ds = useApp().canvas.ds
         ds.changeScale(ds.scale / 1.1, [
           ds.element.width / 2,
           ds.element.height / 2
         ])
-        app.canvas.setDirty(true, true)
+        useApp().canvas.setDirty(true, true)
       }
     },
     {
@@ -444,12 +484,12 @@ export function useCoreCommands(): ComfyCommand[] {
       menubarLabel: 'Zoom to fit',
       category: 'view-controls' as const,
       function: () => {
-        if (app.canvas.empty) {
+        if (useApp().canvas.empty) {
           toast.error(t('toastMessages.emptyCanvas'))
           return
         }
-        app.canvas.fitViewToSelectionAnimated({
-          viewport: visibleCanvasViewport(app.canvas)
+        useApp().canvas.fitViewToSelectionAnimated({
+          viewport: visibleCanvasViewport(useApp().canvas)
         })
       }
     },
@@ -459,7 +499,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Canvas Toggle Lock',
       category: 'view-controls' as const,
       function: () => {
-        app.canvas.read_only = !app.canvas.read_only
+        useApp().canvas.read_only = !useApp().canvas.read_only
       }
     },
     {
@@ -468,7 +508,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Lock Canvas',
       category: 'view-controls' as const,
       function: () => {
-        app.canvas.read_only = true
+        useApp().canvas.read_only = true
       }
     },
     {
@@ -476,7 +516,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--lock-open]',
       label: 'Unlock Canvas',
       function: () => {
-        app.canvas.read_only = false
+        useApp().canvas.read_only = false
       }
     },
     {
@@ -546,6 +586,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -553,7 +594,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(0, batchCount, { intent: metadata })
+        await useApp().queuePrompt(0, batchCount, { intent: metadata })
       }
     },
     {
@@ -566,6 +607,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -573,7 +615,7 @@ export function useCoreCommands(): ComfyCommand[] {
 
         useTelemetry()?.trackWorkflowExecution()
 
-        await app.queuePrompt(-1, batchCount, { intent: metadata })
+        await useApp().queuePrompt(-1, batchCount, { intent: metadata })
       }
     },
     {
@@ -585,6 +627,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(selectedNodesTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -610,7 +653,7 @@ export function useCoreCommands(): ComfyCommand[] {
           return
         }
         useTelemetry()?.trackWorkflowExecution()
-        await app.queuePrompt(0, batchCount, {
+        await useApp().queuePrompt(0, batchCount, {
           queueNodeIds: executionIds,
           intent: metadata
         })
@@ -634,7 +677,7 @@ export function useCoreCommands(): ComfyCommand[] {
       category: 'essentials' as const,
       mutatesGraph: true,
       function: () => {
-        const { canvas } = app
+        const { canvas } = useApp()
         if (!canvas.selectedItems.size) {
           toast.error(t('toastMessages.nothingToGroup'), {
             description: t('toastMessages.pleaseSelectNodesToGroup')
@@ -680,7 +723,7 @@ export function useCoreCommands(): ComfyCommand[] {
       mutatesGraph: true,
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.NEVER)
-        app.canvas.setDirty(true, true)
+        useApp().canvas.setDirty(true, true)
       }
     },
     {
@@ -692,7 +735,7 @@ export function useCoreCommands(): ComfyCommand[] {
       mutatesGraph: true,
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
-        app.canvas.setDirty(true, true)
+        useApp().canvas.setDirty(true, true)
       }
     },
     {
@@ -702,7 +745,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.61.0',
       mutatesGraph: true,
       function: () => {
-        toggleNodeLinks(app.canvas, getSelectedNodesShallow())
+        toggleNodeLinks(useApp().canvas, getSelectedNodesShallow())
       }
     },
     {
@@ -716,7 +759,7 @@ export function useCoreCommands(): ComfyCommand[] {
         getSelectedNodes().forEach((node) => {
           node.pin(!node.pinned)
         })
-        app.canvas.setDirty(true, true)
+        useApp().canvas.setDirty(true, true)
       }
     },
     {
@@ -726,12 +769,12 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.3.33',
       mutatesGraph: true,
       function: () => {
-        for (const item of app.canvas.selectedItems) {
+        for (const item of useApp().canvas.selectedItems) {
           if (item instanceof LGraphNode || item instanceof LGraphGroup) {
             item.pin(!item.pinned)
           }
         }
-        app.canvas.setDirty(true, true)
+        useApp().canvas.setDirty(true, true)
       }
     },
     {
@@ -745,7 +788,7 @@ export function useCoreCommands(): ComfyCommand[] {
           const optimalSize = node.computeSize()
           node.setSize([optimalSize[0], optimalSize[1]])
         })
-        app.canvas.setDirty(true, true)
+        useApp().canvas.setDirty(true, true)
       }
     },
     {
@@ -758,7 +801,7 @@ export function useCoreCommands(): ComfyCommand[] {
         getSelectedNodes().forEach((node) => {
           node.collapse()
         })
-        app.canvas.setDirty(true, true)
+        useApp().canvas.setDirty(true, true)
       }
     },
     {
@@ -814,14 +857,14 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.4.9',
       mutatesGraph: true,
       function: () => {
-        for (const group of app.canvas.selectedItems) {
+        for (const group of useApp().canvas.selectedItems) {
           if (group instanceof LGraphGroup) {
             group.recomputeInsideNodes()
             const padding = useSettingStore().get(
               'Comfy.GroupSelectedNodes.Padding'
             )
             group.resizeTo(group.children, padding)
-            app.canvas.setDirty(false, true)
+            useApp().canvas.setDirty(false, true)
           }
         }
       }
@@ -918,12 +961,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        const { userEmail, resolvedUserInfo } = useCurrentUser()
-        const supportUrl = buildSupportUrl({
-          userEmail: userEmail.value,
-          userId: resolvedUserInfo.value?.id
-        })
-        window.open(supportUrl, '_blank', 'noopener,noreferrer')
+        openSupportForm('question')
       }
     },
     {
@@ -989,8 +1027,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--copy]',
       label: 'Copy',
       function: () => {
-        if (app.canvas.selectedItems.size) {
-          app.canvas.copyToClipboard()
+        if (useApp().canvas.selectedItems.size) {
+          useApp().canvas.copyToClipboard()
         }
       }
     },
@@ -1000,7 +1038,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Paste',
       mutatesGraph: true,
       function: () => {
-        app.canvas.pasteFromClipboard()
+        useApp().canvas.pasteFromClipboard()
       }
     },
     {
@@ -1009,7 +1047,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: () => t('menuLabels.Paste with Connect'),
       mutatesGraph: true,
       function: () => {
-        app.canvas.pasteFromClipboard({ connectInputs: true })
+        useApp().canvas.pasteFromClipboard({ connectInputs: true })
       }
     },
     {
@@ -1017,7 +1055,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--lasso-select]',
       label: 'Select All',
       function: () => {
-        app.canvas.selectItems()
+        useApp().canvas.selectItems()
       }
     },
     {
@@ -1027,7 +1065,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.58.0',
       mutatesGraph: true,
       function: () => {
-        hideSelectedLinks(app.canvas)
+        hideSelectedLinks(useApp().canvas)
       }
     },
     {
@@ -1037,7 +1075,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.58.0',
       mutatesGraph: true,
       function: () => {
-        showSelectedLinks(app.canvas)
+        showSelectedLinks(useApp().canvas)
       }
     },
     {
@@ -1047,7 +1085,7 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.58.0',
       mutatesGraph: true,
       function: () => {
-        deleteSelectedLinks(app.canvas)
+        deleteSelectedLinks(useApp().canvas)
       }
     },
     {
@@ -1057,15 +1095,15 @@ export function useCoreCommands(): ComfyCommand[] {
       versionAdded: '1.10.5',
       mutatesGraph: true,
       function: () => {
-        if (app.canvas.selectedItems.size === 0) {
-          if (deleteSelectedLinks(app.canvas)) return
-          app.canvas.canvas.dispatchEvent(
+        if (useApp().canvas.selectedItems.size === 0) {
+          if (deleteSelectedLinks(useApp().canvas)) return
+          useApp().canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })
           )
           return
         }
-        app.canvas.deleteSelected()
-        app.canvas.setDirty(true, true)
+        useApp().canvas.deleteSelected()
+        useApp().canvas.setDirty(true, true)
       }
     },
     {

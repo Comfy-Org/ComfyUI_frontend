@@ -1,12 +1,17 @@
-import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal
+} from '@comfyorg/api-client/abortSignal'
 import type { BillingHandoffCreateRequest } from '@comfyorg/ingest-types'
 import {
   zBillingHandoffCreateResponse,
   zErrorResponse
 } from '@comfyorg/ingest-types/zod'
+import { parseUrl } from '@comfyorg/shared-frontend-utils/urlSafety'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { watch } from 'vue'
 
+import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import { i18n, t } from '@/i18n'
@@ -14,21 +19,26 @@ import {
   desktopHostUser,
   issueDesktopHostBillingHandoff
 } from '@/platform/auth/desktopHost/desktopHostSession'
-import { refreshBilling } from '@/platform/billing/billingRefresh'
+import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
 import type { BillingTab } from '@/platform/billing/billingTab'
 import { reserveBillingTab } from '@/platform/billing/billingTab'
-import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { localSurface } from '@/platform/billing/localBillingWebEnabled'
 import { registerRefreshOnReturn } from '@/platform/billing/refreshOnReturn'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
+import { tagPlatformUrl } from '@/platform/workspace/utils/platformLink'
 import { useAuthStore } from '@/stores/authStore'
 
 const ISSUE_TIMEOUT_MS = 15_000
 
-/** The billing flow the user started, which billing-web opens after the exchange. */
+/** The billing flow billing-web opens after the exchange, or Platform's billing page, which takes none. */
 export type BillingHandoffRequest =
-  | { readonly intent: 'top-up'; readonly amountCents: number }
+  | {
+      readonly intent: 'top-up'
+      readonly amountCents: number
+      readonly autoTopUp?: BillingHandoffCreateRequest['auto_top_up']
+    }
   | { readonly intent: 'subscription' }
+  | { readonly receiver: 'platform' }
 
 type HandoffIssue =
   | { readonly kind: 'issued'; readonly entryUrl: string }
@@ -68,10 +78,14 @@ function issueBody(
 ): BillingHandoffCreateRequest {
   return {
     workspace_id: workspaceId,
-    receiver: 'billing_web',
     surface: 'local_web',
-    intent: request.intent,
+    ...('receiver' in request
+      ? { receiver: request.receiver }
+      : { receiver: 'billing_web', intent: request.intent }),
     ...('amountCents' in request ? { amount_cents: request.amountCents } : {}),
+    ...('autoTopUp' in request && request.autoTopUp !== undefined
+      ? { auto_top_up: request.autoTopUp }
+      : {}),
     client_version: __COMFYUI_FRONTEND_VERSION__.slice(0, 64)
   }
 }
@@ -92,10 +106,7 @@ async function issueBillingHandoff(
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(issueBody(workspaceId, request)),
-      signal: combineAbortSignals([
-        signal,
-        AbortSignal.timeout(ISSUE_TIMEOUT_MS)
-      ])
+      signal
     })
     if (response.status === 401) return { kind: 'sign_in_again' }
     if (!response.ok) return refusal(response)
@@ -159,24 +170,22 @@ let stopReturnRefresh: (() => void) | null = null
 
 function armReturnRefresh(): void {
   stopReturnRefresh?.()
-  stopReturnRefresh = registerRefreshOnReturn(() =>
-    Promise.allSettled([
-      refreshBilling('account'),
-      useBillingCapabilities().refresh()
-    ])
-  )
+  stopReturnRefresh = registerRefreshOnReturn(refreshBillingAccount)
 }
 
 async function issueThroughDesktop(
   workspaceId: string,
   request: BillingHandoffRequest
 ): Promise<HandoffIssue> {
-  const answer = await issueDesktopHostBillingHandoff(
-    workspaceId,
-    'billing_web',
-    request.intent,
-    'amountCents' in request ? request.amountCents : undefined
-  )
+  const answer =
+    'receiver' in request
+      ? await issueDesktopHostBillingHandoff(workspaceId, request.receiver)
+      : await issueDesktopHostBillingHandoff(
+          workspaceId,
+          'billing_web',
+          request.intent,
+          'amountCents' in request ? request.amountCents : undefined
+        )
   switch (answer.status) {
     case 'issued':
       return { kind: 'issued', entryUrl: answer.entryUrl }
@@ -201,31 +210,22 @@ function refusedOnAbort(signal: AbortSignal): {
   return { refusal, stop: () => signal.removeEventListener('abort', refuse) }
 }
 
-async function issueThroughDesktopUnlessAbandoned(
-  workspaceId: string,
-  request: BillingHandoffRequest,
+async function unlessAbandoned(
+  issue: () => Promise<HandoffIssue>,
   signal: AbortSignal
 ): Promise<HandoffIssue> {
   if (signal.aborted) return UNEXPLAINED_REFUSAL
   const abandoned = refusedOnAbort(signal)
-  return Promise.race([
-    issueThroughDesktop(workspaceId, request),
-    abandoned.refusal
-  ]).finally(abandoned.stop)
+  return Promise.race([issue(), abandoned.refusal]).finally(abandoned.stop)
 }
 
-async function issueForScope(
+async function issueWithFreshToken(
   scope: HandoffScope,
   request: BillingHandoffRequest,
   signal: AbortSignal
 ): Promise<HandoffIssue> {
-  if (localSurface() === 'desktop')
-    return issueThroughDesktopUnlessAbandoned(
-      scope.workspaceId,
-      request,
-      signal
-    )
-  const token = await useAuthStore().getIdToken()
+  const token = await useAuthStore().getFreshIdToken()
+  if (signal.aborted) return UNEXPLAINED_REFUSAL
   if (!token) return SIGN_IN_AGAIN
   return issueBillingHandoff(
     token,
@@ -233,6 +233,26 @@ async function issueForScope(
     scope.cloudBaseUrl,
     request,
     signal
+  )
+}
+
+function issueForScope(
+  scope: HandoffScope,
+  request: BillingHandoffRequest,
+  signal: AbortSignal
+): Promise<HandoffIssue> {
+  if (localSurface() === 'desktop')
+    return unlessAbandoned(
+      () => issueThroughDesktop(scope.workspaceId, request),
+      signal
+    )
+  const abandonedOrOverdue = combineAbortSignals([
+    signal,
+    createTimeoutSignal(ISSUE_TIMEOUT_MS)
+  ])
+  return unlessAbandoned(
+    () => issueWithFreshToken(scope, request, abandonedOrOverdue),
+    abandonedOrOverdue
   )
 }
 
@@ -285,7 +305,7 @@ export function reserveBillingHandoffTab(): BillingTab | null {
   })
 }
 
-/** Issues a one-time billing-web handoff for the signed-in local account, through Desktop's bridge on Desktop; the URL works once and is never shown. */
+/** Issues a one-time billing handoff for the signed-in local account, through Desktop's bridge on Desktop; the URL works once and is never shown. */
 export async function issueLocalBillingHandoff(
   request: BillingHandoffRequest,
   signal: AbortSignal
@@ -306,4 +326,44 @@ export async function issueLocalBillingHandoff(
     scopeWatch.stop()
     inFlight = false
   }
+}
+
+/** A Platform page a handoff opens instead of its billing page; Platform reads it from the entry URL's query. */
+export type PlatformHandoffView = 'plans'
+
+function withPlatformView(
+  entryUrl: string,
+  view: PlatformHandoffView | undefined
+): string | undefined {
+  if (view === undefined) return entryUrl
+  const url = parseUrl(entryUrl)
+  if (!url) return undefined
+  url.searchParams.set('view', view)
+  return url.href
+}
+
+/** Opens Platform billing, or the page `view` names, through a one-time handoff, in a tab reserved during the click; a refusal closes the tab and is shown as a toast. */
+export async function openPlatformBillingHandoff(
+  view?: PlatformHandoffView
+): Promise<void> {
+  if (inFlight) return
+  const tab = reserveBillingHandoffTab()
+  if (!tab) {
+    useToast().error(t('subscription.billingTabBlocked'))
+    return
+  }
+  const issued = await issueLocalBillingHandoff(
+    { receiver: 'platform' },
+    new AbortController().signal
+  )
+  const target =
+    issued.status === 'ok'
+      ? withPlatformView(tagPlatformUrl(issued.url), view)
+      : undefined
+  if (target !== undefined) return tab.navigate(target)
+  tab.close()
+  useToast().error(
+    (issued.status === 'error' && issued.message) ||
+      t('subscription.billingPortalUnavailable')
+  )
 }

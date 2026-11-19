@@ -64,15 +64,11 @@
         </p>
       </div>
       <Button
-        v-if="available"
-        as="a"
-        :href
-        target="_blank"
-        rel="noopener"
+        v-bind="button"
         :variant="view.status.action.variant"
         size="md"
         class="shrink-0 no-underline"
-        @click="track"
+        @click="open"
       >
         {{ $t(view.status.action.label) }}
         <i :class="view.status.action.icon" aria-hidden="true" />
@@ -99,7 +95,7 @@ import { formatPlanDate } from '@/platform/billing/legacy160/platform/billing/co
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
-import { usePlatformHandoff } from '@/platform/billing/composables/usePlatformHandoff'
+import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
 import { useBillingSdkStore } from '@/platform/billing/sdk/billingSdkStore'
 
@@ -423,7 +419,7 @@ const view = computed(() => {
 
 const action = computed(() => view.value?.status.action.id ?? 'turn_on')
 
-const { href, track, available } = usePlatformHandoff(
+const { button, open } = usePlatformBillingLink(
   () => platformAutoTopUpPath(action.value),
   () => ({ target: 'auto_top_up', action: action.value })
 )

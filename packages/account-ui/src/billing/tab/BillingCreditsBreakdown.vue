@@ -82,8 +82,6 @@ const {
   class?: HTMLAttributes['class']
 }>()
 
-// shortcut: design-system Skeleton's classes inline; a new account-ui SFC importing
-// any design-system .vue fails the packages vue-tsc -b build (TS2307). Swap back once that resolves.
 const SKELETON = 'h-3 animate-pulse rounded-sm bg-secondary'
 
 const loading = computed(() => state.kind === 'loading')
@@ -92,7 +90,6 @@ const plan = computed(() => (state.kind === 'plan' ? state : null))
 const credits = (cents: number) =>
   formatWholeCredits(centsToCredits(cents), locale)
 
-// Without a served plan total there is no "of {total}" and no bar.
 const planLine = computed(() => {
   if (!plan.value) return { before: '', value: '—', after: '' }
   const value = credits(plan.value.planCents)

@@ -17,6 +17,8 @@ import type { EffectScope } from 'vue'
 import { projectBillingCapabilities } from '@/platform/billing/sdk/billingCapabilitiesView'
 import { attachCapabilityRevisionInterceptor } from '@/platform/remote/ingest/capabilityRevision'
 import { billingApi } from '@/platform/billing/api/billingApi'
+import { refreshBillingAccount } from '@/platform/billing/billingAccountRefresh'
+import { setLocalBillingWebEnabled } from '@/platform/billing/localBillingWebEnabled'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 
@@ -93,6 +95,8 @@ function capabilitiesResponse(
       can_manage_subscription: false,
       can_open_plans: false,
       can_run_workflows: false,
+      can_set_budgets: false,
+      can_set_hard_caps: false,
       can_upgrade: false,
       can_downgrade_to_personal: true,
       ...overrides
@@ -392,6 +396,25 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.deleteWorkspaceDenial.value).toBe(
       'plan_not_ended'
     )
+  })
+
+  it('exposes the reason the server named for refusing Plans', async () => {
+    const response = capabilitiesResponse(
+      true,
+      'workspace-1',
+      true,
+      {},
+      { can_open_plans: false }
+    )
+    response.denied_reasons = { can_open_plans: 'not_original_owner' }
+    vi.mocked(billingApi.getBillingCapabilities).mockResolvedValueOnce(response)
+
+    expect(billingCapabilities.openPlansDenial.value).toBeUndefined()
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canOpenPlans.value).toBe(false)
+    expect(billingCapabilities.openPlansDenial.value).toBe('not_original_owner')
   })
 
   it('exposes the top-up denial and billing management as the server sent them', async () => {
@@ -1478,6 +1501,163 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
+  describe('refresh() on local with local_billing_web on', () => {
+    beforeEach(() => {
+      mockIsCloud.value = false
+      setLocalBillingWebEnabled(true)
+    })
+
+    afterEach(() => setLocalBillingWebEnabled(false))
+
+    it.for([
+      ['resolves', () => Promise.resolve(capabilitiesResponse(false))],
+      ['fails', () => Promise.reject(new Error('unavailable'))]
+    ] as const)(
+      'reads once more when refresh() is called during a read that %s',
+      async ([, settleEarlierRead]) => {
+        let releaseEarlierRead!: () => void
+        vi.mocked(billingApi.getBillingCapabilities)
+          .mockImplementationOnce(() =>
+            new Promise<void>((resolve) => {
+              releaseEarlierRead = resolve
+            }).then(settleEarlierRead)
+          )
+          .mockResolvedValue(capabilitiesResponse(true))
+
+        void billingCapabilities.initialize()
+        const refreshed = billingCapabilities.refresh()
+        expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+        releaseEarlierRead()
+        await refreshed
+
+        expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+        expect(billingCapabilities.canTopUp.value).toBe(true)
+      }
+    )
+
+    it('settles several refresh() calls made during one read after one later read', async () => {
+      const reads = capabilityReadsThroughInterceptor()
+      vi.mocked(billingApi.getBillingCapabilities).mockImplementation(
+        reads.read
+      )
+      let settledRefreshes = 0
+      const countSettled = () => {
+        settledRefreshes++
+      }
+
+      void billingCapabilities.initialize()
+      void billingCapabilities.refresh().then(countSettled)
+      void billingCapabilities.refresh().then(countSettled)
+      void billingCapabilities.refresh().then(countSettled)
+      await reads.release(capabilitiesResponse(false))
+      expect(settledRefreshes).toBe(0)
+
+      await reads.release(capabilitiesResponse(true))
+
+      expect(settledRefreshes).toBe(3)
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it('reads once more when refresh() joins a read that a mutation also invalidated', async () => {
+      let resolveEarlierRead!: (value: BillingCapabilitiesResponse) => void
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockImplementationOnce(
+          () =>
+            new Promise<BillingCapabilitiesResponse>((resolve) => {
+              resolveEarlierRead = resolve
+            })
+        )
+        .mockResolvedValue(
+          capabilitiesResponse(true, 'workspace-1', true, { revision: 9 })
+        )
+
+      void billingCapabilities.initialize()
+      await emitMutationRevision('5')
+      const refreshed = billingCapabilities.refresh()
+      resolveEarlierRead(
+        capabilitiesResponse(false, 'workspace-1', true, { revision: 7 })
+      )
+      await refreshed
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+
+    it('reads once when refresh() is called with no read in flight', async () => {
+      vi.mocked(billingApi.getBillingCapabilities).mockResolvedValue(
+        capabilitiesResponse(true)
+      )
+      await billingCapabilities.initialize()
+
+      await billingCapabilities.refresh()
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not read again for a refresh() whose scope is disposed during the earlier read', async () => {
+      let resolveEarlierRead!: (value: BillingCapabilitiesResponse) => void
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockImplementationOnce(
+          () =>
+            new Promise<BillingCapabilitiesResponse>((resolve) => {
+              resolveEarlierRead = resolve
+            })
+        )
+        .mockResolvedValue(capabilitiesResponse(true))
+
+      void billingCapabilities.initialize()
+      const refreshed = billingCapabilities.refresh()
+      scope.stop()
+      resolveEarlierRead(capabilitiesResponse(false))
+      await refreshed
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    })
+
+    it('reads once more for a return to the tab during the read an earlier return started', async () => {
+      let releaseEarlierRead!: () => void
+      vi.mocked(billingApi.getBillingCapabilities)
+        .mockImplementationOnce(() =>
+          new Promise<void>((resolve) => {
+            releaseEarlierRead = resolve
+          }).then(() => capabilitiesResponse(false))
+        )
+        .mockResolvedValue(capabilitiesResponse(true))
+
+      void refreshBillingAccount(new Event('focus'))
+      const laterReturn = refreshBillingAccount(new Event('focus'))
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+
+      releaseEarlierRead()
+      await laterReturn
+
+      expect(billingApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
+      expect(billingCapabilities.canTopUp.value).toBe(true)
+    })
+  })
+
+  it('issues no later read for refresh() during a read with local_billing_web off', async () => {
+    let resolveEarlierRead!: (value: BillingCapabilitiesResponse) => void
+    vi.mocked(billingApi.getBillingCapabilities)
+      .mockImplementationOnce(
+        () =>
+          new Promise<BillingCapabilitiesResponse>((resolve) => {
+            resolveEarlierRead = resolve
+          })
+      )
+      .mockResolvedValue(capabilitiesResponse(true))
+
+    void billingCapabilities.initialize()
+    const refreshed = billingCapabilities.refresh()
+    resolveEarlierRead(capabilitiesResponse(false))
+    await refreshed
+
+    expect(billingApi.getBillingCapabilities).toHaveBeenCalledOnce()
+    expect(billingCapabilities.canTopUp.value).toBe(false)
+  })
+
   it('retries an unreadable endpoint until the read succeeds', async () => {
     vi.spyOn(Math, 'random').mockReturnValue(0)
     vi.mocked(billingApi.getBillingCapabilities)
@@ -1645,6 +1825,8 @@ describe('useBillingCapabilities on the SDK rail', () => {
           can_manage_subscription: false,
           can_open_plans: false,
           can_run_workflows: false,
+          can_set_budgets: false,
+          can_set_hard_caps: false,
           can_upgrade: false
         },
         denials: {

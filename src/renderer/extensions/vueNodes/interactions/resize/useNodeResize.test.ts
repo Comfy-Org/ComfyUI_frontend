@@ -1,10 +1,7 @@
 import type { MockInstance } from 'vitest'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { CompassCorners } from '@comfyorg/shared-frontend-utils/geometry'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 
 import { useNodeResize } from './useNodeResize'
@@ -49,11 +46,7 @@ vi.mock(
 
 vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
   layoutStore: {
-    isResizingVueNodes: { value: false },
-    getNodeLayout: vi.fn(() => ({
-      position: { x: 100, y: 200 },
-      size: { width: 300, height: 400 }
-    }))
+    isResizingVueNodes: { value: false }
   }
 }))
 
@@ -63,7 +56,6 @@ function createMockNodeElement(
   minContentHeight = 150
 ): HTMLElement {
   const element = document.createElement('div')
-  element.setAttribute('data-node-id', 'test-node')
   element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
   element.getBoundingClientRect = () => {
     const nodeHeight = element.style.getPropertyValue('--node-height')
@@ -109,7 +101,7 @@ function createPointerEvent(
 }
 
 function startResizeAt(
-  startResize: (event: PointerEvent, corner: CompassCorners) => void,
+  startResize: ReturnType<typeof useNodeResize>['startResize'],
   handle: HTMLElement,
   corner: CompassCorners,
   clientX = 500,
@@ -120,7 +112,11 @@ function startResizeAt(
     clientX,
     clientY
   })
-  startResize(downEvent, corner)
+  assert.exists(handle.parentElement)
+  startResize(downEvent, corner, {
+    element: handle.parentElement,
+    position: { x: 100, y: 200 }
+  })
 }
 
 function simulateMove(
@@ -146,9 +142,6 @@ describe('useNodeResize', () => {
   })
 
   beforeEach(() => {
-    useCanvasStore().currentGraph = fromPartial<LGraph>({
-      rootGraph: { id: 'root-graph' }
-    })
     snapState.shouldSnap = false
     snapState.applySnapToPosition = (pos) => pos
     snapState.applySnapToSize = (size) => size
@@ -282,7 +275,6 @@ describe('useNodeResize', () => {
       getMinContentHeight: () => number
     ): HTMLElement {
       const element = document.createElement('div')
-      element.setAttribute('data-node-id', 'test-node')
       element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
       element.getBoundingClientRect = () => {
         const nodeHeight = element.style.getPropertyValue('--node-height')
@@ -458,7 +450,6 @@ describe('useNodeResize', () => {
       // 280; when width >= 350, content fits in 150.
       const breakpointAwareElement = (() => {
         const element = document.createElement('div')
-        element.setAttribute('data-node-id', 'test-node')
         element.style.setProperty('min-width', `${MIN_NODE_WIDTH}px`)
         element.getBoundingClientRect = () => {
           const nodeHeight = element.style.getPropertyValue('--node-height')

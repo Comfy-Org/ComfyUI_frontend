@@ -18,14 +18,17 @@
  * open one.
  */
 import type {
+  AutoTopUpReader,
   BillingOperationPointerStorage,
   BillingScopeSource,
   BillingSession,
   BillingTransport,
   CredentialedWebSession,
+  OperationOutcomeRead,
   WorkspaceInviteCommands
 } from '@comfyorg/account-core/billing'
 import {
+  createAutoTopUpReader,
   createBillingCommands,
   createCredentialedBillingTransport,
   createBillingEventsReader,
@@ -38,15 +41,18 @@ import {
   createSessionBillingTransport,
   createTopupCommand,
   createWorkspaceInviteCommands,
+  readOperationOutcome,
   sessionBillingScopeSource,
   toBillingTelemetryEvent
 } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
+import { disposeBillingClient } from '@comfyorg/account-ui/billing'
 
 import { CLOUD_BASE_URL } from '@/config/env'
 import { billingWebStripeKey } from '@/config/stripeKey'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
 import { notePayment, sessionTabStorage } from '@/handoff/handoffTab'
+import type { CheckingPayment } from '@/handoff/paymentOutcome'
 import type { PaymentEvent } from '@/handoff/paymentTrace'
 import { TRACED_WRITES, paymentEventOf } from '@/handoff/paymentTrace'
 import { billingWebTelemetry } from '@/telemetry/billingWebTelemetry'
@@ -78,6 +84,13 @@ const resolveUrl = (route: string) => `${CLOUD_BASE_URL}/api${route}`
  */
 export type BillingWebClient = BillingClient & {
   readonly invites: WorkspaceInviteCommands
+  readonly autoTopUp: AutoTopUpReader
+}
+
+/** Ends the client's lifetime, the readers billing-web adds included. */
+export function disposeBillingWebClient(client: BillingWebClient): void {
+  disposeBillingClient(client)
+  client.autoTopUp.dispose()
 }
 
 export function createBillingWebClient(
@@ -170,6 +183,19 @@ export function createHandoffBillingClient(
   return client
 }
 
+/** Reads how the payment an ended handoff tab is still checking ended, with the bearer that tab kept. */
+export function readPaymentOutcome(
+  { reference, token }: CheckingPayment,
+  signal: AbortSignal
+): Promise<OperationOutcomeRead> {
+  return readOperationOutcome({
+    operationId: reference,
+    token,
+    resolveUrl,
+    signal
+  })
+}
+
 /**
  * On the shared web session: the cookie authorizes each request, and the
  * resolved workspace, which the entry link named, is its workspace header.
@@ -221,6 +247,7 @@ function composeBillingWebClient(
     events,
     topup: createTopupCommand({ transport, lifecycle, capabilities, credits }),
     invites: createWorkspaceInviteCommands({ transport }),
+    autoTopUp: createAutoTopUpReader(readerOptions),
     commands: createBillingCommands({
       transport,
       lifecycle,

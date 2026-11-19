@@ -2580,7 +2580,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         vi.mocked(harness.sdk.topup.createTopupCheckout).mockResolvedValue(
           result
         )
-        vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
+        vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
 
         renderDialog()
         await clickAddCredits()
@@ -2621,7 +2621,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
         status: 'ok',
         url: checkoutUrl
       })
-      vi.mocked(useFeatureFlags().flags).billingSdkTopupRailEnabled = true
+      vi.mocked(useFeatureFlags().flags).billingSdkRailEnabled = true
       const tab = { opener: window, location: { href: '' }, close: vi.fn() }
       vi.spyOn(window, 'open').mockReturnValue(tab as never)
 

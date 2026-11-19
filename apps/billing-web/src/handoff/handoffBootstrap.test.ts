@@ -1,8 +1,17 @@
 import { captureHandoffToken } from '@/handoff/captureHandoffToken'
 import { runHandoffBootstrap } from '@/handoff/handoffBootstrap'
 import type { HandoffBootEnv } from '@/handoff/handoffBootstrap'
-import type { HandoffState, TabMarker, TabStorage } from '@/handoff/handoffTab'
-import { handoffTab, readHandoffState } from '@/handoff/handoffTab'
+import type {
+  HandoffState,
+  PaymentOutcomeEnv,
+  TabMarker,
+  TabStorage
+} from '@/handoff/handoffTab'
+import {
+  followPaymentOutcome,
+  handoffTab,
+  readHandoffState
+} from '@/handoff/handoffTab'
 
 const CLOUD = 'https://testcloud.comfy.org'
 const NOW = Date.parse('2026-11-09T12:00:00Z')
@@ -13,6 +22,15 @@ const exchanged = {
   user: { id: 'user-1', email: 'a@example.com' },
   workspace: { id: 'ws-1', name: 'Studio', type: 'team' },
   role: 'owner'
+}
+
+const CHECKING: HandoffState = {
+  kind: 'ended',
+  ending: 'payment_pending',
+  reference: 'op-7',
+  workspace: 'Studio',
+  token: 'comfy-scoped-session-1',
+  since: NOW
 }
 
 const liveSession: HandoffState = {
@@ -130,6 +148,24 @@ describe('runHandoffBootstrap', () => {
     expect(init).toMatchObject({ method: 'POST', credentials: 'omit' })
     expect(JSON.parse(String(init?.body))).toEqual({ token: 'tok-1' })
     expect(handoffTab.value).toEqual(liveSession)
+  })
+
+  it('exchanges on browsers without AbortSignal.timeout', async () => {
+    const native = Object.getOwnPropertyDescriptor(AbortSignal, 'timeout')
+    try {
+      Object.defineProperty(AbortSignal, 'timeout', {
+        configurable: true,
+        value: undefined
+      })
+      const { env, fetchImpl } = setup('/handoff#token=tok-1')
+
+      await expect(runHandoffBootstrap(env)).resolves.toBe('handoff')
+
+      expect(fetchImpl).toHaveBeenCalledOnce()
+      expect(handoffTab.value).toEqual(liveSession)
+    } finally {
+      if (native) Object.defineProperty(AbortSignal, 'timeout', native)
+    }
   })
 
   it('accepts the handoff route with a trailing slash', async () => {
@@ -379,7 +415,7 @@ describe('runHandoffBootstrap', () => {
     {
       name: 'whose accepted payment had no stored operation yet as checking that payment',
       stored: { accepted: 'op-7' },
-      ended: { kind: 'ended', ending: 'payment_pending', reference: 'op-7' }
+      ended: CHECKING
     }
   ])(
     'ends a stored session $name when it expired before the reload',
@@ -420,17 +456,12 @@ describe('runHandoffBootstrap', () => {
         awaited: true
       })
     )
-    const ended = {
-      kind: 'ended',
-      ending: 'payment_pending',
-      reference: 'op-7'
-    }
 
     await runHandoffBootstrap(setup('/return/topup', { storage }).env)
-    expect(handoffTab.value).toEqual(ended)
+    expect(handoffTab.value).toEqual(CHECKING)
 
     await runHandoffBootstrap(setup('/handoff', { storage }).env)
-    expect(handoffTab.value).toEqual(ended)
+    expect(handoffTab.value).toEqual(CHECKING)
   })
 
   it('restores an expired session whose payment succeeded as completed, with its workspace and reference', async () => {
@@ -482,6 +513,21 @@ describe('runHandoffBootstrap', () => {
       name: 'a completed payment that lost its workspace as unconfirmed',
       stored: { ending: 'completed', reference: 'op-7' },
       restored: { kind: 'ended', ending: 'unconfirmed' }
+    },
+    {
+      name: 'a payment still being checked, with the bearer its outcome read needs',
+      stored: CHECKING,
+      restored: CHECKING
+    },
+    {
+      name: 'a payment an older build left being checked, which kept no bearer',
+      stored: { ending: 'payment_pending', reference: 'op-7' },
+      restored: { kind: 'ended', ending: 'payment_pending', reference: 'op-7' }
+    },
+    {
+      name: 'a payment it could not confirm, with its reference',
+      stored: { ending: 'unconfirmed', reference: 'op-7' },
+      restored: { kind: 'ended', ending: 'unconfirmed', reference: 'op-7' }
     }
   ])('keeps $name across a reload', async ({ stored, restored }) => {
     const storage = memoryStorage()
@@ -494,6 +540,36 @@ describe('runHandoffBootstrap', () => {
     await runHandoffBootstrap(env)
 
     expect(handoffTab.value).toEqual(restored)
+  })
+
+  it('goes on checking a payment after a reload, and keeps what it then learns across the next one', async () => {
+    const storage = memoryStorage()
+    const marker = memoryMarker()
+    const completed = {
+      kind: 'ended',
+      ending: 'completed',
+      workspace: 'Studio',
+      reference: 'op-7'
+    }
+    const readOutcome = vi.fn<PaymentOutcomeEnv['readOutcome']>(async () => ({
+      kind: 'outcome',
+      status: 'succeeded'
+    }))
+    storage.setItem('comfy.billing-web.handoff.v1', JSON.stringify(CHECKING))
+
+    await runHandoffBootstrap(setup('/handoff', { storage, marker }).env)
+    onTestFinished(followPaymentOutcome({ storage, marker, readOutcome }))
+    await vi.waitFor(() => expect(handoffTab.value).toEqual(completed))
+
+    handoffTab.value = undefined
+    await runHandoffBootstrap(setup('/handoff', { storage, marker }).env)
+    onTestFinished(followPaymentOutcome({ storage, marker, readOutcome }))
+
+    expect(handoffTab.value).toEqual(completed)
+    expect(readOutcome).toHaveBeenCalledTimes(1)
+    expect(storage.items.get('comfy.billing-web.handoff.v1')).not.toContain(
+      'comfy-scoped-session-1'
+    )
   })
 
   it('treats /handoff with no token and nothing stored as a broken link', async () => {

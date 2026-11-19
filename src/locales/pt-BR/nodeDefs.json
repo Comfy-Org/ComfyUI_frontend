@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Remove o fundo de uma imagem usando Bria RMBG 2.0.",
+    "description": "Remova o fundo de uma imagem usando Bria RMBG 2.0 ou RMBG 3.0.",
     "display_name": "Bria Remover Fundo da Imagem",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "imagem"
       },
+      "model": {
+        "name": "model"
+      },
       "moderation": {
         "name": "moderação",
         "tooltip": "Configurações de moderação"
       },
       "seed": {
         "name": "semente",
-        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados são não determinísticos independentemente da semente."
+        "tooltip": "A seed controla se o nó deve ser executado novamente; a mesma imagem sempre produz o mesmo resultado, independentemente da seed."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma pré-visualização rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
+        "tooltip": "Seedance 2.5 para o modelo mais recente, vídeos de até 30 segundos e saída em 4k e mp4/mov; Seedance 2.5 Draft para uma prévia rápida em 480p, cujo draft_task_id renderiza o resultado final em 1080p ou 4k no nó Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash para vídeos em 480p e 720p de até 30 segundos; Seedance 2.0 para máxima qualidade e 4k; Fast para otimização de velocidade; Mini para a geração mais rápida e de menor custo."
       },
       "model_duration": {
         "name": "duração"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Crie um camera_info. O modo 'orbit' mira com guinada/inclinação/distância ao redor do alvo; 'look_at' posiciona a câmera na posição do mundo. As coordenadas pertencem ao espaço do mundo do visualizador (destro, Y para cima).",
+    "description": "Crie uma camera_info. O modo 'orbit' aponta usando yaw/pitch/distance ao redor do alvo; 'look_at' posiciona a câmera na posição do mundo. As coordenadas correspondem ao espaço do mundo do visualizador (destro, Y para cima) ou, com uma mesh conectada, ao referencial dessa mesh; assim, as mesmas configurações enquadram qualquer mesh.",
     "display_name": "Criar Informações da Câmera",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "Campo de visão vertical em graus."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "Enquadre esta mesh: as posições, o alvo e a distância são contados a partir do centro da caixa delimitadora, em unidades do diâmetro da esfera delimitadora, para que as mesmas configurações enquadrem qualquer mesh."
       },
       "mode": {
         "name": "modo",
@@ -8458,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "Gere um vídeo falado de um avatar do HeyGen com o HeyGen Avatar 6, guiado por um roteiro de texto ou pelo seu próprio áudio.",
+    "display_name": "HeyGen Avatar 6 Identidade para Vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção_da_tela",
+        "tooltip": "'auto' segue a filmagem de origem do avatar."
+      },
+      "avatar": {
+        "name": "avatar"
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "motion_expressiveness": {
+        "name": "expressividade_de_movimento",
+        "tooltip": "'less' produz menos gestos e gestos menores. O prompt de movimento tem precedência onde houver sobreposição."
+      },
+      "motion_prompt": {
+        "name": "prompt_de_movimento",
+        "tooltip": "Gestos, expressão, postura e movimento de câmera."
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos, independentemente da semente."
+      },
+      "speech": {
+        "name": "fala",
+        "tooltip": "Guie o avatar com um roteiro de texto (texto para fala do HeyGen) ou seu próprio áudio."
+      },
+      "speech_custom_voice_id": {
+        "name": "id_de_voz_personalizada"
+      },
+      "speech_text": {
+        "name": "texto"
+      },
+      "speech_voice": {
+        "name": "voz"
+      },
+      "speech_voice_speed": {
+        "name": "velocidade_da_voz"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "Faça uma pessoa ou personagem de uma foto ou vídeo falar o áudio conectado com o HeyGen Avatar 6. Conecte uma imagem, um vídeo ou ambos.",
+    "display_name": "HeyGen Avatar 6 Referência para Vídeo",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo"
+      },
+      "model_aspect_ratio": {
+        "name": "proporção_da_tela"
+      },
+      "model_motion_expressiveness": {
+        "name": "expressividade_de_movimento"
+      },
+      "model_motion_prompt": {
+        "name": "prompt_de_movimento"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "Gere um vídeo de apresentador falante a partir de um avatar HeyGen. Inclui os avatares públicos mais populares do HeyGen; qualquer ID de visual pode ser fornecido como substituição.",
     "display_name": "Vídeo de Avatar HeyGen",
@@ -10638,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "Gere ou edite imagens a partir de um prompt de texto e até 10 imagens de referência, como uma imagem ou uma série de imagens relacionadas.",
+    "display_name": "Kling 4.0 Imagem",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "proporção_da_tela",
+        "tooltip": "auto segue as imagens de referência; caso contrário, segue o prompt."
+      },
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Faça referência às imagens de referência como @Image1, @Image2, ..."
+      },
+      "reference_images": {
+        "name": "imagens_de_referência"
+      },
+      "resolution": {
+        "name": "resolução"
+      },
+      "seed": {
+        "name": "semente",
+        "tooltip": "A semente controla se o nó deve ser executado novamente; os resultados não são determinísticos independentemente da semente."
+      },
+      "series_amount": {
+        "name": "quantidade_da_série",
+        "tooltip": "Gere uma série de imagens relacionadas que mantenham os mesmos personagens e estilo. auto permite que o modelo escolha de 2 a 10 imagens."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "Gere um vídeo com áudio usando até 10 quadros-chave no kling-4.0 ou a partir de um primeiro quadro no kling-4.0-flash. Os quadros intermediários são espaçados uniformemente; o vídeo adota a proporção do primeiro quadro-chave.",
     "display_name": "Kling 4.0 Imagem para Vídeo",
@@ -10658,6 +10788,32 @@
         "name": "resolução"
       },
       "model_seed": {
+        "name": "semente"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "Gere uma imagem alta: um design de página da web ou uma página de detalhes de produto de e-commerce.",
+    "display_name": "Kling 4.0 Imagem Longa",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "skill": {
+        "name": "habilidade"
+      },
+      "skill_prompt": {
+        "name": "prompt"
+      },
+      "skill_resolution": {
+        "name": "resolução"
+      },
+      "skill_seed": {
         "name": "semente"
       }
     },
@@ -19341,7 +19497,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "Gere respostas de texto através do OpenRouter. Direciona para um conjunto selecionado de modelos populares da xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
+    "description": "Gere respostas de texto por meio do OpenRouter. Encaminha para um conjunto selecionado de modelos populares da Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) e Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -25288,6 +25444,77 @@
       }
     }
   },
+  "SenseNovaConditioning": {
+    "description": "Codifique imagens de referência, raciocínio por imagem, texto intercalado ou autocorreção com CLIP. Conecte Imagens de Referência HiDream-O1 antes deste nó e use um amostrador padrão para imagens. A conversão de texto em imagem sem raciocínio precisa apenas de Codificação de Texto CLIP; a saída somente de texto pode usar Gerar Texto.",
+    "display_name": "Condicionamento SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "condicionamento"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "Máximo de tokens gerados durante esta chamada."
+      },
+      "negative": {
+        "name": "negativo"
+      },
+      "task": {
+        "name": "tarefa",
+        "tooltip": "Selecione a tarefa. O modelo de prompt e o comportamento de parada dela são definidos automaticamente."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "condicionamento",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "Texto gerado por esta chamada. Use Decodificação de Intercalação SenseNova para obter o resultado completo."
+      },
+      "2": {
+        "name": "negativo",
+        "tooltip": "Condicionamento negativo atualizado para intercalação e autocorreção."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "Extraia o texto, as imagens e o raciocínio gerados do histórico de intercalação produzido por Condicionamento SenseNova, incluindo a autocorreção U1.6. Com loops, use Encerrar Loop com a acumulação desativada. As imagens de referência de entrada são excluídas. Os consumidores de imagem são ignorados quando nenhuma imagem foi gerada.",
+    "display_name": "Decodificação de Intercalação SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "condicionamento"
+      },
+      "samples": {
+        "name": "amostras",
+        "tooltip": "Último latent de pixel do KSampler, caso o loop tenha terminado em uma solicitação de imagem."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "texto",
+        "tooltip": null
+      },
+      "1": {
+        "name": "imagens",
+        "tooltip": null
+      },
+      "2": {
+        "name": "raciocínio",
+        "tooltip": null
+      }
+    }
+  },
   "SenseNovaSamplingOptions": {
     "description": "Defina o deslocamento de fluxo do SenseNova.",
     "display_name": "Opções de amostragem do SenseNova",
@@ -30305,6 +30532,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Consistência temporal segundo Bonneel et al. 2015, com um termo de fidelidade contra desvio: cada quadro mantém seus próprios detalhes enquanto segue os quadros vizinhos ao longo do fluxo óptico do vídeo-guia.",
+    "display_name": "Anticintilação de Vídeo",
+    "inputs": {
+      "direction": {
+        "name": "direction",
+        "tooltip": "bidirectional calcula a média de uma passagem para frente e outra para trás, o que evita ficar atrás do movimento, ao custo de duas vezes mais tempo."
+      },
+      "guide": {
+        "name": "guide",
+        "tooltip": "Quadros de origem estáveis cujo movimento deve ser seguido, em qualquer resolução. Por padrão, usa images, o que remove menos cintilação."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Quadros com cintilação, por exemplo, um vídeo ampliado ou processado quadro a quadro."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "strength",
+        "tooltip": "A intensidade com que cada quadro segue os quadros vizinhos. Valores maiores removem mais cintilação e suavizam mais os detalhes finos."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "Alterações maiores que este valor entre um quadro e seu vizinho compensado pelo movimento são consideradas reais e são menos suavizadas. 0 suaviza todas as alterações da mesma forma."
       }
     },
     "outputs": {
