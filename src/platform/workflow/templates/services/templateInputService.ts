@@ -8,6 +8,7 @@ import type {
 import {
   combineAbortSignals,
   createTimeoutSignal,
+  structuredCloneFallback,
   throwIfAborted
 } from '@/utils/abortSignal'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
@@ -156,7 +157,7 @@ export async function prepareTemplateInputs(
   onStart?: () => void
 ): Promise<PreparationResult> {
   const errors: unknown[] = []
-  const prepared = structuredClone(workflow)
+  const prepared = structuredCloneFallback(workflow)
   const bindings = prepared.nodes.flatMap((node) => {
     try {
       const binding = getInputBinding(node, restoreNamed)
