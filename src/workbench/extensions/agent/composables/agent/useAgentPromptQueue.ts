@@ -1,4 +1,5 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { watch } from 'vue'
 
 import { useAgentPromptQueueStore } from '@/workbench/extensions/agent/stores/agent/agentPromptQueueStore'
 import type { PromptQueueItem } from '@/workbench/extensions/agent/stores/agent/promptQueueState'
@@ -19,6 +20,7 @@ export function useAgentPromptQueue(options: {
 }) {
   const queue = useAgentPromptQueueStore()
   let pumping = false
+  let pumpRequested = false
 
   async function settleStartedSend(
     id: string,
@@ -42,7 +44,12 @@ export function useAgentPromptQueue(options: {
   }
 
   async function pump(): Promise<void> {
-    if (pumping || options.isBusy() || queue.runningId) return
+    if (pumping) {
+      // A turn can end while this send is still settling; run again after it.
+      pumpRequested = true
+      return
+    }
+    if (options.isBusy() || queue.runningId) return
     const next = queue.nextItem
     if (!next) return
     pumping = true
@@ -52,6 +59,10 @@ export function useAgentPromptQueue(options: {
     } finally {
       pumping = false
     }
+    if (pumpRequested) {
+      pumpRequested = false
+      await pump()
+    }
   }
 
   async function settleActiveAndPump(): Promise<void> {
@@ -59,6 +70,15 @@ export function useAgentPromptQueue(options: {
     if (queue.runningId) queue.finish(queue.runningId)
     await pump()
   }
+
+  // Cancelling an edit makes its item sendable again, and no turn may be left
+  // to end and pump the queue.
+  watch(
+    () => queue.editingId,
+    (editingId, previous) => {
+      if (previous !== null && editingId === null) void pump()
+    }
+  )
 
   function handleComposerSend(
     text: string,

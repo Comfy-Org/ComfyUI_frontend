@@ -607,11 +607,14 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   }
 
   function removeAttachment(id: string): void {
-    cancelThumbnail(id)
-    const attachment = assetsById.get(id)
-    if (attachment) revokePreview(attachment)
-    assetsById.delete(id)
-    retiredAssets.add(id)
+    // A queued prompt still owns this one; releaseUnusedAssets frees it later.
+    if (!heldAssetIds.value.includes(id)) {
+      cancelThumbnail(id)
+      const attachment = assetsById.get(id)
+      if (attachment) revokePreview(attachment)
+      assetsById.delete(id)
+      retiredAssets.add(id)
+    }
     if (attachmentIds.value.includes(id)) {
       attachmentIds.value = attachmentIds.value.filter((item) => item !== id)
       ++revision

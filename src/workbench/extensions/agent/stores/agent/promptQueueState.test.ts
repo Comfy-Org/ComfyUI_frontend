@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
 
 import type {
@@ -11,6 +13,7 @@ import type {
 import {
   emptyPromptQueue,
   nextPromptQueueItem,
+  queuedNodesFor,
   reducePromptQueue,
   visiblePromptQueueItems
 } from './promptQueueState'
@@ -30,7 +33,8 @@ function item(id: string, text = id): PromptQueueItem {
     attachments: [],
     prompt: prompt(text),
     references: [],
-    nodes: []
+    nodes: [],
+    target: null
   }
 }
 
@@ -205,5 +209,18 @@ describe('reducePromptQueue', () => {
     expect(reducePromptQueue(collapsed, { type: 'cleared' })).toEqual(
       emptyPromptQueue()
     )
+  })
+})
+
+describe('queuedNodesFor', () => {
+  it('sends queued nodes only to the target they were picked in', () => {
+    const a = { path: 'workflows/a.json' } as ComfyWorkflow
+    const b = { path: 'workflows/b.json' } as ComfyWorkflow
+    const node = { id: '1' } as SelectedNode
+    const queued = { ...item('one'), nodes: [node], target: a }
+
+    expect(queuedNodesFor(queued, a)).toEqual([node])
+    expect(queuedNodesFor(queued, b)).toEqual([])
+    expect(queuedNodesFor(queued, null)).toEqual([])
   })
 })

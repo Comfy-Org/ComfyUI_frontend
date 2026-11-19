@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { WorkflowReference } from '@/workbench/extensions/agent/types/workflowReference'
 
@@ -19,6 +20,7 @@ import {
 
 export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
   const composer = useAgentComposerStore()
+  const panel = useAgentPanelStore()
   const state = shallowRef(emptyPromptQueue())
   let nextId = 0
 
@@ -73,7 +75,8 @@ export const useAgentPromptQueueStore = defineStore('agentPromptQueue', () => {
         references: [...composer.prompt.references]
       },
       references: [...references],
-      nodes: [...composer.nodes]
+      nodes: [...composer.nodes],
+      target: panel.selectedWorkflow
     }
   }
 

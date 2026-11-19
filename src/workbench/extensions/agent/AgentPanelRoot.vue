@@ -5,7 +5,7 @@ import type { AgentGreetingAssignment } from './types/proactiveGreeting'
 import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
 
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
-import { useClipboard, useEventListener } from '@vueuse/core'
+import { until, useClipboard, useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -155,6 +155,7 @@ import type { SubmissionMeta } from './composables/agent/useAgentDraftSubmission
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentPromptQueue } from './composables/agent/useAgentPromptQueue'
 import { useAgentPromptQueueStore } from './stores/agent/agentPromptQueueStore'
+import { queuedNodesFor } from './stores/agent/promptQueueState'
 import { useAgentSendGates } from './composables/agent/useAgentSendGates'
 import type { CoachHoldEnd } from './composables/agent/useAgentSendGates'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
@@ -2332,7 +2333,7 @@ const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
     sendTurn(
       item.text,
       item.attachments,
-      item.nodes,
+      queuedNodesFor(item, selectedTarget.value),
       item.references,
       {
         clientMessageId: uuidv4(),
@@ -2352,6 +2353,14 @@ watch(
     if (wasBusy && !busy) void settleActiveAndPump()
   }
 )
+// A turn that ended while the panel was unmounted left its item running and
+// no busy-to-idle edge to see. Once the restored chat settles, reconcile.
+void until(currentChatReady)
+  .toBe(true)
+  .then(nextTick)
+  .then(() => {
+    if (promptQueueStore.runningId) void settleActiveAndPump()
+  })
 
 // The session owns the acknowledgement boundary: a stop that lands before the
 // POST acks is remembered there and committed at ack (see stopPendingAck).

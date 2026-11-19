@@ -1,3 +1,4 @@
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 import type { ComposerPrompt } from '@/workbench/extensions/agent/types/composerPrompt'
@@ -15,6 +16,8 @@ export type PromptQueueItem = {
   prompt: ComposerPrompt
   references: WorkflowReference[]
   nodes: SelectedNode[]
+  /** Workflow the nodes were picked in; node ids are graph-local. */
+  target: ComfyWorkflow | null
 }
 
 export type PromptQueueState = {
@@ -44,6 +47,18 @@ export function emptyPromptQueue(): PromptQueueState {
     draft: null,
     expanded: true
   }
+}
+
+/**
+ * Node ids are graph-local: after a target switch they would name different
+ * nodes, so a queued prompt sends its nodes only to the target it was queued
+ * for, the same rule a direct send applies.
+ */
+export function queuedNodesFor(
+  item: PromptQueueItem,
+  target: ComfyWorkflow | null
+): SelectedNode[] {
+  return item.target === target ? item.nodes : []
 }
 
 export function visiblePromptQueueItems(

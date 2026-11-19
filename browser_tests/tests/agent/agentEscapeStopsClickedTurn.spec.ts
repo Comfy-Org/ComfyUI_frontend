@@ -148,7 +148,8 @@ test.describe(
           await expect(
             agentPanel.root.getByText(stillRunning, { exact: true })
           ).toBeVisible()
-          await expect(agentPanel.stopButton).toBeVisible()
+          // The attachment is a sendable draft, so the primary action queues it.
+          await expect(agentPanel.sendButton).toBeVisible()
           expect(cancelled).toHaveLength(0)
 
           await page.keyboard.press('Escape')

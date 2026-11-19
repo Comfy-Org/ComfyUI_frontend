@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComposerAttachment } from '@/workbench/extensions/agent/types/composerAttachment'
 
 import { useAgentComposerStore } from './agentComposerStore'
+import { useAgentPanelStore } from './agentPanelStore'
 import { useAgentPromptQueueStore } from './agentPromptQueueStore'
 
 function attachment(id: string): ComposerAttachment {
@@ -99,5 +101,38 @@ describe('useAgentPromptQueueStore', () => {
     expect(queue.startEdit(queue.items[0].id)).toBe(true)
     expect(composer.attachments).toEqual([queued])
     revoke.mockRestore()
+  })
+
+  it('keeps a queued attachment preview when it is removed during an edit and the edit is cancelled', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    const queued = attachment('queued')
+    composer.setText('with file')
+    composer.addAttachment(queued)
+    queue.enqueueFromComposer('with file', [queued], [])
+    composer.clearDraft()
+
+    expect(queue.startEdit(queue.items[0].id)).toBe(true)
+    composer.removeAttachment('queued')
+    expect(composer.attachments).toEqual([])
+    queue.cancelEdit()
+
+    expect(revoke).not.toHaveBeenCalled()
+    expect(queue.startEdit(queue.items[0].id)).toBe(true)
+    expect(composer.attachments).toEqual([queued])
+    revoke.mockRestore()
+  })
+
+  it('records the workflow target each prompt was queued for', () => {
+    const target = { path: 'workflows/a.json' } as ComfyWorkflow
+    vi.spyOn(useAgentPanelStore(), 'selectedWorkflow', 'get').mockReturnValue(
+      target
+    )
+    const queue = useAgentPromptQueueStore()
+    useAgentComposerStore().setText('first')
+    queue.enqueueFromComposer('first', [], [])
+
+    expect(queue.items[0].target).toEqual(target)
   })
 })

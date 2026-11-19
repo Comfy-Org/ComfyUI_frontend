@@ -216,6 +216,25 @@ describe('Composer', () => {
     expect(emitted().send).toHaveLength(1)
   })
 
+  it('does not stop the active turn when an emptied queued prompt is submitted with Enter', async () => {
+    const composer = useAgentComposerStore()
+    const queue = useAgentPromptQueueStore()
+    composer.setText('first')
+    queue.enqueueFromComposer('first', [], [])
+    queue.begin(queue.items[0].id)
+    composer.setText('second')
+    queue.enqueueFromComposer('second', [], [])
+    composer.clearDraft()
+    expect(queue.startEdit(queue.items[1].id)).toBe(true)
+    composer.setText('')
+    const { emitted } = mount({ streaming: true })
+
+    await userEvent.type(screen.getByRole('textbox'), '{Enter}')
+
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toBeUndefined()
+  })
+
   it('preserves new input on Enter without stopping an active run', async () => {
     const { emitted } = mount({ streaming: true })
     const textbox = screen.getByRole('textbox')

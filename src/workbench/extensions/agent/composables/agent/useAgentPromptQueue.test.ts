@@ -142,4 +142,61 @@ describe('useAgentPromptQueue', () => {
     expect(submitDraft).toHaveBeenCalledTimes(2)
     expect(queue.runningId).not.toBeNull()
   })
+
+  it('resumes the queue when an edit is cancelled after the active turn ended', async () => {
+    const {
+      busy,
+      sent,
+      handleComposerSend,
+      settleActiveAndPump,
+      composer,
+      queue
+    } = setup()
+    composer.setText('one')
+    handleComposerSend('one', [])
+    composer.setText('two')
+    handleComposerSend('two', [])
+    expect(queue.startEdit(queue.items[1].id)).toBe(true)
+
+    busy.value = false
+    await settleActiveAndPump()
+    expect(sent).toEqual(['one'])
+
+    queue.cancelEdit()
+    await vi.waitFor(() => expect(sent).toEqual(['one', 'two']))
+  })
+
+  it('sends the next prompt when a turn ends while a queued send is still settling', async () => {
+    let busy = false
+    const sent: string[] = []
+    let finishTwo = (_sent: boolean) => {}
+    const { handleComposerSend, settleActiveAndPump } = useAgentPromptQueue({
+      isBusy: () => busy,
+      submitDraft: (text: string) => {
+        busy = true
+        sent.push(text)
+      },
+      sendItem: (item: PromptQueueItem) => {
+        sent.push(item.text)
+        if (item.text !== 'two') return
+        return new Promise<boolean>((resolve) => (finishTwo = resolve))
+      },
+      deferCapture: vi.fn()
+    })
+    const composer = useAgentComposerStore()
+    for (const text of ['one', 'two', 'three']) {
+      composer.setText(text)
+      handleComposerSend(text, [])
+    }
+
+    busy = false
+    const pumping = settleActiveAndPump()
+    expect(sent).toEqual(['one', 'two'])
+    // The send ends without a turn: the busy watcher settles it mid-flight.
+    await settleActiveAndPump()
+    finishTwo(false)
+    await pumping
+
+    expect(sent).toEqual(['one', 'two', 'three'])
+  })
 })
