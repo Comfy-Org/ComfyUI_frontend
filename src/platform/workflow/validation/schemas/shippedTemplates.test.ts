@@ -38,6 +38,11 @@ const KNOWN_UNLOADABLE: Record<string, string> = {
   // The schema takes a number or a string there, not null.
   'image_fibo2_edit_dev_pe.json': 'outputs[].slot_index is null',
   'image_fibo2_edit_turbo_pe.json': 'outputs[].slot_index is null',
+  // Arrived in templates 0.11.111, saved by frontend 1.59.1, with the same
+  // defect as the two above. Three templates from three different releases now
+  // ship explicit nulls in their output slots, so whatever writes these files
+  // is doing it repeatedly rather than having done it once.
+  'api_heygen_avatar_6_id2v.json': 'outputs[].slot_index is null',
   // Hand-authored ids: the workflow id is the slug "pika-h3-flex-fl2va", and
   // the subgraph input ids are names like "image1" and "prompt". The schema
   // requires GUIDs, which is what a real save writes.
