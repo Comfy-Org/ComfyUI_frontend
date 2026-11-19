@@ -49,6 +49,7 @@
     "backToPreviousChat": "返回上一個聊天",
     "beta": "測試版",
     "canvasIsEmptyAfterTurn": "此畫布是空的，尚未加入任何內容。目前沒有可執行、儲存或匯出的內容。",
+    "canvasNotReadyForSend": "此分頁的畫布尚未準備完成，因此你的訊息未送出。請稍後再試。",
     "changeWorkflowForChat": "變更代理程式可編輯的工作流程",
     "chatOptions": "聊天選項",
     "chooseWorkflow": "選擇工作流程",
@@ -175,7 +176,7 @@
     "paywall": {
       "addCredits": "新增點數",
       "body": {
-        "local": "您已用完點數餘額。新增點數以讓代理程式持續運作。",
+        "local": "你的帳戶沒有可供智慧代理使用的點數。請加值點數以使用它。",
         "member": "此工作區已用盡所有點數。請要求工作區擁有者新增更多點數。",
         "salesManaged": "此工作區透過您的 Comfy 帳戶團隊計費。請聯絡他們以新增點數。",
         "subscribed": "此工作區已用盡每月點數及儲值餘額。新增點數以讓代理程式持續運作。",

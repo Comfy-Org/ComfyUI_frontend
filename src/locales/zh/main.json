@@ -49,6 +49,7 @@
     "backToPreviousChat": "返回上一个聊天",
     "beta": "测试版",
     "canvasIsEmptyAfterTurn": "此画布为空——尚未向其中添加任何内容。这里还没有可运行、保存或导出的内容。",
+    "canvasNotReadyForSend": "此标签页的画布尚未准备就绪，因此你的消息未能发送。请稍后再试。",
     "changeWorkflowForChat": "更改代理可编辑的工作流",
     "chatOptions": "聊天选项",
     "chooseWorkflow": "选择工作流",
@@ -175,7 +176,7 @@
     "paywall": {
       "addCredits": "添加额度",
       "body": {
-        "local": "您的额度余额已用完。添加额度以继续运行代理。",
+        "local": "你的账户没有可用于智能体的积分。请添加积分后使用。",
         "member": "此工作区已用完所有额度。请让工作区所有者添加更多额度。",
         "salesManaged": "此工作区通过您的 Comfy 客户团队计费。请联系他们添加额度。",
         "subscribed": "此工作区已用完每月额度和充值余额。添加额度以继续运行代理。",

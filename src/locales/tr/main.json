@@ -49,6 +49,7 @@
     "backToPreviousChat": "Önceki sohbete dön",
     "beta": "BETA",
     "canvasIsEmptyAfterTurn": "Bu tuval boş — buna hiçbir şey eklenmedi. Burada henüz çalıştırılacak, kaydedilecek veya dışa aktarılacak bir şey yok.",
+    "canvasNotReadyForSend": "Bu sekmenin tuvali henüz hazır değil, bu nedenle mesajınız gönderilmedi. Birazdan tekrar deneyin.",
     "changeWorkflowForChat": "Ajanın düzenleyebileceği iş akışını değiştirin",
     "chatOptions": "Sohbet seçenekleri",
     "chooseWorkflow": "Bir iş akışı seçin",
@@ -175,7 +176,7 @@
     "paywall": {
       "addCredits": "Kredi ekle",
       "body": {
-        "local": "Kredi bakiyenizi harcadınız. Aracının çalışmaya devam etmesi için kredi ekleyin.",
+        "local": "Hesabınızda agent için kullanılabilir kredi yok. Kullanmak için kredi ekleyin.",
         "member": "Bu çalışma alanı tüm kredilerini kullandı. Daha fazla kredi eklemesi için çalışma alanı sahibinize başvurun.",
         "salesManaged": "Bu çalışma alanı Comfy hesap ekibiniz aracılığıyla faturalandırılır. Kredi eklemek için onlarla iletişime geçin.",
         "subscribed": "Bu çalışma alanı aylık kredilerini ve ek kredi bakiyesini harcadı. Aracının çalışmaya devam etmesi için kredi ekleyin.",
