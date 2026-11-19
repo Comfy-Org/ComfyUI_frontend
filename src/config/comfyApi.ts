@@ -47,6 +47,10 @@ export function getComfyApiBaseUrl(): string {
   return resolveBaseUrl('comfy_api_base_url', BUILD_TIME_API_BASE_URL)
 }
 
+export function getBuildTimeComfyCloudBaseUrl(): string {
+  return BUILD_TIME_CLOUD_BASE_URL
+}
+
 export function getComfyCloudBaseUrl(): string {
   return resolveBaseUrl('comfy_cloud_base_url', BUILD_TIME_CLOUD_BASE_URL)
 }

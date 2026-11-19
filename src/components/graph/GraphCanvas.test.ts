@@ -149,8 +149,11 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
       set rootGraph(graph: LGraph | undefined) {
         rootGraphInternal = graph
       },
+      nodeOutputs: {},
+      nodePreviewImages: {},
       ui: { settings: { dispatchChange: vi.fn() } },
-      setup: vi.fn()
+      setup: vi.fn(),
+      loadGraphData: vi.fn()
     }
   }
 })
@@ -215,6 +218,11 @@ vi.mock(
   import('@/platform/workflow/persistence/composables/useWorkflowAutoSave'),
   () => ({ useWorkflowAutoSave: vi.fn() })
 )
+
+beforeEach(() => {
+  vi.spyOn(api, 'listUserDataFullInfo').mockResolvedValue([])
+  vi.spyOn(api, 'getGlobalSubgraphs').mockResolvedValue({})
+})
 
 /**
  * Installs (or clears) the mock app's root graph, standing in for the

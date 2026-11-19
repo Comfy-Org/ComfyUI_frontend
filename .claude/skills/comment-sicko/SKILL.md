@@ -26,7 +26,7 @@ Dispatcher for the `comment-sicko` subagent (`.claude/agents/comment-sicko.md`),
 ## Output shape
 
 ```
-[comment-sicko] src/components/NodeBadge.vue:42
+[comment-sicko] <file>.vue:42
   // increment the counter by one
   count.value++
 Delete it — the comment restates the next line.

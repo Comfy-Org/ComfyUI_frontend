@@ -81,6 +81,15 @@
     <div v-if="!accountActionsOnly" class="flex items-center gap-2 px-4 py-2">
       <i class="icon-[lucide--coins] text-sm text-credit" />
       <Skeleton v-if="isLoadingBalance" class="h-5 w-16" />
+      <span
+        v-else-if="isBalanceUnavailable"
+        class="text-base font-semibold text-muted-foreground"
+        data-testid="credits-balance-unavailable"
+        :title="$t('profileMenu.balanceUnavailable')"
+        >—<span class="sr-only">{{
+          $t('profileMenu.balanceUnavailable')
+        }}</span></span
+      >
       <span v-else class="text-base font-semibold text-foreground">{{
         displayedCredits
       }}</span>
@@ -94,18 +103,17 @@
       >
         <i class="icon-[lucide--circle-help]" />
       </Button>
-      <Button
-        v-if="addCredits.kind !== 'hidden'"
+      <AddCreditsButton
+        :availability="addCredits"
+        :reason-id="refusalReasonId"
         variant="secondary"
         size="sm"
         data-testid="add-credits-button"
-        :disabled="addCredits.kind === 'disabled'"
-        :aria-describedby="refusalReason ? refusalReasonId : undefined"
         :data-dd-action-name="BILLING_ACTION_NAME.addCreditsPopover"
         @click="handleTopUp"
       >
         {{ $t('subscription.addCredits') }}
-      </Button>
+      </AddCreditsButton>
       <Button
         v-if="paymentRecoveryAvailable"
         variant="secondary"
@@ -140,13 +148,12 @@
       </Button>
     </div>
 
-    <p
-      v-if="!accountActionsOnly && refusalReason"
-      :id="refusalReasonId"
+    <AddCreditsRefusalReason
+      v-if="!accountActionsOnly"
+      :availability="addCredits"
+      :reason-id="refusalReasonId"
       class="m-0 px-4 pb-2 text-xs text-muted-foreground"
-    >
-      {{ refusalReason }}
-    </p>
+    />
 
     <p
       v-if="processingPayment"
@@ -284,7 +291,9 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePaymentRecoveryDialog } from '@/platform/billing/composables/usePaymentRecoveryDialog'
-import { addCreditsAvailability } from '@comfyorg/account-core/billing'
+import { addCreditsAvailability } from '@/platform/billing/legacy160/platform/billing/addCreditsAvailability'
+import AddCreditsButton from '@/platform/billing/legacy160/platform/billing/components/AddCreditsButton.vue'
+import AddCreditsRefusalReason from '@/platform/billing/legacy160/platform/billing/components/AddCreditsRefusalReason.vue'
 import { useAccountUI } from '@/platform/account/composables/useAccountUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -354,17 +363,18 @@ const {
   canAccessSubscriptionFeatures,
   subscription,
   balance,
+  balanceReadFailed,
   isLoading,
   fetchBalance
 } = useBillingContext()
+const isBalanceUnavailable = computed(
+  () => balanceReadFailed.value && !isLoading.value && !balance.value
+)
 
 const isCancelled = computed(() => subscription.value?.isCancelled ?? false)
 const subscriptionDialog = useSubscriptionDialog()
 
-const { locale, t } = useI18n()
-const refusalReason = computed(() =>
-  addCredits.value.kind === 'disabled' ? t(addCredits.value.reasonKey) : null
-)
+const { locale } = useI18n()
 const isLoadingBalance = isLoading
 
 const displayedCredits = computed(() => {

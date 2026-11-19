@@ -1,9 +1,11 @@
-import { app, ComfyApp } from '@/scripts/app'
+import { ComfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { ComfyDialog } from '@/scripts/ui'
 import { $el } from '@/scripts/ui/utils'
 import type { ComfyExtension } from '@/types/comfy'
 
-class ClipspaceDialog extends ComfyDialog {
+/** @knipIgnoreUnusedButUsedByCustomNodes */
+export class ClipspaceDialog extends ComfyDialog {
   static items: Array<
     HTMLButtonElement & {
       contextPredicate?: () => boolean
@@ -174,7 +176,7 @@ class ClipspaceDialog extends ComfyDialog {
 export const clipspaceExtension: ComfyExtension = {
   name: 'Comfy.Clipspace',
   init() {
-    app.openClipspace = function () {
+    useApp().openClipspace = function () {
       if (!ClipspaceDialog.instance) {
         ClipspaceDialog.instance = new ClipspaceDialog()
         ComfyApp.clipspace_invalidate_handler = ClipspaceDialog.invalidate
@@ -182,7 +184,7 @@ export const clipspaceExtension: ComfyExtension = {
 
       if (ComfyApp.clipspace) {
         ClipspaceDialog.instance.show()
-      } else app.ui.dialog.show('Clipspace is Empty!')
+      } else useApp().ui.dialog.show('Clipspace is Empty!')
     }
   }
 }

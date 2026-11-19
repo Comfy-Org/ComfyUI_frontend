@@ -234,6 +234,8 @@ export interface INodeFlags {
   keepAllLinksOnBypass?: boolean
   /** Node is in ghost placement mode (semi-transparent, following cursor) */
   ghost?: boolean
+  /** Renders the node's single preview image at full resolution instead of a downscaled copy */
+  fullResolutionPreview?: boolean
 }
 
 export interface DefaultConnectionColors {
