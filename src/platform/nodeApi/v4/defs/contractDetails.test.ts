@@ -317,7 +317,7 @@ describe('contract details', () => {
   })
 
   describe('properties', () => {
-    it('stores a frozen copy of the value a hook gives', () => {
+    it('stores a copy of the value a hook gives, as setProperty does', () => {
       const type = hostType()
       const replacement = { nested: [1] }
       defs.extend(type, (builder) =>
@@ -329,7 +329,7 @@ describe('contract details', () => {
 
       expect(node.properties.shape).toEqual(replacement)
       expect(node.properties.shape).not.toBe(replacement)
-      expect(Object.isFrozen(node.properties.shape)).toBe(true)
+      expect(Object.isFrozen(node.properties.shape)).toBe(false)
     })
   })
 

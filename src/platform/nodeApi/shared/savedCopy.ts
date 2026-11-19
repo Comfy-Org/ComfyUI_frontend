@@ -7,8 +7,7 @@ type SavedValue<T> =
   | { ok: true; value: T | undefined }
   | { ok: false; error: unknown }
 
-/** A frozen copy of `value` as a workflow would save it; reports nothing. */
-export function savedValue<T>(value: T): SavedValue<T> {
+function savedValue<T>(value: T): SavedValue<T> {
   try {
     const saved: { value?: T } = JSON.parse(JSON.stringify({ value }))
     return { ok: true, value: deepFreeze(saved.value) }
