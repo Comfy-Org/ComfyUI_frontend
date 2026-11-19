@@ -1789,6 +1789,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function recordTurnInProgressConflict(
+    sendId: string,
+    origin: PendingSendOrigin,
+    reattached: boolean
+  ): void {
+    const pending = reattached
+      ? conversationStore.getPendingSend(sendId)
+      : undefined
+    recordFailedPendingSend(sendId, origin, {
+      kind: 'turn_in_progress',
+      message: i18n.global.t(
+        reattached
+          ? 'agent.sendTurnInProgress'
+          : 'agent.sendFailedTurnInProgress'
+      )
+    })
+    if (pending?.stopRequested) void stopTurn(pending.stopRequested.method)
+  }
+
   async function recoverTurnInProgress({
     sendId,
     origin,
@@ -1814,19 +1833,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.takePendingSend(sendId)
       return true
     }
-    if (reattached) {
-      const pending = conversationStore.getPendingSend(sendId)
-      recordFailedPendingSend(sendId, origin, {
-        kind: 'turn_in_progress',
-        message: i18n.global.t('agent.sendTurnInProgress')
-      })
-      if (pending?.stopRequested) void stopTurn(pending.stopRequested.method)
-    } else {
-      recordFailedPendingSend(sendId, origin, {
-        kind: 'turn_in_progress',
-        message: i18n.global.t('agent.sendFailedTurnInProgress')
-      })
-    }
+    recordTurnInProgressConflict(sendId, origin, reattached)
     return true
   }
 

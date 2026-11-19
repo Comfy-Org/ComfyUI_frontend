@@ -1207,6 +1207,17 @@ export const useAgentConversationStore = defineStore(
       }
     }
 
+    function rememberThreadAttachmentNames(
+      targetThreadId: string,
+      attachments: UserAttachment[] | undefined
+    ): void {
+      if (!attachments?.length) return
+      const names = attachmentNamesByThread.get(targetThreadId) ?? new Map()
+      for (const attachment of attachments)
+        if (attachment.ref) names.set(attachment.ref, attachment.name)
+      attachmentNamesByThread.set(targetThreadId, names)
+    }
+
     function startBackgroundTurn(input: {
       threadId: string
       turnId: TurnId
@@ -1224,12 +1235,7 @@ export const useAgentConversationStore = defineStore(
         input.text,
         input.workflowReferences
       )
-      if (input.attachments !== undefined && input.attachments.length > 0) {
-        const names = attachmentNamesByThread.get(input.threadId) ?? new Map()
-        for (const attachment of input.attachments)
-          if (attachment.ref) names.set(attachment.ref, attachment.name)
-        attachmentNamesByThread.set(input.threadId, names)
-      }
+      rememberThreadAttachmentNames(input.threadId, input.attachments)
       const message = createAssistantMessage(input.turnId)
       const transport = createAgentEventTransport(
         message,
