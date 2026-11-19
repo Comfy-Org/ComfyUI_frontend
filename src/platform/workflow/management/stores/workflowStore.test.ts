@@ -1051,62 +1051,36 @@ describe('useWorkflowStore', () => {
   })
 
   describe('save', () => {
-    it('should save workflow content and reset modification state', async () => {
-      await syncRemoteWorkflows(['test.json'])
-      const workflow = store.getWorkflowByPath('workflows/test.json')!
+    it.for([true, false])(
+      'persists the current edits and updates the saved baseline when initially marked modified=%s',
+      async (isModified) => {
+        await syncRemoteWorkflows(['test.json'])
+        const path = 'workflows/test.json'
+        const workflow = store.getWorkflowByPath(path)
+        assert.exists(workflow)
+        const savedState = { ...defaultGraph, extra: { note: 'edited' } }
+        const savedContent = JSON.stringify(savedState)
+        workflow.changeTracker = createMockChangeTracker({
+          workflow,
+          activeState: savedState
+        })
+        workflow.isModified = isModified
+        vi.mocked(api.storeUserData).mockResolvedValue(
+          Response.json({ path, modified: 300, size: savedContent.length })
+        )
 
-      workflow.changeTracker = createMockChangeTracker({
-        workflow
-      })
-      vi.mocked(api.storeUserData).mockResolvedValue({
-        status: 200,
-        json: () =>
-          Promise.resolve({
-            path: 'workflows/test.json',
-            modified: Date.now(),
-            size: 2
-          })
-      } as Response)
+        await workflow.save()
 
-      // Save the workflow
-      await workflow.save()
-
-      // Verify the content was updated
-      expect(workflow.content).toBe(
-        JSON.stringify(workflow.changeTracker.activeState)
-      )
-      expect(workflow.changeTracker.reset).toHaveBeenCalled()
-      expect(workflow.isModified).toBe(false)
-    })
-
-    it('should save workflow even if isModified is screwed by changeTracker', async () => {
-      await syncRemoteWorkflows(['test.json'])
-      const workflow = store.getWorkflowByPath('workflows/test.json')!
-      workflow.isModified = false
-
-      workflow.changeTracker = createMockChangeTracker({
-        workflow
-      })
-      vi.mocked(api.storeUserData).mockResolvedValue({
-        status: 200,
-        json: () =>
-          Promise.resolve({
-            path: 'workflows/test.json',
-            modified: Date.now(),
-            size: 2
-          })
-      } as Response)
-
-      // Save the workflow
-      await workflow.save()
-
-      // Verify storeUserData was called
-      expect(api.storeUserData).toHaveBeenCalled()
-
-      // Verify the content was updated
-      expect(workflow.changeTracker.reset).toHaveBeenCalled()
-      expect(workflow.isModified).toBe(false)
-    })
+        expect(api.storeUserData).toHaveBeenCalledExactlyOnceWith(
+          path,
+          savedContent,
+          expect.objectContaining({ overwrite: true })
+        )
+        expect(workflow.originalContent).toBe(savedContent)
+        expect(workflow.initialState).toEqual(savedState)
+        expect(workflow.isModified).toBe(false)
+      }
+    )
   })
 
   describe('saveAs', () => {
