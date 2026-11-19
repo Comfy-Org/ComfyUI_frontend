@@ -52,16 +52,16 @@
       "from": { "pathNot": "^src/platform/nodeApi/" },
       "to": {
         "path": "^src/platform/nodeApi/",
-        "pathNot": "^src/platform/nodeApi/(nodeApiHost|v4/defs/nodeTypeHooksName|v4/types)\\.ts$"
+        "pathNot": "^src/platform/nodeApi/(nodeApiHost|v4/defs/nodeTypeHooksName|v4/types|v4/canvasSource)\\.ts$"
       }
     },
     {
       "name": "node-api-host-types-only",
-      "comment": "The host reads the published types, and does not import them at run time.",
+      "comment": "The host reads the published types and the canvas seam, and does not import them at run time.",
       "severity": "error",
       "from": { "pathNot": "^src/platform/nodeApi/" },
       "to": {
-        "path": "^src/platform/nodeApi/v4/types\\.ts$",
+        "path": "^src/platform/nodeApi/v4/(types|canvasSource)\\.ts$",
         "dependencyTypesNot": ["type-only"]
       }
     },
@@ -93,10 +93,36 @@
     },
     {
       "name": "node-api-edit-layer",
-      "comment": "Features import downward only: edit, then defs.",
+      "comment": "Features import downward only: edit, widgets, defs, execution; events sit over edit.",
       "severity": "error",
       "from": { "path": "^src/platform/nodeApi/v4/edit/" },
-      "to": { "path": "^src/platform/nodeApi/v4/defs/" }
+      "to": {
+        "path": "^src/platform/nodeApi/v4/(widgets|defs|events|execution)/"
+      }
+    },
+    {
+      "name": "node-api-widgets-layer",
+      "severity": "error",
+      "from": { "path": "^src/platform/nodeApi/v4/widgets/" },
+      "to": { "path": "^src/platform/nodeApi/v4/(defs|events|execution)/" }
+    },
+    {
+      "name": "node-api-defs-layer",
+      "severity": "error",
+      "from": { "path": "^src/platform/nodeApi/v4/defs/" },
+      "to": { "path": "^src/platform/nodeApi/v4/(events|execution)/" }
+    },
+    {
+      "name": "node-api-execution-layer",
+      "severity": "error",
+      "from": { "path": "^src/platform/nodeApi/v4/execution/" },
+      "to": { "path": "^src/platform/nodeApi/v4/events/" }
+    },
+    {
+      "name": "node-api-events-layer",
+      "severity": "error",
+      "from": { "path": "^src/platform/nodeApi/v4/events/" },
+      "to": { "path": "^src/platform/nodeApi/v4/(widgets|defs|execution)/" }
     }
   ],
   "options": {
