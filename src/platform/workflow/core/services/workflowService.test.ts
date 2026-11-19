@@ -3751,6 +3751,37 @@ describe('useWorkflowService', () => {
         expect(existingWorkflow.changeTracker.initialState).toBe(saved)
         expect(existingWorkflow.isModified).toBe(false)
       })
+
+      it('uses the loaded graph as the baseline when the saved file has no node list', async () => {
+        const { draft } = restoreDraft()
+        const apiFormat = { '1': { class_type: 'KSampler', inputs: {} } }
+        existingWorkflow.changeTracker.initialState =
+          apiFormat as unknown as ComfyWorkflowJSON
+
+        await expect(
+          useWorkflowService().afterLoadNewGraph(existingWorkflow, draft)
+        ).resolves.not.toThrow()
+
+        expect(existingWorkflow.changeTracker.initialState).toEqual({
+          ...draft,
+          id: expect.any(String)
+        })
+      })
+
+      it('keeps the saved file as the baseline when restoring the canvas throws', async () => {
+        const { saved, draft } = restoreDraft()
+        vi.spyOn(existingWorkflow.changeTracker, 'restore').mockImplementation(
+          () => {
+            throw new Error('setGraph failed')
+          }
+        )
+
+        await expect(
+          useWorkflowService().afterLoadNewGraph(existingWorkflow, draft)
+        ).rejects.toThrow('setGraph failed')
+
+        expect(existingWorkflow.changeTracker.initialState).toBe(saved)
+      })
     })
 
     /**

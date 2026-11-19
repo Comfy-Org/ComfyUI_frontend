@@ -1081,19 +1081,13 @@ test.describe('Workflow Persistence', () => {
       }
     })
 
-    test('A restored draft stays unsaved after an edit is undone', async ({
-      comfyPage
-    }) => {
-      test.info().annotations.push({
-        type: 'regression',
-        description:
-          'Opening a restored draft made the draft the saved baseline, so undoing a later edit marked unsaved changes as saved'
-      })
-      test.setTimeout(45_000)
+    let workflowA = ''
 
+    test.beforeEach(async ({ comfyPage }) => {
+      test.setTimeout(45_000)
       await comfyPage.settings.setSetting('Comfy.Workflow.Persist', true)
 
-      const workflowA = generateUniqueFilename()
+      workflowA = generateUniqueFilename()
       const workflowB = generateUniqueFilename()
 
       await comfyPage.workflow.loadWorkflow('nodes/single_ksampler')
@@ -1115,6 +1109,16 @@ test.describe('Workflow Persistence', () => {
       await waitForWorkflowTabState(comfyPage)
 
       await comfyPage.workflow.reloadAndWaitForApp()
+    })
+
+    test('A restored draft stays unsaved after an edit is undone', async ({
+      comfyPage
+    }) => {
+      test.info().annotations.push({
+        type: 'regression',
+        description:
+          'Opening a restored draft made the draft the saved baseline, so undoing a later edit marked unsaved changes as saved'
+      })
 
       await test.step('the restored draft opens as unsaved', async () => {
         await comfyPage.menu.topbar.getWorkflowTab(workflowA).click()
