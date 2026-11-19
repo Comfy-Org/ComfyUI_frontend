@@ -395,30 +395,38 @@ describe('useBillingContext', () => {
 
   describe('Cloud billing_status pushes', () => {
     const push = {
-      as_of_ns: 1,
       billing_status: { has_funds: true, scoped_has_funds: { agent: false } }
     }
 
-    async function settledContext() {
+    function useFakeClock() {
       vi.useFakeTimers()
       onTestFinished(() => {
         vi.useRealTimers()
       })
+    }
+
+    function runContext() {
       const scope = effectScope()
       onTestFinished(() => scope.stop())
       const context = scope.run(useSharedBillingContext)!
+      return { scope, context }
+    }
+
+    async function settledContext() {
+      useFakeClock()
+      const run = runContext()
       await vi.advanceTimersByTimeAsync(0)
-      expect(context.isInitialized.value).toBe(true)
+      expect(run.context.isInitialized.value).toBe(true)
       vi.clearAllMocks()
-      return scope
+      return run
     }
 
     it('reads status and balance once after a burst of pushes', async () => {
       await settledContext()
 
       api.dispatchCustomEvent('billing_status', push)
-      api.dispatchCustomEvent('billing_status', { ...push, as_of_ns: 2 })
-      api.dispatchCustomEvent('billing_status', { ...push, as_of_ns: 3 })
+      api.dispatchCustomEvent('billing_status', push)
+      api.dispatchCustomEvent('billing_status', push)
       await vi.advanceTimersByTimeAsync(999)
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
 
@@ -427,28 +435,63 @@ describe('useBillingContext', () => {
       expect(billingApi.getBillingBalance).toHaveBeenCalledOnce()
     })
 
-    it('reports a failed read after a push', async () => {
+    it('still reads while pushes keep arriving less than a second apart', async () => {
       await settledContext()
-      const failure = new Error('status read rejected')
-      vi.mocked(billingApi.getBillingStatus).mockRejectedValue(failure)
+
+      for (let elapsed = 0; elapsed < 5_000; elapsed += 500) {
+        api.dispatchCustomEvent('billing_status', push)
+        await vi.advanceTimersByTimeAsync(500)
+      }
+
+      expect(billingApi.getBillingStatus).toHaveBeenCalledOnce()
+    })
+
+    it('reports failed status and balance reads after a push', async () => {
+      await settledContext()
+      const statusFailure = new Error('status read rejected')
+      const balanceFailure = new Error('balance read rejected')
+      vi.mocked(billingApi.getBillingStatus).mockRejectedValue(statusFailure)
+      vi.mocked(billingApi.getBillingBalance).mockRejectedValue(balanceFailure)
 
       api.dispatchCustomEvent('billing_status', push)
       await vi.advanceTimersByTimeAsync(1_000)
 
-      expect(reportError).toHaveBeenCalledWith(failure, {
+      expect(reportError).toHaveBeenCalledWith(statusFailure, {
         surface: 'billing',
         errorType: 'error_refreshing_billing_status_after_push'
       })
+      expect(reportError).toHaveBeenCalledWith(balanceFailure, {
+        surface: 'billing',
+        errorType: 'error_refreshing_billing_balance_after_push'
+      })
     })
 
-    it('stops reading on pushes once its scope stops', async () => {
-      const scope = await settledContext()
-      scope.stop()
+    it('leaves a push before initialization to the initial read', async () => {
+      useFakeClock()
+      vi.mocked(billingApi.getBillingStatus).mockReturnValue(
+        new Promise(() => {})
+      )
+      const { context } = runContext()
+      await vi.advanceTimersByTimeAsync(0)
+      expect(context.isInitialized.value).toBe(false)
+      expect(billingApi.getBillingStatus).toHaveBeenCalledOnce()
 
       api.dispatchCustomEvent('billing_status', push)
       await vi.advanceTimersByTimeAsync(1_000)
 
+      expect(billingApi.getBillingStatus).toHaveBeenCalledOnce()
+    })
+
+    it('drops a pending push read once its scope stops', async () => {
+      const { scope } = await settledContext()
+
+      api.dispatchCustomEvent('billing_status', push)
+      scope.stop()
+      api.dispatchCustomEvent('billing_status', push)
+      await vi.advanceTimersByTimeAsync(5_000)
+
       expect(billingApi.getBillingStatus).not.toHaveBeenCalled()
+      expect(billingApi.getBillingBalance).not.toHaveBeenCalled()
     })
   })
 

@@ -47,8 +47,10 @@ const PER_CREDIT_TEAM_PLAN_SLUG_PREFIX = 'team_per_credit_'
 
 const ROUTING_WAIT_TIMEOUT_MS = 10_000
 
-// Coalesces a burst of Cloud billing_status pushes into one read.
+// Coalesces a burst of Cloud billing_status pushes into one read, and still
+// reads at least this often while pushes keep arriving.
 const BILLING_PUSH_DEBOUNCE_MS = 1_000
+const BILLING_PUSH_MAX_WAIT_MS = 5_000
 
 class BillingRoutingUnavailableError extends Error {}
 
@@ -421,36 +423,51 @@ function useBillingContextInternal(): BillingContext {
 
   onScopeDispose(onBillingRefresh(refreshFor))
 
+  onScopeDispose(provideCheckoutOperationReader(readCheckoutOperation))
+
   // Cloud pushes billing_status when funds change (grant, top-up, admin
   // credit, Agent grant used up). The push is only a hint, so read the
   // system of record instead of applying it; that also makes out-of-order
-  // pushes harmless.
+  // pushes harmless. Pushes before initialization are skipped: initialize()
+  // reads fresh state itself, and a racing read would supersede its reads.
   if (isCloud) {
-    const readAfterPush = useDebounceFn(async () => {
-      if (type.value === 'unknown') return
-      await Promise.allSettled([
-        runPushedStatusRead(),
-        activeContext.value.fetchBalance()
-      ])
-    }, BILLING_PUSH_DEBOUNCE_MS)
+    let disposed = false
+    const readAfterPush = useDebounceFn(
+      async () => {
+        if (disposed || !isInitialized.value || type.value === 'unknown') return
+        const account = activeContext.value
+        await Promise.all([
+          reportPushedReadFailure(
+            account.fetchStatus({ fresh: true }),
+            'error_refreshing_billing_status_after_push'
+          ),
+          reportPushedReadFailure(
+            account.fetchBalance(),
+            'error_refreshing_billing_balance_after_push'
+          )
+        ])
+      },
+      BILLING_PUSH_DEBOUNCE_MS,
+      { maxWait: BILLING_PUSH_MAX_WAIT_MS }
+    )
     const onBillingStatusPush = () => void readAfterPush()
     api.addEventListener('billing_status', onBillingStatusPush)
-    onScopeDispose(() =>
+    onScopeDispose(() => {
+      disposed = true
       api.removeEventListener('billing_status', onBillingStatusPush)
-    )
+    })
   }
 
-  async function runPushedStatusRead(): Promise<void> {
+  async function reportPushedReadFailure(
+    read: Promise<void>,
+    errorType: string
+  ): Promise<void> {
     try {
-      await activeContext.value.fetchStatus({ fresh: true })
+      await read
     } catch (err) {
-      reportError(err, {
-        surface: 'billing',
-        errorType: 'error_refreshing_billing_status_after_push'
-      })
+      reportError(err, { surface: 'billing', errorType })
     }
   }
-  onScopeDispose(provideCheckoutOperationReader(readCheckoutOperation))
 
   async function subscribe(planSlug: string, options?: SubscribeOptions) {
     if (!(await whenRoutingKnown())) return

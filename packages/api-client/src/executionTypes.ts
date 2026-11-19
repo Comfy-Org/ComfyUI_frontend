@@ -147,7 +147,6 @@ export interface AgentStatusWsMessage {
  * not the system of record: clients reconcile by reading billing status.
  */
 export interface BillingStatusWsMessage {
-  as_of_ns?: number
   billing_status?: {
     has_funds?: boolean
     scoped_has_funds?: Record<string, boolean>

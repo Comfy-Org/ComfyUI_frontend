@@ -174,7 +174,6 @@ describe('API Feature Flags', () => {
     it('passes Cloud billing_status pushes on without logging an unknown type', () => {
       void api.init()
       const data = {
-        as_of_ns: 1,
         billing_status: { has_funds: true, scoped_has_funds: { agent: true } }
       }
 
