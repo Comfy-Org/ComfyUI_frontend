@@ -1013,7 +1013,11 @@ export default defineConfig({
         test: {
           name: 'node-environment',
           environment: 'node',
-          setupFiles: ['./vitest.console.setup.ts'],
+          setupFiles: [
+            './vitest.console.setup.ts',
+            './vitest.network.setup.ts',
+            './vitest.timer.setup.ts'
+          ],
           include: NODE_ENVIRONMENT_TESTS
         }
       },
