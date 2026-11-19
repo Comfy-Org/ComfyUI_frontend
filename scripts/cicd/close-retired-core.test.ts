@@ -30,11 +30,14 @@ const workflow = z
   )
 
 async function guard({
-  base = 'core/1.58',
-  state = 'open',
-  pin = 'pin-sha'
+  pr = { state: 'open', base: { ref: 'core/1.58' } },
+  pin = 'pin-sha',
+  pinLookupBase = pr.base.ref
+}: {
+  pr?: { state: string; base: { ref: string } }
+  pin?: string
+  pinLookupBase?: string
 } = {}) {
-  const pr = { state, base: { ref: base } }
   const script = workflow.jobs.close.steps.find((step) => step.with?.script)
     ?.with?.script
   expect(script).toBeDefined()
@@ -42,12 +45,17 @@ async function guard({
     github: {
       rest: {
         pulls: {
-          get: async () => ({ data: pr }),
+          get: async () => ({ data: { ...pr, base: { ...pr.base } } }),
           update: async ({ state }: { state: string }) => {
             pr.state = state
           }
         },
-        git: { getRef: async () => ({ data: { object: { sha: pin } } }) }
+        git: {
+          getRef: async () => {
+            pr.base.ref = pinLookupBase
+            return { data: { object: { sha: pin } } }
+          }
+        }
       }
     },
     context: {
@@ -75,15 +83,25 @@ it.for([
   { base: 'cloud/1.58', expected: 'open' },
   { base: 'main', expected: 'open' }
 ])('leaves live target $base $expected', async ({ base, expected }) => {
-  expect(await guard({ base })).toBe(expected)
+  const pr = { state: 'open', base: { ref: base } }
+  expect(await guard({ pr })).toBe(expected)
 })
 
 it('leaves an already closed PR closed', async () => {
-  expect(await guard({ state: 'closed' })).toBe('closed')
+  const pr = { state: 'closed', base: { ref: 'core/1.58' } }
+  expect(await guard({ pr })).toBe('closed')
+})
+
+it('leaves a PR open when retargeted to an active line during the pin lookup', async () => {
+  expect(await guard({ pinLookupBase: 'core/1.59' })).toBe('open')
 })
 
 it('aborts closure when the consumer pin changes', async () => {
-  await expect(guard({ pin: 'changed-pin' })).rejects.toThrow('ComfyUI changed')
+  const pr = { state: 'open', base: { ref: 'core/1.58' } }
+  await expect(guard({ pin: 'changed-pin', pr })).rejects.toThrow(
+    'ComfyUI changed'
+  )
+  expect(pr.state).toBe('open')
 })
 
 it('executes only trusted policy without persisting checkout credentials', () => {

@@ -32,12 +32,6 @@ jobs:
           COMFYUI_PIN_SHA: ${{ steps.targets.outputs.pin-sha }}
         with:
           script: |
-            const { data: pr } = await github.rest.pulls.get({
-              ...context.repo,
-              pull_number: context.issue.number
-            })
-            const retired = process.env.RETIRED_CORE_TARGETS.split(' ')
-            if (pr.state !== 'open' || !retired.includes(pr.base.ref)) return
             const { data: pin } = await github.rest.git.getRef({
               owner: 'Comfy-Org',
               repo: 'ComfyUI',
@@ -46,6 +40,12 @@ jobs:
             if (pin.object.sha !== process.env.COMFYUI_PIN_SHA) {
               throw new Error('ComfyUI changed; retry with fresh pin history.')
             }
+            const { data: pr } = await github.rest.pulls.get({
+              ...context.repo,
+              pull_number: context.issue.number
+            })
+            const retired = process.env.RETIRED_CORE_TARGETS.split(' ')
+            if (pr.state !== 'open' || !retired.includes(pr.base.ref)) return
             await github.rest.pulls.update({
               ...context.repo,
               pull_number: context.issue.number,
