@@ -34,6 +34,10 @@ import {
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { useSelectionStore } from '@/core/selection/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import {
+  retireMountedGraphSizes,
+  retireMountedNodeSize
+} from '@/renderer/core/layout/store/mountedNodeSizes'
 import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { changeCanvasSelection } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
@@ -873,7 +877,8 @@ export class LGraph
   /**
    * Removes all nodes from this graph
    */
-  clear(): void {
+  clear({ preserveMountedNodeSizes = false } = {}): void {
+    if (!preserveMountedNodeSizes) retireMountedGraphSizes(this)
     if (this.isRootGraph) {
       emitGraphIntent({
         type: 'clear',
@@ -1482,6 +1487,7 @@ export class LGraph
         useExecutionOrderStore().remove(graphScopeOf(this), node.id)
         detachNodeFromStores(this, node)
         detachNodeLayout(node)
+        retireMountedNodeSize(this, node.id)
 
         const { list_of_graphcanvas } = this
         if (list_of_graphcanvas) {
@@ -2963,7 +2969,8 @@ export class LGraph
    */
   configure(
     data: ISerialisedGraph | SerialisableGraph | null | undefined,
-    keep_old?: boolean
+    keep_old?: boolean,
+    viewOptions?: { preserveMountedNodeSizes?: boolean }
   ): boolean | undefined {
     data = runtimeOptional(data)
     if (!data) return
@@ -2990,9 +2997,8 @@ export class LGraph
     return withGraphIntentSource('load', () => {
       beginNamedValuesShadowDiffLoad()
       try {
-        // TODO: Finish typing configure()
         const data = normalizeConfiguredTopology(payload)
-        if (options.clearGraph) this.clear()
+        if (options.clearGraph) this.clear(viewOptions)
         else detachGraphLayouts([this])
 
         this._configureBase(data)

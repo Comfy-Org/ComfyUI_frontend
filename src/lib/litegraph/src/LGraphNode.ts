@@ -35,11 +35,12 @@ import {
   nodePositionView,
   nodeSizeBuffer,
   nodeSizeView,
+  readNodeRenderingSize,
   refreshNodeGeometry,
   setNodePosition,
   setNodeSize
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { readMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { isSelectedIn, setSelectedIn } from '@/core/selection/selectionStore'
 import { toSelectableKey } from '@/core/selection/selectionState'
 import type {
@@ -938,12 +939,12 @@ export class LGraphNode
    * The size of the node used for rendering.
    */
   get renderingSize(): Size {
-    const renderedSize = refreshNodeGeometry(this)
-    if (!this.flags.collapsed) return renderedSize
-
-    const contentSize = this.graph
-      ? layoutStore.contentSizeOf(this.graph.rootGraph.id, this.id)
-      : undefined
+    const collapsed = !!this.flags.collapsed
+    const contentSize =
+      LiteGraph.vueNodesMode && this.graph
+        ? readMountedNodeSize(this.graph, this.id, { collapsed })
+        : undefined
+    if (!collapsed) return readNodeRenderingSize(this, contentSize)
     return [
       contentSize?.width ??
         this._collapsed_width ??
