@@ -67,14 +67,21 @@ popup showing release notes the user never received.
 Local and Comfy Desktop installs now get a red dot when they are behind, and
 the What's New popup after they update. Cloud behaviour is unchanged.
 
-Ungating the toast needs two things that are not code in this repository. The
-first is a host capability: `ComfyDesktop2Bridge` exposes no update or version
-method, so Comfy Desktop must provide one before the toast's action can be
-correct there, and the check must be a capability probe rather than a build
-flag — the mistake this ADR exists to undo. The second is editorial: the toast
-also requires `hasMediumOrHighAttention`, and every release in the live feed is
-`attention: "low"`, so the toast would fire zero times even with a correct
-action. Attention levels are a publishing practice, not a frontend change.
+Ungating the toast needs two things outside this repository, both in hand.
+The first is a host capability. `ComfyDesktop2Bridge` exposes no update
+method, so the toast's action has nothing correct to call on Comfy Desktop.
+The implementation already exists there, in `runComfyUIUpdate`; only the IPC
+exposure and the bridge type are missing. When they land, the frontend must
+probe that capability rather than branch on a build flag, which is the
+mistake this ADR exists to undo.
+
+The second was the toast's `hasMediumOrHighAttention` requirement, since
+every release in the feed carried `attention: "low"`. That looked like a
+publishing practice with no owner. It was a dropped field: the releases
+gateway hardcoded a low level and discarded the one chosen upstream, so no
+amount of editorial care could have changed it. Fixed outside this
+repository, which means the requirement will start being satisfiable once
+that deploys.
 
 These surfaces are close to unmeasured. Neither the dot, the popup nor the toast emits an event
 of its own, and the `Comfy.Release.Status` settings that record _skipped_ / _changelog seen_ /
