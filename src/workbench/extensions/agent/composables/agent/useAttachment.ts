@@ -15,6 +15,7 @@ import type { ComposerAttachment } from '@/workbench/extensions/agent/types/comp
 import { isAgentAttachable } from '@/workbench/extensions/agent/utils/attachableFiles'
 import {
   DERIVED_WORKFLOW_SOURCE_PREFIX,
+  canCarryEmbeddedWorkflow,
   deriveWorkflowFile
 } from '@/workbench/extensions/agent/utils/derivedWorkflowAttachment'
 
@@ -403,7 +404,7 @@ export function useAttachment(options: UseAttachmentOptions) {
       }
       const result = await uploadStagedFile(id, file)
       if (result === 'uploaded') {
-        await attachDerivedWorkflows([{ id, file }])
+        void attachDerivedWorkflows([{ id, file }])
         options.onUploaded?.()
       }
       return result
@@ -473,48 +474,47 @@ export function useAttachment(options: UseAttachmentOptions) {
    * Lifts an embedded workflow out of each uploaded source and stages it as its
    * own attachment.
    *
-   * Holds each source open — still `pending`, still `uploading` — until its
-   * extraction settles, so the existing send guard refuses to submit while a
-   * workflow is outstanding and `cancelAllUploads` still reaches it.
+   * The lifted workflow is staged as an ordinary uploading attachment, so the
+   * existing send guard refuses to submit while it is outstanding and
+   * `cancelAllUploads` reaches it. Runs detached from the caller's promise, so
+   * attaching a file is never slower for it.
    */
   async function attachDerivedWorkflows(
     sources: readonly { id: string; file: File }[]
   ): Promise<boolean> {
-    const held = sources.filter(({ id }) => !cancelled.has(id))
-    if (!held.length) return false
-    for (const { id } of held) {
-      pending.add(id)
-      options.update(id, { uploading: true })
-    }
+    const candidates = sources.filter(
+      ({ id, file }) => !cancelled.has(id) && canCarryEmbeddedWorkflow(file)
+    )
+    if (!candidates.length) return false
 
-    let uploaded = 0
-    try {
-      const derived = await Promise.all(
-        held.map(async ({ id, file }) => ({
+    const lifted = (
+      await Promise.all(
+        candidates.map(async ({ id, file }) => ({
           id,
           file: await deriveWorkflowFile(file).catch(() => undefined)
         }))
       )
-      const staged = derived.flatMap(({ id, file }) => {
-        if (!file || cancelled.has(id)) return []
-        const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${id}`
-        if (admit(sourceKey) !== 'admitted') return []
-        if (isTooLarge(file)) return []
-        const derivedId = stage(file.name, sourceKey)
-        return derivedId ? [{ id: derivedId, file }] : []
+    ).flatMap(({ id, file }) =>
+      file && !cancelled.has(id) ? [{ id, file }] : []
+    )
+    if (!lifted.length) return false
+
+    const staged = lifted.flatMap(({ id, file }) => {
+      const sourceKey = `${DERIVED_WORKFLOW_SOURCE_PREFIX}${id}`
+      if (admit(sourceKey) !== 'admitted') return []
+      if (isTooLarge(file)) return []
+      const derivedId = stage(file.name, sourceKey)
+      return derivedId ? [{ id: derivedId, file }] : []
+    })
+
+    let uploaded = 0
+    await Promise.all(
+      staged.map(async (item) => {
+        if ((await uploadStagedFile(item.id, item.file)) === 'uploaded')
+          uploaded += 1
       })
-      await Promise.all(
-        staged.map(async (item) => {
-          if ((await uploadStagedFile(item.id, item.file)) === 'uploaded')
-            uploaded += 1
-        })
-      )
-    } finally {
-      for (const { id } of held) {
-        pending.delete(id)
-        if (!cancelled.has(id)) options.update(id, { uploading: false })
-      }
-    }
+    )
+    if (uploaded > 0) options.onUploaded?.()
     return uploaded > 0
   }
 
@@ -537,10 +537,8 @@ export function useAttachment(options: UseAttachmentOptions) {
         }
       })
     )
-    const derived = sources.length
-      ? await attachDerivedWorkflows(sources)
-      : false
-    if (uploaded > 0 || derived) options.onUploaded?.()
+    if (sources.length) void attachDerivedWorkflows(sources)
+    if (uploaded > 0) options.onUploaded?.()
     return uploaded > 0
   }
 

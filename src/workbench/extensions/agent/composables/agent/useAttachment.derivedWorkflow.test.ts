@@ -44,6 +44,7 @@ describe('useAttachment derived workflows', () => {
     const { store, upload, addFiles } = harness()
 
     await addFiles([imageFile('photo.png')])
+    await vi.waitUntil(() => store.attachments.length === 2)
 
     expect(store.attachments.map((chip) => chip.name)).toEqual([
       'photo.png',
@@ -114,7 +115,7 @@ describe('useAttachment derived workflows', () => {
     expect(onError).not.toHaveBeenCalled()
   })
 
-  it('keeps the source outstanding until its lifted workflow has uploaded', async () => {
+  it('keeps the lifted workflow uploading until it lands, so a send cannot drop it', async () => {
     mockDerive.mockResolvedValue(workflowFile('photo.workflow.json'))
     const store = useAgentComposerStore()
     let releaseDerived: (() => void) | undefined
@@ -131,41 +132,42 @@ describe('useAttachment derived workflows', () => {
       remove: store.removeAttachment
     })
 
-    const batch = addFiles([imageFile('photo.png')])
+    await addFiles([imageFile('photo.png')])
     await vi.waitUntil(() => releaseDerived !== undefined)
 
-    expect(store.attachments.map((chip) => chip.name)).toEqual([
-      'photo.png',
-      'photo.workflow.json'
-    ])
-    expect(store.attachments.every((chip) => chip.uploading)).toBe(true)
+    const derivedChip = store.attachments.find(
+      (chip) => chip.name === 'photo.workflow.json'
+    )
+    expect(derivedChip?.uploading).toBe(true)
 
     releaseDerived?.()
-    await batch
-    expect(store.attachments.every((chip) => chip.uploading)).toBe(false)
+    await vi.waitUntil(() => store.attachments.every((chip) => !chip.uploading))
   })
 
-  it('cancels a source whose workflow is still being lifted', async () => {
-    let liftStarted = false
-    mockDerive.mockImplementation(() => {
-      liftStarted = true
-      return new Promise(() => {})
-    })
+  it('cancels a lifted workflow that has not finished uploading', async () => {
+    mockDerive.mockResolvedValue(workflowFile('photo.workflow.json'))
     const store = useAgentComposerStore()
     const { addFiles, cancelAllUploads } = useAttachment({
-      upload: (file: File) => Promise.resolve({ ref: file.name }),
+      upload: (file: File) =>
+        file.name.endsWith('.workflow.json')
+          ? new Promise(() => {})
+          : Promise.resolve({ ref: file.name }),
       staged: () => store.attachments,
       stage: store.addAttachment,
       update: store.updateAttachment,
       remove: store.removeAttachment
     })
 
-    void addFiles([imageFile('photo.png')])
-    await vi.waitUntil(() => liftStarted)
+    await addFiles([imageFile('photo.png')])
+    await vi.waitUntil(() =>
+      store.attachments.some((chip) => chip.name === 'photo.workflow.json')
+    )
 
     cancelAllUploads()
 
-    expect(store.attachments).toHaveLength(0)
+    expect(
+      store.attachments.some((chip) => chip.name === 'photo.workflow.json')
+    ).toBe(false)
   })
 
   it('lifts a workflow from every image in a batch larger than the upload concurrency', async () => {
@@ -178,6 +180,7 @@ describe('useAttachment derived workflows', () => {
       imageFile(`shot-${index}.png`, index)
     )
     await expect(addFiles(batch)).resolves.toBe(true)
+    await vi.waitUntil(() => store.attachments.length === 10)
 
     expect(store.attachments).toHaveLength(10)
     expect(

@@ -15,8 +15,11 @@ export function derivedWorkflowName(sourceName: string): string {
   return `${stripExtension(sourceName)}${DERIVED_SUFFIX}`
 }
 
-function isWorkflowFile(file: File): boolean {
-  return /\.json$/i.test(file.name)
+const WORKFLOW_BEARING_IMAGE = /\.(png|webp|avif)$/i
+
+/** Whether `file` is an image container that can carry a workflow at all. */
+export function canCarryEmbeddedWorkflow(file: File): boolean {
+  return WORKFLOW_BEARING_IMAGE.test(file.name)
 }
 
 function looksLikeEditorWorkflow(value: unknown): boolean {
@@ -33,13 +36,15 @@ function parseWorkflow(raw: string | object): unknown {
  * Lifts an embedded editor workflow out of `file` as a `.json` File ready to
  * stage as its own attachment.
  *
- * Resolves undefined when there is nothing to lift, including an API-format
- * `prompt` with no editor graph, and on any read or parse failure.
+ * Resolves undefined without reading `file` unless it is an image container
+ * that can carry a workflow, and undefined when there is nothing to lift,
+ * including an API-format `prompt` with no editor graph, and on any read or
+ * parse failure.
  */
 export async function deriveWorkflowFile(
   file: File
 ): Promise<File | undefined> {
-  if (isWorkflowFile(file)) return undefined
+  if (!canCarryEmbeddedWorkflow(file)) return undefined
 
   let metadata
   try {
