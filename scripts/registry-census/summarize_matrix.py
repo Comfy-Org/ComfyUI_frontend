@@ -20,7 +20,7 @@ into one directory by the verdict job) and applies, in order:
                  entry files load clean              >= 91% (base 94.0%)
                  registerNodeDef OK                  >= 99% (base 100%)
                  registerCustomNodes OK              >= 99% (base 100%)
-                 packs free of contained hook errors >= 98% (base 99.3%)
+                 packs free of gated hook errors     >= 98% (base 98.9%)
                  every operation clean, err OR desync>= 99% (base 99.8%)
                  rows complete (no hang or crash)    >= 98% (base 100%)
 
@@ -46,6 +46,16 @@ from collections import Counter
 from dataclasses import dataclass, field
 
 STATUS_STAGES = ('registerNodeDef', 'registerCustomNodes')
+TELEMETRY_HOOKS = frozenset({
+    'init',
+    'addCustomNodeDefs',
+    'setup',
+    'beforeLoadGraph',
+    'beforeConfigureGraph',
+    'loadedGraphNode',
+    'afterConfigureGraph',
+    'afterLoadGraph',
+})
 DELTA_TOLERANCE = 1.5
 
 FLOORS = {
@@ -63,7 +73,7 @@ CRITERION_LABELS = {
     'entry_clean': 'entry files load clean',
     'register_node_def': 'registerNodeDef OK',
     'register_custom_nodes': 'registerCustomNodes OK',
-    'hook_free': 'packs free of contained hook errors',
+    'hook_free': 'packs free of gated hook errors',
     'op_clean': 'every operation clean',
     'rows_complete': 'rows complete (no hang or crash)',
 }
@@ -76,6 +86,7 @@ EXPECTED_ROW_KEYS = (
     'loadedOk',
     'ops',
     'hookErrors',
+    'hookErrorMethods',
     'registerNodeDef',
     'registerCustomNodes',
     'storeReadErrors',
@@ -84,7 +95,8 @@ EXPECTED_ROW_KEYS = (
 )
 
 TELEMETRY = (
-    'newTypes, driveTypes, per-op sig/depr, extension counts, no-JS skips'
+    'newTypes, driveTypes, per-op sig/depr, extension counts, no-JS skips,'
+    ' errors from TELEMETRY_HOOKS'
 )
 
 
@@ -240,9 +252,21 @@ def evaluate(
         measured = sum(1 for r in done if stage in r)
         stage_pct[stage] = ok / measured * 100 if measured else 0.0
         lines.append(f'{stage:28s} {ok:5d} of {measured} OK')
-    hook_packs = sum(1 for r in done if r.get('hookErrors'))
+    hook_packs = sum(
+        1 for r in done if set(r['hookErrorMethods']) - TELEMETRY_HOOKS
+    )
     hook_free_pct = (len(done) - hook_packs) / len(done) * 100
-    lines.append(f'{"contained hook errors":28s} {hook_packs:5d} pack(s)')
+    lines.append(f'{"gated hook errors":28s} {hook_packs:5d} pack(s)')
+    telemetry_hook_packs = Counter(
+        method
+        for r in done
+        for method in r['hookErrorMethods']
+        if method in TELEMETRY_HOOKS
+    )
+    if telemetry_hook_packs:
+        lines.append('hook errors reported, not gated:')
+    for method, packs in sorted(telemetry_hook_packs.items()):
+        lines.append(f'  {method:26s} {packs:5d} pack(s)')
     lines.append(
         f'{"harness self-check OK":28s} {self_ok:5d} of {len(done)}'
     )

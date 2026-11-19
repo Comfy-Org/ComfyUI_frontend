@@ -151,6 +151,16 @@ that reaches only the first workflow shows up as a mismatch on the
 per-workflow arm. Canvas work (`activateRootGraph`, camera restore) is not
 driven.
 
+Errors from the hooks this boot and load sequence added (`init`,
+`addCustomNodeDefs`, `setup` and the five load and configure hooks) are
+recorded per hook and printed under "hook errors reported, not gated". About
+one pack in nine throws in one of them, almost all in `setup` or `init`,
+because the hook reaches for a real canvas, settings or the network that
+happy-dom does not provide; the count was identical on both arms. Each of
+these hooks also gets 10 seconds to settle: a `setup` that awaits a `<script>`
+load never settles under happy-dom, which blocked the whole pack until the
+300 s test timeout.
+
 ### PASS criteria
 
 Applied independently by the legacy and Vue `matrix-verdict` jobs over each
@@ -163,7 +173,7 @@ harness/withheld):
 | entry files load clean                    | >= 91%    | 94.1%             |
 | `registerNodeDef` OK                      | >= 99%    | 100%              |
 | `registerCustomNodes` OK                  | >= 99%    | 100%              |
-| packs free of contained hook errors       | >= 98%    | 99.25%            |
+| packs free of gated hook errors           | >= 98%    | 98.9%             |
 | rows complete (no hang or crash)          | >= 98%    | ~100%             |
 | every operation clean (`err` OR `desync`) | >= 99%    | 99.8%             |
 | entry-clean delta vs baseline             | >= -1.5pp | carried by cache  |
