@@ -4,7 +4,8 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 export type GraphResolver = () => LGraph | undefined
 
 interface Entry<THandle extends object, TLive> {
-  readonly handle: THandle
+  held: THandle | undefined
+  readonly weak: WeakRef<THandle>
   readonly resolveGraph: GraphResolver
   readonly locate: () => TLive | undefined
   retire(): void
@@ -33,7 +34,10 @@ interface Retirable {
 export interface DocumentHandles {
   /** Retires every handle made so far. */
   beginDocument(): void
-  /** Retires each handle whose entity is gone and whose key the graph could give to a new entity. */
+  /**
+   * Retires each handle whose entity is gone and whose key the graph could give to a new entity;
+   * the cache holds any other handle of a gone entity only weakly, until its entity is back.
+   */
   afterHistoryRestore(): void
   /** `reissuable` says whether the graph could give `key` to a new entity; unless it says no, a restore retires a handle whose entity is gone. */
   createCache<THandle extends object, TLive>(
@@ -42,6 +46,8 @@ export interface DocumentHandles {
   /** True if `value` is a handle made here. */
   owns(value: unknown): boolean
 }
+
+const FIRST_SWEEP = 256
 
 export function createDocumentHandles(): DocumentHandles {
   let documentNumber = 0
@@ -81,19 +87,40 @@ export function createDocumentHandles(): DocumentHandles {
         Map<string, Entry<THandle, TLive>>
       >()
       const locators = new WeakMap<object, () => TLive | undefined>()
-      caches.add({
-        clear: () => entriesByGraph.clear(),
-        retireGone() {
-          for (const entries of entriesByGraph.values()) {
-            for (const [key, entry] of entries) {
-              if (entry.locate() !== undefined) continue
-              const graph = entry.resolveGraph()
-              if (graph && !reissuable(graph, key)) continue
+      let entryCount = 0
+      let sweepAt = FIRST_SWEEP
+
+      function sweep(retireReissuable: boolean) {
+        for (const entries of entriesByGraph.values()) {
+          for (const [key, entry] of entries) {
+            if (entry.locate() !== undefined) {
+              entry.held ??= entry.weak.deref()
+              if (entry.held) continue
+            } else if (retireReissuable && isReissued(entry, key)) {
               entry.retire()
-              entries.delete(key)
+            } else {
+              entry.held = undefined
+              if (entry.weak.deref()) continue
             }
+            entries.delete(key)
+            entryCount--
           }
         }
+        sweepAt = Math.max(FIRST_SWEEP, entryCount * 2)
+      }
+
+      function isReissued(entry: Entry<THandle, TLive>, key: string) {
+        const graph = entry.resolveGraph()
+        return !graph || reissuable(graph, key)
+      }
+
+      caches.add({
+        clear() {
+          entriesByGraph.clear()
+          entryCount = 0
+          sweepAt = FIRST_SWEEP
+        },
+        retireGone: () => sweep(true)
       })
       return {
         handleFor(graph, key, find, make) {
@@ -103,7 +130,15 @@ export function createDocumentHandles(): DocumentHandles {
             entriesByGraph.set(graph.id, entries)
           }
           const existing = entries.get(key)
-          if (existing) return existing.handle
+          const kept = existing && (existing.held ?? existing.weak.deref())
+          if (existing && kept) {
+            existing.held = kept
+            return kept
+          }
+          if (existing) {
+            entries.delete(key)
+            entryCount--
+          }
 
           const { resolveGraph, retire } = followGraph(graph)
           const locate = () => {
@@ -113,7 +148,14 @@ export function createDocumentHandles(): DocumentHandles {
           const handle = make(locate, resolveGraph)
           handlesMade.add(handle)
           locators.set(handle, locate)
-          entries.set(key, { handle, resolveGraph, locate, retire })
+          entries.set(key, {
+            held: handle,
+            weak: new WeakRef(handle),
+            resolveGraph,
+            locate,
+            retire
+          })
+          if (++entryCount > sweepAt) sweep(false)
           return handle
         },
         locator: (value) =>

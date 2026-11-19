@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -236,5 +236,72 @@ describe('document handles', () => {
     expect(handles.owns({ ...handle })).toBe(false)
     expect(handles.owns('1')).toBe(false)
     expect(handles.owns(null)).toBe(false)
+  })
+})
+
+describe('holding the handles of gone entities', () => {
+  const collectable = new Set<{ collected: boolean }>()
+
+  class CollectableWeakRef<T extends object> {
+    private readonly state = { collected: false }
+    constructor(private readonly target: T) {
+      collectable.add(this.state)
+    }
+    deref(): T | undefined {
+      return this.state.collected ? undefined : this.target
+    }
+  }
+
+  function collectUnheld() {
+    for (const state of collectable) state.collected = true
+  }
+
+  afterEach(() => {
+    collectable.clear()
+  })
+
+  function cacheOverOneGraph() {
+    vi.stubGlobal('WeakRef', CollectableWeakRef)
+    const graph = new LGraph()
+    const present = new Set(['1', '2'])
+    const { handles, probes } = handlesWithProbes(
+      (_graph, key) => present.has(key),
+      () => false
+    )
+    const handleFor = (key: string) => probes.handleFor(graph, key, graphProbe)
+    return { handles, present, handleFor }
+  }
+
+  it('holds the handle of a present entity strongly', () => {
+    const { handles, handleFor } = cacheOverOneGraph()
+    const handle = handleFor('1')
+
+    handles.afterHistoryRestore()
+    collectUnheld()
+
+    expect(handleFor('1')).toBe(handle)
+  })
+
+  it("gives back a gone entity's handle when it returns, while something holds the handle", () => {
+    const { handles, present, handleFor } = cacheOverOneGraph()
+    const handle = handleFor('1')
+    present.delete('1')
+
+    handles.afterHistoryRestore()
+    present.add('1')
+
+    expect(handleFor('1')).toBe(handle)
+  })
+
+  it("lets a gone entity's handle go once nothing else holds it", () => {
+    const { handles, present, handleFor } = cacheOverOneGraph()
+    const handle = handleFor('2')
+    present.delete('2')
+
+    handles.afterHistoryRestore()
+    collectUnheld()
+    present.add('2')
+
+    expect(handleFor('2')).not.toBe(handle)
   })
 })
