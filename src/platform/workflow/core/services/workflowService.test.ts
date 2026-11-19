@@ -677,6 +677,38 @@ describe('useWorkflowService', () => {
         vi.mocked(console.error).mockRestore()
       }
     })
+    it('should log and show an error toast when removing an unedited draft throws', () => {
+      vi.spyOn(useSettingStore(), 'get').mockImplementation(
+        (key: string) => key === 'Comfy.Workflow.Persist'
+      )
+      const error = new Error('storage unavailable')
+      vi.mocked(useWorkflowDraftStoreV2().removeDraft).mockImplementation(
+        () => {
+          throw error
+        }
+      )
+      const activeWorkflow = createModeTestWorkflow({
+        path: 'workflows/test.json'
+      })
+      workflowStore.activeWorkflow = activeWorkflow
+
+      try {
+        expect(() => useWorkflowService().beforeLoadNewGraph()).not.toThrow()
+
+        expect(console.error).toHaveBeenCalledWith(
+          'Failed to persist active workflow draft',
+          error
+        )
+        expect(useToast().error).toHaveBeenCalledWith(
+          t('g.error'),
+          expect.objectContaining({
+            description: t('toastMessages.failedToSaveDraft')
+          })
+        )
+      } finally {
+        vi.mocked(console.error).mockRestore()
+      }
+    })
   })
 
   describe('openWorkflow ordering', () => {
