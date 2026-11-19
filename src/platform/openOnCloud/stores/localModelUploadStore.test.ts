@@ -98,7 +98,7 @@ describe('useLocalModelUploadStore', () => {
     const store = await prepared()
     store.choose(lora, loraFile)
 
-    store.reset()
+    store.reset([lora])
 
     expect(store.pickOf(lora).status).toBe('unchosen')
   })
@@ -123,6 +123,26 @@ describe('useLocalModelUploadStore', () => {
 
     expect(store.canTake(model)).toBe(false)
     expect(store.canUpload([model])).toBe(false)
+  })
+
+  it('clears readiness while the next dialog loads and ignores the older reply', async () => {
+    const store = await prepared()
+    let finishFirst: (folders: string[]) => void = () => {}
+    vi.mocked(localModelUploadApi.readCloudUploadFolders)
+      .mockImplementationOnce(
+        () => new Promise((resolve) => (finishFirst = resolve))
+      )
+      .mockResolvedValueOnce(['checkpoints'])
+
+    const first = store.prepare([lora])
+    expect(store.uploadFolders).toBeNull()
+    expect(store.sizeOf(lora)).toBeUndefined()
+    await store.prepare([ckpt])
+    finishFirst(['loras'])
+    await first
+
+    expect(store.canTake(ckpt)).toBe(true)
+    expect(store.canTake(lora)).toBe(false)
   })
 
   it('uploads to Comfy Cloud, waits for the stored model, then checks again', async () => {
@@ -160,16 +180,19 @@ describe('useLocalModelUploadStore', () => {
     vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
       ok: true
     })
-    const store = await prepared([lora, ckpt])
+    const models = [lora, ckpt]
+    useLocalModelUploadStore().reset(models)
+    const store = await prepared(models)
     store.choose(lora, loraFile)
     store.choose(ckpt, ckptFile)
 
-    await store.start([lora, ckpt])
+    await store.start(models)
     expect(store.upload).toMatchObject({ phase: 'failed' })
     expect(store.pickOf(lora).status).toBe('stored')
-    store.reset()
+    store.reset(models)
+    await store.prepare(models)
     store.choose(ckpt, ckptFile)
-    await store.start([lora, ckpt])
+    await store.start(models)
 
     expect(upload.mock.calls.map(([file]) => file)).toEqual([
       loraFile,
@@ -177,6 +200,30 @@ describe('useLocalModelUploadStore', () => {
       ckptFile
     ])
     expect(store.upload).toEqual({ phase: 'done' })
+  })
+
+  it('allows choosing a stored model again when a new Cloud check lists it as missing', async () => {
+    vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValue({
+      ok: true,
+      taskId: TASK_ID
+    })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    const initialModels = [lora]
+    useLocalModelUploadStore().reset(initialModels)
+    const store = await prepared(initialModels)
+    store.choose(lora, loraFile)
+    await store.start(initialModels)
+    expect(store.pickOf(lora).status).toBe('stored')
+
+    const missingAgain = [lora]
+    store.reset(missingAgain)
+    await store.prepare(missingAgain)
+
+    expect(store.pickOf(lora).status).toBe('unchosen')
+    store.choose(lora, loraFile)
+    expect(store.canUpload(missingAgain)).toBe(true)
   })
 
   it('stops the upload and sends nothing more when the workspace changes', async () => {

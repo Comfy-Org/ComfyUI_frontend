@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import {
+  cloudUploadRequest,
   readCloudUploadFolders,
   readLocalModelSizes,
   waitForStoredModel
@@ -52,6 +54,29 @@ function answers(
     )
   })
 }
+
+describe('cloudUploadRequest', () => {
+  it('sends uploads to the Cloud API origin with workspace authorization', async () => {
+    stubFirebaseAuthHarness()
+    vi.spyOn(useAuthStore(), 'getWorkspaceAuthHeader').mockResolvedValue({
+      Authorization: 'Bearer workspace-token'
+    })
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 201 }))
+
+    const response = await cloudUploadRequest('/assets/uploads', {
+      method: 'POST'
+    })
+
+    expect(response.status).toBe(201)
+    expect(fetch).toHaveBeenCalledWith(
+      `${getComfyApiBaseUrl()}/api/assets/uploads`,
+      {
+        method: 'POST',
+        headers: new Headers({ Authorization: 'Bearer workspace-token' })
+      }
+    )
+  })
+})
 
 describe('readCloudUploadFolders', () => {
   it('reads available folders without native AbortSignal.timeout', async () => {

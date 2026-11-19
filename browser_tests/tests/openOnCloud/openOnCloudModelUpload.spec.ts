@@ -50,7 +50,13 @@ test.describe('Open on Cloud: upload the models Comfy Cloud lacks', () => {
     expect(await cloudTraffic.starts[0].headerValue('authorization')).toMatch(
       /^Bearer /
     )
-    expect(cloudTraffic.stored).toEqual([LOCAL_MODEL_FILE.buffer])
+    expect(cloudTraffic.stored).toHaveLength(1)
+    const [storageWrite] = cloudTraffic.stored
+    const length = LOCAL_MODEL_FILE.buffer.length
+    expect(await storageWrite.headerValue('content-range')).toBe(
+      `bytes 0-${length - 1}/${length}`
+    )
+    expect(storageWrite.postDataBuffer()).toEqual(LOCAL_MODEL_FILE.buffer)
     expect(cloudTraffic.completes[0].postDataJSON()).toMatchObject({
       filename: LOCAL_MODEL_FILE.name,
       tags: ['models', 'loras']

@@ -33,6 +33,8 @@ export type ModelPick =
   | { status: 'wrongFile'; file: File }
   | { status: 'stored' }
 
+export type ModelUploadBlock = 'folder' | 'subfolder' | 'size'
+
 type LocalModelUpload =
   | { phase: 'idle' }
   | { phase: 'uploading'; sent: number; total: number }
@@ -44,11 +46,6 @@ type UploadStop = Extract<LocalModelUpload, { phase: 'failed' }>
 /** Keys a missing model the way the check names it. */
 export function modelKey({ folder, name }: MissingModel): string {
   return `${folder}/${name}`
-}
-
-/** Whether the upload can keep the model's path; one in a subfolder cannot. */
-export function keepsModelPath({ name }: MissingModel): boolean {
-  return !/[\\/]/.test(name)
 }
 
 function matchesModel(
@@ -76,6 +73,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   const picks = shallowRef(new Map<string, ModelPick>())
   const upload = shallowRef<LocalModelUpload>({ phase: 'idle' })
   let batch: { controller: AbortController; owner: string } | undefined
+  let preparation = 0
+  let modelSnapshot: MissingModel[] | undefined
 
   const isUploading = computed(() => upload.value.phase === 'uploading')
   const percent = computed(() => {
@@ -89,24 +88,34 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     () => {
       batch?.controller.abort('accountChanged')
       picks.value = new Map()
+      clearPreparation()
     },
     { flush: 'sync' }
   )
 
+  function clearPreparation(): void {
+    preparation++
+    uploadFolders.value = null
+    sizes.value = new Map()
+  }
+
   async function prepare(models: MissingModel[]): Promise<void> {
     if (isUploading.value) return
+    clearPreparation()
+    const currentPreparation = preparation
     const folders = [...new Set(models.map((model) => model.folder))]
     const [served, ...localSizes] = await Promise.all([
       readCloudUploadFolders(),
       ...folders.map(readLocalModelSizes)
     ])
-    uploadFolders.value = served
+    if (currentPreparation !== preparation) return
     const next = new Map<string, number>()
     folders.forEach((folder, index) => {
       for (const [name, size] of localSizes[index])
         next.set(`${folder}/${name}`, size)
     })
     sizes.value = next
+    uploadFolders.value = served
   }
 
   function sizeOf(model: MissingModel): number | undefined {
@@ -115,12 +124,15 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     )
   }
 
-  function takesFolder(folder: string): boolean {
-    return uploadFolders.value?.includes(folder) ?? false
+  function blockedBy(model: MissingModel): ModelUploadBlock | undefined {
+    if (!uploadFolders.value?.includes(model.folder)) return 'folder'
+    if (/[\\/]/.test(model.name)) return 'subfolder'
+    if (sizeOf(model) === undefined && pickOf(model).status !== 'stored')
+      return 'size'
   }
 
   function canTake(model: MissingModel): boolean {
-    return takesFolder(model.folder) && keepsModelPath(model)
+    return blockedBy(model) === undefined
   }
 
   function pickOf(model: MissingModel): ModelPick {
@@ -252,22 +264,28 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     batch?.controller.abort()
   }
 
-  function reset(): void {
+  function reset(models: MissingModel[]): void {
     if (isUploading.value) return
+    clearPreparation()
     upload.value = { phase: 'idle' }
-    picks.value = new Map(
-      [...picks.value].filter(([, pick]) => pick.status === 'stored')
-    )
+    picks.value =
+      modelSnapshot === models
+        ? new Map(
+            [...picks.value].filter(([, pick]) => pick.status === 'stored')
+          )
+        : new Map()
+    modelSnapshot = models
   }
 
   return {
+    owner,
     upload,
     uploadFolders,
     isUploading,
     percent,
     prepare,
     sizeOf,
-    takesFolder,
+    blockedBy,
     canTake,
     pickOf,
     choose,

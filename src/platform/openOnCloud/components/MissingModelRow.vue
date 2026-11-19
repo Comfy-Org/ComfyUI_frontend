@@ -18,7 +18,7 @@
         :aria-label="$t('openOnCloud.missingModels.uploaded')"
       />
       <label
-        v-else-if="choosable && size !== undefined"
+        v-else-if="choosable"
         class="shrink-0 cursor-pointer rounded-md px-2 py-1 text-foreground hover:bg-accent has-disabled:cursor-default has-disabled:opacity-50"
       >
         <i
@@ -51,7 +51,8 @@ import { useI18n } from 'vue-i18n'
 
 import type {
   MissingModel,
-  ModelPick
+  ModelPick,
+  ModelUploadBlock
 } from '@/platform/openOnCloud/stores/localModelUploadStore'
 
 const { model, pick, size, choosable, blocked, locked } = defineProps<{
@@ -59,7 +60,7 @@ const { model, pick, size, choosable, blocked, locked } = defineProps<{
   pick: ModelPick
   size?: number
   choosable: boolean
-  blocked?: 'folder' | 'subfolder'
+  blocked?: ModelUploadBlock
   locked: boolean
 }>()
 
@@ -69,22 +70,18 @@ const { t } = useI18n()
 
 const BLOCKED_COPY = {
   folder: 'openOnCloud.missingModels.folderUnsupported',
-  subfolder: 'openOnCloud.missingModels.subfolderUnsupported'
-} as const
+  subfolder: 'openOnCloud.missingModels.subfolderUnsupported',
+  size: 'openOnCloud.missingModels.sizeUnavailable'
+} as const satisfies Record<ModelUploadBlock, string>
 
 const note = computed(() => {
-  if (choosable && size === undefined && pick.status !== 'stored')
-    return {
-      tone: 'text-muted-foreground',
-      text: t('openOnCloud.missingModels.sizeUnavailable')
-    }
+  if (blocked)
+    return { tone: 'text-muted-foreground', text: t(BLOCKED_COPY[blocked]) }
   if (pick.status === 'wrongFile')
     return {
       tone: 'text-destructive',
       text: t('openOnCloud.missingModels.wrongFile', { name: model.name })
     }
-  if (blocked)
-    return { tone: 'text-muted-foreground', text: t(BLOCKED_COPY[blocked]) }
   return null
 })
 

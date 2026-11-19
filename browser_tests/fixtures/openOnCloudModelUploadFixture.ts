@@ -1,3 +1,11 @@
+import type {
+  CheckCloudCompatibilityResponse,
+  CompleteModelUploadResponse,
+  GetFeaturesResponse,
+  GetModelsInFolderResponse,
+  GetTaskResponse,
+  StartModelUploadResponse
+} from '@comfyorg/ingest-types'
 import type { Page, Request } from '@playwright/test'
 
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -15,15 +23,13 @@ const CORS = { 'access-control-allow-origin': '*' }
 
 interface CloudTraffic {
   starts: Request[]
-  stored: Buffer[]
+  stored: Request[]
   completes: Request[]
 }
 
-function onCloud(page: Page, path: string | RegExp) {
+function onCloud(page: Page, path: string) {
   const appOrigin = new URL(page.url()).origin
-  return (url: URL) =>
-    url.origin !== appOrigin &&
-    (typeof path === 'string' ? url.pathname === path : path.test(url.pathname))
+  return (url: URL) => url.origin !== appOrigin && url.pathname === path
 }
 
 async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
@@ -36,7 +42,7 @@ async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
       json: {
         open_on_cloud_enabled: true,
         model_upload_folders: ['loras', 'checkpoints']
-      }
+      } satisfies GetFeaturesResponse
     })
   )
   await page.route(onCloud(page, '/api/cloud/compatibility'), (route) =>
@@ -49,7 +55,7 @@ async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
             ? []
             : [{ folder: 'loras', name: LOCAL_MODEL_FILE.name }]
         }
-      }
+      } satisfies CheckCloudCompatibilityResponse
     })
   )
   await page.route(onCloud(page, '/api/assets/uploads'), (route) => {
@@ -63,13 +69,22 @@ async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
         method: 'PUT',
         headers: {},
         expires_at: '2030-01-01T00:00:00Z',
-        max_size_bytes: 2147483648
-      }
+        max_size_bytes: 26843545600,
+        upload_mode: 'resumable',
+        chunk_size_bytes: 67108864
+      } satisfies StartModelUploadResponse
     })
   })
   await page.route(STORAGE_URL, (route) => {
-    traffic.stored.push(route.request().postDataBuffer() ?? Buffer.alloc(0))
-    return route.fulfill({ status: 200, headers: CORS, body: '' })
+    const headers = {
+      ...CORS,
+      'access-control-allow-methods': 'PUT, OPTIONS',
+      'access-control-allow-headers': 'content-range'
+    }
+    if (route.request().method() === 'OPTIONS')
+      return route.fulfill({ status: 204, headers })
+    traffic.stored.push(route.request())
+    return route.fulfill({ status: 200, headers, body: '' })
   })
   await page.route(
     onCloud(page, `/api/assets/uploads/${UPLOAD_ID}/complete`),
@@ -78,7 +93,10 @@ async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
       return route.fulfill({
         status: 202,
         headers: CORS,
-        json: { task_id: TASK_ID, status: 'created' }
+        json: {
+          task_id: TASK_ID,
+          status: 'created'
+        } satisfies CompleteModelUploadResponse
       })
     }
   )
@@ -94,7 +112,7 @@ async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
         payload: {},
         create_time: '2026-11-18T00:00:00Z',
         update_time: '2026-11-18T00:00:01Z'
-      }
+      } satisfies GetTaskResponse
     })
   })
   return traffic
@@ -108,16 +126,13 @@ export const openOnCloudModelUploadFixture = localSignedOutFixture.extend<{
     await new FeatureFlagHelper(page).seedServerFlags({
       open_on_cloud_enabled: true
     })
+    const localModel = {
+      name: LOCAL_MODEL_FILE.name,
+      pathIndex: 0,
+      size: LOCAL_MODEL_FILE.buffer.length
+    }
     await page.route('**/api/experiment/models/loras', (route) =>
-      route.fulfill({
-        json: [
-          {
-            name: LOCAL_MODEL_FILE.name,
-            pathIndex: 0,
-            size: LOCAL_MODEL_FILE.buffer.length
-          }
-        ]
-      })
+      route.fulfill({ json: [localModel] satisfies GetModelsInFolderResponse })
     )
     await comfyPage.cloudAuth.mockLiveEmailSignIn()
     await page.reload()

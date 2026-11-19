@@ -17,8 +17,8 @@
           :model
           :pick="uploads.pickOf(model)"
           :size="uploads.sizeOf(model)"
-          :choosable="canOffer && uploads.canTake(model)"
-          :blocked="canOffer ? blockedBy(model) : undefined"
+          :choosable="canOffer"
+          :blocked="isPrepared ? uploads.blockedBy(model) : undefined"
           :locked="uploads.isUploading"
           @choose="(file) => uploads.choose(model, file)"
         />
@@ -95,7 +95,6 @@ import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import MissingModelRow from '@/platform/openOnCloud/components/MissingModelRow.vue'
 import {
-  keepsModelPath,
   modelKey,
   useLocalModelUploadStore
 } from '@/platform/openOnCloud/stores/localModelUploadStore'
@@ -140,22 +139,20 @@ const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
 
 const { t } = useI18n()
 const uploads = useLocalModelUploadStore()
-const { upload, uploadFolders } = storeToRefs(uploads)
+const { upload, uploadFolders, owner } = storeToRefs(uploads)
 
 watch(
-  () => [signedIn, models] as const,
+  () => [signedIn, models, owner.value] as const,
   () => {
-    uploads.reset()
+    uploads.reset(models)
     if (signedIn) void uploads.prepare(models)
   },
   { immediate: true }
 )
 
+const isPrepared = computed(() => signedIn && uploadFolders.value !== null)
 const canOffer = computed(
-  () =>
-    signedIn &&
-    uploadFolders.value !== null &&
-    models.some((model) => uploads.canTake(model))
+  () => isPrepared.value && models.length > 0 && models.every(uploads.canTake)
 )
 
 const copy = computed(() => {
@@ -189,11 +186,6 @@ const totalSize = computed(() => {
   )
   return bytes > 0 ? formatSize(bytes) : ''
 })
-
-function blockedBy(model: MissingModel) {
-  if (!uploads.takesFolder(model.folder)) return 'folder'
-  return keepsModelPath(model) ? undefined : 'subfolder'
-}
 
 function failureText(reason: LocalModelUploadFailure, message?: string) {
   const key = FAILURE_COPY[reason]

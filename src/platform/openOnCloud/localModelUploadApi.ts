@@ -8,7 +8,7 @@ import {
 } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { ingestApiUrl } from '@/platform/remote/ingest/ingestApiUrl'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -32,9 +32,13 @@ async function cloudHeaders(headers?: HeadersInit): Promise<Headers> {
   return merged
 }
 
+function cloudUploadUrl(route: string): string {
+  return `${getComfyApiBaseUrl()}/api${route}`
+}
+
 /** Sends an upload route to Comfy Cloud as the signed-in workspace. */
 export const cloudUploadRequest: UploadRouteRequest = async (route, init) =>
-  fetch(ingestApiUrl(route), {
+  fetch(cloudUploadUrl(route), {
     ...init,
     headers: await cloudHeaders(init.headers)
   })
@@ -42,7 +46,7 @@ export const cloudUploadRequest: UploadRouteRequest = async (route, init) =>
 /** The model folders Comfy Cloud takes uploads into; empty when it takes none. */
 export async function readCloudUploadFolders(): Promise<string[]> {
   try {
-    const response = await fetch(ingestApiUrl('/features'), {
+    const response = await fetch(cloudUploadUrl('/features'), {
       cache: 'no-store',
       headers: await cloudHeaders(),
       signal: createTimeoutSignal(READ_TIMEOUT_MS)
