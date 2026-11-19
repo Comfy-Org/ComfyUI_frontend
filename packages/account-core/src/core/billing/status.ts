@@ -15,7 +15,6 @@ const BillingStatusBodySchema = zBillingStatusResponse.extend({
   next_charge: zBillingStatusResponse.shape.next_charge.optional()
 })
 
-/** An unknown tier name reads as absent, so a new plan keeps the read usable. */
 function withoutUnsupportedTier(body: unknown): unknown {
   if (typeof body !== 'object' || body === null) return body
   if (!('subscription_tier' in body)) return body
