@@ -1,5 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { useTelemetry } from '@comfyorg/telemetry'
+import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
@@ -9,7 +10,10 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openRunOnCloudDialog } from '@/platform/openOnCloud/openRunOnCloudDialog'
 import { checkCloudCompatibility } from '@/platform/openOnCloud/cloudCompatibilityApi'
-import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import type {
+  CloudWorkflowCheckResult,
+  CloudWorkflowVerdict
+} from '@/platform/openOnCloud/cloudWorkflowCheck'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/components/CloudButton.vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -273,6 +277,49 @@ describe('Cloud button compatibility checks', () => {
       )
     )
   })
+
+  it.for<{
+    name: string
+    result: CloudWorkflowCheckResult
+    properties: RunOnCloudTelemetryEvent['properties']
+  }>([
+    {
+      name: 'no verdict',
+      result: null,
+      properties: { reason: 'no_verdict' }
+    },
+    {
+      name: 'an unreadable model loader',
+      result: {
+        kind: 'unreadableModelLoader',
+        nodeType: 'ImpactCheckpointLoader'
+      },
+      properties: {
+        reason: 'unreadable_model_loader',
+        node_type: 'ImpactCheckpointLoader'
+      }
+    }
+  ])(
+    'reports a check that ends in $name instead of opening the dialog',
+    async ({ result, properties }) => {
+      vi.mocked(checkCloudCompatibility).mockResolvedValue(result)
+      render(CloudButton, { global: { plugins: [testI18n] } })
+
+      await userEvent.setup().click(screen.getByTestId('cloud-button'))
+
+      await waitFor(() =>
+        expect(
+          useTelemetry()?.trackRunOnCloudEvent
+        ).toHaveBeenCalledExactlyOnceWith({
+          name: 'app:run_on_cloud_check_failed',
+          properties
+        })
+      )
+      expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+        false
+      )
+    }
+  )
 
   it('opens the dialog when Cloud is missing nodes or models', async () => {
     vi.mocked(checkCloudCompatibility).mockResolvedValue({

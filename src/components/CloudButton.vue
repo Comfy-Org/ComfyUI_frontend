@@ -57,6 +57,12 @@ function prefetch() {
 function showModal() {
   const current = check.value
   if (current.phase === 'failed') {
+    useTelemetry()?.trackRunOnCloudEvent({
+      name: 'app:run_on_cloud_check_failed',
+      properties: current.nodeType
+        ? { reason: 'unreadable_model_loader', node_type: current.nodeType }
+        : { reason: 'no_verdict' }
+    })
     toast.error(
       current.nodeType
         ? t('openOnCloud.missingLocalModelLoader', {

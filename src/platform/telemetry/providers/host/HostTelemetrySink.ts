@@ -58,6 +58,7 @@ import type {
   PageViewMetadata,
   PageVisibilityMetadata,
   RunButtonProperties,
+  RunOnCloudTelemetryEvent,
   SearchQueryMetadata,
   SettingChangedMetadata,
   ShareFlowMetadata,
@@ -338,6 +339,10 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackUiButtonClicked(metadata: UiButtonClickMetadata): void {
     this.capture(TelemetryEvents.UI_BUTTON_CLICKED, metadata)
+  }
+
+  trackRunOnCloudEvent(event: RunOnCloudTelemetryEvent): void {
+    this.capture(event.name, event.properties)
   }
 
   trackAgentMessageFeedback(metadata: AgentMessageFeedbackMetadata): void {

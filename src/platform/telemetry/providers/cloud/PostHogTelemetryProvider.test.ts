@@ -17,7 +17,8 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BootstrapCompleteMetadata,
   OnboardingTourStage,
-  RunButtonProperties
+  RunButtonProperties,
+  RunOnCloudTelemetryEvent
 } from '@comfyorg/telemetry/types'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
@@ -891,6 +892,22 @@ describe('PostHogTelemetryProvider', () => {
       expect(hoisted.mockCapture).toHaveBeenCalledWith(
         event.name,
         event.properties
+      )
+    })
+
+    it('captures the Run on Cloud deploy setup dialog shown from the errors panel as is', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      const event: RunOnCloudTelemetryEvent = {
+        name: 'app:run_on_cloud_dialog_shown',
+        properties: { state: 'deploy_setup', source: 'errors_panel' }
+      }
+
+      provider.trackRunOnCloudEvent(event)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledExactlyOnceWith(
+        'app:run_on_cloud_dialog_shown',
+        { state: 'deploy_setup', source: 'errors_panel' }
       )
     })
 

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { RunOnCloudTelemetryEvent } from '@comfyorg/telemetry/types'
 import { TelemetryEvents } from '@comfyorg/telemetry/types'
 
 import { HostTelemetrySink } from './HostTelemetrySink'
@@ -618,6 +619,35 @@ describe('HostTelemetrySink', () => {
         survivorLinkId: 3,
         target: '12:0'
       }
+    )
+  })
+
+  it.for<RunOnCloudTelemetryEvent>([
+    {
+      name: 'app:run_on_cloud_dialog_shown',
+      properties: {
+        state: 'ready',
+        source: 'cloud_button',
+        asks_to_sign_in: true
+      }
+    },
+    {
+      name: 'app:run_on_cloud_check_failed',
+      properties: {
+        reason: 'unreadable_model_loader',
+        node_type: 'ImpactCheckpointLoader'
+      }
+    },
+    {
+      name: 'app:run_on_cloud_save_first_blocked',
+      properties: { action: 'open_in_codex', reason: 'modified' }
+    }
+  ])('forwards the Run on Cloud event $name to the host bridge', (event) => {
+    new HostTelemetrySink().trackRunOnCloudEvent(event)
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(
+      event.name,
+      event.properties
     )
   })
 

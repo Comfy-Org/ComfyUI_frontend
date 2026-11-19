@@ -22,11 +22,15 @@ defineProps<{ catalogId?: string }>()
 
 const { flags } = useFeatureFlags()
 
-function openFromError() {
+async function openFromError() {
   useTelemetry()?.trackUiButtonClicked({
     button_id: 'error_tab_run_on_cloud_clicked',
     element_group: 'errors_panel'
   })
-  void openDeploySetupDialog()
+  if (await openDeploySetupDialog())
+    useTelemetry()?.trackRunOnCloudEvent({
+      name: 'app:run_on_cloud_dialog_shown',
+      properties: { state: 'deploy_setup', source: 'errors_panel' }
+    })
 }
 </script>

@@ -1,4 +1,6 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import type { RunOnCloudHandoffAction } from '@comfyorg/telemetry/types'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -11,8 +13,22 @@ import { handoffFileName } from '@/platform/workflow/deploy/utils/agentHandoff'
 import { openAgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import type { AgentApp } from '@/platform/workflow/deploy/utils/agentApps'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useUserStore } from '@/stores/userStore'
+
+function reportSaveFirstBlock(
+  action: RunOnCloudHandoffAction,
+  workflow: LoadedComfyWorkflow | null
+) {
+  useTelemetry()?.trackRunOnCloudEvent({
+    name: 'app:run_on_cloud_save_first_blocked',
+    properties: {
+      action,
+      reason: workflow?.isPersisted ? 'modified' : 'unsaved'
+    }
+  })
+}
 
 export function useRunOnCloudHandoff(
   distribution: Distribution = DISTRIBUTION
@@ -22,7 +38,7 @@ export function useRunOnCloudHandoff(
   const toast = useToast()
   const { copyToClipboard } = useCopyToClipboard()
 
-  function prepareHandoff() {
+  function prepareHandoff(action: RunOnCloudHandoffAction) {
     const workflow = workflowStore.activeWorkflow
     workflow?.changeTracker.prepareForSave()
     if (distribution === 'cloud') {
@@ -43,6 +59,7 @@ export function useRunOnCloudHandoff(
       }
     }
     if (!workflow?.isPersisted || workflow.isModified) {
+      reportSaveFirstBlock(action, workflow)
       toast.error(t('openOnCloud.agentMenu.saveFirst'))
       return null
     }
@@ -69,7 +86,7 @@ export function useRunOnCloudHandoff(
 
   function prepareBrief(): string | null {
     try {
-      const handoff = prepareHandoff()
+      const handoff = prepareHandoff('use_local_agent')
       if (!handoff) return null
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
@@ -82,7 +99,7 @@ export function useRunOnCloudHandoff(
 
   async function copyBrief(): Promise<boolean> {
     try {
-      const handoff = prepareHandoff()
+      const handoff = prepareHandoff('copy_prompt')
       if (
         !handoff ||
         !(await copyToClipboard(handoff.brief, { toastOnSuccess: false }))
@@ -99,7 +116,7 @@ export function useRunOnCloudHandoff(
 
   function openBriefIn(app: AgentApp): void {
     try {
-      const handoff = prepareHandoff()
+      const handoff = prepareHandoff(`open_in_${app}`)
       if (!handoff) return
       if (handoff.download)
         downloadBlob(handoff.download.fileName, handoff.download.blob)
