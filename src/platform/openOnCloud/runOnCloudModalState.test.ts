@@ -16,6 +16,10 @@ const checkpoint: CompatibilityModel = {
   name: 'juggernautXL_v9.safetensors',
   folder: 'checkpoints'
 }
+const pickleCheckpoint: CompatibilityModel = {
+  name: 'legacy/model.pkl',
+  folder: 'checkpoints'
+}
 const pixelSpace: CompatibilityModel = {
   name: 'pixel_space',
   folder: 'vae'
@@ -39,7 +43,7 @@ const modelFileAndPixelSpace: CloudWorkflowGaps = {
 }
 const modelsOnly: CloudWorkflowGaps = {
   nodePacks: [],
-  models: [lora, checkpoint]
+  models: [lora, checkpoint, pickleCheckpoint]
 }
 
 function answered(
@@ -102,11 +106,11 @@ describe(runOnCloudModalState, () => {
       check: answered({ kind: 'missing', gaps: modelsOnly }),
       signedIn: {
         kind: 'missingModels',
-        models: [lora, checkpoint]
+        models: [lora, checkpoint, pickleCheckpoint]
       },
       signedOut: {
         kind: 'missingModels',
-        models: [lora, checkpoint]
+        models: [lora, checkpoint, pickleCheckpoint]
       }
     }
   ])('$name', ({ check, signedIn, signedOut }) => {

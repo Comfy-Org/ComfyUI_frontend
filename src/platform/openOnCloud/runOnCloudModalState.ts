@@ -4,7 +4,6 @@ import type {
   CloudWorkflowCheckState,
   CloudWorkflowGaps
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
-import { isModelFileName } from '@/platform/workflowErrors/missingModel/missingModelScan'
 
 export type RunOnCloudModalState =
   | { kind: 'checking' }
@@ -12,10 +11,12 @@ export type RunOnCloudModalState =
   | { kind: 'deploySetup' }
   | { kind: 'missingModels'; models: CompatibilityModel[] }
 
+function isFileName(name: string): boolean {
+  return /\.[^./\\]+$/.test(name)
+}
+
 function needsDeployment({ nodePacks, models }: CloudWorkflowGaps): boolean {
-  return (
-    nodePacks.length > 0 || models.some((model) => !isModelFileName(model.name))
-  )
+  return nodePacks.length > 0 || models.some((model) => !isFileName(model.name))
 }
 
 export function runOnCloudModalState(
