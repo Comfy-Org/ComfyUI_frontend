@@ -21,10 +21,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
-  resultItemUrl,
+  resultItemPreviewUrl,
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
-import { resultItemHtmlVideoType } from '@/utils/resultItem'
+import { isVideoResult, resultItemHtmlVideoType } from '@/utils/resultItem'
 
 /* MediaLightbox retains this component via KeepAlive include, which matches on
    the registered component name. */
@@ -48,9 +48,14 @@ const playsResolvedUrl = computed(
   () => !!props.result.url && props.result.filenameIsDisplayName === true
 )
 
+const playsStoredPreview = computed(
+  () => !!props.result.preview_id && isVideoResult(props.result)
+)
+
 const vhsAdvancedPreviews = computed(() => {
   return (
     !playsResolvedUrl.value &&
+    !playsStoredPreview.value &&
     isExtensionInstalled('VideoHelperSuite.Core') &&
     isExtensionEnabled('VideoHelperSuite.Core') &&
     settingStore.get('VHS.AdvancedPreviews') &&
@@ -61,11 +66,13 @@ const vhsAdvancedPreviews = computed(() => {
 const url = computed(() =>
   vhsAdvancedPreviews.value
     ? resultItemVhsAdvancedPreviewUrl(props.result)
-    : resultItemUrl(props.result)
+    : resultItemPreviewUrl(props.result)
 )
 const htmlVideoType = computed(() =>
-  vhsAdvancedPreviews.value
-    ? 'video/webm'
-    : resultItemHtmlVideoType(props.result)
+  playsStoredPreview.value
+    ? undefined
+    : vhsAdvancedPreviews.value
+      ? 'video/webm'
+      : resultItemHtmlVideoType(props.result)
 )
 </script>

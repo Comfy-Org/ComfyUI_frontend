@@ -1,8 +1,9 @@
-import { hdrPreviewAssetUrl, isHdrImageFilename } from '@/utils/hdrFormatUtil'
+import { assetContentUrl } from '@/platform/assets/utils/assetUrlUtil'
+import { isHdrImageFilename, isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { isImageResult } from '@/utils/resultItem'
+import { isImageResult, isVideoResult } from '@/utils/resultItem'
 
 function resultItemUrlParams(item: AugmentedResultItem): URLSearchParams {
   const params = new URLSearchParams()
@@ -20,7 +21,7 @@ export function resultItemUrl(item: AugmentedResultItem): string {
   return api.apiURL('/view?' + resultItemUrlParams(item))
 }
 
-interface ResultItemPreviewUrlOptions {
+interface PreviewUrlOptions {
   fullRes?: boolean
   previewFormat?: string
   rand?: string
@@ -28,20 +29,30 @@ interface ResultItemPreviewUrlOptions {
 
 export function resultItemPreviewUrl(
   item: AugmentedResultItem,
-  options: ResultItemPreviewUrlOptions = {}
+  { fullRes = false, previewFormat = '', rand = '' }: PreviewUrlOptions = {}
 ): string {
   if (isHdrImageFilename(item.filename))
     return (
       item.previewUrl ??
-      (item.preview_id ? hdrPreviewAssetUrl(item.preview_id) : '')
+      (item.preview_id ? assetContentUrl(item.preview_id) : '')
     )
-  if (options.fullRes) return resultItemUrl(item)
+  if (isVideoResult(item) && item.preview_id)
+    return item.previewUrl ?? assetContentUrl(item.preview_id)
+  if (fullRes) return resultItemUrl(item)
   if (item.previewUrl !== undefined) return item.previewUrl
   if (item.url !== undefined) return item.url
   const params = resultItemUrlParams(item)
   if (isImageResult(item)) appendCloudResParam(params, item.filename)
   const url = item.filename ? api.apiURL('/view?' + params) : ''
-  return url + (options.previewFormat ?? '') + (options.rand ?? '')
+  return url + previewFormat + rand
+}
+
+export function getHdrPreviewUrl(url: string | undefined): string | undefined {
+  const previewId =
+    url &&
+    isHdrImageUrl(url) &&
+    new URL(url, window.location.origin).searchParams.get('preview_id')
+  return previewId ? assetContentUrl(previewId) : undefined
 }
 
 export function resultItemVhsAdvancedPreviewUrl(

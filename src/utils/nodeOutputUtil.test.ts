@@ -7,11 +7,15 @@ import { isInputPreviewOutput } from './nodeOutputUtil'
 describe(isInputPreviewOutput, () => {
   const cases: {
     expected: boolean
-    output: Pick<NodeExecutionOutput, 'images'> | undefined
+    output: NodeExecutionOutput | undefined
   }[] = [
     {
       expected: true,
       output: { images: [{ type: 'input' }, { type: 'input' }] }
+    },
+    {
+      expected: true,
+      output: { isInputPreview: true, images: [{ type: 'output' }] }
     },
     { expected: false, output: { images: [{ type: 'output' }] } },
     {

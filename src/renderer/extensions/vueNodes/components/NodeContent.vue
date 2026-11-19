@@ -7,8 +7,8 @@
     <slot>
       <VideoPreview
         v-if="hasMedia && media?.type === 'video'"
-        :image-urls="media.items.map((item) => resultItemPreviewUrl(item))"
-        :node-id="nodeId"
+        :items="media.items"
+        :node-id
         class="mt-2 flex-auto"
       />
       <AudioPreview
@@ -19,7 +19,7 @@
       <ImagePreview
         v-else-if="hasMedia && media?.type === 'image'"
         :items="media.items"
-        :node-id="nodeId"
+        :node-id
         :full-resolution="nodeData?.flags.fullResolutionPreview"
         class="flex-auto"
         :style="{ marginTop: `${IMAGE_PREVIEW_MARGIN_TOP}px` }"

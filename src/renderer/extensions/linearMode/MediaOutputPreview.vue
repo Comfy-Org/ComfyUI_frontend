@@ -6,7 +6,7 @@ import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import VideoPreview from '@comfyorg/design-system/media/VideoPreview'
 import { getMediaType } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const Preview3d = defineAsyncComponent(
@@ -30,7 +30,7 @@ const { textContent } = useTextFileContent(() =>
     ? { content: output.content, url: resultItemUrl(output) }
     : undefined
 )
-const src = computed(() => resultItemUrl(output))
+const src = computed(() => resultItemPreviewUrl(output, { fullRes: true }))
 </script>
 <template>
   <template v-if="mediaType === 'images' || mediaType === 'video'">

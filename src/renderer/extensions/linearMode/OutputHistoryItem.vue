@@ -6,7 +6,7 @@ import {
   mediaTypes
 } from '@/renderer/extensions/linearMode/mediaTypes'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import { resultItemUrl } from '@/utils/resultItemUrl'
+import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import VideoPlayOverlay from '@comfyorg/design-system/media/VideoPlayOverlay'
@@ -15,7 +15,7 @@ const { output } = defineProps<{
   output: AugmentedResultItem
 }>()
 
-const src = computed(() => resultItemUrl(output))
+const src = computed(() => resultItemPreviewUrl(output))
 </script>
 <template>
   <img
