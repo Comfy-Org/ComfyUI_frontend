@@ -240,7 +240,7 @@ export async function runMissingModelPipeline({
         })
       )
       await api
-        .getFolderPaths()
+        .getFolderPaths({ signal: controller.signal })
         .then((paths) => {
           if (controller.signal.aborted) return
           missingModelStore.setFolderPaths(paths)
