@@ -286,6 +286,25 @@ describe('FormSelectButton Core Component', () => {
 
       expect(onUpdateModelValue).toHaveBeenCalledWith('second_id')
     })
+
+    it('emits value when the custom optionValue field is missing', async () => {
+      const onUpdateModelValue = vi.fn()
+      render(FormSelectButton, {
+        props: {
+          modelValue: null,
+          options: [
+            { label: 'First', value: 'first' },
+            { label: 'Second', value: 'second' }
+          ],
+          optionValue: 'id',
+          'onUpdate:modelValue': onUpdateModelValue
+        }
+      })
+
+      await clickButton('Second')
+
+      expect(onUpdateModelValue).toHaveBeenCalledWith('second')
+    })
   })
 
   describe('Disabled State', () => {

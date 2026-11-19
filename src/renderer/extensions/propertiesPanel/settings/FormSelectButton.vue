@@ -76,7 +76,11 @@ const getOptionValue = (option: T, index: number): ModelValue => {
   const valueField = optionValue
   const optionRecord = option as Record<string, unknown>
   const value =
-    optionRecord[valueField] ?? optionRecord.name ?? optionRecord.label ?? index
+    optionRecord[valueField] ??
+    optionRecord.value ??
+    optionRecord.name ??
+    optionRecord.label ??
+    index
   return typeof value === 'string' ||
     typeof value === 'number' ||
     typeof value === 'symbol'
