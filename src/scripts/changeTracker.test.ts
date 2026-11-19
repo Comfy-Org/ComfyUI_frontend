@@ -216,6 +216,56 @@ describe('ChangeTracker', () => {
   describe('undoRedo', () => {
     it.for([
       {
+        name: 'leaves textarea undo to the editor with auto-queue on change',
+        focused: 'textarea',
+        mode: 'change',
+        repeat: false,
+        prevented: false,
+        frames: 0
+      },
+      {
+        name: 'prevents native undo while a toolbar control has focus',
+        focused: 'button',
+        mode: 'disabled',
+        repeat: false,
+        prevented: true,
+        frames: 1
+      },
+      {
+        name: 'prevents a held undo without repeating it',
+        focused: 'button',
+        mode: 'disabled',
+        repeat: true,
+        prevented: true,
+        frames: 0
+      }
+    ] as const)('$name', ({ focused, mode, repeat, prevented, frames }) => {
+      useQueueSettingsStore().mode = mode
+      vi.spyOn(document, 'activeElement', 'get').mockReturnValue(
+        document.createElement(focused)
+      )
+      const events = new EventTarget()
+      vi.spyOn(window, 'addEventListener').mockImplementation(
+        (type, listener, options) =>
+          events.addEventListener(type, listener, options)
+      )
+      const frame = vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
+      ChangeTracker.init()
+      const event = new KeyboardEvent('keydown', {
+        key: 'z',
+        ctrlKey: true,
+        repeat,
+        cancelable: true
+      })
+
+      events.dispatchEvent(event)
+
+      expect(event.defaultPrevented).toBe(prevented)
+      expect(frame).toHaveBeenCalledTimes(frames)
+    })
+
+    it.for([
+      {
         key: 'z',
         shiftKey: false,
         history: 'undo',
@@ -2869,6 +2919,45 @@ describe('ChangeTracker', () => {
       } finally {
         document.body.removeChild(modal)
       }
+    })
+
+    it('undoes the widget step of the focused node and leaves graph history alone', async () => {
+      const previousState = createState(1)
+      const currentState = createState(2)
+      const tracker = createTracker(currentState)
+      tracker.undoQueue.push(previousState)
+      const graphId = app.canvas.graph?.id
+      assert(graphId, 'canvas graph missing')
+      const scope = {
+        rootGraphId: app.rootGraph.id,
+        widgetId: widgetId(graphId, toNodeId(7), 'mask')
+      }
+      const store = useWidgetHistoryStore()
+      const travel = vi.fn()
+      onTestFinished(
+        store.registerTraveler({
+          scope: () => scope,
+          canTravel: () => store.canUndo(scope),
+          travel
+        })
+      )
+      store.record(scope, 'before')
+      const node = document.createElement('div')
+      node.dataset.nodeId = '7'
+      node.tabIndex = 0
+      document.body.append(node)
+      onTestFinished(() => node.remove())
+      node.focus()
+
+      ChangeTracker.init()
+      window.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'z', ctrlKey: true })
+      )
+      await vi.runAllTimersAsync()
+
+      expect(travel).toHaveBeenCalledWith('undo')
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(tracker.undoQueue).toEqual([previousState])
     })
   })
 })

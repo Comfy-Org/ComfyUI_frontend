@@ -5,6 +5,9 @@ import { api } from '@/scripts/api'
 
 import { recordDevEvent } from './devPanelLog'
 
+/** Which caller invoked `OpSender.abortIfUnbound`: a refused resubscribe, or a tab-switch retarget. */
+export type UnboundAbortReason = 'subscribe_refused' | 'retarget'
+
 type LostEditKind =
   | 'undeliverable'
   | 'unconfirmed'
@@ -25,6 +28,8 @@ export function reportLostEdit(
     widget?: string
     message?: string
     failedIndex?: number
+    /** Which caller drove the `'unbound'` code. Undefined for every other code. */
+    reason?: UnboundAbortReason
   },
   { shouldReport = true }: { shouldReport?: boolean } = {}
 ): void {
@@ -42,7 +47,12 @@ export function reportLostEdit(
       errorType,
       fingerprint: [errorType],
       level: kind === 'host_rejected' ? 'warning' : 'error',
-      tags: { tab: api.clientId, outcome: kind, code: cause.code },
+      tags: {
+        tab: api.clientId,
+        outcome: kind,
+        code: cause.code,
+        ...(cause.reason ? { reason: cause.reason } : {})
+      },
       context
     })
   if (kind === 'mint_divergence' || kind === 'host_rejected') {

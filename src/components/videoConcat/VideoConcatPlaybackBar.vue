@@ -3,15 +3,16 @@
     data-testid="video-concat-controls"
     class="flex h-8 items-center gap-2 px-1"
   >
-    <button
-      type="button"
+    <Button
+      variant="textonly"
+      size="icon-sm"
       data-testid="video-concat-playback-toggle"
-      class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-foreground hover:bg-muted"
+      class="size-6 shrink-0"
       :aria-label="isPlaying ? t('videoEdit.pause') : t('videoEdit.play')"
       @click="isPlaying = !isPlaying"
     >
       <i :class="isPlaying ? 'icon-[lucide--pause]' : 'icon-[lucide--play]'" />
-    </button>
+    </Button>
     <span
       data-testid="video-concat-timecode"
       class="shrink-0 text-muted-foreground tabular-nums"
@@ -33,21 +34,23 @@
       :aria-label="t('videoEdit.seekVideo')"
       @update:model-value="handleSliderSeek"
     />
-    <button
-      type="button"
+    <Button
+      variant="muted-textonly"
+      size="icon-sm"
       data-testid="video-concat-mute"
-      class="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-md border-none bg-transparent text-muted-foreground hover:bg-muted"
+      class="size-6 shrink-0"
       :aria-label="isMuted ? t('videoEdit.unmute') : t('videoEdit.mute')"
       @click="isMuted = !isMuted"
     >
       <i
         :class="isMuted ? 'icon-[lucide--volume-x]' : 'icon-[lucide--volume-2]'"
       />
-    </button>
+    </Button>
   </div>
 </template>
 
 <script setup lang="ts">
+import Button from '@comfyorg/design-system/button/Button'
 import { useI18n } from 'vue-i18n'
 
 import Slider from '@comfyorg/design-system/slider/Slider'

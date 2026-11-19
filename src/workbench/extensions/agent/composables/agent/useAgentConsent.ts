@@ -15,16 +15,21 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
 import { useDialogStore } from '@/stores/dialogStore'
 import { AGENT_DOCS_URL } from '@/workbench/extensions/agent/agentDocs'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import {
   clearPendingSignInAccept,
   writePendingSignInAccept
 } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
+import type { PendingSignInAccept } from '@/workbench/extensions/agent/services/agent/pendingSignInAccept'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentConsentIntroductionStore } from '@/workbench/extensions/agent/stores/agent/agentConsentIntroductionStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
 
 export const CONSENT_DIALOG_KEY = 'agent-consent'
+const ERROR_WORKFLOW_RESTORE_TIMEOUT_MS = 10_000
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SOURCES = [
   {
@@ -48,6 +53,8 @@ export interface ConsentOfferHooks {
   canShow?: () => boolean
   /** Told when the user turns the card down rather than accepting it. */
   onExit?: (exit: 'declined' | 'dismissed') => void
+  /** Kept with a signed-out Agree so the chip comes back after a sign-in reload. */
+  errorContext?: AgentErrorContext
 }
 
 const CARD_ERROR_TYPE = {
@@ -86,11 +93,9 @@ export function useAgentConsent() {
     { canShow, onExit }: ConsentOfferHooks = {},
     initialError: ConsentCardError | '' = ''
   ): Promise<boolean> {
+    if ((canShow && !canShow()) || dialogStore.isDialogOpen(CONSENT_DIALOG_KEY))
+      return Promise.resolve(false)
     return new Promise<boolean>((resolve) => {
-      if (canShow && !canShow()) {
-        resolve(false)
-        return
-      }
       let settled = false
       let saving = false
       let shown = false
@@ -306,7 +311,10 @@ export function useAgentConsent() {
         return null
       introductionStore.isContinuingSignIn = true
       try {
-        writePendingSignInAccept(heldDraftText())
+        writePendingSignInAccept({
+          draft: heldDraftText(),
+          errorContext: hooks.errorContext
+        })
         let signedIn: boolean
         try {
           signedIn = await showSignInDialog()
@@ -328,13 +336,44 @@ export function useAgentConsent() {
     }
   }
 
-  async function resumeAcceptAfterReload(draft: string): Promise<void> {
+  async function errorWorkflowRestored(
+    errorContext: AgentErrorContext,
+    savedIdentity: string
+  ): Promise<boolean> {
+    const { workflowPath } = errorContext
+    if (workflowPath) {
+      const workflowStore = useWorkflowStore()
+      await until(() => workflowStore.activeWorkflow?.path === workflowPath)
+        .toBe(true, { timeout: ERROR_WORKFLOW_RESTORE_TIMEOUT_MS })
+        .catch(() => {})
+    }
+    return (
+      isLoggedIn.value && accepted.value && identity.value === savedIdentity
+    )
+  }
+
+  async function resumeAcceptAfterReload({
+    draft,
+    errorContext
+  }: PendingSignInAccept): Promise<void> {
     introductionStore.isContinuingSignIn = true
+    let saved: string | null
     try {
-      await saveAcceptanceAfterSignIn()
+      saved = await saveAcceptanceAfterSignIn()
     } finally {
       introductionStore.isContinuingSignIn = false
     }
+    if (
+      errorContext &&
+      saved &&
+      (await errorWorkflowRestored(errorContext, saved))
+    ) {
+      const panelStore = useAgentPanelStore()
+      panelStore.view = { screen: 'chat' }
+      panelStore.open('error_context')
+      panelStore.pendingErrorContext = errorContext
+    }
+    if (errorContext && saved && identity.value !== saved) return
     if (
       draft &&
       !composerStore.draft &&

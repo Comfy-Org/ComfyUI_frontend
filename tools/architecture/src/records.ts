@@ -380,7 +380,14 @@ export function loadArchitectureConfiguration(
   const errors = [
     ...referenceErrors(namedRecords),
     ...overlapErrors(namedRecords),
-    ...referencedFileErrors(repositoryRoot, records, claims),
+    ...referencedFileErrors(
+      repositoryRoot,
+      records,
+      claimFiles(
+        records,
+        records.flatMap((record) => record.publicEntryPoints)
+      )
+    ),
     ...duplicates(exceptions.map(({ id }) => id)).map(
       (id) => `Exception id ${id} is declared more than once`
     )

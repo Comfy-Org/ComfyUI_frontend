@@ -1,0 +1,312 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial, fromAny } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
+
+import { useTelemetry } from '@comfyorg/telemetry'
+
+import { promoteWidget } from '@/core/graph/subgraph/promotionUtils'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useFavoritedWidgetsStore } from '@/renderer/extensions/propertiesPanel/favoritedWidgetsStore'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+
+import WidgetActions from './WidgetActions.vue'
+
+vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
+  promoteWidget: vi.fn()
+}))
+
+vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/services/dialogService'))
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: {
+      g: {
+        rename: 'Rename',
+        enterNewName: 'Enter new name'
+      },
+      rightSidePanel: {
+        showInput: 'Show input',
+        addFavorite: 'Favorite',
+        removeFavorite: 'Unfavorite',
+        resetToDefault: 'Reset to default'
+      }
+    }
+  }
+})
+
+describe('WidgetActions', () => {
+  beforeEach(() => {
+    useCanvasStore().canvas = fromPartial({ setDirty: vi.fn() })
+    vi.mocked(useFavoritedWidgetsStore().toggleFavorite).mockImplementation(
+      () => {}
+    )
+    vi.mocked(useFavoritedWidgetsStore().isFavorited).mockReturnValue(false)
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: 'test_widget',
+      type: 'INT',
+      default: 42
+    })
+  })
+
+  function createMockWidget(
+    value: number = 100,
+    callback?: () => void
+  ): IBaseWidget {
+    return {
+      name: 'test_widget',
+      type: 'number',
+      value,
+      label: 'Test Widget',
+      options: {},
+      y: 0,
+      callback
+    }
+  }
+
+  function createMockNode(): LGraphNode {
+    return fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'TestNode',
+      rootGraph: { id: 'graph-test' },
+      computeSize: vi.fn(),
+      size: [200, 100],
+      isSubgraphNode: () => false
+    })
+  }
+
+  async function renderWidgetActions(
+    widget: IBaseWidget,
+    node: LGraphNode,
+    extraProps: Record<string, unknown> = {}
+  ) {
+    const user = userEvent.setup()
+    const onResetToDefault = vi.fn()
+    render(WidgetActions, {
+      props: {
+        widget,
+        node,
+        label: 'Test Widget',
+        onResetToDefault,
+        ...extraProps
+      },
+      global: {
+        plugins: [i18n]
+      }
+    })
+    await user.click(screen.getByTestId('widget-actions-menu-button'))
+    await screen.findByRole('menu')
+    return { user, onResetToDefault }
+  }
+
+  it('shows reset button when widget has default value', async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    await renderWidgetActions(widget, node)
+
+    expect(screen.getByRole('menuitem', { name: /Reset/ })).toBeInTheDocument()
+  })
+
+  it('emits resetToDefault with default value when reset button clicked', async () => {
+    const widget = createMockWidget(100)
+    const node = createMockNode()
+
+    const { user, onResetToDefault } = await renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('menuitem', { name: /Reset/ }))
+
+    expect(onResetToDefault).toHaveBeenCalledTimes(1)
+    expect(onResetToDefault).toHaveBeenCalledWith(42)
+  })
+
+  it('disables reset button when value equals default', async () => {
+    const widget = createMockWidget(42)
+    const node = createMockNode()
+
+    await renderWidgetActions(widget, node)
+
+    expect(screen.getByRole('menuitem', { name: /Reset/ })).toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+  })
+
+  it('keeps reset enabled when the store value is null and differs from the default', async () => {
+    const node = createMockNode()
+    const id = widgetId('graph-test', node.id, 'test_widget')
+    useWidgetValueStore().registerWidget(id, {
+      type: 'number',
+      value: null,
+      options: {}
+    })
+    const widget = { ...createMockWidget(42), widgetId: id } as IBaseWidget
+
+    await renderWidgetActions(widget, node)
+
+    expect(screen.getByRole('menuitem', { name: /Reset/ })).not.toHaveAttribute(
+      'aria-disabled',
+      'true'
+    )
+  })
+
+  it('does not show reset button when no default value exists', async () => {
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: 'test_widget',
+      type: 'CUSTOM'
+    })
+
+    const widget = createMockWidget(100)
+    const node = createMockNode()
+
+    await renderWidgetActions(widget, node)
+
+    expect(
+      screen.queryByRole('menuitem', { name: /Reset/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('uses fallback default for INT type without explicit default', async () => {
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: 'test_widget',
+      type: 'INT'
+    })
+
+    const widget = createMockWidget(100)
+    const node = createMockNode()
+
+    const { user, onResetToDefault } = await renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('menuitem', { name: /Reset/ }))
+
+    expect(onResetToDefault).toHaveBeenCalledWith(0)
+  })
+
+  it('uses first option as default for combo without explicit default', async () => {
+    vi.mocked(useNodeDefStore().getInputSpecForWidget).mockReturnValue({
+      name: 'test_widget',
+      type: 'COMBO',
+      options: ['option1', 'option2', 'option3']
+    })
+
+    const widget = createMockWidget(100)
+    const node = createMockNode()
+
+    const { user, onResetToDefault } = await renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('menuitem', { name: /Reset/ }))
+
+    expect(onResetToDefault).toHaveBeenCalledWith('option1')
+  })
+
+  it('tracks widget favorite toggled with is_favorited true when favoriting', async () => {
+    vi.mocked(useFavoritedWidgetsStore().isFavorited).mockReturnValue(false)
+
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    const { user } = await renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('menuitem', { name: /Favorite/ }))
+
+    expect(
+      useTelemetry()?.trackWidgetFavoriteToggled
+    ).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: true,
+      source: 'right_side_panel'
+    })
+    expect(
+      useFavoritedWidgetsStore().toggleFavorite
+    ).toHaveBeenCalledExactlyOnceWith(node, 'test_widget')
+  })
+
+  it('tracks widget favorite toggled with is_favorited false when unfavoriting', async () => {
+    vi.mocked(useFavoritedWidgetsStore().isFavorited).mockReturnValue(true)
+
+    const widget = createMockWidget()
+    const node = createMockNode()
+
+    const { user } = await renderWidgetActions(widget, node)
+
+    await user.click(screen.getByRole('menuitem', { name: /Unfavorite/ }))
+
+    expect(
+      useTelemetry()?.trackWidgetFavoriteToggled
+    ).toHaveBeenCalledExactlyOnceWith({
+      node_type: 'TestNode',
+      widget_name: 'test_widget',
+      widget_type: 'number',
+      is_favorited: false,
+      source: 'right_side_panel'
+    })
+  })
+
+  it('promotes the widget into the host when "Show input" is clicked', async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    const { user } = await renderWidgetActions(widget, node, { host })
+
+    await user.click(screen.getByRole('menuitem', { name: /Show input/ }))
+
+    expect(promoteWidget).toHaveBeenCalledWith(node, widget, [host])
+  })
+
+  it('does not offer "Show input" without a host', async () => {
+    await renderWidgetActions(createMockWidget(), createMockNode())
+
+    expect(
+      screen.queryByRole('menuitem', { name: /Show input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it('does not offer "Show input" when the host input is already linked', async () => {
+    const widget = createMockWidget()
+    const node = fromAny<LGraphNode, unknown>({
+      id: 1,
+      type: 'TestNode',
+      rootGraph: { id: 'graph-test' },
+      isSubgraphNode: () => true,
+      getSlotFromWidget: (candidate: IBaseWidget) =>
+        candidate.name === 'test_widget'
+          ? { widgetId: 'graph-test:1:test_widget' }
+          : undefined
+    })
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    await renderWidgetActions(widget, node, { host })
+
+    expect(
+      screen.queryByRole('menuitem', { name: /Show input/ })
+    ).not.toBeInTheDocument()
+  })
+
+  it("toggles the favorite for the row's node", async () => {
+    const widget = createMockWidget()
+    const node = createMockNode()
+    const host = fromAny<SubgraphNode, unknown>({ id: 2 })
+
+    const { user } = await renderWidgetActions(widget, node, { host })
+
+    await user.click(screen.getByRole('menuitem', { name: /Favorite/ }))
+
+    expect(useFavoritedWidgetsStore().toggleFavorite).toHaveBeenCalledWith(
+      node,
+      'test_widget'
+    )
+  })
+})

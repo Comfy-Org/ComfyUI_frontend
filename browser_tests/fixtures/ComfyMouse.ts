@@ -114,6 +114,17 @@ export class ComfyMouse implements Omit<Mouse, 'move'> {
     )
   }
 
+  /** Clicks the center of an element without Playwright's actionability checks. */
+  async clickCenter(target: Locator, options?: Parameters<Mouse['click']>[2]) {
+    const box = await target.boundingBox()
+    if (!box) throw new Error('element should have layout')
+    await this.mouse.click(
+      box.x + box.width / 2,
+      box.y + box.height / 2,
+      options
+    )
+  }
+
   async hold(...args: Parameters<Mouse['down']>) {
     await this.mouse.down(...args)
     const release = new AsyncDisposableStack()

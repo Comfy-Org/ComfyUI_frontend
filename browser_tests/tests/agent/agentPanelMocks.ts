@@ -393,6 +393,7 @@ async function mockAgentBoot(
     agentRetryAfter,
     agentBilling,
     acceptedTurns,
+    agentRemoteConfig,
     crdtDebugEnabled,
     initialFeatureFlags,
     initialSettings,
@@ -464,8 +465,8 @@ async function mockAgentBoot(
   await mockCloudBootRoutes(page, {
     features: {
       ...agentFeatures(agentFlagEnabled),
-      ...(agentConsentWebSession && { unified_web_session: true }),
-      ...initialFeatureFlags
+      ...initialFeatureFlags,
+      ...agentRemoteConfig
     },
     settings: storedSettings,
     objectInfo
@@ -709,6 +710,7 @@ type AgentFixtures = {
   agentPanelInitiallyOpen: boolean
   agentOnboardingCompleted: boolean
   agentRetryAfter: string | undefined
+  agentRemoteConfig: Partial<RemoteConfig>
   crdtDebugEnabled: boolean
   /** `'server'` loads real node definitions instead of the empty catalog. */
   objectInfo: 'server' | undefined
@@ -741,6 +743,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
   agentPanelInitiallyOpen: [false, { option: true }],
   agentOnboardingCompleted: [true, { option: true }],
   agentRetryAfter: [undefined, { option: true }],
+  agentRemoteConfig: [{}, { option: true }],
   crdtDebugEnabled: [false, { option: true }],
   objectInfo: [undefined, { option: true }],
   page: async (
@@ -757,6 +760,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentRetryAfter,
       agentBilling,
       acceptedTurns,
+      agentRemoteConfig,
       crdtDebugEnabled,
       initialFeatureFlags,
       initialSettings,
@@ -780,6 +784,7 @@ export const agentTest = comfyPageFixture.extend<AgentFixtures>({
       agentRetryAfter,
       agentBilling,
       acceptedTurns,
+      agentRemoteConfig,
       crdtDebugEnabled,
       initialFeatureFlags,
       initialSettings,

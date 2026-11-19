@@ -434,8 +434,7 @@ describe('useWorkspaceBilling', () => {
           ...real,
           flags: new Proxy(real.flags, {
             get: (target, key) =>
-              key === 'billingSdkSubscriptionRailEnabled' ||
-              Reflect.get(target, key)
+              key === 'billingSdkRailEnabled' || Reflect.get(target, key)
           })
         })
         const sdk = useBillingSdkStore()
@@ -782,6 +781,27 @@ describe('useWorkspaceBilling', () => {
       }
     )
 
+    it.for([
+      { case: 'served', served: 844.5 },
+      { case: 'omitted', served: undefined }
+    ])(
+      'passes the display plan balance through as received when $case',
+      async ({ served }) => {
+        mockWorkspaceApi.getBillingBalance.mockResolvedValue({
+          ...positiveBalance,
+          cloud_credit_display_balance_cents: served
+        })
+
+        const billing = setupBilling()
+        await billing.fetchBalance()
+
+        expect(billing.balance.value).toMatchObject({
+          cloudCreditBalanceMicros: 2_000_000,
+          cloudCreditDisplayBalanceCents: served
+        })
+      }
+    )
+
     it('leaves low balance unset when the balance response omits it', async () => {
       mockWorkspaceApi.getBillingBalance.mockResolvedValue(positiveBalance)
 
@@ -812,6 +832,35 @@ describe('useWorkspaceBilling', () => {
 
       await expect(billing.fetchBalance()).rejects.toThrow('balance failed')
       expect(billing.error.value).toBe('balance failed')
+    })
+
+    it('records a failed balance read until a later read succeeds', async () => {
+      mockWorkspaceApi.getBillingBalance
+        .mockRejectedValueOnce(new Error('balance failed'))
+        .mockResolvedValueOnce(positiveBalance)
+      const billing = setupBilling()
+      expect(billing.balanceReadFailed.value).toBe(false)
+
+      await expect(billing.fetchBalance()).rejects.toThrow('balance failed')
+      expect(billing.balanceReadFailed.value).toBe(true)
+
+      await billing.fetchBalance()
+      expect(billing.balanceReadFailed.value).toBe(false)
+    })
+
+    it('does not record a failure for a balance read a newer read replaced', async () => {
+      const olderBalance = createDeferred<typeof zeroBalance>()
+      mockWorkspaceApi.getBillingBalance
+        .mockReturnValueOnce(olderBalance.promise)
+        .mockResolvedValueOnce(positiveBalance)
+      const billing = setupBilling()
+
+      const olderRequest = billing.fetchBalance()
+      await billing.fetchBalance()
+      olderBalance.reject(new Error('stale balance failed'))
+      await olderRequest
+
+      expect(billing.balanceReadFailed.value).toBe(false)
     })
 
     it('keeps the newest balance when an older request resolves last', async () => {

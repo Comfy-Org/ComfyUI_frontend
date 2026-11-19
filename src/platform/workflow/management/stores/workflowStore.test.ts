@@ -15,7 +15,10 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
-import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  resetReportedWorkflowStateAnomaliesForTests,
+  UnreadableWorkflowError
+} from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   ComfyWorkflow,
   useWorkflowBookmarkStore,
@@ -167,6 +170,59 @@ describe('useWorkflowStore', () => {
       expect(store.activeWorkflow?.isLoaded).toBe(true)
       expect(workflow.lastModified).toBe(200)
       expect(workflow.size).toBe(2)
+    })
+
+    it('keeps the unsaved edits of a background tab whose file changed remotely', async () => {
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'edited.json', modified: 100, size: 1 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+      const edited = store.getWorkflowByPath('workflows/edited.json')!
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
+      await store.openWorkflow(edited)
+      edited.changeTracker!.activeState = {
+        ...edited.changeTracker!.activeState,
+        extra: { unsaved: true }
+      }
+      edited.isModified = true
+      await store.openWorkflow(
+        store.getWorkflowByPath('workflows/active.json')!
+      )
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'edited.json', modified: 200, size: 2 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+
+      expect(edited.isLoaded).toBe(true)
+      expect(edited.isModified).toBe(true)
+      expect(edited.activeState?.extra).toEqual({ unsaved: true })
+      expect(edited.lastModified).toBe(100)
+    })
+
+    it('still drops the cached content of an unmodified background tab whose file changed', async () => {
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'clean.json', modified: 100, size: 1 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+      const clean = store.getWorkflowByPath('workflows/clean.json')!
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
+      await store.openWorkflow(clean)
+      await store.openWorkflow(
+        store.getWorkflowByPath('workflows/active.json')!
+      )
+
+      await syncRemoteWorkflowsWithMeta([
+        { path: 'clean.json', modified: 200, size: 2 },
+        { path: 'active.json', modified: 100, size: 1 }
+      ])
+
+      expect(clean.isLoaded).toBe(false)
+      expect(clean.isModified).toBe(false)
     })
 
     describe('node widget histories', () => {
@@ -553,6 +609,40 @@ describe('useWorkflowStore', () => {
 
         expect(workflow.activeState?.extra?.linearMode).toBe(true)
         expect(workflow.isModified).toBe(true)
+      })
+
+      it('gives a draft with a legacy id the file id and keeps the legacy id', async () => {
+        const fileId = '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e'
+        const workflow = await loadWithDraft(
+          JSON.stringify({ ...defaultGraph, id: 'legacy-draft-id' }),
+          JSON.stringify({ ...defaultGraph, id: fileId })
+        )
+
+        expect(workflow.activeState?.id).toBe(fileId)
+        expect(workflow.legacyId).toBe('legacy-draft-id')
+      })
+
+      it('does not keep a non-string draft id as the legacy id', async () => {
+        const fileId = '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e'
+        const workflow = await loadWithDraft(
+          JSON.stringify({ ...defaultGraph, id: 42 }),
+          JSON.stringify({ ...defaultGraph, id: fileId })
+        )
+
+        expect(workflow.activeState?.id).toBe(fileId)
+        expect(workflow.legacyId).toBeUndefined()
+      })
+
+      it('leaves a draft that is not a workflow object unchanged', async () => {
+        const workflow = await loadWithDraft(
+          '[]',
+          JSON.stringify({
+            ...defaultGraph,
+            id: '5b6c7d8e-9f0a-4b1c-8d2e-3f4a5b6c7d8e'
+          })
+        )
+
+        expect(workflow.activeState).toEqual([])
       })
 
       it('marks it modified when the draft has no node list to compare', async () => {
@@ -1641,6 +1731,64 @@ describe('useWorkflowStore', () => {
         )
       })
 
+      it('rejects with a typed error whose message does not include the path', async () => {
+        await syncRemoteWorkflows(['secret-name.json'])
+        const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
+        storedAs('null')
+
+        const error: unknown = await workflow.load().catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(UnreadableWorkflowError)
+        expect((error as UnreadableWorkflowError).reason).toBe('not-object')
+        expect((error as UnreadableWorkflowError).workflowPath).toBe(
+          'workflows/secret-name.json'
+        )
+        expect((error as Error).message).not.toContain('secret-name')
+      })
+
+      it.for(['', '   '])(
+        'rejects empty stored content %j with a typed error and reports it',
+        async (content) => {
+          await syncRemoteWorkflows(['a.json'])
+          const workflow = store.getWorkflowByPath('workflows/a.json')!
+          storedAs(content)
+
+          const error: unknown = await workflow.load().catch((e: unknown) => e)
+
+          expect(error).toBeInstanceOf(UnreadableWorkflowError)
+          expect((error as UnreadableWorkflowError).reason).toBe('empty')
+          expectReported('Workflow content is missing or empty', {
+            method: 'ComfyWorkflow.load',
+            isPersisted: true
+          })
+        }
+      )
+
+      it('keeps the typed error when the anomaly assertion throws in development', async () => {
+        mockAssert.mockImplementation((condition: unknown, message: string) => {
+          if (!condition) throw new Error(message)
+        })
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs('null')
+
+        await expect(workflow.load()).rejects.toBeInstanceOf(
+          UnreadableWorkflowError
+        )
+      })
+
+      it('does not leave a tab behind when opening unreadable content', async () => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs('null')
+
+        await expect(store.openWorkflow(workflow)).rejects.toBeInstanceOf(
+          UnreadableWorkflowError
+        )
+
+        expect(store.openWorkflows).not.toContain(workflow)
+      })
+
       it('does not report content that is a JSON object', async () => {
         await syncRemoteWorkflows(['a.json'])
         const workflow = store.getWorkflowByPath('workflows/a.json')!
@@ -1650,6 +1798,54 @@ describe('useWorkflowStore', () => {
 
         expect(workflow.isLoaded).toBe(true)
         expect(failedAssertions()).toHaveLength(0)
+      })
+
+      it.for([
+        '[object Object]',
+        'undefined',
+        '{"nodes":[],',
+        'Workflow content is not a JSON object'
+      ])('rejects stored content %j as unparseable', async (content) => {
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs(content)
+
+        const error: unknown = await workflow.load().catch((e: unknown) => e)
+
+        expect(error).toBeInstanceOf(UnreadableWorkflowError)
+        expect((error as UnreadableWorkflowError).reason).toBe('unparseable')
+        expect(workflow.isLoaded).toBe(false)
+        expect(workflow.changeTracker).toBeNull()
+      })
+
+      it('reports unparseable content with a static message and no content', async () => {
+        await syncRemoteWorkflows(['secret-name.json'])
+        const workflow = store.getWorkflowByPath('workflows/secret-name.json')!
+        storedAs('[object Object]')
+
+        await expect(workflow.load()).rejects.toThrow('not valid JSON')
+
+        expectReported('Workflow content is not valid JSON', {
+          method: 'ComfyWorkflow.load',
+          isPersisted: true,
+          originalContentKind: 'unparseable'
+        })
+        const reported = JSON.stringify(mockAssert.mock.calls)
+        expect(reported).not.toContain('secret-name')
+        expect(reported).not.toContain('[object Object]')
+      })
+
+      it('keeps the typed error when the anomaly assertion throws on unparseable content', async () => {
+        mockAssert.mockImplementation((condition: unknown, message: string) => {
+          if (!condition) throw new Error(message)
+        })
+        await syncRemoteWorkflows(['a.json'])
+        const workflow = store.getWorkflowByPath('workflows/a.json')!
+        storedAs('[object Object]')
+
+        await expect(workflow.load()).rejects.toBeInstanceOf(
+          UnreadableWorkflowError
+        )
       })
     })
 
@@ -1664,7 +1860,9 @@ describe('useWorkflowStore', () => {
             ? workflow.save()
             : workflow.saveAs('workflows/copy.json')
 
-        await expect(attempt).rejects.toThrow('before it is loaded')
+        await expect(attempt).rejects.toThrow(
+          /^Cannot save a workflow before it is loaded$/
+        )
         expect(api.storeUserData).not.toHaveBeenCalled()
         expect(workflow.content).toBe(contentBefore)
         expectReported('Workflow saved without an active state', {
@@ -1719,6 +1917,32 @@ describe('useWorkflowStore', () => {
         await store.openWorkflow(workflow)
 
         expect(failedAssertions()).toHaveLength(0)
+      })
+
+      it('reports a never-loaded temporary workflow that aliases the active path', async () => {
+        const activeByPath = await store.createTemporary('aliased.json').load()
+        const neverLoaded = store.createTemporary('aliased.json')
+        neverLoaded.updatePath(activeByPath.path)
+        store.activeWorkflow = activeByPath
+
+        const opened = await store.openWorkflow(neverLoaded)
+
+        expectReported(
+          'openWorkflow called on an active workflow that is not loaded',
+          {
+            method: 'workflowStore.openWorkflow',
+            isActive: true,
+            isLoaded: false,
+            hasChangeTracker: false,
+            hasInitialState: false,
+            hasActiveState: false,
+            isPersisted: false,
+            isTemporary: true,
+            originalContentKind: 'object'
+          }
+        )
+        expect(opened).toBe(neverLoaded)
+        expect(opened.isLoaded).toBe(true)
       })
     })
   })

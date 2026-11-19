@@ -86,7 +86,13 @@ const BOOTSTRAP_PHASES = {
     'router',
     'sentry-init'
   ],
-  'auth-gate': ['initialized', 'user-store', 'needs-login'],
+  'auth-gate': [
+    'initialized',
+    'identity',
+    'sign-in',
+    'user-store',
+    'needs-login'
+  ],
   bootstrap: [
     'settings',
     'workflows',
@@ -325,12 +331,14 @@ export class BootstrapTracer {
     try {
       const totalMs = Math.round(performance.now())
       const rows = this.summary()
+      const hiddenMs = Math.min(this._hidden.hiddenMsUntil(totalMs), totalMs)
       const metadata: BootstrapCompleteMetadata = {
         total_ms: totalMs,
         outcome,
         phase_count: rows.length,
         untraced_ms: untracedMs(rows, totalMs),
-        hidden_ms: this._hidden.hiddenMsUntil(totalMs),
+        hidden_ms: hiddenMs,
+        visible_ms: totalMs - hiddenMs,
         phases: Object.fromEntries(rows.map((r) => [r.name, r.durationMs])),
         ...(pending?.length ? { pending } : {})
       }

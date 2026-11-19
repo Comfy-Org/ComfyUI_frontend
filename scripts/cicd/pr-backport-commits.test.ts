@@ -7,97 +7,70 @@ import {
   writeFileSync
 } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
-import { z } from 'zod'
 
-const workflowSchema = z.object({
-  jobs: z.object({
-    backport: z.object({
-      steps: z.array(
-        z.object({ id: z.string().optional(), run: z.string().optional() })
-      )
-    })
-  })
-})
+describe('pr-backport cherry-pick step', () => {
+  const SCRIPT = resolve('scripts/cicd/pr-backport-commits.sh')
+  const PR_NUMBER = '21829'
+  const TARGET = 'core/1.0'
 
-const PR_NUMBER = '21829'
-const TARGET = 'core/1.0'
+  let dir: string
+  let work: string
 
-function backportScript(): string {
-  const workflow = workflowSchema.parse(
-    parse(readFileSync('.github/workflows/pr-backport.yaml', 'utf8'))
-  )
-  const step = workflow.jobs.backport.steps.find(
-    (step) => step.id === 'backport'
-  )
-  if (!step?.run) throw new Error('Missing backport script')
-  return step.run
-    .replaceAll('${{ github.event_name }}', 'workflow_dispatch')
-    .replaceAll('${{ inputs.pr_number }}', PR_NUMBER)
-    .replaceAll('${{ steps.filter-targets.outputs.pending-targets }}', TARGET)
-}
+  function git(...args: string[]): string {
+    return execFileSync('git', args, { cwd: work, encoding: 'utf8' }).trim()
+  }
 
-let dir: string
-let work: string
+  function commitFile(content: string, message: string): string {
+    writeFileSync(join(work, 'file.txt'), content)
+    git('add', 'file.txt')
+    git('commit', '--quiet', '-m', message)
+    return git('rev-parse', 'HEAD')
+  }
 
-function git(...args: string[]): string {
-  return execFileSync('git', args, { cwd: work, encoding: 'utf8' }).trim()
-}
-
-function commitFile(content: string, message: string): string {
-  writeFileSync(join(work, 'file.txt'), content)
-  git('add', 'file.txt')
-  git('commit', '--quiet', '-m', message)
-  return git('rev-parse', 'HEAD')
-}
-
-beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), 'pr-backport-commits-'))
-  work = join(dir, 'work')
-  execFileSync('git', ['init', '--quiet', '--bare', join(dir, 'origin.git')])
-  execFileSync('git', ['init', '--quiet', '-b', 'main', work])
-  git('config', 'user.email', 'test@example.com')
-  git('config', 'user.name', 'test')
-  git('remote', 'add', 'origin', join(dir, 'origin.git'))
-  commitFile('one\n', 'base')
-  git('branch', TARGET)
-})
-
-afterEach(() => {
-  rmSync(dir, { recursive: true, force: true })
-})
-
-function runBackport(mergeCommit: string) {
-  git('push', '--quiet', 'origin', 'main', TARGET)
-  writeFileSync(
-    join(dir, 'gh'),
-    `#!/usr/bin/env bash\necho '{"title":"Change","mergeCommit":{"oid":"${mergeCommit}"}}'\n`
-  )
-  chmodSync(join(dir, 'gh'), 0o755)
-  const output = join(dir, 'github-output')
-  writeFileSync(output, '')
-  const result = spawnSync(
-    'bash',
-    ['--noprofile', '--norc', '-e', '-c', backportScript()],
-    {
+  function runBackport(mergeCommit: string) {
+    git('push', '--quiet', 'origin', 'main', TARGET)
+    writeFileSync(
+      join(dir, 'gh'),
+      `#!/usr/bin/env bash\necho '{"title":"Change","mergeCommit":{"oid":"${mergeCommit}"}}'\n`
+    )
+    chmodSync(join(dir, 'gh'), 0o755)
+    const output = join(dir, 'github-output')
+    writeFileSync(output, '')
+    const result = spawnSync('bash', ['--noprofile', '--norc', SCRIPT], {
       cwd: work,
       env: {
         PATH: `${dir}:${process.env.PATH}`,
         HOME: dir,
         GITHUB_OUTPUT: output,
-        PR_NUMBER
+        EVENT_NAME: 'workflow_dispatch',
+        PR_NUMBER,
+        PENDING_TARGETS: TARGET
       },
       encoding: 'utf8'
-    }
-  )
-  expect(result.status).toBe(0)
-  return { ...result, outputs: readFileSync(output, 'utf8') }
-}
+    })
+    expect(result.status).toBe(0)
+    return { ...result, outputs: readFileSync(output, 'utf8') }
+  }
 
-describe('pr-backport cherry-pick step', () => {
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'pr-backport-commits-'))
+    work = join(dir, 'work')
+    execFileSync('git', ['init', '--quiet', '--bare', join(dir, 'origin.git')])
+    execFileSync('git', ['init', '--quiet', '-b', 'main', work])
+    git('config', 'user.email', 'test@example.com')
+    git('config', 'user.name', 'test')
+    git('remote', 'add', 'origin', join(dir, 'origin.git'))
+    commitFile('one\n', 'base')
+    git('branch', TARGET)
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
   it('skips a target that already has the change by hand without failing it or reporting a conflict', () => {
     git('checkout', '--quiet', TARGET)
     commitFile('two\n', 'hand-made backport')

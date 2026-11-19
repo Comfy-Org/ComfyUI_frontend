@@ -29,7 +29,10 @@ references do not resume following. Explicit target selection remains available.
 clears the unsent draft (text, attachments and staged node references), cancels pending uploads
 and starts following again, so a new chat never carries input aimed at another workflow
 (amended 2026-11-01 for PM-2251). Leaving a failed history selection with Back keeps the unsent
-text and follows the visible workflow.
+text and follows the visible workflow. Switching to another existing chat through history keeps
+the unsent draft; only New Chat clears it. A page refresh restores the draft's text and workflow
+references for the same chat; attachments and staged node references are not restored (amended
+2026-11-05 for PM-1517 and PM-2002).
 
 The panel store owns a single target-state union so it survives component
 remounts. In `following`, the target derives directly from the editor's active
@@ -52,6 +55,8 @@ a failed send would redirect the recovered draft. We also rejected continuing
 to follow after nodes were referenced: clearing their chips loses user input,
 while preserving invalid chips adds unnecessary repair steps when the original
 workflow is already known. Ordinary draft text does not commit a target.
+We also rejected clearing the draft when switching between existing chats: it would discard
+typed input without warning, and New Chat is the explicit way to start empty.
 
 ## Consequences
 
@@ -71,6 +76,8 @@ workflow is already known. Ordinary draft text does not commit a target.
   distinguish fresh following from a target committed by user input.
 - A user who wanted to reuse staged references or text in a new chat must restage them;
   the unchanged canvas selection can be restaged immediately.
+- A draft typed in one chat stays in the composer after switching to another existing chat;
+  the user clears or sends it explicitly.
 - Explicit retargeting keeps the existing node-scope cleanup behavior; this
   decision only changes passive tab following.
 
