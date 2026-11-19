@@ -339,6 +339,7 @@ export type {
   CreateHostedTopupCheckoutInput,
   CreateInteractiveTopupInput,
   CreateTopupCheckoutInput,
+  CreateTopupPurchaseInput,
   HostedTopupCheckout,
   HostedTopupCheckoutFailure,
   HostedTopupCheckoutResult,
@@ -353,6 +354,8 @@ export type {
   TopupInvalidReturnUrl,
   TopupNoPaymentMethod,
   TopupNotAvailable,
+  TopupPurchaseResult,
+  TopupPurchaseState,
   TopupQuote,
   TopupQuoteResult,
   TopupResult,
@@ -362,6 +365,7 @@ export type {
 export {
   INTERACTIVE_TOPUP_ROUTE,
   TOPUP_CHECKOUT_ROUTE,
+  TOPUP_PURCHASES_ROUTE,
   TOPUP_QUOTE_ROUTE,
   TOPUP_ROUTE,
   createTopupCommand
