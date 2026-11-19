@@ -215,6 +215,8 @@ export type InteractiveTopupPayment =
 export interface CreateInteractiveTopupInput {
   readonly amountCents: number
   readonly payment: InteractiveTopupPayment
+  /** Turns auto top-up on with this purchase when present. */
+  readonly autoTopUp?: TopupAutoTopUpSettings
   /** The caller's key for this purchase, resent unchanged while its outcome is unresolved. */
   readonly idempotencyKey: string
   readonly signal?: AbortSignal
@@ -436,7 +438,8 @@ export function createTopupCommand(options: TopupCommandOptions): TopupCommand {
             confirmation_token: payment.confirmationToken,
             return_url: payment.returnUrl
           }
-        : { saved_payment_method_id: payment.savedPaymentMethodId })
+        : { saved_payment_method_id: payment.savedPaymentMethodId }),
+      ...(input.autoTopUp === undefined ? {} : { auto_top_up: input.autoTopUp })
     }
     if (!zInteractiveTopupRequest.safeParse(body).success) return INVALID_AMOUNT
     return purchase(INTERACTIVE_TOPUP_ROUTE, body, signal)

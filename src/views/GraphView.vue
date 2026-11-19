@@ -65,10 +65,8 @@ import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreS
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
-import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
-import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
+import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -357,20 +355,10 @@ const onExecutionSuccess = async () => {
   await assetsStore.outputAssets.loadNew()
 }
 
-const { onReconnecting, onReconnected } = useReconnectingNotification()
-const refreshOnReconnect = useReconnectQueueRefresh()
-const refreshNodeDefinitionsOnReconnect = useReconnectNodeDefinitionRefresh()
-
-const handleReconnected = async () => {
-  onReconnected()
-  void refreshNodeDefinitionsOnReconnect()
-  await refreshOnReconnect()
-}
+useServerReconnectLifecycle()
 
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
-useEventListener(api, 'reconnecting', onReconnecting)
-useEventListener(api, 'reconnected', handleReconnected)
 
 onMounted(() => {
   executionStore.bindExecutionEvents()

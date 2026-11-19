@@ -59,6 +59,7 @@ import type {
 } from './operationState'
 import {
   BillingOpStatusSchema,
+  isAutoTopUpActivating,
   isGrantLanding,
   isTerminal,
   reduceBillingOperation,
@@ -77,7 +78,11 @@ import type { BillingStatusData, BillingStatusReader } from './status'
 
 /** Settled, but a later read may still change what the operation reports. */
 function isStillSettling(state: BillingOperationState): boolean {
-  return state.phase === 'reconciliation_needed' || isGrantLanding(state)
+  return (
+    state.phase === 'reconciliation_needed' ||
+    isGrantLanding(state) ||
+    isAutoTopUpActivating(state)
+  )
 }
 
 export function operationRoute(operationId: string): string {

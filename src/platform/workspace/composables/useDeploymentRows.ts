@@ -23,6 +23,7 @@ import {
   deploymentRowReason
 } from '@/platform/workspace/deploymentStartState'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
+import { recommendedDeploymentId } from '@/platform/workspace/recommendedDeployment'
 import { useDeploymentStartStore } from '@/platform/workspace/stores/deploymentStartStore'
 
 type DeploymentSectionKey = 'runOn' | 'current' | 'compatible' | 'incompatible'
@@ -224,6 +225,27 @@ export function useDeploymentRows() {
     }
   }
 
+  const recommendedValue = computed(() => {
+    const picked = pickedDeployment.value
+    if (picked === null || picked.status === 'ready') return null
+    return (
+      recommendedDeploymentId(
+        deployments.value,
+        markFor,
+        picked.deployment_id
+      ) ?? COMFY_CLOUD_ROW
+    )
+  })
+
+  function switchOffer(value: string): Pick<DeploymentRow, 'actionLabel'> {
+    return {
+      actionLabel:
+        value === recommendedValue.value
+          ? t('deploymentSwitcher.workflowNeedsDeployment.switch')
+          : null
+    }
+  }
+
   function cloudRow(): DeploymentRow {
     const mark = markFor(null)
     const label = deploymentFullLabel(null)
@@ -232,6 +254,7 @@ export function useDeploymentRows() {
       mark,
       note: note(mark, label, null),
       ...actionFor('pick', label),
+      ...switchOffer(COMFY_CLOUD_ROW),
       problem: null
     }
   }
@@ -262,6 +285,7 @@ export function useDeploymentRows() {
         reason === null ? null : text(REASON_KEYS[reason], label)
       ),
       ...actionFor(action, label),
+      ...(action === 'pick' ? switchOffer(labels.value) : {}),
       problem: problemFor(label, start)
     }
   }
