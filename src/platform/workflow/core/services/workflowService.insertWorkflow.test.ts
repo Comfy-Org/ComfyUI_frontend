@@ -104,7 +104,7 @@ beforeEach(() => {
 beforeEach(() => {
   vi.mocked(useWorkflowDraftStoreV2().saveDraft).mockImplementation(() => true)
   vi.mocked(useWorkflowDraftStoreV2().getDraft).mockReturnValue(null)
-  vi.mocked(useWorkflowDraftStoreV2().removeDraft).mockImplementation(() => {})
+  vi.mocked(useWorkflowDraftStoreV2().removeDraft).mockReturnValue(true)
   vi.mocked(useWorkflowDraftStoreV2().markDraftUsed).mockImplementation(
     () => {}
   )
