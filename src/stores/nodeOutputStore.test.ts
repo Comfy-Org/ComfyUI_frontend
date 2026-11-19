@@ -45,11 +45,6 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
 }))
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('merges execution-keyed outputs when merge is true', () => {
     const store = useNodeOutputStore()
     const initialOutput = createMockOutputs([{ filename: 'first.png' }])
@@ -235,10 +230,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
 })
 
 describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved execution id', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-  })
-
   it('reports the execution id and output filenames instead of dropping the output silently', () => {
     vi.mocked(
       graphTraversalUtil.executionIdToNodeLocatorId
@@ -347,10 +338,6 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with an unresolved executi
 })
 
 describe('nodeOutputStore legacy entry synchronization', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-  })
-
   it('updates one mapped output without replacing unrelated records', () => {
     const store = useNodeOutputStore()
     const untouched = createMockOutputs([{ filename: 'untouched.png' }])
@@ -373,11 +360,6 @@ describe('nodeOutputStore legacy entry synchronization', () => {
 })
 
 describe('nodeOutputStore replaceNodeOutputImages', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('drops the previous output metadata when replacing the images', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 7 })
@@ -433,11 +415,6 @@ describe('nodeOutputStore replaceNodeOutputImages', () => {
 })
 
 describe('nodeOutputStore restoreOutputs', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should keep reactivity after restoreOutputs followed by setNodeOutputsByExecutionId', () => {
     const store = useNodeOutputStore()
 
@@ -475,11 +452,6 @@ describe('nodeOutputStore restoreOutputs', () => {
 })
 
 describe('nodeOutputStore input preview preservation', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should preserve input preview when execution sends empty output', () => {
     const store = useNodeOutputStore()
     const executionId = createNodeExecutionId([toNodeId(3)])
@@ -654,11 +626,6 @@ describe('nodeOutputStore getPreviewParam', () => {
 })
 
 describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should round-trip outputs through snapshot and restore', () => {
     const store = useNodeOutputStore()
 
@@ -808,11 +775,6 @@ describe('nodeOutputStore snapshotOutputs / restoreOutputs', () => {
 })
 
 describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should clear all outputs and previews for multiple nodes', () => {
     const store = useNodeOutputStore()
 
@@ -841,11 +803,6 @@ describe('nodeOutputStore resetAllOutputsAndPreviews', () => {
 })
 
 describe('nodeOutputStore restoreOutputs + execution interaction', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should allow execution to update outputs after restore', () => {
     const store = useNodeOutputStore()
 
@@ -901,11 +858,6 @@ describe('nodeOutputStore restoreOutputs + execution interaction', () => {
 })
 
 describe('nodeOutputStore merge mode interactions', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should merge new images with existing input preview images', () => {
     const store = useNodeOutputStore()
 
@@ -962,8 +914,6 @@ describe('nodeOutputStore merge mode interactions', () => {
 
 describe('nodeOutputStore image url cache busting', () => {
   beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
     let calls = 0
     vi.mocked(app.getRandParam).mockImplementation(() => `&rand=${calls++}`)
   })
@@ -1047,11 +997,6 @@ describe('nodeOutputStore image url cache busting', () => {
 })
 
 describe('nodeOutputStore setNodeOutputs (widget path)', () => {
-  beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
-  })
-
   it('should return early for empty string filename', () => {
     const store = useNodeOutputStore()
     const node = createMockNode({ id: 5 })

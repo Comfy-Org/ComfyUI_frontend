@@ -1,7 +1,13 @@
+import { mergeTests } from '@playwright/test'
+
 import {
   comfyExpect as expect,
-  comfyPageFixture as test
+  comfyPageFixture
 } from '@e2e/fixtures/ComfyPage'
+import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+
+const test = mergeTests(comfyPageFixture, webSocketFixture)
 
 const HOST_A = '5'
 const HOST_B = '6'
@@ -51,34 +57,30 @@ test.describe(
     })
 
     test('Each copy of a subgraph shows its own live preview while it runs', async ({
-      comfyPage
+      comfyPage,
+      getWebSocket
     }) => {
       await comfyPage.workflow.loadWorkflow(
-        'subgraphs/shared-definition-two-hosts-live-preview'
+        'subgraphs/shared-definition-two-hosts-save-image'
       )
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
-      await comfyPage.runButton.click()
+      execution.latentPreview('live-run', `${HOST_A}:10`)
+      execution.latentPreview('live-run', `${HOST_B}:10`)
 
       await expect
-        .poll(
-          async () => {
-            const srcs = await comfyPage.vueNodes.getBodyImageSources([
-              HOST_A,
-              HOST_B
-            ])
-            const hostA = srcs[HOST_A] ?? []
-            const hostB = srcs[HOST_B] ?? []
-            return {
-              bothLive: [...hostA, ...hostB].every((src) =>
-                src?.startsWith('blob:')
-              ),
-              counts: [hostA.length, hostB.length],
-              distinct: hostA[0] !== hostB[0]
-            }
-          },
-          { timeout: 30_000 }
-        )
-        .toEqual({ bothLive: true, counts: [1, 1], distinct: true })
+        .poll(async () => {
+          const srcs = await comfyPage.vueNodes.getBodyImageSources([
+            HOST_A,
+            HOST_B
+          ])
+          return { ...srcs, distinct: srcs[HOST_A]?.[0] !== srcs[HOST_B]?.[0] }
+        })
+        .toEqual({
+          [HOST_A]: [expect.stringMatching(/^blob:/)],
+          [HOST_B]: [expect.stringMatching(/^blob:/)],
+          distinct: true
+        })
     })
 
     test('A deleted copy of a subgraph brought back with undo shows no image until it runs again', async ({
