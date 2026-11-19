@@ -598,11 +598,14 @@ describe('HostTelemetrySink', () => {
         client_session_id: 'client-session-1'
       }
     }
-  ])('forwards $name to the host bridge', ({ name, track, properties }) => {
-    track(new HostTelemetrySink())
+  ])(
+    'forwards $name with properties $properties to the host bridge',
+    ({ name, track, properties }) => {
+      track(new HostTelemetrySink())
 
-    expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
-  })
+      expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
+    }
+  )
 
   it('forwards link dedup drops to the host bridge', () => {
     new HostTelemetrySink().trackLinkDedupDrop({

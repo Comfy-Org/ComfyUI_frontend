@@ -1217,7 +1217,7 @@ describe('PostHogTelemetryProvider', () => {
         }
       }
     ])(
-      'captures $event with its properties',
+      'captures $event with its properties $properties',
       async ({ event, track, properties }) => {
         const provider = createProvider()
         await vi.dynamicImportSettled()

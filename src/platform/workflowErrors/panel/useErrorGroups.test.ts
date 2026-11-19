@@ -746,9 +746,9 @@ describe('useErrorGroups', () => {
       expect(groups.errorNodeCount.value).toBe(1)
     })
 
-    it.for([null, undefined])(
-      'excludes prompt and runtime errors without a node ID from affected nodes: %s',
-      async (nodeId) => {
+    it.for([{ nodeId: null }, { nodeId: undefined }])(
+      'excludes prompt and runtime errors without a node ID from affected nodes: $nodeId',
+      async ({ nodeId }) => {
         const { store, groups } = createErrorGroups()
         store.recordPromptError({
           type: 'prompt_no_outputs',
