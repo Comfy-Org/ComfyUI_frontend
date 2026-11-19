@@ -497,6 +497,50 @@
       }
     }
   },
+  "BakeTextureFromViews": {
+    "description": "將影像投影回網格的 UV 佈局：使用「渲染網格」進行渲染、編輯或重新生成影像，然後使用相同的網格與相機進行烘焙。沒有任何視圖覆蓋的紋素會保留網格自身的紋理（或頂點色彩）。輸出供「將紋理套用至網格」使用的 base_color，以及顯示各視圖對每個紋素觀測效果的信心遮罩。使用檢視器模型變換所建立的渲染結果無法對齊。",
+    "display_name": "從視圖烘焙紋理",
+    "inputs": {
+      "blend_exponent": {
+        "name": "混合指數",
+        "tooltip": "視圖依 cos（視角）^指數加權。較高值偏向最正面的視圖（較清晰、接縫較明顯）；較低值則平均更多視圖（較柔和）。"
+      },
+      "camera_info": {
+        "name": "相機資訊",
+        "tooltip": "影像渲染時所使用的相機，連接方式與「渲染網格」相同。使用「批次相機」合併相機組。無：使用「渲染網格」自動取景的正面視圖。"
+      },
+      "fill_unseen": {
+        "name": "填補未觀測區域",
+        "tooltip": "沒有任何視圖看見的紋素，會採用從已觀測表面擴展出的色彩，而非網格自身的紋理或頂點色彩。適用於以視圖取代整張紋理時。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "每個相機一張影像，依相機順序排列（批次影像）。可使用任何與渲染結果具有相同長寬比的解析度；解析度越高，烘焙結果越清晰。"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "每個視圖中已編輯的區域；僅會投影已遮罩的像素。單一遮罩會套用至所有視圖。"
+      },
+      "mesh": {
+        "name": "網格",
+        "tooltip": "已進行 UV 展開且已渲染的網格。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "正方形紋理解析度。0 = 網格目前的紋理尺寸（若沒有紋理則為 2048）；否則會將目前紋理重新取樣至此解析度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "信心度",
+        "tooltip": "針對每個紋素，最佳視圖觀測它時有多正面，0 = 未觀測。將其作為另一個相機組的紋理進行渲染，可查看那些視圖仍需覆蓋哪些區域。"
+      }
+    }
+  },
   "BakeTextureFromVoxel": {
     "description": "在網格既有的 UV 配置上烘焙 PBR 紋理（對稀疏體素體積進行三線性取樣）。不會展開 UV——請在上游連接 UV 展開節點。輸出 base_color 與 metallic/roughness 灰階 IMAGE（若無 PBR 則為黑色）；將其提供給 ApplyTextureToMesh（相同網格）以供 SaveGLB 使用。",
     "display_name": "從體素烘焙紋理",
@@ -565,6 +609,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchCameras": {
+    "description": "依輸入順序將相機與軌道視角合併為一個相機清單。",
+    "display_name": "批次相機",
+    "inputs": {
+      "cameras": {
+        "name": "相機"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "相機資訊",
         "tooltip": null
       }
     }
@@ -838,6 +897,204 @@
     "outputs": {
       "0": {
         "name": "output",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeTextToSpeech": {
+    "description": "使用 Breeze TTS 2 將文字轉換為語音。",
+    "display_name": "Breeze 文字轉語音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "delivery": {
+        "name": "演繹方式"
+      },
+      "delivery_speaker_boost": {
+        "name": "speaker_boost"
+      },
+      "language": {
+        "name": "語言",
+        "tooltip": "文字的語言。英文與中文可使用任一模型；其他語言使用 Breeze TTS 2 Multilingual。聲音在其原生語言中效果最佳：若要使用其他語言，請使用以 Breeze Voice Localize 建立的副本。"
+      },
+      "language_model": {
+        "name": "模型"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      },
+      "speed": {
+        "name": "速度",
+        "tooltip": "變更節奏而不改變音調。"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "最多 1000 個字元。會演出而非朗讀如 (laughs) 或 (sighs) 等音訊標籤。"
+      },
+      "voice": {
+        "name": "聲音"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceClone": {
+    "description": "從單一說話者的錄音建立聲音。",
+    "display_name": "Breeze 聲音複製",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "單一說話者，至少 3 秒。僅使用前 60 秒。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "remove_background_noise": {
+        "name": "移除背景雜訊"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "聲音",
+        "tooltip": null
+      },
+      "1": {
+        "name": "預覽",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceDesign": {
+    "description": "根據文字描述建立新的聲音。",
+    "display_name": "Breeze 聲音設計",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "description": {
+        "name": "描述",
+        "tooltip": "描述聲音，3 至 500 個字元：年齡、性別、口音、語調、語速。"
+      },
+      "language": {
+        "name": "語言",
+        "tooltip": "預覽文字的語言。英文與中文可使用任一模型；其他語言使用 Breeze TTS 2 Multilingual。"
+      },
+      "language_model": {
+        "name": "模型"
+      },
+      "preview_text": {
+        "name": "預覽文字",
+        "tooltip": "新聲音在預覽中說出的句子，最多 500 個字元。請以所選語言撰寫：聲音會根據此預覽建立。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "聲音遵循描述的程度。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "聲音",
+        "tooltip": null
+      },
+      "1": {
+        "name": "預覽",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceLocalize": {
+    "description": "建立一個能以另一種語言自然說話的聲音複本。",
+    "display_name": "Breeze 聲音本地化",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "language": {
+        "name": "語言",
+        "tooltip": "新聲音所說的語言。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      },
+      "voice": {
+        "name": "聲音"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "聲音",
+        "tooltip": null
+      },
+      "1": {
+        "name": "預覽",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceRemix": {
+    "description": "根據描述或預設，在相同語言中建立變更後的聲音複本。",
+    "display_name": "Breeze 聲音混音",
+    "inputs": {
+      "change": {
+        "name": "變更"
+      },
+      "change_prompt": {
+        "name": "提示詞"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "數值越高，聲音的變化越大。"
+      },
+      "voice": {
+        "name": "聲音"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "聲音",
+        "tooltip": null
+      },
+      "1": {
+        "name": "預覽",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceSelector": {
+    "description": "選擇精選的 Breeze 聲音，或輸入任意 Breeze 聲音 id。",
+    "display_name": "Breeze 聲音選擇器",
+    "inputs": {
+      "language": {
+        "name": "語言"
+      },
+      "language_voice": {
+        "name": "聲音"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "聲音",
         "tooltip": null
       }
     }
@@ -1234,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "使用 Bria RMBG 2.0 移除影像的背景。",
+    "description": "使用 Bria RMBG 2.0 或 RMBG 3.0 移除影像背景。",
     "display_name": "Bria 移除影像背景",
     "inputs": {
       "control_after_generate": {
@@ -1243,13 +1500,16 @@
       "image": {
         "name": "影像"
       },
+      "model": {
+        "name": "模型"
+      },
       "moderation": {
         "name": "審核",
         "tooltip": "審核設定"
       },
       "seed": {
         "name": "種子",
-        "tooltip": "種子控制此節點是否重新執行；無論種子為何，結果皆為非決定性。"
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，相同影像一律會得到相同結果。"
       }
     },
     "outputs": {
@@ -1645,12 +1905,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "輸出 Seedance 2.5 草稿的 1080p 最終影片。最終影片會保留草稿的場景與動作，並重複使用其提示詞、參考資料、時長、長寬比與音訊設定。",
+    "description": "渲染 Seedance 2.5 Draft 的 1080p 或 4k 最終影片。最終影片會保留草稿的場景與動作，並沿用其提示詞、參考素材、時長、長寬比及音訊設定。",
     "display_name": "ByteDance Seedance 2.5 草稿轉最終影片",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "使用 Seedance 2.5 Draft 模型執行之 Seedance 2.5 節點輸出的 draft_task_id，或貼上的草稿任務 ID。將該節點的種子控制設為固定；否則下次執行會產生新的草稿，而非重複使用您審閱過的草稿。草稿建立後可在 7 天內輸出。"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "最終影片的解析度。"
       },
       "watermark": {
         "name": "浮水印",
@@ -1688,7 +1952,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終影片；Seedance 2.5 Flash：可產生最長 30 秒的 480p 與 720p 影片；Seedance 2.0：提供最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
       },
       "model_duration": {
         "name": "時長"
@@ -1720,7 +1984,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 草稿轉最終影片節點，以輸出 1080p 最終影片。"
+        "tooltip": "Seedance 2.5 Draft 執行作業的任務 ID。將其連接至 Seedance 2.5 Draft to Final Video 節點以渲染 1080p 或 4k 最終影片。"
       }
     }
   },
@@ -1733,7 +1997,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終影片；Seedance 2.5 Flash：可產生最長 30 秒的 480p 與 720p 影片；Seedance 2.0：提供最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -1786,7 +2050,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終影片；Seedance 2.5 Flash：可產生最長 30 秒的 480p 與 720p 影片；Seedance 2.0：提供最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
       },
       "model_auto_downscale": {
         "name": "自動縮小"
@@ -1830,7 +2094,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 草稿轉最終影片節點，以輸出 1080p 最終影片。"
+        "tooltip": "Seedance 2.5 Draft 執行作業的任務 ID。將其連接至 Seedance 2.5 Draft to Final Video 節點以渲染 1080p 或 4k 最終影片。"
       }
     }
   },
@@ -1843,7 +2107,7 @@
       },
       "model": {
         "name": "模型",
-        "tooltip": "Seedance 2.5：最新模型，支援最長 30 秒影片及 mp4/mov 輸出；Seedance 2.5 Draft：可快速預覽 480p，其 draft_task_id 可在 Seedance 2.5 草稿轉最終影片節點中輸出 1080p 最終影片；Seedance 2.0：最高品質與 4k；Fast：針對速度最佳化；Mini：最快且成本最低的生成。"
+        "tooltip": "Seedance 2.5：最新模型，影片最長 30 秒，支援 4k 與 mp4/mov 輸出；Seedance 2.5 Draft：可快速產生 480p 預覽，其 draft_task_id 可在 Seedance 2.5 Draft to Final Video 節點中渲染為 1080p 或 4k 最終影片；Seedance 2.5 Flash：可產生最長 30 秒的 480p 與 720p 影片；Seedance 2.0：提供最高品質與 4k；Fast：針對速度最佳化；Mini：生成速度最快、成本最低。"
       },
       "model_duration": {
         "name": "時長"
@@ -1878,7 +2142,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "Seedance 2.5 Draft 執行的任務 ID。將其連接至 Seedance 2.5 草稿轉最終影片節點，以輸出 1080p 最終影片。"
+        "tooltip": "Seedance 2.5 Draft 執行作業的任務 ID。將其連接至 Seedance 2.5 Draft to Final Video 節點以渲染 1080p 或 4k 最終影片。"
       }
     }
   },
@@ -2183,8 +2447,8 @@
     }
   },
   "ByteDanceSeedreamLayerSeparationNodeV2": {
-    "description": "將影像拆解為一張背景底板，以及最多 16 個可重新定位的透明圖層；每個圖層均具有堆疊順序、邊界框、名稱和描述。",
-    "display_name": "ByteDance Seedream 5.0 圖層分離",
+    "description": "將影像分解為背景底圖及可重新定位的透明圖層（Seedream 5.5 最多 99 層，5.0 最多 16 層）；每個圖層均含堆疊順序、邊界框、名稱與描述。",
+    "display_name": "ByteDance Seedream 5.0 與 5.5 圖層分離",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -2195,11 +2459,11 @@
       "model_crop_layers": {
         "name": "crop_layers"
       },
+      "model_max_images": {
+        "name": "max_images"
+      },
       "model_prompt": {
         "name": "提示詞"
-      },
-      "model_prompt_optimization": {
-        "name": "prompt_optimization"
       },
       "model_seed": {
         "name": "種子"
@@ -2339,7 +2603,7 @@
   },
   "ByteDanceSeedreamNodeV3": {
     "description": "整合文字轉圖片生成與精準的單句編輯，最高支援 4K 解析度。",
-    "display_name": "ByteDance Seedream 4.5 與 5.0",
+    "display_name": "ByteDance Seedream 4.5、5.0 與 5.5",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -2347,20 +2611,17 @@
       "model": {
         "name": "模型"
       },
+      "model_background": {
+        "name": "背景"
+      },
       "model_height": {
         "name": "高度"
-      },
-      "model_prompt_optimization": {
-        "name": "提示詞最佳化"
       },
       "model_seed": {
         "name": "種子"
       },
       "model_size_preset": {
         "name": "尺寸預設"
-      },
-      "model_thinking": {
-        "name": "思考"
       },
       "model_watermark": {
         "name": "浮水印"
@@ -4310,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "建立 camera_info。模式「orbit」會以環繞目標的偏航／俯仰／距離進行瞄準；「look_at」會將相機放置於世界座標位置。座標為檢視器的世界空間（右手座標系，Y 軸向上）。",
+    "description": "建立 camera_info。'orbit' 模式會以目標為中心，依偏航角／俯仰角／距離設定視角；'look_at' 則將相機放置於世界座標位置。座標使用檢視器的世界空間（右手座標系、Y 軸向上）；若已連接網格，則使用該網格的座標框架，因此相同設定可對準任何網格。",
     "display_name": "建立相機資訊",
     "inputs": {
       "camera_info_state": {
@@ -4318,11 +4579,15 @@
       },
       "camera_type": {
         "name": "相機類型",
-        "tooltip": "Render Splat 使用的投影方式：透視（有透視縮短）或正交（平行投影）。"
+        "tooltip": "Render Splat 與 Render Mesh 使用的投影方式：透視（近大遠小）或正交（平行）。"
       },
       "fov": {
         "name": "視野",
         "tooltip": "垂直視野角度（度）。"
+      },
+      "mesh": {
+        "name": "網格",
+        "tooltip": "對準此網格：位置、目標與距離皆以其邊界框中心為基準，並以其包圍球直徑為單位計算，因此相同設定可對準任何網格。"
       },
       "mode": {
         "name": "模式",
@@ -4354,6 +4619,38 @@
       "zoom": {
         "name": "縮放",
         "tooltip": "數位縮放（焦距倍率）。大於 1 時不移動相機而放大。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
+  "CreateCameraOrbit": {
+    "description": "圍繞第一台相機目標的多台相機：預設為轉盤式環繞，可視需要傾斜，另包含垂直向下與向上的視角。Render Mesh 會為每台相機渲染一張影像；Bake Texture From Views 會將影像投影回去。",
+    "display_name": "建立相機環繞視角",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "環繞視角中的第一台相機。相機清單會讓其中每台相機都進行環繞。"
+      },
+      "count": {
+        "name": "數量",
+        "tooltip": "沿掃掠路徑均勻間隔的相機。"
+      },
+      "pitch": {
+        "name": "俯仰",
+        "tooltip": "在目標上方傾斜的總角度，正值會像 Create Camera Info 的 pitch 一樣向上；超過 90 度時，相機會越過頂部。完整旋轉會像 yaw 一樣循環。"
+      },
+      "poles": {
+        "name": "極點",
+        "tooltip": "在軌道後加入直接向下及／或向上觀看目標的視角。其影像頂端會指向遠離第一台相機的方向。"
+      },
+      "yaw": {
+        "name": "偏航角",
+        "tooltip": "依 Create Camera Info 的 yaw 方向繞目標旋轉的總角度。完整旋轉一圈時會在第一台相機前一個步驟停止；其他掃掠則在最後一台相機結束。"
       }
     },
     "outputs": {
@@ -4528,6 +4825,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "自動模式會對 sRGB 使用 8 位元，對 HDR 使用 10 位元。明確選擇 8 位元或 10 位元時，不受色彩空間影響。"
+      },
+      "chroma_subsampling": {
+        "name": "chroma_subsampling",
+        "tooltip": "444 保留完整色彩解析度，422 將水平色彩解析度減半，420 則將兩個軸向都減半。自動會使用編解碼器的預設值。不支援的選項會使用最接近的支援模式，並在主控台輸出警告。"
       },
       "codec": {
         "name": "codec",
@@ -6750,11 +7051,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "使用 FLUX 超解析度將影片放大 1.5 至 3 倍，可精確保留來源內容或創意強化細節。",
-    "display_name": "Flux 影片放大",
+    "display_name": "Flux 影片放大（舊版）",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "自動將面積大於 3840x2160 像素的來源縮小，以符合輸入限制。會保留長寬比；較小的影片不受影響。"
+        "tooltip": "自動縮小面積大於 2560x1440 像素的來源，以符合輸入限制。會保留長寬比；較小的影片不受影響。"
       },
       "control_after_generate": {
         "name": "生成後控制"
@@ -6782,6 +7083,48 @@
       "video": {
         "name": "video",
         "tooltip": "長度 1 至 20 秒、長寬比介於 1:4 至 4:1 的來源片段。輸出會以 24 fps 算繪，每幀上限約為 1,440 萬像素。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "使用 FLUX 超解析度將影片放大至 1080p、2K、4K，或放大 1.5 至 3 倍；可精確保留來源內容，或以創意方式強化其細節。",
+    "display_name": "Flux 影片放大",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "將過大的來源縮小，而非拒絕處理：面積超過 2560x1440 像素，或超過目標解析度的三分之二時（最小倍率為 1.5 倍）。會保留長寬比。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "mode": {
+        "name": "模式",
+        "tooltip": "'creative' 會還原並創造精細細節，最適合生成影片、紋理與風景。'precise' 會在不改變來源的情況下銳化，適用於臉部、產品與實拍影片。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "可選填的片段描述，用於引導強化後的細節。留空即可進行中性的放大。"
+      },
+      "safety_tolerance": {
+        "name": "安全容許度",
+        "tooltip": "內容審核容許度，0 為最嚴格。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於決定節點是否應重新執行的種子；FLUX 會自行選擇種子，因此不論此值為何，實際結果都不具決定性。"
+      },
+      "target_resolution": {
+        "name": "目標解析度",
+        "tooltip": "2K、4K 與 1080p 會將輸出限制在 2560x1440、3840x2160 或 1920x1080 內（直式片段會旋轉尺寸）。若來源在最大 3 倍放大下仍太小而無法填滿，則會放大 3 倍，輸出會較小。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "長度為 1 至 20 秒、長寬比介於 1:4 與 4:1 之間的來源片段。輸出會以 24 fps 算繪，且每幀上限約為 1,440 萬像素。"
       }
     },
     "outputs": {
@@ -7394,7 +7737,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "使用 Google Gemini Omni Flash 模型，根據文字提示生成含音訊的影片。可選擇提供參考圖片及／或影片，以引導或編輯結果。請直接在提示詞中描述所需長度（3-10 秒）。",
+    "description": "使用 Google 的 Gemini Omni Flash 模型，根據文字提示詞生成含音訊的影片。可選擇提供參考圖片及／或影片，以引導或編輯結果。請直接在提示詞中描述所需長度（Omni Flash 1.2 為 3-15 秒，舊版模型為 3-10 秒）。",
     "display_name": "Google Gemini Omni（影片）",
     "inputs": {
       "control_after_generate": {
@@ -7702,7 +8045,8 @@
         "name": "image"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-quality 與 grok-imagine-image-pro 已由 xAI 停用，現在會以低品質模式執行為 grok-imagine-image-2.0。"
       },
       "number_of_images": {
         "name": "number_of_images",
@@ -7734,7 +8078,8 @@
         "name": "生成後控制"
       },
       "model": {
-        "name": "模型"
+        "name": "模型",
+        "tooltip": "grok-imagine-image-quality 與 grok-imagine-image-pro 已由 xAI 停用，現在會以低品質模式執行為 grok-imagine-image-2.0。"
       },
       "model_aspect_ratio": {
         "name": "長寬比"
@@ -7774,7 +8119,8 @@
         "name": "control after generate"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-quality 與 grok-imagine-image-pro 已由 xAI 停用，現在會以低品質模式執行為 grok-imagine-image-2.0。"
       },
       "number_of_images": {
         "name": "number_of_images",
@@ -8119,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "使用 HeyGen Avatar 6 生成會說話的 HeyGen 虛擬角色影片，可由文字腳本或您自己的音訊驅動。",
+    "display_name": "HeyGen Avatar 6 身分轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "'auto' 會依循虛擬角色的來源影片。"
+      },
+      "avatar": {
+        "name": "虛擬角色"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "motion_expressiveness": {
+        "name": "動作表現力",
+        "tooltip": "「較少」會使用較少且幅度較小的手勢。在兩者重疊之處，動作提示詞優先。"
+      },
+      "motion_prompt": {
+        "name": "動作提示詞",
+        "tooltip": "手勢、表情、姿勢與鏡頭移動。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆為非確定性。"
+      },
+      "speech": {
+        "name": "語音",
+        "tooltip": "使用文字腳本（HeyGen 文字轉語音）或您自己的音訊驅動虛擬角色。"
+      },
+      "speech_custom_voice_id": {
+        "name": "自訂語音 ID"
+      },
+      "speech_text": {
+        "name": "文字"
+      },
+      "speech_voice": {
+        "name": "語音"
+      },
+      "speech_voice_speed": {
+        "name": "語音速度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "使用 HeyGen Avatar 6，讓照片或影片中的人物或角色配合已連接的音訊說話。可連接圖片、影片，或同時連接兩者。",
+    "display_name": "HeyGen Avatar 6 參考轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_motion_expressiveness": {
+        "name": "動作表現力"
+      },
+      "model_motion_prompt": {
+        "name": "動作提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "從 HeyGen 虛擬分身產生一段講話主持人影片。包含 HeyGen 最受歡迎的公開分身；可提供任何 look ID 來覆蓋預設分身。",
     "display_name": "HeyGen 虛擬分身影片",
@@ -8209,6 +8642,9 @@
       "model": {
         "name": "模型"
       },
+      "model_auto_duration": {
+        "name": "自動時長"
+      },
       "model_duration": {
         "name": "時長"
       },
@@ -8229,7 +8665,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "使用 HeyGen Video 1.0 根據文字提示詞生成具有同步對話與聲音的影片。可選擇連接最多 12 張參考圖像、影片和音訊片段，並在提示詞中以 {'@'}Image1、{'@'}Video1、{'@'}Audio1 提及它們。",
+    "description": "使用 HeyGen Video 1.0，根據文字提示詞生成含有同步對話與聲音的影片。可選擇連接最多 15 個參考圖片、影片及音訊片段，並在提示詞中以 {'@'}Image1、{'@'}Video1、{'@'}Audio1 指稱它們。",
     "display_name": "HeyGen Video 1.0 參考資料轉影片",
     "inputs": {
       "control_after_generate": {
@@ -8240,6 +8676,9 @@
       },
       "model_aspect_ratio": {
         "name": "長寬比"
+      },
+      "model_auto_duration": {
+        "name": "自動時長"
       },
       "model_duration": {
         "name": "時長"
@@ -9039,7 +9478,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "使用 Ideogram 4.5 精確編輯功能，依據文字提示詞編輯圖像：只有提示詞要求的部分會變更，未修改的像素會保持完全相同，輸出會維持圖像 1 的尺寸（超過約 4 MP 的圖像會先縮小）。最多可接受 4 張參考圖像。",
+    "description": "使用 Ideogram 4.5 精確編輯，依文字提示詞引導編輯圖片：只有提示詞要求的內容會變更，未觸及的像素會保持完全相同，且輸出會保留圖片 1 的尺寸（超過約 4 MP 的圖片會先縮小）。也可以編輯由遮罩或邊界框設定的單一區域，並以完整尺寸傳回圖片。最多可接受 4 張參考圖片（使用 context_window_mask 時為 3 張）。",
     "display_name": "Ideogram 4.5 精確編輯",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9487,9 @@
       "model": {
         "name": "模型",
         "tooltip": "要使用的模型。"
+      },
+      "model_context_window": {
+        "name": "內容視窗"
       },
       "model_prompt": {
         "name": "提示詞"
@@ -10258,6 +10700,193 @@
       }
     }
   },
+  "Kling4EditVideoNode": {
+    "description": "使用文字提示詞及可選的參考圖片和影片編輯影片。結果會與輸入影片具有相同的長度。",
+    "display_name": "Kling 4.0 編輯影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_audio": {
+        "name": "音訊"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageNode": {
+    "description": "根據文字提示詞與最多 10 張參考圖片生成或編輯圖片，可產生單張圖片或一系列相關圖片。",
+    "display_name": "Kling 4.0 圖片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "長寬比",
+        "tooltip": "auto 會依照參考圖片，否則依照提示詞。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "請將參考圖片稱為 @Image1、@Image2、……"
+      },
+      "reference_images": {
+        "name": "參考圖片"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子控制節點是否應重新執行；無論種子為何，結果皆不具確定性。"
+      },
+      "series_amount": {
+        "name": "系列數量",
+        "tooltip": "生成一系列相關圖片，維持相同角色與風格。auto 會讓模型選擇 2 至 10 張圖片。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "在 kling-4.0 上透過最多 10 個關鍵影格生成附帶音訊的影片，或在 kling-4.0-flash 上從首影格生成。中間影格會等距排列；影片採用第一個關鍵影格的長寬比。",
+    "display_name": "Kling 4.0 圖片轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "生成一張長圖：網頁設計或電子商務商品詳情頁。",
+    "display_name": "Kling 4.0 長圖片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "skill": {
+        "name": "技能"
+      },
+      "skill_prompt": {
+        "name": "提示詞"
+      },
+      "skill_resolution": {
+        "name": "解析度"
+      },
+      "skill_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "根據參考圖片與影片生成附帶音訊的影片，可選擇以指定影格作為開頭或結尾。",
+    "display_name": "Kling 4.0 參考資料轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "根據文字提示詞生成附帶音訊的影片。",
+    "display_name": "Kling 4.0 文字轉影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingAvatarNode": {
     "description": "從單張照片和音訊檔案生成廣播風格的數位人像影片。",
     "display_name": "Kling Avatar 2.0",
@@ -11049,8 +11678,7 @@
         "tooltip": "其風格會影響生成的參考圖像。"
       },
       "strength": {
-        "name": "強度",
-        "tooltip": "參考強度；負值會反轉風格影響。"
+        "name": "強度"
       },
       "style_reference": {
         "name": "style_reference",
@@ -13157,30 +13785,102 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "包含一個或多個相機概念，可用於 Luma 文字轉影片與 Luma 圖片轉影片節點。",
-    "display_name": "Luma 概念",
+  "LtxApiVideoAlphaGen": {
+    "description": "擷取與輸入影片逐影格相符的灰階 Alpha 遮罩（白色為前景）。使用 Get Video Components 和 Image To Mask 將其轉換為遮罩。不會保留音訊。",
+    "display_name": "LTX Video AlphaGen",
     "inputs": {
-      "concept1": {
-        "name": "concept1"
+      "control_after_generate": {
+        "name": "生成後控制"
       },
-      "concept2": {
-        "name": "concept2"
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於決定節點是否應重新執行的種子；無論種子為何，實際結果皆不具決定性。"
       },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "可選的相機概念，將會加入到此處選擇的概念中。"
+      "video": {
+        "name": "影片",
+        "tooltip": "最長 10 秒，任一方向最高 3840x2160。"
       }
     },
     "outputs": {
       "0": {
-        "name": "luma_concepts",
+        "name": "遮罩",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoReframe": {
+    "description": "將影片重新構圖為新的解析度與長寬比。原始影片以外的區域會生成內容以與其相符。",
+    "display_name": "LTX Video 重新構圖",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "placement": {
+        "name": "位置",
+        "tooltip": "原始影片在新影格中的位置。影片一律會填滿影格的一側，因此錨點只能沿另一側移動影片。"
+      },
+      "resolution": {
+        "name": "解析度"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於決定節點是否應重新執行的種子；無論種子為何，實際結果皆不具決定性。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "最長 60 秒且最多 1800 個影格，每一邊為 64 至 4096 像素。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoSdrToHdr": {
+    "description": "將 SDR 影片轉換為相同解析度的 10 位元 HDR 影片（BT.2020、HLG）。不會保留音訊。",
+    "display_name": "LTX Video SDR 轉 HDR",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於決定節點是否應重新執行的種子；無論種子為何，實際結果皆不具決定性。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "任一方向最高 3840x2160。1080p 最多 273 個影格、1440p 最多 193 個影格，4K 最多 65 個影格。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoUpscale": {
+    "description": "將影片放大至 1080p、4K 或 8K，並保留其長寬比、影格率和音訊。",
+    "display_name": "LTX Video 放大",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "resolution": {
+        "name": "解析度",
+        "tooltip": "輸出會盡可能放大至符合 1920x1080、3840x2160 或 7680x4320 的尺寸（直式影片會旋轉）。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於決定節點是否應重新執行的種子；無論種子為何，實際結果皆不具決定性。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "短邊至少 480 像素，任一方向最高 7680x4320。1080p 最多 2401 個影格、4K 最多 601 個影格、8K 最多 241 個影格。"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13221,82 +13921,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "根據提示詞與長寬比同步修改影像。",
-    "display_name": "Luma 影像轉換",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image": {
-        "name": "影像"
-      },
-      "image_weight": {
-        "name": "影像權重",
-        "tooltip": "影像的權重；越接近 1.0，影像修改幅度越小。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影像生成的提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "決定此節點是否重新執行的種子值；實際結果無論種子值為何都不具決定性。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "根據提示詞與長寬比同步生成圖像。",
-    "display_name": "Luma 文字轉圖像",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比"
-      },
-      "character_image": {
-        "name": "角色參考圖",
-        "tooltip": "角色參考圖像；可為多張批次圖像，最多可考慮 4 張圖像。"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "image_luma_ref": {
-        "name": "Luma 參考圖",
-        "tooltip": "Luma 參考節點連接，可用輸入圖像影響生成；最多可考慮 4 張圖像。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於圖像生成的提示詞"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子值如何都不具決定性。"
-      },
-      "style_image": {
-        "name": "風格參考圖",
-        "tooltip": "風格參考圖像；僅會使用 1 張圖像。"
-      },
-      "style_image_weight": {
-        "name": "風格圖權重",
-        "tooltip": "風格圖像的權重。如果未提供風格圖像則忽略。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "使用 Luma UNI-1 模型，根據文字生成圖像。",
     "display_name": "Luma UNI-1 圖像",
@@ -13324,52 +13948,6 @@
       "seed": {
         "name": "種子",
         "tooltip": "種子控制此節點是否重新執行；無論種子如何，結果皆為非確定性。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "根據提示詞、輸入圖片與輸出尺寸同步產生影片。",
-    "display_name": "Luma 圖像轉影片",
-    "inputs": {
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "first_image": {
-        "name": "第一張圖片",
-        "tooltip": "生成影片的第一幀。"
-      },
-      "last_image": {
-        "name": "最後一張圖片",
-        "tooltip": "生成影片的最後一幀。"
-      },
-      "loop": {
-        "name": "循環"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "（選填）透過 Luma Concepts 節點指定相機運動的相機概念。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影片生成的提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子值",
-        "tooltip": "決定此節點是否重新執行的種子值；實際結果無論種子值如何都不具決定性。"
       }
     },
     "outputs": {
@@ -13599,7 +14177,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "更改現有影片的長寬比，使用 Luma Ray 3.2 填補新顯露的畫布區域。來源影片最長 30 秒。依輸出秒數計費。",
+    "description": "使用 Luma Ray 3.2 填補新露出的畫布區域，以變更現有影片的長寬比。來源影片最長 10 秒。依輸出秒數計費。",
     "display_name": "Luma Ray 3.2 影片重構比例",
     "inputs": {
       "aspect_ratio": {
@@ -13621,7 +14199,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "要重構比例的來源影片。最長 30 秒。"
+        "tooltip": "要重新構圖的來源影片。最長 10 秒。"
       }
     },
     "outputs": {
@@ -13630,70 +14208,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "保存一張圖片及其權重，供 Luma 生成圖片節點使用。",
-    "display_name": "Luma 參考",
-    "inputs": {
-      "image": {
-        "name": "影像",
-        "tooltip": "用作參考的圖片。"
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "權重",
-        "tooltip": "圖片參考的權重。"
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "根據提示詞與輸出尺寸同步產生影片。",
-    "display_name": "Luma 文字轉影片",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "長寬比"
-      },
-      "control_after_generate": {
-        "name": "生成後控制"
-      },
-      "duration": {
-        "name": "時長"
-      },
-      "loop": {
-        "name": "循環"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "（選填）透過 Luma Concepts 節點指定相機運動的相機概念。"
-      },
-      "model": {
-        "name": "模型"
-      },
-      "prompt": {
-        "name": "提示詞",
-        "tooltip": "用於影片生成的提示詞"
-      },
-      "resolution": {
-        "name": "解析度"
-      },
-      "seed": {
-        "name": "種子",
-        "tooltip": "決定節點是否重新執行的種子；實際結果無論種子如何都不具決定性。"
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -14940,6 +15454,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "設定 MiniMax H3 的上下文視窗。視窗會從模型的 17 影格區塊開始，以保持影片與音訊同步。",
+    "display_name": "MiniMax H3 上下文視窗",
+    "inputs": {
+      "context_length": {
+        "name": "context_length",
+        "tooltip": "實際影格的內容視窗長度。必須為 17*n + 5。"
+      },
+      "context_overlap": {
+        "name": "context_overlap",
+        "tooltip": "實際影格的內容視窗重疊長度。必須為 17*n + 5。"
+      },
+      "freenoise": {
+        "name": "freenoise",
+        "tooltip": "是否套用 FreeNoise 雜訊隨機重排，以改善視窗混合效果。"
+      },
+      "fuse_method": {
+        "name": "fuse_method",
+        "tooltip": "用於融合內容視窗的方法。"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "取樣期間要套用上下文視窗的模型。"
+      },
+      "split_conds_to_windows": {
+        "name": "split_conds_to_windows",
+        "tooltip": "是否依區域索引，將多個條件設定（由 ConditionCombine 建立）拆分至各個視窗。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "在取樣期間套用內容視窗的模型。"
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "將 MiniMax H3 Fun ControlNet 作為模型修補套用至文字轉影片模型。",
     "display_name": "套用 MiniMax H3 Fun ControlNet",
@@ -14980,6 +15529,42 @@
       }
     }
   },
+  "MiniMaxH3ImageConditioning": {
+    "description": "文字轉圖片，或使用圖片進行由其引導的編輯。提示詞會將其稱為 <Picture 1>、<Picture 2>、……",
+    "display_name": "MiniMax H3 圖像條件設定",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "0 會使用 image_1 經參考縮放後的高度；若無圖片則使用 2048。"
+      },
+      "images": {
+        "name": "圖片"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "MiniMax-H3-Image VAE。使用它時，圖片也會錨定為參考潛在空間；不使用時，圖片僅會對文字編碼器提供條件設定。"
+      },
+      "width": {
+        "name": "寬度",
+        "tooltip": "0 會使用 image_1 經參考縮放後的寬度；若無圖片則使用 2048。此模型已針對面積為 2048x2048 像素進行調校。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 圖片轉影片",
     "inputs": {
@@ -15015,6 +15600,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "使用 latent 放大模型調整 MiniMax H3 latent 的影片大小；音訊會原樣傳遞。",
+    "display_name": "MiniMax H3 使用模型進行潛在空間放大",
+    "inputs": {
+      "height": {
+        "name": "高度"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "samples": {
+        "name": "樣本"
+      },
+      "width": {
+        "name": "寬度"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15134,6 +15742,50 @@
       }
     }
   },
+  "MinimaxH3ImageNode": {
+    "description": "使用 MiniMax H3-Image 從文字生成圖片，或編輯及合併最多 16 張參考圖片。在提示詞中依其順序引用參考圖片：{'@'}Image1、{'@'}Image2，依此類推。",
+    "display_name": "MiniMax H3 圖像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "enhance_prompt": {
+        "name": "enhance_prompt",
+        "tooltip": "MiniMax 會在生成前將提示詞改寫為詳細的場景描述。圖片編輯一律會增強提示詞。關閉時，請選擇長寬比或自訂尺寸。"
+      },
+      "images": {
+        "name": "圖片",
+        "tooltip": "可選的參考圖片，可用於編輯或合併；在提示詞中依連接順序以 @Image1..@Image16 引用。最多 16 張。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "連接參考圖片時，提示詞最多可包含 8,000 個字元。"
+      },
+      "seed": {
+        "name": "隨機種子",
+        "tooltip": "隨機種子控制節點是否應重新執行；無論隨機種子為何，結果皆不具決定性。"
+      },
+      "size": {
+        "name": "尺寸",
+        "tooltip": "2K 和 4K 會依長寬比決定尺寸；custom 會設定精確的寬度與高度。"
+      },
+      "size_aspect_ratio": {
+        "name": "aspect_ratio"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "修訂後的提示詞",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ContextIRNode": {
     "description": "使用 MiniMax H3 Context IR 分析文字與媒體內容，並產生增強且結構化的影片提示詞。將輸出接入 MiniMax H3 影片節點的提示詞，並以相同順序附加相同媒體，因為增強後的提示詞會依位置參照所附加的媒體。",
     "display_name": "MiniMax H3 Context IR（提示詞增強器）",
@@ -15209,8 +15861,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "從影像開始生成影片，並將攝影機移動至主體周圍的新角度與距離。",
+    "display_name": "MiniMax H3 Max 攝影機控制",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_azimuth": {
+        "name": "方位角"
+      },
+      "model_distance": {
+        "name": "距離"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_elevation": {
+        "name": "仰角"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "提示詞擴充模式"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "依據提示詞與選用的音訊參考，使用新的影像片段延續影片。",
+    "display_name": "MiniMax H3 Max 延伸影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_output": {
+        "name": "輸出"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_expansion": {
+        "name": "提示詞擴充"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "依據提示詞及選用的參考影像與影片，以新生成的場景取代影片中開始與繼續時間之間的部分。",
+    "display_name": "MiniMax H3 Max 插入影片",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_color_match": {
+        "name": "色彩匹配"
+      },
+      "model_duration": {
+        "name": "時長"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_prompt_expansion": {
+        "name": "提示詞擴充"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_resume_time": {
+        "name": "恢復時間"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_start_time": {
+        "name": "開始時間"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "讓影像動起來，使其嘴部動作跟隨音訊。影片長度與音訊相同。",
+    "display_name": "MiniMax H3 Max 嘴形同步",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_transcription": {
+        "name": "轉錄文字"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "以參考照片中的人物取代影片中的人物，同時保留來源影片的動作、鏡頭、剪輯與聲音。",
+    "display_name": "MiniMax H3 Max 角色替換",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_enhance_realism": {
+        "name": "增強真實感"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "將影片置於新畫布上並生成周邊區域，以調整為新的長寬比。保留來源影片的時間節奏與聲音。",
+    "display_name": "MiniMax H3 Max 影片重新取景",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型",
+        "tooltip": "用於生成影片的模型。"
+      },
+      "model_aspect_ratio": {
+        "name": "長寬比"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_resolution": {
+        "name": "解析度"
+      },
+      "model_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "使用 MiniMax H3 模型，根據參考圖片、影片及音訊生成影片。在提示詞中請依序引用參考資料：「Image 1」、「Image 2」、「Video 1」、「Audio 1」等。",
+    "description": "使用 MiniMax H3 模型，根據參考影像、影片與音訊生成影片。請依照參考資料的順序在提示詞中引用：{'@'}Image1、{'@'}Image2、{'@'}Video1、{'@'}Audio1，依此類推。",
     "display_name": "MiniMax H3 參考生成影片",
     "inputs": {
       "control_after_generate": {
@@ -18311,7 +19173,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "模型在回答前進行多少推理。'default' 會將選擇權交給模型。支援的等級依模型而異：GPT-6 Astra 為 low-max，GPT-6 Sol/Luna 和 GPT-5.6 為 none-max（不含 minimal），GPT-5.5 為 none-xhigh，GPT-5.5 Pro 為 medium-xhigh，GPT-5 為 minimal-high，o-series 為 low-high；GPT-4.1 沒有推理功能。不支援的等級會在傳送請求前遭到拒絕。"
+        "tooltip": "支援的等級因模型而異。不支援的等級會停止執行，並列出有效等級。'default' 讓模型自行選擇。"
       },
       "truncation": {
         "name": "truncation",
@@ -18416,9 +19278,9 @@
       }
     }
   },
-  "OpenAIGPTImageNodeV2": {
-    "description": "透過 OpenAI 的 GPT Image 端點生成圖像。",
-    "display_name": "OpenAI GPT Image 2.5",
+  "OpenAIGPTImageGIFNode": {
+    "description": "透過 OpenAI 的 GPT Image 端點生成動畫 GIF，並輸出其影格與影格速率。",
+    "display_name": "OpenAI GPT Image 2.6 GIF",
     "inputs": {
       "control_after_generate": {
         "name": "生成後控制"
@@ -18428,6 +19290,55 @@
       },
       "model_background": {
         "name": "背景"
+      },
+      "model_complexity": {
+        "name": "複雜度"
+      },
+      "model_frame_count": {
+        "name": "影格數"
+      },
+      "model_frame_duration_ms": {
+        "name": "影格持續時間（毫秒）"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "影格",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV2": {
+    "description": "透過 OpenAI 的 GPT Image 端點生成圖像。",
+    "display_name": "OpenAI GPT Image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_complexity": {
+        "name": "複雜度"
       },
       "model_custom_height": {
         "name": "自訂高度"
@@ -18452,6 +19363,82 @@
       "seed": {
         "name": "種子",
         "tooltip": "後端尚未實作"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV3": {
+    "description": "透過 OpenAI 的 GPT Image 端點生成與編輯影像，並支援以標註引導的編輯。",
+    "display_name": "OpenAI GPT Image 2.6",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_complexity": {
+        "name": "複雜度"
+      },
+      "model_custom_height": {
+        "name": "自訂高度"
+      },
+      "model_custom_width": {
+        "name": "自訂寬度"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "尺寸"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageSVGNode": {
+    "description": "透過 OpenAI 的 GPT Image 端點生成 SVG。",
+    "display_name": "OpenAI GPT Image 2.6 SVG",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_background": {
+        "name": "背景"
+      },
+      "model_complexity": {
+        "name": "複雜度"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_quality": {
+        "name": "品質"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_size": {
+        "name": "尺寸"
       }
     },
     "outputs": {
@@ -18510,7 +19497,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "透過OpenRouter產生文字回應。路由至xAI、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）、Perplexity Sonar等熱門模型。",
+    "description": "透過 OpenRouter 生成文字回應。可路由至精選的熱門模型，包括 Anthropic（Claude）、OpenAI（GPT）、Google（Gemini）、xAI（Grok）、Meta（Muse）、DeepSeek、Qwen、Mistral、Z.AI（GLM）、Moonshot（Kimi）及 Perplexity Sonar。",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -18571,6 +19558,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "文字轉圖像；或在提供圖像時，以其他圖像作為參考來編輯 image_1。提示詞會將它們稱為 <Picture 1>、<Picture 2>、……模型需要將 ModelSamplingMiniMaxH3 設為 1.0/1.0。",
+    "display_name": "p-h3-image 條件設定",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "0 會使用縮放後 image_1 的高度；若沒有圖像則使用 2912。"
+      },
+      "images": {
+        "name": "圖像"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "提供圖像時，簡短指令前方會加上「Edit <Picture 1>. 」；以「Edit <Picture」開頭的指令，以及來自提示詞放大器的編輯摘要，會原樣使用。"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "p-h3-image VAE。使用它時，圖片也會固定為參考 latent；未使用時，圖片僅會對文字編碼器提供條件。"
+      },
+      "width": {
+        "name": "寬度",
+        "tooltip": "0 會使用縮放後 image_1 的寬度；若沒有圖像則使用 2912。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -18824,6 +19848,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "依據提示詞，從輸入影像的指定區域擷取可無縫平鋪的 PBR 材質（紋理影像 + PBR 貼圖）。",
+    "display_name": "Patina 材質擷取",
+    "inputs": {
+      "basecolor": {
+        "name": "基礎色",
+        "tooltip": "生成基礎色（反照率）貼圖。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "產生高度／位移貼圖。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "要從中擷取紋理的影像。"
+      },
+      "image_size": {
+        "name": "影像尺寸",
+        "tooltip": "輸出紋理尺寸。若寬度／高度要介於 512 與 2048 之間，請選擇「自訂」（8K 結果是將貼圖放大 4 倍而得）。"
+      },
+      "metalness": {
+        "name": "金屬度",
+        "tooltip": "產生金屬度貼圖。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "產生法線貼圖。"
+      },
+      "num_inference_steps": {
+        "name": "推論步數",
+        "tooltip": "用於紋理生成的去雜訊步數。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述要從影像中擷取哪種紋理（例如「牆面」）。"
+      },
+      "prompt_expansion": {
+        "name": "提示詞擴展",
+        "tooltip": "使用 LLM 擴展提示詞，以獲得更豐富的紋理細節。預設為關閉：擴展會將提示詞重新詮釋為相片，且往往會使金屬度貼圖變淡。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "產生粗糙度貼圖。"
+      },
+      "safety_checker": {
+        "name": "安全檢查器"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於可重現生成的種子。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "轉換輸入影像的程度。"
+      },
+      "tile_size": {
+        "name": "圖塊大小",
+        "tooltip": "潛在空間中的圖塊大小（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "圖塊步幅",
+        "tooltip": "潛在空間中的圖塊步幅。"
+      },
+      "tiling_mode": {
+        "name": "平鋪模式",
+        "tooltip": "平鋪方向：全向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "放大倍率",
+        "tooltip": "無縫 SeedVR 放大 PBR 貼圖（不會放大基礎紋理）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "紋理",
+        "tooltip": null
+      },
+      "1": {
+        "name": "基礎色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "金屬度",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高度",
+        "tooltip": null
+      },
+      "6": {
+        "name": "擴展後的提示詞",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "根據文字提示產生完整、可無縫平鋪的 PBR 材質（紋理影像 + PBR 貼圖），最高可達 8K。也可選擇使用輸入影像（img2img）或影像 + 遮罩（局部重繪）來驅動生成。",
+    "display_name": "銅綠材質",
+    "inputs": {
+      "basecolor": {
+        "name": "基礎色",
+        "tooltip": "生成基礎色彩（反照率）貼圖。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成高度／位移貼圖。"
+      },
+      "image": {
+        "name": "影像",
+        "tooltip": "選用的來源影像。僅提供影像 = 圖生圖；搭配遮罩 = 局部重繪。"
+      },
+      "image_size": {
+        "name": "影像尺寸",
+        "tooltip": "輸出紋理尺寸。選擇「自訂」可設定介於 512 與 2048 之間的寬度／高度（8K 結果來自將貼圖放大 4 倍）。"
+      },
+      "mask": {
+        "name": "遮罩",
+        "tooltip": "選用的局部重繪遮罩（需要影像）。白色 = 重新生成，黑色 = 保留。"
+      },
+      "metalness": {
+        "name": "金屬度",
+        "tooltip": "生成金屬度貼圖。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "生成法線貼圖。"
+      },
+      "num_inference_steps": {
+        "name": "推論步數",
+        "tooltip": "紋理生成的去噪步數。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述要生成的材質／紋理。"
+      },
+      "prompt_expansion": {
+        "name": "提示詞擴展",
+        "tooltip": "使用 LLM 擴展提示詞，以取得更豐富的紋理細節。預設為關閉：擴展會將提示詞重新詮釋為照片，且往往會使金屬度貼圖失去鮮明度。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "生成粗糙度貼圖。"
+      },
+      "safety_checker": {
+        "name": "安全檢查器"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於可重現生成的種子。"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "變換輸入影像的程度。僅在提供影像時使用。"
+      },
+      "tile_size": {
+        "name": "圖塊大小",
+        "tooltip": "latent 空間中的圖塊大小（64 = 512px，128 = 1024px）。"
+      },
+      "tile_stride": {
+        "name": "圖塊步距",
+        "tooltip": "latent 空間中的圖塊步距。"
+      },
+      "tiling_mode": {
+        "name": "平鋪模式",
+        "tooltip": "平鋪方向：全向、水平或垂直。"
+      },
+      "upscale_factor": {
+        "name": "放大倍率",
+        "tooltip": "無縫 SeedVR 放大 PBR 貼圖（不會放大基礎紋理）。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "紋理",
+        "tooltip": null
+      },
+      "1": {
+        "name": "基礎色彩",
+        "tooltip": null
+      },
+      "2": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "3": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "金屬度",
+        "tooltip": null
+      },
+      "5": {
+        "name": "高度",
+        "tooltip": null
+      },
+      "6": {
+        "name": "擴展後提示詞",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "從紋理影像生成 PBR 材質貼圖（基礎色彩、法線、粗糙度、金屬度、高度）。",
+    "display_name": "Patina PBR 材質貼圖",
+    "inputs": {
+      "auto_downscale": {
+        "name": "自動縮小",
+        "tooltip": "自動縮小最長邊超過 2048px（模型輸入限制）的輸入圖像，同時保留長寬比；較小的圖像會維持原樣。停用後，超大圖像將改為引發錯誤。"
+      },
+      "basecolor": {
+        "name": "底色",
+        "tooltip": "生成底色（反照率）貼圖。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "height": {
+        "name": "高度",
+        "tooltip": "生成高度／位移貼圖。"
+      },
+      "image": {
+        "name": "圖像",
+        "tooltip": "用於衍生 PBR 貼圖的輸入照片或渲染圖。"
+      },
+      "metalness": {
+        "name": "金屬度",
+        "tooltip": "生成金屬度貼圖。"
+      },
+      "normal": {
+        "name": "法線",
+        "tooltip": "生成法線貼圖。"
+      },
+      "roughness": {
+        "name": "粗糙度",
+        "tooltip": "生成粗糙度貼圖。"
+      },
+      "safety_checker": {
+        "name": "安全檢查器"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "用於可重現去雜訊結果的種子。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "底色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "法線",
+        "tooltip": null
+      },
+      "2": {
+        "name": "粗糙度",
+        "tooltip": null
+      },
+      "3": {
+        "name": "金屬度",
+        "tooltip": null
+      },
+      "4": {
+        "name": "高度",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg（已被 PerpNegGuider 棄用）",
     "inputs": {
@@ -18940,6 +20246,183 @@
       },
       "positive": {
         "name": "正向"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex，Pika 後訓練的 MiniMax H3。透過參考圖像、影片與音訊引導，生成或編輯具有同步音訊的影片。",
+    "display_name": "Pika H3 Flex 參考轉影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto 會依照參考影片，否則依照提示詞。參考圖片不會影響此設定。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "輸出長度遵循影格網格：5 秒會產生 124 個影格，約為 5.17 秒。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "請以 @Image1、@Video1、@Audio1，或 <Picture 1>、<Video 1>、<Audio 1> 指稱參考資料。"
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "最多 3 段音訊片段，會在提示詞中稱為 @Audio1..@Audio3。每段為 2 至 15 秒，總計 15 秒。複製至輸出時，片段會依連接順序播放，並優先於已連接影片的聲音播放，不論提示詞指定的是哪一個編號。"
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "最多 9 張圖片，會依連接順序在提示詞中稱為 @Image1..@Image9。至少需要一張圖片或一部影片。"
+      },
+      "reference_video_audio": {
+        "name": "reference_video_audio",
+        "tooltip": "已連接影片的聲音會複製到輸出。若要使用新的環境音，或以新音樂進行動作轉移，請關閉此選項。若提示詞中是沒有對白的說話頭像，則會產生虛構的語音。"
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "最多 3 部影片，會依連接順序在提示詞中稱為 @Video1..@Video3。每部為 2 至 15 秒，總計 15 秒。按秒計費。"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "1080p 及以上會以 768p 算繪，並上採樣一次。在 480p 使用相同 seed 會產生不同的影片。"
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "先讓 Pika 擴寫提示詞。之後每次執行即使使用相同 seed，也會產生不同的影片。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "關閉 rewrite_prompt 時，相同的 seed 會完全重現影片。在本機以相同 seed 執行會產生不同結果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex，Pika 經後訓練的 MiniMax H3。可根據文字以及可選的首尾影格產生含同步音訊的影片。",
+    "display_name": "Pika H3 Flex 影片",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto 會依照第一個已連接的影格，否則依照提示詞。"
+      },
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "duration",
+        "tooltip": "輸出長度遵循影格網格：5 秒會產生 124 個影格，約為 5.17 秒。"
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "1080p 及以上會以 768p 算繪，並上採樣一次。在 480p 使用相同 seed 會產生不同的影片。"
+      },
+      "rewrite_prompt": {
+        "name": "rewrite_prompt",
+        "tooltip": "先讓 Pika 擴寫提示詞。之後每次執行即使使用相同 seed，也會產生不同的影片。"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "關閉 rewrite_prompt 時，相同的 seed 會完全重現影片。在本機以相同 seed 執行會產生不同結果。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "使用 Pika 根據文字描述與可選的歌詞產生音樂，或為歌曲製作翻唱。",
+    "display_name": "Pika 音樂",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "mode": {
+        "name": "mode"
+      },
+      "mode_duration": {
+        "name": "duration"
+      },
+      "mode_lyrics": {
+        "name": "歌詞"
+      },
+      "mode_prompt": {
+        "name": "提示詞"
+      },
+      "mode_rewrite_prompt": {
+        "name": "重寫提示詞"
+      },
+      "mode_seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "使用 Pika 根據文字描述產生音效。",
+    "display_name": "Pika SFX",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "時長"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "seed": {
+        "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "使用 Pika 為影片產生同步的配樂。會保留畫面與長度，僅替換音訊。",
+    "display_name": "Pika Soundtrack",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "instruction": {
+        "name": "指示",
+        "tooltip": "音訊應為何種內容：音效、環境音、音樂或風格。留空即可從畫面推導。"
+      },
+      "seed": {
+        "name": "種子"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "最長 10 分鐘。"
       }
     },
     "outputs": {
@@ -19765,6 +21248,33 @@
       },
       "model_seed": {
         "name": "種子"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "使用 Pruna P-Video Upscale 將影片升頻至 720p、1080p、2K 或 4K，同時保留其長寬比與音訊。",
+    "display_name": "Pruna P-Video Upscale",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "輸出影格率。'source' 會保留影片的影格率，最高為 60。較高的影格率會透過插幀產生。輸出超過 30 fps 的費用為兩倍。"
+      },
+      "target": {
+        "name": "目標",
+        "tooltip": "輸出像素面積：720p 約 0.9 百萬像素、1080p 2.1、2K 3.7、4K 8.3。已達此尺寸的影片會維持原尺寸，僅進行增強。最大長度：2400、1200、600 或 300 個影格；以 24 fps 計算，約為 100、50、25 或 12.5 秒。"
+      },
+      "turbo": {
+        "name": "高速",
+        "tooltip": "以相同價格更快速地升頻，但細節較柔和。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "要升頻的影片，最大 512 MiB。"
       }
     },
     "outputs": {
@@ -20965,8 +22475,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "用於 RelayVSR 影片升頻的條件設定與空白潛在空間；以 cfg 1 和 1 個步驟進行採樣。僅每第 15 個影格會通過模型，VSR Decode 會還原全部影格。",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "影像",
+        "tooltip": "原生解析度的低品質影片，升頻倍率由模型決定。"
+      },
+      "model": {
+        "name": "模型"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "正向",
+        "tooltip": null
+      },
+      "1": {
+        "name": "潛在空間",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "透過窄帶距離場 + Dual Contouring，在目前使用的運算裝置上重新擷取均勻鑲嵌的網格。可正規化雜亂／非流形／自相交的拓撲；在 Decimate Mesh 前執行，可達到精確的面數。輸出會維持焊接狀態。",
+    "description": "透過狹帶距離場 + Dual Contouring，在使用中的運算裝置上重新擷取均勻鑲嵌的網格。可正規化雜亂／非流形／自我相交的拓撲；請在 Decimate Mesh 前執行，以達到精確的面數。輸出會保持焊接狀態。延伸超過 0.51 或跨度小於 0.5 的網格，會先擬合至 [-0.5,0.5] 立方體，再映射回去。",
     "display_name": "重新網格化網格（窄帶 DC）",
     "inputs": {
       "band": {
@@ -21042,7 +22575,7 @@
     }
   },
   "RenderMesh": {
-    "description": "對網格進行單一視角的光線投射。相機與可選的模型變換可來自 Load3D / Preview3D 檢視器。",
+    "description": "算繪網格，每部相機產生一張影像。相機可來自 Load3D / Preview3D 檢視器（包含其模型變換）、Create Camera Info 或 Create Camera Orbit；若未提供相機，則使用自動取景的正面視圖。",
     "display_name": "渲染網格",
     "inputs": {
       "background": {
@@ -21050,7 +22583,7 @@
       },
       "camera_info": {
         "name": "camera_info",
-        "tooltip": "來自 Load3D / Preview3D 檢視器或 Create Camera Info 節點的相機。若未連接，將自動調整為預設正面視圖。"
+        "tooltip": "單一相機，或來自 Create Camera Orbit / Batch Cameras 的清單。無：自動取景的正面視圖。"
       },
       "height": {
         "name": "height"
@@ -21060,11 +22593,15 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "要渲染的內容。auto：若有紋理則使用紋理，否則使用頂點色彩，否則使用著色黏土材質。"
+        "tooltip": "要算繪的內容。auto：若有紋理則使用紋理，否則使用頂點色彩，再不然則使用有陰影的黏土材質。normal：視圖空間法線。world normal：依第一部相機的偏航角旋轉的世界空間法線，如同旋轉網格而非相機。"
       },
       "model_3d_info": {
         "name": "model_3d_info",
         "tooltip": "來自同一個 Load3D / Preview3D 檢視器的模型變換。將其與 camera_info 連接，以符合檢視器構圖。"
+      },
+      "texture": {
+        "name": "紋理",
+        "tooltip": "顯示此紋理以取代網格本身的紋理，例如「從視角烘焙紋理」的輸出未經「將紋理套用至網格」。"
       },
       "width": {
         "name": "width"
@@ -21082,7 +22619,7 @@
     }
   },
   "RenderSplat": {
-    "description": "使用各向異性 EWA 光柵器將高斯 splat 渲染為影像（定向橢圓 splat，抗鋸齒，深度排序由前到後）。相機來自 camera_info 輸入（載入 / 預覽 3D，或建立 Camera Info 節點）；留空則自動框選 splat。將 frames 設為大於 1 可產生旋轉台批次影像，供 Video 節點使用。",
+    "description": "使用各向異性 EWA 光柵化器將高斯潑濺渲染為影像（具方向性的橢圓潑濺、抗鋸齒、依深度由前至後排序）。相機來自 camera_info 輸入（載入／預覽 3D、建立相機資訊，或「建立相機軌道／批次相機」提供的相機清單：每部相機各產生一張影像）；留空即可自動為潑濺取景。將影格數設為大於 1，可產生轉盤式影像批次以供影片節點使用。",
     "display_name": "渲染 Splat",
     "inputs": {
       "background": {
@@ -21094,7 +22631,7 @@
       },
       "camera_info": {
         "name": "camera_info",
-        "tooltip": "渲染所用相機 - 來自 Load3D / Preview3D 相機或 Create Camera Info 節點。若留空，splat 會自動以預設 3/4 視角框選。"
+        "tooltip": "用於渲染的相機：可使用 Load3D／Preview3D 相機、建立相機資訊，或相機清單（每部相機各一張影像，並依影格數旋轉）。若留空，將從預設的 3/4 視角自動為潑濺取景。"
       },
       "frames": {
         "name": "幀數",
@@ -23398,6 +24935,9 @@
       "format_bit_depth": {
         "name": "位元深度"
       },
+      "format_channels": {
+        "name": "通道"
+      },
       "format_input_color_space": {
         "name": "輸入色彩空間"
       },
@@ -23629,7 +25169,7 @@
       },
       "format": {
         "name": "格式",
-        "tooltip": "輸出封裝格式。Auto 對 Auto/H.264 使用 MP4，對 AV1 使用 WebM。MP4、MKV 與 WebM 可選擇特定封裝格式。"
+        "tooltip": "自動模式會針對 ProRes 使用 MOV、針對 AV1 使用 WebM，其他情況則使用 MP4。"
       },
       "format_codec": {
         "name": "codec"
@@ -23900,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "使用 CLIP 編碼參考影像、影像思考、交錯文字或自我修正。請在此節點之前連接 HiDream-O1 參考影像，並針對影像使用標準採樣器。不含思考的文字轉影像只需要 CLIP 文字編碼；純文字輸出可使用生成文字。",
+    "display_name": "SenseNova 條件設定",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "條件設定"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "此次呼叫期間可生成的最大 token 數。"
+      },
+      "negative": {
+        "name": "負面"
+      },
+      "task": {
+        "name": "任務",
+        "tooltip": "選擇任務。其提示詞範本與停止行為會自動設定。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "條件設定",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "此次呼叫生成的文字。請使用 SenseNova 交錯解碼取得完整結果。"
+      },
+      "2": {
+        "name": "負面",
+        "tooltip": "用於交錯處理與自我修正的更新後負面條件設定。"
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "從 SenseNova 條件設定產生的交錯歷程中擷取生成的文字、影像與思考內容，包括 U1.6 自我修正。使用迴圈時，請使用 End Loop 並停用累積。輸入的參考影像不會包含在內。未生成影像時，會略過影像取用端。",
+    "display_name": "SenseNova 交錯解碼",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "條件設定"
+      },
+      "samples": {
+        "name": "樣本",
+        "tooltip": "若迴圈結束於影像請求，則為最後一個 KSampler 的像素潛在空間。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "文字",
+        "tooltip": null
+      },
+      "1": {
+        "name": "影像",
+        "tooltip": null
+      },
+      "2": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24225,6 +25836,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "使用 Sonilo Music 1.5，根據文字提示詞生成包含演唱人聲的歌曲。",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "duration": {
+        "name": "長度",
+        "tooltip": "'auto' 會讓歌曲長度配合歌詞。自訂長度會截斷無法容納的歌詞，並重複過短的歌詞。"
+      },
+      "prompt": {
+        "name": "提示詞",
+        "tooltip": "描述歌曲：曲風、情緒、樂器與人聲。若要指定歌詞，請加入含有 [Verse]／[Chorus] 標籤的 'Lyrics:' 區塊；若未加入，模型會自行撰寫歌詞。最多 2000 個字元。"
+      },
+      "seed": {
+        "name": "種子",
+        "tooltip": "種子可控制節點是否應重新執行；無論種子為何，結果皆不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "使用 Sonilo 的 AI 模型，根據文字提示產生音樂。將時長設為 0 可讓模型自動從提示中推斷時長。",
     "display_name": "Sonilo 文字轉音樂",
@@ -24304,6 +25941,10 @@
         "name": "顏色銳化",
         "tooltip": "使頂點紋理更清晰：1.0 = 物理正確混合；更高則使每個體素的顏色偏向其主導高斯而非鄰近平均（減少紋理模糊）。僅影響顏色，不改變幾何。"
       },
+      "fill": {
+        "name": "填補",
+        "tooltip": "僅限實心。封閉開口相對於沿著表面的成本。數值越低，可封閉越大的開口：約 3 可封住中空物體，但也會替杯子與領口加上蓋子。"
+      },
       "kernel": {
         "name": "核心",
         "tooltip": "最大 splat 半寬（以體素為單位）。每個高斯會在以自身 3-sigma 為大小的視窗內光柵化，最大值由此設定——小的 surfel 保持高效，大的則不會被截斷。如稀疏 splat 出現空隙可提高此值。"
@@ -24327,6 +25968,10 @@
       "smooth": {
         "name": "平滑",
         "tooltip": "Taubin 網格平滑迭代次數。可平滑表面但不會縮小體積（與模糊密度不同）。0 = 原始表面。"
+      },
+      "solid": {
+        "name": "實心",
+        "tooltip": "依高斯點的方向填滿內部，形成單一封閉表面。關閉時：使用原始密度等值面，會在表面後方保留隱藏的內壁。"
       },
       "splat": {
         "name": "splat"
@@ -24354,6 +25999,33 @@
       },
       "1": {
         "name": "右聲道",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "將影像分離為紅、綠、藍影像及 Alpha 遮罩。",
+    "display_name": "分離影像通道",
+    "inputs": {
+      "image": {
+        "name": "影像"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "紅色",
+        "tooltip": null
+      },
+      "1": {
+        "name": "綠色",
+        "tooltip": null
+      },
+      "2": {
+        "name": "藍色",
+        "tooltip": null
+      },
+      "3": {
+        "name": "透明度",
         "tooltip": null
       }
     }
@@ -25065,6 +26737,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "使用騰訊的 Hy4 模型產生文字回應。提供文字提示詞，並可選擇提供一或多張影像作為脈絡。",
+    "display_name": "騰訊 HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "提示詞"
+      },
+      "model_reasoning": {
+        "name": "推理"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "溫度"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D：圖片轉模型（專業版）",
     "inputs": {
@@ -25673,7 +27380,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "TextGenerate",
+    "display_name": "產生文字（已淘汰）",
     "inputs": {
       "audio": {
         "name": "音訊"
@@ -25732,7 +27439,7 @@
       },
       "video": {
         "name": "影片",
-        "tooltip": "影片幀作為圖像批次。預設為 24 FPS；內部會降採樣為 1 FPS。"
+        "tooltip": "作為影像批次的影片影格。假設為 24 FPS；內部會以模型的影格率進行子採樣。"
       }
     },
     "outputs": {
@@ -25806,7 +27513,7 @@
       },
       "video": {
         "name": "影片",
-        "tooltip": "影片幀作為圖像批次。預設為 24 FPS；內部會降採樣為 1 FPS。"
+        "tooltip": "作為影像批次的影片影格。假設為 24 FPS；內部會以模型的影格率進行子採樣。"
       }
     },
     "outputs": {
@@ -25816,6 +27523,79 @@
       },
       "1": {
         "name": "思考",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "產生文字",
+    "inputs": {
+      "audios": {
+        "name": "音訊"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "影像"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用 checkpoint 的多 token 預測頭進行推測式解碼。沒有 MTP 權重時無效。auto 會根據觀察到的 token 相符情況與執行成本，自動調整草稿的深度與廣度；2-5 會固定草稿深度；tree 模式會同時固定廣度與深度。採樣輸出仍保持正確分佈，但相同種子所產生的結果會與非 MTP 輸出不同。"
+      },
+      "prompt": {
+        "name": "提示詞"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "取代模型聊天範本中的系統提示詞。未使用預設範本時會忽略此項。"
+      },
+      "thinking": {
+        "name": "思考",
+        "tooltip": "若模型支援，則以思考模式運作。"
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "若模型具有內建的系統提示詞／範本，則使用該範本。"
+      },
+      "videos": {
+        "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
         "tooltip": null
       }
     }
@@ -25980,7 +27760,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "業界標準的放大與影像增強。",
+    "description": "業界標準的放大與影像增強。最大輸出：1.79 億像素。",
     "display_name": "Topaz 影像增強",
     "inputs": {
       "image": {
@@ -26018,11 +27798,11 @@
       },
       "output_height": {
         "name": "output_height",
-        "tooltip": "設為 0 代表與原始高度相同，或依 output_width 等比例縮放。Wonder 3.5 僅支援 1x 至 6x 放大。Bloom 2 與 Wonder 3.5 會保留輸入長寬比，並將指定尺寸視為目標。"
+        "tooltip": "值為零表示輸出高度與原始高度相同，或在指定 output_width 時依比例縮放。Wonder 3.5 與 Wonder 4 支援 1x 至 6x 的放大倍率，Bloom 2 支援 1x 至 12x。Bloom 2、Wonder 3.5 與 Wonder 4 一律維持輸入的長寬比：若同時設定兩個尺寸且其比例不同，將以較大的縮放倍率為準，輸出尺寸（及價格）會大於指定的尺寸。"
       },
       "output_width": {
         "name": "output_width",
-        "tooltip": "設為 0 代表自動計算（通常為原始尺寸，或依 output_height 等比例縮放）。Wonder 3.5 僅支援 1x 至 6x 放大。Bloom 2 與 Wonder 3.5 會保留輸入長寬比，並將指定尺寸視為目標。"
+        "tooltip": "值為零表示自動計算（通常會是原始尺寸，或在指定 output_height 時依比例縮放）。Wonder 3.5 與 Wonder 4 支援 1x 至 6x 的放大倍率，Bloom 2 支援 1x 至 12x。Bloom 2、Wonder 3.5 與 Wonder 4 一律維持輸入的長寬比：若同時設定兩個尺寸且其比例不同，將以較大的縮放倍率為準，輸出尺寸（及價格）會大於指定的尺寸。"
       }
     },
     "outputs": {
@@ -27916,6 +29696,44 @@
       }
     }
   },
+  "UltraTexConditioning": {
+    "description": "搭配 UltraTex LoRA 用於 FLUX.2 Klein 9B 的條件控制：將參考影像的外觀套用至網格，每個視圖產生一張影像。視圖來自「渲染網格」（世界法線），使用 4 個加上頂部與底部的「建立相機環繞」；請使用「從視圖烘焙紋理」烘焙結果。",
+    "display_name": "UltraTex 條件控制",
+    "inputs": {
+      "conditioning": {
+        "name": "conditioning",
+        "tooltip": "文字條件控制；UltraTex 是以空白提示詞訓練。"
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "更多參考影像：從其他視圖看到的物件，每張皆與其對應視圖連結，如同 reference 與正面視圖的關係。"
+      },
+      "masks": {
+        "name": "masks",
+        "tooltip": "相同視圖的「渲染網格」遮罩。"
+      },
+      "normals": {
+        "name": "normals",
+        "tooltip": "「渲染網格」的「世界法線」渲染結果：6 個標準視圖，或 4 個側面視圖。"
+      },
+      "reference": {
+        "name": "reference",
+        "tooltip": "從正面相機一側所見的物件應有外觀。"
+      },
+      "reference_mask": {
+        "name": "reference_mask",
+        "tooltip": "reference 的物件遮罩（白色 = 物件）"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "UnwrapMesh": {
     "description": "產生 UV 圖集：將表面分割為圖表、將各圖表參數化，並打包至 [0,1] 圖集。圖表接縫上的頂點會被複製（每個圖表一份副本，位置相同、各自擁有 UV），因此輸出網格的頂點數會多於輸入。請在 Remesh/Decimate 之後、紋理烘焙之前執行。",
     "display_name": "展開網格 UV",
@@ -27952,6 +29770,24 @@
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "設定 VAE 編碼與解碼的運算資料型別，不影響其他分支。",
+    "display_name": "VAE 運算資料型別",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "預設值會保留輸入 VAE 的運算資料型別。"
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -28325,6 +30161,31 @@
       }
     }
   },
+  "VSRDecode": {
+    "description": "使用同時讀取低品質影格的 RelayVSR Flash 解碼器，解碼 RelayVSR 潛在空間。",
+    "display_name": "VSR 解碼",
+    "inputs": {
+      "detail": {
+        "name": "細節",
+        "tooltip": "保留解碼器新增至每個影格雙三次插值放大結果的細節量；1 為完整模型輸出。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "提供給條件節點的相同低品質影片。"
+      },
+      "samples": {
+        "name": "樣本"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VaeDecodeShapeTrellis": {
     "display_name": "Trellis2 VAE 解碼形狀",
     "inputs": {
@@ -28429,6 +30290,33 @@
       "video": {
         "name": "影片",
         "tooltip": "含有語音音軌的影片，長度短於 30 分鐘。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "使用 VEED 將影片中的語音翻譯成另一種語言。每位說話者的聲音都會被複製，並讓其嘴型與翻譯內容同步。",
+    "display_name": "VEED 配音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "model",
+        "tooltip": "standard：價格較低、單聲道音訊；西班牙語為拉丁美洲西班牙語，葡萄牙語為巴西葡萄牙語。pro：提供地區口音與立體聲音訊。"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_source_language": {
+        "name": "source_language"
+      },
+      "model_target_language": {
+        "name": "target_language"
       }
     },
     "outputs": {
@@ -28644,6 +30532,40 @@
       },
       "video": {
         "name": "影片"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "依據 Bonneel 等人於 2015 年提出的方法進行時間一致性處理，並加入防止漂移的保真度項：每個影格會保留自身細節，同時沿著導引影片的光流跟隨相鄰影格。",
+    "display_name": "影片去閃爍",
+    "inputs": {
+      "direction": {
+        "name": "方向",
+        "tooltip": "雙向會平均正向與反向處理，可避免運動後方出現殘影，但需花費兩倍時間。"
+      },
+      "guide": {
+        "name": "引導",
+        "tooltip": "要跟隨其運動的穩定來源影格，可使用任何解析度。預設為 images，減少閃爍的效果較弱。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "閃爍的影格，例如逐格放大或處理的影片。"
+      },
+      "optical_flow": {
+        "name": "光流"
+      },
+      "strength": {
+        "name": "強度",
+        "tooltip": "每個影格跟隨相鄰影格的強度。數值越高，去除的閃爍越多，也會柔化更多細節。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "影格與其經運動補償的相鄰影格之間，大於此值的變化會視為真實變化，並減少平滑處理。0 會以相同方式平滑所有變化。"
       }
     },
     "outputs": {
@@ -31411,6 +33333,55 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WeVisOneDetect": {
+    "display_name": "WeVisOne-VL 偵測",
+    "inputs": {
+      "bboxes": {
+        "name": "邊界框",
+        "tooltip": "visual_prompt 的參考邊界框。"
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "WeVisOne-VL 文字編碼器。"
+      },
+      "image": {
+        "name": "影像"
+      },
+      "individual_masks": {
+        "name": "個別遮罩",
+        "tooltip": "依 bboxes 順序且影格依序為每個邊界框輸出一個遮罩，而非每個影格輸出一個聯集遮罩。"
+      },
+      "max_length": {
+        "name": "最大長度"
+      },
+      "query": {
+        "name": "查詢",
+        "tooltip": "要尋找的內容。freeform 會將其作為完整提示詞傳送。"
+      },
+      "task": {
+        "name": "任務",
+        "tooltip": "segmentation：邊界框與 Alpha 遮罩。detection 和 point 每行接受一個標籤。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "遮罩",
+        "tooltip": null
+      },
+      "1": {
+        "name": "邊界框",
+        "tooltip": null
+      },
+      "2": {
+        "name": "點",
+        "tooltip": "用於 point 與 count_point 任務的像素座標點，以 JSON [{\"x\", \"y\", \"label\", \"frame\"}] 表示。"
+      },
+      "3": {
+        "name": "文字",
+        "tooltip": "原始回答。"
       }
     }
   },
