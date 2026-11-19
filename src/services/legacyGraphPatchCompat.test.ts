@@ -165,34 +165,62 @@ describe('legacy graph patch compatibility', () => {
     )
   })
 
+  it('resolves a predecessor bound to the boot graph against the dispatched graph', () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    const host = { rootGraphOrUndefined: first }
+    first.add(new LGraphNode('boot node'))
+
+    captureLegacyGraphPatches(host, { name: 'halxp.export' }, 'setup', () => {
+      const original = first.serialize.bind(first)
+      first.serialize = function (options) {
+        const data = original(options)
+        data.extra = { ...data.extra, exporter: 'halxp' }
+        return data
+      }
+    })
+    applyLegacyGraphPatches(host, second)
+    host.rootGraphOrUndefined = second
+
+    expect(second.serialize()).toMatchObject({
+      id: second.id,
+      nodes: [],
+      extra: { exporter: 'halxp' }
+    })
+    expect(first.serialize().nodes).toHaveLength(1)
+  })
+
   it.for([
-    { extension: { name: 'unlisted.extension' }, hook: 'setup' },
-    { extension: { name: 'pysssss.WidgetDefaults' }, hook: 'afterLoadGraph' },
     {
-      extension: {
-        name: 'pysssss.WidgetDefaults',
-        beforeConfigureGraph() {}
-      },
+      label: 'a load hook',
+      extension: { name: 'legacy.extension' },
+      hook: 'afterLoadGraph'
+    },
+    {
+      label: 'an extension with beforeConfigureGraph',
+      extension: { name: 'legacy.extension', beforeConfigureGraph() {} },
+      hook: 'setup'
+    },
+    {
+      label: 'an extension with afterLoadGraph',
+      extension: { name: 'legacy.extension', afterLoadGraph() {} },
       hook: 'setup'
     }
-  ])(
-    'leaves $extension.name in $hook outside the bridge',
-    ({ extension, hook }) => {
-      const first = new LGraph()
-      const second = new LGraph()
-      const host = { rootGraphOrUndefined: first }
-      const calls: string[] = []
-      captureLegacyGraphPatches(host, extension, hook, () => {
-        first.onNodeAdded = () => void calls.push('first')
-      })
-      applyLegacyGraphPatches(host, second)
-      host.rootGraphOrUndefined = second
-      second.onNodeAdded?.(new LGraphNode('second node'))
+  ])('leaves patches from $label outside the bridge', ({ extension, hook }) => {
+    const first = new LGraph()
+    const second = new LGraph()
+    const host = { rootGraphOrUndefined: first }
+    const calls: string[] = []
+    captureLegacyGraphPatches(host, extension, hook, () => {
+      first.onNodeAdded = () => void calls.push('first')
+    })
+    applyLegacyGraphPatches(host, second)
+    host.rootGraphOrUndefined = second
+    second.onNodeAdded?.(new LGraphNode('second node'))
 
-      expect(calls).toEqual([])
-      expect(reportError).not.toHaveBeenCalled()
-    }
-  )
+    expect(calls).toEqual([])
+    expect(reportError).not.toHaveBeenCalled()
+  })
 
   it('restores untouched members without warning or shadowing prototype hooks', () => {
     const graph = new LGraph()
@@ -208,6 +236,7 @@ describe('legacy graph patch compatibility', () => {
 
     expect(result).toBe('unchanged')
     expect(Object.getOwnPropertyDescriptor(graph, 'clear')).toEqual(before)
+    expect(Object.hasOwn(graph, 'serialize')).toBe(false)
     expect(reportError).not.toHaveBeenCalled()
   })
 })

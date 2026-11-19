@@ -19,6 +19,7 @@ import { imageCompareExtension } from './imageCompare'
 import { imageCompositorExtension } from './imageCompositor'
 import { imageCropExtension } from './imageCrop'
 import { layerEditorExtension } from './layerEditor'
+import { legacyVhsUnbatchWarningExtension } from './legacyVhsUnbatchWarning'
 import { load3dLazyExtension } from './load3d/load3dLazy'
 import { maskEditorExtension } from '@/renderer/extensions/maskEditor/extension'
 import { noteNodeExtension } from './noteNode'
@@ -53,6 +54,7 @@ const baseCoreExtensions: ComfyExtension[] = [
   imageCompositorExtension,
   imageCropExtension,
   layerEditorExtension,
+  legacyVhsUnbatchWarningExtension,
   load3dLazyExtension,
   maskEditorExtension,
   noteNodeExtension,

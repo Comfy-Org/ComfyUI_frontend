@@ -122,24 +122,27 @@ the widgets of the graph on screen. `graph.clear()` still unregisters through
   subgraphs. Instance patches and graph event subscriptions installed in
   `afterLoadGraph` need a `WeakSet` of handled instances to avoid duplicates
   when a graph returns.
-- Compatibility for instance patches applied in `init` or `setup` is limited to
-  an audited bridge. For a named allowlist of extensions, the bridge captures
-  the patch on the boot graph, reapplies it to each graph that becomes active,
-  and reports a `deprecated_extension_graph_patch` warning once per extension.
-  The bridge covers `onNodeAdded` (`pysssss.WidgetDefaults`), `beforeChange`,
-  `afterChange` and `convertToSubgraph` (`cg.customnodes.use_everywhere`), and
-  `clear` (`Comfy.ManagerMenu`). Replaying every extension's installer on each
-  graph was rejected: it fires `WeakSet`-guarded hooks twice and leaks per-node
-  wrappers across tabs.
-- These retained-instance patterns are unsupported and reach only the boot
-  graph. Each one has an expected-failure probe in
-  `browser_tests/tests/legacyDoNotReplicate/`, so a probe that starts passing
-  signals the behavior changed:
-  - wrapping `add` or `remove` on `app.graph` during `setup`;
-  - wrapping `configure` on `app.graph` during `setup`;
-  - wrapping `serialize` on `app.graph` during `setup`;
-  - assigning `onNodeRemoved` on `app.graph` without chaining the previous
-    handler.
+- Instance patches applied in `init` or `setup` reach every root through a
+  compatibility bridge. While each extension's `init` and `setup` run
+  synchronously, the bridge watches `add`, `remove`, `configure`, `serialize`,
+  `onNodeAdded`, `onNodeRemoved`, `beforeChange`, `afterChange`,
+  `convertToSubgraph` and `clear` on the boot graph. It reapplies each
+  captured patch to every root created later, runs the patch only while that
+  root is active, and reports a `deprecated_extension_graph_patch` warning
+  once per extension. The predecessor an extension captured resolves against
+  the root being dispatched, so a chain through
+  `app.graph.serialize.bind(app.graph)` serializes the active root and not the
+  boot graph. Extensions that define `afterLoadGraph` or
+  `beforeConfigureGraph` manage graphs themselves and are left out; capturing
+  their setup patch as well would fire `WeakSet`-guarded hooks twice.
+  Replaying every extension's installer on each graph was rejected for the
+  same reason, and because it leaks per-node wrappers across tabs.
+- The bridge does not cover a patch whose handler reads `app.graph` instead of
+  `this` for its data, state an extension captured from `app.graph` in a
+  closure at setup time, patches installed after an `await` in `setup`, or
+  patches installed from other hooks such as `nodeCreated`. A patch on an
+  inactive root does not run, so background undo/redo and background
+  serialization skip it.
 - Activation does not touch the `LGraph.start()` step loop. `setup` starts the
   boot graph and the first `clear()` stops it, as before; no graph runs the
   loop after its first load, whether it is on screen or in the background.
