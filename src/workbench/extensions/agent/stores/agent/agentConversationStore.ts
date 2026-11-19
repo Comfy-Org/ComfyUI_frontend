@@ -377,7 +377,7 @@ interface SubmittedAskAnswer {
   owner: string
   messageId?: TurnId
   awaitingResolution?: 'accepted' | 'conflict'
-  onResolutionExpired?: () => void
+  onResolutionExpired?: () => boolean | void
 }
 
 export const useAgentConversationStore = defineStore(
@@ -808,7 +808,7 @@ export const useAgentConversationStore = defineStore(
     function markAskAwaitingResolution(
       askId: string,
       kind: 'accepted' | 'conflict',
-      onExpired?: () => void
+      onExpired?: () => boolean | void
     ): void {
       const submitted = submittedAskAnswers.get(askId)
       if (!submitted) return
@@ -845,7 +845,8 @@ export const useAgentConversationStore = defineStore(
     }
 
     function expireAskResolution(askId: string): void {
-      submittedAskAnswers.get(askId)?.onResolutionExpired?.()
+      const onExpired = submittedAskAnswers.get(askId)?.onResolutionExpired
+      if (onExpired?.() === false) return
       clearAskAwaitingResolution(askId)
     }
 
@@ -855,6 +856,7 @@ export const useAgentConversationStore = defineStore(
         if (
           submitted.owner === turn.threadId &&
           submitted.messageId === turn.messageId &&
+          submitted.awaitingResolution === undefined &&
           !answeringAskIds.value.has(askId)
         )
           submittedAskAnswers.delete(askId)
