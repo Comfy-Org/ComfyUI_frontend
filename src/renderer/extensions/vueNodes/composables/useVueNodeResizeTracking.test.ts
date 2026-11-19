@@ -392,30 +392,30 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it.for([
-    { graphId: ROOT_GRAPH_ID, remeasured: true },
-    { graphId: SECOND_GRAPH_ID, remeasured: false }
+    { graphId: ROOT_GRAPH_ID, registrations: 1 },
+    { graphId: SECOND_GRAPH_ID, registrations: 0 }
   ])(
-    'remeasures a mounted node whose layout is recreated in $graphId: $remeasured',
-    ({ graphId, remeasured }) => {
+    'registers a recreated node in $graphId $registrations times per batch',
+    async ({ graphId, registrations }) => {
       const nodeId = toNodeId('recreated-node')
       const view = render(TrackedNode, { props: { nodeId } })
       const element = screen.getByTestId(`tracked-${nodeId}`)
       vi.clearAllMocks()
 
-      for (const listener of testState.layoutChangeListeners)
-        listener(
-          fromPartial<LayoutChange>({
-            type: 'create',
-            nodeIds: [nodeId],
-            operation: { graphId }
-          })
-        )
+      const change = fromPartial<LayoutChange>({
+        type: 'create',
+        nodeIds: [nodeId],
+        operation: { graphId }
+      })
+      testState.layoutChangeListeners.forEach((listener) => listener(change))
+      testState.layoutChangeListeners.forEach((listener) => listener(change))
+      await Promise.resolve()
 
       expect(
-        resizeObserverState.observe.mock.calls.some(
+        resizeObserverState.observe.mock.calls.filter(
           ([observed]) => observed === element
         )
-      ).toBe(remeasured)
+      ).toHaveLength(registrations)
       view.unmount()
     }
   )

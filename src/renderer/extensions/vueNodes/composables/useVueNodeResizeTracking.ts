@@ -248,10 +248,22 @@ function createResizeTracking(scope: EffectScope): ResizeTracking {
     visibility: useDocumentVisibility(),
     observer: new ResizeObserver((entries) => measureEntries(entries, tracking))
   }
+  const canvasStore = useCanvasStore()
+  const pendingNodeIds = new Map<UUID, Set<string>>()
+  function flushRemeasurements() {
+    const { rootGraphId } = canvasStore
+    const nodeIds = rootGraphId && pendingNodeIds.get(rootGraphId)
+    pendingNodeIds.clear()
+    if (scope.active && nodeIds) remeasureNodes(nodeIds, tracking.observer)
+  }
   const stopRemeasuring = layoutStore.onChange((change) => {
-    if (change.type !== 'create') return
-    if (change.operation.graphId !== useCanvasStore().rootGraphId) return
-    remeasureNodes(new Set(change.nodeIds.map(String)), tracking.observer)
+    if (change.type !== 'create' || change.nodeIds.length === 0) return
+    const { graphId } = change.operation
+    if (graphId !== canvasStore.rootGraphId) return
+    if (pendingNodeIds.size === 0) queueMicrotask(flushRemeasurements)
+    let nodeIds = pendingNodeIds.get(graphId)
+    if (!nodeIds) pendingNodeIds.set(graphId, (nodeIds = new Set()))
+    for (const nodeId of change.nodeIds) nodeIds.add(String(nodeId))
   })
   onScopeDispose(stopRemeasuring)
   watch(tracking.visibility, (state) => {
