@@ -148,7 +148,8 @@ export class LayoutFollowerBridge extends EventTarget {
   get isCatchingUp(): boolean {
     return (
       this.sentWorkflowId !== null &&
-      (this.ackSeq === null || this.catchUpPending)
+      (this.ackSeq === null ||
+        (this.catchUpPending && !this.isSubscribeBaselineIntegrated))
     )
   }
 
