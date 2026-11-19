@@ -2,6 +2,7 @@ import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 
 import { once } from 'es-toolkit'
 
+import { callOutOfTurn } from '@/platform/nodeApi/shared/invalidArgument'
 import { savableValue } from '@/platform/nodeApi/shared/savableValue'
 import type { PropertyChangeEvent } from '@/platform/nodeApi/v4/types'
 import type { DispatchContext, MethodInstaller } from './dispatchContext'
@@ -31,8 +32,9 @@ export function propertyInstallers({
         }
         const settle = (member: string, settlement: Settlement) => {
           if (!outcome.open) {
-            throw new TypeError(
-              `${member} can only be called while the hook that received the event runs.`
+            throw callOutOfTurn(
+              member,
+              'while the hook that received the event runs'
             )
           }
           outcome.settlement = settlement
