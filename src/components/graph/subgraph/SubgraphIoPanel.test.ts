@@ -242,6 +242,24 @@ describe('subgraph input node ports', () => {
     expect(host.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
   })
 
+  it('drops a handle drag that is released after the input order changes', async () => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(20)
+    const { host } = await renderInputNode()
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const [firstHandle] = screen.getAllByRole('button', { name: /^Reorder / })
+    vi.advanceTimersByTime(1)
+
+    await user.pointer([
+      { keys: '[MouseLeft>]', target: firstHandle, coords: { y: 0 } },
+      { target: firstHandle, coords: { y: 30 } }
+    ])
+    reorderSubgraphInputs(host.subgraph, [1, 0])
+    await nextTick()
+    await user.pointer({ keys: '[/MouseLeft]', target: firstHandle })
+
+    expect(host.inputs.map(({ name }) => name)).toEqual(['second', 'first'])
+  })
+
   it('drops a handle drag that is released after the canvas turns read-only', async () => {
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(20)
     const { host } = await renderInputNode()

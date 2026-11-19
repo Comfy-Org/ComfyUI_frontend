@@ -5,7 +5,7 @@
 >
 import { computedWithControl, useEventListener } from '@vueuse/core'
 import { partition } from 'es-toolkit'
-import { computed, nextTick, useTemplateRef } from 'vue'
+import { computed, nextTick, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useFocusNode } from '@/composables/canvas/useFocusNode'
@@ -233,7 +233,7 @@ function reorder(from: number, to: number) {
   if (applied) captureEdits()
 }
 
-const { draggingIndex, rowStyle, startDrag, stepWithKeyboard } =
+const { draggingIndex, rowStyle, startDrag, stepWithKeyboard, cancelDrag } =
   useSubgraphIoReorder(
     () =>
       [
@@ -245,6 +245,11 @@ const { draggingIndex, rowStyle, startDrag, stepWithKeyboard } =
     sectionOf,
     reorder
   )
+
+watch(
+  () => rows.value.map(({ port, section }) => `${port.id}:${section}`).join(),
+  cancelDrag
+)
 
 function sectionOf(index: number) {
   const { section } = rows.value[index]
