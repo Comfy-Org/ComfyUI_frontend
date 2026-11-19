@@ -1542,9 +1542,7 @@ export class ComfyApp implements IComfyApp {
         restoreContentsBeforeReload()
         try {
           if (clean) graphsAwaitingNodeTypes.add(graph)
-          await this.reportGraphLoadFailure(error, {
-            notifyExtensions: !backgroundRestore
-          })
+          await this.reportGraphLoadFailure(error)
         } finally {
           endGraphLoad(graph)
         }
@@ -1646,9 +1644,7 @@ export class ComfyApp implements IComfyApp {
         } catch (error) {
           restoreContentsBeforeReload()
           if (clean) graphsAwaitingNodeTypes.add(graph)
-          await this.reportGraphLoadFailure(error, {
-            notifyExtensions: !backgroundRestore
-          })
+          await this.reportGraphLoadFailure(error)
           return { loaded: false }
         }
         const snapTo = LiteGraph.alwaysSnapToGrid

@@ -852,6 +852,55 @@ describe('ComfyApp', () => {
       )
     })
 
+    it.for([
+      {
+        failingStep: 'configure',
+        failWith: (error: Error) => {
+          vi.spyOn(LGraph.prototype, 'configure').mockImplementationOnce(() => {
+            throw error
+          })
+        }
+      },
+      {
+        failingStep: 'beforeConfigureGraph',
+        failWith: (error: Error) => {
+          vi.when(mockExtensionService.invokeExtensionsAsync)
+            .calledWith(
+              'beforeConfigureGraph',
+              expect.anything(),
+              expect.anything(),
+              expect.anything()
+            )
+            .thenRejectOnce(error)
+        }
+      }
+    ])(
+      'notifies onGraphLoadError when a background restore fails in $failingStep',
+      async ({ failWith }) => {
+        app.canvasElRef.value = document.createElement('canvas')
+        const workflow = markLoaded(
+          new ComfyWorkflow({
+            path: 'workflows/background-failure.json',
+            modified: 0,
+            size: 0
+          })
+        )
+        workflow.adoptGraph(new LGraph())
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        const error = new Error('background restore failed')
+        failWith(error)
+
+        await expect(
+          app.loadGraphData(createWorkflowGraphData(), false, false, workflow)
+        ).resolves.toBe(false)
+
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'onGraphLoadError',
+          error
+        )
+      }
+    )
+
     it('reuses a successfully reconfigured waiting graph on the next workflow switch', async () => {
       Reflect.set(app, 'rootGraphInternal', new LGraph())
       app.canvas = mockCanvas
