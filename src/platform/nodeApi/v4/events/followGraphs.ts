@@ -3,6 +3,7 @@ import { watch } from 'vue'
 import type { NodeLifecycleEvent } from '@comfyorg/graph-model/LGraphEventMap'
 
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { graphsIn } from '@/platform/nodeApi/v4/nodeQuery'
 import type { NodeQueryScope } from '@/platform/nodeApi/v4/types'
 
 /**
@@ -63,14 +64,4 @@ function onSubgraphSetChange(root: LGraph, changed: () => void): () => void {
     root.events.removeEventListener('configured', changed)
     root.events.removeEventListener('node:removed', onNodeRemoved)
   }
-}
-
-function graphsIn(
-  scope: NodeQueryScope,
-  visible: LGraph | null
-): readonly LGraph[] {
-  if (!visible) return []
-  if (scope === 'visible') return [visible]
-  const { rootGraph } = visible
-  return [rootGraph, ...rootGraph.subgraphs.values()]
 }

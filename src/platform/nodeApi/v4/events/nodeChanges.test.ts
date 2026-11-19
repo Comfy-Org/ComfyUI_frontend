@@ -53,7 +53,7 @@ describe('onNodeChanged', () => {
     expect(events[0].node).toBe(comfy.graph.node(String(outer.id)))
   })
 
-  it('hears an edit made through comfy.edit', () => {
+  it('hears an edit a handle makes', () => {
     const { outer, comfy } = documentOnScreen()
     const events: NodeChangeEvent[] = []
     comfy.onNodeChanged((event) => events.push(event))
