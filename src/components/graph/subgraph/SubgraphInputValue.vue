@@ -3,6 +3,7 @@ import { omit } from 'es-toolkit'
 import { computed, provide } from 'vue'
 
 import type { EditableInputValueSource } from '@/core/graph/subgraph/resolveInputValueSource'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import WidgetGrid from '@/renderer/extensions/vueNodes/components/WidgetGrid.vue'
 import { useProcessedWidgets } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import {
@@ -10,10 +11,11 @@ import {
   useGrowableRegions
 } from '@/renderer/extensions/vueNodes/layout/useGrowableRegions'
 
-const { source, label, status, resizable } = defineProps<{
+const { source, label, status, heightId, resizable } = defineProps<{
   source: EditableInputValueSource | undefined
   label: string
   status: string | undefined
+  heightId: WidgetId | undefined
   resizable: boolean
 }>()
 
@@ -32,7 +34,7 @@ const widgets = computed(() =>
 )
 
 const growable = useGrowableRegions({
-  regionId: () => source?.widgetId,
+  regionId: () => heightId,
   resizeNode: (height) => emit('resize', height),
   onCommit: () => emit('commit'),
   rootSelector: '[data-subgraph-io-panel]'
