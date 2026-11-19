@@ -87,11 +87,6 @@ export const useReleaseStore = defineStore('release', () => {
       ) === 0
   )
 
-  // `compareVersions` falls back to "different means newer" for non-semver
-  // input, and a missing current version becomes '0.0.0'. Behind the old
-  // desktop-only gate that was harmless. Every local install now reaches it,
-  // and a git-hash or empty version would otherwise show a permanent update
-  // indicator. Only claim an update when both sides can really be compared.
   const versionsComparable = computed(
     () =>
       !!recentRelease.value &&
@@ -106,14 +101,10 @@ export const useReleaseStore = defineStore('release', () => {
 
   // Show toast if needed
   const shouldShowToast = computed(() => {
-    // Unlike the red dot and the popup, this stays on the legacy build: it is
-    // the only surface with an Update action, and that action is correct
-    // nowhere else yet. See ADR-UPDATES-NOTIFICATIONS-0048.
     if (!isDesktop || isCloud) {
       return false
     }
 
-    // Skip if notifications are disabled
     if (!showVersionUpdates.value) {
       return false
     }
@@ -122,12 +113,10 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Skip if low attention
     if (!hasMediumOrHighAttention.value) {
       return false
     }
 
-    // Skip if user already skipped or changelog seen
     if (
       releaseVersion.value === recentRelease.value?.version &&
       ['skipped', 'changelog seen'].includes(releaseStatus.value)
@@ -138,24 +127,19 @@ export const useReleaseStore = defineStore('release', () => {
     return true
   })
 
-  // Show red-dot indicator
   const shouldShowRedDot = computed(() => {
-    // Cloud is always current, so an update indicator there is meaningless.
     if (isCloud) {
       return false
     }
 
-    // An uncomparable version cannot establish that an update exists.
     if (!versionsComparable.value) {
       return false
     }
 
-    // Skip if notifications are disabled
     if (!showVersionUpdates.value) {
       return false
     }
 
-    // Already latest → no dot
     if (!isNewVersionAvailable.value) {
       return false
     }
@@ -164,7 +148,6 @@ export const useReleaseStore = defineStore('release', () => {
     if (!release) return false
     const { version } = release
 
-    // Changelog seen → clear dot
     if (
       releaseVersion.value === version &&
       releaseStatus.value === 'changelog seen'
@@ -172,13 +155,10 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Attention medium / high (levels 2 & 3)
     if (hasMediumOrHighAttention.value) {
-      // Persist until changelog is opened
       return true
     }
 
-    // Attention low (level 1) and skipped → keep up to 3 d
     if (
       releaseVersion.value === version &&
       releaseStatus.value === 'skipped' &&
@@ -188,12 +168,10 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Not skipped → show
     return true
   })
 
   const shouldShowPopup = computed(() => {
-    // Deferred, not dropped: the tour ends and this re-evaluates.
     if (onboardingTourStore.activeTour === 'firstRun') {
       return false
     }
@@ -210,9 +188,6 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Cloud has no meaningful comfyui_version, so it skips the version check.
-    // Everywhere else an uncomparable version must not be treated as "you are
-    // on the latest", or a user is shown release notes they never received.
     const skipVersionCheck = isCloud && !valid(currentVersion.value)
     if (!skipVersionCheck && !isLatestVersion.value) {
       return false
@@ -228,7 +203,6 @@ export const useReleaseStore = defineStore('release', () => {
     return true
   })
 
-  // Action handlers for user interactions
   async function handleSkipRelease(version: string): Promise<void> {
     if (
       version !== recentRelease.value?.version ||

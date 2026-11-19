@@ -732,9 +732,6 @@ describe('useReleaseStore', () => {
         })
       })
 
-      // Each case puts the surface in the state where it WOULD show, so the
-      // setting is the only thing left that can hide it. The two surfaces need
-      // opposite version states, so they cannot share one case.
       it('hides the red dot that a new version would otherwise show', () => {
         const store = useReleaseStore()
         store.releases = [mockRelease]
@@ -754,9 +751,6 @@ describe('useReleaseStore', () => {
       })
     })
 
-    // The module mock returns a valid semver by default, so without these the
-    // non-semver path is never exercised. It only became reachable on these
-    // builds when the distribution gate came off.
     describe('when the running version is not semver', () => {
       beforeEach(() => {
         vi.mocked(valid).mockReturnValue(null)
@@ -788,8 +782,6 @@ describe('useReleaseStore', () => {
       expect(store.shouldShowToast).toBe(false)
     })
 
-    // One release per case: `recentRelease` reads only the first entry, so a
-    // two-element array would leave the second attention level unexercised.
     it.for(['high', 'medium'] as const)(
       'withholds the toast for a %s attention release',
       (attention) => {
