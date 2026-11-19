@@ -392,15 +392,42 @@ describe('useVueNodeResizeTracking', () => {
   })
 
   it.for([
-    { graphId: ROOT_GRAPH_ID, registrations: 1 },
-    { graphId: SECOND_GRAPH_ID, registrations: 0 }
+    {
+      graphId: ROOT_GRAPH_ID,
+      registrations: 1,
+      restoredSize: { width: 240, height: 180 - LiteGraph.NODE_TITLE_HEIGHT },
+      redraws: [[true, true]]
+    },
+    {
+      graphId: SECOND_GRAPH_ID,
+      registrations: 0,
+      restoredSize: undefined,
+      redraws: []
+    }
   ])(
-    'registers a recreated node in $graphId $registrations times per batch',
-    async ({ graphId, registrations }) => {
+    'restores a recreated node measurement in $graphId with $registrations registrations',
+    async ({ graphId, registrations, restoredSize, redraws }) => {
       const nodeId = toNodeId('recreated-node')
       const view = render(TrackedNode, { props: { nodeId } })
       const element = screen.getByTestId(`tracked-${nodeId}`)
+      const { entry } = createResizeEntry({
+        element,
+        nodeId,
+        width: 240,
+        height: 180
+      })
+      const observer = createObserverMock()
+      resizeObserverState.callback?.([entry], observer)
+      const contentKey = `${ROOT_GRAPH_ID}:${nodeId}`
+      expect(testState.contentSizes.delete(contentKey)).toBe(true)
       vi.clearAllMocks()
+      resizeObserverState.observe.mockImplementation((target) => {
+        if (target === element) {
+          queueMicrotask(() =>
+            resizeObserverState.callback?.([entry], observer)
+          )
+        }
+      })
 
       const change = fromPartial<LayoutChange>({
         type: 'create',
@@ -410,7 +437,10 @@ describe('useVueNodeResizeTracking', () => {
       testState.layoutChangeListeners.forEach((listener) => listener(change))
       testState.layoutChangeListeners.forEach((listener) => listener(change))
       await Promise.resolve()
+      await Promise.resolve()
 
+      expect(testState.contentSizes.get(contentKey)).toEqual(restoredSize)
+      expect(testState.setDirty.mock.calls).toEqual(redraws)
       expect(
         resizeObserverState.observe.mock.calls.filter(
           ([observed]) => observed === element
