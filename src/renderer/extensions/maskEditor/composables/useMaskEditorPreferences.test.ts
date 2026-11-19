@@ -7,6 +7,7 @@ vi.mock(import('@/scripts/utils'), () => ({
   })
 }))
 
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useMaskEditorStore } from '@comfyorg/mask-editor/maskEditorStore'
 import {
   ColorComparisonMethod,
@@ -57,10 +58,21 @@ describe('loadAndApply', () => {
     expect(store.brushSettings.stepSize).toBe(5)
   })
 
-  it('does not throw on corrupted localStorage data', () => {
+  it('keeps the current brush and reports corrupted localStorage data', () => {
     localStorage.setItem(BRUSH_STORAGE_KEY, 'not-valid-json')
+    const store = useMaskEditorStore()
+    const sizeBefore = store.brushSettings.size
     const { loadAndApply } = useMaskEditorPreferences()
-    expect(() => loadAndApply()).not.toThrow()
+
+    loadAndApply()
+
+    expect(store.brushSettings.size).toBe(sizeBefore)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(SyntaxError),
+      expect.objectContaining({
+        errorType: 'error_loading_mask_editor_preferences'
+      })
+    )
   })
 })
 

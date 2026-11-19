@@ -2,6 +2,7 @@ import { debounce } from 'es-toolkit/compat'
 import { z } from 'zod'
 
 import { getStorageValue, setStorageValue } from '@/scripts/utils'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import {
   BrushShape,
   ColorComparisonMethod,
@@ -38,12 +39,26 @@ const toolSettingsSchema = z.object({
 
 type ToolSettings = z.infer<typeof toolSettingsSchema>
 
+function reportPreferencesFailure(
+  cause: unknown,
+  errorType:
+    | 'error_loading_mask_editor_preferences'
+    | 'error_saving_mask_editor_preferences'
+): void {
+  reportError(cause, {
+    errorType,
+    surface: 'platform',
+    level: 'warning',
+    tags: { outcome: 'degraded' }
+  })
+}
+
 function readStoredJson(key: string): unknown {
   try {
     const stored = getStorageValue(key)
     return stored ? JSON.parse(stored) : null
   } catch (error) {
-    console.error('Failed to load mask editor preferences:', error)
+    reportPreferencesFailure(error, 'error_loading_mask_editor_preferences')
     return null
   }
 }
@@ -53,7 +68,7 @@ const debouncedWrite = debounce((brush: string, tools: string): void => {
     setStorageValue(BRUSH_STORAGE_KEY, brush)
     setStorageValue(TOOL_STORAGE_KEY, tools)
   } catch (error) {
-    console.error('Failed to save mask editor preferences:', error)
+    reportPreferencesFailure(error, 'error_saving_mask_editor_preferences')
   }
 }, 300)
 
