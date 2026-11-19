@@ -12925,12 +12925,6 @@ export type StartModelUploadData = {
      */
     Origin?: string
   }
-  headers?: {
-    /**
-     * The browser page's HTTPS origin, forwarded when opening a resumable session so its later responses carry CORS headers for that page.
-     */
-    Origin?: string
-  }
   path?: never
   query?: never
   url: '/api/assets/uploads'

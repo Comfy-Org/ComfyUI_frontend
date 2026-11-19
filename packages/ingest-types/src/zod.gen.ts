@@ -6889,10 +6889,6 @@ export const zStartModelUploadHeaders = z.object({
   Origin: z.string().optional()
 })
 
-export const zStartModelUploadHeaders = z.object({
-  Origin: z.string().optional()
-})
-
 /**
  * Signed upload URL or resumable session for one staged object
  */
