@@ -58,8 +58,10 @@ jobs:
 
       - name: Resolve the templates release ComfyUI pins
         id: templates
+        env:
+          TEMPLATES_VERSION: ${{ inputs.templates_version }}
         run: |
-          python3 tools/ci/src/cicd/resolve-shipped-templates.py "${{ inputs.templates_version }}" \
+          python3 tools/ci/src/cicd/resolve-shipped-templates.py "$TEMPLATES_VERSION" \
             | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Install the templates JSON bundle
