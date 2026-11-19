@@ -90,6 +90,7 @@ describe('RunNoticeBanner', () => {
     localStorage.setItem(STORAGE_KEY, 'true')
     const { rerender, emitted } = mount({
       workflowName: 'portrait',
+      genericNoticeReady: true,
       context: 'mismatch'
     })
     expect(screen.getByRole('note')).toHaveTextContent(
