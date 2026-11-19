@@ -2,12 +2,20 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ComfyApp, ComfyExtension } from '@/types/comfy'
 
-type GraphPatchMember =
-  | 'onNodeAdded'
-  | 'beforeChange'
-  | 'afterChange'
-  | 'convertToSubgraph'
-  | 'clear'
+const bridgedMembers = [
+  'onNodeAdded',
+  'onNodeRemoved',
+  'beforeChange',
+  'afterChange',
+  'convertToSubgraph',
+  'clear',
+  'add',
+  'remove',
+  'configure',
+  'serialize'
+] as const
+
+type GraphPatchMember = (typeof bridgedMembers)[number]
 
 type GraphPatchHost = Pick<ComfyApp, 'rootGraphOrUndefined'>
 
@@ -17,20 +25,9 @@ interface GraphPatch {
   previousByGraph: WeakMap<LGraph, LGraph[GraphPatchMember]>
 }
 
-const supportedExtensions = new Map<
-  string,
-  { hook: 'init' | 'setup'; members: readonly GraphPatchMember[] }
->([
-  ['pysssss.WidgetDefaults', { hook: 'setup', members: ['onNodeAdded'] }],
-  [
-    'cg.customnodes.use_everywhere',
-    {
-      hook: 'init',
-      members: ['beforeChange', 'afterChange', 'convertToSubgraph']
-    }
-  ],
-  ['Comfy.ManagerMenu', { hook: 'setup', members: ['clear'] }]
-])
+const capturedHooks = new Set(['init', 'setup'])
+
+const dispatchingGraphs: LGraph[] = []
 
 const bridges = new WeakMap<
   GraphPatchHost,
@@ -43,33 +40,44 @@ function installPatch(host: GraphPatchHost, graph: LGraph, patch: GraphPatch) {
       this === host.rootGraphOrUndefined
         ? patch.handler
         : patch.previousByGraph.get(this)
-    if (typeof handler === 'function') return Reflect.apply(handler, this, args)
+    if (typeof handler !== 'function') return
+    dispatchingGraphs.push(this)
+    try {
+      return Reflect.apply(handler, this, args)
+    } finally {
+      dispatchingGraphs.pop()
+    }
   })
 }
 
 export function captureLegacyGraphPatches<T>(
   host: GraphPatchHost,
-  extension: Pick<ComfyExtension, 'name' | 'beforeConfigureGraph'>,
+  extension: Pick<
+    ComfyExtension,
+    'name' | 'beforeConfigureGraph' | 'afterLoadGraph'
+  >,
   hook: string,
   run: () => T
 ): T {
-  const policy = supportedExtensions.get(extension.name)
   const graph = host.rootGraphOrUndefined
   if (
-    !policy ||
-    policy.hook !== hook ||
+    !capturedHooks.has(hook) ||
     extension.beforeConfigureGraph ||
+    extension.afterLoadGraph ||
     !graph
   )
     return run()
 
-  const candidates = policy.members.map((member) => {
+  const candidates = bridgedMembers.map((member) => {
     const descriptor = Object.getOwnPropertyDescriptor(graph, member)
     const previousByGraph = new WeakMap([[graph, graph[member]]])
     function callPrevious(this: LGraph, ...args: unknown[]) {
-      const previous = previousByGraph.get(this)
+      const dispatching = dispatchingGraphs.at(-1)
+      const target =
+        dispatching && previousByGraph.has(dispatching) ? dispatching : this
+      const previous = previousByGraph.get(target)
       if (typeof previous === 'function')
-        return Reflect.apply(previous, this, args)
+        return Reflect.apply(previous, target, args)
     }
     Reflect.set(graph, member, callPrevious)
     return { member, descriptor, previousByGraph, callPrevious }

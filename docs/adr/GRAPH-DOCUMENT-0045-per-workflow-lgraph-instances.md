@@ -122,24 +122,32 @@ the widgets of the graph on screen. `graph.clear()` still unregisters through
   subgraphs. Instance patches and graph event subscriptions installed in
   `afterLoadGraph` need a `WeakSet` of handled instances to avoid duplicates
   when a graph returns.
-- Compatibility for instance patches applied in `init` or `setup` is limited to
-  an audited bridge. For a named allowlist of extensions, the bridge captures
-  the patch on the boot graph, reapplies it to each graph that becomes active,
-  and reports a `deprecated_extension_graph_patch` warning once per extension.
-  The bridge covers `onNodeAdded` (`pysssss.WidgetDefaults`), `beforeChange`,
-  `afterChange` and `convertToSubgraph` (`cg.customnodes.use_everywhere`), and
-  `clear` (`Comfy.ManagerMenu`). Replaying every extension's installer on each
-  graph was rejected: it fires `WeakSet`-guarded hooks twice and leaks per-node
-  wrappers across tabs.
-- These retained-instance patterns are unsupported and reach only the boot
-  graph. Each one has an expected-failure probe in
-  `browser_tests/tests/legacyDoNotReplicate/`, so a probe that starts passing
-  signals the behavior changed:
-  - wrapping `add` or `remove` on `app.graph` during `setup`;
-  - wrapping `configure` on `app.graph` during `setup`;
-  - wrapping `serialize` on `app.graph` during `setup`;
-  - assigning `onNodeRemoved` on `app.graph` without chaining the previous
-    handler.
+- Instance patches that an extension applies to `app.graph` synchronously in
+  `init` or `setup` go through a compatibility bridge. The bridge captures
+  the patch on the boot graph, reapplies it to each graph that becomes
+  active, forwards to it only while that graph is active, and reports a
+  `deprecated_extension_graph_patch` warning once per extension. It covers
+  `onNodeAdded`, `onNodeRemoved`, `beforeChange`, `afterChange`,
+  `convertToSubgraph`, `clear`, `add`, `remove`, `configure` and
+  `serialize`. A predecessor the extension captured is resolved against the
+  graph being invoked, so `app.graph.serialize.bind(app.graph)` chains export
+  the active workflow rather than the boot graph. Extensions that define
+  `beforeConfigureGraph` or `afterLoadGraph` already install their own
+  per-graph hooks and are not captured; capturing them would apply their patch
+  twice. Patches applied after an `await` in `setup`, or in any other hook,
+  reach only the graph they were applied to. Replaying every extension's
+  installer on each graph was rejected: it fires `WeakSet`-guarded hooks twice
+  and leaks per-node wrappers across tabs. The bridge was first limited to an
+  allowlist (`pysssss.WidgetDefaults`, `cg.customnodes.use_everywhere`,
+  `Comfy.ManagerMenu`); a code search found the same patches in at least nine
+  more packs, including Danbooru-Gallery, Model-Resolver, halxp-comfy and
+  ComfyUI-JDCN, so the allowlist was removed.
+- Probes in `browser_tests/tests/legacyDoNotReplicate/` pin these patterns,
+  with devtools stand-ins (`ecosystemSimulacra.js`) that copy real packs.
+  Patterns that still need an extension change are expected-failure probes:
+  `afterConfigureGraph` state that should follow a tab switch or a background
+  undo, pre-MatchType VHS `cloneType`, the `VHS.LatentPreview` cleanup, and
+  websocket listeners that read `app.graph` for a background job.
 - Activation does not touch the `LGraph.start()` step loop. `setup` starts the
   boot graph and the first `clear()` stops it, as before; no graph runs the
   loop after its first load, whether it is on screen or in the background.

@@ -58,6 +58,32 @@ describe('legacy graph patch compatibility', () => {
     ])
   })
 
+  it('resolves a predecessor bound to the boot graph against the invoked root', () => {
+    const first = new LGraph()
+    const second = new LGraph()
+    first.add(new LGraphNode('first node'))
+    second.add(new LGraphNode('second node'))
+    const host = { rootGraphOrUndefined: first }
+    captureLegacyGraphPatches(
+      host,
+      { name: 'halxp.pretty_json' },
+      'setup',
+      () => {
+        const original = first.serialize.bind(first)
+        first.serialize = () => ({ ...original(), extra: { pretty: true } })
+      }
+    )
+    applyLegacyGraphPatches(host, second)
+    host.rootGraphOrUndefined = second
+
+    const exported = second.serialize()
+
+    expect({
+      titles: exported.nodes.map((node) => node.title),
+      extra: exported.extra
+    }).toEqual({ titles: ['second node'], extra: { pretty: true } })
+  })
+
   it('bypasses the Manager active-graph clear wrapper on an inactive root', async () => {
     const first = new LGraph()
     const second = new LGraph()
@@ -166,7 +192,10 @@ describe('legacy graph patch compatibility', () => {
   })
 
   it.for([
-    { extension: { name: 'unlisted.extension' }, hook: 'setup' },
+    {
+      extension: { name: 'graph.aware.extension', afterLoadGraph() {} },
+      hook: 'setup'
+    },
     { extension: { name: 'pysssss.WidgetDefaults' }, hook: 'afterLoadGraph' },
     {
       extension: {
