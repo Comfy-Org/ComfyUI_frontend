@@ -130,14 +130,14 @@
 
         <div
           v-if="isCollapsed && executing && progress !== undefined"
-          :class="
-            cn(
-              'absolute inset-x-4 -bottom-px translate-y-1/2 rounded-full',
-              progressClasses
-            )
-          "
-          :style="{ width: `${Math.min(progress * 100, 100)}%` }"
-        />
+          class="absolute -bottom-px left-4 h-2 w-full translate-y-1/2 overflow-hidden rounded-full"
+        >
+          <div
+            data-testid="node-progress-fill"
+            :class="cn('rounded-full', progressClasses)"
+            :style="progressStyle"
+          />
+        </div>
 
         <template v-if="!isCollapsed && isRerouteNode">
           <NodeSlots :node-data />
@@ -147,15 +147,14 @@
           <div class="relative">
             <div
               v-if="executing && progress !== undefined"
-              :class="
-                cn(
-                  'absolute inset-x-0 top-1/2 -translate-y-1/2',
-                  !!(progress < 1) && 'rounded-r-full',
-                  progressClasses
-                )
-              "
-              :style="{ width: `${Math.min(progress * 100, 100)}%` }"
-            />
+              class="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 overflow-hidden"
+            >
+              <div
+                data-testid="node-progress-fill"
+                :class="cn(progress < 1 && 'rounded-r-full', progressClasses)"
+                :style="progressStyle"
+              />
+            </div>
           </div>
 
           <div
@@ -588,7 +587,11 @@ const mediaRegions = computed(() => [
 ])
 
 // Computed classes and conditions for better reusability
-const progressClasses = 'h-2 bg-primary transition-all duration-300'
+const progressClasses =
+  'size-full bg-primary transition-[translate] duration-300 [translate:calc(var(--node-progress)-100%)]'
+const progressStyle = computed(() => ({
+  '--node-progress': `${Math.min((progress.value ?? 0) * 100, 100)}%`
+}))
 
 const { latestPreviewUrl, shouldShowPreviewImg } = useNodePreviewState(
   () => nodeData.id,
