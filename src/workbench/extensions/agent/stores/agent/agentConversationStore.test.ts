@@ -491,6 +491,25 @@ describe('useAgentConversationStore', () => {
     }
   })
 
+  it('keeps an unresolved answer marker when its retired session cannot report', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.hydrate(parkedApprovalTranscript('th-A'))
+      store.recordAskAnswer('turn-1:call-1', { selected: ['run'] }, 'th-A')
+      store.markAskAwaitingResolution('turn-1:call-1', 'accepted', () => false)
+
+      vi.advanceTimersByTime(60_000)
+
+      expect(store.asksAwaitingResolution()).toEqual([
+        { askId: 'turn-1:call-1', kind: 'accepted' }
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   // PM-1575 regression (finding #3, medium): settleActiveTurn used to keep
   // only a single "settled but still holding" transport reachable. A second
   // turn settling within the same window while ALSO holding a part
