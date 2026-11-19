@@ -464,6 +464,24 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(1)
   })
 
+  it('treats a throwing send as possibly transmitted when its workflow unbinds', () => {
+    transportThrows = true
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+
+    sender.abortIfUnbound()
+
+    expect(settled).toEqual([{ state: 'unconfirmed', ops: expect.any(Array) }])
+
+    transportThrows = false
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+  })
+
   it('abortIfUnbound frees the queue for the next bound batch immediately', () => {
     sender.enqueue([addNode(1)])
     boundWorkflow = 'wf-2'

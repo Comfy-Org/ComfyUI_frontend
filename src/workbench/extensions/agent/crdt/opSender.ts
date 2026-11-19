@@ -264,8 +264,12 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       : Math.max(observed, lastMinted + 1)
   }
 
+  function sendsThatMayHaveLeft(batch: InFlight): number {
+    return batch.sends + (batch.sendMayHaveLeft ? 1 : 0)
+  }
+
   function retire(batch: InFlight, answered: number): void {
-    const outstanding = batch.sends - answered
+    const outstanding = sendsThatMayHaveLeft(batch) - answered
     if (outstanding <= 0) return
     staleAnonymousBudget += outstanding
     for (const opId of batch.opIds) retiredOpIds.add(opId)
@@ -418,7 +422,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     if (inFlight !== batch) return
     retire(batch, 0)
     settle({
-      state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
+      state: sendsThatMayHaveLeft(batch) > 0 ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops
     })
   }
@@ -456,7 +460,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       retire(batch, 0)
       notify(
         {
-          state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
+          state:
+            sendsThatMayHaveLeft(batch) > 0 ? 'unconfirmed' : 'undeliverable',
           ops: batch.ops
         },
         batch.workflowId
