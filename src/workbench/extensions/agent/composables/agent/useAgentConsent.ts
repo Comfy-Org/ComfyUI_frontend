@@ -347,8 +347,6 @@ export function useAgentConsent() {
         .toBe(true, { timeout: ERROR_WORKFLOW_RESTORE_TIMEOUT_MS })
         .catch(() => {})
     }
-    // The wait can span an account or workspace switch: only the identity that
-    // saved consent gets the error context it signed in with.
     return (
       isLoggedIn.value && accepted.value && identity.value === savedIdentity
     )

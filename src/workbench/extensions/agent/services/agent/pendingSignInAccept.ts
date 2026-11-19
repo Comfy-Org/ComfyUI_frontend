@@ -17,7 +17,6 @@ export function writePendingSignInAccept({
 }: PendingSignInAccept): void {
   const savedAt = Date.now()
   if (errorContext && tryWrite({ draft, errorContext, savedAt })) return
-  // A record too big for the storage quota still keeps the draft.
   tryWrite({ draft, savedAt })
 }
 
