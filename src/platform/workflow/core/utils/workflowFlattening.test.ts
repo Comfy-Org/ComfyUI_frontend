@@ -93,6 +93,10 @@ describe('collectReachableSubgraphDefinitions', () => {
 })
 
 describe('buildSubgraphExecutionPaths', () => {
+  it('returns empty map when root nodes are missing', () => {
+    expect(buildSubgraphExecutionPaths(undefined, [])).toEqual(new Map())
+  })
+
   it('returns empty map when there are no subgraph definitions', () => {
     expect(buildSubgraphExecutionPaths([node(5, 'SomeNode')], [])).toEqual(
       new Map()
