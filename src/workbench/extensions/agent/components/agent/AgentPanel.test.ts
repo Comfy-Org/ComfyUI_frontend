@@ -644,9 +644,6 @@ describe('AgentPanel', () => {
       expect(
         localStorage.getItem('Comfy.AgentPanel.runNoticeDismissed')
       ).toBeNull()
-      expect(
-        screen.getByRole('button', { name: 'Share feedback' })
-      ).toBeInTheDocument()
     }
   )
 

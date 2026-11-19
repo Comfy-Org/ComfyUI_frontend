@@ -177,6 +177,7 @@ const emit = defineEmits<{
 }>()
 
 const openingChat = computed(() => openingWorkflowName !== undefined)
+const boundToTab = computed(() => !workflowDetached && activeTab !== null)
 
 const detachedChatUnavailable = computed(
   () => workflowDetached && sessionId !== null && !targetRestoring
@@ -186,8 +187,8 @@ const targetNotice = computed(() => {
   if (openingChat.value) return undefined
   if (canvasEmptyAfterTurn) return 'emptyCanvas'
   if (targetUnavailable || detachedChatUnavailable.value) return 'unavailable'
-  if (workflowDetached || activeTab === null) return undefined
-  if (visibleTabPath !== null && visibleTabPath !== activeTab.path)
+  if (!boundToTab.value) return undefined
+  if (visibleTabPath !== null && visibleTabPath !== activeTab?.path)
     return 'mismatch'
   return undefined
 })
@@ -483,12 +484,9 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             @paywall-action="emit('paywallAction', $event, 'credits_exhausted')"
           />
           <RunNoticeBanner
-            :hide-intro="greetingReplacesIntro"
+            :hide-intro="greetingReplacesIntro || boundToTab"
             :expanded="isMaximized"
-            :has-workflow-target="!workflowDetached && activeTab !== null"
-            :workflow-name="
-              targetNotice === 'mismatch' ? activeTab?.name : undefined
-            "
+            :workflow-name="activeTab?.name"
             :context="targetNotice"
             :generic-notice-ready="runNoticeReady"
             @show-target="emit('showTarget')"

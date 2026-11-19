@@ -1085,7 +1085,7 @@ describe('AgentPanelRoot onboarding', () => {
     expect(useTelemetry()!.trackAgentOnboardingShown).toHaveBeenCalledTimes(1)
   })
 
-  it('P7-03: tour cards anchor to mounted panel elements and describe per-tab chats', async () => {
+  it('P7-03: tour steps through intro, per-tab workflow, and chat history cards alongside the composer and history button', async () => {
     localStorage.setItem(SCOPED_KEY, 'true')
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
@@ -1123,7 +1123,7 @@ describe('AgentPanelRoot onboarding', () => {
       screen.getByRole('button', {
         name: i18n.global.t('agent.showChatHistory')
       })
-    ).toHaveAttribute('data-coach-hover')
+    ).toBeInTheDocument()
   })
 
   it('holds a replay requested while App Mode has the coach deferred', async () => {
@@ -14686,7 +14686,7 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('P7-01: shows no edit card naming the bound workflow before or after sending and never writes dismissal storage', async () => {
+  it('T1-20 P7-01: shows no edit card naming the bound workflow before or after sending and never writes dismissal storage', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
 

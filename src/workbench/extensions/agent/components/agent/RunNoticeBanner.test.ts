@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 import { i18n } from '@/i18n'
 
@@ -9,25 +9,25 @@ import RunNoticeBanner from './RunNoticeBanner.vue'
 const STORAGE_KEY = 'Comfy.AgentPanel.runNoticeDismissed'
 
 function mount({
-  workflowName = '3d_hunyuan-v2.1',
+  workflowName,
   expanded = false,
-  hasWorkflowTarget = false,
   genericNoticeReady = false,
-  hideIntro = false
+  hideIntro = false,
+  context
 }: {
   workflowName?: string
   expanded?: boolean
-  hasWorkflowTarget?: boolean
   genericNoticeReady?: boolean
   hideIntro?: boolean
+  context?: 'mismatch' | 'unavailable' | 'emptyCanvas'
 } = {}) {
   return render(RunNoticeBanner, {
     props: {
       expanded,
       workflowName,
-      hasWorkflowTarget,
       genericNoticeReady,
-      hideIntro
+      hideIntro,
+      context
     },
     global: { plugins: [i18n] }
   })
@@ -38,34 +38,33 @@ describe('RunNoticeBanner', () => {
     localStorage.clear()
   })
 
-  it('P7-01: renders no bound-workflow edit card and never writes dismissal storage when a workflow is bound', async () => {
-    const setItem = vi.spyOn(Storage.prototype, 'setItem')
-
-    const { rerender } = mount({ hasWorkflowTarget: true })
+  it('P7-01: renders no bound-workflow edit card and never writes dismissal storage when intro is hidden', async () => {
+    const { rerender } = mount({
+      workflowName: '3d_hunyuan-v2.1',
+      hideIntro: true
+    })
 
     expect(screen.queryByRole('note')).toBeNull()
     expect(screen.queryByText(/The agent can now edit/i)).toBeNull()
 
     await rerender({
       workflowName: '3d_hunyuan-v2.1',
-      hasWorkflowTarget: true,
+      hideIntro: true,
       genericNoticeReady: true
     })
 
     expect(screen.queryByRole('note')).toBeNull()
-    expect(setItem).not.toHaveBeenCalledWith(STORAGE_KEY, expect.anything())
     expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
   })
 
   it.for([false, true])(
     'shows the targetless notice only when ready for expanded=%s',
     async (expanded) => {
-      const { rerender } = mount({ workflowName: '', expanded })
+      const { rerender } = mount({ expanded })
       expect(screen.queryByRole('note')).toBeNull()
 
       await rerender({
         expanded,
-        workflowName: '',
         genericNoticeReady: true
       })
       expect(screen.getByRole('note')).toHaveTextContent(
@@ -75,7 +74,7 @@ describe('RunNoticeBanner', () => {
   )
 
   it('hides the notice and persists the dismissal when X is clicked', async () => {
-    mount({ workflowName: '', genericNoticeReady: true })
+    mount({ genericNoticeReady: true })
     await userEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
     expect(screen.queryByRole('note')).toBeNull()
     expect(localStorage.getItem(STORAGE_KEY)).toBe('true')
@@ -83,21 +82,15 @@ describe('RunNoticeBanner', () => {
 
   it('stays hidden on a fresh mount once dismissed', () => {
     localStorage.setItem(STORAGE_KEY, 'true')
-    mount({ workflowName: '', genericNoticeReady: true })
-    expect(screen.queryByRole('note')).toBeNull()
-  })
-
-  it('keeps a dismissed targetless notice hidden when ready', () => {
-    localStorage.setItem(STORAGE_KEY, 'true')
-    mount({ workflowName: '', genericNoticeReady: true })
+    mount({ genericNoticeReady: true })
     expect(screen.queryByRole('note')).toBeNull()
   })
 
   it('shows mismatch despite educational dismissal and preserves that dismissal when resolved', async () => {
     localStorage.setItem(STORAGE_KEY, 'true')
-    const { rerender, emitted } = render(RunNoticeBanner, {
-      props: { workflowName: 'portrait', context: 'mismatch' },
-      global: { plugins: [i18n] }
+    const { rerender, emitted } = mount({
+      workflowName: 'portrait',
+      context: 'mismatch'
     })
     expect(screen.getByRole('note')).toHaveTextContent(
       i18n.global.t('agent.viewingDifferentWorkflow')
@@ -115,10 +108,7 @@ describe('RunNoticeBanner', () => {
 
   it('says the target is unavailable despite educational dismissal and offers a New chat action', async () => {
     localStorage.setItem(STORAGE_KEY, 'true')
-    const { emitted } = render(RunNoticeBanner, {
-      props: { context: 'unavailable' },
-      global: { plugins: [i18n] }
-    })
+    const { emitted } = mount({ context: 'unavailable' })
     expect(screen.getByRole('note')).toHaveTextContent(
       i18n.global.t('agent.targetWorkflowUnavailable')
     )
@@ -131,28 +121,11 @@ describe('RunNoticeBanner', () => {
     expect(emitted('newChat')).toHaveLength(1)
   })
 
-  it('still shows context notices when a workflow target is bound', () => {
-    mount({ workflowName: 'portrait', hasWorkflowTarget: true })
-    expect(screen.queryByRole('note')).toBeNull()
-
-    render(RunNoticeBanner, {
-      props: {
-        workflowName: 'portrait',
-        hasWorkflowTarget: true,
-        context: 'mismatch'
-      },
-      global: { plugins: [i18n] }
-    })
-
-    expect(screen.getByRole('note')).toHaveTextContent(
-      i18n.global.t('agent.viewingDifferentWorkflow')
-    )
-  })
-
-  it('hides only the introductory notice while greeting is visible', async () => {
-    const view = render(RunNoticeBanner, {
-      props: { genericNoticeReady: true, hideIntro: true },
-      global: { plugins: [i18n] }
+  it('hides only the introductory notice when hideIntro is true', async () => {
+    const view = mount({
+      workflowName: 'portrait',
+      genericNoticeReady: true,
+      hideIntro: true
     })
     expect(screen.queryByRole('note')).not.toBeInTheDocument()
     await view.rerender({

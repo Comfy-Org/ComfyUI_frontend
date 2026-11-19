@@ -60,6 +60,7 @@ const NEW_TAB = 'Unsaved Workflow (2)'
 const FIRST_PROMPT = 'Optimise my workflow for speed'
 const SECOND_PROMPT = 'Now reduce the step count'
 const THIRD_PROMPT = 'Finally simplify the labels'
+const THIRD_REPLY = 'Labels simplified.'
 
 // Android Chrome as reported: Pixel 5 is 393x851 CSS px against the reporter's
 // 394x853, and the panel's layout breakpoints are the point. Top-level because
@@ -98,10 +99,19 @@ test.describe(
       const finishTurn = async (
         messageId: string,
         expectedBubbles: number,
-        threadId = THREAD_ID
+        threadId = THREAD_ID,
+        reply?: string
       ): Promise<void> => {
         await expect(agentPanel.userMessageBubbles).toHaveCount(expectedBubbles)
         const socket = await getAgentSocket()
+        if (reply !== undefined) {
+          socket.send(
+            JSON.stringify({
+              type: 'agent_message_delta',
+              data: { delta: reply, message_id: messageId, thread_id: threadId }
+            })
+          )
+        }
         socket.send(
           JSON.stringify({
             type: 'agent_message_done',
@@ -222,7 +232,8 @@ test.describe(
           posted[2].current_tab_unbound,
           'a bound tab is not an unbound tab'
         ).toBeUndefined()
-        await finishTurn(THIRD_MESSAGE_ID, 1, SAVED_THREAD_ID)
+        await finishTurn(THIRD_MESSAGE_ID, 1, SAVED_THREAD_ID, THIRD_REPLY)
+        await expect(panel.getByText(THIRD_REPLY)).toBeVisible()
         await expect(panel.getByRole('note')).toHaveCount(0)
       })
     })
