@@ -1,12 +1,28 @@
 /** Remove credentials, query strings, and fragments from URL-shaped text. */
 export function redactTelemetryUrls(text: string): string {
   if (text.length > MAX_REDACTABLE_TEXT_LENGTH) return REDACTION_SENTINEL
-  return text
+  const withoutBareMetadata = text.replace(BARE_METADATA_PATTERN, '')
+  for (const match of withoutBareMetadata.matchAll(URL_TOKEN_PATTERN)) {
+    if (
+      /[?#]/.test(match[0]) &&
+      withoutBareMetadata[match.index + match[0].length] === "'" &&
+      withoutBareMetadata[match.index - 1] !== "'"
+    ) {
+      return REDACTION_SENTINEL
+    }
+  }
+  const redacted = withoutBareMetadata
     .replace(SPACED_QUERY_URL_PATTERN, redactUrlToken)
     .replace(URL_TOKEN_PATTERN, redactUrlToken)
+  return redacted !== withoutBareMetadata &&
+    /[?#]/.test(withoutBareMetadata) &&
+    (redacted.includes('&') || UNQUOTED_CONTINUATION_PATTERN.test(redacted))
+    ? REDACTION_SENTINEL
+    : redacted
 }
 
 const MAX_REDACTABLE_TEXT_LENGTH = 16_384
+const BARE_METADATA_PATTERN = /(?<![A-Z0-9._~%/-])[?#][^\s"'<>?#=&]+=[^\n]*/gi
 const ABSOLUTE_URL_START = /(?:https?:)?\/\/[^\s"'<>?#]+/.source
 const ROOT_RELATIVE_URL_START =
   /(?<!\d)\/(?!\/|https?:\/\/)(?:[A-Za-z._~%-]|\d(?:[A-Za-z0-9._~%/-]|(?=[?#]))|(?=[?#]))[A-Za-z0-9._~%/-]*/
@@ -25,6 +41,9 @@ const SPACED_QUERY_URL_PATTERN = new RegExp(
 
 const QUOTE_IMMEDIATE_END = `\\s|$`
 const QUOTE_TRAILING_PUNCTUATION = /[)\]}.,;!:>]/.source
+const UNQUOTED_CONTINUATION_PATTERN = new RegExp(
+  `'${QUOTE_TRAILING_PUNCTUATION}+(?!${QUOTE_IMMEDIATE_END}|'|${QUOTE_TRAILING_PUNCTUATION})`
+)
 const QUOTED_URL_RESTART = `(?:https?:)?\\/\\/|\\/[A-Z0-9._~%/-]*[?#]|[A-Z0-9_~%-]+[./][A-Z0-9._~%/-]*#|[A-Z0-9_~%-]+(?:[./][A-Z0-9._~%/-]*)?[?#][A-Z0-9_~%-]+=`
 const QUOTED_DIAGNOSTIC = `[^\\n'<>]+'(?=${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION})`
 const QUOTE_CLOSES_RUN = `${QUOTE_IMMEDIATE_END}|${QUOTE_TRAILING_PUNCTUATION}+(?:${QUOTE_IMMEDIATE_END}|'(?=${QUOTED_URL_RESTART}|${QUOTED_DIAGNOSTIC}))`
@@ -35,8 +54,7 @@ const URL_TOKEN_PATTERN = new RegExp(
   `(?:${ABSOLUTE_URL_START}|${ROOT_RELATIVE_URL_START})${URL_TOKEN_REMAINDER}` +
     `|${RELATIVE_URL_START}\\?${URL_TOKEN_REMAINDER}=${URL_TOKEN_REMAINDER}` +
     `|${RELATIVE_URL_START_WITH_SEPARATOR}#${NONEMPTY_URL_TOKEN_REMAINDER}` +
-    `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}` +
-    `|(?<![A-Z0-9._~%/-])[?#][A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}`,
+    `|${RELATIVE_URL_START}#[A-Z0-9_~%-]+=${URL_TOKEN_REMAINDER}`,
   'gi'
 )
 
@@ -59,15 +77,13 @@ function redactUrlToken(token: string): string {
 
 function redactSingleUrlToken(token: string): string {
   const { core, trailing } = peelTrailingPunctuation(token)
-  const stackSuffix = core.match(/:\d+:\d+$/)?.[0] ?? ''
-  const url = stackSuffix ? core.slice(0, -stackSuffix.length) : core
-  const clean = url.split(/[?#]/, 1)[0]
+  const clean = core.split(/[?#]/, 1)[0]
   const absolute = clean.match(/^((?:https?:)?\/\/)([^/]*)(.*)$/i)
-  if (!absolute) return `${clean}${stackSuffix}${trailing}`
+  if (!absolute) return `${clean}${trailing}`
 
   const [, prefix, authority, path] = absolute
   const userInfoEnd = authority.lastIndexOf('@')
-  return `${prefix}${authority.slice(userInfoEnd + 1)}${path}${stackSuffix}${trailing}`
+  return `${prefix}${authority.slice(userInfoEnd + 1)}${path}${trailing}`
 }
 
 function findGluedUrlBoundary(

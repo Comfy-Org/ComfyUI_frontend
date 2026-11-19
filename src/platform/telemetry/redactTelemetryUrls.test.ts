@@ -170,6 +170,31 @@ describe('redactTelemetryUrls', () => {
       kind: 'bare fragment with no URL-shaped prefix',
       input: '#access_token=x',
       expected: ''
+    },
+    {
+      kind: 'bare query with a spaced value',
+      input: '?q=a b&token=SECRET',
+      expected: ''
+    },
+    {
+      kind: 'bare fragment with a spaced value',
+      input: '#access_token=a b&token=SECRET',
+      expected: ''
+    },
+    {
+      kind: 'bare query with a bracketed key and a spaced value',
+      input: '?filter[id]=a b&token=SECRET',
+      expected: ''
+    },
+    {
+      kind: 'numeric query value resembling stack coordinates',
+      input: 'https://h/x?secret=12:30:45',
+      expected: 'https://h/x'
+    },
+    {
+      kind: 'numeric fragment value resembling stack coordinates',
+      input: 'https://h/x#secret=12:30:45',
+      expected: 'https://h/x'
     }
   ])('$kind', ({ input, expected }) => {
     it('redacts URL metadata', () => {
@@ -209,6 +234,17 @@ describe('redactTelemetryUrls', () => {
     it('does not let a later token survive unredacted', () => {
       expect(redactTelemetryUrls(input)).toBe('https://h/x')
     })
+  })
+
+  it.for([
+    "https://h/x?q=o','b',&token=SECRET",
+    "'https://h/x?q=o','b',&token=SECRET",
+    "'https://h/x?q=o','b',&SECRET",
+    "'https://h/x?q=o','b',;token=SECRET",
+    "'https://h/x?q=o','b',token=SECRET",
+    "https://h/x?q=o','SECRET'"
+  ])('fails closed on ambiguous query continuations: %s', (input) => {
+    expect(redactTelemetryUrls(input)).toBe(REDACTION_SENTINEL)
   })
 
   describe.for([
@@ -333,12 +369,14 @@ describe('redactTelemetryUrls', () => {
     })
   })
 
-  it('redacts adjacent URLs without consuming punctuation or stack locations', () => {
+  it('preserves stack coordinates only outside URL metadata', () => {
     expect(
       redactTelemetryUrls(
-        'https://a/b,https://user:pw@c/d?t=1; at f (https://host/a.js?v=1:12:9)'
+        'https://a/b,https://user:pw@c/d?t=1; at f (https://host/a.js?v=1:12:9) at g (https://host/b.js:23:7)'
       )
-    ).toBe('https://a/b,https://c/d; at f (https://host/a.js:12:9)')
+    ).toBe(
+      'https://a/b,https://c/d; at f (https://host/a.js) at g (https://host/b.js:23:7)'
+    )
   })
 
   describe.for([
@@ -483,9 +521,7 @@ describe('redactTelemetryValues', () => {
     assert.instanceOf(redacted.error, Error)
     expect(redacted.error.message).toBe('failed https://example.com/a.glb')
     expect(redacted.error.name).toBe('AssetLoadError https://example.com/name')
-    expect(redacted.error.stack).toBe(
-      'at load (https://example.com/load.js:1:2)'
-    )
+    expect(redacted.error.stack).toBe('at load (https://example.com/load.js)')
     assert.instanceOf(redacted.error.cause, Error)
     expect(redacted.error.cause.message).toBe(
       'cause https://example.com/cause.glb'
