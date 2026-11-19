@@ -72,6 +72,7 @@ const telemetry = vi.mocked(telemetryProvider)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
+    getUsageStatus: vi.fn(async () => ({ has_used_agent: false })),
     postMessage: vi.fn(async (): Promise<AgentTurnAccepted> => ({
       thread_id: 'th-1',
       message_id: 'msg-1',
@@ -4839,6 +4840,55 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it('(g4b) a turn the socket settles after a reconnect shows the stored row, so a tool call missed in the drop appears', async () => {
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [
+      historyRow(1, 'user', 'msg-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'msg-1', 'Added it.', 'msg-1'),
+        content: {
+          text: 'Added it.',
+          thinking: [
+            { text: 'round one', tool_call_id: 'tool-1' },
+            { text: 'round two' }
+          ],
+          tool_calls: [
+            {
+              id: 'tool-1',
+              tool_call_id: 'tool-1',
+              tool_name: 'add_node',
+              status: 'success'
+            }
+          ]
+        }
+      }
+    ])
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(thinking('msg-1', 'round one'))
+    status(false)
+    status(true)
+    emit(thinking('msg-1', 'round two'))
+    emit(delta('msg-1', 'Added it.'))
+    emit(done('msg-1'))
+
+    await vi.waitFor(() => {
+      const assistant = session.entries.value.at(-1)
+      assert(assistant !== undefined && 'parts' in assistant)
+      expect(
+        assistant.parts.map((part) =>
+          part.type === 'thinking' ? part.text : part.type
+        )
+      ).toEqual(['round one', 'tool', 'round two', 'text'])
+    })
+  })
+
   it('(g5) a turn that ended during the drop is settled from its persisted row and its stale approval card is dropped', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => [
@@ -5642,7 +5692,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g21) a terminal event that beats the pending history fetch keeps the socket transcript', async () => {
+  it('(g21) a terminal event that beats the pending history fetch ignores that read and settles from a fresh one', async () => {
     const pendingHistory: Array<(rows: AgentMessages) => void> = []
     let deliveredResponses = 0
     const getMessages = vi.fn(() =>
@@ -5678,11 +5728,25 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
     await vi.waitFor(() => {
       expect(deliveredResponses).toBe(1)
-      expect(getMessages).toHaveBeenCalledTimes(1)
+      expect(getMessages).toHaveBeenCalledTimes(2)
       const assistant = session.entries.value.at(-1)
       assert(assistant?.role === 'assistant')
       expect(assistant.parts).toEqual([
         { type: 'text', text: 'partial from socket', state: 'done' }
+      ])
+    })
+
+    const settledRead = pendingHistory.at(1)
+    assert.exists(settledRead)
+    settledRead([
+      historyRow(1, 'user', 'msg-1', 'go'),
+      historyRow(2, 'assistant', 'msg-1', 'stored final', 'msg-1')
+    ])
+    await vi.waitFor(() => {
+      const assistant = session.entries.value.at(-1)
+      assert(assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'stored final', state: 'done' }
       ])
     })
   })
@@ -6676,6 +6740,88 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({
       node_ids: ['5'],
       workflow_id: 'wf-selected'
+    })
+  })
+
+  it('sends a plain canvas selection as canvas_selection, not as the tagged selection', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        canvasSelection: () => ['7']
+      }
+    })
+    session.start()
+
+    await session.sendMessage(
+      'what node is selected',
+      undefined,
+      undefined,
+      undefined,
+      () => 'wf-selected'
+    )
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.selection).toBeUndefined()
+    expect(body.canvasSelection).toEqual({
+      node_ids: ['7'],
+      workflow_id: 'wf-selected'
+    })
+  })
+
+  it.for([
+    { tags: ['5'], expected: { node_ids: ['9'] } },
+    { tags: ['5', '9'], expected: undefined }
+  ])(
+    'leaves tagged nodes $tags out of the canvas selection',
+    async ({ tags, expected }) => {
+      const rest = fakeRest()
+      const session = useAgentSession({
+        rest,
+        events: fakeEvents().source,
+        workflow: {
+          current: () => undefined,
+          adopted: () => {},
+          canvasSelection: () => ['5', '9']
+        }
+      })
+      session.start()
+
+      await session.sendMessage(
+        'compare',
+        undefined,
+        tags.map((id) => ({ id, title: `Node ${id}` }))
+      )
+
+      const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+      expect(body.selection).toEqual({ node_ids: tags })
+      expect(body.canvasSelection).toEqual(expected)
+    }
+  )
+
+  it('caps a large plain canvas selection and reports the total', async () => {
+    const rest = fakeRest()
+    const ids = Array.from({ length: 25 }, (_, index) => String(index + 1))
+    const session = useAgentSession({
+      rest,
+      events: fakeEvents().source,
+      workflow: {
+        current: () => undefined,
+        adopted: () => {},
+        canvasSelection: () => ids
+      }
+    })
+    session.start()
+
+    await session.sendMessage('what are these')
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.canvasSelection).toEqual({
+      node_ids: ids.slice(0, 20),
+      total_selected: 25
     })
   })
 

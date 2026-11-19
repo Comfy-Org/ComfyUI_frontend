@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { useExternalLink } from '@/composables/useExternalLink'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/workflowErrors/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
@@ -152,6 +153,31 @@ describe('WorkflowNeedsDeploymentCard', () => {
     expect(
       screen.queryByTestId('custom-deployment-video')
     ).not.toBeInTheDocument()
+  })
+
+  it('opens the platform build wizard for the open workflow from Create on Platform on Cloud', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const user = renderCard()
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait',
+      activeState: { nodes: [{ id: 1, type: 'BiRefNet' }] },
+      changeTracker: { prepareForSave: vi.fn() }
+    })
+    let reads = 0
+    const open = vi.spyOn(window, 'open').mockReturnValue(
+      fromPartial<Window>({
+        get closed() {
+          return reads++ > 0
+        }
+      })
+    )
+
+    await user.click(screen.getByRole('link', { name: /Create on Platform/ }))
+
+    expect(open).toHaveBeenCalledExactlyOnceWith(
+      expect.stringContaining('/profile/builds/new?step=import&handoff='),
+      '_blank'
+    )
   })
 
   it('shows names as written in a row that lists more than three', () => {

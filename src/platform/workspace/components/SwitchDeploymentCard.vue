@@ -87,7 +87,7 @@
           as="a"
           :href="createDeploymentUrl"
           target="_blank"
-          rel="noopener noreferrer"
+          :rel="platformLinkRel()"
           @click="emit('done')"
         >
           {{ $t('deploymentSwitcher.customDeployment.createOnPlatform') }}
@@ -138,6 +138,7 @@ import { useDeploymentSwitchGuard } from '@/platform/workspace/composables/useDe
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { canSwitchTo } from '@/platform/workspace/workflowDeploymentOffer'
 import type { DeploymentChoice } from '@/platform/workspace/workflowDeploymentOffer'
+import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const { choices, missing } = defineProps<{
   choices: readonly DeploymentChoice[]
@@ -160,7 +161,9 @@ const [DefineOption, ReuseOption] = createReusableTemplate<{
 }>()
 
 const selectId = useId()
-const createDeploymentUrl = customDeploymentCreateUrl()
+const createDeploymentUrl = computed(() =>
+  customDeploymentCreateUrl('switch-deployment-card')
+)
 
 function runs(choice: DeploymentChoice): boolean {
   return choice.mark?.kind === 'runs'

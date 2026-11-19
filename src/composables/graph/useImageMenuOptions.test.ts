@@ -1,10 +1,24 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToast } from '@/components/ui/toast/toastStore'
+import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import {
+  createMockCanvasRenderingContext2D,
+  stubCanvasGetContext
+} from '@/utils/__tests__/canvasTestUtils'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { useImageMenuOptions } from './useImageMenuOptions'
 
@@ -19,7 +33,9 @@ const i18n = createI18n({
         'Copy Image': 'Copy Image',
         'Paste Image': 'Paste Image',
         'Save Image': 'Save Image',
-        'Download Images': 'Download Images'
+        'Download Images': 'Download Images',
+        'Show Full Resolution': 'Show Full Resolution',
+        'Show Downscaled Preview': 'Show Downscaled Preview'
       }
     }
   }
@@ -170,6 +186,73 @@ describe('useImageMenuOptions', () => {
     })
   })
 
+  describe('Copy Image action', () => {
+    function createCopyImageFixture() {
+      const original = document.createElement('img')
+      Object.defineProperties(original, {
+        naturalWidth: { value: 4096 },
+        naturalHeight: { value: 2048 }
+      })
+      original.decode = vi
+        .fn<HTMLImageElement['decode']>()
+        .mockResolvedValue(undefined)
+      vi.spyOn(globalThis, 'Image').mockImplementation(function () {
+        return original
+      })
+      const capture: { bounds: number[] } = { bounds: [] }
+      const png = new Blob(['original pixels'], { type: 'image/png' })
+      const context = createMockCanvasRenderingContext2D()
+      stubCanvasGetContext(context)
+      vi.spyOn(HTMLCanvasElement.prototype, 'toBlob').mockImplementation(
+        function (this: HTMLCanvasElement, callback) {
+          capture.bounds = [this.width, this.height]
+          callback(png)
+        }
+      )
+      vi.spyOn(navigator.clipboard, 'write').mockResolvedValue(undefined)
+      const display = document.createElement('img')
+      display.src = 'blob:display-copy'
+      display.dataset.fullSrc = 'http://localhost/original.png'
+      Object.defineProperties(display, {
+        naturalWidth: { value: 1024 },
+        naturalHeight: { value: 512 }
+      })
+      const node = createMockLGraphNode({ imgs: [display], imageIndex: 0 })
+      const { getImageMenuOptions } = mountComposable()
+      const copy = getImageMenuOptions(node).find(
+        (option) => option.label === 'Copy Image'
+      )
+      assert.exists(copy?.action)
+
+      return { original, context, png, capture, copy: copy.action }
+    }
+
+    it('copies the decoded original with its full asymmetric bounds', async () => {
+      const { original, context, png, capture, copy } = createCopyImageFixture()
+
+      await copy()
+
+      expect(original.src).toBe('http://localhost/original.png')
+      expect(capture.bounds).toEqual([4096, 2048])
+      expect(context.drawImage).toHaveBeenCalledWith(original, 0, 0)
+      const writes = vi.mocked(navigator.clipboard.write).mock.calls
+      expect(writes).toHaveLength(1)
+      expect(await writes[0][0][0].getType('image/png')).toBe(png)
+    })
+
+    it('warns without changing the clipboard when the original cannot decode', async () => {
+      const { original, copy } = createCopyImageFixture()
+      vi.mocked(original.decode).mockRejectedValue(new Error('decode refused'))
+
+      await copy()
+
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ kind: 'warning' })
+      ])
+      expect(navigator.clipboard.write).not.toHaveBeenCalled()
+    })
+  })
+
   describe('pasteImage action', () => {
     it('reads clipboard and calls pasteFiles on the node', async () => {
       const node = createImageNode()
@@ -230,6 +313,99 @@ describe('useImageMenuOptions', () => {
       await pasteOption!.action!()
 
       expect(node.pasteFiles).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getPreviewResolutionOption', () => {
+    function useVueNodes(enabled: boolean) {
+      LiteGraph.vueNodesMode = enabled
+      onTestFinished(() => {
+        LiteGraph.vueNodesMode = false
+      })
+    }
+
+    function outputImages(count: number) {
+      vi.spyOn(useNodeOutputStore(), 'getNodeOutputs').mockReturnValue({
+        images: Array.from({ length: count }, (_, i) => ({
+          filename: `image${i}.png`,
+          type: 'output' as const
+        }))
+      })
+    }
+
+    beforeEach(() => {
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        true
+    })
+
+    it.for([
+      {
+        name: 'offers full resolution for a single image',
+        vueNodes: true,
+        images: 1,
+        flags: {},
+        label: 'Show Full Resolution'
+      },
+      {
+        name: 'offers the downscaled preview once full resolution is on',
+        vueNodes: true,
+        images: 1,
+        flags: { fullResolutionPreview: true },
+        label: 'Show Downscaled Preview'
+      },
+      {
+        name: 'is absent for a grid of images',
+        vueNodes: true,
+        images: 2,
+        flags: {},
+        label: undefined
+      },
+      {
+        name: 'is absent on the classic canvas, which never downscales',
+        vueNodes: false,
+        images: 1,
+        flags: {},
+        label: undefined
+      },
+      {
+        name: 'is absent when downscaling is turned off globally',
+        vueNodes: true,
+        images: 1,
+        flags: {},
+        downscale: false,
+        label: undefined
+      }
+    ])('$name', ({ vueNodes, images, flags, downscale = true, label }) => {
+      useVueNodes(vueNodes)
+      useSettingStore().settingValues['Comfy.Node.DownscaleImagePreviews'] =
+        downscale
+      outputImages(images)
+      const { getPreviewResolutionOption } = mountComposable()
+
+      expect(
+        getPreviewResolutionOption(createImageNode({ flags }))?.label
+      ).toBe(label)
+    })
+
+    it('persists the toggle through workflow serialization', () => {
+      useVueNodes(true)
+      outputImages(1)
+      const { getPreviewResolutionOption } = mountComposable()
+      const node = new LGraphNode('PreviewImage')
+      node.previewMediaType = 'image'
+
+      getPreviewResolutionOption(node)?.action?.()
+      const restored = new LGraphNode('PreviewImage')
+      restored.previewMediaType = 'image'
+      restored.configure(node.serialize())
+
+      expect(getPreviewResolutionOption(restored)?.label).toBe(
+        'Show Downscaled Preview'
+      )
+      getPreviewResolutionOption(restored)?.action?.()
+      expect(restored.serialize().flags).not.toHaveProperty(
+        'fullResolutionPreview'
+      )
     })
   })
 })

@@ -83,7 +83,7 @@
               :variant="selectedType === tab.value ? 'inverted' : 'secondary'"
               :aria-pressed="selectedType === tab.value"
               :aria-label="tab.icon ? tab.label : undefined"
-              class="h-8 shrink-0 px-3 text-xs @max-[30rem]/filters:px-2.5"
+              class="shrink-0 px-3 @max-[30rem]/filters:px-2.5"
               @click="selectedType = tab.value"
             >
               <i v-if="tab.icon" :class="cn(tab.icon, 'size-3.5')" />
@@ -108,7 +108,7 @@
             :aria-expanded="mobileFiltersOpen"
             aria-controls="template-mobile-filters"
             :aria-label="$t('templateWorkflows.filtersButton')"
-            class="ml-auto h-8 shrink-0 px-3 text-xs @[58rem]/filters:hidden"
+            class="ml-auto shrink-0 px-3 @[58rem]/filters:hidden"
             @click="mobileFiltersOpen = !mobileFiltersOpen"
           >
             <i class="icon-[lucide--sliders-horizontal] size-3.5" />
@@ -222,7 +222,7 @@
             variant="ghost"
             rounded="lg"
             :data-testid="`template-workflow-${template.name}`"
-            class="group/card h-full transition-colors hover:bg-secondary/50"
+            class="group/card h-full hover:bg-secondary/50"
             @mouseenter="hoveredTemplate = template.name"
             @mouseleave="hoveredTemplate = null"
             @click="onLoadWorkflow(template, $event)"
@@ -487,7 +487,7 @@ import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { getModelFileKey } from '@/platform/workflow/core/utils/modelRequirements'
 import { useTemplateModelAvailability } from '@/platform/workflow/templates/composables/useTemplateModelAvailability'
-import { useTemplateModelRowDownloads } from '@/platform/workflow/templates/composables/useTemplateModelRowDownloads'
+import { useTemplateModelDownloads } from '@/platform/workflow/templates/composables/useTemplateModelDownloads'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type { PreparedWorkflowTemplate } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import type {
@@ -678,6 +678,7 @@ const {
   selectedUseCases,
   selectedRunsOn,
   sortSelection,
+  categorySort,
   hasActiveQuery,
   activeModels,
   activeUseCases,
@@ -715,23 +716,16 @@ watch(searchQuery, (value) => {
  * @param source The origin of the change ('nav' or 'sort').
  */
 const coordinateNavAndSort = (source: 'nav' | 'sort') => {
-  if (hasActiveQuery.value) return
-
   const isPopularNav = selectedNavItem.value === 'popular'
-  const isPopularSort = sortSelection.value === 'popular'
 
   if (source === 'nav') {
-    if (isPopularNav && !isPopularSort) {
-      sortSelection.value = 'popular'
-    } else if (!isPopularNav && isPopularSort) {
-      sortSelection.value = 'default'
-    }
-  } else if (source === 'sort') {
-    // When sort is changed away from 'Popular' while in the 'Popular' category,
-    // reset the category to 'All Templates' to avoid a confusing state.
-    if (isPopularNav && !isPopularSort) {
-      selectedNavItem.value = 'all'
-    }
+    categorySort.value = isPopularNav ? 'popular' : null
+    return
+  }
+
+  if (hasActiveQuery.value) return
+  if (isPopularNav && sortSelection.value !== 'popular') {
+    selectedNavItem.value = 'all'
   }
 }
 
@@ -787,7 +781,7 @@ const hasActiveFilters = computed(
 const mobileFiltersOpen = ref(false)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
-type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelRowDownloads>
+type TemplateModelRowDownloads = ReturnType<typeof useTemplateModelDownloads>
 
 type ActiveTemplateModelSetup = {
   result: TemplateModelSetupResult
@@ -887,10 +881,6 @@ const sortOptions = computed(() => [
         }
       ]
     : []),
-  {
-    name: t('templateWorkflows.sort.default', 'Default'),
-    value: 'default'
-  },
   {
     name: t('templateWorkflows.sort.recommended', 'Recommended'),
     value: 'recommended'
@@ -1178,7 +1168,7 @@ const activeDetailModelDownloadCandidates = computed<
   const setup = activeDetail.value?.modelSetup
   if (!setup || setup.pending) return []
   return setup.result.rows.filter((row) =>
-    isModelDownloadCandidate(row, setup.rowDownloads.stateFor)
+    isModelDownloadCandidate(row, setup.rowDownloads)
   )
 })
 
@@ -1211,7 +1201,7 @@ const activeDetailAssetSetup = computed<TemplateAssetSetup | undefined>(() => {
 
   const total = remainingModelDownloadTotal(
     setup.result.rows,
-    setup.rowDownloads.stateFor
+    setup.rowDownloads
   )
   return {
     state: 'startable',
@@ -1337,7 +1327,12 @@ async function showAssetSetupIfNeeded(
   )
     return false
 
-  const rowDownloads = useTemplateModelRowDownloads({ folderPaths })
+  const rowDownloads = useTemplateModelDownloads(
+    { folderPaths },
+    availability.flatMap(({ model, status }) =>
+      status === 'missing' ? [model] : []
+    )
+  )
   activeDetail.value = {
     template,
     prepared: markRaw(prepared),

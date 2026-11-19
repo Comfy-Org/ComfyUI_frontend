@@ -99,7 +99,10 @@ export function createSessionBillingTransport(
   async function ensureBillingSession(
     mintOptions: SessionRequestOptions
   ): Promise<BillingResult<AccountCredential>> {
-    const minted = await session.ensureFresh(undefined, mintOptions)
+    const minted = await session.ensureFresh(undefined, {
+      ...mintOptions,
+      preserveCredentialOnTransientFailure: true
+    })
     if (minted === undefined) {
       return { status: 'error', code: 'NOT_AUTHENTICATED' }
     }

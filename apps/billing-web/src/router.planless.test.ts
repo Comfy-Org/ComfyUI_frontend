@@ -59,7 +59,8 @@ function flagAnswers(variant: string) {
 
 const PLANLESS =
   '/v1/checkout?product=comfyui&return_to=comfyui_workspace&workspace=ws-team'
-const PRICING_TABLE = 'https://testcloud.comfy.org/?pricing=1&workspace=ws-team'
+const PLATFORM_PLANS =
+  'https://testplatform.comfy.org/settings/billing/plans?workspace=ws-team'
 const PLANLESS_BOUNCE = {
   operation: 'web_entry',
   stage: 'bounced',
@@ -134,11 +135,11 @@ describe('a checkout link that names no plan', () => {
       flag: 'full_page'
     }
   ])(
-    'sends $name straight to the pricing table, without asking for a session or the flag',
+    'sends $name straight to Platform Plans, without asking for a session or the flag',
     async (visitor) => {
       const { router, leave } = await openPlanless(visitor)
 
-      expect(leave).toHaveBeenCalledExactlyOnceWith(PRICING_TABLE)
+      expect(leave).toHaveBeenCalledExactlyOnceWith(PLATFORM_PLANS)
       expect(router.currentRoute.value.path).not.toBe('/sign-in')
       expect(h.bind).not.toHaveBeenCalled()
       expect(fetch).not.toHaveBeenCalled()
@@ -147,14 +148,14 @@ describe('a checkout link that names no plan', () => {
   )
 
   it.for(['embedded', 'unreachable'])(
-    'sends a signed-in customer whose flag reads %s to the pricing table',
+    'sends a signed-in customer whose flag reads %s to Platform Plans',
     async (flag) => {
       const { router, leave } = await openPlanless({
         livePhase: 'authenticated',
         flag
       })
 
-      expect(leave).toHaveBeenCalledExactlyOnceWith(PRICING_TABLE)
+      expect(leave).toHaveBeenCalledExactlyOnceWith(PLATFORM_PLANS)
       expect(router.currentRoute.value.path).not.toBe('/sign-in')
       expect(h.bind).not.toHaveBeenCalled()
       expect(h.track).toHaveBeenCalledExactlyOnceWith(PLANLESS_BOUNCE)
@@ -198,26 +199,27 @@ describe('where a checkout link that names no plan sends the customer to pick on
     to: WebEntryBounceTarget
   }>([
     {
-      name: 'a cloud link to the pricing table',
+      name: 'a cloud link to Platform Plans',
       env: 'staging',
       query: 'product=comfyui&return_to=comfyui_workspace&workspace=ws-1',
-      destination: 'https://stagingcloud.comfy.org/?pricing=1&workspace=ws-1',
+      destination:
+        'https://stagingplatform.comfy.org/settings/billing/plans?workspace=ws-1',
       to: 'pricing_table'
     },
     {
-      name: 'a cloud link without a return_to to the pricing table',
+      name: 'a cloud link without a return_to to Platform Plans',
       env: 'production',
       query: 'product=comfyui',
-      destination: 'https://cloud.comfy.org/?pricing=1',
+      destination: 'https://platform.comfy.org/settings/billing/plans',
       to: 'pricing_table'
     },
     {
-      name: 'a cloud link that names a team to the Team tab',
+      name: 'a cloud link that names a team to the Team tab on Platform Plans',
       env: 'staging',
       query:
         'product=comfyui&return_to=comfyui_workspace&workspace=ws-1&team_credit_stop_id=stop_700',
       destination:
-        'https://stagingcloud.comfy.org/?pricing=team&workspace=ws-1',
+        'https://stagingplatform.comfy.org/settings/billing/plans?pricing=team&stop=stop_700&workspace=ws-1',
       to: 'pricing_table'
     },
     {

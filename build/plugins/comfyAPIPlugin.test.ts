@@ -105,6 +105,15 @@ describe('comfyAPIPlugin transform', () => {
     }
   )
 
+  it('keeps ClipspaceDialog in the extensions/core/clipspace.js shim for custom nodes', () => {
+    const id = path.join(root, 'src/extensions/core/clipspace.ts')
+    const { emitFile } = runTransform(false, id, readFileSync(id, 'utf8'))
+
+    expect(emitFile.mock.calls[0][0].source).toContain(
+      'export const ClipspaceDialog = window.comfyAPI.clipspace.ClipspaceDialog;'
+    )
+  })
+
   it('derives the module name from an id with Windows separators', () => {
     const { result, emitFile } = runTransform(
       false,

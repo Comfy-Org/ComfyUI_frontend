@@ -10,7 +10,8 @@
 
     <div
       role="list"
-      class="group/grid grid gap-2"
+      data-slot="example-grid"
+      class="grid gap-2"
       style="grid-template-columns: repeat(auto-fill, 8rem)"
     >
       <!-- Upload tile (hidden when max images reached) -->
