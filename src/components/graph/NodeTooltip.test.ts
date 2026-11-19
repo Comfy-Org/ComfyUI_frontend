@@ -6,9 +6,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import {
+  LGraphNode,
   isOverNodeInput,
   isOverNodeOutput
 } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
@@ -42,6 +44,7 @@ interface MockCanvas {
   graph_mouse: [number, number]
   graph: { getNodeOnPos: () => MockNode | null }
   linkConnector: { isConnecting: boolean }
+  node_widget?: LGraphCanvas['node_widget']
   node_over: MockNode | null
   getWidgetAtCursor: () => MockWidget | null
 }
@@ -163,6 +166,7 @@ describe('NodeTooltip', () => {
     mockCanvas.mouse = [100, 80]
     mockCanvas.graph_mouse = [10, 10]
     mockCanvas.linkConnector.isConnecting = false
+    mockCanvas.node_widget = null
     mockCanvas.node_over = createSam3Node()
     vi.mocked(mockCanvas.getWidgetAtCursor).mockReturnValue(null)
     vi.mocked(mockIsOverNodeInput).mockReturnValue(-1)
@@ -248,6 +252,42 @@ describe('NodeTooltip', () => {
 
     expect(screen.queryByText(jsonTooltip)).not.toBeInTheDocument()
   })
+
+  it.for([
+    { elapsed: 0, movement: 1, hintCount: 0 },
+    { elapsed: 1500, movement: 1, hintCount: 0 },
+    { elapsed: 0, movement: 0, hintCount: 1 }
+  ])(
+    'shows $hintCount touch widget hints after moving $movement px at $elapsed ms',
+    async ({ elapsed, movement, hintCount }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const node = new LGraphNode('Widget test')
+      const widget = node.addWidget('number', 'steps', 20, () => {}, {})
+      vi.mocked(mockCanvas.getWidgetAtCursor).mockReturnValue({
+        name: 'steps',
+        tooltip: 'Widget hint'
+      })
+      render(NodeTooltip)
+      const canvas = document.createElement('canvas')
+      document.body.appendChild(canvas)
+
+      await user.pointer({
+        keys: '[TouchA>]',
+        target: canvas,
+        coords: { clientX: 100, clientY: 80 }
+      })
+      mockCanvas.node_widget = [node, widget]
+      await vi.advanceTimersByTimeAsync(elapsed)
+      await user.pointer({
+        pointerName: 'TouchA',
+        coords: { clientX: 100 + movement, clientY: 80 }
+      })
+      await vi.advanceTimersByTimeAsync(1600)
+
+      expect(screen.queryAllByText('Widget hint')).toHaveLength(hintCount)
+    }
+  )
 
   it('shows input slot JSON tooltips without i18n placeholder errors', async () => {
     vi.mocked(mockIsOverNodeInput).mockReturnValue(0)

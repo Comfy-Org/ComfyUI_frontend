@@ -144,7 +144,7 @@ function onPointerMove(event: PointerEvent) {
     if (
       touchOrigin &&
       Math.hypot(event.clientX - touchOrigin.x, event.clientY - touchOrigin.y) >
-        10
+        (useApp().canvas.node_widget ? 0 : 10)
     ) {
       hideTooltip()
     }
