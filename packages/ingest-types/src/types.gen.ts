@@ -6354,6 +6354,45 @@ export type InteractiveTopupRequest = {
    * Explicit attached card selection, at most 255 UTF-8 bytes. Valid only on the dedicated interactive route; never changes the invoice default.
    */
   saved_payment_method_id?: string
+  /**
+   * Pays the purchase opened by POST /api/billing/topup/purchases. amount_cents and auto_top_up must equal the purchase's.
+   * Refused unless the caller opened it in this workspace and it is still payable (see 404 and 409). Absent keeps the unbound top-up.
+   *
+   */
+  purchase_id?: string
+}
+
+export type CreateTopupPurchaseRequest = {
+  /**
+   * Nominal credit purchase in USD cents, excluding tax and discounts.
+   */
+  amount_cents: number
+  auto_top_up?: TopupAutoTopUpSettings
+}
+
+export type TopupPurchase = {
+  purchase_id: string
+  /**
+   * open: payable, by a first attempt or after the latest attempt failed. processing: an attempt is unresolved.
+   * paid: an attempt succeeded; never payable again. superseded: replaced by a newer purchase or hosted checkout.
+   * expired: past expires_at. A purchase superseded or expired while an attempt was in flight reports that attempt's outcome.
+   *
+   */
+  status: 'open' | 'processing' | 'paid' | 'superseded' | 'expired'
+  amount_cents: number
+  /**
+   * The settings the payment must carry; absent for a plain purchase. An absent monthly_budget_cents means the default budget.
+   */
+  auto_top_up?: TopupAutoTopUpSettings
+  expires_at: string
+  /**
+   * The latest payment attempt; read GET /api/billing/ops/{id} for its details.
+   */
+  billing_op_id?: string
+  /**
+   * The latest attempt's operation status.
+   */
+  billing_op_status?: string
 }
 
 /**
