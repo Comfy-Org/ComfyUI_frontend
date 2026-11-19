@@ -1339,6 +1339,81 @@ describe('AgentMessage turn wait hint (C8-01..C8-04)', () => {
     )
   })
 
+  it.for(['remember', 'forget'] as const)(
+    'C8-01: keeps Working... and the wait hint visible when %s completes while an answer draft is still streaming',
+    async (toolName) => {
+      let message = createAssistantMessage(toTurnId('msg-draft-wait'))
+      const transport = createAgentEventTransport(message, (next) => {
+        message = next
+      })
+      transport.ingest({
+        type: 'agent_message_draft',
+        data: {
+          text: 'I will keep that in mind.',
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+      transport.ingest({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: `call-${toolName}`,
+          tool_name: toolName,
+          status: 'running',
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+      transport.ingest({
+        type: 'agent_tool_call',
+        data: {
+          tool_call_id: `call-${toolName}`,
+          tool_name: toolName,
+          status: 'success',
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+      transport.ingest({
+        type: 'agent_turn_status',
+        data: {
+          phase: 'wait',
+          reason: 'turn_user_full',
+          position: 0,
+          wait_seconds: 0,
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+
+      const { rerender } = render(AgentMessage, {
+        props: { message },
+        global: { plugins: [i18n] }
+      })
+
+      expect(screen.getByText('I will keep that in mind.')).toBeVisible()
+      expect(screen.getByText('Working...')).toBeVisible()
+      expect(screen.getByTestId('agent-turn-wait-hint')).toBeVisible()
+      expect(screen.getByTestId('agent-turn-wait-hint')).toHaveTextContent(
+        'Waiting for one of your other chats to finish.'
+      )
+
+      transport.ingest({
+        type: 'agent_message_delta',
+        data: {
+          delta: 'Saved.',
+          message_id: 'msg-draft-wait',
+          thread_id: 'thread-0'
+        }
+      })
+      await rerender({ message })
+
+      expect(screen.queryByText('Working...')).toBeNull()
+      expect(screen.queryByTestId('agent-turn-wait-hint')).toBeNull()
+      expect(screen.getByText('Saved.')).toBeVisible()
+    }
+  )
+
   it('C8-04: hides the hint once waitHint is cleared or streaming settles', async () => {
     const waiting = {
       ...createAssistantMessage(toTurnId('msg-clear')),

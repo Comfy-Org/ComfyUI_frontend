@@ -103,29 +103,33 @@ const replyAssets = computed(() =>
   showActions.value ? htmlReplyAssets(renderMarkdownToHtml(markdown.value)) : []
 )
 
+const hasOpenAsk = computed(() => message.parts.some(isOpenAskPart))
+
+const narrating = computed(
+  () =>
+    activityParts.value.length === 0 &&
+    (message.thinking || (message.streaming && !message.parts.length))
+)
+
 const composing = computed(
   () =>
     message.streaming &&
     message.parts.length > 0 &&
-    message.parts.every(
-      (part) =>
-        !isOpenAskPart(part) && (!('state' in part) || part.state === 'done')
-    )
+    !hasOpenAsk.value &&
+    message.parts.every((part) => !('state' in part) || part.state === 'done')
 )
 
-// The one live row this message may show, when the trace itself is not carrying
-// the signal. Narrating and composing never overlap: narrating needs a streaming
-// thinking part, composing needs every part settled.
+const waiting = computed(
+  () => message.streaming && Boolean(message.waitHint) && !hasOpenAsk.value
+)
+
 const status = computed(() => {
-  const narrating =
-    activityParts.value.length === 0 &&
-    (message.thinking || (message.streaming && !message.parts.length))
-  if (narrating)
+  if (narrating.value)
     return {
       icon: 'icon-[lucide--brain]',
       text: message.thinkingText || t('agent.thinking')
     }
-  if (composing.value)
+  if (composing.value || waiting.value)
     return {
       icon: 'text-muted-foreground icon-[lucide--loader-circle] animate-spin',
       text: t('agent.working')

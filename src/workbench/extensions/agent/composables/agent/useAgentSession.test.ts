@@ -12231,6 +12231,45 @@ describe('useAgentSession turn wait status (C8-01..C8-07)', () => {
     session.stop()
   })
 
+  it('C8-06: keeps streaming and waitHint when stopping a waiting turn fails with a network error', async () => {
+    const cancelMessage = vi
+      .fn<
+        (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+      >()
+      .mockRejectedValue(new TypeError('fetch failed'))
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({
+        postMessage: vi.fn(async () => ({
+          thread_id: 'th-1',
+          message_id: 'msg-1'
+        })),
+        cancelMessage
+      }),
+      events: source
+    })
+    session.start({ restore: false })
+
+    await session.sendMessage('Run and fail stop')
+    emit(turnStatus('th-1', 'msg-1', 'wait', 'turn_user_full', 0))
+    expect(session.entries.value.at(-1)).toMatchObject({
+      streaming: true,
+      waitHint: { reason: 'turn_user_full', position: 0 }
+    })
+
+    await session.stopTurn('button')
+
+    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+    expect(session.entries.value.at(-1)).toMatchObject({
+      streaming: true,
+      waitHint: { reason: 'turn_user_full', position: 0 }
+    })
+    expect(session.notices.value).toEqual([
+      { level: 'error', text: 'fetch failed' }
+    ])
+    session.stop()
+  })
+
   it('C8-07: allows sending another message without client-side warning while another turn waits', async () => {
     const { source, emit } = fakeEvents()
     let count = 0
