@@ -150,8 +150,12 @@ describe('useAgentConsent', () => {
     useCurrentUser().isLoggedIn = computed(() => true)
     useCurrentUser().resolvedUserInfo = computed(() => ({ id: 'account-a' }))
     localStorage.clear()
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-a' })
-    Object.assign(useTeamWorkspaceStore(), { workspaceTransitionGeneration: 0 })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-a'
+    })
+    Object.assign(useTeamWorkspaceStore(), {
+      workspaceTransitionGeneration: 0
+    })
     vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
     vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
@@ -842,7 +846,9 @@ describe('useAgentConsent', () => {
 
   it('does not apply an open consent card to a different account', async () => {
     const identity = ref('account-a')
-    useCurrentUser().resolvedUserInfo = computed(() => ({ id: identity.value }))
+    useCurrentUser().resolvedUserInfo = computed(() => ({
+      id: identity.value
+    }))
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
@@ -876,7 +882,9 @@ describe('useAgentConsent', () => {
     'closes a card when its $scope changes before a decision',
     async ({ change }) => {
       const userId = ref('account-a')
-      useCurrentUser().resolvedUserInfo = computed(() => ({ id: userId.value }))
+      useCurrentUser().resolvedUserInfo = computed(() => ({
+        id: userId.value
+      }))
       const onSend = vi.fn()
       const request = useAgentConsent().withConsent('first_message', onSend)
       const dialog = await waitForConsentDialog()
@@ -1177,7 +1185,9 @@ describe('useAgentConsent', () => {
     const onOpen = vi.fn()
     const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
-    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-b'
+    })
     Object.assign(useTeamWorkspaceStore(), {
       workspaceTransitionGeneration:
         useTeamWorkspaceStore().workspaceTransitionGeneration + 1
@@ -1416,6 +1426,36 @@ describe('useAgentConsent', () => {
       })
     })
 
+    it('keeps the draft alone when the error context does not fit in storage', async () => {
+      signedOut()
+      holdDraft('make it blue')
+      vi.mocked(useAuthDialogs().showSignInDialog).mockReturnValueOnce(
+        new Promise(() => {})
+      )
+      const setItem = sessionStorage.setItem.bind(sessionStorage)
+      const write = vi
+        .spyOn(sessionStorage, 'setItem')
+        .mockImplementation((key, value) => {
+          if (value.includes('errorContext'))
+            throw new DOMException('full', 'QuotaExceededError')
+          setItem(key, value)
+        })
+
+      void useAgentConsent().withConsent('button_click', vi.fn(), {
+        errorContext: ERROR_CONTEXT
+      })
+      await startConsent()
+      await vi.waitFor(() =>
+        expect(useAuthDialogs().showSignInDialog).toHaveBeenCalledOnce()
+      )
+      write.mockRestore()
+
+      expect(JSON.parse(sessionStorage.getItem(PENDING_KEY)!)).toEqual({
+        draft: 'make it blue',
+        savedAt: expect.any(Number)
+      })
+    })
+
     function restoredWorkflow() {
       const active = ref<ComfyWorkflow | null>(null)
       Object.defineProperty(useWorkflowStore(), 'activeWorkflow', {
@@ -1473,6 +1513,33 @@ describe('useAgentConsent', () => {
 
       expect(panel.isOpen).toBe(true)
       expect(panel.pendingErrorContext).toEqual(ERROR_CONTEXT)
+    })
+
+    it('drops the error chip when another account takes over while the workflow restores', async () => {
+      signedIn()
+      const userId = ref('account-a')
+      useCurrentUser().resolvedUserInfo = computed(() => ({
+        id: userId.value
+      }))
+      consentSaves()
+      const workflow = restoredWorkflow()
+      const panel = useAgentPanelStore()
+      const consentStore = useAgentConsentStore()
+
+      const resume = useAgentConsent().resumeAcceptAfterReload({
+        draft: '',
+        errorContext: ERROR_CONTEXT
+      })
+      await vi.waitFor(() => expect(consentStore.accepted).toBe(true))
+
+      userId.value = 'account-b'
+      await consentStore.accept()
+      expect(consentStore.accepted).toBe(true)
+      workflow.restore()
+      await resume
+
+      expect(panel.isOpen).toBe(false)
+      expect(panel.pendingErrorContext).toBeNull()
     })
 
     it('leaves the panel closed and drops the error chip when the post-reload save fails', async () => {
@@ -1576,7 +1643,9 @@ describe('useAgentConsent', () => {
       const error = new Error('save failed')
       vi.spyOn(useAgentConsentStore(), 'accept').mockRejectedValueOnce(error)
 
-      await useAgentConsent().resumeAcceptAfterReload({ draft: 'make it blue' })
+      await useAgentConsent().resumeAcceptAfterReload({
+        draft: 'make it blue'
+      })
 
       expect(reportError).toHaveBeenCalledWith(error, {
         surface: 'agent',
@@ -1598,7 +1667,9 @@ describe('useAgentConsent', () => {
         }
       )
 
-      await useAgentConsent().resumeAcceptAfterReload({ draft: 'make it blue' })
+      await useAgentConsent().resumeAcceptAfterReload({
+        draft: 'make it blue'
+      })
       expect(useAgentConsentStore().accepted).toBe(false)
       expect(useAgentComposerStore().draft).toBe('make it blue')
 

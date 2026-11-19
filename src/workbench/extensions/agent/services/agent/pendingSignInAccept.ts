@@ -1,4 +1,7 @@
-import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import type {
+  AgentErrorContext,
+  AgentErrorProblem
+} from '@/platform/workflowErrors/agentErrorContext'
 
 const STORAGE_KEY = 'Comfy.AgentPanel.PendingSignInAccept'
 const PENDING_SIGN_IN_ACCEPT_TTL_MS = 10 * 60 * 1000
@@ -12,17 +15,18 @@ export function writePendingSignInAccept({
   draft,
   errorContext
 }: PendingSignInAccept): void {
+  const savedAt = Date.now()
+  if (errorContext && tryWrite({ draft, errorContext, savedAt })) return
+  // A record too big for the storage quota still keeps the draft.
+  tryWrite({ draft, savedAt })
+}
+
+function tryWrite(record: PendingSignInAccept & { savedAt: number }): boolean {
   try {
-    window.sessionStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(
-        errorContext
-          ? { draft, errorContext, savedAt: Date.now() }
-          : { draft, savedAt: Date.now() }
-      )
-    )
+    window.sessionStorage.setItem(STORAGE_KEY, JSON.stringify(record))
+    return true
   } catch {
-    return
+    return false
   }
 }
 
@@ -43,19 +47,21 @@ const ERROR_CATEGORIES: readonly unknown[] = [
   'execution_failure'
 ]
 
-type FieldChecks = Record<string, (value: unknown) => boolean>
+type FieldChecks<T> = { [K in keyof Required<T>]: (value: unknown) => boolean }
 
 const isString = (value: unknown) => typeof value === 'string'
 const isOptionalString = (value: unknown) =>
   value === undefined || isString(value)
 
-function hasFields(value: unknown, checks: FieldChecks): boolean {
+function hasFields<T>(value: unknown, checks: FieldChecks<T>): boolean {
   if (typeof value !== 'object' || value === null) return false
   const record = value as Record<string, unknown>
-  return Object.entries(checks).every(([key, check]) => check(record[key]))
+  return Object.entries<(value: unknown) => boolean>(checks).every(
+    ([key, check]) => check(record[key])
+  )
 }
 
-const PROBLEM_FIELDS: FieldChecks = {
+const PROBLEM_FIELDS: FieldChecks<AgentErrorProblem> = {
   category: (value) => ERROR_CATEGORIES.includes(value),
   message: isString,
   details: isOptionalString,
@@ -64,9 +70,9 @@ const PROBLEM_FIELDS: FieldChecks = {
   nodeTitle: isOptionalString
 }
 
-const CONTEXT_FIELDS: FieldChecks = {
+const CONTEXT_FIELDS: FieldChecks<AgentErrorContext> = {
   scope: (value) => ERROR_SCOPES.includes(value),
-  count: (value) => typeof value === 'number',
+  count: (value) => typeof value === 'number' && Number.isFinite(value),
   problems: (value) =>
     Array.isArray(value) &&
     value.every((problem) => hasFields(problem, PROBLEM_FIELDS)),

@@ -337,7 +337,8 @@ export function useAgentConsent() {
   }
 
   async function errorWorkflowRestored(
-    errorContext: AgentErrorContext
+    errorContext: AgentErrorContext,
+    savedIdentity: string
   ): Promise<boolean> {
     const { workflowPath } = errorContext
     if (workflowPath) {
@@ -346,7 +347,11 @@ export function useAgentConsent() {
         .toBe(true, { timeout: ERROR_WORKFLOW_RESTORE_TIMEOUT_MS })
         .catch(() => {})
     }
-    return isLoggedIn.value && accepted.value
+    // The wait can span an account or workspace switch: only the identity that
+    // saved consent gets the error context it signed in with.
+    return (
+      isLoggedIn.value && accepted.value && identity.value === savedIdentity
+    )
   }
 
   async function resumeAcceptAfterReload({
@@ -360,7 +365,11 @@ export function useAgentConsent() {
     } finally {
       introductionStore.isContinuingSignIn = false
     }
-    if (errorContext && saved && (await errorWorkflowRestored(errorContext))) {
+    if (
+      errorContext &&
+      saved &&
+      (await errorWorkflowRestored(errorContext, saved))
+    ) {
       const panelStore = useAgentPanelStore()
       panelStore.view = { screen: 'chat' }
       panelStore.open('error_context')

@@ -2383,6 +2383,19 @@ describe('AgentPanel extension flag gate', () => {
       }
     )
 
+    it('keeps the draft but drops an error context with a non-finite count', async () => {
+      sessionStorage.setItem(
+        PENDING_KEY,
+        `{"draft":"make it blue","errorContext":{"scope":"card","count":1e400,"label":"Missing media","severity":"warning","problems":[]},"savedAt":${Date.now()}}`
+      )
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: 'make it blue'
+      })
+    })
+
     it('keeps the draft but drops an error context that is not one', async () => {
       sessionStorage.setItem(
         PENDING_KEY,
