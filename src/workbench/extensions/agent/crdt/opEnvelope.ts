@@ -16,6 +16,7 @@ import type { GraphOperation } from './graphOperations'
 
 export const WIRE_MAX_OPS_PER_BATCH = 256
 export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
+const STAMP_LIFT_HEADROOM = WIRE_MAX_OPS_PER_BATCH * 2 * 16
 
 export interface MintContext {
   actor: Actor
@@ -188,10 +189,11 @@ export function measureWireOp(op: Op): WireMeasurement {
 /**
  * Split measured ops into wire batches: order-preserving, at most
  * {@link WIRE_MAX_OPS_PER_BATCH} ops and {@link WIRE_MAX_BATCH_BYTES} bytes
- * per batch; every non-batchable op (`clear`) is a batch of one. A single op
- * larger than the byte cap still ships alone — the host, not the chunker,
- * owns rejecting it. Pure arithmetic over sizes measured at admission: it
- * cannot throw.
+ * per splittable batch; every non-batchable op (`clear`) is a batch of one. A
+ * single op larger than the byte cap still ships alone — including one that
+ * crosses the cap only after its counters are lifted — because the host, not
+ * the chunker, owns rejecting a singleton. Pure arithmetic over sizes measured
+ * at admission: it cannot throw.
  */
 export function chunkWireOps(ops: readonly SizedOp[]): SizedOp[][] {
   const batches: SizedOp[][] = []
@@ -212,7 +214,8 @@ export function chunkWireOps(ops: readonly SizedOp[]): SizedOp[][] {
     }
     const overOps = current.length + 1 > WIRE_MAX_OPS_PER_BATCH
     const overBytes =
-      current.length > 0 && currentBytes + sized.bytes > WIRE_MAX_BATCH_BYTES
+      current.length > 0 &&
+      currentBytes + sized.bytes > WIRE_MAX_BATCH_BYTES - STAMP_LIFT_HEADROOM
     if (overOps || overBytes) flush()
     current.push(sized)
     currentBytes += sized.bytes

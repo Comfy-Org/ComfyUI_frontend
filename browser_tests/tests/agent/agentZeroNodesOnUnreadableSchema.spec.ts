@@ -254,12 +254,14 @@ test.describe(
       await expect(panel.getByRole('button', { name: STOP_LABEL })).toHaveCount(
         0
       )
+      // The readable repair frame makes the following agent write observable,
+      // so the completed turn must not retain the old unconfirmed-canvas gate.
       await expect(
         panel.getByRole('button', {
           name: enMessages.agent.workedNotConfirmedOnCanvas,
           exact: true
         })
-      ).toBeVisible()
+      ).toHaveCount(0)
 
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
     })
