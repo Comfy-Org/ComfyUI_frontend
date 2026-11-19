@@ -8,6 +8,7 @@ import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/su
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('slot handles', () => {
   let graph: LGraph
@@ -85,19 +86,22 @@ describe('slot handles', () => {
     it.for([[1.5], ['0'], [Number.NaN]])(
       'refuse a position that is not a whole number: %o',
       ([index]) => {
-        expect(() =>
-          Reflect.apply(targetHandle.inputs.at, undefined, [index])
-        ).toThrow(TypeError)
+        expectRefusal(
+          () => Reflect.apply(targetHandle.inputs.at, undefined, [index]),
+          'at'
+        )
       }
     )
 
     it('refuse a name or id that is not text', () => {
-      expect(() =>
-        Reflect.apply(targetHandle.inputs.byName, undefined, [0])
-      ).toThrow(TypeError)
-      expect(() =>
-        Reflect.apply(targetHandle.inputs.byId, undefined, [{}])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(targetHandle.inputs.byName, undefined, [0]),
+        'byName'
+      )
+      expectRefusal(
+        () => Reflect.apply(targetHandle.inputs.byId, undefined, [{}]),
+        'byId'
+      )
     })
 
     it('read as nothing once the node is gone', () => {

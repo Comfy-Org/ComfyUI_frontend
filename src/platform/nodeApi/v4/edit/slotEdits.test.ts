@@ -12,6 +12,7 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('slot edits', () => {
   let graph: LGraph
@@ -226,8 +227,9 @@ describe('slot edits', () => {
         )
         const controlVersion = graph._version
 
-        expect(() => Reflect.apply(slot.modify, undefined, [patch])).toThrow(
-          TypeError
+        expectRefusal(
+          () => Reflect.apply(slot.modify, undefined, [patch]),
+          'modify'
         )
         expect(afterControl).not.toBe(before)
         expect(
@@ -243,9 +245,10 @@ describe('slot edits', () => {
       target.removeInput(2)
 
       expect(slot.modify({ label: 'x' })).toBe(false)
-      expect(() =>
-        Reflect.apply(slot.modify, undefined, [{ label: 1 }])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(slot.modify, undefined, [{ label: 1 }]),
+        'modify'
+      )
       expect(steps).toEqual([])
     })
 
@@ -323,8 +326,9 @@ describe('slot edits', () => {
         side === 'input' ? targetHandle.inputs : sourceHandle.outputs
       const length = collection.length
 
-      expect(() => Reflect.apply(collection.add, undefined, [...args])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(collection.add, undefined, [...args]),
+        'add'
       )
       expect(collection.length).toBe(length)
       expect(steps).toEqual([])
@@ -376,20 +380,22 @@ describe('slot edits', () => {
     it.for([[3], [{ index: -1 }], [{ index: 1.5 }], [{}], [null]])(
       'refuses a reference that is not an id, name or position: %o',
       ([ref]) => {
-        expect(() =>
-          Reflect.apply(targetHandle.inputs.remove, undefined, [ref])
-        ).toThrow(TypeError)
+        expectRefusal(
+          () => Reflect.apply(targetHandle.inputs.remove, undefined, [ref]),
+          'remove'
+        )
         graph.remove(target)
-        expect(() =>
-          Reflect.apply(targetHandle.inputs.remove, undefined, [ref])
-        ).toThrow(TypeError)
+        expectRefusal(
+          () => Reflect.apply(targetHandle.inputs.remove, undefined, [ref]),
+          'remove'
+        )
       }
     )
 
     it('refuses a name two slots share', () => {
       source.addOutput('a', 'INT')
 
-      expect(() => sourceHandle.outputs.remove('a')).toThrow(TypeError)
+      expectRefusal(() => sourceHandle.outputs.remove('a'), 'remove')
       expect(source.outputs).toHaveLength(4)
     })
   })
@@ -467,9 +473,10 @@ describe('slot edits', () => {
       ]
       const node = side === 'output' ? sourceHandle : targetHandle
 
-      expect(() =>
-        Reflect.apply(edit.reorderSlots, undefined, [node, side, names])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(edit.reorderSlots, undefined, [node, side, names]),
+        'reorderSlots'
+      )
       expect([
         target.inputs.map(({ name }) => name),
         source.outputs.map(({ name }) => name)
@@ -480,8 +487,9 @@ describe('slot edits', () => {
     it('refuses to reorder slots two of which share a name', () => {
       source.addOutput('a', 'INT')
 
-      expect(() => sourceHandle.outputs.reorder(['a', 'b', 'c', 'a'])).toThrow(
-        TypeError
+      expectRefusal(
+        () => sourceHandle.outputs.reorder(['a', 'b', 'c', 'a']),
+        'reorder'
       )
     })
 

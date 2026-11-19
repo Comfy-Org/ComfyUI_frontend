@@ -10,6 +10,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('edit contracts', () => {
   let graph: LGraph
@@ -113,7 +114,7 @@ describe('edit contracts', () => {
       }
     }
 
-    expect(() => handle.inputs.at(0)?.modify(patch)).toThrow(TypeError)
+    expectRefusal(() => handle.inputs.at(0)?.modify(patch), 'modify')
     expect(reads).toBe(1)
     expect(node.inputs.map(({ name }) => name)).toEqual(['first', 'second'])
   })
@@ -181,7 +182,7 @@ describe('edit contracts', () => {
       ['an object with more than an index', () => ({ index: 0, name: 'x' })],
       ['an object of a class', () => Object.assign(new Date(), { index: 0 })]
     ] as const)('refuse %s', ([, ref]) => {
-      expect(() => handle.inputs.remove(Object(ref()))).toThrow(TypeError)
+      expectRefusal(() => handle.inputs.remove(Object(ref())), 'remove')
       expect(node.inputs).toHaveLength(2)
     })
 
@@ -200,12 +201,14 @@ describe('edit contracts', () => {
     it('refuses a widget another input is already the socket of', () => {
       handle.inputs.at(0)?.modify({ widget: 'steps' })
 
-      expect(() => handle.inputs.at(1)?.modify({ widget: 'steps' })).toThrow(
-        TypeError
+      expectRefusal(
+        () => handle.inputs.at(1)?.modify({ widget: 'steps' }),
+        'modify'
       )
-      expect(() =>
-        handle.inputs.add('third', 'INT', { widget: 'steps' })
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => handle.inputs.add('third', 'INT', { widget: 'steps' }),
+        'add'
+      )
       expect(node.inputs[1].widget).toBeUndefined()
       expect(handle.inputs.at(0)?.modify({ widget: 'steps' })).toBe(true)
     })
@@ -322,9 +325,11 @@ describe('edit contracts', () => {
     it.for(['constructor', 'toString', 'hasOwnProperty'])(
       'refuses %s as a patch field, though every object inherits it',
       (field) => {
-        expect(() =>
-          Reflect.apply(edit.updateNode, undefined, [handle, { [field]: 1 }])
-        ).toThrow(TypeError)
+        expectRefusal(
+          () =>
+            Reflect.apply(edit.updateNode, undefined, [handle, { [field]: 1 }]),
+          'updateNode'
+        )
       }
     )
 
@@ -355,9 +360,11 @@ describe('edit contracts', () => {
       ['autoHeight as 0', { autoHeight: 0 }],
       ['autoHeight as an empty string', { autoHeight: '' }]
     ] as const)('refuses %s in sizeConstraints', ([, constraints]) => {
-      expect(() =>
-        Reflect.apply(handle.setSizeConstraints, undefined, [constraints])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () =>
+          Reflect.apply(handle.setSizeConstraints, undefined, [constraints]),
+        'setSizeConstraints'
+      )
     })
 
     it('takes a minimum equal to its maximum', () => {
@@ -374,9 +381,10 @@ describe('edit contracts', () => {
     ] as const)(
       'refuses a node title of %s when adding a node',
       ([, title]) => {
-        expect(() =>
-          Reflect.apply(comfy.graph.add, undefined, ['Any', { title }])
-        ).toThrow(TypeError)
+        expectRefusal(
+          () => Reflect.apply(comfy.graph.add, undefined, ['Any', { title }]),
+          'add'
+        )
       }
     )
 
@@ -423,9 +431,10 @@ describe('edit contracts', () => {
     it('refuses a widget for an output, even one the node has', () => {
       node.addWidget('number', 'steps', 1, () => {})
 
-      expect(() =>
-        handle.outputs.add('c', 'INT', Object({ widget: 'steps' }))
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => handle.outputs.add('c', 'INT', Object({ widget: 'steps' })),
+        'add'
+      )
       expect(node.outputs).toHaveLength(2)
     })
   })

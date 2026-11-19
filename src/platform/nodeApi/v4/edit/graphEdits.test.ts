@@ -10,6 +10,7 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 const TYPE = 'EditTest/Added'
 
@@ -92,9 +93,10 @@ describe('graph edits', () => {
       ['an infinite position', TYPE, { position: { x: 0, y: -Infinity } }],
       ['a position that is not an object', TYPE, { position: 3 }]
     ])('refuses %s before adding anything', ([, type, init]) => {
-      expect(() =>
-        Reflect.apply(comfy.graph.add, undefined, [type, init])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(comfy.graph.add, undefined, [type, init]),
+        'add'
+      )
       expect(shown().nodes).toHaveLength(0)
       expect(steps).toEqual([])
     })
@@ -103,9 +105,7 @@ describe('graph edits', () => {
       graph = null
 
       expect(comfy.graph.add(TYPE)).toBeUndefined()
-      expect(() => Reflect.apply(comfy.graph.add, undefined, [5])).toThrow(
-        TypeError
-      )
+      expectRefusal(() => Reflect.apply(comfy.graph.add, undefined, [5]), 'add')
     })
   })
 
@@ -131,8 +131,9 @@ describe('graph edits', () => {
 
       expect(edit.addNode(scope, TYPE)).toBeUndefined()
       expect(shown().nodes).toHaveLength(0)
-      expect(() => Reflect.apply(edit.addNode, undefined, [scope, 5])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(edit.addNode, undefined, [scope, 5]),
+        'addNode'
       )
     })
 
@@ -154,9 +155,10 @@ describe('graph edits', () => {
     it('refuses a node handle in place of a graph handle', () => {
       const node = comfy.graph.add(TYPE)
 
-      expect(() =>
-        Reflect.apply(edit.addNode, undefined, [node, TYPE])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(edit.addNode, undefined, [node, TYPE]),
+        'addNode'
+      )
     })
   })
 
@@ -179,7 +181,7 @@ describe('graph edits', () => {
     })
 
     it('refuses an async function', () => {
-      expect(() => comfy.graph.batch(async () => {})).toThrow(TypeError)
+      expectRefusal(() => comfy.graph.batch(async () => {}), 'batch')
     })
   })
 

@@ -152,9 +152,10 @@ describe('edits and what a load keeps of them', () => {
       expect(() => steps.modify({ position: { x: 3, y: 4 } })).toThrow(
         /^modify needs a slot that is not a widget's socket/
       )
-      expect(() =>
-        added?.modify({ widget: 'extra', position: { x: 3, y: 4 } })
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => added?.modify({ widget: 'extra', position: { x: 3, y: 4 } }),
+        'modify'
+      )
       expect(steps.modify({ widget: null, position: { x: 3, y: 4 } })).toBe(
         true
       )
@@ -315,7 +316,7 @@ describe('edits and what a load keeps of them', () => {
         }
       }
 
-      expect(() => edit.updateNode(noteHandle, patch)).toThrow(TypeError)
+      expectRefusal(() => edit.updateNode(noteHandle, patch), 'updateNode')
       expect(reads).toBe(1)
       expect(note.serialize_widgets).toBe(true)
     })

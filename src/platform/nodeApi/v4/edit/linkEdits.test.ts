@@ -16,6 +16,7 @@ import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import type { EditCore } from '@/platform/nodeApi/v4/edit/edits'
 import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { Comfy, NodeHandle } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('link edits', () => {
   let graph: LGraph
@@ -147,19 +148,26 @@ describe('link edits', () => {
             ? [sourceHandle, into(targetHandle, 'pixels')]
             : [out('image'), undefined]
 
-      expect(() => Reflect.apply(edit.connect, undefined, args)).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(edit.connect, undefined, args),
+        'connect'
       )
       expect(steps).toEqual([])
     })
 
     it('refuses connectTo with a node id or input reference it cannot use', () => {
-      expect(() =>
-        Reflect.apply(out('image').connectTo, undefined, [7, 'pixels'])
-      ).toThrow(TypeError)
-      expect(() =>
-        Reflect.apply(out('image').connectTo, undefined, [String(target.id), 0])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(out('image').connectTo, undefined, [7, 'pixels']),
+        'connectTo'
+      )
+      expectRefusal(
+        () =>
+          Reflect.apply(out('image').connectTo, undefined, [
+            String(target.id),
+            0
+          ]),
+        'connectTo'
+      )
     })
 
     it('refuses to link slots of two graphs', () => {
@@ -174,7 +182,7 @@ describe('link edits', () => {
       const innerInput = innerHandle.inputs.at(0)
       assert(innerInput)
 
-      expect(() => edit.connect(out('image'), innerInput)).toThrow(TypeError)
+      expectRefusal(() => edit.connect(out('image'), innerInput), 'connect')
     })
 
     it('gives nothing for a slot that is gone', () => {
@@ -271,7 +279,7 @@ describe('link edits', () => {
           ? () => Reflect.apply(out('image').disconnect, undefined, [5])
           : () => Reflect.apply(edit.disconnect, undefined, [...args()])
 
-      expect(call).toThrow(TypeError)
+      expectRefusal(call, 'disconnect')
       expect([target.isInputConnected(0), other.isInputConnected(0)]).toEqual([
         true,
         true
@@ -287,8 +295,9 @@ describe('link edits', () => {
         .queryNodes({ scope: 'root-and-subgraphs' })
         .filter((node) => node.graphId !== graph.id)
 
-      expect(() => edit.disconnect(out('image'), innerHandle)).toThrow(
-        TypeError
+      expectRefusal(
+        () => edit.disconnect(out('image'), innerHandle),
+        'disconnect'
       )
     })
   })
@@ -355,16 +364,22 @@ describe('link edits', () => {
       const otherOutput = elsewhere.outputs.at(0)
       assert(otherOutput)
 
-      expect(() => edit.moveLinks(out('image'), otherOutput)).toThrow(TypeError)
-      expect(() =>
-        Reflect.apply(edit.moveLinks, undefined, [
-          out('image'),
-          into(targetHandle, 'pixels')
-        ])
-      ).toThrow(TypeError)
-      expect(() =>
-        Reflect.apply(out('image').moveLinksTo, undefined, [1])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => edit.moveLinks(out('image'), otherOutput),
+        'moveLinks'
+      )
+      expectRefusal(
+        () =>
+          Reflect.apply(edit.moveLinks, undefined, [
+            out('image'),
+            into(targetHandle, 'pixels')
+          ]),
+        'moveLinks'
+      )
+      expectRefusal(
+        () => Reflect.apply(out('image').moveLinksTo, undefined, [1]),
+        'moveLinksTo'
+      )
     })
   })
 })

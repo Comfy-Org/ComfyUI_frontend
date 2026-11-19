@@ -21,6 +21,7 @@ import {
 import { createComfyApi } from './comfyApi'
 import type { ComfyApiHost } from './comfyApi'
 import type { Comfy, NodeHandle } from './types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('node handles', () => {
   let graph: LGraph
@@ -181,9 +182,9 @@ describe('node handles', () => {
         const getProperty = (): unknown =>
           Reflect.apply(handle.getProperty, handle, [name])
 
-        expect(getProperty).toThrow(TypeError)
+        expectRefusal(getProperty, 'getProperty')
         graph.remove(node)
-        expect(getProperty).toThrow(TypeError)
+        expectRefusal(getProperty, 'getProperty')
       }
     )
 

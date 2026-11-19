@@ -6,6 +6,7 @@ import { LGraph, LGraphBadge, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createComfyApi } from '@/platform/nodeApi/v4/comfyApi'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/canvasTestUtils'
 import type { Comfy } from '@/platform/nodeApi/v4/types'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 function drawn(node: LGraphNode): LGraphBadge[] {
   return node.badges.map((badge) =>
@@ -149,8 +150,9 @@ describe('node badges', () => {
   ])('refuses %s before touching the node', ([, badge]) => {
     const { node, handle } = add()
 
-    expect(() => Reflect.apply(handle.addBadge, undefined, [badge])).toThrow(
-      TypeError
+    expectRefusal(
+      () => Reflect.apply(handle.addBadge, undefined, [badge]),
+      'addBadge'
     )
     expect(node.badges).toEqual([])
   })

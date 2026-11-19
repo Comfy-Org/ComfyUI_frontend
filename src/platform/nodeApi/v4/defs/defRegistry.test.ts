@@ -12,6 +12,7 @@ import type {
   NodeDefBuilder
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 describe('node definitions', () => {
   let defs: DefRegistry
@@ -194,8 +195,9 @@ describe('node definitions', () => {
     ])('refuses $name as a selector and registers nothing', ({ selector }) => {
       const apply = vi.fn()
 
-      expect(() => Reflect.apply(defs.extend, defs, [selector, apply])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(defs.extend, defs, [selector, apply]),
+        'extend'
       )
       registerHost('Pick', 'a')
 
@@ -206,9 +208,10 @@ describe('node definitions', () => {
     it('refuses an apply that is not a function and registers nothing', () => {
       registerHost('Pick')
 
-      expect(() =>
-        Reflect.apply(defs.extend, defs, ['Pick', 'not a function'])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(defs.extend, defs, ['Pick', 'not a function']),
+        'extend'
+      )
       registerHost('Pick')
 
       expect(reportError).not.toHaveBeenCalled()
@@ -426,8 +429,8 @@ describe('node definitions', () => {
     })
 
     it.for([5, undefined, null, {}])('refuses %j as a type name', (type) => {
-      expect(() => Reflect.apply(defs.get, defs, [type])).toThrow(TypeError)
-      expect(() => Reflect.apply(defs.has, defs, [type])).toThrow(TypeError)
+      expectRefusal(() => Reflect.apply(defs.get, defs, [type]), 'get')
+      expectRefusal(() => Reflect.apply(defs.has, defs, [type]), 'has')
     })
   })
 
@@ -569,8 +572,9 @@ describe('node definitions', () => {
     ])('refuses $name and registers nothing', ({ definition }) => {
       const before = Object.keys(LiteGraph.registered_node_types)
 
-      expect(() => Reflect.apply(defs.define, defs, [definition])).toThrow(
-        TypeError
+      expectRefusal(
+        () => Reflect.apply(defs.define, defs, [definition]),
+        'define'
       )
       expect(Object.keys(LiteGraph.registered_node_types)).toEqual(before)
       expect(defs.all()).toEqual([])
@@ -589,7 +593,7 @@ describe('node definitions', () => {
     it('refuses a type that is registered already, and leaves it as it was', () => {
       const existing = registerHost('Taken')
 
-      expect(() => defs.define({ type: 'Taken' })).toThrow(TypeError)
+      expectRefusal(() => defs.define({ type: 'Taken' }), 'define')
       expect(LiteGraph.registered_node_types.Taken).toBe(existing)
     })
 
@@ -674,8 +678,9 @@ describe('node definitions', () => {
     it.for([undefined, 'listener', {}])(
       'refuses %j as a listener',
       (listener) => {
-        expect(() => Reflect.apply(defs.onRefreshed, defs, [listener])).toThrow(
-          TypeError
+        expectRefusal(
+          () => Reflect.apply(defs.onRefreshed, defs, [listener]),
+          'onRefreshed'
         )
       }
     )

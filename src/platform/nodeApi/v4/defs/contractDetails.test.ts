@@ -24,6 +24,7 @@ import type {
   NodeDefBuilder
 } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
+import { expectRefusal } from '@/platform/nodeApi/v4/__tests__/refusal'
 
 vi.mock(import('@/lib/litegraph/src/graphIntents'), { spy: true })
 
@@ -84,9 +85,10 @@ describe('contract details', () => {
 
   describe('selectors', () => {
     it('refuses a list holding an object', () => {
-      expect(() =>
-        Reflect.apply(defs.extend, defs, [['A', {}], () => {}])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () => Reflect.apply(defs.extend, defs, [['A', {}], () => {}]),
+        'extend'
+      )
     })
 
     it('picks a category by its whole name, not a prefix of it', () => {
@@ -165,11 +167,13 @@ describe('contract details', () => {
     })
 
     it('refuses a definition with a field Object.prototype has', () => {
-      expect(() =>
-        Reflect.apply(defs.define, defs, [
-          { type: fresh('Defined'), toString: () => '' }
-        ])
-      ).toThrow(TypeError)
+      expectRefusal(
+        () =>
+          Reflect.apply(defs.define, defs, [
+            { type: fresh('Defined'), toString: () => '' }
+          ]),
+        'define'
+      )
     })
   })
 
