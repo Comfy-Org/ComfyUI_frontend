@@ -1195,6 +1195,41 @@ describe('errorMessageResolver', () => {
       }
     },
     {
+      // Comfy-Org/cloud services/dispatcher/server/services/job_monitor/job_monitor.go:44
+      type: 'ServiceError',
+      message:
+        'ServiceError: Job stopped after making no node progress for too long',
+      expected: {
+        catalogId: 'generation_stalled',
+        displayTitle: 'Generation stalled',
+        displayMessage:
+          'This workflow stopped making progress. Try running it again.'
+      }
+    },
+    {
+      // Comfy-Org/cloud services/inference/server/services/joborchestrator/orchestrator.go:769
+      type: 'ServiceError',
+      message:
+        'ServiceError: Job execution interrupted: the inference server was shut down (deploy or scale-down) before this job finished within its 5m0s shutdown grace period. This is not a workflow error; please run the job again.',
+      expected: {
+        catalogId: 'server_crashed',
+        displayTitle: 'Server crashed',
+        displayMessage:
+          'The server stopped while running this workflow. Try again.'
+      }
+    },
+    {
+      // Legacy shutdown wording, still present in stored job history.
+      type: 'ServiceError',
+      message: 'ServiceError: Job execution interrupted: server shutdown.',
+      expected: {
+        catalogId: 'server_crashed',
+        displayTitle: 'Server crashed',
+        displayMessage:
+          'The server stopped while running this workflow. Try again.'
+      }
+    },
+    {
       type: 'ServiceError',
       message: 'ServiceError: RIP to the server your workflow was running on.',
       expected: {
