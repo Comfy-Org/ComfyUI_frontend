@@ -127,7 +127,7 @@ export function parseFlattenableSubgraphDefinitions(
  * "def-A" -> ["5", "10"] for each container node instantiating that subgraph definition.
  */
 export function buildSubgraphExecutionPaths(
-  rootNodes: readonly FlattenableWorkflowNode[],
+  rootNodes: readonly FlattenableWorkflowNode[] | undefined,
   allSubgraphDefs: readonly FlattenableSubgraphDefinition[]
 ): Map<string, string[]> {
   const subgraphDefMap = new Map(allSubgraphDefs.map((s) => [s.id, s]))
@@ -161,7 +161,7 @@ export function buildSubgraphExecutionPaths(
     }
   }
 
-  build(rootNodes, '')
+  build(rootNodes ?? [], '')
   return pathMap
 }
 
