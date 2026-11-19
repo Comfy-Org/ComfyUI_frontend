@@ -32,24 +32,7 @@ export function resolveDraftKey(index: DraftIndexV2, path: string): string {
   return key
 }
 
-/**
- * Takes over the slot `path` would use from the index as stored, when stored
- * shows a different path holding it.
- *
- * A rename keeps its slot (see {@link moveEntry}), so a slot no longer implies
- * `hashPath(path)`. A tab caches its index for the whole session, so one whose
- * cache predates another tab's rename still believes it owns that slot and
- * would read, overwrite or delete the renamed draft's payload. Adopting the
- * stored owner makes {@link resolveDraftKey} allocate a fresh slot for `path`
- * instead — a cost paid by the write that raced, not by the rename.
- *
- * The fallback slot can be taken too, by a repeated rename that parked a third
- * path there, so this settles instead of adopting once: each round imports one
- * stored owner and so rules out the candidate it just checked, leaving the loop
- * bounded by `stored`'s entry count.
- *
- * @returns `cached` itself when nothing else owns the slot.
- */
+/** Adopts stored owners until `path` resolves to an available or owned slot. */
 export function adoptContendedSlot(
   cached: DraftIndexV2,
   stored: DraftIndexV2 | null,
