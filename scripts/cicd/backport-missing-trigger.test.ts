@@ -222,7 +222,8 @@ describe('backport warning for release labels without needs-backport', () => {
     expect(result.status).toBe(0)
     expect(pr.postedComments()).toHaveLength(1)
     const [comment] = pr.postedComments()
-    expect(comment).toContain('`core/1.57` `cloud/1.57`')
+    expect(comment).toContain('`core/1.57`')
+    expect(comment).not.toContain('`cloud/1.57`')
     expect(comment).toContain('add the `needs-backport` label')
     expect(comment).not.toContain('`bug`')
   })
@@ -232,31 +233,31 @@ describe('backport warning for release labels without needs-backport', () => {
 
     pr.runWarning()
     pr.runWarning()
-    pr.setLabels(['core/1.57', 'cloud/1.58'])
+    pr.setLabels(['core/1.57', 'core/1.58'])
     pr.runWarning()
 
     const posted = pr.postedComments()
     expect(posted).toHaveLength(2)
-    expect(posted[1]).toContain('`cloud/1.58`')
+    expect(posted[1]).toContain('`core/1.58`')
     expect(posted[1]).not.toContain('`core/1.57`')
   })
 
   it('leaves out targets that already have a backport PR', () => {
     const pr = createPr({
-      labels: ['core/1.57', 'cloud/1.57'],
+      labels: ['core/1.57', 'core/1.58'],
       backports: [{ base: 'core/1.57', head: 'backport-21241-to-core-1.57' }]
     })
 
     pr.runWarning()
 
     const [comment] = pr.postedComments()
-    expect(comment).toContain('`cloud/1.57`')
+    expect(comment).toContain('`core/1.58`')
     expect(comment).not.toContain('`core/1.57`')
   })
 
   it('leaves out targets backported by hand from a branch the bot did not create', () => {
     const pr = createPr({
-      labels: ['core/1.57', 'core/1.58', 'cloud/1.58'],
+      labels: ['core/1.57', 'core/1.58', 'core/1.59'],
       manualBackports: [
         {
           base: 'core/1.57',
@@ -277,7 +278,7 @@ describe('backport warning for release labels without needs-backport', () => {
 
     const [comment] = pr.postedComments()
     expect(pr.postedComments()).toHaveLength(1)
-    expect(comment).toContain('`cloud/1.58`')
+    expect(comment).toContain('`core/1.59`')
     expect(comment).not.toContain('`core/1.57`')
     expect(comment).not.toContain('`core/1.58`')
   })
@@ -407,8 +408,9 @@ describe('backport warning for release labels without needs-backport', () => {
 
   it.for<[string, PrSetup]>([
     ['no release label', { labels: ['bug'] }],
+    ['retired cloud release label', { labels: ['cloud/1.59'] }],
     [
-      'only labels outside the core/X.Y or cloud/X.Y form',
+      'only labels outside the core/X.Y form',
       { labels: ['1.57', 'branch:release/hotfix', 'core/1.57-rc'] }
     ],
     [

@@ -56,7 +56,7 @@ beforeEach(() => {
     'Comfy.Templates.SelectedModels': [],
     'Comfy.Templates.SelectedUseCases': [],
     'Comfy.Templates.SelectedRunsOn': [],
-    'Comfy.Templates.SortBy': 'default'
+    'Comfy.Templates.SortBy': 'newest'
   }
   vi.mocked(fetch).mockImplementation(async () =>
     Response.json({ version: 0.4, nodes: [], links: [] })

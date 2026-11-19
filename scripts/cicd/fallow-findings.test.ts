@@ -92,7 +92,8 @@ describe('fallow findings renderer', () => {
 
   it('says only new findings gate, so nobody inherits the backlog', () => {
     const md = renderReport(REAL_REPORT)
-    expect(md).toContain('new findings only')
+    expect(md).toContain('Only **new findings** can fail the check')
+    expect(md).not.toContain('introduced or moved by this PR')
     expect(md).toContain('outside the changed files')
     expect(md).toContain('.fallow-baselines/')
   })

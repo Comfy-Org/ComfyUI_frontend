@@ -26,17 +26,8 @@ on:
     - cron: '0 0 * * *'
     # Weekly RC cut: MINOR bump on main every Monday 20:00 UTC (noon PST /
     # 13:00 PDT), aligned with the release freeze in release-weekly-comfyui.yaml.
-    # One cut a week since 2026-10-12 — QA takes one release a week; the
-    # Monday + Wednesday cadence (#18463) is retired. Merging this minor
-    # `Release` PR advances main to the next dev minor AND makes
-    # release-branch-create.yaml cut the outgoing core/x.y + cloud/x.y pair. This
-    # is what makes the branch cuts hands-off (no manual minor bump).
     - cron: '0 20 * * 1'
 
-# Key concurrency by target branch so per-branch bumps (e.g. the cloud
-# release fan-out that dispatches this workflow once per active branch) do
-# not cancel one another before their PRs are opened. Scheduled/main runs
-# fall back to 'main'.
 concurrency:
   group: release-version-bump-${{ github.event.inputs.branch || 'main' }}
   cancel-in-progress: true
@@ -67,12 +58,6 @@ jobs:
           TARGET_BRANCH="$RAW_BRANCH"
           WEEKLY_CUT='false'
 
-          # Monday 20:00 UTC schedule = the weekly RC cut: a MINOR bump on main.
-          # This string must match the cron above exactly, or the cut silently
-          # becomes a patch bump.
-          # Merging it fires release-branch-create.yaml (cuts core/x.y + cloud/x.y).
-          # Every other schedule (the nightly 00:00 UTC cron) is a patch bump, which
-          # never cuts a branch.
           if [[ "$EVENT_NAME" == "schedule" && "$SCHEDULE" == '0 20 * * 1' ]]; then
             VERSION_TYPE='minor'
             TARGET_BRANCH='main'
@@ -87,10 +72,6 @@ jobs:
             TARGET_BRANCH='main'
           fi
 
-          # create-pull-request treats `branch` as a repo-wide ref, so a bare
-          # version-bump-<version> head can collide across base branches (the
-          # cloud fan-out bumps cloud/x.y while nightly/weekly bump main) and
-          # update the wrong PR. Fold a normalized base slug into the head name.
           BRANCH_SLUG="${TARGET_BRANCH//[^a-zA-Z0-9]/-}"
           BRANCH_SLUG="${BRANCH_SLUG,,}"
 

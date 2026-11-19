@@ -58,6 +58,10 @@
       "summary": "Por debajo de {threshold} créditos, recarga hasta {target}.",
       "title": "La recarga automática está activada"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "Abre Facturación para comprobar que la recarga automática esté activada.",
+      "title": "Créditos añadidos"
+    },
     "blocked": {
       "action": "Abrir el proceso de pago",
       "body": "Tu navegador bloqueó la nueva pestaña. Abre el proceso de pago para terminar de pagar.",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}, pagado al finalizar la compra",
     "planLine": {
       "ended": "Comprar créditos no reinicia tu plan de Cloud. Vuelve a suscribirte para ejecutar flujos de trabajo en Cloud.",
+      "ended_sales_managed": "Comprar créditos no reinicia tu plan de Cloud. Ponte en contacto con ventas para renovarlo.",
       "free_runs": "Comprar créditos no inicia un plan de Cloud. Suscríbete para seguir ejecutando flujos de trabajo cuando se agoten tus ejecuciones gratuitas.",
       "no_plan": "Comprar créditos no inicia un plan de Cloud. Suscríbete para ejecutar flujos de trabajo en Cloud."
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "No pudimos confirmar que tu respuesta haya llegado al agente."
     },
     "assetFetchFailed": "No se pudo recuperar {name}",
+    "assetLoadFailed": "No se pudo cargar {name}",
     "assetNotAttachable": "Se pueden adjuntar imágenes, vídeo, audio, modelos 3D y archivos de texto",
     "attach": "Adjuntar un archivo",
     "attachFiles": "Sube imágenes o archivos",
@@ -337,6 +343,36 @@
     "placeholder": "Describe lo que quieres crear",
     "placeholderWithoutSkills": "Describe lo que quieres crear",
     "previewAsset": "Vista previa de {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "Dile a Comfy Agent lo que te gustaría crear.",
+        "title": "¿Tienes algo en mente?"
+      },
+      "firstOpen": {
+        "description": "¿No sabes por dónde empezar? Envía la pregunta de abajo o escribe la tuya.",
+        "prompt": "¿En qué puedes ayudarme?",
+        "title": "¡Un poco de ayuda para empezar!"
+      },
+      "workflowOpen": {
+        "description": "Comfy Agent te muestra lo que planea hacer antes de que cambie algo en tu flujo de trabajo.",
+        "prompt": "Ayúdame a mejorar este flujo de trabajo",
+        "title": "Haz una pregunta o describe un cambio."
+      }
+    },
     "recoveredTurnFailed": "El agente no pudo completar esta respuesta.",
     "reference": "Referencia",
     "remove": "Eliminar",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "No se pudo abrir el workflow de destino.",
     "targetWorkflowUnavailable": "El workflow de destino ya no está disponible.",
     "thinking": "Pensando...",
+    "thinkingShortened": "Razonamiento acortado: el resto era demasiado largo para guardarlo.",
     "title": "Comfy Agent",
     "toolFailed": "{tool} falló",
     "toolFailedSkill": "No se pudo cargar {skill}",
@@ -1485,6 +1522,7 @@
       "paymentProcessingFlyout": "Procesando el pago. No necesitas pagar de nuevo.",
       "paymentProcessingTitle": "Un pago de {amount} aún se está procesando",
       "paymentProcessingTitleNoAmount": "Un pago aún se está procesando",
+      "planRequiredContactSales": "Comprar créditos no reinicia tu plan de Cloud. Ponte en contacto con ventas para renovarlo.",
       "planRequiredFreeRuns": "Comprar créditos no inicia un plan de Cloud. Suscríbete para seguir ejecutando flujos de trabajo una vez que hayas usado tus ejecuciones gratuitas.",
       "planRequiredResubscribe": "Comprar créditos no reinicia tu plan de Cloud. Vuelve a suscribirte para ejecutar flujos de trabajo en Cloud.",
       "planRequiredSubscribe": "Comprar créditos no inicia un plan de Cloud. Suscríbete para ejecutar flujos de trabajo en Cloud.",
@@ -2685,6 +2723,9 @@
     "resizeFromBottomRight": "Redimensionar desde la esquina inferior derecha",
     "resizeFromTopLeft": "Redimensionar desde la esquina superior izquierda",
     "resizeFromTopRight": "Redimensionar desde la esquina superior derecha",
+    "resizeNumberedPreviewHeight": "Cambiar el tamaño de la altura de la vista previa {index}",
+    "resizePreviewHeight": "Cambiar el tamaño de la altura de la vista previa",
+    "resizeWidgetHeight": "Cambiar el tamaño de la altura de {name}",
     "restart": "Reiniciar",
     "restore": "Restaurar",
     "restoreDialog": "Restaurar diálogo",
@@ -3752,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "Experimental: Activar Nodes 2.0",
     "Export": "Exportar",
     "Export (API)": "Exportar (API)",
+    "Export (Workflow Image)": "Exportar (imagen del flujo de trabajo)",
     "File": "Archivo",
     "Fit Group To Contents": "Ajustar grupo a contenidos",
     "Focus Mode": "Modo de Enfoque",
@@ -4323,6 +4365,7 @@
     "handoffFailed": "No se pudo abrir el flujo de trabajo desde ComfyUI en tu computadora",
     "handoffMissing": "Tu flujo de trabajo no llegó",
     "handoffMissingDetail": "ComfyUI deja de esperar después de 10 minutos. Haz clic en Abrir en Comfy Cloud en ComfyUI de nuevo.",
+    "missingLocalModelLoader": "No se pudo leer la configuración del modelo para {nodeType}. Instala el paquete de nodos que lo proporciona y vuelve a intentarlo.",
     "missingModels": {
       "title": "Falta {count} modelo | Faltan {count} modelos",
       "unavailable": "Agrega estos modelos a Comfy Cloud para ejecutar este flujo de trabajo. Las cargas desde este ComfyUI no están disponibles actualmente."
@@ -5220,6 +5263,16 @@
     "triggerLinePlaceholder": "Cárgame cuando el usuario pregunte sobre escalado",
     "yourPacks": "Tus paquetes"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "Accede a este subgrafo mediante un nodo de subgrafo para editar sus valores.",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "Valor vinculado · solo lectura",
+    "locateSource": "Localizar nodo fuente",
+    "sharedSource": "Fuente compartida",
+    "sourceHint": "Editar esta fuente también cambia las otras entradas conectadas a ella.",
+    "unavailable": "Valor no disponible"
+  },
   "subgraphStore": {
     "blueprintName": "Nombre del subgrafo",
     "blueprintNamePrompt": "Nombre del subgrafo:",
@@ -5469,18 +5522,28 @@
       "subscriptionChangeInProgress": "Ya tienes programado un cambio de plan. Podrás elegir otro plan después de que entre en vigor.",
       "subscriptionChangeScheduled": "El cambio de plan programado entrará en vigor el {date}. Podrás elegir otro plan después de esa fecha."
     },
+    "planWithPeriod": {
+      "annual": "{plan} anual",
+      "monthly": "{plan} mensual"
+    },
     "plansAndCredits": "Planes y créditos",
     "plansAndPricing": "Planes y precios",
     "plansForWorkspace": "Planes para {workspace}",
     "plansLink": {
       "blockedBody": "Tu navegador bloqueó la nueva pestaña. Abre la página de planes para elegir un plan.",
       "blockedTitle": "No se abrió la página de planes",
+      "checkoutUnfinishedBody": "Abre la página Planes para volver a intentarlo. Tu navegador bloqueó que se abriera por sí sola.",
+      "checkoutUnfinishedTitle": "No se completó tu proceso de pago",
       "choosePlan": "Elegir un plan",
       "openPlansPage": "Abrir la página de planes",
       "runRefusedEnded": "Tu plan ha finalizado. Vuelve a suscribirte para seguir ejecutando flujos de trabajo en Cloud.",
       "runRefusedFreeRunsUsed": "Has usado las {total} ejecuciones gratuitas. Suscríbete para seguir ejecutando flujos de trabajo en Cloud.",
+      "runRefusedManualBlock": "Este espacio de trabajo ha sido bloqueado. Ponte en contacto con soporte.",
       "runRefusedNoPlan": "Para ejecutar flujos de trabajo en Cloud necesitas un plan.",
-      "runRefusedTitle": "Tu flujo de trabajo no se ejecutó"
+      "runRefusedProjectCap": "Este proyecto ha alcanzado su límite de gasto.",
+      "runRefusedTitle": "Tu flujo de trabajo no se ejecutó",
+      "runRefusedUserCap": "Has alcanzado tu límite de gasto en este espacio de trabajo.",
+      "runRefusedWorkspaceCap": "Este espacio de trabajo ha alcanzado su límite de gasto."
     },
     "plansLoadFailed": "No se pudieron cargar los planes",
     "prepaidCreditsInfo": "Créditos comprados por separado que no expiran",
@@ -5918,6 +5981,7 @@
     "failedToConvertToSubgraph": "No se pudo convertir los elementos en subgrafo",
     "failedToCreateCustomer": "No se pudo crear el cliente: {error}",
     "failedToExportModel": "Error al exportar modelo como {format}",
+    "failedToExportWorkflowImage": "No se pudo exportar la imagen del flujo de trabajo",
     "failedToFetchLogs": "Error al obtener los registros del servidor",
     "failedToFetchSubscription": "Error al obtener el estado de suscripción: {error}",
     "failedToInitializeCameraAngleViewer": "No se pudo inicializar el visor de ángulo de cámara. Intenta recargar la página.",
@@ -6109,12 +6173,14 @@
     "undo": "Deshacer"
   },
   "widgets": {
+    "backFromFolder": "Volver: {name}",
     "boolean": {
       "false": "falso",
       "true": "verdadero"
     },
     "node2only": "Solo Node 2.0",
     "precisionLimit": "Incremento/decremento desactivado: el valor supera el límite de precisión de JavaScript (±2^53)",
+    "selectFolder": "Carpeta: {name}",
     "selectModel": "Seleccionar modelo",
     "uploadSelect": {
       "maxSelectionReached": "Se alcanzó el límite máximo de selección",
@@ -6287,7 +6353,15 @@
         "salesMemberBody": "Pide al propietario de tu espacio de trabajo que contacte con ventas.",
         "teamBody": "Vuelve a suscribirte para ejecutar flujos de trabajo y obtener créditos compartidos de nuevo.",
         "teamMemberBody": "Pide al propietario de tu espacio de trabajo que vuelva a suscribirse.",
+        "teamNotCreatorBody": "El plan de este espacio de trabajo ha finalizado. Pide al creador del espacio de trabajo que vuelva a suscribirse.",
         "teamTitle": "Tu plan Team terminó el {date}"
+      },
+      "planNotStarted": {
+        "body": "Termina de pagar para iniciarlo.",
+        "bodyUnavailable": "Tu plan comenzará cuando se procese el pago.",
+        "title": "Tu plan {plan} no ha comenzado",
+        "titleNoPlan": "Tu plan no ha comenzado",
+        "viewPlans": "Ver en Planes"
       },
       "updatePayment": "Actualizar pago"
     },
