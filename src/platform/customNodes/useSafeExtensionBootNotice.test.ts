@@ -25,11 +25,12 @@ describe('useSafeExtensionBootNotice', () => {
   })
 
   it('says custom extensions are off for this load and offers a reload with them on', () => {
-    bootWith('/?safe&workflow=a')
-    const reload = vi.fn()
-    vi.spyOn(window, 'location', 'get').mockReturnValue(
-      Object.assign(Object.create(Location.prototype), { reload })
-    )
+    bootWith('/?safe&workflow=a#graph')
+    // A Cloud workspace switch can write the flag back before the click.
+    window.history.replaceState(null, '', '/?workflow=a&safe=1#graph')
+    const replace = vi
+      .spyOn(window.location, 'replace')
+      .mockImplementation(() => {})
 
     renderNotice()
 
@@ -44,7 +45,21 @@ describe('useSafeExtensionBootNotice', () => {
     ])
 
     toast.actions[0].onClick()
-    expect(reload).toHaveBeenCalledOnce()
+    expect(replace).toHaveBeenCalledExactlyOnceWith(
+      `${window.location.origin}/?workflow=a#graph`
+    )
+  })
+
+  it('shows the notice again after a layout swap cleared it, without stacking copies', () => {
+    bootWith('/?safe')
+
+    renderNotice()
+    renderNotice()
+    expect(useToast().toasts).toHaveLength(1)
+
+    useToast().dismissAll()
+    renderNotice()
+    expect(useToast().toasts).toHaveLength(1)
   })
 
   it('shows nothing on a normal load', () => {

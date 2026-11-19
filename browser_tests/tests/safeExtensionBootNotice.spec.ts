@@ -13,20 +13,24 @@ test.describe('Safe extension boot notice', { tag: '@ui' }, () => {
         'Safe mode: custom extensions are off'
       )
 
-      await test.step('A ?safe load shows the notice', async () => {
+      await test.step('A ?safe load shows the notice once the graph is up', async () => {
         await comfyPage.goto({ url: `${comfyPage.url}/?safe` })
+        await comfyPage.waitForAppReady()
         await expect(notice).toBeVisible()
         await expect(page).not.toHaveURL(/[?&]safe/)
         await expectElementScreenshot(notice, 'safe-extension-boot-notice.png')
       })
 
       await test.step('Reload with extensions clears it', async () => {
-        await notice
-          .getByRole('button', { name: 'Reload with extensions' })
-          .click()
-        await page.waitForLoadState()
+        // A reload back into safe mode would show the notice again once the
+        // graph view is up, so wait for the new document and the app first.
+        await Promise.all([
+          page.waitForEvent('load'),
+          notice.getByRole('button', { name: 'Reload with extensions' }).click()
+        ])
+        await comfyPage.waitForAppReady()
         await expect(page).not.toHaveURL(/[?&]safe/)
-        await expect(notice).toBeHidden()
+        await expect(notice).toHaveCount(0)
       })
     }
   )
