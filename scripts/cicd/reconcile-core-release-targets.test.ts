@@ -9,6 +9,8 @@ function reconciliation({
   apply = true,
   existing = true,
   failFreeze = false,
+  failNotice = false,
+  failDelete = false,
   stale = false,
   retired = 'core/1.58 core/1.59',
   active = 'core/1.60 core/1.61'
@@ -44,6 +46,11 @@ function reconciliation({
     ])
   )
   writeFileSync(join(directory, 'writes'), '')
+  writeFileSync(join(directory, 'comments.json'), '{}')
+  writeFileSync(join(directory, 'output'), '')
+  writeFileSync(join(directory, 'summary'), '')
+  if (failNotice) writeFileSync(join(directory, 'block-notice'), '')
+  if (failDelete) writeFileSync(join(directory, 'block-delete'), '')
   writeFileSync(
     join(directory, 'git'),
     '#!/bin/sh\nprintf "%s\\trefs/heads/master\\n" "$LATEST_SHA"\n',
@@ -53,7 +60,20 @@ function reconciliation({
     join(directory, 'gh'),
     `#!/bin/bash
 set -euo pipefail
-if [ "$1 $2" = 'api --method' ]; then
+if [ "$1 $2 $3" = 'api --method GET' ]; then
+  if [[ "$*" == *'labels=needs-backport,core/1.59'* ]]; then
+    [[ "$*" == *'--paginate --slurp'* ]] || exit 2
+    printf '%s' '[[{"number":101,"pull_request":{}},{"number":500}],[{"number":202,"pull_request":{}}]]'
+  else
+    echo '[[]]'
+  fi
+elif [ "$1 $2 $3" = 'api --method POST' ] && [[ "$4" == */comments ]]; then
+  number=$(cut -d/ -f5 <<< "$4")
+  [ ! -f "$STATE/block-notice" ] || [ "$number" != 202 ] || exit 1
+  body="\${6#body=}"
+  jq --arg number "$number" --arg body "$body" '.[$number] = ((.[$number] // []) + [{user: {login: "release-bot"}, body: $body}])' "$STATE/comments.json" > "$STATE/comments.next"
+  mv "$STATE/comments.next" "$STATE/comments.json"
+elif [ "$1 $2" = 'api --method' ]; then
   [ "$FAIL_FREEZE" != true ] || exit 1
   cat > "$STATE/request.json"
   echo "$3 $4" >> "$STATE/writes"
@@ -61,6 +81,12 @@ elif [ "$1" = api ]; then
   case "$2" in
     */rulesets) cat "$STATE/rulesets.json" ;;
     */labels) jq -r '.[]' "$STATE/labels.json" ;;
+    graphql) echo release-bot ;;
+    */comments?per_page=100)
+      [[ "$*" == *'--paginate --slurp'* ]] || exit 2
+      number=$(cut -d/ -f5 <<< "$2")
+      jq --arg number "$number" '[[], (.[$number] // [])]' "$STATE/comments.json"
+      ;;
     *) exit 2 ;;
   esac
 elif [ "$1 $2" = 'label create' ]; then
@@ -68,6 +94,9 @@ elif [ "$1 $2" = 'label create' ]; then
   mv "$STATE/labels.next" "$STATE/labels.json"
   echo "$*" >> "$STATE/writes"
 elif [ "$1 $2" = 'label delete' ]; then
+  if [ -f "$STATE/block-delete" ]; then
+    [ -s "$STATE/block-delete" ] && [ "$(cat "$STATE/block-delete")" != "$3" ] || exit 1
+  fi
   jq --arg name "$3" 'map(select(. != $name))' "$STATE/labels.json" > "$STATE/labels.next"
   mv "$STATE/labels.next" "$STATE/labels.json"
   echo "$*" >> "$STATE/writes"
@@ -98,7 +127,9 @@ fi
           COMFYUI_PIN_SHA: 'pin-sha',
           LATEST_SHA: stale ? 'changed-pin' : 'pin-sha',
           APPLY: String(apply),
-          FAIL_FREEZE: String(failFreeze)
+          FAIL_FREEZE: String(failFreeze),
+          GITHUB_OUTPUT: join(directory, 'output'),
+          GITHUB_STEP_SUMMARY: join(directory, 'summary')
         }
       }
     )
@@ -175,6 +206,92 @@ describe('core retirement reconciliation', () => {
     ).toContain('core/1.58')
   })
 
+  it('notifies all pages of waiting PRs before deleting labels', () => {
+    const { directory, run } = reconciliation()
+
+    expect(run().status).toBe(0)
+
+    expect(
+      JSON.parse(readFileSync(join(directory, 'comments.json'), 'utf8'))
+    ).toEqual({
+      '101': [
+        {
+          user: { login: 'release-bot' },
+          body: expect.stringContaining('`core/1.59` is being retired')
+        }
+      ],
+      '202': [
+        {
+          user: { login: 'release-bot' },
+          body: expect.stringContaining('core/1.60 or newer')
+        }
+      ]
+    })
+    expect(
+      readFileSync(join(directory, 'output'), 'utf8')
+        .trim()
+        .split('\n')
+        .at(-1)
+        ?.replace('retired=', '')
+        .split(' ')
+        .sort()
+    ).toEqual([
+      '1.59',
+      'backport:core/1.59',
+      'branch:core/1.59',
+      'core/1.59',
+      'core/1.9'
+    ])
+  })
+
+  it('reports only completed deletions when a later deletion fails', () => {
+    const { directory, run } = reconciliation({ failDelete: true })
+    writeFileSync(join(directory, 'block-delete'), 'backport:core/1.59')
+
+    expect(run().status).toBe(1)
+
+    expect(readFileSync(join(directory, 'output'), 'utf8')).toBe(
+      'retired=1.59\n'
+    )
+    expect(readFileSync(join(directory, 'summary'), 'utf8')).toBe(
+      '- Retired backport label: `1.59`\n'
+    )
+    expect(
+      JSON.parse(readFileSync(join(directory, 'labels.json'), 'utf8'))
+    ).toContain('backport:core/1.59')
+  })
+
+  it.for([
+    { name: 'notice failure', failNotice: true, failDelete: false },
+    { name: 'deletion failure', failNotice: false, failDelete: true }
+  ])(
+    'preserves labels after $name and deduplicates notices on retry',
+    (failure) => {
+      const { directory, run } = reconciliation(failure)
+
+      expect(run().status).toBe(1)
+      expect(
+        JSON.parse(readFileSync(join(directory, 'labels.json'), 'utf8'))
+      ).toContain('core/1.9')
+      expect(readFileSync(join(directory, 'output'), 'utf8')).toBe('')
+      rmSync(join(directory, 'block-notice'), { force: true })
+      rmSync(join(directory, 'block-delete'), { force: true })
+
+      expect(run().status).toBe(0)
+
+      expect(
+        JSON.parse(readFileSync(join(directory, 'comments.json'), 'utf8'))[
+          '101'
+        ]
+      ).toHaveLength(1)
+      expect(
+        JSON.parse(readFileSync(join(directory, 'comments.json'), 'utf8'))[
+          '202'
+        ]
+      ).toHaveLength(1)
+    }
+  )
+
   it('disables its freeze ruleset if no release lines remain retired', () => {
     const { directory, run } = reconciliation({
       active: 'core/1.9 core/1.59 core/1.60',
@@ -199,6 +316,8 @@ describe('core retirement reconciliation', () => {
     expect(run().status).toBe(status)
 
     expect(readFileSync(join(directory, 'writes'), 'utf8')).toBe('')
+    expect(readFileSync(join(directory, 'comments.json'), 'utf8')).toBe('{}')
+    expect(readFileSync(join(directory, 'output'), 'utf8')).toBe('')
     expect(
       JSON.parse(readFileSync(join(directory, 'labels.json'), 'utf8'))
     ).toContain('core/1.59')

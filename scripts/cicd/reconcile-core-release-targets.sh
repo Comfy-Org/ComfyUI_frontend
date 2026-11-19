@@ -41,6 +41,7 @@ for branch in $ACTIVE_CORE_TARGETS; do
 done
 
 LABELS=$(gh api "repos/$GH_REPO/labels" --paginate --jq '.[].name')
+RETIRE_LABELS=()
 while IFS= read -r label; do
   target=${label#branch:}
   target=${target#backport:}
@@ -48,6 +49,39 @@ while IFS= read -r label; do
   [[ "$target" =~ ^[0-9]+\.[0-9]+$ ]] || continue
   oldest=$(printf '%s\n' "$target" "${MINIMUM_CORE_TARGET#core/}" | sort -V | head -n1)
   if [ "$oldest" = "$target" ] && [ "$target" != "${MINIMUM_CORE_TARGET#core/}" ]; then
-    gh label delete "$label" --repo "$GH_REPO" --yes
+    RETIRE_LABELS+=("$label")
   fi
 done <<< "$LABELS"
+
+if [ "${#RETIRE_LABELS[@]}" -eq 0 ]; then
+  exit 0
+fi
+
+NOTICE_AUTHOR=$(gh api graphql -f query='{viewer{login}}' --jq '.data.viewer.login')
+for label in "${RETIRE_LABELS[@]}"; do
+  PRS=$(gh api --method GET "repos/$GH_REPO/issues" \
+    -f state=open -f "labels=needs-backport,$label" -f per_page=100 \
+    --paginate --slurp)
+  NUMBERS=$(jq -r '.[][] | select(.pull_request != null) | .number' <<< "$PRS")
+  NOTICE="The backport target \`$label\` is being retired after the 72-hour rollback window. Its label will be removed and older core release branches are frozen. If this fix is still needed, select a viable target from $MINIMUM_CORE_TARGET or newer, or remove \`needs-backport\` if no backport is needed."
+  for number in $NUMBERS; do
+    COMMENTS=$(gh api "repos/$GH_REPO/issues/$number/comments?per_page=100" --paginate --slurp)
+    NOTIFIED=$(jq -r --arg author "$NOTICE_AUTHOR" --arg body "$NOTICE" \
+      'any(.[][]; .user.login == $author and .body == $body)' <<< "$COMMENTS")
+    if [ "$NOTIFIED" != true ]; then
+      gh api --method POST "repos/$GH_REPO/issues/$number/comments" -f "body=$NOTICE" >/dev/null
+    fi
+  done
+done
+
+DELETED_LABELS=''
+for label in "${RETIRE_LABELS[@]}"; do
+  gh label delete "$label" --repo "$GH_REPO" --yes
+  DELETED_LABELS="${DELETED_LABELS:+$DELETED_LABELS }$label"
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    echo "retired=$DELETED_LABELS" >> "$GITHUB_OUTPUT"
+  fi
+  if [ -n "${GITHUB_STEP_SUMMARY:-}" ]; then
+    echo "- Retired backport label: \`$label\`" >> "$GITHUB_STEP_SUMMARY"
+  fi
+done
