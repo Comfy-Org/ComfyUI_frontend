@@ -4300,7 +4300,7 @@ describe('ComfyApp', () => {
       [3, 2, 0, 1],
       [3, 2, 1, 0]
     ])(
-      'applies files in call order for completion order %j',
+      'applies files in call order for completion order %s, %s, %s, %s',
       async (completionOrder) => {
         const callOrder = [0, 1, 2, 3]
         const resolvers: ((
