@@ -7,7 +7,7 @@ import type { ComfyApiHost } from '@/platform/nodeApi/v4/comfyApi'
 import type { DefRegistry } from '@/platform/nodeApi/v4/types'
 import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 
-describe('selectors, definitions and colours at their edges', () => {
+describe('selectors, definitions and colors at their edges', () => {
   let defs: DefRegistry
   let host: ComfyApiHost
 

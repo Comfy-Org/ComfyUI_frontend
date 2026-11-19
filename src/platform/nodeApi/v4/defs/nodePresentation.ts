@@ -1,7 +1,6 @@
 import { TitleMode } from '@comfyorg/graph-model/globalEnums'
-import { isPlainObject } from 'es-toolkit'
 
-import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import {
   checkedBoolean,
   checkedChoice
@@ -36,20 +35,12 @@ export function checkedPresentation(
       collapsible: true
     }
   }
-  if (!isPlainObject(presentation)) {
-    throw invalidArgument('define', 'a presentation object', presentation)
-  }
-  const given: Readonly<Record<string, unknown>> = { ...presentation }
-  const unknownField = Object.keys(given).find(
-    (field) => !Object.hasOwn(PRESENTATION_FIELDS, field)
+  const given = checkedFields(
+    'define',
+    'presentation',
+    presentation,
+    PRESENTATION_FIELDS
   )
-  if (unknownField !== undefined) {
-    throw invalidArgument(
-      'define',
-      `a presentation of ${Object.keys(PRESENTATION_FIELDS).join(', ')} only`,
-      unknownField
-    )
-  }
   return {
     titleMode:
       given.title === undefined

@@ -23,7 +23,7 @@ interface ClaimedType {
   readonly claims: Claim[]
 }
 
-/** The colours of data types and node colour names, and the colours packs give their own types. */
+/** The colors of data types and node color names, and the colors packs give their own types. */
 export function createTypeColors(): TypeColors {
   const claimed = new Map<string, ClaimedType>()
 
@@ -54,12 +54,12 @@ export function createTypeColors(): TypeColors {
       if (type in Object.prototype) {
         throw invalidArgument('setTypeColor', 'a type name', type)
       }
-      checkedText('setTypeColor', 'a colour', color)
+      checkedText('setTypeColor', 'a color', color)
       const shown = shownColor(type)
       if (shown && shown !== newestColor(type)) {
         throw invalidArgument(
           'setTypeColor',
-          'a type the palette leaves uncoloured',
+          'a type the palette leaves uncolored',
           type
         )
       }
@@ -72,7 +72,7 @@ export function createTypeColors(): TypeColors {
     },
 
     nodeColor(name) {
-      checkedText('nodeColor', 'a colour name', name)
+      checkedText('nodeColor', 'a color name', name)
       if (!Object.hasOwn(LGraphCanvas.node_colors, name)) return undefined
       const { color, bgcolor, groupcolor } = LGraphCanvas.node_colors[name]
       return Object.freeze({ color, bgColor: bgcolor, groupColor: groupcolor })

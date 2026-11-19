@@ -3,18 +3,14 @@ import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import type {
   InputSlotPatch,
   SlotOptions,
   SlotPatch,
   SlotSide
 } from '@/platform/nodeApi/v4/types'
-import {
-  checkedFields,
-  checkedChoice,
-  checkedPoint,
-  checkedString
-} from './checkedArguments'
+import { checkedChoice, checkedPoint, checkedString } from './checkedArguments'
 import type { LiveSlot } from './liveSlot'
 import { SLOT_DIRECTIONS, SLOT_SHAPES } from './slotVocabulary'
 
@@ -51,6 +47,7 @@ export function checkedSlotPatch(
 ): CheckedSlotPatch {
   const given = checkedFields(
     member,
+    'a slot patch',
     patch,
     side === 'input' ? PATCH_FIELDS : OUTPUT_PATCH_FIELDS
   )
@@ -103,6 +100,7 @@ export function checkedSlotOptions(
   const { widget: _inputOnly, ...outputFields } = OPTION_FIELDS
   const { shape, widget } = checkedFields(
     member,
+    'slot options',
     options,
     side === 'input' ? OPTION_FIELDS : outputFields
   )

@@ -1,10 +1,16 @@
 import type { RenderShape } from '@comfyorg/graph-model/globalEnums'
-import { isPlainObject } from 'es-toolkit'
 
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import { checkedChoice } from '@/platform/nodeApi/v4/edit/checkedArguments'
+import {
+  optionalCallback,
+  checkedFields
+} from '@/platform/nodeApi/v4/checkedFields'
+import {
+  checkedChoice,
+  checkedString
+} from '@/platform/nodeApi/v4/edit/checkedArguments'
 import { chooseResizable } from '@/platform/nodeApi/v4/edit/nodeSizing'
 import { SLOT_SHAPES } from '@/platform/nodeApi/v4/edit/slotVocabulary'
 import type {
@@ -67,20 +73,13 @@ const DEFINITION_FIELDS = {
 const EXECUTIONS = ['backend', 'frontend'] as const
 
 /** Refuses a definition an untyped caller got wrong, before anything is registered. */
-export function checkedDefinition(definition: unknown): CheckedDefinition {
-  if (!isPlainObject(definition)) {
-    throw invalidArgument('define', 'a node definition object', definition)
-  }
-  const unknownField = Object.keys(definition).find(
-    (field) => !Object.hasOwn(DEFINITION_FIELDS, field)
+export function checkedDefinition(given: unknown): CheckedDefinition {
+  const definition = checkedFields(
+    'define',
+    'a node definition',
+    given,
+    DEFINITION_FIELDS
   )
-  if (unknownField !== undefined) {
-    throw invalidArgument(
-      'define',
-      `a definition of ${Object.keys(DEFINITION_FIELDS).join(', ')} only`,
-      unknownField
-    )
-  }
   const type = availableTypeName(definition.type)
   return {
     type,
@@ -184,9 +183,11 @@ function availableTypeName(type: unknown): string {
   return type
 }
 
-function optionalHook<T>(name: string, hook: T): T | undefined {
-  if (hook === undefined || typeof hook === 'function') return hook
-  throw invalidArgument('define', `an ${name} that is a function`, hook)
+function optionalHook<K extends keyof DefinitionHooks>(
+  name: K,
+  hook: unknown
+): DefinitionHooks[K] {
+  return optionalCallback('define', name, hook) as DefinitionHooks[K]
 }
 
 function optionalText(field: string, value: unknown): string | undefined {
@@ -195,9 +196,12 @@ function optionalText(field: string, value: unknown): string | undefined {
 }
 
 const SLOT_FIELDS = {
-  inputs: ['name', 'type'],
-  outputs: ['name', 'type', 'shape']
-} as const
+  inputs: { name: true, type: true },
+  outputs: { name: true, type: true, shape: true }
+} as const satisfies Record<
+  'inputs' | 'outputs',
+  Partial<Record<'name' | 'type' | 'shape', true>>
+>
 
 function checkedSlots(
   field: 'inputs' | 'outputs',
@@ -207,27 +211,25 @@ function checkedSlots(
   if (!Array.isArray(slots)) {
     throw invalidArgument('define', `a list of ${field}`, slots)
   }
-  const fields: readonly string[] = SLOT_FIELDS[field]
-  return slots.map((slot: unknown) => {
-    if (
-      !isPlainObject(slot) ||
-      Object.keys(slot).some((key) => !fields.includes(key)) ||
-      typeof slot.name !== 'string' ||
-      typeof slot.type !== 'string'
-    ) {
-      throw invalidArgument(
-        'define',
-        `${field} of { ${fields.join(', ')} } with text name and type`,
-        slot
-      )
-    }
+  return slots.map((given: unknown, index) => {
+    const known: Readonly<Record<string, true>> = SLOT_FIELDS[field]
+    const slot = checkedFields('define', `${field}[${index}]`, given, known)
     const shape =
       slot.shape === undefined
         ? undefined
         : SLOT_SHAPES[
-            checkedChoice('define', `${field}.shape`, slot.shape, SLOT_SHAPES)
+            checkedChoice(
+              'define',
+              `${field}[${index}].shape`,
+              slot.shape,
+              SLOT_SHAPES
+            )
           ]
-    return Object.freeze({ name: slot.name, type: slot.type, shape })
+    return Object.freeze({
+      name: checkedString('define', `${field}[${index}].name`, slot.name),
+      type: checkedString('define', `${field}[${index}].type`, slot.type),
+      shape
+    })
   })
 }
 

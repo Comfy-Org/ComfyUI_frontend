@@ -1,13 +1,9 @@
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { GroupPatch } from '@/platform/nodeApi/v4/types'
-import {
-  checkedFields,
-  checkedNonNegative,
-  checkedPoint,
-  fieldsOf
-} from './checkedArguments'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
+import type { Bounds } from '@/platform/nodeApi/v4/types'
+import { checkedNonNegative, checkedFinite } from './checkedArguments'
 import type { EditRunner } from './editRunner'
 import type { GroupHandles } from './groupHandles'
 
@@ -18,6 +14,10 @@ export interface GroupEdits {
 }
 
 type GroupWrite = (group: LGraphGroup) => void
+
+interface GroupPatch {
+  readonly bounds?: Bounds
+}
 
 const FIELDS = {
   bounds: true
@@ -41,15 +41,18 @@ export function createGroupEdits(
 }
 
 function checkedGroupPatch(member: string, patch: unknown): GroupWrite {
-  const given = checkedFields(member, patch, FIELDS)
+  const given = checkedFields(member, 'a group patch', patch, FIELDS)
   return Object.hasOwn(given, 'bounds')
     ? checkedBounds(member, given.bounds)
     : () => {}
 }
 
+const BOUNDS_FIELDS = { x: true, y: true, width: true, height: true } as const
+
 function checkedBounds(member: string, value: unknown): GroupWrite {
-  const bounds = fieldsOf(member, 'bounds', value)
-  const [x, y] = checkedPoint(member, 'bounds', bounds)
+  const bounds = checkedFields(member, 'bounds', value, BOUNDS_FIELDS)
+  const x = checkedFinite(member, 'bounds.x', bounds.x)
+  const y = checkedFinite(member, 'bounds.y', bounds.y)
   const width = checkedNonNegative(member, 'bounds.width', bounds.width)
   const height = checkedNonNegative(member, 'bounds.height', bounds.height)
   return (group) => {

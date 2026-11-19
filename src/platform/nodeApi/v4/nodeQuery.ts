@@ -1,8 +1,7 @@
-import { isPlainObject } from 'es-toolkit'
-
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import type { NodeQuery, NodeQueryScope } from './types'
 
 const SCOPES = {
@@ -22,11 +21,9 @@ interface CheckedNodeQuery {
 
 /** Refuses a query an untyped caller got wrong, before any node is read. */
 export function checkedNodeQuery(query: NodeQuery): CheckedNodeQuery {
-  assertOnlyKnownFields(query)
-  const { scope = 'visible', type } = query
-  assertScope(scope)
+  const { scope, type } = checkedFields('queryNodes', 'a query', query, FIELDS)
   return {
-    scope,
+    scope: checkedScope('queryNodes', scope),
     selects: type === undefined ? () => true : nodeOfType(type)
   }
 }
@@ -56,28 +53,19 @@ function nodeOfType(type: unknown): (node: LGraphNode) => boolean {
   )
 }
 
-function assertOnlyKnownFields(query: unknown): asserts query is object {
-  if (!isPlainObject(query)) {
-    throw invalidArgument('queryNodes', 'a query object', query)
-  }
-  const unknownField = Object.keys(query).find(
-    (field) => !Object.hasOwn(FIELDS, field)
-  )
-  if (unknownField !== undefined) {
+/** A scope `queryNodes` takes; `undefined` is `'visible'`. */
+function checkedScope(member: string, scope: unknown): NodeQueryScope {
+  if (scope === undefined) return 'visible'
+  if (!isScope(scope)) {
     throw invalidArgument(
-      'queryNodes',
-      `a query of ${Object.keys(FIELDS).join(' and ')} only`,
-      unknownField
-    )
-  }
-}
-
-function assertScope(scope: unknown): asserts scope is NodeQueryScope {
-  if (typeof scope !== 'string' || !Object.hasOwn(SCOPES, scope)) {
-    throw invalidArgument(
-      'queryNodes',
+      member,
       `a scope of ${Object.keys(SCOPES).join(' or ')}`,
       scope
     )
   }
+  return scope
+}
+
+function isScope(scope: unknown): scope is NodeQueryScope {
+  return typeof scope === 'string' && Object.hasOwn(SCOPES, scope)
 }
