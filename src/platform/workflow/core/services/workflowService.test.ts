@@ -537,7 +537,8 @@ describe('useWorkflowService', () => {
         {
           name: activeWorkflow.key,
           isTemporary: activeWorkflow.isTemporary
-        }
+        },
+        activeWorkflow.lastModified
       )
     })
 
@@ -563,7 +564,8 @@ describe('useWorkflowService', () => {
       expect(useWorkflowDraftStoreV2().saveDraft).toHaveBeenCalledWith(
         activeWorkflow.path,
         JSON.stringify(current),
-        { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary }
+        { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary },
+        activeWorkflow.lastModified
       )
       expect(activeWorkflow.activeState).toEqual(current)
       expect(tracker.undoQueue).toEqual([saved])

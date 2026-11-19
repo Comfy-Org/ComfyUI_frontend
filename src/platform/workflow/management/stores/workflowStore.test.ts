@@ -1121,6 +1121,38 @@ describe('useWorkflowStore', () => {
       expect(reopened.activeState.extra?.note).toBe('new edit')
       expect(reopened.isModified).toBe(true)
     })
+
+    it('keeps the completed save and unsaved edits if local draft storage throws', async () => {
+      enableWorkflowPersistence()
+      const path = 'workflows/test.json'
+      await syncRemoteWorkflows(['test.json'])
+      const workflow = store.getWorkflowByPath(path)
+      assert.exists(workflow)
+      const savedState = { ...defaultGraph, extra: { note: 'being saved' } }
+      const editedState = { ...defaultGraph, extra: { note: 'new edit' } }
+      const tracker = createMockChangeTracker({
+        workflow,
+        activeState: savedState
+      })
+      workflow.changeTracker = tracker
+      const saveDraft = vi
+        .spyOn(useWorkflowDraftStoreV2(), 'saveDraft')
+        .mockImplementation(() => {
+          throw new DOMException('Storage unavailable', 'SecurityError')
+        })
+      vi.mocked(api.storeUserData).mockResolvedValueOnce(
+        Response.json({ path, modified: 300, size: 1 })
+      )
+
+      const saving = workflow.save()
+      tracker.activeState = editedState
+
+      await expect(saving).resolves.toBe(workflow)
+      expect(workflow.originalContent).toBe(JSON.stringify(savedState))
+      expect(workflow.activeState).toEqual(editedState)
+      expect(workflow.isModified).toBe(true)
+      expect(saveDraft).toHaveBeenCalledOnce()
+    })
   })
 
   describe('saveAs', () => {

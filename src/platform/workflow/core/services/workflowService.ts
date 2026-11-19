@@ -283,7 +283,8 @@ export const useWorkflowService = () => {
         {
           name: activeWorkflow.key,
           isTemporary: activeWorkflow.isTemporary
-        }
+        },
+        activeWorkflow.lastModified
       )
 
       if (!saved) {

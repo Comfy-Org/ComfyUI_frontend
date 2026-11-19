@@ -60,17 +60,23 @@ registerWorkflowRuntime({
   getDraftScope: () => useWorkflowDraftStoreV2().getScope(),
   getDraft: (path) => useWorkflowDraftStoreV2().getDraft(path),
   saveDraft(workflow, state) {
-    const saved = useWorkflowDraftStoreV2().saveDraft(
-      workflow.path,
-      JSON.stringify(state),
-      { name: workflow.key, isTemporary: workflow.isTemporary },
-      workflow.lastModified
-    )
-    if (!saved) {
-      useToast().error(t('g.error'), {
-        description: t('toastMessages.failedToSaveDraft')
+    try {
+      const saved = useWorkflowDraftStoreV2().saveDraft(
+        workflow.path,
+        JSON.stringify(state),
+        { name: workflow.key, isTemporary: workflow.isTemporary },
+        workflow.lastModified
+      )
+      if (saved) return
+    } catch (error) {
+      reportError(error, {
+        surface: 'graph',
+        errorType: 'error_persisting_workflow_draft'
       })
     }
+    useToast().error(t('g.error'), {
+      description: t('toastMessages.failedToSaveDraft')
+    })
   },
   removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
   markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),
