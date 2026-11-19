@@ -642,6 +642,146 @@ describe('useWorkflowService', () => {
       )
     })
 
+    describe('reload queued behind another graph load', () => {
+      function queueBehindAnotherLoad(
+        onLoad: (data: ComfyWorkflowJSON) => void = () => {}
+      ) {
+        let release = () => {}
+        const front = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        const loaded: Array<ComfyWorkflowJSON | undefined | 'skipped'> = []
+        vi.mocked(app.loadGraphData).mockImplementation(
+          async (data, _clean, _restoreView, _workflow, options = {}) => {
+            await front
+            if (options.isReady?.() === false) {
+              loaded.push('skipped')
+              return false
+            }
+            const graph = options.resolveGraphData
+              ? options.resolveGraphData()
+              : data
+            loaded.push(graph)
+            assert.exists(graph)
+            onLoad(graph)
+            return true
+          }
+        )
+        return { release: () => release(), loaded }
+      }
+
+      function activeWorkflow() {
+        const workflow = createModeTestWorkflow()
+        workflow.changeTracker = new ChangeTracker(workflow, makeWorkflowData())
+        useWorkflowStore().activeWorkflow = workflow
+        return workflow
+      }
+
+      it('reloads canvas edits made while another load held the queue', async () => {
+        activeWorkflow()
+        const queue = queueBehindAnotherLoad()
+
+        const reloading = useWorkflowService().reloadCurrentWorkflow()
+        await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+        app.rootGraph.extra.editWhileQueued = true
+        queue.release()
+        await reloading
+
+        expect(queue.loaded).toEqual([
+          expect.objectContaining({
+            extra: expect.objectContaining({ editWhileQueued: true })
+          })
+        ])
+      })
+
+      it('skips the reload when it stopped being current while it waited', async () => {
+        const workflow = activeWorkflow()
+        const queue = queueBehindAnotherLoad()
+        let idle = true
+
+        const reloading = useWorkflowService().openWorkflow(workflow, {
+          force: true,
+          isCurrent: () => idle,
+          keepSavedBaseline: true
+        })
+        await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+        idle = false
+        queue.release()
+
+        await expect(reloading).resolves.toBe(false)
+        expect(queue.loaded).toEqual(['skipped'])
+      })
+
+      it('skips the reload when another workflow took the canvas while it waited', async () => {
+        const workflow = activeWorkflow()
+        const queue = queueBehindAnotherLoad()
+
+        const reloading = useWorkflowService().openWorkflow(workflow, {
+          force: true
+        })
+        await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+        useWorkflowStore().activeWorkflow = createModeTestWorkflow({
+          path: 'workflows/template.json'
+        })
+        queue.release()
+
+        await expect(reloading).resolves.toBe(false)
+        expect(queue.loaded).toEqual(['skipped'])
+        expect(app.loadGraphData).toHaveBeenCalledOnce()
+      })
+
+      function reloadedInto(workflow: LoadedComfyWorkflow) {
+        return (data: ComfyWorkflowJSON) => {
+          workflow.changeTracker.reset(data)
+          workflow.isModified = false
+        }
+      }
+
+      it('keeps an edit made while it waited as unsaved', async () => {
+        const workflow = activeWorkflow()
+        useWorkflowStore().attachWorkflow(workflow, 0)
+        const saved = workflow.changeTracker.initialState
+        expect(workflow.isModified).toBe(false)
+        const queue = queueBehindAnotherLoad(reloadedInto(workflow))
+
+        const reloading = useWorkflowService().reloadCurrentWorkflow()
+        await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+        app.rootGraph.extra.editWhileQueued = true
+        queue.release()
+        await reloading
+
+        expect(workflow.changeTracker.initialState).toBe(saved)
+        expect(workflow.isModified).toBe(true)
+      })
+
+      it('keeps the saved baseline current at its turn, not the one from before it waited', async () => {
+        const workflow = activeWorkflow()
+        useWorkflowStore().attachWorkflow(workflow, 0)
+        app.rootGraph.extra.edited = true
+        const queue = queueBehindAnotherLoad(reloadedInto(workflow))
+
+        const reloading = useWorkflowService().reloadCurrentWorkflow()
+        await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalled())
+        const savedWhileWaiting = makeWorkflowData({ savedWhileWaiting: true })
+        workflow.changeTracker.initialState = savedWhileWaiting
+        queue.release()
+        await reloading
+
+        expect(workflow.changeTracker.initialState).toBe(savedWhileWaiting)
+      })
+
+      it('opens a background tab with its stored state, not a deferred snapshot', async () => {
+        activeWorkflow()
+        const other = createModeTestWorkflow({ path: 'workflows/other.json' })
+
+        await useWorkflowService().openWorkflow(other)
+
+        const options = vi.mocked(app.loadGraphData).mock.calls[0][4]
+        expect(options?.resolveGraphData).toBeUndefined()
+        expect(options?.isReady).toBeUndefined()
+      })
+    })
+
     describe('keepSavedBaseline', () => {
       function openEditedWorkflow() {
         const saved = makeWorkflowData({ saved: true })

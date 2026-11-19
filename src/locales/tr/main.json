@@ -1721,6 +1721,12 @@
     "reload": "Yeniden yükle",
     "retry": "Yeniden dene",
     "retryLabel": "{deployment} başlatma işlemini yeniden dene",
+    "runBlocked": {
+      "failed": "Bu dağıtım başarısız oldu. Geçiş yapmak için tıklayın.",
+      "notReady": "Bu dağıtım hazır değil. Geçiş yapmak için tıklayın.",
+      "starting": "Bu dağıtım başlatılıyor. Geçiş yapmak için tıklayın.",
+      "stopped": "Bu dağıtım durduruldu. Geçiş yapmak için tıklayın."
+    },
     "runOn": "Şurada çalıştır",
     "runningOn": "Şurada çalışıyor",
     "runsThisWorkflow": "Bu iş akışını çalıştırır",

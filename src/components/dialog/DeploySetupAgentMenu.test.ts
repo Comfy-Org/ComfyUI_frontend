@@ -1,5 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
@@ -24,6 +25,7 @@ const withConsent = vi.hoisted(() =>
   )
 )
 
+vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/scripts/api'))
@@ -122,6 +124,22 @@ describe('DeploySetupAgentMenu', () => {
       await pickRow(user, 'Use local agent')
 
       await waitFor(() => expect(panel.isVisible).toBe(true))
+      expect(
+        vi.mocked(useTelemetry()?.trackUiButtonClicked)?.mock.calls
+      ).toEqual([
+        [
+          {
+            button_id: 'run_on_cloud_agent_menu_opened',
+            element_group: 'run_on_cloud'
+          }
+        ],
+        [
+          {
+            button_id: 'run_on_cloud_use_local_agent_clicked',
+            element_group: 'run_on_cloud'
+          }
+        ]
+      ])
       expect(panel.view).toEqual({ screen: 'chat' })
       expect(panel.pendingCloudHandoff).toContain(
         'Workflow: "workflows/portraits/upscale.json"'
@@ -263,6 +281,31 @@ describe('DeploySetupAgentMenu', () => {
   })
 
   it.for([
+    {
+      row: 'Open in Claude desktop',
+      buttonId: 'run_on_cloud_open_in_claude_clicked'
+    },
+    { row: 'Open in Codex', buttonId: 'run_on_cloud_open_in_codex_clicked' },
+    { row: 'Copy prompt', buttonId: 'run_on_cloud_copy_prompt_clicked' }
+  ])('reports $row after the menu opens', async ({ row, buttonId }) => {
+    const user = renderMenu()
+
+    await pickRow(user, row)
+
+    expect(vi.mocked(useTelemetry()?.trackUiButtonClicked)?.mock.calls).toEqual(
+      [
+        [
+          {
+            button_id: 'run_on_cloud_agent_menu_opened',
+            element_group: 'run_on_cloud'
+          }
+        ],
+        [{ button_id: buttonId, element_group: 'run_on_cloud' }]
+      ]
+    )
+  })
+
+  it.for([
     { row: 'Open in Claude desktop', app: 'claude' },
     { row: 'Open in Codex', app: 'codex' }
   ])('$row opens the brief in that app', async ({ row, app }) => {
@@ -291,6 +334,31 @@ describe('DeploySetupAgentMenu', () => {
 
     await user.click(button)
     expect(button).toHaveTextContent('Deploy with your agent')
+  })
+
+  it.for([
+    { gesture: 'click', keys: '[MouseLeft]', closes: true },
+    { gesture: 'middle-click', keys: '[MouseMiddle]', closes: false }
+  ])('reports Deploy on Platform on $gesture', async ({ keys, closes }) => {
+    render(GlobalDialog, { global: { plugins: [testI18n] } })
+    await openDeploySetupDialog()
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+    const link = await screen.findByRole('link', {
+      name: 'Deploy on Platform'
+    })
+    link.addEventListener('click', (event) => event.preventDefault())
+
+    await user.pointer({ keys, target: link })
+
+    expect(
+      useTelemetry()?.trackUiButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({
+      button_id: 'run_on_cloud_platform_clicked',
+      element_group: 'run_on_cloud'
+    })
+    expect(useDialogStore().isDialogOpen('global-run-on-comfy-cloud')).toBe(
+      !closes
+    )
   })
 
   it('keeps its label when the brief did not reach the clipboard', async () => {

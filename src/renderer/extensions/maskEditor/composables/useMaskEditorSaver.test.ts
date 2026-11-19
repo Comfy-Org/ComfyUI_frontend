@@ -176,9 +176,9 @@ describe('useMaskEditorSaver', () => {
       useWidgetValueStore().getWidget(
         widgetId('maskeditor-saver-test', toNodeId(42), 'image')
       )?.value
-    ).toBe('clipspace-painted-masked-123.png [input]')
+    ).toBe('clipspace/clipspace-painted-masked-123.png')
     expect(mockNode.properties['image']).toBe(
-      'clipspace-painted-masked-123.png [input]'
+      'clipspace/clipspace-painted-masked-123.png'
     )
   })
 
@@ -222,19 +222,35 @@ describe('useMaskEditorSaver', () => {
     expect(mockNode.widgets?.[0].value).toBe('original.png [input]')
   })
 
-  it('omits subfolder from the upload FormData under the unified contract', async () => {
-    const { save } = useMaskEditorSaver()
-    await save()
+  it('uploads every layer into the clipspace subfolder so they stay out of the input list', async () => {
+    await useMaskEditorSaver().save()
 
-    expect(api.fetchApi).toHaveBeenCalledWith(
-      '/upload/image',
-      expect.objectContaining({ method: 'POST' })
+    const uploads = vi.mocked(api.fetchApi).mock.calls.map(([route, init]) => {
+      const body = init?.body as FormData
+      return [route, body.get('type'), body.get('subfolder')]
+    })
+    expect(uploads).toEqual([
+      ['/upload/image', 'input', 'clipspace'],
+      ['/upload/image', 'input', 'clipspace'],
+      ['/upload/image', 'input', 'clipspace'],
+      ['/upload/image', 'input', 'clipspace']
+    ])
+  })
+
+  it('references the saved image by filename when the server flattens subfolders', async () => {
+    vi.mocked(api.fetchApi).mockImplementation(async () =>
+      Response.json({
+        name: 'clipspace-painted-masked-123.png',
+        subfolder: '',
+        type: 'input'
+      })
     )
-    const [, init] = vi.mocked(api.fetchApi).mock.calls[0]
-    const body = init?.body as FormData
-    expect(body).toBeInstanceOf(FormData)
-    expect(body.get('type')).toBe('input')
-    expect(body.get('subfolder')).toBeNull()
+
+    await useMaskEditorSaver().save()
+
+    expect(mockNode.properties['image']).toBe(
+      'clipspace-painted-masked-123.png'
+    )
   })
 
   it('uploads each named product after setting the local preview', async () => {
