@@ -799,7 +799,7 @@ export const useAuthStore = defineStore('auth', () => {
     return currentUser.value?.uid === user?.uid ? token : undefined
   }
 
-  const logout = async (): Promise<void> => {
+  async function logout(): Promise<void> {
     const persistenceTransition = isCloud
       ? prepareWorkflowLogoutTransition()
       : undefined

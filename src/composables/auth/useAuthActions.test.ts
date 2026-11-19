@@ -167,9 +167,6 @@ describe('useAuthActions.logout', () => {
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
     ).toBeLessThan(mockClearAllWorkspaceStorage.mock.invocationCallOrder[0])
     expect(
-      vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
-    ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
-    expect(
       mockClearAllWorkspaceStorage.mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })

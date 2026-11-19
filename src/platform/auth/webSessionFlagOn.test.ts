@@ -431,7 +431,7 @@ describe('cloud app on the shared web session', () => {
     )
   })
 
-  it('fails available and reports a degraded server sign-out', async () => {
+  it('completes sign-out and reports a failed session-cookie delete', async () => {
     const server = installServer({ userId: 'user-a' })
     server.deleteStatus = 503
     await refreshRemoteConfig({ useAuth: false })

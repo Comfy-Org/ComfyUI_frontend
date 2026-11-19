@@ -37,12 +37,10 @@ let workflowStorageState: WorkflowStorageState = {
 interface PendingWorkflowPersistence {
   flush: () => void
   cancel: () => void
-  resumeAfterAbort?: () => void
+  resumeAfterAbort: () => void
 }
 
-export interface WorkflowLogoutTransition {
-  readonly ownerId: symbol
-}
+export type WorkflowLogoutTransition = symbol
 
 const pendingWorkflowPersistence = new Set<PendingWorkflowPersistence>()
 
@@ -58,7 +56,11 @@ function flushPendingWorkflowPersistence(): void {
     try {
       flush()
     } catch (error) {
-      console.warn('Failed to flush pending workflow persistence', error)
+      reportError(error, {
+        surface: 'workspace',
+        errorType: 'workflow_persistence_flush_failed',
+        level: 'error'
+      })
     }
   }
 }
@@ -659,7 +661,7 @@ export function prepareWorkflowLogoutTransition(): WorkflowLogoutTransition {
     ownerId
   }
   cancelPendingWorkflowPersistence()
-  return { ownerId }
+  return ownerId
 }
 
 export function currentWorkflowLogoutTransition():
@@ -667,7 +669,7 @@ export function currentWorkflowLogoutTransition():
   | undefined {
   return workflowStorageState.status === 'transitioning' &&
     workflowStorageState.reason === 'logout'
-    ? { ownerId: workflowStorageState.ownerId }
+    ? workflowStorageState.ownerId
     : undefined
 }
 
@@ -677,7 +679,7 @@ export function completeWorkflowLogoutTransition(
   if (
     workflowStorageState.status !== 'transitioning' ||
     workflowStorageState.reason !== 'logout' ||
-    workflowStorageState.ownerId !== transition.ownerId
+    workflowStorageState.ownerId !== transition
   )
     return false
 
@@ -695,7 +697,7 @@ export function abortWorkflowLogoutTransition(
 
   for (const { resumeAfterAbort } of pendingWorkflowPersistence) {
     try {
-      resumeAfterAbort?.()
+      resumeAfterAbort()
     } catch (error) {
       reportError(error, {
         surface: 'workspace',

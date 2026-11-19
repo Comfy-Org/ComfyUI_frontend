@@ -590,12 +590,14 @@ describe('storageIO', () => {
           flush: () => {
             throw flushError
           },
-          cancel: () => {}
+          cancel: () => {},
+          resumeAfterAbort: () => {}
         })
       const unregisterSuccessfulFlush =
         isolatedStorageIO.registerWorkflowPersistence({
           flush: successfulFlush,
-          cancel: () => {}
+          cancel: () => {},
+          resumeAfterAbort: () => {}
         })
 
       expect(() =>
@@ -604,10 +606,11 @@ describe('storageIO', () => {
 
       expect(successfulFlush).toHaveBeenCalledOnce()
       expect(localStorage.getItem('workflow')).toBeNull()
-      expect(console.warn).toHaveBeenCalledWith(
-        'Failed to flush pending workflow persistence',
-        flushError
-      )
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(flushError, {
+        surface: 'workspace',
+        errorType: 'workflow_persistence_flush_failed',
+        level: 'error'
+      })
       unregisterFailedFlush()
       unregisterSuccessfulFlush()
     })
@@ -661,8 +664,8 @@ describe('storageIO', () => {
       expect(isolatedStorageIO.isStorageAvailable()).toBe(false)
 
       const transition = isolatedStorageIO.prepareWorkflowLogoutTransition()
-      expect(isolatedStorageIO.currentWorkflowLogoutTransition()?.ownerId).toBe(
-        transition.ownerId
+      expect(isolatedStorageIO.currentWorkflowLogoutTransition()).toBe(
+        transition
       )
       expect(
         isolatedStorageIO.completeWorkflowLogoutTransition(transition)
@@ -695,7 +698,8 @@ describe('storageIO', () => {
               updatedAt: 1
             })
           )
-        )
+        ),
+        resumeAfterAbort: vi.fn()
       }
       const unregister = isolatedStorageIO.registerWorkflowPersistence(pending)
 
@@ -714,12 +718,14 @@ describe('storageIO', () => {
         flush: vi.fn(),
         cancel: () => {
           throw error
-        }
+        },
+        resumeAfterAbort: vi.fn()
       })
       const unregisterSuccessful =
         isolatedStorageIO.registerWorkflowPersistence({
           flush: vi.fn(),
-          cancel: successfulCancel
+          cancel: successfulCancel,
+          resumeAfterAbort: vi.fn()
         })
 
       expect(() =>
