@@ -103,8 +103,13 @@ twenty-five per-turn attachment slots instead of one — when the turn is alread
 full the lifted workflow is dropped silently rather than raising an error the
 user cannot act on.
 
-Because an attached workflow becomes the turn's workflow, attaching a
-workflow-bearing image retargets the turn away from the active canvas. That is
+Because an attached workflow becomes the turn target, except where an
+explicitly selected unbound or unsaved tab takes precedence, attaching a
+workflow-bearing image usually retargets the turn away from the active canvas.
+The exception is backend policy from
+[cloud#17623](https://github.com/Comfy-Org/cloud/pull/17623), where
+`unboundTargetSelected` skips attachment inspection, and this decision does not
+override it. That is
 why the derived chip is visible and removable: the retarget follows something
 the user can see and undo, rather than a silent inference. `zTXt` remains
 unhandled, as it already was — a workflow written that way is invisible to the
