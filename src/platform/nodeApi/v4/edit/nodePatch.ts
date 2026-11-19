@@ -5,16 +5,21 @@ import { isEqual, isPlainObject } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import { MODE_NAMES } from '@/platform/nodeApi/v4/nodeHandle'
-import type { NodePatch, NodeShape } from '@/platform/nodeApi/v4/types'
+import type {
+  NodeMode,
+  NodeShape,
+  Point,
+  Size,
+  SizeConstraints
+} from '@/platform/nodeApi/v4/types'
 import {
-  checkedFields,
   checkedBoolean,
   checkedChoice,
   checkedNonNegative,
   checkedOptionalString,
   checkedPoint,
-  fieldsOf,
   checkedString,
   savableCopy
 } from './checkedArguments'
@@ -39,6 +44,22 @@ const SHAPES = {
 } satisfies Record<NodeShape, true>
 
 /** A checked patch: its writes in a fixed order, and whether it turns widget saving off. */
+/** What `updateNode` changes. A field left out stays as it is. */
+export interface NodePatch {
+  readonly title?: string
+  readonly mode?: NodeMode
+  readonly collapsed?: boolean
+  readonly color?: string | null
+  readonly bgColor?: string | null
+  readonly shape?: NodeShape
+  readonly properties?: Readonly<Record<string, unknown>>
+  readonly serializeWidgets?: boolean
+  readonly position?: Point
+  readonly size?: Size
+  readonly sizeConstraints?: SizeConstraints
+  readonly resizable?: boolean
+}
+
 export interface CheckedNodePatch {
   readonly writes: readonly NodeWrite[]
   readonly stopsSavingWidgets: boolean
@@ -50,7 +71,7 @@ export function checkedNodePatch(
   member: string
 ): CheckedNodePatch {
   const checks = fieldChecks(member)
-  const given = checkedFields(member, patch, FIELDS)
+  const given = checkedFields(member, 'a node patch', patch, FIELDS)
   return {
     writes: Object.entries(checks).flatMap(([field, check]) =>
       Object.hasOwn(given, field) ? [check(given[field])] : []
@@ -190,11 +211,13 @@ function deleteProperty(node: LGraphNode, name: string): boolean {
   return true
 }
 
+const SIZE_FIELDS = { width: true, height: true } as const
+
 function checkedDimensions(
   member: string,
   value: unknown
 ): { width: number; height: number } {
-  const size = fieldsOf(member, 'size', value)
+  const size = checkedFields(member, 'size', value, SIZE_FIELDS)
   return {
     width: checkedNonNegative(member, 'size.width', size.width),
     height: checkedNonNegative(member, 'size.height', size.height)

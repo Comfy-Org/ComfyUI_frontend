@@ -185,7 +185,7 @@ describe('a defined type’s presentation', () => {
           { type: 'Pack/Refused', presentation: { chrome: 'none' } }
         ])
       ).toThrow(
-        /^define needs a presentation of title, resizable, collapsible only, not 'chrome'/
+        /^define needs presentation of title, resizable, collapsible only, not 'chrome'/
       )
       expect(() =>
         Reflect.apply(defs.define, defs, [
@@ -196,7 +196,7 @@ describe('a defined type’s presentation', () => {
         Reflect.apply(defs.define, defs, [
           { type: 'Pack/Refused', presentation: 'none' }
         ])
-      ).toThrow(/^define needs a presentation object, not 'none'/)
+      ).toThrow(/^define needs presentation as a plain object, not 'none'/)
       expect(() =>
         Reflect.apply(defs.define, defs, [
           { type: 'Pack/Refused', presentation: { collapsible: 'no' } }

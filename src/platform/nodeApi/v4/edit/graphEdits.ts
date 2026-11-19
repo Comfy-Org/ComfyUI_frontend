@@ -4,7 +4,8 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { GraphScopes } from '@/platform/nodeApi/v4/graphScopeHandle'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { NodeHandle, NodeInit } from '@/platform/nodeApi/v4/types'
-import { checkedFields, checkedPoint, checkedString } from './checkedArguments'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
+import { checkedPoint, checkedString } from './checkedArguments'
 import type { EditRunner } from './editRunner'
 
 /** The graph edits, taking anything a pack passes and checking it. */
@@ -51,6 +52,7 @@ export function checkedNodeCreation(
   const nodeType = checkedString(member, 'type', type)
   const { title: givenTitle, position } = checkedFields(
     member,
+    'init',
     init,
     INIT_FIELDS
   )

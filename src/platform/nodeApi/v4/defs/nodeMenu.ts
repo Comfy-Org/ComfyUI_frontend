@@ -1,14 +1,32 @@
-import { isPlainObject } from 'es-toolkit'
-
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import {
+  optionalCallback,
+  checkedFields
+} from '@/platform/nodeApi/v4/checkedFields'
 import { callListener } from '@/platform/nodeApi/shared/listeners'
 import type {
   NodeHandle,
   NodeMenuItem,
   NodeSubMenuItem
 } from '@/platform/nodeApi/v4/types'
+
+type MenuCallbacks = {
+  readonly [K in 'label' | 'when' | 'run' | 'items']-?: Extract<
+    NodeMenuItem[K],
+    (node: NodeHandle) => unknown
+  >
+}
+
+function menuCallback<K extends keyof MenuCallbacks>(
+  field: K,
+  value: unknown
+): MenuCallbacks[K] | undefined {
+  return optionalCallback('addMenuItem', field, value) as
+    | MenuCallbacks[K]
+    | undefined
+}
 
 /** A menu item as a pack gave it, checked and copied. */
 export interface CheckedMenuItem {
@@ -29,29 +47,30 @@ const MENU_ITEM_FIELDS = {
 
 /** Refuses a menu item an untyped caller got wrong, before it is added. */
 export function checkedMenuItem(item: unknown): CheckedMenuItem {
-  if (!isPlainObject(item)) {
-    throw invalidArgument('addMenuItem', 'a menu item object', item)
-  }
-  const unknownField = Object.keys(item).find(
-    (field) => !Object.hasOwn(MENU_ITEM_FIELDS, field)
+  const fields = checkedFields(
+    'addMenuItem',
+    'a menu item',
+    item,
+    MENU_ITEM_FIELDS
   )
-  if (unknownField !== undefined) {
-    throw invalidArgument(
-      'addMenuItem',
-      `a menu item of ${Object.keys(MENU_ITEM_FIELDS).join(', ')} only`,
-      unknownField
-    )
-  }
-  const { label, when, run, items, order = 0 } = item
-  if (typeof label !== 'string' && typeof label !== 'function') {
+  const { order = 0 } = fields
+  const label =
+    typeof fields.label === 'string'
+      ? fields.label
+      : menuCallback('label', fields.label)
+  const when = menuCallback('when', fields.when)
+  const run = menuCallback('run', fields.run)
+  const items =
+    typeof fields.items === 'function'
+      ? menuCallback('items', fields.items)
+      : checkedSubMenu(fields.items)
+  if (label === undefined) {
     throw invalidArgument(
       'addMenuItem',
       'a label that is text or a function',
       label
     )
   }
-  optionalFunction('when', when)
-  optionalFunction('run', run)
   if (run === undefined && items === undefined) {
     throw invalidArgument('addMenuItem', 'a run function or items', item)
   }
@@ -62,13 +81,7 @@ export function checkedMenuItem(item: unknown): CheckedMenuItem {
       order
     )
   }
-  return Object.freeze({
-    label,
-    when,
-    run,
-    items: typeof items === 'function' ? items : checkedSubMenu(items),
-    order
-  })
+  return Object.freeze({ label, when, run, items, order })
 }
 
 /** The context-menu entry for one item on one node, or `undefined` when it is not shown. */
@@ -121,21 +134,20 @@ function checkedSubMenu(
   return Object.freeze(items.map(checkedSubMenuItem))
 }
 
-function checkedSubMenuItem(child: unknown): NodeSubMenuItem {
-  if (
-    !isPlainObject(child) ||
-    Object.keys(child).some((key) => key !== 'label' && key !== 'run') ||
-    typeof child.label !== 'string' ||
-    typeof child.run !== 'function'
-  ) {
+const SUB_MENU_ITEM_FIELDS = {
+  label: true,
+  run: true
+} satisfies Record<keyof NodeSubMenuItem, true>
+
+function checkedSubMenuItem(child: unknown, index: number): NodeSubMenuItem {
+  const { label, run } = checkedFields(
+    'addMenuItem',
+    `items[${index}]`,
+    child,
+    SUB_MENU_ITEM_FIELDS
+  )
+  if (typeof label !== 'string' || typeof run !== 'function') {
     throw invalidArgument('addMenuItem', 'items of { label, run }', child)
   }
-  const { label, run } = child
-  return Object.freeze({ label, run })
-}
-
-function optionalFunction(field: string, value: unknown): void {
-  if (value !== undefined && typeof value !== 'function') {
-    throw invalidArgument('addMenuItem', `a ${field} that is a function`, value)
-  }
+  return Object.freeze({ label, run: (node: NodeHandle) => run(node) })
 }

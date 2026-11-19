@@ -3,12 +3,9 @@ import { clamp } from 'es-toolkit'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 import type { SizeConstraints } from '@/platform/nodeApi/v4/types'
-import {
-  checkedFields,
-  checkedBoolean,
-  checkedNonNegative
-} from './checkedArguments'
+import { checkedBoolean, checkedNonNegative } from './checkedArguments'
 
 const CONSTRAINTS = {
   minWidth: true,
@@ -24,7 +21,7 @@ export function checkedSizeConstraints(
   member: string,
   value: unknown
 ): SizeConstraints {
-  const given = checkedFields(member, value, CONSTRAINTS)
+  const given = checkedFields(member, 'sizeConstraints', value, CONSTRAINTS)
   const limit = (field: Limit) =>
     given[field] === undefined
       ? undefined

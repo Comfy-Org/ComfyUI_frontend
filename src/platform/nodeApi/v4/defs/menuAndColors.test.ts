@@ -19,7 +19,7 @@ import { hostNodeDef, registerHostType } from './__fixtures__/hostNodeTypes'
 
 const TYPE = 'Pack/Probe'
 
-describe('node menus and colours', () => {
+describe('node menus and colors', () => {
   let graph: LGraph
   let defs: DefRegistry
   let host: ComfyApiHost
@@ -291,7 +291,7 @@ describe('node menus and colours', () => {
     })
   })
 
-  describe('type colours', () => {
+  describe('type colors', () => {
     beforeEach(() => {
       const before = { ...LGraphCanvas.link_type_colors }
       return () => {
@@ -309,7 +309,7 @@ describe('node menus and colours', () => {
       )
     })
 
-    it('reads the colour of a type, and nothing for a type nothing colours', () => {
+    it('reads the color of a type, and nothing for a type nothing colors', () => {
       LGraphCanvas.link_type_colors.COLOURED = '#123'
       LGraphCanvas.link_type_colors.CLEARED = ''
 
@@ -319,7 +319,7 @@ describe('node menus and colours', () => {
       expect(defs.typeColor('__proto__')).toBeUndefined()
     })
 
-    it('colours a type the palette leaves uncoloured, and gives it back when unsubscribed', () => {
+    it('colors a type the palette leaves uncolored, and gives it back when unsubscribed', () => {
       LGraphCanvas.link_type_colors.CLEARED = ''
 
       const stopNew = defs.setTypeColor('PACK_TYPE', '#a00')
@@ -339,7 +339,7 @@ describe('node menus and colours', () => {
     })
 
     it.for(['__proto__', 'constructor', 'toString'])(
-      'refuses %s as a type to colour, and leaves the table as it was',
+      'refuses %s as a type to color, and leaves the table as it was',
       (type) => {
         const prototype = Object.getPrototypeOf(LGraphCanvas.link_type_colors)
 
@@ -351,14 +351,14 @@ describe('node menus and colours', () => {
       }
     )
 
-    it('refuses a type the palette colours, and leaves its colour', () => {
+    it('refuses a type the palette colors, and leaves its color', () => {
       LGraphCanvas.link_type_colors.IMAGE = '#64B5F6'
 
       expect(() => defs.setTypeColor('IMAGE', '#000')).toThrow(TypeError)
       expect(defs.typeColor('IMAGE')).toBe('#64B5F6')
     })
 
-    it('lets a type a pack coloured be coloured again, the newest winning', () => {
+    it('lets a type a pack colored be colored again, the newest winning', () => {
       const stopFirst = defs.setTypeColor('PACK_TYPE', '#a00')
       const stopSecond = defs.setTypeColor('PACK_TYPE', '#0a0')
 
@@ -373,7 +373,7 @@ describe('node menus and colours', () => {
       expect(defs.typeColor('PACK_TYPE')).toBeUndefined()
     })
 
-    it('keeps the newest colour when an older one is unsubscribed', () => {
+    it('keeps the newest color when an older one is unsubscribed', () => {
       const stopFirst = defs.setTypeColor('PACK_TYPE', '#a00')
       defs.setTypeColor('PACK_TYPE', '#0a0')
 
@@ -382,7 +382,7 @@ describe('node menus and colours', () => {
       expect(defs.typeColor('PACK_TYPE')).toBe('#0a0')
     })
 
-    it('puts a pack colour back after a palette clears it, and leaves a palette colour', () => {
+    it('puts a pack color back after a palette clears it, and leaves a palette color', () => {
       defs.setTypeColor('CLEARED_BY_PALETTE', '#a00')
       defs.setTypeColor('COLOURED_BY_PALETTE', '#0a0')
       LGraphCanvas.link_type_colors.CLEARED_BY_PALETTE = ''
@@ -394,7 +394,7 @@ describe('node menus and colours', () => {
       expect(defs.typeColor('COLOURED_BY_PALETTE')).toBe('#00f')
     })
 
-    it('leaves a palette colour alone when the pack colour it replaced is unsubscribed', () => {
+    it('leaves a palette color alone when the pack color it replaced is unsubscribed', () => {
       const stop = defs.setTypeColor('PACK_TYPE', '#a00')
       LGraphCanvas.link_type_colors.PACK_TYPE = '#00f'
 
@@ -409,7 +409,7 @@ describe('node menus and colours', () => {
       [5, '#a00'],
       ['PACK_TYPE', ''],
       ['PACK_TYPE', null]
-    ])('refuses a type or colour of %j and %j', ([type, color]) => {
+    ])('refuses a type or color of %j and %j', ([type, color]) => {
       expect(() =>
         Reflect.apply(defs.setTypeColor, defs, [type, color])
       ).toThrow(TypeError)
@@ -419,8 +419,8 @@ describe('node menus and colours', () => {
     })
   })
 
-  describe('node colours', () => {
-    it('gives the colours of a named entry, frozen', () => {
+  describe('node colors', () => {
+    it('gives the colors of a named entry, frozen', () => {
       const red = defs.nodeColor('red')
 
       expect(red).toEqual({
