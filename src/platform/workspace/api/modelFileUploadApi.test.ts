@@ -408,10 +408,12 @@ describe('modelFileUploadApi.uploadModelFile', () => {
     const request = vi.fn((_route: string, _init: RequestInit) =>
       Promise.resolve(answers.shift()!)
     )
+    const onCompleting = vi.fn()
     const result = modelFileUploadApi.uploadModelFile(file, {
       tags,
       signal: new AbortController().signal,
       onProgress: vi.fn(),
+      onCompleting,
       request
     })
 
@@ -422,6 +424,10 @@ describe('modelFileUploadApi.uploadModelFile', () => {
       '/assets/uploads',
       `/assets/uploads/${UPLOAD_ID}/complete`
     ])
+    expect(onCompleting).toHaveBeenCalledOnce()
+    expect(onCompleting.mock.invocationCallOrder[0]).toBeLessThan(
+      request.mock.invocationCallOrder[1]
+    )
     expect(api.fetchApi).not.toHaveBeenCalled()
   })
 

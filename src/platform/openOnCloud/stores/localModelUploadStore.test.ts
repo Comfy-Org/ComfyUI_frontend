@@ -367,6 +367,33 @@ describe('useLocalModelUploadStore', () => {
     expect(check).toHaveBeenCalledOnce()
   })
 
+  it('resumes the accepted task after a polling timeout without transferring again', async () => {
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValue({ ok: true, taskId: TASK_ID })
+    const poll = vi
+      .mocked(localModelUploadApi.waitForStoredModel)
+      .mockResolvedValueOnce({ ok: false, reason: 'storagePending' })
+      .mockResolvedValueOnce({ ok: true })
+    const models = [lora]
+    const store = await prepared(models)
+    store.choose(lora, loraFile)
+    await store.start(models)
+    expect(store.upload).toEqual({
+      phase: 'failed',
+      reason: 'storagePending',
+      message: undefined
+    })
+
+    store.reset([lora])
+    await store.prepare([lora])
+    await store.start([lora])
+
+    expect(transfer).toHaveBeenCalledOnce()
+    expect(poll.mock.calls.map(([id]) => id)).toEqual([TASK_ID, TASK_ID])
+    expect(store.pickOf(lora).status).toBe('stored')
+  })
+
   it('stops on cancel and does not check again', async () => {
     vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockImplementation(
       (_file, options) =>

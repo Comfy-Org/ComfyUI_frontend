@@ -62,6 +62,7 @@ interface ModelFileUploadOptions {
   signal: AbortSignal
   onProgress: (sentBytes: number) => void
   onReconnecting?: (reconnecting: boolean) => void
+  onCompleting?: () => void
   request?: UploadRouteRequest
 }
 
@@ -417,6 +418,8 @@ async function uploadModelFile(
   try {
     const staged = await stageFile(file, options)
     if ('ok' in staged) return staged
+    if (signal.aborted) return { ok: false, reason: 'cancelled' }
+    options.onCompleting?.()
 
     const completeRes = await postJson(
       `${UPLOADS_ENDPOINT}/${encodeURIComponent(staged.uploadId)}/complete`,

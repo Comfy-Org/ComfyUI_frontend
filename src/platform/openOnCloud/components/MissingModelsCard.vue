@@ -45,10 +45,12 @@
         </div>
         <p class="my-0 text-xs text-muted-foreground">
           {{
-            $t('openOnCloud.missingModels.progress', {
-              sent: formatSize(upload.sent),
-              total: formatSize(upload.total)
-            })
+            upload.canCancel
+              ? $t('openOnCloud.missingModels.progress', {
+                  sent: formatSize(upload.sent),
+                  total: formatSize(upload.total)
+                })
+              : $t('assetBrowser.fileUpload.saving')
           }}
         </p>
       </div>
@@ -144,7 +146,8 @@ const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
   sessionExpired: 'assetBrowser.fileUpload.sessionExpired',
   unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
   unsupportedType: 'openOnCloud.missingModels.folderUnsupported',
-  accountChanged: 'openOnCloud.missingModels.accountChanged'
+  accountChanged: 'openOnCloud.missingModels.accountChanged',
+  storagePending: 'openOnCloud.missingModels.storagePending'
 }
 
 const { t } = useI18n()

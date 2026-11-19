@@ -84,7 +84,11 @@ export async function readLocalModelSizes(
 
 export type StoredTaskOutcome =
   | { ok: true }
-  | { ok: false; reason: 'cancelled' | 'failed'; message?: string }
+  | {
+      ok: false
+      reason: 'cancelled' | 'failed' | 'storagePending'
+      message?: string
+    }
 
 function wait(ms: number, signal: AbortSignal): Promise<boolean> {
   if (signal.aborted) return Promise.resolve(false)
@@ -118,16 +122,16 @@ async function readStoredTask(
       signal: pollSignal
     })
     if (response.status >= 500 || response.status === 429) return
-    if (!response.ok) return { ok: false, reason: 'failed' }
+    if (!response.ok) return { ok: false, reason: 'storagePending' }
     const task = zGetTaskResponse.safeParse(await response.json())
     if (pollSignal.aborted) return
-    if (!task.success) return { ok: false, reason: 'failed' }
+    if (!task.success) return { ok: false, reason: 'storagePending' }
     if (task.data.status === 'failed')
       return { ok: false, reason: 'failed', message: task.data.error_message }
     return TASK_OUTCOMES[task.data.status]
   } catch {
     if (!response || pollSignal.aborted) return
-    return { ok: false, reason: 'failed' }
+    return { ok: false, reason: 'storagePending' }
   } finally {
     clearTimeout(timer)
   }
@@ -144,7 +148,7 @@ export async function waitForStoredModel(
     const outcome = await readStoredTask(taskId, signal, request)
     if (signal.aborted) break
     if (outcome) return outcome
-    if (Date.now() >= deadline) return { ok: false, reason: 'failed' }
+    if (Date.now() >= deadline) return { ok: false, reason: 'storagePending' }
   }
   return { ok: false, reason: 'cancelled' }
 }

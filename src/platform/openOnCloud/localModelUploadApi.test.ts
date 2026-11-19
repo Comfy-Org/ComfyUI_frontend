@@ -166,7 +166,7 @@ describe('waitForStoredModel', () => {
     {
       label: 'the answer is not JSON',
       responses: [new Response('<html>', { status: 200 })],
-      expected: { ok: false, reason: 'failed' }
+      expected: { ok: false, reason: 'storagePending' }
     }
   ])('settles when $label', async ({ responses, expected }) => {
     await expect(outcome(answers(...responses), 10_000)).resolves.toEqual(
@@ -184,12 +184,12 @@ describe('waitForStoredModel', () => {
     }
   )
 
-  it('fails once the task stays unreachable past the deadline', async () => {
+  it('keeps the task unconfirmed past the polling deadline', async () => {
     const request = answers(new Response(null, { status: 503 }))
 
     await expect(outcome(request, 31 * 60_000)).resolves.toEqual({
       ok: false,
-      reason: 'failed'
+      reason: 'storagePending'
     })
   })
 })

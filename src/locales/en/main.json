@@ -4413,6 +4413,7 @@
       "folderUnsupported": "Comfy Cloud does not take uploads into this folder yet.",
       "subfolderUnsupported": "Uploads from here can't keep this model's subfolder yet. Add it to Comfy Cloud from the Cloud editor.",
       "uploaded": "Uploaded",
+      "storagePending": "Comfy Cloud is still confirming this model. Retry to check the existing upload.",
       "accountChanged": "Upload stopped because the account or workspace changed. Try again.",
       "total": "Total {size}",
       "progress": "{sent} of {total}",
