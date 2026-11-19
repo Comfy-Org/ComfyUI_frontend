@@ -2345,16 +2345,33 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         })
       })
 
-      it('leaves the job as it was when the queue cannot be read', async () => {
-        vi.mocked(api.fetchApi).mockRejectedValue(new Error('offline'))
+      it.each([
+        ['the request fails', () => Promise.reject(new Error('offline'))],
+        [
+          'the server answers with an error',
+          () => Promise.resolve(new Response('busy', { status: 503 }))
+        ],
+        [
+          'the body is not JSON',
+          () => Promise.resolve(new Response('<html>', { status: 200 }))
+        ]
+      ])(
+        'reports once and leaves the job as it was when %s',
+        async (_case, answer) => {
+          vi.mocked(api.fetchApi).mockImplementation(answer)
 
-        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
-        await vi.waitFor(() => expect(api.fetchApi).toHaveBeenCalled())
-        await nextTick()
+          fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+          await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
 
-        expect(store.activeJob?.nodes).toEqual({})
-        expect(store.activeJob?.nodeLookup).toBeUndefined()
-      })
+          const [, options] = vi.mocked(reportError).mock.calls[0]
+          expect(options).toMatchObject({
+            errorType: 'warning_queue_read_failed_for_adopted_run',
+            context: { jobId: 'job-1' }
+          })
+          expect(store.activeJob?.nodes).toEqual({})
+          expect(store.activeJob?.nodeLookup).toBeUndefined()
+        }
+      )
 
       it('does not read the queue for a run this tab queued', () => {
         storeVisibleJob('job-1')

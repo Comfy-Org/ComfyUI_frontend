@@ -50,13 +50,12 @@ import {
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
 import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
-import { z } from 'zod'
+import { zQueueInfo } from '@comfyorg/ingest-types/zod'
+import type { z } from 'zod'
 
 type PromptOutputsSkippedData = z.infer<typeof zPromptOutputsSkippedData>
 
-const zRunningQueue = z.object({
-  queue_running: z.array(z.array(z.unknown()))
-})
+const zRunningQueue = zQueueInfo.pick({ queue_running: true })
 
 function findRunningPrompt(
   body: unknown,
@@ -64,7 +63,7 @@ function findRunningPrompt(
 ): ComfyApiWorkflow | undefined {
   const queue = zRunningQueue.safeParse(body)
   if (!queue.success) return
-  const item = queue.data.queue_running.find((entry) => entry[1] === jobId)
+  const item = queue.data.queue_running?.find((entry) => entry[1] === jobId)
   const prompt = zComfyApiWorkflow.safeParse(item?.[2])
   return prompt.success ? prompt.data : undefined
 }
@@ -644,9 +643,13 @@ export const useExecutionStore = defineStore('execution', () => {
     let prompt: ComfyApiWorkflow | undefined
     try {
       const res = await api.fetchApi('/queue')
-      if (!res.ok) return
+      if (!res.ok) {
+        reportQueueReadFailure(new Error(`GET /queue ${res.status}`), jobId)
+        return
+      }
       prompt = findRunningPrompt(await res.json(), jobId)
-    } catch {
+    } catch (cause) {
+      reportQueueReadFailure(cause, jobId)
       return
     }
     if (!prompt || activeJobId.value !== jobId) return
@@ -657,6 +660,15 @@ export const useExecutionStore = defineStore('execution', () => {
       ...job.nodes
     }
     job.nodeLookup = buildExecutionNodeLookup(prompt)
+  }
+
+  function reportQueueReadFailure(cause: unknown, jobId: JobId): void {
+    reportError(cause, {
+      surface: 'graph',
+      errorType: 'warning_queue_read_failed_for_adopted_run',
+      level: 'warning',
+      context: { jobId }
+    })
   }
 
   function reportAmbiguousExecutionStartRejection(jobId: JobId): void {
