@@ -142,5 +142,9 @@ export function useSubgraphIoReorder(
     return offset ? { transform: `translateY(${offset}px)` } : undefined
   }
 
-  return { draggingIndex, rowStyle, startDrag, stepWithKeyboard }
+  function cancelDrag() {
+    drag.value = undefined
+  }
+
+  return { draggingIndex, rowStyle, startDrag, stepWithKeyboard, cancelDrag }
 }
