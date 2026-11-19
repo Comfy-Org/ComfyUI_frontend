@@ -708,6 +708,26 @@ describe('createOpSender', () => {
     ).toBeLessThanOrEqual(WIRE_MAX_BATCH_BYTES)
   })
 
+  it('ships a singleton that crosses the byte cap when its counter is lifted', () => {
+    observedSequence = MINTED_COUNTER
+    const operation = paddedAddNode(1, WIRE_MAX_BATCH_BYTES)
+
+    transportUp = false
+    sender.enqueue([operation])
+    vi.advanceTimersByTime(500 * 6)
+
+    observedCounter = LIFTED_COUNTER - 1
+    transportUp = true
+    sender.retryTransport()
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0].ops).toHaveLength(1)
+    expect(sent[0].ops[0].base_version).toBe(LIFTED_COUNTER)
+    expect(batchBytesOf(sent[0].ops)).toBe(
+      WIRE_MAX_BATCH_BYTES + LIFT_GROWTH_PER_OP
+    )
+  })
+
   it('settles a held batch when the observed counter exhausts safe integers', () => {
     transportUp = false
     sender.enqueue([addNode(1)])
