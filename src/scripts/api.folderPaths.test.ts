@@ -1,6 +1,8 @@
 import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 
+import { FETCH_RESPONSE_HEADERS_TIMEOUT_MS } from '@comfyorg/api-client/apiTimeouts'
+
 import { api } from '@/scripts/api'
 
 vi.mock(import('axios'))
@@ -22,5 +24,20 @@ describe('getFolderPaths', () => {
 
     // With dynamic discovery, we don't pre-generate directories when API is unavailable
     expect(result).toEqual({})
+  })
+
+  it('bounds the request and cancels it with the caller signal', async () => {
+    vi.mocked(axios.get).mockResolvedValueOnce({ data: {} })
+    const { signal } = new AbortController()
+
+    await api.getFolderPaths({ signal })
+
+    expect(axios.get).toHaveBeenCalledWith(
+      expect.stringMatching(/\/folder_paths$/),
+      {
+        signal,
+        timeout: FETCH_RESPONSE_HEADERS_TIMEOUT_MS
+      }
+    )
   })
 })
