@@ -1905,17 +1905,14 @@ export class ComfyApi extends EventTarget {
     })
   }
 
-  async getFolderPaths({ signal }: { signal?: AbortSignal } = {}): Promise<
-    Record<string, string[]>
-  > {
+  async getFolderPaths(
+    _options: { signal?: AbortSignal } = {}
+  ): Promise<Record<string, string[]>> {
     const response = await axios
-      .get(this.internalURL('/folder_paths'), {
-        signal,
-        timeout: FETCH_RESPONSE_HEADERS_TIMEOUT_MS
-      })
+      .get(this.internalURL('/folder_paths'))
       .catch(() => null)
     if (!response) {
-      return {} // Fallback: no filesystem paths known when API unavailable
+      return {}
     }
     return response.data
   }
