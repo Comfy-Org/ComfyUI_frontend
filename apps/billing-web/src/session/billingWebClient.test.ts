@@ -6,7 +6,6 @@ import type {
 } from '@comfyorg/ingest-types'
 import type { BillingSession } from '@comfyorg/account-core/billing'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
-import { disposeBillingClient } from '@comfyorg/account-ui/billing'
 import type {
   AccountCredential,
   SessionSnapshot
@@ -25,7 +24,8 @@ import {
 import type { BillingWebClient } from '@/session/billingWebClient'
 import {
   createBillingWebClient,
-  createHandoffBillingClient
+  createHandoffBillingClient,
+  disposeBillingWebClient
 } from '@/session/billingWebClient'
 import { createResubscribeTelemetry } from '@/telemetry/resubscribeTelemetry'
 import { createSubscriptionCheckoutTelemetry } from '@/telemetry/subscriptionCheckoutTelemetry'
@@ -141,7 +141,7 @@ describe('createBillingWebClient', () => {
     const client = createBillingWebClient(session)
     expect(listeners.size).toBeGreaterThan(0)
 
-    disposeBillingClient(client)
+    disposeBillingWebClient(client)
 
     expect(
       listeners.size,
@@ -215,7 +215,7 @@ describe('billing status wire compatibility', () => {
       value: { status: { has_funds: true } }
     })
     expect(client.status.getSnapshot()?.status).not.toHaveProperty('ended_at')
-    disposeBillingClient(client)
+    disposeBillingWebClient(client)
   })
 
   it('rejects a malformed supplied end date through the authenticated billing web client', async () => {
@@ -234,7 +234,7 @@ describe('billing status wire compatibility', () => {
       httpStatus: 200
     })
     expect(client.status.getSnapshot()).toBeUndefined()
-    disposeBillingClient(client)
+    disposeBillingWebClient(client)
   })
 })
 
@@ -316,7 +316,7 @@ describe('SDK operation telemetry', () => {
       decline_reason: 'card_declined'
     })
     const client = createBillingWebClient(authenticatedSession())
-    onTestFinished(() => disposeBillingClient(client))
+    onTestFinished(() => disposeBillingWebClient(client))
 
     await client.lifecycle.begin('subscription', issueOperation)
 
@@ -426,7 +426,7 @@ describe('createHandoffBillingClient', () => {
       await call(client)
 
       expect(onSessionRefused).toHaveBeenCalled()
-      disposeBillingClient(client)
+      disposeBillingWebClient(client)
     }
   )
 
@@ -451,7 +451,7 @@ describe('createHandoffBillingClient', () => {
       await client.credits.read()
 
       expect(onSessionRefused).toHaveBeenCalled()
-      disposeBillingClient(client)
+      disposeBillingWebClient(client)
     }
   )
 
@@ -470,7 +470,7 @@ describe('createHandoffBillingClient', () => {
     await client.credits.read()
 
     expect(onSessionRefused).not.toHaveBeenCalled()
-    disposeBillingClient(client)
+    disposeBillingWebClient(client)
   })
 
   it('keeps the handoff on a 401 from a route that does not take scoped sessions', async () => {
@@ -486,7 +486,7 @@ describe('createHandoffBillingClient', () => {
     await client.credits.read()
 
     expect(onSessionRefused).not.toHaveBeenCalled()
-    disposeBillingClient(client)
+    disposeBillingWebClient(client)
   })
 
   const LIVE_HANDOFF: HandoffState = {
@@ -557,7 +557,7 @@ describe('createHandoffBillingClient', () => {
       createHandoffBillingSession(sessionTabStorage),
       () => endHandoffSession(sessionTabStorage)
     )
-    onTestFinished(() => disposeBillingClient(client))
+    onTestFinished(() => disposeBillingWebClient(client))
     return client
   }
 

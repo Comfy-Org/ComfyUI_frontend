@@ -1,5 +1,6 @@
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { watch } from 'vue'
 
 import { st, t } from '@/i18n'
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
@@ -395,6 +396,30 @@ describe('missingModelStore', () => {
 
       store.removeMissingModelByWidget('99', 'ckpt_name')
       expect(store.missingModelCandidates).toHaveLength(1)
+    })
+
+    it('does not notify readers when nothing matches', () => {
+      const store = useMissingModelStore()
+      store.setMissingModels([
+        makeModelCandidate('model_a.safetensors', {
+          nodeId: toNodeId('5'),
+          widgetName: 'ckpt_name'
+        })
+      ])
+      const onChange = vi.fn()
+      const stop = watch(() => store.missingModelCandidates, onChange, {
+        flush: 'sync'
+      })
+
+      store.removeMissingModelByWidget('99', 'ckpt_name')
+      store.removeMissingModelsByNodeId('99')
+      store.removeMissingModelByNameOnNodes(
+        'model_a.safetensors',
+        new Set(['99'])
+      )
+      stop()
+
+      expect(onChange).not.toHaveBeenCalled()
     })
   })
 

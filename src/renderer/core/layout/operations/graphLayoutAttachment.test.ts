@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -167,5 +168,21 @@ describe('refreshNodeGeometry non-decreasing content-size floor (PM-1304)', () =
       height: 401
     })
     expect(refreshNodeGeometry(node)).toEqual([220, 401])
+  })
+
+  it('keeps a subgraph IO panel measurement through an explicit resize', () => {
+    const { inputNode } = createTestSubgraph()
+    const graphId = inputNode.subgraph.id
+    layoutStore.reportContentSize(graphId, inputNode.id, {
+      width: 90,
+      height: 240
+    })
+
+    setNodeSize(inputNode, [70, 100])
+
+    expect(layoutStore.contentSizeOf(graphId, inputNode.id)).toEqual({
+      width: 90,
+      height: 240
+    })
   })
 })

@@ -1721,6 +1721,12 @@
     "reload": "重新載入",
     "retry": "重試",
     "retryLabel": "重試啟動 {deployment}",
+    "runBlocked": {
+      "failed": "此部署失敗。點擊以切換。",
+      "notReady": "此部署尚未就緒。點擊以切換。",
+      "starting": "此部署正在啟動。點擊以切換。",
+      "stopped": "此部署已停止。點擊以切換。"
+    },
     "runOn": "執行於",
     "runningOn": "執行於",
     "runsThisWorkflow": "可執行此工作流程",

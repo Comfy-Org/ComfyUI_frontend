@@ -72,7 +72,7 @@
       </PopoverRoot>
 
       <HoverCard
-        :open="creditsOpen"
+        :open="flyout === 'creditsPreview'"
         :open-delay="120"
         @update:open="previewCredits"
       >
@@ -85,6 +85,9 @@
             data-testid="credits-menu-item"
             @click="pinCredits"
             @keydown.arrow-right.prevent="pinCredits"
+            @blur="previewHeldBack = false"
+            @pointerenter="previewHeldBack = false"
+            @pointerleave="previewHeldBack = false"
           >
             <i class="icon-[lucide--coins] text-muted-foreground" />
             <span class="flex-1 text-foreground">{{
@@ -112,16 +115,8 @@
           </button>
         </HoverCardTrigger>
         <HoverCardContent
-          :side="flyoutSide"
-          align="start"
-          :side-offset="flyoutGap"
-          :align-offset="creditsFlyoutAlignOffset"
-          :collision-boundary="menu"
-          :side-flip="false"
-          :align-flip="false"
-          class="w-64 rounded-xl border-border bg-background p-0"
-          @escape-key-down="closeCredits"
-          @pointer-down-outside="closeCreditsUnlessOnRow"
+          v-bind="creditsFlyoutPlacement"
+          :class="creditsFlyoutClass"
         >
           <ProfileMenuCreditsFlyout
             @open-billing="openSettings('workspace')"
@@ -129,6 +124,31 @@
           />
         </HoverCardContent>
       </HoverCard>
+      <PopoverRoot
+        :open="flyout === 'creditsPinned'"
+        @update:open="unpinCredits"
+      >
+        <PopoverContent
+          v-bind="creditsFlyoutPlacement"
+          :reference="creditsRow ?? undefined"
+          :class="
+            cn(
+              creditsFlyoutClass,
+              'max-h-none max-w-none overflow-visible data-[state=closed]:animate-none data-[state=open]:animate-none'
+            )
+          "
+          :aria-label="$t('profileMenu.credits')"
+          @escape-key-down="returnFocusToCreditsRow"
+          @interact-outside="keepPinnedOnCreditsRow"
+        >
+          <div ref="pinnedCredits">
+            <ProfileMenuCreditsFlyout
+              @open-billing="openSettings('workspace')"
+              @close="emit('close')"
+            />
+          </div>
+        </PopoverContent>
+      </PopoverRoot>
 
       <button
         type="button"
@@ -194,7 +214,7 @@
 import type { SettingPanelType } from '@comfyorg/settings-core/types'
 import { cn } from '@comfyorg/tailwind-utils'
 import { PopoverRoot, PopoverTrigger } from 'reka-ui'
-import type { PointerDownOutsideEvent } from 'reka-ui'
+import type { FocusOutsideEvent, PointerDownOutsideEvent } from 'reka-ui'
 import { storeToRefs } from 'pinia'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -236,7 +256,6 @@ const { accountActionsOnly = false, flyoutSide = 'left' } = defineProps<{
 
 const menuInset = 5
 const flyoutGap = menuInset + 8
-const creditsFlyoutAlignOffset = -11
 
 const emit = defineEmits<{
   close: []
@@ -247,6 +266,17 @@ const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
 const { activeSummary } = storeToRefs(useWorkspaceBillingStateStore())
 const menu = useTemplateRef<HTMLElement>('menu')
 const creditsRow = useTemplateRef<HTMLElement>('creditsRow')
+const creditsFlyoutClass = 'w-64 rounded-xl border-border bg-background p-0'
+const creditsFlyoutPlacement = computed(() => ({
+  side: flyoutSide,
+  align: 'start' as const,
+  sideOffset: flyoutGap,
+  alignOffset: -11,
+  collisionBoundary: menu.value,
+  collisionPadding: 0,
+  sideFlip: false,
+  alignFlip: false
+}))
 type MenuFlyout = 'none' | 'switcher' | 'creditsPreview' | 'creditsPinned'
 const flyout = ref<MenuFlyout>('none')
 const creditsOpen = computed(
@@ -290,26 +320,41 @@ const monogram = computed(() =>
   (userDisplayName.value || userEmail.value || '').trim().charAt(0)
 )
 
+const previewHeldBack = ref(false)
+
+function returnFocusToCreditsRow() {
+  previewHeldBack.value = true
+  creditsRow.value?.focus()
+}
+
 function previewCredits(open: boolean) {
-  if (open && flyout.value === 'none') flyout.value = 'creditsPreview'
+  if (open && flyout.value === 'none' && !previewHeldBack.value)
+    flyout.value = 'creditsPreview'
   if (!open && flyout.value === 'creditsPreview') flyout.value = 'none'
 }
 
+const pinnedCredits = useTemplateRef<HTMLElement>('pinnedCredits')
+
 function pinCredits() {
+  if (flyout.value === 'creditsPinned') {
+    pinnedCredits.value
+      ?.querySelector<HTMLElement>('button:not([disabled]), a[href]')
+      ?.focus()
+    return
+  }
   flyout.value = 'creditsPinned'
 }
 
-function closeCredits() {
-  if (creditsOpen.value) flyout.value = 'none'
+function unpinCredits(open: boolean) {
+  if (!open && flyout.value === 'creditsPinned') flyout.value = 'none'
 }
 
-function closeCreditsUnlessOnRow(event: PointerDownOutsideEvent) {
+function keepPinnedOnCreditsRow(
+  event: PointerDownOutsideEvent | FocusOutsideEvent
+) {
   const target = event.detail.originalEvent.target
-  if (target instanceof Node && creditsRow.value?.contains(target)) {
+  if (target instanceof Node && creditsRow.value?.contains(target))
     event.preventDefault()
-    return
-  }
-  closeCredits()
 }
 
 function openSettings(panel: SettingPanelType) {
