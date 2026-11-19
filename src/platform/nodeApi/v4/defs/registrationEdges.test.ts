@@ -165,6 +165,23 @@ describe('registering node types and extensions at the edges', () => {
 
       expect(onCreated).not.toHaveBeenCalled()
     })
+
+    it('runs a definition’s hooks only for the nodes of its own registration', () => {
+      const heard: string[] = []
+      const first = defs.define({
+        type: 'Redefined',
+        onRemoved: () => heard.push('first')
+      })
+      const earlier = addedNode('Redefined')
+      first()
+      defs.define({ type: 'Redefined', onRemoved: () => heard.push('second') })
+      const later = addedNode('Redefined')
+
+      graph.remove(earlier)
+      graph.remove(later)
+
+      expect(heard).toEqual(['second'])
+    })
   })
 
   describe('an apply that returns a promise', () => {

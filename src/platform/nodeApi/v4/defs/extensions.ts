@@ -38,6 +38,7 @@ interface Extension {
   readonly apply: (builder: NodeDefBuilder) => void
   readonly appliedTo: Set<string>
   readonly sequence: number
+  readonly ownType: boolean
 }
 
 interface Application {
@@ -128,7 +129,9 @@ export function createExtensions(installer: HookInstaller): Extensions {
         ...(applications.get(nodeType.type) ?? []),
         { extension, callbacks: applied }
       ].sort(
-        (first, second) => first.extension.sequence - second.extension.sequence
+        (first, second) =>
+          Number(second.extension.ownType) - Number(first.extension.ownType) ||
+          first.extension.sequence - second.extension.sequence
       )
     )
     extension.appliedTo.add(nodeType.type)
@@ -162,7 +165,8 @@ export function createExtensions(installer: HookInstaller): Extensions {
         selects,
         apply,
         appliedTo: new Set(),
-        sequence: ++sequence
+        sequence: ++sequence,
+        ownType: false
       }),
 
     extendOwnType: (nodeType, apply) =>
@@ -170,7 +174,8 @@ export function createExtensions(installer: HookInstaller): Extensions {
         selects: (candidate) => nodeTypes.get(candidate.type) === nodeType,
         apply,
         appliedTo: new Set(),
-        sequence: 0
+        sequence: ++sequence,
+        ownType: true
       }),
 
     typeRegistered(nodeType) {
