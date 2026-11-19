@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { createSharedComposable, until, useStorage } from '@vueuse/core'
-import { compare } from 'semver'
+import { compare, valid } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import type { Ref } from 'vue'
@@ -754,6 +754,31 @@ describe('useReleaseStore', () => {
       })
     })
 
+    // The module mock returns a valid semver by default, so without these the
+    // non-semver path is never exercised. It only became reachable on these
+    // builds when the distribution gate came off.
+    describe('when the running version is not semver', () => {
+      beforeEach(() => {
+        vi.mocked(valid).mockReturnValue(null)
+      })
+
+      it('withholds the red dot instead of claiming a permanent update', () => {
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
+        vi.mocked(compare).mockReturnValue(1)
+
+        expect(store.shouldShowRedDot).toBe(false)
+      })
+
+      it('withholds the popup instead of showing unreceived release notes', () => {
+        const store = useReleaseStore()
+        store.releases = [mockRelease]
+        vi.mocked(compare).mockReturnValue(1)
+
+        expect(store.shouldShowPopup).toBe(false)
+      })
+    })
+
     it('withholds the toast, whose Update action has no correct target here', () => {
       const store = useReleaseStore()
       vi.mocked(compare).mockReturnValue(1)
@@ -790,6 +815,15 @@ describe('useReleaseStore', () => {
       vi.mocked(compare).mockReturnValue(1)
 
       expect(store.shouldShowRedDot).toBe(false)
+    })
+
+    it('still shows the popup when its version is not semver', () => {
+      vi.mocked(valid).mockReturnValue(null)
+      const store = useReleaseStore()
+      store.releases = [mockRelease]
+      vi.mocked(compare).mockReturnValue(1)
+
+      expect(store.shouldShowPopup).toBe(true)
     })
 
     it("still shows the What's New popup", () => {

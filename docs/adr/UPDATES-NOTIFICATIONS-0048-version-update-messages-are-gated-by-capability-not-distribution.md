@@ -21,21 +21,18 @@ consumes it. The practical effect was that no Comfy Desktop user and no local
 install ever saw a version-update message, while Cloud — the one distribution
 that is always current — saw the popup.
 
-The cost is measurable. Of the installs that report a running core version,
-59.4% are more than one minor behind, the median is two minors (about three
-weeks of code), the largest single cohort is 180,314 users on a build that was
-29 days old, and 85.1% of that stale cohort did not change version once in 30
-days. Comfy-Desktop#1978 independently found about one in five fresh Desktop
-installs silently staying on the bundled core.
+The cost is real. Across the installs that report a running core version, a clear majority are
+more than one minor release behind, the typical lag is around two minors, and most of that
+cohort does not change version at all over a month. The desktop repository separately found a
+meaningful share of fresh installs silently staying on the bundled core.
 
-Two decisions govern the behaviour. In `FAQs Messaging` (2026-10-21) the
-product owner agreed a three-level model — _available_, _recommended_,
-_critical_ — in which the `Comfy.Notification.ShowVersionUpdates` setting may
-mute release news but never a recommended or critical update. In Slack
-(2026-11-01) the decision was narrowed to a default: the messages, not
-auto-updates, should be on everywhere. This ADR implements the gating half of
-both; the recommended/critical lanes are not built yet and are not muted today
-because they do not exist.
+Two product decisions govern the behaviour. The first defines three levels of update message,
+_available_, _recommended_ and _critical_, in which the
+`Comfy.Notification.ShowVersionUpdates` setting may mute release news but never a recommended or
+critical update. The second narrows the immediate change to a default: the messages, not
+auto-updates, should be on everywhere. This ADR implements the gating half of both. The
+recommended and critical lanes are not built yet and are not muted today because they do not
+exist.
 
 ## Decision
 
@@ -46,9 +43,8 @@ into.
   it needs no host capability, and it fires on low-attention releases, which
   makes it the only surface that currently reaches a stale user. Cloud is
   always current, so an update indicator there is meaningless.
-- **"What's New" popup** — shown on every distribution. It links only to the
-  changelog, so it carries no host-specific action. It is bounded by
-  `isLatestVersion`: it reports what the user just received and is, by
+- **"What's New" popup** - shown on every distribution. It links only to the changelog, so it
+  carries no host-specific action. It reports what the user just received and is, by
   construction, not an "update available" message.
 - **Release toast** — still withheld outside the legacy desktop build. It is
   the only surface with an Update action, and that action is correct only where
@@ -58,6 +54,12 @@ into.
 
 `Comfy.Notification.ShowVersionUpdates` keeps its existing `true` default and
 continues to suppress every surface when a user turns it off.
+
+Both ungated surfaces additionally require the running version and the release version to be
+comparable semver. `compareVersions` otherwise treats any difference as newer and substitutes
+`0.0.0` for a missing version, which behind the old desktop-only gate was unreachable in
+practice. On a git install reporting a commit hash it would mean a permanent update dot, and a
+popup showing release notes the user never received.
 
 ## Consequences
 
@@ -73,10 +75,18 @@ also requires `hasMediumOrHighAttention`, and every release in the live feed is
 `attention: "low"`, so the toast would fire zero times even with a correct
 action. Attention levels are a publishing practice, not a frontend change.
 
-None of these surfaces emit telemetry, and the `Comfy.Release.Status` settings
-that record _skipped_ / _changelog seen_ / _what's new seen_ are `type:
-'hidden'`, which `settingStore.ts` excludes from `app:setting_changed`. The
-effect of this change is therefore unmeasured until that is addressed.
+These surfaces are close to unmeasured. Neither the dot, the popup nor the toast emits an event
+of its own, and the `Comfy.Release.Status` settings that record _skipped_ / _changelog seen_ /
+_what's new seen_ are `type: 'hidden'`, which `settingStore.ts` excludes from
+`app:setting_changed`. The one partial exception is the dot's destination: opening the help
+centre and clicking a release in its What's New list are both reported, so some of the dot's
+downstream effect is already visible. Impression and dismissal are not.
+
+One consequence of keeping the toast gated: a low-attention dot clears itself after three days
+only once `Comfy.Release.Status` is `skipped`, and only the toast writes that status. On every
+newly ungated distribution such a dot therefore persists until the user opens the changelog.
+That is accepted for now; giving these builds their own way to clear it belongs with the toast
+work.
 
 ## Alternatives considered
 

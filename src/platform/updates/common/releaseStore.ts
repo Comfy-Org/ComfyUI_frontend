@@ -87,6 +87,18 @@ export const useReleaseStore = defineStore('release', () => {
       ) === 0
   )
 
+  // `compareVersions` falls back to "different means newer" for non-semver
+  // input, and a missing current version becomes '0.0.0'. Behind the old
+  // desktop-only gate that was harmless. Every local install now reaches it,
+  // and a git-hash or empty version would otherwise show a permanent update
+  // indicator. Only claim an update when both sides can really be compared.
+  const versionsComparable = computed(
+    () =>
+      !!recentRelease.value &&
+      !!valid(recentRelease.value.version) &&
+      !!valid(currentVersion.value)
+  )
+
   const hasMediumOrHighAttention = computed(() => {
     const attention = recentRelease.value?.attention
     return attention === 'medium' || attention === 'high'
@@ -130,6 +142,11 @@ export const useReleaseStore = defineStore('release', () => {
   const shouldShowRedDot = computed(() => {
     // Cloud is always current, so an update indicator there is meaningless.
     if (isCloud) {
+      return false
+    }
+
+    // An uncomparable version cannot establish that an update exists.
+    if (!versionsComparable.value) {
       return false
     }
 
@@ -193,8 +210,10 @@ export const useReleaseStore = defineStore('release', () => {
       return false
     }
 
-    // Skip version check if current version isn't semver (e.g. git hash)
-    const skipVersionCheck = !valid(currentVersion.value)
+    // Cloud has no meaningful comfyui_version, so it skips the version check.
+    // Everywhere else an uncomparable version must not be treated as "you are
+    // on the latest", or a user is shown release notes they never received.
+    const skipVersionCheck = isCloud && !valid(currentVersion.value)
     if (!skipVersionCheck && !isLatestVersion.value) {
       return false
     }
