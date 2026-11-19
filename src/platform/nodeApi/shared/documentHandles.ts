@@ -93,20 +93,29 @@ export function createDocumentHandles(): DocumentHandles {
       function sweep(retireReissuable: boolean) {
         for (const entries of entriesByGraph.values()) {
           for (const [key, entry] of entries) {
-            if (entry.locate() !== undefined) {
-              entry.held ??= entry.weak.deref()
-              if (entry.held) continue
-            } else if (retireReissuable && isReissued(entry, key)) {
-              entry.retire()
-            } else {
-              entry.held = undefined
-              if (entry.weak.deref()) continue
-            }
+            if (keeps(entry, key, retireReissuable)) continue
             entries.delete(key)
             entryCount--
           }
         }
         sweepAt = Math.max(FIRST_SWEEP, entryCount * 2)
+      }
+
+      function keeps(
+        entry: Entry<THandle, TLive>,
+        key: string,
+        retireReissuable: boolean
+      ): boolean {
+        if (entry.locate() !== undefined) {
+          entry.held ??= entry.weak.deref()
+          return entry.held !== undefined
+        }
+        if (retireReissuable && isReissued(entry, key)) {
+          entry.retire()
+          return false
+        }
+        entry.held = undefined
+        return entry.weak.deref() !== undefined
       }
 
       function isReissued(entry: Entry<THandle, TLive>, key: string) {

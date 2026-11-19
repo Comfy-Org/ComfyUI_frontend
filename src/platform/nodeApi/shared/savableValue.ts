@@ -74,13 +74,7 @@ function copyOf(
   ancestors: Set<object>,
   isLeaf: IsLeaf
 ): unknown {
-  if (value === null || typeof value === 'string') return value
-  if (typeof value === 'boolean') return value
-  if (typeof value === 'number') {
-    if (Number.isFinite(value)) return value
-    throw new Unsavable(path, value)
-  }
-  if (typeof value !== 'object') throw new Unsavable(path, value)
+  if (typeof value !== 'object' || value === null) return primitive(value, path)
   if (isLeaf(value)) return value
   const isList = Array.isArray(value)
   if ((!isList && !isPlainData(value)) || ancestors.has(value)) {
@@ -90,23 +84,40 @@ function copyOf(
   ancestors.add(value)
   const copy: Record<string, unknown> = isList ? Object.assign([]) : {}
   for (const key of Object.keys(value)) {
-    const field = Object.getOwnPropertyDescriptor(value, key)
     const fieldPath = isList ? `${path}[${key}]` : `${path}.${key}`
-    if (!field || !('value' in field)) {
-      throw new Unsavable(fieldPath, field?.get ?? field?.set)
-    }
-    const item = copyOf(field.value, fieldPath, ancestors, isLeaf)
-    if (key === '__proto__') {
-      Object.defineProperty(copy, key, {
-        value: item,
-        enumerable: true,
-        writable: true,
-        configurable: true
-      })
-    } else copy[key] = item
+    const item = copyOf(
+      ownValue(value, key, fieldPath),
+      fieldPath,
+      ancestors,
+      isLeaf
+    )
+    Object.defineProperty(copy, key, {
+      value: item,
+      enumerable: true,
+      writable: true,
+      configurable: true
+    })
   }
   ancestors.delete(value)
   return copy
+}
+
+function primitive(value: unknown, path: string): unknown {
+  const savable =
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value))
+  if (!savable) throw new Unsavable(path, value)
+  return value
+}
+
+function ownValue(container: object, key: string, path: string): unknown {
+  const field = Object.getOwnPropertyDescriptor(container, key)
+  if (!field || !('value' in field)) {
+    throw new Unsavable(path, field?.get ?? field?.set)
+  }
+  return field.value
 }
 
 function deepFreeze(value: unknown, isLeaf: IsLeaf): unknown {
