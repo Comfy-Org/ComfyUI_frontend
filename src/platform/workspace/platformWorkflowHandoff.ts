@@ -23,7 +23,6 @@ interface WorkflowHandoff extends HandedWorkflow {
   platformOrigin: string
 }
 
-/** Platform's build wizard at its import step, asking its opener for the workflow under `nonce`. */
 function workflowHandoffUrl(
   nonce: string,
   surface: PlatformLinkSurface
