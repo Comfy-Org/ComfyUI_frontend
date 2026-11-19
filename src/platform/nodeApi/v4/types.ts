@@ -785,7 +785,7 @@ export interface WidgetCollection extends Iterable<WidgetHandle> {
   /** Puts the widgets in this order. `names` names every widget once. `false` if the node is gone. */
   reorder(names: readonly string[]): boolean
   /**
-   * Moves one widget to `index`, clamped to the list: unlike `at`, a negative index is the front.
+   * Moves one widget to `index`, clamped to the end of the list; a negative index throws.
    * `false` if the node has no widget by that name.
    */
   move(name: string, index: number): boolean

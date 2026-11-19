@@ -33,8 +33,8 @@ export function orderMembers(
       if (typeof name !== 'string') {
         throw invalidArgument('move', 'a widget name', name)
       }
-      if (typeof index !== 'number' || !Number.isInteger(index)) {
-        throw invalidArgument('move', 'a whole number', index)
+      if (typeof index !== 'number' || !Number.isInteger(index) || index < 0) {
+        throw invalidArgument('move', 'a whole number of zero or more', index)
       }
       const found = access.live()
       const order = found && moved(found, name, index)

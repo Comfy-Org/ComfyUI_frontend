@@ -556,8 +556,6 @@ describe('a node’s widgets', () => {
     it.for([
       [0, ['c', 'a', 'b']],
       [1, ['a', 'c', 'b']],
-      [-1, ['c', 'a', 'b']],
-      [-4, ['c', 'a', 'b']],
       [9, ['a', 'b', 'c']]
     ] as const)(
       'moves a widget to %i, clamped to the list',
@@ -568,6 +566,15 @@ describe('a node’s widgets', () => {
         expect(widgets.names()).toEqual(order)
       }
     )
+
+    it.for([[-1], [-4]])('refuses the negative index %i', ([index]) => {
+      const { widgets } = nodeWith('a', 'b', 'c')
+
+      expect(() => widgets.move('c', index)).toThrow(
+        `move needs a whole number of zero or more, not ${index}.`
+      )
+      expect(widgets.names()).toEqual(['a', 'b', 'c'])
+    })
 
     it('moves a widget forward past the others', () => {
       const { widgets } = nodeWith('a', 'b', 'c')
