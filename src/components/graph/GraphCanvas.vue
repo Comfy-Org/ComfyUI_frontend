@@ -30,6 +30,13 @@
       @ready="onLinkOverlayReady"
       @dispose="onLinkOverlayDispose"
     />
+    <template v-if="comfyAppReady && openSubgraph && !linearMode">
+      <SubgraphIoPanel
+        v-for="ioNode in [openSubgraph.inputNode, openSubgraph.outputNode]"
+        :key="`${openSubgraph.id}:${ioNode.id}`"
+        :io-node
+      />
+    </template>
     <SelectionRectangle v-if="comfyAppReady" />
     <NodeTooltip v-if="tooltipEnabled" />
     <NodeSearchboxPopover ref="nodeSearchboxPopoverRef" />
@@ -137,6 +144,7 @@ import AppBuilder from '@/components/builder/AppBuilder.vue'
 import VueNodeSwitchPopup from '@/components/builder/VueNodeSwitchPopup.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import DomWidgets from '@/components/graph/DomWidgets.vue'
+import SubgraphIoPanel from '@/components/graph/subgraph/SubgraphIoPanel.vue'
 import GraphCanvasMenu from '@/components/graph/GraphCanvasMenu.vue'
 import { createNodeProgressCanvasSync } from '@/components/graph/nodeProgressCanvasSync'
 import LinkOverlayCanvas from '@/components/graph/LinkOverlayCanvas.vue'
@@ -212,6 +220,7 @@ import { useSubgraphStore } from '@/stores/subgraphStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { forEachNode } from '@/utils/graphTraversalUtil'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 import SelectionRectangle from './SelectionRectangle.vue'
 import { useUrlActionLoaders } from '@/composables/useUrlActionLoaders'
@@ -245,6 +254,9 @@ const nodeProgressCanvasSync = createNodeProgressCanvasSync(
   workflowStore.nodeToNodeLocatorId
 )
 const { linearMode } = storeToRefs(canvasStore)
+const openSubgraph = computed(() =>
+  isSubgraph(canvasStore.currentGraph) ? canvasStore.currentGraph : undefined
+)
 const { docked: agentDocked, DockedAgentPanel } = useAgentDockMount()
 const executionStore = useExecutionStore()
 const executionErrorStore = useExecutionErrorStore()
@@ -616,7 +628,7 @@ onMounted(async () => {
     useSearchBoxStore().setPopoverRef(nodeSearchboxPopoverRef.value)
 
     window.app = comfyApp
-    window.graph = comfyApp.graph
+    window.graph = comfyApp.rootGraph
 
     comfyAppReady.value = true
 

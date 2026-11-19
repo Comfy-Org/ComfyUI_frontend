@@ -60,9 +60,10 @@ the diff. Keeping those causes apart is the whole point.
 
 Every matrix run opens with a `pin-status` job printing the pin date, the age,
 and the bump URL, and raises a `::warning::` annotation once the pins are more
-than **30 days** old. It does not fail the build — a stale-pin failure would
-block everyone for something nobody's PR caused — but it is the loudest thing
-in the run, because a stale corpus is the one defect this instrument cannot
+than **35 days** old: the monthly bump (31 days at most) plus four days to
+review its PR, so the warning means a bump was missed. It does not fail the
+build — a stale-pin failure would block everyone for something nobody's PR
+caused — but it is the loudest thing in the run, because a stale corpus is the one defect this instrument cannot
 detect from the inside. Everything stays green while the ecosystem it claims
 to measure moves on without it.
 

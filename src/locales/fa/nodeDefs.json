@@ -8465,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "با HeyGen Avatar ۶، یک ویدیوی سخنگو از یک آواتار HeyGen بسازید که با متن گفتار یا فایل صوتی خودتان هدایت می‌شود.",
+    "display_name": "تبدیل هویت HeyGen Avatar ۶ به ویدیو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد",
+        "tooltip": "«auto» از ویدیوی منبع آواتار پیروی می‌کند."
+      },
+      "avatar": {
+        "name": "آواتار"
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "motion_expressiveness": {
+        "name": "بیان‌پذیری حرکت",
+        "tooltip": "«less» حرکات کمتر و کوچک‌تری ایجاد می‌کند. در موارد هم‌پوشانی، پرامپت حرکت اولویت دارد."
+      },
+      "motion_prompt": {
+        "name": "پرامپت حرکت",
+        "tooltip": "حرکات دست، حالت چهره، وضعیت بدن و حرکت دوربین."
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "بذر تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج صرف‌نظر از بذر غیرقطعی هستند."
+      },
+      "speech": {
+        "name": "گفتار",
+        "tooltip": "آواتار را با متن گفتار (تبدیل متن به گفتار HeyGen) یا فایل صوتی خودتان هدایت کنید."
+      },
+      "speech_custom_voice_id": {
+        "name": "شناسه صدای سفارشی"
+      },
+      "speech_text": {
+        "name": "متن"
+      },
+      "speech_voice": {
+        "name": "صدا"
+      },
+      "speech_voice_speed": {
+        "name": "سرعت صدا"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "با HeyGen Avatar ۶، شخص یا شخصیت موجود در عکس یا ویدیو را وادار کنید فایل صوتی متصل‌شده را بیان کند. یک تصویر، یک ویدیو یا هر دو را متصل کنید.",
+    "display_name": "تبدیل مرجع HeyGen Avatar ۶ به ویدیو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل"
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت ابعاد"
+      },
+      "model_motion_expressiveness": {
+        "name": "بیان‌پذیری حرکت"
+      },
+      "model_motion_prompt": {
+        "name": "پرامپت حرکت"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "تولید ویدئوی ارائه‌دهنده سخنگو از یک آواتار HeyGen. شامل محبوب‌ترین آواتارهای عمومی HeyGen؛ هر شناسه ظاهر (look ID) را می‌توان به عنوان جایگزین وارد کرد.",
     "display_name": "ویدئوی آواتار HeyGen",
@@ -10645,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "تصاویر را از یک پرامپت متنی و حداکثر ۱۰ تصویر مرجع، به‌صورت یک تصویر یا مجموعه‌ای از تصاویر مرتبط تولید یا ویرایش کنید.",
+    "display_name": "تصویر Kling ۴.۰",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "نسبت ابعاد",
+        "tooltip": "auto از تصاویر مرجع و در غیر این صورت از پرامپت پیروی می‌کند."
+      },
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "prompt": {
+        "name": "پرامپت",
+        "tooltip": "به تصاویر مرجع با @Image1، @Image2، ... ارجاع دهید."
+      },
+      "reference_images": {
+        "name": "تصاویر مرجع"
+      },
+      "resolution": {
+        "name": "وضوح"
+      },
+      "seed": {
+        "name": "بذر",
+        "tooltip": "Seed تعیین می‌کند که آیا node باید دوباره اجرا شود یا نه؛ نتایج مستقل از seed غیرقطعی هستند."
+      },
+      "series_amount": {
+        "name": "تعداد تصاویر مجموعه",
+        "tooltip": "مجموعه‌ای از تصاویر مرتبط تولید کنید که شخصیت‌ها و سبک یکسانی دارند. auto به مدل اجازه می‌دهد ۲-۱۰ تصویر انتخاب کند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "با حداکثر ۱۰ فریم کلیدی در kling-4.0، یا از یک فریم نخست در kling-4.0-flash، ویدیویی همراه با صدا تولید کنید. فریم‌های میانی با فاصله‌ای یکنواخت قرار می‌گیرند؛ ویدیو نسبت ابعاد نخستین فریم کلیدی را می‌گیرد.",
     "display_name": "Kling 4.0 تصویر به ویدیو",
@@ -10666,6 +10789,32 @@
       },
       "model_seed": {
         "name": "بذر"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "یک تصویر عمودی بلند تولید کنید: طراحی یک صفحهٔ وب یا صفحهٔ جزئیات محصول تجارت الکترونیک.",
+    "display_name": "تصویر بلند Kling ۴.۰",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "skill": {
+        "name": "مهارت"
+      },
+      "skill_prompt": {
+        "name": "پرامپت"
+      },
+      "skill_resolution": {
+        "name": "وضوح"
+      },
+      "skill_seed": {
+        "name": "seed"
       }
     },
     "outputs": {
@@ -25291,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "تصاویر مرجع، تفکر تصویری، متن درهم‌تنیده یا خوداصلاحی را با CLIP کدگذاری کنید. پیش از این node، تصاویر مرجع HiDream-O1 را متصل کنید و برای تصاویر از یک نمونه‌گیر استاندارد استفاده کنید. تبدیل متن به تصویر بدون تفکر فقط به CLIP Text Encode نیاز دارد؛ خروجی فقط‌متن می‌تواند از Generate Text استفاده کند.",
+    "display_name": "شرط‌دهی SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "شرط‌دهی"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "حداکثر tokenهای تولیدشده در طول این فراخوانی."
+      },
+      "negative": {
+        "name": "منفی"
+      },
+      "task": {
+        "name": "وظیفه",
+        "tooltip": "وظیفه را انتخاب کنید. قالب پرامپت و رفتار توقف آن به‌طور خودکار تنظیم می‌شوند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "شرط‌دهی",
+        "tooltip": null
+      },
+      "1": {
+        "name": "متن_تولیدشده",
+        "tooltip": "متن تولیدشده توسط این فراخوانی. برای نتیجهٔ کامل از SenseNova Interleave Decode استفاده کنید."
+      },
+      "2": {
+        "name": "منفی",
+        "tooltip": "شرط‌دهی منفیِ به‌روزشده برای درهم‌تنیدگی و خوداصلاحی."
+      },
+      "3": {
+        "name": "تصویر_درخواست‌شده",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "متن، تصاویر و تفکر تولیدشده را از تاریخچهٔ درهم‌تنیدگیِ تولیدشده توسط SenseNova Conditioning، شامل خوداصلاحی U1.6، استخراج کنید. در حلقه‌ها، از End Loop با accumulate غیرفعال استفاده کنید. تصاویر مرجع ورودی مستثنی می‌شوند. وقتی هیچ تصویری تولید نشده باشد، مصرف‌کنندگان تصویر رد می‌شوند.",
+    "display_name": "رمزگشایی درهم‌تنیدهٔ SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "شرط‌دهی"
+      },
+      "samples": {
+        "name": "نمونه‌ها",
+        "tooltip": "آخرین latent پیکسلی KSampler، اگر حلقه با درخواست تصویر پایان یافته باشد."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "متن",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تصاویر",
+        "tooltip": null
+      },
+      "2": {
+        "name": "تفکر",
         "tooltip": null
       }
     }

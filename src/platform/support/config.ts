@@ -1,18 +1,5 @@
 import { isCloud, isNightly } from '@/platform/distribution/types'
-
-/**
- * Zendesk ticket form field IDs.
- */
-const ZENDESK_FIELDS = {
-  /** Distribution tag (cloud vs OSS) */
-  DISTRIBUTION: 'tf_42243568391700',
-  /** User email (anonymous requester) */
-  ANONYMOUS_EMAIL: 'tf_anonymous_requester_email',
-  /** User email (authenticated) */
-  EMAIL: 'tf_40029135130388',
-  /** User ID */
-  USER_ID: 'tf_42515251051412'
-} as const
+import { buildSupportFormUrl } from '@/utils/supportFormUrl'
 
 /**
  * Gets the distribution identifier for tracking.
@@ -24,7 +11,14 @@ function getDistribution(): 'ccloud' | 'oss-nightly' | 'oss' {
   return 'oss'
 }
 
-const SUPPORT_BASE_URL = 'https://support.comfy.org/hc/en-us/requests/new'
+const SUPPORT_FORM_URLS = {
+  billing:
+    'https://comfysupport.portal.usepylon.com/forms/billing-refund-issue',
+  bug: 'https://comfysupport.portal.usepylon.com/forms/report-a-bug',
+  question: 'https://comfysupport.portal.usepylon.com/forms/question'
+} as const
+
+export type SupportForm = keyof typeof SUPPORT_FORM_URLS
 
 export type FeedbackSource =
   | 'topbar'
@@ -64,28 +58,10 @@ export function buildFeedbackHiddenFields(
     .join(',')
 }
 
-/**
- * Builds the support URL with optional user information for pre-filling.
- * Users without login information will still get a valid support URL without pre-fill.
- *
- * @param params - User information to pre-fill in the support form
- * @returns Complete Zendesk support URL with query parameters
- */
-export function buildSupportUrl(params?: {
-  userEmail?: string | null
-  userId?: string | null
-}): string {
-  const searchParams = new URLSearchParams({
-    [ZENDESK_FIELDS.DISTRIBUTION]: getDistribution()
-  })
-
-  if (params?.userEmail) {
-    searchParams.append(ZENDESK_FIELDS.ANONYMOUS_EMAIL, params.userEmail)
-    searchParams.append(ZENDESK_FIELDS.EMAIL, params.userEmail)
-  }
-  if (params?.userId) {
-    searchParams.append(ZENDESK_FIELDS.USER_ID, params.userId)
-  }
-
-  return `${SUPPORT_BASE_URL}?${searchParams.toString()}`
+/** Builds the support form URL, pre-filled with the user's details when known. */
+export function buildSupportUrl(
+  form: SupportForm,
+  identity?: { email?: string | null; userId?: string | null }
+): string {
+  return buildSupportFormUrl(SUPPORT_FORM_URLS[form], identity)
 }

@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import axios from 'axios'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -158,6 +159,20 @@ describe('NodeSearchBox', () => {
     expect(
       screen.getByRole('option', { name: 'Dragon Blueprint' })
     ).toBeVisible()
+  })
+
+  it('shows frequent nodes that load after the box opened', async () => {
+    vi.useFakeTimers()
+    renderComponent()
+    expect(screen.queryByRole('option', { name: 'KSampler' })).toBeNull()
+
+    const nodeFrequencyStore = useNodeFrequencyStore()
+    nodeFrequencyStore.isLoaded = false
+    vi.spyOn(axios, 'get').mockResolvedValue({ data: { KSampler: 1 } })
+    await nodeFrequencyStore.loadNodeFrequencies()
+    await vi.advanceTimersByTimeAsync(100)
+
+    expect(screen.getByRole('option', { name: 'KSampler' })).toBeVisible()
   })
 
   it.for([50, 100])(

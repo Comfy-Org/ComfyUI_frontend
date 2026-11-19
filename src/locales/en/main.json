@@ -1317,8 +1317,7 @@
       "alphabetical": "A → Z",
       "newest": "Newest",
       "searchPlaceholder": "Search...",
-      "modelSizeLowToHigh": "Model Size (Low to High)",
-      "default": "Default"
+      "modelSizeLowToHigh": "Model Size (Low to High)"
     },
     "error": {
       "preparingMedia": "Some example media couldn't be prepared. The workflow will open; choose your own files for any missing inputs.",
@@ -1379,6 +1378,16 @@
     "unreadableWorkflowMessage": "The saved file for {name} is empty or damaged, so it can't be opened. You can delete it from your workflows.",
     "unsavedChangesLostTitle": "Unsaved changes were not saved",
     "unsavedChangesLost": "The unsaved changes to {name} were no longer available, so the saved file was left as it was."
+  },
+  "subgraphInputValues": {
+    "instance": "{title} · #{id}",
+    "enterInstanceHint": "Enter this subgraph through a Subgraph Node to edit its values.",
+    "linked": "Linked value · read-only",
+    "fromSource": "← {title} #{id}",
+    "sourceHint": "Editing this source also changes the other inputs connected to it.",
+    "sharedSource": "Shared source",
+    "locateSource": "Locate source node",
+    "unavailable": "Value unavailable"
   },
   "subgraphStore": {
     "confirmDeleteTitle": "Delete blueprint?",
@@ -1644,6 +1653,7 @@
     "Duplicate Current Workflow": "Duplicate Current Workflow",
     "Export": "Export",
     "Export (API)": "Export (API)",
+    "Export (Workflow Image)": "Export (Workflow Image)",
     "Convert Selection to Subgraph": "Convert Selection to Subgraph",
     "Edit Subgraph Widgets": "Edit Subgraph Widgets",
     "Exit Subgraph": "Exit Subgraph",
@@ -2644,6 +2654,7 @@
     "linkedWorkflowNotOpened": "Couldn't open this workflow",
     "linkedWorkflowLoadFailed": "Couldn't open this workflow. Please try again.",
     "failedToSaveDraft": "Failed to save workflow draft",
+    "failedToExportWorkflowImage": "Failed to export workflow image",
     "failedExecutionPathResolution": "Could not resolve path to selected nodes",
     "no3dScene": "No 3D scene to apply texture",
     "failedToApplyTexture": "Failed to apply texture",
@@ -3059,6 +3070,7 @@
       "defaultCardBlockedBody": "Your browser blocked the new tab. Open the payment page to set a default card.",
       "openPaymentPage": "Open payment page",
       "planRequiredFreeRuns": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
+      "planRequiredContactSales": "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
       "planRequiredResubscribe": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
       "planRequiredSubscribe": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "confirmSubtitle": "Credits are added to this workspace as soon as payment completes.",
@@ -3311,6 +3323,10 @@
     "planLoadErrorRetry": "Try again",
     "teamPlanName": "Team",
     "unknownTierName": "Current plan",
+    "planWithPeriod": {
+      "monthly": "{plan} monthly",
+      "annual": "{plan} yearly"
+    },
     "salesManagedRunBlockedTitle": "Plan inactive",
     "salesManagedRunBlockedDetail": "This workspace's plan is no longer active. Contact your Comfy account manager to restore access.",
     "teamPlanIncludes": "Your plan includes everything in {plan}, plus:",
@@ -3387,10 +3403,16 @@
       "blockedTitle": "Plans page didn't open",
       "blockedBody": "Your browser blocked the new tab. Open the Plans page to choose a plan.",
       "openPlansPage": "Open Plans page",
+      "checkoutUnfinishedTitle": "Your checkout didn't finish",
+      "checkoutUnfinishedBody": "Open the Plans page to try again. Your browser blocked it from opening on its own.",
       "runRefusedTitle": "Your workflow didn't run",
       "runRefusedNoPlan": "Running workflows on Cloud needs a plan.",
       "runRefusedEnded": "Your plan has ended. Resubscribe to keep running workflows on Cloud.",
       "runRefusedFreeRunsUsed": "You've used all {total} free runs. Subscribe to keep running workflows on Cloud.",
+      "runRefusedManualBlock": "This workspace has been blocked. Contact support.",
+      "runRefusedWorkspaceCap": "This workspace has reached its spending limit.",
+      "runRefusedProjectCap": "This project has reached its spending limit.",
+      "runRefusedUserCap": "You've reached your spending limit in this workspace.",
       "choosePlan": "Choose a plan"
     },
     "paymentRecovery": {
@@ -3896,6 +3918,13 @@
           "title": "Verify your payment"
         }
       },
+      "planNotStarted": {
+        "title": "Your {plan} plan hasn’t started",
+        "titleNoPlan": "Your plan hasn’t started",
+        "body": "Finish paying to start it.",
+        "bodyUnavailable": "Your plan starts once the payment goes through.",
+        "viewPlans": "View on Plans"
+      },
       "parked": {
         "title": "Something went wrong with a recent payment",
         "body": "Contact support so we can fix it.",
@@ -3905,6 +3934,7 @@
         "teamTitle": "Your Team plan ended on {date}",
         "teamBody": "Resubscribe to run workflows and get shared credits again.",
         "teamMemberBody": "Ask your workspace owner to resubscribe.",
+        "teamNotCreatorBody": "This workspace's plan has ended. Ask the workspace's creator to resubscribe.",
         "personalTitle": "Your {plan} plan ended on {date}",
         "personalTitleNoDate": "Your {plan} plan has ended",
         "personalBody": "Resubscribe to run workflows and get credits again.",
@@ -4260,6 +4290,9 @@
     },
     "workflowNeedsDeployment": {
       "title": "Run this workflow on a custom deployment",
+      "installTitle": "Install your missing custom nodes",
+      "installBody": "Deploy a custom Build to add the custom nodes and models Comfy Cloud doesn't have. You set it up on Platform, and it appears under Run on for your workspace.",
+      "buildOnPlatform": "Build on Platform",
       "missingPacks": "{count} missing node pack | {count} missing node packs",
       "missingNodes": "{count} missing node | {count} missing nodes",
       "missingModels": "{count} missing model | {count} missing models",
@@ -4320,7 +4353,13 @@
     "pickStopped": "{deployment} is stopped, so jobs won't run. Start it, or pick a ready deployment.",
     "pickFailed": "{deployment} failed, so jobs won't run. Start it again, or pick a ready deployment.",
     "stoppedStartTooltip": "Running on {deployment}. It's stopped, so jobs won't run. Open this menu to start it.",
-    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again."
+    "failedStartTooltip": "Running on {deployment}. It failed, so jobs won't run. Open this menu to start it again.",
+    "runBlocked": {
+      "stopped": "This deployment is stopped. Click to switch.",
+      "starting": "This deployment is starting. Click to switch.",
+      "failed": "This deployment failed. Click to switch.",
+      "notReady": "This deployment isn't ready. Click to switch."
+    }
   },
   "openOnCloud": {
     "deploySetup": "Deploy your setup to Comfy Cloud",
@@ -6194,6 +6233,7 @@
     "previewAsset": "Preview {name}",
     "title": "Comfy Agent",
     "openVideo": "Open video: {name}",
+    "assetLoadFailed": "Couldn't load {name}",
     "diagnosticReport": {
       "retry": "Retry copy report",
       "clipboardFailed": "Clipboard access failed. Select and copy the report below, or retry.",
@@ -6302,6 +6342,36 @@
     "skip": "Skip",
     "gotIt": "Got it",
     "greeting": "Hello {name},",
+    "proactiveGreeting": {
+      "emptyCanvas": {
+        "title": "Have something in mind?",
+        "description": "Tell Comfy Agent what you'd like to create."
+      },
+      "workflowOpen": {
+        "title": "Ask a question or describe a change.",
+        "description": "Comfy Agent shows you what it plans to do before anything in your workflow changes.",
+        "prompt": "Help me improve this workflow"
+      },
+      "firstOpen": {
+        "title": "A little help to get you started!",
+        "description": "Not sure where to begin? Send the question below, or write your own.",
+        "prompt": "What can you help me with?"
+      },
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ]
+    },
     "greetingQuestion": "What do you want to make?",
     "placeholder": "Describe what you want to create",
     "placeholderWithoutSkills": "Describe what you want to create",
@@ -6410,6 +6480,7 @@
     "viewAddedNodes": "View node | View nodes",
     "stopShortcut": "Esc",
     "thinking": "Thinking...",
+    "thinkingShortened": "Reasoning shortened: the rest was too long to save.",
     "working": "Working...",
     "helpful": "Helpful",
     "notHelpful": "Not helpful",
@@ -6592,6 +6663,7 @@
     "planLine": {
       "no_plan": "Buying credits doesn't start a Cloud plan. Subscribe to run workflows on Cloud.",
       "ended": "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
+      "ended_sales_managed": "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
       "free_runs": "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used."
     },
     "credits": "{credits} credits",
@@ -6699,6 +6771,10 @@
     "autoTopUpFailed": {
       "title": "Auto top-up didn't turn on",
       "body": "Your credits were added. Set up auto top-up in Billing to try again."
+    },
+    "autoTopUpUnconfirmed": {
+      "title": "Credits added",
+      "body": "Open Billing to check that auto top-up is on."
     }
   },
   "billingHandoff": {

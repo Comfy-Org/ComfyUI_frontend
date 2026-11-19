@@ -107,7 +107,7 @@
             as="a"
             :href="platformUrl"
             target="_blank"
-            rel="noopener noreferrer"
+            :rel="platformLinkRel()"
             data-testid="deploy-to-comfy-api-platform"
             @click="emit('done')"
           >
@@ -129,10 +129,13 @@ import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import DeployInstallationButton from '@/platform/workflow/deploy/components/DeployInstallationButton.vue'
 import { useAgentHandoff } from '@/platform/workflow/deploy/composables/useAgentHandoff'
 import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
+import {
+  platformSurfaceLink,
+  platformLinkRel
+} from '@/platform/workspace/utils/platformLink'
 
 const {
   videoSources = [],
@@ -159,7 +162,12 @@ const { isCopying, copied, copyWith } = useBriefCopy()
 
 const docsUrl = buildDocsUrl('/development/overview', { includeLocale: true })
 const inputs = captureInputs()
-const platformUrl = getComfyPlatformBaseUrl()
+const platformUrl = computed(() =>
+  platformSurfaceLink(
+    '/profile/deploy?onboarding=comfy_api',
+    'deploy-to-comfy-api-card'
+  )
+)
 
 const summary = computed(() =>
   [

@@ -50,6 +50,7 @@ test.describe(
       await expect
         .poll(() => getInputNames(comfyPage, AUTOGROW_NODE_ID, ''))
         .toEqual([
+          'images',
           'images.image0',
           'images.image1',
           'images.image2',
