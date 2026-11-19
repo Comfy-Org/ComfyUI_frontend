@@ -510,6 +510,37 @@ describe('useAgentConversationStore', () => {
     }
   })
 
+  it('keeps the original answer-report deadline when a successor rebinds it', () => {
+    vi.useFakeTimers()
+    try {
+      const store = useAgentConversationStore()
+      store.setThreadId('th-A')
+      store.hydrate(parkedApprovalTranscript('th-A'))
+      store.recordAskAnswer('turn-1:call-1', { selected: ['run'] }, 'th-A')
+      const firstReporter = vi.fn(() => false)
+      store.markAskAwaitingResolution(
+        'turn-1:call-1',
+        'accepted',
+        firstReporter
+      )
+      vi.advanceTimersByTime(10_000)
+
+      const successorReporter = vi.fn()
+      store.markAskAwaitingResolution(
+        'turn-1:call-1',
+        'accepted',
+        successorReporter
+      )
+      vi.advanceTimersByTime(5_000)
+
+      expect(firstReporter).not.toHaveBeenCalled()
+      expect(successorReporter).toHaveBeenCalledOnce()
+      expect(store.asksAwaitingResolution()).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('keeps an unresolved answer marker when retirement beats a stopped reporter', () => {
     vi.useFakeTimers()
     try {
