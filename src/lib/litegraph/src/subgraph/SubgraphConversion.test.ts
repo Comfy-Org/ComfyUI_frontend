@@ -925,6 +925,7 @@ describe('SubgraphConversion', () => {
             { name: 'second', type: 'number' }
           ]
         })
+        const slots = [...subgraph.inputNode.slots]
         const subgraphNode = createTestSubgraphNode(subgraph)
         const graph = subgraph.rootGraph
         graph.add(subgraphNode)
@@ -935,7 +936,7 @@ describe('SubgraphConversion', () => {
           const widget = inner.getWidgetFromSlot(inner.inputs[0])
           assert(widget)
           widget.value = `interior ${slot}`
-          subgraph.inputNode.slots[slot].connect(inner.inputs[0], inner)
+          slots[slot].connect(inner.inputs[0], inner)
         }
 
         const secondWidgetId = subgraphNode.inputs[1].widgetId

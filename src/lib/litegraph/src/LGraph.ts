@@ -191,6 +191,8 @@ import {
   mapSubgraphInputsAndLinks,
   mapSubgraphOutputsAndLinks,
   multiClone,
+  sortInputsWhenRelinked,
+  sortWidgetlessInputsFirst,
   splitPositionables
 } from './subgraph/subgraphUtils'
 import {
@@ -2413,6 +2415,7 @@ export class LGraph
       }
     }
 
+    sortWidgetlessInputsFirst(subgraph)
     subgraphNode._setConcreteSlots()
     subgraphNode.arrange()
 
@@ -3311,6 +3314,9 @@ export class LGraph
         }
 
         for (const node of this._nodes) node.updateComputedDisabled()
+        if (this.isRootGraph)
+          for (const subgraph of this._subgraphs.values())
+            sortWidgetlessInputsFirst(subgraph)
 
         this.onConfigure?.(extensionConfigureView(this, data))
         this.incrementVersion()
@@ -3469,6 +3475,7 @@ export class Subgraph
       this.inputs.length = 0
       for (const input of inputs) {
         const subgraphInput = new SubgraphInput(input, this.inputNode)
+        sortInputsWhenRelinked(subgraphInput)
         this.inputs.push(subgraphInput)
         this.events.dispatch('input-added', { input: subgraphInput })
       }
@@ -3531,6 +3538,7 @@ export class Subgraph
       },
       this.inputNode
     )
+    sortInputsWhenRelinked(input)
 
     this.inputs.push(input)
     this.events.dispatch('input-added', { input })

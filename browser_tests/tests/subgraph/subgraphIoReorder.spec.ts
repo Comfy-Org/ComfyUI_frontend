@@ -93,6 +93,13 @@ test.describe('Subgraph IO reorder', { tag: '@subgraph' }, () => {
     const handle = (name: string) =>
       inputPanel.getByRole('button', { name: `Reorder ${name}`, exact: true })
 
+    await test.step('Loading stores widgetless inputs before widget inputs', async () => {
+      expect(await inputOrders(comfyPage)).toEqual({
+        definition: DISPLAYED_ORDER,
+        hosts: [DISPLAYED_ORDER, DISPLAYED_ORDER]
+      })
+    })
+
     await test.step('Enter the shared definition', async () => {
       await (
         await comfyPage.nodeOps.getNodeRefById('11')

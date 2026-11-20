@@ -129,11 +129,7 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   graph.subgraphs.set(subgraph.id, subgraph)
   // `new PromotedWidgetNode()` leaves `type` unset; only `createNode` stamps
   // it, and cmp's mint drops nodes whose serialized `type` is empty.
-  const interior = LiteGraph.createNode('promoted-widget')!
-  interior.id = toNodeId(7)
-  subgraph.add(interior)
   const valueSlot = subgraph.inputNode.slots[options.extraInput ? 1 : 0]
-  valueSlot.connect(interior.inputs[0], interior)
   if (options.promoteExtra) {
     const extraInterior = LiteGraph.createNode('promoted-widget')
     assert.exists(extraInterior)
@@ -141,6 +137,10 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
     subgraph.add(extraInterior)
     subgraph.inputNode.slots[0].connect(extraInterior.inputs[0], extraInterior)
   }
+  const interior = LiteGraph.createNode('promoted-widget')!
+  interior.id = toNodeId(7)
+  subgraph.add(interior)
+  valueSlot.connect(interior.inputs[0], interior)
 
   if (options.secondDefinition) {
     const second = createTestSubgraph({
