@@ -106,10 +106,9 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   const owner = useUploadOwner()
   const uploadFolders = shallowRef<string[] | null>(null)
   const sizes = shallowRef(new Map<string, number>())
-  const picks = shallowRef(
-    new Map<string, { model: MissingModel; pick: ModelPick }>()
-  )
+  const picks = shallowRef(new Map<string, ModelPick>())
   const upload = shallowRef<LocalModelUpload>({ phase: 'idle' })
+  const retryBatches = shallowRef<MissingModel[][]>([])
   let batch:
     | { controller: AbortController; owner: string; ownerChanged: boolean }
     | undefined
@@ -125,10 +124,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     )
       return current.models
 
-    const pending = [...picks.value.values()]
-      .filter(({ pick }) => isPendingPick(pick))
-      .map(({ model }) => model)
-    return pending.length > 0 ? pending : undefined
+    return retryBatches.value[0]
   })
   const canCancel = computed(
     () => upload.value.phase === 'uploading' && upload.value.canCancel
@@ -147,6 +143,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         batch.controller.abort()
       }
       picks.value = new Map()
+      retryBatches.value = []
       if (upload.value.phase === 'failed' && upload.value.models) {
         upload.value = { phase: 'failed', reason: 'accountChanged' }
       }
@@ -200,7 +197,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function pickOf(model: MissingModel): ModelPick {
-    const pick = picks.value.get(modelKey(model))?.pick
+    const pick = picks.value.get(modelKey(model))
     if (pick?.status !== 'chosen') return pick ?? { status: 'unchosen' }
     return matchesModel(pick.file, model, sizeOf(model))
       ? pick
@@ -208,7 +205,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function setPick(model: MissingModel, pick: ModelPick): void {
-    picks.value = new Map(picks.value).set(modelKey(model), { model, pick })
+    picks.value = new Map(picks.value).set(modelKey(model), pick)
   }
 
   function choose(model: MissingModel, file: File): void {
@@ -361,6 +358,22 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     return undefined
   }
 
+  function recordBatchResult(
+    models: MissingModel[],
+    needsRetry: boolean
+  ): void {
+    const keys = new Set(models.map(modelKey))
+    const otherBatches = retryBatches.value.filter(
+      (batch) =>
+        (batch.length !== keys.size ||
+          batch.some((model) => !keys.has(modelKey(model)))) &&
+        batch.some(
+          (model) => picks.value.get(modelKey(model))?.status !== 'stored'
+        )
+    )
+    retryBatches.value = needsRetry ? [models, ...otherBatches] : otherBatches
+  }
+
   async function start(models: MissingModel[]): Promise<void> {
     if (isUploading.value || !canUpload(models)) return
     const queue = models.flatMap((model) => {
@@ -379,6 +392,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         upload.value = { phase: 'failed', reason: 'accountChanged' }
         return
       }
+      recordBatchResult(models, !!stop?.models)
       upload.value = stop ?? { phase: 'done' }
       if (!stop) void useCloudWorkflowCheckStore().check()
     } catch (cause) {
@@ -387,6 +401,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         errorType: 'error_uploading_local_model_to_cloud',
         level: 'warning'
       })
+      if (!current.ownerChanged) recordBatchResult(models, true)
       upload.value = {
         phase: 'failed',
         reason: current.ownerChanged ? 'accountChanged' : 'failed',
@@ -409,10 +424,12 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const recovery = current.phase === 'failed' ? current.models : undefined
     if (!recovery) upload.value = { phase: 'idle' }
     const keys = new Set(models.map(modelKey))
-    const recoverableKeys = new Set(recovery?.map(modelKey))
+    const recoverableKeys = new Set(
+      retryBatches.value.flatMap((batch) => batch.map(modelKey))
+    )
     picks.value = new Map(
       [...picks.value].filter(
-        ([key, { pick }]) =>
+        ([key, pick]) =>
           recoverableKeys.has(key) ||
           isPendingPick(pick) ||
           (keys.has(key) && pick.status === 'stored')

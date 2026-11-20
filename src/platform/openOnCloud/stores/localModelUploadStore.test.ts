@@ -518,6 +518,32 @@ describe('useLocalModelUploadStore', () => {
     expect(store.activeModels).toBeUndefined()
   })
 
+  it('keeps a failed batch recoverable when another upload succeeds before it is retried', async () => {
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValueOnce({ ok: false, reason: 'storageLimit' })
+      .mockResolvedValue({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    const store = await prepared()
+    store.choose(lora, loraFile)
+    await store.start([lora])
+
+    store.reset([ckpt])
+    await store.prepare([ckpt])
+    store.choose(ckpt, ckptFile)
+    await store.start([ckpt])
+
+    expect(store.activeModels).toEqual([lora])
+    store.reset([lora])
+    await store.prepare([lora])
+    await store.start([lora])
+
+    expect(transfer.mock.calls[2][0]).toBe(loraFile)
+    expect(store.activeModels).toBeUndefined()
+  })
+
   it('keeps the upload recoverable when Cloud cancels the storage task', async () => {
     vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValueOnce({
       ok: true,
