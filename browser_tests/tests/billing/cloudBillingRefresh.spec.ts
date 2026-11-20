@@ -1,7 +1,10 @@
 import { expect } from '@playwright/test'
-import type { BillingStatusResponse } from '@comfyorg/ingest-types'
+import type {
+  BillingBalanceResponse,
+  BillingStatusResponse
+} from '@comfyorg/ingest-types'
 
-import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
+import { cloudAppFixture } from '@e2e/fixtures/cloudAppFixture'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   DEFAULT_TEAM_MEMBERS,
@@ -12,21 +15,21 @@ import {
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-test(
-  'updates the open Billing tab when the user returns after a plan change elsewhere',
-  {
-    tag: '@cloud'
-  },
-  async ({ page }) => {
-    const billing = new CloudWorkspaceMockHelper(page)
-    let status: BillingStatusResponse = {
-      ...TEAM_BILLING_STATUS,
-      is_active: false,
-      billing_status: 'inactive',
-      subscription_status: 'ended',
-      ended_at: '2026-11-01T00:00:00Z'
+interface BillingScenario {
+  settings: CloudWorkspaceMockHelper
+  status: BillingStatusResponse
+  balance: BillingBalanceResponse
+}
+
+const test = cloudAppFixture.extend<{ billing: BillingScenario }>({
+  billing: async ({ page }, use) => {
+    const settings = new CloudWorkspaceMockHelper(page)
+    const billing: BillingScenario = {
+      settings,
+      status: TEAM_BILLING_STATUS,
+      balance: EMPTY_BILLING_BALANCE
     }
-    await billing.setup(DEFAULT_TEAM_MEMBERS, TEAM_WORKSPACE, status)
+    await settings.setup(DEFAULT_TEAM_MEMBERS, TEAM_WORKSPACE)
     await page.route('**/api/billing/capabilities', (route) =>
       route.fulfill(
         jsonRoute({
@@ -45,22 +48,35 @@ test(
       )
     )
     await page.route('**/api/billing/status', (route) =>
-      route.fulfill(jsonRoute(status))
+      route.fulfill(jsonRoute(billing.status))
     )
-
-    let balance = EMPTY_BILLING_BALANCE
     await page.route('**/api/billing/balance', (route) =>
-      route.fulfill(jsonRoute(balance))
+      route.fulfill(jsonRoute(billing.balance))
     )
+    await use(billing)
+  }
+})
 
-    const content = await billing.openPlanAndCreditsSettings('Billing')
+test.describe('Cloud Billing refresh', { tag: '@cloud' }, () => {
+  test('shows an activated plan and credits on focus and after reload', async ({
+    billing,
+    page
+  }) => {
+    billing.status = {
+      ...TEAM_BILLING_STATUS,
+      is_active: false,
+      billing_status: 'inactive',
+      subscription_status: 'ended',
+      ended_at: '2026-11-01T00:00:00Z'
+    }
+    const content = await billing.settings.openPlanAndCreditsSettings('Billing')
     const plan = content.getByTestId('billing-plan-line')
     const credits = content.getByTestId('billing-credits-available')
     await expect(plan).toContainText(/ended/i)
     await expect(credits).toHaveText('0')
 
-    status = TEAM_BILLING_STATUS
-    balance = {
+    billing.status = TEAM_BILLING_STATUS
+    billing.balance = {
       ...EMPTY_BILLING_BALANCE,
       amount_micros: 1000,
       effective_balance_micros: 1000
@@ -73,13 +89,23 @@ test(
     await expect(plan).toContainText(/billed monthly/i)
     await expect(credits).toHaveText('2,110')
 
-    await billing.openPlanAndCreditsSettings('Billing')
+    await billing.settings.openPlanAndCreditsSettings('Billing')
     await expect(plan).toContainText(/billed monthly/i)
     await expect(credits).toHaveText('2,110')
+  })
+
+  test('shows the ending notice when Billing reopens after cancellation', async ({
+    billing,
+    page
+  }) => {
+    const content = await billing.settings.openPlanAndCreditsSettings('Billing')
+    await expect(content.getByTestId('billing-plan-line')).toContainText(
+      /billed monthly/i
+    )
 
     const settings = page.getByTestId('settings-dialog')
     await settings.getByRole('button', { name: 'Close dialog' }).click()
-    status = {
+    billing.status = {
       ...TEAM_BILLING_STATUS,
       subscription_status: 'canceled',
       cancel_at: '2099-02-20T00:00:00Z'
@@ -97,5 +123,5 @@ test(
     await expect(
       content.getByRole('button', { name: 'Resume plan' }).first()
     ).toBeVisible()
-  }
-)
+  })
+})
