@@ -2996,7 +2996,14 @@
     "failedSummary": "Desktop sign-in failed",
     "failedDetail": "Something went wrong completing the desktop sign-in. Start signing in again from the ComfyUI desktop app.",
     "ssoUnavailableSummary": "Desktop sign-in isn't available for SSO accounts yet",
-    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app."
+    "ssoUnavailableDetail": "Your account signs in through your organization's SSO, which the ComfyUI desktop app can't use yet. Ask your admin for another way to sign in to the desktop app.",
+    "approvalPendingSummary": "Desktop sign-in request",
+    "approvalPendingDetail": "A confirmation dialog will ask whether to connect the ComfyUI desktop app to your account. Only approve it if you just started signing in from the ComfyUI desktop app; otherwise cancel it.",
+    "redeemingSummary": "Finishing desktop sign-in",
+    "redeemingDetail": "Connecting the ComfyUI desktop app to your account.",
+    "declinedSummary": "Desktop sign-in cancelled",
+    "declinedDetail": "The ComfyUI desktop app was not connected to your account. Start signing in again from the desktop app if you meant to approve it.",
+    "continueToCloud": "Continue to Comfy Cloud instead"
   },
   "validation": {
     "invalidEmail": "Invalid email address",
@@ -6472,6 +6479,14 @@
     "runModeLimit": "Auto-run with limits",
     "runModeLimitDescription": "Comfy will only confirm when a workflow run exceeds your credit limit",
     "runModeSaveFailed": "Could not save run permissions. Please try again.",
+    "queue": {
+      "queued": "{count} Queued",
+      "expand": "Show queued messages",
+      "collapse": "Hide queued messages",
+      "edit": "Edit queued message",
+      "delete": "Delete queued message",
+      "cancelEdit": "Cancel"
+    },
     "send": "Send",
     "sendBlockedByInvalidAttachments": "{count} files can’t be sent. Remove them to send.",
     "sendBlockedByInvalidVideo": "{name} isn’t a valid video. Remove it to send.",

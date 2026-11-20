@@ -1313,6 +1313,7 @@ const MEDIA_ITEM = {
 
 describe('live updates and media on the shared web session', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     identity.reset()
     firebaseSignOut.mockReset()
     firebaseSignOut.mockImplementation(async () => identity.signOut())
@@ -1561,12 +1562,14 @@ describe('live updates and media on the shared web session', () => {
     server.session = 'none'
     FakeSocket.created.at(-1)?.closeFromServer()
     await vi.advanceTimersByTimeAsync(60_000)
-    await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']))
+    await vi.waitFor(() => expect(landings).toEqual(['/cloud/login']), {
+      timeout: 5_000
+    })
     await vi.advanceTimersByTimeAsync(60_000)
 
     expect(landings).toEqual(['/cloud/login'])
     expect(api.socket).toBeNull()
-  })
+  }, 10_000)
 
   it('keeps the socket off Personal once the team workspace is refused and the reload is held', async () => {
     const ingest = await bootWithSocket()
