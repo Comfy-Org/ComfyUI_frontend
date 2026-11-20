@@ -1,8 +1,3 @@
-/**
- * `setPointerCapture` throws a DOMException when the pointer is no longer
- * active. Match it by name too, because a canvas in another window or iframe
- * throws that realm's DOMException, which fails `instanceof`.
- */
 function isDomException(error: unknown): boolean {
   if (error instanceof DOMException) return true
   return (
