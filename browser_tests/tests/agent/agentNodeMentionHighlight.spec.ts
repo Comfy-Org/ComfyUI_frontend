@@ -14,10 +14,7 @@ const renderModes = [
 
 const NODE_CLIP_PADDING = 24
 
-async function captureLegacyNodeHighlight(
-  comfyPage: ComfyPage,
-  panel: Locator
-) {
+async function captureNodeHighlight(comfyPage: ComfyPage, panel: Locator) {
   const bounds = await (
     await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
   ).getBounding()
@@ -93,20 +90,26 @@ for (const mode of renderModes) {
         })
 
         const vueNode = comfyPage.vueNodes.getNodeByTitle('KSampler').first()
-        const legacyHighlight = mode.vueNodesEnabled
-          ? null
-          : await captureLegacyNodeHighlight(comfyPage, panel)
+        const outline = vueNode.getByTestId('node-state-outline-overlay')
+        const expectVisualHighlight = await captureNodeHighlight(
+          comfyPage,
+          panel
+        )
 
         const expectEmphasized = async (emphasized: boolean) => {
           await expect
             .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
             .toEqual([])
-          if (legacyHighlight) {
-            await legacyHighlight(emphasized)
+          if (!mode.vueNodesEnabled) {
+            await expectVisualHighlight(emphasized)
           } else if (emphasized) {
             await expect(vueNode).toHaveAttribute('data-emphasized', 'true')
+            await expect(outline).toBeVisible()
+            await expect(outline).toHaveCSS('border-top-width', '3px')
+            await expectVisualHighlight(true)
           } else {
             await expect(vueNode).not.toHaveAttribute('data-emphasized', 'true')
+            await expect(outline).toBeHidden()
           }
         }
 

@@ -1,7 +1,6 @@
 name: Feature regression
 
 on:
-  pull_request:
   workflow_dispatch:
     inputs:
       feature:
@@ -16,8 +15,8 @@ permissions:
 
 jobs:
   frontend:
-    name: Billing M4 / ${{ github.event_name == 'pull_request' && 'smoke' || 'Cloud Plans regression' }}
-    if: github.event_name == 'pull_request' || inputs.feature == 'billing'
+    name: Billing M4 / Cloud Plans regression
+    if: inputs.feature == 'billing'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -49,18 +48,11 @@ jobs:
         uses: ./.github/actions/start-comfyui-server
 
       - name: Run Cloud Plans checks
-        shell: bash
-        run: |
-          specs=(browser_tests/tests/billing/cloudPlansEntry.spec.ts)
-          if [[ "$EVENT_NAME" == "pull_request" ]]; then
-            specs+=(--grep '@smoke\b')
-          else
-            specs+=(browser_tests/tests/cloudSubscribeDeepLink.spec.ts)
-          fi
-          pnpm exec playwright test --project=cloud --retries=0 --reporter=line,html \
-            "${specs[@]}"
+        run: >-
+          pnpm exec playwright test --project=cloud --retries=0 --reporter=line,html
+          browser_tests/tests/billing/cloudPlansEntry.spec.ts
+          browser_tests/tests/cloudSubscribeDeepLink.spec.ts
         env:
-          EVENT_NAME: ${{ github.event_name }}
           DISTRIBUTION: cloud
           PLAYWRIGHT_HTML_OPEN: never
 

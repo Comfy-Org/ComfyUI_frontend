@@ -73,8 +73,6 @@ test.describe('Agent reply image URLs', { tag: ['@cloud', '@ui'] }, () => {
       })
       const remote = agentPanel.root.getByRole('img', { name: 'a remote duck' })
       await expect(inProse).toBeVisible()
-      // This checks URL rewriting. Request the offscreen preview without
-      // relying on Chromium's native lazy-loading viewport threshold.
       await asAsset.evaluate((image: HTMLImageElement) => {
         image.loading = 'eager'
       })
