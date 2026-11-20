@@ -3,7 +3,7 @@ import { watch } from 'vue'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { CanvasSource } from '@/platform/nodeApi/v4/canvasSource'
+import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import type {
   GraphOverlayDef,
   GraphOverlayHandle

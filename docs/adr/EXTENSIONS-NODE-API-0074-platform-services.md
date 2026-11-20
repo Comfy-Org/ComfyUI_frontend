@@ -253,18 +253,20 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
     panels; without the API a pack appends its own element over the canvas.
     Every offset must be finite and every size positive and finite (finding
     A-01). `ariaLabel` is required, so the panel's `region` role always has a
-    name (finding A-14). An id already mounted is refused. `remove()` calls
-    `destroy` once, while the panel is still in the document, and then
-    removes it, even after the graph view itself was taken down; a stale
-    handle cannot free the id of a later panel. It returns its handle at
+    name (finding A-14). An id already mounted is refused. It returns a
+    disposer, as `addSidebarTab` does, which removes the panel, even after the
+    graph view itself was taken down; a stale disposer cannot free the id of a
+    later panel. There is no `destroy`: the host never takes a panel down, so
+    the pack runs its own teardown before calling the disposer (`destroy` had
+    no stored use; sidebar tabs and dialogs keep theirs, as the host closes
+    them). It returns the disposer at
     once, never `undefined`, as `mountGraphOverlay` does (decision 29): a
     stored pack (`jot`) mounts its panel at import, before the app creates
     the graph view, and a panel that mounted nothing there would never
     appear. Such a panel waits for the first canvas the renderer supplies,
     through a synchronous watch on `CanvasSource.canvas()`, and joins and is
     rendered on that canvas's view then, which is before `onReady`. Its id is
-    taken while it waits; a panel removed before then is never rendered, so
-    its `destroy` is not called. A panel stays on the view it joined.
+    taken while it waits; a panel removed before then is never rendered. A panel stays on the view it joined.
 
 ### Localization (`comfy.localization`, 1 / 1)
 
@@ -419,7 +421,10 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
 - `VueSidebarTab` and `VueDialog` (0 / 0): the host would have rendered a
   pack's Vue component with its own Vue, which only the sandbox needed.
 - `BadgeContribution.icon` (0 / 0) has no use. `ViewportPanelDef.destroy`
-  (0 / 0) is kept, because finding A-14 sets the panel's teardown order.
+  (0 / 0) is cut: the pack's own `remove()` was its only caller, so it was
+  the pack running its teardown before removing the panel, and
+  `ViewportPanelHandle` with it, for the disposer every other registration
+  returns.
 
 ## Alternatives considered
 

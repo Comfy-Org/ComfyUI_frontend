@@ -1518,8 +1518,11 @@ export interface UiHandle {
   showMenu(menu: MenuDef): void
   /** Asks the user for text. Resolves `undefined` if they cancel. */
   prompt(prompt: PromptDef): Promise<string | undefined>
-  /** Mounts a panel over the graph view, once the app has one. An id already mounted throws. */
-  mountViewportPanel(panel: ViewportPanelDef): ViewportPanelHandle
+  /**
+   * Mounts a panel over the graph view, once the app has one, until the disposer is called; the pack tears
+   * its own content down before calling it. An id already mounted throws.
+   */
+  mountViewportPanel(panel: ViewportPanelDef): Unsubscribe
   /** Mounts a canvas over the graph, on the graph view once the app has one. An id already mounted throws. */
   mountGraphOverlay(overlay: GraphOverlayDef): GraphOverlayHandle
 }
@@ -1620,7 +1623,7 @@ export interface ViewportPanelDef {
   readonly ariaLabel: string
   /** The edge or corner the panel sits against. Defaults to `'top-left'`. */
   readonly anchor?: ViewportPanelAnchor
-  /** Pixels in from the anchored side, or along from the centre. */
+  /** Pixels in from the anchored side, or along from the center. */
   readonly offsetX?: number
   /** Pixels in from the anchored top or bottom. */
   readonly offsetY?: number
@@ -1630,13 +1633,6 @@ export interface ViewportPanelDef {
   readonly maxHeight?: number
   /** Fills the panel once, when it joins the graph view. */
   render(container: HTMLElement): void
-  /** Called once when a rendered panel is removed, before it leaves the document. */
-  destroy?(): void
-}
-
-export interface ViewportPanelHandle {
-  /** Removes the panel. Safe to call more than once. */
-  remove(): void
 }
 
 export interface LocalizationHandle {

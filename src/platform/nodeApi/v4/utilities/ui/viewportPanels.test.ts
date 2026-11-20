@@ -71,7 +71,6 @@ function panel(overrides: Partial<ViewportPanelDef> = {}): ViewportPanelDef {
     render: vi.fn((container: HTMLElement) => {
       container.textContent = 'pack panel'
     }),
-    destroy: vi.fn(),
     ...overrides
   }
 }
@@ -142,40 +141,33 @@ describe('viewport panels', () => {
     })
   })
 
-  it('calls destroy once while the panel is still in the document, then removes it', () => {
+  it('removes the panel when the disposer is called, and once only', () => {
     const view = showGraphView()
-    let destroyedInDocument = false
-    const definition = panel({
-      destroy: vi.fn(() => {
-        destroyedInDocument =
-          view.querySelector('[data-viewport-panel]') !== null
-      })
-    })
-    const handle = uiApi().mountViewportPanel(definition)
+    const remove = uiApi().mountViewportPanel(panel())
 
-    handle.remove()
-    handle.remove()
+    remove()
+    remove()
 
-    expect(destroyedInDocument).toBe(true)
     expect(view.querySelector('[data-viewport-panel]')).toBeNull()
-    expect(definition.destroy).toHaveBeenCalledOnce()
   })
 
-  it('calls destroy on remove even after the graph view was taken down', () => {
-    const view = showGraphView()
-    const definition = panel()
-    const handle = uiApi().mountViewportPanel(definition)
-    view.remove()
+  it('refuses a destroy field: the pack tears its content down itself', () => {
+    showGraphView()
 
-    handle.remove()
-
-    expect(definition.destroy).toHaveBeenCalledOnce()
+    expect(() =>
+      uiApi().mountViewportPanel({
+        ...panel(),
+        destroy: () => {}
+      } as ViewportPanelDef)
+    ).toThrow(
+      "ui.mountViewportPanel needs a viewport panel of id, ariaLabel, anchor, offsetX, offsetY, width, maxHeight, render only, not 'destroy'."
+    )
   })
 
   it('refuses an id already mounted, and frees it once the panel is removed', () => {
     const view = showGraphView()
     const ui = uiApi()
-    const first = ui.mountViewportPanel(panel())
+    const removeFirst = ui.mountViewportPanel(panel())
 
     expect(() => ui.mountViewportPanel(panel())).toThrow(
       new TypeError(
@@ -183,7 +175,7 @@ describe('viewport panels', () => {
       )
     )
     expect(view.querySelectorAll('[data-viewport-panel]')).toHaveLength(1)
-    first.remove()
+    removeFirst()
     ui.mountViewportPanel(panel())
     expect(view.querySelectorAll('[data-viewport-panel]')).toHaveLength(1)
   })
@@ -191,11 +183,11 @@ describe('viewport panels', () => {
   it('keeps a later panel under the same id when an old handle is removed again', () => {
     const view = showGraphView()
     const ui = uiApi()
-    const old = ui.mountViewportPanel(panel())
-    old.remove()
+    const removeOld = ui.mountViewportPanel(panel())
+    removeOld()
     ui.mountViewportPanel(panel())
 
-    old.remove()
+    removeOld()
 
     expect(view.querySelectorAll('[data-viewport-panel]')).toHaveLength(1)
     expect(() => ui.mountViewportPanel(panel())).toThrow(TypeError)
@@ -216,7 +208,7 @@ describe('viewport panels', () => {
     const app = appBeforeGraphView()
     const definition = panel()
 
-    const handle = uiApi().mountViewportPanel(definition)
+    const remove = uiApi().mountViewportPanel(definition)
     expect(definition.render).not.toHaveBeenCalled()
     app.showGraphView()
     const later = app.showGraphView()
@@ -226,8 +218,7 @@ describe('viewport panels', () => {
     )
     expect(later.querySelector('[data-viewport-panel]')).toBeNull()
     expect(definition.render).toHaveBeenCalledOnce()
-    handle.remove()
-    expect(definition.destroy).toHaveBeenCalledOnce()
+    remove()
     expect(app.firstView.querySelector('[data-viewport-panel]')).toBeNull()
   })
 
@@ -250,14 +241,13 @@ describe('viewport panels', () => {
     const app = appBeforeGraphView()
     const ui = uiApi()
     const definition = panel()
-    const handle = ui.mountViewportPanel(definition)
+    const remove = ui.mountViewportPanel(definition)
 
-    handle.remove()
+    remove()
     app.showGraphView()
 
     expect(app.firstView.querySelector('[data-viewport-panel]')).toBeNull()
     expect(definition.render).not.toHaveBeenCalled()
-    expect(definition.destroy).not.toHaveBeenCalled()
     ui.mountViewportPanel(panel())
     expect(mountedPanel(app.firstView, 'MyPack.progress')).toBeTruthy()
   })
@@ -277,7 +267,7 @@ describe('viewport panels', () => {
   it('reports a render that throws, and can still be removed', () => {
     const view = showGraphView()
     const broken = new Error('pack render failed')
-    const handle = uiApi().mountViewportPanel(
+    const remove = uiApi().mountViewportPanel(
       panel({
         render: () => {
           throw broken
@@ -285,7 +275,7 @@ describe('viewport panels', () => {
       })
     )
 
-    handle.remove()
+    remove()
 
     expect(reportError).toHaveBeenCalledExactlyOnceWith(
       broken,
@@ -300,7 +290,7 @@ describe('viewport panels', () => {
       name: 'a field a panel does not have',
       value: { ...panel(), height: 40 },
       needs:
-        'a viewport panel of id, ariaLabel, anchor, offsetX, offsetY, width, maxHeight, render, destroy only'
+        'a viewport panel of id, ariaLabel, anchor, offsetX, offsetY, width, maxHeight, render only'
     },
     {
       name: 'a panel made by a class',
@@ -352,11 +342,6 @@ describe('viewport panels', () => {
       name: 'no render function',
       value: { ...panel(), render: null },
       needs: 'render as a function'
-    },
-    {
-      name: 'a destroy that is not a function',
-      value: { ...panel(), destroy: 1 },
-      needs: 'destroy as a function'
     }
   ])('refuses $name, and mounts nothing', ({ value, needs }) => {
     const view = showGraphView()
