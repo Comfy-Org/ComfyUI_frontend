@@ -31,7 +31,7 @@ describe('app readiness', () => {
     expect(listener).toHaveBeenCalledOnce()
   })
 
-  it('runs each listener once, however often readiness is signalled', async () => {
+  it('runs each listener once, however often readiness is signaled', async () => {
     const lifecycle = createAppLifecycle()
     const early = vi.fn()
     const late = vi.fn()

@@ -94,7 +94,7 @@ describe('group handles', () => {
 
   it('counts a node’s title bar when deciding where its center is', () => {
     addGroup('Area', [0, 0, 400, 100])
-    addNode('Centre in the group only with its title bar', 50, 100 - 25 + 5)
+    addNode('Center in the group only with its title bar', 50, 100 - 25 + 5)
     const titleBar = LiteGraph.NODE_TITLE_HEIGHT
     const [handle] = comfy.graph.groups()
 

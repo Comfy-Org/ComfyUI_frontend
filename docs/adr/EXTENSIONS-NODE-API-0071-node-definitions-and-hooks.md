@@ -11,7 +11,7 @@ Proposed
 [ADR-EXTENSIONS-NODE-API-0070](EXTENSIONS-NODE-API-0070-versioned-node-api-with-document-scoped-handles.md)
 gives packs one versioned object, `comfy`, and handles to the nodes of the open
 document. Packs also need to work with node types: read a type's definition,
-add a type of their own, and add behaviour to a type, the work they do today
+add a type of their own, and add behavior to a type, the work they do today
 with the `beforeRegisterNodeDef` hook by patching the class the host generates
 for each type. `comfy.defs` is that part of the API. In the census of the old
 contract it is the most used member: `Comfy.defs` is reached by 112 of 125
