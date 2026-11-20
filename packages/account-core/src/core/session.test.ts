@@ -342,6 +342,24 @@ describe('ensureFresh', () => {
       })
     })
 
+    it('ignores a Date header further off than a day', async () => {
+      const localNow = serverNow
+      const { client } = makeClient({
+        fetchImpl: mintedAt(Date.parse('2000-01-01T00:00:00.000Z')),
+        now: () => localNow
+      })
+
+      const result = await client.ensureFresh(testUser(), {})
+
+      expect(
+        result,
+        'a junk or replayed Date must not push the expiry years ahead'
+      ).toMatchObject({
+        status: 'ok',
+        session: { expiresAt: Date.parse(serverExpiry) }
+      })
+    })
+
     it('rejects a token that expires while its body is still arriving', async () => {
       let localNow = serverNow + 3_600_000
       let finishBody!: () => void

@@ -32,12 +32,16 @@ function codeForResponse(status: number): SessionErrorCode {
 const MAX_REPORTED_ISSUE_PATHS = 5
 
 const CLOCK_SKEW_TOLERANCE_MS = 30_000
+const MAX_CLOCK_SKEW_MS = 24 * 60 * 60 * 1000
 
 function clockSkewMs(response: Response, headersAt: number): number {
   const serverNow = Date.parse(response.headers.get('Date') ?? '')
   if (Number.isNaN(serverNow)) return 0
   const skew = headersAt - serverNow
-  return Math.abs(skew) > CLOCK_SKEW_TOLERANCE_MS ? skew : 0
+  const magnitude = Math.abs(skew)
+  return magnitude > CLOCK_SKEW_TOLERANCE_MS && magnitude <= MAX_CLOCK_SKEW_MS
+    ? skew
+    : 0
 }
 
 function unusableBody(
