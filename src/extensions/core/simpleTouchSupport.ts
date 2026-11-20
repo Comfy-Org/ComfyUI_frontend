@@ -116,7 +116,10 @@ export const simpleTouchSupportExtension: ComfyExtension = {
     useApp().canvasEl.parentElement?.addEventListener(
       'touchend',
       (e: TouchEvent) => {
-        touchGesture.count -= e.changedTouches.length
+        touchGesture.count = Math.max(
+          0,
+          touchGesture.count - e.changedTouches.length
+        )
 
         if (e.touches.length !== 1) touchGesture.zooming = false
         if (touchTime && !e.touches.length) {

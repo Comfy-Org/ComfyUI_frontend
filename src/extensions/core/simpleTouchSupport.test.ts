@@ -155,6 +155,19 @@ describe('Comfy.SimpleTouchSupport', () => {
     expect(processMouseDown).toHaveBeenCalledOnce()
   })
 
+  it('lets a mouse press through once touches from before a resetup end', async () => {
+    const twoFingers = [touchAt(canvasEl), touchAt(canvasEl, 100)]
+    dispatchTouch('touchstart', twoFingers)
+
+    await simpleTouchSupportExtension.setup?.(fromPartial({}))
+
+    dispatchTouch('touchend', [twoFingers[1]], [twoFingers[0]])
+    dispatchTouch('touchend', [], [twoFingers[1]])
+
+    pressPointer({ pointerType: 'mouse', isPrimary: true })
+    expect(processMouseDown).toHaveBeenCalledOnce()
+  })
+
   it('still blocks a second finger during a live gesture', () => {
     pressPointer({ isPrimary: true })
     dispatchTouch('touchstart', [touchAt(canvasEl)])
