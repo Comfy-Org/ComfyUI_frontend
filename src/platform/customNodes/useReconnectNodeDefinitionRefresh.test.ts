@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@comfyorg/telemetry/reportError'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
@@ -579,6 +580,45 @@ describe('useReconnectNodeDefinitionRefresh', () => {
       serverStarted('boot-2')
       await vi.advanceTimersByTimeAsync(0)
       expect(refresh).toHaveBeenCalledOnce()
+
+      await onReconnected()
+      expect(refresh).toHaveBeenCalledTimes(2)
+    })
+
+    it('treats the first boot id after a reconnect as a restart when the server had none before', async () => {
+      api.serverFeatureFlags.value = {}
+      const refresh = registerRefreshCommand()
+      showCanvas(node('UpdatedPackNode'))
+      const fetchDefs = serverHas('UpdatedPackNode')
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      socketReconnects()
+      const done = onReconnected()
+      serverStarted('boot-1')
+      await done
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(fetchDefs).not.toHaveBeenCalled()
+      expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    })
+
+    it('keeps a restart pending and skips the reload when ComfyUI refuses the node definitions', async () => {
+      useExtensionStore().oweNodeDefHooks()
+      vi.spyOn(api, 'fetchNodeDefs').mockResolvedValue(
+        new Response('unavailable', { status: 503 })
+      )
+      const refresh = registerRefreshCommand(
+        vi.fn(async () => {
+          await app.refreshComboInNodes()
+        })
+      )
+      const onReconnected = useReconnectNodeDefinitionRefresh()
+
+      serverStarted('boot-2')
+      await vi.advanceTimersByTimeAsync(0)
+      expect(refresh).toHaveBeenCalledOnce()
+      expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
 
       await onReconnected()
       expect(refresh).toHaveBeenCalledTimes(2)

@@ -5,6 +5,7 @@ import type { ComputedRef } from 'vue'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
+import { useExtensionStore } from '@/platform/extensions/stores/extensionStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -79,12 +80,15 @@ async function rebuildWhenIdle(
   }
 }
 
-async function refreshNodeDefinitions(): Promise<void> {
+async function refreshNodeDefinitions(): Promise<boolean> {
+  const extensionStore = useExtensionStore()
+  const hooksOwed = extensionStore.areNodeDefHooksOwed()
   await useCommandStore().execute('Comfy.RefreshNodeDefinitions', {
     errorHandler: (error) => {
       throw error
     }
   })
+  return !(hooksOwed && extensionStore.areNodeDefHooksOwed())
 }
 
 /**
@@ -101,6 +105,7 @@ export function useReconnectNodeDefinitionRefresh() {
   let reconnects = 0
   let restartPending = false
   let knownBootId = bootIdOf(api.serverFeatureFlags.value)
+  let reconnectedWithoutBootId = false
 
   async function serverAddedNodeTypes(): Promise<boolean> {
     if (!api.serverFeatureFlagsSettled.value) {
@@ -111,17 +116,18 @@ export function useReconnectNodeDefinitionRefresh() {
     return !!serverTypes && serverTypes.some((type) => !isRegistered(type))
   }
 
-  async function refreshAndRebuild(restarted: boolean): Promise<void> {
-    if (isDisposed()) return
+  async function refreshAndRebuild(restarted: boolean): Promise<boolean> {
+    if (isDisposed()) return true
     if (restarted || (await serverAddedNodeTypes())) {
-      if (isDisposed()) return
-      await refreshNodeDefinitions()
+      if (isDisposed()) return true
+      if (!(await refreshNodeDefinitions())) return false
     }
-    if (isDisposed()) return
+    if (isDisposed()) return true
     const workflow = useWorkflowStore().activeWorkflow
     if (workflow) {
       await rebuildWhenIdle(workflow, userBusy, isDisposed, restarted)
     }
+    return true
   }
 
   async function refreshUntilSettled(): Promise<void> {
@@ -131,7 +137,8 @@ export function useReconnectNodeDefinitionRefresh() {
       const restarted = restartPending
       restartPending = false
       try {
-        await refreshAndRebuild(restarted)
+        const refreshed = await refreshAndRebuild(restarted)
+        if (!refreshed && restarted) restartPending = true
       } catch (error) {
         if (restarted) restartPending = true
         reportError(error, {
@@ -155,14 +162,19 @@ export function useReconnectNodeDefinitionRefresh() {
   useEventListener(api, 'feature_flags', () => {
     const bootId = bootIdOf(api.serverFeatureFlags.value)
     if (!bootId) return
-    const restarted = knownBootId !== undefined && bootId !== knownBootId
+    const restarted =
+      knownBootId === undefined
+        ? reconnectedWithoutBootId
+        : bootId !== knownBootId
     knownBootId = bootId
+    reconnectedWithoutBootId = false
     if (!restarted) return
     restartPending = true
     void schedule()
   })
 
   return async function refreshNodeDefinitionsOnReconnect(): Promise<void> {
+    if (knownBootId === undefined) reconnectedWithoutBootId = true
     return schedule()
   }
 }

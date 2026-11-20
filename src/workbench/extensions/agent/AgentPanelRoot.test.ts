@@ -173,6 +173,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
       async () => new Response(null)
     ),
     getServerFeature,
+    serverFeatureFlags: { value: {} },
     socket: { readyState: 1, send: socketSend },
     resetSocket: vi.fn(async () => {}),
     dispatchCustomEvent: vi.fn(),
