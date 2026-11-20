@@ -29,7 +29,7 @@ import {
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@comfyorg/telemetry'
 import type { AgentConsentTrigger } from '@comfyorg/telemetry/types'
-import type { useExtensionService } from '@/services/extensionService'
+import type { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -133,7 +133,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/services/extensionService'), () => ({
+vi.mock(import('@/platform/extensions/services/extensionService'), () => ({
   useExtensionService: () =>
     fromPartial<ReturnType<typeof useExtensionService>>({
       registerExtension: (ext: ComfyExtension) => {
@@ -2321,13 +2321,96 @@ describe('AgentPanel extension flag gate', () => {
       await loadEntryAndSetup()
       Object.assign(consentStore, { identity: 'account-a/workspace-b' })
       await nextTick()
-      expect(resume()).toHaveBeenCalledExactlyOnceWith('make it blue')
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: 'make it blue'
+      })
       expect(sessionStorage.getItem(PENDING_KEY)).toBeNull()
       expect(consentStore.load).not.toHaveBeenCalled()
 
       finishResume()
       await vi.waitFor(() => expect(consentStore.load).toHaveBeenCalledOnce())
       expect(resume()).toHaveBeenCalledOnce()
+    })
+
+    it('hands the Ask agent error context back with the draft', async () => {
+      const errorContext = {
+        scope: 'single',
+        count: 1,
+        label: 'Missing model',
+        severity: 'error',
+        problems: [{ category: 'missing_model', message: 'model missing' }],
+        workflowPath: 'workflows/errored.json'
+      }
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({ draft: '', errorContext, savedAt: Date.now() })
+      )
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: '',
+        errorContext
+      })
+    })
+
+    it.for([
+      { case: 'problems is not a list', problems: 'not a list' },
+      { case: 'a problem is null', problems: [null] }
+    ])(
+      'keeps the draft but drops an error context when $case',
+      async ({ problems }) => {
+        sessionStorage.setItem(
+          PENDING_KEY,
+          JSON.stringify({
+            draft: 'make it blue',
+            errorContext: {
+              scope: 'card',
+              count: 1,
+              label: 'Missing media',
+              severity: 'warning',
+              problems
+            },
+            savedAt: Date.now()
+          })
+        )
+
+        await loadEntryAndSetup()
+
+        expect(resume()).toHaveBeenCalledExactlyOnceWith({
+          draft: 'make it blue'
+        })
+      }
+    )
+
+    it('keeps the draft but drops an error context with a non-finite count', async () => {
+      sessionStorage.setItem(
+        PENDING_KEY,
+        `{"draft":"make it blue","errorContext":{"scope":"card","count":1e400,"label":"Missing media","severity":"warning","problems":[]},"savedAt":${Date.now()}}`
+      )
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: 'make it blue'
+      })
+    })
+
+    it('keeps the draft but drops an error context that is not one', async () => {
+      sessionStorage.setItem(
+        PENDING_KEY,
+        JSON.stringify({
+          draft: 'make it blue',
+          errorContext: { scope: 'card', problems: 'not a list' },
+          savedAt: Date.now()
+        })
+      )
+
+      await loadEntryAndSetup()
+
+      expect(resume()).toHaveBeenCalledExactlyOnceWith({
+        draft: 'make it blue'
+      })
     })
 
     it('is resumed before the Agent is ready', async () => {

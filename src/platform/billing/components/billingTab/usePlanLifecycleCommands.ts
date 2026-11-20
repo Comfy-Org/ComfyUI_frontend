@@ -4,7 +4,7 @@ import { useBillingContext } from '@/platform/billing/composables/useBillingCont
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { billingApi } from '@/platform/billing/api/billingApi'
 import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
-import type { PlanCommandOutcome } from '@/platform/billing/components/billingTab/planLifecycle'
+import type { PlanCommandOutcome } from '@comfyorg/account-core/billing'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 
 function isCodedServerRefusal(err: unknown): err is WorkspaceApiError {

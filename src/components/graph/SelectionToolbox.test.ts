@@ -14,18 +14,18 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
-import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import { createMockLLink } from '@/utils/__tests__/litegraphTestUtils'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@comfyorg/telemetry'))
-vi.mock(import('@/services/extensionService'), () => {
+vi.mock(import('@/platform/extensions/services/extensionService'), () => {
   const service: ReturnType<typeof useExtensionService> = {
     registerExtension: vi.fn(),
     registerExtensionNow: vi.fn(),
@@ -80,7 +80,7 @@ function renderToolbox() {
 describe('SelectionToolbox', () => {
   beforeEach(() => {
     useCanvasStore().canvas = createMockCanvas()
-    vi.spyOn(useRightSidePanelStore(), 'openPanel').mockImplementation(() => {})
+    vi.spyOn(usePropertiesPanelStore(), 'openPanel').mockReturnValue(true)
     vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(nodeDef)
     vi.mocked(useExtensionService().invokeExtensions).mockReturnValue([])
     useSettingStore().$patch({
@@ -192,7 +192,7 @@ describe('SelectionToolbox', () => {
     await userEvent
       .setup()
       .click(screen.getByRole('button', { name: 'Node Info' }))
-    expect(useRightSidePanelStore().openPanel).toHaveBeenCalledWith('info')
+    expect(usePropertiesPanelStore().openPanel).toHaveBeenCalledWith('info')
     expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'selection_toolbox_node_info_opened',
       element_group: 'selection_toolbox'

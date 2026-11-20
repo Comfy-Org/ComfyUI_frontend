@@ -17,7 +17,7 @@ import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSession
 import type {
   WebSessionRequestScope,
   WebSessionRequests
-} from '@/platform/auth/session/webSessionFetch'
+} from '@comfyorg/api-client/webSessionFetch'
 import { useWorkspaceSession } from '@/platform/workspace/ports/workspaceSession'
 
 export type WebSessionBillingSession = BillingSession & BillingScopeSource

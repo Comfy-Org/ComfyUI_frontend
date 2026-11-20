@@ -10,7 +10,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { MissingModelPipelineResult } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
-import type { SettingParams } from '@/platform/settings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
 import type {
   ComfyApiWorkflow,
   ComfyWorkflowJSON
@@ -20,8 +20,8 @@ import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput,
   ProgressWsMessage
-} from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/executionTypes'
+import type { NodeError } from '@comfyorg/api-client/types'
 import type {
   WorkflowOpenSource,
   WorkflowQueueIntent
@@ -30,8 +30,8 @@ import type {
   ComfyWorkflow,
   LoadedComfyWorkflow
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
-import type { ComfyApi } from '@/scripts/api'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
+import type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 import type { ComfyUI } from '@/scripts/ui'
 import type { ComfyAppMenu } from '@/scripts/ui/menu/index'
 import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
@@ -41,7 +41,7 @@ import type {
   NodeLocatorId
 } from '@comfyorg/graph-model/nodeIdentification'
 import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
-import type { AuthUserInfo } from '@/types/authTypes'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 import type {
   BottomPanelExtension,
   ExtensionManager,
@@ -85,7 +85,13 @@ export interface LoadGraphDataOptions {
   deferWarnings?: boolean
   skipAssetScans?: boolean
   silentAssetErrors?: boolean
+  restoreHistory?: boolean
   workflowNavigationId?: number
+  isCurrent?: () => boolean
+  /** Checked once when the load reaches the front of the queue; false skips it. */
+  isReady?: () => boolean
+  /** Graph to load, produced at the front of the queue; undefined skips the load. */
+  resolveGraphData?: () => ComfyWorkflowJSON | undefined
 }
 
 /**
@@ -201,7 +207,7 @@ export interface ComfyApp {
       deferWarnings?: boolean
       onNodeCreated?: (node: LGraphNode) => void
     }
-  ): Promise<void>
+  ): Promise<void | false>
   handleFileList(fileList: File[]): Promise<void>
   handleAudioFileList(fileList: File[]): Promise<void>
   handleVideoFileList(fileList: File[]): Promise<void>
@@ -212,7 +218,7 @@ export interface ComfyApp {
     apiData: ComfyApiWorkflow,
     fileName: string,
     options?: { deferWarnings?: boolean }
-  ): Promise<void>
+  ): Promise<void | false>
   registerExtension(extension: ComfyExtension): void
   collectCanvasMenuItems(canvas: LGraphCanvas): IContextMenuValue[]
   collectNodeMenuItems(node: LGraphNode): IContextMenuValue[]

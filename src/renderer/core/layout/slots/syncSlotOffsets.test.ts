@@ -80,7 +80,9 @@ describe('syncSlotOffsets', () => {
     layoutStore.updateNodeSlotOffsets(
       GRAPH_ID,
       nodeId,
-      [{ index: 0, type: 'input', position: { x: 1, y: 2 } }],
+      [
+        { index: 0, type: 'input', bounds: { x: 1, y: 2, width: 0, height: 0 } }
+      ],
       'expanded'
     )
 
@@ -100,7 +102,9 @@ describe('syncSlotOffsets', () => {
     layoutStore.updateNodeSlotOffsets(
       GRAPH_ID,
       nodeId,
-      [{ index: 0, type: 'input', position: { x: 1, y: 2 } }],
+      [
+        { index: 0, type: 'input', bounds: { x: 1, y: 2, width: 0, height: 0 } }
+      ],
       'expanded'
     )
 

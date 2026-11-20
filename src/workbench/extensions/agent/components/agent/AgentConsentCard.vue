@@ -13,7 +13,9 @@ import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import Message from '@comfyorg/design-system/message/Message'
-import { applyDarkPaletteTheme } from '@/utils/colorPaletteTheme'
+import { DEFAULT_DARK_THEME_PRESET } from '@comfyorg/theme-core/builtInThemePresets'
+import { resolveTheme } from '@comfyorg/theme-core/resolveTheme'
+import { applyTheme } from '@/platform/theme/applyTheme'
 import { openFeedbackDialog } from '@/workbench/extensions/agent/feedback'
 import type { ConsentCardError } from '@/workbench/extensions/agent/types/consentCardError'
 
@@ -86,7 +88,7 @@ const LAYOUTS = {
       FALLBACK_SHELL,
       'aspect-video max-h-full w-[min(100cqw,calc(100cqh*16/9))]'
     ),
-    heading: 'my-0 text-2xl/7.5 text-[22px]/7',
+    heading: 'my-0 text-[22px]/7',
     copy: cn(COPY_SHELL, 'text-[13px]/4.5'),
     contentWrap: 'flex min-w-0 flex-col',
     section: cn(SECTION_SHELL, 'gap-2 px-4.5 pt-3'),
@@ -185,7 +187,11 @@ function choose(action: 'accept' | 'reject'): void {
 }
 
 onMounted(() => {
-  if (containerRef.value) applyDarkPaletteTheme(containerRef.value.style)
+  if (containerRef.value) {
+    applyTheme(resolveTheme(DEFAULT_DARK_THEME_PRESET), {
+      style: containerRef.value.style
+    })
+  }
 })
 </script>
 

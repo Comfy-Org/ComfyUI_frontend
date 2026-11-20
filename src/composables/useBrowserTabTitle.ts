@@ -5,7 +5,7 @@ import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 
 const TITLE_SUFFIX = ' - ComfyUI'
@@ -16,13 +16,7 @@ export const useBrowserTabTitle = () => {
   const settingStore = useSettingStore()
   const workflowStore = useWorkflowStore()
   const workspaceStore = useWorkspaceStore()
-  const tabActivity = useWorkflowTabActivityStore()
-
-  const approvalText = computed(() =>
-    tabActivity.agentAwaitingApproval
-      ? `[${t('g.agentInputNeededShort', 'Input needed')}] `
-      : ''
-  )
+  const titlePrefixes = useBrowserTabTitleStore()
 
   const executionText = computed(() =>
     executionStore.isIdle
@@ -96,7 +90,8 @@ export const useBrowserTabTitle = () => {
   )
 
   const title = computed(
-    () => approvalText.value + (nodeExecutionTitle.value || workflowTitle.value)
+    () =>
+      titlePrefixes.prefix + (nodeExecutionTitle.value || workflowTitle.value)
   )
   useTitle(title)
 }

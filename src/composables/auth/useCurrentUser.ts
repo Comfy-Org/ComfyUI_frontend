@@ -6,7 +6,7 @@ import { desktopHostUser } from '@/platform/auth/desktopHost/desktopHostSession'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useAuthStore } from '@/stores/authStore'
-import type { AuthUserInfo } from '@/types/authTypes'
+import type { AuthUserInfo } from '@comfyorg/api-client/authTypes'
 
 export const useCurrentUser = () => {
   const authStore = useAuthStore()

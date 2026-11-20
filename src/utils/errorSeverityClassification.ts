@@ -4,8 +4,8 @@ import { tryNormalizeNodeExecutionId } from '@comfyorg/graph-model/nodeIdentific
 import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
+import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import {
   classifyValidationErrorAbsorption,
   isMissingNodePromptErrorAbsorbed

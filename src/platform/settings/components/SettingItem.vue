@@ -38,7 +38,7 @@ import type {
   SettingOption,
   SettingParams,
   Settings
-} from '@/platform/settings/types'
+} from '@comfyorg/settings-core/types'
 import { normalizeI18nKey } from '@/utils/formatUtil'
 
 const props = defineProps<{

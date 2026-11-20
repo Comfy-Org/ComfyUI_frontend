@@ -55,8 +55,26 @@ export interface LinkRenderContext {
 
 export class LitegraphLinkAdapter {
   private readonly pathRenderer = new CanvasPathRenderer()
+  private readonly pathContexts = new WeakMap<
+    LinkRenderContext,
+    PathRenderContext
+  >()
 
   constructor(public readonly enableLayoutStoreWrites = true) {}
+
+  private pathRenderContextFor(
+    context: LinkRenderContext,
+    skipBorder: boolean
+  ): PathRenderContext {
+    const cached = this.pathContexts.get(context)
+    const pathContext = cached ?? this.convertToPathRenderContext(context)
+    if (!cached) this.pathContexts.set(context, pathContext)
+
+    pathContext.style.borderWidth =
+      !skipBorder && context.renderBorder ? 4 : undefined
+    pathContext.animation = { time: litegraph().getTime() * 0.001 }
+    return pathContext
+  }
 
   /**
    * Convert LinkDirection enum to Direction string
@@ -286,11 +304,7 @@ export class LitegraphLinkAdapter {
       }
     }
 
-    const pathContext = this.convertToPathRenderContext(context)
-
-    if (skip_border) {
-      pathContext.style.borderWidth = undefined
-    }
+    const pathContext = this.pathRenderContextFor(context, skip_border)
 
     const path = this.pathRenderer.drawLink(ctx, linkData, pathContext)
 

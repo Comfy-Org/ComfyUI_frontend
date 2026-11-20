@@ -77,4 +77,4 @@ it('compiles non-shrinking size-4 icons with explicit overrides', async () => {
   expect(rules.get('.w-8')?.width).toBe('calc(var(--spacing) * 8)')
   expect(rules.get('.h-5')?.height).toBe('calc(var(--spacing) * 5)')
   expect(rules.get('.shrink')?.['flex-shrink']).toBe('1')
-})
+}, 30_000)

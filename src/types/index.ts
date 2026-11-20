@@ -14,13 +14,13 @@ import type {
   UserConfigResponse,
   UserData,
   UserDataFullInfo
-} from '@/platform/remote/comfyui/types'
+} from '@comfyorg/api-client/types'
 import type {
   LogEntry,
   LogsRawResponse,
   TerminalSize
-} from '@/platform/remote/comfyui/execution/types'
-import type { Settings } from '@/platform/settings/types'
+} from '@comfyorg/api-client/executionTypes'
+import type { Settings } from '@comfyorg/settings-core/types'
 import type { ComfyApp } from '@/types/comfy'
 import type { ContextMenu } from '@/lib/litegraph/src/ContextMenu'
 import type { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
@@ -58,10 +58,10 @@ export type {
 export { slotId } from '@comfyorg/graph-model/slotId'
 export type { ComfyExtension } from './comfy'
 export type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
-export type { ComfyApi } from '@/scripts/api'
+export type { ComfyApi } from '@comfyorg/api-client/ComfyApi'
 export type { ComfyApp } from '@/types/comfy'
-export type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-export type { InputSpec } from '@/schemas/nodeDefSchema'
+export type { ComfyNodeDef } from '@comfyorg/object-info-parser'
+export type { InputSpec } from '@comfyorg/object-info-parser'
 export type {
   NodeLocatorId,
   NodeExecutionId,
@@ -238,10 +238,10 @@ export type { LGraphEventMap } from '@comfyorg/graph-model/LGraphEventMap'
 
 declare global {
   interface Window {
-    /** For use by extensions and in the browser console. Where possible, import `app` from '@/scripts/app' instead. */
+    /** For use by extensions and in the browser console. First-party code calls `useApp()` from '@/scripts/appInstance' instead. */
     app?: ComfyApp
 
-    /** For use by extensions and in the browser console. Where possible, import `app` and access via `app.graph` instead. */
+    /** For use by extensions and in the browser console. First-party code reads `useApp().rootGraph` instead. */
     graph?: unknown
 
     LiteGraph?: LiteGraphGlobal

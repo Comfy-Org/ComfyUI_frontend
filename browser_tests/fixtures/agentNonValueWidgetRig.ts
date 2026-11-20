@@ -2,7 +2,7 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
@@ -163,7 +163,6 @@ export class AgentNonValueWidgetRig {
   seedField(): Locator {
     return this.vueNodes
       .getNodeLocator(String(this.config.samplerNodeId))
-      .getByLabel('seed', { exact: true })
-      .getByRole('spinbutton')
+      .getByRole('spinbutton', { name: 'seed', exact: true })
   }
 }

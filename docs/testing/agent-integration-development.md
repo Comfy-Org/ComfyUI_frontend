@@ -72,7 +72,8 @@ Paste the recorder command it prints, one `--prompt` per turn.
 
 ## Setup
 
-1. Use Node 25 and install this repository with `pnpm install`.
+1. Use Node 26 (`package.json` requires `>=26.8.2 <27`; see `.nvmrc`) and install
+   this repository with `pnpm install`.
 2. Check out `Comfy-Org/cloud` next to this repository, or pass its location with
    `--cloud-repo`.
 3. Install the agent's file watcher:
@@ -103,6 +104,12 @@ Paste the recorder command it prints, one `--prompt` per turn.
    Vite forwards it to the standalone agent: a token that starts with `comfyui-` as
    `X-API-KEY`, anything else as a bearer token. The panel then sends without asking a
    signed-out user to sign in. Without it, a signed-out send opens the sign-in dialog.
+
+   The browser learns this from `VITE_DEV_AGENT_PROXY_CREDENTIAL`, which
+   `vite.config.mts` defines as `'true'` whenever the agent proxy is configured and
+   `DEV_AGENT_COMFY_TOKEN` is set. Do not set it yourself: it is derived, it is read
+   only in development mode, and the token itself never reaches the browser. It is the
+   name to grep for when a signed-out panel sends anyway.
 
 The root dependency on `@comfyorg/comfy-multi-player` may use the published npm
 package or `workspace:`. The launcher warns that package source edits will not
@@ -180,6 +187,10 @@ the turn's first frame; replay sends back to back by default and
   an in-process event bus rather than Postgres, Redis, ingest, or Temporal.
 - **Vite proxy:** the development-only same-origin bridge that forwards agent requests
   and injects the standalone session credential outside browser code.
+- **`VITE_DEV_AGENT_PROXY_CREDENTIAL`:** the build-time flag Vite derives from
+  `DEV_AGENT_COMFY_TOKEN` to tell the browser that the proxy supplies a user
+  credential, so a signed-out send skips the sign-in dialog. Derived, never set by
+  hand, and never the token.
 - **`agent.json`:** the discovery file the standalone agent writes into its data
   directory on every start — `{ port, token, pid }`, mode 0600. It is how a local client
   finds the running agent and its current token without scanning ports.

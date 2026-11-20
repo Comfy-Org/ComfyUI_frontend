@@ -4,9 +4,10 @@
     "composite": false,
     "noEmit": true,
     "emitDeclarationOnly": false,
+    "types": ["@webgpu/types", "node", "@testing-library/jest-dom/vitest"],
     "incremental": true,
     "tsBuildInfoFile": "node_modules/.cache/tsbuildinfo/check.tsbuildinfo"
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "src/**/*.vue"],
   "exclude": []
 }

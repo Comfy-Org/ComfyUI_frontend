@@ -7,6 +7,7 @@ import { expect, mergeTests } from '@playwright/test'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -141,7 +142,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await agentPanel.selectWorkflow()
     await expect(panel.getByText(/^Hello/)).toBeVisible()
     await expect(panel.getByText('What do you want to make?')).toBeVisible()
-    const firstPrompt = enMessages.agent.suggestedPrompts.cloud[0]
+    const firstPrompt = enMessages.agent.suggestedPrompts.treatment.cloud[0]
     const promptChip = panel.getByRole('button', { name: firstPrompt })
     await expect(promptChip).toBeVisible()
 
@@ -249,6 +250,43 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText('Resize image node')).toBeVisible()
   })
 
+  test(
+    'shows a rebound canvas shortcut as semantic keycaps in a reply',
+    { tag: '@keyboard' },
+    async ({ agentPanel, comfyPage, getAgentSocket, postedMessages }) => {
+      const commandId = 'Comfy.Canvas.ToggleSelectedNodes.Bypass'
+      const keybindingPanel = comfyPage.settingDialog.keybindingPanel
+
+      await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.category('Keybinding').click()
+      await keybindingPanel.search(commandId)
+      await keybindingPanel.commandLabel(commandId).dblclick()
+      await keybindingPanel.pressCombo('Alt+q')
+      await keybindingPanel.saveKeybinding()
+      await comfyPage.settingDialog.close()
+
+      await agentPanel.open()
+      await agentPanel.selectWorkflow()
+      const ws = await getAgentSocket()
+      await agentPanel.sendMessage('How do I bypass the selected node?')
+      await expect.poll(() => postedMessages.length).toBeGreaterThanOrEqual(1)
+
+      pushEvent(
+        ws,
+        agentMessageDeltaEvent('Select it and press Ctrl+B to bypass the node.')
+      )
+      pushEvent(ws, MESSAGE_DONE_EVENT)
+
+      const reply = agentPanel.root
+        .getByTestId('markdown-stream')
+        .filter({ hasText: 'Select it and press' })
+      await expect(reply).toBeVisible()
+      await expect(reply.locator('kbd')).toHaveText(['Alt', 'Q'])
+      await expect(reply).toContainText('Alt+Q')
+      await expect(reply).not.toContainText('Ctrl+B')
+    }
+  )
+
   test('identifies a generated video and honors its play affordance', async ({
     agentPanel,
     comfyPage,
@@ -337,6 +375,46 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         )
         .toBeGreaterThan(0)
     })
+  })
+
+  test.describe('reply media whose file is missing', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.page.route(/\/api\/view\?.*missing_clip/, (route) =>
+        route.fulfill({ status: 404, body: '' })
+      )
+    })
+
+    test(
+      'says a generated video could not be loaded',
+      { tag: '@screenshot' },
+      async ({ agentPanel, comfyPage, getAgentSocket, postedMessages }) => {
+        await comfyPage.page.mouse.move(0, 0)
+        await agentPanel.open()
+        await agentPanel.selectWorkflow()
+
+        await agentPanel.sendMessage('Generate a short video')
+        await expect.poll(() => postedMessages.length).toBe(1)
+        pushEvent(
+          await getAgentSocket(),
+          agentMessageDeltaEvent(
+            '![your video](/api/view?filename=missing_clip_00001_.mp4&type=output)'
+          )
+        )
+        pushEvent(await getAgentSocket(), MESSAGE_DONE_EVENT)
+
+        const tile = agentPanel.root.getByRole('button', {
+          name: enMessages.agent.assetLoadFailed.replace(
+            '{name}',
+            'your video'
+          ),
+          exact: true
+        })
+        await expect(tile).toBeDisabled()
+        await expect(tile.getByTestId('reply-video-preview')).toHaveCount(0)
+        await expect(tile.getByTestId('reply-video-affordance')).toHaveCount(0)
+        await expectElementScreenshot(tile, 'agent-reply-missing-video.png')
+      }
+    )
   })
 
   test('shows an admission paywall without losing the rejected prompt', async ({

@@ -1,4 +1,5 @@
 import type {
+  BillingOperationKind,
   BillingOperationState,
   BillingResult,
   PaymentProjection,
@@ -69,7 +70,8 @@ export function payVerdictOf(result: SubscriptionCommandResult): PayVerdict {
  * A Pay the server refused before any operation settled: one already under
  * way is re-read, never a decline (rule 18); any other is the coded card.
  */
-function refusalVerdict(result: {
+/** A purchase the server refused: a pending or conflicting one is re-read, anything else is its card. */
+export function refusalVerdict(result: {
   readonly code: string
   readonly serverCode?: BillingServerCode
   readonly serverMessage?: string
@@ -115,12 +117,7 @@ export function topupVerdictOf(result: TopupResult): PayVerdict {
   }
 }
 
-/**
- * The card an operation's own verdict earns, through the shared projection.
- * Nothing for one still pending or succeeded, and nothing for a poll budget
- * that ran out or an operation parked for a human: an unknown outcome never
- * gets the card (rule 12).
- */
+/** The card an operation's own verdict earns, or none when its outcome is unknown. */
 export function operationOutcomeOf(
   operation: BillingOperationState
 ): OperationOutcome | undefined {
@@ -132,7 +129,10 @@ export function operationOutcomeOf(
     return undefined
   const projection = projectPaymentStep(operation, 'preview')
   const operationId = operation.id
-  if (isNotCompleted(projection)) return { kind: 'not_completed', operationId }
+  if (isNotCompleted(projection))
+    return operation.phase === 'pending'
+      ? { kind: 'not_verified', operationId }
+      : { kind: 'not_completed', operationId }
   if (projection.step === 'processing_error')
     return { kind: 'processing_error', operationId }
   if (projection.step !== 'declined') return undefined
@@ -157,7 +157,8 @@ export function outcomeFor(operation: BillingOperationState) {
  * money it cannot see.
  */
 export function reconciledEvent(
-  recovered: BillingResult<BillingOperationState | undefined>
+  recovered: BillingResult<BillingOperationState | undefined>,
+  follows: BillingOperationKind
 ): CheckoutPageEvent {
   if (recovered.status === 'error')
     return { type: 'recheckFailed', code: recovered.code }
@@ -165,6 +166,7 @@ export function reconciledEvent(
   return {
     type: 'reconciled',
     operation,
+    follows,
     ...(operation === undefined ? {} : outcomeFor(operation))
   }
 }

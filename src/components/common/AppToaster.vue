@@ -33,7 +33,11 @@ const politeToasts = computed(() =>
 const assertiveToasts = computed(() => toasts.value.filter(isAssertive))
 
 function announcement(item: Toast) {
-  return [item.title, item.description, item.action?.label]
+  return [
+    item.title,
+    item.description,
+    ...item.actions.map((action) => action.label)
+  ]
     .filter(Boolean)
     .join('. ')
 }
@@ -110,19 +114,24 @@ const icons = {
         :aria-label="t('g.close')"
         class="col-start-3 row-start-1"
         data-testid="toast-close"
+        @click="toast.close(item.id)"
       />
       <ToastDescription v-if="item.description" class="col-start-2 row-start-2">
         {{ item.description }}
       </ToastDescription>
-      <Button
-        v-if="item.action"
-        class="col-span-2 col-start-2 row-start-3 mt-3 justify-self-end"
-        size="md"
-        variant="secondary"
-        @click="item.action.onClick()"
+      <div
+        class="col-span-2 col-start-2 row-start-3 mt-3 flex flex-wrap justify-end gap-2 empty:hidden"
       >
-        {{ item.action.label }}
-      </Button>
+        <Button
+          v-for="(action, index) in item.actions"
+          :key="`${action.label}-${index}`"
+          size="md"
+          variant="secondary"
+          @click="action.onClick()"
+        >
+          {{ action.label }}
+        </Button>
+      </div>
     </ToastRoot>
     <ToastViewport
       :label="

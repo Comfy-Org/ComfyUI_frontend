@@ -27,7 +27,7 @@ import {
   notifyRestoreMintersGraphLoadError
 } from '@/workbench/extensions/agent/crdt/restoreOpMinter'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useExtensionService } from '@/services/extensionService'
+import { useExtensionService } from '@/platform/extensions/services/extensionService'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearPendingSignInAccept,
@@ -346,10 +346,10 @@ export function registerAgentPanelExtension(): void {
         if (!accountId || workspaceStore.isSwitching)
           return hasPendingSignInAccept()
         pendingAcceptChecked = true
-        const draft = takePendingSignInAccept()
-        if (draft === null || accountId !== pendingAcceptAccount) return false
+        const pending = takePendingSignInAccept()
+        if (pending === null || accountId !== pendingAcceptAccount) return false
         resumingAccept = true
-        void resumeAcceptAfterReload(draft).finally(() => {
+        void resumeAcceptAfterReload(pending).finally(() => {
           resumingAccept = false
           loadConsentIfEligible()
         })

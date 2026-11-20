@@ -110,6 +110,9 @@
   "Comfy_Canvas_ToggleSelectedNodes_Collapse": {
     "label": "Collapse/Expand Selected Nodes"
   },
+  "Comfy_Canvas_ToggleSelectedNodes_Links": {
+    "label": "Hide/Show Links on Selected Nodes"
+  },
   "Comfy_Canvas_ToggleSelectedNodes_Mute": {
     "label": "Mute/Unmute Selected Nodes"
   },
@@ -118,6 +121,9 @@
   },
   "Comfy_Canvas_Unlock": {
     "label": "Unlock Canvas"
+  },
+  "Comfy_Canvas_ZipTieSelectedLinks": {
+    "label": "Zip tie selected links"
   },
   "Comfy_Canvas_ZoomIn": {
     "label": "Zoom In"
@@ -145,6 +151,9 @@
   },
   "Comfy_ExportWorkflowAPI": {
     "label": "Export Workflow (API Format)"
+  },
+  "Comfy_ExportWorkflowImage": {
+    "label": "Export Workflow Image"
   },
   "Comfy_Graph_ConvertToSubgraph": {
     "label": "Convert Selection to Subgraph"

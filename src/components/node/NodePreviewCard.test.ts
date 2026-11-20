@@ -2,10 +2,17 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 
 import NodePreviewCard from './NodePreviewCard.vue'
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  DISTRIBUTION: 'cloud' as const,
+  isCloud: true,
+  isDesktop: false,
+  isNightly: false
+}))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
@@ -86,6 +93,34 @@ describe('NodePreviewCard', () => {
 
     expect(screen.getByText('model')).toBeInTheDocument()
     expect(screen.getByText('sync_mode')).toBeInTheDocument()
+  })
+
+  it('renders blueprint boundary inputs on Cloud without dynamic templates', () => {
+    const nodeDef = new ComfyNodeDefImpl(
+      {
+        name: 'SubgraphBlueprint.boundaries',
+        display_name: 'Blueprint boundaries',
+        category: 'Subgraph Blueprints',
+        python_module: 'blueprint',
+        description: '',
+        input: {
+          required: {
+            autogrow: ['COMFY_AUTOGROW_V3', undefined],
+            group: ['COMFY_DYNAMICGROUP_V3', undefined],
+            match: ['COMFY_MATCHTYPE_V3', undefined]
+          }
+        },
+        output: [],
+        output_node: false
+      },
+      { validateInputs: true }
+    )
+
+    renderComponent(nodeDef)
+
+    expect(screen.getByText('autogrow')).toBeInTheDocument()
+    expect(screen.getByText('group')).toBeInTheDocument()
+    expect(screen.getByText('match')).toBeInTheDocument()
   })
 
   it('renders no inputs section when the node has no inputs', () => {

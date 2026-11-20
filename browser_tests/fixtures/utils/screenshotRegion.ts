@@ -26,7 +26,9 @@ async function clientRectOf(target: RegionTarget): Promise<PageRect> {
         element
           .getAnimations()
           .filter(
-            ({ effect }) => effect?.getComputedTiming().endTime !== Infinity
+            ({ effect, playState }) =>
+              playState !== 'paused' &&
+              effect?.getComputedTiming().endTime !== Infinity
           )
           .map(({ finished }) => finished)
       )
@@ -74,6 +76,9 @@ export async function screenshotRegion(
   { padding = 24 }: RegionOptions = {}
 ): Promise<ScreenshotRegion> {
   if (targets.length === 0) throw new Error('No targets to frame')
+  await page.evaluate(async () => {
+    await document.fonts.ready
+  })
   let clip = await enclosingRect(targets, padding)
   await expect
     .poll(

@@ -12,8 +12,8 @@ import { billingApi } from '@/platform/billing/api/billingApi'
 import {
   selectTopupCheckoutBanner,
   topupCheckoutBannerKey
-} from '@/platform/billing/components/billingTab/topupCheckoutBanner'
-import type { TopupCheckoutSnapshot } from '@/platform/billing/components/billingTab/topupCheckoutBanner'
+} from '@comfyorg/account-core/billing'
+import type { TopupCheckoutSnapshot } from '@comfyorg/account-core/billing'
 import { useWorkspaceIdentity } from '@/platform/workspace/ports/workspaceIdentity'
 
 const CREDITS_APPLYING_POLL_MS = 5_000
