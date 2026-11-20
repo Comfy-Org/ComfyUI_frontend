@@ -34,8 +34,17 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    decision 13 of ADR-EXTENSIONS-NODE-API-0070, naming the member the pack
    called, the field and the value
    (`settings.declare needs attrs.min as a finite number, not -Infinity.`).
-   An object a pack passes is read field by field, once each, through
-   `packArguments.ts`; an extra field is ignored. A number must be finite.
+   An object a pack passes follows the API's one rule (ADR-EXTENSIONS-NODE-API-0070
+   decision 13): it must be a plain object, it is read once as a snapshot of
+   its own fields (`packObject` in `packArguments.ts`, over `checkedFields`),
+   and a field the member does not take is refused, so a misspelled or cut
+   field (`{ sevrity }`, a dialog's `onKeyDown`) shows at the call instead of
+   being lost. Each member's table of fields is typed against its definition
+   (`satisfies Record<keyof X, true>`). The one field accepted and ignored is
+   `LocalizationCatalog.phrases`, which a stored pack's catalog may hold; the
+   one argument not checked is `backend.fetch`'s `init`, which is `fetch`'s
+   own `RequestInit`. A scan of the converted packs' literal calls found no
+   unknown field. A number must be finite.
    An id a host store keys a plain object by must not be a name every object
    inherits (`__proto__`, `constructor`, `toString`; `isStoreKey`):
    `settings.declare`, `get`, `set` and `onChange` and `commands.register`
@@ -47,8 +56,27 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    or cannot be reached, is a value and not a throw, as
    `docs/guidance/error-handling.md` asks: `false`, `undefined`, or
    `{ ok: false }` where `undefined` already means something.
-   The exceptions are `backend.fetch` (decision 16) and `settings.set`
-   (decision 7).
+   The exceptions are `backend.fetch` (decision 16), `settings.set`
+   (decision 7) and `defs.refresh` (ADR-EXTENSIONS-NODE-API-0071), which
+   reject as the host calls they wrap do. Every member that returns a
+   promise, and what it gives when the server fails:
+
+   | Member                                          | On failure                                                            |
+   | ----------------------------------------------- | --------------------------------------------------------------------- |
+   | `storage.get`                                   | resolves `{ ok: false }`                                              |
+   | `storage.set`, `storage.remove`                 | resolves `false`                                                      |
+   | `storage.list`, `models.list`, `system.monitor` | resolves `undefined`                                                  |
+   | `commands.run`                                  | resolves `false` for an unknown id; a command that throws is reported |
+   | `ui.prompt`                                     | resolves `undefined` when cancelled                                   |
+   | `settings.set`                                  | rejects when the server cannot be reached                             |
+   | `backend.fetch`                                 | rejects as `fetch` does; any status resolves                          |
+   | `defs.refresh`                                  | rejects if fetching failed; `false` if the host did not apply them    |
+   | `queue.run`, `workflow.open`                    | resolve `false` (ADR-EXTENSIONS-NODE-API-0075)                        |
+
+   V2 rejected in the first rows, so the converter adapts each such call
+   (`storage-get`, `storage-set-remove`, `storage-list`, `system-monitor`
+   rules). A bad argument throws at the call for every member here, before
+   any promise is made.
 
 3. Every callback a pack supplies runs through `shared/listeners.ts`: a
    listener set from `createListeners`, or `callListener` for one callback.
@@ -58,13 +86,15 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    source through `createHostEvent` only while a listener is registered.
 
 4. A value handed to a pack is a string, a frozen copy the API made for that
-   delivery, or a Blob, which cannot change. `jsonValues.ts` checks that a value
-   holds only what JSON can (finite numbers, strings, booleans, `null`, lists
-   and plain objects, refusing a cycle); a setting value that passes is copied
-   with `savedCopy`, the shared copy handles use.
-   A backend payload may also hold Blobs, which `savedCopy` would turn into
-   empty objects, so `frozenJsonCopy` copies and freezes its lists and plain
-   objects and keeps each Blob as it is.
+   delivery, or a Blob, which cannot change; `backend.fetch` hands the live
+   `Response`. One walk, `shared/savableValue.ts`, decides what a value may
+   hold (finite numbers, strings, booleans, `null`, lists and plain objects,
+   refusing a cycle, a getter, which it does not call, and anything else) for
+   every write and read in the API: `settings.set` stores its copy, and
+   `settings.get`, `onChange` and backend payloads hand back `frozenSavable`
+   copies. A backend payload may also hold Blobs, which the walk keeps as
+   they are. A localization catalog is walked once, then checked for
+   messages.
 
 ### Settings (`comfy.settings`, 22 / 177)
 
@@ -89,8 +119,8 @@ calls, counted by the census of 128 stored packs (`census/CENSUS.md`,
    no options and the default `'unavailable'` when the machine has no disk to
    list (`Crystools-MonitorOnly`); refusing it would stop that pack loading.
 7. `get(id)` (22 / 104) reads the store's value or default, for any id, core's
-   included. `set(id, value)` (7 / 11) takes a value JSON can hold for any
-   id, declared or not (the store saves an undeclared id too), applies it
+   included. `set(id, value)` (7 / 11) takes a value the workflow could save
+   unchanged (decision 4) for any id, declared or not (the store saves an undeclared id too), applies it
    at once through the store and returns the store's promise: it rejects
    when the server cannot be reached and resolves when the server answers,
    even with a refusal, with the value applied but not saved. The store's
@@ -500,23 +530,19 @@ exists only for it. A pack is trusted code in the page. The guest SDK's
   function and has no way to take one link out again; the overlay has to
   give the canvas back the handler it had when the last overlay leaves, and
   only while its own link is still the top one.
-- **Copying a value.** A setting value is copied with `savedCopy` from
-  `shared/savedCopy.ts`, after `isJsonValue` has checked it, so the JSON
-  round trip drops nothing. A backend payload is copied with
-  `frozenJsonCopy`, because the shared copy would turn a preview Blob into an
-  empty object.
-- **Checking a JSON value.** `isJsonValue` walks the value once. A JSON round
-  trip would drop `undefined` and functions and turn `NaN` into `null`
-  without saying so, which is the silent change the check exists to refuse.
+- **Checking and copying a value.** Settings and backend payloads use the
+  API's one walk, `shared/savableValue.ts` (decision 4), which checks and
+  copies in one pass and takes a leaf test for a Blob. A JSON round trip
+  would drop `undefined` and functions and turn `NaN` into `null` without
+  saying so, which is the silent change the check exists to refuse.
   LiteGraph's `extensionPersistence.ts` has a private `isJsonValue` with the
   same finite-number, plain-object and loop rules. It is not exported, it
-  has no hook for a leaf such as a Blob, which the backend payload check
-  needs, and LiteGraph is not changed for the API; so the walk is written
-  here.
-- **Checking a message tree.** `localizationHandle.ts` walks a catalog as
-  `isJsonValue` does, but takes only strings, `null` and plain objects,
-  the values a vue-i18n message tree holds; `isJsonValue` would pass a
-  number, a boolean or a list, which are not messages.
+  has no hook for a leaf such as a Blob, and LiteGraph is not changed for
+  the API; so the walk is the API's own.
+- **Checking a message tree.** `localizationHandle.ts` checks the walked
+  copy of a catalog for what a vue-i18n message tree holds: strings, `null`
+  and plain objects. The walk alone would pass a number, a boolean or a
+  list, which are not messages.
 - **Reading the system stats.** `systemHandle.ts` reads the reply of
   `getSystemStats` field by field. The generated `zSystemStatsResponse`
   schema in `@comfyorg/ingest-types` describes the route, but no frontend
