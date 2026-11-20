@@ -12,6 +12,11 @@ import { nextTick, reactive } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  bindCanvasTracker,
+  isCanvasOwner,
+  resetCanvasTrackerForTest
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -715,6 +720,30 @@ describe('useWorkflowStore', () => {
       expect(loadedWorkflow.activeState).toEqual(defaultGraph)
       expect(loadedWorkflow.initialState).toEqual(defaultGraph)
       expect(loadedWorkflow.isModified).toBe(false)
+    })
+  })
+
+  describe('canvas tracker ownership', () => {
+    const openRemoteWorkflowOnCanvas = async () => {
+      resetCanvasTrackerForTest()
+      await syncRemoteWorkflows(['a.json'])
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      const opened = await store.openWorkflow(
+        store.getWorkflowByPath('workflows/a.json')!
+      )
+      bindCanvasTracker(opened.changeTracker)
+      return opened
+    }
+
+    it('keeps the canvas on the active tracker after the active workflow force-reloads', async () => {
+      const workflow = await openRemoteWorkflowOnCanvas()
+
+      await workflow.load({ force: true })
+
+      expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
     })
   })
 
