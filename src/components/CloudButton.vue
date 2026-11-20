@@ -26,6 +26,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useTelemetry } from '@comfyorg/telemetry'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
+import type { CloudWorkflowBlocker } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import {
   closeRunOnCloudDialog,
   openRunOnCloudDialog
@@ -54,16 +55,23 @@ function prefetch() {
   if (check.value.phase === 'idle') void checkStore.check()
 }
 
+function failureMessage(blocker: CloudWorkflowBlocker | null): string {
+  switch (blocker?.kind) {
+    case 'emptyWorkflow':
+      return t('openOnCloud.emptyWorkflow')
+    case 'unreadableModelLoader':
+      return t('openOnCloud.missingLocalModelLoader', {
+        nodeType: blocker.nodeType
+      })
+    case undefined:
+      return t('openOnCloud.checkFailed')
+  }
+}
+
 function showModal() {
   const current = check.value
   if (current.phase === 'failed') {
-    toast.error(
-      current.nodeType
-        ? t('openOnCloud.missingLocalModelLoader', {
-            nodeType: current.nodeType
-          })
-        : t('openOnCloud.checkFailed')
-    )
+    toast.error(failureMessage(current.blocker))
     return
   }
   void openRunOnCloudDialog(() => isMounted && check.value === current)

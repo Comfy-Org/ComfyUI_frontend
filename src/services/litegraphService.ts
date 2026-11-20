@@ -840,15 +840,8 @@ export const useLitegraphService = () => {
     }
   }
 
-  /**
-   * Adds Custom drawing logic for nodes
-   * e.g. Draws images and handles thumbnail navigation on nodes that output images
-   * @param {*} node The node to add the draw handler
-   */
   function addDrawBackgroundHandler(node: typeof LGraphNode) {
-    /**
-     * @deprecated No longer needed as we use {@link useImagePreviewWidget}
-     */
+    node.prototype.hideOutputImages = false
     node.prototype.setSizeForImage = function (this: LGraphNode) {
       console.warn(
         'node.setSizeForImage is deprecated. Now it has no effect. Please remove the call to it.'

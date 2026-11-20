@@ -58,6 +58,10 @@
       "summary": "低於 {threshold} 點數時，儲值至 {target}。",
       "title": "已啟用自動儲值"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "開啟「帳務」以確認已啟用自動儲值。",
+      "title": "已新增點數"
+    },
     "blocked": {
       "action": "開啟結帳頁面",
       "body": "您的瀏覽器封鎖了新分頁。請開啟結帳頁面以完成付款。",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}，於結帳時付款",
     "planLine": {
       "ended": "購買點數不會重新啟用您的 Cloud 方案。請重新訂閱以在 Cloud 上執行工作流程。",
+      "ended_sales_managed": "購買點數不會重新啟用您的雲端方案。請聯絡業務人員以續約。",
       "free_runs": "購買點數不會啟用 Cloud 方案。免費執行次數用完後，請訂閱以繼續執行工作流程。",
       "no_plan": "購買點數不會啟用 Cloud 方案。請訂閱以在 Cloud 上執行工作流程。"
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "我們無法確認您的回答已送達代理程式。"
     },
     "assetFetchFailed": "無法擷取 {name}",
+    "assetLoadFailed": "無法載入 {name}",
     "assetNotAttachable": "可附加圖片、影片、音訊、3D 模型和文字檔",
     "attach": "附加檔案",
     "attachFiles": "上傳影像或檔案",
@@ -337,6 +343,36 @@
     "placeholder": "描述您想要建立的內容",
     "placeholderWithoutSkills": "描述您想要建立的內容",
     "previewAsset": "預覽 {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "告訴 Comfy Agent 您想創作什麼。",
+        "title": "有想創作的內容嗎？"
+      },
+      "firstOpen": {
+        "description": "不確定要從何開始嗎？傳送下方的問題，或自行輸入。",
+        "prompt": "您可以幫我做什麼？",
+        "title": "協助您輕鬆開始！"
+      },
+      "workflowOpen": {
+        "description": "在您的工作流程有任何變更之前，Comfy Agent 會先向您顯示它計畫執行的操作。",
+        "prompt": "協助我改善此工作流程",
+        "title": "提出問題或描述要變更的內容。"
+      }
+    },
     "recoveredTurnFailed": "代理程式無法完成此回應。",
     "reference": "參照",
     "remove": "移除",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "無法開啟目標工作流程。",
     "targetWorkflowUnavailable": "目標工作流程已無法使用。",
     "thinking": "思考中...",
+    "thinkingShortened": "推理內容已縮短：其餘內容過長，無法儲存。",
     "title": "Comfy Agent",
     "toolFailed": "{tool} 失敗",
     "toolFailedSkill": "載入 {skill} 失敗",
@@ -1485,6 +1522,7 @@
       "paymentProcessingFlyout": "付款處理中。您不需要再次付款。",
       "paymentProcessingTitle": "一筆 {amount} 的付款仍在處理中",
       "paymentProcessingTitleNoAmount": "一筆付款仍在處理中",
+      "planRequiredContactSales": "購買點數不會重新啟用您的雲端方案。請聯絡業務人員以續約。",
       "planRequiredFreeRuns": "購買點數不會啟用 Cloud 方案。免費執行次數用完後，請訂閱以繼續執行工作流程。",
       "planRequiredResubscribe": "購買點數不會重新啟用您的 Cloud 方案。請重新訂閱以在 Cloud 上執行工作流程。",
       "planRequiredSubscribe": "購買點數不會啟用 Cloud 方案。請訂閱以在 Cloud 上執行工作流程。",
@@ -1722,10 +1760,10 @@
     "retry": "重試",
     "retryLabel": "重試啟動 {deployment}",
     "runBlocked": {
-      "failed": "此部署失敗。點擊以切換。",
-      "notReady": "此部署尚未就緒。點擊以切換。",
-      "starting": "此部署正在啟動。點擊以切換。",
-      "stopped": "此部署已停止。點擊以切換。"
+      "failed": "此部署失敗。按一下以切換。",
+      "notReady": "此部署尚未就緒。按一下以切換。",
+      "starting": "此部署正在啟動。按一下以切換。",
+      "stopped": "此部署已停止。按一下以切換。"
     },
     "runOn": "執行於",
     "runningOn": "執行於",
@@ -2685,6 +2723,9 @@
     "resizeFromBottomRight": "從右下角調整大小",
     "resizeFromTopLeft": "從左上角調整大小",
     "resizeFromTopRight": "從右上角調整大小",
+    "resizeNumberedPreviewHeight": "調整預覽 {index} 的高度",
+    "resizePreviewHeight": "調整預覽高度",
+    "resizeWidgetHeight": "調整 {name} 的高度",
     "restart": "重新啟動",
     "restore": "還原",
     "restoreDialog": "還原對話框",
@@ -3752,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "實驗性：啟用 Nodes 2.0",
     "Export": "匯出",
     "Export (API)": "匯出（API）",
+    "Export (Workflow Image)": "匯出（工作流程影像）",
     "File": "檔案",
     "Fit Group To Contents": "群組貼合內容",
     "Focus Mode": "專注模式",
@@ -4323,6 +4365,7 @@
     "handoffFailed": "無法從您電腦上的 ComfyUI 開啟工作流程",
     "handoffMissing": "您的工作流程未送達",
     "handoffMissingDetail": "ComfyUI 會在 10 分鐘後停止等待。請在 ComfyUI 中再次點擊「在 Comfy Cloud 開啟」。",
+    "missingLocalModelLoader": "無法讀取 {nodeType} 的模型設定。請安裝提供此節點類型的節點套件，然後再試一次。",
     "missingModels": {
       "title": "缺少 {count} 個模型 | 缺少 {count} 個模型",
       "unavailable": "請將這些模型新增至 Comfy Cloud 以執行此工作流程。目前無法從此 ComfyUI 上傳。"
@@ -5220,6 +5263,16 @@
     "triggerLinePlaceholder": "當使用者詢問放大時載入我",
     "yourPacks": "您的套件"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "請透過子圖節點進入此子圖，以編輯其值。",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "已連結的值 · 唯讀",
+    "locateSource": "定位來源節點",
+    "sharedSource": "共用來源",
+    "sourceHint": "編輯此來源也會變更其他與其連接的輸入。",
+    "unavailable": "值無法使用"
+  },
   "subgraphStore": {
     "blueprintName": "子圖名稱",
     "blueprintNamePrompt": "子圖名稱：",
@@ -5469,18 +5522,28 @@
       "subscriptionChangeInProgress": "您已有排定的方案變更。待其生效後，您可以選擇其他方案。",
       "subscriptionChangeScheduled": "您排定的方案變更將於 {date} 生效。之後您可以選擇其他方案。"
     },
+    "planWithPeriod": {
+      "annual": "{plan} 年繳",
+      "monthly": "{plan} 月繳"
+    },
     "plansAndCredits": "方案與額度",
     "plansAndPricing": "方案與價格",
     "plansForWorkspace": "{workspace} 的方案",
     "plansLink": {
       "blockedBody": "您的瀏覽器封鎖了新分頁。請開啟方案頁面以選擇方案。",
       "blockedTitle": "方案頁面未開啟",
+      "checkoutUnfinishedBody": "開啟「方案」頁面以再試一次。您的瀏覽器阻擋了它自行開啟。",
+      "checkoutUnfinishedTitle": "您的結帳程序未完成",
       "choosePlan": "選擇方案",
       "openPlansPage": "開啟方案頁面",
       "runRefusedEnded": "您的方案已結束。重新訂閱即可繼續在雲端執行工作流程。",
       "runRefusedFreeRunsUsed": "您已用完全部 {total} 次免費執行。訂閱即可繼續在雲端執行工作流程。",
+      "runRefusedManualBlock": "此工作區已遭封鎖。請聯絡支援團隊。",
       "runRefusedNoPlan": "在雲端執行工作流程需要方案。",
-      "runRefusedTitle": "您的工作流程未執行"
+      "runRefusedProjectCap": "此專案已達支出上限。",
+      "runRefusedTitle": "您的工作流程未執行",
+      "runRefusedUserCap": "您已達到此工作區的支出上限。",
+      "runRefusedWorkspaceCap": "此工作區已達支出上限。"
     },
     "plansLoadFailed": "無法載入方案",
     "prepaidCreditsInfo": "單獨購買且不會過期的點數",
@@ -5918,6 +5981,7 @@
     "failedToConvertToSubgraph": "轉換項目為子圖失敗",
     "failedToCreateCustomer": "建立客戶失敗：{error}",
     "failedToExportModel": "無法將模型匯出為 {format}",
+    "failedToExportWorkflowImage": "無法匯出工作流程影像",
     "failedToFetchLogs": "無法取得伺服器日誌",
     "failedToFetchSubscription": "無法取得訂閱狀態：{error}",
     "failedToInitializeCameraAngleViewer": "無法初始化相機角度檢視器。請嘗試重新載入頁面。",
@@ -6109,12 +6173,14 @@
     "undo": "復原"
   },
   "widgets": {
+    "backFromFolder": "返回：{name}",
     "boolean": {
       "false": "否",
       "true": "是"
     },
     "node2only": "僅限 Node 2.0",
     "precisionLimit": "已停用遞增／遞減：數值超過 JavaScript 精確度限制（±2^53）",
+    "selectFolder": "資料夾：{name}",
     "selectModel": "選擇模型",
     "uploadSelect": {
       "maxSelectionReached": "已達到最大選取限制",
@@ -6287,7 +6353,15 @@
         "salesMemberBody": "請要求工作區擁有者聯絡業務人員。",
         "teamBody": "重新訂閱以再次執行工作流程並取得共享點數。",
         "teamMemberBody": "請要求工作區擁有者重新訂閱。",
+        "teamNotCreatorBody": "此工作區的方案已結束。請要求工作區建立者重新訂閱。",
         "teamTitle": "您的團隊方案已於 {date} 結束"
+      },
+      "planNotStarted": {
+        "body": "完成付款即可啟用。",
+        "bodyUnavailable": "付款完成後，您的方案即會開始。",
+        "title": "您的 {plan} 方案尚未開始",
+        "titleNoPlan": "您的方案尚未開始",
+        "viewPlans": "在「方案」中檢視"
       },
       "updatePayment": "更新付款方式"
     },

@@ -1,7 +1,11 @@
 import { zUploadImageResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
-import { combineAbortSignals } from '@comfyorg/api-client/abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal,
+  throwIfAborted
+} from '@comfyorg/api-client/abortSignal'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
@@ -59,7 +63,7 @@ async function uploadTemplateInput(
 ): Promise<{ ok: true; path: string } | { ok: false; error: Error }> {
   const requestSignal = combineAbortSignals([
     signal,
-    AbortSignal.timeout(120_000)
+    createTimeoutSignal(120_000)
   ])
   let operation = 'download'
   function failure(cause: unknown): { ok: false; error: Error } {
@@ -79,7 +83,7 @@ async function uploadTemplateInput(
     )
     if (!response.ok) return failure(new Error(`HTTP ${response.status}`))
     const bytes = await response.arrayBuffer()
-    requestSignal.throwIfAborted()
+    throwIfAborted(requestSignal)
     const body = new FormData()
     body.append('image', new File([bytes], file))
     body.append('type', 'input')
@@ -100,7 +104,7 @@ async function uploadTemplateInput(
         : result.name
     }
   } catch (cause) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     return failure(cause)
   }
 }
@@ -177,15 +181,15 @@ export async function prepareTemplateInputs(
   const { bindings, files, errors } = getTemplateInputPlan(prepared, inputs, {
     restoreNamed
   })
-  signal.throwIfAborted()
+  throwIfAborted(signal)
   if (!files.size) return { workflow, uploadedCount: 0, errors }
   onStart?.()
   let uploadedCount = 0
   for (const [file, sourceRevision] of files) {
-    signal.throwIfAborted()
+    throwIfAborted(signal)
     try {
       const uploaded = await uploadTemplateInput(file, sourceRevision, signal)
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       if (!uploaded.ok) {
         errors.push(uploaded.error)
         continue
@@ -201,7 +205,7 @@ export async function prepareTemplateInputs(
       }
       uploadedCount++
     } catch (error) {
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       errors.push(error)
     }
   }

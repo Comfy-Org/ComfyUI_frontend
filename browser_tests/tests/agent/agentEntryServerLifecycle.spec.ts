@@ -1,11 +1,26 @@
 import { expect, mergeTests } from '@playwright/test'
 
+import type { ListMembersResponse } from '@comfyorg/ingest-types'
+
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentServerFeature } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-const test = mergeTests(agentTest, webSocketFixture)
+const test = mergeTests(agentTest, webSocketFixture).extend({
+  page: async ({ page }, use) => {
+    await page.route('**/api/workspace/members**', (route) =>
+      route.fulfill(
+        jsonRoute({
+          members: [],
+          pagination: { offset: 0, limit: 50, total: 0, has_more: false }
+        } satisfies ListMembersResponse)
+      )
+    )
+    await use(page)
+  }
+})
 
 test.describe(
   "Agent entry button follows ComfyUI's agent",
@@ -14,14 +29,19 @@ test.describe(
     annotation: {
       type: 'issue',
       description:
-        'https://github.com/Comfy-Org/ComfyUI_frontend/pull/20971: the entry button follows the agent feature ComfyUI publishes, and unit tests only cover that with a mocked store'
+        'https://github.com/Comfy-Org/ComfyUI_frontend/pull/20971: the entry button follows the agent feature ComfyUI publishes and mounts the panel once ready, and unit tests only cover that with a mocked store'
     }
   },
   () => {
     test.use({
       agentFlagEnabled: false,
       connectWebSocketToServer: false,
-      initialLocalStorage: { 'Comfy.AgentPanel.activationVisits': '2' }
+      initialLocalStorage: {
+        'Comfy.AgentPanel.activationVisits': '2',
+        'Comfy.AgentConsent.IntroductionResponded.test-user-e2e.ws-personal':
+          'true',
+        'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal': 'true'
+      }
     })
 
     test('stays inert while the agent starts or fails, then offers it once it is ready', async ({
@@ -84,5 +104,35 @@ test.describe(
         await expect(agentPanel.root).toHaveCount(0)
       })
     })
+
+    test(
+      'opens the panel for a signed-in user who already agreed, once the agent is ready',
+      { tag: '@auth' },
+      async ({ page, agentPanel, getWebSocket }) => {
+        const ws = await getWebSocket()
+        const publish = (type: string, data: unknown) =>
+          ws.send(JSON.stringify({ type, data }))
+
+        const starting: AgentServerFeature = { state: 'starting', reason: null }
+        publish('feature_flags', { agent: starting })
+        await expect(
+          page.getByRole('button', {
+            name: enMessages.agent.entryStarting,
+            exact: true
+          })
+        ).toHaveAttribute('aria-disabled', 'true')
+        await expect(agentPanel.root).toHaveCount(0)
+
+        const ready: AgentServerFeature = { state: 'ready', reason: null }
+        publish('agent_status', ready)
+        await expect(agentPanel.openButton).not.toHaveAttribute(
+          'aria-disabled',
+          'true'
+        )
+        await agentPanel.openButton.click()
+        await expect(agentPanel.root).toBeVisible()
+        await expect(agentPanel.consentDialog).toHaveCount(0)
+      }
+    )
   }
 )
