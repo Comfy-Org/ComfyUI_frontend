@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -57,9 +58,9 @@ function makeMockEventManager() {
 
 function makeStream(): MediaStream {
   const tracks: { stop: ReturnType<typeof vi.fn> }[] = [{ stop: vi.fn() }]
-  return {
+  return fromAny<MediaStream, unknown>({
     getTracks: () => tracks
-  } as unknown as MediaStream
+  })
 }
 
 function makeSourceCanvas(): HTMLCanvasElement {
@@ -87,16 +88,21 @@ describe('RecordingManager', () => {
     // happy-dom canvases lack captureStream; stub it on the prototype so
     // every canvas the production code creates gets a usable stream.
     vi.spyOn(
-      HTMLCanvasElement.prototype as unknown as {
-        captureStream: (fps?: number) => MediaStream
-      },
+      fromAny<
+        {
+          captureStream: (fps?: number) => MediaStream
+        },
+        unknown
+      >(HTMLCanvasElement.prototype),
       'captureStream'
     ).mockImplementation(makeStream)
     // happy-dom returns null from getContext('2d'); production code throws
     // without it. Provide a minimal context with the methods the manager calls.
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue({
-      drawImage: vi.fn()
-    } as unknown as ReturnType<HTMLCanvasElement['getContext']>)
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
+      fromAny<ReturnType<HTMLCanvasElement['getContext']>, unknown>({
+        drawImage: vi.fn()
+      })
+    )
     rafSpy = vi.spyOn(window, 'requestAnimationFrame').mockReturnValue(1)
     vi.spyOn(window, 'cancelAnimationFrame').mockImplementation(() => {})
 
@@ -197,8 +203,8 @@ describe('RecordingManager', () => {
     it('reports a non-zero duration after recording', async () => {
       await manager.startRecording()
       // Force a known startTime so duration math is deterministic.
-      ;(
-        manager as unknown as { recordingStartTime: number }
+      fromAny<{ recordingStartTime: number }, unknown>(
+        manager
       ).recordingStartTime = Date.now() - 2000
 
       manager.stopRecording()

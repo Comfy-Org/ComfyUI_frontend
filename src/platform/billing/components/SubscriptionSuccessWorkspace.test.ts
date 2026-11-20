@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, ref } from 'vue'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import userEvent from '@testing-library/user-event'
@@ -91,9 +92,9 @@ function renderCard(props: Record<string, unknown> = {}) {
   return render(SubscriptionSuccessWorkspace, {
     props: {
       tierKey: 'creator',
-      previewData: {
+      previewData: fromPartial<PreviewSubscribeResponse>({
         new_plan: { price_cents: 1600 }
-      } as unknown as PreviewSubscribeResponse,
+      }),
       ...props
     },
     global: {

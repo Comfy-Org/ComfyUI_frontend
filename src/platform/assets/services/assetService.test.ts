@@ -41,12 +41,9 @@ function buildResponse(
   body: unknown,
   init: { ok?: boolean; status?: number } = {}
 ): Response {
-  return {
-    ok: init.ok ?? true,
-    status: init.status ?? 200,
-    json: vi.fn().mockResolvedValue(body),
-    text: vi.fn().mockResolvedValue(JSON.stringify(body))
-  } as unknown as Response
+  return Response.json(body, {
+    status: init.status ?? (init.ok === false ? 500 : 200)
+  })
 }
 
 function buildAssetListResponse(

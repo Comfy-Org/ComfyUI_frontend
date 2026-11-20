@@ -55,9 +55,7 @@ describe('useTurnstile', () => {
     })
 
     it('clamps an unknown remote-config value to off', () => {
-      remoteConfig.value = {
-        signup_turnstile: 'bogus' as unknown as 'shadow'
-      }
+      remoteConfig.value = { signup_turnstile: 'bogus' }
 
       expect(useTurnstile().mode.value).toBe('off')
     })

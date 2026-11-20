@@ -474,10 +474,7 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
     readWorkflow(assetPath('customNodes/core_smoke.json'))
   )
   await comfyPage.page.evaluate(() => {
-    const w = window as unknown as {
-      __cnEvents?: object[]
-      __cnSelfCheckTimer?: ReturnType<typeof setInterval>
-    }
+    const w = window
     w.__cnSelfCheckTimer = setInterval(() => {
       const sink = w.__cnEvents
       if (!sink || sink.length === 0) return
@@ -498,10 +495,7 @@ test('attribution self-check: a foreign-prompt terminal event cannot fail this r
     timeoutMs: 15000
   })
   const injectionLanded = await comfyPage.page.evaluate(() => {
-    const w = window as unknown as {
-      __cnEvents?: { prompt_id?: string }[]
-      __cnSelfCheckTimer?: ReturnType<typeof setInterval>
-    }
+    const w = window
     clearInterval(w.__cnSelfCheckTimer)
     return (w.__cnEvents ?? []).some(
       (event) => event.prompt_id === 'cn-foreign-self-check'

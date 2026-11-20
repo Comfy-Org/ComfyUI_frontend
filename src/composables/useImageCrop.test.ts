@@ -173,10 +173,7 @@ function makePointerEvent(
   return ev
 }
 
-type CropVm = Record<string, unknown> & {
-  $el: HTMLDivElement
-  modelValue: { x: number; y: number; width: number; height: number }
-}
+type CropVm = InstanceType<typeof ImageCropHarness>
 
 function setupImageLayout(vm: CropVm, nw: number, nh: number) {
   /* Harness root + image are not RTL queries — layout is driven by composable state */
@@ -195,7 +192,7 @@ function setupImageLayout(vm: CropVm, nw: number, nh: number) {
       value: nh
     })
   }
-  ;(vm.handleImageLoad as () => void)()
+  vm.handleImageLoad()
   flushResizeObservers()
 }
 
@@ -211,7 +208,7 @@ async function mountHarness(
     nodeId: Number(nodeId),
     widget
   })
-  const vm = harness.mount(el) as unknown as CropVm
+  const vm = harness.mount(el) as CropVm
   await nextTick()
   await Promise.resolve()
   harnessCleanups.push(() => {
@@ -607,7 +604,7 @@ describe('useImageCrop', () => {
       configurable: true,
       value: 0
     })
-    ;(vm.handleImageLoad as () => void)()
+    vm.handleImageLoad()
     vm.modelValue = { x: 0, y: 0, width: 100, height: 80 }
     const style = vm.cropBoxStyle as Record<string, string>
     expect(parseFloat(style.width)).toBeCloseTo(100, 1)
@@ -628,7 +625,7 @@ describe('useImageCrop', () => {
 
     expect(vm.imageUrl).toBe('https://example.com/a.png')
     expect(vm.isLoading).toBe(true)
-    ;(vm.handleImageLoad as () => void)()
+    vm.handleImageLoad()
     expect(vm.isLoading).toBe(false)
   })
 
@@ -643,14 +640,14 @@ describe('useImageCrop', () => {
 
     expect(vm.imageUrl).toBe('https://example.com/b.png')
     expect(vm.isLoading).toBe(true)
-    ;(vm.handleImageLoad as () => void)()
+    vm.handleImageLoad()
     expect(vm.isLoading).toBe(false)
   })
 
   it('clears imageUrl on image error', async () => {
     const vm = await mountHarness()
     expect(vm.imageUrl).toBeTruthy()
-    ;(vm.handleImageError as () => void)()
+    vm.handleImageError()
     expect(vm.imageUrl).toBeNull()
     expect(vm.isLoading).toBe(false)
   })
@@ -659,13 +656,11 @@ describe('useImageCrop', () => {
     vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue(undefined)
     const vm = await mountHarness()
     expect(vm.imageUrl).toBeNull()
-    const xBefore = vm.cropX as number
+    const xBefore = vm.cropX
     const el = document.createElement('div')
     el.setPointerCapture = vi.fn()
-    ;(vm.handleDragStart as (e: PointerEvent) => void)(
-      makePointerEvent('pointerdown', el, 10, 10)
-    )
-    expect(vm.cropX as number).toBe(xBefore)
+    vm.handleDragStart(makePointerEvent('pointerdown', el, 10, 10))
+    expect(vm.cropX).toBe(xBefore)
   })
 
   it('drags the crop box in image space and ends on pointerup', async () => {
@@ -678,16 +673,16 @@ describe('useImageCrop', () => {
     captureEl.setPointerCapture = vi.fn()
     captureEl.releasePointerCapture = vi.fn()
 
-    const dragStart = vm.handleDragStart as (e: PointerEvent) => void
-    const dragMove = vm.handleDragMove as (e: PointerEvent) => void
-    const dragEnd = vm.handleDragEnd as (e: PointerEvent) => void
+    const dragStart = vm.handleDragStart
+    const dragMove = vm.handleDragMove
+    const dragEnd = vm.handleDragEnd
 
-    const x0 = vm.cropX as number
+    const x0 = vm.cropX
     dragStart(makePointerEvent('pointerdown', captureEl, 200, 150))
     dragMove(makePointerEvent('pointermove', captureEl, 260, 180))
     dragEnd(makePointerEvent('pointerup', captureEl, 260, 180))
-    expect(vm.cropX as number).toBeGreaterThan(x0)
-    expect(vm.cropY as number).toBeGreaterThanOrEqual(0)
+    expect(vm.cropX).toBeGreaterThan(x0)
+    expect(vm.cropY).toBeGreaterThanOrEqual(0)
   })
 
   it.for([
@@ -703,7 +698,7 @@ describe('useImageCrop', () => {
       move: 'handleResizeMove',
       end: 'handleResizeEnd'
     }
-  ])(
+  ] as const)(
     'reports the end of an edit once $gesture ends',
     async ({ start, move, end }) => {
       const vm = await mountHarness()
@@ -711,7 +706,7 @@ describe('useImageCrop', () => {
       const captureEl = document.createElement('div')
       captureEl.setPointerCapture = vi.fn()
       captureEl.releasePointerCapture = vi.fn()
-      const call = (name: string, e: PointerEvent) =>
+      const call = (name: keyof CropVm, e: PointerEvent) =>
         (vm[name] as (e: PointerEvent, dir: string) => void)(e, 'right')
 
       call(start, makePointerEvent('pointerdown', captureEl, 200, 150))
@@ -751,8 +746,8 @@ describe('useImageCrop', () => {
       e: PointerEvent,
       dir: string
     ) => void
-    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
-    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+    const resizeMove = vm.handleResizeMove
+    const resizeEnd = vm.handleResizeEnd
 
     resizeStart(makePointerEvent('pointerdown', captureEl, 200, 120), 'right')
     resizeMove(makePointerEvent('pointermove', captureEl, 260, 120))
@@ -775,8 +770,8 @@ describe('useImageCrop', () => {
       e: PointerEvent,
       dir: string
     ) => void
-    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
-    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+    const resizeMove = vm.handleResizeMove
+    const resizeEnd = vm.handleResizeEnd
 
     resizeStart(makePointerEvent('pointerdown', captureEl, 100, 100), 'top')
     resizeMove(makePointerEvent('pointermove', captureEl, 100, 150))
@@ -828,8 +823,8 @@ describe('useImageCrop', () => {
       e: PointerEvent,
       dir: string
     ) => void
-    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
-    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+    const resizeMove = vm.handleResizeMove
+    const resizeEnd = vm.handleResizeEnd
 
     resizeStart(makePointerEvent('pointerdown', captureEl, 300, 300), 'se')
     resizeMove(makePointerEvent('pointermove', captureEl, 360, 360))
@@ -853,8 +848,8 @@ describe('useImageCrop', () => {
       e: PointerEvent,
       dir: string
     ) => void
-    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
-    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
+    const resizeMove = vm.handleResizeMove
+    const resizeEnd = vm.handleResizeEnd
 
     resizeStart(makePointerEvent('pointerdown', captureEl, 200, 200), 'se')
     resizeMove(makePointerEvent('pointermove', captureEl, 600, 600))
@@ -874,13 +869,13 @@ describe('useImageCrop', () => {
       e: PointerEvent,
       dir: string
     ) => void
-    const resizeMove = vm.handleResizeMove as (e: PointerEvent) => void
-    const resizeEnd = vm.handleResizeEnd as (e: PointerEvent) => void
-    const h0 = vm.cropHeight as number
+    const resizeMove = vm.handleResizeMove
+    const resizeEnd = vm.handleResizeEnd
+    const h0 = vm.cropHeight
     resizeStart(makePointerEvent('pointerdown', captureEl, 10, 10), 'bottom')
     resizeMove(makePointerEvent('pointermove', captureEl, 10, 80))
     resizeEnd(makePointerEvent('pointerup', captureEl, 10, 80))
-    expect(vm.cropHeight as number).toBeGreaterThan(h0)
+    expect(vm.cropHeight).toBeGreaterThan(h0)
   })
 })
 

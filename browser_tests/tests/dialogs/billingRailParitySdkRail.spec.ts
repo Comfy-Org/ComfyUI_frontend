@@ -278,7 +278,8 @@ async function setupParity(
     ...routes,
     openedUrls: () =>
       page.evaluate(
-        () => (window as unknown as { __openedUrls: string[] }).__openedUrls
+        () =>
+          (window as Window & { __openedUrls?: string[] }).__openedUrls ?? []
       )
   }
 }

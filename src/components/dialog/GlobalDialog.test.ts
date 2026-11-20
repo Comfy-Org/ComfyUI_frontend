@@ -431,18 +431,12 @@ describe('GlobalDialog Reka overlay scrim', () => {
 
 describe('shouldPreventRekaDismiss', () => {
   function makeEvent(target: Element | null) {
-    let prevented = false
-    return {
-      detail: { originalEvent: { target } },
-      preventDefault: () => {
-        prevented = true
-      },
-      get defaultPrevented() {
-        return prevented
-      }
-    } as unknown as CustomEvent<{ originalEvent: PointerEvent }> & {
-      defaultPrevented: boolean
-    }
+    const originalEvent = new PointerEvent('pointerdown')
+    Object.defineProperty(originalEvent, 'target', { value: target })
+    return new CustomEvent('pointerDownOutside', {
+      cancelable: true,
+      detail: { originalEvent }
+    })
   }
 
   function appendLayer(mark: (layer: HTMLElement) => void) {

@@ -49,7 +49,7 @@ function makeMockEventManager() {
 }
 
 function makeOrbitControls(target = new THREE.Vector3()) {
-  return { target } as unknown as OrbitControls
+  return fromAny<OrbitControls, unknown>({ target })
 }
 
 describe('ViewHelperManager', () => {

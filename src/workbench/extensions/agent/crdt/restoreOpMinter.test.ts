@@ -1,9 +1,10 @@
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
+import { toWorkflowJson } from './__fixtures__/workflowJson'
 import type { GraphOperation } from './graphOperations'
 import { readDocWidgetValue } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
@@ -23,7 +24,7 @@ const CATALOG: WidgetCatalog = {
 }
 
 function mintDocFrom(graph: LGraph) {
-  return mint(graph.serialize() as unknown as WorkflowJSON, CATALOG)
+  return mint(toWorkflowJson(graph.serialize()), CATALOG)
 }
 
 function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {

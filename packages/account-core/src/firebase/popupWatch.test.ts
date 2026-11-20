@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { PopupWatchCallbacks } from './popupWatch'
 
@@ -32,18 +32,6 @@ vi.mock<unknown>(import('firebase/auth'), () => ({
   browserPopupRedirectResolver: sdk.BrowserPopupRedirectResolver
 }))
 
-interface ResolverUnderTest {
-  _initialize: (auth: unknown) => Promise<{
-    onEvent: (event: unknown) => boolean
-  }>
-  _openPopup: (
-    auth: unknown,
-    provider: unknown,
-    authType: string,
-    eventId?: string
-  ) => Promise<unknown>
-}
-
 const result = (eventId: string) => ({ type: 'signInViaPopup', eventId })
 
 let firebaseOnEvent: ReturnType<typeof vi.fn<(event: unknown) => boolean>>
@@ -58,9 +46,10 @@ beforeEach(() => {
 
 async function load() {
   const watch = await import('./popupWatch')
-  const Resolver =
-    watch.watchedPopupRedirectResolver as unknown as new () => ResolverUnderTest
-  const resolver = new Resolver()
+  const Resolver = watch.watchedPopupRedirectResolver
+  assert(typeof Resolver === 'function')
+  const resolver: unknown = Reflect.construct(Resolver, [])
+  assert.instanceOf(resolver, sdk.BrowserPopupRedirectResolver)
   const auth = {}
   // Firebase initializes the resolver before it opens any popup.
   const manager = await resolver._initialize(auth)

@@ -2,6 +2,8 @@ const ERROR_ASSERTION_MESSAGE =
   'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
 const DOM_INSPECTION_MESSAGE =
   'Do not inspect the DOM inside a computed. Derive from a store instead. See docs/guidance/state-and-effects.md.'
+const DOUBLE_ASSERTION_MESSAGE =
+  'Do not bypass type checking with `as unknown as`. Narrow or construct the value instead. In tests, use `fromPartial` from @total-typescript/shoehorn when a partial fixture is intentional.'
 const DOM_METHOD_MESSAGES = new Map([
   [
     'getBoundingClientRect',
@@ -44,6 +46,7 @@ const TRANSFORM_STYLE_PROPERTIES = new Set([
 const TRANSFORM_WRITE_MESSAGE =
   'Do not write a transform straight to element.style on the graph canvas - Chrome recomposites the whole page on every change. Use useCompositedTransform from @/renderer/core/layout/transform/useCompositedTransform.'
 const TEST_APIS = new Set(['describe', 'it', 'suite', 'test'])
+const HOISTED_VITEST_METHODS = new Set(['hoisted', 'mock'])
 const DISABLING_CONDITION = new Map([
   ['skipIf', true],
   ['runIf', false]
@@ -75,6 +78,15 @@ interface TemplateLiteral extends Node {
 
 interface ImportDeclaration extends Node {
   readonly source: StringLiteral
+  readonly specifiers: readonly Node[]
+  readonly importKind?: 'type' | 'value'
+}
+
+interface ImportSpecifier extends Node {
+  readonly type: 'ImportSpecifier'
+  readonly imported: Identifier
+  readonly local: Identifier
+  readonly importKind?: 'type' | 'value'
 }
 
 interface ImportExpression extends Node {
@@ -124,15 +136,153 @@ interface TypeReference extends Node {
   readonly typeName: Node
 }
 
+interface TypeAssertion extends Node {
+  readonly type: 'TSAsExpression'
+  readonly expression: Node
+  readonly typeAnnotation: Node
+}
+
+interface PendingAssertion {
+  readonly node: TypeAssertion
+  readonly inner: TypeAssertion
+}
+
+interface Scope {
+  readonly set: ReadonlyMap<
+    string,
+    { readonly defs: readonly { readonly type: string }[] }
+  >
+  readonly upper: Scope | null
+}
+
+interface RuleFixer {
+  insertTextBefore(node: Node, text: string): unknown
+  replaceText(node: Node, text: string): unknown
+}
+
 interface RuleContext {
+  readonly filename: string
   readonly sourceCode: {
     getAncestors(node: Node): readonly Node[]
+    getScope(node: Node): Scope
+    getText(node: Node): string
   }
-  report(descriptor: { node: Node; message: string }): void
+  report(descriptor: {
+    node: Node
+    message: string
+    fix?: (fixer: RuleFixer) => unknown
+  }): void
+}
+
+function isNode(value: unknown): value is Node {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'type' in value &&
+    typeof value.type === 'string'
+  )
+}
+
+function isIdentifier(node: Node): node is Identifier {
+  return (
+    node.type === 'Identifier' &&
+    'name' in node &&
+    typeof node.name === 'string'
+  )
+}
+
+function isImportSpecifier(node: Node): node is ImportSpecifier {
+  return (
+    node.type === 'ImportSpecifier' &&
+    'imported' in node &&
+    'local' in node &&
+    isNode(node.imported) &&
+    isNode(node.local) &&
+    isIdentifier(node.imported) &&
+    isIdentifier(node.local)
+  )
+}
+
+function isTypeAssertion(node: Node): node is TypeAssertion {
+  return (
+    node.type === 'TSAsExpression' &&
+    'expression' in node &&
+    'typeAnnotation' in node &&
+    isNode(node.expression) &&
+    isNode(node.typeAnnotation)
+  )
 }
 
 function identifierName(node: Node): string | undefined {
-  return node.type === 'Identifier' ? (node as Identifier).name : undefined
+  return isIdentifier(node) ? node.name : undefined
+}
+
+function importedLocalName(
+  node: ImportDeclaration,
+  importedName: string
+): string | undefined {
+  const specifier = node.specifiers.find(
+    (specifier) =>
+      isImportSpecifier(specifier) &&
+      specifier.importKind !== 'type' &&
+      specifier.imported.name === importedName
+  )
+  return specifier && isImportSpecifier(specifier)
+    ? specifier.local.name
+    : undefined
+}
+
+function resolvesToImport(
+  context: RuleContext,
+  node: Node,
+  name: string
+): boolean {
+  for (
+    let scope: Scope | null = context.sourceCode.getScope(node);
+    scope;
+    scope = scope.upper
+  ) {
+    const variable = scope.set.get(name)
+    if (variable) {
+      return variable.defs.some(({ type }) => type === 'ImportBinding')
+    }
+  }
+  return false
+}
+
+function isHoistedVitestCall(node: Node): node is CallExpression {
+  if (node.type !== 'CallExpression') return false
+  const { callee } = node as CallExpression
+  if (callee.type !== 'MemberExpression') return false
+  const { computed, object, property } = callee as MemberExpression
+  const method = identifierName(property)
+  return (
+    !computed &&
+    identifierName(object) === 'vi' &&
+    method !== undefined &&
+    HOISTED_VITEST_METHODS.has(method)
+  )
+}
+
+function runsInHoistedVitestCallback(
+  context: RuleContext,
+  node: Node
+): boolean {
+  const lineage = [...context.sourceCode.getAncestors(node), node]
+  return lineage.some(
+    (ancestor, index) =>
+      isHoistedVitestCall(ancestor) &&
+      ancestor.arguments.includes(lineage[index + 1])
+  )
+}
+
+function availableHelperName(usedNames: ReadonlySet<string>): string {
+  if (!usedNames.has('fromAny')) return 'fromAny'
+  if (!usedNames.has('fromAnyRuntime')) return 'fromAnyRuntime'
+
+  let suffix = 2
+  while (usedNames.has(`fromAnyRuntime${suffix}`)) suffix++
+  return `fromAnyRuntime${suffix}`
 }
 
 function staticString(node: Node): string | undefined {
@@ -262,6 +412,89 @@ export const noUnsafeErrorAssertion = {
           return
         }
         context.report({ node, message: ERROR_ASSERTION_MESSAGE })
+      }
+    }
+  }
+}
+
+export const noUnknownDoubleAssertion = {
+  meta: { fixable: 'code' },
+  create(context: RuleContext) {
+    let fromAny: string | undefined
+    let program: Node
+    const assertions: PendingAssertion[] = []
+    const usedNames = new Set<string>()
+    const filename = context.filename.replaceAll('\\', '/')
+    const canInsertHelper =
+      /(?:\.test\.|\.spec\.)/.test(filename) &&
+      !filename.includes('/browser_tests/')
+
+    const replacement = (
+      node: TypeAssertion,
+      inner: TypeAssertion,
+      helper: string
+    ) => {
+      return `${helper}<${context.sourceCode.getText(node.typeAnnotation)}, unknown>(${context.sourceCode.getText(inner.expression)})`
+    }
+
+    const canCallHelper = (node: TypeAssertion, helper: string) =>
+      !runsInHoistedVitestCallback(context, node) &&
+      (helper !== fromAny || resolvesToImport(context, node, helper))
+
+    return {
+      Program(node: Node) {
+        program = node
+      },
+      'Program:exit'() {
+        const helper =
+          fromAny ??
+          (canInsertHelper ? availableHelperName(usedNames) : undefined)
+        if (!helper) {
+          assertions.forEach(({ node }) =>
+            context.report({ node, message: DOUBLE_ASSERTION_MESSAGE })
+          )
+          return
+        }
+
+        const fixable = assertions.filter(({ node }) =>
+          canCallHelper(node, helper)
+        )
+        const rewrite = (fixer: RuleFixer, { node, inner }: PendingAssertion) =>
+          fixer.replaceText(node, replacement(node, inner, helper))
+        const fixFor = (assertion: PendingAssertion) => {
+          if (!fixable.includes(assertion)) return undefined
+          if (fromAny) return (fixer: RuleFixer) => rewrite(fixer, assertion)
+          if (assertion !== fixable[0]) return undefined
+          return (fixer: RuleFixer) => [
+            fixer.insertTextBefore(
+              program,
+              `import { fromAny${helper === 'fromAny' ? '' : ` as ${helper}`} } from '@total-typescript/shoehorn'\n`
+            ),
+            ...fixable.map((pending) => rewrite(fixer, pending))
+          ]
+        }
+
+        assertions.forEach((assertion) =>
+          context.report({
+            node: assertion.node,
+            message: DOUBLE_ASSERTION_MESSAGE,
+            fix: fixFor(assertion)
+          })
+        )
+      },
+      Identifier(node: Identifier) {
+        usedNames.add(node.name)
+      },
+      ImportDeclaration(node: ImportDeclaration) {
+        if (node.source.value !== '@total-typescript/shoehorn') return
+        if (node.importKind === 'type') return
+        fromAny ??= importedLocalName(node, 'fromAny')
+      },
+      TSAsExpression(node: TypeAssertion) {
+        if (!isTypeAssertion(node.expression)) return
+        const inner = node.expression
+        if (inner.typeAnnotation.type !== 'TSUnknownKeyword') return
+        assertions.push({ node, inner })
       }
     }
   }

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
@@ -13,7 +14,7 @@ function createMockChip(
   return {
     key: 'input',
     label: 'Input',
-    filter: {
+    filter: fromPartial<FilterChip['filter']>({
       id: 'input',
       matches: vi.fn(),
       fuseSearch: {
@@ -22,7 +23,7 @@ function createMockChip(
         ),
         data
       }
-    } as unknown as FilterChip['filter']
+    })
   }
 }
 

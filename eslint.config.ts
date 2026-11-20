@@ -2,6 +2,7 @@
 
 import pluginJs from '@eslint/js'
 import pluginI18n from '@intlify/eslint-plugin-vue-i18n'
+import { fromAny } from '@total-typescript/shoehorn'
 import betterTailwindcss from 'eslint-plugin-better-tailwindcss'
 import { getDefaultSelectors } from 'eslint-plugin-better-tailwindcss/api/defaults'
 import {
@@ -97,7 +98,7 @@ const specializedThemeTokenPattern = [
 ].join('|')
 const specializedThemeClassPattern = `^(?:.*:)?!?(?:${themeColorUtilityPattern})-(?:${specializedThemeTokenPattern})`
 
-const i18nPlugin = pluginI18n as unknown as ESLint.Plugin
+const i18nPlugin = fromAny<ESLint.Plugin, typeof pluginI18n>(pluginI18n)
 
 // .oxlintrc.json `ignorePatterns` is the shared ignore list for both linters;
 // the rest of the oxlint configs switch off ESLint rules oxlint already runs.

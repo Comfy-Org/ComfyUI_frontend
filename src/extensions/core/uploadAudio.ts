@@ -190,7 +190,7 @@ export const audioWidgetExtension: ComfyExtension = {
 
       const audioUIWidget = node.widgets?.find(
         (w) => w.name === 'audioUI'
-      ) as unknown as DOMWidget<HTMLAudioElement, string>
+      ) as DOMWidget<HTMLAudioElement, string>
       const audio = output.audio[0]
       const resourceUrl = getResourceURL(
         audio.subfolder ?? '',
@@ -223,7 +223,7 @@ export const uploadAudioExtension: ComfyExtension = {
         ) as IStringWidget
         const audioUIWidget = node.widgets?.find(
           (w) => w.name === 'audioUI'
-        ) as unknown as DOMWidget<HTMLAudioElement, string>
+        ) as DOMWidget<HTMLAudioElement, string>
 
         const onAudioWidgetUpdate = () => {
           const value = audioWidget.value
@@ -423,7 +423,7 @@ export const recordAudioExtension: ComfyExtension = {
             try {
               mediaRecorder = new ExtendableMediaRecorder(currentStream, {
                 mimeType: 'audio/wav'
-              }) as unknown as MediaRecorder
+              }) as MediaRecorder
 
               audioChunks = []
 

@@ -34,9 +34,9 @@ async function createNodeWithFilenamePrefix(
   vi.mocked(useApp).mockReturnValue(fromPartial<ComfyApp>({ rootGraph: graph }))
   const ext = saveImageExtraOutputExtension
 
-  const nodeType = {
+  const nodeType = fromPartial<Parameters<BeforeRegisterNodeDef>[0]>({
     prototype: {}
-  } as unknown as Parameters<BeforeRegisterNodeDef>[0]
+  })
   const nodeData = { name: nodeName } as ComfyNodeDef
 
   await ext.beforeRegisterNodeDef!(
