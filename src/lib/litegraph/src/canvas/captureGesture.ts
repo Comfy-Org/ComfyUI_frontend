@@ -1,3 +1,18 @@
+/**
+ * `setPointerCapture` throws a DOMException when the pointer is no longer
+ * active. Match it by name too, because a canvas in another window or iframe
+ * throws that realm's DOMException, which fails `instanceof`.
+ */
+function isDomException(error: unknown): boolean {
+  if (error instanceof DOMException) return true
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'name' in error &&
+    (error.name === 'NotFoundError' || error.name === 'InvalidStateError')
+  )
+}
+
 export function captureGesture(
   element: Element,
   pointerId: number,
@@ -10,7 +25,7 @@ export function captureGesture(
   try {
     element.setPointerCapture(pointerId)
   } catch (error) {
-    if (!(error instanceof DOMException)) throw error
+    if (!isDomException(error)) throw error
   }
   element.addEventListener('lostpointercapture', onLostPointerCapture)
   return () => {

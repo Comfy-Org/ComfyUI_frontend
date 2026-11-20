@@ -66,6 +66,8 @@ export const simpleTouchSupportExtension: ComfyExtension = {
     listeners?.abort()
     listeners = new AbortController()
     const { signal } = listeners
+    touchGesture.count = 0
+    touchGesture.zooming = false
 
     let touchDist: number | null = null
     let touchTime: Date | null = null

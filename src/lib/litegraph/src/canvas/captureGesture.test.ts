@@ -71,4 +71,23 @@ describe('captureGesture', () => {
     expect(onInterrupt).toHaveBeenCalledOnce()
     expect(release).not.toThrow()
   })
+
+  it('tolerates a capture error thrown by another window', () => {
+    const element = document.createElement('div')
+    const foreignError = { name: 'NotFoundError', message: 'gone' }
+    vi.spyOn(element, 'setPointerCapture').mockImplementation(() => {
+      throw foreignError
+    })
+
+    expect(() => captureGesture(element, 1, vi.fn())).not.toThrow()
+  })
+
+  it('rethrows errors that are not capture failures', () => {
+    const element = document.createElement('div')
+    vi.spyOn(element, 'setPointerCapture').mockImplementation(() => {
+      throw new TypeError('boom')
+    })
+
+    expect(() => captureGesture(element, 1, vi.fn())).toThrow(TypeError)
+  })
 })
