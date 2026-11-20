@@ -9,6 +9,7 @@ import type {
   PointTuple as Point,
   Rect
 } from '@comfyorg/shared-frontend-utils/geometry'
+import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { CanvasPointerEvent } from '@comfyorg/graph-model/events'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
@@ -876,10 +877,13 @@ describe('LGraphNode', () => {
     test('Vue mode measures collapsed content without replacing requested size', () => {
       const graph = new LGraph()
       graph.add(node)
-      layoutStore.reportContentSize(graph.rootGraph.id, node.id, {
-        width: 90,
-        height: 12
-      })
+      bindMountedNodeSize(graph, node.id, () => {}).report(
+        {
+          width: 90,
+          height: 12
+        },
+        true
+      )
       LiteGraph.vueNodesMode = true
       node.measure(out)
 

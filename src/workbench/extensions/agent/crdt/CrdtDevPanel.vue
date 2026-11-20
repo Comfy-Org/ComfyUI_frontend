@@ -44,9 +44,11 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
-
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
-import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
+
+import type { CrdtLogScope, DevEvent } from './crdtLog'
+import type { CrdtLogLevel } from './crdtLogLevel'
+import { CRDT_LOG_LEVELS } from './crdtLogLevel'
 import type {
   CrdtDebugReportInput,
   ReportIdentifiers,
@@ -57,14 +59,13 @@ import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport
 } from './crdtDebugReport'
-import type { CrdtLogScope, DevEvent } from './devPanelLog'
 import {
   DEV_EVENT_KINDS,
   clearDevEvents,
   devEventReplacer,
   devEvents,
   stringifyDevEvents
-} from './devPanelLog'
+} from './crdtLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type {
@@ -367,11 +368,11 @@ const visibleLogRows = computed<readonly LogRow[]>(() =>
     })
 )
 
-const level = ref<string | undefined>(crdtLogLevel())
+const level = defineModel<CrdtLogLevel>('level', { default: 'info' })
 
 function onLevelChange(next: string | number | undefined) {
   const value = CRDT_LOG_LEVELS.find((candidate) => candidate === next)
-  if (value) setCrdtLogLevel(value)
+  if (value) level.value = value
 }
 
 // ── merge lab ─────────────────────────────────────────────────────────────
@@ -784,7 +785,7 @@ function fmtTime(at: number): string {
         <Label class="ml-auto text-muted-foreground">
           {{ t(`${i18nKey}.verbosity`) }}
           <SingleSelect
-            v-model="level"
+            :model-value="level"
             :label="t(`${i18nKey}.verbosity`)"
             :accessible-label="t(`${i18nKey}.verbosity`)"
             :options="verbosityOptions"

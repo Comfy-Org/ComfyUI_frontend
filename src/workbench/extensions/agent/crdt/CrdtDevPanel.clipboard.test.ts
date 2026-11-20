@@ -16,20 +16,18 @@ const { copyToClipboard, reportError } = vi.hoisted(() => ({
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copied: ref(false), copyToClipboard })
 }))
-vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
-  reportError
-}))
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({ reportError }))
 
 import type { AgentCrdtStatus } from './agentCrdtStatus'
 import CrdtDevPanel from './CrdtDevPanel.vue'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import * as crdtDebugReport from './crdtDebugReport'
 import {
   clearDevEvents,
   devEvents,
   recordDevEvent,
   stringifyDevEvents
-} from './devPanelLog'
+} from './crdtLog'
 
 vi.mock(import('@/scripts/api'))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
@@ -73,7 +71,7 @@ describe('CrdtDevPanel clipboard controls', () => {
   beforeEach(() => {
     api.clientId = 'client-test-1'
     api.api_host = 'localhost:8188'
-    setCrdtDebugEnabled(true)
+    remoteConfig.value = { 'Comfy.Agent.CrdtDebug': true }
     clearDevEvents()
     localStorage.clear()
     copyToClipboard.mockClear()
