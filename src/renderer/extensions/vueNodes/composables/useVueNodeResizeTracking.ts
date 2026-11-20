@@ -11,7 +11,10 @@ import type { Ref } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { bindMountedNodeSize } from '@/renderer/core/layout/store/mountedNodeSizes'
+import {
+  bindMountedNodeSize,
+  mountedGraphScope
+} from '@/renderer/core/layout/store/mountedNodeSizes'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 
@@ -88,11 +91,14 @@ export function useMountedNodeSize(
       () => element.value,
       id,
       type,
-      () => canvasStore.currentGraph,
+      () => canvasStore.currentGraph?.rootGraph,
+      () =>
+        canvasStore.currentGraph && mountedGraphScope(canvasStore.currentGraph),
       () => canvasStore.canvas,
       rebinding
     ],
-    ([element, id, , graph, canvas], _, onCleanup) => {
+    ([element, id, , , , canvas], _, onCleanup) => {
+      const graph = canvasStore.currentGraph
       if (!element || !graph || !canvas) return
       const nodeId = toNodeId(id)
       const binding = bindMountedNodeSize(graph, nodeId, () => {

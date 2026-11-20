@@ -5,6 +5,7 @@ import { defineComponent, h, nextTick, useTemplateRef } from 'vue'
 
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraphData } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
 import {
@@ -155,6 +156,33 @@ describe('mounted Vue node measurements', () => {
     expect(readMountedNodeSize(next, id, { collapsed: false })?.width).toBe(225)
     view.unmount()
     expect(readMountedNodeSize(next, id, { collapsed: false })).toBeUndefined()
+  })
+
+  it('keeps mounted measurements when history rebuilds the open subgraph', async () => {
+    const original = graph.createSubgraph(createTestSubgraphData())
+    const canvasStore = useCanvasStore()
+    canvasStore.currentGraph = original
+    const { observer, element } = await mountNode()
+    observer.resize(element, 420, 180)
+    const snapshot = graph.asSerialisable()
+    snapshot.definitions = { subgraphs: [original.asSerialisable()] }
+
+    graph.configure(snapshot, undefined, { preserveMountedNodeSizes: true })
+    const restored = graph.subgraphs.get(original.id)
+    if (!restored || restored === original)
+      throw new Error('Expected a rebuilt subgraph')
+    canvasStore.currentGraph = restored
+    await nextTick()
+    expect(readMountedNodeSize(restored, id, { collapsed: false })?.width).toBe(
+      420
+    )
+
+    graph.configure(snapshot)
+    const replacement = graph.subgraphs.get(original.id)
+    if (!replacement) throw new Error('Expected a replacement subgraph')
+    expect(
+      readMountedNodeSize(replacement, id, { collapsed: false })
+    ).toBeUndefined()
   })
 
   it('defers hidden deliveries and ignores unchanged measurements on return', async () => {
