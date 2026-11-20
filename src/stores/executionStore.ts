@@ -677,6 +677,13 @@ export const useExecutionStore = defineStore('execution', () => {
     if (!activeJobId.value) setActiveJob(jobId)
   }
 
+  function activateOverForeignJob(jobId: JobId) {
+    const activeId = activeJobId.value
+    if (!activeId || activeId === jobId) return
+    if (rememberStampAndCheckActiveWorkflow(activeId)) return
+    if (rememberStampAndCheckActiveWorkflow(jobId)) setActiveJob(jobId)
+  }
+
   function handOffActiveJob() {
     setActiveJob(
       pickNextFocusedJob(startedJobIdsByStart(), (jobId) =>
@@ -705,6 +712,7 @@ export const useExecutionStore = defineStore('execution', () => {
     rememberStampedWorkflowId(jobId, e.detail.workflow_id)
     executionErrorStore.clearExecutionStartErrors(runErrorKeyForJob(jobId))
     activateIfIdle(jobId)
+    activateOverForeignJob(jobId)
     if (!queuedJobs.value[jobId].nodeLookup) void adoptRunningPrompt(jobId)
   }
 
@@ -1295,6 +1303,11 @@ export const useExecutionStore = defineStore('execution', () => {
     flushPendingExecutionError(id)
     flushPendingSkippedOutputs(id)
     if (id === activeJobId.value) showActiveJobProgress()
+    else if (
+      id in queuedJobs.value &&
+      queuedJob.executionStartedAt !== undefined
+    )
+      activateOverForeignJob(id)
   }
 
   function flushPendingExecutionError(jobId: string) {
