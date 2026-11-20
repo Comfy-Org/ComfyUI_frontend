@@ -447,6 +447,27 @@ describe('useLocalModelUploadStore', () => {
     }
   )
 
+  it('shows a completion refusal without retrying the same staged upload', async () => {
+    const upload = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockImplementationOnce(async (_file, options) => {
+        options.onCompleting?.({ uploadId: 'staged-upload' })
+        return { ok: false, reason: 'featureDisabled' }
+      })
+    const store = await prepared()
+    store.choose(lora, loraFile)
+
+    await store.start([lora])
+
+    expect(upload).toHaveBeenCalledOnce()
+    expect(store.upload).toMatchObject({
+      phase: 'failed',
+      reason: 'featureDisabled'
+    })
+    expect(store.pickOf(lora).status).toBe('chosen')
+    expect(localModelUploadApi.waitForStoredModel).not.toHaveBeenCalled()
+  })
+
   it.for([true, false])(
     'checks model availability after a task disappears (%s)',
     async (available) => {

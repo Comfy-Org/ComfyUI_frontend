@@ -274,7 +274,10 @@ describe('modelFileUploadApi.uploadModelFile', () => {
   })
 
   it.for([
-    { code: 'FEATURE_DISABLED', expected: { ok: false, reason: 'failed' } },
+    {
+      code: 'FEATURE_DISABLED',
+      expected: { ok: false, reason: 'featureDisabled' }
+    },
     {
       code: 'PRIVATE_MODELS_DISABLED',
       expected: { ok: false, reason: 'privateModelsDisabled' }
@@ -369,6 +372,7 @@ describe('modelFileUploadApi.uploadModelFile', () => {
   })
 
   it.for([
+    [403, 'FEATURE_DISABLED', 'featureDisabled'],
     [403, 'PRIVATE_MODELS_DISABLED', 'privateModelsDisabled'],
     [503, 'PRIVATE_MODELS_UNAVAILABLE', 'planUnavailable'],
     [400, 'UNSUPPORTED_FILE_TYPE', 'unsupportedFile']

@@ -4774,6 +4774,7 @@
       "choose": "Choose a file",
       "drop": "Or drop a .safetensors file here",
       "failed": "Upload failed. Try again.",
+      "featureDisabled": "Model uploads are currently unavailable.",
       "notSafetensors": "Only .safetensors files can be uploaded.",
       "notStopped": "Couldn't confirm the earlier upload stopped, so the file wasn't sent again.",
       "planUnavailable": "Couldn't check your plan. Try again.",

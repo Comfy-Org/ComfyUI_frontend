@@ -22,6 +22,7 @@ type UploadStopped = Extract<ModelFileUploadResult, { ok: false }>
 
 const FAILURE_COPY: Partial<Record<UploadStopped['reason'], string>> = {
   cancelled: 'assetBrowser.fileUpload.cancelled',
+  featureDisabled: 'assetBrowser.fileUpload.featureDisabled',
   sessionExpired: 'assetBrowser.fileUpload.sessionExpired',
   unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
   unsupportedType: 'assetBrowser.fileUpload.unsupportedType',

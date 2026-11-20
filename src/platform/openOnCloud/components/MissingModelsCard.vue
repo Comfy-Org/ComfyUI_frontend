@@ -137,6 +137,7 @@ const PRIMARY_COPY: Record<Footer, string> = {
 
 const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
   cancelled: 'openOnCloud.missingModels.cancelled',
+  featureDisabled: 'assetBrowser.fileUpload.featureDisabled',
   privateModelsDisabled: 'assetBrowser.fileUpload.privateModelsDisabled',
   planUnavailable: 'assetBrowser.fileUpload.planUnavailable',
   sessionExpired: 'assetBrowser.fileUpload.sessionExpired',

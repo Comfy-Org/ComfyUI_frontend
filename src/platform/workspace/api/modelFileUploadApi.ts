@@ -31,6 +31,7 @@ type ModelFileUploadFailure =
   | 'unsupportedType'
   | 'tooLarge'
   | 'storageLimit'
+  | 'featureDisabled'
   | 'privateModelsDisabled'
   | 'planUnavailable'
   | 'sessionExpired'
@@ -38,6 +39,7 @@ type ModelFileUploadFailure =
   | 'failed'
 
 const FAILURE_BY_CODE: Partial<Record<string, ModelFileUploadFailure>> = {
+  FEATURE_DISABLED: 'featureDisabled',
   UNSUPPORTED_FILE_TYPE: 'unsupportedFile',
   UNSUPPORTED_MODEL_TYPE: 'unsupportedType',
   PRIVATE_MODELS_DISABLED: 'privateModelsDisabled',
