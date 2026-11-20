@@ -2515,6 +2515,7 @@ export class LGraph
     const newLinks: (LinkPresentation & {
       oid: NodeId
       oslot: number
+      originInput?: SubgraphInput
       tid: NodeId
       tslot: number
       id: LinkId
@@ -2567,6 +2568,10 @@ export class LGraph
         continue
       }
       const originSlot = outerLink?.origin_slot ?? link.origin_slot
+      const originInput =
+        this instanceof Subgraph && outerLink?.origin_id === SUBGRAPH_INPUT_ID
+          ? this.inputs[originSlot]
+          : undefined
       const externalParentId = outerLink?.parentId
       if (link.target_id === SUBGRAPH_OUTPUT_ID) {
         for (const sublink of outputLinks(
@@ -2581,6 +2586,7 @@ export class LGraph
           newLinks.push({
             oid: originId,
             oslot: originSlot,
+            originInput,
             tid: sublink.target_id,
             tslot: sublink.target_slot,
             id: link.id,
@@ -2614,6 +2620,7 @@ export class LGraph
       newLinks.push({
         oid: originId,
         oslot: originSlot,
+        originInput,
         tid: targetId,
         tslot: link.target_slot,
         id: link.id,
@@ -2663,7 +2670,8 @@ export class LGraph
           console.error('Ignoring link to subgraph outside subgraph')
           continue
         }
-        if (newLink.tid === UNASSIGNED_NODE_ID) continue
+        const { originInput } = newLink
+        if (!originInput || newLink.tid === UNASSIGNED_NODE_ID) continue
         const tnode = this.getNodeById(newLink.tid)
         if (!tnode) continue
         const targetSlot = resolveUnpackedTargetInput(
@@ -2674,10 +2682,7 @@ export class LGraph
         created =
           targetSlot === -1
             ? null
-            : this.inputNode.slots[newLink.oslot].connect(
-                tnode.inputs[targetSlot],
-                tnode
-              )
+            : originInput.connect(tnode.inputs[targetSlot], tnode)
       } else if (newLink.tid == SUBGRAPH_OUTPUT_ID) {
         if (!(this instanceof Subgraph)) {
           console.error('Ignoring link to subgraph outside subgraph')
@@ -3526,6 +3531,7 @@ export class Subgraph
 
     this.inputs.push(input)
     this.events.dispatch('input-added', { input })
+    sortWidgetlessInputsFirst(this)
 
     return input
   }

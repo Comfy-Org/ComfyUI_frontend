@@ -567,6 +567,38 @@ describe('SubgraphConversion', () => {
         )
       ).toBeNull()
     })
+    it('reconnects each nested widget input to its own subgraph input after unpacking', () => {
+      const graph = createTestRootGraph()
+      onTestFinished(enableSubgraphNodeCreation(graph))
+      const seed = createTestNode(graph)
+      const { subgraph: outer } = graph.convertToSubgraph(
+        new Set<Positionable>([seed])
+      )
+      const plainTarget = createTestNode(outer, ['number'])
+      outer
+        .addInput('plain', 'number')
+        .connect(plainTarget.inputs[0], plainTarget)
+      const widgetNodes = ['first', 'second'].map((name) => {
+        const node = createTestWidgetNode(outer)
+        node.title = name
+        node.inputs[0].widget = { name: 'text_widget' }
+        outer.addInput(name, 'number').connect(node.inputs[0], node)
+        return node
+      })
+      const { node: nestedNode } = outer.convertToSubgraph(
+        new Set<Positionable>(widgetNodes)
+      )
+
+      outer.unpackSubgraph(nestedNode)
+
+      expect(
+        ['first', 'second'].map((title) => {
+          const node = outer.nodes.find((n) => n.title === title)
+          const link = node?.getInputLink(0)
+          return link && outer.inputs[link.origin_slot]?.name
+        })
+      ).toEqual(['first', 'second'])
+    })
     it('preserves output-boundary targets when earlier links shift inputs', () => {
       const graph = createTestRootGraph()
       onTestFinished(enableSubgraphNodeCreation(graph))

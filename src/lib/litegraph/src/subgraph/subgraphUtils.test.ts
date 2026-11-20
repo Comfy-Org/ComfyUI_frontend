@@ -197,6 +197,15 @@ describe('subgraphUtils', () => {
       expect(orders(subgraph, host)).toEqual({ subgraph: order, host: order })
     })
 
+    it('adds a new unconnected input before the widget inputs', () => {
+      const { subgraph, host } = createSubgraphWithWidgetInputs()
+
+      subgraph.addInput('latent', 'LATENT')
+
+      const order = ['image', 'mask', 'latent', 'seed', 'steps']
+      expect(orders(subgraph, host)).toEqual({ subgraph: order, host: order })
+    })
+
     it('removes a widget input that follows another widget input', () => {
       const { subgraph, host, steps } = createSubgraphWithWidgetInputs()
 
