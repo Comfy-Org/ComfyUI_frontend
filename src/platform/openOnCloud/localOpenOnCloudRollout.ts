@@ -21,6 +21,7 @@ type RolloutSession = {
   getToken?: () => Promise<string | undefined>
   signal: AbortSignal
   latestRequest: number
+  revalidation?: Promise<boolean>
 }
 let currentSession: RolloutSession | undefined
 
@@ -128,7 +129,6 @@ async function readRollout(
   return false
 }
 
-/** Keeps a handoff bound to the identity that started it. */
 export function bindLocalOpenOnCloudGrant() {
   const session = currentSession
   const isCurrent = () => currentSession === session
@@ -136,9 +136,12 @@ export function bindLocalOpenOnCloudGrant() {
     isCurrent,
     async revalidate() {
       if (!session || !isCurrent()) return false
-      // The signed-out development override has no account grant to refresh.
-      if (!session.getToken) return true
-      return await readRollout(session, false)
+      const isSignedOut = !session.getToken
+      if (isSignedOut) return true
+      session.revalidation ??= readRollout(session, false).finally(() => {
+        session.revalidation = undefined
+      })
+      return await session.revalidation
     }
   }
 }

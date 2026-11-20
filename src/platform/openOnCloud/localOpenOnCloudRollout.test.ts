@@ -157,3 +157,21 @@ it('cannot use a revalidation response after the initiating account signs out', 
   expect(authorization.isCurrent()).toBe(false)
   expect(visible()).toEqual([false, false])
 })
+
+it('shares a fresh grant read for overlapping handoffs in the same account', async () => {
+  const { userId, visible } = start()
+  const fresh = deferredResponse()
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(Response.json(allowed))
+    .mockReturnValueOnce(fresh.promise)
+  userId.value = 'employee-token'
+  await vi.waitFor(() => expect(visible()).toEqual([true, true]))
+
+  const first = bindLocalOpenOnCloudGrant().revalidate()
+  const second = bindLocalOpenOnCloudGrant().revalidate()
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+  fresh.resolve(Response.json(allowed))
+
+  await expect(Promise.all([first, second])).resolves.toEqual([true, true])
+  expect(fetch).toHaveBeenCalledTimes(2)
+})
