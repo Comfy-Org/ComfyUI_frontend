@@ -5,7 +5,10 @@ import { useI18n } from 'vue-i18n'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { reportError } from '@comfyorg/telemetry/reportError'
-import type { AgentWorkflowBindSource } from '@comfyorg/telemetry/types'
+import type {
+  AgentTargetUnavailableCause,
+  AgentWorkflowBindSource
+} from '@comfyorg/telemetry/types'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -24,7 +27,11 @@ import type {
 
 type RestorationOutcome =
   | { outcome: 'open'; target: ComfyWorkflow | null }
-  | { outcome: 'deleted' }
+  | {
+      outcome: 'deleted'
+      cause: Exclude<AgentTargetUnavailableCause, 'workflow_deleted'>
+      startupTabRestoreSettled: boolean
+    }
   | { outcome: 'superseded' }
 
 interface WorkflowRestoration {
@@ -45,11 +52,16 @@ const RESTORE_ABANDONED: WorkflowRestoration = {
 
 function restorationOutcomeFor(
   lifecycle: CloudWorkflowLifecycle,
-  target: ComfyWorkflow | null
+  target: ComfyWorkflow | null,
+  startupTabRestoreSettled: boolean
 ): RestorationOutcome {
   switch (lifecycle) {
     case 'gone':
-      return { outcome: 'deleted' }
+      return {
+        outcome: 'deleted',
+        cause: 'restore_gone',
+        startupTabRestoreSettled
+      }
     case 'live':
     case 'unknown':
       return { outcome: 'open', target }
@@ -274,12 +286,22 @@ export function useAgentWorkflowSelection({
         return { outcome: 'superseded' }
       target = localOwnerFor(workflowId)
     }
+    const startupTabRestoreSettled = workflowStore.tabsRestored
     if (!listed || !cloudListingOmits(workflowId))
       return { outcome: 'open', target }
-    if (target === null) return { outcome: 'deleted' }
+    if (target === null)
+      return {
+        outcome: 'deleted',
+        cause: 'restore_not_listed',
+        startupTabRestoreSettled
+      }
     const lifecycle = await cloudWorkflowLifecycle(workflowId)
     if (!isCurrent()) return { outcome: 'superseded' }
-    return restorationOutcomeFor(lifecycle, localOwnerFor(workflowId))
+    return restorationOutcomeFor(
+      lifecycle,
+      localOwnerFor(workflowId),
+      startupTabRestoreSettled
+    )
   }
 
   function localOwnerFor(workflowId: string): ComfyWorkflow | null {
@@ -315,9 +337,14 @@ export function useAgentWorkflowSelection({
     if (cached !== null)
       return openRestoredWorkflow(cached, workflowId, isCurrent)
     const resolved = await resolveRestorationTarget(workflowId, isCurrent)
-    if (resolved.outcome === 'superseded') return RESTORE_ABANDONED
+    if (resolved.outcome === 'superseded' || !isCurrent())
+      return RESTORE_ABANDONED
     if (resolved.outcome === 'deleted') {
-      panelStore.markWorkflowTargetUnavailable()
+      panelStore.markWorkflowTargetUnavailable({
+        cause: resolved.cause,
+        workflow_id: workflowId,
+        startup_tab_restore_settled: resolved.startupTabRestoreSettled
+      })
       return NOT_RESTORED
     }
     return openRestoredWorkflow(resolved.target, workflowId, isCurrent)

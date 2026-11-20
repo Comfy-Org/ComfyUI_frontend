@@ -27,4 +27,4 @@ runs:
       shell: bash
       env:
         COMFYUI_PIN_REPOSITORY: ${{ runner.temp }}/comfyui-pin
-      run: pnpm exec tsx scripts/cicd/core-release-targets.ts
+      run: pnpm exec tsx tools/ci/src/cicd/core-release-targets.ts
