@@ -538,6 +538,62 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     it.for([
+      {
+        session: 'signed out',
+        user: null,
+        reports: []
+      },
+      {
+        session: 'signed in',
+        user: { id: 'account-a' },
+        reports: [[{ reason: 'storage_unavailable' }]]
+      }
+    ])(
+      'keeps an unanswered $session introduction bounded when storage cannot be written',
+      async ({ user, reports }) => {
+        currentUser.value = user
+        vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+          throw new Error('Storage unavailable')
+        })
+
+        await loadEntryAndSetup()
+        await flush()
+
+        expect(agentStore.isVisible).toBe(false)
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+        expect((await notOffered()).mock.calls).toEqual(reports)
+      }
+    )
+
+    it.for([
+      { session: 'signed out', user: null, scope: 'signed-out' },
+      {
+        session: 'signed in',
+        user: { id: 'account-a' },
+        scope: 'account-a.workspace-a'
+      }
+    ])(
+      'stays silent for an answered $session introduction when storage cannot be written',
+      async ({ user, scope }) => {
+        currentUser.value = user
+        localStorage.setItem(
+          `Comfy.AgentConsent.IntroductionResponded.${scope}`,
+          'true'
+        )
+        vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+          throw new Error('Storage unavailable')
+        })
+
+        await loadEntryAndSetup()
+        await flush()
+
+        expect(agentStore.isVisible).toBe(false)
+        expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+        expect(await notOffered()).not.toHaveBeenCalled()
+      }
+    )
+
+    it.for([
       { state: 'unknown', agent: undefined },
       { state: 'starting', agent: { state: 'starting', reason: null } },
       { state: 'failed', agent: { state: 'failed', reason: 'not_found' } }

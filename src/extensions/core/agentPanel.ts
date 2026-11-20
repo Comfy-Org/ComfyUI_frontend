@@ -419,6 +419,13 @@ export function registerAgentPanelExtension(): void {
       function prepareStartupPanel(): boolean {
         if (agentPanelStore.onboarding.startup === 'lockedUntilConsent')
           return prepareLockedStartup()
+        if (
+          agentPanelStore.onboarding.offerMemory === 'answered' &&
+          !introductionOwed()
+        ) {
+          dropHold()
+          return false
+        }
         if (!launchInActivationWindow) {
           reportOfferExit('activation_window_complete', 'startup')
           dropHold()
