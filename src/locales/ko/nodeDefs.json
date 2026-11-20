@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Bria RMBG 2.0을 사용하여 이미지에서 배경을 제거합니다.",
+    "description": "Bria RMBG 2.0 또는 RMBG 3.0을 사용하여 이미지에서 배경을 제거합니다.",
     "display_name": "Bria 이미지 배경 제거",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "image"
       },
+      "model": {
+        "name": "모델"
+      },
       "moderation": {
         "name": "moderation",
         "tooltip": "모더레이션 설정"
       },
       "seed": {
         "name": "seed",
-        "tooltip": "시드는 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 동일한 이미지는 항상 동일한 결과를 제공합니다."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_duration": {
         "name": "duration"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "모델",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "최신 모델, 최대 30초 비디오, 4k 및 mp4/mov 출력에는 Seedance 2.5를 사용합니다. 빠른 480p 미리보기에는 Seedance 2.5 Draft를 사용하며, 해당 draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종본을 렌더링합니다. 최고 품질 및 4k에는 Seedance 2.0을, 속도 최적화에는 Fast를, 가장 빠르고 비용이 가장 낮은 생성에는 Mini를 사용합니다."
+        "tooltip": "최신 모델용 Seedance 2.5: 최대 30초 동영상, 4k 및 mp4/mov 출력 지원. 빠른 480p 미리보기용 Seedance 2.5 Draft: draft_task_id로 Seedance 2.5 Draft to Final Video 노드에서 1080p 또는 4k 최종 영상을 렌더링합니다. 최대 30초의 480p 및 720p 동영상용 Seedance 2.5 Flash. 최고 품질 및 4k용 Seedance 2.0. 속도 최적화용 Fast. 가장 빠르고 비용이 가장 낮은 생성용 Mini."
       },
       "model_duration": {
         "name": "duration"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "camera_info를 생성합니다. 'orbit' 모드는 대상 주위에서 yaw/pitch/distance로 조준하며, 'look_at' 모드는 월드 위치에 카메라를 배치합니다. 좌표는 뷰어의 월드 공간입니다(right-handed,Y-up).",
+    "description": "camera_info를 생성합니다. 'orbit' 모드는 대상 주위에서 yaw/pitch/distance로 조준하며, 'look_at'은 카메라를 월드 위치에 배치합니다. 좌표는 뷰어의 월드 공간(오른손 좌표계, Y-up)을 기준으로 하며, mesh가 연결된 경우 해당 mesh의 프레임을 기준으로 하므로 동일한 설정으로 모든 mesh를 프레이밍할 수 있습니다.",
     "display_name": "카메라 정보 생성",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "수직 시야각(도 단위)."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "이 mesh를 프레이밍합니다. 위치, 대상 및 거리는 경계 구의 지름을 단위로 하여 경계 상자의 중심에서 계산되므로, 동일한 설정으로 모든 mesh를 프레이밍할 수 있습니다."
       },
       "mode": {
         "name": "mode",
@@ -8458,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "HeyGen Avatar 6를 사용하여 텍스트 스크립트 또는 직접 제공한 오디오로 구동되는 HeyGen 아바타의 말하는 비디오를 생성합니다.",
+    "display_name": "HeyGen Avatar 6 아이덴티티-비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "'auto'는 아바타의 원본 영상 비율을 따릅니다."
+      },
+      "avatar": {
+        "name": "아바타"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "motion_expressiveness": {
+        "name": "모션 표현력",
+        "tooltip": "'less'는 더 적고 작은 제스처를 적용합니다. 겹치는 부분에서는 모션 프롬프트가 우선합니다."
+      },
+      "motion_prompt": {
+        "name": "모션 프롬프트",
+        "tooltip": "제스처, 표정, 자세 및 카메라 움직임입니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "speech": {
+        "name": "음성",
+        "tooltip": "텍스트 스크립트(HeyGen 텍스트 음성 변환) 또는 직접 제공한 오디오로 아바타를 구동합니다."
+      },
+      "speech_custom_voice_id": {
+        "name": "사용자 지정 음성 ID"
+      },
+      "speech_text": {
+        "name": "텍스트"
+      },
+      "speech_voice": {
+        "name": "음성"
+      },
+      "speech_voice_speed": {
+        "name": "음성 속도"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "HeyGen Avatar 6를 사용하여 사진 또는 비디오 속 인물이나 캐릭터가 연결된 오디오를 말하도록 만듭니다. 이미지, 비디오 또는 둘 다를 연결하세요.",
+    "display_name": "HeyGen Avatar 6 참조-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_motion_expressiveness": {
+        "name": "모션 표현력"
+      },
+      "model_motion_prompt": {
+        "name": "모션 프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "HeyGen 아바타로부터 발표자 영상을 생성합니다. HeyGen의 가장 인기 있는 공개 아바타가 포함되어 있으며, look ID를 입력하여 원하는 아바타로 대체할 수 있습니다.",
     "display_name": "HeyGen 아바타 비디오",
@@ -8548,6 +8642,9 @@
       "model": {
         "name": "모델"
       },
+      "model_auto_duration": {
+        "name": "자동 지속 시간"
+      },
       "model_duration": {
         "name": "길이"
       },
@@ -8568,7 +8665,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "HeyGen Video 1.0을 사용하여 텍스트 프롬프트로부터 동기화된 대화와 사운드가 포함된 비디오를 생성합니다. 선택적으로 최대 12개의 참조 이미지, 비디오 및 오디오 클립을 연결하고 프롬프트에서 {'@'}Image1, {'@'}Video1, {'@'}Audio1로 언급할 수 있습니다.",
+    "description": "HeyGen Video 1.0을 사용하여 텍스트 프롬프트로 동기화된 대화와 사운드가 포함된 비디오를 생성합니다. 선택적으로 최대 15개의 참조 이미지, 비디오 및 오디오 클립을 연결하고 프롬프트에서 {'@'}Image1, {'@'}Video1, {'@'}Audio1로 언급할 수 있습니다.",
     "display_name": "HeyGen Video 1.0 참조-비디오",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8676,9 @@
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "model_auto_duration": {
+        "name": "자동 지속 시간"
       },
       "model_duration": {
         "name": "길이"
@@ -10632,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "텍스트 프롬프트와 최대 10장의 참조 이미지를 바탕으로 단일 이미지 또는 서로 관련된 이미지 시리즈를 생성하거나 편집합니다.",
+    "display_name": "Kling 4.0 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "auto는 참조 이미지를 따르며, 그렇지 않은 경우 프롬프트를 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "참조 이미지는 @Image1, @Image2, ...로 지정하세요."
+      },
+      "reference_images": {
+        "name": "참조 이미지"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "series_amount": {
+        "name": "시리즈 수",
+        "tooltip": "동일한 캐릭터와 스타일을 유지하는 관련 이미지 시리즈를 생성합니다. auto를 선택하면 모델이 2~10장의 이미지를 선택합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "kling-4.0에서는 최대 10개의 키프레임을 통해 오디오가 포함된 비디오를 생성하거나, kling-4.0-flash에서는 첫 프레임으로부터 생성합니다. 중간 프레임은 균등한 간격으로 배치되며, 비디오는 첫 번째 키프레임의 종횡비를 따릅니다.",
     "display_name": "Kling 4.0 이미지를 비디오로",
@@ -10652,6 +10788,32 @@
         "name": "해상도"
       },
       "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "웹페이지 디자인 또는 전자상거래 상품 상세 페이지용 세로로 긴 이미지 하나를 생성합니다.",
+    "display_name": "Kling 4.0 긴 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "skill": {
+        "name": "기술"
+      },
+      "skill_prompt": {
+        "name": "프롬프트"
+      },
+      "skill_resolution": {
+        "name": "해상도"
+      },
+      "skill_seed": {
         "name": "시드"
       }
     },
@@ -13723,34 +13885,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "루마 텍스트 투 비디오 및 루마 이미지 투 비디오 노드에서 사용할 하나 이상의 카메라 컨셉을 보관합니다.",
-    "display_name": "Luma 컨셉",
-    "inputs": {
-      "concept1": {
-        "name": "컨셉1"
-      },
-      "concept2": {
-        "name": "컨셉2"
-      },
-      "concept3": {
-        "name": "컨셉3"
-      },
-      "concept4": {
-        "name": "컨셉4"
-      },
-      "luma_concepts": {
-        "name": "luma 컨셉",
-        "tooltip": "여기에 선택한 컨셉에 추가할 선택적 카메라 컨셉입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma 컨셉",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "Luma UNI-1 모델을 사용하여 텍스트 프롬프트로 기존 이미지를 편집합니다.",
     "display_name": "Luma UNI-1 이미지 편집",
@@ -13787,82 +13921,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "프롬프트와 종횡비에 따라 이미지를 동기적으로 수정합니다.",
-    "display_name": "Luma 이미지 생성 (이미지 → 이미지)",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "image": {
-        "name": "이미지"
-      },
-      "image_weight": {
-        "name": "이미지 가중치",
-        "tooltip": "이미지의 가중치; 1.0에 가까울수록 이미지가 덜 수정됩니다."
-      },
-      "model": {
-        "name": "모델"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "이미지 생성을 위한 프롬프트"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노드를 다시 실행할지 결정하는 시드; 실제 결과는 시드와 상관없이 비결정적입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "프롬프트와 종횡비에 따라 이미지를 동기적으로 생성합니다.",
-    "display_name": "Luma 이미지 생성 (텍스트 → 이미지)",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비"
-      },
-      "character_image": {
-        "name": "캐릭터 참조 이미지",
-        "tooltip": "캐릭터 참조 이미지; 여러 장의 배치가 가능하며, 최대 4개의 이미지를 사용할 수 있습니다."
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "image_luma_ref": {
-        "name": "Luma 참조 이미지",
-        "tooltip": "입력 이미지를 사용해 생성에 영향을 주는 Luma Reference 노드 연결; 최대 4개의 이미지를 사용할 수 있습니다."
-      },
-      "model": {
-        "name": "모델"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "이미지 생성을 위한 프롬프트"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노드가 다시 실행될지 결정하는 시드; 실제 결과는 시드와 관계없이 비결정적입니다."
-      },
-      "style_image": {
-        "name": "스타일 참조 이미지",
-        "tooltip": "스타일 참조 이미지; 1개의 이미지만 사용됩니다."
-      },
-      "style_image_weight": {
-        "name": "스타일 이미지 가중치",
-        "tooltip": "스타일 이미지의 가중치. 스타일 이미지가 제공되지 않으면 무시됩니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "Luma UNI-1 모델을 사용하여 텍스트로부터 이미지를 생성합니다.",
     "display_name": "Luma UNI-1 이미지",
@@ -13890,52 +13948,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "시드 값은 노드가 다시 실행될지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "프롬프트, 입력 이미지, output_size를 기반으로 동기적으로 비디오를 생성합니다.",
-    "display_name": "Luma 이미지 → 비디오",
-    "inputs": {
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "길이"
-      },
-      "first_image": {
-        "name": "첫 이미지",
-        "tooltip": "생성된 비디오의 첫 프레임."
-      },
-      "last_image": {
-        "name": "마지막 이미지",
-        "tooltip": "생성된 비디오의 마지막 프레임."
-      },
-      "loop": {
-        "name": "루프"
-      },
-      "luma_concepts": {
-        "name": "Luma 컨셉",
-        "tooltip": "선택 사항: Luma 컨셉 노드를 통해 카메라 움직임을 지정하는 카메라 컨셉."
-      },
-      "model": {
-        "name": "모델"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "비디오 생성을 위한 프롬프트"
-      },
-      "resolution": {
-        "name": "해상도"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 상관없이 비결정적입니다."
       }
     },
     "outputs": {
@@ -14165,7 +14177,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "기존 비디오의 종횡비를 변경하고, Luma Ray 3.2를 사용하여 새로 노출된 캔버스 영역을 채웁니다. 소스 비디오는 최대 30초까지 지원됩니다. 출력 초당 과금됩니다.",
+    "description": "Luma Ray 3.2를 사용하여 새로 노출된 캔버스 영역을 채우면서 기존 비디오의 화면비를 변경합니다. 소스 비디오는 최대 10초까지 가능합니다. 출력 초당 과금됩니다.",
     "display_name": "Luma Ray 3.2 비디오 리프레임",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14199,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "리프레임할 소스 비디오입니다. 최대 30초."
+        "tooltip": "화면비를 변경할 소스 비디오입니다. 최대 10초."
       }
     },
     "outputs": {
@@ -14196,70 +14208,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "Luma 이미지 생성 노드에서 사용할 이미지와 가중치를 보관합니다.",
-    "display_name": "Luma 이미지 참조",
-    "inputs": {
-      "image": {
-        "name": "이미지",
-        "tooltip": "참조로 사용할 이미지입니다."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "가중치",
-        "tooltip": "이미지 참조의 가중치입니다."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "프롬프트와 output_size에 따라 동기적으로 비디오를 생성합니다.",
-    "display_name": "Luma 텍스트 투 비디오",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "종횡비"
-      },
-      "control_after_generate": {
-        "name": "생성 후 제어"
-      },
-      "duration": {
-        "name": "길이"
-      },
-      "loop": {
-        "name": "루프"
-      },
-      "luma_concepts": {
-        "name": "Luma 컨셉",
-        "tooltip": "카메라 움직임을 제어하기 위한 선택적 Camera Concepts (Luma Concepts 노드 사용)."
-      },
-      "model": {
-        "name": "모델"
-      },
-      "prompt": {
-        "name": "프롬프트",
-        "tooltip": "비디오 생성을 위한 프롬프트"
-      },
-      "resolution": {
-        "name": "해상도"
-      },
-      "seed": {
-        "name": "시드",
-        "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -19549,7 +19497,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. xAI, DeepSeek, Qwen, Mistral, Z.AI(GLM), Moonshot(Kimi), Perplexity Sonar 등에서 엄선된 인기 모델로 라우팅됩니다.",
+    "description": "OpenRouter를 통해 텍스트 응답을 생성합니다. Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), Perplexity Sonar의 엄선된 인기 모델 모음으로 라우팅합니다.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -24987,6 +24935,9 @@
       "format_bit_depth": {
         "name": "bit_depth"
       },
+      "format_channels": {
+        "name": "채널"
+      },
       "format_input_color_space": {
         "name": "input_color_space"
       },
@@ -25493,6 +25444,77 @@
       }
     }
   },
+  "SenseNovaConditioning": {
+    "description": "CLIP으로 참조 이미지, 이미지 사고, 인터리브된 텍스트 또는 자기 수정을 인코딩합니다. 이 노드 앞에 HiDream-O1 참조 이미지를 연결하고 이미지에는 표준 샘플러를 사용하세요. 사고 없이 텍스트를 이미지로 생성하려면 CLIP 텍스트 인코드만 필요하며, 텍스트 전용 출력에는 텍스트 생성을 사용할 수 있습니다.",
+    "display_name": "SenseNova 컨디셔닝",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "컨디셔닝"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "이 호출 중 생성할 최대 토큰 수입니다."
+      },
+      "negative": {
+        "name": "네거티브"
+      },
+      "task": {
+        "name": "작업",
+        "tooltip": "작업을 선택합니다. 프롬프트 템플릿과 중지 동작은 자동으로 설정됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "컨디셔닝",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "이 호출에서 생성된 텍스트입니다. 전체 결과에는 SenseNova 인터리브 디코드를 사용하세요."
+      },
+      "2": {
+        "name": "네거티브",
+        "tooltip": "인터리브 및 자기 수정을 위해 업데이트된 네거티브 컨디셔닝입니다."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "U1.6 자기 수정을 포함하여 SenseNova 컨디셔닝에서 생성된 인터리브 기록으로부터 생성된 텍스트, 이미지 및 사고를 추출합니다. 루프에서는 누적을 비활성화한 상태로 루프 종료를 사용하세요. 입력 참조 이미지는 제외됩니다. 이미지가 생성되지 않은 경우 이미지를 사용하는 노드는 건너뜁니다.",
+    "display_name": "SenseNova 인터리브 디코드",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "컨디셔닝"
+      },
+      "samples": {
+        "name": "샘플",
+        "tooltip": "루프가 이미지 요청에서 끝난 경우의 마지막 KSampler 픽셀 latent입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "이미지",
+        "tooltip": null
+      },
+      "2": {
+        "name": "사고",
+        "tooltip": null
+      }
+    }
+  },
   "SenseNovaSamplingOptions": {
     "description": "SenseNova 플로우 시프트를 설정합니다.",
     "display_name": "SenseNova 샘플링 옵션",
@@ -25977,6 +25999,33 @@
       },
       "1": {
         "name": "오른쪽",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "이미지를 빨강, 초록, 파랑 이미지와 알파 mask로 분리합니다.",
+    "display_name": "이미지 채널 분리",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "빨강",
+        "tooltip": null
+      },
+      "1": {
+        "name": "초록",
+        "tooltip": null
+      },
+      "2": {
+        "name": "파랑",
+        "tooltip": null
+      },
+      "3": {
+        "name": "알파",
         "tooltip": null
       }
     }
@@ -30483,6 +30532,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Bonneel et al. 2015에 따른 시간적 일관성 처리로, 드리프트에 대한 충실도 항을 포함합니다. 각 프레임은 가이드 동영상의 optical flow를 따라 인접 프레임을 따르면서도 자체 세부 사항을 유지합니다.",
+    "display_name": "동영상 깜빡임 제거",
+    "inputs": {
+      "direction": {
+        "name": "방향",
+        "tooltip": "bidirectional은 정방향 및 역방향 패스를 평균내므로, 두 배의 시간으로 움직임을 뒤따르는 현상을 방지합니다."
+      },
+      "guide": {
+        "name": "가이드",
+        "tooltip": "움직임을 따를 안정적인 소스 프레임이며, 해상도는 관계없습니다. 기본값은 images이며, 이 경우 깜빡임 제거 효과가 더 적습니다."
+      },
+      "images": {
+        "name": "이미지",
+        "tooltip": "프레임별로 업스케일하거나 처리한 동영상처럼 깜빡임이 있는 프레임입니다."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "강도",
+        "tooltip": "각 프레임이 인접 프레임을 따르는 정도입니다. 값이 높을수록 깜빡임이 더 많이 제거되고 미세한 세부 사항은 더 부드러워집니다."
+      },
+      "threshold": {
+        "name": "임계값",
+        "tooltip": "프레임과 모션 보정된 인접 프레임 간의 변화가 이 값보다 크면 실제 변화로 간주되어 덜 부드럽게 처리됩니다. 0이면 모든 변화가 동일하게 부드럽게 처리됩니다."
       }
     },
     "outputs": {

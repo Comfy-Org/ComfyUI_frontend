@@ -15,6 +15,18 @@ test.describe('Login Button', { tag: ['@ui'] }, () => {
         comfyPage.page.getByTestId(TestIds.topbar.loginButton)
       ).toBeVisible()
     })
+
+    test('button sits in the top bar, not the sidebar', async ({
+      comfyPage
+    }) => {
+      const { menu, page } = comfyPage
+      await expect(
+        menu.topbar.integratedTabBarActions.getByTestId(
+          TestIds.topbar.loginButton
+        )
+      ).toBeVisible()
+      await expect(page.getByTestId(TestIds.topbar.loginButton)).toHaveCount(1)
+    })
   })
 
   test.describe('ARIA', () => {
@@ -91,6 +103,23 @@ test.describe('Login Button', { tag: ['@ui'] }, () => {
 
 test.describe('Login Button (new billing UX)', { tag: ['@ui'] }, () => {
   test.use({ billingNewUx: true })
+
+  test('sits in the sidebar profile slot, not the top bar', async ({
+    comfyPage
+  }) => {
+    const { menu, page } = comfyPage
+    await expect(
+      menu.sideToolbar.getByRole('button', {
+        name: 'Sign in to use Partner Nodes'
+      })
+    ).toBeVisible()
+    await expect(page.getByTestId(TestIds.topbar.loginButton)).toHaveCount(1)
+    await expect(
+      menu.topbar.integratedTabBarActions.getByTestId(
+        TestIds.topbar.loginButton
+      )
+    ).toHaveCount(0)
+  })
 
   test('shows the Partner Nodes tooltip and opens sign-in on click', async ({
     comfyPage

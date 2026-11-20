@@ -1491,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "Удалите фон с изображения с помощью Bria RMBG 2.0.",
+    "description": "Удаляет фон с изображения с помощью Bria RMBG 2.0 или RMBG 3.0.",
     "display_name": "Bria Удалить фон изображения",
     "inputs": {
       "control_after_generate": {
@@ -1500,13 +1500,16 @@
       "image": {
         "name": "изображение"
       },
+      "model": {
+        "name": "модель"
+      },
       "moderation": {
         "name": "модерация",
         "tooltip": "Настройки модерации"
       },
       "seed": {
         "name": "seed",
-        "tooltip": "Seed определяет, должен ли узел выполняться повторно; результаты всегда недетерминированы независимо от seed."
+        "tooltip": "Seed определяет, должен ли узел запускаться повторно; одно и то же изображение всегда даёт одинаковый результат независимо от seed."
       }
     },
     "outputs": {
@@ -1949,7 +1952,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.5 — новейшая модель, видео продолжительностью до 30 секунд, вывод в 4k и mp4/mov; Seedance 2.5 Draft — быстрый предпросмотр в 480p, чей draft_task_id выполняет рендер финала 1080p или 4k в узле Seedance 2.5 Draft to Final Video; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и недорогая генерация."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео длительностью до 30 секунд, вывод в 4k и mp4/mov; Seedance 2.5 Draft — для быстрого предпросмотра в 480p, чей draft_task_id создаёт финальное видео в 1080p или 4k в узле Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash — для видео 480p и 720p длительностью до 30 секунд; Seedance 2.0 — для максимального качества и 4k; Fast — для оптимизации скорости; Mini — для самой быстрой и дешёвой генерации."
       },
       "model_duration": {
         "name": "длительность"
@@ -1994,7 +1997,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.5 — новейшая модель, видео продолжительностью до 30 секунд, вывод в 4k и mp4/mov; Seedance 2.5 Draft — быстрый предпросмотр в 480p, чей draft_task_id выполняет рендер финала 1080p или 4k в узле Seedance 2.5 Draft to Final Video; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и недорогая генерация."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео длительностью до 30 секунд, вывод в 4k и mp4/mov; Seedance 2.5 Draft — для быстрого предпросмотра в 480p, чей draft_task_id создаёт финальное видео в 1080p или 4k в узле Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash — для видео 480p и 720p длительностью до 30 секунд; Seedance 2.0 — для максимального качества и 4k; Fast — для оптимизации скорости; Mini — для самой быстрой и дешёвой генерации."
       },
       "model_auto_downscale": {
         "name": "автоматическое уменьшение масштаба"
@@ -2047,7 +2050,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.5 — новейшая модель, видео продолжительностью до 30 секунд, вывод в 4k и mp4/mov; Seedance 2.5 Draft — быстрый предпросмотр в 480p, чей draft_task_id выполняет рендер финала 1080p или 4k в узле Seedance 2.5 Draft to Final Video; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и недорогая генерация."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео длительностью до 30 секунд, вывод в 4k и mp4/mov; Seedance 2.5 Draft — для быстрого предпросмотра в 480p, чей draft_task_id создаёт финальное видео в 1080p или 4k в узле Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash — для видео 480p и 720p длительностью до 30 секунд; Seedance 2.0 — для максимального качества и 4k; Fast — для оптимизации скорости; Mini — для самой быстрой и дешёвой генерации."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -2104,7 +2107,7 @@
       },
       "model": {
         "name": "модель",
-        "tooltip": "Seedance 2.5 — новейшая модель, видео продолжительностью до 30 секунд, вывод в 4k и mp4/mov; Seedance 2.5 Draft — быстрый предпросмотр в 480p, чей draft_task_id выполняет рендер финала 1080p или 4k в узле Seedance 2.5 Draft to Final Video; Seedance 2.0 — максимальное качество и 4k; Fast — оптимизация скорости; Mini — самая быстрая и недорогая генерация."
+        "tooltip": "Seedance 2.5 — новейшая модель, видео длительностью до 30 секунд, вывод в 4k и mp4/mov; Seedance 2.5 Draft — для быстрого предпросмотра в 480p, чей draft_task_id создаёт финальное видео в 1080p или 4k в узле Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash — для видео 480p и 720p длительностью до 30 секунд; Seedance 2.0 — для максимального качества и 4k; Fast — для оптимизации скорости; Mini — для самой быстрой и дешёвой генерации."
       },
       "model_duration": {
         "name": "длительность"
@@ -4568,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "Создаёт camera_info. Режим «orbit» наводится на цель с помощью yaw/pitch/distance вокруг неё; «look_at» размещает камеру в мировой позиции. Координаты соответствуют мировому пространству просмотрщика (правосторонняя система, ось Y направлена вверх).",
+    "description": "Создаёт camera_info. Режим «orbit» наводит камеру с помощью yaw/pitch/distance вокруг цели; «look_at» размещает камеру в мировой позиции. Координаты относятся к мировому пространству просмотра (правосторонняя система координат, ось Y направлена вверх) либо, при подключённой сетке, к системе координат этой сетки, поэтому одни и те же настройки кадрируют любую сетку.",
     "display_name": "Создать информацию о камере",
     "inputs": {
       "camera_info_state": {
@@ -4581,6 +4584,10 @@
       "fov": {
         "name": "fov",
         "tooltip": "Вертикальный угол обзора в градусах."
+      },
+      "mesh": {
+        "name": "сетка",
+        "tooltip": "Кадрирует эту сетку: позиции, цель и расстояние отсчитываются от центра её ограничивающего параллелепипеда в единицах диаметра её ограничивающей сферы, поэтому одни и те же настройки кадрируют любую сетку."
       },
       "mode": {
         "name": "mode",
@@ -8458,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "Создаёт говорящее видео с аватаром HeyGen Avatar 6 на основе текстового сценария или собственного аудио.",
+    "display_name": "HeyGen Avatar 6: идентичность в видео",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "«auto» использует соотношение сторон исходного видео аватара."
+      },
+      "avatar": {
+        "name": "avatar"
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "motion_expressiveness": {
+        "name": "motion_expressiveness",
+        "tooltip": "«less» задаёт меньшее количество и меньшую амплитуду жестов. В пересекающихся аспектах motion_prompt имеет приоритет."
+      },
+      "motion_prompt": {
+        "name": "motion_prompt",
+        "tooltip": "Жесты, выражение лица, поза и движение камеры."
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, следует ли повторно запускать ноду; результаты недетерминированы независимо от seed."
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "Управляйте аватаром с помощью текстового сценария (синтез речи HeyGen) или собственного аудио."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "Заставляет человека или персонажа с фото или видео говорить подключённое аудио с помощью HeyGen Avatar 6. Подключите изображение, видео или оба варианта.",
+    "display_name": "HeyGen Avatar 6: референс в видео",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_motion_expressiveness": {
+        "name": "motion_expressiveness"
+      },
+      "model_motion_prompt": {
+        "name": "motion_prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "Создайте видео с говорящим ведущим на основе аватара HeyGen. Включает самые популярные публичные аватары HeyGen; можно указать любой look ID для замены.",
     "display_name": "HeyGen Аватар Видео",
@@ -8548,6 +8642,9 @@
       "model": {
         "name": "модель"
       },
+      "model_auto_duration": {
+        "name": "автоматическая длительность"
+      },
       "model_duration": {
         "name": "длительность"
       },
@@ -8568,7 +8665,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "Создаёт видео с синхронизированными диалогом и звуком по текстовому запросу с помощью HeyGen Video 1.0. При необходимости подключите до 12 референсных изображений, видео и аудиоклипов и упомяните их в запросе как {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "description": "Создайте видео с синхронизированными диалогом и звуком по текстовому промпту с помощью HeyGen Video 1.0. При необходимости подключите до 15 эталонных изображений, видео и аудиоклипов и упомяните их в промпте как {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
     "display_name": "HeyGen Video 1.0: референс в видео",
     "inputs": {
       "control_after_generate": {
@@ -8579,6 +8676,9 @@
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
+      },
+      "model_auto_duration": {
+        "name": "автоматическая длительность"
       },
       "model_duration": {
         "name": "длительность"
@@ -10632,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "Создаёт или редактирует изображения по текстовому запросу и до 10 референсных изображений: одно изображение или серию связанных изображений.",
+    "display_name": "Kling 4.0: изображение",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto использует референсные изображения, в противном случае — prompt."
+      },
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Ссылайтесь на референсные изображения как @Image1, @Image2, ..."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "Seed определяет, следует ли узлу запускаться повторно; результаты недетерминированы независимо от seed."
+      },
+      "series_amount": {
+        "name": "series_amount",
+        "tooltip": "Создаёт серию связанных изображений с теми же персонажами и стилем. auto позволяет модели выбрать от 2 до 10 изображений."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "Создавайте видео с аудио по не более чем 10 ключевым кадрам в kling-4.0 или по первому кадру в kling-4.0-flash. Промежуточные кадры располагаются равномерно; видео принимает соотношение сторон первого ключевого кадра.",
     "display_name": "Kling 4.0 Изображение в видео",
@@ -10652,6 +10788,32 @@
         "name": "разрешение"
       },
       "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "Создайте одно высокое изображение: дизайн веб-страницы или страницу сведений о товаре для электронной коммерции.",
+    "display_name": "Kling 4.0: длинное изображение",
+    "inputs": {
+      "control_after_generate": {
+        "name": "управление после генерации"
+      },
+      "skill": {
+        "name": "навык"
+      },
+      "skill_prompt": {
+        "name": "промпт"
+      },
+      "skill_resolution": {
+        "name": "разрешение"
+      },
+      "skill_seed": {
         "name": "seed"
       }
     },
@@ -13723,34 +13885,6 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "Содержит одну или несколько концепций камеры для использования с узлами Luma Text to Video и Luma Image to Video.",
-    "display_name": "Luma Концепции",
-    "inputs": {
-      "concept1": {
-        "name": "concept1"
-      },
-      "concept2": {
-        "name": "concept2"
-      },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Необязательные концепции камеры для добавления к выбранным здесь."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_concepts",
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageEditNode2": {
     "description": "Редактирование существующего изображения с помощью текстового запроса, используя модель Luma UNI-1.",
     "display_name": "Luma UNI-1 Image Edit",
@@ -13787,82 +13921,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "Синхронно изменяет изображения на основе запроса и соотношения сторон.",
-    "display_name": "Luma Image to Image",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "image": {
-        "name": "изображение"
-      },
-      "image_weight": {
-        "name": "вес изображения",
-        "tooltip": "Вес изображения; чем ближе к 1.0, тем меньше будет изменено изображение."
-      },
-      "model": {
-        "name": "модель"
-      },
-      "prompt": {
-        "name": "промпт",
-        "tooltip": "Промпт для генерации изображения"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "Синхронно генерирует изображения на основе запроса и соотношения сторон.",
-    "display_name": "Luma Текст в изображение",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "character_image": {
-        "name": "character_image",
-        "tooltip": "Референсные изображения персонажей; может быть пакет из нескольких, учитывается до 4 изображений."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image_luma_ref": {
-        "name": "image_luma_ref",
-        "tooltip": "Подключение к Luma Reference для влияния на генерацию с помощью входных изображений; может быть учтено до 4 изображений."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Запрос для генерации изображения"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты не являются детерминированными независимо от сида."
-      },
-      "style_image": {
-        "name": "style_image",
-        "tooltip": "Референсное изображение стиля; будет использовано только 1 изображение."
-      },
-      "style_image_weight": {
-        "name": "style_image_weight",
-        "tooltip": "Вес изображения стиля. Игнорируется, если style_image не предоставлено."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "Генерация изображений по текстовому описанию с помощью модели Luma UNI-1.",
     "display_name": "Luma UNI-1 Image",
@@ -13890,52 +13948,6 @@
       "seed": {
         "name": "seed",
         "tooltip": "Seed определяет, нужно ли повторно запускать узел; результаты всегда недетерминированы, независимо от seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "Генерирует видео синхронно на основе запроса, входных изображений и output_size.",
-    "display_name": "Luma Image to Video",
-    "inputs": {
-      "control_after_generate": {
-        "name": "контроль после генерации"
-      },
-      "duration": {
-        "name": "длительность"
-      },
-      "first_image": {
-        "name": "первое_изображение",
-        "tooltip": "Первый кадр сгенерированного видео."
-      },
-      "last_image": {
-        "name": "последнее_изображение",
-        "tooltip": "Последний кадр сгенерированного видео."
-      },
-      "loop": {
-        "name": "зацикливание"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Необязательные Camera Concepts для управления движением камеры через узел Luma Concepts."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Запрос для генерации видео"
-      },
-      "resolution": {
-        "name": "разрешение"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от seed."
       }
     },
     "outputs": {
@@ -14165,7 +14177,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "Измените соотношение сторон существующего видео, используя Luma Ray 3.2 для заполнения новых областей холста. Исходное видео до 30 секунд. Оплата за каждую секунду результата.",
+    "description": "Изменяет соотношение сторон существующего видео, используя Luma Ray 3.2 для заполнения новых открытых областей холста. Исходное видео — до 10 секунд. Оплата взимается за секунду результата.",
     "display_name": "Luma Ray 3.2 Видео Переформатирование",
     "inputs": {
       "aspect_ratio": {
@@ -14187,7 +14199,7 @@
       },
       "video": {
         "name": "видео",
-        "tooltip": "Исходное видео для изменения формата. До 30 секунд."
+        "tooltip": "Исходное видео для изменения соотношения сторон. До 10 секунд."
       }
     },
     "outputs": {
@@ -14196,70 +14208,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "Содержит изображение и вес для использования с узлом Luma Generate Image.",
-    "display_name": "Luma Reference",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "Изображение для использования в качестве эталона."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "weight",
-        "tooltip": "Вес эталонного изображения."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "Синхронно генерирует видео на основе запроса и output_size.",
-    "display_name": "Luma Текст в Видео",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Необязательные Camera Concepts для управления движением камеры через узел Luma Concepts."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "Запрос для генерации видео"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "Seed для определения, нужно ли повторно запускать узел; фактические результаты всегда недетерминированы, независимо от seed."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -19549,7 +19497,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "Генерирует текстовые ответы через OpenRouter. Использует подборку популярных моделей от xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) и Perplexity Sonar.",
+    "description": "Генерирует текстовые ответы через OpenRouter. Направляет запросы к подобранному набору популярных моделей от Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) и Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -24987,6 +24935,9 @@
       "format_bit_depth": {
         "name": "глубина_цвета"
       },
+      "format_channels": {
+        "name": "каналы"
+      },
       "format_input_color_space": {
         "name": "цветовое_пространство_входа"
       },
@@ -25493,6 +25444,77 @@
       }
     }
   },
+  "SenseNovaConditioning": {
+    "description": "Кодирует эталонные изображения, размышления об изображении, чередующийся текст или самокоррекцию с помощью CLIP. Подключите эталонные изображения HiDream-O1 перед этим узлом и используйте стандартный сэмплер для изображений. Для преобразования текста в изображение без размышлений требуется только CLIP Text Encode; для вывода только текста можно использовать Generate Text.",
+    "display_name": "Кондиционирование SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "кондиционирование"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "Максимальное количество токенов, генерируемых во время этого вызова."
+      },
+      "negative": {
+        "name": "негативный"
+      },
+      "task": {
+        "name": "задача",
+        "tooltip": "Выберите задачу. Её шаблон промпта и поведение остановки задаются автоматически."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "кондиционирование",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "Текст, сгенерированный этим вызовом. Используйте SenseNova Interleave Decode для получения полного результата."
+      },
+      "2": {
+        "name": "негативный",
+        "tooltip": "Обновлённое негативное кондиционирование для чередования и самокоррекции."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "Извлекает сгенерированные текст, изображения и размышления из истории чередования, созданной SenseNova Conditioning, включая самокоррекцию U1.6. В циклах используйте End Loop с отключённым накоплением. Входные эталонные изображения исключаются. Потребители изображений пропускаются, если изображения не были сгенерированы.",
+    "display_name": "Декодирование чередования SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "кондиционирование"
+      },
+      "samples": {
+        "name": "сэмплы",
+        "tooltip": "Последний пиксельный latent KSampler, если цикл завершился запросом изображения."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "текст",
+        "tooltip": null
+      },
+      "1": {
+        "name": "изображения",
+        "tooltip": null
+      },
+      "2": {
+        "name": "размышления",
+        "tooltip": null
+      }
+    }
+  },
   "SenseNovaSamplingOptions": {
     "description": "Настройте смещение потока SenseNova.",
     "display_name": "Параметры сэмплирования SenseNova",
@@ -25977,6 +25999,33 @@
       },
       "1": {
         "name": "правый",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "Разделяет изображение на красное, зелёное и синее изображения, а также альфа-маску.",
+    "display_name": "Разделить каналы изображения",
+    "inputs": {
+      "image": {
+        "name": "изображение"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "красный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "зелёный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "синий",
+        "tooltip": null
+      },
+      "3": {
+        "name": "альфа",
         "tooltip": null
       }
     }
@@ -30483,6 +30532,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "Временная согласованность по Bonneel et al. 2015 с членом верности для противодействия дрейфу: каждый кадр сохраняет собственные детали, следуя за соседними кадрами вдоль оптического потока направляющего видео.",
+    "display_name": "Устранение мерцания видео",
+    "inputs": {
+      "direction": {
+        "name": "направление",
+        "tooltip": "bidirectional усредняет прямой и обратный проходы, что предотвращает отставание от движения, но занимает вдвое больше времени."
+      },
+      "guide": {
+        "name": "направляющее видео",
+        "tooltip": "Стабильные исходные кадры, за движением которых следует алгоритм, с любым разрешением. По умолчанию используются изображения, что устраняет меньше мерцания."
+      },
+      "images": {
+        "name": "изображения",
+        "tooltip": "Мерцающие кадры, например видео, увеличенное или обработанное покадрово."
+      },
+      "optical_flow": {
+        "name": "optical_flow"
+      },
+      "strength": {
+        "name": "сила",
+        "tooltip": "Насколько сильно каждый кадр следует за соседними. Более высокие значения сильнее устраняют мерцание и сглаживают мелкие детали."
+      },
+      "threshold": {
+        "name": "порог",
+        "tooltip": "Изменения между кадром и его соседом с компенсацией движения, превышающие это значение, считаются реальными и сглаживаются меньше. При 0 все изменения сглаживаются одинаково."
       }
     },
     "outputs": {

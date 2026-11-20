@@ -20,7 +20,7 @@ import {
   isOverNodeOutput
 } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { app as comfyApp } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { isDOMWidget } from '@/scripts/domWidget'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
@@ -40,8 +40,8 @@ function hideTooltip() {
 async function showTooltip(tooltip: string | null | undefined) {
   if (!tooltip) return
 
-  left.value = comfyApp.canvas.mouse[0] + 'px'
-  top.value = comfyApp.canvas.mouse[1] + 'px'
+  left.value = useApp().canvas.mouse[0] + 'px'
+  top.value = useApp().canvas.mouse[1] + 'px'
   tooltipText.value = tooltip
 
   await nextTick()
@@ -50,16 +50,16 @@ async function showTooltip(tooltip: string | null | undefined) {
   if (!rect) return
 
   if (rect.right > window.innerWidth) {
-    left.value = comfyApp.canvas.mouse[0] - rect.width + 'px'
+    left.value = useApp().canvas.mouse[0] - rect.width + 'px'
   }
 
   if (rect.top < 0) {
-    top.value = comfyApp.canvas.mouse[1] + rect.height + 'px'
+    top.value = useApp().canvas.mouse[1] + rect.height + 'px'
   }
 }
 
 function onIdle() {
-  const { canvas } = comfyApp
+  const { canvas } = useApp()
   const node = canvas?.node_over
   if (!node || node.flags?.ghost) return
 
@@ -113,7 +113,7 @@ function onIdle() {
     )
   }
 
-  const widget = comfyApp.canvas.getWidgetAtCursor()
+  const widget = useApp().canvas.getWidgetAtCursor()
   // Dont show for DOM widgets, these use native browser tooltips as we dont get proper mouse events on these
   if (widget && !isDOMWidget(widget)) {
     const translatedTooltip = resolveNodeDefSlotText(

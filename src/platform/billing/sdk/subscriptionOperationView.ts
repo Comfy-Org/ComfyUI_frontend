@@ -165,12 +165,21 @@ function projectFailure(
   }
 }
 
-/**
- * A settle that ended anywhere but `succeeded` as a sentence for the customer:
- * a declined card carries the reason the top-up view already localizes, and
- * every other terminal phase is the generic subscription failure. The phase
- * itself lands on `code`, where the adapter keeps machine identifiers.
- */
+function unsuccessfulSettleDetail({
+  operation,
+  phase
+}: SubscriptionCommandOutcome): string {
+  if (operation?.phase === 'failed')
+    return declineDetail(operation.declineReason)
+  if (phase === 'timed_out')
+    return t(
+      operation?.kind === 'cancel'
+        ? 'billingOperation.cancelTimeout'
+        : 'billingOperation.subscriptionTimeout'
+    )
+  return t('billingOperation.subscriptionFailedDetail')
+}
+
 function projectUnsuccessfulSettle(
   outcome: SubscriptionCommandOutcome
 ): SubscriptionRailOutcome<never> {
@@ -178,9 +187,7 @@ function projectUnsuccessfulSettle(
   return {
     status: 'error',
     error: new SettledOperationError(
-      operation?.phase === 'failed'
-        ? declineDetail(operation.declineReason)
-        : t('billingOperation.subscriptionFailedDetail'),
+      unsuccessfulSettleDetail(outcome),
       phase,
       operation?.id,
       operation && failureCategoryFor(operation)
