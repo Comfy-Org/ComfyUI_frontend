@@ -3056,6 +3056,30 @@ describe('ComfyApp', () => {
       expect(comfy.graph.node('1')).not.toBe(kept)
     })
 
+    it.for([
+      { restoreHistory: true, preserved: true },
+      { restoreHistory: false, preserved: false }
+    ])(
+      'keeps mounted node sizes only for a restore of the open document ($restoreHistory)',
+      async ({ restoreHistory, preserved }) => {
+        nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
+        await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
+        const configure = vi.spyOn(app.rootGraph, 'configure')
+
+        await app.loadGraphData(
+          workflowWithFixedIdAndOneNode(),
+          false,
+          false,
+          null,
+          { restoreHistory }
+        )
+
+        expect(configure).toHaveBeenCalledWith(expect.anything(), undefined, {
+          preserveMountedNodeSizes: preserved
+        })
+      }
+    )
+
     it('keeps a handle through undo and redo, which rebuild the open document', async () => {
       const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
       await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
