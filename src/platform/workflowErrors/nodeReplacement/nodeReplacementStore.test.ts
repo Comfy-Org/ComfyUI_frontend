@@ -151,7 +151,7 @@ describe('useNodeReplacementStore', () => {
             old_widget_ids: ['string'],
             input_mapping: [{ new_id: 'value', old_id: 'string' }],
             output_mapping: null,
-            old_pack: 'pack-b',
+            old_pack: 'Pack-B',
             kind: 'equivalent'
           }
         ]
@@ -167,26 +167,45 @@ describe('useNodeReplacementStore', () => {
     })
 
     it.for([
-      { name: 'matching widget count', widgetValues: ['text'], matches: true },
+      {
+        name: 'matching widget count',
+        oldWidgetIds: ['string'],
+        widgetValues: ['text'],
+        matches: true
+      },
       {
         name: 'extra widget values',
+        oldWidgetIds: ['string'],
         widgetValues: ['text', true],
         matches: false
       },
       {
         name: 'named widget values',
+        oldWidgetIds: ['string'],
         widgetValues: { string: 'text' },
+        matches: false
+      },
+      {
+        name: 'no saved widget values for a widgetless entry',
+        oldWidgetIds: null,
+        widgetValues: undefined,
+        matches: true
+      },
+      {
+        name: 'no saved widget values for an entry with widgets',
+        oldWidgetIds: ['string'],
+        widgetValues: undefined,
         matches: false
       }
     ])(
       'applies the only pack entry to a node without a pack given $name: $matches',
-      ({ widgetValues, matches }) => {
+      ({ oldWidgetIds, widgetValues, matches }) => {
         store.replacements = {
           StringConstant: [
             {
               new_node_id: 'PrimitiveString',
               old_node_id: 'StringConstant',
-              old_widget_ids: ['string'],
+              old_widget_ids: oldWidgetIds,
               input_mapping: [{ new_id: 'value', old_id: 'string' }],
               output_mapping: null,
               old_pack: 'comfyui-kjnodes',

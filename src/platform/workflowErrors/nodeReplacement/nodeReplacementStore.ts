@@ -15,9 +15,10 @@ export function fitsSavedWidgets(
   entry: NodeReplacement,
   widgetValues: FlattenableWorkflowNode['widgets_values']
 ): boolean {
+  const values = widgetValues ?? []
   return (
-    Array.isArray(widgetValues) &&
-    widgetValues.length === (entry.old_widget_ids?.length ?? 0)
+    Array.isArray(values) &&
+    values.length === (entry.old_widget_ids?.length ?? 0)
   )
 }
 
@@ -56,7 +57,8 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
   ): NodeReplacement | undefined {
     return (
       entries.find(
-        (entry) => entry.old_pack != null && entry.old_pack === pack
+        (entry) =>
+          entry.old_pack != null && entry.old_pack.toLowerCase() === pack
       ) ?? entries.find((entry) => entry.old_pack == null)
     )
   }
