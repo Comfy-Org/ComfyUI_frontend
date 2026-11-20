@@ -1,11 +1,12 @@
-import { BATCHABLE_OPS } from '@comfyorg/comfy-multi-player'
+import { BATCHABLE_OPS, inspectOps } from '@comfyorg/comfy-multi-player'
 import type { Op } from '@comfyorg/comfy-multi-player'
 import * as fc from 'fast-check'
-import { assert, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from './graphOperations'
-import type { SizedOp } from './opEnvelope'
-import { chunkWireOps, measureWireOp, mintWireOps } from './opEnvelope'
+import { chunkWireOps, mintWireOps } from './opEnvelope'
+
+type SizedOp = ReturnType<typeof sizedOf>
 
 const MINT = { actor: 'human:pbt-user:tab-1', baseVersion: 7 }
 
@@ -38,10 +39,8 @@ function clear(ids: number[]): GraphOperation {
   return { op: 'clear', removed_nodes: ids }
 }
 
-function sizedOf(op: Op): SizedOp {
-  const measured = measureWireOp(op)
-  assert(measured.admitted)
-  return measured.sized
+function sizedOf(op: Op) {
+  return { op, bytes: inspectOps([op])[0].canonical_op.byteLength }
 }
 
 function isBatchable(sized: SizedOp): boolean {

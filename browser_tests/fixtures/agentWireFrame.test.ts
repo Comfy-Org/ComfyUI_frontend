@@ -2,10 +2,7 @@ import { applyOps, mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import type { Op, WireOp } from '@comfyorg/comfy-multi-player'
 import { describe, expect, it } from 'vitest'
 
-import {
-  mintOpId,
-  mintWireOps
-} from '@/workbench/extensions/agent/crdt/opEnvelope'
+import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 
 import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
@@ -26,7 +23,7 @@ function addNode(id: number): GraphOperation {
 describe('parseWireOps', () => {
   const resetDoc: WireOp = {
     op: 'reset_doc',
-    op_id: mintOpId(),
+    op_id: mintWireOps([addNode(1)], MINT)[0].op_id,
     actor: MINT.actor,
     base_version: MINT.baseVersion,
     stamp: [MINT.baseVersion, MINT.actor],

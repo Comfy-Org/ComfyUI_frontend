@@ -217,9 +217,6 @@
       "path": "src/workbench/extensions/agent/crdt/restoreOpMinter.ts"
     },
     {
-      "path": "src/workbench/extensions/agent/crdt/schemaGuard.ts"
-    },
-    {
       "path": "src/workbench/extensions/agent/crdt/semanticLayoutSeparation.guard.test.ts"
     },
     {
