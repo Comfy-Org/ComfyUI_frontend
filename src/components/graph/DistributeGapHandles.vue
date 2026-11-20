@@ -71,6 +71,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { nodeBox, placementsOf } from '@/lib/litegraph/src/utils/arrange'
 import {
   gapAfterTravel,
+  gapMidpoints,
   setGap
 } from '@comfyorg/graph-model/arrange/distributeGaps'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
@@ -130,15 +131,8 @@ function computeHandles(
   along: Axis,
   gap: number
 ): GapHandle[] {
-  const crossStart = Math.min(...boxes.map((b) => (along === 'x' ? b.y : b.x)))
-  const crossEnd = Math.max(
-    ...boxes.map((b) => (along === 'x' ? b.y + b.height : b.x + b.width))
-  )
-  const cross = (crossStart + crossEnd) / 2
-  return boxes.slice(1).map((box, index) => {
-    const [left, top] = canvas.ds.convertOffsetToCanvas(
-      along === 'x' ? [box.x - gap / 2, cross] : [cross, box.y - gap / 2]
-    )
+  return gapMidpoints(boxes, along, gap).map(({ x, y }, index) => {
+    const [left, top] = canvas.ds.convertOffsetToCanvas([x, y])
     return { index, gap: Math.round(gap), left, top }
   })
 }
