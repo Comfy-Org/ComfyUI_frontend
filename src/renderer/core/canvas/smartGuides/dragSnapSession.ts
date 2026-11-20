@@ -20,8 +20,8 @@ import { getLinkEndpointPositions } from '@/lib/litegraph/src/canvas/linkGeometr
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphGroup, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { containsRect, overlapBounding } from '@/lib/litegraph/src/measure'
-import { nodeBox } from '@/lib/litegraph/src/utils/arrange'
-import type { VisualBox } from '@/lib/litegraph/src/utils/arrange'
+import { nodeBox } from '@/renderer/core/layout/arrange/arrange'
+import type { VisualBox } from '@/renderer/core/layout/arrange/arrange'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
 import { activeGuides } from './smartGuidesState'

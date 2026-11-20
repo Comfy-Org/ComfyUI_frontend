@@ -63,16 +63,16 @@ import {
   nodeBox,
   nodePlacement,
   positionForBox
-} from '@/lib/litegraph/src/utils/arrange'
+} from '@/renderer/core/layout/arrange/arrange'
 import type {
   Axis,
   NodePlacement,
   VisualBox
-} from '@/lib/litegraph/src/utils/arrange'
+} from '@/renderer/core/layout/arrange/arrange'
 import {
   gapAfterTravel,
   setGap
-} from '@/renderer/core/canvas/smartGuides/distributeGaps'
+} from '@/renderer/core/layout/arrange/distributeGaps'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'

@@ -3,7 +3,7 @@ import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
-import type { Axis } from '@/lib/litegraph/src/utils/arrange'
+import type { Axis } from '@/renderer/core/layout/arrange/arrange'
 
 import type { SmartGuide } from './snapSolver'
 

@@ -191,7 +191,10 @@ import type {
   IContextMenuOptions,
   IContextMenuValue
 } from './types/contextMenu'
-import type { IBoundaryNodes, NewNodePosition } from './utils/arrange'
+import type {
+  IBoundaryNodes,
+  NewNodePosition
+} from '@/renderer/core/layout/arrange/arrange'
 import type {
   Panel,
   PanelButton,
@@ -236,7 +239,11 @@ import type {
 } from '@comfyorg/graph-model/serialisation'
 import type { NeverNever, PickNevers } from './types/utility'
 import type { IBaseWidget, TWidgetValue } from '@comfyorg/graph-model/widgets'
-import { alignNodes, distributeNodes, getBoundaryNodes } from './utils/arrange'
+import {
+  alignNodes,
+  distributeNodes,
+  getBoundaryNodes
+} from '@/renderer/core/layout/arrange/arrange'
 import { findFirstNode, getDraggedItems } from './utils/collections'
 import {
   beginIncrementalDragSnap,
