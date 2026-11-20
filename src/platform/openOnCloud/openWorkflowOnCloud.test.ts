@@ -1,16 +1,16 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
+import { localOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import type {
   CloudTab,
   CloudTabOpener
 } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { api } from '@/scripts/api'
 
@@ -26,6 +26,13 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/base/common/downloadUtil'), () => ({
   downloadBlob: vi.fn()
 }))
+
+vi.mock(import('@/platform/openOnCloud/localOpenOnCloudRollout'), async () => {
+  const { shallowRef } = await import('vue')
+  return {
+    localOpenOnCloudRollout: shallowRef({ open_on_cloud_enabled: true })
+  }
+})
 
 vi.mock(import('@/platform/openOnCloud/serializeRootGraph'), () => ({
   serializeRootGraph: vi.fn(() => structuredClone(defaultGraph))
@@ -69,6 +76,18 @@ function sendFromTab(
 }
 
 describe('openWorkflowOnCloud in a browser', () => {
+  it('does not open a tab after the current rollout grant is revoked', async () => {
+    const rollout = vi
+      .spyOn(localOpenOnCloudRollout, 'value', 'get')
+      .mockReturnValue({ open_on_cloud_enabled: false })
+    onTestFinished(() => rollout.mockRestore())
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(tabs.open).not.toHaveBeenCalled()
+  })
+
   it('opens Comfy Cloud in a tab that keeps its opener, with a nonce', async () => {
     const { tabs } = fakeTabs()
 
@@ -176,14 +195,6 @@ describe('openWorkflowOnCloud in a browser', () => {
 })
 
 describe('openWorkflowOnCloud on Desktop', () => {
-  beforeEach(() => {
-    const previous = remoteConfig.value
-    remoteConfig.value = { open_on_cloud_enabled: true }
-    onTestFinished(() => {
-      remoteConfig.value = previous
-    })
-  })
-
   it('uses the native host relay when Desktop hosts a localhost distribution', async () => {
     const previous = window.__comfyDesktop2
     window.__comfyDesktop2 = fromPartial<

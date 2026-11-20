@@ -1,5 +1,6 @@
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { handsPopupsToSystemBrowser } from '@/platform/distribution/desktopBrowser'
 import {
@@ -127,6 +128,7 @@ async function openFromDesktop(
 export async function openWorkflowOnCloud(
   tabs: CloudTabOpener = browserTabs
 ): Promise<void> {
+  if (!useFeatureFlags().flags.openOnCloudEnabled) return
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
   if (handsPopupsToSystemBrowser()) return openFromDesktop(tabs, filename)
 

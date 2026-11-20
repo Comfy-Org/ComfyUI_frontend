@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
@@ -13,7 +14,10 @@ import {
   cloudOrigin,
   isLocalOrigin
 } from '@/platform/openOnCloud/localHandoffProtocol'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import {
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 
@@ -108,7 +112,15 @@ async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   const { refreshRemoteConfig } =
     await import('@/platform/remoteConfig/refreshRemoteConfig')
   await refreshRemoteConfig({ useAuth: false }).catch(() => undefined)
-  if (remoteConfig.value.open_on_cloud_enabled === false) return false
+  const rollout = zGetFeaturesResponse
+    .pick({ open_on_cloud_enabled: true })
+    .safeParse(remoteConfig.value)
+  if (
+    remoteConfigState.value !== 'anonymous' ||
+    !rollout.success ||
+    rollout.data.open_on_cloud_enabled === false
+  )
+    return false
   const relayed = await relayWorkflow(url).catch(() => false)
   if (!relayed) {
     const splash = document.getElementById('splash-loader')

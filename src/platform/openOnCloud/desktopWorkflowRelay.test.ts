@@ -11,6 +11,7 @@ import {
 
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import * as distributionTypes from '@/platform/distribution/types'
+import { localOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import {
   handleDesktopWorkflowHandoff,
   stageDesktopWorkflowHandoff
@@ -20,6 +21,12 @@ import { api } from '@/scripts/api'
 import { defaultGraph } from '@/scripts/defaultGraph'
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/openOnCloud/localOpenOnCloudRollout'), async () => {
+  const { shallowRef } = await import('vue')
+  return {
+    localOpenOnCloudRollout: shallowRef({ open_on_cloud_enabled: true })
+  }
+})
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
   isDesktop: true,
@@ -147,6 +154,19 @@ describe(handleDesktopWorkflowHandoff, () => {
     )
   })
 
+  it('leaves the staged transfer untouched when the relay cannot read the rollout', async () => {
+    const { relay } = await stagedRelay()
+    openAt(relay)
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 503 }))
+    const replace = relayed()
+
+    await expect(handleDesktopWorkflowHandoff()).resolves.toBe(false)
+
+    expect(api.getUserData).not.toHaveBeenCalled()
+    expect(api.deleteUserData).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
+  })
+
   it('forwards an already staged transfer from a signed-out browser', async () => {
     const { relay, record } = await stagedRelay()
     remoteConfig.value = {}
@@ -163,7 +183,10 @@ describe(handleDesktopWorkflowHandoff, () => {
   })
 
   it('does not stage a transfer when the toolbar is disabled', async () => {
-    remoteConfig.value = { open_on_cloud_enabled: false }
+    const rollout = vi
+      .spyOn(localOpenOnCloudRollout, 'value', 'get')
+      .mockReturnValue({ open_on_cloud_enabled: false })
+    onTestFinished(() => rollout.mockRestore())
 
     await expect(
       stageDesktopWorkflowHandoff('portrait', defaultGraph)
