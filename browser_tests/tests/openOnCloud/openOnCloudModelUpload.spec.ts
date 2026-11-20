@@ -65,6 +65,22 @@ test.describe('Open on Cloud: upload the models Comfy Cloud lacks', () => {
       filename: LOCAL_MODEL_FILE.name,
       tags: ['models', 'loras']
     })
+
+    await page.context().route(
+      (url) => url.pathname === '/' && url.searchParams.has('from_local'),
+      (route) =>
+        route.fulfill({
+          contentType: 'text/html',
+          body: '<title>Cloud handoff</title>'
+        })
+    )
+    const opened = page.waitForEvent('popup')
+    await page.getByTestId('run-on-cloud-primary').click()
+    const cloud = await opened
+    await expect
+      .poll(() => new URL(cloud.url()).searchParams.get('workspace'))
+      .toBe('ws-personal')
+    await cloud.close()
   })
 
   test('refuses a file that is not the model the workflow uses', async ({

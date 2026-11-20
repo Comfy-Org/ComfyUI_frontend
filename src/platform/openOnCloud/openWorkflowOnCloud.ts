@@ -1,3 +1,4 @@
+import { isWorkspaceId } from '@comfyorg/account-core/workspaceLink'
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
@@ -108,15 +109,18 @@ function armHandoff(
 
 async function openFromDesktop(
   tabs: CloudTabOpener,
-  filename: string
+  filename: string,
+  workspaceId?: string
 ): Promise<void> {
   const workflow = await prepareWorkflow()
   if (!workflow) return showPrepareFailed()
-  const relay = await stageDesktopWorkflowHandoff(filename, workflow).catch(
-    () => undefined
-  )
+  const relay = await stageDesktopWorkflowHandoff(
+    filename,
+    workflow,
+    workspaceId
+  ).catch(() => undefined)
   if (relay) return tabs.openDisowned(relay)
-  tabs.openDisowned(cloudEditorUrl())
+  tabs.openDisowned(cloudEditorUrl(undefined, workspaceId))
   downloadWorkflow(filename, workflow)
   useToast().info(t('openOnCloud.downloaded'), {
     description: t('openOnCloud.downloadedDetail'),
@@ -125,13 +129,17 @@ async function openFromDesktop(
 }
 
 export async function openWorkflowOnCloud(
-  tabs: CloudTabOpener = browserTabs
+  tabs: CloudTabOpener = browserTabs,
+  workspaceId?: string
 ): Promise<void> {
+  if (workspaceId !== undefined && !isWorkspaceId(workspaceId))
+    return showPrepareFailed()
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
-  if (handsPopupsToSystemBrowser()) return openFromDesktop(tabs, filename)
+  if (handsPopupsToSystemBrowser())
+    return openFromDesktop(tabs, filename, workspaceId)
 
   const nonce = handoffNonce()
-  const tab = tabs.open(cloudEditorUrl(nonce))
+  const tab = tabs.open(cloudEditorUrl(nonce, workspaceId))
   if (!tab) {
     useToast().error(t('openOnCloud.popupBlocked'), { duration: NOTICE_MS })
     return

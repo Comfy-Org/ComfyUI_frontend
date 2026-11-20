@@ -35,10 +35,13 @@
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useTelemetry } from '@comfyorg/telemetry'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-defineProps<{ asksToSignIn: boolean }>()
+const { asksToSignIn } = defineProps<{ asksToSignIn: boolean }>()
+const { flags } = useFeatureFlags()
 
 const emit = defineEmits<{
   done: []
@@ -50,7 +53,11 @@ function openOnCloud() {
     button_id: 'run_on_cloud_open_on_cloud_clicked',
     element_group: 'run_on_cloud'
   })
-  void openWorkflowOnCloud()
+  const workspaceId =
+    !asksToSignIn && flags.openOnCloudModelUploadEnabled
+      ? (useTeamWorkspaceStore().activeWorkspaceId ?? undefined)
+      : undefined
+  void openWorkflowOnCloud(undefined, workspaceId)
   emit('done')
 }
 </script>

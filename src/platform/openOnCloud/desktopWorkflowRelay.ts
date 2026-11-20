@@ -39,18 +39,19 @@ function transferFile(nonce: string) {
 
 export async function stageDesktopWorkflowHandoff(
   filename: string,
-  workflow: ComfyWorkflowJSON
+  workflow: ComfyWorkflowJSON,
+  workspaceId?: string
 ): Promise<string | undefined> {
   const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
   if (!useFeatureFlags().flags.openOnCloudEnabled) return undefined
 
   const nonce = crypto.randomUUID()
   const expiresAt = Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
-  const destination = await desktopWorkflowUrl(nonce, {
-    filename,
-    workflow,
-    expiresAt
-  })
+  const destination = await desktopWorkflowUrl(
+    nonce,
+    { filename, workflow, expiresAt },
+    workspaceId
+  )
   if (!destination) return undefined
   const file = transferFile(nonce)
   const stored = await api.storeUserData(
