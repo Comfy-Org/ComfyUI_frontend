@@ -127,6 +127,27 @@ describe('executionErrorUtil', () => {
         expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
       },
       {
+        name: 'the structured node_errors when the embedded JSON has no node errors',
+        detail: {
+          exception_message: `${summaryOnlyMessage} {"node_errors":{}}`,
+          node_errors: relayedNodeErrors
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'the valid errors of a node when one of its errors is malformed',
+        detail: {
+          exception_message: summaryOnlyMessage,
+          node_errors: {
+            '72': {
+              ...relayedNodeErrors['72'],
+              errors: [...relayedNodeErrors['72'].errors, { type: 5 }]
+            }
+          }
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
         name: 'the valid structured entries when a sibling entry is malformed',
         detail: {
           exception_message: summaryOnlyMessage,

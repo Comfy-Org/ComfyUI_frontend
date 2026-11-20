@@ -3,7 +3,7 @@ import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import type { ExecutionErrorWsMessage } from '@comfyorg/api-client/executionTypes'
 import { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
 import { isPlainObject } from 'es-toolkit'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 type PromptOutputsSkippedNodeError = z.infer<
   typeof zPromptOutputsSkippedNodeError
@@ -132,25 +132,48 @@ export function isMissingNodePromptError(
   return promptError?.type === 'missing_node_type'
 }
 
+const zRelayedNodeError = zPromptOutputsSkippedNodeError.extend({
+  errors: z.array(z.unknown())
+})
+const zRelayedValidationError =
+  zPromptOutputsSkippedNodeError.shape.errors.element
+
+function relayedNodeErrorOf(
+  nodeError: unknown
+): PromptOutputsSkippedNodeError | null {
+  const parsed = zRelayedNodeError.safeParse(nodeError)
+  if (!parsed.success) return null
+  const errors = parsed.data.errors.flatMap((error) => {
+    const item = zRelayedValidationError.safeParse(error)
+    return item.success ? [item.data] : []
+  })
+  return { ...parsed.data, errors }
+}
+
 function relayedNodeErrorsOf(nodeErrors: unknown): Record<string, NodeError> {
   if (!isPlainObject(nodeErrors)) return {}
   const valid = Object.fromEntries(
     Object.entries(nodeErrors).flatMap(([nodeId, nodeError]) => {
-      const parsed = zPromptOutputsSkippedNodeError.safeParse(nodeError)
-      return parsed.success ? [[nodeId, parsed.data] as const] : []
+      const parsed = relayedNodeErrorOf(nodeError)
+      return parsed ? [[nodeId, parsed] as const] : []
     })
   )
   return normalizeRelayedNodeErrors(valid)
 }
 
-/** The validation response a cloud error carries: JSON embedded in its message, else its structured `node_errors`. */
+function hasNodeErrors(validationError: CloudValidationError): boolean {
+  return Object.keys(validationError.node_errors ?? {}).length > 0
+}
+
+/** The validation response a cloud error carries: embedded node errors, else its structured `node_errors`, else any embedded prompt error. */
 export function cloudValidationErrorOf(
   detail: Pick<ExecutionErrorWsMessage, 'exception_message' | 'node_errors'>
 ): CloudValidationError | null {
   const embedded = tryExtractValidationError(detail.exception_message)
-  if (embedded) return embedded
+  if (embedded && hasNodeErrors(embedded)) return embedded
   const nodeErrors = relayedNodeErrorsOf(detail.node_errors)
-  return Object.keys(nodeErrors).length > 0 ? { node_errors: nodeErrors } : null
+  if (Object.keys(nodeErrors).length > 0) return { node_errors: nodeErrors }
+  return embedded
 }
 
 /**
