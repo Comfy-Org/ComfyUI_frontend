@@ -1165,23 +1165,6 @@ export const useWorkflowService = () => {
     return invalidateCanvasTracker
   }
 
-  /**
-   * Set the active workflow after the new graph is loaded.
-   *
-   * The call relationship is
-   * useWorkflowService().openWorkflow -> app.loadGraphData -> useWorkflowService().afterLoadNewGraph
-   * app.loadApiJson -> useWorkflowService().afterLoadNewGraph
-   * app.importA1111 -> useWorkflowService().afterLoadNewGraph
-   *
-   * @param value The value to set as the active workflow.
-   * @param workflowData The initial workflow data loaded to the graph editor.
-   */
-  /**
-   * Reuses an existing workflow when this is a restoration case (persisted but
-   * currently unloaded) or an idempotent repeated load of the currently active
-   * same-path workflow, so startup flows that load the same name twice don't
-   * open duplicate tabs.
-   */
   const reusableWorkflowFor = (
     path: string,
     workflowData: ComfyWorkflowJSON
@@ -1216,12 +1199,23 @@ export const useWorkflowService = () => {
         : (target ?? undefined)
     const taken = useWorkspaceStore().workflow.openWorkflows.some(
       (w) =>
-        toRaw(w) !== (owner && toRaw(owner)) &&
+        toRaw(w) !== toRaw(owner) &&
         (w.activeState?.id ?? w.initialState?.id) === id
     )
     if (taken) workflowData.id = generateUUID()
   }
 
+  /**
+   * Set the active workflow after the new graph is loaded.
+   *
+   * The call relationship is
+   * useWorkflowService().openWorkflow -> app.loadGraphData -> useWorkflowService().afterLoadNewGraph
+   * app.loadApiJson -> useWorkflowService().afterLoadNewGraph
+   * app.importA1111 -> useWorkflowService().afterLoadNewGraph
+   *
+   * @param value The value to set as the active workflow.
+   * @param workflowData The initial workflow data loaded to the graph editor.
+   */
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,

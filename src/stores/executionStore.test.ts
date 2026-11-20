@@ -3110,6 +3110,53 @@ describe('useExecutionStore - frames from a background workflow', () => {
 
     expect(store.activeJobId).toBe('job-visible')
   })
+
+  it("hands focus to the active tab's newest job over a newer job elsewhere", () => {
+    queueJob('job-visible-2', visibleWorkflow)
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-visible-2', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+
+    fire('execution_success', { prompt_id: 'job-visible', timestamp: 0 })
+
+    expect(store.activeJobId).toBe('job-visible-2')
+  })
+
+  it('hands focus to the newest job overall when the active tab has none', () => {
+    fire('execution_start', { prompt_id: 'job-visible', timestamp: 0 })
+    fire('execution_start', { prompt_id: 'job-background', timestamp: 0 })
+
+    fire('execution_success', { prompt_id: 'job-visible', timestamp: 0 })
+
+    expect(store.activeJobId).toBe('job-background')
+
+    fire('execution_success', { prompt_id: 'job-background', timestamp: 0 })
+
+    expect(store.activeJobId).toBeNull()
+  })
+
+  it('derives progress from finished frames for a job not queued here', () => {
+    const node = (id: string, state: string) => ({
+      value: 0,
+      max: 1,
+      state,
+      node_id: id,
+      prompt_id: 'job-elsewhere',
+      display_node_id: id
+    })
+    fire('progress_state', {
+      prompt_id: 'job-elsewhere',
+      nodes: {
+        '1': node('1', 'finished'),
+        '2': node('2', 'running'),
+        '3': node('3', 'pending'),
+        '4': node('4', 'finished')
+      }
+    })
+    vi.advanceTimersToNextFrame()
+
+    expect(store.executionProgressForJob('job-elsewhere')).toBe(0.5)
+  })
 })
 
 describe('useExecutionStore - storeJob and workflow path tracking', () => {

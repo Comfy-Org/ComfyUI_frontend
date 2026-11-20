@@ -216,14 +216,6 @@ export function useJobList() {
       : t('g.emDash')
   )
 
-  function isTrackedRunningJob(jobId: string, state: JobState) {
-    return (
-      state === 'running' &&
-      (jobId === executionStore.activeJobId ||
-        jobId in executionStore.nodeProgressStatesByJob)
-    )
-  }
-
   const selectedJobTab = ref<JobTab>('All')
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')
   const selectedSortMode = ref<JobSortMode>('mostRecent')
@@ -305,24 +297,23 @@ export function useJobList() {
     progress: ReturnType<typeof jobProgress> | undefined,
     modelDownload: JobModelDownload | undefined
   ) {
-    if (modelDownload) {
-      return {
-        progressTotalPercent: undefined,
-        progressCurrentPercent: downloadPercent(modelDownload)
-      }
-    }
     return {
-      progressTotalPercent: progress?.totalPercent,
-      progressCurrentPercent: progress?.currentNodePercent
+      progressTotalPercent: modelDownload ? undefined : progress?.totalPercent,
+      progressCurrentPercent: modelDownload
+        ? downloadPercent(modelDownload)
+        : progress?.currentNodePercent
     }
   }
 
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
-      const isActive = isTrackedRunningJob(task.jobId, state)
-      const progress = isActive ? jobProgress(task.jobId) : undefined
       const isFocused =
         state === 'running' && task.jobId === executionStore.activeJobId
+      const isActive =
+        isFocused ||
+        (state === 'running' &&
+          task.jobId in executionStore.nodeProgressStatesByJob)
+      const progress = isActive ? jobProgress(task.jobId) : undefined
       const modelDownload = activeDownload(task.jobId, state)
       const showAddedHint = shouldShowAddedHint(task, state)
       const promptKey = taskIdToKey(task.jobId)
