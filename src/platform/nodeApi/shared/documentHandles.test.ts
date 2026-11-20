@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
 import {
@@ -240,28 +240,14 @@ describe('document handles', () => {
 })
 
 describe('holding the handles of gone entities', () => {
-  const collectable = new Set<{ collected: boolean }>()
-
-  class CollectableWeakRef<T extends object> {
-    private readonly state = { collected: false }
-    constructor(private readonly target: T) {
-      collectable.add(this.state)
-    }
-    deref(): T | undefined {
-      return this.state.collected ? undefined : this.target
+  class CollectedWeakRef {
+    deref(): undefined {
+      return undefined
     }
   }
-
-  function collectUnheld() {
-    for (const state of collectable) state.collected = true
-  }
-
-  afterEach(() => {
-    collectable.clear()
-  })
 
   function cacheOverOneGraph() {
-    vi.stubGlobal('WeakRef', CollectableWeakRef)
+    vi.stubGlobal('WeakRef', CollectedWeakRef)
     const graph = new LGraph()
     const present = new Set(['1', '2'])
     const { handles, probes } = handlesWithProbes(
@@ -272,36 +258,16 @@ describe('holding the handles of gone entities', () => {
     return { handles, present, handleFor }
   }
 
-  it('holds the handle of a present entity strongly', () => {
-    const { handles, handleFor } = cacheOverOneGraph()
-    const handle = handleFor('1')
-
-    handles.afterHistoryRestore()
-    collectUnheld()
-
-    expect(handleFor('1')).toBe(handle)
-  })
-
-  it("gives back a gone entity's handle when it returns, while something holds the handle", () => {
+  it("keeps a gone entity's handle until its entity returns, so a WeakMap keyed by it keeps its entry", () => {
     const { handles, present, handleFor } = cacheOverOneGraph()
-    const handle = handleFor('1')
+    const state = new WeakMap([[handleFor('1'), 'kept']])
     present.delete('1')
 
     handles.afterHistoryRestore()
+    for (let key = 3; key < 1000; key++) handleFor(String(key))
+    handles.afterHistoryRestore()
     present.add('1')
 
-    expect(handleFor('1')).toBe(handle)
-  })
-
-  it("lets a gone entity's handle go once nothing else holds it", () => {
-    const { handles, present, handleFor } = cacheOverOneGraph()
-    const handle = handleFor('2')
-    present.delete('2')
-
-    handles.afterHistoryRestore()
-    collectUnheld()
-    present.add('2')
-
-    expect(handleFor('2')).not.toBe(handle)
+    expect(state.get(handleFor('1'))).toBe('kept')
   })
 })
