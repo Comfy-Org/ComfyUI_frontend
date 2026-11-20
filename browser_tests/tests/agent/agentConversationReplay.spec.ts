@@ -96,6 +96,10 @@ test.describe(
         await agentConversation.runTurns()
         await page.evaluate(() => window.app!.canvas.deselectAll())
 
+        await expect
+          .poll(() => overlappingNodePairs(agentConversation.vueNodes.nodes))
+          .toEqual([])
+
         const region = await screenshotRegion(
           page,
           await agentConversation.vueNodes.nodes.all()

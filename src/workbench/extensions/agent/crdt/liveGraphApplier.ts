@@ -2089,23 +2089,22 @@ export class LiveGraphApplier {
     { moveCollisions }: { moveCollisions: boolean }
   ): void {
     const createdSet = new Set(created)
-    // Groups only: a group's `pos`/`size` are a view onto its `_bounding`, so
-    // this already is its rendered box. A node's is not — see toPlacementRect.
-    const rect = (item: LGraphGroup): PlacementRect => ({
-      x: item.pos[0],
-      y: item.pos[1],
-      width: item.size[0],
-      height: item.size[1]
+    const groupRect = (group: LGraphGroup): PlacementRect => ({
+      x: group.pos[0],
+      y: group.pos[1],
+      width: group.size[0],
+      height: group.size[1]
     })
     const createdNodes = graph._nodes.filter((node) => createdSet.has(node.id))
     const existingNodes = graph._nodes.filter(
       (node) => !createdSet.has(node.id)
     )
     const ctx = this.deps.getCanvas?.()?.ctx ?? undefined
+    const measureNow = (node: LGraphNode) => pendingBounds(node, ctx)
     const existingBounds = existingNodes.map((node) =>
-      isRendered(node) ? node.boundingRect : pendingBounds(node, ctx)
+      isRendered(node) ? node.boundingRect : measureNow(node)
     )
-    const createdBounds = createdNodes.map((node) => pendingBounds(node, ctx))
+    const createdBounds = createdNodes.map(measureNow)
     const framesOnlyExisting = (group: LGraphGroup) =>
       framesAny(group, existingBounds) && !framesAny(group, createdBounds)
     const kept = createdGroups.filter(framesOnlyExisting)
@@ -2116,15 +2115,15 @@ export class LiveGraphApplier {
     const incoming = [...createdNodes, ...placedGroups]
     const offset = placementOffset({
       existing: [
-        ...existingBounds.map(toPlacementRect),
+        ...existingNodes.map((node) => toPlacementRect(measureNow(node))),
         ...graph.groups
           .filter((group) => !placedGroups.includes(group))
-          .map(rect)
+          .map(groupRect)
       ],
       viewport: this.deps.viewportBounds?.() ?? null,
       incoming: [
         ...createdBounds.map(toPlacementRect),
-        ...placedGroups.map(rect)
+        ...placedGroups.map(groupRect)
       ],
       moveCollisions
     })
@@ -2135,16 +2134,6 @@ export class LiveGraphApplier {
   }
 }
 
-/**
- * A measured node box as a placement rect.
- *
- * `pos` is the top-left of a node's *body*; its title bar is drawn above that,
- * so `measure()` reports `pos[1] - NODE_TITLE_HEIGHT` as the top and adds the
- * title to the height. A rect built from `pos`/`size` is therefore short by the
- * title height, and a vertical gap smaller than it reads as clear while the
- * incoming node's title covers the node below. Placement uses the same measured
- * bounds as the group-framing decision above so both see the rendered box.
- */
 function toPlacementRect([x, y, width, height]: ReadOnlyRect): PlacementRect {
   return { x, y, width, height }
 }

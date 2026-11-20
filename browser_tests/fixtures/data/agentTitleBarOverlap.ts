@@ -25,23 +25,14 @@ function note(
   }
 }
 
-/**
- * The gap left between the existing node's body and the incoming one's, in
- * graph units. Smaller than `LiteGraph.NODE_TITLE_HEIGHT` (30), so the bodies
- * clear each other while the incoming node's title bar is drawn across the
- * existing node.
- */
 export const BODY_GAP_PX = 10
 
 export const EXISTING_NODES = [note(1, [0, 180], [400, 300], 'Existing node A')]
 
-/**
- * One node whose *body* sits `BODY_GAP_PX` below the existing node's body, so a
- * rect built from `pos`/`size` shows a clear 10px gap while the rendered boxes
- * overlap by `NODE_TITLE_HEIGHT - BODY_GAP_PX`.
- */
+const existingBodyBottom = EXISTING_NODES[0].pos[1] + EXISTING_NODES[0].size[1]
+
 export const INCOMING_NODES = [
-  note(42, [0, 180 + 300 + BODY_GAP_PX], [400, 200], 'Agent node')
+  note(42, [0, existingBodyBottom + BODY_GAP_PX], [400, 200], 'Agent node')
 ]
 
 export const TITLE_BAR_CATALOG: WidgetCatalog = {
