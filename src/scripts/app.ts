@@ -818,7 +818,14 @@ export class ComfyApp implements IComfyApp {
       }
     })
 
-    api.addEventListener('execution_start', () => {
+    api.addEventListener('execution_start', ({ detail }) => {
+      if (
+        !useExecutionStore().rememberStampAndCheckActiveWorkflow(
+          detail.prompt_id,
+          detail.workflow_id
+        )
+      )
+        return
       triggerCallbackOnAllNodes(this.rootGraph, 'onExecutionStart')
     })
 
@@ -1312,6 +1319,7 @@ export class ComfyApp implements IComfyApp {
       }
 
       graphData = clone(graphData)
+      useWorkflowService().claimUniqueRootGraphId(graphData, workflow)
 
       if (useSettingStore().get('Comfy.Validation.Workflows')) {
         const { graphData: validatedGraphData } =

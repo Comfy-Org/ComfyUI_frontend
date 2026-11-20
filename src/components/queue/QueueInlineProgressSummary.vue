@@ -50,10 +50,15 @@ const {
 } = useQueueProgress()
 
 const currentNodeName = computed(() => {
-  return resolveNodeDisplayName(executionStore.executingNode, {
-    emptyLabel: t('g.emDash'),
-    untitledLabel: t('g.untitled')
-  })
+  return resolveNodeDisplayName(
+    executionStore.activeJobId
+      ? executionStore.executingNodeForJob(executionStore.activeJobId)
+      : null,
+    {
+      emptyLabel: t('g.emDash'),
+      untitledLabel: t('g.untitled')
+    }
+  )
 })
 
 const shouldShow = computed(

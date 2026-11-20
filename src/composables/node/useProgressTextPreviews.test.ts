@@ -88,7 +88,11 @@ describe('useProgressTextPreviews', () => {
       storeActiveJob(workflow)
       mountPreviews()
 
-      fireProgressText({ nodeId: toNodeId('1'), text: 'warming up' })
+      fireProgressText({
+        nodeId: toNodeId('1'),
+        text: 'warming up',
+        prompt_id: 'job-1'
+      })
 
       expect(showTextPreview).toHaveBeenCalledExactlyOnceWith(
         node,
@@ -103,7 +107,11 @@ describe('useProgressTextPreviews', () => {
       storeActiveJob(workflow)
       mountPreviews()
 
-      fireProgressText({ nodeId: toNodeId('3:1'), text: 'warming up' })
+      fireProgressText({
+        nodeId: toNodeId('3:1'),
+        text: 'warming up',
+        prompt_id: 'job-1'
+      })
 
       expect(showTextPreview).toHaveBeenCalledExactlyOnceWith(
         node,

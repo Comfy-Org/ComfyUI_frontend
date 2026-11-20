@@ -261,7 +261,8 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
 
   function handleExecuted({ detail }: CustomEvent<ExecutedWsMessage>) {
     const jobId = detail.prompt_id
-    if (jobId !== executionStore.activeJobId) return
+    if (jobId !== executionStore.activeJobId || jobId !== trackedJobId.value)
+      return
     onNodeExecuted(jobId, detail)
   }
 
@@ -276,7 +277,11 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
     ],
     ([jobId], [oldJobId]) => {
       if (!isAppMode.value) return
-      if (oldJobId && oldJobId !== jobId) {
+      if (
+        oldJobId &&
+        oldJobId !== jobId &&
+        !(oldJobId in executionStore.queuedJobs)
+      ) {
         onJobComplete(oldJobId)
       }
       // Guard with trackedJobId to avoid double-starting when the
@@ -292,11 +297,25 @@ export const useLinearOutputStore = defineStore('linearOutput', () => {
   )
 
   watch(
+    () => Object.keys(executionStore.queuedJobs),
+    (liveJobIds) => {
+      if (!isAppMode.value) return
+      const live = new Set(liveJobIds)
+      const ended = new Set(
+        inProgressItems.value
+          .map((i) => i.jobId)
+          .filter((id) => !live.has(id) && !pendingResolve.value.has(id))
+      )
+      for (const jobId of ended) onJobComplete(jobId)
+    }
+  )
+
+  watch(
     () => jobPreviewStore.nodePreviewsByPromptId,
     (previews) => {
       if (!isAppMode.value) return
       const jobId = executionStore.activeJobId
-      if (!jobId) return
+      if (!jobId || jobId !== trackedJobId.value) return
       const preview = Object.hasOwn(previews, jobId)
         ? previews[jobId]
         : undefined

@@ -3,7 +3,6 @@ import { orderBy } from 'es-toolkit/array'
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useQueueProgress } from '@/composables/queue/useQueueProgress'
 import { isCloud } from '@/platform/distribution/types'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -21,6 +20,7 @@ import {
   isYesterday
 } from '@/utils/dateTimeUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
+import { clampPercentInt } from '@/utils/numberUtil'
 import { buildJobDisplay } from '@/utils/queueDisplay'
 import { isActiveJobState, jobStateFromTask } from '@/utils/queueUtil'
 
@@ -46,6 +46,8 @@ export type JobListItem = {
   progressTotalPercent?: number
   progressCurrentPercent?: number
   runningNodeName?: string
+  isFocused?: boolean
+  canFocus?: boolean
   executionTimeMs?: number
   computeHours?: number
 }
@@ -57,6 +59,8 @@ export type JobGroup = {
 }
 
 const ADDED_HINT_DURATION_MS = 3000
+const toPercent = (fraction: number) =>
+  clampPercentInt(Math.round(fraction * 100))
 const relativeTimeFormatterCache = new Map<string, Intl.RelativeTimeFormat>()
 const optionalValue = <T>(value: T | null | undefined): T | undefined =>
   value ?? undefined
@@ -179,8 +183,6 @@ export function useJobList() {
     recentlyAddedPendingIds.value = new Set<string>()
   })
 
-  const { totalPercent, currentNodePercent } = useQueueProgress()
-
   const relativeTimeFormatter = computed(() => {
     const localeValue = locale.value
     let formatter = relativeTimeFormatterCache.get(localeValue)
@@ -195,12 +197,32 @@ export function useJobList() {
   const isJobInitializing = (jobId: string | number | undefined) =>
     executionStore.isJobInitializing(jobId)
 
-  const currentNodeName = computed(() => {
-    return resolveNodeDisplayName(executionStore.executingNode, {
-      emptyLabel: t('g.emDash'),
-      untitledLabel: t('g.untitled')
-    })
-  })
+  function jobProgress(jobId: string) {
+    return {
+      totalPercent: toPercent(executionStore.executionProgressForJob(jobId)),
+      currentNodePercent: toPercent(
+        executionStore.executingNodeProgressForJob(jobId) ?? 0
+      ),
+      currentNodeName: resolveNodeDisplayName(
+        executionStore.executingNodeForJob(jobId),
+        { emptyLabel: t('g.emDash'), untitledLabel: t('g.untitled') }
+      )
+    }
+  }
+
+  const currentNodeName = computed(() =>
+    executionStore.activeJobId
+      ? jobProgress(executionStore.activeJobId).currentNodeName
+      : t('g.emDash')
+  )
+
+  function isTrackedRunningJob(jobId: string, state: JobState) {
+    return (
+      state === 'running' &&
+      (jobId === executionStore.activeJobId ||
+        jobId in executionStore.nodeProgressStatesByJob)
+    )
+  }
 
   const selectedJobTab = ref<JobTab>('All')
   const selectedWorkflowFilter = ref<'all' | 'current'>('all')
@@ -280,8 +302,7 @@ export function useJobList() {
   }
 
   function progressFills(
-    state: JobState,
-    isActive: boolean,
+    progress: ReturnType<typeof jobProgress> | undefined,
     modelDownload: JobModelDownload | undefined
   ) {
     if (modelDownload) {
@@ -290,16 +311,18 @@ export function useJobList() {
         progressCurrentPercent: downloadPercent(modelDownload)
       }
     }
-    const running = state === 'running' && isActive
     return {
-      progressTotalPercent: running ? totalPercent.value : undefined,
-      progressCurrentPercent: running ? currentNodePercent.value : undefined
+      progressTotalPercent: progress?.totalPercent,
+      progressCurrentPercent: progress?.currentNodePercent
     }
   }
 
   const jobItems = computed<JobListItem[]>(() => {
     return filteredTaskEntries.value.map(({ task, state }) => {
-      const isActive = task.jobId === (executionStore.activeJobId ?? '')
+      const isActive = isTrackedRunningJob(task.jobId, state)
+      const progress = isActive ? jobProgress(task.jobId) : undefined
+      const isFocused =
+        state === 'running' && task.jobId === executionStore.activeJobId
       const modelDownload = activeDownload(task.jobId, state)
       const showAddedHint = shouldShowAddedHint(task, state)
       const promptKey = taskIdToKey(task.jobId)
@@ -313,9 +336,9 @@ export function useJobList() {
         locale: locale.value,
         formatClockTimeFn: formatClockTime,
         isActive,
-        totalPercent: isActive ? totalPercent.value : undefined,
-        currentNodePercent: isActive ? currentNodePercent.value : undefined,
-        currentNodeName: isActive ? currentNodeName.value : undefined,
+        totalPercent: progress?.totalPercent,
+        currentNodePercent: progress?.currentNodePercent,
+        currentNodeName: progress?.currentNodeName,
         showAddedHint,
         isCloud,
         modelDownload
@@ -330,9 +353,13 @@ export function useJobList() {
         iconImageUrl: promptPreviewUrl ?? display.iconImageUrl,
         showClear: display.showClear,
         taskRef: task,
-        ...progressFills(state, isActive, modelDownload),
-        runningNodeName:
-          state === 'running' && isActive ? currentNodeName.value : undefined,
+        ...progressFills(progress, modelDownload),
+        runningNodeName: progress?.currentNodeName,
+        isFocused,
+        canFocus:
+          state === 'running' &&
+          !isFocused &&
+          executionStore.rememberStampAndCheckActiveWorkflow(task.jobId),
         executionTimeMs: task.executionTime,
         computeHours:
           task.executionTime !== undefined

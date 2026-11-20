@@ -1057,6 +1057,52 @@ export const useWorkflowService = () => {
    * @param value The value to set as the active workflow.
    * @param workflowData The initial workflow data loaded to the graph editor.
    */
+  /**
+   * Reuses an existing workflow when this is a restoration case (persisted but
+   * currently unloaded) or an idempotent repeated load of the currently active
+   * same-path workflow, so startup flows that load the same name twice don't
+   * open duplicate tabs.
+   */
+  const reusableWorkflowFor = (
+    path: string,
+    workflowData: ComfyWorkflowJSON
+  ): ComfyWorkflow | undefined => {
+    const workflowStore = useWorkspaceStore().workflow
+    const existingWorkflow = workflowStore.getWorkflowByPath(
+      ComfyWorkflow.basePath + appendJsonExt(path)
+    )
+    if (!existingWorkflow) return
+    if (existingWorkflow.isPersisted && !existingWorkflow.isLoaded)
+      return existingWorkflow
+    const isSameActiveWorkflowLoad =
+      workflowStore.isActive(existingWorkflow) &&
+      (existingWorkflow.isTemporary ||
+        areWorkflowIdsEquivalent(
+          existingWorkflow.activeState?.id,
+          workflowData.id,
+          existingWorkflow.legacyId
+        ))
+    return isSameActiveWorkflowLoad ? existingWorkflow : undefined
+  }
+
+  const claimUniqueRootGraphId = (
+    workflowData: ComfyWorkflowJSON,
+    target: string | ComfyWorkflow | null
+  ) => {
+    const id = workflowData.id
+    if (!id) return
+    const owner =
+      typeof target === 'string'
+        ? reusableWorkflowFor(target, workflowData)
+        : (target ?? undefined)
+    const taken = useWorkspaceStore().workflow.openWorkflows.some(
+      (w) =>
+        toRaw(w) !== (owner && toRaw(owner)) &&
+        (w.activeState?.id ?? w.initialState?.id) === id
+    )
+    if (taken) workflowData.id = generateUUID()
+  }
+
   const afterLoadNewGraph = async (
     value: string | ComfyWorkflow | null,
     workflowData: ComfyWorkflowJSON,
@@ -1116,32 +1162,10 @@ export const useWorkflowService = () => {
     if (value === null || typeof value === 'string') {
       // Check if a persisted workflow with this path exists
       if (value) {
-        const fullPath = ComfyWorkflow.basePath + appendJsonExt(value)
-        const existingWorkflow = workflowStore.getWorkflowByPath(fullPath)
-
-        // Reuse an existing workflow when this is a restoration case
-        // (persisted but currently unloaded) or an idempotent repeated load
-        // of the currently active same-path workflow.
-        //
-        // This prevents accidental duplicate tabs when startup/load flows
-        // invoke loadGraphData more than once for the same workflow name.
-        const existingId = existingWorkflow?.activeState?.id
-        const isSameActiveWorkflowLoad =
-          !!existingWorkflow &&
-          workflowStore.isActive(existingWorkflow) &&
-          (existingWorkflow.isTemporary ||
-            areWorkflowIdsEquivalent(
-              existingId,
-              workflowData.id,
-              existingWorkflow.legacyId
-            ))
-
-        const reused =
-          existingWorkflow &&
-          ((existingWorkflow.isPersisted && !existingWorkflow.isLoaded) ||
-            isSameActiveWorkflowLoad)
-            ? await bindStoredToCanvas(existingWorkflow)
-            : undefined
+        const existingWorkflow = reusableWorkflowFor(value, workflowData)
+        const reused = existingWorkflow
+          ? await bindStoredToCanvas(existingWorkflow)
+          : undefined
         if (reused !== undefined) {
           const loadedWorkflow = reused
           if (!loadedWorkflow) return
@@ -1384,6 +1408,7 @@ export const useWorkflowService = () => {
     duplicateWorkflow,
     showPendingWarnings,
     afterLoadNewGraph,
+    claimUniqueRootGraphId,
     beforeLoadNewGraph
   }
 }
