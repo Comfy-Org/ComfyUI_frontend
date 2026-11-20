@@ -1263,6 +1263,26 @@ describe('useAgentConversationStore', () => {
       }
     })
 
+    it('does not let deferred cleanup delete a replacement answer', () => {
+      vi.useFakeTimers()
+      try {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        store.hydrate(askUserTranscript())
+        store.recordAskAnswer('turn-1:call-1', { selected: ['oil'] }, 'th')
+        store.deferSubmittedAskCleanup('turn-1:call-1')
+
+        store.recordAskAnswer('turn-1:call-1', { selected: ['photo'] }, 'th')
+        vi.advanceTimersByTime(60_000)
+
+        expect(store.submittedAskAnswer('turn-1:call-1')).toEqual({
+          selected: ['photo']
+        })
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('rebuilds a retired delete approval read-only from a transcript that still lists it', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')

@@ -841,6 +841,7 @@ export const useAgentConversationStore = defineStore(
       knownMessageId?: TurnId,
       knownMinSelections?: number
     ): void {
+      clearAskResolutionReportWatchdog(askId)
       const prior = submittedAskAnswers.get(askId)
       const kind =
         knownKind ??
@@ -959,6 +960,7 @@ export const useAgentConversationStore = defineStore(
       const submitted = submittedAskAnswers.get(askId)
       if (!submitted) return
       submitted.cleanupDeferred = true
+      submitted.awaitingResolution = 'conflict'
       clearAskResolutionReportWatchdog(askId)
       askResolutionReportWatchdogs.set(
         askId,

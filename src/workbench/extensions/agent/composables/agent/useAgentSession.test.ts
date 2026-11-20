@@ -3118,6 +3118,27 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
 
+    it('treats an empty optional receipt as status-only after free text', async () => {
+      const { session } = await parkedOnQuestion(
+        { status: 'answered', selected: [] },
+        0
+      )
+
+      await session.answerAsk('turn-1:call-1', {
+        selected: [],
+        other_text: 'A custom model'
+      })
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(card()).toMatchObject({
+        resolution: { status: 'unconfirmed' }
+      })
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
     it('leaves a status-only 202 to the frame to report', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
@@ -3311,6 +3332,35 @@ describe('useAgentSession (v1 composition root)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('reports a deferred first-attempt conflict if the socket drops', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValue(new AgentApiError('already answered', 409, undefined))
+    const events = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: events.source
+    })
+    session.start()
+    events.status(true)
+    await session.sendMessage('build it')
+    events.emit(runApproval('msg-1'))
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
+
+    events.status(false)
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
+    )
+    expect(session.notices.value).toEqual([
+      {
+        level: 'error',
+        text: enMessages.agent.runApproval.answerUncertain
+      }
+    ])
   })
 
   it('keeps a first-attempt 409 submission for the winning resolution frame', async () => {
@@ -3563,7 +3613,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([])
     })
 
-    it('reports a first-attempt 409 when the resolution channel is gone', async () => {
+    it('reports a first-attempt 409 as unconfirmed when the resolution channel is gone', async () => {
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockRejectedValue(
@@ -3588,13 +3638,13 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([
         {
           level: 'error',
-          text: enMessages.agent.runApproval.answerSuperseded
+          text: enMessages.agent.runApproval.answerUncertain
         }
       ])
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'agent_ask_answer_superseded'
+          errorType: 'agent_ask_answer_unconfirmed'
         })
       )
     })
@@ -6323,7 +6373,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(0)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
-        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
       )
     } finally {
       vi.useRealTimers()
@@ -6363,7 +6413,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(0)
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
-        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+        expect.objectContaining({ errorType: 'agent_ask_answer_unconfirmed' })
       )
     } finally {
       vi.useRealTimers()
@@ -6720,7 +6770,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([
         {
           level: 'error',
-          text: enMessages.agent.runApproval.answerSuperseded
+          text: enMessages.agent.runApproval.answerUncertain
         }
       ])
     } finally {
