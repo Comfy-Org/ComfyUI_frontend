@@ -13,7 +13,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseDocument } from 'yaml'
 
-const ROOT = join(import.meta.dirname, '../..')
+const ROOT = join(import.meta.dirname, '../../../..')
 const TSX = join(ROOT, 'node_modules/.bin/tsx')
 
 function fixture() {
@@ -186,7 +186,7 @@ describe('shared PR report disclosure', () => {
         ]
       })
     )
-    const result = spawnSync(TSX, [join(ROOT, 'scripts/perf-report.ts')], {
+    const result = spawnSync(TSX, [join(ROOT, 'tools/ci/src/perf-report.ts')], {
       cwd: dir.root,
       encoding: 'utf8'
     })

@@ -11,7 +11,7 @@ import type {
 } from '@playwright/test/reporter'
 import { describe, expect, it, onTestFinished } from 'vitest'
 
-const ROOT = join(import.meta.dirname, '../..')
+const ROOT = join(import.meta.dirname, '../../../..')
 const TSX = join(ROOT, 'node_modules/.bin/tsx')
 const SCRIPT = join(import.meta.dirname, 'extract-playwright-counts.ts')
 const BASE_URL = 'https://abc.chromium.pages.dev'

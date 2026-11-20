@@ -1,6 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
 
-/** Written alongside coverage.lcov by scripts/cicd/package-e2e-coverage.sh. */
 export const COVERAGE_METADATA_FILE = 'coverage-metadata.json'
 
 export interface CoverageMetadata {

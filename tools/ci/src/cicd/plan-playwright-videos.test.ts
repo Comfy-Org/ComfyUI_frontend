@@ -39,7 +39,7 @@ function resolveOnPath(name: string, skip: TestContext['skip']): string {
   return found ?? skip(`${name} not found on PATH`)
 }
 const playwright = fileURLToPath(import.meta.resolve('@playwright/test'))
-const bin = join(import.meta.dirname, '../../node_modules/.bin')
+const bin = join(import.meta.dirname, '../../../../node_modules/.bin')
 
 function fixture(
   chromiumCount: number,

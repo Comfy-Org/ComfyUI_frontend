@@ -102,7 +102,7 @@ describe('check-adr-links', () => {
   })
 
   it('passes on the real repository (every tracked docs/adr reference resolves)', () => {
-    const repoRoot = path.resolve(import.meta.dirname, '..', '..')
+    const repoRoot = path.resolve(import.meta.dirname, '../../../..')
     const result = runScript(repoRoot)
     if (result.status !== 0) {
       throw new Error(

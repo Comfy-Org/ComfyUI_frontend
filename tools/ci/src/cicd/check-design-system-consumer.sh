@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-node scripts/cicd/check-design-system-sources.ts
+node tools/ci/src/cicd/check-design-system-sources.ts
 FIXTURE=$(mktemp -d)
 trap 'rm -rf "$FIXTURE"' EXIT
 CONSUMER="$FIXTURE/components"

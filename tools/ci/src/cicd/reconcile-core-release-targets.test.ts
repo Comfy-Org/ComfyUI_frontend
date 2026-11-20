@@ -117,7 +117,7 @@ fi
       [
         '--noprofile',
         '--norc',
-        'scripts/cicd/reconcile-core-release-targets.sh'
+        'tools/ci/src/cicd/reconcile-core-release-targets.sh'
       ],
       {
         encoding: 'utf8',
