@@ -770,6 +770,25 @@ describe('useWorkflowStore', () => {
         store.modifiedWorkflows.map((workflow) => toRaw(workflow))
       ).toEqual([toRaw(active)])
     })
+
+    it('activates the lookup entry when it replaced the active instance', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
+      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
+      const replacement = await new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 1
+      }).load()
+      store.attachWorkflow(replacement)
+
+      const opened = await store.openWorkflow(replacement)
+
+      expect(toRaw(opened)).toBe(toRaw(replacement))
+      expect(toRaw(store.activeWorkflow)).toBe(toRaw(replacement))
+    })
   })
 
   describe('openWorkflowsInBackground', () => {

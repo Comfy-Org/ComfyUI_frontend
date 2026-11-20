@@ -1,3 +1,4 @@
+import { toRaw } from 'vue'
 import { encodeRgbaAsPng } from '@comfyorg/mask-editor/pngEncodeUtil'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
@@ -1457,6 +1458,26 @@ describe('useWorkflowService', () => {
 
       await service.openWorkflow(active, { force: true })
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
+    })
+
+    it('keeps the active workflow on the canvas when a stale same-path object is opened', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/same-path.json'
+      })
+      const stale = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/same-path.json'
+      })
+      workflowStore.attachWorkflow(active)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      bindCanvasTracker(active.changeTracker!)
+
+      await expect(useWorkflowService().openWorkflow(stale)).resolves.toBe(true)
+
+      expect(app.loadGraphData).not.toHaveBeenCalled()
+      expect(toRaw(workflowStore.activeWorkflow)).toBe(active)
     })
 
     it('loads an active workflow that does not own the canvas', async () => {
