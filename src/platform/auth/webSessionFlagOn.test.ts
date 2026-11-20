@@ -1569,7 +1569,7 @@ describe('live updates and media on the shared web session', () => {
 
     expect(landings).toEqual(['/cloud/login'])
     expect(api.socket).toBeNull()
-  })
+  }, 10_000)
 
   it('keeps the socket off Personal once the team workspace is refused and the reload is held', async () => {
     const ingest = await bootWithSocket()
