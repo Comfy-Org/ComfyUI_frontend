@@ -175,9 +175,55 @@ describe('executionErrorUtil', () => {
           promptError: {
             type: 'prompt_outputs_failed_validation',
             message: summaryOnlyMessage,
-            details: ''
+            details: summaryOnlyMessage
           }
         }
+      },
+      {
+        name: 'only the usable embedded entries when a sibling is null',
+        detail: {
+          exception_message: `400: ${JSON.stringify({ node_errors: { ...embeddedNodeErrors, '10': null } })}`
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
+      },
+      {
+        name: 'a prompt-level rejection when the embedded prompt error is null',
+        detail: {
+          exception_message: `${summaryOnlyMessage} {"error":null}`,
+          node_errors: {
+            '72': { ...relayedNodeErrors['72'], errors: [{ type: 5 }] }
+          }
+        },
+        expected: {
+          kind: 'promptError',
+          promptError: {
+            type: 'prompt_outputs_failed_validation',
+            message: `${summaryOnlyMessage} {"error":null}`,
+            details: `${summaryOnlyMessage} {"error":null}`
+          }
+        }
+      },
+      {
+        name: 'the structured node_errors over embedded entries whose errors are all null',
+        detail: {
+          exception_message: `${summaryOnlyMessage} {"node_errors":{"1":{"errors":[null]}}}`,
+          node_errors: relayedNodeErrors
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'only the object errors of an embedded node',
+        detail: {
+          exception_message: `400: ${JSON.stringify({
+            node_errors: {
+              '9': {
+                ...embeddedNodeErrors['9'],
+                errors: [...embeddedNodeErrors['9'].errors, null]
+              }
+            }
+          })}`
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: embeddedNodeErrors }
       },
       {
         name: 'the valid structured entries when a sibling entry is malformed',

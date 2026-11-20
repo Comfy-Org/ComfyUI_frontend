@@ -161,13 +161,25 @@ function relayedNodeErrorsOf(nodeErrors: unknown): Record<string, NodeError> {
   return normalizeRelayedNodeErrors(valid)
 }
 
-function hasUsableNodeErrors(validationError: CloudValidationError): boolean {
-  return Object.values(validationError.node_errors ?? {}).some(
-    (nodeError: unknown) =>
-      isPlainObject(nodeError) &&
-      Array.isArray(nodeError.errors) &&
-      nodeError.errors.length > 0
+function usableNodeError(nodeError: NodeError | null): NodeError | null {
+  if (!isPlainObject(nodeError) || !Array.isArray(nodeError.errors)) return null
+  const errors = nodeError.errors.filter((error) => isPlainObject(error))
+  return errors.length > 0 ? { ...nodeError, errors } : null
+}
+
+function usableNodeErrors(
+  nodeErrors: Record<SerializedNodeId, NodeError | null> | undefined
+): Record<SerializedNodeId, NodeError> {
+  return Object.fromEntries(
+    Object.entries(nodeErrors ?? {}).flatMap(([nodeId, nodeError]) => {
+      const usable = usableNodeError(nodeError)
+      return usable ? [[nodeId, usable] as const] : []
+    })
   )
+}
+
+function hasUsableNodeErrors(validationError: CloudValidationError): boolean {
+  return Object.keys(usableNodeErrors(validationError.node_errors)).length > 0
 }
 
 function relayedRejection(
@@ -179,7 +191,7 @@ function relayedRejection(
     error: {
       type: 'prompt_outputs_failed_validation',
       message: detail.exception_message,
-      details: ''
+      details: detail.exception_message
     }
   }
 }
@@ -193,7 +205,9 @@ export function cloudValidationErrorOf(
   const nodeErrors = relayedNodeErrorsOf(detail.node_errors)
   if (Object.keys(nodeErrors).length > 0) return { node_errors: nodeErrors }
   const embeddedPromptError =
-    embedded?.error === undefined ? null : { error: embedded.error }
+    embedded && normalizePromptError(embedded.error)
+      ? { error: embedded.error }
+      : null
   return embeddedPromptError ?? relayedRejection(detail)
 }
 
@@ -206,14 +220,12 @@ export function classifyCloudValidationError(
   const extracted = cloudValidationErrorOf(detail)
   if (!extracted) return null
 
-  const { error, node_errors } = extracted
-  const hasNodeErrors = node_errors && Object.keys(node_errors).length > 0
-
-  if (hasNodeErrors) {
-    return { kind: 'nodeErrors', nodeErrors: node_errors }
+  const nodeErrors = usableNodeErrors(extracted.node_errors)
+  if (Object.keys(nodeErrors).length > 0) {
+    return { kind: 'nodeErrors', nodeErrors }
   }
 
-  const promptError = normalizePromptError(error)
+  const promptError = normalizePromptError(extracted.error)
   return promptError ? { kind: 'promptError', promptError } : null
 }
 
