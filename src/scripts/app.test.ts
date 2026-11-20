@@ -726,6 +726,19 @@ describe('ComfyApp', () => {
       )
     })
 
+    it('loads a workflow whose nodes field is not an array without raising the load error dialog', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+      const apiFormatWorkflow = fromPartial<ComfyWorkflowJSON>({
+        '1': { class_type: 'KSampler', inputs: {} }
+      })
+
+      await expect(app.loadGraphData(apiFormatWorkflow)).resolves.toBe(true)
+
+      expect(showDialog).not.toHaveBeenCalled()
+    })
+
     it('resolves false, not rejects, when graph configure fails', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       const graph = new LGraph()
