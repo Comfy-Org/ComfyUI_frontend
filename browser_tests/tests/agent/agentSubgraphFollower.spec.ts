@@ -151,12 +151,12 @@ test.describe(
             definitionRegistered: true,
             nestedDefinitionRegistered: true,
             inputs: [
-              { name: 'text', link: null },
               { name: 'clip', link: AGENT_SUBGRAPH_LINK_ID },
               { name: 'model', link: null },
               { name: 'positive', link: null },
               { name: 'negative', link: null },
               { name: 'latent_image', link: null },
+              { name: 'text', link: null },
               { name: 'seed', link: null }
             ],
             widgets: [
