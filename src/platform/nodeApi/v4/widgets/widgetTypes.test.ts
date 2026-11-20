@@ -168,7 +168,9 @@ describe('declared widget types', () => {
 
   it('takes a value set while the node is being made, as no undo step', () => {
     widgetTypes.define('PACK_COLOR', {
-      render: (_container, value) => value.set('#123456')
+      render: (_container, value) => {
+        value.set('#123456')
+      }
     })
     const node = new LGraphNode('Node', 'TestNode')
     const construct = useWidgetStore().widgets.get('PACK_COLOR')
@@ -269,5 +271,23 @@ describe('declared widget types', () => {
     ).toThrow(
       "defineWidgetType needs a type no widget is defined for, not 'PACK_COLOR'."
     )
+  })
+
+  it('sets nothing through the value of a widget removed from its node', () => {
+    const { rendered } = defineRendering()
+    const { node } = buildInput('PACK_COLOR')
+    const value = rendered.value
+    assert(value)
+    expect(value.set('#111111')).toBe(true)
+    const changed = vi.fn()
+    node.onWidgetChanged = changed
+    const before = changes
+
+    node.widgets?.splice(0)
+
+    expect(value.set('#222222')).toBe(false)
+    expect(value.get()).toBeUndefined()
+    expect(changed).not.toHaveBeenCalled()
+    expect(changes).toBe(before)
   })
 })

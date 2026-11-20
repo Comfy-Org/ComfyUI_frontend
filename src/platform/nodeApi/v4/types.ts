@@ -792,7 +792,7 @@ export type WidgetValue = string | number | boolean | object | null
 
 /**
  * A node's widgets, in the order the node shows them. On a deleted node every
- * read is `undefined` and every change does nothing.
+ * read is `undefined` and every change does nothing and returns `false` or `undefined`.
  */
 export interface WidgetCollection extends Iterable<WidgetHandle> {
   readonly length: number | undefined
@@ -963,12 +963,12 @@ export interface MountDef {
   readonly defaultValue?: MountedData
 }
 
-/** The value a mounted widget holds. */
+/** The value a mounted widget holds. Once the widget is off its node, `get` is `undefined` and `set` is `false`. */
 export interface MountedValue {
   /** A frozen copy of the value. */
   get(): MountedData | undefined
-  /** Commits a value as `WidgetHandle.setValue` does. */
-  set(value: MountedData): void
+  /** Commits a value as `WidgetHandle.setValue` does, to this widget only, not one added later under its name. */
+  set(value: MountedData): boolean
   /** Runs when the value changes other than through `set`, as when a workflow loads. */
   onChange(listener: (value: MountedData | undefined) => void): Unsubscribe
 }

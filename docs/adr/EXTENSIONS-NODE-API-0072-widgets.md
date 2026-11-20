@@ -258,7 +258,11 @@ This ADR records how the API reaches widgets through those owners.
     `''` from the start, so `get()`, `onChange` and the saved workflow agree.
     This replaces the earlier rule that a mounted value is a string or a
     plain object or array, which made a pack wrap a number and change its
-    reads. `MountedValue.set` commits through `WidgetHandle.setValue`.
+    reads. `MountedValue.set` commits through `WidgetHandle.setValue` and
+    returns its result. The accessor belongs to its widget, as a listener
+    does (decision 12): once that widget is off its node, `get()` is
+    `undefined` and `set` is `false`, and a widget added later under the
+    name is not reached through it.
     `onChange` runs for every other write, such as a load restoring the
     value or `setValue` on the widget's handle, with the value the widget
     then holds, and not for the pack's own `set`.

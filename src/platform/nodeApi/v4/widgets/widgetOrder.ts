@@ -70,7 +70,7 @@ function moved(
   const widget = found.widgets.find((candidate) => candidate.name === name)
   if (!widget) return undefined
   const others = found.widgets.filter((candidate) => candidate !== widget)
-  const to = Math.min(Math.max(index, 0), others.length)
+  const to = Math.min(index, others.length)
   return [
     ...others.slice(0, to),
     widget,

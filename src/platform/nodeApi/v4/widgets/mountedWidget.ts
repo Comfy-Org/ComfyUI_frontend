@@ -85,6 +85,7 @@ export function createMountedWidget(
   readonly widget: DOMWidgetImpl<HTMLDivElement, DOMWidgetValue>
   readonly onChange: ReturnType<typeof createListeners<[DOMWidgetValue]>>
   readonly settingOwnValue: (set: () => void) => void
+  readonly isOnNode: () => boolean
 } {
   const onChange = createListeners<[DOMWidgetValue]>('mount.onChange')
   let value: DOMWidgetValue = spec.defaultValue ?? ''
@@ -119,7 +120,8 @@ export function createMountedWidget(
       } finally {
         settingOwn = false
       }
-    }
+    },
+    isOnNode: () => node.widgets?.includes(widget) ?? false
   }
 }
 
@@ -127,14 +129,20 @@ export function createMountedWidget(
 export function renderMounted(
   spec: MountSpec,
   mounted: ReturnType<typeof createMountedWidget>,
-  commit: (value: DOMWidgetValue) => void,
+  commit: (value: DOMWidgetValue) => boolean,
   copyOfSaved: SavedCopier
 ): MountedValue {
   const value: MountedValue = Object.freeze({
-    get: () => copyOfSaved('get', mounted.widget.value),
+    get: () =>
+      mounted.isOnNode() ? copyOfSaved('get', mounted.widget.value) : undefined,
     set(next: unknown) {
       const checked = mountedData('set', next, 'value')
-      mounted.settingOwnValue(() => commit(checked))
+      if (!mounted.isOnNode()) return false
+      let applied = false
+      mounted.settingOwnValue(() => {
+        applied = commit(checked)
+      })
+      return applied
     },
     onChange(listener: unknown) {
       if (typeof listener !== 'function') {
