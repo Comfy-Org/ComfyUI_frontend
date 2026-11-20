@@ -1,6 +1,6 @@
 <template>
   <div
-    v-if="handles.length"
+    v-if="handles.length && axis"
     class="pointer-events-none absolute inset-0 z-2 overflow-hidden"
   >
     <div
@@ -12,6 +12,7 @@
       :aria-label="t('g.distributeGap')"
       :aria-orientation="axis === 'x' ? 'vertical' : 'horizontal'"
       :aria-valuenow="handle.gap"
+      aria-valuemin="0"
       :class="
         cn(
           'group pointer-events-auto absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center outline-none',
@@ -20,6 +21,7 @@
       "
       :style="{ left: `${handle.left}px`, top: `${handle.top}px` }"
       @pointerdown="startDrag($event, handle.index)"
+      @wheel="forwardEventToCanvas"
       @keydown="nudge($event, handle.index)"
     >
       <div
@@ -33,7 +35,7 @@
       <span
         :class="
           cn(
-            'absolute text-[11px] whitespace-nowrap text-primary tabular-nums',
+            'absolute text-2xs whitespace-nowrap text-primary tabular-nums',
             axis === 'x' ? 'bottom-full mb-1' : 'left-full ml-1'
           )
         "
@@ -46,27 +48,31 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { onBeforeUnmount, ref, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { computed, onBeforeUnmount, shallowRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { SnapBox } from '@/lib/litegraph/src/canvas/gestureSnap'
-import type { NodePlacement } from '@/renderer/core/canvas/smartGuides/dragSnapSession'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import {
-  nodeBox,
+  snapBoxOf,
   nodePlacement,
-  positionFor
+  positionForBox
 } from '@/renderer/core/canvas/smartGuides/dragSnapSession'
+import type { NodePlacement } from '@/renderer/core/canvas/smartGuides/dragSnapSession'
 import {
   evenGap,
   gapAfterTravel,
   setGap
 } from '@/renderer/core/canvas/smartGuides/distributeGaps'
-import type { DistributeAxis } from '@/renderer/core/canvas/smartGuides/distributeGaps'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
+import type {
+  Axis,
+  SnapBox
+} from '@/renderer/core/canvas/smartGuides/snapSolver'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 
@@ -81,10 +87,10 @@ const { t } = useI18n()
 const canvasStore = useCanvasStore()
 const workflowStore = useWorkflowStore()
 const mutations = useLayoutMutations(LayoutSource.Canvas)
+const { forwardEventToCanvas } = useCanvasInteractions()
 
-const handles = ref<GapHandle[]>([])
-const axis = ref<DistributeAxis>('x')
-let handlesKey = ''
+const handles = shallowRef<GapHandle[]>([])
+const axis = computed(() => distributeSession.value?.axis)
 
 function sessionNodes(canvas: LGraphCanvas): LGraphNode[] | undefined {
   const session = distributeSession.value
@@ -96,28 +102,34 @@ function sessionNodes(canvas: LGraphCanvas): LGraphNode[] | undefined {
   return nodes.filter((node): node is LGraphNode => !!node)
 }
 
-function computeHandles(canvas: LGraphCanvas, boxes: SnapBox[]): GapHandle[] {
-  const along = axis.value
-  const gap = evenGap(boxes, along) ?? 0
+function computeHandles(
+  canvas: LGraphCanvas,
+  boxes: SnapBox[],
+  along: Axis,
+  gap: number
+): GapHandle[] {
   const crossStart = Math.min(...boxes.map((b) => (along === 'x' ? b.y : b.x)))
   const crossEnd = Math.max(
     ...boxes.map((b) => (along === 'x' ? b.y + b.height : b.x + b.width))
   )
   const cross = (crossStart + crossEnd) / 2
   return boxes.slice(1).map((box, index) => {
-    const [x, y] =
+    const [left, top] = canvas.ds.convertOffsetToCanvas(
       along === 'x' ? [box.x - gap / 2, cross] : [cross, box.y - gap / 2]
-    const { scale, offset } = canvas.ds
-    const left = (x + offset[0]) * scale
-    const top = (y + offset[1]) * scale
+    )
     return { index, gap: Math.round(gap), left, top }
   })
 }
 
+const sameHandles = (a: GapHandle[], b: GapHandle[]) =>
+  a.length === b.length &&
+  a.every(
+    (h, i) => h.gap === b[i].gap && h.left === b[i].left && h.top === b[i].top
+  )
+
 function clearHandles() {
   distributeSession.value = null
   handles.value = []
-  handlesKey = ''
 }
 
 watch(
@@ -126,22 +138,19 @@ watch(
     if (!canvas) return
     onCleanup(
       onCanvasFrame(canvas, 'present', () => {
-        if (!distributeSession.value) {
-          if (handles.value.length) clearHandles()
+        const along = axis.value
+        if (!along) {
+          if (handles.value.length) handles.value = []
           return
         }
-        axis.value = distributeSession.value.axis
-        const nodes = sessionNodes(canvas)
-        const boxes = nodes?.map(nodeBox)
-        if (!boxes || evenGap(boxes, axis.value) === undefined) {
+        const boxes = sessionNodes(canvas)?.map(snapBoxOf)
+        const gap = boxes && evenGap(boxes, along)
+        if (!boxes || gap === undefined || gap < 0) {
           clearHandles()
           return
         }
-        const next = computeHandles(canvas, boxes)
-        const key = JSON.stringify(next)
-        if (key === handlesKey) return
-        handlesKey = key
-        handles.value = next
+        const next = computeHandles(canvas, boxes, along, gap)
+        if (!sameHandles(next, handles.value)) handles.value = next
       })
     )
   },
@@ -158,7 +167,7 @@ function applyBoxes(
     rootGraphId,
     placements.map((placement, i) => ({
       nodeId: placement.node.id,
-      position: positionFor(placement, boxes[i])
+      position: positionForBox(placement, boxes[i])
     }))
   )
   canvas.setDirty(true, true)
@@ -167,28 +176,26 @@ function applyBoxes(
 let endActiveDrag: (() => void) | undefined
 onBeforeUnmount(() => endActiveDrag?.())
 
-function pointerAlong(event: PointerEvent) {
-  return axis.value === 'x' ? event.clientX : event.clientY
-}
-
 function startDrag(event: PointerEvent, index: number) {
+  if (event.button !== 0) return forwardEventToCanvas(event)
   const { canvas, rootGraphId } = canvasStore
   const nodes = canvas && sessionNodes(canvas)
-  if (event.button !== 0 || !canvas || !nodes || !rootGraphId) return
+  const along = axis.value
+  if (!canvas || !nodes || !rootGraphId || !along) return
   event.preventDefault()
   event.stopPropagation()
 
   const target = event.currentTarget
-  if (target instanceof HTMLElement) target.setPointerCapture(event.pointerId)
+  if (target instanceof HTMLElement) {
+    target.setPointerCapture(event.pointerId)
+    target.focus()
+  }
 
   const { graph } = canvas
   const workflow = workflowStore.activeWorkflow
   const session = distributeSession.value
-  const selection = [...canvas.selectedItems]
   const isStillEditable = () =>
     distributeSession.value === session &&
-    canvas.selectedItems.size === selection.length &&
-    selection.every((item) => canvas.selectedItems.has(item)) &&
     canvas.graph === graph &&
     canvasStore.rootGraphId === rootGraphId &&
     workflowStore.activeWorkflow === workflow &&
@@ -196,40 +203,41 @@ function startDrag(event: PointerEvent, index: number) {
 
   const placements = nodes.map(nodePlacement)
   const startBoxes = placements.map(({ box }) => box)
+  const pointerAlong = (e: PointerEvent) =>
+    along === 'x' ? e.clientX : e.clientY
   const startPointer = pointerAlong(event)
   const scale = canvas.ds.scale || 1
   const { pointerId } = event
-  let moved = false
 
-  const onMove = (moveEvent: PointerEvent) => {
-    if (moveEvent.pointerId !== pointerId) return
-    if (!isStillEditable()) return endDrag()
-    const travel = (pointerAlong(moveEvent) - startPointer) / scale
-    const gap = gapAfterTravel(startBoxes, axis.value, index, travel)
-    applyBoxes(
-      canvas,
-      rootGraphId,
-      placements,
-      setGap(startBoxes, axis.value, index, gap)
-    )
-    moved = true
-  }
-  const endDrag = () => {
-    window.removeEventListener('pointermove', onMove)
-    window.removeEventListener('pointerup', onEnd)
-    window.removeEventListener('pointercancel', onEnd)
-    endActiveDrag = undefined
-    if (moved && workflowStore.activeWorkflow === workflow)
-      workflow?.changeTracker.captureCanvasState()
-  }
-  const onEnd = (endEvent: PointerEvent) => {
-    if (endEvent.pointerId === pointerId) endDrag()
-  }
   endActiveDrag?.()
+  workflow?.changeTracker.beforeChange()
+
+  const stopListeners = [
+    useEventListener(window, 'pointermove', (moveEvent: PointerEvent) => {
+      if (moveEvent.pointerId !== pointerId) return
+      if (!isStillEditable()) return endDrag()
+      const travel = (pointerAlong(moveEvent) - startPointer) / scale
+      const gap = gapAfterTravel(startBoxes, along, index, travel)
+      applyBoxes(
+        canvas,
+        rootGraphId,
+        placements,
+        setGap(startBoxes, along, index, gap)
+      )
+    }),
+    useEventListener(window, 'pointerup', (e: PointerEvent) => {
+      if (e.pointerId === pointerId) endDrag()
+    }),
+    useEventListener(window, 'pointercancel', (e: PointerEvent) => {
+      if (e.pointerId === pointerId) endDrag()
+    })
+  ]
+  function endDrag() {
+    for (const stop of stopListeners) stop()
+    endActiveDrag = undefined
+    workflow?.changeTracker.afterChange()
+  }
   endActiveDrag = endDrag
-  window.addEventListener('pointermove', onMove)
-  window.addEventListener('pointerup', onEnd)
-  window.addEventListener('pointercancel', onEnd)
 }
 
 const NUDGE_KEYS: Record<string, number> = {
@@ -241,22 +249,20 @@ const NUDGE_KEYS: Record<string, number> = {
 
 function nudge(event: KeyboardEvent, index: number) {
   const direction = NUDGE_KEYS[event.key]
+  if (!direction || event.ctrlKey || event.altKey || event.metaKey) return
+  if (endActiveDrag) return
   const { canvas, rootGraphId } = canvasStore
   const nodes = canvas && sessionNodes(canvas)
-  if (!direction || !canvas || !nodes || !rootGraphId) return
+  const along = axis.value
+  if (!canvas || !nodes || !rootGraphId || !along) return
   event.preventDefault()
   event.stopPropagation()
 
   const placements = nodes.map(nodePlacement)
   const boxes = placements.map(({ box }) => box)
   const gap =
-    (evenGap(boxes, axis.value) ?? 0) + direction * (event.shiftKey ? 10 : 1)
-  applyBoxes(
-    canvas,
-    rootGraphId,
-    placements,
-    setGap(boxes, axis.value, index, gap)
-  )
+    (evenGap(boxes, along) ?? 0) + direction * (event.shiftKey ? 10 : 1)
+  applyBoxes(canvas, rootGraphId, placements, setGap(boxes, along, index, gap))
   workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 }
 </script>

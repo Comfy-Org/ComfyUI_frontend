@@ -7,25 +7,24 @@ import type {
   Point2D as Point,
   Size2D as Size
 } from '@comfyorg/shared-frontend-utils/geometry'
-import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
-  resizeEdgesOf,
-  startResizeSnap
-} from '@/lib/litegraph/src/canvas/gestureSnap'
+  clampToMinimum,
+  resizeFromCorner
+} from '@/lib/litegraph/src/canvas/cornerResize'
+import { startResizeSnap } from '@/lib/litegraph/src/canvas/gestureSnap'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { useNodeSnap } from '@/renderer/extensions/vueNodes/composables/useNodeSnap'
 import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useShiftKeySync'
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
-import {
-  hasNorthEdge,
-  hasWestEdge
-} from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
 interface ResizeOrigin {
   element: HTMLElement
   position: Point
+  snapItem?: Positionable
 }
 
 export interface ResizeCallbackPayload {
@@ -51,14 +50,16 @@ export function useNodeResize(
   const resizeStartPosition = ref<Point | null>(null)
   const resizeCorner = ref<CompassCorners>('SE')
 
-  const { shouldSnap, applySnapToPosition, applySnapToSize } = useNodeSnap()
+  const { shouldSnap, gridSize } = useNodeSnap()
 
   const { trackShiftKey } = useShiftKeySync()
+
+  const canvasStore = useCanvasStore()
 
   const startResize = (
     event: PointerEvent,
     corner: CompassCorners,
-    { element: nodeElement, position }: ResizeOrigin
+    { element: nodeElement, position, snapItem }: ResizeOrigin
   ) => {
     event.stopPropagation()
 
@@ -85,14 +86,9 @@ export function useNodeResize(
       return measured / currentScale
     }
 
-    const { canvas } = useCanvasStore()
-    const rawNodeId = nodeElement.dataset.nodeId
-    const node = rawNodeId
-      ? canvas?.graph?.getNodeById(toNodeId(rawNodeId))
-      : undefined
+    const { canvas } = canvasStore
     const resizeSnap =
-      canvas && node ? startResizeSnap(canvas, node) : undefined
-    const head = node ? node.pos[1] - node.boundingRect[1] : 0
+      canvas && snapItem ? startResizeSnap(canvas, snapItem) : undefined
     const startPosition: Point = { ...position }
 
     const stopShiftSync = trackShiftKey(event.shiftKey)
@@ -123,97 +119,37 @@ export function useNodeResize(
         (moveEvent.clientY - resizeStartPointer.value.y) / (scale || 1)
 
       const activeCorner = resizeCorner.value
-      let newWidth: number
-      let newHeight: number
-      let newX = resizeStartPosition.value.x
-      let newY = resizeStartPosition.value.y
+      const snapToGrid = shouldSnap(moveEvent)
+      const resized = resizeFromCorner(
+        { ...resizeStartPosition.value, ...resizeStartSize.value },
+        activeCorner,
+        deltaX,
+        deltaY,
+        snapToGrid ? gridSize.value : 0,
+        'ceil'
+      )
 
-      switch (activeCorner) {
-        case 'NE':
-          newY = resizeStartPosition.value.y + deltaY
-          newWidth = resizeStartSize.value.width + deltaX
-          newHeight = resizeStartSize.value.height - deltaY
-          break
-        case 'SW':
-          newX = resizeStartPosition.value.x + deltaX
-          newWidth = resizeStartSize.value.width - deltaX
-          newHeight = resizeStartSize.value.height + deltaY
-          break
-        case 'NW':
-          newX = resizeStartPosition.value.x + deltaX
-          newY = resizeStartPosition.value.y + deltaY
-          newWidth = resizeStartSize.value.width - deltaX
-          newHeight = resizeStartSize.value.height - deltaY
-          break
-        default:
-          newWidth = resizeStartSize.value.width + deltaX
-          newHeight = resizeStartSize.value.height + deltaY
-          break
-      }
-
-      const isWestCorner = hasWestEdge(activeCorner)
-      const isNorthCorner = hasNorthEdge(activeCorner)
-
-      if (shouldSnap(moveEvent)) {
-        if (isNorthCorner || isWestCorner) {
-          const originalX = newX
-          const originalY = newY
-          const snapped = applySnapToPosition({ x: newX, y: newY })
-          newX = snapped.x
-          newY = snapped.y
-
-          if (isNorthCorner) {
-            newHeight += originalY - newY
-          }
-          if (isWestCorner) {
-            newWidth += originalX - newX
-          }
-        }
-
-        const snappedSize = applySnapToSize({
-          width: newWidth,
-          height: newHeight
-        })
-        newWidth = snappedSize.width
-        newHeight = snappedSize.height
-      }
-
-      const box = {
-        x: newX,
-        y: newY - head,
-        width: newWidth,
-        height: newHeight,
-        head
-      }
+      const titleBand = resized.height - removeNodeTitleHeight(resized.height)
+      const body = { ...resized, height: resized.height - titleBand }
       const snapped =
-        resizeSnap?.resize(box, resizeEdgesOf(activeCorner), {
-          suspended: shouldSnap(moveEvent)
-        }) ?? box
-      newX = snapped.x
-      newY = snapped.y + head
-      newWidth = snapped.width
-      newHeight = snapped.height
+        resizeSnap?.resize(body, activeCorner, { snapToGrid }) ?? body
+      const withTitle = { ...snapped, height: snapped.height + titleBand }
 
       const minWidth =
         parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
         MIN_NODE_WIDTH
-      if (newWidth < minWidth) {
-        if (isWestCorner) {
-          newX =
-            resizeStartPosition.value.x + resizeStartSize.value.width - minWidth
-        }
-        newWidth = minWidth
-      }
-      const minContentHeight = measureMinContentHeight(newWidth)
-      if (newHeight < minContentHeight) {
-        if (isNorthCorner) {
-          newY =
-            resizeStartPosition.value.y +
-            resizeStartSize.value.height -
-            minContentHeight
-        }
-        newHeight = minContentHeight
-      }
+      const width = Math.max(withTitle.width, minWidth)
+      const {
+        x: newX,
+        y: newY,
+        width: newWidth,
+        height: newHeight
+      } = clampToMinimum(
+        withTitle,
+        activeCorner,
+        minWidth,
+        measureMinContentHeight(width)
+      )
 
       const payload: ResizeCallbackPayload = {
         size: { width: newWidth, height: newHeight }

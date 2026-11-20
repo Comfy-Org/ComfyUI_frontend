@@ -1,56 +1,57 @@
 import type {
+  Bounds,
   CompassCorners,
   Point2D
 } from '@comfyorg/shared-frontend-utils/geometry'
 import type { LGraphCanvas } from '@comfyorg/graph-model/entityRegistry'
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 
-/** A visual box in canvas units; `head` is the title band height above the body. */
-export interface SnapBox {
-  x: number
-  y: number
-  width: number
-  height: number
-  head: number
-}
-
-export interface ResizeEdges {
-  x?: 'left' | 'right'
-  y?: 'top' | 'bottom'
-}
-
 interface SnapStep {
-  suspended: boolean
+  snapToGrid: boolean
 }
 
-/** Snaps the offset of one drag gesture from its start. */
 export interface MoveSnap {
-  offset(raw: Point2D, step: SnapStep): Point2D
+  offset(offsetFromStart: Point2D, step: SnapStep): Point2D
   stop(): void
 }
 
-/** Snaps the moving edges of one resize gesture. */
 export interface ResizeSnap {
-  resize(box: SnapBox, edges: ResizeEdges, step: SnapStep): SnapBox
+  resize(bounds: Bounds, corner: CompassCorners, step: SnapStep): Bounds
   stop(): void
 }
 
-/** Supplies snapping for drag and resize gestures on a canvas. */
+/** Supplies snapping for drag and resize gestures; `undefined` leaves a gesture unsnapped. */
 export interface GestureSnapProvider {
-  move(canvas: LGraphCanvas, items: Positionable[]): MoveSnap
-  resize(canvas: LGraphCanvas, item: Positionable): ResizeSnap
+  move(canvas: LGraphCanvas, items: Positionable[]): MoveSnap | undefined
+  resize(canvas: LGraphCanvas, item: Positionable): ResizeSnap | undefined
 }
 
 const passthroughMove: MoveSnap = { offset: (raw) => raw, stop: () => {} }
-const passthroughResize: ResizeSnap = { resize: (box) => box, stop: () => {} }
+const passthroughResize: ResizeSnap = {
+  resize: (bounds) => bounds,
+  stop: () => {}
+}
 
 let provider: GestureSnapProvider | undefined
+let providerRegistration: symbol | undefined
 
-/** Installs the gesture snap provider; returns a function that removes it. */
-export function setGestureSnapProvider(next: GestureSnapProvider): () => void {
+/** Registers the gesture snap provider; returns a function that removes it. */
+export function registerGestureSnapProvider(
+  next: GestureSnapProvider
+): () => void {
+  if (provider && provider !== next) {
+    console.error('A gesture snap provider is already registered')
+    return () => {}
+  }
+
+  const registration = Symbol()
   provider = next
+  providerRegistration = registration
+
   return () => {
-    if (provider === next) provider = undefined
+    if (providerRegistration !== registration) return
+    provider = undefined
+    providerRegistration = undefined
   }
 }
 
@@ -68,14 +69,6 @@ export function startResizeSnap(
   return provider?.resize(canvas, item) ?? passthroughResize
 }
 
-/** The edges that move when resizing from a corner. */
-export function resizeEdgesOf(corner: CompassCorners): ResizeEdges {
-  return {
-    x: corner.includes('W') ? 'left' : 'right',
-    y: corner.includes('N') ? 'top' : 'bottom'
-  }
-}
-
 interface IncrementalDrag {
   snap: MoveSnap
   raw: Point2D
@@ -84,7 +77,6 @@ interface IncrementalDrag {
 
 const incrementalDrags = new WeakMap<LGraphCanvas, IncrementalDrag>()
 
-/** Begins snapping a drag that is applied as a series of relative steps. */
 export function beginIncrementalDragSnap(
   canvas: LGraphCanvas,
   items: Iterable<Positionable>
@@ -93,6 +85,21 @@ export function beginIncrementalDragSnap(
   incrementalDrags.set(canvas, {
     snap: startMoveSnap(canvas, items),
     raw: { x: 0, y: 0 },
+    applied: { x: 0, y: 0 }
+  })
+}
+
+/** Restarts snapping from the items' current positions when the dragged set changes mid-drag. */
+export function retargetIncrementalDragSnap(
+  canvas: LGraphCanvas,
+  items: Iterable<Positionable>
+): void {
+  const drag = incrementalDrags.get(canvas)
+  if (!drag) return
+  drag.snap.stop()
+  incrementalDrags.set(canvas, {
+    snap: startMoveSnap(canvas, items),
+    raw: { x: drag.raw.x - drag.applied.x, y: drag.raw.y - drag.applied.y },
     applied: { x: 0, y: 0 }
   })
 }

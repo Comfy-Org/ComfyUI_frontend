@@ -1,11 +1,16 @@
-import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
+import type { Bounds, Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 
-import type {
-  ResizeEdges,
-  SnapBox
-} from '@/lib/litegraph/src/canvas/gestureSnap'
+export type Axis = 'x' | 'y'
 
-type SnapAxis = 'x' | 'y'
+/** A visual box in canvas units; `titleHeight` is the title band above the body. */
+export interface SnapBox extends Bounds {
+  titleHeight: number
+}
+
+export interface ResizeEdges {
+  x?: 'left' | 'right'
+  y?: 'top' | 'bottom'
+}
 
 type XAnchor = 'left' | 'center' | 'right'
 type YAnchor = 'top' | 'body' | 'middle' | 'bottom'
@@ -19,11 +24,11 @@ export interface WireAnchor {
 }
 
 export type SmartGuide =
-  | { kind: 'line'; axis: SnapAxis; at: number; from: number; to: number }
+  | { kind: 'line'; axis: Axis; at: number; from: number; to: number }
   | { kind: 'wire'; from: Point2D; to: Point2D }
   | {
       kind: 'gap'
-      axis: SnapAxis
+      axis: Axis
       from: number
       to: number
       cross: number
@@ -31,7 +36,7 @@ export type SmartGuide =
 
 interface SnapLine {
   key: string
-  axis: SnapAxis
+  axis: Axis
   anchor: Anchor
   value: number
   kind: SnapKind
@@ -51,10 +56,16 @@ export interface SnapThreshold {
   exit: number
 }
 
-export type SnapAttachment = Partial<Record<SnapAxis, string>>
+export type SnapAttachment = Partial<Record<Axis, string>>
 
 export interface SnapIndex {
-  lines: Record<SnapAxis, SnapLine[]>
+  lines: Record<Axis, SnapLine[]>
+  targets: SnapBox[]
+}
+
+interface SnapFrame {
+  threshold: SnapThreshold
+  attachment?: SnapAttachment
 }
 
 const KIND_PRIORITY: Record<SnapKind, number> = {
@@ -63,12 +74,12 @@ const KIND_PRIORITY: Record<SnapKind, number> = {
   edge: 1
 }
 
-const ALIGNED_EPSILON = 0.5
+export const ALIGNED_EPSILON = 0.5
 const MAX_SPACING_TARGETS = 400
 
 const right = (b: SnapBox) => b.x + b.width
 const bottom = (b: SnapBox) => b.y + b.height
-const bodyTop = (b: SnapBox) => b.y + b.head
+const bodyTop = (b: SnapBox) => b.y + b.titleHeight
 
 function anchorValue(box: SnapBox, anchor: Anchor): number {
   switch (anchor) {
@@ -89,17 +100,17 @@ function anchorValue(box: SnapBox, anchor: Anchor): number {
   }
 }
 
-function crossRange(box: SnapBox, axis: SnapAxis): [number, number] {
+function crossRange(box: SnapBox, axis: Axis): [number, number] {
   return axis === 'x' ? [box.y, bottom(box)] : [box.x, right(box)]
 }
 
-function overlapsAcross(a: SnapBox, b: SnapBox, axis: SnapAxis): boolean {
+function overlapsAcross(a: SnapBox, b: SnapBox, axis: Axis): boolean {
   const [a0, a1] = crossRange(a, axis)
   const [b0, b1] = crossRange(b, axis)
   return a0 < b1 && b0 < a1
 }
 
-function spanLine(axis: SnapAxis, at: number, boxes: SnapBox[]): SmartGuide {
+function spanLine(axis: Axis, at: number, boxes: SnapBox[]): SmartGuide {
   const ranges = boxes.map((b) => crossRange(b, axis))
   return {
     kind: 'line',
@@ -110,7 +121,7 @@ function spanLine(axis: SnapAxis, at: number, boxes: SnapBox[]): SmartGuide {
   }
 }
 
-function gapGuide(axis: SnapAxis, first: SnapBox, second: SnapBox): SmartGuide {
+function gapGuide(axis: Axis, first: SnapBox, second: SnapBox): SmartGuide {
   const [a0, a1] = crossRange(first, axis)
   const [b0, b1] = crossRange(second, axis)
   const from = axis === 'x' ? right(first) : bottom(first)
@@ -124,17 +135,13 @@ function gapGuide(axis: SnapAxis, first: SnapBox, second: SnapBox): SmartGuide {
   }
 }
 
-function orderedAlong(
-  a: SnapBox,
-  b: SnapBox,
-  axis: SnapAxis
-): [SnapBox, SnapBox] {
+function orderedAlong(a: SnapBox, b: SnapBox, axis: Axis): [SnapBox, SnapBox] {
   return (axis === 'x' ? a.x <= b.x : a.y <= b.y) ? [a, b] : [b, a]
 }
 
 function edgeLines(target: SnapBox, id: string, gap: number): SnapLine[] {
   const align = (
-    axis: SnapAxis,
+    axis: Axis,
     anchor: Anchor,
     value: number,
     name: string
@@ -147,7 +154,7 @@ function edgeLines(target: SnapBox, id: string, gap: number): SnapLine[] {
     guides: () => []
   })
   const abut = (
-    axis: SnapAxis,
+    axis: Axis,
     anchor: Anchor,
     value: number,
     name: string
@@ -179,7 +186,7 @@ function spacingLinesFor(
   first: SnapBox,
   second: SnapBox,
   key: string,
-  axis: SnapAxis
+  axis: Axis
 ): SnapLine[] {
   const start = axis === 'x' ? 'left' : 'top'
   const end = axis === 'x' ? 'right' : 'bottom'
@@ -287,7 +294,6 @@ function wireLines(movingStart: SnapBox, wires: WireAnchor[]): SnapLine[] {
   })
 }
 
-/** Builds the snap lines for a drag or resize; built once per gesture. */
 export function buildSnapIndex(
   targets: SnapBox[],
   options: SnapOptions,
@@ -306,7 +312,8 @@ export function buildSnapIndex(
     lines: {
       x: all.filter((line) => line.axis === 'x'),
       y: all.filter((line) => line.axis === 'y')
-    }
+    },
+    targets
   }
 }
 
@@ -315,7 +322,7 @@ interface Candidate {
   delta: number
 }
 
-type ApplyDelta = (box: SnapBox, axis: SnapAxis, delta: number) => SnapBox
+type ApplyDelta = (box: SnapBox, axis: Axis, delta: number) => SnapBox
 
 function candidatesFor(
   lines: SnapLine[],
@@ -335,7 +342,7 @@ function candidatesFor(
   return candidates
 }
 
-function moved(box: SnapBox, axis: SnapAxis, delta: number): SnapBox {
+function moved(box: SnapBox, axis: Axis, delta: number): SnapBox {
   return axis === 'x'
     ? { ...box, x: box.x + delta }
     : { ...box, y: box.y + delta }
@@ -363,7 +370,7 @@ function pick(
   return attached
 }
 
-const MOVE_ANCHORS: Record<SnapAxis, readonly Anchor[]> = {
+const MOVE_ANCHORS: Record<Axis, readonly Anchor[]> = {
   x: ['left', 'center', 'right'],
   y: ['top', 'body', 'middle', 'bottom']
 }
@@ -387,7 +394,7 @@ const ALIGNABLE: Record<Anchor, readonly Anchor[]> = {
 function alignedGuides(
   box: SnapBox,
   targets: SnapBox[],
-  anchors: Record<SnapAxis, readonly Anchor[]>
+  anchors: Record<Axis, readonly Anchor[]>
 ): SmartGuide[] {
   const guides: SmartGuide[] = []
   for (const axis of ['x', 'y'] as const) {
@@ -412,10 +419,8 @@ function alignedGuides(
 function solve(
   index: SnapIndex,
   box: SnapBox,
-  targets: SnapBox[],
-  threshold: SnapThreshold,
-  attachment: SnapAttachment,
-  anchors: Record<SnapAxis, readonly Anchor[]>,
+  { threshold, attachment = {} }: SnapFrame,
+  anchors: Record<Axis, readonly Anchor[]>,
   apply: ApplyDelta
 ): SnapResult {
   let snapped = box
@@ -424,7 +429,7 @@ function solve(
   for (const axis of ['x', 'y'] as const) {
     const candidates = candidatesFor(
       index.lines[axis],
-      box,
+      snapped,
       anchors[axis],
       threshold.exit,
       apply
@@ -442,7 +447,7 @@ function solve(
       Math.abs(line.value - snapped.y) <= ALIGNED_EPSILON
   )
   const guides = [
-    ...alignedGuides(snapped, targets, anchors),
+    ...alignedGuides(snapped, index.targets, anchors),
     ...winners.flatMap((w) =>
       w.line.kind === 'wire' ? [] : w.line.guides(snapped)
     ),
@@ -455,11 +460,9 @@ function solve(
 export function snapMove(
   index: SnapIndex,
   box: SnapBox,
-  targets: SnapBox[],
-  threshold: SnapThreshold,
-  attachment: SnapAttachment = {}
+  frame: SnapFrame
 ): SnapResult {
-  return solve(index, box, targets, threshold, attachment, MOVE_ANCHORS, moved)
+  return solve(index, box, frame, MOVE_ANCHORS, moved)
 }
 
 const RESIZE_ANCHORS = {
@@ -482,26 +485,15 @@ function resizedEdge(edges: ResizeEdges): ApplyDelta {
   }
 }
 
-/** Snaps the moving edges of a box being resized. */
 export function snapResize(
   index: SnapIndex,
   box: SnapBox,
   edges: ResizeEdges,
-  targets: SnapBox[],
-  threshold: SnapThreshold,
-  attachment: SnapAttachment = {}
+  frame: SnapFrame
 ): SnapResult {
   const anchors = {
     x: edges.x ? RESIZE_ANCHORS[edges.x] : [],
     y: edges.y ? RESIZE_ANCHORS[edges.y] : []
   }
-  return solve(
-    index,
-    box,
-    targets,
-    threshold,
-    attachment,
-    anchors,
-    resizedEdge(edges)
-  )
+  return solve(index, box, frame, anchors, resizedEdge(edges))
 }

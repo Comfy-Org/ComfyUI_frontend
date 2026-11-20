@@ -35,6 +35,7 @@
             :tooltip="t(option.label)"
             variant="muted-textonly"
             :aria-label="t(option.label)"
+            :disabled="!canAlign(option.action)"
             @click="align(option.action)"
           >
             <i :class="option.icon" />
@@ -66,11 +67,12 @@
             <i class="icon-[lucide--grid-3x3]" />
           </Button>
           <Button
-            v-for="option in sizeOptions"
+            v-for="option in spacingAndSizeOptions"
             :key="option.action"
             :tooltip="t(option.label)"
             variant="muted-textonly"
             :aria-label="t(option.label)"
+            :disabled="!canAlign(option.action)"
             @click="align(option.action)"
           >
             <i :class="option.icon" />
@@ -102,7 +104,7 @@ const { t } = useI18n()
 const { activeLayout, gap, start, previewGap, commitGap, reset } =
   useArrangeSession()
 
-const { align } = useAlignSelection()
+const { align, canAlign } = useAlignSelection()
 
 interface AlignOption {
   action: AlignAction
@@ -143,7 +145,7 @@ const alignOptions: AlignOption[] = [
   }
 ]
 
-const sizeOptions: AlignOption[] = [
+const spacingAndSizeOptions: AlignOption[] = [
   {
     action: 'distributeX',
     label: 'g.distributeHorizontally',

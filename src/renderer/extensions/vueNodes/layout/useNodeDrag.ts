@@ -37,7 +37,7 @@ export const useNodeDrag = createSharedComposable(() => {
   let nonNodeStartPositions: Map<Positionable, Point> | null = null
 
   let moveSnap: MoveSnap | null = null
-  let panOffset: Point = { x: 0, y: 0 }
+  let dragOrigin: Point | null = null
 
   let autoPan: AutoPanController | null = null
   let lastPointerX = 0
@@ -89,7 +89,7 @@ export const useNodeDrag = createSharedComposable(() => {
         )
       : null
 
-    panOffset = { x: 0, y: 0 }
+    dragOrigin = { ...position }
     moveSnap = startDragSnap(nodeId)
   }
 
@@ -120,7 +120,6 @@ export const useNodeDrag = createSharedComposable(() => {
       canvas: lgCanvas,
       maxPanSpeed: lgCanvas.auto_pan_speed,
       onPan: (panX, panY) => {
-        panOffset = { x: panOffset.x + panX, y: panOffset.y + panY }
         if (dragStartPos) {
           dragStartPos.x += panX
           dragStartPos.y += panY
@@ -156,15 +155,18 @@ export const useNodeDrag = createSharedComposable(() => {
       x: (lastPointerX - dragStartMouse.x) / canvas.ds.scale,
       y: (lastPointerY - dragStartMouse.y) / canvas.ds.scale
     }
+    const pannedBy = dragOrigin
+      ? { x: dragStartPos.x - dragOrigin.x, y: dragStartPos.y - dragOrigin.y }
+      : { x: 0, y: 0 }
     const raw = {
-      x: pointerDelta.x + panOffset.x,
-      y: pointerDelta.y + panOffset.y
+      x: pointerDelta.x + pannedBy.x,
+      y: pointerDelta.y + pannedBy.y
     }
     const snapped =
-      moveSnap?.offset(raw, { suspended: isShiftHeld.value }) ?? raw
+      moveSnap?.offset(raw, { snapToGrid: isShiftHeld.value }) ?? raw
     const canvasDelta = {
-      x: pointerDelta.x + snapped.x - raw.x,
-      y: pointerDelta.y + snapped.y - raw.y
+      x: snapped.x - pannedBy.x,
+      y: snapped.y - pannedBy.y
     }
 
     const updates = [
@@ -303,6 +305,7 @@ export const useNodeDrag = createSharedComposable(() => {
 
     moveSnap?.stop()
     moveSnap = null
+    dragOrigin = null
 
     autoPan?.stop()
     autoPan = null

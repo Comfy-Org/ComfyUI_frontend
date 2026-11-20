@@ -18,15 +18,12 @@
         class="stroke-primary"
         stroke-width="3"
         stroke-linecap="round"
-        :x1="toScreenX(guide.from.x)"
-        :y1="toScreenY(guide.from.y)"
-        :x2="toScreenX(guide.to.x)"
-        :y2="toScreenY(guide.to.y)"
+        v-bind="segment(guide.from, guide.to)"
       />
       <g v-else data-testid="smart-guide-gap" class="stroke-primary">
         <line stroke-width="1" v-bind="gapEnds(guide)" />
         <text
-          class="fill-primary stroke-none text-[11px]"
+          class="fill-primary stroke-none text-2xs"
           text-anchor="middle"
           v-bind="gapLabelAt(guide)"
         >
@@ -38,22 +35,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { shallowRef, watch } from 'vue'
+
+import type { Point2D } from '@comfyorg/shared-frontend-utils/geometry'
 
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { activeGuides } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
 import type { SmartGuide } from '@/renderer/core/canvas/smartGuides/snapSolver'
-import { useSmartGuidesSettings } from '@/renderer/core/canvas/smartGuides/useSmartGuidesSettings'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 
 type LineGuide = Extract<SmartGuide, { kind: 'line' }>
 type GapGuide = Extract<SmartGuide, { kind: 'gap' }>
 
-useSmartGuidesSettings()
-
 const canvasStore = useCanvasStore()
-const guides = ref<readonly SmartGuide[]>([])
-const camera = ref({ x: 0, y: 0, scale: 1 })
+const { canvasToScreen, syncWithCanvas } = useTransformState()
+const guides = shallowRef<readonly SmartGuide[]>([])
 
 watch(
   () => canvasStore.canvas,
@@ -61,67 +58,41 @@ watch(
     if (!canvas) return
     onCleanup(
       onCanvasFrame(canvas, 'present', () => {
-        const [x, y] = canvas.ds.offset
-        const { scale } = canvas.ds
         const next = activeGuides.value
         if (next === guides.value && !next.length) return
         guides.value = next
-        if (
-          camera.value.x !== x ||
-          camera.value.y !== y ||
-          camera.value.scale !== scale
-        )
-          camera.value = { x, y, scale }
+        syncWithCanvas(canvas)
       })
     )
   },
   { immediate: true }
 )
 
-function toScreenX(x: number) {
-  return (x + camera.value.x) * camera.value.scale
-}
-
-function toScreenY(y: number) {
-  return (y + camera.value.y) * camera.value.scale
+function segment(from: Point2D, to: Point2D) {
+  const start = canvasToScreen(from)
+  const end = canvasToScreen(to)
+  return { x1: start.x, y1: start.y, x2: end.x, y2: end.y }
 }
 
 function lineEnds({ axis, at, from, to }: LineGuide) {
   return axis === 'x'
-    ? {
-        x1: toScreenX(at),
-        x2: toScreenX(at),
-        y1: toScreenY(from),
-        y2: toScreenY(to)
-      }
-    : {
-        x1: toScreenX(from),
-        x2: toScreenX(to),
-        y1: toScreenY(at),
-        y2: toScreenY(at)
-      }
+    ? segment({ x: at, y: from }, { x: at, y: to })
+    : segment({ x: from, y: at }, { x: to, y: at })
 }
 
 function gapEnds({ axis, from, to, cross }: GapGuide) {
   return axis === 'x'
-    ? {
-        x1: toScreenX(from),
-        x2: toScreenX(to),
-        y1: toScreenY(cross),
-        y2: toScreenY(cross)
-      }
-    : {
-        x1: toScreenX(cross),
-        x2: toScreenX(cross),
-        y1: toScreenY(from),
-        y2: toScreenY(to)
-      }
+    ? segment({ x: from, y: cross }, { x: to, y: cross })
+    : segment({ x: cross, y: from }, { x: cross, y: to })
 }
 
 function gapLabelAt({ axis, from, to, cross }: GapGuide) {
   const mid = (from + to) / 2
-  return axis === 'x'
-    ? { x: toScreenX(mid), y: toScreenY(cross) - 4 }
-    : { x: toScreenX(cross) + 14, y: toScreenY(mid) + 4 }
+  if (axis === 'x') {
+    const { x, y } = canvasToScreen({ x: mid, y: cross })
+    return { x, y: y - 4 }
+  }
+  const { x, y } = canvasToScreen({ x: cross, y: mid })
+  return { x: x + 14, y: y + 4 }
 }
 </script>
