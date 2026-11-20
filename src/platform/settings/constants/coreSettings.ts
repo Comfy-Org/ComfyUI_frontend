@@ -7,6 +7,7 @@ import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
 import { CANVAS_NAVIGATION_PRESETS } from '@comfyorg/settings-core/canvasNavigation'
 import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
+import { TEMPLATES_DEFAULT_SORT } from '@/platform/settings/constants/templates'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingParams } from '@comfyorg/settings-core/types'
 import { normalizeDisabledExtensionPaths } from '@/platform/settings/utils/extensionPath'
@@ -23,6 +24,12 @@ import { breakpointsTailwind } from '@vueuse/core'
  * when they are no longer needed.
  */
 export const CORE_SETTINGS: SettingParams[] = [
+  {
+    id: 'Comfy.Agent.CrdtDebug.Level',
+    name: 'CRDT diagnostic log level',
+    type: 'hidden',
+    defaultValue: 'info'
+  },
   {
     id: 'Comfy.Memory.AllowManualUnload',
     name: 'Allow manual unload of models and execution cache via user command',
@@ -1212,7 +1219,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Templates.SortBy',
     name: 'Template library - Sort preference',
     type: 'hidden',
-    defaultValue: 'default'
+    defaultValue: TEMPLATES_DEFAULT_SORT,
+    // The 'default' (unsorted) option was removed; fall back to the new default.
+    migrateDeprecatedValue: (value: unknown) =>
+      value === 'default' ? TEMPLATES_DEFAULT_SORT : value
   },
 
   /**

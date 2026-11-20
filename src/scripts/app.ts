@@ -89,7 +89,7 @@ import type {
   ExecutionErrorWsMessage,
   NodeExecutionOutput
 } from '@comfyorg/api-client/executionTypes'
-import type { NodeError } from '@comfyorg/api-client/types'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
 import {
   isComboInputSpecV1,
   isComboInputSpecV2
@@ -102,6 +102,7 @@ import { useAccountPreconditionDialog } from '@/platform/billing/subscription/co
 import {
   promptErrorHasLockedCredits,
   promptRefusalPrecondition,
+  withRefusalReason,
   resolveAccountPrecondition
 } from '@/platform/workflowErrors/errorCatalog/accountPreconditionRouting'
 import { useJobModelDownloadStore } from '@/stores/jobModelDownloadStore'
@@ -136,6 +137,7 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -158,7 +160,10 @@ import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
+import {
+  refreshMissingNodeReplacements,
+  rescanAndSurfaceMissingNodes
+} from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
@@ -174,6 +179,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { warnAboutSlowHasSelectors } from '@/utils/slowHasSelectorUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
@@ -231,11 +237,17 @@ import {
 
 export { ANIM_PREVIEW_WIDGET } from '@/core/graph/subgraph/preview/mediaPreviewName'
 
-function servedRefusalPrecondition(error: unknown) {
+function servedRefusal(error: unknown): unknown {
   if (!useFeatureFlags().flags.billingNewUxEnabled) return undefined
   return error instanceof PromptExecutionError
-    ? promptRefusalPrecondition(error.response.error)
+    ? error.response.error
     : undefined
+}
+
+function withCloudRefusalReason(promptError: PromptError, error: unknown) {
+  return isCloud
+    ? withRefusalReason(promptError, servedRefusal(error))
+    : promptError
 }
 
 function isMeshModelFile(file: File): boolean {
@@ -850,8 +862,10 @@ export class ComfyApp implements IComfyApp {
       releaseSharedObjectUrl(blobUrl)
     })
 
-    api.addEventListener('feature_flags', () => {
-      void useNodeReplacementStore().load()
+    api.addEventListener('feature_flags', async () => {
+      await useNodeReplacementStore().load()
+      useDeprecatedNodesStore().rescan(this.rootGraphOrUndefined)
+      refreshMissingNodeReplacements()
     })
 
     useJobModelDownloadStore()
@@ -1007,6 +1021,7 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+    warnAboutSlowHasSelectors()
 
     await defaultWorkflowReady
 
@@ -1204,7 +1219,7 @@ export class ComfyApp implements IComfyApp {
     options: LoadGraphDataOptions = {}
   ): Promise<LoadedComfyWorkflow | boolean | undefined> {
     return this.enqueueGraphLoad(async () =>
-      options.isCurrent?.() === false
+      options.isCurrent?.() === false || options.isReady?.() === false
         ? false
         : this.loadGraphDataNow(
             graphData,
@@ -1234,12 +1249,31 @@ export class ComfyApp implements IComfyApp {
       skipAssetScans = false,
       silentAssetErrors = false,
       workflowNavigationId,
-      isCurrent
+      isCurrent,
+      isReady,
+      resolveGraphData
     } = options
     await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
+    const skipUnreadyLoad = async () => {
+      await useExtensionService().invokeExtensionsAsync(
+        'onGraphLoadError',
+        new DOMException('Workflow load was replaced', 'AbortError')
+      )
+      void useSubgraphNavigationStore().updateHash(
+        'workflow-load',
+        workflowNavigationId
+      )
+      return false
+    }
+    if (isReady?.() === false) return skipUnreadyLoad()
     let reset_invalid_values = false
     const missingNodeTypes: MissingNodeType[] = []
     try {
+      if (resolveGraphData) {
+        const resolved = resolveGraphData()
+        if (!resolved) return await skipUnreadyLoad()
+        graphData = resolved
+      }
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
       replaceCanvas()
       ChangeTracker.isLoadingGraph = true
@@ -1476,7 +1510,9 @@ export class ComfyApp implements IComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        this.rootGraph.configure(graphData as ISerialisedGraph)
+        this.rootGraph.configure(graphData as ISerialisedGraph, undefined, {
+          preserveMountedNodeSizes: options.restoreHistory
+        })
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =
@@ -2001,7 +2037,7 @@ export class ComfyApp implements IComfyApp {
               ? (resolveAccountPrecondition({
                   exceptionType: promptError.type,
                   exceptionMessage: promptError.message
-                }) ?? servedRefusalPrecondition(error))
+                }) ?? promptRefusalPrecondition(servedRefusal(error)))
               : undefined
             if (promptPrecondition) {
               const opened = await useAccountPreconditionDialog().open(
@@ -2074,7 +2110,7 @@ export class ComfyApp implements IComfyApp {
                 promptError
               ) {
                 executionErrorStore.recordPromptError(
-                  promptError,
+                  withCloudRefusalReason(promptError, error),
                   queuedRunErrorKey
                 )
               }

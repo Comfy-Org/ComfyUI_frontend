@@ -16,7 +16,7 @@ export const ADD_CREDITS_COPY = {
   'planLine.ended':
     "Buying credits doesn't restart your Cloud plan. Resubscribe to run workflows on Cloud.",
   'planLine.ended_sales_managed':
-    "Buying credits doesn't restart your plan. Contact sales to renew it.",
+    "Buying credits doesn't restart your Cloud plan. Contact sales to renew it.",
   'planLine.free_runs':
     "Buying credits doesn't start a Cloud plan. Subscribe to keep running workflows once your free runs are used.",
   credits: '{credits} credits',
@@ -107,7 +107,9 @@ export const ADD_CREDITS_COPY = {
   'autoTopUpOn.done': 'Done',
   'autoTopUpFailed.title': "Auto top-up didn't turn on",
   'autoTopUpFailed.body':
-    'Your credits were added. Set up auto top-up in Billing to try again.'
+    'Your credits were added. Set up auto top-up in Billing to try again.',
+  'autoTopUpUnconfirmed.title': 'Credits added',
+  'autoTopUpUnconfirmed.body': 'Open Billing to check that auto top-up is on.'
 } as const satisfies Record<string, string>
 
 export type AddCreditsCopyKey = keyof typeof ADD_CREDITS_COPY

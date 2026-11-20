@@ -386,14 +386,14 @@ describe('CancelSubscriptionDialogContent', () => {
         reported: [intent, abandoned]
       },
       {
-        name: 'keeping the subscription after the provider opened the flow',
+        name: 'keeping after the provider flow opened',
         arrange: () => {},
         props: { flowAlreadyOpened: true },
         act: keep,
         reported: [abandoned]
       },
       {
-        name: 'keeping the subscription after the provider flow the customer confirmed',
+        name: 'keeping after a confirmed provider flow',
         arrange: () => {},
         props: { flowAlreadyOpened: true, flowAlreadyConfirmed: true },
         act: keep,
@@ -414,13 +414,13 @@ describe('CancelSubscriptionDialogContent', () => {
         reported: [intent]
       },
       {
-        name: 'a cancel before routing is known that fails',
+        name: 'an unrouted cancel that fails',
         arrange: cancelFailsOn(false),
         act: confirm,
         reported: [intent, failed]
       },
       {
-        name: 'a cancel before routing is known that fails before the customer leaves',
+        name: 'an unrouted failed cancel, then keeping',
         arrange: cancelFailsOn(false),
         act: async () => {
           await confirm()

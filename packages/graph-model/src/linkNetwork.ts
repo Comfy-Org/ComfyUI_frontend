@@ -34,12 +34,3 @@ export interface LinkNetwork extends ReadonlyLinkNetwork {
   _removeReroute(id: RerouteId): void
   removeFloatingLink(link: LLink): void
 }
-
-export interface ItemLocator {
-  getNodeOnPos(x: number, y: number, nodeList?: LGraphNode[]): LGraphNode | null
-  getRerouteOnPos(x: number, y: number): Reroute | undefined
-  getIoNodeOnPos?(
-    x: number,
-    y: number
-  ): SubgraphInputNode | SubgraphOutputNode | undefined
-}

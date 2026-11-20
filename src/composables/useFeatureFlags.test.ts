@@ -62,6 +62,19 @@ function persistFromAnotherTab(key: string, value: string) {
 }
 
 describe('useFeatureFlags', () => {
+  it.for([
+    { value: undefined, enabled: false },
+    { value: false, enabled: false },
+    { value: true, enabled: true }
+  ])(
+    'resolves CRDT diagnostics from the flag: $value',
+    ({ value, enabled }) => {
+      remoteConfig.value = { 'Comfy.Agent.CrdtDebug': value }
+      localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+      expect(useFeatureFlags().flags.agentCrdtDebugEnabled).toBe(enabled)
+    }
+  )
+
   afterEach(() => {
     vi.mocked(distributionTypes).isCloud = false
     vi.mocked(distributionTypes).isNightly = false
@@ -540,11 +553,11 @@ describe('useFeatureFlags', () => {
     })
 
     it.for([
-      { served: true, expected: true },
-      { served: false, expected: false },
-      { served: 'true', expected: false }
+      { case: 'boolean true', served: true, expected: true },
+      { case: 'boolean false', served: false, expected: false },
+      { case: 'string "true"', served: 'true', expected: false }
     ])(
-      'uses only a boolean true from remote config: $served',
+      'uses only a boolean true from remote config: $case',
       async ({ served, expected }) => {
         const previousConfig = window.__CONFIG__
         const previousRevision = remoteConfigRevision.value
