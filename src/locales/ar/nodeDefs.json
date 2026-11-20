@@ -8465,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "أنشئ فيديو ناطقًا لأفاتار HeyGen باستخدام HeyGen Avatar 6، بالاعتماد على نص مكتوب أو صوتك الخاص.",
+    "display_name": "HeyGen Avatar 6 من الهوية إلى الفيديو",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع 'auto' لقطات المصدر الخاصة بالأفاتار."
+      },
+      "avatar": {
+        "name": "الأفاتار"
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "motion_expressiveness": {
+        "name": "motion_expressiveness",
+        "tooltip": "يمنح 'less' إيماءات أقل وأصغر. تكون لموجّه الحركة الأولوية في المواضع التي يتداخلان فيها."
+      },
+      "motion_prompt": {
+        "name": "motion_prompt",
+        "tooltip": "الإيماءات والتعبير والوضعية وحركة الكاميرا."
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "تتحكم البذرة في ما إذا كانت العقدة ستُشغَّل مجددًا؛ النتائج غير حتمية بغض النظر عن البذرة."
+      },
+      "speech": {
+        "name": "الكلام",
+        "tooltip": "شغّل الأفاتار بنص مكتوب (تحويل النص إلى كلام من HeyGen) أو بصوتك الخاص."
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "النص"
+      },
+      "speech_voice": {
+        "name": "الصوت"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "اجعل شخصًا أو شخصية من صورة أو فيديو يتحدث بالصوت المتصل باستخدام HeyGen Avatar 6. صِل صورةً أو فيديوً أو كليهما.",
+    "display_name": "HeyGen Avatar 6 من المرجع إلى الفيديو",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_motion_expressiveness": {
+        "name": "motion_expressiveness"
+      },
+      "model_motion_prompt": {
+        "name": "motion_prompt"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "إنشاء فيديو مقدم يتحدث باستخدام HeyGen avatar. يتضمن أشهر الصور الرمزية العامة من HeyGen؛ يمكن تزويد معرف مظهر كبديل.",
     "display_name": "فيديو HeyGen Avatar",
@@ -10645,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "أنشئ الصور أو حرّرها انطلاقًا من موجّه نصي وما يصل إلى 10 صور مرجعية، كصورة واحدة أو كسلسلة من الصور المترابطة.",
+    "display_name": "Kling 4.0 صورة",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "يتبع auto الصور المرجعية، وإلا فيتبع الموجّه."
+      },
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "prompt": {
+        "name": "الموجّه",
+        "tooltip": "أشر إلى الصور المرجعية باعتبارها @Image1, @Image2, ..."
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "resolution": {
+        "name": "الدقة"
+      },
+      "seed": {
+        "name": "البذرة",
+        "tooltip": "يتحكم البذر في ما إذا كان ينبغي إعادة تشغيل العقدة؛ النتائج غير حتمية بغض النظر عن البذر."
+      },
+      "series_amount": {
+        "name": "series_amount",
+        "tooltip": "أنشئ سلسلة من الصور المترابطة التي تحافظ على الشخصيات والأسلوب نفسيهما. يتيح auto للنموذج اختيار 2-10 صور."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "أنشئ فيديو مع صوت باستخدام ما يصل إلى 10 إطارات رئيسية على kling-4.0، أو من إطار أول على kling-4.0-flash. تتباعد الإطارات الوسطى بالتساوي؛ ويأخذ الفيديو نسبة العرض إلى الارتفاع للإطار الرئيسي الأول.",
     "display_name": "Kling 4.0 صورة إلى فيديو",
@@ -10666,6 +10789,32 @@
       },
       "model_seed": {
         "name": "البذرة"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "ولّد صورة طويلة واحدة: تصميم صفحة ويب أو صفحة تفاصيل منتج للتجارة الإلكترونية.",
+    "display_name": "Kling 4.0 صورة طويلة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "skill": {
+        "name": "مهارة"
+      },
+      "skill_prompt": {
+        "name": "الموجّه"
+      },
+      "skill_resolution": {
+        "name": "الدقة"
+      },
+      "skill_seed": {
+        "name": "البذر"
       }
     },
     "outputs": {
@@ -25291,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "شفّر الصور المرجعية والتفكير الصوري والنص المتداخل أو التصحيح الذاتي باستخدام CLIP. صِل HiDream-O1 Reference Images قبل هذه العقدة واستخدم مُعيّنة قياسية للصور. لا يحتاج التحويل من نص إلى صورة دون تفكير إلا إلى CLIP Text Encode؛ ويمكن للمخرجات النصية فقط استخدام Generate Text.",
+    "display_name": "تكييف SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "التكييف"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "الحد الأقصى للرموز المولّدة خلال هذا الاستدعاء."
+      },
+      "negative": {
+        "name": "سلبي"
+      },
+      "task": {
+        "name": "المهمة",
+        "tooltip": "حدّد المهمة. يُضبط قالب موجّهها وسلوك الإيقاف تلقائيًا."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "التكييف",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "النص الذي ولّده هذا الاستدعاء. استخدم SenseNova Interleave Decode للحصول على النتيجة الكاملة."
+      },
+      "2": {
+        "name": "سلبي",
+        "tooltip": "تكييف سلبي محدّث للتداخل والتصحيح الذاتي."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "استخرج النص والصور والتفكير المُولَّدة من سجل التداخل الذي ينتجه SenseNova Conditioning، بما في ذلك التصحيح الذاتي U1.6. مع الحلقات، استخدم End Loop مع تعطيل التراكم. تُستثنى الصور المرجعية المُدخلة. تُتخطى مستهلكات الصور عند عدم توليد أي صور.",
+    "display_name": "فك ترميز التداخل لـ SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "التكييف"
+      },
+      "samples": {
+        "name": "عينات",
+        "tooltip": "الكامن البكسلي الأخير لـ KSampler، إذا انتهت الحلقة بطلب صورة."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "نص",
+        "tooltip": null
+      },
+      "1": {
+        "name": "صور",
+        "tooltip": null
+      },
+      "2": {
+        "name": "تفكير",
         "tooltip": null
       }
     }

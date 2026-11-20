@@ -124,7 +124,6 @@ test.describe('Dialog accessibility', { tag: '@a11y' }, () => {
 
     await accessibility.expectOnlyKnownViolations([
       'color-contrast',
-      'label-content-name-mismatch',
       'landmark-no-duplicate-main',
       'landmark-unique',
       'meta-viewport',

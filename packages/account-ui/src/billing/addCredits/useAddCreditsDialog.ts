@@ -59,6 +59,8 @@ export interface AddCreditsPorts {
   readonly autoTopUpSetupUrl?: () => Promise<string | null>
   /** False once the host no longer owns the watched checkout; a landing still reading its setup link is then dropped. */
   readonly ownsCheckout?: () => boolean
+  /** Called once the customer reaches a created checkout: its reserved tab navigated, or they followed the blocked step's link. */
+  readonly checkoutOpened?: () => void
 }
 
 export type AddCreditsQuote =
@@ -266,7 +268,10 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
       dispatch({ type: 'checkout_refused', refusal: session.refusal })
       return
     }
-    tab?.navigate(session.url)
+    if (tab) {
+      tab.navigate(session.url)
+      ports.checkoutOpened?.()
+    }
     dispatch({ type: 'checkout_created', checkoutUrl: session.url })
     armPaymentWatch()
   }
@@ -305,6 +310,9 @@ export function useAddCreditsDialog(options: AddCreditsDialogOptions) {
     typeAmount: (input: string) => dispatch({ type: 'amount_typed', input }),
     continueToCheckout,
     reopenCheckout,
-    followBlockedLink: () => dispatch({ type: 'blocked_link_followed' })
+    followBlockedLink: () => {
+      dispatch({ type: 'blocked_link_followed' })
+      ports.checkoutOpened?.()
+    }
   }
 }

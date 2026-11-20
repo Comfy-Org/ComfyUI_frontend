@@ -17,6 +17,7 @@ import type {
   AgentCreditTransitionNoticeMetadata,
   AgentCreditUsageExposureMetadata,
   AgentEntryButtonClickedMetadata,
+  AgentErrorMetadata,
   AgentFreeUseExposureMetadata,
   AgentFreeUseNoticeMetadata,
   AgentGraphProjectionMetadata,
@@ -429,6 +430,10 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
     this.capture(TelemetryEvents.AGENT_STOP_CLICKED, metadata)
+  }
+
+  trackAgentError(metadata: AgentErrorMetadata): void {
+    this.capture(TelemetryEvents.AGENT_ERROR, metadata)
   }
 
   trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {

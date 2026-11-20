@@ -22,7 +22,7 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
+import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import type { NodeState } from '@comfyorg/graph-model/nodeState'
 import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -36,7 +36,7 @@ interface NodeWidgetsProps {
   nodeData?: NodeState
   widgetIds?: readonly WidgetId[]
   processedWidgetModel?: {
-    processedWidgets: ProcessedWidget[]
+    processedWidgets: WidgetGridItem[]
     nodeType: string
     canSelectInputs: boolean
   }
@@ -79,7 +79,7 @@ const fallbackWidgetModel = useProcessedWidgets(
 const widgetModel = computed(
   () =>
     processedWidgetModel ?? {
-      processedWidgets: fallbackWidgetModel.processedWidgets.value,
+      processedWidgets: fallbackWidgetModel.gridRows.value,
       nodeType: fallbackWidgetModel.nodeType.value,
       canSelectInputs: fallbackWidgetModel.canSelectInputs.value
     }

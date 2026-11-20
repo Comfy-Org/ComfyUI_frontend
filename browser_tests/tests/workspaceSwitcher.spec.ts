@@ -296,6 +296,61 @@ test.describe('Workspace switcher', { tag: '@cloud' }, () => {
       })
     })
 
+    test('moves focus into a flyout opened with Enter, tabs through its actions, and returns to Credits on Escape', async ({
+      comfyPage
+    }) => {
+      const page = comfyPage.page
+
+      await comfyPage.toast.closeToasts()
+      await page.getByRole('button', { name: 'Current user' }).click()
+      const credits = page.getByTestId('credits-menu-item')
+      const flyout = page.getByTestId('credits-flyout')
+      const addCredits = flyout.getByRole('button', { name: 'Add credits' })
+      const billingSettings = flyout.getByRole('button', {
+        name: 'Billing settings'
+      })
+
+      await test.step('the hover preview offers an enabled Add credits', async () => {
+        await credits.hover()
+        await expect(addCredits).toBeEnabled()
+        await page.mouse.move(1, 1)
+        await expect(flyout).toBeHidden()
+      })
+
+      await test.step('Enter moves focus to Add credits', async () => {
+        await credits.focus()
+        await page.keyboard.press('Enter')
+        await expect(addCredits).toBeFocused()
+      })
+
+      await test.step('the pinned flyout sits where the preview sits', async () => {
+        await expect
+          .poll(() => creditsFlyoutLayout(page))
+          .toEqual({
+            width: FLYOUT_WIDTH_PX,
+            gap: FLYOUT_GAP_PX,
+            firstLineBelowCreditsLabel: 0,
+            runsPastMenuBottom: false,
+            startsAboveMenuTop: false,
+            opensBesideCreditsRow: true
+          })
+      })
+
+      await test.step('Tab reaches Billing settings', async () => {
+        await page.keyboard.press('Tab')
+        await expect(billingSettings).toBeFocused()
+      })
+
+      await test.step('Escape closes the flyout and focuses Credits', async () => {
+        await page.clock.install()
+        await page.keyboard.press('Escape')
+        await page.clock.runFor(1000)
+        await expect(flyout).toBeHidden()
+        await expect(credits).toBeFocused()
+        await expect(page.getByTestId('current-user-popover')).toBeVisible()
+      })
+    })
+
     test('closes a clicked flyout on a click elsewhere in the menu', async ({
       comfyPage
     }) => {

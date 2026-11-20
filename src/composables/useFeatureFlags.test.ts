@@ -540,11 +540,11 @@ describe('useFeatureFlags', () => {
     })
 
     it.for([
-      { served: true, expected: true },
-      { served: false, expected: false },
-      { served: 'true', expected: false }
+      { case: 'boolean true', served: true, expected: true },
+      { case: 'boolean false', served: false, expected: false },
+      { case: 'string "true"', served: 'true', expected: false }
     ])(
-      'uses only a boolean true from remote config: $served',
+      'uses only a boolean true from remote config: $case',
       async ({ served, expected }) => {
         const previousConfig = window.__CONFIG__
         const previousRevision = remoteConfigRevision.value

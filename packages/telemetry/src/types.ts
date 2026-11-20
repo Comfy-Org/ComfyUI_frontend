@@ -173,6 +173,8 @@ export interface BootstrapCompleteMetadata {
   untraced_ms: number
   /** Wall-clock ms the tab was hidden during startup. */
   hidden_ms: number
+  /** Wall-clock ms the tab was visible during startup: `total_ms - hidden_ms`. */
+  visible_ms: number
   /**
    * Per-phase durations, keyed `<namespace>/<phase>` (e.g.
    * `bootstrap/object-info`). Nested phases intentionally overlap their
@@ -1259,6 +1261,16 @@ export type AgentErrorClass =
   | 'ask_answer_failed'
   | 'thread_list_load_failed'
   | 'workflow_open_failed'
+  | 'workflow_sync_failed'
+
+/** Why an agent workflow sync failed; codes outside this set are `other`. */
+export type AgentWorkflowSyncErrorCode =
+  | 'schema_version_mismatch'
+  | 'catalog_mismatch'
+  | 'unsupported'
+  | 'stale_client_schema'
+  | 'stale_host_schema'
+  | 'other'
 
 export type AgentRequestPath =
   | '/agent/threads'
@@ -1302,6 +1314,8 @@ export interface AgentErrorMetadata extends Record<string, unknown> {
   request_path?: AgentRequestPath
   request_status?: number
   request_error?: AgentRequestErrorName
+  /** Only on `workflow_sync_failed`: the closed-set reason sync stopped. */
+  sync_error_code?: AgentWorkflowSyncErrorCode
 }
 
 /**

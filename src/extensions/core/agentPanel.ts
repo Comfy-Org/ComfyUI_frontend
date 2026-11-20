@@ -346,10 +346,10 @@ export function registerAgentPanelExtension(): void {
         if (!accountId || workspaceStore.isSwitching)
           return hasPendingSignInAccept()
         pendingAcceptChecked = true
-        const draft = takePendingSignInAccept()
-        if (draft === null || accountId !== pendingAcceptAccount) return false
+        const pending = takePendingSignInAccept()
+        if (pending === null || accountId !== pendingAcceptAccount) return false
         resumingAccept = true
-        void resumeAcceptAfterReload(draft).finally(() => {
+        void resumeAcceptAfterReload(pending).finally(() => {
           resumingAccept = false
           loadConsentIfEligible()
         })
