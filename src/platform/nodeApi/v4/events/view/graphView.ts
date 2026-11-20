@@ -1,11 +1,10 @@
-import { isPlainObject } from 'es-toolkit'
-
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { CanvasSource } from '@/platform/nodeApi/v4/canvasSource'
+import { checkedPoint } from '@/platform/nodeApi/v4/edit/checkedArguments'
 import { selectedNodes } from '@/platform/nodeApi/v4/events/selection'
 import type { NodeHandles } from '@/platform/nodeApi/v4/nodeHandle'
 import type { Bounds, GraphHandle } from '@/platform/nodeApi/v4/types'
@@ -67,7 +66,7 @@ export function createGraphView(
       viewChanged(canvas)
     },
     panBy(delta) {
-      const { x, y } = checkedDelta(delta)
+      const [x, y] = checkedPoint('panBy', 'delta', delta)
       const canvas = shownCanvas()
       if (!canvas) return
       canvas.ds.mouseDrag(x, y)
@@ -94,15 +93,6 @@ export function centerOnArea(
 function viewChanged(canvas: LGraphCanvas): void {
   canvas.setDirty(true, true)
   canvas.ds.computeVisibleArea(canvas.viewport)
-}
-
-function checkedDelta(delta: unknown): { x: number; y: number } {
-  const x: unknown = isPlainObject(delta) ? delta.x : undefined
-  const y: unknown = isPlainObject(delta) ? delta.y : undefined
-  if (!isFiniteNumber(x) || !isFiniteNumber(y)) {
-    throw invalidArgument('panBy', 'a distance of finite x and y', delta)
-  }
-  return { x, y }
 }
 
 function isFiniteNumber(value: unknown): value is number {
