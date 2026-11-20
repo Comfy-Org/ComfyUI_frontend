@@ -244,3 +244,77 @@ export function boxesOf(
 ): Map<NodeId, VisualBox> {
   return new Map([...placements].map(([id, { box }]) => [id, box]))
 }
+
+export type StackLayout = 'vertical' | 'horizontal' | 'grid'
+
+const byTopDown = (a: VisualBox, b: VisualBox) => a.y - b.y || a.x - b.x
+
+const byLeftRight = (a: VisualBox, b: VisualBox) => a.x - b.x || a.y - b.y
+
+const columnsFor = (layout: StackLayout, count: number) =>
+  layout === 'vertical'
+    ? 1
+    : layout === 'horizontal'
+      ? count
+      : Math.ceil(Math.sqrt(count))
+
+const offsetsFrom = (origin: number, sizes: number[], gap: number) =>
+  sizes.map(
+    (_, i) =>
+      origin + sizes.slice(0, i).reduce((sum, size) => sum + size + gap, 0)
+  )
+
+const largestPerSlot = (
+  sizes: number[],
+  slots: number,
+  slotOf: (i: number) => number
+) =>
+  Array.from({ length: slots }, (_, slot) =>
+    Math.max(...sizes.filter((_, i) => slotOf(i) === slot))
+  )
+
+/** Placements stacked into a column, a row, or a near-square grid from the top-left-most box, `gap` apart; empty for fewer than two. */
+export function stackPlacements(
+  placements: ReadonlyMap<NodeId, Placement>,
+  layout: StackLayout,
+  gap: number
+): Map<NodeId, Placement> {
+  if (placements.size < 2) return new Map()
+  const anchor = [...placements.values()]
+    .map(({ box }) => box)
+    .reduce((best, box) => (box.x + box.y < best.x + best.y ? box : best))
+  const order = layout === 'horizontal' ? byLeftRight : byTopDown
+  const entries = [...placements].sort(([, a], [, b]) => order(a.box, b.box))
+  const cols = columnsFor(layout, entries.length)
+  const rows = Math.ceil(entries.length / cols)
+  const colOf = (i: number) => i % cols
+  const rowOf = (i: number) => Math.floor(i / cols)
+  const colX = offsetsFrom(
+    anchor.x,
+    largestPerSlot(
+      entries.map(([, { box }]) => box.width),
+      cols,
+      colOf
+    ),
+    gap
+  )
+  const rowY = offsetsFrom(
+    anchor.y,
+    largestPerSlot(
+      entries.map(([, { box }]) => box.height),
+      rows,
+      rowOf
+    ),
+    gap
+  )
+  return new Map(
+    entries.map(([id, placement], i) => [
+      id,
+      placeBox(placement, {
+        ...placement.box,
+        x: colX[colOf(i)],
+        y: rowY[rowOf(i)]
+      })
+    ])
+  )
+}

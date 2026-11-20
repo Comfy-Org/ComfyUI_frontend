@@ -1,7 +1,8 @@
 import { useSelectionState } from '@/composables/graph/useSelectionState'
-import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { TitleMode } from '@comfyorg/graph-model/globalEnums'
+import { placementsOf } from '@/lib/litegraph/src/utils/arrange'
+import { stackPlacements } from '@comfyorg/graph-model/arrange/arrange'
+import type { StackLayout } from '@comfyorg/graph-model/arrange/arrange'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -10,153 +11,23 @@ import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { useApp } from '@/scripts/appInstance'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
-export type ArrangeLayout = 'vertical' | 'horizontal' | 'grid'
-
 export const DEFAULT_ARRANGE_GAP = 12
 export const MIN_ARRANGE_GAP = 0
 export const MAX_ARRANGE_GAP = 48
-
-interface NodeBox {
-  id: NodeId
-  posX: number
-  posY: number
-  visualWidth: number
-  visualHeight: number
-  titleHeight: number
-}
 
 interface ArrangeUpdate {
   nodeId: NodeId
   position: Point
 }
 
-const titleHeightOf = (node: LGraphNode): number => {
-  const mode = node.title_mode
-  if (mode === TitleMode.TRANSPARENT_TITLE || mode === TitleMode.NO_TITLE) {
-    return 0
-  }
-  return LiteGraph.NODE_TITLE_HEIGHT
-}
-
-const toBox = (node: LGraphNode): NodeBox => {
-  const titleHeight = titleHeightOf(node)
-  const [width, height] = node.renderingSize
-  return {
-    id: node.id,
-    posX: node.pos[0],
-    posY: node.pos[1],
-    visualWidth: width,
-    visualHeight: height + titleHeight,
-    titleHeight
-  }
-}
-
-const byTopDown = (a: NodeBox, b: NodeBox) => a.posY - b.posY || a.posX - b.posX
-
-const byLeftRight = (a: NodeBox, b: NodeBox) =>
-  a.posX - b.posX || a.posY - b.posY
-
-const findAnchor = (boxes: NodeBox[]): NodeBox =>
-  boxes.reduce((best, box) =>
-    box.posX + box.posY < best.posX + best.posY ? box : best
-  )
-
-const cumulativeOffsets = (
-  sizes: number[],
-  origin: number,
-  gap: number
-): number[] => {
-  const offsets: number[] = [origin]
-  for (let i = 1; i < sizes.length; i++) {
-    offsets.push(offsets[i - 1] + sizes[i - 1] + gap)
-  }
-  return offsets
-}
-
-const arrangeVertical = (
-  boxes: NodeBox[],
-  anchor: NodeBox,
-  gap: number
-): ArrangeUpdate[] => {
-  const sorted = [...boxes].sort(byTopDown)
-  let visualTop = anchor.posY - anchor.titleHeight
-  return sorted.map((box) => {
-    const update: ArrangeUpdate = {
-      nodeId: box.id,
-      position: { x: anchor.posX, y: visualTop + box.titleHeight }
-    }
-    visualTop += box.visualHeight + gap
-    return update
-  })
-}
-
-const arrangeHorizontal = (
-  boxes: NodeBox[],
-  anchor: NodeBox,
-  gap: number
-): ArrangeUpdate[] => {
-  const sorted = [...boxes].sort(byLeftRight)
-  const visualTop = anchor.posY - anchor.titleHeight
-  let cursorX = anchor.posX
-  return sorted.map((box) => {
-    const update: ArrangeUpdate = {
-      nodeId: box.id,
-      position: { x: cursorX, y: visualTop + box.titleHeight }
-    }
-    cursorX += box.visualWidth + gap
-    return update
-  })
-}
-
-const arrangeGrid = (
-  boxes: NodeBox[],
-  anchor: NodeBox,
-  gap: number
-): ArrangeUpdate[] => {
-  const sorted = [...boxes].sort(byTopDown)
-  const cols = Math.ceil(Math.sqrt(sorted.length))
-  const rows = Math.ceil(sorted.length / cols)
-
-  const colWidths = Array.from({ length: cols }, () => 0)
-  const rowHeights = Array.from({ length: rows }, () => 0)
-  sorted.forEach((box, i) => {
-    const col = i % cols
-    const row = Math.floor(i / cols)
-    if (box.visualWidth > colWidths[col]) colWidths[col] = box.visualWidth
-    if (box.visualHeight > rowHeights[row]) rowHeights[row] = box.visualHeight
-  })
-
-  const colX = cumulativeOffsets(colWidths, anchor.posX, gap)
-  const rowVisualTop = cumulativeOffsets(
-    rowHeights,
-    anchor.posY - anchor.titleHeight,
-    gap
-  )
-
-  return sorted.map((box, i) => {
-    const col = i % cols
-    const row = Math.floor(i / cols)
-    return {
-      nodeId: box.id,
-      position: {
-        x: colX[col],
-        y: rowVisualTop[row] + box.titleHeight
-      }
-    }
-  })
-}
-
 export function computeArrangement(
   nodes: LGraphNode[],
-  layout: ArrangeLayout,
+  layout: StackLayout,
   gap: number = DEFAULT_ARRANGE_GAP
 ): ArrangeUpdate[] {
-  if (nodes.length < 2) return []
-  const boxes = nodes.map(toBox)
-  const anchor = findAnchor(boxes)
-  if (layout === 'vertical') return arrangeVertical(boxes, anchor, gap)
-  if (layout === 'horizontal') return arrangeHorizontal(boxes, anchor, gap)
-  return arrangeGrid(boxes, anchor, gap)
+  return [...stackPlacements(placementsOf(nodes), layout, gap)].map(
+    ([nodeId, { position }]) => ({ nodeId, position })
+  )
 }
 
 interface ArrangeOptions {
@@ -171,7 +42,7 @@ export function useArrangeNodes() {
   const canvasStore = useCanvasStore()
 
   const arrangeNodes = (
-    layout: ArrangeLayout,
+    layout: StackLayout,
     { gap = DEFAULT_ARRANGE_GAP, captureUndo = true }: ArrangeOptions = {}
   ) => {
     if (!hasMultipleSelection.value) return
