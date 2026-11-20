@@ -1,4 +1,7 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
+
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -10,6 +13,46 @@ const renderModes = [
 ] as const
 
 const NODE_CLIP_PADDING = 24
+
+async function captureLegacyNodeHighlight(
+  comfyPage: ComfyPage,
+  panel: Locator
+) {
+  const bounds = await (
+    await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
+  ).getBounding()
+  const clip = await comfyPage.page.evaluate(
+    ({ x, y, width, height, padding }) => {
+      const [left, top] = window.app!.canvasPosToClientPos([x, y])
+      const [right, bottom] = window.app!.canvasPosToClientPos([
+        x + width,
+        y + height
+      ])
+      return {
+        x: left - padding,
+        y: top - padding,
+        width: right - left + padding * 2,
+        height: bottom - top + padding * 2
+      }
+    },
+    { ...bounds, padding: NODE_CLIP_PADDING }
+  )
+
+  const screenshotNode = () =>
+    comfyPage.page.screenshot({
+      clip,
+      mask: [panel],
+      animations: 'disabled'
+    })
+
+  const idleNode = await screenshotNode()
+
+  return async (emphasized: boolean) => {
+    await expect
+      .poll(async () => (await screenshotNode()).equals(idleNode))
+      .toBe(!emphasized)
+  }
+}
 
 for (const mode of renderModes) {
   test.describe(
@@ -49,53 +92,21 @@ for (const mode of renderModes) {
           exact: true
         })
 
-        const bounds = await (
-          await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
-        ).getBounding()
-        const clip = await comfyPage.page.evaluate(
-          ({ x, y, width, height, padding }) => {
-            const [left, top] = window.app!.canvasPosToClientPos([x, y])
-            const [right, bottom] = window.app!.canvasPosToClientPos([
-              x + width,
-              y + height
-            ])
-            return {
-              x: left - padding,
-              y: top - padding,
-              width: right - left + padding * 2,
-              height: bottom - top + padding * 2
-            }
-          },
-          { ...bounds, padding: NODE_CLIP_PADDING }
-        )
-
-        const screenshotNode = () =>
-          comfyPage.page.screenshot({
-            clip,
-            mask: [panel],
-            animations: 'disabled'
-          })
-
-        const idleNode = await screenshotNode()
+        const vueNode = comfyPage.vueNodes.getNodeByTitle('KSampler').first()
+        const legacyHighlight = mode.vueNodesEnabled
+          ? null
+          : await captureLegacyNodeHighlight(comfyPage, panel)
 
         const expectEmphasized = async (emphasized: boolean) => {
           await expect
             .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
             .toEqual([])
-          await expect
-            .poll(async () => (await screenshotNode()).equals(idleNode))
-            .toBe(!emphasized)
-          if (mode.vueNodesEnabled) {
-            const vueNode = comfyPage.vueNodes
-              .getNodeByTitle('KSampler')
-              .first()
-            if (emphasized)
-              await expect(vueNode).toHaveAttribute('data-emphasized', 'true')
-            else
-              await expect(vueNode).not.toHaveAttribute(
-                'data-emphasized',
-                'true'
-              )
+          if (legacyHighlight) {
+            await legacyHighlight(emphasized)
+          } else if (emphasized) {
+            await expect(vueNode).toHaveAttribute('data-emphasized', 'true')
+          } else {
+            await expect(vueNode).not.toHaveAttribute('data-emphasized', 'true')
           }
         }
 
