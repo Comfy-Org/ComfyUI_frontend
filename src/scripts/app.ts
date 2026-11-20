@@ -1137,13 +1137,9 @@ export class ComfyApp implements IComfyApp {
       return
     }
 
-    const captured = safeLocalStorage.read('litegrapheditor_clipboard')
-    if (!captured.ok) {
-      useToast().warning(t('toastMessages.clipboardStorageUnavailable'))
-      return
-    }
-    const old = captured.value
+    let captured: ReturnType<typeof safeLocalStorage.read> | undefined
     let insertFailed = false
+    let clipboardUnreadable = false
 
     for (const template of templateData.templates) {
       if (!template.data) {
@@ -1154,13 +1150,20 @@ export class ComfyApp implements IComfyApp {
       const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
         deserialiseAndCreate(template.data, this.canvas)
-      } else if (
-        safeLocalStorage.setItem('litegrapheditor_clipboard', template.data) !==
-        'ok'
-      ) {
-        insertFailed = true
       } else {
-        this.canvas.pasteFromClipboard()
+        captured ??= safeLocalStorage.read('litegrapheditor_clipboard')
+        if (!captured.ok) {
+          clipboardUnreadable = true
+        } else if (
+          safeLocalStorage.setItem(
+            'litegrapheditor_clipboard',
+            template.data
+          ) !== 'ok'
+        ) {
+          insertFailed = true
+        } else {
+          this.canvas.pasteFromClipboard()
+        }
       }
 
       // Move mouse position down to paste the next template below
@@ -1178,9 +1181,11 @@ export class ComfyApp implements IComfyApp {
       }
     }
 
-    if (old !== null) {
-      safeLocalStorage.setItem('litegrapheditor_clipboard', old)
+    if (captured?.ok && captured.value !== null) {
+      safeLocalStorage.setItem('litegrapheditor_clipboard', captured.value)
     }
+    if (clipboardUnreadable)
+      useToast().warning(t('toastMessages.clipboardStorageUnavailable'))
     if (insertFailed)
       useToast().warning(t('toastMessages.failedToInsertTemplate'))
   }

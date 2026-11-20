@@ -198,3 +198,39 @@ it('keeps the user clipboard and skips saving when it cannot be read', async () 
   expect(realGetItem('litegrapheditor_clipboard')).toBe('user copy')
   expect(useToast().toasts).toMatchObject([{ kind: 'warning' }])
 })
+
+it('inserts templates without reroutes while the clipboard cannot be read', async () => {
+  const { app, extension, canvas } = await importNodeTemplates(() =>
+    Promise.resolve(
+      Response.json([
+        { name: 'Plain', data: '{"nodes":[]}' },
+        { name: 'Rerouted', data: '{"nodes":[],"reroutes":[1]}' }
+      ])
+    )
+  )
+  const { deserialiseAndCreate } = await import('@/utils/vintageClipboard')
+  const { useToast } = await import('@/components/ui/toast/toastStore')
+  await extension.setup?.(app)
+  const templateItems = await vi.waitFor(() => {
+    const menu = extension.getCanvasMenuItems?.(canvas)[2]
+    const options = menu?.submenu?.options ?? []
+    expect(options).toHaveLength(4)
+    return options
+  })
+  localStorage.setItem('litegrapheditor_clipboard', 'user copy')
+  const realGetItem = localStorage.getItem.bind(localStorage)
+  vi.spyOn(localStorage, 'getItem').mockImplementation((key) => {
+    if (key === 'litegrapheditor_clipboard')
+      throw new DOMException('busy', 'InvalidStateError')
+    return realGetItem(key)
+  })
+  const [plain, rerouted] = templateItems
+
+  await (plain as { callback: () => Promise<void> }).callback()
+  await (rerouted as { callback: () => Promise<void> }).callback()
+
+  expect(deserialiseAndCreate).toHaveBeenCalledOnce()
+  expect(useApp().canvas.pasteFromClipboard).not.toHaveBeenCalled()
+  expect(realGetItem('litegrapheditor_clipboard')).toBe('user copy')
+  expect(useToast().toasts).toMatchObject([{ kind: 'warning' }])
+})

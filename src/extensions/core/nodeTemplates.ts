@@ -438,19 +438,21 @@ export const nodeTemplatesExtension: ComfyExtension = {
         return {
           content: template.name,
           callback: async () => {
-            await clipboardAction(() => {
-              let data: { reroutes?: unknown }
-              try {
-                data = JSON.parse(template.data)
-              } catch (error) {
-                console.error('Failed to parse node template data', error)
-                useToast().warning(t('toastMessages.invalidTemplateData'))
-                return
-              }
+            let data: { reroutes?: unknown }
+            try {
+              data = JSON.parse(template.data)
+            } catch (error) {
+              console.error('Failed to parse node template data', error)
+              useToast().warning(t('toastMessages.invalidTemplateData'))
+              return
+            }
 
-              if (!data.reroutes) {
-                deserialiseAndCreate(template.data, useApp().canvas)
-              } else if (
+            if (!data.reroutes) {
+              deserialiseAndCreate(template.data, useApp().canvas)
+              return
+            }
+            await clipboardAction(() => {
+              if (
                 safeLocalStorage.setItem(
                   'litegrapheditor_clipboard',
                   template.data
