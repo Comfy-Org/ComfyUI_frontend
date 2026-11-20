@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
@@ -11,10 +11,12 @@ import type {
 } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { openWorkflowOnCloud } from '@/platform/openOnCloud/openWorkflowOnCloud'
 import { serializeRootGraph } from '@/platform/openOnCloud/serializeRootGraph'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { api } from '@/scripts/api'
 
 const distribution = vi.hoisted(() => ({ isDesktop: false }))
+const revalidateGrant = vi.hoisted(() => vi.fn<() => Promise<boolean>>())
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isDesktop() {
     return distribution.isDesktop
@@ -29,8 +31,16 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 
 vi.mock(import('@/platform/openOnCloud/localOpenOnCloudRollout'), async () => {
   const { shallowRef } = await import('vue')
+  const rollout = shallowRef({ open_on_cloud_enabled: true })
   return {
-    localOpenOnCloudRollout: shallowRef({ open_on_cloud_enabled: true })
+    localOpenOnCloudRollout: rollout,
+    bindLocalOpenOnCloudGrant: () => {
+      const initiatingRollout = rollout.value
+      return {
+        isCurrent: () => rollout.value === initiatingRollout,
+        revalidate: revalidateGrant
+      }
+    }
   }
 })
 
@@ -42,6 +52,10 @@ const cloudOrigin = new URL(getComfyCloudBaseUrl()).origin
 const PREPARE_FAILED_TOAST = expect.objectContaining({
   kind: 'error',
   title: "Couldn't prepare this workflow for Comfy Cloud"
+})
+
+beforeEach(() => {
+  revalidateGrant.mockResolvedValue(true)
 })
 
 function fakeTabs(opens = true) {
@@ -76,6 +90,20 @@ function sendFromTab(
 }
 
 describe('openWorkflowOnCloud in a browser', () => {
+  it('does not open a handoff tab to a Cloud origin other than the grant host', async () => {
+    const previous = remoteConfig.value
+    remoteConfig.value = { comfy_cloud_base_url: 'https://preview.example.com' }
+    onTestFinished(() => {
+      remoteConfig.value = previous
+    })
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(tabs.open).not.toHaveBeenCalled()
+    expect(revalidateGrant).not.toHaveBeenCalled()
+  })
+
   it('does not open a tab after the current rollout grant is revoked', async () => {
     const rollout = vi
       .spyOn(localOpenOnCloudRollout, 'value', 'get')
@@ -121,6 +149,7 @@ describe('openWorkflowOnCloud in a browser', () => {
     sendFromTab({ type: 'comfy-local-handoff:ready', nonce })
     await vi.advanceTimersByTimeAsync(0)
 
+    expect(revalidateGrant).toHaveBeenCalledOnce()
     expect(tab.postMessage).toHaveBeenCalledExactlyOnceWith(
       {
         type: 'comfy-local-handoff:workflow',
@@ -134,6 +163,18 @@ describe('openWorkflowOnCloud in a browser', () => {
       },
       cloudOrigin
     )
+  })
+
+  it('does not send a workflow if Cloud denies the same account at transfer time', async () => {
+    revalidateGrant.mockResolvedValue(false)
+    const { tab, tabs } = fakeTabs()
+    await openWorkflowOnCloud(tabs)
+
+    sendFromTab({ type: 'comfy-local-handoff:ready', nonce: openedNonce(tabs) })
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(revalidateGrant).toHaveBeenCalledOnce()
+    expect(tab.postMessage).not.toHaveBeenCalled()
   })
 
   it('answers only once', async () => {
@@ -208,6 +249,21 @@ describe('openWorkflowOnCloud in a browser', () => {
 })
 
 describe('openWorkflowOnCloud on Desktop', () => {
+  it('does not stage a workflow if Cloud denies the same account', async () => {
+    distribution.isDesktop = true
+    onTestFinished(() => {
+      distribution.isDesktop = false
+    })
+    revalidateGrant.mockResolvedValue(false)
+    const store = vi.spyOn(api, 'storeUserData')
+    const { tabs } = fakeTabs()
+
+    await openWorkflowOnCloud(tabs)
+
+    expect(revalidateGrant).toHaveBeenCalledOnce()
+    expect(store).not.toHaveBeenCalled()
+    expect(tabs.openDisowned).not.toHaveBeenCalled()
+  })
   it('does not open the fallback or download when the grant clears during staging', async () => {
     const previous = window.__comfyDesktop2
     window.__comfyDesktop2 = fromPartial<

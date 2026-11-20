@@ -3,7 +3,10 @@ import { ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
-import { startLocalOpenOnCloudRollout } from '@/platform/openOnCloud/localOpenOnCloudRollout'
+import {
+  bindLocalOpenOnCloudGrant,
+  startLocalOpenOnCloudRollout
+} from '@/platform/openOnCloud/localOpenOnCloudRollout'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 
@@ -119,5 +122,38 @@ it('ignores a grant returned after sign-out and renders a denied account as off'
   userId.value = 'other-token'
   await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
   await vi.advanceTimersByTimeAsync(0)
+  expect(visible()).toEqual([false, false])
+})
+
+it('refreshes the grant for the initiating account and clears it on denial', async () => {
+  const { userId, visible } = start()
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(Response.json(allowed))
+    .mockResolvedValueOnce(Response.json({ open_on_cloud_enabled: false }))
+  userId.value = 'employee-token'
+  await vi.waitFor(() => expect(visible()).toEqual([true, true]))
+  const authorization = bindLocalOpenOnCloudGrant()
+
+  await expect(authorization.revalidate()).resolves.toBe(false)
+  expect(visible()).toEqual([false, false])
+  expect(fetch).toHaveBeenCalledTimes(2)
+})
+
+it('cannot use a revalidation response after the initiating account signs out', async () => {
+  const { userId, visible } = start()
+  const granted = deferredResponse()
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(Response.json(allowed))
+    .mockReturnValueOnce(granted.promise)
+  userId.value = 'employee-token'
+  await vi.waitFor(() => expect(visible()).toEqual([true, true]))
+  const authorization = bindLocalOpenOnCloudGrant()
+  const refreshed = authorization.revalidate()
+  await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2))
+  userId.value = undefined
+  granted.resolve(Response.json(allowed))
+
+  await expect(refreshed).resolves.toBe(false)
+  expect(authorization.isCurrent()).toBe(false)
   expect(visible()).toEqual([false, false])
 })

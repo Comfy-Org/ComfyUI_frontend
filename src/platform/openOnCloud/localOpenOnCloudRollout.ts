@@ -17,6 +17,12 @@ type RolloutAttempt =
   | { ok: false; retryable: boolean; cause: unknown }
 
 const rollout = shallowRef<OpenOnCloudRollout>()
+type RolloutSession = {
+  getToken?: () => Promise<string | undefined>
+  signal: AbortSignal
+  latestRequest: number
+}
+let currentSession: RolloutSession | undefined
 
 export const localOpenOnCloudRollout = readonly(rollout)
 
@@ -85,20 +91,55 @@ async function requestRolloutWithRetry(
   return result
 }
 
-async function readRollout(
+async function fetchRollout(
   getToken: () => Promise<string | undefined>,
-  signal: AbortSignal
-): Promise<void> {
+  signal: AbortSignal,
+  retry: boolean
+): Promise<RolloutAttempt | undefined> {
   try {
     const endpoint = new URL('/api/features', getBuildTimeComfyCloudBaseUrl())
     if (endpoint.protocol !== 'https:') return
+    return await (retry ? requestRolloutWithRetry : requestRollout)(
+      endpoint,
+      getToken,
+      signal
+    )
+  } catch (cause) {
+    return { ok: false, retryable: false, cause }
+  }
+}
 
-    const result = await requestRolloutWithRetry(endpoint, getToken, signal)
-    if (!result || signal.aborted) return
-    if (result.ok) rollout.value = result.data
-    else reportRolloutReadFailure(result.cause)
-  } catch (error) {
-    if (!signal.aborted) reportRolloutReadFailure(error)
+async function readRollout(
+  session: RolloutSession,
+  retry: boolean
+): Promise<boolean> {
+  const { getToken, signal } = session
+  if (!getToken) return false
+  const request = ++session.latestRequest
+  const result = await fetchRollout(getToken, signal, retry)
+  if (!result || signal.aborted || request !== session.latestRequest)
+    return false
+  if (result.ok) {
+    rollout.value = result.data
+    return result.data.open_on_cloud_enabled
+  }
+  if (!result.retryable) rollout.value = undefined
+  reportRolloutReadFailure(result.cause)
+  return false
+}
+
+/** Keeps a handoff bound to the identity that started it. */
+export function bindLocalOpenOnCloudGrant() {
+  const session = currentSession
+  const isCurrent = () => currentSession === session
+  return {
+    isCurrent,
+    async revalidate() {
+      if (!session || !isCurrent()) return false
+      // The signed-out development override has no account grant to refresh.
+      if (!session.getToken) return true
+      return await readRollout(session, false)
+    }
   }
 }
 
@@ -111,13 +152,19 @@ export function startLocalOpenOnCloudRollout(
     (userId, _, onCleanup) => {
       const controller = new AbortController()
       onCleanup(() => controller.abort())
+      currentSession = {
+        getToken: userId ? getToken : undefined,
+        signal: controller.signal,
+        latestRequest: 0
+      }
       rollout.value = undefined
-      if (userId) void readRollout(getToken, controller.signal)
+      if (userId) void readRollout(currentSession, true)
     },
     { immediate: true, flush: 'sync' }
   )
   return () => {
     stop()
+    currentSession = undefined
     rollout.value = undefined
   }
 }

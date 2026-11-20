@@ -11,8 +11,8 @@ import {
   desktopWorkflowUrl
 } from '@/platform/openOnCloud/desktopWorkflowHandoff'
 import {
-  cloudOrigin,
-  isLocalOrigin
+  isLocalOrigin,
+  trustedCloudHandoffOrigin
 } from '@/platform/openOnCloud/localHandoffProtocol'
 import {
   remoteConfig,
@@ -25,7 +25,8 @@ const zRelayRecord = z.object({
   destination: z.url().refine((value) => {
     const url = new URL(value)
     return (
-      url.origin === cloudOrigin() && url.hash.startsWith(DESKTOP_HANDOFF_HASH)
+      url.origin === trustedCloudHandoffOrigin() &&
+      url.hash.startsWith(DESKTOP_HANDOFF_HASH)
     )
   }),
   expiresAt: z.number()
@@ -43,10 +44,14 @@ function transferFile(nonce: string) {
 
 export async function stageDesktopWorkflowHandoff(
   filename: string,
-  workflow: ComfyWorkflowJSON
+  workflow: ComfyWorkflowJSON,
+  authorize?: () => Promise<boolean>
 ): Promise<string | undefined> {
   const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
-  if (!useFeatureFlags().flags.openOnCloudEnabled) return undefined
+  const { flags } = useFeatureFlags()
+  const isEnabled = () => flags.openOnCloudEnabled
+  const origin = trustedCloudHandoffOrigin()
+  if (!origin || !isEnabled()) return undefined
 
   const nonce = crypto.randomUUID()
   const expiresAt = Date.now() + DESKTOP_HANDOFF_LIFETIME_MS
@@ -55,7 +60,14 @@ export async function stageDesktopWorkflowHandoff(
     workflow,
     expiresAt
   })
-  if (!destination) return undefined
+  if (
+    !destination ||
+    new URL(destination).origin !== origin ||
+    (authorize && !(await authorize())) ||
+    trustedCloudHandoffOrigin() !== origin ||
+    !isEnabled()
+  )
+    return undefined
   const file = transferFile(nonce)
   const stored = await api.storeUserData(
     file,
@@ -118,7 +130,8 @@ async function redirectDesktopWorkflowRelay(): Promise<boolean> {
   if (
     remoteConfigState.value !== 'anonymous' ||
     !rollout.success ||
-    rollout.data.open_on_cloud_enabled === false
+    rollout.data.open_on_cloud_enabled === false ||
+    !trustedCloudHandoffOrigin()
   )
     return false
   const relayed = await relayWorkflow(url).catch(() => false)
