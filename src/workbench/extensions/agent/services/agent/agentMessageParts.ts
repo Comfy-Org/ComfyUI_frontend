@@ -49,6 +49,8 @@ export interface ThinkingPart {
   text: string
   state: PartState
   durationMs?: number
+  /** Stored round's first tool-call id; set only on restored thinking. */
+  toolCallId?: string
 }
 
 export interface NoticePart {
