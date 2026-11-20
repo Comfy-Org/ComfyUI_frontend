@@ -5,8 +5,7 @@ defines the entity taxonomy and component decomposition, this document examines
 the three questions the ADR defers — questions that turn out to be facets of a
 single deeper insight.
 
-For the structural problems motivating this work, see
-[Entity Problems](entity-problems.md). For the target architecture, see
+For the target architecture, see
 [ECS Target Architecture](ecs-target-architecture.md). For the phased migration
 roadmap, see [ECS Migration Plan](ecs/ecs-migration-plan.md).
 
@@ -571,7 +570,5 @@ documents in a follow-up pass after team review of this document:
   dependency graph
 - [ECS Lifecycle Scenarios](ecs-lifecycle-scenarios.md) — unpack flow uses
   `subgraphEntityId`
-- [Proto-ECS Stores](proto-ecs-stores.md) — extraction map lists Subgraph as
-  distinct entity kind
 - [Entity Interactions](entity-interactions.md) — entity table and overview
   diagram list Subgraph separately

@@ -129,7 +129,6 @@ This design covers link topology (endpoints, type, chain terminus).
 Link visual state (`color`, path caches) and the layout store's link
 _geometry_ records are out of scope. The `output.links` and `input.link`
 slot mirrors have since been deleted — the store is the single source
-for slot connectivity in both directions (see
-[output slot connectivity](output-slot-connectivity.md) Decision 6);
+for slot connectivity in both directions;
 the remaining fields are deprecated warning getters kept as extension
 migration telemetry.

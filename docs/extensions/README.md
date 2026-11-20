@@ -17,7 +17,6 @@ Extensions are the primary way to add functionality to ComfyUI. They can be cust
   - Hook execution sequence
   - Best practices for extension development
 - **[Frontend migration guides](https://docs.comfy.org/custom-nodes/js/node-id-migration)** - Node ID, link registration, widget, connection and serialization callback, node geometry, and PrimeVue removal changes, on docs.comfy.org
-- **[Widget Value Recipe Book](./widget-value-recipe-book.md)** - General guidance for choosing between `computed`, `watch`, direct calls, and `effectScope()` when building widget-driven reactive UI
 
 ## Quick Links
 
