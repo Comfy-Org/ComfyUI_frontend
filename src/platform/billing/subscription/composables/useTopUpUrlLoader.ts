@@ -1,5 +1,8 @@
 import { useRoute, useRouter } from 'vue-router'
 
+import { useToast } from '@/components/ui/toast/toastStore'
+import { t } from '@/i18n'
+
 import {
   clearPreservedQuery,
   hydratePreservedQuery,
@@ -18,8 +21,9 @@ const NAMESPACE = PRESERVED_QUERY_NAMESPACES.TOPUP
  * paid users straight to buying more credits (lifecycle emails).
  *
  * Gated to users who can top up; an ineligible user is a silent no-op with the
- * param stripped. Survives the login redirect via the preserved-query system,
- * like the pricing URL loader.
+ * param stripped. Fails closed when the link's `?workspace=` was refused, so a
+ * purchase never credits a workspace the link did not name. Survives the login
+ * redirect via the preserved-query system, like the pricing URL loader.
  */
 export function useTopUpUrlLoader() {
   const route = useRoute()
@@ -29,18 +33,17 @@ export function useTopUpUrlLoader() {
   const telemetry = useTelemetry()
 
   /** Reads `?topup=`, strips it, and opens the dialog when the gate allows. */
-  async function loadTopUpFromUrl() {
+  async function loadTopUpFromUrl({ workspaceLinkRefused = false } = {}) {
     hydratePreservedQuery(NAMESPACE)
     const query =
       mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
     const param = query.topup
     if (param === undefined) return
 
-    const shouldOpen = typeof param === 'string' && param.length > 0
+    const requested = typeof param === 'string' && param.length > 0
+    const shouldOpen = requested && !workspaceLinkRefused
     if (shouldOpen) await initialize()
 
-    // Strip any present topup param (even ineligible or malformed values) and
-    // write the clean URL in a single replace once capability loading settles.
     const cleanQuery = { ...query }
     delete cleanQuery.topup
     router.replace({ query: cleanQuery }).catch((error) => {
@@ -48,10 +51,11 @@ export function useTopUpUrlLoader() {
     })
     clearPreservedQuery(NAMESPACE)
 
-    // Only a non-empty string value opens the dialog; an empty/array param
-    // just gets stripped above.
+    if (requested && workspaceLinkRefused) {
+      useToast().info(t('workspace.deepLinkTopUpRefused'))
+      return
+    }
     if (!shouldOpen) return
-
     if (!canTopUp.value) return
 
     telemetry?.trackAddApiCreditButtonClicked({ source: 'deep_link' })

@@ -19,6 +19,10 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 
 const NAMESPACE = PRESERVED_QUERY_NAMESPACES.WORKSPACE
 
+/** What a `?workspace=` link did: `switching` means a reload is in flight;
+ * `refused` means the link named a workspace the app could not open. */
+export type WorkspaceLinkOutcome = 'absent' | 'active' | 'switching' | 'refused'
+
 /**
  * Reads the `workspace` link from a merged query. `undefined` only when the
  * key itself is absent. A repeated value (still possible when the stash
@@ -89,36 +93,29 @@ export function useWorkspaceUrlLoader() {
     clearPreservedQuery(NAMESPACE)
   }
 
-  /**
-   * Reads `?workspace=`, strips it, and switches (or explains why not).
-   * Returns `true` when it triggered a switch that will reload the page —
-   * the caller must stop running further loaders immediately: `location.reload()`
-   * doesn't halt the current script, so a later loader's own URL cleanup
-   * (e.g. settings unconditionally strips `?settings=`) can otherwise land
-   * on the still-live page and get baked into the URL the reload re-fetches.
-   */
-  async function loadWorkspaceFromUrl(): Promise<boolean> {
+  /** Applies the `?workspace=` link; on `switching` the caller must stop
+   * running further loaders, since `location.reload()` does not halt them. */
+  async function loadWorkspaceFromUrl(): Promise<WorkspaceLinkOutcome> {
     hydratePreservedQuery(NAMESPACE)
     const query =
       mergePreservedQueryIntoQuery(NAMESPACE, route.query) ?? route.query
     const link = readWorkspaceLinkFromQuery(query)
-    if (!link) return false
+    if (!link) return 'absent'
 
     if (link.status === 'absent') {
       await stripParam(query)
-      return false
+      return 'absent'
     }
 
     if (link.status === 'invalid') {
       await stripParam(query)
       notifyStayed()
-      return false
+      return 'refused'
     }
 
-    // Already there: strip and say nothing, nothing changed.
     if (link.workspaceId === activeWorkspace.value?.id) {
       await stripParam(query)
-      return false
+      return 'active'
     }
 
     return switchFromLink(query, link.workspaceId)
@@ -127,13 +124,13 @@ export function useWorkspaceUrlLoader() {
   async function switchFromLink(
     query: LocationQueryRaw,
     workspaceId: string
-  ): Promise<boolean> {
+  ): Promise<WorkspaceLinkOutcome> {
     const keepSafeBoot = isSafeExtensionBootActive()
     await stripParam(keepSafeBoot ? { ...query, safe: '' } : query)
-    if (await switchWorkspace(workspaceId)) return true
+    if (await switchWorkspace(workspaceId)) return 'switching'
     if (keepSafeBoot) await stripParam(query)
     notifyStayed()
-    return false
+    return 'refused'
   }
 
   return {

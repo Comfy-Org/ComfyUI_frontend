@@ -24,6 +24,7 @@ import { useCreateWorkspaceUrlLoader } from '@/platform/account/composables/useC
 import { useDeploymentUrlLoader } from '@/platform/workspace/composables/useDeploymentUrlLoader'
 import { useInviteUrlLoader } from '@/platform/account/composables/useInviteUrlLoader'
 import { useWorkspaceUrlLoader } from '@/platform/workspace/composables/useWorkspaceUrlLoader'
+import type { WorkspaceLinkOutcome } from '@/platform/workspace/composables/useWorkspaceUrlLoader'
 
 interface UrlActionStep {
   /** What the loader does, for the failure log — not shown to the customer. */
@@ -162,12 +163,24 @@ function buildUrlActionSteps(
   router: ReturnType<typeof useRouter>
 ): UrlActionStep[] {
   const steps = deploymentLinkSteps(loaders.deploymentUrlLoader)
+  let workspaceLink: WorkspaceLinkOutcome = 'absent'
+  const paymentLinkGate = () => ({
+    workspaceLinkRefused: workspaceLink === 'refused'
+  })
 
   if (loaders.workspaceUrlLoader) {
     const loader = loaders.workspaceUrlLoader
     steps.push({
       failureMessage: 'Failed to load workspace from URL:',
-      run: () => loader.loadWorkspaceFromUrl()
+      run: async () => {
+        try {
+          workspaceLink = await loader.loadWorkspaceFromUrl()
+        } catch (error) {
+          workspaceLink = 'refused'
+          throw error
+        }
+        return workspaceLink === 'switching'
+      }
     })
   }
   steps.push(...workflowLinkSteps(loaders.workflowLinkUrlLoader))
@@ -191,14 +204,14 @@ function buildUrlActionSteps(
     const loader = loaders.pricingTableUrlLoader
     laterSteps.push({
       failureMessage: 'Failed to load pricing table from URL:',
-      run: () => loader.loadPricingTableFromUrl()
+      run: () => loader.loadPricingTableFromUrl(paymentLinkGate())
     })
   }
   if (loaders.topUpUrlLoader) {
     const loader = loaders.topUpUrlLoader
     laterSteps.push({
       failureMessage: 'Failed to load top-up dialog from URL:',
-      run: () => loader.loadTopUpFromUrl()
+      run: () => loader.loadTopUpFromUrl(paymentLinkGate())
     })
   }
   if (loaders.settingsUrlLoader) {

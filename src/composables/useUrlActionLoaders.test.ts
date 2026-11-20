@@ -10,6 +10,7 @@ import { useSubscriptionDialog } from '@/platform/billing/subscription/composabl
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
 import type { useWorkflowLinkUrlLoader } from '@/platform/workflow/management/composables/useWorkflowLinkUrlLoader'
+import type { WorkspaceLinkOutcome } from '@/platform/workspace/composables/useWorkspaceUrlLoader'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -37,7 +38,7 @@ vi.mock(
 const mocks = vi.hoisted(() => ({
   reportError: vi.fn(),
   loadDeployment: vi.fn(async (): Promise<boolean> => false),
-  loadWorkspace: vi.fn(async (): Promise<boolean | undefined> => undefined),
+  loadWorkspace: vi.fn(async (): Promise<WorkspaceLinkOutcome> => 'absent'),
   loadInvite: vi.fn(async () => undefined),
   loadCreateWorkspace: vi.fn(async () => undefined),
   loadPricingTable: vi.fn(async () => undefined),
@@ -372,9 +373,9 @@ describe('useUrlActionLoaders', () => {
         { workflowId: 'workflow-id' },
         ['workflowId']
       )
-      const loader =
-        kind === 'deployment' ? mocks.loadDeployment : mocks.loadWorkspace
-      loader.mockResolvedValueOnce(true)
+      if (kind === 'deployment')
+        mocks.loadDeployment.mockResolvedValueOnce(true)
+      else mocks.loadWorkspace.mockResolvedValueOnce('switching')
 
       await useUrlActionLoaders().runUrlActionLoaders()
 
@@ -591,7 +592,7 @@ describe('useUrlActionLoaders', () => {
   })
 
   it('stops the loop when the workspace loader reports a reload in flight', async () => {
-    mocks.loadWorkspace.mockResolvedValueOnce(true)
+    mocks.loadWorkspace.mockResolvedValueOnce('switching')
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
@@ -604,12 +605,45 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadAssets).not.toHaveBeenCalled()
   })
 
+  it.for([
+    { outcome: 'refused', workspaceLinkRefused: true },
+    { outcome: 'active', workspaceLinkRefused: false },
+    { outcome: 'absent', workspaceLinkRefused: false }
+  ] as const)(
+    'passes workspaceLinkRefused $workspaceLinkRefused to the payment loaders after a $outcome link',
+    async ({ outcome, workspaceLinkRefused }) => {
+      mocks.loadWorkspace.mockResolvedValueOnce(outcome)
+
+      await useUrlActionLoaders().runUrlActionLoaders()
+
+      expect(mocks.loadTopUp).toHaveBeenCalledExactlyOnceWith({
+        workspaceLinkRefused
+      })
+      expect(mocks.loadPricingTable).toHaveBeenCalledExactlyOnceWith({
+        workspaceLinkRefused
+      })
+    }
+  )
+
+  it('fails the payment loaders closed when the workspace loader throws', async () => {
+    mocks.loadWorkspace.mockRejectedValueOnce(new Error('boom'))
+
+    await useUrlActionLoaders().runUrlActionLoaders()
+
+    expect(mocks.loadTopUp).toHaveBeenCalledExactlyOnceWith({
+      workspaceLinkRefused: true
+    })
+    expect(mocks.loadPricingTable).toHaveBeenCalledExactlyOnceWith({
+      workspaceLinkRefused: true
+    })
+  })
+
   // A successful switch reloads the page, so the sweep step must never run
   // on this path either — it would otherwise strip whatever the reload
   // needs to re-read once the new page loads.
   it('does not run the param sweep when a switch reload is in flight', async () => {
     await router.replace({ path: '/', query: { workspace: 'w-1' } })
-    mocks.loadWorkspace.mockResolvedValueOnce(true)
+    mocks.loadWorkspace.mockResolvedValueOnce('switching')
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
@@ -618,7 +652,7 @@ describe('useUrlActionLoaders', () => {
   })
 
   it('skips checkout recovery when a switch reload is in flight', async () => {
-    mocks.loadWorkspace.mockResolvedValueOnce(true)
+    mocks.loadWorkspace.mockResolvedValueOnce('switching')
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()

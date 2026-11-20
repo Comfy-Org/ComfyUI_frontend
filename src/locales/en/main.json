@@ -5956,7 +5956,9 @@
     "inviteDirectoryManagedDetail": "This workspace's members are managed through your organization's directory, so invite links can't be used to join it. Ask your organization's admin to add you.",
     "viewWorkspace": "View workspace",
     "switchFailed": "Failed to switch workspace. Please try again.",
-    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}."
+    "deepLinkStayed": "Couldn't open that workspace. You're still in {workspaceName}.",
+    "deepLinkTopUpRefused": "This link is for a workspace you can't access, so the top-up was not opened.",
+    "deepLinkPricingRefused": "This link is for a workspace you can't access, so the plans were not opened."
   },
   "workspaceAuth": {
     "initializationFailed": "Couldn't load your workspace",

@@ -6,6 +6,7 @@ import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
 
 import { useTelemetry } from '@comfyorg/telemetry'
+import { useToast } from '@/components/ui/toast/toastStore'
 
 import { useTopUpUrlLoader } from './useTopUpUrlLoader'
 
@@ -27,6 +28,8 @@ vi.mock(import('@/platform/billing/composables/useBillingDialogs'))
 vi.mock(import('@/platform/billing/composables/useBillingCapabilities'))
 
 vi.mock(import('@comfyorg/telemetry'))
+
+vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
 
 function setRouteQuery(value: LocationQueryRaw) {
   const query = useRoute().query
@@ -191,5 +194,45 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+  })
+
+  describe('when the link named a workspace the viewer could not open', () => {
+    it('does not open the dialog, says why, and strips the param', async () => {
+      setRouteQuery({ topup: '1', other: 'param' })
+
+      const { loadTopUpFromUrl } = useTopUpUrlLoader()
+      await loadTopUpFromUrl({ workspaceLinkRefused: true })
+
+      expect(useBillingDialogs().showTopUpCreditsDialog).not.toHaveBeenCalled()
+      expect(useToast().info).toHaveBeenCalledExactlyOnceWith(
+        'workspace.deepLinkTopUpRefused'
+      )
+      expect(useRouter().replace).toHaveBeenCalledWith({
+        query: { other: 'param' }
+      })
+      expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
+        'topup'
+      )
+    })
+
+    it('stays silent when the topup param would not have opened anyway', async () => {
+      setRouteQuery({ topup: '' })
+
+      const { loadTopUpFromUrl } = useTopUpUrlLoader()
+      await loadTopUpFromUrl({ workspaceLinkRefused: true })
+
+      expect(useToast().info).not.toHaveBeenCalled()
+      expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
+    })
+  })
+
+  it('opens the dialog when the workspace link was honored', async () => {
+    setRouteQuery({ topup: '1' })
+
+    const { loadTopUpFromUrl } = useTopUpUrlLoader()
+    await loadTopUpFromUrl({ workspaceLinkRefused: false })
+
+    expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useToast().info).not.toHaveBeenCalled()
   })
 })
