@@ -74,9 +74,8 @@ mutations are blocked in both browser routing and Playwright API clients.
 POSTs a deployed build sends on its own are blocked as well but do not fail the
 test: Datadog RUM, Sentry, Mixpanel, PostHog (so a run has no live PostHog
 flags), and, on the app's own origin, the Cloudflare bot check and the RES4LYF
-custom-node extension. Each is matched by host and exact path, so a POST to any
-other path on those hosts fails the run. `blocked-egress.json` lists them with a
-`Background` prefix.
+custom-node extension. `blocked-egress.json` lists them with a `Background`
+prefix.
 
 Use a dedicated sandbox account. Checkout recovery tests in #17481 additionally
 require a personal workspace with no paid plan or saved card. Those tests own
