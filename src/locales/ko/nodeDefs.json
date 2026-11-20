@@ -8465,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "HeyGen Avatar 6를 사용하여 텍스트 스크립트 또는 직접 제공한 오디오로 구동되는 HeyGen 아바타의 말하는 비디오를 생성합니다.",
+    "display_name": "HeyGen Avatar 6 아이덴티티-비디오",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "'auto'는 아바타의 원본 영상 비율을 따릅니다."
+      },
+      "avatar": {
+        "name": "아바타"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "motion_expressiveness": {
+        "name": "모션 표현력",
+        "tooltip": "'less'는 더 적고 작은 제스처를 적용합니다. 겹치는 부분에서는 모션 프롬프트가 우선합니다."
+      },
+      "motion_prompt": {
+        "name": "모션 프롬프트",
+        "tooltip": "제스처, 표정, 자세 및 카메라 움직임입니다."
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드를 다시 실행할지 여부를 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "speech": {
+        "name": "음성",
+        "tooltip": "텍스트 스크립트(HeyGen 텍스트 음성 변환) 또는 직접 제공한 오디오로 아바타를 구동합니다."
+      },
+      "speech_custom_voice_id": {
+        "name": "사용자 지정 음성 ID"
+      },
+      "speech_text": {
+        "name": "텍스트"
+      },
+      "speech_voice": {
+        "name": "음성"
+      },
+      "speech_voice_speed": {
+        "name": "음성 속도"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "HeyGen Avatar 6를 사용하여 사진 또는 비디오 속 인물이나 캐릭터가 연결된 오디오를 말하도록 만듭니다. 이미지, 비디오 또는 둘 다를 연결하세요.",
+    "display_name": "HeyGen Avatar 6 참조-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델"
+      },
+      "model_aspect_ratio": {
+        "name": "종횡비"
+      },
+      "model_motion_expressiveness": {
+        "name": "모션 표현력"
+      },
+      "model_motion_prompt": {
+        "name": "모션 프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "HeyGen 아바타로부터 발표자 영상을 생성합니다. HeyGen의 가장 인기 있는 공개 아바타가 포함되어 있으며, look ID를 입력하여 원하는 아바타로 대체할 수 있습니다.",
     "display_name": "HeyGen 아바타 비디오",
@@ -10645,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "텍스트 프롬프트와 최대 10장의 참조 이미지를 바탕으로 단일 이미지 또는 서로 관련된 이미지 시리즈를 생성하거나 편집합니다.",
+    "display_name": "Kling 4.0 이미지",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "종횡비",
+        "tooltip": "auto는 참조 이미지를 따르며, 그렇지 않은 경우 프롬프트를 따릅니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "프롬프트",
+        "tooltip": "참조 이미지는 @Image1, @Image2, ...로 지정하세요."
+      },
+      "reference_images": {
+        "name": "참조 이미지"
+      },
+      "resolution": {
+        "name": "해상도"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "시드는 노드가 다시 실행될지 제어합니다. 시드와 관계없이 결과는 비결정적입니다."
+      },
+      "series_amount": {
+        "name": "시리즈 수",
+        "tooltip": "동일한 캐릭터와 스타일을 유지하는 관련 이미지 시리즈를 생성합니다. auto를 선택하면 모델이 2~10장의 이미지를 선택합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "kling-4.0에서는 최대 10개의 키프레임을 통해 오디오가 포함된 비디오를 생성하거나, kling-4.0-flash에서는 첫 프레임으로부터 생성합니다. 중간 프레임은 균등한 간격으로 배치되며, 비디오는 첫 번째 키프레임의 종횡비를 따릅니다.",
     "display_name": "Kling 4.0 이미지를 비디오로",
@@ -10665,6 +10788,32 @@
         "name": "해상도"
       },
       "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "웹페이지 디자인 또는 전자상거래 상품 상세 페이지용 세로로 긴 이미지 하나를 생성합니다.",
+    "display_name": "Kling 4.0 긴 이미지",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "skill": {
+        "name": "기술"
+      },
+      "skill_prompt": {
+        "name": "프롬프트"
+      },
+      "skill_resolution": {
+        "name": "해상도"
+      },
+      "skill_seed": {
         "name": "시드"
       }
     },
@@ -25291,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "CLIP으로 참조 이미지, 이미지 사고, 인터리브된 텍스트 또는 자기 수정을 인코딩합니다. 이 노드 앞에 HiDream-O1 참조 이미지를 연결하고 이미지에는 표준 샘플러를 사용하세요. 사고 없이 텍스트를 이미지로 생성하려면 CLIP 텍스트 인코드만 필요하며, 텍스트 전용 출력에는 텍스트 생성을 사용할 수 있습니다.",
+    "display_name": "SenseNova 컨디셔닝",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "컨디셔닝"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "이 호출 중 생성할 최대 토큰 수입니다."
+      },
+      "negative": {
+        "name": "네거티브"
+      },
+      "task": {
+        "name": "작업",
+        "tooltip": "작업을 선택합니다. 프롬프트 템플릿과 중지 동작은 자동으로 설정됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "컨디셔닝",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "이 호출에서 생성된 텍스트입니다. 전체 결과에는 SenseNova 인터리브 디코드를 사용하세요."
+      },
+      "2": {
+        "name": "네거티브",
+        "tooltip": "인터리브 및 자기 수정을 위해 업데이트된 네거티브 컨디셔닝입니다."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "U1.6 자기 수정을 포함하여 SenseNova 컨디셔닝에서 생성된 인터리브 기록으로부터 생성된 텍스트, 이미지 및 사고를 추출합니다. 루프에서는 누적을 비활성화한 상태로 루프 종료를 사용하세요. 입력 참조 이미지는 제외됩니다. 이미지가 생성되지 않은 경우 이미지를 사용하는 노드는 건너뜁니다.",
+    "display_name": "SenseNova 인터리브 디코드",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "컨디셔닝"
+      },
+      "samples": {
+        "name": "샘플",
+        "tooltip": "루프가 이미지 요청에서 끝난 경우의 마지막 KSampler 픽셀 latent입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "이미지",
+        "tooltip": null
+      },
+      "2": {
+        "name": "사고",
         "tooltip": null
       }
     }

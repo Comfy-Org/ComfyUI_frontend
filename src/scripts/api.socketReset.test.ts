@@ -164,10 +164,10 @@ describe('ComfyApi realtime socket reset', () => {
     vi.spyOn(Math, 'random').mockReturnValueOnce(0.5)
     dropped.close()
 
-    await vi.advanceTimersByTimeAsync(2_000)
+    await vi.advanceTimersByTimeAsync(700)
     expect(FakeWebSocket.instances).toHaveLength(1)
 
-    await vi.advanceTimersByTimeAsync(500)
+    await vi.advanceTimersByTimeAsync(50)
     await vi.waitFor(() => expect(FakeWebSocket.instances).toHaveLength(2))
   })
 })

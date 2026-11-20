@@ -942,6 +942,7 @@ describe('PostHogTelemetryProvider', () => {
         phase_count: 1,
         untraced_ms: 2700,
         hidden_ms: 0,
+        visible_ms: 5200,
         phases: { 'auth-gate/user-store': 2500 },
         pending: ['bootstrap/object-info']
       } satisfies BootstrapCompleteMetadata
@@ -1221,6 +1222,20 @@ describe('PostHogTelemetryProvider', () => {
         properties: { reason: 'target_missing', step: 2 }
       },
       {
+        event: TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentTargetUnavailable({
+            cause: 'restore_not_listed',
+            workflow_id: 'wf-1',
+            startup_tab_restore_settled: false
+          }),
+        properties: {
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        }
+      },
+      {
         event: TelemetryEvents.AGENT_SEND_GATED,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentSendGated({
@@ -1243,7 +1258,7 @@ describe('PostHogTelemetryProvider', () => {
         }
       }
     ])(
-      'captures $event with its properties',
+      'captures $event with its properties $properties',
       async ({ event, track, properties }) => {
         const provider = createProvider()
         await vi.dynamicImportSettled()

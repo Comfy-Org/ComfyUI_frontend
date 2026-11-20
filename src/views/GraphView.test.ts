@@ -5,10 +5,8 @@ import { createI18n } from 'vue-i18n'
 import type { ComfyDesktop2Bridge } from '@comfyorg/comfyui-desktop-bridge-types'
 import type { ElectronAPI } from '@comfyorg/comfyui-electron-types'
 
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
-import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
+import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import type * as DistributionTypes from '@/platform/distribution/types'
-import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { showMissingNodesNotice } from '@/platform/workflowErrors/nodeReplacement/missingNodesNotice'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
@@ -126,28 +124,9 @@ vi.mock(
   () => ({ registerCoreBottomPanelTabs: vi.fn(async () => {}) })
 )
 
-vi.mock(
-  import('@/platform/customNodes/useReconnectNodeDefinitionRefresh'),
-  () => {
-    const refreshNodeDefinitionsOnReconnect = vi.fn(async () => {})
-    return {
-      useReconnectNodeDefinitionRefresh: () => refreshNodeDefinitionsOnReconnect
-    }
-  }
-)
-
-vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
-  const refreshOnReconnect = vi.fn(async () => {})
-  return { useReconnectQueueRefresh: () => refreshOnReconnect }
-})
-
-vi.mock(import('@/composables/useReconnectingNotification'), () => {
-  const onReconnected = vi.fn()
-  const onReconnecting = vi.fn()
-  return {
-    useReconnectingNotification: () => ({ onReconnected, onReconnecting })
-  }
-})
+vi.mock(import('@/composables/useServerReconnectLifecycle'), () => ({
+  useServerReconnectLifecycle: vi.fn()
+}))
 
 vi.mock(import('@/base/common/async'), () => ({ runWhenGlobalIdle: vi.fn() }))
 vi.mock(import('@/composables/useBrowserTabTitle'), () => ({
@@ -288,14 +267,12 @@ describe('GraphView - reconnect wiring', () => {
     )
   })
 
-  it('wires the reconnected event to the toast, queue refresh and node definition refresh', () => {
+  it('starts the server reconnect lifecycle once', () => {
+    vi.mocked(useServerReconnectLifecycle).mockClear()
+
     render(GraphView, { global: { plugins: [i18n] } })
 
-    apiMock.dispatchCustomEvent('reconnected')
-
-    expect(useReconnectingNotification().onReconnected).toHaveBeenCalledTimes(1)
-    expect(useReconnectQueueRefresh()).toHaveBeenCalledTimes(1)
-    expect(useReconnectNodeDefinitionRefresh()).toHaveBeenCalledTimes(1)
+    expect(useServerReconnectLifecycle).toHaveBeenCalledOnce()
   })
 
   it.for([
