@@ -107,9 +107,14 @@ import type {
 } from '@/platform/openOnCloud/stores/localModelUploadStore'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 
-const { models, signedIn } = defineProps<{
+const {
+  models,
+  signedIn,
+  recovering = false
+} = defineProps<{
   models: MissingModel[]
   signedIn: boolean
+  recovering?: boolean
 }>()
 
 const emit = defineEmits<{ dismiss: [] }>()
@@ -161,7 +166,7 @@ const upload = computed(() => {
 watch(
   () => [signedIn, models, owner.value] as const,
   () => {
-    uploads.reset(models)
+    uploads.reset(models, { freshVerdict: !recovering })
     if (signedIn) void uploads.prepare(models)
   },
   { immediate: true }
@@ -208,7 +213,9 @@ const footer = computed<Footer>(() => {
   return canOffer.value ? 'upload' : 'close'
 })
 
-const canRecheck = computed(() => isPrepared.value && !uploads.isUploading)
+const canRecheck = computed(
+  () => !recovering && isPrepared.value && !uploads.isUploading
+)
 const showSecondary = computed(
   () => footer.value !== 'uploading' || uploads.canCancel
 )

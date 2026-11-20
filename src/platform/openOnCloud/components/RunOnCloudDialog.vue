@@ -3,6 +3,7 @@
     v-if="state.kind === 'missingModels'"
     :models="state.models"
     :signed-in="isLoggedIn"
+    :recovering="!!uploadModels"
     @dismiss="emit('dismiss')"
   />
   <DeploySetupCard
@@ -52,16 +53,19 @@ const { activeModels, isUploading, owner, retryBatches } = storeToRefs(
   useLocalModelUploadStore()
 )
 const { isLoggedIn } = useCurrentUser()
-const state = computed(() => {
+const uploadModels = computed(() => {
   const models = uploadBatch && toRaw(uploadBatch.models)
   if (
     models &&
     uploadBatch?.owner === owner.value &&
     (activeModels.value === models || retryBatches.value.includes(models))
   )
-    return { kind: 'missingModels' as const, models }
-  if (activeModels.value && isUploading.value)
-    return { kind: 'missingModels' as const, models: activeModels.value }
+    return models
+  return isUploading.value ? activeModels.value : undefined
+})
+const state = computed(() => {
+  if (uploadModels.value)
+    return { kind: 'missingModels' as const, models: uploadModels.value }
   return runOnCloudModalState(check.value, { signedIn: isLoggedIn.value })
 })
 </script>

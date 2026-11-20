@@ -426,7 +426,10 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     if (canCancel.value) batch?.controller.abort()
   }
 
-  function reset(models: MissingModel[]): void {
+  function reset(
+    models: MissingModel[],
+    { freshVerdict = false }: { freshVerdict?: boolean } = {}
+  ): void {
     if (isUploading.value) return
     clearPreparation()
     const current = upload.value
@@ -438,12 +441,11 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       retryBatches.value.flatMap((batch) => batch.map(modelKey))
     )
     picks.value = new Map(
-      [...picks.value].filter(
-        ([key, pick]) =>
-          recoverableKeys.has(key) ||
-          isPendingPick(pick) ||
-          (keys.has(key) && pick.status === 'stored')
-      )
+      [...picks.value].filter(([key, pick]) => {
+        const wasStored = keys.has(key) && pick.status === 'stored'
+        if (freshVerdict && wasStored) return false
+        return recoverableKeys.has(key) || isPendingPick(pick) || wasStored
+      })
     )
     modelSnapshot = models
   }

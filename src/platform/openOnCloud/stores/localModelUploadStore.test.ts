@@ -232,7 +232,7 @@ describe('useLocalModelUploadStore', () => {
     expect(store.upload).toEqual({ phase: 'done' })
   })
 
-  it('allows choosing a stored model again when a new Cloud check lists it as missing', async () => {
+  it('requires choosing a stored model again when a new Cloud check lists it as missing', async () => {
     vi.spyOn(modelFileUploadApi, 'uploadModelFile').mockResolvedValue({
       ok: true,
       taskId: TASK_ID
@@ -247,11 +247,12 @@ describe('useLocalModelUploadStore', () => {
     await store.start(initialModels)
     expect(store.pickOf(lora).status).toBe('stored')
 
-    const missingAgain = [lora]
-    store.reset(missingAgain)
+    const missingAgain = [lora, ckpt]
+    store.reset(missingAgain, { freshVerdict: true })
     await store.prepare(missingAgain)
+    store.choose(ckpt, ckptFile)
 
-    expect(store.pickOf(lora).status).toBe('stored')
+    expect(store.pickOf(lora).status).toBe('unchosen')
     expect(store.canUpload(missingAgain)).toBe(false)
     store.choose(lora, loraFile)
     expect(store.canUpload(missingAgain)).toBe(true)
