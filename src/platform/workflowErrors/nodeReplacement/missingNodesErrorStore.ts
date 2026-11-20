@@ -9,8 +9,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import {
   dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
-  removePendingMissingNodeTypesByNodeId,
-  removePendingMissingNodeTypesByType
+  removePendingMissingNodeTypesByNodeId
 } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useApp } from '@/scripts/appInstance'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
@@ -85,16 +84,6 @@ export const useMissingNodesErrorStore = defineStore(
       setMissingNodeTypes(remaining)
     }
 
-    /** Remove specific node types from the missing nodes list (e.g. after replacement). */
-    function removeMissingNodesByType(typesToRemove: string[]) {
-      if (!missingNodesError.value) return
-      const remaining = removePendingMissingNodeTypesByType(
-        missingNodesError.value.nodeTypes,
-        typesToRemove
-      )
-      setMissingNodeTypes(remaining)
-    }
-
     const hasMissingNodes = computed(() => !!visibleMissingNodesError.value)
 
     const missingNodeCount = computed(
@@ -138,7 +127,6 @@ export const useMissingNodesErrorStore = defineStore(
       surfaceMissingNodes,
       removeMissingNodesByNodeId,
       removeMissingNodesByPrefix,
-      removeMissingNodesByType,
       hasMissingNodes,
       missingNodeCount,
       missingAncestorExecutionIds,

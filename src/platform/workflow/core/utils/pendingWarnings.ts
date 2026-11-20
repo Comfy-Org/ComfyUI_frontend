@@ -21,19 +21,6 @@ export function dedupeMissingNodeTypes(
   return uniqBy(types, getMissingNodeKey)
 }
 
-export function removePendingMissingNodeTypesByType(
-  currentTypes: readonly MissingNodeType[] | undefined,
-  typesToRemove: readonly string[]
-): MissingNodeType[] {
-  const removeSet = new Set(typesToRemove)
-  return dedupeMissingNodeTypes(
-    (currentTypes ?? []).filter((node) => {
-      const nodeType = typeof node === 'string' ? node : node.type
-      return !removeSet.has(nodeType)
-    })
-  )
-}
-
 export function removePendingMissingNodeTypesByNodeId(
   currentTypes: readonly MissingNodeType[] | undefined,
   nodeId: string

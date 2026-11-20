@@ -6,8 +6,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   dedupeMissingNodeTypes,
   removePendingMissingNodeTypesByExecutionIdPrefix,
-  removePendingMissingNodeTypesByNodeId,
-  removePendingMissingNodeTypesByType
+  removePendingMissingNodeTypesByNodeId
 } from '@/platform/workflow/core/utils/pendingWarnings'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
@@ -54,13 +53,6 @@ export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
       nodeTypes.value = dedupeMissingNodeTypes([...nodeTypes.value, entry])
   }
 
-  function removeByType(types: string[]): void {
-    nodeTypes.value = removePendingMissingNodeTypesByType(
-      nodeTypes.value,
-      types
-    )
-  }
-
   function removeByNodeId(executionId: string): void {
     nodeTypes.value = removePendingMissingNodeTypesByExecutionIdPrefix(
       removePendingMissingNodeTypesByNodeId(nodeTypes.value, executionId),
@@ -68,5 +60,5 @@ export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
     )
   }
 
-  return { nodeTypes, rescan, addNode, removeByType, removeByNodeId }
+  return { nodeTypes, rescan, addNode, removeByNodeId }
 })
