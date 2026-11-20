@@ -3,7 +3,10 @@ import {
   createTimeoutSignal,
   throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
-import type { CompatibilityModel } from '@comfyorg/ingest-types'
+import type {
+  CloudWorkflowCompatibility,
+  CompatibilityModel
+} from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
@@ -280,6 +283,18 @@ function giveUp(cause: unknown): null {
   return null
 }
 
+function workflowVerdict(
+  verdict: CloudWorkflowCompatibility,
+  requireModelVerdict: boolean
+): CloudWorkflowCheckResult {
+  const { missing_node_types: nodePacks, missing_models: models } = verdict
+  if (nodePacks.length || models?.length)
+    return { kind: 'missing', gaps: { nodePacks, models: models ?? [] } }
+  if (requireModelVerdict && models === undefined)
+    return giveUp(new Error('Cloud compatibility omitted the model verdict'))
+  return { kind: 'canOpen' }
+}
+
 /** Resolves null when no verdict is available. */
 export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResult> {
   try {
@@ -292,14 +307,11 @@ export async function checkCloudCompatibility(): Promise<CloudWorkflowCheckResul
       }
     const models = await collectModels(nodes)
     if (!models) return null
+    const requireModelVerdict =
+      models.length > 0 && useFeatureFlags().flags.openOnCloudModelUploadEnabled
     const nodeTypes = [...new Set(nodes.map((node) => node.class_type))]
     const verdict = await requestCompatibility(nodeTypes, models)
-    if (!verdict) return null
-    const { missing_node_types: nodePacks, missing_models: missing = [] } =
-      verdict
-    return nodePacks.length || missing.length
-      ? { kind: 'missing', gaps: { nodePacks, models: missing } }
-      : { kind: 'canOpen' }
+    return verdict ? workflowVerdict(verdict, requireModelVerdict) : null
   } catch (error) {
     return giveUp(error)
   }

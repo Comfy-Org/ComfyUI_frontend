@@ -92,6 +92,28 @@ describe(checkCloudCompatibility, () => {
     })
   })
 
+  it.for([
+    { uploadsEnabled: true, expected: null },
+    { uploadsEnabled: false, expected: { kind: 'canOpen' } }
+  ])(
+    'checks a workflow with models and no model verdict when uploads are $uploadsEnabled',
+    async ({ uploadsEnabled, expected }) => {
+      Object.assign(useFeatureFlags().flags, {
+        openOnCloudModelUploadEnabled: uploadsEnabled
+      })
+      registerCheckpointLoader()
+      workflowHas(
+        node('CheckpointLoaderSimple', { ckpt_name: 'sdxl.safetensors' })
+      )
+      cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+      await expect(checkCloudCompatibility()).resolves.toEqual(expected)
+      expect(requestBody().models).toEqual([
+        { folder: 'checkpoints', name: 'sdxl.safetensors' }
+      ])
+    }
+  )
+
   it('keeps a signed-in workflow unchecked when workspace authorization is missing', async () => {
     workflowHas(node('KSampler'))
     Object.assign(useAuthStore(), { isAuthenticated: true })
