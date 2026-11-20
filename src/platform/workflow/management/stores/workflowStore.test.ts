@@ -726,6 +726,7 @@ describe('useWorkflowStore', () => {
   describe('canvas tracker ownership', () => {
     const openRemoteWorkflowOnCanvas = async () => {
       resetCanvasTrackerForTest()
+      onTestFinished(resetCanvasTrackerForTest)
       await syncRemoteWorkflows(['a.json'])
       vi.mocked(api.getUserData).mockResolvedValue({
         status: 200,
