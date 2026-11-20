@@ -18,7 +18,7 @@ import type {
   PointTuple as Point
 } from '@comfyorg/shared-frontend-utils/geometry'
 import { isInRectangle } from '@/lib/litegraph/src/measure'
-import { resizeCornerAt } from './cornerResize'
+import { resizeCornerAt } from '@comfyorg/graph-model/arrange/cornerResize'
 
 import {
   LinkMarkerShape,

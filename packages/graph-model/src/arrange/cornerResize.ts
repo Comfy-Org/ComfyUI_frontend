@@ -1,11 +1,15 @@
 import type {
   Bounds,
   CompassCorners,
-  PointTuple as Point,
-  ReadOnlyRect
+  Point2D,
+  ReadOnlyRect,
+  Size2D
 } from '@comfyorg/shared-frontend-utils/geometry'
 
-import { snapPoint } from '@/lib/litegraph/src/measure'
+type Rounding = 'round' | 'ceil'
+
+const snapTo = (value: number, grid: number, rounding: Rounding = 'round') =>
+  grid * Math[rounding](value / grid)
 
 export const GROUP_RESIZE_REACH = 10
 
@@ -47,7 +51,7 @@ export function resizeFromCorner(
   deltaX: number,
   deltaY: number,
   grid = 0,
-  sizeRounding: 'round' | 'ceil' = 'round'
+  sizeRounding: Rounding = 'round'
 ): Bounds {
   const west = hasWestEdge(corner)
   const north = hasNorthEdge(corner)
@@ -57,15 +61,17 @@ export function resizeFromCorner(
   const height = start.height + (north ? -deltaY : deltaY)
   if (!grid) return { x, y, width, height }
 
-  const edge: Point = [x, y]
-  snapPoint(edge, grid)
-  const size: Point = [width, height]
-  snapPoint(size, grid, sizeRounding)
+  const edgeX = snapTo(x, grid)
+  const edgeY = snapTo(y, grid)
   return {
-    x: west ? edge[0] : x,
-    y: north ? edge[1] : y,
-    width: west ? start.x + start.width - edge[0] : size[0],
-    height: north ? start.y + start.height - edge[1] : size[1]
+    x: west ? edgeX : x,
+    y: north ? edgeY : y,
+    width: west
+      ? start.x + start.width - edgeX
+      : snapTo(width, grid, sizeRounding),
+    height: north
+      ? start.y + start.height - edgeY
+      : snapTo(height, grid, sizeRounding)
   }
 }
 
@@ -84,4 +90,35 @@ export function clampToMinimum(
     width,
     height
   }
+}
+
+export interface ResizeBoxOptions {
+  grid?: number
+  sizeRounding?: Rounding
+  /** The minimum size at a given width, for content that reflows. */
+  minAt: (width: number) => Size2D
+  /** Snaps the resized box, honouring `min`; omit to leave it unsnapped. */
+  snap?: (box: Bounds, min: Size2D) => Bounds
+}
+
+/** Resizes `start` by dragging `corner` by `delta`: grid, then snap, then the minimum size, keeping the opposite edges fixed. */
+export function resizeBox(
+  start: Bounds,
+  corner: CompassCorners,
+  delta: Point2D,
+  { grid = 0, sizeRounding, minAt, snap }: ResizeBoxOptions
+): Bounds {
+  const resized = resizeFromCorner(
+    start,
+    corner,
+    delta.x,
+    delta.y,
+    grid,
+    sizeRounding
+  )
+  const min = minAt(resized.width)
+  const snapped = snap?.(resized, min) ?? resized
+  const { width, height } =
+    snapped.width === resized.width ? min : minAt(snapped.width)
+  return clampToMinimum(snapped, corner, width, height)
 }

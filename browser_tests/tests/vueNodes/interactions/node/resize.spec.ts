@@ -5,7 +5,7 @@ import {
 import {
   hasNorthEdge,
   hasWestEdge
-} from '@/lib/litegraph/src/canvas/cornerResize'
+} from '@comfyorg/graph-model/arrange/cornerResize'
 import { MIN_NODE_WIDTH } from '@/renderer/core/layout/transform/graphRenderTransform'
 import { RESIZE_HANDLES } from '@/renderer/extensions/vueNodes/interactions/resize/resizeHandleConfig'
 
