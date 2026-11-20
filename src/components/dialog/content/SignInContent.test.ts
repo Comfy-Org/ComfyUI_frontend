@@ -187,6 +187,18 @@ describe('SignInContent', () => {
     ).toHaveAttribute('href', 'https://comfy.org/privacy-policy/')
   })
 
+  it('sends a person who needs an API key to the Platform API keys page, naming this dialog', () => {
+    renderSignInContent()
+
+    const href = new URL(
+      screen.getByRole('link', { name: 'Generate key' }).getAttribute('href') ??
+        ''
+    )
+
+    expect(href.pathname).toBe('/profile/api-keys')
+    expect(href.searchParams.get('utm_content')).toBe('sign-in-dialog')
+  })
+
   it('withholds the sign-up form while region detection is pending', async () => {
     const settle = inChina.defer()
     renderSignInContent()

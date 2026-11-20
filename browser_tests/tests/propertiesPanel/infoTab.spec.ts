@@ -3,14 +3,14 @@ import { expect } from '@playwright/test'
 import type { ObjectInfoResponse } from '@comfyorg/object-info-parser'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { PropertiesPanel } from '@e2e/fixtures/components/PropertiesPanel'
 import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 
 test.describe('Properties panel - Info tab', () => {
-  let panel: PropertiesPanelHelper
+  let panel: PropertiesPanel
 
   test.beforeEach(async ({ comfyPage }) => {
-    panel = new PropertiesPanelHelper(comfyPage.page)
+    panel = new PropertiesPanel(comfyPage.page)
     await comfyPage.actionbar.propertiesButton.click()
     await comfyPage.nodeOps.selectNodes(['KSampler'])
     await panel.switchToTab('Info')
@@ -72,7 +72,7 @@ test.describe('Properties panel - Info tab dynamic combo inputs', () => {
       await comfyPage.workflow.reloadAndWaitForApp()
       await comfyPage.workflow.loadWorkflow('inputs/string_input')
 
-      const panel = new PropertiesPanelHelper(comfyPage.page)
+      const panel = new PropertiesPanel(comfyPage.page)
       await comfyPage.actionbar.propertiesButton.click()
 
       // The workflow's only node sits at (15, 48), close enough to the canvas

@@ -1,3 +1,4 @@
+import { useTelemetry } from '@comfyorg/telemetry'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -5,9 +6,10 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock(import('@comfyorg/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@comfyorg/telemetry'))
+const trackAgentTargetUnavailable = vi.mocked(
+  useTelemetry()!.trackAgentTargetUnavailable
+)
 
 async function setup() {
   const workflows = useWorkflowStore()
@@ -51,6 +53,12 @@ describe('Agent target tab lifetime', () => {
 
 type TargetSetup = Awaited<ReturnType<typeof setup>>
 
+const deletedEvent = {
+  cause: 'workflow_deleted',
+  workflow_id: null,
+  startup_tab_restore_settled: null
+} as const
+
 function saveTarget(target: ComfyWorkflow): void {
   target.size = 1
   vi.spyOn(target, 'delete').mockResolvedValue()
@@ -78,6 +86,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: true,
+      events: [deletedEvent],
       selected: undefined
     },
     {
@@ -87,6 +96,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: true,
+      events: [deletedEvent],
       selected: undefined
     },
     {
@@ -94,6 +104,7 @@ describe('Agent target deletion', () => {
       act: async ({ workflows, target }: TargetSetup) =>
         workflows.deleteWorkflow(target),
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -107,6 +118,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(successor)
       },
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -123,6 +135,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: true,
+      events: [deletedEvent],
       selected: undefined
     },
     {
@@ -136,6 +149,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -149,6 +163,7 @@ describe('Agent target deletion', () => {
         await deleting
       },
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -163,6 +178,7 @@ describe('Agent target deletion', () => {
         await deleting
       },
       unavailable: true,
+      events: [deletedEvent],
       selected: undefined
     },
     {
@@ -170,6 +186,7 @@ describe('Agent target deletion', () => {
       act: async ({ workflows, target }: TargetSetup) =>
         workflows.closeWorkflow(target),
       unavailable: false,
+      events: [],
       selected: undefined
     },
     {
@@ -180,6 +197,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(other)
       },
       unavailable: false,
+      events: [],
       selected: 'workflows/a.json'
     },
     {
@@ -194,6 +212,7 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: false,
+      events: [],
       selected: 'workflows/b.json'
     },
     {
@@ -205,11 +224,12 @@ describe('Agent target deletion', () => {
         await workflows.deleteWorkflow(target)
       },
       unavailable: false,
+      events: [],
       selected: 'workflows/b.json'
     }
   ])(
     '$event: unavailable=$unavailable',
-    async ({ act, unavailable, selected }) => {
+    async ({ act, unavailable, events, selected }) => {
       const context = await setup()
       await nextTick()
 
@@ -218,6 +238,9 @@ describe('Agent target deletion', () => {
 
       expect(context.panel.targetUnavailable).toBe(unavailable)
       expect(context.panel.selectedWorkflow?.path).toBe(selected)
+      expect(
+        trackAgentTargetUnavailable.mock.calls.map(([event]) => event)
+      ).toEqual(events)
     }
   )
 
@@ -321,7 +344,11 @@ describe('Agent target tracking policy', () => {
   ])('clears an unavailable target after $event', async ({ act, selected }) => {
     const { workflows, panel, target, other } = await setup()
     workflows.activeWorkflow = target
-    panel.markWorkflowTargetUnavailable()
+    panel.markWorkflowTargetUnavailable({
+      cause: 'restore_not_listed',
+      workflow_id: 'wf-target',
+      startup_tab_restore_settled: true
+    })
     expect(panel.targetUnavailable).toBe(true)
     expect(panel.selectedWorkflow).toBeNull()
 

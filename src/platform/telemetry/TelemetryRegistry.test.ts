@@ -632,6 +632,20 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
       },
       {
+        method: 'trackAgentTargetUnavailable',
+        expected: {
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        },
+        invoke: (registry) =>
+          registry.trackAgentTargetUnavailable({
+            cause: 'restore_not_listed',
+            workflow_id: 'wf-1',
+            startup_tab_restore_settled: false
+          })
+      },
+      {
         method: 'trackAgentSendGated',
         expected: {
           gate: 'coach',
@@ -687,7 +701,7 @@ describe('TelemetryRegistry', () => {
     })
 
     it.for(cases)(
-      'dispatches $method to every registered provider',
+      'dispatches $method with $expected to every registered provider',
       ({ method, expected, invoke }) => {
         const a: TelemetryProvider = { [method]: vi.fn() }
         const b: TelemetryProvider = { [method]: vi.fn() }

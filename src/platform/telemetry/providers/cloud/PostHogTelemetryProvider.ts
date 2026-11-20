@@ -52,6 +52,7 @@ import type {
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
   AgentSendGatedMetadata,
+  AgentTargetUnavailableMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -115,6 +116,7 @@ import type {
   WidgetFavoriteToggledMetadata,
   WorkflowCreatedMetadata,
   WorkflowImportMetadata,
+  WorkflowLinkOpenedMetadata,
   WorkflowSavedMetadata,
   WorkspaceInviteFailedMetadata,
   WorkspaceInviteMetadata
@@ -705,6 +707,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.trackEvent(TelemetryEvents.WORKFLOW_OPENED, metadata)
   }
 
+  trackWorkflowLinkOpened(metadata: WorkflowLinkOpenedMetadata): void {
+    this.trackEvent(TelemetryEvents.WORKFLOW_LINK_OPENED, metadata)
+  }
+
   trackWorkflowSaved(metadata: WorkflowSavedMetadata): void {
     this.trackEvent(TelemetryEvents.WORKFLOW_SAVED, metadata)
   }
@@ -941,6 +947,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
+  }
+
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_TARGET_UNAVAILABLE, metadata)
   }
 
   trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {

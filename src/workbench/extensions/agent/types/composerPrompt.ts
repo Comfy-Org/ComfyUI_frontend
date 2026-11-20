@@ -1,5 +1,6 @@
 import type { SelectedNode } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '@/workbench/extensions/agent/composables/agent/useCanvasSelection'
+import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
 import type { ComposerAttachment } from './composerAttachment'
 import type { WorkflowReference } from './workflowReference'
 import type { SkillReference } from './skillReference'
@@ -20,6 +21,12 @@ export type ComposerReference =
   | {
       kind: 'asset'
       attachment: ComposerAttachment
+      textOffset: number
+    }
+  | {
+      kind: 'error'
+      id: string
+      context: AgentErrorContext
       textOffset: number
     }
 
@@ -43,6 +50,8 @@ export function composerReferenceKey(reference: ComposerReference): string {
       return `node:${JSON.stringify([reference.scope, selectedNodeKey(reference.node)])}`
     case 'asset':
       return `asset:${reference.attachment.id}`
+    case 'error':
+      return `error:${reference.id}`
   }
 }
 
@@ -56,5 +65,7 @@ export function composerReferenceName(reference: ComposerReference): string {
       return `${reference.node.title} #${reference.node.id}`
     case 'asset':
       return reference.attachment.name
+    case 'error':
+      return reference.context.label
   }
 }

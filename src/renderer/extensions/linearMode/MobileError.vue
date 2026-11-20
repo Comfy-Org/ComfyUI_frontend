@@ -26,7 +26,7 @@ const { copyToClipboard } = useCopyToClipboard()
 const guideUrl = buildDocsUrl('troubleshooting/overview', {
   includeLocale: true
 })
-const supportUrl = buildSupportUrl()
+const supportUrl = buildSupportUrl('bug')
 
 const inputNodeIds = computed(() => {
   const ids = new Set()

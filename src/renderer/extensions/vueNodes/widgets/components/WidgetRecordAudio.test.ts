@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
@@ -5,8 +6,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 const { useAudioRecorderMock, useAudioPlaybackMock, useAudioWaveformMock } =
   vi.hoisted(() => ({
@@ -14,16 +17,6 @@ const { useAudioRecorderMock, useAudioPlaybackMock, useAudioWaveformMock } =
     useAudioPlaybackMock: vi.fn(),
     useAudioWaveformMock: vi.fn()
   }))
-const appMock = vi.hoisted(() => ({
-  app: {
-    rootGraphOrUndefined: { events: new EventTarget() },
-    canvas: {
-      graph: {
-        getNodeById: vi.fn<(id: string) => unknown>(() => null)
-      }
-    }
-  }
-}))
 const isDOMWidgetMock = vi.hoisted(() => vi.fn(() => false))
 
 vi.mock(
@@ -47,7 +40,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(import('@/scripts/app'), () => appMock)
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
   isDOMWidget: isDOMWidgetMock
@@ -56,6 +49,8 @@ vi.mock<unknown>(import('@/scripts/domWidget'), () => ({
 import type { useAudioPlayback } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioPlayback'
 import { useAudioRecorder } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioRecorder'
 import type { useAudioWaveform } from '@/renderer/extensions/vueNodes/widgets/composables/audio/useAudioWaveform'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
 import WidgetRecordAudio from './WidgetRecordAudio.vue'
 
 type RecorderOptions = NonNullable<Parameters<typeof useAudioRecorder>[0]>
@@ -126,7 +121,11 @@ function renderWidget(props: { readonly?: boolean; nodeId?: NodeId } = {}) {
       plugins: [i18n, getActivePinia()!],
       stubs: { Button: ButtonStub }
     },
-    props: { readonly: false, nodeId: toNodeId('n1'), ...props }
+    props: {
+      readonly: false,
+      nodeId: toNodeId('n1'),
+      ...props
+    }
   })
 }
 
@@ -151,7 +150,7 @@ describe('WidgetRecordAudio', () => {
 
     waveform.waveformBars.value = []
 
-    appMock.app.canvas.graph.getNodeById.mockReset().mockReturnValue(null)
+    useCanvasStore().currentGraph = app.rootGraph
     isDOMWidgetMock.mockReset().mockReturnValue(false)
   })
 
@@ -272,16 +271,22 @@ describe('WidgetRecordAudio', () => {
     function createAudioWidget(initialSrc = '') {
       const element = document.createElement('audio')
       element.src = initialSrc
-      return {
-        name: 'audioUI',
-        type: 'audio',
-        element
-      }
+      return Object.assign(
+        fromPartial<IBaseWidget>({ name: 'audioUI', type: 'audio' }),
+        { element }
+      )
     }
 
-    function primeAudioWidgetInNode(widgets: { element: HTMLAudioElement }[]) {
-      appMock.app.canvas.graph.getNodeById.mockReturnValue({ widgets })
+    function primeAudioWidgetInNode(
+      widget: ReturnType<typeof createAudioWidget>,
+      id?: NodeId
+    ): NodeId {
+      const node = new LGraphNode('RecordAudio')
+      if (id !== undefined) node.id = id
+      node.addCustomWidget(widget)
+      app.rootGraph.add(node)
       isDOMWidgetMock.mockReturnValue(true)
+      return node.id
     }
 
     beforeEach(() => {
@@ -294,8 +299,7 @@ describe('WidgetRecordAudio', () => {
 
     it('replaces the audio widget element src with a new blob URL when a recording completes', async () => {
       const audioWidget = createAudioWidget()
-      primeAudioWidgetInNode([audioWidget])
-      renderWidget()
+      renderWidget({ nodeId: primeAudioWidgetInNode(audioWidget) })
 
       const blob = new Blob(['audio-bytes'], { type: 'audio/webm' })
       await getRecorderOptions().onRecordingComplete?.(blob)
@@ -308,15 +312,16 @@ describe('WidgetRecordAudio', () => {
         .mockReturnValueOnce('blob:fake/first')
         .mockReturnValueOnce('blob:fake/second')
       const staleWidget = createAudioWidget()
-      primeAudioWidgetInNode([staleWidget])
-      renderWidget()
+      const nodeId = primeAudioWidgetInNode(staleWidget)
+      renderWidget({ nodeId })
       await getRecorderOptions().onRecordingComplete?.(new Blob(['x']))
+      const staleNode = app.rootGraph.getNodeById(nodeId)
+      if (!staleNode) throw new Error('Expected the stale node in the graph')
+      app.rootGraph.remove(staleNode)
       const reloadedWidget = createAudioWidget()
-      primeAudioWidgetInNode([reloadedWidget])
+      primeAudioWidgetInNode(reloadedWidget, nodeId)
 
-      appMock.app.rootGraphOrUndefined.events.dispatchEvent(
-        new Event('configured')
-      )
+      app.rootGraph.events.dispatch('configured')
       await getRecorderOptions().onRecordingComplete?.(new Blob(['y']))
 
       expect(reloadedWidget.element.src).toBe('blob:fake/second')
@@ -327,8 +332,7 @@ describe('WidgetRecordAudio', () => {
       vi.mocked(URL.createObjectURL).mockReturnValue('blob:fake/new')
 
       const audioWidget = createAudioWidget('blob:stale-existing')
-      primeAudioWidgetInNode([audioWidget])
-      renderWidget()
+      renderWidget({ nodeId: primeAudioWidgetInNode(audioWidget) })
 
       await getRecorderOptions().onRecordingComplete?.(new Blob(['x']))
 
@@ -340,9 +344,9 @@ describe('WidgetRecordAudio', () => {
       vi.mocked(URL.createObjectURL).mockReturnValue('blob:fake/new')
 
       const audioWidget = createAudioWidget('originally-empty')
-      primeAudioWidgetInNode([audioWidget])
+      const nodeId = primeAudioWidgetInNode(audioWidget)
       isDOMWidgetMock.mockReturnValue(false)
-      renderWidget()
+      renderWidget({ nodeId })
 
       await getRecorderOptions().onRecordingComplete?.(new Blob(['x']))
 

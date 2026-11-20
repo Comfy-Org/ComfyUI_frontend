@@ -594,6 +594,30 @@ describe('workspaceApi', () => {
       expect(mockAxiosInstance.post).not.toHaveBeenCalled()
     })
 
+    it('does not read a released top-up checkout when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const pendingAuth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(auth.getWorkspaceAuthHeader).mockReturnValue(pendingAuth)
+      const controller = new AbortController()
+      const checkout = billingApi.getTopupCheckout('cs_1', controller.signal)
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(checkout).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.get).not.toHaveBeenCalled()
+    })
+
+    it('forwards top-up checkout read cancellation to the transport', async () => {
+      mockAxiosInstance.get.mockResolvedValue({ data: {} })
+      const controller = new AbortController()
+      await billingApi.getTopupCheckout('cs_1', controller.signal)
+      expect(mockAxiosInstance.get).toHaveBeenCalledWith(
+        '/api/billing/topup/checkouts/cs_1',
+        { headers: AUTH_HEADER, timeout: 10_000, signal: controller.signal }
+      )
+    })
+
     it('forwards deployment selection cancellation to the transport', async () => {
       mockAxiosInstance.put.mockResolvedValue({})
       const controller = new AbortController()
@@ -625,6 +649,32 @@ describe('workspaceApi', () => {
         '/api/workspaces/ws-1/deployment',
         { headers: AUTH_HEADER, params: { follow: 'workspace' } }
       )
+    })
+
+    it('forwards a clear cancellation to the transport', async () => {
+      mockAxiosInstance.delete.mockResolvedValue({})
+      const controller = new AbortController()
+      await workspaceApi.clearDeployment('ws-1', { signal: controller.signal })
+      expect(mockAxiosInstance.delete).toHaveBeenCalledWith(
+        '/api/workspaces/ws-1/deployment',
+        { headers: AUTH_HEADER, params: undefined, signal: controller.signal }
+      )
+    })
+
+    it('does not send a canceled clear when authorization finishes late', async () => {
+      let finishAuth!: (headers: typeof AUTH_HEADER) => void
+      const pendingAuth = new Promise<typeof AUTH_HEADER>((resolve) => {
+        finishAuth = resolve
+      })
+      vi.mocked(auth.getWorkspaceAuthHeader).mockReturnValue(pendingAuth)
+      const controller = new AbortController()
+      const cleared = workspaceApi.clearDeployment('ws-1', {
+        signal: controller.signal
+      })
+      controller.abort()
+      finishAuth(AUTH_HEADER)
+      await expect(cleared).rejects.toMatchObject({ name: 'AbortError' })
+      expect(mockAxiosInstance.delete).not.toHaveBeenCalled()
     })
 
     it('setDefaultDeployment() sends PUT /workspaces/:id/default-deployment with the deployment', async () => {
