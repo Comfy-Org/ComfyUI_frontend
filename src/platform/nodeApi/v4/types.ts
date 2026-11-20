@@ -1562,7 +1562,7 @@ export interface ButtonContribution {
 
 /** What a pack keeps of a badge or button it added. */
 export interface ChromeItemHandle<T> {
-  /** Replaces the fields given. `false` once removed, and nothing changes. */
+  /** Replaces the fields given. `false` once removed, whatever it is given, and nothing changes. */
   update(changes: Partial<Omit<T, 'id'>>): boolean
   /** Takes the item away. Safe to call more than once. */
   remove(): void

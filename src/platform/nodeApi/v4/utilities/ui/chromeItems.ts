@@ -110,13 +110,13 @@ function createChromeSlot<TItem extends { readonly id: string }, THost>(
       let current: TItem | undefined = item
       return Object.freeze({
         update(changes: unknown) {
+          if (!current) return false
           const given = checkedFields(
             'update',
             'the fields to change',
             changes,
             changeable
           )
-          if (!current) return false
           current = readItem({ ...current, ...given, id: item.id }, 'update')
           replace(item.id, current)
           return true

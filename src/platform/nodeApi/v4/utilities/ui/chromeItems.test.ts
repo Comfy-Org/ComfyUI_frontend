@@ -96,6 +96,7 @@ describe('top-bar badges', () => {
 
     expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['2 GB'])
     expect(gpu.update({ text: '9%' })).toBe(false)
+    expect(Reflect.apply(gpu.update, gpu, [{ colour: 'red' }])).toBe(false)
     expect(host.topbarBadges.value.map(({ text }) => text)).toEqual(['2 GB'])
   })
 
