@@ -441,10 +441,16 @@ const turnStartedAt = new Map<TurnId, number>()
  * flight, consumed exactly once at ack.
  */
 let sendInFlight = false
-let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+// A pending stop belongs to one send attempt, so a stale or parallel send never stops a later turn.
+let sendAttempt = 0
+let stopPendingAck: {
+  method: AgentStopMethod | undefined
+  attempt: number
+} | null = null
 
-function consumeStopPendingAck() {
+function consumeStopPendingAck(attempt: number) {
   const pending = stopPendingAck
+  if (pending === null || pending.attempt !== attempt) return null
   stopPendingAck = null
   return pending
 }
@@ -490,6 +496,28 @@ function disownsWorkflow(error: unknown): boolean {
     error instanceof AgentApiError &&
     error.status === 403 &&
     zDisownedWorkflowError.safeParse(error.body).success
+  )
+}
+
+function refusedBeforeAcceptance(error: unknown): boolean {
+  if (!(error instanceof AgentApiError)) return false
+  if (parseAdmissionError(error) !== undefined) return true
+  return (
+    error.status >= 400 &&
+    error.status < 500 &&
+    parseTurnInProgress(error) === undefined
+  )
+}
+
+function serverRefusedSendOverCard(
+  error: unknown,
+  dismissedAskIds: string[]
+): boolean {
+  return (
+    dismissedAskIds.length > 0 &&
+    error instanceof AgentApiError &&
+    error.status >= 500 &&
+    !refusedBeforeAcceptance(error)
   )
 }
 
@@ -617,6 +645,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const readyThreadId = ref<string | null>(null)
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
+  const askSendRefused = ref(false)
   const answeringAskIds = computed(() => conversationStore.answeringAskIds)
   const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
     'first_open'
@@ -1439,10 +1468,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     ack: AgentTurnAccepted,
     text: string,
     wfContext: WorkflowTurnContext | undefined,
-    attachments?: SentAttachment[],
-    tags?: SentTag[],
-    workflowReferences?: WorkflowReference[],
-    skillScope = skillPacks.scope
+    attachments: SentAttachment[] | undefined,
+    tags: SentTag[] | undefined,
+    workflowReferences: WorkflowReference[] | undefined,
+    skillScope: typeof skillPacks.scope,
+    attempt: number
   ): void {
     const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
@@ -1477,7 +1507,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     observeSkillTurn({ threadId: ack.thread_id, messageId: turnId }, skillScope)
     readyThreadId.value = ack.thread_id
     recordTurnStarted(turnId, startsThread)
-    stopPendingActiveTurn()
+    stopPendingActiveTurn(attempt)
     runAcceptedTurnSideEffect(
       () => onThreadActivated?.(ack.thread_id),
       'agent_thread_activated_callback_failed'
@@ -1493,9 +1523,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
   }
 
-  function stopPendingActiveTurn(): void {
-    const pendingStop = consumeStopPendingAck()
-    if (pendingStop !== null) void stopTurn(pendingStop.method)
+  function stopPendingActiveTurn(attempt: number): void {
+    const pendingStop = consumeStopPendingAck(attempt)
+    if (pendingStop !== null) void stopActiveTurn(pendingStop.method)
   }
 
   function recordSendError(
@@ -1547,10 +1577,29 @@ export function useAgentSession(deps: AgentSessionDeps) {
     text: string,
     accepted: boolean,
     reattached: boolean,
-    threadAtSend: string
+    threadAtSend: string,
+    dismissedAskIds: string[]
   ): void {
     if (threadAtSend !== 'new' && conversationStore.threadId !== threadAtSend)
       return
+    if (
+      parseTurnInProgress(error) !== undefined &&
+      dismissedAskIds.some(conversationStore.activeTurnOwnsAsk)
+    ) {
+      askSendRefused.value = true
+      conversationStore.recordFailedSend(
+        nextLocalErrorId(),
+        text,
+        i18n.global.t('agent.askSendRefused')
+      )
+      reportSendFailure(error)
+      trackAgentError('request_failed', 'pre_acceptance', 'inline_notice', {
+        retryable: isRetryableRequestFailure(error, false)
+      })
+      return
+    }
+    if (!accepted && refusedBeforeAcceptance(error))
+      conversationStore.restoreActiveAsks(dismissedAskIds)
     recordSendError(error, text, accepted, reattached)
   }
 
@@ -1579,7 +1628,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function reattachRefusedTurn(
     error: unknown,
     threadAtSend: string,
-    generation: number
+    generation: number,
+    attempt: number
   ): Promise<boolean> {
     const conflict = parseTurnInProgress(error)
     if (conflict === undefined || threadAtSend === 'new') return false
@@ -1601,8 +1651,24 @@ export function useAgentSession(deps: AgentSessionDeps) {
         activeTurnId === conflict.active_message_id)
     if (reattachGeneration === refusedTurnReattachGeneration)
       refusedTurnReattachGeneration++
-    if (adoptedActiveTurn) stopPendingActiveTurn()
+    if (adoptedActiveTurn) stopPendingActiveTurn(attempt)
     return adoptedActiveTurn
+  }
+
+  // After a 5xx the server may still hold the card open, so show what it holds; a network error gives no answer.
+  async function reloadAfterRefusedSend(
+    threadAtSend: string,
+    generation: number
+  ): Promise<void> {
+    if (threadAtSend === 'new') return
+    const isCurrent = () =>
+      generation === loadGeneration &&
+      ownedGeneration === sessionGeneration &&
+      conversationStore.threadId === threadAtSend
+    await Promise.race([
+      hydrateFromServer(threadAtSend, isCurrent),
+      new Promise<void>((resolve) => setTimeout(resolve, RECONCILE_TIMEOUT_MS))
+    ])
   }
 
   async function recoverFailedSend({
@@ -1611,7 +1677,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sentContext,
     accepted,
     threadAtSend,
-    generation
+    generation,
+    dismissedAskIds,
+    attempt
   }: {
     error: unknown
     text: string
@@ -1619,16 +1687,29 @@ export function useAgentSession(deps: AgentSessionDeps) {
     accepted: boolean
     threadAtSend: string
     generation: number
+    dismissedAskIds: string[]
+    attempt: number
   }): Promise<false> {
     releaseDisownedWorkflow(sentContext, error)
     if (generation !== loadGeneration) return false
     const reattached = await reattachRefusedTurn(
       error,
       threadAtSend,
-      generation
+      generation,
+      attempt
     )
     if (generation !== loadGeneration) return false
-    recordCurrentSendError(error, text, accepted, reattached, threadAtSend)
+    if (!reattached && serverRefusedSendOverCard(error, dismissedAskIds))
+      await reloadAfterRefusedSend(threadAtSend, generation)
+    if (generation !== loadGeneration) return false
+    recordCurrentSendError(
+      error,
+      text,
+      accepted,
+      reattached,
+      threadAtSend,
+      dismissedAskIds
+    )
     return false
   }
 
@@ -1639,9 +1720,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
-    onAccepted?: () => void
+    onAccepted?: () => void,
+    dismissAsk = false
   ): Promise<boolean> {
     const generation = loadGeneration
+    const attempt = sendAttempt
     const skillScopeAtSend = skillPacks.scope
     const threadAtSend = conversationStore.threadId ?? 'new'
     const originContext = workflow?.current()
@@ -1649,6 +1732,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       originContext === undefined ? null : { tabPath: originContext.tabPath }
     const canvasNodeIds = workflow?.canvasSelection?.()
     let sentContext: WorkflowTurnContext | undefined
+    let dismissedAskIds: string[] = []
     let accepted = false
     try {
       await prepareWorkflow()
@@ -1658,6 +1742,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (refusesTarget(text, originContext, wfContext, draft, clientMessageId))
         return false
       sentContext = wfContext
+      dismissedAskIds = dismissIfSentOverCard(dismissAsk)
       const input = buildPostInput(
         threadAtSend,
         text,
@@ -1682,7 +1767,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         attachments,
         tags,
         workflowReferences,
-        skillScopeAtSend
+        skillScopeAtSend,
+        attempt
       )
       rememberMint(input, wfContext, ack.workflow_id)
       return true
@@ -1693,9 +1779,15 @@ export function useAgentSession(deps: AgentSessionDeps) {
         sentContext,
         accepted,
         threadAtSend,
-        generation
+        generation,
+        dismissedAskIds,
+        attempt
       })
     }
+  }
+
+  function dismissIfSentOverCard(dismissAsk: boolean): string[] {
+    return dismissAsk ? conversationStore.dismissActiveAsks() : []
   }
 
   function observeAcceptedTurn(
@@ -1741,7 +1833,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
     clientMessageId?: string,
-    onAccepted?: () => void
+    onAccepted?: () => void,
+    dismissAsk = false
   ): Promise<boolean> {
     if (sending.value) {
       trackSendRefused('send_busy', clientMessageId)
@@ -1756,6 +1849,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     sending.value = true
     const releaseSendGate = sendGateStore.begin()
     sendInFlight = true
+    sendAttempt++
     stopPendingAck = null
     try {
       const sent = await performSend(
@@ -1765,7 +1859,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         workflowReferences,
         selectionWorkflowId,
         clientMessageId,
-        onAccepted
+        onAccepted,
+        dismissAsk
       )
       if (!sent) stopPendingAck = null
       return sent
@@ -1894,13 +1989,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function stopTurn(method?: AgentStopMethod): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
-    if (threadId === null || turnId === null) {
-      // The POST has not acked yet; remember the intent and cancel on ack.
-      // sendInFlight, not this instance's sending: the panel that posted may
-      // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
-      return
-    }
+    // sendInFlight, not this instance's sending: a remounted panel's Stop must reach the send that acks.
+    if (sendInFlight) stopPendingAck = { method, attempt: sendAttempt }
+    if (threadId === null || turnId === null) return
+    // Stop the old turn now too in case the replacement is refused; the click counts once, on the pending stop.
+    await stopActiveTurn(sendInFlight ? undefined : method)
+  }
+
+  async function stopActiveTurn(method?: AgentStopMethod): Promise<void> {
+    const threadId = conversationStore.threadId
+    const turnId = conversationStore.activeTurnId
+    if (threadId === null || turnId === null) return
     if (isStoppingTurn(turnId)) return
     promptEditState.value = { phase: 'stopping', turnId }
     const stopMetadata = captureStopMetadata(
@@ -3114,6 +3213,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     entries: computed(() => conversationStore.entries),
     status: computed(() => conversationStore.status),
     isStreaming: computed(() => conversationStore.isStreaming),
+    sendDismissesAsk: computed(
+      () => conversationStore.activeAskOpen && !askSendRefused.value
+    ),
     notices: computed(() => notices.value),
     threadId: computed(() => conversationStore.threadId)
   }
