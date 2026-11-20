@@ -19,6 +19,7 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
@@ -579,10 +580,9 @@ const settingStore = useSettingStore()
 const crdtLogLevel = computed({
   get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
   set: (level: CrdtLogLevel) => {
-    try {
-      localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
-    } catch (error) {
-      reportError(error, {
+    const outcome = safeLocalStorage.write('Comfy.Agent.CrdtDebug.level', level)
+    if (outcome.result !== 'ok') {
+      reportError(outcome.error, {
         surface: 'agent',
         errorType: 'failure_saving_crdt_debug_level_mirror',
         level: 'warning'
