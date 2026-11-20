@@ -405,6 +405,41 @@ describe('useSubgraphStore', () => {
     }
   )
 
+  it('does not flag an empty user blueprint as a load failure', async () => {
+    const userBlueprints = [
+      {
+        path: 'Image Edit.json/move/subgraphs/my subgraph.json',
+        content: ''
+      },
+      { path: 'corrupt.json', content: '{' },
+      { path: 'kept.json', content: JSON.stringify(mockGraph) }
+    ]
+    vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
+      userBlueprints.map(({ path, content }) => ({
+        path,
+        modified: Date.now(),
+        size: content.length
+      }))
+    )
+    vi.mocked(api.getUserData).mockImplementation(async (file) => {
+      const blueprint = userBlueprints.find(
+        ({ path }) => `subgraphs/${path}` === file
+      )
+      return new Response(blueprint?.content ?? '', { status: 200 })
+    })
+    vi.mocked(api.getGlobalSubgraphs).mockResolvedValue({})
+
+    await store.fetchSubgraphs()
+
+    expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.kept'])
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        description: 'Workflow content is not valid JSON'
+      })
+    ])
+  })
+
   it('should handle global blueprint with rejected data promise gracefully', async () => {
     await mockFetch(
       {},
