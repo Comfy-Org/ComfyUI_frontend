@@ -3,7 +3,7 @@ import type { Page, Request, Response } from '@playwright/test'
 const APP_CHUNK_RESOURCE_TYPES = new Set(['script', 'stylesheet'])
 
 const I18N_404_IN_EVERY_CLOUD_ENVIRONMENT =
-  /^Failed to load resource: the server responded with a status of 404 \([^)]*\) \[https:\/\/[^\s\]]+\/api\/i18n(?:[?#][^\s\]]*)?\]$/
+  /^Failed to load resource: the server responded with a status of 404 \([^)]*\) \[https:\/\/[^\s\]/?#]+\/api\/i18n(?:[?#][^\s\]]*)?\]$/
 
 const SIGNED_OUT_SESSION_401_IN_EVERY_CLOUD_ENVIRONMENT =
   /^Failed to load resource: the server responded with a status of 401 \([^)]*\) \[https:\/\/[^\s\]/?#]+\/api\/auth\/session\]$/

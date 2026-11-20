@@ -47,6 +47,12 @@ describe(isBootConsoleErrorInEveryCloudEnvironment, () => {
       allowed: false
     },
     {
+      name: 'an i18n path nested under another path',
+      error:
+        'Failed to load resource: the server responded with a status of 404 () [https://deploy.example/other/api/i18n]',
+      allowed: false
+    },
+    {
       name: 'the signed-out session 401 resource line',
       error:
         'Failed to load resource: the server responded with a status of 401 () [https://deploy.example/api/auth/session]',
