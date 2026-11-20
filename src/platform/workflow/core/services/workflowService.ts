@@ -312,7 +312,8 @@ export const useWorkflowService = () => {
         {
           name: activeWorkflow.key,
           isTemporary: activeWorkflow.isTemporary
-        }
+        },
+        { minUpdatedAt: activeWorkflow.lastModified }
       )
 
       if (!saved) {
