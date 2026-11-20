@@ -1,4 +1,3 @@
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { Renderer } from '@e2e/fixtures/helpers/PanZoomPerfHelper'
 import {
@@ -7,6 +6,7 @@ import {
   measurePan,
   measureProgress,
   measureZoom,
+  queueProgressFill,
   reportPerf,
   SLOW_PROGRESS_CADENCE
 } from '@e2e/fixtures/helpers/PanZoomPerfHelper'
@@ -15,16 +15,8 @@ const NODE_COUNTS = [60, 245] as const
 const TEST_TIMEOUT_MS = 300_000
 const QUEUE_PANEL_SETTING = 'Comfy.Queue.QPOV2'
 const QUEUE_LAYOUTS = [
-  {
-    name: 'floating-queue',
-    docked: false,
-    fill: (comfyPage: ComfyPage) => comfyPage.queuePanel.progressNodeFill
-  },
-  {
-    name: 'docked-queue',
-    docked: true,
-    fill: (comfyPage: ComfyPage) => comfyPage.actionbar.inlineProgressNodeFill
-  }
+  { name: 'floating-queue', docked: false },
+  { name: 'docked-queue', docked: true }
 ] as const
 
 function definePanZoomTests(renderer: Renderer) {
@@ -56,7 +48,7 @@ function definePanZoomTests(renderer: Renderer) {
     })
   }
 
-  for (const { name, docked, fill } of QUEUE_LAYOUTS) {
+  for (const { name, docked } of QUEUE_LAYOUTS) {
     test.describe(name, () => {
       test.use({ initialSettings: { [QUEUE_PANEL_SETTING]: docked } })
 
@@ -74,7 +66,7 @@ function definePanZoomTests(renderer: Renderer) {
               comfyPage,
               `${prefix}-progress-${name}`,
               renderer,
-              { queueFill: fill(comfyPage) }
+              { queueFill: queueProgressFill(comfyPage, docked) }
             )
           )
         })

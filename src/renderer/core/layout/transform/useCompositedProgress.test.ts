@@ -33,7 +33,7 @@ function scrubbedTime(element: HTMLElement) {
 
 describe('useCompositedProgress', () => {
   beforeEach(() => {
-    vi.useFakeTimers()
+    vi.useFakeTimers({ shouldAdvanceTime: false })
     reducedMotion.value = false
     vi.mocked(usePreferredReducedMotion).mockReturnValue(motionPreference)
   })
@@ -95,6 +95,27 @@ describe('useCompositedProgress', () => {
     progress.value = 0.8
     await nextTick()
 
+    expect(scrubbedTime(element)).toBe(800)
+  })
+
+  it('jumps to the target when reduced motion turns on partway through easing', async () => {
+    const element = document.createElement('div')
+    const progress = ref(0.2)
+    showProgress(element, progress, KEYFRAMES)
+
+    progress.value = 0.8
+    await vi.advanceTimersByTimeAsync(100)
+    expect(scrubbedTime(element)).toBeLessThan(800)
+
+    reducedMotion.value = true
+    await nextTick()
+    expect(scrubbedTime(element)).toBe(800)
+
+    await vi.advanceTimersByTimeAsync(100)
+    expect(scrubbedTime(element)).toBe(800)
+
+    reducedMotion.value = false
+    await nextTick()
     expect(scrubbedTime(element)).toBe(800)
   })
 

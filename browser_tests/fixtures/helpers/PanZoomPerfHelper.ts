@@ -223,6 +223,8 @@ async function expectFilled(fills: Locator, count: number, fraction: number) {
           Math.max(
             ...elements.map((element) => {
               const track = element.parentElement!.getBoundingClientRect()
+              if (!element.checkVisibility({ visibilityProperty: true }))
+                return Infinity
               const filled =
                 (element.getBoundingClientRect().right - track.left) /
                 track.width
@@ -233,6 +235,12 @@ async function expectFilled(fills: Locator, count: number, fraction: number) {
       )
     )
     .toBeLessThan(FILL_TOLERANCE)
+}
+
+export function queueProgressFill(comfyPage: ComfyPage, docked: boolean) {
+  return docked
+    ? comfyPage.actionbar.inlineProgressNodeFill
+    : comfyPage.queuePanel.progressNodeFill
 }
 
 export async function measureProgress(
@@ -292,7 +300,7 @@ export async function measureProgress(
             jobId: PROGRESS_JOB_ID
           }
         ),
-      cadence
+      { ...cadence, updates }
     )
     const shown = ((updates - 1) * step) / PROGRESS_MAX
     if (renderer === 'vue') {
