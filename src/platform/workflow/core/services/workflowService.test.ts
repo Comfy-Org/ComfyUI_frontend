@@ -1460,6 +1460,42 @@ describe('useWorkflowService', () => {
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
     })
 
+    it('force-reloads the active instance itself after its lookup entry was replaced', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/replaced-entry.json'
+      })
+      const replacement = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/replaced-entry.json'
+      })
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+      workflowStore.attachWorkflow(replacement)
+
+      await useWorkflowService().openWorkflow(active, { force: true })
+
+      expect(vi.mocked(app.loadGraphData).mock.calls[0]?.[3]).toBe(active)
+    })
+
+    it('does not reset the active tracker with the data of a stale same-path object', async () => {
+      const workflowStore = useWorkflowStore()
+      const active = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/stale-data.json'
+      })
+      const stale = createWorkflow(null, {
+        loadable: true,
+        path: 'workflows/stale-data.json'
+      })
+      workflowStore.attachWorkflow(active)
+      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
+
+      await useWorkflowService().afterLoadNewGraph(stale, makeWorkflowData())
+
+      expect(active.changeTracker!.reset).not.toHaveBeenCalled()
+    })
+
     it('keeps the active workflow on the canvas when a stale same-path object is opened', async () => {
       const workflowStore = useWorkflowStore()
       const active = createWorkflow(null, {
