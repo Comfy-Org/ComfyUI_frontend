@@ -6,8 +6,8 @@ import {
   lanesAlong,
   nodePlacement,
   positionForBox
-} from '@/lib/litegraph/src/utils/arrange'
-import type { AlignAction, Axis } from '@/lib/litegraph/src/utils/arrange'
+} from '@/renderer/core/layout/arrange/arrange'
+import type { AlignAction, Axis } from '@/renderer/core/layout/arrange/arrange'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

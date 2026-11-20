@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { evenGap } from '@/lib/litegraph/src/utils/arrange'
+import { evenGap } from '@/renderer/core/layout/arrange/arrange'
 
 import { gapAfterTravel, setGap } from './distributeGaps'
 

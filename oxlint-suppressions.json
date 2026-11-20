@@ -398,11 +398,6 @@
       "count": 1
     }
   },
-  "src/lib/litegraph/src/utils/arrange.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/lib/litegraph/src/utils/namedValuesShadowDiffTelemetry.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
@@ -771,6 +766,11 @@
   "src/renderer/core/canvas/litegraph/slotCalculations.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 3
+    }
+  },
+  "src/renderer/core/layout/arrange/arrange.ts": {
+    "comfy/no-positional-boolean-params": {
+      "count": 1
     }
   },
   "src/renderer/core/layout/slots/slotIdentifier.ts": {

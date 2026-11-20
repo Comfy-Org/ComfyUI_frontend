@@ -1,5 +1,5 @@
-import { evenGap, spaceEvenly } from '@/lib/litegraph/src/utils/arrange'
-import type { Axis, VisualBox } from '@/lib/litegraph/src/utils/arrange'
+import { evenGap, spaceEvenly } from '@/renderer/core/layout/arrange/arrange'
+import type { Axis, VisualBox } from '@/renderer/core/layout/arrange/arrange'
 
 type RowEnd = 'start' | 'end'
 

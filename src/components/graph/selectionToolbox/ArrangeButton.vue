@@ -98,7 +98,7 @@ import {
 } from '@/composables/graph/useArrangeNodes'
 import { useAlignSelection } from '@/renderer/core/canvas/smartGuides/useAlignSelection'
 import { useArrangeSession } from '@/composables/graph/useArrangeSession'
-import type { AlignAction } from '@/lib/litegraph/src/utils/arrange'
+import type { AlignAction } from '@/renderer/core/layout/arrange/arrange'
 
 const { t } = useI18n()
 const { activeLayout, gap, start, previewGap, commitGap, reset } =

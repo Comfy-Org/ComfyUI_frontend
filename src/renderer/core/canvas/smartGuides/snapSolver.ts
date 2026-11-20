@@ -1,7 +1,7 @@
 import type { Point2D, Size2D } from '@comfyorg/shared-frontend-utils/geometry'
 
-import { ALIGNED_EPSILON } from '@/lib/litegraph/src/utils/arrange'
-import type { Axis, VisualBox } from '@/lib/litegraph/src/utils/arrange'
+import { ALIGNED_EPSILON } from '@/renderer/core/layout/arrange/arrange'
+import type { Axis, VisualBox } from '@/renderer/core/layout/arrange/arrange'
 
 export interface ResizeEdges {
   x?: 'left' | 'right'
