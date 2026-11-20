@@ -11,8 +11,9 @@
   },
   "include": [
     "**/*.ts",
-    "../global.d.ts",
+    "../browser_tests/types/**/*.d.ts",
     "../src/types/**/*.d.ts",
-    "../src/types/index.ts"
+    "../src/types/index.ts",
+    "../global.d.ts"
   ]
 }

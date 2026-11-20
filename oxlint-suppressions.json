@@ -828,11 +828,6 @@
       "count": 1
     }
   },
-  "src/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 3
-    }
-  },
   "src/renderer/extensions/vueNodes/layout/useNodeDrag.test.ts": {
     "comfy/no-unread-hoisted-mock-state": {
       "count": 1
@@ -1117,21 +1112,6 @@
   "src/workbench/extensions/agent/composables/agent/useAgentSession.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/CrdtDevPanel.clipboard.test.ts": {
-    "comfy/no-unread-hoisted-mock-state": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugGate.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
-  "src/workbench/extensions/agent/crdt/crdtDebugReport.ts": {
-    "regexp/no-dupe-disjunctions": {
-      "count": 2
     }
   },
   "src/workbench/extensions/agent/crdt/liveGraphApplier.test.ts": {
