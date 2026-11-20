@@ -29,8 +29,15 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
-import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
+import {
+  refreshMissingNodeReplacements,
+  rescanAndSurfaceMissingNodes
+} from './missingNodeScan'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type {
+  MissingNodeType,
+  NodeReplacement
+} from '@/platform/workflowErrors/nodeReplacement/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
@@ -270,5 +277,32 @@ describe('scanMissingNodes (via rescanAndSurfaceMissingNodes)', () => {
     const error = getMissingNodesError(store)
     const missing = error.nodeTypes[0]
     expect(typeof missing !== 'string' && missing.type).toBe('OriginalType')
+  })
+})
+
+describe('refreshMissingNodeReplacements', () => {
+  it('keeps a replacement the scan matched from saved widget values', () => {
+    const soleEntry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    useNodeReplacementStore().replacements = { StringConstant: [soleEntry] }
+    const scanned: MissingNodeType = {
+      type: 'StringConstant',
+      nodeId: '1',
+      isReplaceable: true,
+      replacement: soleEntry
+    }
+    const store = useMissingNodesErrorStore()
+    store.setMissingNodeTypes([scanned])
+
+    refreshMissingNodeReplacements()
+
+    expect(getMissingNodesError(store).nodeTypes).toEqual([scanned])
   })
 })

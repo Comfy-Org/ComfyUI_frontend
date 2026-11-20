@@ -66,7 +66,7 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     widgetValues: FlattenableWorkflowNode['widgets_values']
   ): NodeReplacement | null {
     const entries = entriesFor(nodeType)
-    const match = matchPack(entries, cnrId)
+    const match = matchPack(entries, cnrId?.toLowerCase())
     if (match) return match
     const [sole] = entries
     const fitsSoleEntry =

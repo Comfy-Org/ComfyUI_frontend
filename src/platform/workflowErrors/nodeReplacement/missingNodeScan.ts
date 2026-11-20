@@ -32,10 +32,9 @@ function replacementFieldsFor(
 
 function withCurrentReplacement(nodeType: MissingNodeType): MissingNodeType {
   if (typeof nodeType === 'string') return nodeType
-  return {
-    ...nodeType,
-    ...replacementFieldsFor(nodeType.type, nodeType.cnrId)
-  }
+  const current = replacementFieldsFor(nodeType.type, nodeType.cnrId)
+  if (!current.isReplaceable && nodeType.replacement) return nodeType
+  return { ...nodeType, ...current }
 }
 
 /** Scan the live graph for unregistered node types and build a full MissingNodeType list. */

@@ -116,6 +116,12 @@ describe('useNodeReplacementStore', () => {
         expected: 'FromPackB'
       },
       {
+        name: 'the entry for the saved pack written in another case',
+        cnrId: 'Pack-B',
+        widgetValues: ['text'],
+        expected: 'FromPackB'
+      },
+      {
         name: 'nothing for a pack without an entry',
         cnrId: 'comfy-core',
         widgetValues: ['text'],
