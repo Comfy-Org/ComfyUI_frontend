@@ -2576,8 +2576,8 @@ export class LGraphNode
   updateArea(ctx?: CanvasRenderingContext2D): void {
     const bounds = this._boundingRect
     this.measure(bounds, ctx)
-    this.onBounding?.(bounds)
     this._measuredPos = [this.pos[0], this.pos[1]]
+    this.onBounding?.(bounds)
 
     const renderArea = this._renderArea
     renderArea.set(bounds)

@@ -311,3 +311,26 @@ describe('boundingRect after a move', () => {
     }
   )
 })
+
+test('an onBounding hook that reads boundingRect sees the fresh measurement', () => {
+  layoutStore.resetForTests()
+  const graph = new LGraph()
+  const node = new LGraphNode('test')
+  graph.add(node)
+  node.pos = [40, 60]
+  node.size = [100, 50]
+  node.onBounding = (bounds) => {
+    bounds[3] = node.boundingRect[3] + 20
+  }
+  node.updateArea()
+  node.pos = [140, 260]
+
+  node.updateArea()
+
+  expect([...node.boundingRect]).toEqual([
+    140,
+    260 - LiteGraph.NODE_TITLE_HEIGHT,
+    100,
+    50 + LiteGraph.NODE_TITLE_HEIGHT + 20
+  ])
+})
