@@ -6,7 +6,8 @@ hooks.
 ## Extending a type
 
 `extend(selector, apply)` calls `apply` once for each type the selector picks,
-now and as types register later. The selector is a type name, a list of
+now and as types register later, and again for each type when the
+definitions reload (`defs.refresh`, or the editor reloading them). The selector is a type name, a list of
 names, a pattern, `{ category }`, or a test of the definition. The builder's
 methods can be called only while `apply` runs.
 

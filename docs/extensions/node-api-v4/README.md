@@ -129,10 +129,10 @@ in these guides against the published types.
   server cannot be reached; and `defs.refresh`, when fetching the definitions
   fails.
 - A listener or hook registration (`on…`, `extend`, `define`,
-  `registerImporter`, `addBadge`, `addSidebarTab`) returns a function that
-  removes only that registration and is safe to call twice. A badge, button,
-  panel or overlay in `comfy.ui` returns a handle whose `remove()` is safe to
-  call twice. `settings.declare`, `commands.register` and
+  `registerImporter`, `addBadge`, `addSidebarTab`, `mountViewportPanel`)
+  returns a function that removes only that registration and is safe to call
+  twice. A badge, button or overlay in `comfy.ui` returns a handle whose
+  `remove()` is safe to call twice. `settings.declare`, `commands.register` and
   `localization.registerCatalog` last for the page. A builder's methods add
   to the extension, which its own disposer removes.
 - A callback the pack gives that throws is reported, and neither the editor

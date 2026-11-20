@@ -7,7 +7,9 @@ object that names the entity and reads it live each time it is asked.
 
 - There is one handle per entity, so two handles to one node are the same
   object. A handle is a stable `Map` or `WeakMap` key, and
-  `comfy.sameEntity(a, b)` gives the same answer as `a === b`.
+  `comfy.sameEntity(a, b)` gives the same answer as `a === b` for node,
+  group, slot, widget and graph-scope handles. It is `false` for anything
+  else, `comfy.graph` and a document handle included.
 - A handle belongs to the document it came from and to its own graph, and
   stops resolving whenever a workflow loads: another document, a return to
   this document's tab, or a reload of it. Take a fresh handle when the
@@ -78,6 +80,10 @@ comfy.onDocumentClosed((document) => {
 const workflow = comfy.workflow.snapshot()
 console.info(workflow ? Object.keys(workflow) : 'no document yet')
 ```
+
+`onDocumentClosed` fires when a document is closed, and also when the host
+replaces an open tab that is not on screen because its file changed on the
+server; the file then opens as a new document with a new id.
 
 `onWorkflowLoaded` fires after every load, undo and redo, with the open
 document. A handle taken before any other load, of this document or
