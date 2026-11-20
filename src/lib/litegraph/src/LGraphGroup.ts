@@ -245,7 +245,8 @@ export class LGraphGroup implements Positionable, IPinnable, IColorable {
     this.setBounds(x, y, width, height)
   }
 
-  private setBounds(x: number, y: number, width: number, height: number): void {
+  /** Sets position and size in one layout operation. */
+  setBounds(x: number, y: number, width: number, height: number): void {
     this.bounds.set([x, y, width, height])
     if (!this.graph || this.id === -1) return
 

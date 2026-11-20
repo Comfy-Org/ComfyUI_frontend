@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { alignBoxes } from './alignBoxes'
+import { alignBoxes, laneBox, lanesAlong } from './alignBoxes'
 import type { AlignAction } from './alignBoxes'
 
 const a = { x: 10, y: 0, width: 100, height: 60, titleHeight: 30 }
@@ -109,6 +109,35 @@ describe('alignBoxes', () => {
     ]
     expect(alignBoxes(boxes, 'distributeX').map((box) => box.x)).toEqual([
       0, 500, 290
+    ])
+  })
+})
+
+describe('lanesAlong', () => {
+  it('reports the lanes a distribution moved as units, evenly spaced as lane boxes', () => {
+    const boxes = [0, 105, 125, 500].map((x, i) => ({
+      x,
+      y: i * 20,
+      width: 100,
+      height: 10,
+      titleHeight: 0
+    }))
+    const after = alignBoxes(boxes, 'distributeX')
+    const lanes = lanesAlong(after, 'x')
+    expect(after.map((box) => box.x)).toEqual([0, 240, 260, 500])
+    expect(lanes).toEqual([[0], [1, 2], [3]])
+    expect(
+      lanes.map((lane) => {
+        const { x, width } = laneBox(
+          lane.map((i) => after[i]),
+          'x'
+        )
+        return [x, width]
+      })
+    ).toEqual([
+      [0, 100],
+      [240, 120],
+      [500, 100]
     ])
   })
 })

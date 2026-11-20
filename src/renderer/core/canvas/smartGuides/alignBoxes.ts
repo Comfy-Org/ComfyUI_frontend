@@ -37,19 +37,32 @@ function sameLane(p: SnapBox, q: SnapBox, axis: Axis): boolean {
   )
 }
 
-function lanesAlong(boxes: SnapBox[], axis: Axis): number[][] {
-  return orderAlong(boxes, axis).reduce<number[][]>((lanes, { index }) => {
-    const joins = (lane: number[]) =>
-      lane.some((other) => sameLane(boxes[index], boxes[other], axis))
-    return [
-      ...lanes.filter((lane) => !joins(lane)),
-      [...lanes.filter(joins).flat(), index]
-    ]
-  }, [])
+/** Groups box indices into lanes of boxes that overlap or line up along `axis`, ordered by lane start. */
+export function lanesAlong(boxes: SnapBox[], axis: Axis): number[][] {
+  return orderAlong(boxes, axis)
+    .reduce<number[][]>((lanes, { index }) => {
+      const joins = (lane: number[]) =>
+        lane.some((other) => sameLane(boxes[index], boxes[other], axis))
+      return [
+        ...lanes.filter((lane) => !joins(lane)),
+        [...lanes.filter(joins).flat(), index]
+      ]
+    }, [])
+    .sort(
+      (p, q) =>
+        laneBox(
+          p.map((i) => boxes[i]),
+          axis
+        )[axis] -
+        laneBox(
+          q.map((i) => boxes[i]),
+          axis
+        )[axis]
+    )
 }
 
-function laneBox(boxes: SnapBox[], lane: number[], axis: Axis): SnapBox {
-  const members = lane.map((i) => boxes[i])
+/** The box spanning every member of a lane along `axis`. */
+export function laneBox(members: SnapBox[], axis: Axis): SnapBox {
   const start = Math.min(...members.map((b) => b[axis]))
   const end = Math.max(...members.map((b) => b[axis] + sizeAlong(b, axis)))
   const size = axis === 'x' ? { width: end - start } : { height: end - start }
@@ -57,11 +70,14 @@ function laneBox(boxes: SnapBox[], lane: number[], axis: Axis): SnapBox {
 }
 
 function distribute(boxes: SnapBox[], axis: Axis): SnapBox[] {
-  const lanes = lanesAlong(boxes, axis).sort(
-    (p, q) => laneBox(boxes, p, axis)[axis] - laneBox(boxes, q, axis)[axis]
-  )
+  const lanes = lanesAlong(boxes, axis)
   if (lanes.length < 3) return boxes
-  const before = lanes.map((lane) => laneBox(boxes, lane, axis))
+  const before = lanes.map((lane) =>
+    laneBox(
+      lane.map((i) => boxes[i]),
+      axis
+    )
+  )
   const first = before[0]
   const last = before[before.length - 1]
   const span = last[axis] + sizeAlong(last, axis) - first[axis]

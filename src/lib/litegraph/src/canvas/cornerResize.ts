@@ -40,7 +40,7 @@ export const hasWestEdge = (corner: CompassCorners): boolean =>
 export const hasNorthEdge = (corner: CompassCorners): boolean =>
   corner === 'NE' || corner === 'NW'
 
-/** Resizes `start` by dragging `corner`, keeping the opposite corner fixed; with a grid, snaps the dragged edges and then the size. */
+/** Resizes `start` by dragging `corner`, keeping the opposite corner fixed; with a grid, snaps a dragged west or north edge to the grid and rounds a dragged east or south size. */
 export function resizeFromCorner(
   start: Bounds,
   corner: CompassCorners,
@@ -51,25 +51,22 @@ export function resizeFromCorner(
 ): Bounds {
   const west = hasWestEdge(corner)
   const north = hasNorthEdge(corner)
-  let x = west ? start.x + deltaX : start.x
-  let y = north ? start.y + deltaY : start.y
-  let width = start.width + (west ? -deltaX : deltaX)
-  let height = start.height + (north ? -deltaY : deltaY)
+  const x = west ? start.x + deltaX : start.x
+  const y = north ? start.y + deltaY : start.y
+  const width = start.width + (west ? -deltaX : deltaX)
+  const height = start.height + (north ? -deltaY : deltaY)
   if (!grid) return { x, y, width, height }
 
   const edge: Point = [x, y]
   snapPoint(edge, grid)
-  if (west) {
-    width += x - edge[0]
-    x = edge[0]
-  }
-  if (north) {
-    height += y - edge[1]
-    y = edge[1]
-  }
   const size: Point = [width, height]
   snapPoint(size, grid, sizeRounding)
-  return { x, y, width: size[0], height: size[1] }
+  return {
+    x: west ? edge[0] : x,
+    y: north ? edge[1] : y,
+    width: west ? start.x + start.width - edge[0] : size[0],
+    height: north ? start.y + start.height - edge[1] : size[1]
+  }
 }
 
 /** Grows `box` to the minimum size, keeping the edges opposite `corner` in place. */

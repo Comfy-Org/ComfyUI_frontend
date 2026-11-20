@@ -68,6 +68,7 @@ import {
   gapAfterTravel,
   setGap
 } from '@/renderer/core/canvas/smartGuides/distributeGaps'
+import { laneBox } from '@/renderer/core/canvas/smartGuides/alignBoxes'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
 import type {
   Axis,
@@ -92,14 +93,35 @@ const { forwardEventToCanvas } = useCanvasInteractions()
 const handles = shallowRef<GapHandle[]>([])
 const axis = computed(() => distributeSession.value?.axis)
 
-function sessionNodes(canvas: LGraphCanvas): LGraphNode[] | undefined {
+function sessionLanes(canvas: LGraphCanvas): LGraphNode[][] | undefined {
   const session = distributeSession.value
   const { graph } = canvas
   if (!session || !graph || session.graph !== graph || canvas.read_only) return
   if (canvas.selectedItems.size !== session.selectionSize) return
-  const nodes = session.nodeIds.map((id) => graph.getNodeById(id))
+  const lanes = session.lanes.map((lane) =>
+    lane.map((id) => graph.getNodeById(id))
+  )
+  const nodes = lanes.flat()
   if (nodes.some((node) => !node || !canvas.selectedItems.has(node))) return
-  return nodes.filter((node): node is LGraphNode => !!node)
+  return lanes.map((lane) => lane.filter((node): node is LGraphNode => !!node))
+}
+
+interface LanePlacement {
+  members: NodePlacement[]
+  box: SnapBox
+}
+
+function placeLanes(lanes: LGraphNode[][], along: Axis): LanePlacement[] {
+  return lanes.map((lane) => {
+    const members = lane.map(nodePlacement)
+    return {
+      members,
+      box: laneBox(
+        members.map(({ box }) => box),
+        along
+      )
+    }
+  })
 }
 
 function computeHandles(
@@ -143,7 +165,9 @@ watch(
           if (handles.value.length) handles.value = []
           return
         }
-        const boxes = sessionNodes(canvas)?.map(snapBoxOf)
+        const boxes = sessionLanes(canvas)?.map((lane) =>
+          laneBox(lane.map(snapBoxOf), along)
+        )
         const gap = boxes && evenGap(boxes, along)
         if (!boxes || gap === undefined || gap < 0) {
           clearHandles()
@@ -157,20 +181,35 @@ watch(
   { immediate: true }
 )
 
-function applyBoxes(
+function applyLaneBoxes(
   canvas: LGraphCanvas,
   rootGraphId: string,
-  placements: NodePlacement[],
+  lanes: LanePlacement[],
+  along: Axis,
   boxes: SnapBox[]
 ) {
   mutations.batchMoveNodes(
     rootGraphId,
-    placements.map((placement, i) => ({
-      nodeId: placement.node.id,
-      position: positionForBox(placement, boxes[i])
-    }))
+    lanes.flatMap(({ members, box }, i) => {
+      const shift = boxes[i][along] - box[along]
+      return members.map((placement) => ({
+        nodeId: placement.node.id,
+        position: positionForBox(placement, {
+          ...placement.box,
+          [along]: placement.box[along] + shift
+        })
+      }))
+    })
   )
   canvas.setDirty(true, true)
+}
+
+function editableLanes() {
+  const { canvas, rootGraphId } = canvasStore
+  const nodeLanes = canvas && sessionLanes(canvas)
+  const along = axis.value
+  if (!canvas || !nodeLanes || !rootGraphId || !along) return
+  return { canvas, rootGraphId, along, lanes: placeLanes(nodeLanes, along) }
 }
 
 let endActiveDrag: (() => void) | undefined
@@ -178,10 +217,9 @@ onBeforeUnmount(() => endActiveDrag?.())
 
 function startDrag(event: PointerEvent, index: number) {
   if (event.button !== 0) return forwardEventToCanvas(event)
-  const { canvas, rootGraphId } = canvasStore
-  const nodes = canvas && sessionNodes(canvas)
-  const along = axis.value
-  if (!canvas || !nodes || !rootGraphId || !along) return
+  const editable = editableLanes()
+  if (!editable) return
+  const { canvas, rootGraphId, along, lanes } = editable
   event.preventDefault()
   event.stopPropagation()
 
@@ -199,10 +237,9 @@ function startDrag(event: PointerEvent, index: number) {
     canvas.graph === graph &&
     canvasStore.rootGraphId === rootGraphId &&
     workflowStore.activeWorkflow === workflow &&
-    !!sessionNodes(canvas)
+    !!sessionLanes(canvas)
 
-  const placements = nodes.map(nodePlacement)
-  const startBoxes = placements.map(({ box }) => box)
+  const startBoxes = lanes.map(({ box }) => box)
   const pointerAlong = (e: PointerEvent) =>
     along === 'x' ? e.clientX : e.clientY
   const startPointer = pointerAlong(event)
@@ -218,10 +255,11 @@ function startDrag(event: PointerEvent, index: number) {
       if (!isStillEditable()) return endDrag()
       const travel = (pointerAlong(moveEvent) - startPointer) / scale
       const gap = gapAfterTravel(startBoxes, along, index, travel)
-      applyBoxes(
+      applyLaneBoxes(
         canvas,
         rootGraphId,
-        placements,
+        lanes,
+        along,
         setGap(startBoxes, along, index, gap)
       )
     }),
@@ -250,19 +288,22 @@ const NUDGE_KEYS: Record<string, number> = {
 function nudge(event: KeyboardEvent, index: number) {
   const direction = NUDGE_KEYS[event.key]
   if (!direction || event.ctrlKey || event.altKey || event.metaKey) return
-  if (endActiveDrag) return
-  const { canvas, rootGraphId } = canvasStore
-  const nodes = canvas && sessionNodes(canvas)
-  const along = axis.value
-  if (!canvas || !nodes || !rootGraphId || !along) return
+  const editable = !endActiveDrag && editableLanes()
+  if (!editable) return
+  const { canvas, rootGraphId, along, lanes } = editable
   event.preventDefault()
   event.stopPropagation()
 
-  const placements = nodes.map(nodePlacement)
-  const boxes = placements.map(({ box }) => box)
+  const boxes = lanes.map(({ box }) => box)
   const gap =
     (evenGap(boxes, along) ?? 0) + direction * (event.shiftKey ? 10 : 1)
-  applyBoxes(canvas, rootGraphId, placements, setGap(boxes, along, index, gap))
+  applyLaneBoxes(
+    canvas,
+    rootGraphId,
+    lanes,
+    along,
+    setGap(boxes, along, index, gap)
+  )
   workflowStore.activeWorkflow?.changeTracker.captureCanvasState()
 }
 </script>

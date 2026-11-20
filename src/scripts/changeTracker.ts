@@ -587,6 +587,7 @@ export class ChangeTracker implements WorkflowChangeTracker {
   squashState = useDebounceFn(() => {
     if (
       this !== useWorkflowStore().activeWorkflow?.changeTracker ||
+      this.changeCount > 0 ||
       ChangeTracker.isLoadingGraph ||
       isChangeCaptureSuppressed() ||
       !canCaptureCanvas(this)

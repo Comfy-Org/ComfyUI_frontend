@@ -131,13 +131,18 @@ export function useNodeResize(
 
       const titleBand = resized.height - removeNodeTitleHeight(resized.height)
       const body = { ...resized, height: resized.height - titleBand }
-      const snapped =
-        resizeSnap?.resize(body, activeCorner, { snapToGrid }) ?? body
-      const withTitle = { ...snapped, height: snapped.height + titleBand }
-
       const minWidth =
         parseFloat(nodeElement.style.getPropertyValue('min-width') || '0') ||
         MIN_NODE_WIDTH
+      const rawWidth = Math.max(body.width, minWidth)
+      const rawMinHeight = measureMinContentHeight(rawWidth)
+      const snapped =
+        resizeSnap?.resize(body, activeCorner, {
+          snapToGrid,
+          min: { width: minWidth, height: rawMinHeight - titleBand }
+        }) ?? body
+      const withTitle = { ...snapped, height: snapped.height + titleBand }
+
       const width = Math.max(withTitle.width, minWidth)
       const {
         x: newX,
@@ -148,7 +153,7 @@ export function useNodeResize(
         withTitle,
         activeCorner,
         minWidth,
-        measureMinContentHeight(width)
+        width === rawWidth ? rawMinHeight : measureMinContentHeight(width)
       )
 
       const payload: ResizeCallbackPayload = {

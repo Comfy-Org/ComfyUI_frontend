@@ -1,7 +1,9 @@
 import type { LGraph, LLink } from '@comfyorg/graph-model/entityRegistry'
 
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
+import { litegraph } from '@/lib/litegraph/src/litegraphInstance'
 import { inputLinkId } from '@/lib/litegraph/src/node/slotLinks'
+import { getSlotPosition } from '@/renderer/core/canvas/litegraph/slotCalculations'
 
 export function getLinkEndpointPositions(
   graph: LGraph,
@@ -13,7 +15,11 @@ export function getLinkEndpointPositions(
     if (!inputNode || !input || !subgraphInput.linkIds.includes(link.id)) {
       return
     }
-    return [subgraphInput.pos, inputNode.getInputPos(link.target_slot)]
+
+    const endPos = litegraph().vueNodesMode
+      ? getSlotPosition(inputNode, link.target_slot, true)
+      : inputNode.getInputPos(link.target_slot)
+    return [subgraphInput.pos, endPos]
   }
 
   const { subgraphOutput, outputNode, output } = resolved
@@ -21,7 +27,11 @@ export function getLinkEndpointPositions(
     if (!outputNode || !output || subgraphOutput.linkIds[0] !== link.id) {
       return
     }
-    return [outputNode.getOutputPos(link.origin_slot), subgraphOutput.pos]
+
+    const startPos = litegraph().vueNodesMode
+      ? getSlotPosition(outputNode, link.origin_slot, false)
+      : outputNode.getOutputPos(link.origin_slot)
+    return [startPos, subgraphOutput.pos]
   }
 
   if (
@@ -32,8 +42,12 @@ export function getLinkEndpointPositions(
     return
   if (!outputNode || !output) return
 
-  return [
-    outputNode.getOutputPos(link.origin_slot),
-    inputNode.getInputPos(link.target_slot)
-  ]
+  const endPos: Point = litegraph().vueNodesMode
+    ? getSlotPosition(inputNode, link.target_slot, true)
+    : inputNode.getInputPos(link.target_slot)
+  const startPos: Point = litegraph().vueNodesMode
+    ? getSlotPosition(outputNode, link.origin_slot, false)
+    : outputNode.getOutputPos(link.origin_slot)
+
+  return [startPos, endPos]
 }

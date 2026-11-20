@@ -4,13 +4,15 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSelectionState } from '@/composables/graph/useSelectionState'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { alignBoxes } from '@/renderer/core/canvas/smartGuides/alignBoxes'
+import {
+  alignBoxes,
+  lanesAlong
+} from '@/renderer/core/canvas/smartGuides/alignBoxes'
 import type { AlignAction } from '@/renderer/core/canvas/smartGuides/alignBoxes'
 import {
   nodePlacement,
   positionForBox
 } from '@/renderer/core/canvas/smartGuides/dragSnapSession'
-import { orderAlong } from '@/renderer/core/canvas/smartGuides/distributeGaps'
 import { distributeSession } from '@/renderer/core/canvas/smartGuides/smartGuidesState'
 import type { Axis } from '@/renderer/core/canvas/smartGuides/snapSolver'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -57,10 +59,16 @@ export function useAlignSelection() {
     const after = alignBoxes(before, action)
     mutations.batchMoveNodes(
       rootGraphId,
-      placements.map((placement, i) => ({
-        nodeId: placement.node.id,
-        position: positionForBox(placement, after[i])
-      }))
+      placements.flatMap((placement, i) =>
+        after[i].x === before[i].x && after[i].y === before[i].y
+          ? []
+          : [
+              {
+                nodeId: placement.node.id,
+                position: positionForBox(placement, after[i])
+              }
+            ]
+      )
     )
     nodes.forEach((node, i) => {
       const { width, height, titleHeight } = after[i]
@@ -76,8 +84,8 @@ export function useAlignSelection() {
         ? {
             graph: canvas.graph,
             axis,
-            nodeIds: orderAlong(after, axis).map(
-              ({ index }) => nodes[index].id
+            lanes: lanesAlong(after, axis).map((lane) =>
+              lane.map((index) => nodes[index].id)
             ),
             selectionSize: canvas.selectedItems.size
           }
