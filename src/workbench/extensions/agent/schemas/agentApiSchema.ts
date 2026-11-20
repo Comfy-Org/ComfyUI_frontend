@@ -238,6 +238,19 @@ export const zDisownedWorkflowError = z.object({
 })
 
 /**
+ * The 403 body the local agent server returns when the request's credential
+ * no longer owns the agent process - the signed-in account changed and
+ * nobody has handed ownership to the new one yet
+ * (`services/agent/local/internal/server/authority.go`, `bindOwner`).
+ * `POST /agent/owner`, carrying the new credential as auth and the previous
+ * owner's in the body, moves ownership so the refused request can be
+ * retried (BE-25360).
+ */
+export const zCredentialNotOwnerError = z.object({
+  code: z.literal('credential_not_owner')
+})
+
+/**
  * The 409 body the agent service returns when the thread already has a turn in
  * progress (`rejectTurnInProgress` in `services/agent/server/agent_handler.go`).
  * `type` is the discriminator — a 409 from the cancel or answer endpoints
@@ -261,7 +274,8 @@ const zAgentThinkingData = z
   .object({
     delta: z.string(),
     message_id: z.string(),
-    thread_id: z.string()
+    thread_id: z.string(),
+    tool_call_id: z.string().optional().catch(undefined)
   })
   .passthrough()
 

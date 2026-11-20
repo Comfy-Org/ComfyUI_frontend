@@ -75,6 +75,74 @@ export type PromptErrorResponse = {
   [key: string]: unknown
 }
 
+/**
+ * Represents a model file with metadata
+ */
+export type ModelFile = {
+  /**
+   * The filename of the model
+   */
+  name: string
+  /**
+   * Index of the path where this model is located
+   */
+  pathIndex: number
+  /**
+   * File size in bytes
+   */
+  size: number
+}
+
+/**
+ * Standard error response with a machine-readable code and human-readable message.
+ */
+export type ErrorResponse = {
+  code: string
+  /**
+   * Optional open object carrying structured, machine-readable context about the error (e.g. offending field names, validation specifics). Absent for most errors; consumers must not assume any particular shape.
+   */
+  details?: {
+    [key: string]: unknown
+  }
+  message: string
+}
+
+export type GetModelsInFolderData = {
+  body?: never
+  path: {
+    /**
+     * The folder name to list models from
+     */
+    folder: string
+  }
+  query?: never
+  url: '/api/experiment/models/{folder}'
+}
+
+export type GetModelsInFolderErrors = {
+  /**
+   * Folder not found or no models in folder
+   */
+  404: ErrorResponse
+  /**
+   * Internal server error
+   */
+  500: ErrorResponse
+}
+
+export type GetModelsInFolderError =
+  GetModelsInFolderErrors[keyof GetModelsInFolderErrors]
+
+export type GetModelsInFolderResponses = {
+  /**
+   * Success - List of models in the folder
+   */
+  200: Array<ModelFile>
+}
+
+export type GetModelsInFolderResponse =
+  GetModelsInFolderResponses[keyof GetModelsInFolderResponses]
+
 export type ExecutePromptData = {
   body: PromptRequest
   path?: never

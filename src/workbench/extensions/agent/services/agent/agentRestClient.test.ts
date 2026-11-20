@@ -10,6 +10,7 @@ import * as authRejection from '@/platform/auth/authRejection'
 import { api } from '@/scripts/api'
 
 import { withAgentAuth } from './agentAuth'
+import { rememberPreviousCredentialForHandoff } from './agentOwnerHandoff'
 
 import type {
   AgentThreadSummary,
@@ -21,8 +22,10 @@ vi.mock(import('./agentAuth'))
 
 import {
   AgentApiError,
+  AgentOwnerHandoffFailedError,
   AgentResponseUnreadableError,
   createAgentRestClient,
+  isCredentialNotOwnerRefusal,
   isLoopbackOnlyRefusal
 } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
@@ -1543,6 +1546,104 @@ describe('error mapping', () => {
       .catch((e: unknown) => e)
 
     expect(reportError).not.toHaveBeenCalled()
+  })
+
+  describe("the local agent's owner-handoff refusal (BE-25360)", () => {
+    const refusal = { code: 'credential_not_owner' }
+
+    beforeEach(() => {
+      rememberPreviousCredentialForHandoff(null)
+    })
+
+    it('does not report it as an auth rejection', async () => {
+      rememberPreviousCredentialForHandoff('previous-cred')
+      respond(jsonResponse(403, refusal))
+      respond(new Response(null, { status: 204 }))
+      respond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+
+      await makeClient().getRunMode()
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(markErrorReported).not.toHaveBeenCalled()
+    })
+
+    it('hands off to the new account and retries the refused request on 204', async () => {
+      rememberPreviousCredentialForHandoff('previous-cred')
+      respond(jsonResponse(403, refusal))
+      respond(new Response(null, { status: 204 }))
+      respond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+
+      const result = await makeClient().getRunMode()
+
+      expect(result).toEqual({ mode: 'auto', credit_limit: null })
+      expect(api.fetchApi).toHaveBeenCalledTimes(3)
+      const [handoffRoute, handoffInit] = vi.mocked(api.fetchApi).mock.calls[1]
+      expect(handoffRoute).toBe('/agent/owner')
+      expect(handoffInit?.method).toBe('POST')
+      expect(JSON.parse(handoffInit?.body as string)).toEqual({
+        previous_credential: 'previous-cred'
+      })
+    })
+
+    it('spends the pending credential at most once', async () => {
+      rememberPreviousCredentialForHandoff('previous-cred')
+      respond(jsonResponse(403, refusal))
+      respond(new Response(null, { status: 204 }))
+      respond(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await makeClient().getRunMode()
+
+      respond(jsonResponse(403, refusal))
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(error).toBeInstanceOf(AgentApiError)
+      expect(api.fetchApi).toHaveBeenCalledTimes(4)
+    })
+
+    it('falls back to telling the user to restart ComfyUI when the handoff call itself is refused', async () => {
+      rememberPreviousCredentialForHandoff('stale-previous-cred')
+      respond(jsonResponse(403, refusal))
+      respond(jsonResponse(403, { error: 'the previous credential is stale' }))
+
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(error).toBeInstanceOf(AgentOwnerHandoffFailedError)
+      expect((error as Error).cause).toBeInstanceOf(AgentApiError)
+      expect(api.fetchApi).toHaveBeenCalledTimes(2)
+    })
+
+    it('surfaces the original refusal unchanged when no previous credential was remembered', async () => {
+      respond(jsonResponse(403, refusal))
+
+      const error = await makeClient()
+        .getRunMode()
+        .catch((e: unknown) => e)
+
+      expect(error).toBeInstanceOf(AgentApiError)
+      expect(error).not.toBeInstanceOf(AgentOwnerHandoffFailedError)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
+    })
+
+    it.for([
+      ['a 403 with no code at all', 403, { error: 'access denied' }],
+      ['another 403 code', 403, { error: 'nope', code: 'origin_not_allowed' }],
+      ['the same code on a 401', 401, refusal]
+    ] as const)('is false for %s', async ([, status, body]) => {
+      expect(
+        isCredentialNotOwnerRefusal(new AgentApiError('x', status, body))
+      ).toBe(false)
+    })
+
+    it.for([
+      ['undefined', undefined],
+      ['null', null],
+      ['the bare code string', 'credential_not_owner']
+    ] as const)('is false for %s rather than throwing', ([, value]) => {
+      expect(isCredentialNotOwnerRefusal(value)).toBe(false)
+    })
   })
 
   it('keeps a genuinely unreadable POST response distinct without exposing its route', async () => {

@@ -55,7 +55,7 @@ onScopeDispose(() => {
 })
 
 async function useLocalAgent() {
-  const prompt = prepareBrief()
+  const prompt = await prepareBrief()
   if (prompt && (await openLocalAgent(prompt, () => isActive)) && isActive)
     emit('done')
 }

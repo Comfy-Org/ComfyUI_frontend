@@ -88,12 +88,12 @@ import { formatCredits, formatUsdFromCents } from '@/base/credits/comfyCredits'
 import Button from '@comfyorg/design-system/button/Button'
 import BillingInfoTip from '@/platform/billing/legacy160/platform/billing/components/billingTab/BillingInfoTip.vue'
 import Skeleton from '@comfyorg/design-system/skeleton/Skeleton'
-import { reportError } from '@comfyorg/telemetry/reportError'
 import type { AutoReloadSettings } from '@comfyorg/billing-core'
 import { zAutoReloadSettings } from '@comfyorg/ingest-types/zod'
 import { formatPlanDate } from '@/platform/billing/legacy160/platform/billing/components/billingTab/planRow'
 import { useBillingAutoTopUpCard } from '@/platform/billing/legacy160/platform/billing/composables/useBillingAutoTopUpCard'
 import { useAutoTopUpCardViewed } from '@/platform/billing/composables/useAutoTopUpCardViewed'
+import { reportSavedPaymentMethodsReadFailure } from '@/platform/billing/composables/reportSavedPaymentMethodsReadFailure'
 import { useBillingCapabilities } from '@/platform/billing/composables/useBillingCapabilities'
 import { usePlatformBillingLink } from '@/platform/billing/composables/usePlatformHandoff'
 import { platformAutoTopUpPath } from '@/platform/billing/platformAutoTopUpPath'
@@ -373,10 +373,10 @@ const savedPaymentMethodsRead = computedAsync(async () => {
   if (result.status === 'ok') {
     return { scope: requestScope, methods: result.value }
   }
-  reportError(new Error(`Saved payment methods read failed: ${result.code}`), {
-    errorType: 'auto_top_up_payment_methods_read_failed',
-    surface: 'billing'
-  })
+  reportSavedPaymentMethodsReadFailure(
+    result.code,
+    'auto_top_up_payment_methods_read_failed'
+  )
   return null
 }, null)
 

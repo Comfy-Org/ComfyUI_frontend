@@ -632,6 +632,20 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
       },
       {
+        method: 'trackAgentTargetUnavailable',
+        expected: {
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        },
+        invoke: (registry) =>
+          registry.trackAgentTargetUnavailable({
+            cause: 'restore_not_listed',
+            workflow_id: 'wf-1',
+            startup_tab_restore_settled: false
+          })
+      },
+      {
         method: 'trackAgentSendGated',
         expected: {
           gate: 'coach',
