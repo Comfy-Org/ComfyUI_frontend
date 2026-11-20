@@ -5,6 +5,7 @@
       :title="$t('releaseToast.newVersionAvailable')"
       :subtitle="latestRelease?.version"
       :position
+      class="data-[position=bottom-left]:left-[calc(var(--sidebar-default-connected-width)+1rem)] data-[position=bottom-right]:right-[calc(var(--sidebar-default-connected-width)+1rem)]"
     >
       <SanitizedHtml
         class="pl-14 text-sm leading-[1.21] font-normal text-muted-foreground"
@@ -208,13 +209,3 @@ defineExpose({
   handleUpdate
 })
 </script>
-
-<style scoped>
-[data-position='bottom-left'] {
-  left: calc(var(--sidebar-default-connected-width) + 1rem);
-}
-
-[data-position='bottom-right'] {
-  right: calc(var(--sidebar-default-connected-width) + 1rem);
-}
-</style>
