@@ -1209,6 +1209,10 @@ importers:
         version: 6.0.3
 
   packages/comfyui-api-types:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.7
     devDependencies:
       '@hey-api/openapi-ts':
         specifier: 0.97.3
