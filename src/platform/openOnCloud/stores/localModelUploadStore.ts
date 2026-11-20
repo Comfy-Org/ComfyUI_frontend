@@ -193,7 +193,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function canTake(model: MissingModel): boolean {
-    return blockedBy(model) === undefined
+    return pickOf(model).status === 'stored' || blockedBy(model) === undefined
   }
 
   function pickOf(model: MissingModel): ModelPick {
@@ -209,7 +209,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   }
 
   function choose(model: MissingModel, file: File): void {
-    if (isUploading.value || !canTake(model) || isPendingPick(pickOf(model)))
+    if (isUploading.value || blockedBy(model) || isPendingPick(pickOf(model)))
       return
     setPick(model, { status: 'chosen', file })
     if (upload.value.phase === 'failed' && !upload.value.models)

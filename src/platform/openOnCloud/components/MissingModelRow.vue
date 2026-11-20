@@ -20,6 +20,7 @@
       <label
         v-if="
           choosable &&
+          !blocked &&
           size !== undefined &&
           pick.status !== 'staged' &&
           pick.status !== 'submitted'
@@ -88,6 +89,7 @@ const BLOCKED_COPY = {
 } as const satisfies Record<ModelUploadBlock, string>
 
 const note = computed(() => {
+  if (pick.status === 'stored') return null
   if (blocked)
     return { tone: 'text-muted-foreground', text: t(BLOCKED_COPY[blocked]) }
   if (pick.status === 'wrongFile')

@@ -404,6 +404,41 @@ describe('useLocalModelUploadStore', () => {
     expect(store.pickOf(lora).status).toBe('stored')
   })
 
+  it('resumes a partially stored batch when the upload folders are unavailable', async () => {
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValueOnce({ ok: true, taskId: 'first-task' })
+      .mockResolvedValueOnce({ ok: true, taskId: 'second-task' })
+    const poll = vi
+      .mocked(localModelUploadApi.waitForStoredModel)
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({ ok: false, reason: 'storagePending' })
+      .mockResolvedValueOnce({ ok: true })
+    const models = [lora, ckpt]
+    const store = await prepared(models)
+    store.choose(lora, loraFile)
+    store.choose(ckpt, ckptFile)
+    await store.start(models)
+
+    expect(store.pickOf(lora).status).toBe('stored')
+    expect(store.pickOf(ckpt).status).toBe('submitted')
+    await prepared(models, [], [])
+
+    store.choose(lora, loraFile)
+    expect(store.pickOf(lora).status).toBe('stored')
+    expect(models.every(store.canTake)).toBe(true)
+    expect(store.canUpload(models)).toBe(true)
+    await store.start(models)
+
+    expect(transfer).toHaveBeenCalledTimes(2)
+    expect(poll.mock.calls.map(([id]) => id)).toEqual([
+      'first-task',
+      'second-task',
+      'second-task'
+    ])
+    expect(store.upload).toEqual({ phase: 'done' })
+  })
+
   it.for([
     { reason: 'failed', expected: 'storagePending' },
     { reason: 'planUnavailable', expected: 'planUnavailable' }
