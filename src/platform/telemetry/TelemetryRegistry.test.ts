@@ -24,12 +24,43 @@ import type {
   AgentPaywallShownMetadata,
   AgentStarterPromptClickedMetadata,
   AgentWorkflowAppliedMetadata,
+  ProactiveGreetingEnrolledMetadata,
   TelemetryProvider
 } from '@comfyorg/telemetry/types'
 
 type AgentDispatchMethod = keyof TelemetryProvider & `trackAgent${string}`
 
 describe('TelemetryRegistry', () => {
+  it('reports whether the enrollment provider admitted the exposure', async () => {
+    const registry = new TelemetryRegistry()
+    const metadata: ProactiveGreetingEnrolledMetadata = {
+      user_id: 'user',
+      workspace_id: 'workspace',
+      group_key: '["user","workspace"]',
+      variant: 'generic',
+      canvas_state: 'empty'
+    }
+    await expect(
+      registry.trackProactiveGreetingEnrolled(metadata)
+    ).resolves.toBe(false)
+
+    const trackProactiveGreetingEnrolled = vi
+      .fn<NonNullable<TelemetryProvider['trackProactiveGreetingEnrolled']>>()
+      .mockResolvedValueOnce(true)
+      .mockRejectedValueOnce(new Error('provider unavailable'))
+    registry.registerProvider({ trackProactiveGreetingEnrolled })
+
+    await expect(
+      registry.trackProactiveGreetingEnrolled(metadata)
+    ).resolves.toBe(true)
+    expect(trackProactiveGreetingEnrolled).toHaveBeenCalledExactlyOnceWith(
+      metadata
+    )
+    await expect(
+      registry.trackProactiveGreetingEnrolled(metadata)
+    ).resolves.toBe(false)
+  })
+
   it('dispatches feature flag evaluations to supporting providers', () => {
     const trackFeatureFlagEvaluation = vi.fn()
     const registry = new TelemetryRegistry()

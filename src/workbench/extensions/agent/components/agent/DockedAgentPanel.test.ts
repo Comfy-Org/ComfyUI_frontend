@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, nextTick, ref } from 'vue'
+import type { PropType } from 'vue'
 
 import type { SubscriptionInfo } from '@/platform/billing/composables/types'
 import { i18n } from '@/i18n'
@@ -14,6 +15,8 @@ import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/a
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/agentRunModeStore'
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
+import { useProactiveGreetingAssignment } from '@/workbench/extensions/agent/composables/agent/useProactiveGreetingAssignment'
+import type { AgentGreetingAssignment } from '@/workbench/extensions/agent/types/proactiveGreeting'
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
@@ -21,11 +24,17 @@ vi.mock(import('@comfyorg/telemetry'))
 vi.mock(import('@/platform/billing/composables/useBillingContext'))
 const billingContext = useBillingContext()
 vi.mock(import('@/workbench/extensions/agent/services/agent/agentAuth'))
+vi.mock(
+  import('@/workbench/extensions/agent/composables/agent/useProactiveGreetingAssignment')
+)
 
 const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
 beforeEach(() => {
+  vi.mocked(useProactiveGreetingAssignment).mockReturnValue(
+    computed(() => undefined)
+  )
   vi.spyOn(api, 'fetchApi').mockImplementation(fetchApi)
 })
 
@@ -50,7 +59,10 @@ vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
     __esModule: true,
     default: defineComponent({
       name: 'AgentPanelRoot',
-      setup() {
+      props: {
+        proactiveAssignment: Object as PropType<AgentGreetingAssignment>
+      },
+      setup(props) {
         if (rootLiveness.setupFailures > 0) {
           rootLiveness.setupFailures--
           throw new Error('panel root setup failed')
@@ -64,6 +76,7 @@ vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
         onMounted(() => renderStore.reach('drawn'))
         return () =>
           h('div', { 'data-testid': 'agent-panel-root-stub' }, [
+            h('span', props.proactiveAssignment?.variant ?? 'unassigned'),
             h(
               'button',
               {
@@ -94,6 +107,22 @@ function renderPanel() {
 }
 
 describe('DockedAgentPanel', () => {
+  it('passes current assignment to the mounted root and removes it when disabled', async () => {
+    const assignment = ref<AgentGreetingAssignment | undefined>({
+      userId: 'user-a',
+      workspaceId: 'workspace-a',
+      variant: 'C'
+    })
+    vi.mocked(useProactiveGreetingAssignment).mockReturnValue(
+      computed(() => assignment.value)
+    )
+    openPanel()
+    renderPanel()
+    expect(await screen.findByText('C')).toBeVisible()
+    assignment.value = undefined
+    expect(await screen.findByText('unassigned')).toBeVisible()
+  })
+
   beforeEach(() => {
     window.innerWidth = 1024
     localStorage.clear()

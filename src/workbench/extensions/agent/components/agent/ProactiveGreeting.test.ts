@@ -2,6 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import { i18n } from '@/i18n'
 import { useAgentComposerStore } from '@/workbench/extensions/agent/stores/agent/agentComposerStore'
@@ -127,4 +128,48 @@ it('updates only an untouched owned prefill when the locale changes', async () =
     i18n.global.locale.value = previousLocale
     i18n.global.setLocaleMessage('fr', previousMessages)
   }
+})
+
+it('renders and prefills the copy in the locale recorded at enrollment', () => {
+  const i18n = createI18n({
+    legacy: false,
+    locale: 'fr',
+    fallbackLocale: 'en',
+    messages: {
+      en: {
+        agent: {
+          proactiveGreeting: {
+            firstOpen: {
+              title: 'How can I help?',
+              description: 'Start here',
+              prompt: 'What can you help me with?'
+            }
+          }
+        }
+      },
+      fr: {
+        agent: {
+          greeting: 'Bonjour {name}',
+          proactiveGreeting: {
+            firstOpen: {
+              title: 'Comment puis-je aider ?',
+              description: 'Commencez ici',
+              prompt: 'Comment peux-tu m’aider ?'
+            }
+          }
+        }
+      }
+    }
+  })
+  const greeting = { variant: 'B', canvas: 'empty', copyLocale: 'en' } as const
+
+  render(EmptyState, {
+    props: { greeting, userName: 'Ryan' },
+    global: { plugins: [i18n] }
+  })
+
+  expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
+    'How can I help?'
+  )
+  expect(useAgentComposerStore().draft).toBe('What can you help me with?')
 })
