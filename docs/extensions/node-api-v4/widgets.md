@@ -49,8 +49,9 @@ stopSerialize?.()
 a workflow loads, an undo or redo restores it, or an import runs, and that
 includes `onWorkflowLoaded` listeners. On a DOM widget (a mount, canvas,
 declared type or text area) one commit by the user runs `activate` twice
-(core issue #23742). `beforeSerialize` changes only the queued prompt, not the
-saved workflow. A listener belongs to the widget it was added to: a widget
+(core issue #23742). `beforeSerialize` runs each time the app builds a prompt:
+to queue it, and for Export, Export (API) and the share dialog. It changes only
+that prompt, not the saved workflow. A listener belongs to the widget it was added to: a widget
 added again under the same name, or rebuilt by undo, starts with none.
 
 A combo's `options.values` may be a list, a function called with no
@@ -115,6 +116,10 @@ meter?.redraw()
 ```
 
 A mounted value is any value a workflow can save; `null` reads back as `''`.
+`destroy` runs once, when the host releases the widget: it is removed, or its
+node is deleted. A declared widget type's teardown, the function its `render`
+returns, runs once in the same way. Both rely on the host fix #23520, which
+is in `main`.
 `serialize` decides whether it is saved, and follows whether `defaultValue` is
 given; `sendToPrompt` decides whether it is sent, and follows `serialize`.
 

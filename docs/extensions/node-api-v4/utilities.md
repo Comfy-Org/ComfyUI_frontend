@@ -139,16 +139,17 @@ removeTab()
 
 ### Panels and overlays over the graph
 
-`mountViewportPanel` returns its handle at once, also in the module body
+`mountViewportPanel` returns a disposer at once, also in the module body
 before the app has a graph view. The panel renders once, when it joins the
-graph view, and `destroy` is called only for a panel that rendered. A panel
-sits above every graph overlay, so a press on it does not reach an
-interactive overlay.
+graph view. It has no `destroy`: the pack tears its own content down, then
+calls the disposer, which takes the panel off. A panel sits above every graph
+overlay, so a press on it does not reach an interactive overlay.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
 
-const panel = comfy.ui.mountViewportPanel({
+let stopTidy: (() => void) | undefined
+const removePanel = comfy.ui.mountViewportPanel({
   id: 'MyPack.toolbar',
   ariaLabel: 'My pack tools',
   anchor: 'top-right',
@@ -156,13 +157,18 @@ const panel = comfy.ui.mountViewportPanel({
   render(container) {
     const button = document.createElement('button')
     button.textContent = 'Tidy'
-    button.addEventListener('click', () => {
-      void comfy.commands.run('MyPack.tidy')
-    })
+    const tidy = () => void comfy.commands.run('MyPack.tidy')
+    button.addEventListener('click', tidy)
     container.append(button)
+    stopTidy = () => button.removeEventListener('click', tidy)
   }
 })
-comfy.onReady(() => console.info(typeof panel.remove))
+
+function closePanel() {
+  stopTidy?.()
+  removePanel()
+}
+comfy.onReady(() => console.info(typeof closePanel))
 ```
 
 Browser features that V2 offered through a guest SDK (`files`, `clipboard`,
