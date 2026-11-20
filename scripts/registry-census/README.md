@@ -162,8 +162,8 @@ load never settles under happy-dom, which blocked the whole pack until the
 300 s test timeout.
 
 Those errors are too common for a floor, but the share of packs free of them
-(counting a hook that did not settle as a failure) is stable: exactly 292
-packs failed in every one of eight arm and renderer runs. The verdict gates
+(counting a hook that did not settle as a failure, in any phase it is driven
+in) is stable: the same packs failed on both arms and both renderers. The verdict gates
 it as a delta instead: it may not drop more than 0.5 points, about 13 packs,
 below the previous main baseline, so a frontend change that breaks `setup` or
 `init` for a group of packs fails the verdict. Baselines saved before this

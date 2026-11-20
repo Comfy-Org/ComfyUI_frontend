@@ -391,6 +391,20 @@ class NewHookDeltaGate(unittest.TestCase):
                      ' (from 100.0% to 99.0%)'],
                 )
 
+    def test_a_load_hook_that_never_settles_breaches(self) -> None:
+        rows = population()
+        for r in rows:
+            r['ops']['load:afterLoadGraph'] = {
+                'err': '', 'sig': '{}', 'depr': '', 'desync': ''}
+        rows[0]['ops']['load:afterLoadGraph']['err'] = (
+            'Error: afterLoadGraph did not settle within 10000 ms')
+        v = sm.evaluate(rows, {}, self.BASELINE, 'run-2')
+        self.assertEqual(
+            v.breaches,
+            ['packs free of new-hook errors dropped 1.0pp'
+             ' (from 100.0% to 99.0%)'],
+        )
+
     def test_an_unchanged_new_hook_rate_passes(self) -> None:
         rows = broken(30, lambda r: add_hook_error(r, 'setup'))
         prev = {**self.BASELINE, 'newHookFreePct': 70.0}
