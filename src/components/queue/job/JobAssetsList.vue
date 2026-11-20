@@ -123,6 +123,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { iconForJobState } from '@/utils/queueDisplay'
 import { isActiveJobState } from '@/utils/queueUtil'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 import { buildVirtualJobRows } from './buildVirtualJobRows'
 import type { VirtualJobRow } from './buildVirtualJobRows'
@@ -364,8 +365,14 @@ function isPreviewableCompletedJob(job: JobListItem) {
 
 const executionStore = useExecutionStore()
 
-function focusJob(job: JobListItem) {
-  if (job.canFocus) executionStore.focusJob(job.id)
+async function focusJob(job: JobListItem) {
+  if (!job.canFocus || executionStore.focusJob(job.id)) return
+  const workflow = executionStore.openWorkflowForJob(job.id)
+  if (!workflow) return
+  const opened = await useWorkflowService().openWorkflow(workflow, {
+    initiator: 'user'
+  })
+  if (opened) executionStore.focusJob(job.id)
 }
 
 function emitViewItem(job: JobListItem) {

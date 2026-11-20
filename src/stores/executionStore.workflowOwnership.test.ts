@@ -1,4 +1,4 @@
-import { nextTick } from 'vue'
+import { nextTick, toRaw } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -26,6 +26,18 @@ function workflow(path: string): LoadedComfyWorkflow {
 
 const workflowA = workflow('workflows/a.json')
 const workflowB = workflow('workflows/b.json')
+const uniqueWorkflow = createMockLoadedWorkflow({
+  path: 'workflows/unique.json',
+  instanceId: 'instance-unique',
+  activeState: { id: 'unique-graph-id' },
+  initialState: { id: 'unique-graph-id' }
+})
+const closedWorkflow = createMockLoadedWorkflow({
+  path: 'workflows/closed.json',
+  instanceId: 'instance-closed',
+  activeState: { id: 'closed-graph-id' },
+  initialState: { id: 'closed-graph-id' }
+})
 
 function promptNode() {
   return { inputs: {}, class_type: 'TestNode', _meta: { title: 'Node' } }
@@ -77,6 +89,58 @@ describe('executionStore workflow ownership', () => {
 
   it('rejects a frame that names no job at all', () => {
     expect(store.rememberStampAndCheckActiveWorkflow(undefined)).toBe(false)
+  })
+
+  describe('finding the open tab a job belongs to', () => {
+    it.for<{
+      name: string
+      register: (s: ReturnType<typeof useExecutionStore>) => void
+      expected: LoadedComfyWorkflow | undefined
+    }>([
+      {
+        name: 'the workflow it was queued from',
+        register: () => queueJobFrom('job', workflowB),
+        expected: workflowB
+      },
+      {
+        name: 'the tab instance',
+        register: (s) =>
+          s.ensureSessionWorkflowPath(
+            'job',
+            'workflows/renamed.json',
+            workflowB.instanceId
+          ),
+        expected: workflowB
+      },
+      {
+        name: 'the session path',
+        register: (s) => s.ensureSessionWorkflowPath('job', workflowB.path),
+        expected: workflowB
+      },
+      {
+        name: 'a graph id only one tab holds',
+        register: (s) => {
+          openTabs(uniqueWorkflow)
+          s.registerJobWorkflowIdMapping('job', 'unique-graph-id')
+        },
+        expected: uniqueWorkflow
+      },
+      {
+        name: 'nothing, for a graph id two tabs share',
+        register: (s) =>
+          s.registerJobWorkflowIdMapping('job', 'shared-graph-id'),
+        expected: undefined
+      },
+      {
+        name: 'nothing, for a job whose tab is closed',
+        register: () => queueJobFrom('job', closedWorkflow),
+        expected: undefined
+      }
+    ])('resolves $name', ({ register, expected }) => {
+      register(store)
+
+      expect(toRaw(store.openWorkflowForJob('job'))).toBe(expected)
+    })
   })
 
   describe('the session path, when no tab instance is known', () => {

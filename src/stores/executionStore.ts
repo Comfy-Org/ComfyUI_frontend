@@ -48,6 +48,7 @@ import {
   normalizeRelayedNodeErrors
 } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
+import { jobProgressFraction, pickNextFocusedJob } from '@/utils/jobFocusUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
 import { zComfyApiWorkflow } from '@comfyorg/graph-model/workflowSchema'
 import { zQueueInfo } from '@comfyorg/ingest-types/zod'
@@ -472,13 +473,12 @@ export const useExecutionStore = defineStore('execution', () => {
   })
 
   function executionProgressForJob(jobId: JobId): number {
-    const nodes = Object.hasOwn(queuedJobs.value, jobId)
-      ? Object.values(queuedJobs.value[jobId].nodes)
-      : []
-    if (nodes.length > 0) return nodes.filter(Boolean).length / nodes.length
-    const states = Object.values(nodeProgressStatesByJob.value[jobId] ?? {})
-    if (states.length === 0) return 0
-    return states.filter((n) => n.state === 'finished').length / states.length
+    return jobProgressFraction(
+      Object.hasOwn(queuedJobs.value, jobId)
+        ? Object.values(queuedJobs.value[jobId].nodes)
+        : [],
+      Object.values(nodeProgressStatesByJob.value[jobId] ?? {})
+    )
   }
 
   function executingNodeForJob(jobId: JobId): ExecutionNodeInfo | null {
@@ -678,8 +678,11 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function handOffActiveJob() {
-    const started = startedJobIdsByStart()
-    setActiveJob(newestJobOwnedByActiveWorkflow() ?? started.at(-1) ?? null)
+    setActiveJob(
+      pickNextFocusedJob(startedJobIdsByStart(), (jobId) =>
+        rememberStampAndCheckActiveWorkflow(jobId)
+      )
+    )
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -1416,6 +1419,27 @@ export const useExecutionStore = defineStore('execution', () => {
     else showActiveJobProgress()
   }
 
+  function openWorkflowForJob(jobId: JobId): ComfyWorkflow | undefined {
+    const workflow = jobIdToWorkflow.get(jobId)
+    if (workflow && workflowStore.isOpen(workflow)) return workflow
+    const instanceId = jobIdToWorkflowInstanceId.get(jobId)
+    const byInstance =
+      instanceId &&
+      workflowStore.openWorkflows.find((w) => w.instanceId === instanceId)
+    if (byInstance) return byInstance
+    const path = jobIdToSessionWorkflowPath.value.get(jobId)
+    const byPath = path && workflowStore.getWorkflowByPath(path)
+    if (byPath && workflowStore.isOpen(byPath)) return byPath
+    const graphId =
+      jobIdToStampedWorkflowId.get(jobId) ?? jobIdToWorkflowId.value.get(jobId)
+    const byGraph = graphId
+      ? workflowStore.openWorkflows.filter(
+          (w) => (w.activeState?.id ?? w.initialState?.id) === graphId
+        )
+      : []
+    return byGraph.length === 1 ? byGraph[0] : undefined
+  }
+
   function focusJob(jobId: JobId): boolean {
     if (queuedJobs.value[jobId]?.executionStartedAt === undefined) return false
     if (!rememberStampAndCheckActiveWorkflow(jobId)) return false
@@ -1454,6 +1478,7 @@ export const useExecutionStore = defineStore('execution', () => {
     rememberStampAndCheckActiveWorkflow,
     rememberStampAndCheckOutputOwner,
     focusJob,
+    openWorkflowForJob,
     executionProgressForJob,
     executingNodeForJob,
     executingNodeProgressForJob,
