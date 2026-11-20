@@ -45,8 +45,71 @@ describe(isBootConsoleErrorInEveryCloudEnvironment, () => {
       error:
         'Failed to load resource: the server responded with a status of 404 () [https://deploy.example/assets/index-abc.js]',
       allowed: false
+    },
+    {
+      name: 'an i18n path nested under another path',
+      error:
+        'Failed to load resource: the server responded with a status of 404 () [https://deploy.example/other/api/i18n]',
+      allowed: false
+    },
+    {
+      name: 'the signed-out session 401 resource line',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example/api/auth/session]',
+      allowed: true
+    },
+    {
+      name: 'a session probe with a query',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example/api/auth/session?x=1]',
+      allowed: false
+    },
+    {
+      name: 'a session path carried in a query value',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example/api/auth/session?next=/api/auth/session]',
+      allowed: false
+    },
+    {
+      name: 'a session path nested under another path',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example/other/api/auth/session]',
+      allowed: false
+    },
+    {
+      name: 'the signed-out session 401 on a host with a port',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example:8443/api/auth/session]',
+      allowed: true
+    },
+    {
+      name: 'a server error from the session endpoint',
+      error:
+        'Failed to load resource: the server responded with a status of 500 () [https://deploy.example/api/auth/session]',
+      allowed: false
+    },
+    {
+      name: 'a 403 from the session endpoint',
+      error:
+        'Failed to load resource: the server responded with a status of 403 () [https://deploy.example/api/auth/session]',
+      allowed: false
+    },
+    {
+      name: 'a 401 from a neighbouring auth endpoint',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example/api/auth/session/refresh]',
+      allowed: false
+    },
+    {
+      name: 'a 401 from another API endpoint',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example/api/user]',
+      allowed: false
     }
-  ])('allows only the known i18n 404: $name', ({ error, allowed }) => {
-    expect(isBootConsoleErrorInEveryCloudEnvironment(error)).toBe(allowed)
-  })
+  ])(
+    'allows only the known signed-out boot lines: $name',
+    ({ error, allowed }) => {
+      expect(isBootConsoleErrorInEveryCloudEnvironment(error)).toBe(allowed)
+    }
+  )
 })
