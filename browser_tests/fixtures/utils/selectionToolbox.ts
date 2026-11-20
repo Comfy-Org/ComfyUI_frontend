@@ -21,3 +21,11 @@ export async function openMoreOptions(comfyPage: ComfyPage): Promise<Locator> {
   await expect(menu.getByText('Copy', { exact: true })).toBeVisible()
   return menu
 }
+
+/** Opens the selection toolbox "Arrange" popover. */
+export async function openArrange(comfyPage: ComfyPage): Promise<void> {
+  await expect(comfyPage.selectionToolbox).toBeVisible()
+  await comfyPage.selectionToolbox
+    .getByRole('button', { name: 'Arrange', exact: true })
+    .click()
+}
