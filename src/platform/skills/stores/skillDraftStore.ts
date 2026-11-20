@@ -57,7 +57,7 @@ function writeDrafts(scope: string, drafts: SkillDrafts): void {
       localStorage.removeItem(key)
     else localStorage.setItem(key, JSON.stringify(drafts))
   } catch {
-    return
+    console.warn('Failed to persist the skill draft')
   }
 }
 

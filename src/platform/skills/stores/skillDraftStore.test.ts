@@ -99,6 +99,21 @@ describe('skillDraftStore', () => {
     }
   )
 
+  it('keeps the draft for this session and warns when storage rejects the write', () => {
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Quota exceeded', 'QuotaExceededError')
+    })
+    const skills = useSkillPacksStore()
+    const drafts = useSkillDraftStore()
+
+    drafts.setDraft(skills.scope, { kind: 'new' }, PORTRAIT)
+
+    expect(drafts.newSkillDraft).toEqual(PORTRAIT)
+    expect(console.warn).toHaveBeenCalledExactlyOnceWith(
+      'Failed to persist the skill draft'
+    )
+  })
+
   it.for(['landscape', '__proto__', 'constructor', 'toString'])(
     'reads back the edit draft of a skill named %s from storage',
     (name) => {
