@@ -161,7 +161,7 @@ describe('edit contracts', () => {
   })
 
   describe('slot references', () => {
-    it('read a position once, and refuse one read through a getter', () => {
+    it('read a position once, as every object argument is read, even through a getter', () => {
       let reads = 0
       const counted = {
         get index() {
@@ -170,11 +170,9 @@ describe('edit contracts', () => {
         }
       }
 
-      expect(() => handle.inputs.remove(counted)).toThrow(
-        /^remove needs a slot id, a slot name or \{ index \}/
-      )
-      expect(reads).toBe(0)
-      expect(node.inputs).toHaveLength(2)
+      expect(handle.inputs.remove(counted)).toBe(true)
+      expect(reads).toBe(1)
+      expect(node.inputs).toHaveLength(1)
     })
 
     it.for([
