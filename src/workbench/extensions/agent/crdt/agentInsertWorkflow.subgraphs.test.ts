@@ -310,17 +310,15 @@ describe('insert_workflow materializes subgraphs correctly', () => {
       ]
     })
     blueprintGraph.subgraphs.set(subgraph.id, subgraph)
+    const [modeInput, stepsInput] = subgraph.inputs
     const comboInterior = LiteGraph.createNode('combo-widget')!
     comboInterior.id = toNodeId(8)
     subgraph.add(comboInterior)
-    subgraph.inputNode.slots[0].connect(comboInterior.inputs[0], comboInterior)
+    modeInput.connect(comboInterior.inputs[0], comboInterior)
     const numberInterior = LiteGraph.createNode('number-widget')!
     numberInterior.id = toNodeId(9)
     subgraph.add(numberInterior)
-    subgraph.inputNode.slots[1].connect(
-      numberInterior.inputs[0],
-      numberInterior
-    )
+    stepsInput.connect(numberInterior.inputs[0], numberInterior)
     const host = createTestSubgraphNode(subgraph, { id: 1 })
     blueprintGraph.add(host)
     const modeWidget = host.widgets.find((w) => w.name === 'mode')

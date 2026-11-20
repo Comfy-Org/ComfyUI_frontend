@@ -656,6 +656,7 @@ describe('SubgraphNode widget name collision on rename', () => {
         { name: 'prompt_b', type: 'STRING' }
       ]
     })
+    const slots = [...subgraph.inputNode.slots]
 
     // Create two interior nodes with widgets
     const nodeA = new LGraphNode('NodeA')
@@ -664,7 +665,7 @@ describe('SubgraphNode widget name collision on rename', () => {
     nodeA.addOutput('out', 'STRING')
     nodeA.addWidget('text', 'value', '', () => {})
     subgraph.add(nodeA)
-    subgraph.inputNode.slots[0].connect(nodeA.inputs[0], nodeA)
+    slots[0].connect(nodeA.inputs[0], nodeA)
 
     const nodeB = new LGraphNode('NodeB')
     nodeB.addInput('value', 'STRING')
@@ -672,7 +673,7 @@ describe('SubgraphNode widget name collision on rename', () => {
     nodeB.addOutput('out', 'STRING')
     nodeB.addWidget('text', 'value', '', () => {})
     subgraph.add(nodeB)
-    subgraph.inputNode.slots[1].connect(nodeB.inputs[0], nodeB)
+    slots[1].connect(nodeB.inputs[0], nodeB)
 
     const subgraphNode = createTestSubgraphNode(subgraph)
 
@@ -715,6 +716,7 @@ describe('SubgraphNode widget name collision on rename', () => {
         { name: 'seed2', type: 'INT' }
       ]
     })
+    const slots = [...subgraph.inputNode.slots]
 
     const nodeA = new LGraphNode('NodeA')
     nodeA.addInput('value', 'INT')
@@ -722,7 +724,7 @@ describe('SubgraphNode widget name collision on rename', () => {
     nodeA.addOutput('out', 'INT')
     nodeA.addWidget('number', 'value', 0, () => {})
     subgraph.add(nodeA)
-    subgraph.inputNode.slots[0].connect(nodeA.inputs[0], nodeA)
+    slots[0].connect(nodeA.inputs[0], nodeA)
 
     const nodeB = new LGraphNode('NodeB')
     nodeB.addInput('value', 'INT')
@@ -730,7 +732,7 @@ describe('SubgraphNode widget name collision on rename', () => {
     nodeB.addOutput('out', 'INT')
     nodeB.addWidget('number', 'value', 0, () => {})
     subgraph.add(nodeB)
-    subgraph.inputNode.slots[1].connect(nodeB.inputs[0], nodeB)
+    slots[1].connect(nodeB.inputs[0], nodeB)
 
     const subgraphNode = createTestSubgraphNode(subgraph)
 
@@ -769,6 +771,7 @@ describe('SubgraphNode widget name collision on rename', () => {
         { name: 'beta', type: 'STRING' }
       ]
     })
+    const slots = [...subgraph.inputNode.slots]
 
     const nodeA = new LGraphNode('NodeA')
     nodeA.addInput('value', 'STRING')
@@ -776,7 +779,7 @@ describe('SubgraphNode widget name collision on rename', () => {
     nodeA.addOutput('out', 'STRING')
     nodeA.addWidget('text', 'value', '', () => {})
     subgraph.add(nodeA)
-    subgraph.inputNode.slots[0].connect(nodeA.inputs[0], nodeA)
+    slots[0].connect(nodeA.inputs[0], nodeA)
 
     const nodeB = new LGraphNode('NodeB')
     nodeB.addInput('value', 'STRING')
@@ -784,7 +787,7 @@ describe('SubgraphNode widget name collision on rename', () => {
     nodeB.addOutput('out', 'STRING')
     nodeB.addWidget('text', 'value', '', () => {})
     subgraph.add(nodeB)
-    subgraph.inputNode.slots[1].connect(nodeB.inputs[0], nodeB)
+    slots[1].connect(nodeB.inputs[0], nodeB)
 
     const subgraphNode = createTestSubgraphNode(subgraph)
 

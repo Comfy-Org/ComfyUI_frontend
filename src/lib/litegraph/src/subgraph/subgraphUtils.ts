@@ -8,7 +8,7 @@ import type {
   SubgraphNode,
   SubgraphOutput
 } from '@comfyorg/graph-model/entityRegistry'
-import { isEqual } from 'es-toolkit'
+import { isEqual, partition } from 'es-toolkit'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
@@ -594,7 +594,24 @@ function isPermutation(indices: readonly number[], length: number): boolean {
   )
 }
 
-/** Reorders the subgraph's inputs; every instance follows on `inputs-reordered`. */
+function hasWidgets(input: SubgraphInput): boolean {
+  return input.getConnectedWidgets().length > 0
+}
+
+function widgetlessFirst(
+  subgraph: Subgraph,
+  indices: readonly number[]
+): number[] {
+  const [withWidgets, widgetless] = partition(indices, (index) =>
+    hasWidgets(subgraph.inputs[index])
+  )
+  return [...widgetless, ...withWidgets]
+}
+
+/**
+ * Reorders the subgraph's inputs, keeping widgetless inputs before widget
+ * inputs; every instance follows on `inputs-reordered`.
+ */
 export function reorderSubgraphInputs(
   subgraph: Subgraph,
   orderedIndices: readonly number[]
@@ -609,7 +626,7 @@ export function reorderSubgraphInputs(
   }
 
   const oldOrder = subgraph.inputs.map((i) => i.id)
-  reorderInPlace(subgraph.inputs, orderedIndices)
+  reorderInPlace(subgraph.inputs, widgetlessFirst(subgraph, orderedIndices))
 
   function* innerLinks(input: SubgraphInput): Generator<LLink | undefined> {
     for (const id of input.linkIds) yield subgraph.getLink(id)
@@ -627,6 +644,45 @@ export function reorderSubgraphInputs(
     })
   }
   return true
+}
+
+/** Moves widgetless inputs before widget inputs, keeping each group's order. */
+export function sortWidgetlessInputsFirst(subgraph: Subgraph): void {
+  reorderSubgraphInputs(subgraph, [...subgraph.inputs.keys()])
+}
+
+/**
+ * Keeps the subgraph's inputs widgetless-first whenever `input` gains or loses
+ * a link; an input whose link gives it its first widget joins the end of the
+ * widget inputs.
+ */
+export function sortInputsWhenRelinked(input: SubgraphInput): void {
+  const { subgraph } = input.parent
+  const controller = new AbortController()
+  const { signal } = controller
+  const sort = () => sortWidgetlessInputsFirst(subgraph)
+  input.events.addEventListener(
+    'input-connected',
+    (event) => {
+      const widgets = input.getConnectedWidgets()
+      if (widgets.length !== 1 || widgets[0] !== event.detail.widget)
+        return sort()
+      const at = subgraph.inputs.indexOf(input)
+      reorderSubgraphInputs(subgraph, [
+        ...[...subgraph.inputs.keys()].filter((index) => index !== at),
+        at
+      ])
+    },
+    { signal }
+  )
+  input.events.addEventListener('input-disconnected', sort, { signal })
+  subgraph.events.addEventListener(
+    'removing-input',
+    (event) => {
+      if (event.detail.input === input) controller.abort()
+    },
+    { signal }
+  )
 }
 
 /** Reorders the subgraph's outputs; every instance follows on `outputs-reordered`. */

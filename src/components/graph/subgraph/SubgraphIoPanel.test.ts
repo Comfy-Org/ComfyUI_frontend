@@ -278,7 +278,7 @@ describe('subgraph input node ports', () => {
     expect(host.inputs.map(({ name }) => name)).toEqual(['first', 'second'])
   })
 
-  it('lists widgetless inputs above widget inputs whatever the definition order', async () => {
+  it('lists widgetless inputs above widget inputs', async () => {
     await renderInputNode(
       'inputNode',
       ['image', 'seed', 'mask', 'steps'],
@@ -316,8 +316,8 @@ describe('subgraph input node ports', () => {
 
     expect(graph.inputs.map(({ name }) => name)).toEqual([
       'image',
-      'seed',
       'mask',
+      'seed',
       'steps'
     ])
   })

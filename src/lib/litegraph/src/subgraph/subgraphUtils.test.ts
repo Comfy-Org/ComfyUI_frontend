@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   LGraph,
@@ -6,9 +6,14 @@ import {
   findUsedSubgraphIds,
   getDirectSubgraphIds
 } from '@/lib/litegraph/src/litegraph'
-import type { UUID } from '@/lib/litegraph/src/litegraph'
+import type {
+  Subgraph,
+  SubgraphNode,
+  UUID
+} from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 
+import type { SubgraphInput } from './SubgraphInput'
 import { reorderSubgraphInputs, reorderSubgraphOutputs } from './subgraphUtils'
 import {
   createTestSubgraph,
@@ -122,6 +127,83 @@ describe('subgraphUtils', () => {
         subgraph: subgraph.inputs.map(({ name }) => name),
         host: host.inputs.map(({ name }) => name)
       }).toEqual({ subgraph: ['first', 'second'], host: ['first', 'second'] })
+    })
+  })
+
+  describe('widgetless-first input order', () => {
+    function connectWidget(subgraph: Subgraph, input: SubgraphInput) {
+      const interior = new LGraphNode(`Interior ${input.name}`)
+      const slot = interior.addInput('text', 'STRING')
+      slot.widget = {
+        name: interior.addWidget('text', 'text', '', () => {}).name
+      }
+      subgraph.add(interior)
+      const link = input.connect(slot, interior)
+      assert.exists(link)
+      return link
+    }
+
+    function createSubgraphWithWidgetInputs() {
+      const subgraph = createTestSubgraph({
+        inputs: ['image', 'seed', 'mask', 'steps'].map((name) => ({
+          name,
+          type: 'STRING'
+        }))
+      })
+      const [image, seed, mask, steps] = subgraph.inputs
+      connectWidget(subgraph, seed)
+      const stepsLink = connectWidget(subgraph, steps)
+      const host = createTestSubgraphNode(subgraph)
+      subgraph.rootGraph.add(host)
+      return { subgraph, host, image, mask, steps, stepsLink }
+    }
+
+    function orders(subgraph: Subgraph, host: SubgraphNode) {
+      return {
+        subgraph: subgraph.inputs.map(({ name }) => name),
+        host: host.inputs.map(({ name }) => name)
+      }
+    }
+
+    it('moves an input that gains a widget to the end of the widget inputs', () => {
+      const { subgraph, host, image } = createSubgraphWithWidgetInputs()
+      const source = new LGraphNode('Source')
+      source.addOutput('out', 'STRING')
+      subgraph.rootGraph.add(source)
+      const outerLink = source.connect(0, host, 0)
+
+      connectWidget(subgraph, image)
+
+      const order = ['mask', 'seed', 'steps', 'image']
+      expect(orders(subgraph, host)).toEqual({ subgraph: order, host: order })
+      expect(outerLink?.target_slot).toBe(3)
+    })
+
+    it('moves an input that loses its widget to the end of the widgetless inputs', () => {
+      const { subgraph, host, stepsLink } = createSubgraphWithWidgetInputs()
+
+      subgraph.removeLink(stepsLink.id)
+
+      const order = ['image', 'mask', 'steps', 'seed']
+      expect(orders(subgraph, host)).toEqual({ subgraph: order, host: order })
+    })
+
+    it('keeps each kind of input in the requested order when a reorder mixes them', () => {
+      const { subgraph, host } = createSubgraphWithWidgetInputs()
+
+      reorderSubgraphInputs(subgraph, [3, 1, 2, 0])
+
+      const order = ['mask', 'image', 'steps', 'seed']
+      expect(orders(subgraph, host)).toEqual({ subgraph: order, host: order })
+    })
+
+    it('removes a widget input that follows another widget input', () => {
+      const { subgraph, host, steps } = createSubgraphWithWidgetInputs()
+
+      subgraph.removeInput(steps)
+
+      const order = ['image', 'mask', 'seed']
+      expect(orders(subgraph, host)).toEqual({ subgraph: order, host: order })
     })
   })
 
