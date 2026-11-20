@@ -1,0 +1,46 @@
+{
+  "id": "morning-class",
+  "name": "Morning Class",
+  "canvas_background_mode": "cover",
+  "colors": {
+    "node_slot": {},
+    "litegraph_base": {
+      "BACKGROUND_IMAGE": "/assets/images/morning-class.webp",
+      "CLEAR_BACKGROUND_COLOR": "#32342f",
+      "NODE_TITLE_COLOR": "#f1eee0",
+      "NODE_SELECTED_TITLE_COLOR": "#fff8e8",
+      "NODE_TEXT_COLOR": "#f1eee0",
+      "NODE_TEXT_HIGHLIGHT_COLOR": "#fff8e8",
+      "NODE_DEFAULT_COLOR": "#355549",
+      "NODE_DEFAULT_BGCOLOR": "#29443a",
+      "NODE_DEFAULT_BOXCOLOR": "#b6cbb9",
+      "WIDGET_BGCOLOR": "#1b302a",
+      "WIDGET_OUTLINE_COLOR": "#668579",
+      "WIDGET_TEXT_COLOR": "#f1eee0",
+      "WIDGET_SECONDARY_TEXT_COLOR": "#cad9cc",
+      "LINK_COLOR": "#e6b27f",
+      "CONNECTING_LINK_COLOR": "#f1eee0"
+    },
+    "comfy_base": {},
+    "theme": {
+      "background": "#573c2d",
+      "foreground": "#f9eee0",
+      "card": "#654938",
+      "primary": "#84542e",
+      "secondary": "#664738",
+      "muted": "#795c49",
+      "muted-foreground": "#e7cfb8",
+      "accent": "#73503b",
+      "destructive": "#a3453c",
+      "border": "#876147",
+      "input": "#493125",
+      "ring": "#f0c888",
+      "node": "#29443a",
+      "node-foreground": "#f1eee0",
+      "node-header": "#355549",
+      "node-border": "#668579",
+      "warning": "#efb769",
+      "shadow-color": "rgb(22 17 13 / 0.5)"
+    }
+  }
+}
