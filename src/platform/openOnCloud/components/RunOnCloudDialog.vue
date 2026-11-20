@@ -26,6 +26,7 @@ import { storeToRefs } from 'pinia'
 import { computed, toRaw, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import DeploySetupCard from '@/platform/openOnCloud/components/DeploySetupCard.vue'
 import RunOnCloudCard from '@/platform/openOnCloud/components/RunOnCloudCard.vue'
@@ -53,7 +54,9 @@ const { activeModels, isUploading, owner, retryBatches, upload } = storeToRefs(
   useLocalModelUploadStore()
 )
 const { isLoggedIn } = useCurrentUser()
+const { flags } = useFeatureFlags()
 const uploadModels = computed(() => {
+  if (!flags.openOnCloudModelUploadEnabled) return undefined
   const models = uploadBatch && toRaw(uploadBatch.models)
   if (
     models &&
@@ -71,9 +74,9 @@ const state = computed(() => {
 watch(upload, (current) => {
   if (
     uploadBatch &&
-    current.phase === 'failed' &&
-    current.reason === 'cancelled' &&
-    !uploadModels.value
+    !uploadModels.value &&
+    (current.phase === 'done' ||
+      (current.phase === 'failed' && current.reason === 'cancelled'))
   )
     emit('dismiss')
 })

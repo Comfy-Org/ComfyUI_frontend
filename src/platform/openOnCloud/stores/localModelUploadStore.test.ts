@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   checkCloudCompatibility,
-  checkCloudModelAvailable
+  checkCloudModelsAvailable
 } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import type { CloudWorkflowCheckResult } from '@/platform/openOnCloud/cloudWorkflowCheck'
 import * as localModelUploadApi from '@/platform/openOnCloud/localModelUploadApi'
@@ -55,6 +55,7 @@ describe('useLocalModelUploadStore', () => {
 
   beforeEach(() => {
     setWorkspace('ws-1')
+    vi.mocked(checkCloudModelsAvailable).mockResolvedValue(true)
     check = vi
       .spyOn(useCloudWorkflowCheckStore(), 'check')
       .mockResolvedValue(undefined)
@@ -514,14 +515,17 @@ describe('useLocalModelUploadStore', () => {
         ok: false,
         reason: 'taskUnavailable'
       })
-      vi.mocked(checkCloudModelAvailable).mockResolvedValue(available)
+      vi.mocked(checkCloudModelsAvailable).mockResolvedValue(available)
       const models = [lora]
       const store = await prepared(models)
       store.choose(lora, loraFile)
 
       await store.start(models)
 
-      expect(checkCloudModelAvailable).toHaveBeenCalledWith(lora)
+      expect(checkCloudModelsAvailable).toHaveBeenCalledWith(
+        [lora],
+        expect.any(AbortSignal)
+      )
       expect(transfer).toHaveBeenCalledOnce()
       expect(store.pickOf(lora).status).toBe(available ? 'stored' : 'chosen')
       expect(store.upload.phase).toBe(available ? 'done' : 'failed')
@@ -549,6 +553,44 @@ describe('useLocalModelUploadStore', () => {
       reason: 'storageLimit',
       message: 'Workspace model storage is full.'
     })
+  })
+
+  it('keeps stored files and confirms the original batch after switching workflows', async () => {
+    const transfer = vi
+      .spyOn(modelFileUploadApi, 'uploadModelFile')
+      .mockResolvedValue({ ok: true, taskId: TASK_ID })
+    vi.mocked(localModelUploadApi.waitForStoredModel).mockResolvedValue({
+      ok: true
+    })
+    vi.mocked(checkCloudModelsAvailable)
+      .mockResolvedValueOnce(false)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(true)
+    const models = [lora]
+    const store = await prepared(models)
+    store.choose(lora, loraFile)
+
+    await store.start(models)
+    expect(store.upload).toMatchObject({
+      phase: 'failed',
+      reason: 'confirmationPending'
+    })
+    expect(store.retryBatches).toEqual([models])
+    store.reset([...models], { freshVerdict: true })
+    expect(store.pickOf(lora).status).toBe('stored')
+
+    store.reset([ckpt], { freshVerdict: true })
+    await prepared(models, [], [])
+    await store.start(models, { refreshWorkflow: false })
+    expect(store.retryBatches).toEqual([models])
+    await store.start(models, { refreshWorkflow: false })
+
+    expect(transfer).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(checkCloudModelsAvailable).mock.calls.map(([batch]) => batch)
+    ).toEqual([models, models, models])
+    expect(store.retryBatches).toEqual([])
+    expect(check).not.toHaveBeenCalled()
   })
 
   it('keeps an unfinished storage task recoverable after a different upload succeeds', async () => {

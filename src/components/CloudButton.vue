@@ -13,7 +13,7 @@
     @click="openModal"
   >
     <ProgressRing
-      v-if="isUploading"
+      v-if="hasUploadInProgress"
       :percent="uploadPercent"
       class="size-4"
       data-testid="cloud-button-upload-progress"
@@ -74,6 +74,7 @@ import Button from '@comfyorg/design-system/button/Button'
 import MenuContent from '@comfyorg/design-system/menu/MenuContent'
 import MenuItem from '@comfyorg/design-system/menu/MenuItem'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useTelemetry } from '@comfyorg/telemetry'
 import ProgressRing from '@/platform/openOnCloud/components/ProgressRing.vue'
 import {
@@ -88,6 +89,7 @@ import {
 import type { MissingModel } from '@/platform/openOnCloud/stores/localModelUploadStore'
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 const toast = useToast()
 const checkStore = useCloudWorkflowCheckStore()
 const { state: check } = storeToRefs(checkStore)
@@ -99,7 +101,15 @@ const {
   percent: uploadPercent
 } = storeToRefs(useLocalModelUploadStore())
 
-const canRecover = computed(() => !isUploading.value && !!activeModels.value)
+const hasUploadInProgress = computed(
+  () => flags.openOnCloudModelUploadEnabled && isUploading.value
+)
+const canRecover = computed(
+  () =>
+    flags.openOnCloudModelUploadEnabled &&
+    !isUploading.value &&
+    !!activeModels.value
+)
 const isChecking = computed(() => check.value.phase === 'checking')
 const opensWhenAnswered = ref(false)
 let isMounted = true
@@ -108,7 +118,7 @@ onBeforeUnmount(() => {
 })
 
 const tooltip = computed(() => {
-  if (isUploading.value)
+  if (hasUploadInProgress.value)
     return t('openOnCloud.cloudButton.uploading', {
       percent: uploadPercent.value
     })
@@ -118,7 +128,7 @@ const tooltip = computed(() => {
 })
 
 function prefetch() {
-  if (!isUploading.value && check.value.phase === 'idle')
+  if (!hasUploadInProgress.value && check.value.phase === 'idle')
     void checkStore.check()
 }
 
@@ -142,7 +152,7 @@ function openModal() {
     button_id: 'run_bar_cloud_clicked',
     element_group: 'top_menu'
   })
-  if (isUploading.value) {
+  if (hasUploadInProgress.value) {
     openUploadBatch(activeModels.value)
     return
   }
@@ -156,11 +166,12 @@ function openModal() {
 }
 
 function openUploadBatch(models: MissingModel[] | undefined) {
-  if (!models) return
+  if (!flags.openOnCloudModelUploadEnabled || !models) return
   const uploadBatch = { models, owner: owner.value }
   void openRunOnCloudDialog(
     () =>
       isMounted &&
+      flags.openOnCloudModelUploadEnabled &&
       owner.value === uploadBatch.owner &&
       (activeModels.value === models || retryBatches.value.includes(models)),
     { uploadBatch }
@@ -170,7 +181,7 @@ function openUploadBatch(models: MissingModel[] | undefined) {
 watch(
   () => check.value.phase,
   (phase) => {
-    if (isUploading.value) return
+    if (hasUploadInProgress.value) return
     if (phase === 'idle') {
       opensWhenAnswered.value = false
       closeRunOnCloudDialog()

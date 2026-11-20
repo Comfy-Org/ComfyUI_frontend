@@ -2,7 +2,7 @@ import userEvent from '@testing-library/user-event'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -57,6 +57,44 @@ function deferredVerdict() {
 }
 
 describe('Cloud button compatibility checks', () => {
+  beforeEach(() => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: true
+    })
+  })
+
+  it('shows missing models but hides upload and recovery while rollout is off', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    const model = { folder: 'loras', name: 'unavailable.safetensors' }
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({
+      kind: 'missing',
+      gaps: { nodePacks: [], models: [model] }
+    })
+    useLocalModelUploadStore().upload = {
+      phase: 'failed',
+      reason: 'storagePending',
+      models: [model]
+    }
+    render(
+      {
+        components: { CloudButton, GlobalDialog },
+        template: '<CloudButton /><GlobalDialog />'
+      },
+      { global: { plugins: [testI18n] } }
+    )
+    const user = userEvent.setup({ pointerEventsCheck: 0 })
+
+    await user.click(screen.getByTestId('cloud-button'))
+
+    expect(await screen.findByText(model.name)).toBeVisible()
+    expect(
+      screen.queryByRole('button', { name: 'Sign in to upload' })
+    ).toBeNull()
+    expect(screen.queryByTestId('cloud-upload-recovery-button')).toBeNull()
+  })
+
   it.for([
     {
       flag: true,

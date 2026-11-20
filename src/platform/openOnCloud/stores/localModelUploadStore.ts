@@ -8,7 +8,7 @@ import {
   readLocalModelSizes,
   waitForStoredModel
 } from '@/platform/openOnCloud/localModelUploadApi'
-import { checkCloudModelAvailable } from '@/platform/openOnCloud/cloudCompatibilityApi'
+import { checkCloudModelsAvailable } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import type { CloudWorkflowGaps } from '@/platform/openOnCloud/cloudWorkflowCheck'
@@ -22,6 +22,7 @@ import type {
   UploadRouteRequest
 } from '@/platform/workspace/api/modelFileUploadApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 /** A model Comfy Cloud lacks: its folder and name. */
 export type MissingModel = CloudWorkflowGaps['models'][number]
@@ -30,6 +31,7 @@ export type MissingModel = CloudWorkflowGaps['models'][number]
 export type LocalModelUploadFailure =
   | Extract<ModelFileUploadResult, { ok: false }>['reason']
   | 'accountChanged'
+  | 'confirmationPending'
   | 'storagePending'
 
 /** The file chosen for a missing model, if any. */
@@ -219,7 +221,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
   function canUpload(models: MissingModel[]): boolean {
     const statuses = models.map((model) => canTake(model) && pickOf(model))
     return (
-      statuses.some((pick) => pick && isUploadablePick(pick)) &&
+      statuses.length > 0 &&
       statuses.every(
         (pick) => pick && (isUploadablePick(pick) || pick.status === 'stored')
       )
@@ -317,7 +319,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     submitted: SubmittedModel,
     signal: AbortSignal
   ): Promise<UploadStop | undefined> {
-    const available = await checkCloudModelAvailable(model)
+    const available = await checkCloudModelsAvailable([model], signal)
     if (signal.aborted) return { phase: 'failed', reason: 'cancelled' }
     if (available) return
     if (available === false) {
@@ -381,17 +383,36 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     const keys = new Set(models.map(modelKey))
     const otherBatches = retryBatches.value.filter(
       (batch) =>
-        (batch.length !== keys.size ||
-          batch.some((model) => !keys.has(modelKey(model)))) &&
-        batch.some(
-          (model) => picks.value.get(modelKey(model))?.status !== 'stored'
-        )
+        batch.length !== keys.size ||
+        batch.some((model) => !keys.has(modelKey(model)))
     )
     retryBatches.value = needsRetry ? [models, ...otherBatches] : otherBatches
   }
 
-  async function start(models: MissingModel[]): Promise<void> {
-    if (isUploading.value || !canUpload(models)) return
+  async function confirmBatch(
+    models: MissingModel[],
+    signal: AbortSignal
+  ): Promise<UploadStop | undefined> {
+    if (signal.aborted) return
+    upload.value = {
+      phase: 'uploading',
+      sent: 0,
+      total: 0,
+      models,
+      canCancel: false
+    }
+    const confirmed = await checkCloudModelsAvailable(models, signal)
+    if (!confirmed)
+      return { phase: 'failed', reason: 'confirmationPending', models }
+  }
+
+  async function start(
+    models: MissingModel[],
+    { refreshWorkflow = true }: { refreshWorkflow?: boolean } = {}
+  ): Promise<void> {
+    if (batch || isUploading.value || !canUpload(models)) return
+    const workflows = useWorkflowStore()
+    const workflow = workflows.activeWorkflow
     const queue = models.flatMap((model) => {
       const pick = pickOf(model)
       return isUploadablePick(pick) ? [{ model, pick }] : []
@@ -403,14 +424,17 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     }
     batch = current
     try {
-      const stop = await sendAll(models, queue, current)
+      const stop =
+        (await sendAll(models, queue, current)) ??
+        (await confirmBatch(models, current.controller.signal))
       if (current.ownerChanged) {
         upload.value = { phase: 'failed', reason: 'accountChanged' }
         return
       }
       recordBatchResult(models, !!stop?.models)
       upload.value = stop ?? { phase: 'done' }
-      if (!stop) void useCloudWorkflowCheckStore().check()
+      if (!stop && refreshWorkflow && workflows.activeWorkflow === workflow)
+        void useCloudWorkflowCheckStore().check()
     } catch (cause) {
       reportError(cause, {
         surface: 'platform',
@@ -449,7 +473,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
     picks.value = new Map(
       [...picks.value].filter(([key, pick]) => {
         const wasStored = keys.has(key) && pick.status === 'stored'
-        if (freshVerdict && wasStored) return false
+        if (freshVerdict && wasStored && !recoverableKeys.has(key)) return false
         return recoverableKeys.has(key) || isPendingPick(pick) || wasStored
       })
     )

@@ -40,6 +40,9 @@ test.describe('Open on Cloud: upload the models Comfy Cloud lacks', () => {
       .setInputFiles(LOCAL_MODEL_FILE)
     await upload.click()
 
+    await expect(
+      card.getByText('Comfy Cloud has not confirmed these models yet.')
+    ).toBeVisible()
     await card.getByRole('button', { name: 'Check again' }).click()
     await expect(page.getByTestId('run-on-cloud-card')).toBeVisible()
     expect(cloudTraffic.starts).toHaveLength(1)
@@ -93,5 +96,29 @@ test.describe('Open on Cloud: upload the models Comfy Cloud lacks', () => {
     ).toBeVisible()
     await expect(card.getByTestId('missing-models-upload')).toBeDisabled()
     expect(cloudTraffic.starts).toEqual([])
+  })
+})
+
+test.describe('Open on Cloud upload rollout disabled', () => {
+  test.use({ modelUploadEnabled: false })
+
+  test('shows missing models without offering upload or recovery', async ({
+    comfyPage,
+    cloudTraffic
+  }) => {
+    const { page } = comfyPage
+    await comfyPage.workflow.loadWorkflow('openOnCloud/missing-uploadable-lora')
+    await page.getByTestId('cloud-button').click()
+
+    const card = page.getByTestId('missing-models-card')
+    await expect(card.getByText(LOCAL_MODEL_FILE.name)).toBeVisible()
+    await expect(
+      card.getByRole('button', { name: 'Sign in to upload' })
+    ).toHaveCount(0)
+    await expect(card.getByTestId('missing-models-upload')).toHaveCount(0)
+    await expect(page.getByTestId('cloud-upload-recovery-button')).toHaveCount(
+      0
+    )
+    expect(cloudTraffic.starts).toHaveLength(0)
   })
 })

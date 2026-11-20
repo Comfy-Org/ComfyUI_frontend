@@ -95,6 +95,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useAuthDialogs } from '@/composables/auth/useAuthDialogs'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import MissingModelRow from '@/platform/openOnCloud/components/MissingModelRow.vue'
 import {
@@ -145,10 +146,12 @@ const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
   unsupportedFile: 'assetBrowser.fileUpload.notSafetensors',
   unsupportedType: 'openOnCloud.missingModels.folderUnsupported',
   accountChanged: 'openOnCloud.missingModels.accountChanged',
+  confirmationPending: 'openOnCloud.missingModels.confirmationPending',
   storagePending: 'openOnCloud.missingModels.storagePending'
 }
 
 const { t } = useI18n()
+const { flags } = useFeatureFlags()
 const uploads = useLocalModelUploadStore()
 const cloudCheck = useCloudWorkflowCheckStore()
 const { upload: currentUpload, uploadFolders, owner } = storeToRefs(uploads)
@@ -166,8 +169,15 @@ const upload = computed(() => {
 })
 
 watch(
-  () => [signedIn, models, owner.value] as const,
+  () =>
+    [
+      flags.openOnCloudModelUploadEnabled,
+      signedIn,
+      models,
+      owner.value
+    ] as const,
   () => {
+    if (!flags.openOnCloudModelUploadEnabled) return
     uploads.reset(models, { freshVerdict: !recovering })
     if (signedIn) void uploads.prepare(models)
   },
@@ -178,16 +188,32 @@ watch(
   () =>
     upload.value.phase === 'failed' && upload.value.reason === 'accountChanged',
   (accountChanged) => {
-    if (accountChanged && signedIn) void uploads.prepare(models)
+    if (accountChanged && signedIn && flags.openOnCloudModelUploadEnabled)
+      void uploads.prepare(models)
   }
 )
 
-const isPrepared = computed(() => signedIn && uploadFolders.value !== null)
+const isPrepared = computed(
+  () =>
+    flags.openOnCloudModelUploadEnabled &&
+    signedIn &&
+    uploadFolders.value !== null
+)
 const canOffer = computed(
   () => isPrepared.value && models.length > 0 && models.every(uploads.canTake)
 )
+const needsConfirmation = computed(
+  () =>
+    models.length > 0 &&
+    models.every((model) => uploads.pickOf(model).status === 'stored')
+)
 
 const copy = computed(() => {
+  if (!flags.openOnCloudModelUploadEnabled)
+    return {
+      title: 'openOnCloud.missingModels.title',
+      description: 'openOnCloud.missingModels.unavailable'
+    }
   if (!signedIn)
     return {
       title: 'openOnCloud.missingModels.title',
@@ -197,6 +223,11 @@ const copy = computed(() => {
     return {
       title: 'openOnCloud.missingModels.title',
       description: 'openOnCloud.missingModels.preparing'
+    }
+  if (needsConfirmation.value)
+    return {
+      title: 'openOnCloud.missingModels.confirmationTitle',
+      description: 'openOnCloud.missingModels.confirmationDescription'
     }
   if (canOffer.value)
     return {
@@ -210,13 +241,18 @@ const copy = computed(() => {
 })
 
 const footer = computed<Footer>(() => {
+  if (!flags.openOnCloudModelUploadEnabled) return 'close'
   if (upload.value.phase === 'uploading') return 'uploading'
   if (!signedIn) return 'signIn'
   return canOffer.value ? 'upload' : 'close'
 })
 
 const canRecheck = computed(
-  () => !recovering && isPrepared.value && !uploads.isUploading
+  () =>
+    !recovering &&
+    !needsConfirmation.value &&
+    isPrepared.value &&
+    !uploads.isUploading
 )
 const showSecondary = computed(
   () => footer.value !== 'uploading' || uploads.canCancel
@@ -229,6 +265,8 @@ const uploadDisabled = computed(
 )
 const primaryCopy = computed(() => {
   const current = upload.value
+  if (footer.value === 'upload' && needsConfirmation.value)
+    return 'openOnCloud.missingModels.checkAgain'
   if (
     footer.value === 'upload' &&
     current.phase === 'failed' &&
@@ -240,6 +278,7 @@ const primaryCopy = computed(() => {
 const progressText = computed(() => {
   const current = upload.value
   if (current.phase !== 'uploading') return ''
+  if (needsConfirmation.value) return t('openOnCloud.missingModels.confirming')
   if (!current.canCancel) return t('assetBrowser.fileUpload.saving')
   return t('openOnCloud.missingModels.progress', {
     sent: formatSize(current.sent),
@@ -270,6 +309,7 @@ function onSecondary() {
 function onPrimary() {
   if (footer.value === 'uploading') emit('dismiss')
   else if (footer.value === 'signIn') void useAuthDialogs().showSignInDialog()
-  else void uploads.start(models)
+  else if (footer.value === 'upload')
+    void uploads.start(models, { refreshWorkflow: !recovering })
 }
 </script>

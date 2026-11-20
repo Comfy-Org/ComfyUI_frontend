@@ -1,4 +1,7 @@
-import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
+import {
+  combineAbortSignals,
+  createTimeoutSignal
+} from '@comfyorg/api-client/abortSignal'
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -207,20 +210,25 @@ async function collectModels(
 async function requestCompatibility(
   nodeTypes: string[],
   models: CompatibilityModel[],
-  { requireWorkspace = false }: { requireWorkspace?: boolean } = {}
+  {
+    requireWorkspace = false,
+    signal
+  }: { requireWorkspace?: boolean; signal?: AbortSignal } = {}
 ) {
   try {
     const { isLoggedIn } = useCurrentUser()
     const auth = await useAuthStore().getWorkspaceAuthHeader()
+    if (signal?.aborted) return null
     if (!auth && (requireWorkspace || isLoggedIn.value))
       return giveUp(new Error('Workspace authorization unavailable'))
+    const timeout = createTimeoutSignal(10_000)
     const response = await fetch(
       new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()),
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...auth },
         body: JSON.stringify({ node_types: nodeTypes, models }),
-        signal: createTimeoutSignal(10_000)
+        signal: signal ? combineAbortSignals([signal, timeout]) : timeout
       }
     )
     if (!response.ok)
@@ -233,19 +241,22 @@ async function requestCompatibility(
     if (!parsed.success) return giveUp(parsed.error)
     return parsed.data.cloud
   } catch (error) {
+    if (signal?.aborted) return null
     return giveUp(error)
   }
 }
 
-export async function checkCloudModelAvailable(model: CompatibilityModel) {
-  const verdict = await requestCompatibility([], [model], {
-    requireWorkspace: true
+export async function checkCloudModelsAvailable(
+  models: CompatibilityModel[],
+  signal?: AbortSignal
+) {
+  const verdict = await requestCompatibility([], models, {
+    requireWorkspace: true,
+    signal
   })
   const missing = verdict?.missing_models
   if (!missing) return null
-  return !missing.some(
-    ({ folder, name }) => folder === model.folder && name === model.name
-  )
+  return missing.length === 0
 }
 
 function giveUp(cause: unknown): null {

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   checkCloudCompatibility,
-  checkCloudModelAvailable
+  checkCloudModelsAvailable
 } from '@/platform/openOnCloud/cloudCompatibilityApi'
 import { LGraphEventMode, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -109,7 +109,7 @@ describe(checkCloudCompatibility, () => {
       })
     )
 
-    await expect(checkCloudModelAvailable(model)).resolves.toBe(false)
+    await expect(checkCloudModelsAvailable([model])).resolves.toBe(false)
     expect(requestBody()).toEqual({ node_types: [], models: [model] })
     expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
       Authorization: 'Bearer workspace'
@@ -132,7 +132,9 @@ describe(checkCloudCompatibility, () => {
       )
 
       await expect(
-        checkCloudModelAvailable({ folder: 'loras', name: 'model.safetensors' })
+        checkCloudModelsAvailable([
+          { folder: 'loras', name: 'model.safetensors' }
+        ])
       ).resolves.toBe(available)
     }
   )

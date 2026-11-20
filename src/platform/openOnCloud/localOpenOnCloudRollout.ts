@@ -6,14 +6,18 @@ import {
 import { zGetFeaturesResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { readonly, shallowRef, watch } from 'vue'
-import type { z } from 'zod'
+import { z } from 'zod'
 
 import { getBuildTimeComfyCloudBaseUrl } from '@/config/comfyApi'
 
-const zOpenOnCloudRollout = zGetFeaturesResponse.pick({
-  open_on_cloud_enabled: true,
-  open_on_cloud_use_local_agent_enabled: true
-})
+const zOpenOnCloudRollout = zGetFeaturesResponse
+  .pick({
+    open_on_cloud_enabled: true,
+    open_on_cloud_use_local_agent_enabled: true
+  })
+  .extend({
+    open_on_cloud_model_upload_enabled: z.boolean().optional().catch(undefined)
+  })
 
 type OpenOnCloudRollout = z.infer<typeof zOpenOnCloudRollout>
 

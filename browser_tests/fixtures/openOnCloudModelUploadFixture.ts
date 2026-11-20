@@ -122,11 +122,14 @@ async function mockComfyCloud(page: Page): Promise<CloudTraffic> {
 
 export const openOnCloudModelUploadFixture = localSignedOutFixture.extend<{
   cloudTraffic: CloudTraffic
+  modelUploadEnabled: boolean
 }>({
-  cloudTraffic: async ({ comfyPage }, use) => {
+  modelUploadEnabled: [true, { option: true }],
+  cloudTraffic: async ({ comfyPage, modelUploadEnabled }, use) => {
     const { page } = comfyPage
     await new FeatureFlagHelper(page).seedServerFlags({
-      open_on_cloud_enabled: true
+      open_on_cloud_enabled: true,
+      ...(modelUploadEnabled && { open_on_cloud_model_upload_enabled: true })
     })
     const localModel = {
       name: LOCAL_MODEL_FILE.name,
