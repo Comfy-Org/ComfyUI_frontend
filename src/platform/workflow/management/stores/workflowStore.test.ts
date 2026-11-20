@@ -8,7 +8,7 @@ import {
   vi
 } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { nextTick, reactive } from 'vue'
+import { nextTick, reactive, toRaw } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -743,6 +743,33 @@ describe('useWorkflowStore', () => {
       bindCanvasTracker(opened.changeTracker)
 
       expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
+    })
+
+    it('lists the opened object under its path when another object with that path was active', async () => {
+      await syncRemoteWorkflows(['a.json'])
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
+      const samePath = await new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 1
+      }).load()
+
+      const opened = await store.openWorkflow(samePath)
+      opened.isModified = true
+
+      expect(toRaw(store.getWorkflowByPath('workflows/a.json'))).toBe(
+        toRaw(opened)
+      )
+      expect(store.openWorkflows.map((workflow) => toRaw(workflow))).toEqual([
+        toRaw(opened)
+      ])
+      expect(
+        store.modifiedWorkflows.map((workflow) => toRaw(workflow))
+      ).toEqual([toRaw(opened)])
     })
   })
 
