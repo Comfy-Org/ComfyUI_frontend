@@ -64,6 +64,22 @@ export class SubgraphHelper {
     return this.inputPort(name).getByTestId(TestIds.node.slotConnectionDot)
   }
 
+  inputWidget(name: string): Locator {
+    return this.inputPanel.locator(`[data-widget-name="${name}"]`)
+  }
+
+  /** The input port's vertical offset on screen relative to the input node. */
+  async inputPortScreenY(name: string): Promise<number> {
+    return this.page.evaluate((name) => {
+      const canvas = window.app?.canvas
+      const port = canvas?.subgraph?.inputNode.slots.find(
+        (slot) => slot.name === name
+      )
+      if (!canvas || !port) throw new Error(`Expected subgraph input ${name}`)
+      return port.pos[1] * canvas.ds.scale
+    }, name)
+  }
+
   async fillInput(name: string, value: string): Promise<void> {
     const input = this.inputPanel.getByRole('textbox', { name, exact: true })
     await input.fill(value)
