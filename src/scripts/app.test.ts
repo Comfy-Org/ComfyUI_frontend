@@ -157,7 +157,6 @@ const {
   mockWorkflowService: {
     beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
-    claimUniqueRootGraphId: vi.fn<WorkflowService['claimUniqueRootGraphId']>(),
     showPendingWarnings: vi.fn<WorkflowService['showPendingWarnings']>(),
     restoreRetainedWorkflow: vi.fn<WorkflowService['restoreRetainedWorkflow']>()
   },
@@ -273,9 +272,6 @@ async function useRealWorkflowService(): Promise<WorkflowService> {
   )
   mockWorkflowService.afterLoadNewGraph.mockImplementation(
     real.afterLoadNewGraph
-  )
-  mockWorkflowService.claimUniqueRootGraphId.mockImplementation(
-    real.claimUniqueRootGraphId
   )
   mockWorkflowService.showPendingWarnings.mockImplementation(
     real.showPendingWarnings

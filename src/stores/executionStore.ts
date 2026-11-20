@@ -193,6 +193,7 @@ export const useExecutionStore = defineStore('execution', () => {
 
   const jobIdToStampedWorkflowId = new Map<JobId, string>()
   const MAX_STAMPED_WORKFLOW_ID_ENTRIES = 4000
+  let jobIdsAtLoad: Set<JobId> | undefined
 
   const initializingJobIds = ref<Set<JobId>>(new Set())
 
@@ -565,11 +566,20 @@ export const useExecutionStore = defineStore('execution', () => {
     return ownerPath === activeWorkflow.path
   }
 
+  function recordJobIdsAtLoad(jobIds: Iterable<JobId>) {
+    jobIdsAtLoad ??= new Set(jobIds)
+  }
+
+  function predatesLoad(jobId: JobId): boolean {
+    return !jobIdsAtLoad || jobIdsAtLoad.has(jobId)
+  }
+
   function ownershipByWorkflowId(
     jobId: JobId,
     activeWorkflow: ComfyWorkflow,
     workflowId: string | undefined
   ): boolean | undefined {
+    if (!predatesLoad(jobId)) return
     const activeGraphId = routableWorkflowId(
       activeWorkflow.activeState?.id ?? activeWorkflow.initialState?.id
     )
@@ -691,8 +701,9 @@ export const useExecutionStore = defineStore('execution', () => {
       reportQueueReadFailure(cause, jobId)
       return
     }
+    if (!prompt || !Object.hasOwn(queuedJobs.value, jobId)) return
     const job = queuedJobs.value[jobId]
-    if (!prompt || !job || job.nodeLookup) return
+    if (job.nodeLookup) return
     job.nodes = {
       ...Object.fromEntries(Object.keys(prompt).map((id) => [id, false])),
       ...job.nodes
@@ -1400,14 +1411,13 @@ export const useExecutionStore = defineStore('execution', () => {
     const path = jobIdToSessionWorkflowPath.value.get(jobId)
     const byPath = path && workflowStore.getWorkflowByPath(path)
     if (byPath && workflowStore.isOpen(byPath)) return byPath
+    if (!predatesLoad(jobId)) return
     const graphId =
       jobIdToStampedWorkflowId.get(jobId) ?? jobIdToWorkflowId.value.get(jobId)
-    const byGraph = graphId
-      ? workflowStore.openWorkflows.filter(
-          (w) => (w.activeState?.id ?? w.initialState?.id) === graphId
-        )
-      : []
-    return byGraph.length === 1 ? byGraph[0] : undefined
+    if (!graphId) return
+    return workflowStore.openWorkflows.find(
+      (w) => (w.activeState?.id ?? w.initialState?.id) === graphId
+    )
   }
 
   function focusJob(jobId: JobId): boolean {
@@ -1455,6 +1465,7 @@ export const useExecutionStore = defineStore('execution', () => {
     clearInitializationByJobId,
     clearInitializationByJobIds,
     reconcileInitializingJobs,
+    recordJobIdsAtLoad,
     clearActiveJobIfStale,
     forgetFinishedJobs,
     bindExecutionEvents,
