@@ -19,42 +19,50 @@ test(
       userRequest
     } = embeddedWorkflowAttachment
 
-    await embeddedWorkflowAttachment.attachImage()
+    await test.step('attaching an image with an embedded workflow', async () => {
+      await embeddedWorkflowAttachment.attachImage()
 
-    await expect(agentPanel.attachmentChip(imageName)).toBeVisible()
-    await expect(agentPanel.attachmentChip(derivedName)).toBeVisible()
+      await expect(agentPanel.attachmentChip(imageName)).toBeVisible()
+      await expect(agentPanel.attachmentChip(derivedName)).toBeVisible()
 
-    expect(await embeddedWorkflowAttachment.liftedWorkflowHasMarker()).toBe(
-      true
-    )
-    expect(embeddedWorkflowAttachment.uploadedNames()).toEqual([
-      imageName,
-      derivedName
-    ])
+      expect(await embeddedWorkflowAttachment.liftedWorkflowHasMarker()).toBe(
+        true
+      )
+      expect(embeddedWorkflowAttachment.uploadedNames()).toEqual([
+        imageName,
+        derivedName
+      ])
+    })
 
-    await embeddedWorkflowAttachment.sendTurn()
+    await test.step('sending without replacing the active canvas', async () => {
+      await embeddedWorkflowAttachment.sendTurn()
 
-    await expect(agentPanel.userMessageBubbles).toHaveText([userRequest])
-    await expect(agentPanel.stopButton).toBeVisible()
-    expect(await embeddedWorkflowAttachment.postedTurn()).toMatchObject(
-      expectedRequest
-    )
+      await expect(agentPanel.userMessageBubbles).toHaveText([userRequest])
+      await expect(agentPanel.stopButton).toBeVisible()
+      expect(await embeddedWorkflowAttachment.postedTurn()).toMatchObject(
+        expectedRequest
+      )
 
-    await expect(activeCanvasNode).toBeVisible()
-    await expect(embeddedSourceNode).toHaveCount(0)
-    await expect(importedResultNode).toHaveCount(0)
-    await expect(topbar.getActiveTab()).toContainText('Unsaved Workflow')
+      await expect(activeCanvasNode).toBeVisible()
+      await expect(embeddedSourceNode).toHaveCount(0)
+      await expect(importedResultNode).toHaveCount(0)
+      await expect(topbar.getActiveTab()).toContainText('Unsaved Workflow')
+    })
 
-    await embeddedWorkflowAttachment.openImportedResult()
+    await test.step('opening the imported result in a new tab', async () => {
+      await embeddedWorkflowAttachment.openImportedResult()
 
-    await expect(importedResultNode).toBeVisible()
-    await expect(topbar.getActiveTab()).toContainText(importedName)
-    await expect(topbar.tabs).toHaveCount(2)
-    await expect(activeCanvasNode).toHaveCount(0)
+      await expect(importedResultNode).toBeVisible()
+      await expect(topbar.getActiveTab()).toContainText(importedName)
+      await expect(topbar.tabs).toHaveCount(2)
+      await expect(activeCanvasNode).toHaveCount(0)
+    })
 
-    await topbar.getTab(0).click()
-    await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
-    await expect(activeCanvasNode).toBeVisible()
-    await expect(importedResultNode).toHaveCount(0)
+    await test.step('returning to the original canvas', async () => {
+      await topbar.getTab(0).click()
+      await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
+      await expect(activeCanvasNode).toBeVisible()
+      await expect(importedResultNode).toHaveCount(0)
+    })
   }
 )

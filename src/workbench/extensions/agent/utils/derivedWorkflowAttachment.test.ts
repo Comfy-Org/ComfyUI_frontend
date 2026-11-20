@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import {
@@ -45,10 +45,10 @@ describe('deriveWorkflowFile', () => {
 
     const derived = await deriveWorkflowFile(imageFile())
 
-    expect(derived).toBeInstanceOf(File)
-    expect(derived!.name).toBe('photo.workflow.json')
-    expect(derived!.type).toBe('application/json')
-    expect(await workflowIn(derived!)).toEqual(WORKFLOW)
+    assert.exists(derived)
+    expect(derived.name).toBe('photo.workflow.json')
+    expect(derived.type).toBe('application/json')
+    expect(await workflowIn(derived)).toEqual(WORKFLOW)
   })
 
   it('lifts a workflow handed back as an object', async () => {
@@ -56,7 +56,8 @@ describe('deriveWorkflowFile', () => {
 
     const derived = await deriveWorkflowFile(imageFile())
 
-    expect(await workflowIn(derived!)).toEqual(WORKFLOW)
+    assert.exists(derived)
+    expect(await workflowIn(derived)).toEqual(WORKFLOW)
   })
 
   it('tolerates bare NaN and Infinity tokens', async () => {
@@ -67,11 +68,10 @@ describe('deriveWorkflowFile', () => {
 
     const derived = await deriveWorkflowFile(imageFile())
 
-    expect(derived).toBeDefined()
-    const parsed = (await workflowIn(derived!)) as {
-      nodes: Array<{ widgets_values: unknown }>
-    }
-    expect(parsed.nodes[0].widgets_values).toEqual([null, null])
+    assert.exists(derived)
+    expect(await workflowIn(derived)).toEqual({
+      nodes: [{ id: 1, type: 'KSampler', widgets_values: [null, null] }]
+    })
   })
 
   it('returns nothing when the image carries no metadata', async () => {
@@ -126,6 +126,7 @@ describe('deriveWorkflowFile', () => {
     mockParser.mockResolvedValue({ workflow: JSON.stringify(WORKFLOW) })
     const derived = await deriveWorkflowFile(imageFile())
 
-    await expect(deriveWorkflowFile(derived!)).resolves.toBeUndefined()
+    assert.exists(derived)
+    await expect(deriveWorkflowFile(derived)).resolves.toBeUndefined()
   })
 })

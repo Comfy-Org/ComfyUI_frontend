@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { createWorkflowBearingPng } from '@e2e/fixtures/data/agent/workflowBearingPng'
 import { deriveWorkflowFile } from './derivedWorkflowAttachment'
@@ -20,8 +20,8 @@ function pngFile(buffer: Buffer, name = 'portrait.png'): File {
 
 async function parsedWorkflow(file: File): Promise<unknown> {
   const derived = await deriveWorkflowFile(file)
-  expect(derived).toBeInstanceOf(File)
-  return JSON.parse(await derived!.text())
+  assert.exists(derived)
+  return JSON.parse(await derived.text())
 }
 
 describe('deriveWorkflowFile against a real PNG', () => {
@@ -42,18 +42,6 @@ describe('deriveWorkflowFile against a real PNG', () => {
       expect(await parsedWorkflow(file)).toEqual(WORKFLOW)
     }
   )
-
-  it('names the derived file after the image', async () => {
-    const derived = await deriveWorkflowFile(
-      pngFile(
-        createWorkflowBearingPng({ workflow: WORKFLOW }),
-        'holiday-snap.png'
-      )
-    )
-
-    expect(derived!.name).toBe('holiday-snap.workflow.json')
-    expect(derived!.type).toBe('application/json')
-  })
 
   it('prefers the editor workflow when the image carries both', async () => {
     const file = pngFile(

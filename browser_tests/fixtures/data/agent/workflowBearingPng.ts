@@ -15,11 +15,6 @@ function isLatin1(value: string): boolean {
   return Buffer.from(value, 'latin1').toString('latin1') === value
 }
 
-/**
- * `tEXt` is Latin-1 by specification, so PIL — and therefore SaveImage — falls
- * back to a UTF-8 `iTXt` chunk for a workflow that Latin-1 cannot hold. Mirror
- * that, or a workflow with non-English prompts would be unrepresentable here.
- */
 function textChunk(keyword: string, value: string): Buffer {
   const key = Buffer.concat([Buffer.from(keyword, 'latin1'), Buffer.alloc(1)])
   if (isLatin1(value)) {
@@ -29,9 +24,9 @@ function textChunk(keyword: string, value: string): Buffer {
     'iTXt',
     Buffer.concat([
       key,
-      Buffer.from([0, 0]), // uncompressed, compression method 0
-      Buffer.alloc(1), // empty language tag
-      Buffer.alloc(1), // empty translated keyword
+      Buffer.from([0, 0]),
+      Buffer.alloc(1),
+      Buffer.alloc(1),
       Buffer.from(value, 'utf8')
     ])
   )
@@ -50,7 +45,7 @@ function singlePixel(pixel: [number, number, number]): Buffer {
   return deflateSync(Buffer.from([0, ...pixel]), { level: 1 })
 }
 
-/** A decodable 1x1 PNG carrying the given ComfyUI metadata in `tEXt`. */
+/** A decodable 1x1 PNG carrying the given ComfyUI metadata. */
 export function createWorkflowBearingPng(
   metadata: { workflow?: unknown; prompt?: unknown },
   options: { pixel?: [number, number, number] } = {}
