@@ -3415,9 +3415,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     // Clean up state var
     pointer.finally = () => {
       // Legacy custom widget callback
-      if (widget.mouse) {
-        const { eUp } = pointer
-        if (!eUp) return
+      const { eUp } = pointer
+      if (widget.mouse && eUp) {
         const { canvasX, canvasY } = eUp
         widget.mouse(eUp, [canvasX - node.pos[0], canvasY - node.pos[1]], node)
       }

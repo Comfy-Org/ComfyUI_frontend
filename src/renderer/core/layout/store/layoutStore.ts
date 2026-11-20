@@ -188,7 +188,6 @@ class LayoutStoreImpl {
   // Vue reactivity layer
   private version = ref(0)
   private _nodeGeometryVersion = 0
-  private _contentSizeVersion = 0
   private _slotOffsetVersion = ref(0)
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
@@ -222,7 +221,6 @@ class LayoutStoreImpl {
   private linkSegmentLayouts = new Map<string, LinkSegmentLayout>() // Internal string key: ${linkId}:${rerouteId ?? 'final'}
   private slotOffsets = new Map<ScopedLayoutKey, SlotOffsetSnapshot>()
   private contentSizes = new Map<ScopedLayoutKey, Size>()
-  private suppressedContentSizes = new Map<ScopedLayoutKey, Size>()
   private rerouteLayouts = new Map<ScopedLayoutKey, RerouteLayout>()
 
   // Spatial index managers
@@ -278,11 +276,6 @@ class LayoutStoreImpl {
    */
   get nodeGeometryVersion(): number {
     return this._nodeGeometryVersion
-  }
-
-  /** Non-reactive revision for measured Vue content dimensions. */
-  get contentSizeVersion(): number {
-    return this._contentSizeVersion
   }
 
   /**
@@ -430,26 +423,10 @@ class LayoutStoreImpl {
 
   reportContentSize(rootGraphId: UUID, nodeId: NodeId, size: Size): void {
     const key = makeScopedLayoutKey(rootGraphId, nodeId)
-    const suppressed = this.suppressedContentSizes.get(key)
-    if (suppressed) {
-      if (suppressed.width === size.width && suppressed.height === size.height)
-        return
-      this.suppressedContentSizes.delete(key)
-    }
     const previous = this.contentSizes.get(key)
     if (previous?.width === size.width && previous.height === size.height)
       return
     this.contentSizes.set(key, size)
-    this._contentSizeVersion++
-  }
-
-  clearContentSize(rootGraphId: UUID, nodeId: NodeId): void {
-    const key = makeScopedLayoutKey(rootGraphId, nodeId)
-    const previous = this.contentSizes.get(key)
-    if (!previous) return
-    this.suppressedContentSizes.set(key, previous)
-    this.contentSizes.delete(key)
-    this._contentSizeVersion++
   }
 
   /**
@@ -577,8 +554,7 @@ class LayoutStoreImpl {
   /** Forgets everything the DOM measured for an entity. */
   clearMeasuredGeometry(graphId: UUID, nodeId: NodeId): void {
     const key = makeScopedLayoutKey(graphId, nodeId)
-    if (this.contentSizes.delete(key)) this._contentSizeVersion++
-    this.suppressedContentSizes.delete(key)
+    this.contentSizes.delete(key)
     if (this.slotOffsets.delete(key))
       this.queueGeometryChange(new Set([graphId]))
   }
@@ -903,10 +879,6 @@ class LayoutStoreImpl {
     for (const key of this.contentSizes.keys()) {
       if (!key.startsWith(prefix)) continue
       this.contentSizes.delete(key)
-      this._contentSizeVersion++
-    }
-    for (const key of this.suppressedContentSizes.keys()) {
-      if (key.startsWith(prefix)) this.suppressedContentSizes.delete(key)
     }
     let slotOffsetsDropped = false
     for (const key of this.slotOffsets.keys()) {
@@ -1028,11 +1000,7 @@ class LayoutStoreImpl {
       this.linkSegmentSpatialIndex.clear()
       this.linkLayouts.clear()
       this.linkSegmentLayouts.clear()
-      if (this.contentSizes.size > 0) {
-        this.contentSizes.clear()
-        this._contentSizeVersion++
-      }
-      this.suppressedContentSizes.clear()
+      this.contentSizes.clear()
       if (this.slotOffsets.size > 0) {
         this.slotOffsets.clear()
         this._slotOffsetVersion.value++

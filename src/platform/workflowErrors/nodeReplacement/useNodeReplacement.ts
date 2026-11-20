@@ -408,6 +408,7 @@ function replaceWithMapping(
   newNode.graph = nodeGraph
   node.graph = null
   nodeGraph._nodes_by_id[newNode.id] = newNode
+  nodeGraph.incrementVersion()
   components.adoptNode(scope.rootGraphId, newNode.id, newNode.properties)
 
   for (const { name, value } of assignedWidgets) {
