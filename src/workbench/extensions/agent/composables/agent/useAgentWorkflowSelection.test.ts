@@ -387,6 +387,11 @@ describe('historical workflow restoration', () => {
         context: { workflowId: 'wf-saved' }
       }
     )
+    expect(trackAgentTargetUnavailable).toHaveBeenCalledExactlyOnceWith({
+      cause: 'restore_unresolved',
+      workflow_id: 'wf-saved',
+      startup_tab_restore_settled: true
+    })
   })
 
   it('opens the chat with its workflow unavailable when two saved files share its name', async () => {
