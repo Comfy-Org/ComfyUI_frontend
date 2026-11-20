@@ -31,7 +31,15 @@ type RefusalCopy =
   | 'sales_managed'
   | 'unfinished'
   | 'change_unnamed'
+  | 'purchase_ended'
   | 'unknown'
+
+const ENDED_PURCHASE_CODES: ReadonlySet<string> = new Set([
+  'PURCHASE_SUPERSEDED',
+  'PURCHASE_EXPIRED',
+  'PURCHASE_NOT_FOUND',
+  'PURCHASE_NOT_PAYABLE_HERE'
+])
 
 const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   not_workspace_owner: 'owner',
@@ -68,6 +76,7 @@ const REFUSAL_COPY: Readonly<Record<CapabilityDenialReason, RefusalCopy>> = {
   no_upgrade_available: 'unknown',
   partner_governance_not_entitled: 'unknown',
   plan_ending: 'unknown',
+  plan_not_enterprise: 'unknown',
   project_cap_exceeded: 'unknown',
   rollout_disabled: 'unknown',
   sales_managed: 'sales_managed',
@@ -179,7 +188,7 @@ function refusedEnding(
     return {
       kind: 'refused',
       code,
-      copy: 'unknown',
+      copy: ENDED_PURCHASE_CODES.has(code) ? 'purchase_ended' : 'unknown',
       ...(message === undefined ? {} : { serverMessage: message })
     }
   }

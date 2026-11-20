@@ -24,9 +24,9 @@ A user subscribes to a plan, changes plan mid-cycle, cancels, resumes before the
 
 Preconditions:
 
-- Doctor passes; signed in as an email-verified `@comfy.org` user; `flags.billingSdkSubscriptionRailEnabled` resolves as the scenario expects.
+- Doctor passes; signed in as an email-verified `@comfy.org` user; `flags.billingSdkRailEnabled` resolves true.
 - Stripe in test mode, card `4242 4242 4242 4242`. Confirm the TEST MODE banner before the first payment.
-- Both a personal and a team workspace available. S0 baseline plan name and renewal date recorded.
+- Both a personal and a team workspace available. Baseline plan name and renewal date recorded.
 
 - **Subscribe.** Choose a plan and complete checkout. The success screen names the plan chosen, and `Settings` agrees after a reload. Confirm the subscribe request ran on `fetch` with an `Idempotency-Key`.
 - **Change plan mid-cycle.** Switch to a different plan. The amount shown on the confirmation is what is actually charged. Verify against the provider receipt or the usage log, not just the dialog.
@@ -39,9 +39,9 @@ Preconditions:
 
 ## Gotchas
 
-- **Cancel runs through Churnkey first, then the rail.** When `/api/features` carries a `churnkey_app_id`, `Plan & Credits ▸ ⋯ ▸ Cancel plan` opens Churnkey's retention survey (`/api/billing/churnkey/auth` on `xhr`, then `assets.churnkey.co` and `api.churnkey.co`). Churnkey's `handleCancel` calls `billing.cancelSubscription()` (`launchCancellationFlow.ts:62-76`), which is the SDK rail when the flag is on. If Churnkey fails to prepare, the in-app `Cancel subscription` dialog opens instead. Back out of the survey with `Go Back` to leave the subscription intact.
+- **Cancel may open a retention offer first.** `launchCancellationFlow` (`src/platform/billing/subscription/launchCancellationFlow.ts`) prepares a retention flow for a personal workspace on workspace billing and passes it to the cancellation dialog. When offers are unavailable (422 or 503) the dialog opens without one. The cancellation itself goes through the billing rail: the SDK rail when the flag is on and the SDK route has not latched unavailable, otherwise the legacy rail (see "The fallback hides the rail" below).
 - **The credit slider is a native `input[type=range]`.** Clicking a tick label does nothing and keyboard arrows do not apply after a programmatic `focus()`. Drag the thumb (`left_click_drag`) to change tiers.
-- **Credit stops come from the top level of the plans payload**, not from each plan: `{current_plan_slug, plans, team_credit_stops:{default_stop_index, stops}}`. Stop ids are `team_<usd>` (`team_700`, `team_1400`, …). The hardcoded fallback in `constants/teamPlanCreditStops.ts` carries **no ids**, so if the API stops serving stops every subscribe/preview 400s with `team_credit_stop_id is required`.
+- **Credit stops come from the top level of the plans payload**, not from each plan: `{current_plan_slug, plans, team_credit_stops:{default_stop_index, stops}}`. Stop ids are `team_<usd>` (`team_700`, `team_1400`, …). The hardcoded fallback in `src/platform/billing/subscription/constants/teamPlanCreditStops.ts` carries **no ids**, so if the API stops serving stops every subscribe/preview 400s with `team_credit_stop_id is required`.
 - **A workspace with a scheduled plan change cannot change plan again.** The backend answers `400 SUBSCRIPTION_CHANGE_IN_PROGRESS`. Use a team workspace with no pending change to test the charged-amount path.
 - **The fallback hides the rail.** A 404 on the SDK route maps to `unavailable` → `DECLINED`, and the caller silently runs the legacy path; `billingSdkStore` then latches it for the whole tab. So a subscription that succeeds proves nothing about which transport served it. Always check resourceType. Once the latch trips, every later subscription call in that tab is legacy until the tab is closed.
 - **Behaviour difference worth reporting, not a pass/fail.** On the SDK rail, a subscription left parked mid-payment causes the app to open the payment page **by itself at startup**; the legacy rail leaves it behind a button. Observe whether a payment tab opens unprompted and whether the browser blocked it. A product decision is pending. Report what you see.

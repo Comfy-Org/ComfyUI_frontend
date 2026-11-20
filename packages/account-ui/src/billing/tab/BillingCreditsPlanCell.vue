@@ -2,7 +2,7 @@
   <div
     :class="
       cn(
-        'flex flex-1 flex-col gap-2 border-r border-card px-5 py-4',
+        'flex flex-1 flex-col gap-2 border-r border-border px-5 py-4',
         classes?.root
       )
     "

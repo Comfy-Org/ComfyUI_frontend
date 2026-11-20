@@ -454,6 +454,26 @@ describe('HostTelemetrySink', () => {
       }
     },
     {
+      name: TelemetryEvents.AGENT_ERROR,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentError({
+          error_class: 'workflow_sync_failed',
+          failure_stage: 'post_acceptance',
+          retryable: false,
+          turn_accepted: true,
+          ui_treatment: 'toast',
+          sync_error_code: 'stale_client_schema'
+        }),
+      properties: {
+        error_class: 'workflow_sync_failed',
+        failure_stage: 'post_acceptance',
+        retryable: false,
+        turn_accepted: true,
+        ui_treatment: 'toast',
+        sync_error_code: 'stale_client_schema'
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_WORKFLOW_BOUND,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentWorkflowBound({
@@ -557,6 +577,20 @@ describe('HostTelemetrySink', () => {
       properties: { reason: 'target_missing', step: 2 }
     },
     {
+      name: TelemetryEvents.AGENT_TARGET_UNAVAILABLE,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentTargetUnavailable({
+          cause: 'restore_not_listed',
+          workflow_id: 'wf-1',
+          startup_tab_restore_settled: false
+        }),
+      properties: {
+        cause: 'restore_not_listed',
+        workflow_id: 'wf-1',
+        startup_tab_restore_settled: false
+      }
+    },
+    {
       name: TelemetryEvents.AGENT_SEND_GATED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentSendGated({
@@ -578,11 +612,14 @@ describe('HostTelemetrySink', () => {
         client_session_id: 'client-session-1'
       }
     }
-  ])('forwards $name to the host bridge', ({ name, track, properties }) => {
-    track(new HostTelemetrySink())
+  ])(
+    'forwards $name with properties $properties to the host bridge',
+    ({ name, track, properties }) => {
+      track(new HostTelemetrySink())
 
-    expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
-  })
+      expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
+    }
+  )
 
   it('forwards link dedup drops to the host bridge', () => {
     new HostTelemetrySink().trackLinkDedupDrop({

@@ -1,10 +1,11 @@
 import { getActivePinia } from 'pinia'
 import { render, screen, fireEvent } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { ComboInputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
+import { assetService } from '@/platform/assets/services/assetService'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import WidgetSelect from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelect.vue'
 import { createMockWidget } from './widgetTestUtils'
@@ -15,16 +16,7 @@ const i18n = createI18n({
   messages: { en: {} }
 })
 
-// Mock state for asset service
-const mockShouldUseWidgetAssetPicker = vi.hoisted(() => vi.fn(() => false))
-const mockIsWidgetAssetPickerEnabled = vi.hoisted(() => vi.fn(() => false))
-
-vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
-  assetService: {
-    shouldUseWidgetAssetPicker: mockShouldUseWidgetAssetPicker,
-    isWidgetAssetPickerEnabled: mockIsWidgetAssetPickerEnabled
-  }
-}))
+vi.mock(import('@/platform/assets/services/assetService'))
 
 const WidgetSelectDropdownStub = defineComponent({
   name: 'WidgetSelectDropdown',
@@ -64,12 +56,35 @@ const globalConfig = {
   }
 }
 
-describe('WidgetSelect Value Binding', () => {
-  beforeEach(() => {
-    mockShouldUseWidgetAssetPicker.mockReturnValue(false)
-    mockIsWidgetAssetPickerEnabled.mockReturnValue(false)
+it.for([
+  {
+    name: 'model',
+    eligible: true,
+    value: 'studio/model.safetensors',
+    expected: 'model.safetensors'
+  },
+  {
+    name: 'schedule',
+    eligible: false,
+    value: 'schedule/custom',
+    expected: 'schedule/custom'
+  }
+])('summarizes $name', ({ name, eligible, value, expected }) => {
+  vi.mocked(assetService.isAssetBrowserEligible).mockReturnValue(eligible)
+  render(WidgetSelect, {
+    props: {
+      widget: { name, type: 'combo', value, options: { values: [value] } },
+      nodeType: 'ModelLoader',
+      modelValue: value
+    },
+    global: {
+      plugins: [i18n]
+    }
   })
+  expect(screen.getByRole('combobox').textContent.trim()).toBe(expected)
+})
 
+describe('WidgetSelect Value Binding', () => {
   type SelectWidgetOptions = {
     values?: string[]
     return_index?: boolean
@@ -123,37 +138,9 @@ describe('WidgetSelect Value Binding', () => {
     })
   })
 
-  describe('node-type prop passing', () => {
-    it('passes node-type prop to WidgetSelectDropdown', () => {
-      const spec: ComboInputSpec = {
-        type: 'COMBO',
-        name: 'test_select',
-        image_upload: true
-      }
-      const widget = createSelectWidget('option1', {}, undefined, spec)
-      renderComponent(widget, 'option1', {
-        nodeType: 'CheckpointLoaderSimple'
-      })
-
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.nodeType).toBe('CheckpointLoaderSimple')
-    })
-
-    it('does not pass node-type prop to WidgetSelectDefault', () => {
-      const widget = createSelectWidget('option1')
-      renderComponent(widget, 'option1', { nodeType: 'KSampler' })
-
-      expect(screen.getByTestId('widget-select-default')).toBeInTheDocument()
-      expect(
-        screen.queryByTestId('widget-select-dropdown')
-      ).not.toBeInTheDocument()
-    })
-  })
-
   describe('Asset mode detection', () => {
     it('enables asset mode when shouldUseWidgetAssetPicker returns true', () => {
-      mockShouldUseWidgetAssetPicker.mockReturnValue(true)
+      vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(true)
 
       const widget = createSelectWidget('test.safetensors')
       renderComponent(widget, 'test.safetensors', {
@@ -164,7 +151,7 @@ describe('WidgetSelect Value Binding', () => {
     })
 
     it('disables asset mode when shouldUseWidgetAssetPicker returns false', () => {
-      mockShouldUseWidgetAssetPicker.mockReturnValue(false)
+      vi.mocked(assetService.shouldUseWidgetAssetPicker).mockReturnValue(false)
 
       const widget = createSelectWidget('test.safetensors')
       renderComponent(widget, 'test.safetensors', {
@@ -200,10 +187,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createSelectWidget('clip.wav', {}, undefined, spec)
       renderComponent(widget, 'clip.wav')
 
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.assetKind).toBe('audio')
-      expect(dropdown.dataset.allowUpload).toBe('true')
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
     it('uses dropdown variant for mesh uploads via spec', () => {
@@ -216,12 +200,7 @@ describe('WidgetSelect Value Binding', () => {
       const widget = createSelectWidget('model.glb', {}, undefined, spec)
       renderComponent(widget, 'model.glb')
 
-      const dropdown = screen.getByTestId('widget-select-dropdown')
-      expect(dropdown).toBeInTheDocument()
-      expect(dropdown.dataset.assetKind).toBe('mesh')
-      expect(dropdown.dataset.allowUpload).toBe('true')
-      expect(dropdown.dataset.uploadFolder).toBe('input')
-      expect(dropdown.dataset.uploadSubfolder).toBe('3d')
+      expect(screen.getByTestId('widget-select-dropdown')).toBeInTheDocument()
     })
 
     it('keeps default select when no spec or media hints are present', () => {

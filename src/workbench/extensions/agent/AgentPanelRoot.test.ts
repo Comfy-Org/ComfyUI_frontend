@@ -13,6 +13,7 @@ import type {
   BillingStatus,
   GlobalSetting,
   PaginationInfo,
+  SubscriptionState,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
 import type { User } from 'firebase/auth'
@@ -204,6 +205,7 @@ const appMock = vi.hoisted(() => {
     ui: { autoQueueEnabled: false },
     graph,
     rootGraph: graph,
+    rootGraphOrUndefined: graph,
     isGraphReady: false,
     canvas: undefined as
       | LGraphCanvas
@@ -284,6 +286,7 @@ const paywallBilling = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'unknown',
   status: 'paid' as BillingStatus | null,
   isActive: true,
+  subscriptionState: 'active' as SubscriptionState | null,
   fetchStatus: vi.fn<() => Promise<void>>()
 }))
 const paywallHasFunds = ref<boolean | null>(false)
@@ -428,6 +431,8 @@ beforeEach(() => {
       type: computed(() => paywallBilling.type),
       billingStatus: computed(() => paywallBilling.status),
       canAccessSubscriptionFeatures: computed(() => paywallBilling.isActive),
+      isInitialized: computed(() => true),
+      subscriptionState: computed(() => paywallBilling.subscriptionState),
       fetchStatus: paywallBilling.fetchStatus
     })
   )
@@ -545,6 +550,7 @@ beforeEach(() => {
   paywallBilling.tier = 'STANDARD'
   paywallBilling.type = 'workspace'
   paywallBilling.status = 'paid'
+  paywallBilling.subscriptionState = 'active'
   paywallBilling.isActive = true
   paywallBilling.fetchStatus.mockReset().mockResolvedValue(undefined)
   paywallHasFunds.value = false
@@ -728,6 +734,33 @@ describe('AgentPanelRoot first-use experience', () => {
     )
   })
 
+  it('prefills a pending Cloud handoff on mount without replacing the draft or sending it', async () => {
+    useAgentComposerStore().setText('Keep my draft')
+    useAgentPanelStore().pendingCloudHandoff = 'Prepare this workflow on Cloud.'
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(await screen.findByRole('textbox')).toHaveTextContent(
+      'Keep my draft Prepare this workflow on Cloud.'
+    )
+    expect(screen.queryByTestId('user-message-bubble')).not.toBeInTheDocument()
+    expect(useAgentPanelStore().pendingCloudHandoff).toBeNull()
+  })
+
+  it('prefills a Cloud handoff in an already mounted composer without sending it', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+
+    useAgentPanelStore().pendingCloudHandoff = 'Prepare this workflow on Cloud.'
+
+    await waitFor(() =>
+      expect(screen.getByRole('textbox')).toHaveTextContent(
+        'Prepare this workflow on Cloud.'
+      )
+    )
+    expect(screen.queryByTestId('user-message-bubble')).not.toBeInTheDocument()
+  })
+
   it('opens directly to the composer without another dialog', async () => {
     const history = useAgentChatHistoryStore()
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -747,7 +780,7 @@ describe('AgentPanelRoot first-use experience', () => {
     paywallAgentScopedHasFundsAuthoritative.value = true
     vi.mocked(useFreeUsePlacement).mockReturnValueOnce(
       fromPartial({
-        variant: ref('top-banner'),
+        variant: ref('near-composer'),
         reportNotice: reportFreeUseNotice
       })
     )
@@ -757,7 +790,7 @@ describe('AgentPanelRoot first-use experience', () => {
     return screen.findByRole('note', { name: 'Free use notice' })
   }
 
-  it('forwards free-use notice interactions to the experiment', async () => {
+  it('forwards Local free-use notice interactions to telemetry', async () => {
     placeFundedFreeUseNotice()
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -766,8 +799,8 @@ describe('AgentPanelRoot first-use experience', () => {
     )
 
     expect(reportFreeUseNotice.mock.calls).toEqual([
-      [{ action: 'shown', placement: 'top-banner' }],
-      [{ action: 'dismissed', placement: 'top-banner' }]
+      [{ action: 'shown', placement: 'near-composer' }],
+      [{ action: 'dismissed', placement: 'near-composer' }]
     ])
   })
 
@@ -1319,6 +1352,39 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
+  it('says Add credits does not start a Cloud plan for an owner without one', async () => {
+    paywallBilling.tier = 'FREE'
+    paywallBilling.isActive = false
+    paywallBilling.subscriptionState = 'never_subscribed'
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: toTurnId('msg-paywall'),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    expect(
+      await screen.findByTestId('agent-paywall-plan-note')
+    ).toHaveTextContent("Buying credits doesn't start a Cloud plan.")
+  })
+
+  it('keeps the plan note out for an owner with an active plan', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: toTurnId('msg-paywall'),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    expect(await findInlinePaywallButton('Add credits')).toBeInTheDocument()
+    expect(screen.queryByTestId('agent-paywall-plan-note')).toBeNull()
+  })
+
   it('shows Subscribe only when the server allows self-serve subscription but not top-up', async () => {
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -1443,6 +1509,8 @@ describe('AgentPanelRoot paywall telemetry', () => {
         tier,
         type: computed(() => 'workspace'),
         billingStatus: computed(() => 'paid'),
+        isInitialized: computed(() => true),
+        subscriptionState: computed(() => 'active' as const),
         fetchStatus: vi.fn().mockResolvedValue(undefined)
       })
     )
@@ -8928,7 +8996,7 @@ describe('AgentPanelRoot workflow binding', () => {
   )
 
   it.for(['workspace', 'unknown'] as const)(
-    'leaves the $ post-consent billing refresh to the dock host on first send',
+    'leaves the %s post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')
       mockMessagesEndpoint('wf-42')
@@ -10736,7 +10804,7 @@ describe('AgentPanelRoot workflow binding', () => {
     { previous: 'th-current', outcome: 'pending' },
     { previous: 'th-current', outcome: 'failed' }
   ])(
-    'keeps an unfinished history selection hidden after remount: %o',
+    'keeps an unfinished history selection hidden after remount: previous=$previous, outcome=$outcome',
     async ({ previous, outcome }) => {
       makeTab('wf-current')
       const saved = addTab('workflows/portrait.json')
@@ -12562,6 +12630,31 @@ describe('AgentPanelRoot workflow binding', () => {
         duration: Number.POSITIVE_INFINITY
       })
     )
+  })
+
+  it('reports a refused subscribe as a workflow sync failure with its code, never the host message', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add a node')
+    telemetry.trackAgentError.mockClear()
+
+    dispatchApiEvent('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-42',
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'Expected schema 4, found 5'
+    })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledExactlyOnceWith({
+      error_class: 'workflow_sync_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'toast',
+      sync_error_code: 'schema_version_mismatch'
+    })
   })
 
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
@@ -14633,6 +14726,8 @@ describe('AgentPanelRoot workflow binding', () => {
           failure_kind: 'bad_state',
           feature_area: 'agent',
           operation: 'send',
+          stale_cause: 'socket_closed',
+          stale_terminal: 'none',
           outcome: 'withheld'
         },
         context: { workflowId: 'wf-42' }
@@ -17039,3 +17134,71 @@ describe('AgentPanelRoot agent socket identity', () => {
 function dispatchApiEvent(type: string, detail: unknown): void {
   ws.emit(type, detail)
 }
+
+describe('AgentPanelRoot proactive qualification', () => {
+  const assignment = {
+    userId: 'account-a',
+    workspaceId: 'workspace-proactive',
+    variant: 'B' as const
+  }
+
+  beforeEach(() => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: assignment.workspaceId
+    })
+    Object.assign(useAgentPanelStore(), { enabled: true, isOpen: true })
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-proactive',
+      'true'
+    )
+    mockMessagesEndpoint('wf-proactive')
+  })
+
+  it('makes no usage request when the experiment is unconfigured', async () => {
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await screen.findByRole('textbox')
+    await settleFollow()
+    expect(fetchRequests('/api/agent/usage-status')).toHaveLength(0)
+    expect(
+      screen.getByRole('heading', { name: 'What do you want to make?' })
+    ).toBeVisible()
+  })
+
+  it('shows the assigned greeting only after qualification and retires it at the accepted send', async () => {
+    const target = addTab('workflows/proactive.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({
+        id: 'wf-proactive',
+        nodes: []
+      })
+    })
+    workflowStore.activeWorkflow = target
+    useAgentWorkflowTabBindingStore().bind('wf-proactive', target.path)
+    useAgentPanelStore().setWorkflowTarget(target)
+    const delegate = vi.mocked(fetch).getMockImplementation()!
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      String(input).includes('/agent/usage-status')
+        ? Promise.resolve(json(200, { has_used_agent: false }))
+        : delegate(input, init)
+    )
+    render(AgentPanelRoot, {
+      props: { proactiveAssignment: assignment },
+      global: { plugins: [i18n] }
+    })
+    expect(
+      await screen.findByRole('heading', {
+        name: 'A little help to get you started!'
+      })
+    ).toBeVisible()
+    expect(screen.getByRole('textbox')).toHaveTextContent(
+      'What can you help me with?'
+    )
+    await waitFor(() => expect(screen.getByRole('textbox')).toHaveFocus())
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+    await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
+    expect(
+      await screen.findByRole('heading', { name: 'What do you want to make?' })
+    ).toBeVisible()
+    expect(fetchRequests('/api/agent/usage-status')).toHaveLength(1)
+  })
+})

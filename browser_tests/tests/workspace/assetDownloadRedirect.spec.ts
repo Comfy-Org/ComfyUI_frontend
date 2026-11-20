@@ -8,7 +8,7 @@ import { WEB_SESSION_COOKIE } from '@e2e/fixtures/data/webSession'
 
 test.use({
   firebaseLogin: false,
-  serverFeatures: { assets: true, unified_cloud_auth: true }
+  serverFeatures: { assets: true }
 })
 
 for (const workspace of ['ws-personal', 'ws-team']) {

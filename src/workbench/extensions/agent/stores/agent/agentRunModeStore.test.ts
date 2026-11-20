@@ -270,7 +270,7 @@ describe('agentRunModeStore', () => {
     ['auto_limited', 0],
     ['auto_limited', 1.5]
   ] as const)(
-    'rejects an invalid mode and credit-limit pairing before sending',
+    'rejects mode %s with credit limit %s before sending',
     async ([mode, creditLimit]) => {
       const store = useAgentRunModeStore()
 

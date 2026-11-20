@@ -2,10 +2,14 @@
 import {
   HoverCardContent,
   injectHoverCardRootContext,
-  useForwardProps,
+  useForwardPropsEmits,
   HoverCardPortal
 } from 'reka-ui'
-import type { HoverCardContentProps } from 'reka-ui'
+import type {
+  FocusOutsideEvent,
+  HoverCardContentProps,
+  PointerDownOutsideEvent
+} from 'reka-ui'
 import { computed } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
@@ -18,7 +22,17 @@ const {
   ...rest
 } = defineProps<HoverCardContentProps & { class?: HTMLAttributes['class'] }>()
 
-const forwarded = useForwardProps(computed(() => rest))
+const emits = defineEmits<{
+  escapeKeyDown: [event: KeyboardEvent]
+  pointerDownOutside: [event: PointerDownOutsideEvent]
+  focusOutside: [event: FocusOutsideEvent]
+  interactOutside: [event: PointerDownOutsideEvent | FocusOutsideEvent]
+}>()
+
+const forwarded = useForwardPropsEmits(
+  computed(() => rest),
+  emits
+)
 
 const { open } = injectHoverCardRootContext()
 </script>

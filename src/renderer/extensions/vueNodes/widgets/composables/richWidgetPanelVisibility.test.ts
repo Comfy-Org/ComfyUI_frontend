@@ -53,7 +53,7 @@ describe('rich widget panel visibility', () => {
       inputSpec: { type: 'IMAGECOMPARE', name: 'compare' }
     }
   ])(
-    'renders $widgetType on the node body but not in the right side panel',
+    'renders $widgetType on the node body but not in the properties panel',
     ({ widgetType, construct, inputSpec }) => {
       const node = new LGraphNode('RichWidgetNode')
 

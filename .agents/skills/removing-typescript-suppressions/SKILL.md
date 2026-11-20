@@ -40,13 +40,9 @@ Remove the in-scope suppressions, then run the narrowest typecheck that owns the
 files. Use the compiler diagnostics to group failures by root cause instead of
 patching each line independently.
 
-Common commands in this repository:
-
-```bash
-pnpm typecheck
-pnpm typecheck:browser
-pnpm typecheck:scripts
-```
+`pnpm typecheck` does not cover every path; `docs/guidance/typescript.md` lists
+the script that owns `browser_tests/`, `scripts/`, `tools/`, and
+`apps/billing-web/`.
 
 ### 4. Repair the contract
 
@@ -84,13 +80,15 @@ changes a shared type, public contract, store, or cross-package boundary.
 ### Narrow optional browser globals once
 
 Copy an optional global to a local and guard it. This preserves narrowing across
-callbacks and asynchronous code.
+callbacks and asynchronous code. Return the failure to the caller instead of
+throwing (see `docs/guidance/error-handling.md`):
 
 ```typescript
-const app = window.app
-if (!app) throw new Error('ComfyUI app is not initialized')
-
-await app.api.getNodeDefs()
+async function loadNodeDefs() {
+  const app = window.app
+  if (!app) return undefined
+  return app.api.getNodeDefs()
+}
 ```
 
 ### Use the owner instead of casting a facade
@@ -131,7 +129,7 @@ if (!node?.widgets?.length) return {}
 ```
 
 Use optional chaining only when the missing value and the empty value have the
-same behavior. Otherwise, use a guard with a useful error.
+same behavior. Otherwise, guard and return a failure value the caller handles.
 
 ### Use named payloads across callback boundaries
 
@@ -140,10 +138,9 @@ and similar APIs. Pass an object instead of asserting a tuple:
 
 ```typescript
 await page.evaluate(
-  ({ nodeName, displayName, inputNames }) => {
-    // use the independently typed fields
-  },
-  { nodeName, displayName, inputNames }
+  ({ nodeName, inputNames }) =>
+    inputNames.map((inputName) => `${nodeName}.${inputName}`),
+  { nodeName, inputNames }
 )
 ```
 
@@ -156,13 +153,12 @@ validate data.
 
 ### Make test preconditions executable
 
-If a test needs optional output, narrow it with a runtime guard that produces a
-clear behavioral failure:
+If a test needs optional output, narrow it with an assertion that fails the test
+with a clear message:
 
 ```typescript
-if (!serialized.inputs || !serialized.outputs) {
-  throw new Error('Expected serialized node labels')
-}
+assert.exists(serialized.inputs, 'serialized node has inputs')
+assert.exists(serialized.outputs, 'serialized node has outputs')
 ```
 
 Do not replace the suppression with a non-null assertion.
@@ -185,10 +181,7 @@ delete it. Put useful context on the value that the code actually checks.
 
 ## Guardrails
 
-- Do not hand-declare server response types. Import generated shared types.
 - Do not grow `ExtensionManager` or another public API to expose private state.
-- Put reusable type guards in leaf modules with runtime-free `import type`
-  dependencies.
 - Do not change runtime behavior while repairing types unless the old code was
   demonstrably inconsistent with its runtime contract. Cover such a bug with a
   focused test.

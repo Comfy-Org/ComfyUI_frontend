@@ -161,7 +161,7 @@
       <WidgetInputNumberInput
         v-if="hasTrim"
         v-model="startFrame"
-        root-class="col-span-full grid grid-cols-subgrid items-center"
+        root-class="col-span-full"
         :widget="startFrameWidget"
         @update:model-value="emit('editEnd', 'trim:start')"
       />
@@ -169,7 +169,7 @@
       <WidgetInputNumberInput
         v-if="hasTrim"
         v-model="endFrame"
-        root-class="col-span-full grid grid-cols-subgrid items-center"
+        root-class="col-span-full"
         :widget="endFrameWidget"
         @update:model-value="emit('editEnd', 'trim:end')"
       />

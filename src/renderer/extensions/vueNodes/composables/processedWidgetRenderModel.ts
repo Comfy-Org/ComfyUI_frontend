@@ -1,5 +1,8 @@
+import { computed } from 'vue'
+
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
@@ -12,7 +15,7 @@ import type {
 import WidgetDOM from '@/renderer/extensions/vueNodes/widgets/components/WidgetDOM.vue'
 import WidgetLegacy from '@/renderer/extensions/vueNodes/widgets/components/WidgetLegacy.vue'
 import { getComponent } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
@@ -49,6 +52,7 @@ import {
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
+import { getWidgetSizing } from '@/lib/litegraph/src/utils/widgetLayout'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'
 function isTooltipValueType(val: unknown): val is TooltipValueType {
@@ -68,9 +72,7 @@ interface WidgetErrorTarget {
 }
 
 export interface ProcessedWidget extends WidgetGridItem {
-  handleContextMenu: (e: PointerEvent) => void
   hasError: boolean
-  hasLayoutSize: boolean
   tooltipText: string
   updateHandler: (value: WidgetValue) => void
   widgetId: WidgetId
@@ -78,7 +80,7 @@ export interface ProcessedWidget extends WidgetGridItem {
 
 export interface WidgetUiCallbacks {
   getTooltipText: (widget: WidgetTooltipSource, fullValue?: string) => string
-  handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
+  handleNodeRightClick?: (e: PointerEvent, nodeId: NodeId) => void
 }
 
 export interface ComputeProcessedWidgetsOptions {
@@ -125,6 +127,7 @@ function createSlotMetadata(
       ? originNode?.outputs[link.originSlot]?.name
       : undefined,
     promoted: input.widgetId !== undefined,
+    shape: input.shape,
     type: String(input.type)
   }
 }
@@ -231,7 +234,7 @@ function createWidgetUpdateHandler({
     if (live) {
       const normalized = normalizeWidgetValue(newValue)
       live.widget.value = normalized
-      live.widget.callback?.(normalized, app.canvas, live.node)
+      live.widget.callback?.(normalized, useApp().canvas, live.node)
       live.node.widgets?.forEach((w) => w.triggerDraw?.())
     }
 
@@ -357,6 +360,20 @@ interface WidgetProcessingContext {
   ui: WidgetUiCallbacks
 }
 
+function widgetContextMenu(
+  ctx: WidgetProcessingContext,
+  widgetName: string
+): ((e: PointerEvent) => void) | undefined {
+  const { handleNodeRightClick } = ctx.ui
+  if (!handleNodeRightClick) return undefined
+  return (e) => {
+    e.preventDefault()
+    e.stopPropagation()
+    handleNodeRightClick(e, ctx.nodeData.id)
+    showNodeOptions(e, { nodeId: ctx.nodeData.id, widgetName })
+  }
+}
+
 function processWidget(
   id: WidgetId,
   ctx: WidgetProcessingContext
@@ -427,27 +444,26 @@ function processWidget(
     { name: widgetState.name, tooltip: renderState?.tooltip },
     fullValue
   )
-  const handleContextMenu = (e: PointerEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    ctx.ui.handleNodeRightClick(e, ctx.nodeData.id)
-    showNodeOptions(e, {
-      nodeId: ctx.nodeData.id,
-      widgetName: widgetState.name
-    })
-  }
 
-  return {
-    handleContextMenu,
-    hasLayoutSize: renderState?.hasLayoutSize ?? false,
-    hasError: hasWidgetError(
+  const error = computed(() =>
+    hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,
       ctx.nodeErrors,
       ctx.executionErrorStore,
       ctx.missingModelStore,
       ctx.missingMediaStore
-    ),
+    )
+  )
+
+  return {
+    handleContextMenu: widgetContextMenu(ctx, widgetState.name),
+    get sizing() {
+      return live ? getWidgetSizing(live.widget, live.node) : undefined
+    },
+    get hasError() {
+      return error.value
+    },
     widgetId: id,
     renderKey: `${id}:${type}`,
     vueComponent:
@@ -530,4 +546,47 @@ export function computeProcessedWidgets({
   return Array.from(new Set(ids))
     .map((id) => processWidget(id, ctx))
     .filter((widget): widget is ProcessedWidget => widget !== null)
+}
+
+export function computeInputRows(
+  nodeData: NodeState | undefined,
+  rootGraph: LGraph | null
+): WidgetGridItem[] {
+  const hostNode = nodeData && getHostNode(rootGraph, nodeData)
+  const graphRef = hostNode?.graph
+  if (!nodeData || !hostNode || !graphRef) return []
+  const linkStore = useLinkStore()
+  const scope = graphScopeOf(graphRef)
+  return nodeData.inputs.flatMap((input, index) => {
+    const role = autogrowInputRole(hostNode, input)
+    if (!role) return []
+    const link = linkStore.getInputSlotLink(scope, nodeData.id, index)
+    return [
+      {
+        inputRole: role === 'group' ? 'autogrowGroup' : 'socket',
+        renderKey: `input:${input.name}`,
+        simplified: {
+          name: input.name,
+          label: input.label ?? input.localized_name,
+          type: String(input.type),
+          value: undefined
+        },
+        slotMetadata: createSlotMetadata(input, index, link, graphRef),
+        visible: role === 'child'
+      }
+    ]
+  })
+}
+
+export function withInputRows(
+  widgets: WidgetGridItem[],
+  inputRows: WidgetGridItem[]
+): WidgetGridItem[] {
+  const rows = [...widgets]
+  for (const row of inputRows) {
+    const index = row.slotMetadata?.index ?? -1
+    const next = rows.findIndex((r) => (r.slotMetadata?.index ?? -1) > index)
+    rows.splice(next === -1 ? rows.length : next, 0, row)
+  }
+  return rows
 }

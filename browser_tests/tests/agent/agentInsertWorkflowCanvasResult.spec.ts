@@ -206,8 +206,6 @@ test.describe(
       })
       await loadIntoBootWorkflow(page, BLANK_WORKFLOW)
 
-      // Drive the turn through the real, public Agent panel -- not a raw
-      // CRDT call -- exactly as a user would trigger the tool.
       const agentPanel = new AgentPanel(page)
       await agentPanel.open()
       const socket = await getAgentSocket()
@@ -228,8 +226,6 @@ test.describe(
           )
         )
 
-      // The fake host: an empty document, matching the follower's own empty
-      // starting state, so the canvas is genuinely blank before the tool runs.
       const host = new HostDoc(WORKFLOW_ID, { nodes: [], links: [] }, catalog)
       for (const frame of host.initialSync()) socket.send(JSON.stringify(frame))
 
@@ -237,8 +233,6 @@ test.describe(
         .poll(() => page.evaluate(() => window.app!.graph.nodes.length))
         .toBe(0)
 
-      // The tool call executes: `insert_workflow` lands as a live doc_update,
-      // the same delta shape a real turn's CRDT broadcast carries.
       const applied = host.apply(insertWorkflowOps())
       socket.send(JSON.stringify(applied))
 
@@ -281,14 +275,10 @@ test.describe(
         }
       })
 
-      // Widget: the promoted `text`/`seed` values from the inserted subgraph
-      // read back correctly on the live node.
       expect(canvasState.widgets).toEqual([
         { name: 'text', value: PROMPT_TEXT },
         { name: 'seed', value: SEED_VALUE }
       ])
-      // Link: the freshly-inserted source connects to the freshly-inserted
-      // subgraph instance's promoted `clip` input, not to nothing / itself.
       expect(canvasState.linkOriginId).toBe(canvasState.sourceId)
       expect(canvasState.linkTargetId).toBe(canvasState.hostId)
       expect(canvasState.linkType).toBe('CLIP')
@@ -297,15 +287,12 @@ test.describe(
         .getByRole('button', { name: 'Fit View (.)', exact: true })
         .click()
 
-      // Same widget values, now asserted against the rendered Vue node DOM --
-      // the user-visible surface Christian's review asked for, not just the
-      // graph model.
       const hostNode = new VueNodeHelpers(page).getNodeLocator(
         canvasState.hostId
       )
       await expect(hostNode.getByRole('textbox')).toHaveValue(PROMPT_TEXT)
       await expect(
-        hostNode.getByLabel('seed', { exact: true }).getByRole('spinbutton')
+        hostNode.getByRole('spinbutton', { name: 'seed', exact: true })
       ).toHaveValue(String(SEED_VALUE))
 
       await testInfo.attach('insert-workflow-result.png', {

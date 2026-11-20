@@ -601,6 +601,25 @@ export class AgentConversationHarness {
     return [...latest.values()]
   }
 
+  private async expectWidgetValuesReplayed(throughTurn: number): Promise<void> {
+    for (const { nodeId, widget, value } of this.recordedWidgetValues(
+      throughTurn
+    )) {
+      const field = this.vueNodes
+        .getNodeLocator(nodeId)
+        .getByLabel(widget, { exact: true })
+      if (typeof value === 'number') {
+        await expect
+          .poll(async () => Number(await field.inputValue()))
+          .toBe(value)
+        continue
+      }
+      const tag = await field.evaluate((el) => el.tagName.toLowerCase())
+      if (tag === 'button') await expect(field).toContainText(value)
+      else await expect(field).toHaveValue(value)
+    }
+  }
+
   // The renderer's link map names the endpoints no DOM surface does; the
   // painted result is a screenshot expectation in the replay spec.
   private async renderedLinks(): Promise<RecordedLink[]> {
@@ -726,25 +745,7 @@ export class AgentConversationHarness {
     }
     await expect(this.page.getByTestId('node-title')).toHaveCount(nodes.length)
 
-    for (const { nodeId, widget, value } of this.recordedWidgetValues(
-      throughTurn
-    )) {
-      const field = this.vueNodes
-        .getNodeLocator(nodeId)
-        .getByLabel(widget, { exact: true })
-      if (typeof value === 'number') {
-        // Number widgets format their input (0.5 renders as 0.50), so compare the number.
-        await expect
-          .poll(async () =>
-            Number(await field.locator('input').first().inputValue())
-          )
-          .toBe(value)
-        continue
-      }
-      const tag = await field.evaluate((el) => el.tagName.toLowerCase())
-      if (tag === 'button') await expect(field).toContainText(value)
-      else await expect(field).toHaveValue(value)
-    }
+    await this.expectWidgetValuesReplayed(throughTurn)
 
     const projectedLinks = projected.links.map((raw): RecordedLink => {
       const [, fromNode, fromSlot, toNode, toSlot] = zProjectedLink.parse(raw)
@@ -777,8 +778,6 @@ export class AgentConversationHarness {
     )
     links.sort(byLinkKey)
     await expect.poll(() => this.renderedLinks()).toEqual(links)
-    // A widget-backed input renders no slot row on an uncollapsed node
-    // (NodeSlots.vue); the wire above already covers that end.
     for (const link of links) {
       await expect(
         this.vueNodes.getOutputSlotRow(link.fromNode, link.fromSlot)
@@ -1294,6 +1293,11 @@ export class AgentConversationHarness {
   }
 
   async reloadWithoutLocalWorkflow(): Promise<void> {
+    const settings = this.comfyPage.settings
+    const persist = await settings.getSetting('Comfy.Workflow.Persist')
+    const confirm = await settings.getSetting('Comfy.Window.UnloadConfirmation')
+    await settings.setSetting('Comfy.Workflow.Persist', false)
+    await settings.setSetting('Comfy.Window.UnloadConfirmation', false)
     await this.page.evaluate(() => {
       for (const storage of [localStorage, sessionStorage]) {
         const workflowKeys = Object.keys(storage).filter((key) =>
@@ -1308,6 +1312,8 @@ export class AgentConversationHarness {
       state: 'hidden',
       timeout: PANEL_MOUNT_TIMEOUT
     })
+    await settings.setSetting('Comfy.Workflow.Persist', persist)
+    await settings.setSetting('Comfy.Window.UnloadConfirmation', confirm)
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
   }
@@ -1567,10 +1573,7 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   },
   viewport: VIEWPORT,
   video: {
-    mode:
-      process.env.PLAYWRIGHT_LOCAL || process.env.RECORD_VIDEO === 'true'
-        ? 'on'
-        : 'off',
+    mode: process.env.RECORD_VIDEO === 'true' ? 'on' : 'off',
     size: VIEWPORT
   },
   agentConversation: async (
