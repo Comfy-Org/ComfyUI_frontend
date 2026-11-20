@@ -386,7 +386,7 @@ registered, so `extend` cannot depend on the order.
 29. A definition may also declare `onConnectionsChanged` and
     `onPropertyChanged`.
 
-### Menus and colours
+### Menus and colors
 
 30. `addMenuItem(item)` adds an entry to the context menu of the type's
     nodes, through the host extension's `getNodeMenuItems` hook, which both
@@ -405,29 +405,29 @@ registered, so `extend` cannot depend on the order.
     Entries are sorted by `order` (none counts as 0); ties keep the order they
     were added in. A `run` for a node that has been removed since the menu
     opened does nothing.
-32. `typeColor(type)` reads the colour the host draws a data type's links in
+32. `typeColor(type)` reads the color the host draws a data type's links in
     (`LGraphCanvas.link_type_colors`), and `undefined` when the type has none
     or an empty one.
-33. `setTypeColor(type, color)` colours a type the palette leaves uncoloured,
-    such as one the pack introduced. A type whose colour is the newest pack
-    colour for it may be coloured again, by the same pack or another (review
-    finding B-15): the newest colour shows. Each disposer removes only its own
-    colour; when it removes the colour on show the next newest shows, and
+33. `setTypeColor(type, color)` colors a type the palette leaves uncolored,
+    such as one the pack introduced. A type whose color is the newest pack
+    color for it may be colored again, by the same pack or another (review
+    finding B-15): the newest color shows. Each disposer removes only its own
+    color; when it removes the color on show the next newest shows, and
     when it removes the last one the table gets back what it held before the
-    first, unless a palette has coloured the type since. A type the palette
-    colours, and a name `Object.prototype` has (`__proto__`, `constructor`),
+    first, unless a palette has colored the type since. A type the palette
+    colors, and a name `Object.prototype` has (`__proto__`, `constructor`),
     are refused with a `TypeError`.
-34. Applying a palette writes an empty colour for every data type it has no
-    colour for, which would clear a pack's colour. The theme service calls the
+34. Applying a palette writes an empty color for every data type it has no
+    color for, which would clear a pack's color. The theme service calls the
     host side's `reapplyTypeColors()` after it applies a palette; it puts back
-    each pack colour the palette cleared and leaves a colour the palette set.
+    each pack color the palette cleared and leaves a color the palette set.
 35. `nodeColor(name)` gives a frozen copy of an entry of
     `LGraphCanvas.node_colors`, and `undefined` for a name the menu does not
     have, a property of `Object.prototype` included.
 36. `isTypeCompatible(outputType, inputType)` is
     `LiteGraph.isValidConnection`, the rule the host links by.
 37. Every type name given to `define`, `setTypeColor` or `typeColor`, every
-    colour and every colour name must be non-empty text. `extend`, `get` and
+    color and every color name must be non-empty text. `extend`, `get` and
     `has` take `''` as a name no type has.
 
 ### Left out
@@ -579,7 +579,7 @@ registered, so `extend` cannot depend on the order.
   `AppModeWidgetList.vue`'s `nodeToNodeData` pass functions that call the
   method on the node (`onDragOver: (e) => node.onDragOver?.(e)`, and the
   same for `onDragDrop`).
-- The type colours are global, as the host's table is: a pack's colour for a
+- The type colors are global, as the host's table is: a pack's color for a
   type shows in every document.
 - Host changes: `useComfyApiStore().publish()` registers the extension;
   `themeService.setActiveTheme` calls `useComfyApiStore().reapplyTypeColors()`
@@ -612,11 +612,11 @@ registered, so `extend` cannot depend on the order.
 - **Saved fields** go through the host's extension payload in
   `extensionPersistence.ts`, and the fields it saves itself are its own list
   (`isNodeCanonicalField`).
-- **Type colours** are the host's own table, with a record of each pack's
-  claim beside it so a disposer can take back only its own colour.
+- **Type colors** are the host's own table, with a record of each pack's
+  claim beside it so a disposer can take back only its own color.
   `getLinkTypeColor` in `litegraphUtil.ts` reads the same table but gives the
-  default link colour for a type with none, which would hide that the type
-  is uncoloured.
+  default link color for a type with none, which would hide that the type
+  is uncolored.
 - **A defined type's presentation** uses the host's own class fields
   (`title_mode`, `collapsable`) and the edit core's `chooseResizable` for
   `resizable`; nothing new holds it, and nothing puts it back after the

@@ -493,8 +493,8 @@ describe('useThemeService', () => {
   })
 })
 
-describe('pack colours across palettes', () => {
-  it('puts back the colour a pack gave its own type after a palette clears it', async () => {
+describe('pack colors across palettes', () => {
+  it('puts back the color a pack gave its own type after a palette clears it', async () => {
     clearRootThemeAfterTest()
     const before = { ...LGraphCanvas.link_type_colors }
     onTestFinished(() => {

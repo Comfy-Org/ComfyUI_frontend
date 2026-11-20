@@ -331,10 +331,10 @@ describe('node menus and colors', () => {
     })
 
     it('reads the color of a type, and nothing for a type nothing colors', () => {
-      LGraphCanvas.link_type_colors.COLOURED = '#123'
+      LGraphCanvas.link_type_colors.COLORED = '#123'
       LGraphCanvas.link_type_colors.CLEARED = ''
 
-      expect(defs.typeColor('COLOURED')).toBe('#123')
+      expect(defs.typeColor('COLORED')).toBe('#123')
       expect(defs.typeColor('CLEARED')).toBeUndefined()
       expect(defs.typeColor('UNKNOWN')).toBeUndefined()
       expect(defs.typeColor('__proto__')).toBeUndefined()
@@ -405,14 +405,14 @@ describe('node menus and colors', () => {
 
     it('puts a pack color back after a palette clears it, and leaves a palette color', () => {
       defs.setTypeColor('CLEARED_BY_PALETTE', '#a00')
-      defs.setTypeColor('COLOURED_BY_PALETTE', '#0a0')
+      defs.setTypeColor('COLORED_BY_PALETTE', '#0a0')
       LGraphCanvas.link_type_colors.CLEARED_BY_PALETTE = ''
-      LGraphCanvas.link_type_colors.COLOURED_BY_PALETTE = '#00f'
+      LGraphCanvas.link_type_colors.COLORED_BY_PALETTE = '#00f'
 
       host.reapplyTypeColors()
 
       expect(defs.typeColor('CLEARED_BY_PALETTE')).toBe('#a00')
-      expect(defs.typeColor('COLOURED_BY_PALETTE')).toBe('#00f')
+      expect(defs.typeColor('COLORED_BY_PALETTE')).toBe('#00f')
     })
 
     it('leaves a palette color alone when the pack color it replaced is unsubscribed', () => {
