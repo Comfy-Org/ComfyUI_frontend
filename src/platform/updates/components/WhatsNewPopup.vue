@@ -174,6 +174,10 @@ defineExpose({
   pointer-events: auto;
 }
 
+.whats-new-popup-container.sidebar-left {
+  left: calc(var(--sidebar-default-connected-width) + 1rem);
+}
+
 .content-text {
   color: var(--foreground);
   font-size: 14px;
