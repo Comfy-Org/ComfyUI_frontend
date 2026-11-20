@@ -755,6 +755,39 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.tabPathFor('wf-other')).toBe('workflows/other.json')
   })
 
+  it('keeps the later confirmation time when another tab publishes an expired record for a verified draft', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: false })
+    onTestFinished(() => {
+      vi.useRealTimers()
+    })
+    const workflows = useWorkflowStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    bindings.bind('wf-draft', draft.path)
+    await nextTick()
+    const theirConfirmedAt = Date.now() + DAY_MS
+
+    vi.setSystemTime(theirConfirmedAt + 40 * DAY_MS)
+    const seeded = {
+      'wf-draft': {
+        tabPath: draft.path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: theirConfirmedAt
+      }
+    }
+    seedBindings(seeded)
+    storageEvent(STORAGE_KEY, localStorage.getItem(STORAGE_KEY))
+    await nextTick()
+
+    expect(bindings.matchesWorkflow('wf-draft', draft)).toBe(true)
+    expect(storedBindings()).toEqual(seeded)
+  })
+
   it('does not rewrite storage when adopting open drafts from another tab', async () => {
     const workflows = useWorkflowStore()
     const bindings = useAgentWorkflowTabBindingStore()

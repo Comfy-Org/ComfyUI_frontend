@@ -135,7 +135,10 @@ export const useAgentWorkflowTabBindingStore = defineStore(
           incoming.tabPath === current.tabPath &&
           incoming.graphId === current.graphId
         )
-          next[workflowId] = { ...incoming, confirmedAt: current.confirmedAt }
+          next[workflowId] = {
+            ...incoming,
+            confirmedAt: Math.max(incoming.confirmedAt, current.confirmedAt)
+          }
       }
       return next
     }
