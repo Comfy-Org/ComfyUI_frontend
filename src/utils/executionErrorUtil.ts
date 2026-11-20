@@ -161,19 +161,40 @@ function relayedNodeErrorsOf(nodeErrors: unknown): Record<string, NodeError> {
   return normalizeRelayedNodeErrors(valid)
 }
 
-function hasNodeErrors(validationError: CloudValidationError): boolean {
-  return Object.keys(validationError.node_errors ?? {}).length > 0
+function hasUsableNodeErrors(validationError: CloudValidationError): boolean {
+  return Object.values(validationError.node_errors ?? {}).some(
+    (nodeError: unknown) =>
+      isPlainObject(nodeError) &&
+      Array.isArray(nodeError.errors) &&
+      nodeError.errors.length > 0
+  )
 }
 
-/** The validation response a cloud error carries: embedded node errors, else its structured `node_errors`, else any embedded prompt error. */
+function relayedRejection(
+  detail: Pick<ExecutionErrorWsMessage, 'exception_message' | 'node_errors'>
+): CloudValidationError | null {
+  if (!isPlainObject(detail.node_errors)) return null
+  if (Object.keys(detail.node_errors).length === 0) return null
+  return {
+    error: {
+      type: 'prompt_outputs_failed_validation',
+      message: detail.exception_message,
+      details: ''
+    }
+  }
+}
+
+/** The validation response a cloud error carries: embedded node errors, else its structured `node_errors`, else any embedded prompt error, else the rejection its unusable `node_errors` still signal. */
 export function cloudValidationErrorOf(
   detail: Pick<ExecutionErrorWsMessage, 'exception_message' | 'node_errors'>
 ): CloudValidationError | null {
   const embedded = tryExtractValidationError(detail.exception_message)
-  if (embedded && hasNodeErrors(embedded)) return embedded
+  if (embedded && hasUsableNodeErrors(embedded)) return embedded
   const nodeErrors = relayedNodeErrorsOf(detail.node_errors)
   if (Object.keys(nodeErrors).length > 0) return { node_errors: nodeErrors }
-  return embedded
+  const embeddedPromptError =
+    embedded?.error === undefined ? null : { error: embedded.error }
+  return embeddedPromptError ?? relayedRejection(detail)
 }
 
 /**

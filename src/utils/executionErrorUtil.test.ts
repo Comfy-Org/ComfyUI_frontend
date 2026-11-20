@@ -148,6 +148,38 @@ describe('executionErrorUtil', () => {
         expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
       },
       {
+        name: 'the structured node_errors over embedded node_errors with no usable entry',
+        detail: {
+          exception_message: `${summaryOnlyMessage} {"node_errors":{"1":null}}`,
+          node_errors: relayedNodeErrors
+        },
+        expected: { kind: 'nodeErrors', nodeErrors: relayedNodeErrors }
+      },
+      {
+        name: 'nothing for embedded node_errors with no usable entry and no structured field',
+        detail: {
+          exception_message: `${summaryOnlyMessage} {"node_errors":{"1":null}}`
+        },
+        expected: null
+      },
+      {
+        name: 'a prompt-level rejection when every relayed error is malformed',
+        detail: {
+          exception_message: summaryOnlyMessage,
+          node_errors: {
+            '72': { ...relayedNodeErrors['72'], errors: [{ type: 5 }] }
+          }
+        },
+        expected: {
+          kind: 'promptError',
+          promptError: {
+            type: 'prompt_outputs_failed_validation',
+            message: summaryOnlyMessage,
+            details: ''
+          }
+        }
+      },
+      {
         name: 'the valid structured entries when a sibling entry is malformed',
         detail: {
           exception_message: summaryOnlyMessage,
