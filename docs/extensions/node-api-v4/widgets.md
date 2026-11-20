@@ -7,7 +7,11 @@ widget handle names a widget by its node and its name.
 
 `setValue` commits as a user's edit does: the widget's callbacks run and it is
 one undo step. Values are what a workflow can save: text, a finite number, a
-boolean, `null`, or a plain object or list of those.
+boolean, `null`, or a plain object or list of those. `setHeight` is an undo
+step too, because the node it grows is saved. Every change (`setValue`,
+`setOption`, `setLabel`, `setHidden`, `setDisabled`, `setHeight`, `setLinked`,
+and `reorder` and `move` on `node.widgets`) returns `true` when it applied and
+`false` when the widget or its node is gone.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
@@ -61,8 +65,9 @@ later undo or a reload does not repeat it. By default the values are given
 back by position, so after a removed or moved widget they land on the wrong
 widgets; with the `Comfy.Workflow.NamedValuesRestore` setting on, they are
 given back by name (core issue #23744). Make such changes in the type's
-`onCreated` hook, which runs for every rebuilt node too. `move` with a negative
-index moves the widget to the front, and `add` lower-cases `type`.
+`onCreated` hook, which runs for every rebuilt node too. `move` clamps an index
+past the end to the end and throws for a negative one; it returns `false` for
+a name the node does not have. `add` lower-cases `type`.
 
 ## Adding widgets
 

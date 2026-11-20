@@ -58,7 +58,7 @@ comfy.defs.extend('MyPack.Broadcast', (builder) => {
   )
 })
 
-for (const supply of comfy.graph.resolvedSupplies() ?? []) {
+for (const supply of comfy.graph.resolvedSupplies()) {
   console.info(supply.supplierNodeId, supply.to, supply.from.kind)
 }
 ```
