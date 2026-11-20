@@ -170,6 +170,28 @@ describe('useAttachment derived workflows', () => {
     await vi.waitUntil(() => store.attachments.every((chip) => !chip.uploading))
   })
 
+  it('removes the lifted workflow when its image is removed', async () => {
+    vi.mocked(deriveWorkflowFile).mockResolvedValue(
+      workflowFile('photo.workflow.json')
+    )
+    const { store, addFiles, cancelUpload } = harness()
+
+    await addFiles([imageFile('photo.png')])
+    await vi.waitUntil(
+      () =>
+        store.attachments.length === 2 &&
+        store.attachments.every((chip) => !chip.uploading)
+    )
+    const imageId = store.attachments[0].id
+
+    // The composer drops the clicked chip itself and then reports the id, so
+    // only the lifted workflow is left for cancellation to account for.
+    store.removeAttachment(imageId)
+    cancelUpload(imageId)
+
+    expect(store.attachments).toEqual([])
+  })
+
   it('cancels a lifted workflow that has not finished uploading', async () => {
     vi.mocked(deriveWorkflowFile).mockResolvedValue(
       workflowFile('photo.workflow.json')
