@@ -122,10 +122,6 @@ function credentialFromBody(
       schemaIssuePaths(parsed.error.issues)
     )
   }
-  // Date.parse can yield NaN on a schema-valid string, so the expiry is
-  // checked after the schema. A token dead on arrival can never authorize
-  // anything; a short-but-future one is left to the valid-on-read path; an
-  // empty token is never a session.
   const serverExpiresAt = Date.parse(parsed.data.expires_at)
   if (Number.isNaN(serverExpiresAt)) {
     return unusableBody(response.status, 'invalid_expiry')

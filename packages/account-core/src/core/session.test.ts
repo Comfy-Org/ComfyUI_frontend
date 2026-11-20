@@ -341,6 +341,57 @@ describe('ensureFresh', () => {
         detail: 'expires_in_ms=-3600000,clock_skew_ms=3600000'
       })
     })
+
+    it('rejects a token that expires while its body is still arriving', async () => {
+      let localNow = serverNow + 3_600_000
+      let finishBody!: () => void
+      const body = new ReadableStream<Uint8Array>({
+        start(controller) {
+          finishBody = () => {
+            controller.enqueue(
+              new TextEncoder().encode(
+                JSON.stringify(
+                  mintBody({ expires_at: '2026-11-05T12:00:05.000Z' })
+                )
+              )
+            )
+            controller.close()
+          }
+        }
+      })
+      const fetchImpl = vi.fn<typeof fetch>(
+        async () =>
+          new Response(body, {
+            status: 200,
+            headers: {
+              'Content-Type': 'application/json',
+              Date: new Date(serverNow).toUTCString()
+            }
+          })
+      )
+      const { client, storage } = makeClient({
+        fetchImpl,
+        now: () => localNow
+      })
+
+      const pending = client.ensureFresh(testUser(), {})
+      await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalled())
+      await new Promise((resolve) => setTimeout(resolve, 0))
+      localNow += 10_000
+      finishBody()
+      const result = await pending
+
+      expect(
+        result,
+        'expiry is judged on the clock after the body is read, with the skew sampled at headers'
+      ).toMatchObject({
+        status: 'error',
+        code: 'TOKEN_EXCHANGE_FAILED',
+        reason: 'expired_on_arrival',
+        detail: 'expires_in_ms=-5000,clock_skew_ms=3600000'
+      })
+      expect(storage.raw()).toBeNull()
+    })
   })
 
   it('shares one in-flight mint between concurrent callers', async () => {
@@ -562,7 +613,9 @@ describe('ensureFresh', () => {
     const fetchImpl = vi.fn<typeof fetch>(async () =>
       jsonResponse(
         200,
-        mintBody({ workspace: { id: 'ws-other', name: 'Other', type: 'team' } })
+        mintBody({
+          workspace: { id: 'ws-other', name: 'Other', type: 'team' }
+        })
       )
     )
     const { client, storage } = makeClient({ fetchImpl })
