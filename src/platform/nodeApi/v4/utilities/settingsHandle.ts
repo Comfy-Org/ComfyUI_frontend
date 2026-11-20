@@ -13,6 +13,7 @@ import {
 } from '@/platform/nodeApi/shared/savableValue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
+import { isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import type {
   SettingAttrs,
   SettingDef,
@@ -26,8 +27,8 @@ import {
   isCallback,
   isFiniteNumber,
   isList,
+  isName,
   isObject,
-  isStoreKey,
   isText,
   listOf,
   packObject
@@ -116,10 +117,14 @@ function declareSetting(setting: unknown): void {
 }
 
 function settingId(member: string, id: unknown): keyof Settings {
-  if (!isStoreKey(id)) {
+  if (!isSettingId(id)) {
     throw invalidArgument(member, 'a setting id no object inherits', id)
   }
   return hostSettingId(id)
+}
+
+function isSettingId(value: unknown): value is string {
+  return isName(value) && isStoreKey(value)
 }
 
 const DEFAULT_VALUE_CHECKS: Readonly<
@@ -150,7 +155,7 @@ function settingParams(setting: unknown): SettingParams {
   )
   const id = fields.required(
     'id',
-    isStoreKey,
+    isSettingId,
     'a non-empty string no object inherits'
   )
   const name = fields.required('name', isText, 'a string')

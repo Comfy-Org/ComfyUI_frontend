@@ -196,6 +196,21 @@ describe('registering a catalog', () => {
     expect(messagesOf('en').MyPackJ).toEqual({ greeting: 'Hello' })
   })
 
+  it('refuses a message behind a getter without calling it', () => {
+    const read = vi.fn(() => 'Hello')
+    const group = Object.defineProperty({}, 'greeting', {
+      get: read,
+      enumerable: true
+    })
+    const localization = localizationApi()
+
+    expect(() =>
+      localization.registerCatalog('en', { messages: { MyPackK: group } })
+    ).toThrow(TypeError)
+    expect(read).not.toHaveBeenCalled()
+    expect(messagesOf('en').MyPackK).toBeUndefined()
+  })
+
   it('takes one group under two keys, which is not a loop', () => {
     const shared = { label: 'Shared' }
 
