@@ -1,16 +1,18 @@
 # Reading and editing the graph
 
-`comfy.graph` reads and `comfy.edit` writes. Every edit of a node, slot, link
-or group goes through `comfy.edit`, so the editor's undo, modified state and
-rendering stay right. Widget values and the workflow's `extra` have their own
+`comfy.graph` reads the graph, and the handles change it. Every edit of a
+node, slot, link or group runs through one edit core inside the editor, so the
+editor's undo, modified state and rendering stay right. The handle methods
+(`node.setTitle`, `slot.modify`, `node.inputs.add`, `group.setBounds`) and
+`comfy.graph.add` and `comfy.graph.batch` are the way in; the core itself is
+not published. Widget values and the workflow's `extra` have their own
 members ([Widgets](./widgets.md), `workflow.setExtra`).
-The edit methods on handles (`node.setTitle`, `slot.modify`,
-`node.inputs.add`) are one-line calls into `comfy.edit`.
 
 ## Reading
 
-Reads go to the live node each time and return frozen copies. A position or
-size is an object, `{ x, y }` or `{ width, height }`, in graph space.
+Reads go to the live node each time and return frozen copies. A position is
+a `Point`, `{ x, y }`, and a size a `Size`, `{ width, height }`, both in graph
+space; `getBounds` gives a `Bounds`, which has all four fields.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
@@ -26,54 +28,55 @@ for (const node of comfy.graph.selection()) {
 }
 ```
 
+`comfy.graph.links()`, `groups()` and `resolvedSupplies()` are empty, never
+`undefined`, before there is a graph.
+
 ## Editing
 
-Each edit is one undo step and returns `false` when its node is gone. A field a
-patch leaves out stays as it is. `resizable` (and `node.setResizable`) is not
-saved and makes no undo step; a `false` lasts until the user unpins the node,
-which makes it resizable again, as the editor does (core issue #23731).
+Each edit is one undo step and returns `false` when its node is gone.
+`setColor` and `setBgColor` restore the default for `null` or `undefined`.
+`node.setResizable` is not saved and makes no undo step; a `false` lasts until
+the user unpins the node, which makes it resizable again, as the editor does
+(core issue #23731).
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
 
 const node = comfy.graph.selection()[0]
 if (node) {
-  comfy.edit.updateNode(node, {
-    title: 'Upscaled',
-    bgColor: '#335',
-    position: { x: 100, y: 200 }
-  })
+  node.setTitle('Upscaled')
+  node.setBgColor('#335')
+  node.setColor(null)
+  node.setPosition({ x: 100, y: 200 })
   node.setMode('bypass')
   node.setProperty('upscale', 2)
 }
 ```
 
-`comfy.edit.batch` runs several edits as one undo step. Loop inside one batch,
-not one batch per item.
+`comfy.graph.batch` runs several edits as one undo step. Loop inside one
+batch, not one batch per item. `comfy.graph.add` adds a node to the graph on
+screen.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
 
-const root = comfy.graph.root()
-if (root) {
-  comfy.edit.batch(() => {
-    const loader = comfy.edit.addNode(root, 'CheckpointLoaderSimple', {
-      position: { x: 0, y: 0 }
-    })
-    const sampler = comfy.edit.addNode(root, 'KSampler', {
-      position: { x: 400, y: 0 }
-    })
-    const model = loader?.outputs.byName('MODEL')
-    const input = sampler?.inputs.byName('model')
-    if (model && input) comfy.edit.connect(model, input)
+comfy.graph.batch(() => {
+  const loader = comfy.graph.add('CheckpointLoaderSimple', {
+    position: { x: 0, y: 0 }
   })
-}
+  const sampler = comfy.graph.add('KSampler', { position: { x: 400, y: 0 } })
+  if (loader && sampler) {
+    loader.outputs.byName('MODEL')?.connectTo(sampler.id, 'model')
+  }
+})
 ```
 
 ## Slots and links
 
 A slot is named by a `SlotRef`: its id, else its name, else
 `{ index: n }` for its position. A bare number is not a `SlotRef`.
+`inputs.at` and `outputs.at` take a negative index to count back from the
+end, as `widgets.at` does.
 
 ```ts
 import { comfy } from '/comfy/api/v4.js'
@@ -87,6 +90,7 @@ if (source && target) {
   output?.links()?.forEach((link) => {
     console.info(link.targetNodeId, link.targetIndex, link.type)
   })
+  console.info(target.inputs.at(-1)?.name)
   target.inputs.remove('extra')
 }
 ```
@@ -108,7 +112,7 @@ links (links detached onto a reroute) at their slot index, as the host does
 ```ts
 import { comfy } from '/comfy/api/v4.js'
 
-for (const group of comfy.graph.groups() ?? []) {
+for (const group of comfy.graph.groups()) {
   console.info(group.getTitle(), group.getBounds(), group.nodes()?.length)
 }
 

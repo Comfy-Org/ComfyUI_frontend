@@ -68,7 +68,8 @@ comfy.workflow.registerImporter({
 ```
 
 `workflow.open(data)` opens a workflow as a new document and resolves whether
-the editor loaded it.
+the editor loaded it: `false` for an object that is not a workflow. Data that
+is not an object throws a `TypeError` at the call, not as a rejected promise.
 
 ## The queue
 
@@ -90,7 +91,8 @@ if (outputs.length > 0) {
 }
 ```
 
-`run` resolves `true` once its prompts are submitted, and also when a request
+Options `run` cannot use throw a `TypeError` at the call. `run` resolves
+`true` once its prompts are submitted, and also when a request
 fails with no answer from the backend. It resolves `false` if a node it names
 is gone or the run was folded into one in progress, refused, given node errors
 or stopped before sending. A run whose every prompt is refused fires only
