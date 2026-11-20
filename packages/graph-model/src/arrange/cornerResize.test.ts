@@ -100,20 +100,16 @@ describe('resizeBox', () => {
     expect([x, y, width, height]).toEqual([163, 81, 140, 80])
   })
 
-  it('re-measures the minimum when the snap changes the width', () => {
-    const widths: number[] = []
-    resizeBox(
+  it('clamps to the minimum measured at the snapped width', () => {
+    const { width, height } = resizeBox(
       start,
       'SE',
       { x: 10, y: 0 },
       {
-        minAt: (width) => {
-          widths.push(width)
-          return min
-        },
+        minAt: (width) => ({ width: 140, height: width - 70 }),
         snap: (box) => ({ ...box, width: 250 })
       }
     )
-    expect(widths).toEqual([210, 250])
+    expect([width, height]).toEqual([250, 180])
   })
 })
