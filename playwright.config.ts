@@ -55,7 +55,10 @@ export default defineConfig({
   ],
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
-  reporter: process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html',
+  reporter: [
+    [process.env.PLAYWRIGHT_BLOB_OUTPUT_DIR ? 'blob' : 'html'],
+    ['./browser_tests/reporters/nodes2AcceptanceReporter.ts']
+  ],
   ...maybeLocalOptions,
 
   globalSetup:
@@ -93,7 +96,31 @@ export default defineConfig({
             use: { ...devices['Desktop Chrome'] },
             timeout: 30_000,
             grepInvert:
-              /@mobile|@perf|@audit|@cloud|@desktop|@custom-nodes|@agent-harness/
+              /@mobile|@perf|@audit|@cloud|@desktop|@custom-nodes|@agent-harness|@nodes2-acceptance/
+          },
+
+          {
+            name: 'nodes2-acceptance',
+            use: { ...devices['Desktop Chrome'], trace: 'retain-on-failure' },
+            timeout: 30_000,
+            grep: /@nodes2-acceptance/,
+            grepInvert: /@acceptance-packs|@acceptance-perf/
+          },
+
+          {
+            name: 'nodes2-acceptance-packs',
+            use: { ...devices['Desktop Chrome'], trace: 'retain-on-failure' },
+            timeout: 60_000,
+            grep: /@acceptance-packs/,
+            fullyParallel: false
+          },
+
+          {
+            name: 'nodes2-acceptance-perf',
+            use: { ...devices['Desktop Chrome'], trace: 'off', video: 'off' },
+            timeout: 600_000,
+            grep: /@acceptance-perf/,
+            fullyParallel: false
           },
 
           {
