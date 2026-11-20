@@ -163,6 +163,7 @@ import {
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
+import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -298,6 +299,7 @@ const agentIdentity = resolveAgentIdentity({
 onBeforeUnmount(() => agentIdentity.stop())
 
 onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
+onBeforeUnmount(onIdentityChange(() => captureOutgoingCredentialForHandoff()))
 
 function onPaywallAction(
   action: AgentPaywallAction,
