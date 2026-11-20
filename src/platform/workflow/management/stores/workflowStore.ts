@@ -240,6 +240,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
       throw new DOMException('Workflow load was replaced', 'AbortError')
     }
     activeWorkflow.value = loadedWorkflow
+    if (workflow.path in workflowLookup.value)
+      workflowLookup.value[workflow.path] = loadedWorkflow
     useApp().canvas.bg_tint = loadedWorkflow.tintCanvasBg
 
     const historyIndex = tabActivationHistory.value.indexOf(workflow.path)
