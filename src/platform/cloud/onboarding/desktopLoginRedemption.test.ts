@@ -63,8 +63,11 @@ async function setup(
     { path: '/:pathMatch(.*)*', component: { template: '<div />' } }
   ]
 ) {
-  const { installDesktopLoginRedemption } =
-    await import('./desktopLoginRedemption')
+  const {
+    installDesktopLoginRedemption,
+    desktopLoginRedemptionStatus,
+    claimDesktopLoginRedemptionStatus
+  } = await import('./desktopLoginRedemption')
   const { capturePreservedQuery, getPreservedQueryParam } =
     await import('@/platform/navigation/preservedQueryManager')
 
@@ -83,6 +86,8 @@ async function setup(
   return {
     router,
     trigger,
+    status: desktopLoginRedemptionStatus,
+    claimStatus: claimDesktopLoginRedemptionStatus,
     seedStash: (code: string) =>
       capturePreservedQuery(NAMESPACE, { desktop_login_code: code }, [
         'desktop_login_code'
@@ -653,6 +658,114 @@ describe('installDesktopLoginRedemption', () => {
       expect(stashedCode()).toBeUndefined()
     }
   )
+
+  describe('desktopLoginRedemptionStatus', () => {
+    it('reports awaiting_approval while the dialog is open, then redeemed on success', async () => {
+      const { trigger, seedStash, status, claimStatus } = await setup()
+      claimStatus()
+      seedStash(VALID_CODE)
+      let approve!: (value: boolean) => void
+      vi.mocked(useDialogService().confirm).mockReturnValue(
+        new Promise<boolean>((resolve) => {
+          approve = resolve
+        })
+      )
+      respondToFetch(REDEEM_URL, okResponse)
+
+      await trigger()
+      await vi.waitFor(() =>
+        expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
+      )
+      expect(status.value).toBe('awaiting_approval')
+
+      approve(true)
+      await flushRedemption()
+
+      expect(status.value).toBe('redeemed')
+    })
+
+    it('reports expired on a terminal redeem status', async () => {
+      const { trigger, seedStash, status, claimStatus } = await setup()
+      claimStatus()
+      seedStash(VALID_CODE)
+      respondToFetch(REDEEM_URL, () => new Response(null, { status: 410 }))
+
+      await trigger()
+
+      expect(status.value).toBe('expired')
+    })
+
+    it('reports declined when the user declines the dialog', async () => {
+      const { trigger, seedStash, status, claimStatus } = await setup()
+      claimStatus()
+      seedStash(VALID_CODE)
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+
+      await trigger()
+
+      expect(status.value).toBe('declined')
+    })
+
+    it('reports failed once the retry budget is spent', async () => {
+      const { trigger, seedStash, status, claimStatus } = await setup()
+      claimStatus()
+      seedStash(VALID_CODE)
+      respondToFetch(REDEEM_URL, () => new Response(null, { status: 500 }))
+
+      await trigger()
+      expect(status.value).toBe('redeeming')
+
+      await vi.advanceTimersByTimeAsync(RETRY_DELAY_MS)
+
+      expect(status.value).toBe('failed')
+    })
+
+    it('reports failed and drops the code when the approval dialog throws', async () => {
+      const { trigger, seedStash, status, stashedCode, claimStatus } =
+        await setup()
+      claimStatus()
+      seedStash(VALID_CODE)
+      vi.mocked(useDialogService().confirm).mockRejectedValue(
+        new Error('dialog exploded')
+      )
+
+      await trigger()
+
+      expect(status.value).toBe('failed')
+      expect(stashedCode()).toBeUndefined()
+    })
+
+    it('keeps no outcome reached while no approval page is showing', async () => {
+      const { trigger, seedStash, status } = await setup()
+      seedStash(VALID_CODE)
+      respondToFetch(REDEEM_URL, () => new Response(null, { status: 410 }))
+
+      await trigger()
+
+      expect(status.value).toBe('idle')
+      expect(useToast().toasts).toEqual([
+        expect.objectContaining({ title: 'desktopLogin.expiredSummary' })
+      ])
+    })
+
+    it('keeps an outcome reached on the approval route before its page claims it', async () => {
+      const { router, seedStash, status } = await setup([
+        { path: '/', component: { template: '<div />' } },
+        {
+          path: '/cloud/desktop-login',
+          name: 'cloud-desktop-login',
+          component: { template: '<div />' }
+        }
+      ])
+      seedStash(VALID_CODE)
+      respondToFetch(REDEEM_URL, () => new Response(null, { status: 410 }))
+
+      await router.push('/cloud/desktop-login')
+      await flushRedemption()
+
+      expect(status.value).toBe('expired')
+    })
+  })
 
   it('coalesces concurrent triggers into one dialog and one request', async () => {
     const { router, seedStash } = await setup()

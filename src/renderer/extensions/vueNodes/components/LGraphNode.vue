@@ -17,7 +17,9 @@
         'drop-shadow-lg outline-none',
         isRerouteNode
           ? 'h-(--node-height)'
-          : 'min-h-(--node-height) min-w-(--min-node-width)',
+          : compactHeader
+            ? 'w-max max-w-(--min-node-width)'
+            : 'min-h-(--node-height) min-w-(--min-node-width)',
         cursorClass,
         shouldHandleNodePointerEvents &&
           !nodeData.flags?.ghost &&
@@ -82,7 +84,7 @@
           cn(
             'flex flex-1 flex-col bg-node-header',
             'w-(--node-width)',
-            !isRerouteNode && 'min-w-(--min-node-width)',
+            !isRerouteNode && !compactHeader && 'min-w-(--min-node-width)',
             shapeClass,
             hasAnyError && 'ring-4',
             errorSeverity === 'missing' && 'ring-warning',
@@ -390,6 +392,14 @@ const displayHeader = computed(() => nodeData.titleMode !== TitleMode.NO_TITLE)
 const isRerouteNode = computed(() => nodeData.type === 'Reroute')
 
 const isCollapsed = computed(() => nodeData.flags?.collapsed ?? false)
+const compactHeader = computed(
+  () =>
+    isCollapsed.value &&
+    displayHeader.value &&
+    !isRerouteNode.value &&
+    !nodeData.showAdvanced &&
+    !(hasAnyError.value && showErrorsTabEnabled.value)
+)
 const bypassed = computed(
   (): boolean => nodeData.mode === LGraphEventMode.BYPASS
 )
