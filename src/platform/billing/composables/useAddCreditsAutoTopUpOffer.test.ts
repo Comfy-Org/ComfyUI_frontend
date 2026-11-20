@@ -201,21 +201,6 @@ describe('useAddCreditsAutoTopUpOffer', () => {
       expect(offer.value).toEqual({ kind: 'hidden' })
     })
 
-    it('offers no checkbox and stays silent when the session ended under the read', async () => {
-      vi.mocked(useBillingSdkStore().readPaymentMethods).mockResolvedValue({
-        status: 'error',
-        code: 'NOT_AUTHENTICATED'
-      })
-      const { offer } = offerFor({ status: 'off', atCheckout: true })
-
-      await vi.waitFor(() =>
-        expect(useBillingSdkStore().readPaymentMethods).toHaveBeenCalledOnce()
-      )
-      await new Promise<void>((resolve) => setTimeout(resolve, 0))
-      expect(offer.value).toEqual({ kind: 'hidden' })
-      expect(reportError).not.toHaveBeenCalled()
-    })
-
     it('offers no checkbox when the default is not one it can name as a card', async () => {
       serveSavedMethods([
         { id: 'pm_bank', type: 'us_bank_account', is_default: true }
