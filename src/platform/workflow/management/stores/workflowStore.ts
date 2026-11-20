@@ -541,9 +541,6 @@ export const useWorkflowStore = defineStore('workflow', () => {
   }
   const { moveWorkflowThumbnail, clearThumbnail } = useWorkflowThumbnail()
 
-  // Renames still updating this store, by workflow. A rename onto a path whose
-  // holder is moving away waits for the holder's swap below, so the holder's
-  // late lookup and tab update cannot remove the tab that took its old path.
   const pendingRenames = new Map<ComfyWorkflow, Promise<boolean>>()
 
   const renameWorkflow = async (
