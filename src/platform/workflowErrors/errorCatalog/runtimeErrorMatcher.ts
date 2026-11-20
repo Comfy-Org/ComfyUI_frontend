@@ -59,7 +59,6 @@ const TIMEOUT_MESSAGES = new Set(['Job execution time exceeded maximum limit'])
 const GENERATION_STALLED_MESSAGES = new Set([
   'Job went too long without making any progress',
   'Job has stagnated',
-  // Dispatcher no-progress watchdog moving a job to lost.
   'Job stopped after making no node progress for too long'
 ])
 const SERVER_CRASHED_MESSAGES = new Set([
@@ -129,9 +128,6 @@ const START_FAILED_PREFIXES = [
 const REQUEST_FAILED_PREFIXES = ['Failed to send prompt request:']
 const SERVER_CRASHED_PREFIXES = [
   'Workflow execution was interrupted due to ComfyUI process restart.',
-  // Inference pod shut down (deploy or scale-down) before the job finished
-  // within its grace period. The first is the legacy wording, kept for stored
-  // job history; the second is the current one, which embeds the duration.
   'Job execution interrupted: server shutdown.',
   'Job execution interrupted: the inference server was shut down',
   'Failed to clear queue and restart failed:',
