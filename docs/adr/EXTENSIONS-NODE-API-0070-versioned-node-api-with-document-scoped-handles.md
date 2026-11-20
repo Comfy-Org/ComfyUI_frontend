@@ -365,6 +365,16 @@ without a canvas context resets a collapsed node's drawn width to 0.
 The API can change behind the handles and the root object without touching
 packs, and a breaking change is a new folder and module rather than an edit.
 
+The API is in the application bundle the host loads at startup. Measured
+against `main`, it adds 113.4 KB minified (37.5 KB gzip) on its own, and the
+full build grows by 225 KB raw (about 45 to 56 KB gzip, depending on
+chunking): the API and the host modules it imports (widget composables,
+`themeService`, `extensionService`) join the shared startup chunk, which
+grows from 13.6 KB to 402 KB (4.0 to 104 KB gzip). Loading `comfyApi.ts` with
+`import()` in `publish()` would take it off that path, but `publish()` must
+still finish before extensions load, and about 13 host call sites would need a
+no-op host until it resolves; that is left for a measured follow-up.
+
 Host changes outside the folder:
 
 - `GraphCanvas.vue` publishes the API before extensions load and marks it
@@ -387,12 +397,16 @@ document that stays on screen are retired, and a pack takes fresh ones.
 Handles are kept until their document is replaced, so memory grows with the
 number of live entities packs have asked about in the open document, and is
 released on the next load. An undo or redo releases the handles it retires. A
-handle to a node that is gone but may come back is held only weakly once an
-undo or redo, or a sweep when the cache has doubled, finds it gone: a pack
-that holds it gets it back when the node returns, and one nobody holds is
-collected. So memory and the walk each undo makes follow the live entities
-plus the handles packs still hold; measured with 10,000 nodes made and
-deleted, held strongly they cost 14.3 KB each until the next load. API-JSON and A1111 imports clear the graph without a
+handle to a node that is gone but may come back is kept, as identity needs:
+a pack may know it only as a `WeakMap` key, and holding it weakly would make
+that entry depend on garbage collection (see "Alternatives considered"). So
+memory and the walk each undo makes follow every node packs have asked about
+in the document, deleted ones included: measured with 10,000 nodes made and
+deleted, each with a node, a widget and a slot handle taken, the handles
+hold 144 MB (14.4 KB a node) until the next load, and each undo walks them,
+about 30 ms at 10,000 gone node handles. A node handle with its members is
+9.6 KB, about 60 closures; shrinking it, not weakening the hold, is how to
+lower this. API-JSON and A1111 imports clear the graph without a
 load, so handles taken before one stay held until a load, undo or redo.
 
 Adding a version adds wiring beside this one: an import map entry in
