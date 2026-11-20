@@ -1,4 +1,4 @@
-# ADR-CANVAS-0054: Mounted node views own measurements
+# ADR-CANVAS-mounted-node-views-own-measurements: Mounted node views own measurements
 
 Date: 2026-11-19
 

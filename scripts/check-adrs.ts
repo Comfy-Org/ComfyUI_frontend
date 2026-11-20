@@ -29,7 +29,7 @@ const ADR_FILENAME_PATTERN =
 const EXTERNAL_ADR_IDS = new Set(['ORDERING-0005'])
 const STALE_REFERENCE_FIXTURE_FILES = new Set([
   'scripts/check-adrs.test.ts',
-  'scripts/cicd/check-adr-links.test.ts'
+  'tools/ci/src/cicd/check-adr-links.test.ts'
 ])
 const LEGACY_REFERENCE_PATTERN =
   /ADR(?:[- ]?\d{4}(?!-\d{2})|(?:-[A-Z][A-Z0-9]*)?\s*(?:\/\s*|\(\s*)\d{4}(?!-\d{2}))|(?:docs\/)?adr\/\d{4}-/

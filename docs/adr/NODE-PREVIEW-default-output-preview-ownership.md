@@ -1,4 +1,4 @@
-# ADR-NODE-PREVIEW-0060: Default output preview ownership
+# ADR-NODE-PREVIEW-default-output-preview-ownership: Default output preview ownership
 
 Date: 2026-11-19
 

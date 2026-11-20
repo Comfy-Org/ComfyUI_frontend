@@ -1,4 +1,4 @@
-# ADR-AGENT-QUEUE-0051: Frontend Prompt Queue
+# ADR-AGENT-QUEUE-frontend-prompt-queue: Frontend Prompt Queue
 
 Date: 2026-10-29
 
