@@ -637,8 +637,9 @@ export class LGraphNode
 
   /** The fg color used to render the node. */
   get renderingColor(): string {
+    const color = this.color || this.constructor.color
     const baseColor =
-      this.color || this.constructor.color || LiteGraph.NODE_DEFAULT_COLOR
+      typeof color === 'string' && color ? color : LiteGraph.NODE_DEFAULT_COLOR
     return adjustColor(baseColor, { lightness: LiteGraph.nodeLightness })
   }
 
@@ -4612,7 +4613,7 @@ export class LGraphNode
       y += w.computedHeight ?? 0
     }
 
-    if (!this.graph) throw new NullGraphError()
+    if (!this.graph) return
 
     // Grow the node if necessary.
     // Ref: https://github.com/Comfy-Org/ComfyUI_frontend/issues/2652
