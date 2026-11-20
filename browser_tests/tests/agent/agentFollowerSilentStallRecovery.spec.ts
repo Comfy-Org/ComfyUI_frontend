@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 
 import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import { addLoadImageNode } from '@e2e/fixtures/data/agent/agentRemoteApply'

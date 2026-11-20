@@ -27,7 +27,6 @@ import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutA
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
 import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import type { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import { useNodeLayout } from '@/renderer/extensions/vueNodes/layout/useNodeLayout'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { toSelectableKey } from '@/core/selection/selectionState'
@@ -78,7 +77,8 @@ vi.mock(
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'),
   () => ({
-    useVueElementTracking: vi.fn()
+    useMountedNodeSize: vi.fn(),
+    useWidgetGridResizeTracking: vi.fn()
   })
 )
 
@@ -276,12 +276,6 @@ describe('LGraphNode', () => {
       if (key === 'Comfy.Node.AlwaysShowAdvancedWidgets') return false
       if (key === 'Comfy.Node.Opacity') return 1
     })
-  })
-
-  it('should call resize tracking composable with node ID', () => {
-    renderLGraphNode({ nodeData: mockNodeData })
-
-    expect(useVueElementTracking).toHaveBeenCalledWith('test-node-123', 'node')
   })
 
   it('should render with data-node-id attribute', () => {
