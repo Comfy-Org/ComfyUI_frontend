@@ -55,6 +55,7 @@ import type { operations } from '@/types/comfyRegistryTypes'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
   abortWorkflowLogoutTransition,
+  completeWorkflowLogoutTransition,
   prepareWorkflowLogoutTransition
 } from '@/platform/workflow/persistence/base/storageIO'
 
@@ -818,18 +819,21 @@ export const useAuthStore = defineStore('auth', () => {
         await useCloudWebSessionStore().signOut()
         if (currentUser.value) await firebaseIdentity.signOut()
       })
+      if (persistenceTransition) {
+        completeWorkflowLogoutTransition(persistenceTransition)
+      }
     } catch (error) {
       if (persistenceTransition) {
         const persistenceResumed = userId.value
           ? abortWorkflowLogoutTransition(persistenceTransition)
           : false
         reportError(error, {
-          surface: 'workspace',
-          errorType: 'failure_logging_out_workflow_persistence',
+          surface: 'auth',
+          errorType: 'failure_logging_out_user',
           level: 'warning',
           tags: {
             outcome: 'degraded',
-            persistence_resumed: String(persistenceResumed)
+            persistence_resumed: persistenceResumed
           }
         })
       }

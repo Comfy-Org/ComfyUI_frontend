@@ -37,8 +37,10 @@ import {
   clearAllWorkspaceStorage,
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
-  currentWorkflowLogoutTransition,
+  fenceWorkflowStorageForAuthState,
+  isWorkflowStorageTransitioning,
   prepareWorkflowLogoutTransition,
+  releaseWorkflowStorageAuthFence,
   registerWorkflowPersistence
 } from '@/platform/workflow/persistence/base/storageIO'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
@@ -109,6 +111,7 @@ export function useWorkflowPersistenceV2() {
 
   const persistCurrentWorkflow = () => {
     if (!workflowPersistenceEnabled.value) return
+    if (isWorkflowStorageTransitioning()) return
     const activeWorkflow = workflowStore.activeWorkflow
     if (!activeWorkflow) return
 
@@ -116,10 +119,8 @@ export function useWorkflowPersistenceV2() {
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
-    // Skip if unchanged
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
-    // Save to V2 draft store
     const saved = draftStore.saveDraft(workflowPath, workflowJson, {
       name: activeWorkflow.key,
       isTemporary: activeWorkflow.isTemporary
@@ -132,12 +133,10 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    // Update session pointer
     tabState.setActivePath(workflowPath)
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
 
-    // Clean up draft if workflow is saved and unmodified
     if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
       draftStore.removeDraft(workflowPath)
     }
@@ -163,10 +162,8 @@ export function useWorkflowPersistenceV2() {
     teamWorkspaceStore.initState === 'error'
 
   function resumePersistenceWhenWorkspaceIsReady(): void {
-    const transition = currentWorkflowLogoutTransition()
-    if (!transition) return
     if (isWorkspaceInitConcluded()) {
-      completeWorkflowLogoutTransition(transition)
+      releaseWorkflowStorageAuthFence()
       return
     }
 
@@ -174,7 +171,7 @@ export function useWorkflowPersistenceV2() {
       isWorkspaceInitConcluded,
       () => {
         stopWorkspaceReadinessWatcher = undefined
-        completeWorkflowLogoutTransition(transition)
+        releaseWorkflowStorageAuthFence()
       },
       { once: true }
     )
@@ -199,7 +196,7 @@ export function useWorkflowPersistenceV2() {
     resolvedAuthSubject = null
     draftStore.setAuthSubject(null)
     stopPendingWorkspaceReadinessWatcher()
-    prepareWorkflowLogoutTransition()
+    fenceWorkflowStorageForAuthState()
     clearAllWorkspaceStorage()
   })
   onUserResolved((user) => {

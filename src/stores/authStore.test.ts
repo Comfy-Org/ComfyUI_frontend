@@ -570,7 +570,7 @@ describe('useAuthStore', () => {
   })
 
   describe('logout', () => {
-    it('should sign out the user', async () => {
+    it('fences workflow storage before the first logout await and signs out', async () => {
       vi.mocked(firebaseAuth.signOut).mockResolvedValue(undefined)
 
       const logout = store.logout()
@@ -589,10 +589,10 @@ describe('useAuthStore', () => {
       expect(firebaseAuth.signOut).toHaveBeenCalledWith(mockAuth)
       expect(isStorageAvailable()).toBe(true)
       expect(mockReportError).toHaveBeenCalledWith(mockError, {
-        surface: 'workspace',
-        errorType: 'failure_logging_out_workflow_persistence',
+        surface: 'auth',
+        errorType: 'failure_logging_out_user',
         level: 'warning',
-        tags: { outcome: 'degraded', persistence_resumed: 'true' }
+        tags: { outcome: 'degraded', persistence_resumed: true }
       })
     })
 
@@ -608,10 +608,10 @@ describe('useAuthStore', () => {
       expect(store.currentUser).toBeNull()
       expect(isStorageAvailable()).toBe(false)
       expect(mockReportError).toHaveBeenCalledWith(mockError, {
-        surface: 'workspace',
-        errorType: 'failure_logging_out_workflow_persistence',
+        surface: 'auth',
+        errorType: 'failure_logging_out_user',
         level: 'warning',
-        tags: { outcome: 'degraded', persistence_resumed: 'false' }
+        tags: { outcome: 'degraded', persistence_resumed: false }
       })
     })
   })
