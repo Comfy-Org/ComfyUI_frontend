@@ -107,8 +107,9 @@ in these guides against the published types.
   so a misspelled or cut field shows at the call. The services follow this
   too: `settings.declare`, `commands.register`, `commands.notify`, every
   `comfy.ui` definition and `localization.registerCatalog`. A catalog's
-  `phrases` is the one field taken and ignored, and `backend.fetch` passes its
-  `init` on as `fetch`'s own options.
+  `phrases` is the one field taken and ignored. `backend.fetch` passes its
+  `init` on as `fetch`'s own options, and throws for one that is not an object
+  or for headers `Headers` cannot take.
 - A `Bounds` passed where a `Point` is taken is refused for its extra fields:
   write `node.setPosition({ x: bounds.x, y: bounds.y })`, not
   `node.setPosition(node.getBounds())`.
