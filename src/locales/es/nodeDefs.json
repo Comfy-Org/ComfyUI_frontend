@@ -16456,6 +16456,9 @@
         "name": "modelo",
         "tooltip": "Modelo que se utilizará."
       },
+      "model_auto_downscale": {
+        "name": "reducción_de_escala_automática"
+      },
       "model_negative_prompt": {
         "name": "indicación negativa"
       },

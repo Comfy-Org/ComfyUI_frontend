@@ -16456,6 +16456,9 @@
         "name": "model",
         "tooltip": "Kullanılacak model."
       },
+      "model_auto_downscale": {
+        "name": "otomatik_küçültme"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },

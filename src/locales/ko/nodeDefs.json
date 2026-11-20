@@ -16456,6 +16456,9 @@
         "name": "모델",
         "tooltip": "사용할 모델입니다."
       },
+      "model_auto_downscale": {
+        "name": "자동_다운스케일"
+      },
       "model_negative_prompt": {
         "name": "네거티브 프롬프트"
       },

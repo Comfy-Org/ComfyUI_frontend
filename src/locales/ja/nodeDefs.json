@@ -16456,6 +16456,9 @@
         "name": "モデル",
         "tooltip": "使用するモデル。"
       },
+      "model_auto_downscale": {
+        "name": "自動ダウンスケール"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },

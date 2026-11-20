@@ -16379,6 +16379,9 @@
       "control_after_generate": {
         "name": "control after generate"
       },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },

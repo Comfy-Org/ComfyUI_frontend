@@ -16456,6 +16456,9 @@
         "name": "模型",
         "tooltip": "要使用的模型。"
       },
+      "model_auto_downscale": {
+        "name": "自動縮小解析度"
+      },
       "model_negative_prompt": {
         "name": "負面提示詞"
       },
