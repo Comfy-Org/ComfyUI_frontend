@@ -284,6 +284,17 @@ else
 ## 🎭 Playwright: $status_icon $total_passed passed, $total_failed failed$missing_note$flaky_note"
     fi
 
+    deployment_failed=false
+    IFS=' ' read -r -a url_array <<< "$urls"
+    i=0
+    for counts_json in "${counts_array[@]}"; do
+        url="${url_array[$i]:-}"
+        if [ -n "$counts_json" ] && [ "$url" != "missing" ] && { [ "$url" = "failed" ] || [ -z "$url" ]; }; then
+            deployment_failed=true
+        fi
+        i=$((i + 1))
+    done
+
     if [ $total_failed -gt 0 ]; then
         failed_test_lines=""
         failed_tests_label="$total_failed tests"
@@ -315,9 +326,22 @@ $test_line"
         done
 
         if [ -n "$failed_test_lines" ]; then
-            comment="$comment
+            next_step="Expand the failed tests below, review their reports and fix the failures before merging."
+            [ "$deployment_failed" = true ] && next_step="Expand the failed tests below and fix the failures, then [open the workflow run]($WORKFLOW_URL), fix report deployment and re-run the job before merging."
+        elif [ "$deployment_failed" = true ]; then
+            next_step="[Open the workflow run]($WORKFLOW_URL), review the failed tests and fix the failures, then fix report deployment and re-run the job before merging."
+        else
+            next_step="Open the browser reports below, review the failed tests and fix the failures before merging."
+        fi
 
-> ❌ $failed_tests_label failed. Expand the failed tests below, review their reports and fix the failures before merging.
+        failed_summary="$failed_tests_label failed"
+        [ "$deployment_failed" = true ] && failed_summary="$failed_summary and browser reports are missing"
+        comment="$comment
+
+> ❌ $failed_summary. $next_step"
+
+        if [ -n "$failed_test_lines" ]; then
+            comment="$comment
 
 <details>
 <summary>Failed tests</summary>
@@ -325,10 +349,6 @@ $test_line"
 ${failed_test_lines#$'\n'}
 
 </details>"
-        else
-            comment="$comment
-
-> ❌ $failed_tests_label failed. Open the browser reports below, review the failed tests and fix the failures before merging."
         fi
     fi
     
@@ -349,9 +369,7 @@ ${failed_test_lines#$'\n'}
 "
     
     i=0
-    deployment_failed=false
     IFS=' ' read -r -a browser_array <<< "$BROWSERS"
-    IFS=' ' read -r -a url_array <<< "$urls"
     for counts_json in "${counts_array[@]}"; do
         [ -z "$counts_json" ] && { i=$((i + 1)); continue; }
         browser="${browser_array[$i]:-}"
@@ -364,7 +382,6 @@ ${failed_test_lines#$'\n'}
             comment="$comment
 - **${browser}**: [View Report](${url})$(counts_suffix "$counts_json")"
         else
-            deployment_failed=true
             comment="$comment
 - **${browser}**: ❌ Deployment failed"
         fi
@@ -376,7 +393,7 @@ ${failed_test_lines#$'\n'}
 
 </details>"
 
-    if [ "$deployment_failed" = true ]; then
+    if [ "$deployment_failed" = true ] && [ $total_failed -eq 0 ]; then
         comment="$comment
 
 > ❌ Browser reports are missing. [Open the workflow run]($WORKFLOW_URL), fix report generation or deployment and re-run the job."
