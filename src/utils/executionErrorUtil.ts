@@ -1,5 +1,11 @@
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
-import type { SerializedNodeId } from '@/types/nodeId'
+import type { NodeError, PromptError } from '@comfyorg/api-client/types'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
+import type { zPromptOutputsSkippedNodeError } from '@comfyorg/ingest-types/zod'
+import type { z } from 'zod'
+
+type PromptOutputsSkippedNodeError = z.infer<
+  typeof zPromptOutputsSkippedNodeError
+>
 
 type RawPromptError =
   | string
@@ -76,6 +82,46 @@ export function normalizePromptError(error: unknown): PromptError | null {
   return typeof error === 'string'
     ? { type: 'error', message: error, details: '' }
     : null
+}
+
+function isExtraInfo(
+  value: unknown
+): value is NonNullable<NodeValidationError['extra_info']> {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    (!('input_name' in value) || typeof value.input_name === 'string')
+  )
+}
+
+function toNodeValidationErrors(error: unknown): NodeValidationError[] {
+  const promptError = normalizePromptError(error)
+  if (!promptError) return []
+  const extraInfo =
+    error !== null && typeof error === 'object' && 'extra_info' in error
+      ? error.extra_info
+      : undefined
+  return [
+    isExtraInfo(extraInfo)
+      ? { ...promptError, extra_info: extraInfo }
+      : promptError
+  ]
+}
+
+/**
+ * Converts relayed node errors to `NodeError`s; a string entry becomes the
+ * message, and a node left with no errors is dropped.
+ */
+export function normalizeRelayedNodeErrors(
+  nodeErrors: Record<string, PromptOutputsSkippedNodeError>
+): Record<string, NodeError> {
+  return Object.fromEntries(
+    Object.entries(nodeErrors).flatMap(([nodeId, nodeError]) => {
+      const errors = nodeError.errors.flatMap(toNodeValidationErrors)
+      return errors.length > 0 ? [[nodeId, { ...nodeError, errors }]] : []
+    })
+  )
 }
 
 export function isMissingNodePromptError(

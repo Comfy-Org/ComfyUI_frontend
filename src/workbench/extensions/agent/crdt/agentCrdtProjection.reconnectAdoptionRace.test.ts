@@ -4,10 +4,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
 import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
@@ -195,6 +195,7 @@ describe('AgentCrdtProjection keeps a hand-wired autogrow link connected', () =>
     // first connect`, mirroring `agentAutogrowHandWiredLinkFixture.ts`).
     deliver()
     expect(readSinkSlots(graph, sink.id)).toEqual([
+      { name: GROUP, origin: null },
       { name: `${GROUP}.image_1`, origin: String(sourceAgent.id) },
       { name: `${GROUP}.image_2`, origin: null }
     ])
@@ -226,6 +227,7 @@ describe('AgentCrdtProjection keeps a hand-wired autogrow link connected', () =>
     // confirmed one — must not leave the slot reading back disconnected.
     const afterHandWire = readSinkSlots(graph, sink.id)
     expect(afterHandWire).toEqual([
+      { name: GROUP, origin: null },
       { name: `${GROUP}.image_1`, origin: String(sourceAgent.id) },
       { name: `${GROUP}.image_2`, origin: String(sourceHand.id) },
       { name: `${GROUP}.image_3`, origin: null }

@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type {
   ISerialisedNode,
   SerialisableGraph
-} from '@/lib/litegraph/src/types/serialisation'
+} from '@comfyorg/graph-model/serialisation'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -11,12 +11,12 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { GraphScope } from '@/types/graphScopeId'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { GroupId } from '@/types/groupId'
-import type { NodeId } from '@/types/nodeId'
-import type { RerouteId } from '@/types/rerouteId'
-import { widgetId } from '@/types/widgetId'
+import type { GraphScope } from '@comfyorg/graph-model/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { GroupId } from '@comfyorg/graph-model/groupId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import type { RerouteId } from '@comfyorg/graph-model/rerouteId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 import { createTestSubgraphData } from './subgraph/__fixtures__/subgraphHelpers'
 
 /**

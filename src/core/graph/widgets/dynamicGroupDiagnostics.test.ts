@@ -4,11 +4,11 @@ import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { applyRemoteDynamicGroupRowCount } from './dynamicGroupDiagnostics'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { followedDoc } from '@/workbench/extensions/agent/crdt/__fixtures__/followedDoc'
 import { LiveGraphApplier } from '@/workbench/extensions/agent/crdt/liveGraphApplier'
 
@@ -19,8 +19,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return distribution.isCloud
   }
 }))
-
-vi.mock(import('@/platform/telemetry/reportError'))
 
 function addGroup(node: LGraphNode, min = 0) {
   useLitegraphService().addNodeInput(node, {
@@ -287,33 +285,35 @@ describe('remote DynamicGroup row count reports', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it.for([
-    { type: 'AboveMaxDynamicGroup', value: 4 },
-    { type: 'HugeDynamicGroup', value: 1e9 }
-  ])(
-    'refuses a remote row count of $value above max without adding rows',
-    ({ type, value }) => {
-      const { node, rows, setRows } = remoteGroup(type)
-      const add = vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
-        throw new Error('Unexpected row allocation')
-      })
+  it('applies a remote row count above max', () => {
+    const { rows, setRows } = remoteGroup('AboveMaxDynamicGroup')
 
-      expect(setRows(value)).toBe(1)
-      expect(add).not.toHaveBeenCalled()
-      expect(rows.value).toBe(1)
-      expect(vi.mocked(reportError).mock.calls).toEqual([
-        [
-          expect.objectContaining({
-            message: 'Remote DynamicGroup row count did not apply'
-          }),
-          expect.objectContaining({
-            errorType: 'agent_graph_dynamic_group_rows_mismatch',
-            context: { requested: value, actual: 1 }
-          })
-        ]
-      ])
-    }
-  )
+    expect(setRows(4)).toBe(0)
+    expect(rows.value).toBe(4)
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('refuses a remote row count above the allocation bound without adding rows', () => {
+    const { node, rows, setRows } = remoteGroup('HugeDynamicGroup')
+    const add = vi.spyOn(node, 'addCustomWidget').mockImplementation(() => {
+      throw new Error('Unexpected row allocation')
+    })
+
+    expect(setRows(1e9)).toBe(1)
+    expect(add).not.toHaveBeenCalled()
+    expect(rows.value).toBe(1)
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      [
+        expect.objectContaining({
+          message: 'Remote DynamicGroup row count did not apply'
+        }),
+        expect.objectContaining({
+          errorType: 'agent_graph_dynamic_group_rows_mismatch',
+          context: { requested: 1e9, actual: 1 }
+        })
+      ]
+    ])
+  })
 
   function restoredGroup(type: string, count: number) {
     const group = remoteGroup(type)
@@ -351,22 +351,12 @@ describe('remote DynamicGroup row count reports', () => {
     expect(reportError).not.toHaveBeenCalled()
   })
 
-  it('refuses a remote row count that grows a restored group further above max', () => {
+  it('applies a remote row count that grows a restored group further above max', () => {
     const { rows, setRows } = restoredGroup('RestoredDynamicGroup', 4)
 
-    expect(setRows(5)).toBe(1)
-    expect(rows.value).toBe(4)
-    expect(vi.mocked(reportError).mock.calls).toEqual([
-      [
-        expect.objectContaining({
-          message: 'Remote DynamicGroup row count did not apply'
-        }),
-        expect.objectContaining({
-          errorType: 'agent_graph_dynamic_group_rows_mismatch',
-          context: { requested: 5, actual: 4 }
-        })
-      ]
-    ])
+    expect(setRows(5)).toBe(0)
+    expect(rows.value).toBe(5)
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('reports a remote row count the live group did not reach, once per node type', () => {
@@ -404,5 +394,221 @@ describe('remote DynamicGroup row count reports', () => {
 
     expect(setRows(2)).toBe(1)
     expect(reportError).not.toHaveBeenCalled()
+  })
+})
+
+describe('remote DynamicGroup counts outside a row-count write', () => {
+  function comboNodeType() {
+    return class extends LGraphNode {
+      constructor() {
+        super('Remote Dynamic Combo')
+        this.serialize_widgets = true
+        useLitegraphService().addNodeInput(this, {
+          name: 'mode',
+          type: 'COMFY_DYNAMICCOMBO_V3',
+          isOptional: false,
+          options: [
+            {
+              key: 'on',
+              inputs: {
+                required: {
+                  rows: [
+                    'COMFY_DYNAMICGROUP_V3',
+                    {
+                      min: 0,
+                      max: 3,
+                      template: {
+                        required: { text: ['STRING', { default: '' }] }
+                      }
+                    }
+                  ]
+                }
+              }
+            },
+            { key: 'off', inputs: {} }
+          ]
+        })
+      }
+    }
+  }
+
+  beforeEach(() => {
+    LiteGraph.registerNodeType(
+      'CreatedDynamicGroup',
+      class extends LGraphNode {
+        constructor() {
+          super('Created Dynamic Group')
+          this.serialize_widgets = true
+          addGroup(this)
+        }
+      }
+    )
+    LiteGraph.registerNodeType(
+      'OvercountDynamicGroup',
+      class extends LGraphNode {
+        constructor() {
+          super('Overcount Dynamic Group')
+          this.serialize_widgets = true
+          addGroup(this)
+        }
+      }
+    )
+    LiteGraph.registerNodeType('RefusedComboGroup', comboNodeType())
+    LiteGraph.registerNodeType('RestoredComboGroup', comboNodeType())
+    LiteGraph.registerNodeType('CountedComboGroup', comboNodeType())
+    LiteGraph.registerNodeType('GrownComboGroup', comboNodeType())
+  })
+
+  function followed(type: string, values: unknown[], order: string[]) {
+    const graph = new LGraph()
+    const { doc, collector } = followedDoc(
+      {
+        nodes: [
+          { id: 1, type, pos: [0, 0], size: [210, 100], widgets_values: values }
+        ],
+        links: []
+      },
+      { types: { [type]: { widget_order: order } } }
+    )
+    const applier = new LiveGraphApplier({ getGraph: () => graph })
+    const context = { actor: 'agent:test', opIds: ['op-1'] }
+    const apply = () =>
+      applier.applyChanges(doc, collector.take(), context).failureCount
+    function write(values: Record<string, unknown>) {
+      doc.transact(() => {
+        const widgets = nodesMap(doc).get('1')?.get('widgets')
+        if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+        for (const [name, value] of Object.entries(values))
+          widgets.set(name, value)
+      })
+      return apply()
+    }
+    function widget(name: string) {
+      return graph
+        .getNodeById(toNodeId(1))
+        ?.widgets?.find((widget) => widget.name === name)
+    }
+    return { apply, write, widget }
+  }
+
+  function mismatch(
+    type: string,
+    requested: number,
+    actual: number,
+    operation = 'remote_apply'
+  ) {
+    return [
+      expect.objectContaining({
+        message: 'Remote DynamicGroup row count did not apply'
+      }),
+      expect.objectContaining({
+        errorType: 'agent_graph_dynamic_group_rows_mismatch',
+        tags: expect.objectContaining({ node_type: type, operation }),
+        context: { requested, actual }
+      })
+    ]
+  }
+
+  const comboOrder = [
+    'mode',
+    'mode.rows',
+    'mode.rows.0.text',
+    'mode.rows.1.text'
+  ]
+
+  it('reports a refused count on a created node as a remote mismatch', () => {
+    refuseInputChanges()
+    const { apply, widget } = followed(
+      'CreatedDynamicGroup',
+      [2, 0.5, 0.6],
+      ['rows', 'rows.0.strength', 'rows.1.strength']
+    )
+
+    expect(apply()).toBe(1)
+    expect(widget('rows')?.value).toBe(0)
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      mismatch('CreatedDynamicGroup', 2, 0)
+    ])
+  })
+
+  it('counts a refused count once, not again for its row fields', () => {
+    const { apply, write } = followed(
+      'OvercountDynamicGroup',
+      [1, 0.5],
+      ['rows', 'rows.0.strength', 'rows.1.strength']
+    )
+    apply()
+    refuseInputChanges()
+
+    expect(write({ rows: 3, 'rows.2.strength': 0.7 })).toBe(1)
+    expect(write({ 'rows.0.strength': 0.9 })).toBe(0)
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      mismatch('OvercountDynamicGroup', 3, 1)
+    ])
+  })
+
+  it('reports a refused row restore from a remote DynamicCombo switch without failing the frame', () => {
+    const { apply, write, widget } = followed(
+      'RefusedComboGroup',
+      ['on', 2, 'a', 'b'],
+      comboOrder
+    )
+    apply()
+    expect(write({ mode: 'off' })).toBe(0)
+    refuseInputChanges()
+
+    expect(write({ mode: 'on' })).toBe(0)
+    expect(widget('mode.rows')?.value).toBe(0)
+    expect(write({ mode: 'on' })).toBe(0)
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      mismatch('RefusedComboGroup', 2, 0, 'remote_remount')
+    ])
+  })
+
+  it('restores rows on a remote DynamicCombo switch without reporting', () => {
+    const { apply, write, widget } = followed(
+      'RestoredComboGroup',
+      ['on', 2, 'a', 'b'],
+      comboOrder
+    )
+    apply()
+
+    expect([write({ mode: 'off' }), write({ mode: 'on' })]).toEqual([0, 0])
+    expect(widget('mode.rows')?.value).toBe(2)
+    expect(widget('mode.rows.1.text')?.value).toBe('b')
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('counts a refused switch that also writes the count once', () => {
+    const { apply, write } = followed(
+      'CountedComboGroup',
+      ['on', 2, 'a', 'b'],
+      comboOrder
+    )
+    apply()
+    write({ mode: 'off' })
+    refuseInputChanges()
+
+    expect(write({ mode: 'on', 'mode.rows': 2 })).toBe(1)
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      mismatch('CountedComboGroup', 2, 0)
+    ])
+  })
+  it('reports a remounted group below the count the document reached', () => {
+    const { apply, write, widget } = followed(
+      'GrownComboGroup',
+      ['on', 2, 'a', 'b'],
+      comboOrder
+    )
+    apply()
+    write({ mode: 'off' })
+    write({ 'mode.rows': 3, 'mode.rows.2.text': 'c' })
+    vi.mocked(reportError).mockClear()
+
+    expect(write({ mode: 'on' })).toBe(0)
+    expect(widget('mode.rows')?.value).toBe(2)
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      mismatch('GrownComboGroup', 3, 2, 'remote_remount')
+    ])
   })
 })

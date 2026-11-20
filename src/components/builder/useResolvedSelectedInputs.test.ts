@@ -2,12 +2,12 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import { app } from '@/scripts/app'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { toNodeId } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
-import { widgetId } from '@/types/widgetId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
 
 import { useResolvedSelectedInputs } from './useResolvedSelectedInputs'
 

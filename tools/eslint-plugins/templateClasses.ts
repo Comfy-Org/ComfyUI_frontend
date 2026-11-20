@@ -1,5 +1,6 @@
 import type { Rule } from 'eslint'
 import { existsSync, readFileSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import type { AST } from 'vue-eslint-parser'
 
@@ -8,6 +9,10 @@ import {
   buttonVariants
 } from '@comfyorg/design-system/button.variants'
 import type { ButtonVariants } from '@comfyorg/design-system/button.variants'
+import type { BadgeVariants } from '@comfyorg/design-system/lib/badge/badge.variants'
+import { badgeVariants } from '@comfyorg/design-system/lib/badge/badge.variants'
+import type { MessageVariants } from '@comfyorg/design-system/lib/message/message.variants'
+import { messageVariants } from '@comfyorg/design-system/lib/message/message.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Category } from '@comfyorg/design-system-audits/textCategories'
@@ -23,7 +28,12 @@ type VAttribute = AST.VAttribute
 
 interface TemplateParserServices {
   defineTemplateBodyVisitor(visitor: {
-    VElement: (node: VElement) => void
+    VElement?: (node: VElement) => void
+    'VElement:exit'?: (node: VElement) => void
+    VLiteral?: (node: AST.VLiteral) => void
+    Literal?: (node: AST.ESLintLiteral) => void
+    TemplateElement?: (node: AST.ESLintTemplateElement) => void
+    [selector: string]: ((node: never) => void) | undefined
   }): Rule.RuleListener
 }
 
@@ -321,6 +331,14 @@ const componentDefaultsCache = new Map<string, string | null>()
 const appSourceRoot = path.join(repoRoot, 'src')
 
 function uiComponentFile(source: string, importer: string) {
+  if (source.startsWith('@comfyorg/design-system/')) {
+    try {
+      const resolved = createRequire(importer).resolve(source)
+      return resolved.endsWith('.vue') ? resolved : null
+    } catch {
+      return null
+    }
+  }
   if (!importer.startsWith(appSourceRoot + path.sep)) return null
   const match = source.match(/^@\/(components\/ui\/.+\.vue)$/)
   return match ? path.join(appSourceRoot, match[1]) : null
@@ -400,7 +418,9 @@ function isButtonVariant(
 function isButtonSize(
   value: string | undefined
 ): value is ButtonVariants['size'] {
-  return value === undefined || buttonSizeNames.includes(value)
+  return (
+    value === undefined || value === 'unset' || buttonSizeNames.includes(value)
+  )
 }
 
 function buttonDefaultClasses(node: VElement) {
@@ -410,6 +430,84 @@ function buttonDefaultClasses(node: VElement) {
   const size = staticAttributeValue(node, 'size')
   if (!isButtonVariant(variant) || !isButtonSize(size)) return null
   return buttonVariants({ variant, size })
+}
+
+function isMessageSeverity(
+  value: string | undefined
+): value is MessageVariants['severity'] {
+  return (
+    value === undefined ||
+    value === 'error' ||
+    value === 'warning' ||
+    value === 'info' ||
+    value === 'success' ||
+    value === 'secondary'
+  )
+}
+
+function isBadgeVariant(
+  value: string | undefined
+): value is BadgeVariants['variant'] {
+  return (
+    value === undefined ||
+    [
+      'tag',
+      'chip',
+      'badge',
+      'compact',
+      'label',
+      'circle',
+      'outline',
+      'square',
+      'pill',
+      'dot'
+    ].includes(value)
+  )
+}
+
+function isBadgeSeverity(
+  value: string | undefined
+): value is BadgeVariants['severity'] {
+  return (
+    value === undefined ||
+    [
+      'default',
+      'contrast',
+      'primary',
+      'secondary',
+      'muted',
+      'danger',
+      'info',
+      'success',
+      'warning'
+    ].includes(value)
+  )
+}
+
+function badgeDefaultClasses(node: VElement) {
+  if (hasBoundAttribute(node, 'variant') || hasBoundAttribute(node, 'severity'))
+    return null
+  const variant = staticAttributeValue(node, 'variant')
+  const severity = staticAttributeValue(node, 'severity')
+  if (!isBadgeVariant(variant) || !isBadgeSeverity(severity)) return null
+  return badgeVariants({ variant, severity })
+}
+
+function resolvedComponentDefaults(file: string, node: VElement) {
+  const componentsRoot = path.join(
+    repoRoot,
+    'packages/design-system/src/components'
+  )
+  if (file === path.join(componentsRoot, 'button/Button.vue'))
+    return buttonDefaultClasses(node)
+  if (file === path.join(componentsRoot, 'badge/Badge.vue'))
+    return badgeDefaultClasses(node)
+  if (file === path.join(componentsRoot, 'message/Message.vue')) {
+    if (hasBoundAttribute(node, 'severity')) return null
+    const severity = staticAttributeValue(node, 'severity')
+    return isMessageSeverity(severity) ? messageVariants({ severity }) : null
+  }
+  return componentDefaultClasses(file)
 }
 
 function importedUiComponents(context: Rule.RuleContext) {
@@ -431,6 +529,79 @@ function sortedClassSet(classes: string) {
   return [...new Set(classes.split(/\s+/).filter(Boolean))].sort().join(' ')
 }
 
+function literalClassAlternatives(
+  expression: AST.VExpressionContainer['expression'] | undefined
+) {
+  const alternatives =
+    expression?.type === 'ConditionalExpression'
+      ? [expression.consequent, expression.alternate]
+      : [expression]
+  return alternatives.every(
+    (alternative): alternative is AST.ESLintLiteral =>
+      alternative?.type === 'Literal' && typeof alternative.value === 'string'
+  )
+    ? alternatives
+    : []
+}
+
+function componentClassLiterals(node: VElement) {
+  const attributes = node.startTag.attributes.filter((attribute) => {
+    if (!attribute.directive) return attribute.key.name === 'class'
+    return (
+      attribute.key.name.name === 'bind' &&
+      (attribute.key.argument?.type !== 'VIdentifier' ||
+        attribute.key.argument.name === 'class')
+    )
+  })
+  if (attributes.length !== 1) return []
+  const attribute = attributes[0]
+  if (!attribute.directive) return attribute.value ? [attribute.value] : []
+  if (
+    attribute.key.argument?.type !== 'VIdentifier' ||
+    attribute.key.argument.name !== 'class'
+  )
+    return []
+  return literalClassAlternatives(attribute.value?.expression)
+}
+
+function checkComponentLiteral(
+  context: Rule.RuleContext,
+  node: VElement,
+  literal: AST.VLiteral | AST.ESLintLiteral,
+  defaults: string
+) {
+  if (typeof literal.value !== 'string') return
+  const raw = context.sourceCode.text.slice(...literal.range)
+  if (raw.slice(1, -1) !== literal.value) return
+  const tokens = literal.value.split(/\s+/).filter(Boolean)
+  const defaultTokens = new Set(cn(defaults).split(/\s+/))
+  const merged = sortedClassSet(cn(defaults, tokens.join(' ')))
+  const redundant = new Set<string>()
+  let kept = tokens
+  for (const token of tokens) {
+    if (!defaultTokens.has(token)) continue
+    const without = kept.filter((other) => other !== token)
+    if (sortedClassSet(cn(defaults, without.join(' '))) !== merged) continue
+    redundant.add(token)
+    kept = without
+  }
+  for (const token of redundant) {
+    context.report({
+      node: literal,
+      messageId: 'redundant',
+      data: { token, component: node.rawName },
+      fix:
+        literal.type === 'VLiteral'
+          ? removeTokensFix(context, literal.parent, redundant)
+          : (fixer) =>
+              fixer.replaceTextRange(
+                literal.range,
+                raw[0] + kept.join(' ') + raw[0]
+              )
+    })
+  }
+}
+
 const noRedundantComponentClasses: Rule.RuleModule = {
   meta: {
     type: 'suggestion',
@@ -445,35 +616,18 @@ const noRedundantComponentClasses: Rule.RuleModule = {
     schema: []
   },
   create(context) {
+    if (hasStyleBlock(context)) return {}
     const components = importedUiComponents(context)
     if (!components.size) return {}
     return templateVisitor(context, (node) => {
       const file = components.get(node.rawName)
       if (!file) return
-      const attribute = staticClassAttribute(node)
-      if (!attribute) return
-      const defaults =
-        path.basename(file) === 'Button.vue'
-          ? buttonDefaultClasses(node)
-          : componentDefaultClasses(file)
+      const literals = componentClassLiterals(node)
+      if (!literals.length) return
+      const defaults = resolvedComponentDefaults(file, node)
       if (!defaults) return
-      const tokens = classTokens(attribute)
-      const merged = sortedClassSet(cn(defaults, tokens.join(' ')))
-      const redundant = new Set<string>()
-      let kept = tokens
-      for (const token of tokens) {
-        const without = kept.filter((other) => other !== token)
-        if (sortedClassSet(cn(defaults, without.join(' '))) !== merged) continue
-        redundant.add(token)
-        kept = without
-      }
-      for (const token of redundant) {
-        context.report({
-          node: attribute,
-          messageId: 'redundant',
-          data: { token, component: node.rawName },
-          fix: removeTokensFix(context, attribute, redundant)
-        })
+      for (const literal of literals) {
+        checkComponentLiteral(context, node, literal, defaults)
       }
     })
   }
@@ -601,11 +755,200 @@ const noInheritedUtilities: Rule.RuleModule = {
   }
 }
 
+const iconElement: Rule.RuleModule = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description:
+        'Require Iconify classes on <i> elements without redundant default utilities'
+    },
+    messages: {
+      wrongElement:
+        'Apply icon-[…] classes to an <i> element, not <{{element}}>.',
+      redundantIconUtility:
+        'Remove `{{token}}`; icon classes already provide size-4 and shrink-0.'
+    },
+    schema: []
+  },
+  create(context) {
+    const services = context.sourceCode.parserServices as
+      | Partial<TemplateParserServices>
+      | undefined
+    const classes = new Map<
+      VElement,
+      {
+        node: AST.VLiteral | AST.ESLintLiteral | AST.ESLintTemplateElement
+        tokens: string[]
+      }[]
+    >()
+    const iconClass = /(?:^|:)!?icon-(?:img-|mask-|s[\d.]+-)?\[/
+    function mutuallyExclusive(left: AST.Node, right: AST.Node) {
+      let parent = left.parent
+      while (parent && parent.type !== 'VAttribute') {
+        if (parent.type === 'ConditionalExpression') {
+          const branches = [parent.consequent, parent.alternate]
+          const leftBranch = branches.findIndex(
+            (branch) =>
+              branch.range[0] <= left.range[0] &&
+              left.range[1] <= branch.range[1]
+          )
+          const rightBranch = branches.findIndex(
+            (branch) =>
+              branch.range[0] <= right.range[0] &&
+              right.range[1] <= branch.range[1]
+          )
+          if (
+            leftBranch !== -1 &&
+            rightBranch !== -1 &&
+            leftBranch !== rightBranch
+          )
+            return true
+        }
+        parent = parent.parent
+      }
+      return false
+    }
+    function isClassAttribute(
+      attribute: AST.VAttribute | AST.VDirective,
+      node: AST.Node
+    ) {
+      if (!attribute.directive) return attribute.key.name === 'class'
+      if (attribute.key.name.name !== 'bind') return false
+      if (attribute.key.argument) {
+        return (
+          attribute.key.argument.type === 'VIdentifier' &&
+          attribute.key.argument.name === 'class'
+        )
+      }
+      const expression = attribute.value?.expression
+      return (
+        expression?.type === 'ObjectExpression' &&
+        expression.properties.some(
+          (property) =>
+            property.type === 'Property' &&
+            ((property.key.type === 'Identifier' &&
+              !property.computed &&
+              property.key.name === 'class') ||
+              (property.key.type === 'Literal' &&
+                property.key.value === 'class')) &&
+            property.value.range[0] <= node.range[0] &&
+            node.range[1] <= property.value.range[1]
+        )
+      )
+    }
+    function checkClass(
+      node: AST.VLiteral | AST.ESLintLiteral | AST.ESLintTemplateElement,
+      text: string
+    ) {
+      let parent = node.parent
+      while (parent && parent.type !== 'VAttribute') {
+        if (parent.type === 'BinaryExpression' && parent.operator !== '+')
+          return
+        parent = parent.parent
+      }
+      if (!parent) return
+      const element = parent.parent.parent
+      if (!isClassAttribute(parent, node)) return
+      const tokens = text.split(/\s+/).filter(Boolean)
+      const entries = classes.get(element) ?? []
+      entries.push({ node, tokens })
+      classes.set(element, entries)
+    }
+    return (
+      services?.defineTemplateBodyVisitor?.({
+        'VElement:exit': (element) => {
+          const entries = classes.get(element)
+          classes.delete(element)
+          if (!entries) return
+          const icons = entries.filter(({ tokens }) =>
+            tokens.some((token) => iconClass.test(token))
+          )
+          if (element.rawName !== 'i') {
+            for (const { node } of icons) {
+              context.report({
+                node,
+                messageId: 'wrongElement',
+                data: { element: element.rawName }
+              })
+            }
+            return
+          }
+          for (const { node, tokens } of entries) {
+            if (!icons.some((icon) => !mutuallyExclusive(node, icon.node)))
+              continue
+            for (const token of tokens) {
+              if (token !== 'size-4' && token !== 'shrink-0') continue
+              context.report({
+                node,
+                messageId: 'redundantIconUtility',
+                data: { token }
+              })
+            }
+          }
+        },
+        VLiteral: (node) => checkClass(node, node.value),
+        Literal: (node) => {
+          if (typeof node.value === 'string') checkClass(node, node.value)
+        },
+        TemplateElement: (node) => checkClass(node, node.value.raw)
+      }) ?? {}
+    )
+  }
+}
+
+const BUTTON_FILL = /(^|:)!?bg-(?!((transparent|none|inherit)!?)?$)/
+
+const preferDesignSystemButton: Rule.RuleModule = {
+  meta: {
+    type: 'suggestion',
+    docs: {
+      description:
+        'Disallow native <button> elements that paint their own background instead of using the design-system Button'
+    },
+    messages: {
+      styled:
+        '<button> sets `{{token}}`; use the design-system Button with a variant instead.'
+    },
+    schema: []
+  },
+  create(context) {
+    const services = context.sourceCode.parserServices as
+      | Partial<TemplateParserServices>
+      | undefined
+    function check(node: AST.Node, text: string) {
+      const token = text.split(/\s+/).find((part) => BUTTON_FILL.test(part))
+      if (token)
+        context.report({
+          loc: node.loc,
+          messageId: 'styled',
+          data: { token }
+        })
+    }
+    const buttonAttribute =
+      "VElement[rawName='button'] > VStartTag > VAttribute"
+    const boundClass = `${buttonAttribute}[directive=true][key.argument.name='class']`
+    return (
+      services?.defineTemplateBodyVisitor?.({
+        [`${buttonAttribute}[directive=false][key.name='class'] > VLiteral`]: (
+          node: AST.VLiteral
+        ) => check(node, node.value),
+        [`${boundClass} Literal`]: (node: AST.ESLintLiteral) => {
+          if (typeof node.value === 'string') check(node, node.value)
+        },
+        [`${boundClass} TemplateElement`]: (node: AST.ESLintTemplateElement) =>
+          check(node, node.value.raw)
+      }) ?? {}
+    )
+  }
+}
+
 export default {
   meta: { name: 'template-classes' },
   rules: {
+    'prefer-design-system-button': preferDesignSystemButton,
     'no-default-utilities': noDefaultUtilities,
     'no-redundant-component-classes': noRedundantComponentClasses,
-    'no-inherited-utilities': noInheritedUtilities
+    'no-inherited-utilities': noInheritedUtilities,
+    'icon-element': iconElement
   }
 }

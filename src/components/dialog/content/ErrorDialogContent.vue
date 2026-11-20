@@ -5,11 +5,16 @@
   >
     <NoResultsPlaceholder
       class="pb-0"
-      icon="pi pi-exclamation-circle"
-      :title="title"
+      icon="icon-[lucide--circle-alert]"
       :message="message"
       text-class="break-words max-w-[60vw]"
-    />
+    >
+      <template #title>
+        <DialogTitle as="h3" class="mb-2 text-[1.17em] font-bold">
+          {{ title }}
+        </DialogTitle>
+      </template>
+    </NoResultsPlaceholder>
     <template v-if="error.extensionFile">
       <span>{{ t('errorDialog.extensionFileHint') }}:</span>
       <br />
@@ -54,7 +59,7 @@
         data-testid="error-dialog-copy-report"
         @click="copyReportToClipboard"
       >
-        <i class="pi pi-copy" />
+        <i class="icon-[lucide--copy]" />
         {{ $t('g.copyToClipboard') }}
       </Button>
     </div>
@@ -66,16 +71,17 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import NoResultsPlaceholder from '@/components/common/NoResultsPlaceholder.vue'
+import NoResultsPlaceholder from '@comfyorg/design-system/common/NoResultsPlaceholder'
 import FindIssueButton from '@/components/dialog/content/error/FindIssueButton.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
-import type { RunErrorMessageSource } from '@/platform/errorCatalog/types'
-import { useTelemetry } from '@/platform/telemetry'
+import { resolveRunErrorMessage } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
+import type { RunErrorMessageSource } from '@/platform/workflowErrors/errorCatalog/types'
+import { useTelemetry } from '@comfyorg/telemetry'
 import { api } from '@/scripts/api'
 import { useApp } from '@/scripts/appInstance'
-import { useCommandStore } from '@/stores/commandStore'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { generateErrorReport } from '@/utils/errorReportUtil'
 import type { ErrorReportData } from '@/utils/errorReportUtil'
@@ -142,14 +148,13 @@ const resolvedErrors = computed(() =>
 )
 const title = computed(() => {
   const displayTitle =
-    resolvedErrors.value[0]?.title ??
-    error.nodeType ??
-    error.exceptionType ??
-    t('errorDialog.defaultTitle')
+    [resolvedErrors.value[0]?.title, error.nodeType, error.exceptionType].find(
+      (candidate) => candidate?.trim()
+    ) || t('errorDialog.defaultTitle')
 
   if (errorSources[0]?.kind !== 'execution') return displayTitle
 
-  const nodeTitle = error.nodeType ?? displayTitle
+  const nodeTitle = error.nodeType?.trim() ? error.nodeType : displayTitle
   return error.nodeId ? `${nodeTitle} (#${error.nodeId})` : nodeTitle
 })
 const message = computed(
@@ -160,16 +165,13 @@ const message = computed(
       .join('\n\n') || error.exceptionMessage
 )
 
-/**
- * Open contact support flow from error dialog and track telemetry.
- */
-const showContactSupport = async () => {
+const showContactSupport = () => {
   telemetry?.trackHelpResourceClicked({
     resource_type: 'help_feedback',
     is_external: true,
     source: 'error_dialog'
   })
-  await useCommandStore().execute('Comfy.ContactSupport')
+  openSupportForm('bug')
 }
 
 onMounted(async () => {

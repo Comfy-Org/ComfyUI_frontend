@@ -5,11 +5,11 @@ import {
   setRevealedLinks
 } from '@/lib/litegraph/src/canvas/linkRevealState'
 import type { LinkRevealKind } from '@/lib/litegraph/src/canvas/linkRevealState'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 interface SlotLinkRevealOptions {
   nodeId?: NodeId
@@ -22,7 +22,7 @@ export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
   const owner = {}
 
   function revealLinks(): void {
-    const graph = app.canvas.graph
+    const graph = useApp().canvas.graph
     if (!graph || options.nodeId === undefined) return
 
     const scope = graphScopeOf(graph)
@@ -44,12 +44,12 @@ export function useSlotLinkReveal(options: SlotLinkRevealOptions) {
         : []
     )
     if (setRevealedLinks(scope.rootGraphId, linkIds, owner, options.kind)) {
-      app.canvas.setDirty(false, true)
+      useApp().canvas.setDirty(false, true)
     }
   }
 
   function unrevealLinks(): void {
-    if (clearRevealedLinks(owner)) app.canvas.setDirty(false, true)
+    if (clearRevealedLinks(owner)) useApp().canvas.setDirty(false, true)
   }
 
   onScopeDispose(unrevealLinks)

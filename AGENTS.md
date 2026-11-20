@@ -49,6 +49,8 @@ See @docs/guidance/\*.md for file-type-specific conventions (auto-loaded by glob
 
 The project uses **pnpm workspaces** for monorepo organization and native tool CLIs for task execution
 
+- Use Vite for frontend package bundling with TypeScript `moduleResolution: "bundler"`. Fix package exports and source imports; do not patch compiler or resolver dependencies to make package builds pass.
+
 ## Package Manager
 
 This project uses **pnpm**. Always prefer scripts defined in `package.json` (e.g., `pnpm test:unit`, `pnpm lint`). To run arbitrary packages not in scripts, use `pnpx` or `pnpm dlx` — never `npx`.
@@ -199,8 +201,8 @@ CI runs everything.
 1. Leverage VueUse functions for performance-enhancing styles
 2. Use es-toolkit for utility functions
 3. Use vue-i18n in composition API for any string literals. Place new translation entries in src/locales/en/main.json. Use the plurals system in i18n instead of hardcoding pluralization in templates.
-4. PrimeVue has been removed. Its imports are permanently banned; use components from `src/components/ui`.
-5. Write tests for all changes, especially bug fixes to catch future regressions
+4. PrimeVue has been removed. Its imports are permanently banned; use components from `@comfyorg/design-system`.
+5. Add tests for changed behavioral contracts or reproduced bugs when existing tests do not cover them. Behavior-preserving refactors need no new tests. Follow `docs/guidance/testing-principles.md` before proposing or writing tests.
 6. Do not write code comments. Make the code say it with names, extracted functions, types, and tests. The only permitted comment is curt JSDoc on an exported API (see Common Pitfalls)
 7. Whenever a new piece of code is written, the author should ask themselves 'is there a simpler way to introduce the same functionality?'. If the answer is yes, the simpler course should be chosen
 8. Avoid mutable state, prefer immutability and assignment at point of declaration
@@ -218,7 +220,7 @@ See `docs/guidance/design-standards.md` for Figma file keys, section node IDs, a
 
 - Frameworks: Vitest (unit/component, happy-dom) and Playwright (E2E).
 - Locations: unit/component `src/**/*.test.ts`, E2E `browser_tests/**/*.spec.ts`, litegraph `src/lib/litegraph/test/`.
-- Principles: `docs/guidance/testing-principles.md` (auto-loaded for `*.test.ts` and `*.spec.ts`). Behavioral tests, no change detectors, parameterized tables over copied bodies, mock only what you own, fewest tests that keep coverage.
+- Principles: Read `docs/guidance/testing-principles.md` before proposing, reviewing, or writing tests, not only when editing a test file. Start with caller or user expectations and reachable scenarios, then choose the smallest suite that protects them. Use Beck's Test Desiderata to judge behavioral value and refactor resistance.
 - Conventions: `docs/guidance/vitest.md` (unit/component), `docs/guidance/playwright.md` (E2E), and `docs/testing/*.md` for detailed patterns.
 
 ## Architecture Decision Records
@@ -245,6 +247,12 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
   disable the control, never grant it. A missing fact is a backend ticket plus
   `pendingServerFact('BE-xxxx', expr)`, never another field. See
   `docs/adr/API-SERVER-FACTS-0042-server-facts-are-rendered-not-derived.md`
+- NEVER change the `@comfyorg/comfy-multi-player` pin in `pnpm-workspace.yaml` by hand. Cloud opens the
+  `sync-multiplayer-pin-*` PR that moves it
+- NEVER approve or merge any PR that changes the `@comfyorg/comfy-multi-player` pin, manual or automated, unless its
+  `SCHEMA_VERSION` matches the one the cloud comfy-agent doc host runs: the CRDT follower refuses any other schema,
+  which breaks live multiplayer sync. When a required check fails on the sync PR, read the failure first; if it shows the
+  new version is incompatible with this repo, fix the frontend rather than merging past it
 - NEVER use `any` type - use proper TypeScript types
 - NEVER use `as any` type assertions - fix the underlying type issue
 - NEVER add `@ts-ignore` or `@ts-nocheck`. Use `@ts-expect-error` only in a test
@@ -298,7 +306,7 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
     suggests adding a comment. An example that contains comments is not
     permission to write them.
 - NEVER call `captureException` or `datadogRum.addError` directly
-  - Use `reportError()` from `@/platform/telemetry/reportError`; see `src/AGENTS.md`
+  - Use `reportError()` from `@comfyorg/telemetry/reportError`; see `src/AGENTS.md`
   - Each raw sink reaches one console, so the failure reads as zero in the other
 - NEVER use the `dark:` tailwind variant
   - Instead use a semantic value from the `style.css` theme
@@ -312,8 +320,8 @@ ADR files are named `<DOMAIN>[-<SUBDOMAIN>]-<NNNN>-descriptive-title.md`: at mos
 - NEVER use arbitrary percentage values like `w-[80%]` when a Tailwind fraction utility exists
   - Use `w-4/5` instead of `w-[80%]`, `w-1/2` instead of `w-[50%]`, etc.
 - NEVER use font-size classes (`text-xs`, `text-sm`, etc.) to size `icon-[...]` (iconify) icons
-  - Iconify icons size via `width`/`height: 1.2em`, so font-size produces unpredictable results
-  - Use `size-*` classes for explicit sizing, or set font-size on the **parent** container and let `1.2em` scale naturally
+  - Iconify icons default to `size-4`, and font size has no effect on them
+  - Override the size with a `size-*` class on the icon itself
 
 ## Agent-only rules
 

@@ -8,7 +8,6 @@ on:
     workflows: ['CI: Lint Format', 'CI: Tests E2E']
     types: [completed]
     branches:
-      - 'cloud/**'
       - 'core/**'
 
 permissions:

@@ -30,7 +30,7 @@
         class="size-full cursor-pointer object-cover"
       />
 
-      <AssetBadgeGroup :badges="asset.badges" />
+      <AssetBadgeGroup :badges="badges" />
       <IconGroup
         :class="
           cn(
@@ -141,15 +141,15 @@ import { computed, ref, toValue, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { useImageQuiet } from '@/composables/useImageQuiet'
-import IconGroup from '@/components/button/IconGroup.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import IconGroup from '@comfyorg/design-system/button-group/IconGroup'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
-import Button from '@/components/ui/button/Button.vue'
-import Menu from '@/components/ui/menu/Menu.vue'
-import type { MenuItem } from '@/components/ui/menu/types'
-import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
-import TooltipContent from '@/components/ui/tooltip/TooltipContent.vue'
-import TooltipTrigger from '@/components/ui/tooltip/TooltipTrigger.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Menu from '@comfyorg/design-system/menu/Menu'
+import type { MenuItem } from '@comfyorg/design-system/lib/menu/types'
+import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
+import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
+import TooltipTrigger from '@comfyorg/design-system/tooltip/TooltipTrigger'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -176,6 +176,12 @@ const { t, d } = useI18n()
 const settingStore = useSettingStore()
 const { closeDialog } = useDialogStore()
 const { isDownloadedThisSession, acknowledgeAsset } = useAssetDownloadStore()
+
+const badges = computed<AssetDisplayItem['badges']>(() =>
+  asset.isWorkspaceLibrary
+    ? [{ label: t('assetBrowser.library'), type: 'type' }, ...asset.badges]
+    : asset.badges
+)
 
 const assetMenuOpen = ref(false)
 
@@ -224,10 +230,10 @@ function confirmDeletion() {
       promptText
     },
     footerProps: {
+      cancelText: t('g.cancel'),
       confirmText: t('g.delete'),
-      // TODO: These need to be put into the new Button Variants once we have them.
       confirmClass: cn(
-        'bg-destructive text-foreground ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
+        'bg-destructive ring-foreground hover:bg-destructive/80 focus:bg-destructive/80 focus:ring'
       ),
       optionsDisabled,
       onCancel: () => {
@@ -243,7 +249,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.complete', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 1_000))
           emit('deleted', asset)
         } catch (err: unknown) {
@@ -251,7 +256,6 @@ function confirmDeletion() {
           promptText.value = t('assetBrowser.deletion.failed', {
             assetName
           })
-          // Give a second for the completion message
           await new Promise((resolve) => setTimeout(resolve, 3_000))
         } finally {
           closeDialog(confirmDialog)

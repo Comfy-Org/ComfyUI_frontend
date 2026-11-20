@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   consoleErrorExclusionsForPacks,
-  customExtensionStartupErrors,
+  customNodeStartupErrors,
   isForeignExecutionNoise,
   staleRequiredConnectivityErrorRulesForPacks,
   staleRequiredStartupErrorRulesForPacks,
@@ -19,7 +19,7 @@ import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
 describe('consoleErrorLedger', () => {
   it('startup attribution excludes core boot noise and keeps extension failures', () => {
     expect(
-      customExtensionStartupErrors([
+      customNodeStartupErrors([
         'Failed to load resource: 404 [http://localhost:8188/user.css]',
         'ComfyApp graph accessed before initialization [http://localhost:8188/assets/app.js]',
         'Failed to load resource: 404 [http://localhost:8188/extensions/core/clipspace.js]',
@@ -36,7 +36,9 @@ describe('consoleErrorLedger', () => {
 
   it('required startup errors fail stale and filter only their exact signatures', () => {
     const error =
-      "[vite:preloadError] {url: null, message: Unexpected token '}'} [http://localhost:8188/assets/main-abc.js]"
+      "[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/js/ltx_director_guide.js: Unexpected token '}'"
+    const otherCause =
+      "[Reported error]: error_loading_extension /extensions/WhatDreamsCost-ComfyUI/js/ltx_director_guide.js: The requested module '/scripts/app.js' does not provide an export named 'app'"
     expect(
       staleRequiredStartupErrorRulesForPacks(['WhatDreamsCost-ComfyUI'], [])
     ).toEqual(['WhatDreamsCost-ComfyUI/ltx-director-guide-syntax'])
@@ -49,9 +51,9 @@ describe('consoleErrorLedger', () => {
     expect(
       unallowlistedGlobalExtensionErrorsForPacks(
         ['WhatDreamsCost-ComfyUI'],
-        [error, 'different failure']
+        [error, otherCause, 'different failure']
       )
-    ).toEqual(['different failure'])
+    ).toEqual([otherCause, 'different failure'])
   })
 
   it('reports every console acceptance with unique removal metadata', () => {

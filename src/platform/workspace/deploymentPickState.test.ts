@@ -18,6 +18,7 @@ const deployment: WorkspaceDeployment = {
   build_name: 'Studio Build',
   release_version: 1,
   status: 'ready',
+  can_start: false,
   created_at: '2026-10-01T00:00:00Z'
 }
 
@@ -221,6 +222,23 @@ describe('reduceDeploymentPick', () => {
         defaultDeploymentId: 'dep-1'
       })
     ).toBe(hidden)
+  })
+
+  it('following the default in place ends the switch on the same deployment', () => {
+    expect(
+      reduceDeploymentPick(
+        { ...switching, defaultDeploymentId: 'dep-1' },
+        { type: 'followedInPlace' }
+      )
+    ).toEqual({
+      ...ready,
+      defaultDeploymentId: 'dep-1',
+      pickSource: 'workspace_default'
+    })
+    const hidden: DeploymentPickState = { phase: 'hidden' }
+    expect(reduceDeploymentPick(hidden, { type: 'followedInPlace' })).toBe(
+      hidden
+    )
   })
 })
 

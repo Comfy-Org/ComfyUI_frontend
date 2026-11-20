@@ -1,23 +1,23 @@
-import { useElementBounding, useEventListener, useRafFn } from '@vueuse/core'
+import { useElementBounding, useEventListener } from '@vueuse/core'
 import { computed, onUnmounted, ref, watch, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { useVueFeatureFlags } from '@/composables/useVueFeatureFlags'
-import type { ReadOnlyRect, Rect } from '@/lib/litegraph/src/interfaces'
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import type {
+  ReadOnlyRect,
+  Rect,
+  Point2D as Point
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { getSelectedLinksAnchor } from '@/lib/litegraph/src/canvas/linkSelection'
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Point } from '@/renderer/core/layout/types'
+import { useCompositedTransform } from '@/renderer/core/layout/transform/useCompositedTransform'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
 import { computeUnionBounds } from '@/utils/mathUtil'
-
-/**
- * Manages the position of the selection toolbox independently.
- * Uses CSS custom properties for performant transform updates.
- */
 
 // Shared signals for auxiliary UI (e.g., MoreOptions) to coordinate hide/restore
 const moreOptionsOpen = ref(false)
@@ -67,6 +67,8 @@ export function useSelectionToolboxPosition(
   const { shouldRenderVueNodes } = useVueFeatureFlags()
   const isDraggingLiteGraphItems = ref(lgCanvas.isDragging)
   const linkSelectionStore = useLinkSelectionStore()
+  const { setTransform: setToolboxTransform } =
+    useCompositedTransform(toolboxRef)
 
   useEventListener(
     lgCanvas.canvas,
@@ -76,17 +78,14 @@ export function useSelectionToolboxPosition(
     }
   )
 
-  // World position of selection center
   const worldPosition = ref({ x: 0, y: 0 })
 
   const visible = ref(false)
 
-  // Use VueUse to reactively track canvas bounding rect
   const { left: canvasLeft, top: canvasTop } = useElementBounding(
     lgCanvas.canvas
   )
 
-  // Unified dragging state - combines both LiteGraph and Vue node dragging
   const isDragging = computed((): boolean => {
     const vueNodeDragging =
       shouldRenderVueNodes.value && layoutStore.isDraggingVueNodes.value
@@ -142,22 +141,12 @@ export function useSelectionToolboxPosition(
     const screenY =
       (worldPosition.value.y + offset[1]) * scale + canvasTop.value
 
-    // Update CSS custom properties directly for best performance
-    if (toolboxRef.value) {
-      toolboxRef.value.style.setProperty('--tb-x', `${screenX}px`)
-      toolboxRef.value.style.setProperty('--tb-y', `${screenY}px`)
-    }
+    setToolboxTransform(`translate(${screenX}px, ${screenY}px)`)
   }
 
-  // Sync with canvas transform
-  const { resume: startSync, pause: stopSync } = useRafFn(updateTransform)
-
-  watchEffect(() => {
-    if (visible.value) {
-      startSync()
-    } else {
-      stopSync()
-    }
+  watchEffect((onCleanup) => {
+    if (!visible.value) return
+    onCleanup(onCanvasFrame(lgCanvas, 'present', updateTransform))
   })
 
   const handleSelectionMembershipChange = () => {
@@ -209,14 +198,12 @@ export function useSelectionToolboxPosition(
   const handleDragStart = () => {
     visible.value = false
 
-    // Early return if more options wasn't open
     if (!moreOptionsOpen.value) {
       moreOptionsRestorePending.value = false
       moreOptionsWasOpenBeforeDrag = false
       return
     }
 
-    // Handle more options cleanup
     const currentSig = buildSelectionSignature(canvasStore)
     const selectionChanged = currentSig !== moreOptionsSelectionSignature
 
@@ -246,7 +233,6 @@ export function useSelectionToolboxPosition(
         moreOptionsRestorePending.value &&
         selectionMatches
 
-      // Single point of assignment for each ref
       moreOptionsRestorePending.value =
         shouldRestore && moreOptionsRestorePending.value
       moreOptionsWasOpenBeforeDrag = false

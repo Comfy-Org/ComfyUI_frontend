@@ -6,19 +6,10 @@ import type {
   WebSessionResponse
 } from '@comfyorg/ingest-types'
 
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
 
 import { TEAM_WORKSPACE } from '@e2e/fixtures/data/workspaceSwitcher'
 import { CLOUD_SELF_EMAIL } from '@e2e/fixtures/helpers/CloudAuthHelper'
-
-export const WEB_SESSION_FEATURES: RemoteConfig = { unified_web_session: true }
-
-/** What ingest answers a caller with no client header or cookie. */
-export const WEB_SESSION_ANONYMOUS_FEATURES = {
-  unified_web_session: false,
-  web_session_probe: true
-} satisfies RemoteConfig & { web_session_probe: boolean }
 
 export const WEB_SESSION_COOKIE = {
   name: 'e2e_web_session',
@@ -42,6 +33,7 @@ export const WEB_SESSION: WebSessionResponse = {
 export const WEB_SESSION_MINT: ExchangeTokenResponse = {
   token: 'session-jwt-e2e',
   expires_at: '2099-01-01T00:00:00Z',
+  user_id: 'uid-1',
   workspace: {
     id: TEAM_WORKSPACE.id,
     name: TEAM_WORKSPACE.name,
@@ -77,6 +69,11 @@ export const SHARED_PERSONAL_TEAM_WORKSPACE: WorkspaceWithRole = {
 export const WORKSPACE_ACCESS_DENIED: ErrorResponse = {
   code: 'workspace_access_denied',
   message: 'You no longer have access to this workspace'
+}
+
+export const NO_WEB_SESSION: ErrorResponse = {
+  code: 'no_session',
+  message: 'No session'
 }
 
 export const SESSION_REVOKED: ErrorResponse = {

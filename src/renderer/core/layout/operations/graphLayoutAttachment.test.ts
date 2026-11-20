@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutChange } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import {
   attachNodeLayout,
   detachGraphLayouts,
   detachNodeLayout,
-  refreshNodeGeometry,
+  readNodeRenderingSize,
   setNodePosition,
   setNodeSize
 } from './graphLayoutAttachment'
@@ -111,13 +112,7 @@ describe('node layout attachment ownership', () => {
   })
 })
 
-// PM-1304 / PM-1312: Flux2ImageNode (and any autogrow-widget node) can only be
-// resized larger, never smaller, once its content has required more height.
-// `refreshNodeGeometry` computes the rendered size as
-// `Math.max(explicitSize, contentSize)`, a floor that never decreases even
-// when the user explicitly drags the node smaller. Once fixed, the explicit
-// size the user set via drag should win over a stale, larger content size.
-describe('refreshNodeGeometry non-decreasing content-size floor (PM-1304)', () => {
+describe('requested and measured dimensions', () => {
   beforeEach(() => {
     layoutStore.resetForTests()
   })
@@ -129,43 +124,34 @@ describe('refreshNodeGeometry non-decreasing content-size floor (PM-1304)', () =
     return node
   }
 
-  it('lets an explicit resize shrink the node below a previously reported (now stale) content size', () => {
+  it('lets the rendered size shrink when the view reports the smaller dimensions', () => {
     const graph = new LGraph()
     const node = nodeFor(graph, 'flux-image-node')
     attachNodeLayout(graph, node)
 
-    // Node starts at a small explicit size.
     setNodeSize(node, [220, 100])
-    expect(refreshNodeGeometry(node)).toEqual([220, 100])
-
-    // An autogrow widget (e.g. a multiline prompt) reports content that
-    // needs more height than the explicit size, so the rendered size
-    // grows to fit it. This part is correct behavior.
-    layoutStore.reportContentSize(graph.id, node.id, {
-      width: 220,
-      height: 400
-    })
-    expect(refreshNodeGeometry(node)).toEqual([220, 400])
-
-    // The user now drags the resize handle to shrink the node back down.
-    // `setNodeSize` is exactly what the resize-drag interaction calls.
+    expect(readNodeRenderingSize(node, { width: 220, height: 400 })).toEqual([
+      220, 400
+    ])
     setNodeSize(node, [220, 120])
+    expect(readNodeRenderingSize(node, { width: 220, height: 120 })).toEqual([
+      220, 120
+    ])
+  })
 
-    // Bug: the rendered size stays pinned to the stale content-size floor
-    // instead of honoring the user's explicit smaller size.
-    expect(refreshNodeGeometry(node)).toEqual([220, 120])
+  it('keeps a subgraph IO panel measurement through an explicit resize', () => {
+    const { inputNode } = createTestSubgraph()
+    const graphId = inputNode.subgraph.id
+    layoutStore.reportContentSize(graphId, inputNode.id, {
+      width: 90,
+      height: 240
+    })
 
-    // ResizeObserver may immediately repeat the pre-resize measurement. It
-    // must remain suppressed until the content actually changes.
-    layoutStore.reportContentSize(graph.id, node.id, {
-      width: 220,
-      height: 400
+    setNodeSize(inputNode, [70, 100])
+
+    expect(layoutStore.contentSizeOf(graphId, inputNode.id)).toEqual({
+      width: 90,
+      height: 240
     })
-    expect(refreshNodeGeometry(node)).toEqual([220, 120])
-    layoutStore.reportContentSize(graph.id, node.id, {
-      width: 220,
-      height: 401
-    })
-    expect(refreshNodeGeometry(node)).toEqual([220, 401])
   })
 })

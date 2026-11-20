@@ -7,26 +7,23 @@ import { useI18n } from 'vue-i18n'
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
 import DraggableList from '@/components/common/DraggableList.vue'
 import IoItem from '@/components/builder/IoItem.vue'
-import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
+import PropertiesAccordionItem from '@comfyorg/design-system/accordion/PropertiesAccordionItem'
 import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import type { ResolvedSelection } from '@/components/builder/useResolvedSelectedInputs'
-import type { WidgetId } from '@/types/widgetId'
+import type { WidgetId } from '@comfyorg/graph-model/widgetId'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { NodeId } from '@/types/nodeId'
-import {
-  LGraphEventMode,
-  TitleMode
-} from '@/lib/litegraph/src/types/globalEnums'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
+import { LGraphEventMode, TitleMode } from '@comfyorg/graph-model/globalEnums'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import TransformPane from '@/renderer/core/layout/transform/TransformPane.vue'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { renameWidget } from '@/utils/widgetUtil'
 import { useAppMode } from '@/composables/useAppMode'
@@ -55,7 +52,7 @@ const resolvedInputs = useResolvedSelectedInputs()
 const outputsWithState = computed<[NodeId, string][]>(() =>
   appModeStore.selectedOutputs.map((nodeId) => [
     nodeId,
-    app.rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
+    useApp().rootGraph.getNodeById(nodeId)?.title ?? String(nodeId)
   ])
 )
 
@@ -79,7 +76,7 @@ function getHovered(
 
 function getNodeBounding(nodeId: NodeId) {
   if (settingStore.get('Comfy.VueNodes.Enabled')) return undefined
-  const node = app.rootGraph.getNodeById(nodeId)
+  const node = useApp().rootGraph.getNodeById(nodeId)
   if (!node) return
 
   const titleOffset =

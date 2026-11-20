@@ -2,18 +2,18 @@ import type {
   LGraphNode,
   SubgraphNode,
   SubgraphInput
-} from '@/lib/litegraph/src/types/entityRegistry'
+} from '@comfyorg/graph-model/entityRegistry'
 import type {
   PromotedWidgetExecutionSource,
   ResolvedPromotedWidget
 } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import type { NodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId, SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { hasPromotedWidgetTarget } from './hasPromotedWidgetTarget'
 

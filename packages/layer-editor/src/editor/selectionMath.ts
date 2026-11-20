@@ -1,11 +1,13 @@
-import type { Rect, Vec2 } from '#/node'
+import type {
+  Size2D,
+  CompactRect as Rect,
+  Point2D as Vec2
+} from '@comfyorg/shared-frontend-utils/geometry'
 
 export type SelectionOp = 'replace' | 'add' | 'subtract' | 'intersect'
 
-export interface GrayMask {
+export interface GrayMask extends Size2D {
   data: Float32Array
-  width: number
-  height: number
 }
 
 export function emptyMask(width: number, height: number): GrayMask {
@@ -89,8 +91,7 @@ function vanHerk(
   out: Float32Array,
   n: number,
   radius: number,
-  pick: (a: number, b: number) => number,
-  pad: number
+  pick: (a: number, b: number) => number
 ): void {
   const w = 2 * radius + 1
   const fwd = new Float32Array(n)
@@ -105,27 +106,26 @@ function vanHerk(
   for (let i = 0; i < n; i++) {
     const lo = i - radius
     const hi = i + radius
-    const a = hi < n ? fwd[hi] : pad
-    const b = lo >= 0 ? bwd[lo] : pad
+    const a = hi < n ? fwd[hi] : 0
+    const b = lo >= 0 ? bwd[lo] : 0
     out[i] =
       hi < n && lo >= 0
         ? pick(a, b)
-        : pick(pick(hi < n ? a : pad, lo >= 0 ? b : pad), pad)
+        : pick(pick(hi < n ? a : 0, lo >= 0 ? b : 0), 0)
   }
 }
 
 function verticalFilter(
   mask: GrayMask,
   radius: number,
-  pick: (a: number, b: number) => number,
-  pad: number
+  pick: (a: number, b: number) => number
 ): GrayMask {
   const out = emptyMask(mask.width, mask.height)
   const col = new Float32Array(mask.height)
   const res = new Float32Array(mask.height)
   for (let x = 0; x < mask.width; x++) {
     for (let y = 0; y < mask.height; y++) col[y] = mask.data[y * mask.width + x]
-    vanHerk(col, res, mask.height, radius, pick, pad)
+    vanHerk(col, res, mask.height, radius, pick)
     for (let y = 0; y < mask.height; y++) out.data[y * mask.width + x] = res[y]
   }
   return out
@@ -134,8 +134,7 @@ function verticalFilter(
 function ellipticalFilter(
   mask: GrayMask,
   radius: number,
-  pick: (a: number, b: number) => number,
-  pad: number
+  pick: (a: number, b: number) => number
 ): GrayMask {
   const r = Math.max(1, Math.round(radius))
   const circ = new Int32Array(2 * r + 1)
@@ -146,7 +145,7 @@ function ellipticalFilter(
   const byHeight = new Map<number, GrayMask>()
   for (const h of circ) {
     if (!byHeight.has(h))
-      byHeight.set(h, h === 0 ? mask : verticalFilter(mask, h, pick, pad))
+      byHeight.set(h, h === 0 ? mask : verticalFilter(mask, h, pick))
   }
   const out = emptyMask(mask.width, mask.height)
   for (let y = 0; y < mask.height; y++) {
@@ -158,10 +157,10 @@ function ellipticalFilter(
         const src =
           xx >= 0 && xx < mask.width
             ? byHeight.get(circ[i + r])!.data[row + xx]
-            : pad
+            : 0
         v = v === null ? src : pick(v, src)
       }
-      out.data[row + x] = v ?? pad
+      out.data[row + x] = v ?? 0
     }
   }
   return out
@@ -221,7 +220,7 @@ export function growMask(
   bounds: Rect | null = null
 ): GrayMask {
   return withBounds(mask, bounds, Math.round(radius) + 1, (m) =>
-    ellipticalFilter(m, radius, Math.max, 0)
+    ellipticalFilter(m, radius, Math.max)
   )
 }
 
@@ -231,7 +230,7 @@ export function shrinkMask(
   bounds: Rect | null = null
 ): GrayMask {
   return withBounds(mask, bounds, Math.round(radius) + 1, (m) =>
-    ellipticalFilter(m, radius, Math.min, 0)
+    ellipticalFilter(m, radius, Math.min)
   )
 }
 
@@ -241,8 +240,8 @@ export function borderMask(
   bounds: Rect | null = null
 ): GrayMask {
   return withBounds(mask, bounds, Math.round(radius) + 1, (m) => {
-    const grown = ellipticalFilter(m, radius, Math.max, 0)
-    const shrunk = ellipticalFilter(m, radius, Math.min, 0)
+    const grown = ellipticalFilter(m, radius, Math.max)
+    const shrunk = ellipticalFilter(m, radius, Math.min)
     const out = emptyMask(m.width, m.height)
     for (let p = 0; p < out.data.length; p++) {
       out.data[p] = Math.max(grown.data[p] - shrunk.data[p], 0)
@@ -365,10 +364,8 @@ function featherMaskFull(mask: GrayMask, radius: number): GrayMask {
   return cur
 }
 
-export interface FloodSource {
+export interface FloodSource extends Size2D {
   data: Uint8ClampedArray
-  width: number
-  height: number
 }
 
 function pixelDifference(

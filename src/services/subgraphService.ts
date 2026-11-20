@@ -4,8 +4,8 @@ import type {
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
 import { normalizeSubgraphDefinitionIds } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
+import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import { useApp } from '@/scripts/appInstance'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

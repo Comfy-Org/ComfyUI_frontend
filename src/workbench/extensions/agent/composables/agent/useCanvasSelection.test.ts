@@ -1,8 +1,8 @@
 import { effectScope, ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@comfyorg/graph-model/nodeIdentification'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import type { SelectedNode } from './useCanvasSelection'
 import { selectedNodeKey, useCanvasSelection } from './useCanvasSelection'

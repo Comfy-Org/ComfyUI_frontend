@@ -10,7 +10,7 @@ import {
   isColorable
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { useThemeStore } from '@/platform/theme/themeStore'
 
 import { useCanvasRefresh } from './useCanvasRefresh'
 
@@ -35,9 +35,9 @@ interface ShapeOption {
 export function useNodeCustomization() {
   const { t } = useI18n()
   const canvasStore = useCanvasStore()
-  const colorPaletteStore = useColorPaletteStore()
+  const themeStore = useThemeStore()
   const canvasRefresh = useCanvasRefresh()
-  const isLightTheme = computed(() => colorPaletteStore.colorScheme === 'light')
+  const isLightTheme = computed(() => themeStore.colorScheme === 'light')
 
   // Color options
   const NO_COLOR_OPTION: ColorOption = {

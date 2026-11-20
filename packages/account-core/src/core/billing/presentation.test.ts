@@ -16,18 +16,12 @@ describe('selectBillingPresentation', () => {
         billingRail: 'stripe'
       })
     ).toBe('hosted')
-    for (const billingRail of [
-      'legacy_stripe',
-      'metronome',
-      undefined
-    ] as const) {
-      expect(
-        selectBillingPresentation({
-          embeddedCheckoutAvailable: true,
-          billingRail
-        })
-      ).toBe('hosted')
-    }
+    expect(
+      selectBillingPresentation({
+        embeddedCheckoutAvailable: true,
+        billingRail: undefined
+      })
+    ).toBe('hosted')
   })
 
   it('follows the backend when it answered with a page and no challenge', () => {

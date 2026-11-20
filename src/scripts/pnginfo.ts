@@ -1,7 +1,7 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'

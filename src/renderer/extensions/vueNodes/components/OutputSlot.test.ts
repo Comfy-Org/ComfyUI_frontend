@@ -6,7 +6,7 @@ import { render, screen } from '@testing-library/vue'
 
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import OutputSlot from './OutputSlot.vue'
 
@@ -84,6 +84,12 @@ describe('OutputSlot', () => {
     renderOutputSlot({ name: 'internal_name' })
 
     expect(screen.getByText('internal_name')).toBeInTheDocument()
+  })
+
+  it('renders label when the name is empty', () => {
+    renderOutputSlot({ name: '', label: 'BOOLEAN' })
+
+    expect(screen.getByText('BOOLEAN')).toBeInTheDocument()
   })
 
   it('falls back to "Output N" when all names are absent', () => {

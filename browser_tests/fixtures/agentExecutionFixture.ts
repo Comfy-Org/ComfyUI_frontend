@@ -1,9 +1,9 @@
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentExecutionHelper } from '@e2e/fixtures/helpers/AgentExecutionHelper'
-import { MultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/MultiAutogrowRealignHarness'
+import { AgentMultiAutogrowRealignHarness } from '@e2e/fixtures/helpers/AgentMultiAutogrowRealignHarness'
 
 export interface AgentExecutionRig {
-  harness: MultiAutogrowRealignHarness
+  harness: AgentMultiAutogrowRealignHarness
   execution: AgentExecutionHelper
 }
 
@@ -23,7 +23,7 @@ export const agentExecutionTest = agentTest.extend<{
   rig: AgentExecutionRig
 }>({
   rig: async ({ page }, use) => {
-    const harness = new MultiAutogrowRealignHarness(page)
+    const harness = new AgentMultiAutogrowRealignHarness(page)
     await harness.setUp({ settings: { 'Comfy.Queue.QPOV2': false } })
     const execution = new AgentExecutionHelper(page, harness.hostSocket)
     await execution.install()

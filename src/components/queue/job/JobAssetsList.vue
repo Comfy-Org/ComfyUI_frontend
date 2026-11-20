@@ -58,7 +58,7 @@
                   :aria-label="t('g.cancel')"
                   @click.stop="emitCancelItem(row.job)"
                 >
-                  <i class="icon-[lucide--x] size-4" />
+                  <i class="icon-[lucide--x]" />
                 </Button>
                 <Button
                   v-else-if="isFailedDeletable(row.job)"
@@ -67,7 +67,7 @@
                   :aria-label="t('g.delete')"
                   @click.stop="emitDeleteItem(row.job)"
                 >
-                  <i class="icon-[lucide--trash-2] size-4" />
+                  <i class="icon-[lucide--trash-2]" />
                 </Button>
                 <Button
                   v-else-if="row.job.state === 'completed'"
@@ -83,7 +83,7 @@
                   :aria-label="t('g.more')"
                   @click.stop="$emit('menu', row.job, $event)"
                 >
-                  <i class="icon-[lucide--ellipsis] size-4" />
+                  <i class="icon-[lucide--ellipsis]" />
                 </Button>
               </template>
             </AssetsListItem>
@@ -112,7 +112,7 @@ import { useI18n } from 'vue-i18n'
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import JobDetailsHoverPopover from '@/components/queue/job/JobDetailsHoverPopover.vue'
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 import type { JobGroup, JobListItem } from '@/composables/queue/useJobList'
 import { resultItemPreviewUrl } from '@/utils/resultItemUrl'
 import { isImageResult, isVideoResult } from '@/utils/resultItem'
