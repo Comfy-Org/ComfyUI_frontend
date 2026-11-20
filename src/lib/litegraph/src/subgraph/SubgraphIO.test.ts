@@ -1,12 +1,19 @@
 import { describe, expect, it } from 'vitest'
 
+import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
+import { pointerEvent } from '@/lib/litegraph/src/__fixtures__/canvasHarness'
+import { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
+  createTestRootGraph,
   createTestSubgraph,
+  createTestSubgraphData,
   createTestSubgraphNode
 } from './__fixtures__/subgraphHelpers'
 
@@ -388,6 +395,82 @@ describe('SubgraphIO - Advanced Scenarios', () => {
     expect(subgraphNode.outputs.length).toBe(0)
   })
 
+  it.for(['inputNode', 'outputNode'] as const)(
+    'disconnects a port on the %s with Ctrl+Alt click',
+    (ioNodeKey) => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'in', type: 'INT' }],
+        outputs: [{ name: 'out', type: 'INT' }]
+      })
+      const inner = new LGraphNode('Inner')
+      inner.addInput('value', 'INT')
+      inner.addOutput('value', 'INT')
+      subgraph.add(inner)
+      subgraph.inputs[0].connect(inner.inputs[0], inner)
+      subgraph.outputs[0].connect(inner.outputs[0], inner)
+      const ioNode = subgraph[ioNodeKey]
+      ioNode.arrange()
+      const [x, y, width, height] = ioNode.slots[0].boundingRect
+      const center = [x + width / 2, y + height / 2] as const
+      const modifiers = { ctrlKey: true, altKey: true }
+      const pointer = new CanvasPointer(document.createElement('canvas'))
+      const down = pointerEvent('pointerdown', ...center, modifiers)
+
+      pointer.down(down)
+      ioNode.onPointerDown(down, pointer, new LinkConnector(() => {}))
+      pointer.up(pointerEvent('pointerup', ...center, modifiers))
+
+      expect(subgraph.links.size).toBe(1)
+      expect(ioNode.slots[0].linkIds).toEqual([])
+    }
+  )
+
+  it('shrinks the output node when outputs are removed', () => {
+    const subgraph = createTestSubgraph()
+    subgraph.addOutput('a', 'STRING')
+    const removed = subgraph.addOutput('b', 'STRING')
+    subgraph.outputNode.arrange()
+    const tall = subgraph.outputNode.boundingRect[3]
+
+    subgraph.removeOutput(removed)
+    subgraph.outputNode.arrange()
+
+    expect(subgraph.outputNode.boundingRect[3]).toBeLessThan(tall)
+  })
+
+  it('keeps a requested input node size larger than its slots', () => {
+    const subgraph = createTestSubgraph()
+    subgraph.addInput('a', 'STRING')
+    subgraph.inputNode.size = [344, 400]
+
+    subgraph.inputNode.arrange()
+
+    const [, , width, height] = subgraph.inputNode.boundingRect
+    expect([width, height]).toEqual([344, 400])
+  })
+
+  it('disconnects every fanout link without leaving orphaned target connections', () => {
+    const subgraph = createTestSubgraph({
+      inputs: [{ name: 'number', type: 'INT' }]
+    })
+    const a = new LGraphNode('A')
+    const b = new LGraphNode('B')
+    const aInput = a.addInput('value', 'INT')
+    const bInput = b.addInput('value', 'INT')
+    subgraph.add(a)
+    subgraph.add(b)
+    const slot = subgraph.inputs[0]
+    slot.connect(aInput, a)
+    slot.connect(bInput, b)
+    expect(subgraph.links.size).toBe(2)
+
+    slot.disconnect()
+
+    expect(subgraph.links.size).toBe(0)
+    expect([aInput.link, bInput.link]).toEqual([null, null])
+    expect(slot.linkIds).toEqual([])
+  })
+
   it('maintains slot synchronization across multiple instances', () => {
     const subgraph = createTestSubgraph({
       name: 'Multi-Instance Test',
@@ -488,4 +571,72 @@ describe('SubgraphIO - Empty Slot Connection', () => {
       ])
     }
   )
+})
+
+describe('SubgraphIO - Definition-keyed layout', () => {
+  it('applies a layout move to only the definition it names', () => {
+    const a = createTestSubgraph()
+    const b = createTestSubgraph({ rootGraph: a.rootGraph })
+    b.inputNode.pos = [300, 400]
+
+    layoutStore.applyOperation({
+      type: 'moveNode',
+      graphId: a.id,
+      nodeId: a.inputNode.id,
+      position: { x: 15, y: 25 },
+      source: LayoutSource.Vue,
+      timestamp: 0
+    })
+
+    expect([...a.inputNode.pos]).toEqual([15, 25])
+    expect(a.inputNode.asSerialisable().bounding.slice(0, 2)).toEqual([15, 25])
+    expect([...b.inputNode.pos]).toEqual([300, 400])
+  })
+
+  it('moves pseudo-node layout to the new key when an empty definition is renamed', () => {
+    const root = createTestRootGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const previousId = subgraph.id
+    subgraph.inputNode.pos = [30, 40]
+
+    subgraph.id = '00000000-0000-4000-8000-0000000000aa'
+    subgraph.inputNode.pos = [50, 60]
+
+    expect(
+      layoutStore.getNodeLayout(subgraph.id, subgraph.inputNode.id)?.position
+    ).toEqual({ x: 50, y: 60 })
+    expect(
+      layoutStore.getNodeLayout(previousId, subgraph.inputNode.id)
+    ).toBeNull()
+  })
+
+  it('saves the fitted size without writing it as layout intent', async () => {
+    const subgraph = createTestSubgraph()
+    for (const name of ['a', 'b', 'c', 'd']) subgraph.addOutput(name, 'STRING')
+    const { outputNode } = subgraph
+    const changes: unknown[] = []
+    const stop = layoutStore.onChange((change) => changes.push(change))
+
+    outputNode.arrange()
+    await Promise.resolve()
+    stop()
+
+    expect(changes).toEqual([])
+    expect(outputNode.asSerialisable().bounding).toEqual(
+      outputNode.boundingRect.export()
+    )
+    expect(outputNode.asSerialisable().bounding[3]).not.toBe(outputNode.size[1])
+  })
+
+  it('drops pseudo-node layout and measurements when the root graph is cleared', () => {
+    const root = createTestRootGraph()
+    const subgraph = root.createSubgraph(createTestSubgraphData())
+    const { id, inputNode } = subgraph
+    layoutStore.reportContentSize(id, inputNode.id, { width: 240, height: 90 })
+
+    root.clear()
+
+    expect(layoutStore.getNodeLayout(id, inputNode.id)).toBeNull()
+    expect(layoutStore.contentSizeOf(id, inputNode.id)).toBeUndefined()
+  })
 })

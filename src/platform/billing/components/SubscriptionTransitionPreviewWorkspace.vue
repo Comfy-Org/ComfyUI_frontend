@@ -19,10 +19,6 @@
 </template>
 
 <script setup lang="ts">
-/**
- * The cloud app's binding of the shared plan-change confirm: its tier names
- * and credits, its translations, and whether the subscription status loaded.
- */
 import { CheckoutTransitionConfirm } from '@comfyorg/account-ui/billing/checkout'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'

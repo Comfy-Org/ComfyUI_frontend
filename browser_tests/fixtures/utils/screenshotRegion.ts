@@ -26,7 +26,9 @@ async function clientRectOf(target: RegionTarget): Promise<PageRect> {
         element
           .getAnimations()
           .filter(
-            ({ effect }) => effect?.getComputedTiming().endTime !== Infinity
+            ({ effect, playState }) =>
+              playState !== 'paused' &&
+              effect?.getComputedTiming().endTime !== Infinity
           )
           .map(({ finished }) => finished)
       )

@@ -47,6 +47,11 @@
       "types": "./dist/maskEditorStore.d.ts",
       "default": "./src/maskEditorStore.ts"
     },
+    "./pngEncodeUtil": {
+      "@comfyorg/mask-editor": "./src/pngEncodeUtil.ts",
+      "types": "./dist/pngEncodeUtil.d.ts",
+      "default": "./src/pngEncodeUtil.ts"
+    },
     "./types": {
       "@comfyorg/mask-editor": "./src/types.ts",
       "types": "./dist/types.d.ts",

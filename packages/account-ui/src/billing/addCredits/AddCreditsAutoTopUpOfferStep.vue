@@ -17,17 +17,15 @@
     >
       {{ translate('autoTopUpOffer.notNow') }}
     </button>
-    <a
-      :href="setupUrl"
-      target="_blank"
-      rel="noopener"
+    <AddCreditsBillingLink
+      :to="setupUrl"
       :class="primaryActionClass(ui)"
       data-testid="add-credits-auto-top-up-set-up"
       @click="emit('setUp')"
     >
       {{ translate('autoTopUpOffer.setUp') }}
       <i class="icon-[lucide--arrow-up-right]" aria-hidden="true" />
-    </a>
+    </AddCreditsBillingLink>
   </div>
 </template>
 
@@ -36,11 +34,15 @@ import type { AddCreditsTranslate } from '@comfyorg/account-core/billing'
 import { buttonVariants } from '@comfyorg/design-system/button.variants'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { AddCreditsUi } from './addCreditsPresentation'
+import AddCreditsBillingLink from './AddCreditsBillingLink.vue'
+import type {
+  AddCreditsBillingLinkTarget,
+  AddCreditsUi
+} from './addCreditsPresentation'
 import { footerBarClass, primaryActionClass } from './addCreditsPresentation'
 
 const { setupUrl, translate, ui } = defineProps<{
-  setupUrl: string
+  setupUrl: AddCreditsBillingLinkTarget
   translate: AddCreditsTranslate
   ui: AddCreditsUi
 }>()

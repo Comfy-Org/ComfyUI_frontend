@@ -65,10 +65,8 @@ import { registerCoreSidebarTabs } from '@/composables/sidebarTabs/registerCoreS
 import { useBrowserTabTitle } from '@/composables/useBrowserTabTitle'
 import { useCoreCommands } from '@/composables/useCoreCommands'
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
-import { useReconnectNodeDefinitionRefresh } from '@/platform/customNodes/useReconnectNodeDefinitionRefresh'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
-import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
+import { useServerReconnectLifecycle } from '@/composables/useServerReconnectLifecycle'
 import { useProgressFavicon } from '@/composables/useProgressFavicon'
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
 import { scanAllMediaCandidates } from '@/platform/workflowErrors/missingMedia/missingMediaScan'
@@ -91,6 +89,7 @@ import { useDeploymentCompatibility } from '@/platform/workspace/composables/use
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
+import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
@@ -100,7 +99,7 @@ import { noticeMissingNodes } from '@/platform/workspace/noticeMissingNodes'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@comfyorg/api-client/executionTypes'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useAppMode } from '@/composables/useAppMode'
@@ -118,6 +117,7 @@ import {
 } from '@/stores/queueStore'
 import { useServerConfigStore } from '@/stores/serverConfigStore'
 import { useTemplateInputDownloadStore } from '@/platform/workflow/templates/stores/templateInputDownloadStore'
+import { useMissingModelDownloadStore } from '@/platform/workflowErrors/missingModel/missingModelDownloadStore'
 import { useThemeStore } from '@/platform/theme/themeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { electronAPI, isLocalDesktopHost } from '@/utils/envUtil'
@@ -155,16 +155,19 @@ const { linearMode } = storeToRefs(useCanvasStore())
 const templateInputDownloadStore = useTemplateInputDownloadStore()
 const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   getReferencedInputNames: () =>
-    new Set(scanAllMediaCandidates(app.rootGraph).map(({ name }) => name)),
+    new Set(scanAllMediaCandidates(useApp().rootGraph).map(({ name }) => name)),
   refreshGraphBindings: async (completedInputNames) => {
     try {
-      await app.reloadNodeDefs()
+      await useApp().reloadNodeDefs()
       refreshDownloadedTemplateInputBindings(
-        app.rootGraph,
-        scanAllMediaCandidates(app.rootGraph),
+        useApp().rootGraph,
+        scanAllMediaCandidates(useApp().rootGraph),
         new Set(completedInputNames)
       )
-      await runMissingMediaPipeline({ rootGraph: app.rootGraph, silent: true })
+      await runMissingMediaPipeline({
+        rootGraph: useApp().rootGraph,
+        silent: true
+      })
     } finally {
       // The transfers finished even if rebinding them did not. Releasing them
       // either way keeps a failed rebind from holding the run action behind a
@@ -180,6 +183,20 @@ const templateInputGraphSync = startTemplateInputDownloadGraphSync({
   }
 })
 const stopTemplateInputDownloadTracking = startTemplateInputDownloadTracking()
+const stopModelDownloadTracking = startModelDownloadTracking()
+
+function startModelDownloadTracking() {
+  try {
+    return useMissingModelDownloadStore().startTracking()
+  } catch (error) {
+    reportError(error, {
+      surface: 'graph',
+      errorType: 'workflow_model_download_tracking_failed',
+      level: 'warning'
+    })
+    return () => undefined
+  }
+}
 
 function startTemplateInputDownloadTracking() {
   try {
@@ -204,6 +221,7 @@ function startTemplateInputDownloadTracking() {
 }
 
 onBeforeUnmount(() => {
+  stopModelDownloadTracking()
   stopTemplateInputDownloadTracking()
   templateInputGraphSync.dispose()
   templateInputDownloadStore.clear()
@@ -302,10 +320,10 @@ const useNewMenu = computed(() => {
 })
 watchEffect(() => {
   if (useNewMenu.value === 'Disabled') {
-    app.ui.menuContainer.style.setProperty('display', 'block')
-    app.ui.restoreMenuPosition()
+    useApp().ui.menuContainer.style.setProperty('display', 'block')
+    useApp().ui.restoreMenuPosition()
   } else {
-    app.ui.menuContainer.style.setProperty('display', 'none')
+    useApp().ui.menuContainer.style.setProperty('display', 'none')
   }
 })
 
@@ -325,8 +343,9 @@ void registerCoreBottomPanelTabs()
 useQueuePolling()
 const queuePendingTaskCountStore = useQueuePendingTaskCountStore()
 
-const onStatus = async (e: CustomEvent<StatusWsMessageStatus>) => {
+const onStatus = async (e: CustomEvent<StatusWsMessageStatus | null>) => {
   queuePendingTaskCountStore.update(e)
+  if (!e.detail) return
   await queueStore.update()
   await assetsStore.outputAssets.loadNew()
 }
@@ -336,26 +355,16 @@ const onExecutionSuccess = async () => {
   await assetsStore.outputAssets.loadNew()
 }
 
-const { onReconnecting, onReconnected } = useReconnectingNotification()
-const refreshOnReconnect = useReconnectQueueRefresh()
-const refreshNodeDefinitionsOnReconnect = useReconnectNodeDefinitionRefresh()
-
-const handleReconnected = async () => {
-  onReconnected()
-  void refreshNodeDefinitionsOnReconnect()
-  await refreshOnReconnect()
-}
+useServerReconnectLifecycle()
 
 useEventListener(api, 'status', onStatus)
 useEventListener(api, 'execution_success', onExecutionSuccess)
-useEventListener(api, 'reconnecting', onReconnecting)
-useEventListener(api, 'reconnected', handleReconnected)
 
 onMounted(() => {
   executionStore.bindExecutionEvents()
 
   try {
-    legacyMenuContainerRef.value?.append(app.ui.menuContainer)
+    legacyMenuContainerRef.value?.append(useApp().ui.menuContainer)
   } catch (e) {
     console.error('Failed to init ComfyUI frontend', e)
   }
@@ -446,7 +455,8 @@ const onGraphReady = () => {
       telemetry.trackShellLayout(
         getShellLayoutSnapshot({
           view_mode: mode.value,
-          is_app_mode: isAppMode.value
+          is_app_mode: isAppMode.value,
+          right_side_panel_open: usePropertiesPanelStore().isOpen
         })
       )
     }

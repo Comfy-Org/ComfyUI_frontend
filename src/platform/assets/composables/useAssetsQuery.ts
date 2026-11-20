@@ -16,6 +16,7 @@ interface QueryOptions {
 
 const BASE_PARAMS = {
   include_public: false,
+  include_total: false,
   limit: 100,
   sort: 'created_at',
   tags_none: ['missing']
@@ -195,11 +196,25 @@ const sharedState: SharedPagedListState<ListAssetsData['query'], AssetItem> = {
 export function useAssetsQuery(
   params: ListAssetsData['query']
 ): PagedList<AssetItem> {
-  return getPagedList(params, sharedState)
+  const list = getPagedList(params, sharedState)
+  return {
+    hasMore: list.hasMore,
+    isLoading: list.isLoading,
+    items: list.items,
+    loadMore: () => list.loadMore(),
+    invalidate: invalidateAll,
+    loadNew: loadNewAll
+  }
 }
 
-export async function invalidateAll() {
+export async function invalidateAll(stale?: string[]) {
   await Promise.all(
-    [...sharedState.cache.values()].map((e) => e.list.invalidate())
+    [...sharedState.cache.values()].map((e) => e.list.invalidate(stale))
+  )
+}
+
+export async function loadNewAll() {
+  await Promise.all(
+    [...sharedState.cache.values()].map((e) => e.list.loadNew())
   )
 }

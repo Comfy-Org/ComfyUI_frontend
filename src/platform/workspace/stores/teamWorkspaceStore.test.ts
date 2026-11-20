@@ -1543,7 +1543,7 @@ describe('useTeamWorkspaceStore', () => {
         }
       }
     ] as const)(
-      'names the served $reason refusal',
+      'names the served $reason refusal for denied reason $response.denied_reasons.can_create_workspace',
       async ({ reason, response }) => {
         mockWorkspaceApi.list.mockResolvedValue(response)
 
