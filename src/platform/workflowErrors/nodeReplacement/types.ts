@@ -15,12 +15,16 @@ interface OutputMap {
   old_idx: number
 }
 
+type NodeReplacementKind = 'deprecated' | 'equivalent'
+
 export interface NodeReplacement {
   new_node_id: string
   old_node_id: string
   old_widget_ids: string[] | null
   input_mapping: InputMap[] | null
   output_mapping: OutputMap[] | null
+  old_pack?: string | null
+  kind?: NodeReplacementKind
 }
 
 export type NodeReplacementResponse = Record<string, NodeReplacement[]>

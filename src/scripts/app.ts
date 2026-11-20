@@ -1388,9 +1388,13 @@ export class ComfyApp implements IComfyApp {
               n.mode === LGraphEventMode.NEVER ||
               n.mode === LGraphEventMode.BYPASS
             if (!isMuted) {
-              const replacement = nodeReplacementStore.getReplacementFor(n.type)
               const cnrId = getCnrIdFromProperties(
                 n.properties as Record<string, unknown> | undefined
+              )
+              const replacement = nodeReplacementStore.getReplacementForMissing(
+                n.type,
+                cnrId,
+                n.widgets_values
               )
               const executionId = pathPrefix
                 ? `${pathPrefix}:${n.id}`
@@ -2619,12 +2623,15 @@ export class ComfyApp implements IComfyApp {
               widgets_values: widgetValues,
               widgets_values_named: widgetValuesNamed
             }
-            const replacement = nodeReplacementStore.getReplacementFor(
-              data.class_type
+            const placeholderCnrId = getCnrIdFromProperties(node.properties)
+            const replacement = nodeReplacementStore.getReplacementForMissing(
+              data.class_type,
+              placeholderCnrId,
+              widgetValues
             )
             placeholderEntry = {
               type: data.class_type,
-              cnrId: getCnrIdFromProperties(node.properties),
+              cnrId: placeholderCnrId,
               isReplaceable: replacement !== null,
               replacement: replacement ?? undefined
             }

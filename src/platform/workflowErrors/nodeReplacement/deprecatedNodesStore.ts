@@ -26,7 +26,10 @@ export const useDeprecatedNodesStore = defineStore('deprecatedNodes', () => {
     nodeId: string
   ): MissingNodeType | undefined {
     if (!node.constructor.nodeData?.deprecated) return undefined
-    const replacement = useNodeReplacementStore().getReplacementFor(node.type)
+    const replacement = useNodeReplacementStore().getReplacementForInstalled(
+      node.type,
+      node.constructor.nodeData.python_module
+    )
     if (!replacement) return undefined
     if (!(replacement.new_node_id in LiteGraph.registered_node_types))
       return undefined

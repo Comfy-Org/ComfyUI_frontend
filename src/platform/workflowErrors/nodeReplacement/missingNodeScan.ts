@@ -6,6 +6,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
+import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 import {
   collectAllNodes,
@@ -13,8 +14,16 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 
-function replacementFieldsFor(nodeType: string) {
-  const replacement = useNodeReplacementStore().getReplacementFor(nodeType)
+function replacementFieldsFor(
+  nodeType: string,
+  cnrId: string | undefined,
+  widgetValues?: FlattenableWorkflowNode['widgets_values']
+) {
+  const replacement = useNodeReplacementStore().getReplacementForMissing(
+    nodeType,
+    cnrId,
+    widgetValues
+  )
   return {
     isReplaceable: replacement !== null,
     replacement: replacement ?? undefined
@@ -23,7 +32,10 @@ function replacementFieldsFor(nodeType: string) {
 
 function withCurrentReplacement(nodeType: MissingNodeType): MissingNodeType {
   if (typeof nodeType === 'string') return nodeType
-  return { ...nodeType, ...replacementFieldsFor(nodeType.type) }
+  return {
+    ...nodeType,
+    ...replacementFieldsFor(nodeType.type, nodeType.cnrId)
+  }
 }
 
 /** Scan the live graph for unregistered node types and build a full MissingNodeType list. */
@@ -50,7 +62,11 @@ function scanMissingNodes(rootGraph: LGraph): MissingNodeType[] {
       type: originalType,
       nodeId: executionId ?? String(node.id),
       cnrId,
-      ...replacementFieldsFor(originalType)
+      ...replacementFieldsFor(
+        originalType,
+        cnrId,
+        node.last_serialization?.widgets_values
+      )
     })
   }
 

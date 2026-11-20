@@ -3,6 +3,8 @@ import type { NodeReplacement, NodeReplacementResponse } from './types'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+import { extractCustomNodeName } from '@/platform/customNodes/manager/utils/packUtils'
+import type { FlattenableWorkflowNode } from '@/platform/workflow/core/utils/workflowFlattening'
 import { ServerFeatureFlag } from '@/platform/remoteConfig/serverFeatureFlag'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
@@ -32,9 +34,47 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     return api.getServerFeature(ServerFeatureFlag.NODE_REPLACEMENTS, false)
   }
 
-  function getReplacementFor(nodeType: string): NodeReplacement | null {
-    if (!isEnabled.value) return null
-    return replacements.value[nodeType]?.[0] ?? null
+  function entriesFor(nodeType: string): NodeReplacement[] {
+    if (!isEnabled.value) return []
+    return replacements.value[nodeType] ?? []
+  }
+
+  function matchPack(
+    entries: NodeReplacement[],
+    pack: string | undefined
+  ): NodeReplacement | undefined {
+    return (
+      entries.find(
+        (entry) => entry.old_pack != null && entry.old_pack === pack
+      ) ?? entries.find((entry) => entry.old_pack == null)
+    )
+  }
+
+  /** Replacement for a registered node type; pack entries apply only when its definition comes from that pack. */
+  function getReplacementForInstalled(
+    nodeType: string,
+    pythonModule: string | undefined
+  ): NodeReplacement | null {
+    const pack = extractCustomNodeName(pythonModule)?.toLowerCase()
+    return matchPack(entriesFor(nodeType), pack) ?? null
+  }
+
+  /** Replacement for an unregistered node type, matched by the pack the workflow saved it from. */
+  function getReplacementForMissing(
+    nodeType: string,
+    cnrId: string | undefined,
+    widgetValues: FlattenableWorkflowNode['widgets_values']
+  ): NodeReplacement | null {
+    const entries = entriesFor(nodeType)
+    const match = matchPack(entries, cnrId)
+    if (match) return match
+    const [sole] = entries
+    const fitsSoleEntry =
+      cnrId === undefined &&
+      entries.length === 1 &&
+      Array.isArray(widgetValues) &&
+      widgetValues.length === (sole.old_widget_ids?.length ?? 0)
+    return fitsSoleEntry ? sole : null
   }
 
   function hasReplacement(nodeType: string): boolean {
@@ -47,7 +87,8 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     isLoaded,
     isEnabled,
     load,
-    getReplacementFor,
+    getReplacementForInstalled,
+    getReplacementForMissing,
     hasReplacement
   }
 })

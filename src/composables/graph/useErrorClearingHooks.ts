@@ -240,7 +240,12 @@ function scanSingleNodeModelsAndTypes(
   const originalType = node.last_serialization?.type ?? node.type
   if (!(originalType in LiteGraph.registered_node_types)) {
     const nodeReplacementStore = useNodeReplacementStore()
-    const replacement = nodeReplacementStore.getReplacementFor(originalType)
+    const cnrId = getCnrIdFromNode(node)
+    const replacement = nodeReplacementStore.getReplacementForMissing(
+      originalType,
+      cnrId,
+      node.last_serialization?.widgets_values
+    )
     const store = useMissingNodesErrorStore()
     const existing = store.missingNodesError?.nodeTypes ?? []
     store.surfaceMissingNodes([
@@ -248,7 +253,7 @@ function scanSingleNodeModelsAndTypes(
       {
         type: originalType,
         nodeId: execId,
-        cnrId: getCnrIdFromNode(node),
+        cnrId,
         isReplaceable: replacement !== null,
         replacement: replacement ?? undefined
       }

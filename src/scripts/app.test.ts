@@ -3883,7 +3883,7 @@ describe('ComfyApp', () => {
         .spyOn(nodeReplacementStore, 'load')
         .mockResolvedValue()
       const getReplacement = vi
-        .spyOn(nodeReplacementStore, 'getReplacementFor')
+        .spyOn(nodeReplacementStore, 'getReplacementForMissing')
         .mockReturnValue(replacement)
       const apiData: unknown = {
         '-1': {
@@ -3952,7 +3952,10 @@ describe('ComfyApp', () => {
       LiteGraph.registerNodeType(sourceNodeType, ApiJsonSourceNode)
       const nodeReplacementStore = useNodeReplacementStore()
       vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
-      vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
+      vi.spyOn(
+        nodeReplacementStore,
+        'getReplacementForMissing'
+      ).mockReturnValue(null)
 
       await app.loadApiJson(
         {
@@ -4036,7 +4039,10 @@ describe('ComfyApp', () => {
       Reflect.set(app, 'rootGraphInternal', graph)
       const nodeReplacementStore = useNodeReplacementStore()
       vi.spyOn(nodeReplacementStore, 'load').mockResolvedValue()
-      vi.spyOn(nodeReplacementStore, 'getReplacementFor').mockReturnValue(null)
+      vi.spyOn(
+        nodeReplacementStore,
+        'getReplacementForMissing'
+      ).mockReturnValue(null)
       const missingNodesStore = useMissingNodesErrorStore()
       const workflowService = await useRealWorkflowService()
       vi.mocked(getWorkflowDataFromFile).mockResolvedValue({
