@@ -751,6 +751,21 @@ describe('useWorkflowService', () => {
         false
       )
     })
+
+    it('returns false and forwards the guard when the import is superseded', async () => {
+      const workflow = createApiWorkflow()
+      const isCurrent = () => true
+      vi.mocked(app.loadApiJson).mockResolvedValueOnce(false)
+
+      await expect(
+        useWorkflowService().openWorkflow(workflow, { isCurrent })
+      ).resolves.toBe(false)
+
+      expect(app.loadApiJson).toHaveBeenCalledWith(apiPrompt, workflow, {
+        deferWarnings: true,
+        isCurrent
+      })
+    })
   })
 
   describe('openWorkflow ordering', () => {

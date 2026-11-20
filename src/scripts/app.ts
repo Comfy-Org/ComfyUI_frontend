@@ -2510,18 +2510,19 @@ export class ComfyApp implements IComfyApp {
   async loadApiJson(
     apiData: ComfyApiWorkflow,
     source: string | ComfyWorkflow,
-    options: { deferWarnings?: boolean } = {}
+    options: { deferWarnings?: boolean; isCurrent?: () => boolean } = {}
   ): Promise<void | false> {
-    return this.enqueueGraphLoad(() =>
-      this.loadApiJsonNow(apiData, source, options)
-    )
+    return this.enqueueGraphLoad(async () => {
+      if (options.isCurrent?.() === false) return false
+      return await this.loadApiJsonNow(apiData, source, options)
+    })
   }
 
   private async loadApiJsonNow(
     apiData: ComfyApiWorkflow,
     source: string | ComfyWorkflow,
-    options: { deferWarnings?: boolean }
-  ): Promise<void> {
+    options: { deferWarnings?: boolean; isCurrent?: () => boolean }
+  ): Promise<void | false> {
     const fileName = typeof source === 'string' ? source : source.path
     let lifecycleStarted = false
     let lifecycleCompleted = false
@@ -2529,6 +2530,9 @@ export class ComfyApp implements IComfyApp {
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
       lifecycleStarted = true
+      // The open may have been superseded while this import waited behind
+      // another graph load. Bail out before the canvas is mutated.
+      if (options.isCurrent?.() === false) return false
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
       replaceCanvas()
       releaseCaptureSuppression = beginChangeCaptureSuppression()

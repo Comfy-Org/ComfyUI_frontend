@@ -679,7 +679,8 @@ export const useWorkflowService = () => {
       if (apiWorkflow) {
         try {
           const outcome = await useApp().loadApiJson(apiWorkflow, workflow, {
-            deferWarnings: true
+            deferWarnings: true,
+            ...(isCurrent && { isCurrent })
           })
           return outcome !== false
         } catch (error) {
