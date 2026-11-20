@@ -1,10 +1,11 @@
-import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { getActivePinia } from 'pinia'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { INumericWidget } from '@comfyorg/graph-model/widgets'
 import { getWidgetStep } from '@/lib/litegraph/src/utils/widget'
+import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@comfyorg/settings-core/types'
 import type { InputSpec } from '@comfyorg/object-info-parser/schemas/nodeDefSchemaV2'
@@ -88,9 +89,9 @@ function stubSettings(overrides: Partial<Settings>) {
   const settingStore = useSettingStore(getActivePinia())
   vi.spyOn(settingStore, 'get').mockImplementation(
     <K extends keyof Settings>(key: K): Settings[K] =>
-      (Object.hasOwn(overrides, key)
-        ? overrides[key]
-        : undefined) as Settings[K]
+      Object.hasOwn(overrides, key)
+        ? overrides[key]!
+        : settingStore.getDefaultValue(key)!
   )
 }
 
@@ -120,6 +121,11 @@ describe('Primitive numeric widget options', () => {
   })
 
   beforeEach(() => {
+    const floatRounding = CORE_SETTINGS.find(
+      (setting) => setting.id === 'Comfy.DisableFloatRounding'
+    )
+    assert.exists(floatRounding)
+    useSettingStore(getActivePinia()).addSetting(floatRounding)
     for (const { type, nodeClass } of floatNodeClasses)
       LiteGraph.registerNodeType(type, nodeClass)
     LiteGraph.registerNodeType(TEST_PRIMITIVE_INT_TYPE, TestPrimitiveIntNode)
