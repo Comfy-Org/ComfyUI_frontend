@@ -971,3 +971,17 @@ describe('snapToGrid', () => {
     expect(applyOperation).not.toHaveBeenCalled()
   })
 })
+
+describe('LGraphNode renderingColor', () => {
+  test.for([{ color: 0xff0000 }, { color: { r: 255 } }])(
+    'uses the default color when the node color is $color',
+    ({ color }) => {
+      const node = new LGraphNode('Colored')
+      const defaultNode = new LGraphNode('Default')
+      Reflect.set(node, 'color', color)
+
+      expect(node.renderingColor).toBe(defaultNode.renderingColor)
+      expect(typeof node.renderingColor).toBe('string')
+    }
+  )
+})
