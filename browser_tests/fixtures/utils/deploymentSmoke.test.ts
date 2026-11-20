@@ -59,6 +59,24 @@ describe(isBootConsoleErrorInEveryCloudEnvironment, () => {
       allowed: false
     },
     {
+      name: 'a session path carried in a query value',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example/api/auth/session?next=/api/auth/session]',
+      allowed: false
+    },
+    {
+      name: 'a session path nested under another path',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example/other/api/auth/session]',
+      allowed: false
+    },
+    {
+      name: 'the signed-out session 401 on a host with a port',
+      error:
+        'Failed to load resource: the server responded with a status of 401 () [https://deploy.example:8443/api/auth/session]',
+      allowed: true
+    },
+    {
       name: 'a server error from the session endpoint',
       error:
         'Failed to load resource: the server responded with a status of 500 () [https://deploy.example/api/auth/session]',

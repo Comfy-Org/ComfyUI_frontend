@@ -6,7 +6,7 @@ const I18N_404_IN_EVERY_CLOUD_ENVIRONMENT =
   /^Failed to load resource: the server responded with a status of 404 \([^)]*\) \[https:\/\/[^\s\]]+\/api\/i18n(?:[?#][^\s\]]*)?\]$/
 
 const SIGNED_OUT_SESSION_401_IN_EVERY_CLOUD_ENVIRONMENT =
-  /^Failed to load resource: the server responded with a status of 401 \([^)]*\) \[https:\/\/[^\s\]]+\/api\/auth\/session\]$/
+  /^Failed to load resource: the server responded with a status of 401 \([^)]*\) \[https:\/\/[^\s\]/?#]+\/api\/auth\/session\]$/
 
 /** True only for the console lines every Cloud environment logs at a signed-out boot: the `/api/i18n` 404 and the `/api/auth/session` 401. */
 export function isBootConsoleErrorInEveryCloudEnvironment(
