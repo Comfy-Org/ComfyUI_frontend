@@ -36,6 +36,22 @@ function reportRolloutReadFailure(cause: unknown): void {
   })
 }
 
+async function parseRolloutResponse(
+  response: Response
+): Promise<RolloutAttempt> {
+  try {
+    const served = zOpenOnCloudRollout.safeParse(await response.json())
+    if (served.success) return { ok: true, data: served.data }
+    return {
+      ok: false,
+      retryable: false,
+      cause: new Error('Invalid Cloud rollout response')
+    }
+  } catch (cause) {
+    return { ok: false, retryable: !(cause instanceof SyntaxError), cause }
+  }
+}
+
 async function requestRollout(
   endpoint: URL,
   getToken: () => Promise<string | undefined>,
@@ -63,16 +79,7 @@ async function requestRollout(
         retryable: response.status === 429 || response.status >= 500,
         cause: new Error(`Cloud features HTTP ${response.status}`)
       }
-    const served = zOpenOnCloudRollout.safeParse(
-      await response.json().catch(() => undefined)
-    )
-    return served.success
-      ? { ok: true, data: served.data }
-      : {
-          ok: false,
-          retryable: false,
-          cause: new Error('Invalid Cloud rollout response')
-        }
+    return await parseRolloutResponse(response)
   } catch (cause) {
     return { ok: false, retryable: true, cause }
   }

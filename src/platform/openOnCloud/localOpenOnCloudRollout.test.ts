@@ -25,6 +25,14 @@ function deferredResponse() {
   return { promise, resolve }
 }
 
+function timedOutBody(): Response {
+  const response = Response.json(allowed)
+  vi.spyOn(response, 'json').mockRejectedValue(
+    new DOMException('Body read timed out', 'AbortError')
+  )
+  return response
+}
+
 function start(getCredential?: () => Promise<string | undefined>) {
   const userId = ref<string>()
   const getToken = getCredential ?? (async () => userId.value)
@@ -64,6 +72,19 @@ it('recovers for the same account after the token and Cloud service become avail
   expect(visible()).toEqual([true, true])
   expect(getToken).toHaveBeenCalledTimes(3)
   expect(fetch).toHaveBeenCalledTimes(2)
+})
+
+it('retries startup when Cloud sends headers but reading the body times out', async () => {
+  const { userId, visible } = start()
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(timedOutBody())
+    .mockResolvedValueOnce(Response.json(allowed))
+  userId.value = 'employee-token'
+
+  await vi.advanceTimersByTimeAsync(1_000)
+
+  expect(fetch).toHaveBeenCalledTimes(2)
+  expect(visible()).toEqual([true, true])
 })
 
 it('renders both served flags for the current account and clears them on identity changes', async () => {
@@ -137,6 +158,22 @@ it('refreshes the grant for the initiating account and clears it on denial', asy
   await expect(authorization.revalidate()).resolves.toBe(false)
   expect(visible()).toEqual([false, false])
   expect(fetch).toHaveBeenCalledTimes(2)
+})
+
+it('blocks the timed-out handoff and leaves the same account able to retry', async () => {
+  const { userId, visible } = start()
+  vi.mocked(fetch)
+    .mockResolvedValueOnce(Response.json(allowed))
+    .mockResolvedValueOnce(timedOutBody())
+    .mockResolvedValueOnce(Response.json(allowed))
+  userId.value = 'employee-token'
+  await vi.waitFor(() => expect(visible()).toEqual([true, true]))
+  const authorization = bindLocalOpenOnCloudGrant()
+
+  await expect(authorization.revalidate()).resolves.toBe(false)
+  expect(visible()).toEqual([true, true])
+  await expect(authorization.revalidate()).resolves.toBe(true)
+  expect(fetch).toHaveBeenCalledTimes(3)
 })
 
 it('cannot use a revalidation response after the initiating account signs out', async () => {
