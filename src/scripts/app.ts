@@ -1310,8 +1310,19 @@ export class ComfyApp implements IComfyApp {
     const { loaded, surfaceWarnings } = await this.enqueueGraphLoad(() =>
       this.loadGraphDataNow(graphData, clean, restore_view, workflow, options)
     )
+    if (loaded === false && clean && !(workflow instanceof ComfyWorkflow))
+      await useWorkflowService().restoreRetainedWorkflow()
     await surfaceWarnings?.()
     return loaded
+  }
+
+  private async enqueueImport<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await this.enqueueGraphLoad(operation)
+    } catch (error) {
+      await useWorkflowService().restoreRetainedWorkflow()
+      throw error
+    }
   }
 
   private async loadGraphDataNow(
@@ -2433,7 +2444,7 @@ export class ComfyApp implements IComfyApp {
 
     // Use parameters strictly as the final fallback
     if (parameters && typeof parameters === 'string') {
-      return await this.enqueueGraphLoad(async () => {
+      return await this.enqueueImport(async () => {
         const lifecycle = { started: false }
         let releaseCaptureSuppression: (() => void) | undefined
         let graph = this.rootGraph
@@ -2629,7 +2640,7 @@ export class ComfyApp implements IComfyApp {
     fileName: string,
     options: { deferWarnings?: boolean } = {}
   ): Promise<void | false> {
-    return this.enqueueGraphLoad(() =>
+    return this.enqueueImport(() =>
       this.loadApiJsonNow(apiData, fileName, options)
     )
   }

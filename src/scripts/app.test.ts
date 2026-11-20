@@ -59,6 +59,7 @@ import { useWorkflowService } from '@/platform/workflow/core/services/workflowSe
 import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
 import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { isCanvasOwner } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { isGraphLoading } from '@/core/graph/graphLoadState'
 import {
   createTestCanvasElement,
@@ -151,7 +152,8 @@ const {
   mockWorkflowService: {
     beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
-    showPendingWarnings: vi.fn<WorkflowService['showPendingWarnings']>()
+    showPendingWarnings: vi.fn<WorkflowService['showPendingWarnings']>(),
+    restoreRetainedWorkflow: vi.fn<WorkflowService['restoreRetainedWorkflow']>()
   },
   mockValidateWorkflow: vi.fn<WorkflowValidation['validateWorkflow']>()
 }))
@@ -268,6 +270,9 @@ async function useRealWorkflowService(): Promise<WorkflowService> {
   )
   mockWorkflowService.showPendingWarnings.mockImplementation(
     real.showPendingWarnings
+  )
+  mockWorkflowService.restoreRetainedWorkflow.mockImplementation(
+    real.restoreRetainedWorkflow
   )
   return real
 }
@@ -5667,6 +5672,53 @@ describe('ComfyApp', () => {
 
       expect(app.rootGraph).toBe(importedA.graph)
       expect(executionErrorStore.lastNodeErrors).toEqual(failedKSamplerErrors)
+    })
+
+    it.for([
+      {
+        source: 'a pasted workflow that fails validation',
+        load: (app: ComfyApp) => {
+          useSettingStore().settingValues['Comfy.Validation.Workflows'] = true
+          mockValidateWorkflow.mockRejectedValueOnce(
+            new Error('workflow validation blew up')
+          )
+          return expect(
+            app.loadGraphData(createWorkflowGraphData())
+          ).resolves.toBe(false)
+        }
+      },
+      {
+        source: 'an API JSON import that fails',
+        load: (app: ComfyApp) => {
+          vi.spyOn(useNodeReplacementStore(), 'load').mockRejectedValueOnce(
+            new Error('replacement lookup failed')
+          )
+          return expect(app.loadApiJson({}, 'broken.json')).rejects.toThrow(
+            'replacement lookup failed'
+          )
+        }
+      }
+    ])('shows the open workflow again after $source', async ({ load }) => {
+      await useRealWorkflowService()
+      const workflowStore = useWorkflowStore()
+      workflowStore.provideChangeTracker(ChangeTracker)
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+      vi.mocked(workflowStore.createNewTemporary).mockRestore()
+      vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+      vi.mocked(workflowStore.isActive).mockRestore()
+      vi.mocked(workflowStore.openWorkflow).mockRestore()
+      await app.loadApiJson({}, 'api-open')
+      const open = workflowStore.activeWorkflow
+      assert.exists(open?.graph)
+      assert.exists(open.changeTracker)
+
+      await load(app)
+
+      expect(workflowStore.activeWorkflow).toBe(open)
+      expect(app.rootGraph).toBe(open.graph)
+      expect(isCanvasOwner(open.changeTracker)).toBe(true)
     })
 
     it('reuses the active workflow when importing the same file again', async () => {

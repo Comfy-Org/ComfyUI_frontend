@@ -569,9 +569,10 @@ export const useWorkflowService = () => {
     }
   }
 
-  const restoreRetainedWorkflow = async (failed: ComfyWorkflow) => {
+  const restoreRetainedWorkflow = async (failed?: ComfyWorkflow) => {
     const retained = getActiveWorkflow()
-    if (!retained || retained.path === failed.path || !retained.isLoaded) return
+    if (!retained || retained.path === failed?.path || !retained.isLoaded)
+      return
 
     const canvasAwaitsRetained = () =>
       workflowStore.isActive(retained) &&
@@ -1446,7 +1447,8 @@ export const useWorkflowService = () => {
     duplicateWorkflow,
     showPendingWarnings,
     afterLoadNewGraph,
-    beforeLoadNewGraph
+    beforeLoadNewGraph,
+    restoreRetainedWorkflow
   }
 }
 
