@@ -5,6 +5,7 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { callListener } from '@/platform/nodeApi/shared/listeners'
+import { isStoreKey } from '@/platform/nodeApi/v4/checkedFields'
 import type {
   CommandDef,
   CommandsHandle,
@@ -18,7 +19,6 @@ import {
   isFiniteNumber,
   isName,
   isObject,
-  isStoreKey,
   isText,
   packObject
 } from './packArguments'
@@ -105,7 +105,7 @@ function commandDefinition(command: unknown) {
   )
   const id = fields.required(
     'id',
-    isStoreKey,
+    isCommandId,
     'a non-empty string no object inherits'
   )
   const label = fields.required(
@@ -128,6 +128,10 @@ function commandDefinition(command: unknown) {
         targetElementId: scope && 'graph-canvas'
       })
   }
+}
+
+function isCommandId(value: unknown): value is string {
+  return isName(value) && isStoreKey(value)
 }
 
 function isLabel(value: unknown): value is string | (() => unknown) {

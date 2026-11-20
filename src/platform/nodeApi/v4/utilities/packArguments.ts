@@ -55,11 +55,6 @@ export function isName(value: unknown): value is string {
   return typeof value === 'string' && value.trim() !== ''
 }
 
-/** A name a host store can key a plain object by: not a member every object inherits. */
-export function isStoreKey(value: unknown): value is string {
-  return isName(value) && !(value in Object.prototype)
-}
-
 export function isBoolean(value: unknown): value is boolean {
   return typeof value === 'boolean'
 }
