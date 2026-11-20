@@ -104,6 +104,7 @@
       <img
         v-if="
           !imageError &&
+          mainImageSrc &&
           displayUrls[currentIndex] &&
           !failedHdrPreviews[currentIndex]
         "
@@ -122,7 +123,7 @@
         draggable="false"
         class="pointer-events-none absolute inset-0 block size-full object-contain"
         @load="handleImageLoad"
-        @error="mainImageSrc && handleImageError(displayUrls[currentIndex])"
+        @error="handleImageError(displayUrls[currentIndex])"
       />
       <button
         v-else-if="!imageError && isHdr"
