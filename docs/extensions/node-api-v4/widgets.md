@@ -116,6 +116,9 @@ meter?.redraw()
 ```
 
 A mounted value is any value a workflow can save; `null` reads back as `''`.
+The value accessor belongs to its widget: once the widget is removed, `get()`
+gives `undefined` and `set()` returns `false`, even if another widget later
+takes the name. `set()` returns `true` when it commits.
 `destroy` runs once, when the host releases the widget: it is removed, or its
 node is deleted. A declared widget type's teardown, the function its `render`
 returns, runs once in the same way. Both rely on the host fix #23520, which

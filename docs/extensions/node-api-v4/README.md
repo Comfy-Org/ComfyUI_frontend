@@ -117,7 +117,8 @@ in these guides against the published types.
   option, a mounted value, a setting) must be one the workflow saves
   unchanged: text, a finite number, a boolean, `null`, or a plain object or
   list of those. `NaN`, a function or `undefined` inside it, a `Date`, an
-  object with `toJSON`, a class instance, a getter and a cycle are refused,
+  object with `toJSON`, a class instance, a getter, a cycle, and a list with a
+  hole or a named field are refused,
   and the message names the path, such as `value.list[0]`. `undefined` as the
   whole value deletes a property or an extra.
 - A name used as a key (a setting id, a command id, a type, a property name,
@@ -125,10 +126,10 @@ in these guides against the published types.
   object inherits: not `__proto__`, `constructor`, `toString` or another
   `Object.prototype` member.
 - A failure the pack cannot prevent, such as a server that does not answer, is
-  a value (`false`, `undefined`, `{ ok: false }`), not a throw. Three calls
+  a value (`false`, `undefined`, `{ ok: false }`), not a throw. Four calls
   reject instead: `backend.fetch`, as `fetch` does; `settings.set`, when the
-  server cannot be reached; and `defs.refresh`, when fetching the definitions
-  fails.
+  server cannot be reached; `defs.refresh`, when fetching the definitions
+  fails; and `queue.run`, as Run does, when the prompt cannot be built.
 - A listener or hook registration (`on…`, `extend`, `define`,
   `registerImporter`, `addBadge`, `addSidebarTab`, `mountViewportPanel`)
   returns a function that removes only that registration and is safe to call
