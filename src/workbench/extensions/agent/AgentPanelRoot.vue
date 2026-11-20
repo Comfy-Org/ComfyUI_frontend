@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import type { AgentNodeAsk } from '@/workbench/extensions/agent/types/agentNodeAsk'
 import './agentPanel.css'
 import type { AgentGreetingAssignment } from './types/proactiveGreeting'
 import { useProactiveGreeting } from './composables/agent/useProactiveGreeting'
@@ -251,8 +252,10 @@ const { proactiveAssignment } = defineProps<{
 const { t } = useI18n()
 const toast = useToast()
 let errorAttachRun = 0
+let nodeAskRun = 0
 onBeforeUnmount(() => {
   errorAttachRun++
+  nodeAskRun++
 })
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
@@ -2381,6 +2384,7 @@ async function onSelectHistory(
       cancelled.revision
     )
   errorAttachRun++
+  nodeAskRun++
   composerStore.clearErrorContext()
   cancelWorkflowSelection()
   agentPanelStore.beginWorkflowRestoration()
@@ -2751,7 +2755,11 @@ async function sendTurn(
   }
 }
 
-const { submit: submitDraft, withdrawSubmission } = useAgentDraftSubmission({
+const {
+  submit: submitDraft,
+  submitDirect: onSendDirect,
+  withdrawSubmission
+} = useAgentDraftSubmission({
   canSubmit: () =>
     !savingReferenceForCurrentDraft.value &&
     !isSending.value &&
@@ -3011,6 +3019,76 @@ async function onRetryPendingSend(clientMessageId: string): Promise<void> {
   await dispatchRetryPendingSend(retryClientMessageId, retried)
 }
 
+function nodeAskWorkflowOpen(ask: AgentNodeAsk): boolean {
+  if (workflowStore.activeWorkflow?.path === ask.workflowPath) return true
+  toast.warning(t('agent.nodeAsk.workflowChanged'), { duration: 5000 })
+  return false
+}
+
+function holdNodeAsk(ask: AgentNodeAsk): void {
+  if (composerStore.hasDraft) {
+    toast.warning(t('agent.nodeAsk.busy'), { duration: 5000 })
+    return
+  }
+  replaceSelectionTags(ask.nodes)
+  const staged = composerStore.prompt
+  const gap = !staged.text || staged.text.endsWith(' ') ? '' : ' '
+  composerStore.restorePrompt(
+    { text: `${staged.text}${gap}${ask.text}`, references: staged.references },
+    []
+  )
+  composerStore.markNodeAskPrompt(ask.inputMethod)
+}
+
+function nodeAskTargetMismatch(ask: AgentNodeAsk): boolean {
+  if (
+    ask.workflowPath === undefined ||
+    selectedTarget.value?.path === ask.workflowPath
+  )
+    return false
+  toast.warning(t('agent.nodeAsk.workflowChanged'), { duration: 5000 })
+  return true
+}
+
+function isChatBusyForNodeAsk(): boolean {
+  return isStreaming.value || isSending.value || status.value === 'thinking'
+}
+
+async function sendNodeAsk(ask: AgentNodeAsk): Promise<void> {
+  const run = ++nodeAskRun
+  const workflow = workflowStore.activeWorkflow
+  if (!nodeAskWorkflowOpen(ask)) return
+  const needsFollow =
+    workflow !== null &&
+    (selectedTarget.value?.path !== workflow.path ||
+      (threadId.value === null &&
+        conversationStore.activeBlankChatId !== blankChatIdFor(workflow)))
+  if (needsFollow) await followTab(workflow)
+  if (isHydrating.value) await until(isHydrating).toBe(false)
+  if (run !== nodeAskRun || !nodeAskWorkflowOpen(ask)) return
+  agentPanelStore.retainWorkflowTarget()
+  if (nodeAskTargetMismatch(ask)) return
+  if (isChatBusyForNodeAsk()) {
+    holdNodeAsk(ask)
+    return
+  }
+  const outcome = await onSendDirect({
+    text: ask.text,
+    nodes: ask.nodes,
+    inputMethod: ask.inputMethod
+  })
+  if (outcome === 'rejected') holdNodeAsk(ask)
+}
+
+watch(
+  () => agentPanelStore.pendingNodeAsk,
+  (ask) => {
+    if (!ask) return
+    agentPanelStore.pendingNodeAsk = null
+    void sendNodeAsk(ask)
+  },
+  { immediate: true }
+)
 function onStop(method: AgentStopMethod): void {
   if (gateHoldOnCurrentChat.value) {
     const cancelled = composerStore.cancelGateHold()
@@ -3071,6 +3149,7 @@ function resetComposerForChatSwitch(): void {
   replaceSelectionTags([])
   dismissedSelectionSignature.value = null
   errorAttachRun++
+  nodeAskRun++
 }
 
 function openFailedBlankTab(blankChatId: string): ComfyWorkflow | undefined {

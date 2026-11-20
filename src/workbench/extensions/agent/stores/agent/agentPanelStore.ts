@@ -1,4 +1,5 @@
 import type { AgentErrorContext } from '@/platform/workflowErrors/agentErrorContext'
+import type { AgentNodeAsk } from '@/workbench/extensions/agent/types/agentNodeAsk'
 import { useEventListener, useWindowSize } from '@vueuse/core'
 import { clamp } from 'es-toolkit'
 import { defineStore } from 'pinia'
@@ -126,6 +127,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   })
   const pendingCloudHandoff = ref<string | null>(null)
   const pendingErrorContext = shallowRef<AgentErrorContext | null>(null)
+  const pendingNodeAsk = shallowRef<AgentNodeAsk | null>(null)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
   const targetTracking = ref<TargetTracking>({ mode: 'uninitialized' })
@@ -623,6 +625,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     targetTracking,
     followsVisibleWorkflow,
     pendingErrorContext,
+    pendingNodeAsk,
     pendingCloudHandoff,
     initializeTargetTracking,
     retainWorkflowTarget,

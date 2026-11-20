@@ -9,7 +9,12 @@
         @wheel="canvasInteractions.forwardEventToCanvas"
       >
         <TooltipProvider>
-          <div class="flex h-8 gap-1">
+          <AskAgentComposer
+            v-if="agentComposerOpen && canAskAgent"
+            :from-width="agentComposerFromWidth"
+            @close="agentComposerOpen = false"
+          />
+          <div v-else class="flex h-8 gap-1">
             <template v-if="hasLinkSelection">
               <LinkDestinationButton />
               <ToolboxButton
@@ -129,6 +134,7 @@
                 :icon="command.icon"
                 @click="commandStore.execute(command.id)"
               />
+              <AskAgentButton v-if="canAskAgent" @click="openAgentComposer" />
               <ExecuteButton v-if="hasOutputNodesSelected" />
               <ToolboxButton
                 :label="$t('g.moreOptions')"
@@ -144,9 +150,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import AlignButton from '@/components/graph/selectionToolbox/AlignButton.vue'
+import AskAgentButton from '@/components/graph/selectionToolbox/AskAgentButton.vue'
+import AskAgentComposer from '@/components/graph/selectionToolbox/AskAgentComposer.vue'
 import TidyUpButton from '@/components/graph/selectionToolbox/TidyUpButton.vue'
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
 import ExecuteButton from '@/components/graph/selectionToolbox/ExecuteButton.vue'
@@ -168,7 +176,10 @@ import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { useLinkSelectionStore } from '@/stores/linkSelectionStore'
 import type { ComfyCommandImpl } from '@comfyorg/keybindings/commandStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import VerticalDivider from '@comfyorg/design-system/common/VerticalDivider'
 
@@ -184,6 +195,13 @@ const { isRefreshable, refreshSelected } = useRefreshableSelection()
 const toolboxRef = ref<HTMLElement | undefined>()
 const lift = ref(0)
 const { visible } = useSelectionToolboxPosition(toolboxRef, lift)
+const agentPanelStore = useAgentPanelStore()
+const workflowStore = useWorkflowStore()
+const agentComposerOpen = ref(false)
+const agentComposerFromWidth = ref<number>()
+watch(visible, (shown) => {
+  if (!shown) agentComposerOpen.value = false
+})
 
 const extensionToolboxCommands = computed<ComfyCommandImpl[]>(() => {
   const commandIds = new Set<string>(
@@ -222,6 +240,38 @@ const showBypass = computed(
     hasMultipleSelection.value ||
     hasGroupedNodesSelection.value
 )
+const hasAnyNodeSelected = computed(() =>
+  selectedItems.value.some(isLGraphNode)
+)
+const canAskAgent = computed(
+  () => agentPanelStore.enabled && hasAnyNodeSelected.value
+)
+
+watch(
+  () =>
+    selectedItems.value
+      .map((item) =>
+        isLGraphNode(item)
+          ? `N:${workflowStore.nodeToNodeLocatorId(item)}`
+          : `O:${String(item.id ?? '')}`
+      )
+      .join(','),
+  () => {
+    agentComposerOpen.value = false
+  }
+)
+
+function openAgentComposer(): void {
+  agentComposerFromWidth.value =
+    toolboxRef.value?.querySelector<HTMLElement>(
+      '.selection-toolbox'
+    )?.clientWidth
+  agentComposerOpen.value = true
+  useTelemetry()?.trackUiButtonClicked({
+    button_id: 'selection_toolbox_ask_agent_opened',
+    element_group: 'selection_toolbox'
+  })
+}
 const hasLinkSelection = computed(
   () => !hasAnySelection.value && linkSelectionStore.selection !== null
 )
@@ -248,7 +298,7 @@ function onInfoClick() {
 
 <style scoped>
 .selection-toolbox {
-  transform: translateX(-50%) translateY(-120%);
+  transform: translateX(-50%) translateY(calc(-100% - 8px));
 }
 
 @keyframes slideUp {
@@ -257,11 +307,11 @@ function onInfoClick() {
     opacity: 0;
   }
   50% {
-    transform: translateX(-50%) translateY(-125%);
+    transform: translateX(-50%) translateY(calc(-100% - 10px));
     opacity: 0.5;
   }
   100% {
-    transform: translateX(-50%) translateY(-120%);
+    transform: translateX(-50%) translateY(calc(-100% - 8px));
     opacity: 1;
   }
 }

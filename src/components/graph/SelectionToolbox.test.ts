@@ -20,6 +20,11 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { usePropertiesPanelStore } from '@/renderer/extensions/propertiesPanel/propertiesPanelStore'
 import { createMockCanvas } from '@/utils/__tests__/canvasTestUtils'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import {
+  clearEscapeOverrides,
+  consultEscapeOverride
+} from '@/platform/keybindings/escapeOverride'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 vi.mock(import('@comfyorg/telemetry'))
@@ -34,6 +39,16 @@ vi.mock(import('@/platform/extensions/services/extensionService'), () => {
   return { useExtensionService: () => service }
 })
 vi.mock(import('@/utils/litegraphUtil'))
+const askAgentAboutNodes = vi.hoisted(() => vi.fn())
+vi.mock(
+  import('@/workbench/extensions/agent/composables/agent/useAskAgentAboutNodes'),
+  () => ({
+    useAskAgentAboutNodes: () => ({
+      canAskAgent: computed(() => true),
+      askAgentAboutNodes
+    })
+  })
+)
 vi.mock(import('@/composables/canvas/useSelectionToolboxPosition'), () => ({
   useSelectionToolboxPosition: () => ({ visible: computed(() => true) }),
   resetMoreOptionsState: vi.fn()
@@ -324,5 +339,207 @@ describe('SelectionToolbox', () => {
     expect(screen.getByTestId('tooltip-content')).toHaveTextContent(
       'More Options'
     )
+  })
+})
+
+describe('SelectionToolbox Ask agent', () => {
+  beforeEach(() => {
+    clearEscapeOverrides()
+    useCanvasStore().canvas = createMockCanvas({
+      canvas: document.createElement('canvas')
+    })
+    vi.mocked(useNodeDefStore().fromLGraphNode).mockReturnValue(nodeDef)
+    askAgentAboutNodes.mockClear()
+  })
+
+  function nodes(count: number, type = 'KSampler'): LGraphNode[] {
+    return Array.from({ length: count }, (_, index) => {
+      const node = new LGraphNode(`Node ${index}`)
+      node.type = type
+      return node
+    })
+  }
+
+  it('shows no Ask agent button while the agent is off', () => {
+    setCanvasSelection(nodes(1))
+    renderToolbox()
+    expect(screen.queryByRole('button', { name: 'Ask agent' })).toBeNull()
+  })
+
+  it('turns the toolbar into the composer and tracks the button click', async () => {
+    const trackUiButtonClicked = vi.fn()
+    vi.mocked(useTelemetry).mockReturnValue({
+      trackUiButtonClicked
+    } as unknown as ReturnType<typeof useTelemetry>)
+    useAgentPanelStore().enabled = true
+    setCanvasSelection(nodes(1))
+    renderToolbox()
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Ask agent' }))
+
+    expect(screen.queryByRole('button', { name: 'Ask agent' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'More Options' })).toBeNull()
+    expect(
+      screen.getByRole('list', { name: 'Example prompts' })
+    ).toBeInTheDocument()
+    expect(trackUiButtonClicked).toHaveBeenCalledWith({
+      button_id: 'selection_toolbox_ask_agent_opened',
+      element_group: 'selection_toolbox'
+    })
+  })
+
+  it('opens the composer with example prompts for one node and keeps them visible while typing', async () => {
+    useAgentPanelStore().enabled = true
+    setCanvasSelection(nodes(1))
+    renderToolbox()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Ask agent' }))
+
+    const input = screen.getByRole('textbox', {
+      name: 'Ask about the selected nodes'
+    })
+    expect(input).toHaveFocus()
+    expect(
+      screen
+        .getAllByRole('button', { name: /\?$|settings$/ })
+        .map((button) => button.textContent.trim())
+    ).toEqual([
+      'What does this node do?',
+      'Explain these settings',
+      'Suggest better settings'
+    ])
+
+    await user.type(input, 'Why are faces soft?')
+    expect(
+      screen.getByRole('list', { name: 'Example prompts' })
+    ).toBeInTheDocument()
+  })
+
+  it('offers media prompts for a Load Image node', async () => {
+    useAgentPanelStore().enabled = true
+    setCanvasSelection(nodes(1, 'LoadImage'))
+    renderToolbox()
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Ask agent' }))
+
+    expect(
+      screen.getByRole('button', { name: 'Upscale this' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Edit this image' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Animate this' })
+    ).toBeInTheDocument()
+  })
+
+  it('offers the multiple-node prompts for three nodes', async () => {
+    useAgentPanelStore().enabled = true
+    setCanvasSelection(nodes(3))
+    renderToolbox()
+
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Ask agent' }))
+
+    expect(
+      screen.getByRole('button', { name: 'How do these connect?' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Combine these into one workflow' })
+    ).toBeInTheDocument()
+  })
+
+  it('asks about the selection from an example prompt with suggestion input method and closes', async () => {
+    useAgentPanelStore().enabled = true
+    const selection = nodes(1)
+    setCanvasSelection(selection)
+    renderToolbox()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Ask agent' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Explain these settings' })
+    )
+
+    expect(askAgentAboutNodes).toHaveBeenCalledWith(
+      'Explain these settings',
+      selection,
+      'selection_toolbox_suggestion'
+    )
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('sends a typed question on Enter with selection_toolbox input method and closes', async () => {
+    useAgentPanelStore().enabled = true
+    const selection = nodes(1)
+    setCanvasSelection(selection)
+    renderToolbox()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Ask agent' }))
+    await user.type(screen.getByRole('textbox'), 'Why is it slow?{Enter}')
+
+    expect(askAgentAboutNodes).toHaveBeenCalledWith(
+      'Why is it slow?',
+      selection,
+      'selection_toolbox'
+    )
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('closes on Escape from both input and focused example prompt buttons without bubbling', async () => {
+    useAgentPanelStore().enabled = true
+    setCanvasSelection(nodes(1))
+    renderToolbox()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Ask agent' }))
+    const exampleButton = screen.getByRole('button', {
+      name: 'Explain these settings'
+    })
+    exampleButton.focus()
+    await user.keyboard('{Escape}')
+
+    expect(askAgentAboutNodes).not.toHaveBeenCalled()
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('claims bare Escape via escape override while open so subgraphs do not exit', async () => {
+    useAgentPanelStore().enabled = true
+    setCanvasSelection(nodes(1))
+    renderToolbox()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Ask agent' }))
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    await nextTick()
+    expect(screen.queryByRole('textbox')).toBeNull()
+  })
+
+  it('closes on outside pointerdown or selection change without asking', async () => {
+    useAgentPanelStore().enabled = true
+    setCanvasSelection(nodes(1))
+    renderToolbox()
+    const user = userEvent.setup()
+
+    await user.click(screen.getByRole('button', { name: 'Ask agent' }))
+    await user.pointer({ keys: '[MouseLeft>]', target: document.body })
+    expect(screen.queryByRole('textbox')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Ask agent' }))
+    setCanvasSelection(nodes(2))
+    await nextTick()
+    expect(screen.queryByRole('textbox')).toBeNull()
+    expect(askAgentAboutNodes).not.toHaveBeenCalled()
   })
 })
