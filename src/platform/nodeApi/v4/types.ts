@@ -882,7 +882,7 @@ export interface WidgetHandle {
   ): Unsubscribe
 }
 
-/** A widget's value about to be sent in a queued prompt. */
+/** A widget's value about to be sent in a prompt the app builds. */
 export interface WidgetSerializeEvent {
   /** Where the value goes: a prompt, whether queued or exported. The saved workflow cannot be changed. */
   readonly context: 'prompt'
