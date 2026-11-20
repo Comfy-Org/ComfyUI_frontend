@@ -208,3 +208,9 @@ defineExpose({
   handleUpdate
 })
 </script>
+
+<style scoped>
+[data-position='bottom-left'] {
+  left: calc(var(--sidebar-default-connected-width) + 1rem);
+}
+</style>
