@@ -920,6 +920,16 @@ describe('refusing what an overlay cannot use', () => {
       name: 'a field a region does not have',
       regions: [{ kind: 'circle', x: 0, y: 0, r: 1 }],
       needs: 'regions[0] of kind, x, y, radius, width, height only'
+    },
+    {
+      name: 'a circle with a rectangle field',
+      regions: [{ kind: 'circle', x: 0, y: 0, radius: 1, width: 4 }],
+      needs: 'regions[0] of kind, x, y, radius only'
+    },
+    {
+      name: 'a rectangle with a circle field',
+      regions: [{ kind: 'rect', x: 0, y: 0, width: 1, height: 1, radius: 2 }],
+      needs: 'regions[0] of kind, x, y, width, height only'
     }
   ])('refuses $name, and keeps the regions it had', ({ regions, needs }) => {
     const { canvas, ui } = appShowingGraph()

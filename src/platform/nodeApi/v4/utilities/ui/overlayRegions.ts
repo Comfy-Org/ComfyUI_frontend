@@ -6,18 +6,25 @@ import {
   packObject
 } from '@/platform/nodeApi/v4/utilities/packArguments'
 
-const HIT_REGION_FIELDS = {
+const CIRCLE_FIELDS = {
   kind: true,
   x: true,
   y: true,
-  radius: true,
-  width: true,
-  height: true
+  radius: true
 } satisfies Record<
-  | keyof Extract<GraphOverlayHitRegion, { kind: 'circle' }>
-  | keyof Extract<GraphOverlayHitRegion, { kind: 'rect' }>,
+  keyof Extract<GraphOverlayHitRegion, { kind: 'circle' }>,
   true
 >
+
+const RECT_FIELDS = {
+  kind: true,
+  x: true,
+  y: true,
+  width: true,
+  height: true
+} satisfies Record<keyof Extract<GraphOverlayHitRegion, { kind: 'rect' }>, true>
+
+const HIT_REGION_FIELDS = { ...CIRCLE_FIELDS, ...RECT_FIELDS }
 
 interface ViewportPoint {
   readonly x: number
@@ -46,6 +53,18 @@ function readRegion(
 ): GraphOverlayHitRegion {
   const fields = packObject(member, path, region, HIT_REGION_FIELDS, `${path}.`)
   const kind = fields.required('kind', isKind, "'circle' or 'rect'")
+  const shape = kind === 'circle' ? CIRCLE_FIELDS : RECT_FIELDS
+  const absent =
+    kind === 'circle' ? (['width', 'height'] as const) : (['radius'] as const)
+  for (const key of absent) {
+    if (fields.optional(key, isAny, '') !== undefined) {
+      throw invalidArgument(
+        member,
+        `${path} of ${Object.keys(shape).join(', ')} only`,
+        key
+      )
+    }
+  }
   const x = fields.required('x', isFiniteNumber, 'a finite number')
   const y = fields.required('y', isFiniteNumber, 'a finite number')
   const size = (key: 'radius' | 'width' | 'height') =>
@@ -71,6 +90,10 @@ export function hitsRegion(
         point.y >= region.y &&
         point.y <= region.y + region.height
   )
+}
+
+function isAny(_value: unknown): _value is unknown {
+  return true
 }
 
 function isKind(value: unknown): value is GraphOverlayHitRegion['kind'] {
