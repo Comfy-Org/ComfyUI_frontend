@@ -332,6 +332,23 @@ describe('Cloud button compatibility checks', () => {
     expect(useToast().toasts).toEqual([])
   })
 
+  it('closes the open dialog when the Cloud button unmounts', async () => {
+    vi.mocked(checkCloudCompatibility).mockResolvedValue({ kind: 'canOpen' })
+    const { unmount } = render(CloudButton, {
+      global: { plugins: [testI18n] }
+    })
+    const dialogs = useDialogStore()
+
+    await userEvent.setup().click(screen.getByTestId('cloud-button'))
+    await waitFor(() =>
+      expect(dialogs.isDialogOpen('global-run-on-comfy-cloud')).toBe(true)
+    )
+
+    unmount()
+
+    expect(dialogs.isDialogOpen('global-run-on-comfy-cloud')).toBe(false)
+  })
+
   it('opens nothing when the button unmounts while the dialog loads', async () => {
     let opening: Promise<boolean> | undefined
     vi.mocked(openRunOnCloudDialog).mockImplementationOnce((isStillWanted) => {

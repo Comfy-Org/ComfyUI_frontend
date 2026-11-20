@@ -1,48 +1,25 @@
 import { expect } from '@playwright/test'
-import type { Locator } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import {
+  canvasNodeEmphasis,
+  vueNodeEmphasis
+} from '@e2e/fixtures/helpers/NodeEmphasisHelper'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 const renderModes = [
-  { name: 'legacy nodes', vueNodesEnabled: false },
-  { name: 'Vue nodes', vueNodesEnabled: true }
-] as const
-
-const NODE_CLIP_PADDING = 24
-
-async function captureCanvasHighlight(comfyPage: ComfyPage, panel: Locator) {
-  const node = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
-  const bounds = await node.getBounding()
-  const clip = await comfyPage.page.evaluate(
-    ({ x, y, width, height, padding }) => {
-      const [left, top] = window.app!.canvasPosToClientPos([x, y])
-      const [right, bottom] = window.app!.canvasPosToClientPos([
-        x + width,
-        y + height
-      ])
-      return {
-        x: left - padding,
-        y: top - padding,
-        width: right - left + padding * 2,
-        height: bottom - top + padding * 2
-      }
-    },
-    { ...bounds, padding: NODE_CLIP_PADDING }
-  )
-
-  const screenshotNode = () =>
-    comfyPage.page.screenshot({ clip, mask: [panel], animations: 'disabled' })
-
-  const idleNode = await screenshotNode()
-  return async (emphasized: boolean) => {
-    await expect
-      .poll(async () => (await screenshotNode()).equals(idleNode))
-      .toBe(!emphasized)
+  {
+    name: 'legacy nodes',
+    vueNodesEnabled: false,
+    emphasisCheck: canvasNodeEmphasis
+  },
+  {
+    name: 'Vue nodes',
+    vueNodesEnabled: true,
+    emphasisCheck: vueNodeEmphasis
   }
-}
+] as const
 
 for (const mode of renderModes) {
   test.describe(
@@ -81,20 +58,17 @@ for (const mode of renderModes) {
           name: 'KSampler',
           exact: true
         })
-
-        const expectHighlight = mode.vueNodesEnabled
-          ? async (emphasized: boolean) => {
-              const { stateOutline } =
-                await comfyPage.vueNodes.getFixtureByTitle('KSampler')
-              await expect(stateOutline).toBeVisible({ visible: emphasized })
-            }
-          : await captureCanvasHighlight(comfyPage, panel)
+        const isEmphasized = await mode.emphasisCheck(
+          comfyPage,
+          'KSampler',
+          panel
+        )
 
         const expectEmphasized = async (emphasized: boolean) => {
           await expect
             .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
             .toEqual([])
-          await expectHighlight(emphasized)
+          await isEmphasized(emphasized)
         }
 
         await test.step('emphasizes the keyboard-active node without selecting it', async () => {
