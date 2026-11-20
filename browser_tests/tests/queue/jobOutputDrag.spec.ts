@@ -7,9 +7,11 @@ import {
 import {
   draggedImageOutput,
   draggedVideoOutput,
-  jobOutputDragJobs
+  jobOutputDragJobs,
+  loadVideoInputFilename
 } from '@e2e/fixtures/data/jobOutputDrag'
 import { jobsRouteFixture } from '@e2e/fixtures/jobsRouteFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
@@ -32,6 +34,16 @@ const test = mergeTests(comfyPageFixture, jobsRouteFixture).extend<{
             contentType: 'image/png'
           })
       )
+      await page.route(
+        (url) =>
+          url.pathname.endsWith('/view') &&
+          url.searchParams.get('filename') === loadVideoInputFilename,
+        (route) =>
+          route.fulfill({
+            path: assetPath('plain_video.mp4'),
+            contentType: 'video/mp4'
+          })
+      )
       await use()
     },
     { auto: true }
@@ -46,55 +58,37 @@ test.describe('Job queue output drag', { tag: ['@ui', '@widget'] }, () => {
     }
   })
 
-  test.describe('onto a loader node', () => {
+  test.describe('onto Load Image', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/all_load_widgets')
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
       await comfyPage.queuePanel.open()
     })
 
-    for (const { output, title, nodeId, widgetName } of [
-      {
-        output: draggedImageOutput,
-        title: 'Load Image',
-        nodeId: '5',
-        widgetName: 'image'
-      },
-      {
-        output: draggedVideoOutput,
-        title: 'Load Video',
-        nodeId: '2',
-        widgetName: 'file'
-      }
-    ]) {
-      test(`references ${output.filename} as the ${title} input`, async ({
-        comfyPage
-      }) => {
-        const node = await comfyPage.nodeOps.getNodeRefById(nodeId)
-        await node.centerOnNode()
-        const center = await comfyPage.canvasOps.getNodeCenterByTitle(title)
-        if (!center) throw new Error(`${title} node center not found`)
+    test('references a finished image as its input', async ({ comfyPage }) => {
+      const node = await comfyPage.nodeOps.getNodeRefById('10')
 
-        await comfyPage.queuePanel.dragOutputTo(output.jobId, center)
+      await comfyPage.queuePanel.dragOutputToNode(
+        draggedImageOutput.jobId,
+        node
+      )
 
-        const widget = await node.getWidgetByName(widgetName)
-        await expect
-          .poll(() => widget.getValue())
-          .toBe(`${output.filename} [output]`)
-      })
-    }
+      const widget = await node.getWidgetByName('image')
+      await expect
+        .poll(() => widget.getValue())
+        .toBe(`${draggedImageOutput.filename} [output]`)
+    })
 
-    test('keeps the Load Image input and warns when a video is dropped on it', async ({
+    test('keeps its input and warns when a finished video is dropped on it', async ({
       comfyPage
     }) => {
-      const node = await comfyPage.nodeOps.getNodeRefById('5')
+      const node = await comfyPage.nodeOps.getNodeRefById('10')
       const widget = await node.getWidgetByName('image')
       const imageBefore = await widget.getValue()
-      await node.centerOnNode()
-      const center =
-        await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')
-      if (!center) throw new Error('Load Image node center not found')
 
-      await comfyPage.queuePanel.dragOutputTo(draggedVideoOutput.jobId, center)
+      await comfyPage.queuePanel.dragOutputToNode(
+        draggedVideoOutput.jobId,
+        node
+      )
 
       await expect(
         comfyPage.toast.toastWarnings.filter({
@@ -103,6 +97,25 @@ test.describe('Job queue output drag', { tag: ['@ui', '@widget'] }, () => {
       ).toHaveCount(1)
       expect(await widget.getValue()).toBe(imageBefore)
     })
+  })
+
+  test('references a finished video dropped on the Load Video player', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('widgets/load_video_widget')
+    const node = await comfyPage.nodeOps.getNodeRefById('2')
+    await node.centerOnNode()
+    await comfyPage.queuePanel.open()
+
+    await comfyPage.queuePanel.dragOutputOnto(
+      draggedVideoOutput.jobId,
+      comfyPage.page.getByTestId(TestIds.canvas.domWidgets).locator('video')
+    )
+
+    const widget = await node.getWidgetByName('file')
+    await expect
+      .poll(() => widget.getValue())
+      .toBe(`${draggedVideoOutput.filename} [output]`)
   })
 
   test('adds a Load Image node for a finished image dropped on empty canvas', async ({
@@ -141,15 +154,14 @@ test.describe('Job queue output drag', { tag: ['@ui', '@widget'] }, () => {
     test('references a finished image as the Load Image input', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/all_load_widgets')
+      await comfyPage.workflow.loadWorkflow('widgets/load_image_widget')
       await comfyPage.menu.jobHistoryTab.open()
-      const node = await comfyPage.nodeOps.getNodeRefById('5')
-      await node.centerOnNode()
-      const center =
-        await comfyPage.canvasOps.getNodeCenterByTitle('Load Image')
-      if (!center) throw new Error('Load Image node center not found')
+      const node = await comfyPage.nodeOps.getNodeRefById('10')
 
-      await comfyPage.queuePanel.dragOutputTo(draggedImageOutput.jobId, center)
+      await comfyPage.queuePanel.dragOutputToNode(
+        draggedImageOutput.jobId,
+        node
+      )
 
       const widget = await node.getWidgetByName('image')
       await expect
@@ -162,15 +174,14 @@ test.describe('Job queue output drag', { tag: ['@ui', '@widget'] }, () => {
     test('references a finished video as the Load Video input', async ({
       comfyPage
     }) => {
-      await comfyPage.workflow.loadWorkflow('widgets/all_load_widgets')
+      await comfyPage.workflow.loadWorkflow('widgets/load_video_widget')
       await comfyPage.queuePanel.open()
       const node = await comfyPage.nodeOps.getNodeRefById('2')
-      await node.centerOnNode()
-      const center =
-        await comfyPage.canvasOps.getNodeCenterByTitle('Load Video')
-      if (!center) throw new Error('Load Video node center not found')
 
-      await comfyPage.queuePanel.dragOutputTo(draggedVideoOutput.jobId, center)
+      await comfyPage.queuePanel.dragOutputToNode(
+        draggedVideoOutput.jobId,
+        node
+      )
 
       const widget = await node.getWidgetByName('file')
       await expect

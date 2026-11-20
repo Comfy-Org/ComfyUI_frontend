@@ -33,6 +33,7 @@ export const TestIds = {
   },
   canvas: {
     main: 'graph-canvas',
+    domWidgets: 'dom-widgets',
     contextMenu: 'canvas-context-menu',
     toggleMinimapButton: 'toggle-minimap-button',
     closeMinimapButton: 'close-minimap-button',
