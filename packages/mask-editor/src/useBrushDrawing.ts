@@ -230,6 +230,18 @@ export function useBrushDrawing(initialSettings?: {
     }
   }
 
+  const pendingMoves = new Set<() => Promise<void>>()
+
+  /** Draws a move on the next frame, or earlier if the stroke ends first. */
+  function queueMove(draw: () => Promise<void>) {
+    const run = async () => {
+      if (!pendingMoves.delete(run) || !isDrawing.value) return
+      await draw()
+    }
+    pendingMoves.add(run)
+    requestAnimationFrame(run)
+  }
+
   async function handleDrawing(event: PointerEvent): Promise<void> {
     const diff = performance.now() - smoothingLastDrawTime.value.getTime()
     const coords = { x: event.offsetX, y: event.offsetY }
@@ -237,8 +249,7 @@ export function useBrushDrawing(initialSettings?: {
     const currentTool = store.currentTool
 
     if (diff > 20 && !isDrawing.value) {
-      requestAnimationFrame(async () => {
-        if (!isDrawing.value) return
+      queueMove(async () => {
         try {
           initShape(CompositionOperation.SourceOver)
           if (gpu.hasRenderer.value) {
@@ -251,8 +262,7 @@ export function useBrushDrawing(initialSettings?: {
         }
       })
     } else {
-      requestAnimationFrame(async () => {
-        if (!isDrawing.value) return
+      queueMove(async () => {
         try {
           if (currentTool === 'eraser' || event.buttons === 2) {
             initShape(CompositionOperation.DestinationOut)
@@ -275,6 +285,7 @@ export function useBrushDrawing(initialSettings?: {
 
     if (!isDrawing.value) return
 
+    for (const run of pendingMoves) await run()
     isDrawing.value = false
     lineStartPoint.value = coords_canvas
     initialDraw.value = true
