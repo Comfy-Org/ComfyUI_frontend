@@ -1239,6 +1239,30 @@ describe('useAgentConversationStore', () => {
       expect(store.submittedAskAnswer('turn-1:call-1')).toBeUndefined()
     })
 
+    it('keeps a deferred conflict answer until its bounded cleanup expires', () => {
+      vi.useFakeTimers()
+      try {
+        const store = useAgentConversationStore()
+        store.setThreadId('th')
+        store.hydrate(askUserTranscript())
+        store.recordAskAnswer('turn-1:call-1', { selected: ['oil'] }, 'th')
+        store.deferSubmittedAskCleanup('turn-1:call-1')
+
+        store.settleTurn(
+          { threadId: 'th', messageId: 'assistant-message-1' as TurnId },
+          undefined
+        )
+
+        expect(store.submittedAskAnswer('turn-1:call-1')).toEqual({
+          selected: ['oil']
+        })
+        vi.advanceTimersByTime(60_000)
+        expect(store.submittedAskAnswer('turn-1:call-1')).toBeUndefined()
+      } finally {
+        vi.useRealTimers()
+      }
+    })
+
     it('rebuilds a retired delete approval read-only from a transcript that still lists it', () => {
       const store = useAgentConversationStore()
       store.setThreadId('th')
@@ -1596,6 +1620,17 @@ describe('useAgentConversationStore', () => {
 
     expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
     expect(store.isAskRetired('ask-2', 'deleted')).toBe(false)
+  })
+
+  it('does not reopen a provisionally retired ask from one stale hydrate', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.hydrate(parkedApprovalTranscript('th'))
+    store.retireAsk('turn-1:call-1', { status: 'unconfirmed' }, 'th', false)
+
+    store.hydrate(parkedApprovalTranscript('th'))
+
+    expect(store.isAskRetired('turn-1:call-1', 'th')).toBe(true)
   })
 
   it('reset preserves ask recovery state owned by a background turn', () => {

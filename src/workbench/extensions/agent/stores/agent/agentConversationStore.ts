@@ -457,6 +457,7 @@ interface SubmittedAskAnswer {
   awaitingResolution?: 'accepted' | 'conflict'
   onResolutionExpired?: () => boolean | void
   resolutionDeadline?: number
+  cleanupDeferred?: boolean
 }
 
 export const useAgentConversationStore = defineStore(
@@ -955,13 +956,16 @@ export const useAgentConversationStore = defineStore(
     }
 
     function deferSubmittedAskCleanup(askId: string): void {
+      const submitted = submittedAskAnswers.get(askId)
+      if (!submitted) return
+      submitted.cleanupDeferred = true
       clearAskResolutionReportWatchdog(askId)
       askResolutionReportWatchdogs.set(
         askId,
-        setTimeout(
-          () => completeAskResolutionReport(askId),
-          ASK_RESOLUTION_GRACE_MS
-        )
+        setTimeout(() => {
+          clearAskResolutionReportWatchdog(askId)
+          completeAskResolutionReport(askId)
+        }, ASK_RESOLUTION_GRACE_MS)
       )
     }
 
@@ -985,6 +989,7 @@ export const useAgentConversationStore = defineStore(
         if (
           submitted.owner === turn.threadId &&
           submitted.messageId === turn.messageId &&
+          submitted.cleanupDeferred !== true &&
           submitted.awaitingResolution === undefined &&
           !answeringAskIds.value.has(askId)
         )
@@ -1786,23 +1791,25 @@ export const useAgentConversationStore = defineStore(
       userAttachments.value = new Map()
     }
 
+    function discardAskState(owner: string): void {
+      retiredAsks.delete(owner)
+      provisionalRetiredAsks.delete(owner)
+      for (const [askId, submitted] of submittedAskAnswers) {
+        if (submitted.owner !== owner) continue
+        clearAskRetirementWatchdog(askId)
+        clearAskResolutionReportWatchdog(askId)
+        submittedAskAnswers.delete(askId)
+        setAskAnswering(askId, false)
+      }
+    }
+
     function reset({
       discardCurrentThread = false
     }: { discardCurrentThread?: boolean } = {}): void {
       unreconciledSnapshotTurns.clear()
       disposeActiveAndSettledTransports()
-      if (discardCurrentThread && threadId.value !== null) {
-        const owner = threadId.value
-        retiredAsks.delete(owner)
-        provisionalRetiredAsks.delete(owner)
-        for (const [askId, submitted] of submittedAskAnswers) {
-          if (submitted.owner !== owner) continue
-          clearAskRetirementWatchdog(askId)
-          clearAskResolutionReportWatchdog(askId)
-          submittedAskAnswers.delete(askId)
-          setAskAnswering(askId, false)
-        }
-      }
+      if (discardCurrentThread && threadId.value !== null)
+        discardAskState(threadId.value)
       discardDetachedAskState()
       messages.value = []
       userTexts.value = new Map()
@@ -1830,12 +1837,6 @@ export const useAgentConversationStore = defineStore(
     function reapplyRetiredAsks(
       transcript: ReturnType<typeof normalizeAgentTranscript>
     ): void {
-      for (const message of transcript.messages)
-        for (const part of message.parts) {
-          if (!isOpenAskPart(part)) continue
-          const askId = askIdOf(part)
-          if (askId !== undefined) confirmAskPending(askId)
-        }
       const retired = retiredAsksFor()
       const provisional = provisionalRetiredAsksFor()
       const provisionalResolutions = new Map(
@@ -2124,6 +2125,7 @@ export const useAgentConversationStore = defineStore(
       clearAskAwaitingResolution,
       completeAskResolutionReport,
       deferSubmittedAskCleanup,
+      discardAskState,
       askKind,
       commitAsk,
       retireAsk,

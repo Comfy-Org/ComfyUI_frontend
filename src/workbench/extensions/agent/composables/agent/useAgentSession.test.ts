@@ -3097,6 +3097,27 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([])
     })
 
+    it('treats an empty optional receipt as status-only after a nonempty answer', async () => {
+      const { session } = await parkedOnQuestion(
+        { status: 'answered', selected: [] },
+        0
+      )
+
+      const committed = await session.answerAsk('turn-1:call-1', {
+        selected: ['sdxl']
+      })
+      await vi.advanceTimersByTimeAsync(15_000)
+
+      expect(committed).toBe(true)
+      expect(card()).toMatchObject({
+        resolution: { status: 'unconfirmed' }
+      })
+      expect(reportError).not.toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
+    })
+
     it('leaves a status-only 202 to the frame to report', async () => {
       const { session, emit } = await parkedOnQuestion()
       await session.answerAsk('turn-1:call-1', { selected: ['sdxl'] })
@@ -3152,6 +3173,9 @@ describe('useAgentSession (v1 composition root)', () => {
       emit(askResolved('msg-1', 'turn-1:call-1', null, 'cancelled'))
 
       expect(card()).toMatchObject({ resolution: { status: 'closed' } })
+      expect(
+        useAgentConversationStore().submittedAskAnswer('turn-1:call-1')
+      ).toBeUndefined()
     })
 
     it.for<{
@@ -3318,6 +3342,46 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it('routes a stopped session answer notice to its live successor', async () => {
+    let resolveAnswer: ((receipt: AgentAnswerAccepted) => void) | undefined
+    const answerAsk = vi.fn<AgentRestClient['answerAsk']>(
+      () =>
+        new Promise<AgentAnswerAccepted>((resolve) => {
+          resolveAnswer = resolve
+        })
+    )
+    const firstEvents = fakeEvents()
+    const first = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: firstEvents.source
+    })
+    first.start()
+    firstEvents.status(true)
+    await first.sendMessage('build it')
+    firstEvents.emit(runApproval('msg-1'))
+    const answering = first.answerAsk('turn-1:call-1', {
+      selected: ['cancel']
+    })
+    await vi.waitFor(() => expect(answerAsk).toHaveBeenCalledOnce())
+
+    first.stop()
+    const second = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    second.start({ restore: false })
+    resolveAnswer?.({ status: 'answered', selected: ['run'] })
+    await answering
+
+    expect(first.notices.value).toEqual([])
+    expect(second.notices.value).toEqual([
+      {
+        level: 'error',
+        text: enMessages.agent.runApproval.answerSuperseded
+      }
+    ])
+  })
+
   it('reports a 409 after a retry because the first attempt may have landed', async () => {
     vi.useFakeTimers()
     try {
@@ -3351,6 +3415,35 @@ describe('useAgentSession (v1 composition root)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('keeps a retried refusal unconfirmed for a later resolution frame', async () => {
+    const answerAsk = vi
+      .fn<AgentRestClient['answerAsk']>()
+      .mockRejectedValueOnce(new TypeError('connection reset'))
+      .mockRejectedValueOnce(new AgentApiError('gone', 404, undefined))
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ answerAsk }),
+      events: source
+    })
+    session.start()
+    status(true)
+    await session.sendMessage('build it')
+    emit(runApproval('msg-1'))
+
+    await session.answerAsk('turn-1:call-1', { selected: ['cancel'] })
+    expect(
+      useAgentConversationStore().messages[0].parts.some(
+        (part) => part.type === 'runApproval'
+      )
+    ).toBe(false)
+    emit(askResolved('msg-1', 'turn-1:call-1', ['run']))
+
+    expect(reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+    )
   })
 
   // A 500 here is ambiguous, not a clean miss: `asks.go` CASes the answer onto
@@ -3470,7 +3563,7 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(session.notices.value).toEqual([])
     })
 
-    it('retires a first-attempt 409 without claiming it may have landed', async () => {
+    it('reports a first-attempt 409 when the resolution channel is gone', async () => {
       const answerAsk = vi
         .fn<AgentRestClient['answerAsk']>()
         .mockRejectedValue(
@@ -3492,8 +3585,18 @@ describe('useAgentSession (v1 composition root)', () => {
 
       expect(cardOnScreen()).toBe(false)
       expect(session.answeringAskIds.value.size).toBe(0)
-      expect(session.notices.value).toEqual([])
-      expect(reportError).not.toHaveBeenCalled()
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_ask_answer_superseded'
+        })
+      )
     })
 
     it.for([403, 404] as const)(
@@ -5508,6 +5611,45 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
+  it('(g9a) first live status reconciles turns retained across a remount', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [])
+    const firstEvents = fakeEvents()
+    const first = useAgentSession({
+      rest: fakeRest({ postMessage, getMessages }),
+      events: firstEvents.source
+    })
+    first.start()
+    firstEvents.status(true)
+    await first.sendMessage('first')
+    firstEvents.emit(deltaIn('th-1', 'msg-1', 'one'))
+    first.newChat()
+    await first.sendMessage('second')
+    firstEvents.emit(deltaIn('th-2', 'msg-2', 'two'))
+
+    first.stop()
+    getMessages.mockClear()
+    const secondEvents = fakeEvents()
+    const second = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: secondEvents.source
+    })
+    second.start()
+    await vi.waitFor(() =>
+      expect(getMessages).toHaveBeenCalledWith('th-2', expect.anything())
+    )
+    secondEvents.status(true)
+
+    await vi.waitFor(() =>
+      expect(getMessages).toHaveBeenCalledWith('th-1', expect.anything())
+    )
+  })
+
   it('(g10) a failing recovery fetch does not amplify backend failure and leaves the turn live', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => {
@@ -5557,7 +5699,24 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toEqual([])
   })
 
-  it('(g11a) a deleted thread invalidates an in-flight send before its acknowledgement', async () => {
+  it('(g11a) deleting the visible history discards its ask recovery state', async () => {
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('go')
+    const store = useAgentConversationStore()
+    store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th-1')
+    store.retireAsk('ask-2', { status: 'retired' }, 'th-1')
+
+    session.newChat('history_delete')
+
+    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    expect(store.isAskRetired('ask-2', 'th-1')).toBe(false)
+  })
+
+  it('(g11b) a deleted thread invalidates an in-flight send before its acknowledgement', async () => {
     let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
     const postMessage = vi
       .fn<AgentRestClient['postMessage']>()
@@ -5689,6 +5848,9 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.sendMessage('first')
     emit(deltaIn('th-1', 'msg-1', 'one'))
+    const store = useAgentConversationStore()
+    store.recordAskAnswer('ask-1', { selected: ['run'] }, 'th-1')
+    store.retireAsk('ask-2', { status: 'retired' }, 'th-1')
     session.newChat()
     await session.sendMessage('second')
     emit(deltaIn('th-2', 'msg-2', 'two'))
@@ -5719,6 +5881,8 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
       'th-2'
     )
+    expect(store.submittedAskAnswer('ask-1')).toBeUndefined()
+    expect(store.isAskRetired('ask-2', 'th-1')).toBe(false)
   })
 
   it('(g18) a history fetch that never answers stops at its deadline', async () => {
@@ -6157,7 +6321,10 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(0)
-      expect(reportError).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
     } finally {
       vi.useRealTimers()
     }
@@ -6194,7 +6361,10 @@ describe('useAgentSession (v1 composition root)', () => {
       await vi.advanceTimersByTimeAsync(31_000)
 
       expect(approvalParts(session)).toHaveLength(0)
-      expect(reportError).not.toHaveBeenCalled()
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({ errorType: 'agent_ask_answer_superseded' })
+      )
     } finally {
       vi.useRealTimers()
     }
@@ -6547,7 +6717,12 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(approvalParts(session)).toHaveLength(1)
       status(false)
       await session.answerAsk('turn-1:call-1', { selected: ['run'] })
-      expect(session.notices.value).toEqual([])
+      expect(session.notices.value).toEqual([
+        {
+          level: 'error',
+          text: enMessages.agent.runApproval.answerSuperseded
+        }
+      ])
     } finally {
       vi.useRealTimers()
     }
