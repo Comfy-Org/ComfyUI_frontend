@@ -340,9 +340,9 @@ describe('drawEnd', () => {
     const drawnX = arc.mock.calls.map(([x]) => x)
     expect(Math.max(...drawnX)).toBeGreaterThan(140)
 
+    expect(frames).toHaveLength(1)
     const callsBeforeFrame = arc.mock.calls.length
-    for (const frame of frames) frame(0)
-    await Promise.resolve()
+    frames[0](0)
     expect(arc).toHaveBeenCalledTimes(callsBeforeFrame)
     vi.restoreAllMocks()
   })

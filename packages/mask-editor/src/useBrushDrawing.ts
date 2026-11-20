@@ -232,7 +232,6 @@ export function useBrushDrawing(initialSettings?: {
 
   const pendingMoves = new Set<() => Promise<void>>()
 
-  /** Draws a move on the next frame, or earlier if the stroke ends first. */
   function queueMove(draw: () => Promise<void>) {
     const run = async () => {
       if (!pendingMoves.delete(run) || !isDrawing.value) return
