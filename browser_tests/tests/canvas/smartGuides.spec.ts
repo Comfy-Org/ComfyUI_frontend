@@ -506,3 +506,39 @@ test.describe('Smart guides', { tag: ['@vue-nodes', '@canvas'] }, () => {
     })
   })
 })
+
+test.describe('Smart guides on the classic canvas', { tag: '@canvas' }, () => {
+  test('dragging a node snaps it onto another node’s left edge', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('smartGuides/two_notes')
+    const dragged = await comfyPage.nodeOps.getNodeRefByTitle('Dragged')
+
+    await dragged.dragBy({ x: -5, y: 60 })
+
+    await expect.poll(() => leftsOf(comfyPage, ['Dragged'])).toEqual([55])
+  })
+
+  test('resizing a node snaps its right edge onto a neighbour’s', async ({
+    comfyPage
+  }) => {
+    await comfyPage.workflow.loadWorkflow('smartGuides/two_notes')
+    const dragged = await comfyPage.nodeOps.getNodeRefByTitle('Dragged')
+    const rightEdge = async () => {
+      const { x, width } = await dragged.getBounding()
+      return Math.round(x + width)
+    }
+    const { x, y, width, height } = await dragged.getBounding()
+    const corner: [number, number] = [x + width - 3, y + height - 3]
+
+    await comfyPage.canvasOps.dragAndDrop(
+      await comfyPage.canvasOps.canvasPosToClientPos(corner),
+      await comfyPage.canvasOps.canvasPosToClientPos([
+        corner[0] + 380 - (x + width),
+        corner[1]
+      ])
+    )
+
+    await expect.poll(rightEdge).toBe(375)
+  })
+})
