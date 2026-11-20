@@ -533,12 +533,53 @@ jobs:
             fi
           fi
 
+      # A draft PR is invisible to review. Nothing in this workflow ever cleared
+      # the draft flag, so every pin bump waited on somebody noticing it by hand:
+      # #17329 sat 2d22h, #17375 1d1h, #17442 3d13h, and #17553 was still a draft
+      # 10h after its release published while the stranded-commits check failed
+      # hourly saying stable users did not have the fixes. Draft dwell was the
+      # dominant term in reach lag every cycle, and review itself was fast once
+      # the flag came off. Only clear it when PyPI is confirmed: an unconfirmed
+      # version's CI legitimately fails until the index catches up, and the draft
+      # is the right state for that.
+      - name: Mark the bump PR ready for review
+        if: steps.create-pr.outputs.skipped != 'true' && needs.publish-pypi.outputs.pypi_confirmed == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+          COMFYUI_FORK: ${{ inputs.comfyui_fork || 'Comfy-Org/ComfyUI' }}
+        run: |
+          set -euo pipefail
+
+          FORK_OWNER=$(echo "$COMFYUI_FORK" | cut -d'/' -f1)
+          BRANCH="automation/comfyui-frontend-bump"
+
+          NODE_ID=$(gh api "repos/Comfy-Org/ComfyUI/pulls?state=open&head=${FORK_OWNER}:${BRANCH}" \
+            --jq '[.[] | select(.head.repo == null or .head.repo.full_name == env.COMFYUI_FORK)][0]
+              | select(. != null) | .node_id')
+          if [ -z "$NODE_ID" ]; then
+            echo "::warning title=No open bump PR::Could not find an open bump PR for ${BRANCH}; nothing to mark ready."
+            exit 0
+          fi
+
+          # REST cannot clear the draft flag — `pulls` PATCH ignores `draft` — and
+          # `gh pr ready` resolves the repo through an org lookup that PR_GH_TOKEN
+          # has no read:org scope for (FRONT-3357). The GraphQL mutation needs
+          # neither, and is a no-op on a PR that is already ready.
+          gh api graphql -f query='
+            mutation($id: ID!) {
+              markPullRequestReadyForReview(input: { pullRequestId: $id }) {
+                pullRequest { number isDraft }
+              }
+            }' -F id="$NODE_ID" --jq '.data.markPullRequestReadyForReview.pullRequest
+              | "PR #\(.number) isDraft=\(.isDraft)"'
+
       - name: Summary
         if: steps.create-pr.outputs.skipped != 'true'
         run: |
           echo "## ComfyUI PR Created" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Draft PR created in Comfy-Org/ComfyUI" >> $GITHUB_STEP_SUMMARY
+          echo "PR created in Comfy-Org/ComfyUI (marked ready for review once PyPI is confirmed)" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### PR Body:" >> $GITHUB_STEP_SUMMARY
           cat pr-body.txt >> $GITHUB_STEP_SUMMARY
