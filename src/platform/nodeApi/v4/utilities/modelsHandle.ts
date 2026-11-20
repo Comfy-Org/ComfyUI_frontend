@@ -2,7 +2,7 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { ModelsHandle } from '@/platform/nodeApi/v4/types'
 import { api } from '@/scripts/api'
 
-import { textFieldOfEach } from './jsonValues'
+import { textFieldOfEach } from './serverReplies'
 
 export function createModelsHandle(): ModelsHandle {
   const models: ModelsHandle = {

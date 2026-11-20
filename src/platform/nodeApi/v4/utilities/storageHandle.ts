@@ -2,7 +2,7 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { api } from '@/scripts/api'
 
 import type { StorageHandle, StoredText } from '@/platform/nodeApi/v4/types'
-import { textFieldOfEach } from './jsonValues'
+import { textFieldOfEach } from './serverReplies'
 import { isText } from './packArguments'
 
 const NOT_READ: StoredText = Object.freeze({ ok: false })
