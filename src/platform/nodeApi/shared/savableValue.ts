@@ -90,27 +90,14 @@ function copyOf(
 ): unknown {
   if (typeof value !== 'object' || value === null) return primitive(value, path)
   if (walk.isLeaf(value)) return value
-  const isList = Array.isArray(value)
-  if ((!isList && !isPlainData(value)) || ancestors.has(value)) {
-    throw new Unsavable(path, value)
-  }
-  if (ancestors.size === MAX_DEPTH) throw new Unsavable(path, value, true)
-  ancestors.add(value)
+  const isList = enterContainer(value, path, ancestors)
   const copy: Record<string, unknown> = isList ? Object.assign([]) : {}
-  const keys = Object.keys(value)
-  if (isList && !holdsOnlyItems(value, keys)) {
-    throw new Unsavable(path, value, false, LIST)
-  }
-  for (const key of keys) {
+  for (const key of Object.keys(value)) {
     const fieldPath = isList ? `${path}[${key}]` : `${path}.${key}`
     const field = ownValue(value, key, fieldPath)
     if (field === undefined && walk.asSaved && !isList) continue
-    const item =
-      field === undefined && walk.asSaved
-        ? null
-        : copyOf(field, fieldPath, ancestors, walk)
     Object.defineProperty(copy, key, {
-      value: item,
+      value: copiedField(field, fieldPath, ancestors, walk),
       enumerable: true,
       writable: true,
       configurable: true
@@ -118,6 +105,34 @@ function copyOf(
   }
   ancestors.delete(value)
   return copy
+}
+
+function enterContainer(
+  value: object,
+  path: string,
+  ancestors: Set<object>
+): boolean {
+  const isList = Array.isArray(value)
+  if ((!isList && !isPlainData(value)) || ancestors.has(value)) {
+    throw new Unsavable(path, value)
+  }
+  if (ancestors.size === MAX_DEPTH) throw new Unsavable(path, value, true)
+  if (isList && !holdsOnlyItems(value, Object.keys(value))) {
+    throw new Unsavable(path, value, false, LIST)
+  }
+  ancestors.add(value)
+  return isList
+}
+
+function copiedField(
+  field: unknown,
+  path: string,
+  ancestors: Set<object>,
+  walk: Walk
+): unknown {
+  return field === undefined && walk.asSaved
+    ? null
+    : copyOf(field, path, ancestors, walk)
 }
 
 function holdsOnlyItems(list: readonly unknown[], keys: string[]): boolean {
