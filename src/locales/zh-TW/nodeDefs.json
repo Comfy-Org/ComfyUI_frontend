@@ -7475,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "為文字、影像、音訊或影片選擇其中一個選項。將 `choice` 連接至輸入承載選項名稱的 Branch 節點，或使用 `option_index`。",
+    "display_name": "Google Gemini 決策（選擇）",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "選用作為模型情境的音訊片段。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "選用作為模型情境的影像。最多 16 張影像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "options": {
+        "name": "選項",
+        "tooltip": "每行一個選項，會完全依照輸入內容使用。對於不符合任何選項的輸入，請加入如 `other` 的選項。"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "選項所回答的問題。若有多個輸入，請使用插槽名稱，例如「image_1 中顯示的是哪個季節？」"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所針對的文字，例如提示詞或 LLM 回應。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "選用作為模型情境的影片片段。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選擇",
+        "tooltip": null
+      },
+      "1": {
+        "name": "選項索引",
+        "tooltip": "所選選項在選項清單中的位置，從 0 開始。"
+      },
+      "2": {
+        "name": "信心程度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "從批次中挑選一張影像。將 `index` 連接至 Get Image from Batch 以保留挑選的影像。",
+    "display_name": "Google Gemini 決策（挑選影像）",
+    "inputs": {
+      "images": {
+        "name": "影像",
+        "tooltip": "可供選擇的影像，數量為 2 至 64 張。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "要挑選哪張影像。將提示詞連接至 `text`，以挑選最符合提示詞的影像。"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所針對的文字，例如影像生成時使用的提示詞。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "索引",
+        "tooltip": null
+      },
+      "1": {
+        "name": "信心程度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "為文字、影像、音訊或影片評分，範圍為 1 至 10。將 `result` 連接至 If/Else Switch 節點，以根據分數執行動作。",
+    "display_name": "Google Gemini 決策（評分）",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "可選的音訊片段，用作模型的上下文。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "選用作為模型情境的影像。最多 16 張影像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "要評分的項目，量表範圍為 1 至 10。請如範例所示，說明 1 和 10 分別代表什麼意思。"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所針對的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "當分數至少為此值時，`result` 為 true。乾淨、清晰的影像約為 7 至 8 分，嚴重損壞的影像約為 3 至 5 分。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "可選的影片片段，用作模型的上下文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "分數",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "針對文字、影像、音訊或影片提出是／否問題。將 `result` 連接至 If/Else Switch 節點，以在兩條路徑之間選擇。",
+    "display_name": "Google Gemini 決策（是／否）",
+    "inputs": {
+      "audio": {
+        "name": "音訊",
+        "tooltip": "可選的音訊片段，用作模型的上下文。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "可選的影像，用作模型的上下文。最多 16 張影像。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "針對已連接內容提出可回答「是」或「否」的問題。請將問題設計為「是」代表您要採取的情況。有多個輸入時，請使用插槽名稱，例如「image_2 是否顯示與 image_1 相同的人？」"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所針對的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "當「是」的機率至少達到此值時，答案為「是」。明確的「是」答案分數約為 0.85 至 0.92，因此設為 0.9 或更高會排除其中許多答案。"
+      },
+      "video": {
+        "name": "影片",
+        "tooltip": "可選的影片片段，用作模型的上下文。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "機率",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "透過 Google Vertex API 同步產生或編輯影像。",
     "display_name": "Nano Banana Pro（Google Gemini Image）",
@@ -8757,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "為文字、影像、音訊或影片選擇其中一個選項。將 `choice` 連接至輸入帶有選項名稱的 Branch 節點，或使用 `option_index`。",
+    "display_name": "HeyGen 決策（選擇）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "音訊最長 30 分鐘。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "總計最多 4 張影像，批次中的每個影格皆會計入。它們會依插槽順序編號為 image_1 至 image_4，因此第一個插槽中有 2 張的批次會是 image_1 和 image_2。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "options": {
+        "name": "選項",
+        "tooltip": "每行一個選項，會完全依照輸入的內容使用。針對不符合任何選項的輸入，請新增如 `other` 的選項。"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "選項所回答的問題。有多個輸入時，請以 image_1、image_2、audio_1 或 video_1 稱呼它們，例如「image_1 顯示的是哪個季節？」"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所針對的文字，例如提示詞或 LLM 回應。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "影片最長 60 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選擇",
+        "tooltip": null
+      },
+      "1": {
+        "name": "選項索引",
+        "tooltip": "所選選項在選項清單中的位置，從 0 開始。"
+      },
+      "2": {
+        "name": "信心度",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "為文字、影像、音訊或影片評分，範圍為 1 至 10。將 `result` 連接至 If/Else Switch 節點，以根據分數採取動作。",
+    "display_name": "HeyGen 決策（評分）",
+    "inputs": {
+      "audio_1": {
+        "name": "音訊_1",
+        "tooltip": "音訊最長 30 分鐘。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "總計最多 4 張影像，批次中的每個影格也會計入。它們會依各插槽的順序編號為 image_1 至 image_4，因此第一個插槽中有 2 張的批次會是 image_1 和 image_2。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "要評分的項目，評分範圍為 1 至 10。如範例所示，請說明 1 與 10 各代表什麼。"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所針對的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "當分數至少達到此值時，`result` 為 true。乾淨、清晰的影像約為 7 分，嚴重受損的影像約為 3 至 5 分。"
+      },
+      "video_1": {
+        "name": "影片_1",
+        "tooltip": "影片最長 60 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "分數",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "針對文字、影像、音訊或影片提出是／否問題。將 `result` 連接至 If/Else Switch 節點，以在兩個路徑之間選擇。",
+    "display_name": "HeyGen 決策（是／否）",
+    "inputs": {
+      "audio_1": {
+        "name": "音訊_1",
+        "tooltip": "音訊最長 30 分鐘。"
+      },
+      "images": {
+        "name": "影像",
+        "tooltip": "總計最多 4 張影像，批次中的每個影格也會計入。它們會依各插槽的順序編號為 image_1 至 image_4，因此第一個插槽中有 2 張的批次會是 image_1 和 image_2。"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "question": {
+        "name": "問題",
+        "tooltip": "針對已連接內容提出可用是或否回答的問題。請將問題設計為「是」代表要採取動作的情況。若有多個輸入，請分別以 image_1、image_2、audio_1 或 video_1 指稱，例如「image_2 是否與 image_1 顯示同一人？」"
+      },
+      "text": {
+        "name": "文字",
+        "tooltip": "問題所針對的文字，例如提示詞或 LLM 回應。"
+      },
+      "threshold": {
+        "name": "閾值",
+        "tooltip": "當「是」的機率至少達到此值時，答案為是。明確的答案會接近 0 或 1。"
+      },
+      "video_1": {
+        "name": "影片_1",
+        "tooltip": "影片最長 60 秒。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "答案",
+        "tooltip": null
+      },
+      "2": {
+        "name": "機率",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "使用 HeyGen Video 1.0 將圖像製作成具有同步對話與聲音的影片。該圖像會作為第一個影格使用。",
     "display_name": "HeyGen Video 1.0 圖像轉影片",
@@ -8984,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "從單一說話者的錄音複製聲音，並使用 HeyGen Voice 1.0 以該聲音朗讀文字。",
+    "display_name": "HeyGen Voice 1.0 即時複製文字轉語音",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後控制"
+      },
+      "model": {
+        "name": "模型"
+      },
+      "model_expressiveness_boost": {
+        "name": "表現力增強"
+      },
+      "model_language": {
+        "name": "語言"
+      },
+      "model_recording_language": {
+        "name": "錄音語言"
+      },
+      "model_remove_background_noise": {
+        "name": "移除背景雜訊"
+      },
+      "model_seed": {
+        "name": "種子"
+      },
+      "model_similarity": {
+        "name": "相似度"
+      },
+      "model_text": {
+        "name": "文字"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "以透過 HeyGen Voice 1.0 即時複製的聲音朗讀文字。",
+    "description": "使用 HeyGen Voice 1.0 以 HeyGen 聲音朗讀文字。若要使用從錄音複製的聲音朗讀，請使用 HeyGen Voice 1.0 Instant Clone Text to Speech。",
     "display_name": "HeyGen Voice 1.0 文字轉語音",
     "inputs": {
       "model": {
@@ -16456,6 +16799,9 @@
         "name": "模型",
         "tooltip": "要使用的模型。"
       },
+      "model_auto_downscale": {
+        "name": "自動縮小"
+      },
       "model_negative_prompt": {
         "name": "負面提示詞"
       },
@@ -23489,15 +23835,15 @@
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "包圍盒高度（Z 軸）。"
+        "tooltip": "邊界框高度（垂直）。"
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "包圍盒長度（X 軸）。"
+        "tooltip": "邊界框長度（前後）。"
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "包圍盒寬度（Y 軸）。與其他設為 0 可跳過包圍盒。"
+        "tooltip": "邊界框寬度（左右）。與其他值一同設為 0，即可略過邊界框。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -23570,15 +23916,15 @@
       },
       "bbox_height": {
         "name": "包圍盒高度",
-        "tooltip": "包圍盒高度（Z 軸）。"
+        "tooltip": "邊界框高度（垂直）。"
       },
       "bbox_length": {
         "name": "包圍盒長度",
-        "tooltip": "包圍盒長度（X 軸）。"
+        "tooltip": "邊界框長度（前後）。"
       },
       "bbox_width": {
         "name": "包圍盒寬度",
-        "tooltip": "包圍盒寬度（Y 軸）。與其他設為 0 可跳過包圍盒。"
+        "tooltip": "邊界框寬度（左右）。與其他值一同設為 0，即可略過邊界框。"
       },
       "control_after_generate": {
         "name": "生成後控制"

@@ -7475,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "Wählen Sie eine Ihrer Optionen für Text, Bilder, Audio oder Video aus. Verbinden Sie `choice` mit einem Branch-Node, dessen Eingänge die Optionsnamen enthalten, oder verwenden Sie `option_index`.",
+    "display_name": "Google Gemini-Entscheidung (Auswahl)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Optionaler Audio-Clip, der als Kontext für das Modell verwendet wird."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optionale(s) Bild(er), die als Kontext für das Modell verwendet werden. Bis zu 16 Bilder."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Eine Option pro Zeile, genau wie eingegeben verwendet. Fügen Sie für Eingänge, auf die keine davon zutrifft, eine Option wie `other` hinzu."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Die Frage, die durch die Optionen beantwortet wird. Verwenden Sie bei mehreren Eingängen die Socket-Namen, zum Beispiel „Welche Jahreszeit ist in image_1 zu sehen?“"
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, etwa ein Prompt oder eine LLM-Antwort."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Optionaler Video-Clip, der als Kontext für das Modell verwendet wird."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Position der ausgewählten Option in der Optionsliste, beginnend bei 0."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "Wählen Sie ein Bild aus einem Batch aus. Verbinden Sie `index` mit „Get Image from Batch“, um das ausgewählte Bild beizubehalten.",
+    "display_name": "Google Gemini-Entscheidung (Bild auswählen)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Die Bilder zur Auswahl, 2 bis 64."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Welches Bild ausgewählt werden soll. Verbinden Sie den Prompt mit `text`, um das Bild auszuwählen, das am besten dazu passt."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, etwa der Prompt, mit dem die Bilder erstellt wurden."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": null
+      },
+      "1": {
+        "name": "confidence",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "Bewerten Sie Text, Bilder, Audio oder Video von 1 bis 10. Verbinden Sie `result` mit einem If/Else-Switch-Node, um anhand der Bewertung zu handeln.",
+    "display_name": "Google Gemini-Entscheidung (Bewertung)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Optionaler Audioclip, der dem Modell als Kontext dient."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Optionale(s) Bild(er), die als Kontext für das Modell verwendet werden. Bis zu 16 Bilder."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Was auf einer Skala von 1 bis 10 bewertet werden soll. Geben Sie wie im Beispiel an, was 1 und 10 bedeuten."
+      },
+      "text": {
+        "name": "Text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, z. B. ein Prompt oder eine LLM-Antwort."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "`result` ist true, wenn die Bewertung mindestens diesem Wert entspricht. Saubere, scharfe Bilder erreichen etwa 7 bis 8, stark beschädigte etwa 3 bis 5."
+      },
+      "video": {
+        "name": "Video",
+        "tooltip": "Optionaler Videoclip, der dem Modell als Kontext dient."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Ergebnis",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Score",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "Stellen Sie eine Ja/Nein-Frage zu Text, Bildern, Audio oder Video. Verbinden Sie `result` mit einem If/Else Switch-Node, um zwischen zwei Pfaden zu wählen.",
+    "display_name": "Google Gemini-Entscheidung (Ja/Nein)",
+    "inputs": {
+      "audio": {
+        "name": "Audio",
+        "tooltip": "Optionaler Audioclip, der dem Modell als Kontext dient."
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Optionale Bilder, die dem Modell als Kontext dienen. Bis zu 16 Bilder."
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "question": {
+        "name": "Frage",
+        "tooltip": "Eine Frage mit einer Ja- oder Nein-Antwort zu den verbundenen Eingaben. Formulieren Sie sie so, dass „Ja“ der Fall ist, bei dem Sie aktiv werden. Verwenden Sie bei mehreren Eingaben die Socket-Namen, zum Beispiel „Zeigt image_2 dieselbe Person wie image_1?“"
+      },
+      "text": {
+        "name": "Text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, z. B. ein Prompt oder eine LLM-Antwort."
+      },
+      "threshold": {
+        "name": "Schwellenwert",
+        "tooltip": "Die Antwort lautet „Ja“, wenn die Wahrscheinlichkeit für „Ja“ mindestens diesem Wert entspricht. Eindeutige Ja-Antworten erreichen einen Score von etwa 0,85 bis 0,92; 0,9 oder mehr weist daher viele davon zurück."
+      },
+      "video": {
+        "name": "Video",
+        "tooltip": "Optionaler Videoclip, der dem Modell als Kontext dient."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Ergebnis",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Antwort",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Wahrscheinlichkeit",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Bilder synchron über die Google Vertex API generieren oder bearbeiten.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -8757,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "Wählen Sie eine Ihrer Optionen für Text, Bilder, Audio oder Video. Verbinden Sie `choice` mit einem Branch-Node, dessen Eingänge die Optionsnamen tragen, oder verwenden Sie `option_index`.",
+    "display_name": "HeyGen-Entscheidung (Auswahl)",
+    "inputs": {
+      "audio_1": {
+        "name": "Audio_1",
+        "tooltip": "Audio mit einer Dauer von bis zu 30 Minuten."
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Insgesamt bis zu 4 Bilder, wobei jedes Frame eines Batch mitgezählt wird. Sie werden socketübergreifend der Reihe nach von image_1 bis image_4 nummeriert; ein Batch mit 2 Bildern am ersten Socket entspricht also image_1 und image_2."
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "options": {
+        "name": "Optionen",
+        "tooltip": "Eine Option pro Zeile, genau wie eingegeben verwendet. Fügen Sie für Eingaben, auf die keine der Optionen zutrifft, eine Option wie `other` hinzu."
+      },
+      "question": {
+        "name": "Frage",
+        "tooltip": "Die Frage, die durch die Optionen beantwortet wird. Beziehen Sie sich bei mehreren Eingaben auf diese als image_1, image_2, audio_1 oder video_1, zum Beispiel „Welche Jahreszeit wird in image_1 gezeigt?“"
+      },
+      "text": {
+        "name": "Text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, z. B. ein Prompt oder eine LLM-Antwort."
+      },
+      "video_1": {
+        "name": "Video_1",
+        "tooltip": "Video mit einer Dauer von bis zu 60 Sekunden."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Auswahl",
+        "tooltip": null
+      },
+      "1": {
+        "name": "optionsindex",
+        "tooltip": "Position der ausgewählten Option in der Optionsliste, beginnend bei 0."
+      },
+      "2": {
+        "name": "Konfidenz",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "Bewerten Sie Text, Bilder, Audio oder Video von 1 bis 10. Verbinden Sie `result` mit einem If/Else-Switch-Node, um anhand der Bewertung zu handeln.",
+    "display_name": "HeyGen-Entscheidung (Bewertung)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio mit einer Dauer von bis zu 30 Minuten."
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Insgesamt bis zu 4 Bilder, wobei jedes Frame eines Batch gezählt wird. Sie werden socketübergreifend der Reihe nach von image_1 bis image_4 nummeriert. Ein Batch mit 2 Bildern am ersten Socket entspricht also image_1 und image_2."
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "question": {
+        "name": "Frage",
+        "tooltip": "Was bewertet werden soll, auf einer Skala von 1 bis 10. Geben Sie an, was 1 und 10 bedeuten, wie im Beispiel."
+      },
+      "text": {
+        "name": "Text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, beispielsweise ein Prompt oder eine LLM-Antwort."
+      },
+      "threshold": {
+        "name": "Schwellenwert",
+        "tooltip": "`result` ist wahr, wenn die Bewertung mindestens diesem Wert entspricht. Saubere, scharfe Bilder erreichen etwa 7, stark beschädigte etwa 3 bis 5."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Video mit einer Dauer von bis zu 60 Sekunden."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Ergebnis",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Bewertung",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "Stellen Sie eine Ja/Nein-Frage zu Text, Bildern, Audio oder Video. Verbinden Sie `result` mit einem If/Else-Switch-Node, um zwischen zwei Pfaden zu wählen.",
+    "display_name": "HeyGen-Entscheidung (Ja/Nein)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "Audio mit einer Dauer von bis zu 30 Minuten."
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Insgesamt bis zu 4 Bilder, wobei jedes Frame eines Batch gezählt wird. Sie werden socketübergreifend der Reihe nach von image_1 bis image_4 nummeriert. Ein Batch mit 2 Bildern am ersten Socket entspricht also image_1 und image_2."
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "question": {
+        "name": "Frage",
+        "tooltip": "Eine Frage mit einer Ja- oder Nein-Antwort zu den verbundenen Inhalten. Formulieren Sie sie so, dass „Ja“ der Fall ist, auf den Sie reagieren. Beziehen Sie sich bei mehreren Eingaben beispielsweise als image_1, image_2, audio_1 oder video_1 auf sie: „Zeigt image_2 dieselbe Person wie image_1?“"
+      },
+      "text": {
+        "name": "Text",
+        "tooltip": "Der Text, auf den sich die Frage bezieht, beispielsweise ein Prompt oder eine LLM-Antwort."
+      },
+      "threshold": {
+        "name": "Schwellenwert",
+        "tooltip": "Die Antwort lautet Ja, wenn die Wahrscheinlichkeit für Ja mindestens diesem Wert entspricht. Eindeutige Antworten liegen nahe bei 0 oder 1."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "Video mit einer Dauer von bis zu 60 Sekunden."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Ergebnis",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Antwort",
+        "tooltip": null
+      },
+      "2": {
+        "name": "Wahrscheinlichkeit",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "Animiert ein Bild mit synchronisierten Dialogen und Ton mithilfe von HeyGen Video 1.0 zu einem Video. Das Bild wird als erstes Frame verwendet.",
     "display_name": "HeyGen Video 1.0 Bild zu Video",
@@ -8984,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "Klonen Sie eine Stimme aus der Aufnahme eines einzelnen Sprechers und lassen Sie mit HeyGen Voice 1.0 Text damit sprechen.",
+    "display_name": "HeyGen Voice 1.0 Instant Clone Text zu Sprache",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "Modell"
+      },
+      "model_expressiveness_boost": {
+        "name": "expressiveness_boost"
+      },
+      "model_language": {
+        "name": "Sprache"
+      },
+      "model_recording_language": {
+        "name": "Aufnahmesprache"
+      },
+      "model_remove_background_noise": {
+        "name": "Hintergrundgeräusche entfernen"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_similarity": {
+        "name": "Ähnlichkeit"
+      },
+      "model_text": {
+        "name": "Text"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "Spricht Text mit einer durch HeyGen Voice 1.0 Instant Clone geklonten Stimme.",
+    "description": "Lassen Sie Text mit HeyGen Voice 1.0 in einer HeyGen-Stimme sprechen. Um mit einer aus einer Aufnahme geklonten Stimme zu sprechen, verwenden Sie HeyGen Voice 1.0 Instant Clone Text to Speech.",
     "display_name": "HeyGen Voice 1.0 Text to Speech",
     "inputs": {
       "model": {
@@ -16456,6 +16799,9 @@
         "name": "Modell",
         "tooltip": "Zu verwendendes Modell."
       },
+      "model_auto_downscale": {
+        "name": "auto_downscale"
+      },
       "model_negative_prompt": {
         "name": "Negativer Prompt"
       },
@@ -23489,15 +23835,15 @@
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "Höhe der Bounding Box (Z-Achse)."
+        "tooltip": "Höhe der Bounding Box (vertikal)."
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "Länge der Bounding Box (X-Achse)."
+        "tooltip": "Länge der Bounding Box (von vorne nach hinten)."
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "Breite der Bounding Box (Y-Achse). Zusammen mit den anderen Werten auf 0 setzen, um bbox zu überspringen."
+        "tooltip": "Breite der Bounding Box (von Seite zu Seite). Setzen Sie diesen Wert zusammen mit den anderen auf 0, um die Bounding Box zu überspringen."
       },
       "control_after_generate": {
         "name": "Steuerung nach Generierung"
@@ -23570,15 +23916,15 @@
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "Höhe der Bounding Box (Z-Achse)."
+        "tooltip": "Höhe der Bounding Box (vertikal)."
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "Länge der Bounding Box (X-Achse)."
+        "tooltip": "Länge der Bounding Box (von vorne nach hinten)."
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "Breite der Bounding Box (Y-Achse). Setzen Sie diesen Wert zusammen mit den anderen auf 0, um bbox zu überspringen."
+        "tooltip": "Breite der Bounding Box (von Seite zu Seite). Setzen Sie diesen Wert zusammen mit den anderen auf 0, um die Bounding Box zu überspringen."
       },
       "control_after_generate": {
         "name": "Steuerung nach Generierung"

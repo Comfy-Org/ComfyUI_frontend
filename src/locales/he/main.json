@@ -373,6 +373,14 @@
         "title": "שאל שאלה או תאר שינוי."
       }
     },
+    "queue": {
+      "cancelEdit": "ביטול",
+      "collapse": "הסתרת הודעות בתור",
+      "delete": "מחיקת הודעה בתור",
+      "edit": "עריכת הודעה בתור",
+      "expand": "הצגת הודעות בתור",
+      "queued": "{count} הודעות בתור"
+    },
     "recoveredTurnFailed": "הסוכן לא הצליח להשלים את התגובה הזו.",
     "reference": "הפניה",
     "remove": "הסר",
@@ -1823,12 +1831,19 @@
     "workspaceDefault": "ברירת מחדל של סביבת העבודה"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "תיבת דו-שיח לאישור תשאל אם לחבר את אפליקציית שולחן העבודה של ComfyUI לחשבונך. אשרו זאת רק אם זה עתה התחלתם להיכנס מאפליקציית שולחן העבודה של ComfyUI; אחרת, בטלו.",
+    "approvalPendingSummary": "בקשת כניסה מאפליקציית שולחן העבודה",
     "confirmMessage": "אפליקציית ComfyUI במחשב ממתינה לכניסה עם החשבון שלך. המשך רק אם התחלת כעת את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
     "confirmSummary": "לאשר כניסה משולחן העבודה?",
+    "continueToCloud": "המשך אל Comfy Cloud במקום זאת",
+    "declinedDetail": "אפליקציית שולחן העבודה של ComfyUI לא חוברה לחשבונך. אם התכוונת לאשר זאת, התחילו שוב את תהליך הכניסה מאפליקציית שולחן העבודה.",
+    "declinedSummary": "הכניסה מאפליקציית שולחן העבודה בוטלה",
     "expiredDetail": "בקשת הכניסה פגה או כבר נוצלה. יש להתחיל מחדש את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
     "expiredSummary": "הכניסה משולחן העבודה נכשלה",
     "failedDetail": "אירעה שגיאה במהלך השלמת הכניסה משולחן העבודה. יש להתחיל מחדש את תהליך הכניסה מאפליקציית ComfyUI במחשב.",
     "failedSummary": "הכניסה משולחן העבודה נכשלה",
+    "redeemingDetail": "מחבר את אפליקציית שולחן העבודה של ComfyUI לחשבונך.",
+    "redeemingSummary": "השלמת הכניסה מאפליקציית שולחן העבודה",
     "ssoUnavailableDetail": "החשבון שלך נכנס דרך ה-SSO של הארגון שלך, שבו יישום שולחן העבודה של ComfyUI עדיין אינו יכול להשתמש. בקש מהמנהל שלך דרך אחרת להיכנס ליישום שולחן העבודה.",
     "ssoUnavailableSummary": "כניסה לשולחן העבודה עדיין אינה זמינה עבור חשבונות SSO",
     "successDetail": "ניתן לחזור לאפליקציית ComfyUI במחשב.",
@@ -4150,6 +4165,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "חלופות תואמות",
+    "deprecatedNodesLabel": "ניתן להחליף צמתים שהוצאו משימוש",
+    "deprecatedNodesMessage": "צמתים אלה עדיין פועלים, אך קיימים להם תחליפים חדשים יותר. החלפתם מעדכנת את תהליך העבודה.",
+    "deprecatedNodesTitle": "צמתים שהוצאו משימוש",
     "installMissingNodes": "התקנת הצמתים החסרים",
     "installationRequired": "נדרשת התקנה",
     "instructionMessage": "עליך להתקין צמתים אלו או להחליף אותם בחלופות מותקנות כדי להריץ את תהליך העבודה. צמתים חסרים מודגשים ב{red} בקנבס. חלק מהצמתים אינם ניתנים להחלפה ויש להתקינם דרך מנהל הצמתים.",
@@ -4361,6 +4379,7 @@
     "deploySetup": "פרסו את ההגדרה שלכם ל-Comfy Cloud",
     "deploySetupDialog": {
       "body": "פרסו את ההגדרה המקומית שלכם ל-Comfy Cloud כ-Build, ולאחר מכן השתמשו בה ב-ComfyUI או קראו לה כ-API בעל התאמה אוטומטית לעומס.",
+      "platformTabBlocked": "תהליך העבודה נשמר. לחצו שוב על פרסום בפלטפורמה כדי להמשיך.",
       "pointGpu": "הפעילו על מעבדי GPU עוצמתיים בענן",
       "pointNodes": "הביאו את הצמתים והמודלים המותאמים אישית שלכם",
       "pointPricing": "שלמו רק בזמן שעובדי ה-GPU שלכם פעילים, בתוספת אחסון",
@@ -4368,8 +4387,11 @@
     },
     "deployWithAgent": "פריסה באמצעות הסוכן שלכם",
     "desktopTransferFailed": "לא ניתן היה להעביר את תהליך העבודה שלכם. לחצו שוב על Open on Comfy Cloud ב-Desktop.",
+    "desktopTransferRetry": "לא ניתן היה לאמת העברה זו. טענו מחדש את הלשונית הזו כדי לנסות שוב.",
+    "desktopTransferUnavailable": "האפשרות פתיחה ב-Comfy Cloud אינה זמינה כעת עבור עורך זה.",
     "downloaded": "תהליך העבודה הורד",
     "downloadedDetail": "גררו אותו אל Comfy Cloud בדפדפן שלכם כדי לפתוח אותו שם.",
+    "emptyWorkflow": "בתהליך עבודה זה אין צמתים להפעלה. הוסיפו צמתים ושמרו אותו, ולאחר מכן נסו שוב.",
     "handoffFailed": "לא ניתן היה לפתוח את תהליך העבודה מ-ComfyUI במחשב שלכם",
     "handoffMissing": "תהליך העבודה שלכם לא הגיע",
     "handoffMissingDetail": "ComfyUI מפסיק להמתין לאחר 10 דקות. לחצו שוב על Open on Comfy Cloud ב-ComfyUI.",
@@ -4388,7 +4410,9 @@
       "openOnCloud": "פתח ב-Comfy Cloud",
       "ready": "ב-Comfy Cloud קיימים כל הצמתים והמודלים שבהם תהליך העבודה הזה משתמש. הוא ייפתח בלשונית חדשה, מוכן להפעלה.",
       "title": "הפעל ב-Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "לא ניתן היה לאמת את הגישה אל Comfy Cloud",
+    "verifyAccessFailedDetail": "אם הלחצן Cloud עדיין זמין, בחרו שוב באפשרות פתיחה ב-Comfy Cloud."
   },
   "openSharedWorkflow": {
     "author": "יוצר:",

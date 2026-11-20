@@ -7475,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "テキスト、画像、音声、動画に対する選択肢を1つ選びます。`choice` を、入力が選択肢名になっている Branch ノードに接続するか、`option_index` を使用します。",
+    "display_name": "Google Gemini 判定（選択）",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "モデルのコンテキストとして使用する任意の音声クリップです。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "モデルのコンテキストとして使用する任意の画像です。最大16枚。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "options": {
+        "name": "選択肢",
+        "tooltip": "1行につき1つの選択肢を入力し、入力どおりにそのまま使用されます。どれにも当てはまらない入力のために、`other` などの選択肢を追加します。"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選択肢が答える質問です。複数の入力がある場合は、たとえば「image_1 にはどの季節が写っていますか？」のようにソケット名を使用します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキストです。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "モデルのコンテキストとして使用する任意の動画クリップです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選択",
+        "tooltip": null
+      },
+      "1": {
+        "name": "選択肢インデックス",
+        "tooltip": "選択された選択肢の options リスト内での位置です。0から始まります。"
+      },
+      "2": {
+        "name": "信頼度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "バッチから画像を1枚選びます。選んだ画像を保持するには、`index` を Get Image from Batch に接続します。",
+    "display_name": "Google Gemini 判定（画像を選択）",
+    "inputs": {
+      "images": {
+        "name": "画像",
+        "tooltip": "選択対象の画像です。2～64枚。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "どの画像を選ぶかを指定します。最も一致する画像を選ぶには、プロンプトを `text` に接続します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "画像の作成に使用したプロンプトなど、質問の対象となるテキストです。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "インデックス",
+        "tooltip": null
+      },
+      "1": {
+        "name": "信頼度",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "テキスト、画像、音声、動画を1～10で評価します。スコアに応じて動作させるには、`result` を If/Else Switch ノードに接続します。",
+    "display_name": "Google Gemini 判定（スコア）",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "モデルのコンテキストとして使用する任意の音声クリップ。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "モデルのコンテキストとして使用する任意の画像です。最大16枚。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "1～10の尺度で評価する対象です。例のように、1と10が何を意味するかを指定してください。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトやLLMの応答など、質問の対象となるテキスト。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "スコアがこの値以上の場合、`result` は true になります。きれいで鮮明な画像はおよそ7～8、ひどく損傷した画像はおよそ3～5です。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "モデルのコンテキストとして使用する任意の動画クリップ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "スコア",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "テキスト、画像、音声、または動画について、はい／いいえで答えられる質問をします。`result` を If/Else Switch ノードに接続して、2つのパスから選択します。",
+    "display_name": "Google Gemini 判定（はい／いいえ）",
+    "inputs": {
+      "audio": {
+        "name": "音声",
+        "tooltip": "モデルのコンテキストとして使用する任意の音声クリップ。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "モデルのコンテキストとして使用する任意の画像。最大16枚。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "接続されている内容について、はいまたはいいえで答えられる質問です。実行したいケースが「はい」になるように質問してください。複数の入力がある場合は、たとえば「Does image_2 show the same person as image_1?」のようにソケット名を使用します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトやLLMの応答など、質問の対象となるテキスト。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "「はい」の確率がこの値以上の場合、回答は「はい」になります。明確な「はい」の回答は約0.85～0.92のスコアになるため、0.9以上にするとその多くが除外されます。"
+      },
+      "video": {
+        "name": "動画",
+        "tooltip": "モデルのコンテキストとして使用する任意の動画クリップ。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "回答",
+        "tooltip": null
+      },
+      "2": {
+        "name": "確率",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Google Vertex API を通じて画像を同期的に生成または編集します。",
     "display_name": "Nano Banana Pro（Google Gemini Image）",
@@ -8757,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "テキスト、画像、音声、または動画に対して、選択肢の中から1つを選びます。`choice` を、入力に選択肢名を持つ Branch ノードに接続するか、`option_index` を使用します。",
+    "display_name": "HeyGen 判定（選択）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "最大30分の音声。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "バッチのすべてのフレームを数えて、合計で最大4枚の画像。画像はソケット全体で順に image_1 から image_4 として番号付けされるため、最初のソケットに2枚のバッチがある場合は image_1 と image_2 になります。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "options": {
+        "name": "選択肢",
+        "tooltip": "1行につき1つの選択肢を入力し、入力どおりに使用されます。いずれにも当てはまらない入力用に、`other` などの選択肢を追加してください。"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "選択肢が答える質問です。複数の入力がある場合は、たとえば「Which season is shown in image_1?」のように、image_1、image_2、audio_1、video_1 として参照します。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトやLLMの応答など、質問の対象となるテキスト。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "最大60秒の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "選択肢",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "選択した選択肢の、オプション一覧内での位置（0から開始）。"
+      },
+      "2": {
+        "name": "信頼度",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "テキスト、画像、音声、または動画を1から10で評価します。`result` を If/Else Switch ノードに接続して、スコアに応じた処理を行います。",
+    "display_name": "HeyGen 判定（スコア）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "最大30分の音声。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "バッチのすべてのフレームを含めて、合計最大4枚の画像。ソケット全体で順番に image_1 から image_4 として番号付けされるため、最初のソケットに2枚のバッチを接続すると image_1 と image_2 になります。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "1から10の尺度で何を評価するかを指定します。例のように、1と10が何を意味するかを記述してください。"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキスト。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "スコアがこの値以上の場合、`result` は true になります。きれいで鮮明な画像はおよそ7、ひどく損傷した画像はおよそ3から5になります。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "最大60秒の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "スコア",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "テキスト、画像、音声、または動画について、はい／いいえで答えられる質問をします。`result` を If/Else Switch ノードに接続して、2つのパスから選択します。",
+    "display_name": "HeyGen 判定（はい／いいえ）",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "最大30分の音声。"
+      },
+      "images": {
+        "name": "画像",
+        "tooltip": "バッチのすべてのフレームを含めて、合計最大4枚の画像。ソケット全体で順番に image_1 から image_4 として番号付けされるため、最初のソケットに2枚のバッチを接続すると image_1 と image_2 になります。"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "question": {
+        "name": "質問",
+        "tooltip": "接続されている内容について、はいまたはいいえで答えられる質問です。処理を行うケースが「はい」になるように質問してください。複数の入力がある場合は、たとえば image_1、image_2、audio_1、video_1 のように参照します。例:「image_2 は image_1 と同じ人物を写していますか？」"
+      },
+      "text": {
+        "name": "テキスト",
+        "tooltip": "プロンプトや LLM の応答など、質問の対象となるテキスト。"
+      },
+      "threshold": {
+        "name": "しきい値",
+        "tooltip": "「はい」である確率がこの値以上の場合、回答は「はい」になります。明確な回答は0または1に近くなります。"
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "最大60秒の動画。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "結果",
+        "tooltip": null
+      },
+      "1": {
+        "name": "回答",
+        "tooltip": null
+      },
+      "2": {
+        "name": "確率",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "HeyGen Video 1.0 を使用して、画像を同期した会話と音声を含む動画にアニメーション化します。画像は最初のフレームとして使用されます。",
     "display_name": "HeyGen Video 1.0 画像から動画",
@@ -8984,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "1人の話者の録音から声をクローンし、HeyGen Voice 1.0でその声にテキストを話させます。",
+    "display_name": "HeyGen Voice 1.0 即時クローン テキスト読み上げ",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "モデル"
+      },
+      "model_expressiveness_boost": {
+        "name": "表現力の強化"
+      },
+      "model_language": {
+        "name": "言語"
+      },
+      "model_recording_language": {
+        "name": "録音の言語"
+      },
+      "model_remove_background_noise": {
+        "name": "背景ノイズを除去"
+      },
+      "model_seed": {
+        "name": "シード"
+      },
+      "model_similarity": {
+        "name": "類似度"
+      },
+      "model_text": {
+        "name": "テキスト"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "HeyGen Voice 1.0 Instant Cloneでクローンした声でテキストを読み上げます。",
+    "description": "HeyGen Voice 1.0で、HeyGenの音声にテキストを話させます。録音からクローンした音声で話させるには、HeyGen Voice 1.0 Instant Clone Text to Speechを使用してください。",
     "display_name": "HeyGen Voice 1.0 Text to Speech",
     "inputs": {
       "model": {
@@ -16456,6 +16799,9 @@
         "name": "モデル",
         "tooltip": "使用するモデル。"
       },
+      "model_auto_downscale": {
+        "name": "自動ダウンスケール"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },
@@ -23489,15 +23835,15 @@
       },
       "bbox_height": {
         "name": "bbox_height",
-        "tooltip": "バウンディングボックスの高さ（Z軸）。"
+        "tooltip": "バウンディングボックスの高さ（垂直）。"
       },
       "bbox_length": {
         "name": "bbox_length",
-        "tooltip": "バウンディングボックスの長さ（X軸）。"
+        "tooltip": "バウンディングボックスの長さ（前後）。"
       },
       "bbox_width": {
         "name": "bbox_width",
-        "tooltip": "バウンディングボックスの幅（Y軸）。他と合わせて0にするとバウンディングボックスをスキップします。"
+        "tooltip": "バウンディングボックスの幅（左右）。他の値とともに0に設定すると、バウンディングボックスをスキップします。"
       },
       "control_after_generate": {
         "name": "control after generate"
@@ -23570,15 +23916,15 @@
       },
       "bbox_height": {
         "name": "バウンディングボックス高さ",
-        "tooltip": "バウンディングボックスの高さ（Z軸）。"
+        "tooltip": "バウンディングボックスの高さ（垂直）。"
       },
       "bbox_length": {
         "name": "バウンディングボックス長さ",
-        "tooltip": "バウンディングボックスの長さ（X軸）。"
+        "tooltip": "バウンディングボックスの長さ（前後）。"
       },
       "bbox_width": {
         "name": "バウンディングボックス幅",
-        "tooltip": "バウンディングボックスの幅（Y軸）。他と合わせて0にするとバウンディングボックスをスキップします。"
+        "tooltip": "バウンディングボックスの幅（左右）。他の値とともに0に設定すると、バウンディングボックスをスキップします。"
       },
       "control_after_generate": {
         "name": "生成後のコントロール"

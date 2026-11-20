@@ -373,6 +373,14 @@
         "title": "Haz una pregunta o describe un cambio."
       }
     },
+    "queue": {
+      "cancelEdit": "Cancelar",
+      "collapse": "Ocultar mensajes en cola",
+      "delete": "Eliminar mensaje en cola",
+      "edit": "Editar mensaje en cola",
+      "expand": "Mostrar mensajes en cola",
+      "queued": "{count} en cola"
+    },
     "recoveredTurnFailed": "El agente no pudo completar esta respuesta.",
     "reference": "Referencia",
     "remove": "Eliminar",
@@ -1823,12 +1831,19 @@
     "workspaceDefault": "Valor predeterminado del espacio de trabajo"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "Un cuadro de diálogo de confirmación te preguntará si deseas conectar la aplicación de escritorio de ComfyUI a tu cuenta. Apruébalo solo si acabas de iniciar sesión desde la aplicación de escritorio de ComfyUI; de lo contrario, cancélalo.",
+    "approvalPendingSummary": "Solicitud de inicio de sesión en la aplicación de escritorio",
     "confirmMessage": "La aplicación de escritorio de ComfyUI está esperando para iniciar sesión con tu cuenta. Continúa solo si acabas de iniciar sesión desde la aplicación de escritorio de ComfyUI.",
     "confirmSummary": "¿Aprobar inicio de sesión en el escritorio?",
+    "continueToCloud": "Continuar a Comfy Cloud en su lugar",
+    "declinedDetail": "La aplicación de escritorio de ComfyUI no se conectó a tu cuenta. Vuelve a iniciar sesión desde la aplicación de escritorio si querías aprobarlo.",
+    "declinedSummary": "Inicio de sesión en la aplicación de escritorio cancelado",
     "expiredDetail": "La solicitud de inicio de sesión expiró o ya fue utilizada. Inicia sesión nuevamente desde la aplicación de escritorio de ComfyUI.",
     "expiredSummary": "Error en el inicio de sesión en el escritorio",
     "failedDetail": "Ocurrió un error al completar el inicio de sesión en el escritorio. Inicia sesión nuevamente desde la aplicación de escritorio de ComfyUI.",
     "failedSummary": "Error en el inicio de sesión en el escritorio",
+    "redeemingDetail": "Conectando la aplicación de escritorio de ComfyUI a tu cuenta.",
+    "redeemingSummary": "Finalizando el inicio de sesión en la aplicación de escritorio",
     "ssoUnavailableDetail": "Tu cuenta inicia sesión mediante el SSO de tu organización, que la aplicación de escritorio de ComfyUI aún no puede usar. Pide a tu administrador otra forma de iniciar sesión en la aplicación de escritorio.",
     "ssoUnavailableSummary": "El inicio de sesión en la aplicación de escritorio aún no está disponible para cuentas con SSO",
     "successDetail": "Puedes volver a la aplicación de escritorio de ComfyUI.",
@@ -4150,6 +4165,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "Alternativas compatibles",
+    "deprecatedNodesLabel": "Los nodos obsoletos se pueden reemplazar",
+    "deprecatedNodesMessage": "Estos nodos siguen funcionando, pero tienen reemplazos más recientes. Reemplazarlos actualiza el flujo de trabajo.",
+    "deprecatedNodesTitle": "Nodos obsoletos",
     "installMissingNodes": "Instalar nodos faltantes",
     "installationRequired": "Instalación requerida",
     "instructionMessage": "Debes instalar estos nodos o reemplazarlos por alternativas instaladas para ejecutar el flujo de trabajo. Los nodos faltantes están resaltados en {red} en el lienzo. Algunos nodos no se pueden intercambiar y deben instalarse mediante el Administrador de Nodos.",
@@ -4361,6 +4379,7 @@
     "deploySetup": "Implementa tu configuración en Comfy Cloud",
     "deploySetupDialog": {
       "body": "Implementa tu configuración local en Comfy Cloud como una compilación y luego úsala en ComfyUI o llámala como una API con escalado automático.",
+      "platformTabBlocked": "Flujo de trabajo guardado. Haz clic en Implementar en la plataforma de nuevo para continuar.",
       "pointGpu": "Ejecuta en potentes GPU en la nube",
       "pointNodes": "Trae tus nodos y modelos personalizados",
       "pointPricing": "Paga solo mientras tus trabajadores de GPU estén activos, más el almacenamiento",
@@ -4368,8 +4387,11 @@
     },
     "deployWithAgent": "Implementar con tu agente",
     "desktopTransferFailed": "No se pudo transferir tu flujo de trabajo. Haz clic en Abrir en Comfy Cloud en Desktop de nuevo.",
+    "desktopTransferRetry": "No se pudo verificar esta transferencia. Recarga esta pestaña para volver a intentarlo.",
+    "desktopTransferUnavailable": "Abrir en Comfy Cloud no está disponible actualmente para este editor.",
     "downloaded": "Flujo de trabajo descargado",
     "downloadedDetail": "Arrástralo a Comfy Cloud en tu navegador para abrirlo allí.",
+    "emptyWorkflow": "Este flujo de trabajo no tiene nodos que ejecutar. Añade nodos y guárdalo; luego, vuelve a intentarlo.",
     "handoffFailed": "No se pudo abrir el flujo de trabajo desde ComfyUI en tu computadora",
     "handoffMissing": "Tu flujo de trabajo no llegó",
     "handoffMissingDetail": "ComfyUI deja de esperar después de 10 minutos. Haz clic en Abrir en Comfy Cloud en ComfyUI de nuevo.",
@@ -4388,7 +4410,9 @@
       "openOnCloud": "Abrir en Comfy Cloud",
       "ready": "Comfy Cloud tiene todos los nodos y modelos que utiliza este flujo de trabajo. Se abre en una pestaña nueva, listo para ejecutarse.",
       "title": "Ejecutar en Comfy Cloud"
-    }
+    },
+    "verifyAccessFailed": "No se pudo verificar el acceso a Comfy Cloud",
+    "verifyAccessFailedDetail": "Si el botón Cloud sigue disponible, selecciona Abrir en Comfy Cloud de nuevo."
   },
   "openSharedWorkflow": {
     "author": "Autor:",

@@ -7475,6 +7475,174 @@
       }
     }
   },
+  "GeminiDecisionChoice": {
+    "description": "Metin, görüntü, ses veya video için seçeneklerinizden birini seçin. `choice` öğesini, girdileri seçenek adlarını taşıyan bir Branch düğümüne bağlayın veya `option_index` kullanın.",
+    "display_name": "Google Gemini Kararı (Seçim)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı ses klibi."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı görüntü(ler). En fazla 16 görüntü."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "options",
+        "tooltip": "Her satıra bir seçenek yazın; tam olarak yazıldığı biçimde kullanılır. Hiçbirine uymayan girdiler için `other` gibi bir seçenek ekleyin."
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Seçeneklerin yanıtladığı soru. Birden çok girişle, örneğin 'Hangi mevsim image_1 içinde gösteriliyor?' şeklinde soket adlarını kullanın."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir prompt veya LLM yanıtı."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı video klibi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "choice",
+        "tooltip": null
+      },
+      "1": {
+        "name": "option_index",
+        "tooltip": "Seçilen seçeneğin seçenekler listesindeki, 0'dan başlayan konumu."
+      },
+      "2": {
+        "name": "confidence",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionPickImage": {
+    "description": "Bir toplu işten bir görüntü seçin. Seçilen görüntüyü korumak için `index` öğesini Get Image from Batch düğümüne bağlayın.",
+    "display_name": "Google Gemini Kararı (Görüntü Seç)",
+    "inputs": {
+      "images": {
+        "name": "images",
+        "tooltip": "Aralarından seçim yapılacak 2 ila 64 görüntü."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "Hangi görüntünün seçileceği. Onunla en iyi eşleşen görüntüyü seçmek için promptu `text` öğesine bağlayın."
+      },
+      "text": {
+        "name": "text",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin görüntülerin oluşturulduğu prompt."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "index",
+        "tooltip": null
+      },
+      "1": {
+        "name": "confidence",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionScore": {
+    "description": "Metin, görüntü, ses veya videoyu 1'den 10'a kadar derecelendirin. Puana göre işlem yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "Google Gemini Kararı (Puan)",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı ses klibi."
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı görüntü(ler). En fazla 16 görüntü."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "question",
+        "tooltip": "1'den 10'a kadar bir ölçekte neyin derecelendirileceği. Örnekteki gibi 1 ve 10'un ne anlama geldiğini belirtin."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun hakkında olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "threshold",
+        "tooltip": "Puan en az bu değer olduğunda `result` true olur. Temiz, net görüntüler yaklaşık 7 ila 8, çok hasarlı olanlar ise yaklaşık 3 ila 5 puan alır."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı video klibi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "puan",
+        "tooltip": null
+      }
+    }
+  },
+  "GeminiDecisionYesNo": {
+    "description": "Metin, görseller, ses veya video hakkında evet/hayır sorusu sorun. İki yol arasında seçim yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "Google Gemini Kararı (Evet/Hayır)",
+    "inputs": {
+      "audio": {
+        "name": "ses",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı ses klibi."
+      },
+      "images": {
+        "name": "görseller",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı görsel(ler). En fazla 16 görsel."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Bağlanan öğe hakkında evet veya hayır yanıtı olan bir soru. Soruyu, evetin işlem yapacağınız durum olacağı şekilde sorun. Birden fazla girdiyle soket adlarını kullanın; örneğin, 'image_2, image_1 ile aynı kişiyi mi gösteriyor?'"
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun hakkında olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Evet olasılığı en az bu değer olduğunda yanıt evettir. Açık evet yanıtları yaklaşık 0.85 ila 0.92 puan alır; dolayısıyla 0.9 veya üzeri, bunların çoğunu reddeder."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "Model için bağlam olarak kullanılacak isteğe bağlı video klibi."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "yanıt",
+        "tooltip": null
+      },
+      "2": {
+        "name": "olasılık",
+        "tooltip": null
+      }
+    }
+  },
   "GeminiImage2Node": {
     "description": "Google Vertex API üzerinden senkron olarak görsel oluşturun veya düzenleyin.",
     "display_name": "Nano Banana Pro (Google Gemini Image)",
@@ -8757,6 +8925,143 @@
       }
     }
   },
+  "HeyGenDecisionChoice": {
+    "description": "Metin, görseller, ses veya video için seçeneklerinizden birini seçin. `choice` öğesini girdileri seçenek adlarını taşıyan bir Branch düğümüne bağlayın veya `option_index` kullanın.",
+    "display_name": "HeyGen Kararı (Seçim)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "En fazla 30 dakikalık ses."
+      },
+      "images": {
+        "name": "görseller",
+        "tooltip": "Bir toplu işin her karesi sayılmak üzere toplam en fazla 4 görsel. Soketler genelinde sırayla image_1 ila image_4 olarak numaralandırılırlar; dolayısıyla ilk soketteki 2 görsellik bir toplu iş image_1 ve image_2 olur."
+      },
+      "model": {
+        "name": "model"
+      },
+      "options": {
+        "name": "seçenekler",
+        "tooltip": "Her satıra bir seçenek; aynen yazıldığı şekilde kullanılır. Hiçbirine uymayan girdiler için `other` gibi bir seçenek ekleyin."
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Seçeneklerin yanıtladığı soru. Birden fazla girdiyle bunlara image_1, image_2, audio_1 veya video_1 olarak başvurun; örneğin, 'image_1 içinde hangi mevsim gösteriliyor?'"
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun hakkında olduğu metin; örneğin bir istem veya LLM yanıtı."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "En fazla 60 saniyelik video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "seçim",
+        "tooltip": null
+      },
+      "1": {
+        "name": "seçenek_indeksi",
+        "tooltip": "Seçilen seçeneğin, 0'dan başlayarak seçenekler listesindeki konumu."
+      },
+      "2": {
+        "name": "güven",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionScore": {
+    "description": "Metni, görüntüleri, sesi veya videoyu 1'den 10'a kadar değerlendirin. Puana göre işlem yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "HeyGen Karar (Puan)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "En fazla 30 dakikalık ses."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Bir toplu işteki her kare sayılmak üzere toplamda en fazla 4 görüntü. Soketler genelinde sırayla image_1 ile image_4 arasında numaralandırılırlar; bu nedenle ilk sokette 2'lik bir toplu iş image_1 ve image_2 olur."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "1'den 10'a kadar bir ölçekte neyin değerlendirileceği. Örnekteki gibi 1 ve 10'un ne anlama geldiğini belirtin."
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya bir LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Puan en az bu değer olduğunda `result` doğrudur. Temiz, net görüntüler yaklaşık 7; çok hasarlı olanlarsa yaklaşık 3 ila 5 puan alır."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "En fazla 60 saniyelik video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "puan",
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenDecisionYesNo": {
+    "description": "Metin, görüntüler, ses veya video hakkında evet/hayır sorusu sorun. İki yol arasında seçim yapmak için `result` öğesini bir If/Else Switch düğümüne bağlayın.",
+    "display_name": "HeyGen Karar (Evet/Hayır)",
+    "inputs": {
+      "audio_1": {
+        "name": "audio_1",
+        "tooltip": "En fazla 30 dakikalık ses."
+      },
+      "images": {
+        "name": "görüntüler",
+        "tooltip": "Bir toplu işteki her kare sayılmak üzere toplamda en fazla 4 görüntü. Soketler genelinde sırayla image_1 ile image_4 arasında numaralandırılırlar; bu nedenle ilk sokette 2'lik bir toplu iş image_1 ve image_2 olur."
+      },
+      "model": {
+        "name": "model"
+      },
+      "question": {
+        "name": "soru",
+        "tooltip": "Bağlı olan içerik hakkında evet ya da hayır yanıtı gerektiren bir soru. Soruyu, evetin işlem yapacağınız durum olacağı şekilde sorun. Birden fazla girdiyle, örneğin image_1, image_2, audio_1 veya video_1 olarak bunlara başvurun: 'image_2, image_1 ile aynı kişiyi mi gösteriyor?'"
+      },
+      "text": {
+        "name": "metin",
+        "tooltip": "Sorunun ilgili olduğu metin; örneğin bir istem veya bir LLM yanıtı."
+      },
+      "threshold": {
+        "name": "eşik",
+        "tooltip": "Evet olasılığı en az bu değer olduğunda yanıt evettir. Net yanıtlar 0 veya 1'e yakındır."
+      },
+      "video_1": {
+        "name": "video_1",
+        "tooltip": "En fazla 60 saniyelik video."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "sonuç",
+        "tooltip": null
+      },
+      "1": {
+        "name": "yanıt",
+        "tooltip": null
+      },
+      "2": {
+        "name": "olasılık",
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenImageToVideoNode": {
     "description": "HeyGen Video 1.0 kullanarak senkronize diyalog ve ses içeren bir görüntüyü videoya dönüştürün. Görüntü ilk kare olarak kullanılır.",
     "display_name": "HeyGen Video 1.0 Görüntüden Videoya",
@@ -8984,8 +9289,46 @@
       }
     }
   },
+  "HeyGenVoiceCloneTextToSpeechNode": {
+    "description": "Bir konuşmacının kaydından sesi klonlayın ve HeyGen Voice 1.0 ile metni bu sesle okutun.",
+    "display_name": "HeyGen Voice 1.0 Anında Klon Metinden Sese",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası denetim"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_expressiveness_boost": {
+        "name": "ifade_güçlendirmesi"
+      },
+      "model_language": {
+        "name": "dil"
+      },
+      "model_recording_language": {
+        "name": "kayıt_dili"
+      },
+      "model_remove_background_noise": {
+        "name": "arka_plan_gürültüsünü_kaldır"
+      },
+      "model_seed": {
+        "name": "tohum"
+      },
+      "model_similarity": {
+        "name": "benzerlik"
+      },
+      "model_text": {
+        "name": "metin"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenVoiceTextToSpeechNode": {
-    "description": "HeyGen Voice 1.0 Anında Klonlama ile klonlanmış bir sesle metni seslendirin.",
+    "description": "HeyGen Voice 1.0 ile bir HeyGen sesiyle metni okutun. Bir kayıttan klonlanmış bir sesle okutmak için HeyGen Voice 1.0 Instant Clone Text to Speech kullanın.",
     "display_name": "HeyGen Voice 1.0 Metinden Konuşmaya",
     "inputs": {
       "model": {
@@ -16456,6 +16799,9 @@
         "name": "model",
         "tooltip": "Kullanılacak model."
       },
+      "model_auto_downscale": {
+        "name": "otomatik_küçültme"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },
@@ -23489,15 +23835,15 @@
       },
       "bbox_height": {
         "name": "bbox_yüksekliği",
-        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+        "tooltip": "Sınırlayıcı kutu yüksekliği (dikey)."
       },
       "bbox_length": {
         "name": "bbox_uzunluğu",
-        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+        "tooltip": "Sınırlayıcı kutu uzunluğu (önden arkaya)."
       },
       "bbox_width": {
         "name": "bbox_genişliği",
-        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+        "tooltip": "Sınırlayıcı kutu genişliği (yandan yana). bbox'u atlamak için diğerleriyle birlikte 0 olarak ayarlayın."
       },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol"
@@ -23570,15 +23916,15 @@
       },
       "bbox_height": {
         "name": "bbox_yükseklik",
-        "tooltip": "Sınır kutusu yüksekliği (Z ekseni)."
+        "tooltip": "Sınırlayıcı kutu yüksekliği (dikey)."
       },
       "bbox_length": {
         "name": "bbox_uzunluk",
-        "tooltip": "Sınır kutusu uzunluğu (X ekseni)."
+        "tooltip": "Sınırlayıcı kutu uzunluğu (önden arkaya)."
       },
       "bbox_width": {
         "name": "bbox_genişlik",
-        "tooltip": "Sınır kutusu genişliği (Y ekseni). Diğerleriyle birlikte 0 ayarlanırsa bbox atlanır."
+        "tooltip": "Sınırlayıcı kutu genişliği (yandan yana). bbox'u atlamak için diğerleriyle birlikte 0 olarak ayarlayın."
       },
       "control_after_generate": {
         "name": "oluşturduktan sonra kontrol"

@@ -373,6 +373,14 @@
         "title": "提出問題或描述要變更的內容。"
       }
     },
+    "queue": {
+      "cancelEdit": "取消",
+      "collapse": "隱藏佇列中的訊息",
+      "delete": "刪除佇列中的訊息",
+      "edit": "編輯佇列中的訊息",
+      "expand": "顯示佇列中的訊息",
+      "queued": "已排入佇列 {count} 個"
+    },
     "recoveredTurnFailed": "代理程式無法完成此回應。",
     "reference": "參照",
     "remove": "移除",
@@ -1823,12 +1831,19 @@
     "workspaceDefault": "工作區預設"
   },
   "desktopLogin": {
+    "approvalPendingDetail": "系統將顯示確認對話方塊，詢問是否要將 ComfyUI 桌面版應用程式連結至您的帳戶。僅在您剛從 ComfyUI 桌面版應用程式開始登入時才核准；否則請取消。",
+    "approvalPendingSummary": "桌面版登入請求",
     "confirmMessage": "ComfyUI 桌面應用程式正在等待使用您的帳戶登入。僅在您剛從 ComfyUI 桌面應用程式啟動登入時才繼續。",
     "confirmSummary": "批准桌面端登入？",
+    "continueToCloud": "改為繼續前往 Comfy Cloud",
+    "declinedDetail": "ComfyUI 桌面版應用程式未連結至您的帳戶。如果您原本要核准，請從桌面版應用程式重新開始登入。",
+    "declinedSummary": "已取消桌面版登入",
     "expiredDetail": "登入請求已過期或已被使用。請從 ComfyUI 桌面應用程式重新啟動登入。",
     "expiredSummary": "桌面端登入失敗",
     "failedDetail": "完成桌面端登入時發生錯誤。請從 ComfyUI 桌面應用程式重新啟動登入。",
     "failedSummary": "桌面端登入失敗",
+    "redeemingDetail": "正在將 ComfyUI 桌面版應用程式連結至您的帳戶。",
+    "redeemingSummary": "正在完成桌面版登入",
     "ssoUnavailableDetail": "您的帳戶是透過組織的 SSO 登入，而 ComfyUI 桌面版應用程式目前尚無法使用此方式。請向您的管理員詢問其他登入桌面版應用程式的方式。",
     "ssoUnavailableSummary": "目前尚未提供 SSO 帳戶使用桌面版登入",
     "successDetail": "您可以返回 ComfyUI 桌面應用程式。",
@@ -4150,6 +4165,9 @@
   },
   "nodeReplacement": {
     "compatibleAlternatives": "相容替代方案",
+    "deprecatedNodesLabel": "可替換已淘汰的節點",
+    "deprecatedNodesMessage": "這些節點仍可執行，但已有較新的替代項目。替換它們會更新工作流程。",
+    "deprecatedNodesTitle": "已淘汰的節點",
     "installMissingNodes": "安裝缺少的節點",
     "installationRequired": "需要安裝",
     "instructionMessage": "您必須安裝這些節點，或以已安裝的替代方案進行替換，才能執行工作流程。缺少的節點會在畫布上以{red}標示。有些節點無法替換，必須透過節點管理器安裝。",
@@ -4361,6 +4379,7 @@
     "deploySetup": "將您的設定部署到 Comfy Cloud",
     "deploySetupDialog": {
       "body": "將您的本機設定部署至 Comfy Cloud 作為 Build，然後在 ComfyUI 中使用，或將其作為可自動擴展的 API 呼叫。",
+      "platformTabBlocked": "工作流程已儲存。再次點擊「在平台上部署」以繼續。",
       "pointGpu": "在強大的雲端 GPU 上執行",
       "pointNodes": "帶上您的自訂節點與模型",
       "pointPricing": "僅在您的 GPU 工作程序運作期間付費，另加儲存空間費用",
@@ -4368,8 +4387,11 @@
     },
     "deployWithAgent": "使用您的代理程式部署",
     "desktopTransferFailed": "無法傳輸您的工作流程。請在 Desktop 中再次點擊「在 Comfy Cloud 開啟」。",
+    "desktopTransferRetry": "無法驗證這次傳輸。請重新載入此分頁後再試一次。",
+    "desktopTransferUnavailable": "此編輯器目前無法使用「在 Comfy Cloud 上開啟」。",
     "downloaded": "工作流程已下載",
     "downloadedDetail": "將它拖放到瀏覽器中的 Comfy Cloud，即可在該處開啟。",
+    "emptyWorkflow": "此工作流程沒有可執行的節點。請新增節點並儲存後，再試一次。",
     "handoffFailed": "無法從您電腦上的 ComfyUI 開啟工作流程",
     "handoffMissing": "您的工作流程未送達",
     "handoffMissingDetail": "ComfyUI 會在 10 分鐘後停止等待。請在 ComfyUI 中再次點擊「在 Comfy Cloud 開啟」。",
@@ -4388,7 +4410,9 @@
       "openOnCloud": "在 Comfy Cloud 開啟",
       "ready": "Comfy Cloud 擁有此工作流程所使用的每個節點與模型。它會在新分頁中開啟，並已可執行。",
       "title": "在 Comfy Cloud 上執行"
-    }
+    },
+    "verifyAccessFailed": "無法驗證 Comfy Cloud 的存取權限",
+    "verifyAccessFailedDetail": "如果 Cloud 按鈕仍可使用，請再次選取「在 Comfy Cloud 上開啟」。"
   },
   "openSharedWorkflow": {
     "author": "作者：",
