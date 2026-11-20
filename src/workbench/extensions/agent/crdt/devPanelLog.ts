@@ -2,8 +2,11 @@ import { shallowRef, triggerRef } from 'vue'
 
 import { reportError } from '@comfyorg/telemetry/reportError'
 
-import { isCrdtDebugEnabled } from './crdtDebugGate'
-import type { CrdtLogLevel } from './crdtDebugGate'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { Settings } from '@comfyorg/settings-core/types'
+
+type CrdtLogLevel = Settings['Comfy.Agent.CrdtDebug.Level']
+const { flags } = useFeatureFlags()
 
 /**
  * In-memory ring buffer feeding the CRDT debug panel. Deliberately
@@ -279,7 +282,7 @@ export function recordDevEvent(
   detail: unknown,
   options: DevEventOptions = {}
 ): void {
-  if (!isCrdtDebugEnabled()) return
+  if (!flags.agentCrdtDebugEnabled) return
   const events = buffer ?? (buffer = [])
   events.push({
     seq: nextSeq++,
