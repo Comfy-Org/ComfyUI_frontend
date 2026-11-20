@@ -435,10 +435,8 @@ export class ComfyWorkflow extends UserFile {
     this.changeTracker = markRaw(
       runtime.createChangeTracker(this, initialState)
     )
-    if (previousTracker && isCanvasOwner(previousTracker)) {
-      this.changeTracker.changeCount = previousTracker.changeCount
+    if (previousTracker && isCanvasOwner(previousTracker))
       bindCanvasTracker(this.changeTracker)
-    }
     if (draft?.state && draft.content) {
       const state = withTabId(draft.state, initialState)
       const draftId: unknown = draft.state.id
