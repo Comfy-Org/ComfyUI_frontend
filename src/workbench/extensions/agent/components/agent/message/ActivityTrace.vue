@@ -53,7 +53,22 @@ function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
           : 'agent.toolLoadedSkill'
     return t(label, { skill: row.skill })
   }
+  if (row.download) {
+    const label =
+      row.state === 'streaming'
+        ? 'agent.toolDownloadingModel'
+        : row.ok === false
+          ? 'agent.toolFailedDownload'
+          : 'agent.toolDownloadedModel'
+    return t(label, { file: row.download })
+  }
   return toolLabel(row.name, row.state, t)
+}
+
+function titleOf(
+  row: Extract<ActivityRow, { kind: 'tool' }>
+): string | undefined {
+  return row.download ? labelOf(row) : undefined
 }
 
 function rowSignature(row: ActivityRow): string {
@@ -62,6 +77,7 @@ function rowSignature(row: ActivityRow): string {
         'tool',
         row.name,
         row.skill,
+        row.download,
         row.state,
         row.ok,
         row.canvasConfirmed,
@@ -99,9 +115,11 @@ function rowSignature(row: ActivityRow): string {
           >{{ row.text || t('agent.thinking') }}</span
         >
         <template v-else>
-          <span :class="cn(labelClass(row.state), 'truncate')">{{
-            labelOf(row)
-          }}</span>
+          <span
+            :class="cn(labelClass(row.state), 'truncate')"
+            :title="titleOf(row)"
+            >{{ labelOf(row) }}</span
+          >
           <span
             v-if="row.count > 1"
             class="mt-0.5 shrink-0 text-xs text-muted-foreground"

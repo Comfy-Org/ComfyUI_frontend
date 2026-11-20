@@ -453,7 +453,12 @@ describe('normalizeAgentTranscript', () => {
     const transcript = normalizeAgentTranscript([message])
 
     expect(transcript.messages[0].parts).toEqual([
-      { type: 'thinking', text: 'Looking it up.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'Looking it up.',
+        state: 'done',
+        toolCallId: 'call-1'
+      },
       {
         type: 'tool',
         callId: 'call-1',
@@ -461,7 +466,12 @@ describe('normalizeAgentTranscript', () => {
         state: 'done',
         ok: true
       },
-      { type: 'thinking', text: 'The audit row is gone.', state: 'done' },
+      {
+        type: 'thinking',
+        text: 'The audit row is gone.',
+        state: 'done',
+        toolCallId: 'call-missing'
+      },
       { type: 'text', text: 'Done', state: 'done' }
     ])
   })

@@ -497,6 +497,50 @@
       }
     }
   },
+  "BakeTextureFromViews": {
+    "description": "מקרין את התמונות חזרה על פריסת ה-UV של הרשת: יש לעבד באמצעות Render Mesh, לערוך או ליצור מחדש את התמונות, ואז לאפות אותן עם אותה רשת ואותן מצלמות. טקסלים שאף תצוגה אינה מכסה שומרים על המרקם של הרשת עצמה (או על צבעי הקודקודים). מפיק את base_color עבור Apply Texture to Mesh ומסכת ביטחון המציינת עד כמה התצוגות ראו כל טקסל. עיבודים שנוצרו עם התמרת מודל צופה אינם מתיישרים.",
+    "display_name": "אפיית מרקם מתצוגות",
+    "inputs": {
+      "blend_exponent": {
+        "name": "blend_exponent",
+        "tooltip": "משקל התצוגות נקבע לפי cos(זווית התצוגה)^מעריך. ערך גבוה יותר מעדיף את התצוגה החזיתית ביותר (חדה יותר, תפרים בולטים יותר); ערך נמוך יותר מחשב ממוצע של יותר תצוגות (רך יותר)."
+      },
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "המצלמות שבהן עובדו התמונות, כפי שחוברו אל Render Mesh. ניתן לאחד מתקני מצלמות באמצעות Batch Cameras. ללא: תצוגה קדמית ממוסגרת אוטומטית של Render Mesh."
+      },
+      "fill_unseen": {
+        "name": "fill_unseen",
+        "tooltip": "טקסלים שאף תצוגה אינה רואה יקבלו צבע שהורחב מהמשטח הנראה, במקום המרקם של הרשת עצמה או צבעי הקודקודים. מיועד לתצוגות שמחליפות את המרקם כולו."
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "תמונה אחת לכל מצלמה, לפי סדר המצלמות (Batch Images). כל רזולוציה ביחס הגובה-רוחב של העיבוד; רזולוציה גבוהה יותר מעניקה אפייה חדה יותר."
+      },
+      "mask": {
+        "name": "מסכה",
+        "tooltip": "אזורים שנערכו בכל תצוגה; רק פיקסלים במסכה מוקרנים. מסכה יחידה חלה על כל התצוגות."
+      },
+      "mesh": {
+        "name": "רשת",
+        "tooltip": "הרשת שנפרסה ל-UV ואשר עובדה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "רזולוציית מרקם ריבועית. 0 = גודל המרקם הנוכחי של הרשת (2048 אם אין לה מרקם); אחרת, המרקם הנוכחי נדגם מחדש לרזולוציה זו."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_color",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ביטחון",
+        "tooltip": "לכל טקסל, מידת החזיתיות שבה התצוגה הטובה ביותר ראתה אותו; 0 = לא נראה. יש לעבד אותה כמרקם ממתקן אחר כדי לראות מה תצוגות אלה עדיין צריכות לכסות."
+      }
+    }
+  },
   "BakeTextureFromVoxel": {
     "description": "אופה מרקמי PBR על פריסת ה-UV הקיימת של הרשת (דגימה טריליניארית של נפח הווקסלים הדליל). אינו מבצע פריסה — יש לחבר במעלה הזרם צומת פריסת UV. מפיק תמונות IMAGE בגווני אפור עבור base_color + metallic/roughness (שחור אם אין PBR); יש להזין אותן ל-ApplyTextureToMesh (אותה רשת) עבור SaveGLB.",
     "display_name": "אפיית מרקם מווקסל",
@@ -565,6 +609,21 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BatchCameras": {
+    "description": "מאחד מצלמות ומסלולי הקפה לרשימת מצלמות אחת, לפי סדר הקלט.",
+    "display_name": "אצוות מצלמות",
+    "inputs": {
+      "cameras": {
+        "name": "מצלמות"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
         "tooltip": null
       }
     }
@@ -838,6 +897,204 @@
     "outputs": {
       "0": {
         "name": "פלט",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeTextToSpeech": {
+    "description": "המרת טקסט לדיבור באמצעות Breeze TTS 2.",
+    "display_name": "Breeze המרת טקסט לדיבור",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "delivery": {
+        "name": "אופן הגשה"
+      },
+      "delivery_speaker_boost": {
+        "name": "speaker_boost"
+      },
+      "language": {
+        "name": "שפה",
+        "tooltip": "שפת הטקסט. באנגלית ובסינית ניתן להשתמש בכל אחד מהמודלים; שפות אחרות משתמשות ב-Breeze TTS 2 Multilingual. קול נשמע במיטבו בשפה שלו: עבור שפה אחרת, יש להשתמש בעותק שנוצר באמצעות Breeze Voice Localize."
+      },
+      "language_model": {
+        "name": "מודל"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת צריך לפעול מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "speed": {
+        "name": "מהירות",
+        "tooltip": "משנה את הקצב בלי לשנות את גובה הצליל."
+      },
+      "text": {
+        "name": "טקסט",
+        "tooltip": "עד 1000 תווים. תגי שמע כגון (laughs) או (sighs) מבוצעים ולא מוקראים."
+      },
+      "voice": {
+        "name": "קול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceClone": {
+    "description": "יצירת קול מהקלטה של דובר יחיד.",
+    "display_name": "Breeze שכפול קול",
+    "inputs": {
+      "audio": {
+        "name": "שמע",
+        "tooltip": "דובר אחד, לפחות 3 שניות. נעשה שימוש ב-60 השניות הראשונות בלבד."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "remove_background_noise": {
+        "name": "הסרת רעשי רקע"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "קול",
+        "tooltip": null
+      },
+      "1": {
+        "name": "תצוגה מקדימה",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceDesign": {
+    "description": "יצירת קול חדש מתיאור טקסטואלי.",
+    "display_name": "עיצוב קול Breeze",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "description": {
+        "name": "תיאור",
+        "tooltip": "תארו את הקול, 3 עד 500 תווים: גיל, מגדר, מבטא, גוון, קצב."
+      },
+      "language": {
+        "name": "שפה",
+        "tooltip": "שפת טקסט התצוגה המקדימה. באנגלית ובסינית אפשר להשתמש בכל אחד מהמודלים; שפות אחרות משתמשות ב-Breeze TTS 2 Multilingual."
+      },
+      "language_model": {
+        "name": "מודל"
+      },
+      "preview_text": {
+        "name": "טקסט תצוגה מקדימה",
+        "tooltip": "המשפט שהקול החדש אומר בתצוגה המקדימה, עד 500 תווים. כתבו אותו בשפה שנבחרה: הקול נבנה מתצוגה מקדימה זו."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת ההתאמה של הקול לתיאור."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "קול",
+        "tooltip": null
+      },
+      "1": {
+        "name": "תצוגה מקדימה",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceLocalize": {
+    "description": "יצירת עותק של קול הדובר שפה אחרת כשפת אם.",
+    "display_name": "התאמת שפה לקול Breeze",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "language": {
+        "name": "שפה",
+        "tooltip": "השפה שהקול החדש ידבר."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "voice": {
+        "name": "קול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "קול",
+        "tooltip": null
+      },
+      "1": {
+        "name": "תצוגה מקדימה",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceRemix": {
+    "description": "יצירת עותק שונה של קול באותה שפה, מתוך תיאור או הגדרה קבועה מראש.",
+    "display_name": "ערבוב קול Breeze",
+    "inputs": {
+      "change": {
+        "name": "שינוי"
+      },
+      "change_prompt": {
+        "name": "פרומפט"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם יש להריץ מחדש את הצומת; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "ערכים גבוהים יותר משנים את הקול יותר."
+      },
+      "voice": {
+        "name": "קול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "קול",
+        "tooltip": null
+      },
+      "1": {
+        "name": "תצוגה מקדימה",
+        "tooltip": null
+      }
+    }
+  },
+  "BreezeVoiceSelector": {
+    "description": "בחרו קול Breeze נבחר, או הזינו מזהה של כל קול Breeze.",
+    "display_name": "בורר קולות Breeze",
+    "inputs": {
+      "language": {
+        "name": "שפה"
+      },
+      "language_voice": {
+        "name": "קול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "קול",
         "tooltip": null
       }
     }
@@ -1234,7 +1491,7 @@
     }
   },
   "BriaRemoveImageBackground": {
-    "description": "הסרת הרקע מתמונה באמצעות Bria RMBG 2.0.",
+    "description": "הסרת הרקע מתמונה באמצעות Bria RMBG 2.0 או RMBG 3.0.",
     "display_name": "Bria הסרת רקע מתמונה",
     "inputs": {
       "control_after_generate": {
@@ -1243,13 +1500,16 @@
       "image": {
         "name": "תמונה"
       },
+      "model": {
+        "name": "מודל"
+      },
       "moderation": {
         "name": "הגדרות בקרה",
         "tooltip": "הגדרות בקרה"
       },
       "seed": {
         "name": "seed",
-        "tooltip": "ה-seed קובע אם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
+        "tooltip": "הזרע קובע אם יש להריץ מחדש את הצומת; אותה תמונה תמיד נותנת אותה תוצאה ללא קשר לזרע."
       }
     },
     "outputs": {
@@ -1645,12 +1905,16 @@
     }
   },
   "ByteDance2DraftToFinalVideoNode": {
-    "description": "עבד את הסרטון הסופי ב־1080p של טיוטת Seedance 2.5. הסרטון הסופי שומר על הסצנה והתנועה של הטיוטה, ועושה שימוש חוזר בפרומפט, בהפניות, במשך, ביחס הממדים ובהגדרת השמע שלה.",
+    "description": "עיבוד סרטון הגמר ב-1080p או 4k של טיוטת Seedance 2.5. התוצר הסופי שומר על הסצנה והתנועה של הטיוטה, ומשתמש מחדש בפרומפט, בהפניות, במשך, ביחס הגובה-רוחב ובהגדרת השמע שלה.",
     "display_name": "ByteDance Seedance 2.5 מטיוטה לסרטון סופי",
     "inputs": {
       "draft_task_id": {
         "name": "draft_task_id",
         "tooltip": "פלט ה־draft_task_id של צומת Seedance 2.5 שהורץ עם מודל Seedance 2.5 Draft, או מזהה משימת טיוטה שהודבק. הגדר את בקרת ה־seed של צומת זה לקבוע, אחרת ההרצה הבאה תיצור טיוטה חדשה במקום להשתמש מחדש בזו שבדקת. ניתן לעבד טיוטה במשך 7 ימים לאחר יצירתה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "הרזולוציה של הסרטון הסופי."
       },
       "watermark": {
         "name": "סימן מים",
@@ -1688,7 +1952,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מרנדר את התוצר הסופי ב-1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini להפקה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "duration"
@@ -1720,7 +1984,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חבר אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הסרטון הסופי ב־1080p."
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לרנדר את התוצר הסופי ב-1080p או 4k."
       }
     }
   },
@@ -1733,7 +1997,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מרנדר את התוצר הסופי ב-1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini להפקה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "auto_downscale"
@@ -1786,7 +2050,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מרנדר את התוצר הסופי ב-1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini להפקה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_auto_downscale": {
         "name": "הקטנה אוטומטית"
@@ -1830,7 +2094,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חבר אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הסרטון הסופי ב־1080p."
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לרנדר את התוצר הסופי ב-1080p או 4k."
       }
     }
   },
@@ -1843,7 +2107,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט mp4/mov; ‏Seedance 2.5 Draft לתצוגה מקדימה מהירה ב־480p, שה־draft_task_id שלה מעבד את הסרטון הסופי ב־1080p בצומת Seedance 2.5 Draft to Final Video; ‏Seedance 2.0 לאיכות מרבית ול־4k; ‏Fast למיטוב מהירות; ‏Mini ליצירה המהירה ביותר ובעלות הנמוכה ביותר."
+        "tooltip": "Seedance 2.5 עבור המודל החדש ביותר, סרטונים באורך של עד 30 שניות ופלט 4k ו-mp4/mov; Seedance 2.5 Draft לתצוגה מקדימה מהירה ב-480p, שבה draft_task_id מרנדר את התוצר הסופי ב-1080p או 4k בצומת Seedance 2.5 Draft to Final Video; Seedance 2.5 Flash עבור סרטוני 480p ו-720p באורך של עד 30 שניות; Seedance 2.0 לאיכות מרבית ול-4k; Fast למיטוב מהירות; Mini להפקה המהירה ביותר ובעלות הנמוכה ביותר."
       },
       "model_duration": {
         "name": "משך"
@@ -1878,7 +2142,7 @@
       },
       "1": {
         "name": "draft_task_id",
-        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חבר אותו לצומת Seedance 2.5 Draft to Final Video כדי לעבד את הסרטון הסופי ב־1080p."
+        "tooltip": "מזהה המשימה של הרצת Seedance 2.5 Draft. חברו אותו לצומת Seedance 2.5 Draft to Final Video כדי לרנדר את התוצר הסופי ב-1080p או 4k."
       }
     }
   },
@@ -2183,8 +2447,8 @@
     }
   },
   "ByteDanceSeedreamLayerSeparationNodeV2": {
-    "description": "פרק תמונה ללוח רקע ולעד 16 שכבות שקופות שניתן למקם מחדש, שלכל אחת מהן סדר שכבות, תיבה תוחמת, שם ותיאור.",
-    "display_name": "ByteDance Seedream 5.0 הפרדת שכבות",
+    "description": "פירוק תמונה ללוח רקע ולשכבות שקופות הניתנות למיקום מחדש (עד 99 עם Seedream 5.5, ועד 16 עם 5.0), שלכל אחת מהן סדר שכבות, תיבה תוחמת, שם ותיאור.",
+    "display_name": "ByteDance Seedream 5.0 & 5.5 הפרדת שכבות",
     "inputs": {
       "control_after_generate": {
         "name": "בקרה לאחר יצירה"
@@ -2195,11 +2459,11 @@
       "model_crop_layers": {
         "name": "crop_layers"
       },
+      "model_max_images": {
+        "name": "max_images"
+      },
       "model_prompt": {
         "name": "פרומפט"
-      },
-      "model_prompt_optimization": {
-        "name": "prompt_optimization"
       },
       "model_seed": {
         "name": "seed"
@@ -2339,7 +2603,7 @@
   },
   "ByteDanceSeedreamNodeV3": {
     "description": "יצירת טקסט-לתמונה מאוחדת ועריכה מדויקת במשפט יחיד ברזולוציה של עד 4K.",
-    "display_name": "ByteDance Seedream 4.5 & 5.0",
+    "display_name": "ByteDance Seedream 4.5, 5.0 & 5.5",
     "inputs": {
       "control_after_generate": {
         "name": "בקרה לאחר יצירה"
@@ -2347,20 +2611,17 @@
       "model": {
         "name": "מודל"
       },
+      "model_background": {
+        "name": "רקע"
+      },
       "model_height": {
         "name": "גובה"
-      },
-      "model_prompt_optimization": {
-        "name": "מיטוב הנחיה"
       },
       "model_seed": {
         "name": "זרע"
       },
       "model_size_preset": {
         "name": "הגדרת גודל מראש"
-      },
-      "model_thinking": {
-        "name": "חשיבה"
       },
       "model_watermark": {
         "name": "סימן מים"
@@ -4310,7 +4571,7 @@
     }
   },
   "CreateCameraInfo": {
-    "description": "בניית camera_info. המצב 'orbit' מכוון באמצעות yaw/pitch/distance סביב היעד; המצב 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן מרחב העולם של הצופה (right-handed,Y-up).",
+    "description": "יצירת camera_info. המצב 'orbit' מכוון באמצעות yaw/pitch/distance סביב היעד; 'look_at' מציב את המצלמה במיקום בעולם. הקואורדינטות הן מרחב העולם של הצופה (right-handed,Y-up), או, כאשר מחובר mesh, המסגרת של אותו mesh, כך שאותן הגדרות ממסגרות כל mesh.",
     "display_name": "יצירת מידע מצלמה",
     "inputs": {
       "camera_info_state": {
@@ -4318,11 +4579,15 @@
       },
       "camera_type": {
         "name": "סוג מצלמה",
-        "tooltip": "היטל בשימוש על ידי Render Splat: פרספקטיבה (קיצור) או אורתוגרפי (מקבילי)."
+        "tooltip": "ההיטל המשמש את Render Splat ואת Render Mesh: perspective (קיצור פרספקטיבי) או orthographic (מקביל)."
       },
       "fov": {
         "name": "fov",
         "tooltip": "שדה ראייה אנכי במעלות."
+      },
+      "mesh": {
+        "name": "mesh",
+        "tooltip": "מסגרו mesh זה: המיקומים, היעד והמרחק נמדדים ממרכז התיבה התוחמת שלו, ביחידות של קוטר הכדור התוחם שלו, כך שאותן הגדרות ממסגרות כל mesh."
       },
       "mode": {
         "name": "מצב",
@@ -4354,6 +4619,38 @@
       "zoom": {
         "name": "zoom",
         "tooltip": "זום דיגיטלי (מכפיל אורך מוקד). >1 מקרב מבלי להזיז את המצלמה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "camera_info",
+        "tooltip": null
+      }
+    }
+  },
+  "CreateCameraOrbit": {
+    "description": "כמה מצלמות סביב יעד המצלמה הראשונה: סיבוב היקפי כברירת מחדל, עם הטיה לפי הצורך, וכן תצפיות ישירות מלמעלה ומלמטה. Render Mesh מרנדר תמונה אחת לכל מצלמה; Bake Texture From Views מקרין אותן בחזרה.",
+    "display_name": "יצירת מסלול מצלמה",
+    "inputs": {
+      "camera_info": {
+        "name": "camera_info",
+        "tooltip": "המצלמה הראשונה במסלול ההיקפי. רשימת מצלמות יוצרת מסלול סביב כל מצלמה שבה."
+      },
+      "count": {
+        "name": "כמות",
+        "tooltip": "מצלמות במרווחים שווים לאורך טווח הסיבוב."
+      },
+      "pitch": {
+        "name": "pitch",
+        "tooltip": "הטיה כוללת מעל היעד; ערך חיובי עולה כמו ה-pitch של Create Camera Info. מעבר ל-90 המצלמות עוברות מעל החלק העליון. סיבובים מלאים חוזרים בלולאה כמו yaw."
+      },
+      "poles": {
+        "name": "קטבים",
+        "tooltip": "תצוגות ישירות מלמעלה ו/או מלמטה אל היעד, המתווספות לאחר המסלול. החלק העליון של התמונה שלהן פונה הרחק מהמצלמה הראשונה."
+      },
+      "yaw": {
+        "name": "yaw",
+        "tooltip": "סיבוב כולל סביב היעד, בכיוון ה-yaw של Create Camera Info. סיבובים מלאים נעצרים צעד אחד לפני המצלמה הראשונה; סריקות אחרות מסתיימות במצלמה האחרונה."
       }
     },
     "outputs": {
@@ -4528,6 +4825,10 @@
       "bit_depth": {
         "name": "bit_depth",
         "tooltip": "Auto משתמש ב-8-bit עבור sRGB וב-10-bit עבור HDR. בחירות מפורשות של 8-bit ו-10-bit אינן תלויות במרחב הצבע."
+      },
+      "chroma_subsampling": {
+        "name": "chroma_subsampling",
+        "tooltip": "444 שומר על רזולוציית צבע מלאה, 422 מחלק בחצי את רזולוציית הצבע האופקית, ו-420 מחלק בחצי את שני הצירים. Auto משתמש בברירת המחדל של המקודד. אפשרויות שאינן נתמכות משתמשות במצב הנתמך הקרוב ביותר ומדפיסות אזהרה במסוף."
       },
       "codec": {
         "name": "codec",
@@ -6750,11 +7051,11 @@
   },
   "FluxVideoUpscaleNode": {
     "description": "הגדלת רזולוציית וידאו פי 1.5 עד 3 באמצעות רזולוציית-העל של FLUX, תוך שימור מדויק של המקור או שיפור יצירתי של פרטיו.",
-    "display_name": "הגדלת רזולוציית וידאו של Flux",
+    "display_name": "הגדלת וידאו של flux (מדור קודם)",
     "inputs": {
       "auto_downscale": {
         "name": "auto_downscale",
-        "tooltip": "הקטן אוטומטית מקורות ששטחם עולה על 3840x2160 פיקסלים כדי להתאים למגבלת הקלט. יחס הממדים נשמר; סרטונים קטנים יותר נותרים ללא שינוי."
+        "tooltip": "מקטין אוטומטית מקורות ששטחם גדול מ-2560x1440 פיקסלים כדי להתאים למגבלת הקלט. יחס הממדים נשמר; סרטונים קטנים יותר אינם משתנים."
       },
       "control_after_generate": {
         "name": "בקרה לאחר יצירה"
@@ -6782,6 +7083,48 @@
       "video": {
         "name": "video",
         "tooltip": "קליפ מקור באורך של 1 עד 20 שניות וביחס רוחב-גובה בין 1:4 ל־4:1. הפלט מעובד ב־24 fps ומוגבל לכ־14.4 מגה-פיקסל לכל פריים."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "FluxVideoUpscaleNodeV2": {
+    "description": "מגדיל סרטון ל-1080p, ‏2K או 4K, או פי 1.5 עד 3, באמצעות רזולוציית-העל של FLUX, תוך שימור מדויק של המקור או שיפור יצירתי של פרטיו.",
+    "display_name": "הגדלת וידאו של flux",
+    "inputs": {
+      "auto_downscale": {
+        "name": "הקטנה אוטומטית",
+        "tooltip": "הקטן מקורות גדולים מדי במקום לדחות אותם: מעל שטח של 2560x1440 פיקסלים, או מעל שני שלישים מרזולוציית היעד (מקדם ההגדלה המינימלי הוא פי 1.5). יחס הממדים נשמר."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "mode": {
+        "name": "מצב",
+        "tooltip": "'creative' משחזר וממציא פרטים עדינים, ומתאים במיוחד לצילומים שנוצרו, למרקמים ולנופים. 'precise' מחדד את המקור בלי לשנותו, עבור פנים, מוצרים וצילומים אמיתיים."
+      },
+      "prompt": {
+        "name": "הנחיה",
+        "tooltip": "תיאור אופציונלי של הקליפ, המכוון את הפרטים המשופרים. השאירו ריק להגדלה ניטרלית."
+      },
+      "safety_tolerance": {
+        "name": "סבילות בטיחות",
+        "tooltip": "סבילות לסינון תוכן; 0 הוא הערך המחמיר ביותר."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע לקביעה אם הצומת צריך לפעול מחדש; FLUX בוחר זרע משלו, לכן התוצאות בפועל אינן דטרמיניסטיות ללא קשר לערך זה."
+      },
+      "target_resolution": {
+        "name": "רזולוציית יעד",
+        "tooltip": "2K, ‏4K ו-1080p מתאימים את הפלט בתוך 2560x1440, ‏3840x2160 או 1920x1080 בהתאמה (מסובבים עבור קליפים לאורך). מקור קטן מכדי למלא את הרזולוציה בהגדלה המרבית של פי 3 יוגדל פי 3 ויופק בגודל קטן יותר."
+      },
+      "video": {
+        "name": "וידאו",
+        "tooltip": "קליפ מקור באורך של 1 עד 20 שניות, עם יחס ממדים בין 1:4 ל-4:1. הפלט מרונדר ב-24 fps ומוגבל לכ-14.4 מגה-פיקסל לפריים."
       }
     },
     "outputs": {
@@ -7394,7 +7737,7 @@
     }
   },
   "GeminiVideoOmniV2": {
-    "description": "צרו וידאו עם שמע מפרומפט טקסט באמצעות מודלי Gemini Omni Flash של Google. ניתן לספק תמונות ייחוס ו/או סרטונים כדי להנחות או לערוך את התוצאה. תארו את האורך הרצוי (3-10 שניות) ישירות בפרומפט.",
+    "description": "יצירת סרטון עם שמע מפרומפט טקסט באמצעות מודלי Gemini Omni Flash של Google. ניתן לספק אופציונלית תמונות ו/או סרטוני עזר כדי להנחות או לערוך את התוצאה. תארו את האורך הרצוי ישירות בפרומפט (3-15 שניות עבור Omni Flash 1.2, ‏3-10 שניות עבור מודלים ישנים יותר).",
     "display_name": "Google Gemini Omni (וידאו)",
     "inputs": {
       "control_after_generate": {
@@ -7702,7 +8045,8 @@
         "name": "image"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-quality ו-grok-imagine-image-pro הוצאו משימוש על ידי xAI וכעת פועלים כ-grok-imagine-image-2.0 באיכות נמוכה."
       },
       "number_of_images": {
         "name": "number_of_images",
@@ -7734,7 +8078,8 @@
         "name": "control after generate"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-quality ו-grok-imagine-image-pro הוצאו משימוש על ידי xAI וכעת פועלים כ-grok-imagine-image-2.0 באיכות נמוכה."
       },
       "model_aspect_ratio": {
         "name": "aspect_ratio"
@@ -7774,7 +8119,8 @@
         "name": "control after generate"
       },
       "model": {
-        "name": "model"
+        "name": "model",
+        "tooltip": "grok-imagine-image-quality ו-grok-imagine-image-pro הוצאו משימוש על ידי xAI וכעת פועלים כ-grok-imagine-image-2.0 באיכות נמוכה."
       },
       "number_of_images": {
         "name": "number_of_images",
@@ -8119,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "יצירת סרטון מדבר של אווטאר HeyGen באמצעות HeyGen Avatar 6, המונע על ידי תסריט טקסט או שמע משלכם.",
+    "display_name": "זהות HeyGen Avatar 6 לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס ממדים",
+        "tooltip": "'auto' פועל בהתאם לצילומי המקור של האווטאר."
+      },
+      "avatar": {
+        "name": "אווטאר"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "motion_expressiveness": {
+        "name": "הבעתיות_תנועה",
+        "tooltip": "האפשרות 'פחות' מפיקה פחות מחוות ובעלות היקף קטן יותר. להנחיית התנועה יש קדימות במקרים שבהם יש חפיפה."
+      },
+      "motion_prompt": {
+        "name": "הנחיית_תנועה",
+        "tooltip": "מחוות, הבעה, תנוחה ותנועת מצלמה."
+      },
+      "resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "speech": {
+        "name": "דיבור",
+        "tooltip": "הניעו את האווטאר באמצעות תסריט טקסט (המרת טקסט לדיבור של HeyGen) או שמע משלכם."
+      },
+      "speech_custom_voice_id": {
+        "name": "מזהה_קול_מותאם_אישית"
+      },
+      "speech_text": {
+        "name": "טקסט"
+      },
+      "speech_voice": {
+        "name": "קול"
+      },
+      "speech_voice_speed": {
+        "name": "מהירות_קול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "הפוך אדם או דמות מתמונה או מסרטון כך שידברו את האודיו המחובר באמצעות HeyGen Avatar 6. חברו תמונה, סרטון או את שניהם.",
+    "display_name": "HeyGen Avatar 6 הפניה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_motion_expressiveness": {
+        "name": "הבעתיות_תנועה"
+      },
+      "model_motion_prompt": {
+        "name": "הנחיית_תנועה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "צור וידאו מגיש מדבר מאווטאר של HeyGen. כולל את האווטארים הציבוריים הפופולריים ביותר של HeyGen; ניתן לספק כל מזהה מראה (look ID) כעקיפה.",
     "display_name": "וידאו אווטאר HeyGen",
@@ -8209,6 +8642,9 @@
       "model": {
         "name": "מודל"
       },
+      "model_auto_duration": {
+        "name": "משך_אוטומטי"
+      },
       "model_duration": {
         "name": "משך"
       },
@@ -8229,7 +8665,7 @@
     }
   },
   "HeyGenReferenceToVideoNode": {
-    "description": "יצירת וידאו עם דיאלוג וקול מסונכרנים מפרומפט טקסט באמצעות HeyGen Video 1.0. אפשר לחבר עד 12 תמונות, סרטוני וידאו וקטעי שמע להפניה, ולציין אותם בפרומפט כ-{'@'}Image1, {'@'}Video1, {'@'}Audio1.",
+    "description": "צרו סרטון עם דיבור וצליל מסונכרנים מהנחיית טקסט באמצעות HeyGen Video 1.0. אפשר לחבר עד 15 תמונות הפניה, סרטונים וקטעי אודיו, ולהזכיר אותם בהנחיה בתור {'@'}Image1, {'@'}Video1, {'@'}Audio1.",
     "display_name": "HeyGen Video 1.0 הפניה לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -8240,6 +8676,9 @@
       },
       "model_aspect_ratio": {
         "name": "יחס_גובה-רוחב"
+      },
+      "model_auto_duration": {
+        "name": "משך_אוטומטי"
       },
       "model_duration": {
         "name": "משך"
@@ -9039,7 +9478,7 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "עריכת תמונה בהנחיית פרומפט טקסט באמצעות העריכה המדויקת של Ideogram 4.5: רק מה שהפרומפט מבקש משתנה, פיקסלים שלא נגעו בהם נשארים זהים, והפלט שומר על גודל תמונה 1 (תמונות מעל ~4 MP מוקטנות תחילה). ניתן לקבל עד 4 תמונות להפניה.",
+    "description": "עורך תמונה בהנחיית טקסט באמצעות עריכה מדויקת של Ideogram 4.5: רק מה שההנחיה מבקשת משתנה, פיקסלים שלא נגעו בהם נשארים זהים, והפלט שומר על גודלה של תמונה 1 (תמונות שמעל לכ־4 MP מוקטנות תחילה). ניתן גם לערוך אזור יחיד, המוגדר באמצעות מסכה או תיבות תוחמות, ולהחזיר את התמונה בגודל מלא. מקבל עד 4 תמונות הפניה (3 עם context_window_mask).",
     "display_name": "Ideogram 4.5 עריכה מדויקת",
     "inputs": {
       "control_after_generate": {
@@ -9048,6 +9487,9 @@
       "model": {
         "name": "מודל",
         "tooltip": "המודל לשימוש."
+      },
+      "model_context_window": {
+        "name": "חלון_הקשר"
       },
       "model_prompt": {
         "name": "הנחיה"
@@ -10258,6 +10700,193 @@
       }
     }
   },
+  "Kling4EditVideoNode": {
+    "description": "ערכו סרטון באמצעות הנחיית טקסט ותמונות וסרטוני הפניה אופציונליים. התוצאה תהיה באותו אורך כמו סרטון הקלט.",
+    "display_name": "Kling 4.0 עריכת וידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_audio": {
+        "name": "אודיו"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageNode": {
+    "description": "צרו או ערכו תמונות מהנחיית טקסט ועד 10 תמונות הפניה, כתמונה אחת או כסדרה של תמונות קשורות.",
+    "display_name": "Kling 4.0 תמונה",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס_גובה_רוחב",
+        "tooltip": "auto פועל לפי תמונות הייחוס, אחרת לפי ההנחיה."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "prompt": {
+        "name": "הנחיה",
+        "tooltip": "התייחסו לתמונות ההפניה כאל @Image1, @Image2, ..."
+      },
+      "reference_images": {
+        "name": "תמונות_הפניה"
+      },
+      "resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם יש להפעיל את הצומת מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "series_amount": {
+        "name": "מספר_תמונות_בסדרה",
+        "tooltip": "יצירת סדרה של תמונות קשורות השומרות על אותם דמויות וסגנון. auto מאפשר למודל לבחור 2–10 תמונות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ImageToVideoNode": {
+    "description": "יצירת וידאו עם שמע באמצעות עד 10 תמונות מפתח ב-kling-4.0, או מתמונת פתיחה ב-kling-4.0-flash. תמונות האמצע מרווחות באופן שווה; יחס הגובה-רוחב של הווידאו נקבע לפי תמונת המפתח הראשונה.",
+    "display_name": "Kling 4.0 מתמונה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "יצירת תמונה גבוהה אחת: עיצוב דף אינטרנט או דף פרטי מוצר למסחר אלקטרוני.",
+    "display_name": "Kling 4.0 תמונה ארוכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "skill": {
+        "name": "מיומנות"
+      },
+      "skill_prompt": {
+        "name": "הנחיה"
+      },
+      "skill_resolution": {
+        "name": "רזולוציה"
+      },
+      "skill_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4ReferenceToVideoNode": {
+    "description": "יצירת וידאו עם שמע מתמונות ומסרטוני וידאו לייחוס, עם אפשרות להתחיל או לסיים בתמונות נתונות.",
+    "display_name": "Kling 4.0 מתמונות ייחוס לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה_רוחב"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4TextToVideoNode": {
+    "description": "יצירת וידאו עם שמע מהנחיית טקסט.",
+    "display_name": "Kling 4.0 מטקסט לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר היצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה_רוחב"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "הנחיה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "KlingAvatarNode": {
     "description": "יצירת סרטוני דמות דיגיטלית בסגנון שידור מתמונה בודדת וקובץ שמע.",
     "display_name": "Kling Avatar 2.0",
@@ -11049,8 +11678,7 @@
         "tooltip": "תמונת ייחוס שהסגנון שלה משפיע על היצירה."
       },
       "strength": {
-        "name": "עוצמה",
-        "tooltip": "עוצמת ההפניה; ערכים שליליים הופכים את השפעת הסגנון."
+        "name": "עוצמה"
       },
       "style_reference": {
         "name": "style_reference",
@@ -13157,30 +13785,102 @@
       }
     }
   },
-  "LumaConceptsNode": {
-    "description": "קונספטים של מצלמה לשימוש עם Luma Text to Video ו-Luma Image to Video צמתים.",
-    "display_name": "Luma Concepts",
+  "LtxApiVideoAlphaGen": {
+    "description": "חלץ מאט אלפא בגוני אפור (לבן הוא החזית) התואם לסרטון הקלט פריים אחר פריים. השתמשו ב-Get Video Components וב-Image To Mask כדי להפוך אותו למסכה. השמע אינו נשמר.",
+    "display_name": "LTX Video AlphaGen",
     "inputs": {
-      "concept1": {
-        "name": "concept1"
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
       },
-      "concept2": {
-        "name": "concept2"
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע לקביעה אם הצומת צריך לפעול מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר לזרע."
       },
-      "concept3": {
-        "name": "concept3"
-      },
-      "concept4": {
-        "name": "concept4"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "קונספטים של מצלמה נוספים להוספה לאלו שנבחרו כאן (אופציונלי)."
+      "video": {
+        "name": "סרטון",
+        "tooltip": "עד 10 שניות, לכל היותר 3840x2160 בכל כיוון."
       }
     },
     "outputs": {
       "0": {
-        "name": "luma_concepts",
+        "name": "מאט",
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoReframe": {
+    "description": "שנו את מסגורו של סרטון לרזולוציה וליחס ממדים חדשים. האזורים שמחוץ לסרטון המקורי נוצרים כך שיתאימו לו.",
+    "display_name": "LTX Video שינוי מסגור",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "placement": {
+        "name": "מיקום",
+        "tooltip": "מיקום הסרטון המקורי בפריים החדש. הסרטון תמיד ממלא צד אחד של הפריים, ולכן עוגן מזיז אותו לאורך הצד השני בלבד."
+      },
+      "resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע לקביעה אם הצומת צריך לפעול מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "video": {
+        "name": "סרטון",
+        "tooltip": "עד 60 שניות ו-1800 פריימים, כל צלע בין 64 ל-4096 פיקסלים."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoSdrToHdr": {
+    "description": "המרת סרטון SDR לסרטון HDR ב-10 סיביות (BT.2020, HLG) באותה רזולוציה. השמע אינו נשמר.",
+    "display_name": "LTX Video המרת SDR ל-HDR",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע לקביעה אם הצומת צריך לפעול מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "video": {
+        "name": "סרטון",
+        "tooltip": "לכל היותר 3840x2160 בכל כיוון. עד 273 פריימים ב-1080p, 193 פריימים ב-1440p ו-65 פריימים ב-4K."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LtxApiVideoUpscale": {
+    "description": "הגדלת רזולוציית הסרטון ל-1080p, 4K או 8K, תוך שמירה על יחס הממדים, קצב הפריימים והשמע שלו.",
+    "display_name": "LTX Video הגדלת רזולוציה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "הפלט יהיה גדול ככל שניתן במסגרת 1920x1080, 3840x2160 או 7680x4320 (מסובב עבור סרטוני דיוקן)."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע לקביעה אם הצומת צריך לפעול מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "video": {
+        "name": "סרטון",
+        "tooltip": "הצלע הקצרה היא לפחות 480 פיקסלים, ולכל היותר 7680x4320 בכל כיוון. עד 2401 פריימים עבור 1080p, 601 פריימים עבור 4k ו-241 פריימים עבור 8k."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -13221,82 +13921,6 @@
       }
     }
   },
-  "LumaImageModifyNode": {
-    "description": "שינוי תמונות באופן סינכרוני לפי פרומפט ויחס ממדים.",
-    "display_name": "Luma תמונה לתמונה",
-    "inputs": {
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image": {
-        "name": "image"
-      },
-      "image_weight": {
-        "name": "image_weight",
-        "tooltip": "משקל התמונה; ככל שקרוב ל-1.0, כך התמונה תשתנה פחות."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageNode": {
-    "description": "יוצר תמונות באופן סינכרוני לפי פרומפט ויחס ממדים.",
-    "display_name": "Luma טקסט לתמונה",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "character_image": {
-        "name": "character_image",
-        "tooltip": "תמונות ייחוס לדמות; ניתן להזין אצווה של מספר תמונות, עד 4 תמונות יילקחו בחשבון."
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "image_luma_ref": {
-        "name": "image_luma_ref",
-        "tooltip": "חיבור צומת Luma Reference להשפעה על יצירה עם תמונות קלט; ניתן לשקול עד 4 תמונות."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט ליצירת התמונה"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      },
-      "style_image": {
-        "name": "style_image",
-        "tooltip": "תמונת ייחוס לסגנון; רק תמונה אחת תילקח בחשבון."
-      },
-      "style_image_weight": {
-        "name": "style_image_weight",
-        "tooltip": "משקל תמונת הסגנון. מתעלם אם לא סופקה תמונת סגנון."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
   "LumaImageNode2": {
     "description": "יצירת תמונות מטקסט באמצעות מודל Luma UNI-1.",
     "display_name": "Luma UNI-1 תמונה",
@@ -13320,52 +13944,6 @@
       "prompt": {
         "name": "פרומפט",
         "tooltip": "תיאור טקסטואלי של התמונה הרצויה. 1–6000 תווים."
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "ה-seed קובע האם הצומת ירוץ מחדש; התוצאות אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
-        "tooltip": null
-      }
-    }
-  },
-  "LumaImageToVideoNode": {
-    "description": "יוצר וידאו באופן סינכרוני על בסיס פרומפט, תמונות קלט ו-output_size.",
-    "display_name": "Luma תמונה לוידאו",
-    "inputs": {
-      "control_after_generate": {
-        "name": "שליטה לאחר יצירה"
-      },
-      "duration": {
-        "name": "משך"
-      },
-      "first_image": {
-        "name": "תמונה ראשונה",
-        "tooltip": "הפריים הראשון של הוידאו שנוצר."
-      },
-      "last_image": {
-        "name": "תמונה אחרונה",
-        "tooltip": "הפריים האחרון של הוידאו שנוצר."
-      },
-      "loop": {
-        "name": "לולאה"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "קונספטים אופציונליים של מצלמה לשליטה בתנועת המצלמה דרך צומת Luma Concepts."
-      },
-      "model": {
-        "name": "מודל"
-      },
-      "prompt": {
-        "name": "פרומפט",
-        "tooltip": "הנחיה ליצירת הוידאו"
-      },
-      "resolution": {
-        "name": "רזולוציה"
       },
       "seed": {
         "name": "seed",
@@ -13599,7 +14177,7 @@
     }
   },
   "LumaRay32VideoReframeNode": {
-    "description": "שינוי יחס הגובה-רוחב של וידאו קיים, תוך שימוש ב-Luma Ray 3.2 למילוי האזורים החדשים בקנבס. וידאו מקור עד 30 שניות. החיוב לפי שניית פלט.",
+    "description": "שנו את יחס הממדים של סרטון קיים באמצעות Luma Ray 3.2 כדי למלא את אזורי הקנבס שנחשפו מחדש. סרטון המקור יכול להיות באורך של עד 10 שניות. החיוב הוא לכל שניית פלט.",
     "display_name": "Luma Ray 3.2 שינוי יחס גובה-רוחב לווידאו",
     "inputs": {
       "aspect_ratio": {
@@ -13621,7 +14199,7 @@
       },
       "video": {
         "name": "video",
-        "tooltip": "וידאו מקור לשינוי יחס גובה-רוחב. עד 30 שניות."
+        "tooltip": "סרטון המקור לשינוי המסגור. עד 10 שניות."
       }
     },
     "outputs": {
@@ -13630,70 +14208,6 @@
       },
       "1": {
         "name": "generation_id",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaReferenceNode": {
-    "description": "שומר תמונה ומשקל לשימוש עם צומת Luma Generate Image.",
-    "display_name": "Luma Reference",
-    "inputs": {
-      "image": {
-        "name": "image",
-        "tooltip": "תמונה לשימוש כהפניה."
-      },
-      "luma_ref": {
-        "name": "luma_ref"
-      },
-      "weight": {
-        "name": "weight",
-        "tooltip": "משקל של הפניית התמונה."
-      }
-    },
-    "outputs": {
-      "0": {
-        "name": "luma_ref",
-        "tooltip": null
-      }
-    }
-  },
-  "LumaVideoNode": {
-    "description": "יוצר וידאו באופן סינכרוני על בסיס פרומפט ו-output_size.",
-    "display_name": "Luma Text to Video",
-    "inputs": {
-      "aspect_ratio": {
-        "name": "aspect_ratio"
-      },
-      "control_after_generate": {
-        "name": "control after generate"
-      },
-      "duration": {
-        "name": "duration"
-      },
-      "loop": {
-        "name": "loop"
-      },
-      "luma_concepts": {
-        "name": "luma_concepts",
-        "tooltip": "Camera Concepts אופציונלי לשליטה בתנועת מצלמה דרך צומת Luma Concepts."
-      },
-      "model": {
-        "name": "model"
-      },
-      "prompt": {
-        "name": "prompt",
-        "tooltip": "פרומפט ליצירת הווידאו"
-      },
-      "resolution": {
-        "name": "resolution"
-      },
-      "seed": {
-        "name": "seed",
-        "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
-      }
-    },
-    "outputs": {
-      "0": {
         "tooltip": null
       }
     }
@@ -14940,6 +15454,41 @@
       }
     }
   },
+  "MiniMaxH3ContextWindows": {
+    "description": "הגדירו חלונות הקשר עבור MiniMax H3. החלונות מתחילים בגבולות מקטעי 17 הפריימים של המודל כדי לשמור על סנכרון בין הווידאו לשמע.",
+    "display_name": "MiniMax H3 חלונות הקשר",
+    "inputs": {
+      "context_length": {
+        "name": "אורך ההקשר",
+        "tooltip": "אורך חלון ההקשר בפריימים בפועל. חייב להיות 17*n + 5."
+      },
+      "context_overlap": {
+        "name": "חפיפת ההקשר",
+        "tooltip": "החפיפה של חלון ההקשר בפריימים בפועל. חייבת להיות 17*n + 5."
+      },
+      "freenoise": {
+        "name": "FreeNoise",
+        "tooltip": "האם להחיל ערבוב רעש של FreeNoise, המשפר את מיזוג החלונות."
+      },
+      "fuse_method": {
+        "name": "שיטת מיזוג",
+        "tooltip": "השיטה שבה יש להשתמש למיזוג חלונות ההקשר."
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שעליו יוחלו חלונות הקשר במהלך הדגימה."
+      },
+      "split_conds_to_windows": {
+        "name": "פיצול התניות לחלונות",
+        "tooltip": "האם לפצל התניות מרובות (שנוצרו על-ידי ConditionCombine) לכל חלון לפי אינדקס האזור."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": "המודל שעליו מוחלים חלונות הקשר במהלך הדגימה."
+      }
+    }
+  },
   "MiniMaxH3FunControlNetApply": {
     "description": "החל MiniMax H3 Fun ControlNet על מודל מטקסט לווידאו כתיקון מודל.",
     "display_name": "החל MiniMax H3 Fun ControlNet",
@@ -14980,6 +15529,42 @@
       }
     }
   },
+  "MiniMaxH3ImageConditioning": {
+    "description": "טקסט לתמונה, או עריכה המונחית על-ידי תמונות. הפרומפט מתייחס אליהן כאל <Picture 1>, <Picture 2>, ...",
+    "display_name": "התניית תמונה של MiniMax H3",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "0 משתמש בגובה של image_1 לאחר שינוי קנה המידה להפניה, או ב-2048 ללא תמונות."
+      },
+      "images": {
+        "name": "תמונות"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "ה-VAE של MiniMax-H3-Image. באמצעותו התמונות מעוגנות גם כערכי latent להפניה; בלעדיו הן מתנות רק את מקודד הטקסט."
+      },
+      "width": {
+        "name": "רוחב",
+        "tooltip": "0 משתמש ברוחב של image_1 לאחר שינוי קנה המידה להפניה, או ב-2048 ללא תמונות. המודל מכוונן לשטח של 2048x2048 פיקסלים."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      }
+    }
+  },
   "MiniMaxH3ImageToVideo": {
     "display_name": "MiniMax H3 Image to Video",
     "inputs": {
@@ -15015,6 +15600,29 @@
         "tooltip": null
       },
       "1": {
+        "tooltip": null
+      }
+    }
+  },
+  "MiniMaxH3LatentUpscaleWithModel": {
+    "description": "משנה את גודל הסרטון של latent מסוג MiniMax H3 באמצעות מודל להגדלת latent; השמע עובר ללא שינוי.",
+    "display_name": "הגדלת latent של MiniMax H3 באמצעות מודל",
+    "inputs": {
+      "height": {
+        "name": "גובה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "samples": {
+        "name": "דגימות"
+      },
+      "width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -15134,6 +15742,50 @@
       }
     }
   },
+  "MinimaxH3ImageNode": {
+    "description": "יצירת תמונות מטקסט, או עריכה ושילוב של עד 16 תמונות הפניה, באמצעות MiniMax H3-Image. יש להתייחס להפניות בפרומפט לפי סדרן: {'@'}Image1, {'@'}Image2, וכן הלאה.",
+    "display_name": "תמונת MiniMax H3",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "enhance_prompt": {
+        "name": "שיפור פרומפט",
+        "tooltip": "MiniMax משכתב את הפרומפט לתיאור מפורט של הסצנה לפני היצירה. עריכות תמונה משופרות תמיד. כאשר האפשרות כבויה, יש לבחור יחס ממדים או גודל מותאם אישית."
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "תמונות הפניה אופציונליות לעריכה או לשילוב, שאליהן מתייחסים בפרומפט כאל @Image1..@Image16 לפי סדר החיבור. עד 16."
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "כאשר מחוברות תמונות הפניה, הפרומפט יכול להכיל לכל היותר 8,000 תווים."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם יש להפעיל מחדש את הצומת; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "size": {
+        "name": "גודל",
+        "tooltip": "2K ו-4K גוזרים את הגודל מיחס הממדים; מותאם אישית מגדיר רוחב וגובה מדויקים."
+      },
+      "size_aspect_ratio": {
+        "name": "יחס ממדים"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "פרומפט מתוקן",
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ContextIRNode": {
     "description": "ניתוח הקשר טקסט ומדיה באמצעות MiniMax H3 Context IR והפקת פרומפט וידאו משופר ומובנה. הזינו את הפלט בפרומפט של צומת וידאו MiniMax H3 וצרפו אליו את אותה מדיה באותו סדר, מכיוון שהפרומפט המשופר מתייחס למדיה המצורפת לפי מיקום.",
     "display_name": "MiniMax H3 Context IR (משפר פרומפט)",
@@ -15209,8 +15861,218 @@
       }
     }
   },
+  "MinimaxHailuo03MaxCameraControlNode": {
+    "description": "יוצר סרטון המתחיל מהתמונה ומניע את המצלמה לזווית ולמרחק חדשים סביב הנושא.",
+    "display_name": "בקרת מצלמה MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת סרטון."
+      },
+      "model_azimuth": {
+        "name": "אַזִימוּט"
+      },
+      "model_distance": {
+        "name": "מרחק"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_elevation": {
+        "name": "גובה זוויתי"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_prompt_expansion_mode": {
+        "name": "מצב_הרחבת_פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxExtendVideoNode": {
+    "description": "ממשיך סרטון עם קטעים חדשים בהנחיית פרומפט והפניות שמע אופציונליות.",
+    "display_name": "הרחבת סרטון MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת סרטון."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס_גובה-רוחב"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_output": {
+        "name": "פלט"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_prompt_expansion": {
+        "name": "הרחבת_פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxInsertVideoNode": {
+    "description": "מחליף את החלק בסרטון שבין זמני ההתחלה והחידוש בסצנה חדשה שנוצרה, בהנחיית פרומפט ותמונות וסרטוני הפניה אופציונליים.",
+    "display_name": "הוספת סרטון MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת סרטון."
+      },
+      "model_color_match": {
+        "name": "התאמת_צבעים"
+      },
+      "model_duration": {
+        "name": "משך"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_prompt_expansion": {
+        "name": "הרחבת_פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_resume_time": {
+        "name": "זמן המשך"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_start_time": {
+        "name": "זמן התחלה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxLipSyncNode": {
+    "description": "הנפשת תמונה כך שתנועות הפה שלה יתאימו לשמע. אורך הסרטון יהיה כאורך השמע.",
+    "display_name": "סנכרון שפתיים MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_transcription": {
+        "name": "תמלול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxRecastNode": {
+    "description": "החלפת האנשים בסרטון באנשים מתמונות עזר, תוך שמירה על התנועה, המצלמה, החיתוכים והצליל של סרטון המקור.",
+    "display_name": "שחזור ליהוק MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_enhance_realism": {
+        "name": "שיפור ריאליזם"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "MinimaxHailuo03MaxReframeVideoNode": {
+    "description": "התאמת סרטון ליחס ממדים חדש באמצעות התאמתו לקנבס חדש ויצירת האזורים שמסביב. התזמון והצליל של סרטון המקור נשמרים.",
+    "display_name": "שינוי מסגור וידאו MiniMax H3 Max",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל שישמש ליצירת וידאו."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס ממדים"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "MinimaxHailuo03ReferenceNode": {
-    "description": "יצירת וידאו המותנה בתמונות, סרטונים ושמע של ייחוס באמצעות מודלי MiniMax H3. התייחסו להפניות בפרומפט לפי סדרן: 'Image 1', 'Image 2', 'Video 1', 'Audio 1' וכן הלאה.",
+    "description": "יצירת וידאו המותנה בתמונות עזר, סרטונים ושמע באמצעות מודלי MiniMax H3. יש להפנות לעזרי הייחוס בפרומפט לפי סדרם: {'@'}Image1, {'@'}Image2, {'@'}Video1, {'@'}Audio1 וכן הלאה.",
     "display_name": "MiniMax H3 רפרנס לווידאו",
     "inputs": {
       "control_after_generate": {
@@ -18311,7 +19173,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "מידת ההנמקה שהמודל מבצע לפני המענה. 'default' משאיר את הבחירה למודל. הרמות הנתמכות משתנות לפי מודל: GPT-6 Astra low-max, GPT-6 Sol/Luna ו-GPT-5.6 none-max (ללא minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, סדרת o low-high; ל-GPT-4.1 אין הנמקה. רמות שאינן נתמכות נדחות לפני שליחת הבקשה."
+        "tooltip": "הרמות הנתמכות משתנות לפי המודל. רמה שאינה נתמכת עוצרת את ההרצה ומציגה את הרמות החוקיות. 'default' מאפשר למודל לבחור."
       },
       "truncation": {
         "name": "truncation",
@@ -18416,9 +19278,55 @@
       }
     }
   },
+  "OpenAIGPTImageGIFNode": {
+    "description": "יצירת GIF מונפש באמצעות נקודת הקצה GPT Image של OpenAI ופלט של המסגרות וקצב המסגרות שלו.",
+    "display_name": "OpenAI GPT Image 2.6 GIF",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_background": {
+        "name": "רקע"
+      },
+      "model_complexity": {
+        "name": "מורכבות"
+      },
+      "model_frame_count": {
+        "name": "מספר מסגרות"
+      },
+      "model_frame_duration_ms": {
+        "name": "משך מסגרת במילישניות"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "פריימים",
+        "tooltip": null
+      },
+      "1": {
+        "name": "fps",
+        "tooltip": null
+      }
+    }
+  },
   "OpenAIGPTImageNodeV2": {
     "description": "יוצר תמונות דרך נקודת הקצה של OpenAI GPT Image.",
-    "display_name": "OpenAI GPT Image 2.5",
+    "display_name": "תמונת GPT של OpenAI",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -18428,6 +19336,9 @@
       },
       "model_background": {
         "name": "background"
+      },
+      "model_complexity": {
+        "name": "מורכבות"
       },
       "model_custom_height": {
         "name": "custom_height"
@@ -18452,6 +19363,82 @@
       "seed": {
         "name": "seed",
         "tooltip": "עדיין לא נתמך בצד השרת"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageNodeV3": {
+    "description": "יוצר ועורך תמונות דרך נקודת הקצה GPT Image של OpenAI, עם עריכות בהנחיית הערות.",
+    "display_name": "תמונת GPT של OpenAI 2.6",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_background": {
+        "name": "רקע"
+      },
+      "model_complexity": {
+        "name": "מורכבות"
+      },
+      "model_custom_height": {
+        "name": "custom_height"
+      },
+      "model_custom_width": {
+        "name": "custom_width"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "OpenAIGPTImageSVGNode": {
+    "description": "יוצר SVG דרך נקודת הקצה GPT Image של OpenAI.",
+    "display_name": "SVG של תמונת GPT של OpenAI 2.6",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_background": {
+        "name": "רקע"
+      },
+      "model_complexity": {
+        "name": "מורכבות"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_quality": {
+        "name": "איכות"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_size": {
+        "name": "גודל"
       }
     },
     "outputs": {
@@ -18510,7 +19497,7 @@
     }
   },
   "OpenRouterLLMNode": {
-    "description": "יצירת תגובות טקסט דרך OpenRouter. מנתב למודלים פופולריים נבחרים מ-xAI, DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi), ו-Perplexity Sonar.",
+    "description": "יוצר תגובות טקסט דרך OpenRouter. מנתב לקבוצה שנבחרה בקפידה של מודלים פופולריים מבית Anthropic (Claude), OpenAI (GPT), Google (Gemini), xAI (Grok), Meta (Muse), DeepSeek, Qwen, Mistral, Z.AI (GLM), Moonshot (Kimi) ו-Perplexity Sonar.",
     "display_name": "OpenRouter LLM",
     "inputs": {
       "control_after_generate": {
@@ -18571,6 +19558,43 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PH3ImageConditioning": {
+    "description": "טקסט לתמונה, או עם תמונות עריכה של image_1 כאשר האחרות משמשות כייחוסים. הפרומפט מתייחס אליהן כאל <Picture 1>, <Picture 2>, ... המודל זקוק ל-ModelSamplingMiniMaxH3 ב-1.0/1.0.",
+    "display_name": "התניית p-h3-image",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "0 משתמש בגובה של image_1 לאחר שינוי קנה המידה, או ב-2912 ללא תמונות."
+      },
+      "images": {
+        "name": "תמונות"
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "עם תמונות, להנחיה קצרה מתווסף בתחילתה \"Edit <Picture 1>. \"; הנחיה שמתחילה ב-\"Edit <Picture\" ותיאור עריכה ממגדיל הפרומפט משמשים כפי שהם."
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "ה-VAE של p-h3-image. באמצעותו התמונות מעוגנות גם כלטנטים של ייחוס; בלעדיו הן מתנות רק את מקודד הטקסט."
+      },
+      "width": {
+        "name": "רוחב",
+        "tooltip": "0 משתמש ברוחב של image_1 לאחר שינוי קנה המידה, או ב-2912 ללא תמונות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
         "tooltip": null
       }
     }
@@ -18824,6 +19848,288 @@
       }
     }
   },
+  "PatinaMaterialExtractNode": {
+    "description": "מחלץ חומר PBR הניתן לריצוף רציף (תמונת מרקם + מפות PBR) מאזור בתמונת קלט, בהנחיית פרומפט.",
+    "display_name": "חילוץ חומר Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "צבע בסיס",
+        "tooltip": "יצירת מפת צבע בסיס (albedo)."
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "יצירת מפת הגובה/ההסטה."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "התמונה שממנה יש לחלץ מרקם."
+      },
+      "image_size": {
+        "name": "image_size",
+        "tooltip": "גודל מרקם הפלט. בחרו 'custom' כדי להגדיר רוחב/גובה בין 512 ל-2048 (תוצאת 8K מתקבלת מהגדלה פי 4 של המפות)."
+      },
+      "metalness": {
+        "name": "מתכתיות",
+        "tooltip": "יצירת מפת המתכתיות."
+      },
+      "normal": {
+        "name": "נורמלים",
+        "tooltip": "יצירת מפת נורמלים."
+      },
+      "num_inference_steps": {
+        "name": "מספר שלבי הסקה",
+        "tooltip": "שלבי הסרת רעש ליצירת מרקם."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "תארו איזה מרקם לחלץ מהתמונה (למשל, \"הקיר\")."
+      },
+      "prompt_expansion": {
+        "name": "הרחבת פרומפט",
+        "tooltip": "הרחבת הפרומפט באמצעות LLM לקבלת פרטי מרקם עשירים יותר. כבוי כברירת מחדל: ההרחבה ממסגרת מחדש את הפרומפט כתמונה ונוטה לטשטש את מפת המתכתיות."
+      },
+      "roughness": {
+        "name": "חספוס",
+        "tooltip": "יצירת מפת החספוס."
+      },
+      "safety_checker": {
+        "name": "בודק בטיחות"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע ליצירה הניתנת לשחזור."
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת השינוי של תמונת הקלט."
+      },
+      "tile_size": {
+        "name": "גודל אריח",
+        "tooltip": "גודל האריח במרחב latent ‏(64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "צעד אריח",
+        "tooltip": "צעד האריח במרחב latent."
+      },
+      "tiling_mode": {
+        "name": "מצב ריצוף",
+        "tooltip": "כיוון הריצוף: לכל הכיוונים, אופקי או אנכי."
+      },
+      "upscale_factor": {
+        "name": "מקדם הגדלה",
+        "tooltip": "הגדלת מפות ה-PBR באמצעות SeedVR באופן חלק (מרקם הבסיס אינו מוגדל)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מרקם",
+        "tooltip": null
+      },
+      "1": {
+        "name": "צבע בסיס",
+        "tooltip": null
+      },
+      "2": {
+        "name": "נורמלים",
+        "tooltip": null
+      },
+      "3": {
+        "name": "חספוס",
+        "tooltip": null
+      },
+      "4": {
+        "name": "מתכתיות",
+        "tooltip": null
+      },
+      "5": {
+        "name": "גובה",
+        "tooltip": null
+      },
+      "6": {
+        "name": "פרומפט מורחב",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaMaterialNode": {
+    "description": "יצירת חומר PBR מלא הניתן לריצוף חלק (תמונת מרקם + מפות PBR) מפרומפט טקסטואלי, עד 8K. ניתן לחלופין להניע אותו באמצעות תמונת קלט (img2img) או תמונה + mask ‏(inpaint).",
+    "display_name": "חומר Patina",
+    "inputs": {
+      "basecolor": {
+        "name": "צבע בסיס",
+        "tooltip": "צור את מפת צבע הבסיס (albedo)."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר היצירה"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "צור את מפת הגובה/ההיסט."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תמונת מקור אופציונלית. תמונה בלבד = img2img; עם מסכה = inpaint."
+      },
+      "image_size": {
+        "name": "גודל תמונה",
+        "tooltip": "גודל מרקם הפלט. בחרו באפשרות 'custom' עבור רוחב/גובה בין 512 ל-2048 (תוצאת 8K מתקבלת מהגדלה פי 4 של המפות)."
+      },
+      "mask": {
+        "name": "מסכה",
+        "tooltip": "מסכת inpaint אופציונלית (מחייבת תמונה). לבן = יצירה מחדש, שחור = השארה."
+      },
+      "metalness": {
+        "name": "מתכתיות",
+        "tooltip": "צור את מפת המתכתיות."
+      },
+      "normal": {
+        "name": "נורמל",
+        "tooltip": "צור את מפת הנורמל."
+      },
+      "num_inference_steps": {
+        "name": "num_inference_steps",
+        "tooltip": "שלבי הסרת רעש ליצירת מרקם."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "תיאור החומר/המרקם ליצירה."
+      },
+      "prompt_expansion": {
+        "name": "prompt_expansion",
+        "tooltip": "הרחב את ההנחיה באמצעות LLM לקבלת פרטי מרקם עשירים יותר. כבוי כברירת מחדל: ההרחבה ממסגרת את ההנחיה כתצלום ונוטה להחליש את מפת המתכתיות."
+      },
+      "roughness": {
+        "name": "חספוס",
+        "tooltip": "צור את מפת החספוס."
+      },
+      "safety_checker": {
+        "name": "safety_checker"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע ליצירה הניתנת לשחזור."
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת השינוי של תמונת הקלט. בשימוש רק כאשר מסופקת תמונה."
+      },
+      "tile_size": {
+        "name": "tile_size",
+        "tooltip": "גודל האריח במרחב latent ‏(64 = 512px, 128 = 1024px)."
+      },
+      "tile_stride": {
+        "name": "tile_stride",
+        "tooltip": "פסיעת האריח במרחב latent."
+      },
+      "tiling_mode": {
+        "name": "tiling_mode",
+        "tooltip": "כיוון הריצוף: לכל הכיוונים, אופקי או אנכי."
+      },
+      "upscale_factor": {
+        "name": "upscale_factor",
+        "tooltip": "הגדלת רזולוציה ללא תפרים באמצעות SeedVR של מפות PBR ‏(המרקם הבסיסי אינו מוגדל)."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מרקם",
+        "tooltip": null
+      },
+      "1": {
+        "name": "צבע בסיס",
+        "tooltip": null
+      },
+      "2": {
+        "name": "נורמל",
+        "tooltip": null
+      },
+      "3": {
+        "name": "חספוס",
+        "tooltip": null
+      },
+      "4": {
+        "name": "מתכתיות",
+        "tooltip": null
+      },
+      "5": {
+        "name": "גובה",
+        "tooltip": null
+      },
+      "6": {
+        "name": "expanded_prompt",
+        "tooltip": null
+      }
+    }
+  },
+  "PatinaPBRMapsNode": {
+    "description": "צור מפות חומר PBR ‏(צבע בסיס, נורמל, חספוס, מתכתיות, גובה) מתמונת מרקם.",
+    "display_name": "מפות חומר PBR של Patina",
+    "inputs": {
+      "auto_downscale": {
+        "name": "הקטנה אוטומטית",
+        "tooltip": "הקטן אוטומטית תמונת קלט שהצלע הארוכה ביותר שלה עולה על 2048px (מגבלת הקלט של המודל), תוך שמירה על יחס הממדים; תמונות קטנות יותר יישארו ללא שינוי. השבת אפשרות זו כדי להציג שגיאה עבור תמונות גדולות מדי."
+      },
+      "basecolor": {
+        "name": "צבע בסיס",
+        "tooltip": "הפקת מפת צבע הבסיס (albedo)."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "height": {
+        "name": "גובה",
+        "tooltip": "הפקת מפת הגובה/ההסטה."
+      },
+      "image": {
+        "name": "תמונה",
+        "tooltip": "תצלום או רינדור קלט שמהם יופקו מפות PBR."
+      },
+      "metalness": {
+        "name": "מתכתיות",
+        "tooltip": "הפקת מפת המתכתיות."
+      },
+      "normal": {
+        "name": "נורמל",
+        "tooltip": "הפקת מפת הנורמל."
+      },
+      "roughness": {
+        "name": "חספוס",
+        "tooltip": "הפקת מפת החספוס."
+      },
+      "safety_checker": {
+        "name": "בודק בטיחות"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "זרע להפחתת רעש הניתנת לשחזור."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "צבע בסיס",
+        "tooltip": null
+      },
+      "1": {
+        "name": "נורמל",
+        "tooltip": null
+      },
+      "2": {
+        "name": "חספוס",
+        "tooltip": null
+      },
+      "3": {
+        "name": "מתכתיות",
+        "tooltip": null
+      },
+      "4": {
+        "name": "גובה",
+        "tooltip": null
+      }
+    }
+  },
   "PerpNeg": {
     "display_name": "Perp-Neg (הוצא משימוש על ידי Perp-Neg Guider)",
     "inputs": {
@@ -18940,6 +20246,183 @@
       },
       "positive": {
         "name": "positive"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexReferenceVideoNode": {
+    "description": "Pika H3 Flex, MiniMax H3 של Pika שאומן לאחר מכן. הפקה או עריכה של וידאו עם אודיו מסונכרן, בהנחיית תמונות, סרטונים ואודיו של ייחוס.",
+    "display_name": "Pika H3 Flex מייחוס לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס גובה־רוחב",
+        "tooltip": "auto פועל לפי סרטון עזר, או לפי הפרומפט אם אין כזה. תמונות עזר אינן משפיעות עליו."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "אורך הפלט פועל לפי רשת פריימים: 5 שניות מניבות 124 פריימים, שהם כ־5.17 שניות."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "התייחסו לייחוסים כאל @Image1, @Video1, @Audio1, או כאל <Picture 1>, <Video 1>, <Audio 1>."
+      },
+      "reference_audios": {
+        "name": "קטעי שמע לעזר",
+        "tooltip": "עד 3 קטעים, שאליהם מתייחסים בפרומפט כ־@Audio1..@Audio3. 2–15 שניות לכל קטע, 15 שניות בסך הכול. כאשר הם מועתקים לפלט, הקטעים מתנגנים לפי סדר החיבור, לפני השמע של סרטוני הווידאו המחוברים, בלי קשר למספר שהפרומפט מציין."
+      },
+      "reference_images": {
+        "name": "תמונות עזר",
+        "tooltip": "עד 9 תמונות, שאליהן מתייחסים בפרומפט כ־@Image1..@Image9 לפי סדר החיבור. נדרשת לפחות תמונה או סרטון וידאו אחד."
+      },
+      "reference_video_audio": {
+        "name": "שמע של סרטון עזר",
+        "tooltip": "השמע של סרטוני וידאו מחוברים מועתק לפלט. השביתו אפשרות זו כדי ליצור אווירה חדשה או להעביר תנועה עם מוזיקה חדשה. ראש מדבר ללא דיאלוג בפרומפט יקבל לאחר מכן דיבור מומצא."
+      },
+      "reference_videos": {
+        "name": "סרטוני וידאו לעזר",
+        "tooltip": "עד 3 סרטוני וידאו, שאליהם מתייחסים בפרומפט כ־@Video1..@Video3 לפי סדר החיבור. 2–15 שניות לכל סרטון, 15 שניות בסך הכול. החיוב הוא לפי שנייה."
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "1080p ומעלה מעובדים ב־768p ומשודרגים פעם אחת. אותו seed ב־480p מפיק סרטון שונה."
+      },
+      "rewrite_prompt": {
+        "name": "שכתוב פרומפט",
+        "tooltip": "אפשרו ל־Pika להרחיב תחילה את הפרומפט. אותו seed יפיק לאחר מכן סרטון שונה בכל הרצה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "כאשר rewrite_prompt כבוי, אותו seed משחזר את הסרטון בדיוק. הרצה מקומית עם אותו seed מפיקה תוצאה שונה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaH3FlexVideoNode": {
+    "description": "Pika H3 Flex, ‏MiniMax H3 של Pika שעבר אימון המשך. יצירת וידאו עם שמע מסונכרן מטקסט ומפריים ראשון ואחרון אופציונליים.",
+    "display_name": "Pika H3 Flex Video",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס גובה־רוחב",
+        "tooltip": "auto פועל לפי הפריים המחובר הראשון, או לפי הפרומפט אם אין כזה."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "אורך הפלט פועל לפי רשת פריימים: 5 שניות מניבות 124 פריימים, שהם כ־5.17 שניות."
+      },
+      "first_frame": {
+        "name": "פריים ראשון"
+      },
+      "last_frame": {
+        "name": "פריים אחרון"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "resolution": {
+        "name": "רזולוציה",
+        "tooltip": "1080p ומעלה מעובדים ב־768p ומשודרגים פעם אחת. אותו seed ב־480p מפיק סרטון שונה."
+      },
+      "rewrite_prompt": {
+        "name": "שכתוב פרומפט",
+        "tooltip": "אפשרו ל־Pika להרחיב תחילה את הפרומפט. אותו seed יפיק לאחר מכן סרטון שונה בכל הרצה."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "כאשר rewrite_prompt כבוי, אותו seed משחזר את הסרטון בדיוק. הרצה מקומית עם אותו seed מפיקה תוצאה שונה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaMusicNode": {
+    "description": "יצירת מוזיקה מתיאור טקסטואלי וממילות שיר אופציונליות, או יצירת קאבר לשיר, באמצעות Pika.",
+    "display_name": "Pika Music",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "mode": {
+        "name": "מצב"
+      },
+      "mode_duration": {
+        "name": "משך"
+      },
+      "mode_lyrics": {
+        "name": "מילות שיר"
+      },
+      "mode_prompt": {
+        "name": "פרומפט"
+      },
+      "mode_rewrite_prompt": {
+        "name": "שכתוב פרומפט"
+      },
+      "mode_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSFXNode": {
+    "description": "יצירת אפקט קולי מתיאור טקסט באמצעות Pika.",
+    "display_name": "אפקטים קוליים של Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך"
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PikaSoundtrackNode": {
+    "description": "יצירת פסקול מסונכרן לסרטון באמצעות Pika. התמונה והאורך נשמרים; רק השמע מוחלף.",
+    "display_name": "פסקול של Pika",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "instruction": {
+        "name": "הנחיה",
+        "tooltip": "מה צריך להיות בשמע: אפקטים קוליים, אווירה, מוזיקה או סגנון. השאירו ריק כדי לגזור זאת מהתמונה."
+      },
+      "seed": {
+        "name": "זרע"
+      },
+      "video": {
+        "name": "סרטון",
+        "tooltip": "עד 10 דקות."
       }
     },
     "outputs": {
@@ -19765,6 +21248,33 @@
       },
       "model_seed": {
         "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaPVideoUpscaleNode": {
+    "description": "הגדלת רזולוציית סרטון ל-720p, 1080p, 2K או 4K באמצעות Pruna P-Video Upscale, תוך שמירה על יחס הממדים והשמע שלו.",
+    "display_name": "הגדלת רזולוציה Pruna P-Video",
+    "inputs": {
+      "fps": {
+        "name": "fps",
+        "tooltip": "קצב הפריימים בפלט. 'מקור' שומר על קצב הסרטון, עד 60. קצב גבוה יותר עובר אינטרפולציה. פלט מעל 30 fps עולה פי שניים."
+      },
+      "target": {
+        "name": "יעד",
+        "tooltip": "שטח הפיקסלים בפלט: 720p הוא כ-0.9 מגה-פיקסל, 1080p הוא 2.1, 2K הוא 3.7, 4K הוא 8.3. סרטון שכבר בגודל זה שומר על גודלו ורק משופר. אורך מרבי: 2400, 1200, 600 או 300 פריימים, כ-100, 50, 25 או 12.5 שניות ב-24 fps."
+      },
+      "turbo": {
+        "name": "טורבו",
+        "tooltip": "הגדלת רזולוציה מהירה יותר עם פרטים רכים יותר, באותו המחיר."
+      },
+      "video": {
+        "name": "סרטון",
+        "tooltip": "סרטון להגדלת רזולוציה, עד 512 MiB."
       }
     },
     "outputs": {
@@ -20965,8 +22475,31 @@
       }
     }
   },
+  "RelayVSRConditioning": {
+    "description": "התניה ו-latent ריק להגדלת רזולוציית וידאו באמצעות RelayVSR; יש לדגום בצעד אחד ב-cfg 1. רק כל פריים 15 עובר דרך המודל, ו-VSR Decode משחזר את כולם.",
+    "display_name": "RelayVSRConditioning",
+    "inputs": {
+      "images": {
+        "name": "תמונות",
+        "tooltip": "הסרטון באיכות נמוכה ברזולוציה המקורית שלו; המודל קובע את גורם הגדלת הרזולוציה."
+      },
+      "model": {
+        "name": "מודל"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "חיובי",
+        "tooltip": null
+      },
+      "1": {
+        "name": "latent",
+        "tooltip": null
+      }
+    }
+  },
   "RemeshMesh": {
-    "description": "מחלץ מחדש רשת בעלת טסלציה אחידה באמצעות שדה מרחק ברצועה צרה + Dual Contouring, בהתקן החישוב הפעיל. מנרמל טופולוגיה מבולגנת / לא־מניפולדית / בעלת חיתוכים עצמיים; יש להפעיל לפני Decimate Mesh כדי להגיע למספר פנים מדויק. הפלט נשאר מאוחה.",
+    "description": "חילוץ מחדש של רשת בעלת טסלציה אחידה באמצעות שדה מרחק ברצועה צרה + Dual Contouring, בהתקן החישוב הפעיל. מנרמל טופולוגיה מבולגנת / לא-מניפולדית / בעלת חיתוך עצמי; יש להפעיל לפני Decimate Mesh כדי להגיע למספר פאות מדויק. הפלט נשאר מחובר. רשתות החורגות מעבר ל-0.51 או משתרעות על פחות מ-0.5 מותאמות תחילה לקובייה [-0.5,0.5] ולאחר מכן ממופות בחזרה.",
     "display_name": "יצירת רשת מחדש (DC ברצועה צרה)",
     "inputs": {
       "band": {
@@ -21042,7 +22575,7 @@
     }
   },
   "RenderMesh": {
-    "description": "מבצע הטלת קרניים לתצוגה יחידה של רשת. המצלמה והמרת המודל האופציונלית יכולות להגיע מציג Load3D / Preview3D.",
+    "description": "רינדור של רשת, תמונה אחת לכל מצלמה. המצלמות מגיעות מצופה Load3D / Preview3D (עם טרנספורמציית המודל שלו), מ-Create Camera Info או מ-Create Camera Orbit; ללא מצלמה, תצוגה קדמית במסגור אוטומטי.",
     "display_name": "עיבוד רשת",
     "inputs": {
       "background": {
@@ -21050,7 +22583,7 @@
       },
       "camera_info": {
         "name": "camera_info",
-        "tooltip": "מצלמה מציג Load3D / Preview3D או מצומת Create Camera Info. אם לא מחוברת מצלמה, תצוגה קדמית כברירת מחדל תמוסגר אוטומטית."
+        "tooltip": "מצלמה אחת, או רשימה מ-Create Camera Orbit / Batch Cameras. ללא מצלמה: תצוגה קדמית במסגור אוטומטי."
       },
       "height": {
         "name": "height"
@@ -21060,11 +22593,15 @@
       },
       "mode": {
         "name": "mode",
-        "tooltip": "מה לעבד. אוטומטי: מרקם אם קיים, אחרת צבעי קודקודים, אחרת חומר מוצל בסגנון חימר."
+        "tooltip": "מה לרנדר. אוטומטי: טקסטורה אם קיימת, אחרת צבעי קודקודים, אחרת חימר מוצל. נורמלי: נורמלים במרחב תצוגה. נורמל עולמי: נורמלים במרחב עולמי המסובבים לפי ה-yaw של המצלמה הראשונה, כאילו הרשת הסתובבה במקום המצלמה."
       },
       "model_3d_info": {
         "name": "model_3d_info",
         "tooltip": "המרת מודל מאותו ציג Load3D / Preview3D. חבר אותה עם camera_info כדי להתאים את מסגור הציג."
+      },
+      "texture": {
+        "name": "טקסטורה",
+        "tooltip": "מוצג במקום המרקם של הרשת עצמה, למשל פלט של Bake Texture From Views ללא Apply Texture to Mesh."
       },
       "width": {
         "name": "width"
@@ -21082,7 +22619,7 @@
     }
   },
   "RenderSplat": {
-    "description": "הדמיית Gaussian Splat כתמונה באמצעות רסטרייזר EWA אנאיזוטרופי (ספליטים אליפטיים ממוקדים, אנטי-אליאסינג, ממוינים לעומק מהחזית לאחור). המצלמה מתקבלת מקלט camera_info (Load / Preview 3D, או צומת Create Camera Info); השאר ריק כדי למקד אוטומטית את הספליט. הגדר frames גדול מ-1 עבור אצוות תמונות בסיבוב לשימוש בצומת Video.",
+    "description": "רנדרו splat גאוסי כתמונה באמצעות מרסטרייזר EWA אנאיזוטרופי (התזות אליפטיות מכוונות, עם החלקת קצוות, הממוינות לפי עומק מלפנים לאחור). המצלמה מגיעה מקלט camera_info ‏(Load / Preview 3D, ‏Create Camera Info, או רשימת מצלמות מ-Create Camera Orbit / Batch Cameras: תמונה אחת לכל מצלמה); השאירו אותו ריק כדי למסגר את ה-splat באופן אוטומטי. הגדירו frames גדול מ-1 כדי ליצור אצווה של תמונות מסתובבות להזנה לצומת Video.",
     "display_name": "Render Splat",
     "inputs": {
       "background": {
@@ -21094,7 +22631,7 @@
       },
       "camera_info": {
         "name": "camera_info",
-        "tooltip": "מצלמה להדמיה - מצלמת Load3D / Preview3D או צומת Create Camera Info. אם ריק, splat יתמקד אוטומטית מזווית 3/4 ברירת מחדל."
+        "tooltip": "מצלמה שממנה יתבצע הרינדור — מצלמת Load3D / Preview3D, ‏Create Camera Info, או רשימת מצלמות (תמונה אחת לכל מצלמה, כאשר כל אחת מסובבת לפי frames). אם השדה ריק, ה-splat ממוסגר אוטומטית מתצוגת 3/4 ברירת מחדל."
       },
       "frames": {
         "name": "frames",
@@ -23398,6 +24935,9 @@
       "format_bit_depth": {
         "name": "bit_depth"
       },
+      "format_channels": {
+        "name": "ערוצים"
+      },
       "format_input_color_space": {
         "name": "input_color_space"
       },
@@ -23629,7 +25169,7 @@
       },
       "format": {
         "name": "פורמט",
-        "tooltip": "מכל הפלט. Auto משתמש ב-MP4 עבור Auto/H.264 וב-WebM עבור AV1. MP4, MKV ו-WebM בוחרים מכל מסוים."
+        "tooltip": "Auto משתמש ב-MOV עבור ProRes, ב-WebM עבור AV1, וב-MP4 בכל מקרה אחר."
       },
       "format_codec": {
         "name": "מקודד"
@@ -23900,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "קודדו תמונות ייחוס, חשיבה על תמונות, טקסט משולב או תיקון עצמי באמצעות CLIP. חברו את HiDream-O1 Reference Images לפני צומת זה והשתמשו בדוגם סטנדרטי עבור תמונות. המרה מטקסט לתמונה ללא חשיבה דורשת רק CLIP Text Encode; לפלט טקסט בלבד ניתן להשתמש ב-Generate Text.",
+    "display_name": "התניית SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "התניה"
+      },
+      "max_tokens": {
+        "name": "מקסימום אסימונים",
+        "tooltip": "מספר האסימונים המרבי שנוצרים במהלך קריאה זו."
+      },
+      "negative": {
+        "name": "שלילי"
+      },
+      "task": {
+        "name": "משימה",
+        "tooltip": "בחרו את המשימה. תבנית הפרומפט ואופן העצירה שלה מוגדרים אוטומטית."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "התניה",
+        "tooltip": null
+      },
+      "1": {
+        "name": "טקסט שנוצר",
+        "tooltip": "טקסט שנוצר בקריאה זו. השתמשו ב-SenseNova Interleave Decode לקבלת התוצאה המלאה."
+      },
+      "2": {
+        "name": "שלילי",
+        "tooltip": "התניה שלילית מעודכנת לשילוב ולתיקון עצמי."
+      },
+      "3": {
+        "name": "התבקשה תמונה",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "חלצו טקסט, תמונות וחשיבה שנוצרו מהיסטוריית השילוב שהופקה על ידי SenseNova Conditioning, לרבות תיקון עצמי של U1.6. בעת שימוש בלולאות, השתמשו ב-End Loop כאשר accumulate מושבת. תמונות הייחוס בקלט אינן נכללות. צמתים הצורכים תמונות מדולגים כאשר לא נוצרו תמונות.",
+    "display_name": "פענוח שילוב של SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "התניה"
+      },
+      "samples": {
+        "name": "דגימות",
+        "tooltip": "ה-latent של הפיקסלים מ-KSampler האחרון, אם הלולאה הסתיימה בבקשה לתמונה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "טקסט",
+        "tooltip": null
+      },
+      "1": {
+        "name": "תמונות",
+        "tooltip": null
+      },
+      "2": {
+        "name": "חשיבה",
         "tooltip": null
       }
     }
@@ -24225,6 +25836,32 @@
       }
     }
   },
+  "SoniloMusic15": {
+    "description": "צרו שיר עם שירה קולית מפרומפט טקסט באמצעות Sonilo Music 1.5.",
+    "display_name": "Sonilo Music 1.5",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "duration": {
+        "name": "משך",
+        "tooltip": "'auto' מתאים את אורך השיר למילים. אורך מותאם אישית חותך מילים שאינן מתאימות וחוזר על מילים קצרות."
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "תארו את השיר: סגנון, אווירה, כלים ושירה. כדי להגדיר את המילים, הוסיפו מקטע 'Lyrics:' עם תגיות [Verse] / [Chorus]; בלעדיו, המודל כותב מילים משלו. מקסימום: 2000 תווים."
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "SoniloTextToMusic": {
     "description": "יצירת מוזיקה מתוך הנחיה טקסטואלית באמצעות מודל הבינה המלאכותית של Sonilo.",
     "display_name": "Sonilo טקסט למוזיקה",
@@ -24304,6 +25941,10 @@
         "name": "חידוד צבע",
         "tooltip": "מחדד את מרקם הקודקודים: 1.0 = ערבוב פיזיקלי נכון; ערך גבוה יותר מטה את צבע הווקסל לכיוון ה-gaussian הדומיננטי במקום ממוצע שכנים (מפחית מריחה). צבע בלבד - הגיאומטריה לא משתנה."
       },
+      "fill": {
+        "name": "מילוי",
+        "tooltip": "למודלים מוצקים בלבד. העלות של סגירת פתח ביחס למעקב אחר המשטח. ערך נמוך יותר סוגר פתחים גדולים יותר: ערך של כ־3 אוטם אובייקטים חלולים, אך גם מוסיף מכסים לכוסות ולצווארונים."
+      },
       "kernel": {
         "name": "kernel",
         "tooltip": "רוחב חצי מקסימלי של splat בווקסלים. כל gaussian נרשם בחלון בגודל 3-sigma שלו, מוגבל כאן - surfels קטנים נשארים זולים, גדולים לא נחתכים. להעלות אם splats דלילים משאירים חורים."
@@ -24327,6 +25968,10 @@
       "smooth": {
         "name": "החלקה",
         "tooltip": "מספר איטרציות החלקת רשת Taubin. מחליק את המשטח מבלי להקטין אותו (שימור נפח), בניגוד לטשטוש הצפיפות. 0 = משטח גולמי."
+      },
+      "solid": {
+        "name": "מוצק",
+        "tooltip": "מלאו את החלק הפנימי בהתאם לכיוון הגאוסים, לקבלת משטח סגור יחיד. כבוי: קו המתאר של הצפיפות הגולמית, המשמר דופן פנימית נסתרת מאחורי המשטח."
       },
       "splat": {
         "name": "splat"
@@ -24354,6 +25999,33 @@
       },
       "1": {
         "name": "ימין",
+        "tooltip": null
+      }
+    }
+  },
+  "SplitImageChannels": {
+    "description": "מפצל תמונה לתמונות אדומה, ירוקה וכחולה ולמסכת אלפא.",
+    "display_name": "פיצול ערוצי תמונה",
+    "inputs": {
+      "image": {
+        "name": "תמונה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "אדום",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ירוק",
+        "tooltip": null
+      },
+      "2": {
+        "name": "כחול",
+        "tooltip": null
+      },
+      "3": {
+        "name": "אלפא",
         "tooltip": null
       }
     }
@@ -25065,6 +26737,41 @@
       }
     }
   },
+  "TencentHyNode": {
+    "description": "יצירת תגובות טקסט באמצעות מודל Hy4 של Tencent. ספקו פרומפט טקסטואלי, ובאופן אופציונלי תמונה אחת או יותר להקשר.",
+    "display_name": "Tencent HY",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_max_tokens": {
+        "name": "max_tokens"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_reasoning": {
+        "name": "הנמקה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_system_prompt": {
+        "name": "system_prompt"
+      },
+      "model_temperature": {
+        "name": "טמפרטורה"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TencentImageToModelNode": {
     "display_name": "Hunyuan3D: תמונה(ות) למודל",
     "inputs": {
@@ -25673,7 +27380,7 @@
     }
   },
   "TextGenerate": {
-    "display_name": "יצירת טקסט",
+    "display_name": "יצירת טקסט (הוצא משימוש)",
     "inputs": {
       "audio": {
         "name": "אודיו"
@@ -25732,7 +27439,7 @@
       },
       "video": {
         "name": "וידאו",
-        "tooltip": "פריימים של וידאו כאצוות תמונות. מניח 24 פריימים לשנייה; מדוגם פנימית ל-1 פריים לשנייה."
+        "tooltip": "פריימים של וידאו כאצוות תמונות. ההנחה היא 24 FPS; הדגימה מצטמצמת באופן פנימי לקצב הפריימים של המודל."
       }
     },
     "outputs": {
@@ -25806,12 +27513,85 @@
       },
       "video": {
         "name": "וידאו",
-        "tooltip": "פריימים של וידאו כאצוות תמונות. מניח 24 פריימים לשנייה; מדוגם פנימית ל-1 פריים לשנייה."
+        "tooltip": "פריימים של וידאו כאצוות תמונות. ההנחה היא 24 FPS; הדגימה מצטמצמת באופן פנימי לקצב הפריימים של המודל."
       }
     },
     "outputs": {
       "0": {
         "name": "טקסט שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "thinking",
+        "tooltip": null
+      }
+    }
+  },
+  "TextGenerateV2": {
+    "display_name": "יצירת טקסט",
+    "inputs": {
+      "audios": {
+        "name": "שמע"
+      },
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "תמונות"
+      },
+      "max_length": {
+        "name": "max_length"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "פענוח ספקולטיבי באמצעות ראש החיזוי הרב-אסימוני של נקודת הביקורת. אין השפעה ללא משקלי MTP. auto מתאים את עומק ורוחב הטיוטה להתאמות אסימונים שנצפו ולעלות הביצוע; 2-5 מקבע עומק טיוטה קבוע; מצבי tree מקבעים גם את הרוחב וגם את העומק. הפלט שנדגם נשאר בהתפלגות נכונה, אך שונה מפלט ללא MTP עבור אותו זרע."
+      },
+      "prompt": {
+        "name": "פרומפט"
+      },
+      "sampling_mode": {
+        "name": "sampling_mode"
+      },
+      "sampling_mode_min_p": {
+        "name": "min_p"
+      },
+      "sampling_mode_presence_penalty": {
+        "name": "presence_penalty"
+      },
+      "sampling_mode_repetition_penalty": {
+        "name": "repetition_penalty"
+      },
+      "sampling_mode_seed": {
+        "name": "seed"
+      },
+      "sampling_mode_temperature": {
+        "name": "temperature"
+      },
+      "sampling_mode_top_k": {
+        "name": "top_k"
+      },
+      "sampling_mode_top_p": {
+        "name": "top_p"
+      },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "מחליף את פרומפט המערכת בתבנית הצ'אט של המודל. מתעלמים ממנו כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
+      "thinking": {
+        "name": "חשיבה",
+        "tooltip": "הפעלה במצב חשיבה אם המודל תומך בכך."
+      },
+      "use_default_template": {
+        "name": "use_default_template",
+        "tooltip": "שימוש בפרומפט/תבנית המערכת המובנים אם קיימים במודל."
+      },
+      "videos": {
+        "name": "סרטונים"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "generated_text",
         "tooltip": null
       },
       "1": {
@@ -25980,7 +27760,7 @@
     }
   },
   "TopazImageEnhanceV2": {
-    "description": "הגדלה ושיפור תמונה בתקן תעשייתי.",
+    "description": "הגדלת רזולוציה ושיפור תמונות ברמה מקצועית. פלט מרבי: 179 מגה-פיקסל.",
     "display_name": "Topaz שיפור תמונה",
     "inputs": {
       "image": {
@@ -26018,11 +27798,11 @@
       },
       "output_height": {
         "name": "גובה פלט",
-        "tooltip": "ערך אפס משמעו פלט באותו גובה כמו המקור או מותאם פרופורציונלית ל-output_width אם צוין. Wonder 3.5 תומך בפקטור הגדלה מ-1x עד 6x בלבד. Bloom 2 ו-Wonder 3.5 שומרים על יחס הגובה-רוחב המקורי ומתייחסים לגודל המבוקש כיעד."
+        "tooltip": "ערך אפס פירושו פלט באותו גובה כמו המקור, או שינוי קנה מידה יחסי ל-output_width, אם צוין. Wonder 3.5 ו-Wonder 4 תומכים בגורמי הגדלה מ-1x עד 6x, ו-Bloom 2 מ-1x עד 12x. Bloom 2, Wonder 3.5 ו-Wonder 4 שומרים תמיד על יחס הממדים של הקלט: אם שני הגדלים מוגדרים והיחס ביניהם שונה, קנה המידה הגדול יותר גובר והפלט (והמחיר) גדולים מהגודל המבוקש."
       },
       "output_width": {
         "name": "רוחב פלט",
-        "tooltip": "ערך אפס משמעו חישוב אוטומטי (בדרך כלל יהיה בגודל המקורי או מותאם פרופורציונלית ל-output_height אם צוין). Wonder 3.5 תומך בפקטור הגדלה מ-1x עד 6x בלבד. Bloom 2 ו-Wonder 3.5 שומרים על יחס הגובה-רוחב המקורי ומתייחסים לגודל המבוקש כיעד."
+        "tooltip": "ערך אפס פירושו חישוב אוטומטי (בדרך כלל הגודל המקורי או שינוי קנה מידה יחסי ל-output_height, אם צוין). Wonder 3.5 ו-Wonder 4 תומכים בגורמי הגדלה מ-1x עד 6x, ו-Bloom 2 מ-1x עד 12x. Bloom 2, Wonder 3.5 ו-Wonder 4 שומרים תמיד על יחס הממדים של הקלט: אם שני הגדלים מוגדרים והיחס ביניהם שונה, קנה המידה הגדול יותר גובר והפלט (והמחיר) גדולים מהגודל המבוקש."
       }
     },
     "outputs": {
@@ -27916,6 +29696,44 @@
       }
     }
   },
+  "UltraTexConditioning": {
+    "description": "התניה עבור FLUX.2 Klein 9B עם ה-LoRA של UltraTex: מחילה את מראה תמונת הייחוס על רשת תלת-ממדית, כתמונה אחת לכל תצוגה. התצוגות מגיעות מ-Render Mesh (world normal) עם Create Camera Orbit של 4, בתוספת עליונה ותחתונה; אפו את התוצאה באמצעות Bake Texture From Views.",
+    "display_name": "התניית UltraTex",
+    "inputs": {
+      "conditioning": {
+        "name": "התניה",
+        "tooltip": "התניית טקסט; UltraTex אומן עם פרומפט ריק."
+      },
+      "extra_views": {
+        "name": "extra_views",
+        "tooltip": "תמונות ייחוס נוספות: האובייקט כפי שנראה מהתצוגות האחרות, כאשר כל אחת מקושרת לתצוגה שלה כפי שהייחוס מקושר לחזית."
+      },
+      "masks": {
+        "name": "מסכות",
+        "tooltip": "מסכות Render Mesh של אותן תצוגות."
+      },
+      "normals": {
+        "name": "נורמלים",
+        "tooltip": "עיבודי Render Mesh מסוג 'world normal': 6 התצוגות הקנוניות, או 4 תצוגות הצד."
+      },
+      "reference": {
+        "name": "ייחוס",
+        "tooltip": "האובייקט כפי שהוא אמור להיראות, מנקודת המבט של המצלמה הקדמית."
+      },
+      "reference_mask": {
+        "name": "reference_mask",
+        "tooltip": "מסכת אובייקט של תמונת הייחוס (לבן = אובייקט)"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "UnwrapMesh": {
     "description": "יוצר אטלס UV: מחלק את המשטח לתרשימים, מבצע פרמטריזציה לכל אחד, ואורז אותם באטלס [0,1]. קודקודים בתפרי התרשימים משוכפלים (עותק אחד לכל תרשים, אותו מיקום, UV עצמאי), ולכן רשת הפלט כוללת יותר קודקודים מרשת הקלט. יש להפעיל לאחר Remesh/Decimate ולפני אפיית טקסטורות.",
     "display_name": "פריסת UV של רשת",
@@ -27952,6 +29770,24 @@
     "inputs": {
       "model_name": {
         "name": "model_name"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VAEComputeDtype": {
+    "description": "מגדיר את dtype החישוב לקידוד ולפענוח של VAE, בלי להשפיע על ענפים אחרים.",
+    "display_name": "dtype חישוב של VAE",
+    "inputs": {
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "ברירת המחדל שומרת על dtype החישוב של ה-VAE בקלט."
+      },
+      "vae": {
+        "name": "vae"
       }
     },
     "outputs": {
@@ -28325,6 +30161,31 @@
       }
     }
   },
+  "VSRDecode": {
+    "description": "פענוח ייצוגי latent של RelayVSR באמצעות מפענח Flash של RelayVSR, שקורא גם את הפריימים באיכות נמוכה.",
+    "display_name": "פענוח VSR",
+    "inputs": {
+      "detail": {
+        "name": "פרטים",
+        "tooltip": "כמה מהפרטים שהמפענח מוסיף להגדלה הביקובית של כל פריים נשמרים; 1 הוא פלט המודל המלא."
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "אותו סרטון באיכות נמוכה שניתן לצומת ההתניה."
+      },
+      "samples": {
+        "name": "דגימות"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "VaeDecodeShapeTrellis": {
     "display_name": "פענוח צורה של Trellis2 VAE",
     "inputs": {
@@ -28429,6 +30290,33 @@
       "video": {
         "name": "וידאו",
         "tooltip": "וידאו עם פסקול דיבור, שאורכו פחות מ-30 דקות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VeedDubbingNode": {
+    "description": "תרגום הדיבור בסרטון לשפה אחרת באמצעות VEED. קולו של כל דובר משוכפל, ותנועות שפתיו מסונכרנות לתרגום.",
+    "display_name": "דיבוב VEED",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "standard: מחיר נמוך יותר, שמע מונו; ספרדית היא ספרדית לטינו-אמריקאית ופורטוגזית היא פורטוגזית ברזילאית. pro: מבטאים אזוריים ושמע סטריאו."
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_source_language": {
+        "name": "source_language"
+      },
+      "model_target_language": {
+        "name": "target_language"
       }
     },
     "outputs": {
@@ -28644,6 +30532,40 @@
       },
       "video": {
         "name": "video"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "VideoDeflicker": {
+    "description": "עקביות זמנית לפי Bonneel et al. 2015, עם איבר נאמנות נגד סחיפה: כל פריים שומר על הפרטים שלו תוך מעקב אחר הפריימים השכנים לאורך הזרימה האופטית של סרטון ההנחיה.",
+    "display_name": "הסרת הבהובים מסרטון",
+    "inputs": {
+      "direction": {
+        "name": "כיוון",
+        "tooltip": "bidirectional מחשב ממוצע של מעבר קדימה ומעבר אחורה, וכך מונע השהיה ביחס לתנועה, אך דורש זמן כפול."
+      },
+      "guide": {
+        "name": "מנחה",
+        "tooltip": "פריימי מקור יציבים שיש לעקוב אחר תנועתם, בכל רזולוציה. ברירת המחדל היא images, שמסירה פחות הבהובים."
+      },
+      "images": {
+        "name": "תמונות",
+        "tooltip": "פריימים מהבהבים, למשל סרטון שהוגדל או עובד פריים אחר פריים."
+      },
+      "optical_flow": {
+        "name": "זרימה אופטית"
+      },
+      "strength": {
+        "name": "עוצמה",
+        "tooltip": "מידת החוזק שבה כל פריים עוקב אחר הפריימים השכנים לו. ערך גבוה יותר מסיר יותר הבהובים ומרכך יותר פרטים עדינים."
+      },
+      "threshold": {
+        "name": "סף",
+        "tooltip": "שינויים הגדולים מערך זה בין פריים לשכנו המפוצה לפי תנועה נחשבים לאמיתיים ומוחלקים פחות. 0 מחליק כל שינוי באותה מידה."
       }
     },
     "outputs": {
@@ -31411,6 +33333,55 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "WeVisOneDetect": {
+    "display_name": "זיהוי WeVisOne-VL",
+    "inputs": {
+      "bboxes": {
+        "name": "bboxes",
+        "tooltip": "תיבות ייחוס עבור visual_prompt."
+      },
+      "clip": {
+        "name": "clip",
+        "tooltip": "מקודד טקסט WeVisOne-VL."
+      },
+      "image": {
+        "name": "תמונה"
+      },
+      "individual_masks": {
+        "name": "מסכות נפרדות",
+        "tooltip": "פלט של mask אחת לכל תיבה, בסדר של bboxes ובסדר רציף של הפריימים, במקום איחוד אחד לכל פריים."
+      },
+      "max_length": {
+        "name": "אורך מרבי"
+      },
+      "query": {
+        "name": "שאילתה",
+        "tooltip": "מה לחפש. freeform שולח אותה כפרומפט המלא."
+      },
+      "task": {
+        "name": "משימה",
+        "tooltip": "segmentation: תיבות ומפות alpha. המשימות detection ו-point מקבלות תווית אחת בכל שורה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "מסכות",
+        "tooltip": null
+      },
+      "1": {
+        "name": "bboxes",
+        "tooltip": null
+      },
+      "2": {
+        "name": "נקודות",
+        "tooltip": "נקודות כ-JSON [{\"x\", \"y\", \"label\", \"frame\"}] בפיקסלים, עבור המשימות point ו-count_point."
+      },
+      "3": {
+        "name": "טקסט",
+        "tooltip": "התשובה הגולמית."
       }
     }
   },

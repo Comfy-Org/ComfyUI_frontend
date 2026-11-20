@@ -23,6 +23,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
@@ -697,7 +698,7 @@ describe('AgentPanelRoot tab activity across chats', () => {
   })
 
   it('marks a host-permission question as needing an answer page-wide until it is answered', async () => {
-    const { unmount } = renderPanel()
+    renderPanel()
     await send('install the video nodes')
 
     emitAskUser()
@@ -717,8 +718,132 @@ describe('AgentPanelRoot tab activity across chats', () => {
     emitRunApproval()
     await nextTick()
     expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+  })
+
+  it.for([
+    { kind: 'run approval', emitAsk: emitRunApproval },
+    { kind: 'question', emitAsk: emitAskUser }
+  ])(
+    'keeps the page-wide prefix after the panel closes while a $kind is pending, until it reopens',
+    async ({ emitAsk }) => {
+      const { unmount } = renderPanel()
+      await send('add an upscaler')
+      emitAsk()
+      await nextTick()
+
+      unmount()
+      await nextTick()
+      expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+      renderPanel()
+      await vi.waitFor(() => expect(useBrowserTabTitleStore().prefix).toBe(''))
+    }
+  )
+
+  it('keeps the held prefix through a workspace refresh and clears it on an account switch', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-a' })
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
 
     unmount()
+    await nextTick()
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    await nextTick()
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+    useAuthStore().currentUser = fromPartial<User>({ uid: 'account-b' })
+    await nextTick()
+    expect(useBrowserTabTitleStore().prefix).toBe('')
+  })
+
+  async function holdAfterTwoAsks(): Promise<{
+    start: number
+    setNow: (at: number) => void
+    unmount: () => void
+  }> {
+    const start = Date.now()
+    let now = start
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+    now = start + 14 * 60_000
+    emitAskUser()
+    await nextTick()
+    return { start, setNow: (at) => (now = at), unmount }
+  }
+
+  it('times the held prefix from the newest pending ask when the first is answered', async () => {
+    const { start, setNow, unmount } = await holdAfterTwoAsks()
+    agentSocket.receive('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: 'm-1',
+      ask_id: 'm-1:call-1',
+      status: 'answered',
+      selected: ['run']
+    })
+    await nextTick()
+
+    setNow(start + 16 * 60_000)
+    unmount()
+    await nextTick()
+
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+  })
+
+  it('times the held prefix from the newest pending ask when both still wait', async () => {
+    const { start, setNow, unmount } = await holdAfterTwoAsks()
+
+    setNow(start + 16 * 60_000)
+    unmount()
+    await nextTick()
+
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+  })
+
+  it('times the held prefix from when the ask first appeared after its chat is left and reopened', async () => {
+    const start = Date.now()
+    let now = start
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const { unmount } = renderPanel()
+    await send('add an upscaler')
+    emitRunApproval()
+    await nextTick()
+
+    await openChat('Other chat', 'th-2')
+    now = start + 14 * 60_000
+    await openChat('Running chat', 'th-1')
+    expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
+
+    now = start + 16 * 60_000
+    unmount()
+    await nextTick()
+
+    expect(useBrowserTabTitleStore().prefix).toBe('')
+  })
+
+  it('clears the page-wide prefix on close when nothing waits for an answer', async () => {
+    const { unmount } = renderPanel()
+    await send('install the video nodes')
+    emitAskUser()
+    await nextTick()
+    agentSocket.receive('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: 'm-1',
+      ask_id: 'm-1:call-2',
+      status: 'answered',
+      selected: ['allow']
+    })
+    await nextTick()
+
+    unmount()
+    await nextTick()
+
     expect(useBrowserTabTitleStore().prefix).toBe('')
   })
 

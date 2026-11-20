@@ -34,6 +34,7 @@
       "unconfirmed": "我們無法確認您的回答已送達代理程式。"
     },
     "assetFetchFailed": "無法擷取 {name}",
+    "assetLoadFailed": "無法載入 {name}",
     "assetNotAttachable": "可附加圖片、影片、音訊、3D 模型和文字檔",
     "attach": "附加檔案",
     "attachFiles": "上傳影像或檔案",
@@ -48,34 +49,37 @@
     "backToPreviousChat": "返回上一個聊天",
     "beta": "測試版",
     "canvasIsEmptyAfterTurn": "此畫布是空的，尚未加入任何內容。目前沒有可執行、儲存或匯出的內容。",
+    "canvasNotReadyForSend": "此分頁的畫布尚未準備就緒，因此未傳送您的訊息。請稍候再試一次。",
     "changeWorkflowForChat": "變更代理程式可編輯的工作流程",
     "chatOptions": "聊天選項",
     "chooseWorkflow": "選擇工作流程",
     "chooseWorkflowForChat": "選擇此聊天的工作流程",
     "close": "關閉",
     "coachBody": "描述您的想法，請它建立並執行工作流程。它可以看到您的畫布和檔案。",
-    "coachGraphBody": "Agent 工作時，您仍可編輯節點圖或切換分頁。",
-    "coachGraphTitle": "讓 Agent 在您編輯時執行",
     "coachHistoryBody": "先前的對話會儲存在這裡。開啟其中一個以檢視，或繼續與 Agent 協作。",
     "coachHistoryTitle": "從上次中斷處繼續",
     "coachHoldNotice": "當您完成或略過導覽後，系統將傳送您的訊息。",
     "coachProgress": "{current} / {total}",
     "coachTitle": "認識您的 Comfy Agent",
-    "coachWorkflowBody": "在您傳送訊息、選擇工作流程或新增節點參照之前，它會隨著您的分頁切換。",
-    "coachWorkflowTitle": "您的代理程式會編輯您正在檢視的工作流程",
+    "coachWorkflowBody": "該工作流程的名稱顯示在訊息方塊頂端。按一下名稱即可選擇其他工作流程。按一下工作流程分頁可開啟其最新聊天，除非訊息方塊中有草稿。",
+    "coachWorkflowTitle": "Agent 一次只編輯一個工作流程",
     "consent": {
       "accept": "開始使用 Comfy Agent",
-      "agreeAndContinue": "同意並繼續",
+      "agreeAndContinue": "同意並繼續登入",
       "body1": "Comfy Agent 可協助您規劃、建立、執行及反覆改進工作流程。描述您想創作的內容，Comfy Agent 將成為您強大的夥伴。",
       "body2": "為建立您的工作流程，Comfy Agent 會處理您的部分資料。請放心，您的資料絕不會用於 AI 模型訓練。按一下「開始」即表示您同意其使用。",
       "body2BeforeSignIn": "為建立您的工作流程，Comfy Agent 會處理您的部分資料。請放心，您的資料絕不會用於訓練 AI 模型。點擊「同意並繼續」即表示您同意此用途。",
+      "contactForm": "聯絡表單",
+      "errorContact": "請檢查您的連線後再試一次。如果問題持續發生，請使用 {contactForm}。",
+      "errorTitle": "無法啟動 Comfy Agent",
       "loadError": "無法載入您的 Agent 偏好設定。請再試一次。",
+      "loadErrorTitle": "無法載入您的 Agent 設定",
       "readDocs": "閱讀文件",
       "reject": "暫時略過",
       "saveError": "無法儲存您的偏好設定。請再試一次。",
-      "signInError": "無法開啟登入頁面。請再試一次。",
-      "signInNext": "您接下來將登入。",
+      "signInErrorTitle": "無法開啟登入頁面",
       "title": "認識 Comfy Agent",
+      "tryAgain": "再試一次",
       "videoPlaceholder": "影片無法播放"
     },
     "copied": "已複製！",
@@ -83,7 +87,7 @@
     "copyMarkdown": "複製為 Markdown",
     "copyUnavailable": "此版本僅能複製目前的對話",
     "creditTransitionNotice": "您已用完免費的代理程式點數。後續的代理程式活動會使用您的工作區點數，其中可能包含付費點數。",
-    "creditsUsed": "代理程式使用了 {credits} 點積分 | 代理程式使用了 {credits} 點積分",
+    "creditsUsed": "Agent 已使用 {credits} 點數 | Agent 已使用 {credits} 點數",
     "currentTab": "目前分頁",
     "delete": "刪除",
     "deleteApproval": {
@@ -145,6 +149,7 @@
     "historyCurrent": "目前",
     "historyEarlier": "更早",
     "historyEmpty": "尚無對話",
+    "historyIncomplete": "部分聊天無法載入。正在顯示已載入的聊天。",
     "historyOpenFailed": "無法開啟。請選取此對話以重試。",
     "historyToday": "今天",
     "historyYesterday": "昨天",
@@ -170,14 +175,21 @@
     "nodes": "節點",
     "nodesAdded": "代理已將 1 個節點加入圖表 | 代理已將 {count} 個節點加入圖表",
     "notHelpful": "沒有幫助",
+    "openVideo": "開啟影片：{name}",
     "openWorkflowTab": "開啟 {name}",
     "openingChat": "正在開啟聊天…",
     "openingWorkflowChat": "正在開啟 {workflowName} 的聊天…",
     "otherOpenWorkflows": "其他已開啟的工作流程",
+    "paused": {
+      "recheck": "約 {seconds} 秒後將自行再試一次。|約 {seconds} 秒後將自行再試一次。",
+      "resume": "繼續",
+      "title": "代理已暫停",
+      "titleNoFunds": "代理已暫停 — 點數已用盡"
+    },
     "paywall": {
       "addCredits": "新增點數",
       "body": {
-        "local": "您已用完點數餘額。新增點數以讓代理程式持續運作。",
+        "local": "你的帳戶沒有可供代理使用的點數。請加值點數以使用它。",
         "member": "此工作區已用盡所有點數。請要求工作區擁有者新增更多點數。",
         "salesManaged": "此工作區透過您的 Comfy 帳戶團隊計費。請聯絡他們以新增點數。",
         "subscribed": "此工作區已用盡每月點數及儲值餘額。新增點數以讓代理程式持續運作。",
@@ -200,6 +212,7 @@
     "retryAfterSeconds": "您可以在 {seconds}s 後再試一次。",
     "retryFollowedChat": "重試開啟 {workflowName} 的聊天",
     "runApproval": {
+      "answerAcceptedUnconfirmed": "您的回答已傳達給 Agent，但我們無法確認是否已套用該回答。重新載入頁面以查看目前狀態。",
       "answerFailed": "無法傳送您的回答。請重新載入頁面後再試一次。",
       "answerSuperseded": "此問題已在其他地方回答，因此系統使用了該回答而非您的回答。",
       "answerUncertain": "無法確認您的回答是否已送達代理程式。回答可能仍已套用——請重新載入頁面以查看目前狀態。",
@@ -315,7 +328,7 @@
     "workflowReferenceUnavailableReason": "此參照的工作流程已無法使用，或您沒有存取權限。",
     "workflowSyncFailedDetail": "此工作流程是使用不相容的文件版本建立。您的畫布未受到變更。",
     "workflowSyncFailedDetailCatalogMismatch": "此工作流程中的節點自代理上次查看後已變更。您的畫布未受到變更。您的下一則訊息會傳送您的畫布，讓代理重新建立其工作流程副本。",
-    "workflowSyncFailedDetailStaleClient": "此頁面已過期，因此無法顯示代理的變更。請重新載入頁面以查看變更。",
+    "workflowSyncFailedDetailStaleClient": "此頁面無法顯示此文件的目前版本，因此無法在這裡顯示 Agent 的變更。這些變更已保留。重新載入可能會解決此問題；若沒有，表示更新尚未傳送到您的應用程式。",
     "workflowSyncFailedDetailStaleHost": "此頁面的版本比代理服務更新，因此尚無法在這裡顯示代理所做的變更。服務更新完成後，重新載入頁面即可查看。",
     "workflowSyncFailedTitle": "此工作流程無法同步",
     "workflows": "工作流程",
@@ -411,6 +424,23 @@
     "fileFormats": "檔案格式",
     "fileName": "檔案名稱",
     "fileSize": "檔案大小",
+    "fileUpload": {
+      "cancelled": "上傳已取消。",
+      "choose": "選擇檔案",
+      "drop": "或將 .safetensors 檔案拖放至此處",
+      "failed": "上傳失敗。請再試一次。",
+      "notSafetensors": "僅能上傳 .safetensors 檔案。",
+      "notStopped": "無法確認先前的上傳已停止，因此未再次傳送檔案。",
+      "planUnavailable": "無法檢查您的方案。請再試一次。",
+      "privateModelsDisabled": "您的方案不包含私人模型。",
+      "progress": "{sent} / {total}",
+      "saving": "正在儲存至您的媒體庫...",
+      "stopping": "正在停止先前的上傳...",
+      "tryAgain": "再試一次",
+      "unsupportedType": "雲端尚無法儲存此模型類型。請選擇其他類型。",
+      "upload": "上傳",
+      "uploading": "正在上傳 {name}"
+    },
     "filterBy": "篩選條件",
     "findInLibrary": "可在模型庫的 {type} 區段找到。",
     "finish": "完成",
@@ -530,6 +560,9 @@
     "apiKey": {
       "cleared": "API 金鑰已清除",
       "clearedDetail": "您的 API 金鑰已成功清除",
+      "clearedForSession": "僅清除此工作階段的 API 金鑰",
+      "clearedForSessionBlockedDetail": "您的瀏覽器正在封鎖網站儲存空間。若您重新啟用儲存空間，可能會再次使用先前儲存的金鑰。",
+      "clearedForSessionDetail": "您的瀏覽器無法移除已儲存的金鑰，因此重新載入後將再次使用它。",
       "description": "使用您的 Comfy API 金鑰以啟用 API 節點",
       "error": "無效的 API 金鑰",
       "generateKey": "點此取得",
@@ -542,6 +575,10 @@
       "storageFailedDetail": "請再試一次。",
       "stored": "API 金鑰已儲存",
       "storedDetail": "您的 API 金鑰已成功儲存",
+      "storedForSession": "API 金鑰僅儲存於此次工作階段",
+      "storedForSessionBlockedDetail": "您的瀏覽器正在封鎖網站儲存空間，因此重新載入後不會保留此金鑰。若重新啟用儲存空間，先前儲存的金鑰可能會再次使用。",
+      "storedForSessionDetail": "您的瀏覽器無法儲存此金鑰，因此重新載入後將會清除。",
+      "storedForSessionPreviousKeptDetail": "您的瀏覽器無法儲存它。重新載入後，將再次使用您先前儲存的金鑰。",
       "title": "API 金鑰",
       "whitelistInfo": "關於未列入白名單的網站"
     },
@@ -550,6 +587,7 @@
     },
     "desktopHost": {
       "continueInBrowser": "請在瀏覽器中完成登入",
+      "popupBlocked": "請允許此頁面的彈出式視窗以登入。",
       "signInFailed": "登入未完成。請再試一次。",
       "signOutFailed": "Comfy Desktop 仍處於登入狀態。請完成或取消任何正在執行的安裝作業，然後再次登出。"
     },
@@ -678,6 +716,7 @@
         "orgMismatch": "您登入的組織與此電子郵件所屬的組織不同。請使用您的工作帳戶再試一次。",
         "orgNotAttached": "您組織的 Comfy 工作區尚未設定。請聯絡您的管理員。",
         "rateLimited": "登入嘗試次數過多。請稍候幾分鐘後再試一次。",
+        "seatLimitReached": "您的組織已用完所有 Comfy 席位。請要求管理員釋出席位或新增更多席位。",
         "suspended": "您的組織已移除您的存取權。請聯絡您的管理員。",
         "unavailable": "目前無法使用單一登入。請稍後再試。"
       },
@@ -731,8 +770,10 @@
     "cancelTimeout": "訂閱取消逾時",
     "expiredCardDetail": "此卡片已過期。請使用其他付款方式。",
     "incorrectCvcDetail": "卡片安全碼不正確。請確認後再試一次。",
+    "incorrectNumberDetail": "卡號不正確。請檢查後再試一次。",
     "insufficientFundsDetail": "此付款方式餘額不足。請嘗試其他付款方式或聯絡您的銀行。",
     "methodNotChargeableOffSessionDetail": "此付款方式無法用於訂閱。請新增其他付款方式，然後再試一次。",
+    "noPaymentMethodDetail": "新增付款方式，然後再試一次。",
     "operationAlreadyPendingDetail": "您先前開始的一筆付款仍在處理中。必須等它完成後，您才能選擇其他方案。",
     "paymentDeclinedDetail": "您的銀行拒絕此筆付款。請嘗試其他付款方式或聯絡您的銀行。",
     "processingErrorDetail": "無法處理您的付款。請再試一次或使用其他付款方式。",
@@ -747,6 +788,7 @@
     "topupActionRequired": "請驗證您的付款以儲值點數",
     "topupAlreadyPendingDetail": "您先前開始的儲值仍在處理中。請先完成驗證或等待其完成，再儲值更多點數。",
     "topupFailed": "儲值失敗",
+    "topupMethodIncompatibleDetail": "此付款方式無法用於儲值。請新增卡片後再試一次。",
     "topupProcessing": "正在處理付款 — 新增點數中...",
     "topupSuccess": "點數儲值成功",
     "topupTimeout": "儲值驗證逾時"
@@ -1196,13 +1238,18 @@
   "credits": {
     "accountInitialized": "帳戶已初始化",
     "activity": "活動",
+    "addCreditsRefusal": {
+      "paymentPastDue": "請更新您的付款方式以新增點數。",
+      "topupPurchasesPaused": "目前無法購買點數。請稍後再試。",
+      "unavailable": "目前此工作區無法新增點數。"
+    },
     "added": "已新增",
     "additionalInfo": "其他資訊",
     "api": "API",
     "apiPricing": "API 價格",
     "charge": "扣款",
+    "creditUnit": "點數 | 點數",
     "credits": "點數",
-    "creditUnit": "點數",
     "creditsAvailable": "可用點數",
     "details": "詳細資料",
     "eventType": "事件類型",
@@ -1222,6 +1269,7 @@
     },
     "invoiceHistory": "發票紀錄",
     "lastUpdated": "最後更新",
+    "lessThanOne": "<1",
     "loadEventsError": "載入活動失敗。請再試一次。",
     "loadEventsUnknownError": "載入活動時發生錯誤。請重新整理並再試一次。",
     "messageSupport": "聯絡客服",
@@ -1233,6 +1281,10 @@
       "addMoreCredits": "儲值點數",
       "addMoreCreditsToRun": "儲值點數以執行",
       "amountToPayLabel": "需支付的美元金額",
+      "autoTopUp": {
+        "prompt": "點數快用完了嗎？開啟自動儲值。",
+        "setUp": "設定"
+      },
       "awaitingBankApprovalBody": "您的銀行需要核准這筆付款，之後才會將點數加入您的帳戶。您可以透過銀行的應用程式或此次購買的付款連結完成核准。在此筆付款完成或到期前，無法開始新的儲值。",
       "buy": "購買",
       "buyCredits": "繼續付款",
@@ -1252,6 +1304,8 @@
       "creditsToReceiveLabel": "可獲得的點數",
       "defaultCardBlockedBody": "您的瀏覽器封鎖了新分頁。請開啟付款頁面以設定預設卡片。",
       "defaultCardBlockedTitle": "未開啟付款頁面",
+      "deniedCreatorOnly": "只有建立此工作區的人可以完成其帳單設定。",
+      "deniedTopupsPaused": "目前此工作區的點數儲值已暫停。",
       "howManyCredits": "您想要儲值多少點數？",
       "insufficientMessage": "您的點數不足，無法執行此工作流程。",
       "insufficientTitle": "點數不足",
@@ -1289,6 +1343,7 @@
       "unknownError": "發生未知錯誤",
       "usdAmount": "${amount}",
       "verifyBody": "您的銀行需要進行額外驗證以完成此筆付款。",
+      "verifyByBody": "您的銀行正在等待您確認。請於 {date} {time} 前完成驗證，以完成此次儲值。",
       "verifyTitle": "驗證您的付款",
       "videosEstimate": "約 {count} 部影片",
       "viewPricing": "查看價格詳情",
@@ -1317,6 +1372,7 @@
     "BOOLEAN": "布林值",
     "BOUNDING_BOX": "邊界框",
     "BOUNDING_BOXES": "BOUNDING_BOXES",
+    "BREEZE_VOICE": "BREEZE_VOICE",
     "CAMERA_INFO_STATE": "CAMERA_INFO_STATE",
     "CLIP": "CLIP",
     "CLIP_VISION": "CLIP 視覺",
@@ -1376,9 +1432,7 @@
     "LOAD_3D": "載入 3D",
     "LORA_MODEL": "LoRA模型",
     "LOSS_MAP": "損失圖",
-    "LUMA_CONCEPTS": "LUMA 概念",
     "LUMA_RAY32_KEYFRAME": "LUMA_RAY32_KEYFRAME",
-    "LUMA_REF": "LUMA 參考",
     "MASK": "遮罩",
     "MESH": "網格",
     "MESHY_RIGGED_TASK_ID": "MESHY_RIGGED_TASK_ID",
@@ -1447,47 +1501,94 @@
   },
   "deploymentSwitcher": {
     "comfyCloud": "Comfy Cloud",
+    "compatibleEnvironments": "相容的環境",
     "createCustomDeployment": "建立自訂部署",
-    "createCustomDeploymentTooltip": "使用您自己的自訂節點與模型執行編輯器。請在開發者平台上進行設定。",
     "currentTooltip": "正在 {deployment} 上執行",
+    "customDeployment": {
+      "body": "自訂部署可新增 Comfy Cloud 未提供的自訂節點和模型。您可在平台上進行設定，之後它會顯示在工作區的「執行於」下方。",
+      "createOnPlatform": "在 Platform 上建立",
+      "pointApi": "將其作為自動擴展的 API 從您的產品中呼叫",
+      "pointGpu": "在您選擇的 GPU 上使用 ComfyUI",
+      "pointNodes": "使用 Comfy Cloud 上沒有的自訂節點和模型",
+      "title": "建立自訂部署"
+    },
     "defaultDeleted": "已刪除",
     "defaultGone": "工作區預設部署已刪除，因此成員會從 Comfy Cloud 開始。",
     "defaultGoneOwner": "工作區預設部署已刪除，因此成員會從 Comfy Cloud 開始。請在「工作區預設」下選擇新的部署。",
+    "deployCustomNodes": {
+      "body": "建立自訂部署，在 Comfy Cloud 上執行您的自訂節點和模型，並顯示在您工作區的「執行於」下方。",
+      "pointNodes": "部署您的工作流程所需的自訂或私有節點套件",
+      "title": "在 Comfy Cloud 上部署自訂節點"
+    },
     "deployment": "{build} v{version}",
     "deploymentChanged": "此瀏覽器現在在 {deployment} 上執行。重新載入以取得其節點。",
+    "failedStartTooltip": "正在 {deployment} 上執行。啟動失敗，因此工作不會執行。開啟此選單以再次啟動。",
     "failedToSetDefault": "無法變更工作區預設部署",
     "failedToSwitch": "無法切換",
     "fullLabel": "{build} · {deployment}",
+    "incompatibleEnvironments": "不相容的環境",
+    "labelWithDetail": "{label} · {detail}",
     "landed": "正在 {deployment} 上執行",
     "linkRefused": "無法開啟此部署",
     "linkTimedOut": "此部署開啟所花時間過長。請再次嘗試該連結。",
     "linkWorkspaceRefused": "無法切換至該工作區。您仍在 {workspaceName}。",
     "lookupUnavailable": "無法檢查此編輯器執行所在的部署。",
     "lookupUnavailableDetail": "顯示的模型來自 Comfy Cloud。重新載入以再試一次。",
+    "manageDeployments": "管理部署",
+    "manageDeploymentsTooltip": "在開發者平台管理您的建置及其部署。",
     "membersStartOn": "未自行選擇部署的成員將從此開始",
     "missingNodes": "缺少 {count} 個節點 | 缺少 {count} 個節點",
-    "nameWithVersion": "{name} · v{version}",
+    "missingNodesAfterReason": "它無法執行此工作流程。缺少 {nodes}。",
+    "missingNodesNamed": "{deployment} 無法執行此工作流程。缺少 {nodes}。",
     "namedDeployment": "{name}",
     "noDeployments": "此工作區尚無任何部署。",
     "notChecked": "尚未檢查",
+    "notCheckedAfterReason": "無法檢查它是否可以執行此工作流程。",
+    "notCheckedNamed": "無法檢查 {deployment} 是否可以執行此工作流程。",
     "notReadyTooltip": "正在 {deployment} 上執行。它尚未就緒，因此工作不會執行，直到它就緒為止。",
+    "pickFailed": "{deployment} 發生失敗，因此工作不會執行。請再次啟動它，或選擇已準備就緒的部署。",
     "pickGone": "您選擇的部署已不存在。",
     "pickGoneDetail": "此瀏覽器現在在 Comfy Cloud 上執行。請再次選擇一個部署以使用。",
+    "pickStopped": "{deployment} 已停止，因此工作不會執行。請啟動它，或選擇已準備就緒的部署。",
+    "reason": {
+      "failed": "{deployment} 發生失敗。請再次啟動它以在其上執行工作。",
+      "notReady": "{deployment} 尚未準備就緒。準備就緒後再選取它。",
+      "startElsewhere": "{deployment} 尚未執行。請先在 Developer Platform 上啟動它，然後再選取。",
+      "starting": "{deployment} 正在啟動。準備就緒後再選取它。",
+      "stopped": "{deployment} 已停止。請啟動它以在其上執行工作。"
+    },
     "releaseChanged": "此部署目前執行不同的版本。重新載入以取得其節點。",
     "reload": "重新載入",
+    "retry": "重試",
+    "retryLabel": "重試啟動 {deployment}",
     "runOn": "執行於",
+    "runningOn": "執行於",
     "runsThisWorkflow": "可執行此工作流程",
+    "start": "啟動",
+    "startFailed": "{deployment} 未能啟動。",
+    "startFix": {
+      "failed": "重試，或在 Developer Platform 上檢查它。",
+      "noCredits": "新增點數後再重試。",
+      "tooManyRunning": "停止另一個部署後再重試。",
+      "unavailable": "目前請在 Developer Platform 上啟動它。"
+    },
+    "startLabel": "啟動 {deployment}",
+    "startOnPlatformLabel": "在 Developer Platform 上啟動 {deployment}",
     "status": {
+      "failed": "失敗",
       "notReady": "尚未就緒",
       "provisioning": "正在啟動",
       "starting": "正在啟動",
-      "stopped": "已停止"
+      "stopped": "已停止",
+      "stopping": "正在停止"
     },
+    "stoppedStartTooltip": "正在 {deployment} 上執行。它已停止，因此工作不會執行。開啟此選單以啟動它。",
     "stoppedTooltip": "正在 {deployment} 上執行。它目前已停止，因此工作不會執行，直到您在開發者平台上啟動它。",
     "switching": "正在切換",
     "switchingNote": "切換會重新載入編輯器。您的分頁會保持開啟。",
     "switchingNoteWithoutDrafts": "切換會重新載入編輯器。",
     "triggerLabel": "正在 {deployment} 上執行。選擇此編輯器的執行位置",
+    "triggerLabelNew": "新功能。{label}",
     "triggerLabelNotReady": "{status} 選擇此編輯器的執行位置",
     "unnamedDeployment": "部署 {id}",
     "unsaved": {
@@ -1496,6 +1597,18 @@
       "switchWithoutSaving": "不儲存並切換",
       "tabsReturn": "無論如何重新載入後，您開啟的分頁都會回復。",
       "title": "要先儲存工作流程再切換嗎？"
+    },
+    "version": "v{version}",
+    "workflowNeedsDeployment": {
+      "andMore": "{names}，以及另外 {count} 個",
+      "missingModels": "缺少 {count} 個模型 | 缺少 {count} 個模型",
+      "missingNodes": "缺少 {count} 個節點 | 缺少 {count} 個節點",
+      "missingPacks": "缺少 {count} 個節點套件 | 缺少 {count} 個節點套件",
+      "noneRunIt": "此工作區中沒有任何部署具備所有這些節點。",
+      "switch": "切換",
+      "switchBody": "Comfy Cloud 缺少這些項目。切換至具備這些項目的部署，然後繼續從該處工作。",
+      "title": "在自訂部署上執行此工作流程",
+      "titleNoneRunIt": "建立部署以在 Comfy Cloud 上執行此工作流程"
     },
     "workspaceDefault": "工作區預設"
   },
@@ -1567,7 +1680,7 @@
       },
       "missing_model": {
         "displayMessageCloud": "請匯入模型，或開啟節點進行替換。",
-        "displayMessageDeployment": "這些模型不在 {deployment} 上。請開啟節點，從中選擇一個可用模型。",
+        "displayMessageDeployment": "這些模型不在 {deployment} 上。將它們加入其建置，或開啟節點以選擇其中已有的模型。",
         "displayMessageOss": "請下載模型，或開啟節點進行替換。",
         "toastMessageManyCloud": "部分模型不支援，請選擇其他模型。",
         "toastMessageManyDeployment": "請選擇其他模型，或選擇包含這些模型的部署。",
@@ -1584,7 +1697,7 @@
       },
       "missing_node": {
         "displayMessageCloud": "雲端不支援所需的自訂節點。請以支援的節點取代。",
-        "displayMessageDeployment": "這些節點不在 {deployment} 上。請替換它們，或選擇包含它們的部署。",
+        "displayMessageDeployment": "這些節點不在 {deployment} 上。將其套件加入其建置，或予以替換。",
         "displayMessageOss": "請安裝缺少的套件以使用此工作流程。",
         "toastMessageManyCloud": "此工作流程使用雲端不支援的節點。",
         "toastMessageManyDeployment": "請替換這些節點，或選擇包含它們的部署。",
@@ -1818,9 +1931,9 @@
       },
       "timeout": {
         "itemLabel": "{nodeName}",
-        "message": "此工作流程已達最大執行時間。請嘗試降低圖片解析度、批次大小或縮短流程後再執行。",
+        "message": "此工作流程已達到您方案的最長執行時間（Free 為 @:subscription.maxDuration.free，Pro 為 @:subscription.maxDuration.pro，其他所有方案為 @:subscription.maxDuration.standard）。請嘗試降低影像解析度、批次大小或工作流程長度，然後再次執行。",
         "title": "生成逾時",
-        "toastMessage": "此工作流程已達最大執行時間。請嘗試降低圖片解析度、批次大小或縮短流程後再執行。",
+        "toastMessage": "此工作流程已達到您方案的最長執行時間（Free 為 @:subscription.maxDuration.free，Pro 為 @:subscription.maxDuration.pro，其他所有方案為 @:subscription.maxDuration.standard）。請嘗試降低影像解析度、批次大小或工作流程長度，然後再次執行。",
         "toastTitle": "生成逾時"
       },
       "unexpected_service_error": {
@@ -1988,7 +2101,9 @@
     "moreDeployments": "其他 {count} 個",
     "multipleIssueCount": "找到 {count} 個問題｜找到 {count} 個問題",
     "multipleIssuesMessage": "請先解決這些問題，再執行工作流程。",
+    "runOnCustomDeployment": "在自訂部署上執行",
     "runsOn": "在 {deployment} 上執行",
+    "setUpCustomDeployment": "設定",
     "switchDeployment": "切換",
     "viewDetails": "檢視詳情"
   },
@@ -2058,8 +2173,12 @@
     "addNewKeybinding": "新增快捷鍵",
     "addNode": "新增節點...",
     "addNodeFilterCondition": "新增節點篩選條件",
+    "agentCreated": "由代理程式建立",
+    "agentExtensionAdded": "您的代理程式已新增 {name}",
+    "agentExtensionDisableFailed": "無法停用擴充功能。請再試一次。",
+    "agentInputNeededShort": "需要輸入",
     "agentModified": "代理程式已更新此工作流程",
-    "agentNeedsApproval": "Agent 需要您的核准",
+    "agentNeedsApproval": "代理程式正在等待您的回覆",
     "agentWorking": "代理程式正在處理此工作流程",
     "all": "全部",
     "allKeybindingsReset": "所有快捷鍵已重設為預設值",
@@ -2073,6 +2192,7 @@
     "arrangeVertically": "垂直排列",
     "asset": "{count} 筆資產",
     "audioFailedToLoad": "無法載入音訊",
+    "audioPlaybackFailed": "無法播放此音訊。請再試一次，或下載後在其他應用程式中播放。",
     "audioProgress": "音訊進度",
     "author": "作者",
     "back": "返回",
@@ -2124,6 +2244,7 @@
     "copyToClipboard": "複製到剪貼簿",
     "copyURL": "複製網址",
     "core": "核心",
+    "createdByAgent": "由代理程式建立",
     "currentUser": "目前使用者",
     "custom": "自訂",
     "customBackground": "自訂背景",
@@ -2139,7 +2260,9 @@
     "details": "詳細資訊",
     "devOnly": "開發專用",
     "devices": "裝置",
+    "disableAgentCreated": "停用所有由代理程式建立的項目",
     "disableAll": "全部停用",
+    "disableExtension": "停用擴充功能",
     "disableSelected": "停用所選",
     "disableThirdParty": "停用第三方",
     "disabling": "正在停用 {id}",
@@ -2179,6 +2302,11 @@
     "experimental": "實驗性",
     "export": "匯出",
     "extensionName": "擴充套件名稱",
+    "extensionPath": "擴充功能資料夾",
+    "extensionPathSaveRefused": "擴充功能變更未儲存。請再試一次。",
+    "extensionPathSaveUnconfirmed": "無法確認擴充功能變更。請重新載入頁面後再試一次。",
+    "extensionPathToggle": "擴充功能資料夾 {name}",
+    "extensionPaths": "依資料夾檢視擴充功能",
     "extensions": "擴充功能",
     "failed": "失敗",
     "failedToCopyJobId": "複製工作 ID 失敗",
@@ -2367,7 +2495,7 @@
     "removeFilter": "移除 {label} 篩選器",
     "removeImage": "移除圖片",
     "removeKeybinding": "移除快捷鍵",
-    "removeTag": "移除標籤",
+    "removeTagNamed": "移除 {tag}",
     "removeVideo": "移除影片",
     "rename": "重新命名",
     "reportIssue": "送出回報",
@@ -3006,6 +3134,11 @@
     "showGrid": "顯示格線",
     "showSkeleton": "顯示骨架",
     "startRecording": "開始錄影",
+    "stats": {
+      "edges": "邊",
+      "triangles": "三角形",
+      "vertices": "頂點"
+    },
     "stopRecording": "停止錄影",
     "switchCamera": "切換相機",
     "switchingMaterialMode": "正在切換材質模式...",
@@ -3451,6 +3584,7 @@
     "Help": "說明",
     "Help Center": "幫助中心",
     "Hide Selected Links": "隱藏選取的連線",
+    "Hide/Show Links on Selected Nodes": "隱藏／顯示選取節點上的連線",
     "Increase Brush Size in MaskEditor": "在 MaskEditor 中增大筆刷大小",
     "Install Missing Custom Nodes": "安裝缺少的自訂節點",
     "Interrupt": "中斷",
@@ -3473,6 +3607,7 @@
     "Node Library": "節點庫",
     "Node Links": "節點連結",
     "Open": "開啟",
+    "Open 3D Viewer (Beta) for Selected Node": "為選取的節點開啟 3D 檢視器（測試版）",
     "Open Color Picker in MaskEditor": "在 MaskEditor 中開啟顏色選擇器",
     "Open Custom Nodes Folder": "開啟自訂節點資料夾",
     "Open DevTools": "開啟開發者工具",
@@ -3596,6 +3731,7 @@
     "Anthropic": "Anthropic",
     "BFL": "BFL",
     "Beeble": "Beeble",
+    "Breeze": "Breeze",
     "Bria": "Bria",
     "ByteDance": "字節跳動",
     "Clarity AI": "Clarity AI",
@@ -3618,6 +3754,7 @@
     "Mirelo": "Mirelo",
     "OpenAI": "OpenAI",
     "OpenRouter": "OpenRouter",
+    "Pika": "Pika",
     "PixVerse": "PixVerse",
     "Pruna": "Pruna",
     "Quiver": "Quiver",
@@ -3665,6 +3802,7 @@
     "debug": "除錯",
     "detection": "偵測",
     "experimental": "實驗性",
+    "fal": "fal",
     "fibo": "fibo",
     "filters": "濾鏡",
     "flux": "Flux",
@@ -3976,6 +4114,51 @@
     "failedDetail": "無法重設您的新手引導狀態。請再試一次。",
     "failedSummary": "無法重新播放新手引導"
   },
+  "openOnCloud": {
+    "agentMenu": {
+      "copyPrompt": "複製提示詞",
+      "openInClaude": "在 Claude 桌面版中開啟",
+      "openInCodex": "在 Codex 中開啟",
+      "saveFirst": "將此工作流程傳送給代理程式前，請先儲存。",
+      "useLocalAgent": "使用本機代理程式"
+    },
+    "checkFailed": "無法在 Comfy Cloud 上檢查此工作流程。請再試一次。",
+    "cloudButton": {
+      "checking": "正在檢查 Comfy Cloud…",
+      "tooltip": "在 Comfy Cloud 上執行"
+    },
+    "deploySetup": "將您的設定部署至 Comfy Cloud",
+    "deploySetupDialog": {
+      "body": "將您的本機設定部署至 Comfy Cloud，然後在 ComfyUI 中使用，或將其作為可自動擴展的 API 呼叫。",
+      "pointGpu": "在高效能雲端 GPU 上執行",
+      "pointNodes": "帶入您的自訂節點和模型",
+      "pointPricing": "僅需支付工作所使用的 GPU 秒數及建置項目的儲存空間費用",
+      "title": "在 Comfy Cloud 上執行您的工作流程"
+    },
+    "deployWithAgent": "使用您的代理程式部署",
+    "desktopTransferFailed": "無法傳輸您的工作流程。請再次在桌面版中點擊「在 Comfy Cloud 上開啟」。",
+    "downloaded": "工作流程已下載",
+    "downloadedDetail": "將它拖放到瀏覽器中的 Comfy Cloud 以在該處開啟。",
+    "handoffFailed": "無法從您電腦上的 ComfyUI 開啟工作流程",
+    "handoffMissing": "您的工作流程尚未送達",
+    "handoffMissingDetail": "ComfyUI 會在 10 分鐘後停止等待。請再次在 ComfyUI 中點擊「在 Comfy Cloud 上開啟」。",
+    "missingLocalModelLoader": "無法讀取 {nodeType} 的模型設定。請安裝提供它的節點套件，然後再試一次。",
+    "missingModels": {
+      "title": "缺少 {count} 個模型 | 缺少 {count} 個模型",
+      "unavailable": "請將這些模型新增至 Comfy Cloud 以執行此工作流程。目前無法從此 ComfyUI 上傳。"
+    },
+    "openedFromLocal": "從您電腦上的 ComfyUI 開啟",
+    "openedFromLocalDetail": "Comfy Cloud 擁有此工作流程使用的所有節點和模型。準備好後按下「執行」。",
+    "popupBlocked": "您的瀏覽器封鎖了 Comfy Cloud 分頁。請允許此頁面的彈出式視窗，然後再試一次。",
+    "prepareFailed": "無法為 Comfy Cloud 準備此工作流程",
+    "prepareFailedDetail": "請檢查工作流程是否有錯誤，儲存後再試一次。",
+    "runDialog": {
+      "asksToSignIn": "Comfy Cloud 會要求您登入。",
+      "openOnCloud": "在 Comfy Cloud 上開啟",
+      "ready": "Comfy Cloud 擁有此工作流程使用的所有節點和模型。它會在新分頁中開啟，並可立即執行。",
+      "title": "在 Comfy Cloud 上執行"
+    }
+  },
   "openSharedWorkflow": {
     "author": "作者：",
     "copyAssetsAndOpen": "匯入資產並開啟工作流程",
@@ -4029,6 +4212,9 @@
     "unmuteOpen": "取消開放權重 clip 靜音",
     "unmutePartner": "取消合作夥伴節點 clip 靜音"
   },
+  "profileMenu": {
+    "balanceUnavailable": "無法載入您的餘額。"
+  },
   "progressToast": {
     "allDownloadsCompleted": "所有下載已完成",
     "downloadingModel": "正在下載模型...",
@@ -4044,10 +4230,14 @@
     "noImportsInQueue": "佇列中沒有 {filter}",
     "pending": "處理中",
     "progressCount": "{completed} / {total}",
-    "taskUnavailable": "下載任務已無法使用。"
+    "taskUnavailable": "下載任務已無法使用。",
+    "uploadsInLibrary": "{name} 已在您的媒體庫中 | 您的媒體庫中有 {count} 個模型"
   },
   "queue": {
     "completedIn": "於 {duration} 完成",
+    "downloadedOfTotal": "{downloaded}／{total}",
+    "downloadingModel": "正在下載 {name}",
+    "downloadingModelOf": "正在下載 {name}（第 {index} 個，共 {count} 個）",
     "inQueue": "排隊中...",
     "initializingAlmostReady": "初始化中 - 即將完成",
     "jobAddedToQueue": "工作已加入佇列",
@@ -4107,11 +4297,13 @@
   },
   "rightSidePanel": {
     "addFavorite": "收藏",
+    "addToDeploymentBuild": "在 Platform 上將這些加入 {deployment} 的建置，然後部署新版本。",
     "advancedInputs": "進階輸入",
     "blockedLastRun": "上次執行被阻擋",
     "bypass": "繞過",
     "collapse": "收合",
     "color": "節點顏色",
+    "editBuildOnPlatform": "在 Platform 上編輯建置",
     "editSubgraph": "編輯子圖",
     "editTitle": "編輯標題",
     "errorHelp": "如需更多協助，請{github}或{support}",
@@ -4207,9 +4399,12 @@
       "runsOn": "執行環境：",
       "title": "缺少節點包",
       "unknownPack": "未知的節點包",
+      "unsupportedOnBuild": "此建置不支援：{cause}",
+      "unsupportedOnBuildNoCause": "此建置不支援",
       "unsupportedTitle": "不支援的節點包",
       "viewInManager": "在管理器中檢視"
     },
+    "missingResourcesWarning": "缺少資源",
     "mute": "靜音",
     "noErrors": "沒有問題",
     "noSelection": "請選擇節點以檢視其屬性與資訊。",
@@ -4219,6 +4414,7 @@
     "nodesNoneDesc": "無節點",
     "noneSearchDesc": "沒有符合搜尋的項目",
     "normal": "一般",
+    "openBuildsOnPlatform": "在 Platform 上開啟建置",
     "parameters": "參數",
     "pinned": "已釘選",
     "properties": "屬性",
@@ -5017,6 +5213,8 @@
     "partnerNodesCredits": "合作節點點數",
     "partnerNodesDescription": "用於執行商業/專有模型",
     "partnerNodesPricingTable": "合作夥伴節點價格表",
+    "pastDueNoticeMember": "此工作區有一筆未付款項——請要求工作區擁有者更新付款方式。",
+    "pastDueNoticeOwner": "您有一筆未付款項——請更新付款方式以變更方案。",
     "paymentRecovery": {
       "memberCta": "好的，知道了",
       "memberDescription": "請聯絡您的工作區擁有者以恢復工作區的訂閱。",
@@ -5163,6 +5361,7 @@
     "pricingBlurbSeeDetails": "查看詳情",
     "reactivatePlan": "恢復訂閱",
     "reactivateToUseCredits": "請重新啟用您的方案以使用這些點數",
+    "refillsAfterPayment": "付款完成後補充",
     "refillsDate": "補充 {date}",
     "refillsNextCycle": "下個週期補充",
     "refreshCredits": "刷新點數",
@@ -5222,6 +5421,14 @@
     "saveYearly": "節省 20%",
     "saveYearlyUpTo": "最高可省 20%",
     "scheduledChangeNotice": "您的方案將於 {date} 變更為 {plan}。",
+    "signupPaymentRecovery": {
+      "body": "完成付款以啟用您的方案。",
+      "contactSupport": "聯絡支援團隊",
+      "finishPayment": "完成付款",
+      "title": "您的 {plan} 付款未成功。",
+      "titleNoPlan": "您的方案付款未成功。",
+      "unavailable": "我們無法開啟付款頁面。請再試一次，或聯絡支援團隊。"
+    },
     "subscribe": "訂閱",
     "subscribeFailed": "訂閱失敗",
     "subscribeForMore": "升級",
@@ -5464,8 +5671,8 @@
     "logoProviderSeparator": " ＆ "
   },
   "textEditor": {
-    "characterCount": "{count} 個字元",
-    "expand": "放大",
+    "characterCount": "{count} 個字元 | {count} 個字元",
+    "expand": "展開",
     "title": "{widget} · {node}"
   },
   "toastMessages": {
@@ -5601,6 +5808,15 @@
     "title": "版本相容性警告",
     "updateFrontend": "更新前端"
   },
+  "videoConcat": {
+    "clipLabel": "片段 {position}",
+    "clips": "片段",
+    "mixedDimensions": "混合尺寸",
+    "noClips": "連接影片以預覽並排序",
+    "previewClips": "片段",
+    "previewResult": "上次執行",
+    "reorderHint": "拖曳片段或按 Alt + 方向鍵以重新排序，點擊即可跳轉"
+  },
   "videoEdit": {
     "adjustCrop": "調整裁切區域",
     "adjustEndFrame": "調整結束影格",
@@ -5722,7 +5938,9 @@
     "exportWorkflow": "匯出工作流程",
     "saveWorkflow": "儲存工作流程",
     "savedAsApp": "已轉換為應用程式工作流程",
-    "savedAsWorkflow": "已轉換為僅節點圖工作流程"
+    "savedAsWorkflow": "已轉換為僅節點圖工作流程",
+    "unsavedChangesLost": "{name} 的未儲存變更已無法取得，因此已儲存的檔案維持原樣。",
+    "unsavedChangesLostTitle": "未儲存的變更未被儲存"
   },
   "workspace": {
     "addedToNamedWorkspace": "您已被加入 {workspaceName}",
@@ -5779,7 +5997,11 @@
         "title": "您的團隊方案將於 {date} 結束"
       },
       "lowCredits": {
-        "localBody": "您還剩 {credits} 點數。請新增點數以繼續執行合作夥伴節點。",
+        "localBody": "您剩下 {credits} 點。請新增點數以繼續執行合作夥伴節點。| 您剩下 {credits} 點。請新增點數以繼續執行合作夥伴節點。",
+        "memberBody": "此工作區剩下 {credits} 點。請要求工作區擁有者在用完前新增點數。| 此工作區剩下 {credits} 點。請要求工作區擁有者在用完前新增點數。",
+        "ownerBody": "此工作區剩下 {credits} 點。請在用完前新增點數。| 此工作區剩下 {credits} 點。請在用完前新增點數。",
+        "pausedBody": "您剩下 {credits} 點。目前無法購買點數。| 您剩下 {credits} 點。目前無法購買點數。",
+        "personalBody": "您剩下 {credits} 點。請在用完前新增點數。| 您剩下 {credits} 點。請在用完前新增點數。",
         "title": "點數不足"
       },
       "outOfCredits": {
@@ -5792,8 +6014,14 @@
         "pastDueBody": "您的團隊已用完所有點數。請更新付款方式以新增更多點數。",
         "pastDueMemberBody": "您的團隊已用完所有點數。請要求工作區擁有者更新付款方式。",
         "pastDuePersonalBody": "您已用完所有點數。請更新付款方式以新增更多點數。",
+        "pausedBody": "您的團隊已用完所有點數。目前無法購買點數。點數將於 {date} 補充。",
+        "pausedBodyNoDate": "您的團隊已用完所有點數。目前無法購買點數。請稍後再試，或聯絡客服。",
+        "pausedPersonalBody": "您已用完所有點數。目前無法購買點數。點數將於 {date} 補充。",
+        "pausedPersonalBodyNoDate": "您已用完所有點數。目前無法購買點數。請稍後再試，或聯絡客服。",
         "personalBody": "您已用完所有點數。請加購點數，或等到點數於 {date} 補充。",
         "personalBodyNoDate": "您已用完所有點數。請加購點數。",
+        "refusedBody": "您的團隊已用完所有點數。",
+        "refusedPersonalBody": "您已用完所有點數。",
         "title": "點數已用完"
       },
       "parked": {
@@ -5815,7 +6043,7 @@
           "title": "已收到付款"
         },
         "verifyPayment": {
-          "action": "驗證您的付款",
+          "action": "完成驗證",
           "body": "您的銀行要求額外驗證才能完成此次付款。",
           "title": "驗證您的付款"
         }
@@ -5838,6 +6066,7 @@
     "billingTab": {
       "autoTopUp": {
         "actions": {
+          "addPaymentMethod": "新增付款方式",
           "manage": "管理",
           "turnOn": "開啟",
           "updatePayment": "更新付款方式"
@@ -5846,13 +6075,22 @@
         "limit": "每月上限：已使用 {spent}／{limit}",
         "limitTooltip": "僅計入自動儲值扣款。將於 {date} 重設。",
         "limitTooltipNoDate": "僅計入自動儲值扣款。",
-        "member": "點數不足時可自動儲值。如需管理，請聯絡工作區擁有者。",
-        "off": "當您的點數餘額不足時自動儲值",
+        "maximumReached": "已達每月上限。將於 {date} 重設。",
+        "maximumReachedNoDate": "已達每月上限。",
+        "member": "點數不足時可自動儲值。請聯絡工作區擁有者來管理此功能。",
+        "noDefaultPaymentMethod": "自動儲值需要預設付款方式。請設定預設付款方式以啟用。",
+        "noPaymentMethod": "自動儲值需要付款方式。請新增付款方式以啟用。",
+        "off": "當您的餘額不足時自動補充點數。",
         "onHold": "沒有預設付款方式。請設定付款方式以恢復自動儲值。",
         "paused": "已達每月上限。將於 {date} 恢復。",
+        "pausedByRemainder": "下一次儲值會超過您的每月上限。將於 {date} 恢復。",
+        "pausedByRemainderNoDate": "下一次儲值會超過您的每月上限。",
         "pausedNoDate": "已達每月上限。",
+        "rule": "點數低於 {threshold} 時，儲值至 {target} 點數。",
         "status": {
           "failed": "失敗",
+          "limitReached": "已達限制",
+          "maximumReached": "已達上限",
           "off": "關閉",
           "on": "開啟",
           "onHold": "暫緩",
@@ -5865,17 +6103,23 @@
       "credits": {
         "addCredits": "新增點數",
         "available": "可用",
+        "availableUntil": "有效至 {date}",
         "inUse": "目前使用中",
         "overdrawn": "您的執行次數比現有點數多用了 {count} 點。|您的執行次數比現有點數多用了 {count} 點。",
         "plan": "方案",
         "planOfPool": "{total} 中剩餘 {remaining}",
-        "planTooltip": "您的方案包含的點數。每個帳單週期會補充。",
-        "rateInfo": "關於點數",
-        "rateTooltip": "點數用於支付執行費用。{credits} 點 = $1。",
+        "planTooltip": "方案點數會優先於儲值點數使用。",
+        "planUsed": "已使用 {percent}%",
         "title": "點數",
+        "tooltip": "點數可用於 Comfy Cloud、ComfyUI 和 Comfy API。",
+        "tooltipLabel": "關於點數",
         "topUp": "儲值",
-        "topUpTooltip": "您加購的點數。方案點數用完後會使用這些點數。",
+        "topUpTooltip": "方案點數用完後使用。",
         "unavailable": "無法載入您的餘額。"
+      },
+      "footer": {
+        "messageSupport": "聯絡客服",
+        "partnerNodesPricing": "合作夥伴節點定價"
       },
       "handoff": {
         "member": {
@@ -5884,7 +6128,9 @@
         },
         "owner": {
           "action": "開啟帳務",
-          "label": "付款方式、發票與使用量"
+          "label": "付款方式、發票與使用量",
+          "line": "在 {platform} 管理帳務的其他所有事項",
+          "platform": "platform.comfy.org"
         }
       },
       "loadError": "無法載入您的方案。",
@@ -5903,6 +6149,7 @@
           "yearly": "按年計費。下張發票日期為 {date}。"
         },
         "ended": "已於 {date} 結束。",
+        "endedNoDate": "此方案已結束。",
         "ending": "將於 {date} 結束。您不會再被收費。",
         "lifecycleRefused": "無法進行這項變更。請再試一次。",
         "managedByOwner": "由工作區擁有者管理。",
@@ -5912,12 +6159,19 @@
           "line": "訂閱即可在雲端執行工作流程。",
           "title": "此工作區沒有有效方案"
         },
+        "paused": "已暫停。續約付款未成功。",
         "resumeConfirm": {
           "body": "您的方案將於 {date} 續訂。您隨時都可以再次取消。",
           "title": "要恢復您的 {plan} 方案嗎？"
         },
+        "salesManaged": {
+          "line": "依合約計費。",
+          "renews": "依合約計費。將於 {date} 續約。",
+          "title": "企業版"
+        },
         "scheduledChange": "將於 {date} 變更為 {plan}。",
         "stayConfirm": {
+          "bodyNoAmount": "您將繼續使用 {current}。您隨時都可以再次排程變更。",
           "title": "要取消變更為 {plan} 的操作嗎？"
         },
         "unknown": {
@@ -6184,10 +6438,11 @@
     }
   },
   "workspaceSwitcher": {
+    "cannotCreateWorkspace": "目前無法在此帳戶建立工作區。",
     "createWorkspace": "建立新工作區",
     "failedToSwitch": "切換工作區失敗",
     "managedByOrganization": "您的組織管理您的工作區，因此您無法建立工作區。",
-    "maxWorkspacesReached": "您最多只能擁有 {max} 個工作區。請刪除一個以建立新工作區。",
+    "maxWorkspacesReached": "您最多只能擁有 {max} 個工作區。請刪除它以建立新的工作區。| 您最多只能擁有 {max} 個工作區。請刪除其中一個以建立新的工作區。",
     "personal": "個人",
     "roleMember": "成員",
     "roleOwner": "擁有者",

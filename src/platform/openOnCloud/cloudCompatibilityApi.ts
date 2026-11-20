@@ -1,3 +1,4 @@
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
@@ -216,7 +217,7 @@ async function postCompatibilityCheck(
       node_types: nodeTypes,
       models
     }),
-    signal: AbortSignal.timeout(10_000)
+    signal: createTimeoutSignal(10_000)
   })
 }
 

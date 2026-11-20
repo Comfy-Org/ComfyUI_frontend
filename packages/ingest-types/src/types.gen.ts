@@ -7922,6 +7922,10 @@ export type AgentToolCallData = {
    * Optional terminal recovery barrier. The highest published doc_update sequence carrying this call's op_ids.
    */
   doc_seq?: number
+  /**
+   * bash only. The model file a `comfy model download` in the call's command fetches (its --filename, else the last segment of its --url), on its running frame and on its terminal frame, so the client can name the download while it runs. Omitted on every other tool and command.
+   */
+  download?: string
   duration_ms?: number
   error_code?: string
   /**

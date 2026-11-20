@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useIntervalFn } from '@vueuse/core'
@@ -1190,15 +1191,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
     })
   }
 
-  function recordUnavailableTarget(
+  function recordRefusedSend(
     text: string,
-    clientMessageId: string | undefined
+    clientMessageId: string | undefined,
+    noticeKey: string
   ): void {
     trackSendRefused('target_unavailable', clientMessageId)
     conversationStore.recordFailedSend(
       nextLocalErrorId(),
       text,
-      i18n.global.t('agent.targetNavigationUnavailable')
+      i18n.global.t(noticeKey)
     )
   }
 
@@ -1209,11 +1211,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
     draft: DraftSnapshot | undefined,
     clientMessageId: string | undefined
   ): boolean {
-    const refused =
-      workflowTargetChanged(originContext, wfContext) ||
-      lacksCanvasForRemint(wfContext, draft)
-    if (refused) recordUnavailableTarget(text, clientMessageId)
-    return refused
+    if (workflowTargetChanged(originContext, wfContext)) {
+      recordRefusedSend(
+        text,
+        clientMessageId,
+        'agent.targetNavigationUnavailable'
+      )
+      return true
+    }
+    if (!lacksCanvasForRemint(wfContext, draft)) return false
+    recordRefusedSend(text, clientMessageId, 'agent.canvasNotReadyForSend')
+    return true
   }
 
   function postTurn(
@@ -2457,8 +2465,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     const firstLive = connection === 'initial'
     connection = 'live'
-    if (reconnected) reconcileLiveTurns('reconnect')
-    else if (firstLive) reconcileLiveTurns('hydrate')
+    if (reconnected) {
+      conversationStore.markActiveTurnMissedFrames()
+      reconcileLiveTurns('reconnect')
+    } else if (firstLive) reconcileLiveTurns('hydrate')
   }
 
   function reconcileLiveTurns(cause: RecoveryCause): void {
@@ -2662,7 +2672,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!isTurnLive(turn, generation)) return false
       const deliveredBeforeFetch = new Set(deliveredAsks)
       const outcome = await fetchTurnOutcome(turn, signal)
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       if (!isTurnLive(turn, generation)) return false
       const consecutiveThreadMissing = recordThreadAvailability(key, outcome)
       pruneRecoveryLedgers()

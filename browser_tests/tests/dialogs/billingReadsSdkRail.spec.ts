@@ -15,6 +15,7 @@ import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expectElementScreenshot } from '@e2e/fixtures/utils/screenshotRegion'
 import {
   mockWorkspaceTokenMint,
   workspace
@@ -150,11 +151,16 @@ interface BootOptions {
    * the billing gate issues its first reads.
    */
   readRailOnFeatures?: boolean
+  balanceDown?: () => boolean
 }
 
 async function mockCloudBoot(
   page: Page,
-  { unsafeBalance = false, readRailOnFeatures = false }: BootOptions = {}
+  {
+    unsafeBalance = false,
+    readRailOnFeatures = false,
+    balanceDown = () => false
+  }: BootOptions = {}
 ): Promise<ReadRoutes> {
   const reads: Request[] = []
   const eventPages: (string | null)[] = []
@@ -210,6 +216,13 @@ async function mockCloudBoot(
   })
   await page.route('**/api/billing/balance', (r) => {
     record(r.request())
+    if (balanceDown()) {
+      return r.fulfill({
+        status: 503,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'Balance temporarily unavailable' })
+      })
+    }
     return unsafeBalance
       ? r.fulfill({
           contentType: 'application/json',
@@ -411,6 +424,36 @@ test.describe('Billing reads rail (FE-2476)', { tag: '@cloud' }, () => {
     // nor its dollar rendering may appear.
     await expect(content.getByText('9,007,199,254')).toBeHidden()
   })
+
+  test(
+    'shows a failed balance read as unavailable, then recovers on Try again',
+    { tag: '@screenshot' },
+    async ({ page }) => {
+      test.setTimeout(60_000)
+      let down = true
+      await mockCloudBoot(page, { balanceDown: () => down })
+      await bootApp(page)
+
+      const content = await openPlanAndCredits(page)
+      const tile = content.getByTestId('credits-tile')
+
+      await expect(tile.getByTestId('credits-total-unavailable')).toHaveText(
+        '—'
+      )
+      await expect(tile.getByText("Couldn't load your balance.")).toBeVisible()
+      await expect(tile.getByText('0', { exact: true })).toBeHidden()
+      await expectElementScreenshot(
+        tile,
+        'credits-tile-balance-unavailable.png'
+      )
+
+      down = false
+      await tile.getByRole('button', { name: 'Try again' }).click()
+
+      await expect(tile.getByText('12,660')).toBeVisible()
+      await expect(tile.getByTestId('credits-total-unavailable')).toBeHidden()
+    }
+  )
 
   test('issues its own request for the second page of the usage log', async ({
     page
