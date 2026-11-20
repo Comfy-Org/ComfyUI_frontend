@@ -1399,7 +1399,7 @@ export class ComfyApp implements IComfyApp {
       isCurrent,
       isReady,
       resolveGraphData,
-      restoresHistory = false
+      restoreHistory = false
     } = options
     const backgroundRestore =
       !clean &&
@@ -1660,13 +1660,13 @@ export class ComfyApp implements IComfyApp {
           return { loaded: false }
         }
         try {
-          if (!restoresHistory) useComfyApiStore().beginDocument()
+          if (!restoreHistory) useComfyApiStore().beginDocument()
           try {
             graph.configure(graphData as ISerialisedGraph, undefined, {
-              preserveMountedNodeSizes: options.restoreHistory
+              preserveMountedNodeSizes: restoreHistory
             })
           } finally {
-            if (restoresHistory) useComfyApiStore().afterHistoryRestore()
+            if (restoreHistory) useComfyApiStore().afterHistoryRestore()
           }
 
           const originalMainGraphRenderer = graph.extra.workflowRendererVersion

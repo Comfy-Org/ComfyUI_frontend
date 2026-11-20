@@ -3068,7 +3068,7 @@ describe('ComfyApp', () => {
         false,
         null,
         {
-          restoresHistory: true
+          restoreHistory: true
         }
       )
 
@@ -3088,7 +3088,7 @@ describe('ComfyApp', () => {
       assert(kept)
 
       await app.loadGraphData(beforeAdding, false, false, null, {
-        restoresHistory: true
+        restoreHistory: true
       })
       app.rootGraph.add(new LGraphNode('added after undo'))
 
@@ -3110,10 +3110,10 @@ describe('ComfyApp', () => {
       assert(kept)
 
       await app.loadGraphData(beforeAdding, false, false, null, {
-        restoresHistory: true
+        restoreHistory: true
       })
       await app.loadGraphData(afterAdding, false, false, null, {
-        restoresHistory: true
+        restoreHistory: true
       })
 
       expect(kept.isDeleted).toBe(true)
@@ -3211,7 +3211,7 @@ describe('ComfyApp', () => {
       })
 
       await app.loadGraphData(beforeAdding, false, false, null, {
-        restoresHistory: true
+        restoreHistory: true
       })
 
       expect(added).toBe(true)
@@ -3248,7 +3248,7 @@ describe('ComfyApp', () => {
       FailsToConfigure.failing = true
       await expect(
         app.loadGraphData(beforeAdding, false, false, null, {
-          restoresHistory: true
+          restoreHistory: true
         })
       ).resolves.toBe(false)
       FailsToConfigure.failing = false

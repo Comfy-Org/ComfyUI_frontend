@@ -107,7 +107,7 @@ a reference that is the node object dies on every undo.
       ids. Every earlier handle then stops resolving. A handle taken while
       that document loads belongs to it. Reloading the open workflow, as a
       language change or late custom nodes do, is such a load.
-    - Undo and redo mark their load with `restoresHistory`. They rebuild the
+    - Undo and redo mark their load with `restoreHistory`. They rebuild the
       graph, so a handle whose entity is still there keeps working, and a
       handle whose entity is gone reports `isDeleted` and reads it again when
       a later undo or redo brings it back. When the load finishes, even if it
@@ -125,7 +125,7 @@ a reference that is the node object dies on every undo.
       the groups present, and a handle to the newest group a restore removes
       is retired. Slot handles name slot objects, which a restore rebuilds,
       so they are retired when a restore finds them gone.
-    - The change tracker marks a load `restoresHistory` only when it comes from
+    - The change tracker marks a load `restoreHistory` only when it comes from
       its own undo or redo queue. A state that comes from elsewhere, such as the
       saved workflow of an earlier run that Reuse Parameters restores in Linear
       mode, can give a handle's id to another node, so it is a load. So is an
@@ -145,7 +145,7 @@ a reference that is the node object dies on every undo.
       agent do on purpose, whose handle then follows the new node; a node added
       before the change tracker captured the canvas and then replaced by a
       redo, which ends when #23333 is fixed; and a load that an extension marks
-      `restoresHistory`, an option meant for the change tracker. The API does
+      `restoreHistory`, an option meant for the change tracker. The API does
       not defend against an extension that sets it, as it does not defend
       against one that redefines the window slot, nor against one that lowers
       a graph's id counter (`last_node_id` is writable). The random ids the
@@ -288,7 +288,7 @@ ticket, and the workaround is removed when the ticket is fixed.
   id the counter could give again, so an id-keyed handle never names a
   different node. Once ids are not reissued, a handle can also survive a
   node's removal by undo and its return by redo: `afterHistoryRestore()`, its
-  host call and the narrowing of decision 10 are removed. `restoresHistory` stays, because it is also how the host tells
+  host call and the narrowing of decision 10 are removed. `restoreHistory` stays, because it is also how the host tells
   a rebuild of the open document from a load of another.
 - Group ids are reissued the same way, and #23333 names only node ids: the
   0.4 workflow the change tracker keeps has no group counter, so a restore
@@ -345,8 +345,12 @@ without a canvas context resets a collapsed node's drawn width to 0.
 - **The document counter.** `beginDocument()` counts loads because the session
   uid of ADR-GRAPH-DOCUMENT-0026 does not exist yet. See "Relation to other
   decisions".
-- **`restoresHistory`.** A new option on `loadGraphData`, set by the change
-  tracker, not a second load method. A separate method would repeat the
+- **`restoreHistory`.** The option `loadGraphData` already takes for the
+  change tracker's undo and redo (#23897 uses it to keep the sizes mounted
+  Vue nodes measured), not a second load method. The change tracker now sets
+  it only for a state that is a rebuild of the open document: a state an undo
+  or redo pushed across a load is a load (decision 10), so it is `false` there,
+  and such a restore also measures node sizes afresh, as any load does. A separate method would repeat the
   load pipeline of about five hundred lines, and comparing graph ids cannot tell
   an undo from a reload of the same workflow.
 - **The store.** `useComfyApiStore` holds the one API so the host reaches it
@@ -368,9 +372,9 @@ Host changes outside the folder:
   `comfyAppReady` have mounted.
 - `src/scripts/app.ts` calls `beginDocument()` before configuring a saved
   document, and `afterHistoryRestore()` after an undo or redo.
-  `LoadGraphDataOptions` gains `restoresHistory`.
-- `src/scripts/changeTracker.ts` sets `restoresHistory` for a load from its
-  own undo or redo queue, and remembers each state an undo or redo pushed
+  `restoreHistory` gains a JSDoc saying extensions must not set it.
+- `src/scripts/changeTracker.ts` sets `restoreHistory` for a load from its
+  own undo or redo queue (it set it for every restore), and remembers each state an undo or redo pushed
   across a load, so that restoring that state is a load too (decision 10).
 
 Handle retirement on import depends on `LGraph.clear()` assigning a new root

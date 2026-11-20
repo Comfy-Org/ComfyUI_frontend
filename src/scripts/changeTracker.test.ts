@@ -1794,7 +1794,7 @@ describe('ChangeTracker', () => {
       expect(
         vi
           .mocked(app.loadGraphData)
-          .mock.calls.map(([, , , , options]) => options?.restoresHistory)
+          .mock.calls.map(([, , , , options]) => options?.restoreHistory)
       ).toEqual([true, true])
     })
 
@@ -1809,7 +1809,7 @@ describe('ChangeTracker', () => {
       expect(
         vi
           .mocked(app.loadGraphData)
-          .mock.calls.map(([, , , , options]) => options?.restoresHistory)
+          .mock.calls.map(([, , , , options]) => options?.restoreHistory)
       ).toEqual([false])
     })
 
@@ -1831,7 +1831,7 @@ describe('ChangeTracker', () => {
       expect(
         vi
           .mocked(app.loadGraphData)
-          .mock.calls.map(([, , , , options]) => options?.restoresHistory)
+          .mock.calls.map(([, , , , options]) => options?.restoreHistory)
       ).toEqual([false, false, true, true, false])
     })
 

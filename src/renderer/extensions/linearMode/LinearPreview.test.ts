@@ -230,6 +230,6 @@ describe('LinearPreview', () => {
     await vi.waitFor(() => expect(app.loadGraphData).toHaveBeenCalledOnce())
     const [, , , , options] = vi.mocked(app.loadGraphData).mock.calls[0]
     expect(tracker.undoQueue).toHaveLength(1)
-    expect(options?.restoresHistory).not.toBe(true)
+    expect(options?.restoreHistory).not.toBe(true)
   })
 })
