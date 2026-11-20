@@ -77,21 +77,23 @@ function isDOMBackedWidget(widget: Readonly<IBaseWidget>): boolean {
   )
 }
 
-export function deriveWidgetRenderState(
-  widget: Readonly<IBaseWidget>
-): WidgetRenderState {
-  const isDOMWidget = isDOMBackedWidget(widget)
-  const useDOMElement =
-    isDOMWidget &&
+export function prefersDOMElement(widget: Readonly<IBaseWidget>): boolean {
+  return (
+    isDOMBackedWidget(widget) &&
     'element' in widget &&
     !!widget.element &&
     !(
       'vueNodeRenderer' in widget.options &&
       widget.options.vueNodeRenderer === 'native'
     )
+  )
+}
+
+export function deriveWidgetRenderState(
+  widget: Readonly<IBaseWidget>
+): WidgetRenderState {
   return {
-    isDOMWidget,
-    useDOMElement,
+    isDOMWidget: isDOMBackedWidget(widget),
     tooltip: widget.tooltip
   }
 }
