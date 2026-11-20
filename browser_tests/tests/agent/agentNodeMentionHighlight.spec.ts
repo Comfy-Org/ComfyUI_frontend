@@ -1,7 +1,9 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 const renderModes = [
@@ -10,6 +12,37 @@ const renderModes = [
 ] as const
 
 const NODE_CLIP_PADDING = 24
+
+async function captureCanvasHighlight(comfyPage: ComfyPage, panel: Locator) {
+  const node = await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
+  const bounds = await node.getBounding()
+  const clip = await comfyPage.page.evaluate(
+    ({ x, y, width, height, padding }) => {
+      const [left, top] = window.app!.canvasPosToClientPos([x, y])
+      const [right, bottom] = window.app!.canvasPosToClientPos([
+        x + width,
+        y + height
+      ])
+      return {
+        x: left - padding,
+        y: top - padding,
+        width: right - left + padding * 2,
+        height: bottom - top + padding * 2
+      }
+    },
+    { ...bounds, padding: NODE_CLIP_PADDING }
+  )
+
+  const screenshotNode = () =>
+    comfyPage.page.screenshot({ clip, mask: [panel], animations: 'disabled' })
+
+  const idleNode = await screenshotNode()
+  return async (emphasized: boolean) => {
+    await expect
+      .poll(async () => (await screenshotNode()).equals(idleNode))
+      .toBe(!emphasized)
+  }
+}
 
 for (const mode of renderModes) {
   test.describe(
@@ -49,54 +82,19 @@ for (const mode of renderModes) {
           exact: true
         })
 
-        const bounds = await (
-          await comfyPage.nodeOps.getNodeRefByTitle('KSampler')
-        ).getBounding()
-        const clip = await comfyPage.page.evaluate(
-          ({ x, y, width, height, padding }) => {
-            const [left, top] = window.app!.canvasPosToClientPos([x, y])
-            const [right, bottom] = window.app!.canvasPosToClientPos([
-              x + width,
-              y + height
-            ])
-            return {
-              x: left - padding,
-              y: top - padding,
-              width: right - left + padding * 2,
-              height: bottom - top + padding * 2
+        const expectHighlight = mode.vueNodesEnabled
+          ? async (emphasized: boolean) => {
+              const { stateOutline } =
+                await comfyPage.vueNodes.getFixtureByTitle('KSampler')
+              await expect(stateOutline).toBeVisible({ visible: emphasized })
             }
-          },
-          { ...bounds, padding: NODE_CLIP_PADDING }
-        )
-
-        const screenshotNode = () =>
-          comfyPage.page.screenshot({
-            clip,
-            mask: [panel],
-            animations: 'disabled'
-          })
-
-        const idleNode = await screenshotNode()
+          : await captureCanvasHighlight(comfyPage, panel)
 
         const expectEmphasized = async (emphasized: boolean) => {
           await expect
             .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
             .toEqual([])
-          await expect
-            .poll(async () => (await screenshotNode()).equals(idleNode))
-            .toBe(!emphasized)
-          if (mode.vueNodesEnabled) {
-            const vueNode = comfyPage.vueNodes
-              .getNodeByTitle('KSampler')
-              .first()
-            if (emphasized)
-              await expect(vueNode).toHaveAttribute('data-emphasized', 'true')
-            else
-              await expect(vueNode).not.toHaveAttribute(
-                'data-emphasized',
-                'true'
-              )
-          }
+          await expectHighlight(emphasized)
         }
 
         await test.step('emphasizes the keyboard-active node without selecting it', async () => {
@@ -107,7 +105,6 @@ for (const mode of renderModes) {
               exact: true
             })
             .click()
-          // Park the pointer off the menu so only the keyboard moves the active row.
           await agentPanel.composer.hover()
           await expect(nodeMention).toBeVisible()
           await expectEmphasized(false)
