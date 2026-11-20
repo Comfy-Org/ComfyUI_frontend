@@ -1983,6 +1983,40 @@ describe('ComfyApp', () => {
       vi.spyOn(api, 'dispatchCustomEvent').mockImplementation(() => true)
     }
 
+    it('keeps a batch on the workflow that queued it when the tab changes mid-batch', async () => {
+      prepareEmptyPromptQueue()
+      const queueingGraph = Reflect.get(app, 'rootGraphInternal') as LGraph
+      const serialisedFrom: LGraph[] = []
+      vi.spyOn(app, 'graphToPrompt').mockImplementation(
+        async (graph?: LGraph) => {
+          if (graph) serialisedFrom.push(graph)
+          return { output: {}, workflow: createWorkflowGraphData() }
+        }
+      )
+
+      // Switch workflow and root graph while the batch is still queueing, the
+      // way a user switching tabs at item 2 of 3 does.
+      const otherGraph = new LGraph()
+      const otherWorkflow = new ComfyWorkflow({
+        path: 'workflows/other.json',
+        modified: 0,
+        size: 0
+      })
+      vi.spyOn(api, 'queuePrompt').mockImplementation(() => {
+        Reflect.set(app, 'rootGraphInternal', otherGraph)
+        useWorkflowStore().activeWorkflow = markLoaded(otherWorkflow)
+        return Promise.resolve({ prompt_id: `job-${serialisedFrom.length}` })
+      })
+
+      await expect(app.queuePrompt(0, 3)).resolves.toBe(true)
+
+      // Every item serialises the graph that queued the batch, not whatever
+      // became active partway through: Comfy-Org/ComfyUI#16352.
+      expect(serialisedFrom).toHaveLength(3)
+      expect(serialisedFrom.every((g) => g === queueingGraph)).toBe(true)
+      expect(serialisedFrom).not.toContain(otherGraph)
+    })
+
     it('waits for workspace authentication before submitting the prompt', async () => {
       prepareEmptyPromptQueue()
       let resolveToken: (token: string) => void = () => {}

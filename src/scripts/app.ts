@@ -1894,6 +1894,15 @@ export class ComfyApp implements IComfyApp {
         )
 
         const isPartialExecution = !!queueNodeIds?.length
+        // A batch belongs to the workflow that queued it. Each item below is
+        // serialised separately on purpose, so widget value controls advance
+        // between items (control_after_generate), but the graph and workflow
+        // they are read from are captured once here. Reading them per item let
+        // a tab switch mid-batch retarget the remaining items at whatever was
+        // open by then: Comfy-Org/ComfyUI#16352.
+        const batchGraph = this.rootGraph
+        const batchWorkflow = useWorkspaceStore().workflow
+          .activeWorkflow as ComfyWorkflow
         for (let i = 0; i < batchCount; i++) {
           let executionContext: ExecutionContext | undefined
           if (telemetry) {
@@ -1907,19 +1916,18 @@ export class ComfyApp implements IComfyApp {
             }
           }
 
-          forEachNode(this.rootGraph, (node) => {
+          forEachNode(batchGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
             applyPromotedWidgetControl(node, 'beforeQueued')
           })
 
-          const queuedWorkflow = useWorkspaceStore().workflow
-            .activeWorkflow as ComfyWorkflow
+          const queuedWorkflow = batchWorkflow
           const queuedRunErrorKey = executionErrorStore.captureRunErrorKey()
           const queuedMode = getWorkflowMode(queuedWorkflow)
           const startTime = performance.now()
-          const p = await this.graphToPrompt(this.rootGraph).catch(
+          const p = await this.graphToPrompt(batchGraph).catch(
             (error: unknown) => {
               telemetry?.trackExecutionOutcome({
                 startTime,
@@ -1931,7 +1939,7 @@ export class ComfyApp implements IComfyApp {
               throw error
             }
           )
-          const queuedNodes = collectAllNodes(this.rootGraph)
+          const queuedNodes = collectAllNodes(batchGraph)
           let workflowContext: WorkflowExecutionContext | undefined
           if (executionContext) {
             workflowContext = toWorkflowExecutionContext(executionContext, {
@@ -2062,7 +2070,7 @@ export class ComfyApp implements IComfyApp {
               error instanceof PromptExecutionError &&
               promptError?.type === 'missing_node_type'
             ) {
-              rescanAndSurfaceMissingNodes(this.rootGraph)
+              rescanAndSurfaceMissingNodes(batchGraph)
             } else if (
               error instanceof PromptExecutionError &&
               error.status === 403 &&
