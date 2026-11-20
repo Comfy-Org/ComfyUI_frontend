@@ -3649,7 +3649,7 @@ describe('ComfyApp', () => {
         })
       }
 
-      it('reports what a pack changes, not what an undo or redo gives back, and a saved mode or colour the rebuilt node did not start with', async () => {
+      it('reports what a pack changes, not what an undo or redo gives back, and a saved mode or color the rebuilt node did not start with', async () => {
         const { comfy } = nodeApiWithNodeTypeThatTakesItsHandleWhenAdded()
         await app.loadGraphData(workflowWithFixedIdAndOneNode(), false)
         showTheRootGraph()

@@ -68,15 +68,15 @@ review finding requires it. The counts below are packs, then call sites.
 ### Root events
 
 4. `onNodeChanged(listener, options?)` (8 packs, 11 sites) reports a change
-   to a node's title, mode, colour or body colour. It listens to the graph
+   to a node's title, mode, color or body color. It listens to the graph
    event every host writer of those fields raises,
    `node:property:changed`, so a change made by the user or a pack is
    heard alike. A load, an undo or a redo does not edit the nodes in
    place: `LGraph.configure` builds new ones from the saved state. A new
    node is created with its saved title and starts with mode `'always'`
-   and no colours, and `LGraphNode.configure` then writes the saved mode
-   and colours through the same setters. So a rebuild raises the event
-   once for each saved mode other than `'always'` and each saved colour,
+   and no colors, and `LGraphNode.configure` then writes the saved mode
+   and colors through the same setters. So a rebuild raises the event
+   once for each saved mode other than `'always'` and each saved color,
    whether or not it changed, and not for the saved title. An undo that puts a
    title back, or a mode back to `'always'`, is silent; a redo or load of
    a bypassed node reports `'bypass'` again. The event comes from the host's
