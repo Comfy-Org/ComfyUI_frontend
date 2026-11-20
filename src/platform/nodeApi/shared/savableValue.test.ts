@@ -2,6 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { frozenSavable, isSavable, savableValue } from './savableValue'
 
+function withoutItem(list: number[], index: number): number[] {
+  Reflect.deleteProperty(list, index)
+  return list
+}
+
 describe('a value the workflow saves unchanged', () => {
   it('copies it in one pass, unfrozen', () => {
     const value = { list: [1, 'two', null, { deep: true }] }
@@ -38,6 +43,20 @@ describe('a value the workflow saves unchanged', () => {
     expect(isSavable(value)).toBe(false)
   })
 
+  it.for([
+    ['a hole', withoutItem([1, 2, 3], 1)],
+    ['a hole at the end', Object.assign([1], { length: 2 })],
+    ['a named field', Object.assign([1, 2], { note: 'x' })]
+  ] as const)(
+    'refuses a list with %s, which the workflow would not save as it is',
+    ([, list]) => {
+      expect(() => savableValue('m', { list })).toThrow(
+        'm needs value.list as a list of items only, with no hole or named field, not a list.'
+      )
+      expect(isSavable(list)).toBe(false)
+    }
+  )
+
   it('refuses a value that holds itself, and takes one held twice', () => {
     const shared = { x: 1 }
     const looped: Record<string, unknown> = {}
@@ -57,6 +76,12 @@ describe('a value the workflow saves unchanged', () => {
     expect(copy).toEqual({ preview: blob, list: [1] })
     expect(Object.isFrozen(copy)).toBe(true)
     expect(frozenSavable({ run: () => 1 })).toBeUndefined()
+  })
+
+  it('copies undefined for a reader as a save does: a field left out, null in a list', () => {
+    expect(
+      frozenSavable({ kept: 1, gone: undefined, list: [undefined] })
+    ).toEqual({ kept: 1, list: [null] })
   })
 
   it('refuses a value nested deeper than a thousand levels, instead of overflowing the stack', () => {

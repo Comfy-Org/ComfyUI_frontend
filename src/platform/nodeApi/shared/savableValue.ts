@@ -14,15 +14,25 @@ const SAVABLE =
 
 type IsLeaf = (value: object) => boolean
 
-const noLeaf: IsLeaf = () => false
+/** How a walk treats what a write refuses and a save would quietly change. */
+interface Walk {
+  readonly isLeaf: IsLeaf
+  /** A read copies `undefined` as JSON saves it: a field left out, `null` in a list. */
+  readonly asSaved: boolean
+}
+
+const WRITE: Walk = { isLeaf: () => false, asSaved: false }
 
 const MAX_DEPTH = 1000
+
+const LIST = 'a list of items only, with no hole or named field'
 
 class Unsavable {
   constructor(
     readonly path: string,
     readonly value: unknown,
-    readonly tooDeep = false
+    readonly tooDeep = false,
+    readonly needed = SAVABLE
   ) {}
 }
 
@@ -33,25 +43,29 @@ export function savableValue(
   path = 'value'
 ): SavableValue {
   try {
-    return copyOf(value, path, new Set(), noLeaf) as SavableValue
+    return copyOf(value, path, new Set(), WRITE) as SavableValue
   } catch (error) {
     if (!(error instanceof Unsavable)) throw error
     const needed = error.tooDeep
       ? `${path} nested at most ${MAX_DEPTH} deep`
-      : `${error.path} as ${SAVABLE}`
+      : `${error.path} as ${error.needed}`
     throw invalidArgument(member, needed, error.value)
   }
 }
 
-/** A frozen copy of `value`, keeping any object `isLeaf` accepts as it is, or `undefined` if it holds anything else. */
+/**
+ * A frozen copy of `value` as a workflow would save it, keeping any object
+ * `isLeaf` accepts as it is, or `undefined` if it holds anything else.
+ */
 export function frozenSavable(value: unknown): SavableValue | undefined
 export function frozenSavable(value: unknown, isLeaf: IsLeaf): unknown
 export function frozenSavable(
   value: unknown,
-  isLeaf: IsLeaf = noLeaf
+  isLeaf: IsLeaf = WRITE.isLeaf
 ): unknown {
   try {
-    return deepFreeze(copyOf(value, '', new Set(), isLeaf), isLeaf)
+    const copy = copyOf(value, '', new Set(), { isLeaf, asSaved: true })
+    return deepFreeze(copy, isLeaf)
   } catch (error) {
     if (error instanceof Unsavable) return undefined
     throw error
@@ -60,7 +74,7 @@ export function frozenSavable(
 
 export function isSavable(value: unknown): value is SavableValue {
   try {
-    copyOf(value, '', new Set(), noLeaf)
+    copyOf(value, '', new Set(), WRITE)
     return true
   } catch (error) {
     if (error instanceof Unsavable) return false
@@ -72,10 +86,10 @@ function copyOf(
   value: unknown,
   path: string,
   ancestors: Set<object>,
-  isLeaf: IsLeaf
+  walk: Walk
 ): unknown {
   if (typeof value !== 'object' || value === null) return primitive(value, path)
-  if (isLeaf(value)) return value
+  if (walk.isLeaf(value)) return value
   const isList = Array.isArray(value)
   if ((!isList && !isPlainData(value)) || ancestors.has(value)) {
     throw new Unsavable(path, value)
@@ -83,14 +97,18 @@ function copyOf(
   if (ancestors.size === MAX_DEPTH) throw new Unsavable(path, value, true)
   ancestors.add(value)
   const copy: Record<string, unknown> = isList ? Object.assign([]) : {}
-  for (const key of Object.keys(value)) {
+  const keys = Object.keys(value)
+  if (isList && !holdsOnlyItems(value, keys)) {
+    throw new Unsavable(path, value, false, LIST)
+  }
+  for (const key of keys) {
     const fieldPath = isList ? `${path}[${key}]` : `${path}.${key}`
-    const item = copyOf(
-      ownValue(value, key, fieldPath),
-      fieldPath,
-      ancestors,
-      isLeaf
-    )
+    const field = ownValue(value, key, fieldPath)
+    if (field === undefined && walk.asSaved && !isList) continue
+    const item =
+      field === undefined && walk.asSaved
+        ? null
+        : copyOf(field, fieldPath, ancestors, walk)
     Object.defineProperty(copy, key, {
       value: item,
       enumerable: true,
@@ -100,6 +118,11 @@ function copyOf(
   }
   ancestors.delete(value)
   return copy
+}
+
+function holdsOnlyItems(list: readonly unknown[], keys: string[]): boolean {
+  const last = list.length - 1
+  return keys.length === list.length && (last < 0 || keys[last] === `${last}`)
 }
 
 function primitive(value: unknown, path: string): unknown {
