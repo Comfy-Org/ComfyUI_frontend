@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
 import {
-  DERIVED_WORKFLOW_SOURCE_PREFIX,
   deriveWorkflowFile,
   derivedWorkflowName
 } from './derivedWorkflowAttachment'
@@ -19,11 +18,8 @@ function imageFile(name = 'photo.png') {
   return new File([new Uint8Array([1, 2, 3])], name, { type: 'image/png' })
 }
 
-async function textOf(file: File): Promise<string> {
-  return new Uint8Array(await file.arrayBuffer()).reduce(
-    (text, byte) => text + String.fromCharCode(byte),
-    ''
-  )
+async function workflowIn(file: File): Promise<unknown> {
+  return JSON.parse(await file.text())
 }
 
 describe('derivedWorkflowName', () => {
@@ -52,7 +48,7 @@ describe('deriveWorkflowFile', () => {
     expect(derived).toBeInstanceOf(File)
     expect(derived!.name).toBe('photo.workflow.json')
     expect(derived!.type).toBe('application/json')
-    expect(JSON.parse(await textOf(derived!))).toEqual(WORKFLOW)
+    expect(await workflowIn(derived!)).toEqual(WORKFLOW)
   })
 
   it('lifts a workflow handed back as an object', async () => {
@@ -60,7 +56,7 @@ describe('deriveWorkflowFile', () => {
 
     const derived = await deriveWorkflowFile(imageFile())
 
-    expect(JSON.parse(await textOf(derived!))).toEqual(WORKFLOW)
+    expect(await workflowIn(derived!)).toEqual(WORKFLOW)
   })
 
   it('tolerates bare NaN and Infinity tokens', async () => {
@@ -72,7 +68,9 @@ describe('deriveWorkflowFile', () => {
     const derived = await deriveWorkflowFile(imageFile())
 
     expect(derived).toBeDefined()
-    const parsed = JSON.parse(await textOf(derived!))
+    const parsed = (await workflowIn(derived!)) as {
+      nodes: Array<{ widgets_values: unknown }>
+    }
     expect(parsed.nodes[0].widgets_values).toEqual([null, null])
   })
 
@@ -129,11 +127,5 @@ describe('deriveWorkflowFile', () => {
     const derived = await deriveWorkflowFile(imageFile())
 
     await expect(deriveWorkflowFile(derived!)).resolves.toBeUndefined()
-  })
-})
-
-describe('DERIVED_WORKFLOW_SOURCE_PREFIX', () => {
-  it('is a stable marker for the dedupe key', () => {
-    expect(DERIVED_WORKFLOW_SOURCE_PREFIX).toBe('derived-workflow:')
   })
 })

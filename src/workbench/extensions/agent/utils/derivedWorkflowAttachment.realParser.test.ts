@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  createPlainPng,
-  createWorkflowBearingPng
-} from '@e2e/fixtures/data/agent/workflowBearingPng'
+import { createWorkflowBearingPng } from '@e2e/fixtures/data/agent/workflowBearingPng'
 import { deriveWorkflowFile } from './derivedWorkflowAttachment'
 
 const WORKFLOW = {
@@ -66,8 +63,23 @@ describe('deriveWorkflowFile against a real PNG', () => {
     expect(await parsedWorkflow(file)).toEqual(WORKFLOW)
   })
 
+  it('preserves non-ASCII text in the lifted workflow', async () => {
+    const translated = {
+      nodes: [
+        {
+          id: 1,
+          type: 'CLIPTextEncode',
+          widgets_values: ['夕焼けの街、ネオン']
+        }
+      ]
+    }
+    const file = pngFile(createWorkflowBearingPng({ workflow: translated }))
+
+    expect(await parsedWorkflow(file)).toEqual(translated)
+  })
+
   it('lifts nothing from a PNG with no ComfyUI metadata', async () => {
-    const file = pngFile(createPlainPng(), 'plain.png')
+    const file = pngFile(createWorkflowBearingPng({}), 'plain.png')
 
     await expect(deriveWorkflowFile(file)).resolves.toBeUndefined()
   })

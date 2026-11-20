@@ -3,14 +3,12 @@ import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
 const DERIVED_SUFFIX = '.workflow.json'
 
-/** Marks a staged attachment as one lifted out of another attachment. */
 export const DERIVED_WORKFLOW_SOURCE_PREFIX = 'derived-workflow:'
 
 function stripExtension(name: string): string {
   return name.replace(/\.[^./\\]+$/, '') || name
 }
 
-/** Names the workflow lifted out of `sourceName` after it. */
 export function derivedWorkflowName(sourceName: string): string {
   return `${stripExtension(sourceName)}${DERIVED_SUFFIX}`
 }
@@ -27,9 +25,9 @@ export function canCarryEmbeddedWorkflow(file: File): boolean {
 }
 
 function looksLikeEditorWorkflow(value: unknown): boolean {
-  if (typeof value !== 'object' || value === null) return false
-  const nodes = (value as { nodes?: unknown }).nodes
-  return Array.isArray(nodes) && nodes.length > 0
+  if (typeof value !== 'object' || value === null || !('nodes' in value))
+    return false
+  return Array.isArray(value.nodes) && value.nodes.length > 0
 }
 
 function parseWorkflow(raw: string | object): unknown {

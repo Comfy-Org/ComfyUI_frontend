@@ -11,13 +11,28 @@ function chunk(type: string, data: Buffer): Buffer {
   return Buffer.concat([length, typeAndData, crc])
 }
 
+function isLatin1(value: string): boolean {
+  return Buffer.from(value, 'latin1').toString('latin1') === value
+}
+
+/**
+ * `tEXt` is Latin-1 by specification, so PIL — and therefore SaveImage — falls
+ * back to a UTF-8 `iTXt` chunk for a workflow that Latin-1 cannot hold. Mirror
+ * that, or a workflow with non-English prompts would be unrepresentable here.
+ */
 function textChunk(keyword: string, value: string): Buffer {
+  const key = Buffer.concat([Buffer.from(keyword, 'latin1'), Buffer.alloc(1)])
+  if (isLatin1(value)) {
+    return chunk('tEXt', Buffer.concat([key, Buffer.from(value, 'latin1')]))
+  }
   return chunk(
-    'tEXt',
+    'iTXt',
     Buffer.concat([
-      Buffer.from(keyword, 'latin1'),
-      Buffer.alloc(1),
-      Buffer.from(value, 'latin1')
+      key,
+      Buffer.from([0, 0]), // uncompressed, compression method 0
+      Buffer.alloc(1), // empty language tag
+      Buffer.alloc(1), // empty translated keyword
+      Buffer.from(value, 'utf8')
     ])
   )
 }
@@ -51,16 +66,6 @@ export function createWorkflowBearingPng(
     chunk('IHDR', imageHeader()),
     ...text,
     chunk('IDAT', singlePixel(options.pixel ?? [0x40, 0x80, 0xc0])),
-    chunk('IEND', Buffer.alloc(0))
-  ])
-}
-
-/** A decodable 1x1 PNG with no ComfyUI metadata. */
-export function createPlainPng(): Buffer {
-  return Buffer.concat([
-    Buffer.from(PNG_SIGNATURE),
-    chunk('IHDR', imageHeader()),
-    chunk('IDAT', singlePixel([0x10, 0x20, 0x30])),
     chunk('IEND', Buffer.alloc(0))
   ])
 }
