@@ -1613,6 +1613,57 @@ describe('useNodeReplacement', () => {
       expect(useMissingNodesErrorStore().missingNodesError).toBeNull()
     })
 
+    it('replaces only the nodes saved from the selected pack', () => {
+      const fromPackA = createPlaceholderNode(1, 'StringConstant')
+      const fromPackB = createPlaceholderNode(2, 'StringConstant')
+      fromPackA.properties = { cnr_id: 'pack-a' }
+      fromPackB.properties = { cnr_id: 'pack-b' }
+      const graph = createMockGraph([fromPackA, fromPackB])
+      fromPackA.graph = graph
+      fromPackB.graph = graph
+      Object.assign(app, { rootGraph: graph })
+
+      vi.mocked(collectAllNodes).mockReturnValue([fromPackA, fromPackB])
+      const replacementNode = createNewNode()
+      vi.mocked(LiteGraph.createNode).mockReturnValueOnce(replacementNode)
+
+      const packAEntry: MissingNodeType = {
+        type: 'StringConstant',
+        nodeId: '1',
+        cnrId: 'pack-a',
+        isReplaceable: true,
+        replacement: {
+          new_node_id: 'PrimitiveString',
+          old_node_id: 'StringConstant',
+          old_widget_ids: null,
+          input_mapping: null,
+          output_mapping: null,
+          old_pack: 'pack-a',
+          kind: 'equivalent'
+        }
+      }
+      const packBEntry: MissingNodeType = {
+        type: 'StringConstant',
+        nodeId: '2',
+        cnrId: 'pack-b',
+        isReplaceable: false
+      }
+      seedMissingNodeTypes([packAEntry, packBEntry])
+
+      useNodeReplacement().replaceGroup({
+        type: 'StringConstant',
+        nodeTypes: [packAEntry]
+      })
+
+      expect(graph._nodes).toStrictEqual([replacementNode, fromPackB])
+      expect(
+        getActiveWorkflowMock().pendingWarnings?.missingNodeTypes
+      ).toStrictEqual([packBEntry])
+      expect(
+        useMissingNodesErrorStore().missingNodesError?.nodeTypes
+      ).toStrictEqual([packBEntry])
+    })
+
     it('keeps missing node state when only some nodes of a type are replaced', () => {
       const firstPlaceholder = createPlaceholderNode(1, 'OldNode')
       const secondPlaceholder = createPlaceholderNode(2, 'OldNode')

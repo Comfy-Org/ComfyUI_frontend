@@ -18,6 +18,7 @@ import { isNodeBindable } from '@/lib/litegraph/src/utils/type'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { t } from '@/i18n'
 import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
+import { getCnrIdFromNode } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import type {
   MissingNodeType,
@@ -25,6 +26,7 @@ import type {
 } from '@/platform/workflowErrors/nodeReplacement/types'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
+  removePendingMissingNodeTypesByNodeId,
   removePendingMissingNodeTypesByType,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
@@ -55,12 +57,15 @@ function findMatchingType(
   node: LGraphNode,
   selectedTypes: MissingNodeType[]
 ): Extract<MissingNodeType, { type: string }> | undefined {
-  const nodeType = node.type
-  for (const selected of selectedTypes) {
-    if (typeof selected !== 'object' || !selected.isReplaceable) continue
-    if (sanitizeNodeName(selected.type) === nodeType) return selected
-  }
-  return undefined
+  const isPlaceholder = !!node.last_serialization
+  const nodeCnrId = isPlaceholder ? getCnrIdFromNode(node) : undefined
+  return selectedTypes.find(
+    (selected): selected is Extract<MissingNodeType, { type: string }> =>
+      typeof selected === 'object' &&
+      !!selected.isReplaceable &&
+      sanitizeNodeName(selected.type) === node.type &&
+      (!isPlaceholder || selected.cnrId === nodeCnrId)
+  )
 }
 
 interface ReplacementTopologyPlan {
@@ -467,17 +472,48 @@ function replaceWithMapping(
   return true
 }
 
-function removeReplacedMissingNodeTypes(types: string[]): void {
-  useMissingNodesErrorStore().removeMissingNodesByType(types)
-  useDeprecatedNodesStore().removeByType(types)
+function removeReplacedMissingNodeTypes(
+  selectedTypes: MissingNodeType[],
+  replacedTypes: string[]
+): void {
+  const replaced = selectedTypes.filter((selected) =>
+    replacedTypes.includes(
+      typeof selected === 'string' ? selected : selected.type
+    )
+  )
+  const nodeIds = replaced.flatMap((entry) =>
+    typeof entry === 'object' && entry.nodeId != null
+      ? [String(entry.nodeId)]
+      : []
+  )
+  const types = replaced.flatMap((entry) =>
+    typeof entry === 'string'
+      ? [entry]
+      : entry.nodeId == null
+        ? [entry.type]
+        : []
+  )
+
+  const missingNodesStore = useMissingNodesErrorStore()
+  const deprecatedNodesStore = useDeprecatedNodesStore()
+  missingNodesStore.removeMissingNodesByType(types)
+  deprecatedNodesStore.removeByType(types)
+  for (const nodeId of nodeIds) {
+    missingNodesStore.removeMissingNodesByNodeId(nodeId)
+    deprecatedNodesStore.removeByNodeId(nodeId)
+  }
 
   const activeWorkflow = useWorkflowStore().activeWorkflow
   if (!activeWorkflow) return
 
   updatePendingWarnings(activeWorkflow, {
-    missingNodeTypes: removePendingMissingNodeTypesByType(
-      activeWorkflow.pendingWarnings?.missingNodeTypes,
-      types
+    missingNodeTypes: nodeIds.reduce(
+      (remaining, nodeId) =>
+        removePendingMissingNodeTypesByNodeId(remaining, nodeId),
+      removePendingMissingNodeTypesByType(
+        activeWorkflow.pendingWarnings?.missingNodeTypes,
+        types
+      )
     )
   })
 }
@@ -600,7 +636,7 @@ export function useNodeReplacement() {
   function replaceGroup(group: ReplacementGroup): void {
     const replaced = replaceNodesInPlace(group.nodeTypes)
     if (replaced.length > 0) {
-      removeReplacedMissingNodeTypes(replaced)
+      removeReplacedMissingNodeTypes(group.nodeTypes, replaced)
     }
   }
 
@@ -612,7 +648,7 @@ export function useNodeReplacement() {
     const allNodeTypes = groups.flatMap((g) => g.nodeTypes)
     const replaced = replaceNodesInPlace(allNodeTypes)
     if (replaced.length > 0) {
-      removeReplacedMissingNodeTypes(replaced)
+      removeReplacedMissingNodeTypes(allNodeTypes, replaced)
     }
   }
 
