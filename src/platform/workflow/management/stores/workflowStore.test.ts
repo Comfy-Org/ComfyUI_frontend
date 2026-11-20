@@ -12,6 +12,11 @@ import { nextTick, reactive } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import {
+  bindCanvasTracker,
+  isCanvasOwner,
+  resetCanvasTrackerForTest
+} from '@/platform/workflow/core/canvasTrackerOwnership'
 import type { LinearInput } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
@@ -715,6 +720,28 @@ describe('useWorkflowStore', () => {
       expect(loadedWorkflow.activeState).toEqual(defaultGraph)
       expect(loadedWorkflow.initialState).toEqual(defaultGraph)
       expect(loadedWorkflow.isModified).toBe(false)
+    })
+  })
+
+  describe('canvas tracker ownership', () => {
+    it('makes the opened object active when another object with its path is active', async () => {
+      resetCanvasTrackerForTest()
+      await syncRemoteWorkflows(['a.json'])
+      vi.mocked(api.getUserData).mockResolvedValue({
+        status: 200,
+        text: () => Promise.resolve(defaultGraphJSON)
+      } as Response)
+      await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
+      const samePath = await new ComfyWorkflow({
+        path: 'workflows/a.json',
+        modified: Date.now(),
+        size: 1
+      }).load()
+
+      const opened = await store.openWorkflow(samePath)
+      bindCanvasTracker(opened.changeTracker)
+
+      expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
     })
   })
 
