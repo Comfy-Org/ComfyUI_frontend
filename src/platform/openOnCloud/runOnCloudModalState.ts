@@ -4,6 +4,7 @@ import type {
   CloudWorkflowCheckState,
   CloudWorkflowGaps
 } from '@/platform/openOnCloud/cloudWorkflowCheck'
+import { pendingServerFact } from '@/platform/serverFacts/pendingServerFact'
 
 export type RunOnCloudModalState =
   | { kind: 'checking' }
@@ -16,7 +17,13 @@ function isFileName(name: string): boolean {
 }
 
 function needsDeployment({ nodePacks, models }: CloudWorkflowGaps): boolean {
-  return nodePacks.length > 0 || models.some((model) => !isFileName(model.name))
+  return (
+    nodePacks.length > 0 ||
+    pendingServerFact(
+      'BE-27119',
+      models.some((model) => !isFileName(model.name))
+    )
+  )
 }
 
 export function runOnCloudModalState(
