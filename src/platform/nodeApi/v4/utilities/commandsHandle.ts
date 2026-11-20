@@ -5,7 +5,12 @@ import { useToast } from '@/components/ui/toast/toastStore'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { callListener } from '@/platform/nodeApi/shared/listeners'
-import type { CommandsHandle } from '@/platform/nodeApi/v4/types'
+import type {
+  CommandDef,
+  CommandsHandle,
+  KeyCombo,
+  NotifyDef
+} from '@/platform/nodeApi/v4/types'
 
 import {
   isBoolean,
@@ -24,6 +29,29 @@ const TOAST_KINDS = {
   warn: 'warning',
   error: 'error'
 } as const
+
+const COMMAND_FIELDS = {
+  id: true,
+  label: true,
+  run: true,
+  keybinding: true,
+  scope: true
+} satisfies Record<keyof CommandDef, true>
+
+const KEY_COMBO_FIELDS = {
+  key: true,
+  ctrl: true,
+  alt: true,
+  shift: true,
+  meta: true
+} satisfies Record<keyof KeyCombo, true>
+
+const NOTIFY_FIELDS = {
+  severity: true,
+  summary: true,
+  detail: true,
+  life: true
+} satisfies Record<keyof NotifyDef, true>
 
 export function createCommandsHandle(): CommandsHandle {
   const commands: CommandsHandle = {
@@ -69,7 +97,12 @@ async function runCommand(id: string): Promise<boolean> {
 }
 
 function commandDefinition(command: unknown) {
-  const fields = packObject('commands.register', 'a command', command)
+  const fields = packObject(
+    'commands.register',
+    'a command',
+    command,
+    COMMAND_FIELDS
+  )
   const id = fields.required(
     'id',
     isStoreKey,
@@ -113,16 +146,17 @@ function isCanvasScope(value: unknown): value is 'canvas' {
 function keyCombo(combo: object) {
   const fields = packObject(
     'commands.register',
-    'a key combo',
+    'keybinding',
     combo,
+    KEY_COMBO_FIELDS,
     'keybinding.'
   )
   const key = fields.required('key', isName, 'a key name')
-  const modifier = (name: string) =>
+  const modifier = (name: keyof typeof KEY_COMBO_FIELDS) =>
     fields.optional(name, isBoolean, 'a boolean') ?? false
-  const [ctrl, alt, shift, meta] = ['ctrl', 'alt', 'shift', 'meta'].map(
-    modifier
-  )
+  const [ctrl, alt, shift, meta] = (
+    ['ctrl', 'alt', 'shift', 'meta'] as const
+  ).map(modifier)
   return { key, ctrl: ctrl || meta, alt, shift }
 }
 
@@ -136,7 +170,12 @@ function bindDefaultKey(keybinding: KeybindingImpl): boolean {
 }
 
 function toast(notification: unknown) {
-  const fields = packObject('commands.notify', 'a notification', notification)
+  const fields = packObject(
+    'commands.notify',
+    'a notification',
+    notification,
+    NOTIFY_FIELDS
+  )
   const severity =
     fields.optional('severity', isSeverity, 'success, info, warn or error') ??
     'info'

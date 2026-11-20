@@ -295,7 +295,18 @@ describe('viewport panels', () => {
   })
 
   it.for([
-    { name: 'no panel', value: 7, needs: 'a viewport panel' },
+    { name: 'no panel', value: 7, needs: 'a viewport panel as a plain object' },
+    {
+      name: 'a field a panel does not have',
+      value: { ...panel(), height: 40 },
+      needs:
+        'a viewport panel of id, ariaLabel, anchor, offsetX, offsetY, width, maxHeight, render, destroy only'
+    },
+    {
+      name: 'a panel made by a class',
+      value: Object.assign(new (class Panel {})(), panel()),
+      needs: 'a viewport panel as a plain object'
+    },
     {
       name: 'an empty id',
       value: panel({ id: '' }),

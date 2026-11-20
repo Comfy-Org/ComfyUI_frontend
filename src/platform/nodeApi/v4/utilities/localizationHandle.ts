@@ -4,11 +4,18 @@ import { mergeExtensionI18n } from '@/i18n'
 import { SUPPORTED_LOCALE_OPTIONS } from '@/locales/localeConfig'
 import { savedCopy } from '@/platform/nodeApi/shared/savedCopy'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
-import type { LocalizationHandle } from '@/platform/nodeApi/v4/types'
+import type {
+  LocalizationCatalog,
+  LocalizationHandle
+} from '@/platform/nodeApi/v4/types'
 
 import { packObject } from './packArguments'
 
 const MEMBER = 'localization.registerCatalog'
+
+const CATALOG_FIELDS = {
+  messages: true
+} satisfies Record<keyof LocalizationCatalog, true>
 
 export function createLocalizationHandle(): LocalizationHandle {
   const localization: LocalizationHandle = {
@@ -23,7 +30,14 @@ export function createLocalizationHandle(): LocalizationHandle {
           locale
         )
       }
-      const messages = packObject(MEMBER, 'a catalog', catalog).required(
+      const messages = packObject(
+        MEMBER,
+        'a catalog',
+        catalog,
+        CATALOG_FIELDS,
+        '',
+        ['phrases']
+      ).required(
         'messages',
         isMessageTree,
         'an object of strings, null and nested objects'

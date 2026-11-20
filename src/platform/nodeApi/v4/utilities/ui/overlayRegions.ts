@@ -6,6 +6,19 @@ import {
   packObject
 } from '@/platform/nodeApi/v4/utilities/packArguments'
 
+const HIT_REGION_FIELDS = {
+  kind: true,
+  x: true,
+  y: true,
+  radius: true,
+  width: true,
+  height: true
+} satisfies Record<
+  | keyof Extract<GraphOverlayHitRegion, { kind: 'circle' }>
+  | keyof Extract<GraphOverlayHitRegion, { kind: 'rect' }>,
+  true
+>
+
 interface ViewportPoint {
   readonly x: number
   readonly y: number
@@ -21,7 +34,7 @@ export function readHitRegions(
   }
   return Object.freeze(
     Array.from(regions, (region, index) =>
-      readRegion(member, region, `regions[${index}].`)
+      readRegion(member, region, `regions[${index}]`)
     )
   )
 }
@@ -29,13 +42,13 @@ export function readHitRegions(
 function readRegion(
   member: string,
   region: unknown,
-  prefix: string
+  path: string
 ): GraphOverlayHitRegion {
-  const fields = packObject(member, 'a hit region', region, prefix)
+  const fields = packObject(member, path, region, HIT_REGION_FIELDS, `${path}.`)
   const kind = fields.required('kind', isKind, "'circle' or 'rect'")
   const x = fields.required('x', isFiniteNumber, 'a finite number')
   const y = fields.required('y', isFiniteNumber, 'a finite number')
-  const size = (key: string) =>
+  const size = (key: 'radius' | 'width' | 'height') =>
     fields.required(key, isPositive, 'a positive finite number')
   return Object.freeze(
     kind === 'circle'

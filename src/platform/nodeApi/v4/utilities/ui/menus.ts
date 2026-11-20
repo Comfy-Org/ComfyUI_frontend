@@ -9,11 +9,25 @@ import {
   isText,
   packObject
 } from '@/platform/nodeApi/v4/utilities/packArguments'
+import type { MenuDef, MenuItemDef } from '@/platform/nodeApi/v4/types'
 
 const MEMBER = 'ui.showMenu'
 
+const MENU_FIELDS = {
+  items: true,
+  title: true,
+  event: true
+} satisfies Record<keyof MenuDef, true>
+
+const ITEM_FIELDS = {
+  label: true,
+  disabled: true,
+  submenu: true,
+  run: true
+} satisfies Record<keyof MenuItemDef, true>
+
 export function showMenu(definition: unknown): void {
-  const fields = packObject(MEMBER, 'a menu', definition)
+  const fields = packObject(MEMBER, 'a menu', definition, MENU_FIELDS)
   const items = menuItems(fields.required('items', isList, 'a list'), 'items')
   const title = fields.optional('title', isText, 'a string')
   const event = fields.required(
@@ -39,7 +53,7 @@ function menuItems(
 }
 
 function menuItem(item: unknown, path: string): IContextMenuValue {
-  const fields = packObject(MEMBER, `${path} as a menu item`, item, `${path}.`)
+  const fields = packObject(MEMBER, path, item, ITEM_FIELDS, `${path}.`)
   const label = fields.required('label', isText, 'a string')
   const disabled = fields.optional('disabled', isBoolean, 'a boolean')
   const submenu = fields.optional('submenu', isList, 'a list')

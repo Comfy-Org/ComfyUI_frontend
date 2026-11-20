@@ -4,6 +4,7 @@ import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import type { CanvasSource } from '@/platform/nodeApi/shared/canvasSource'
 import type {
   ViewportPanelAnchor,
+  ViewportPanelDef,
   ViewportPanelHandle
 } from '@/platform/nodeApi/v4/types'
 import {
@@ -17,6 +18,18 @@ import type { PackObject } from '@/platform/nodeApi/v4/utilities/packArguments'
 import { mountedContent } from './mountedContent'
 
 const MEMBER = 'ui.mountViewportPanel'
+
+const PANEL_FIELDS = {
+  id: true,
+  ariaLabel: true,
+  anchor: true,
+  offsetX: true,
+  offsetY: true,
+  width: true,
+  maxHeight: true,
+  render: true,
+  destroy: true
+} satisfies Record<keyof ViewportPanelDef, true>
 
 const ANCHORS: readonly ViewportPanelAnchor[] = [
   'top-left',
@@ -32,7 +45,12 @@ export function createViewportPanels(canvas: () => CanvasSource | undefined) {
   const mounted = new Set<string>()
 
   return function mountViewportPanel(definition: unknown): ViewportPanelHandle {
-    const fields = packObject(MEMBER, 'a viewport panel', definition)
+    const fields = packObject(
+      MEMBER,
+      'a viewport panel',
+      definition,
+      PANEL_FIELDS
+    )
     const id = fields.required('id', isName, 'a non-empty string')
     const panel = panelElement(id, fields)
     const content = mountedContent(
@@ -84,7 +102,10 @@ function onceViewShown(
   return stop
 }
 
-function panelElement(id: string, fields: PackObject): HTMLElement {
+function panelElement(
+  id: string,
+  fields: PackObject<keyof typeof PANEL_FIELDS>
+): HTMLElement {
   const ariaLabel = fields.required('ariaLabel', isName, 'a non-empty string')
   const anchor =
     fields.optional('anchor', isAnchor, ANCHORS.join(', ')) ?? 'top-left'

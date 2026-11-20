@@ -138,7 +138,18 @@ describe('declaring a setting', () => {
     {
       name: 'no definition',
       setting: undefined,
-      needs: 'a setting definition'
+      needs: 'a setting definition as a plain object'
+    },
+    {
+      name: 'a definition that inherits its fields',
+      setting: Object.create(sizeSetting),
+      needs: 'a setting definition as a plain object'
+    },
+    {
+      name: 'a field a setting does not have',
+      setting: { ...sizeSetting, defaultvalue: 4 },
+      needs:
+        'a setting definition of id, name, type, defaultValue, tooltip, category, options, attrs, onChange only'
     },
     {
       name: 'an empty id',
@@ -198,7 +209,12 @@ describe('declaring a setting', () => {
     {
       name: 'an option of the wrong kind',
       setting: { ...sizeSetting, options: [5] },
-      needs: 'options of strings or { value, label }'
+      needs: 'options[0] as a plain object'
+    },
+    {
+      name: 'an option with the host spelling of its label',
+      setting: { ...sizeSetting, options: [{ value: 1, text: 'One' }] },
+      needs: 'options[0] of value, label only'
     },
     {
       name: 'an option value that is not finite',
@@ -219,6 +235,16 @@ describe('declaring a setting', () => {
       name: 'a step given as text',
       setting: { ...sizeSetting, attrs: { step: '1' } },
       needs: 'attrs.step as a finite number'
+    },
+    {
+      name: 'a range field attrs do not have',
+      setting: { ...sizeSetting, attrs: { min: 0, maximum: 9 } },
+      needs: 'attrs of min, max, step only'
+    },
+    {
+      name: 'attrs made by a class',
+      setting: { ...sizeSetting, attrs: new Map([['min', 0]]) },
+      needs: 'attrs as a plain object'
     },
     {
       name: 'an onChange that is not a function',

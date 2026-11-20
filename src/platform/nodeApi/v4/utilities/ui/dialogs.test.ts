@@ -108,7 +108,16 @@ describe('dialogs', () => {
   })
 
   it.for([
-    { name: 'no dialog', value: 'MyPack.settings', needs: 'a dialog' },
+    {
+      name: 'no dialog',
+      value: 'MyPack.settings',
+      needs: 'a dialog as a plain object'
+    },
+    {
+      name: 'a field a dialog does not have',
+      value: { ...dialog(), onClose: () => {} },
+      needs: 'a dialog of key, title, render, destroy only'
+    },
     {
       name: 'an empty key',
       value: dialog({ key: '' }),
@@ -169,7 +178,21 @@ describe('prompts', () => {
   })
 
   it.for([
-    { name: 'no prompt', value: 'Strength', needs: 'a prompt' },
+    {
+      name: 'no prompt',
+      value: 'Strength',
+      needs: 'a prompt as a plain object'
+    },
+    {
+      name: 'a misspelt label',
+      value: { lable: 'x' },
+      needs: 'a prompt of label, value, placeholder only'
+    },
+    {
+      name: 'a prompt that inherits its label',
+      value: Object.create({ label: 'x' }),
+      needs: 'a prompt as a plain object'
+    },
     {
       name: 'an empty label',
       value: { label: '' },

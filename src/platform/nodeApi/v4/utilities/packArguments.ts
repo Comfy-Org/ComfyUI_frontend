@@ -1,22 +1,29 @@
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { checkedFields } from '@/platform/nodeApi/v4/checkedFields'
 
 export type Check<T> = (value: unknown) => value is T
 
-/** The fields of an object a pack passed. Each is read once, and one of the wrong type throws. */
-export interface PackObject {
-  required<T>(key: string, check: Check<T>, needed: string): T
-  optional<T>(key: string, check: Check<T>, needed: string): T | undefined
+/** The fields of a plain object a pack passed, read once. One of the wrong type throws. */
+export interface PackObject<TField extends string = string> {
+  required<T>(key: TField, check: Check<T>, needed: string): T
+  optional<T>(key: TField, check: Check<T>, needed: string): T | undefined
 }
 
-/** Refuses anything but an object, naming its fields in errors as `prefix` plus the key. */
-export function packObject(
+/**
+ * Refuses anything but a plain object of `known` fields, as `checkedFields` does,
+ * naming its fields in errors as `prefix` plus the key.
+ */
+export function packObject<TField extends string>(
   member: string,
   needed: string,
   value: unknown,
-  prefix = ''
-): PackObject {
-  if (!isObject(value)) throw invalidArgument(member, needed, value)
-  const target = value
+  known: Readonly<Record<TField, true>>,
+  prefix = '',
+  ignored: readonly string[] = []
+): PackObject<TField> {
+  const given = checkedFields(member, needed, value, known, ignored)
+  const fieldOf = (key: string): unknown =>
+    Object.hasOwn(given, key) ? given[key] : undefined
 
   function checked<T>(
     key: string,
@@ -30,9 +37,9 @@ export function packObject(
 
   return {
     required: (key, check, fieldNeeded) =>
-      checked(key, Reflect.get(target, key), check, fieldNeeded),
+      checked(key, fieldOf(key), check, fieldNeeded),
     optional(key, check, fieldNeeded) {
-      const field: unknown = Reflect.get(target, key)
+      const field = fieldOf(key)
       return field === undefined
         ? undefined
         : checked(key, field, check, fieldNeeded)
