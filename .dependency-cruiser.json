@@ -85,32 +85,45 @@
       "severity": "error",
       "from": { "path": "^src/platform/nodeApi/v4/edit/" },
       "to": {
-        "path": "^src/platform/nodeApi/v4/(widgets|defs|events|execution)/"
+        "path": "^src/platform/nodeApi/v4/(widgets|defs|events|execution|utilities)/"
       }
     },
     {
       "name": "node-api-widgets-layer",
       "severity": "error",
       "from": { "path": "^src/platform/nodeApi/v4/widgets/" },
-      "to": { "path": "^src/platform/nodeApi/v4/(defs|events|execution)/" }
+      "to": {
+        "path": "^src/platform/nodeApi/v4/(defs|events|execution|utilities)/"
+      }
     },
     {
       "name": "node-api-defs-layer",
       "severity": "error",
       "from": { "path": "^src/platform/nodeApi/v4/defs/" },
-      "to": { "path": "^src/platform/nodeApi/v4/(events|execution)/" }
+      "to": { "path": "^src/platform/nodeApi/v4/(events|execution|utilities)/" }
     },
     {
       "name": "node-api-execution-layer",
       "severity": "error",
       "from": { "path": "^src/platform/nodeApi/v4/execution/" },
-      "to": { "path": "^src/platform/nodeApi/v4/events/" }
+      "to": { "path": "^src/platform/nodeApi/v4/(events|utilities)/" }
     },
     {
       "name": "node-api-events-layer",
       "severity": "error",
       "from": { "path": "^src/platform/nodeApi/v4/events/" },
-      "to": { "path": "^src/platform/nodeApi/v4/(widgets|defs|execution)/" }
+      "to": {
+        "path": "^src/platform/nodeApi/v4/(widgets|defs|execution|utilities)/"
+      }
+    },
+    {
+      "name": "node-api-utilities-layer",
+      "comment": "The platform services stand beside the graph features and import none of them.",
+      "severity": "error",
+      "from": { "path": "^src/platform/nodeApi/v4/utilities/" },
+      "to": {
+        "path": "^src/platform/nodeApi/v4/(edit|widgets|defs|events|execution)/"
+      }
     }
   ],
   "options": {
