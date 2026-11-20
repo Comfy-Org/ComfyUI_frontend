@@ -1,12 +1,14 @@
 import type { Page, Route } from '@playwright/test'
 
 import type {
+  AgentPostMessageRequest,
   AgentRunMode,
   BillingStatusResponse,
   GlobalSetting,
   ListAssetsResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type { UserDataFullInfo } from '@comfyorg/api-client/types'
@@ -28,7 +30,8 @@ import {
   createAgentComposerConversation,
   createAgentComposerThreadList
 } from '@e2e/fixtures/data/agent/agentComposerPerformance'
-import { emptyAgentThreadList } from '@e2e/fixtures/data/agent/agentThreadList'
+import type { AgentSavedChat } from '@e2e/fixtures/data/agent/agentSavedChat'
+import { agentThreadPage } from '@e2e/fixtures/data/agent/agentThreadList'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -150,9 +153,12 @@ async function mockAgentBoot(
 export async function mockAgentTurnApi(
   page: Page,
   turnAccepted: AgentTurnAccepted,
-  beforeAccept?: () => Promise<void>
-): Promise<void> {
-  const threads = emptyAgentThreadList()
+  {
+    savedChat,
+    beforeAccept
+  }: { savedChat?: AgentSavedChat; beforeAccept?: () => Promise<void> } = {}
+): Promise<AgentPostMessageRequest[]> {
+  const threads = agentThreadPage(savedChat ? [savedChat.thread] : [])
   const runMode: AgentRunMode = { mode: 'ask_approval', credit_limit: null }
   await page.route('**/api/experiment/models', (route) =>
     route.fulfill(jsonRoute([]))
@@ -163,15 +169,23 @@ export async function mockAgentTurnApi(
   await page.route('**/api/agent/run-mode', (route) =>
     route.fulfill(jsonRoute(runMode))
   )
+  const posted: AgentPostMessageRequest[] = []
   await page.route('**/api/agent/threads/*/messages', async (route) => {
+    const request = route.request()
+    if (savedChat && request.method() === 'GET')
+      return route.fulfill(jsonRoute(savedChat.messages))
+    if (request.method() === 'POST')
+      posted.push(zAgentPostMessageRequest.parse(request.postDataJSON()))
     await beforeAccept?.()
     await route.fulfill(jsonRoute(turnAccepted))
   })
+  return posted
 }
 
 export async function mockWorkflowPersistence(
   page: Page,
-  workflowId: string
+  workflowId: string,
+  initialWorkflows: WorkflowListResponse['data'] = []
 ): Promise<void> {
   let savedName: string | undefined
   await page.route('**/api/userdata/*', (route) => {
@@ -190,25 +204,28 @@ export async function mockWorkflowPersistence(
     return route.fulfill(jsonRoute(saved))
   })
   const fulfillWorkflowList = (route: Route) => {
+    const data: WorkflowListResponse['data'] = [
+      ...initialWorkflows,
+      ...(savedName === undefined
+        ? []
+        : [
+            {
+              id: workflowId,
+              name: savedName,
+              created_at: '2026-09-01T00:00:00Z',
+              updated_at: '2026-09-01T00:00:00Z',
+              created_by: 'test-user-e2e',
+              latest_version: 1
+            }
+          ])
+    ]
     const workflows: WorkflowListResponse = {
-      data:
-        savedName === undefined
-          ? []
-          : [
-              {
-                id: workflowId,
-                name: savedName,
-                created_at: '2026-09-01T00:00:00Z',
-                updated_at: '2026-09-01T00:00:00Z',
-                created_by: 'test-user-e2e',
-                latest_version: 1
-              }
-            ],
+      data,
       pagination: {
         has_more: false,
         limit: 100,
         offset: 0,
-        total: savedName === undefined ? 0 : 1
+        total: data.length
       }
     }
     return route.fulfill(jsonRoute(workflows))

@@ -347,8 +347,8 @@ describe('historical workflow restoration', () => {
     selection.cancelSelection()
     panel.setWorkflowTarget(current)
     finishSync()
-    await restoration
 
+    expect((await restoration).ready).toBe(false)
     expect(workflows.activeWorkflow?.path).toBe(current.path)
     expect(panel.selectedWorkflow?.path).toBe(current.path)
     expect(workflows.openWorkflows.map(({ path }) => path)).toEqual([
@@ -358,88 +358,142 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it('keeps the current view and reports a failed restore when a listed workflow has no saved file', async () => {
-    const { selection, workflows, panel, current, warnRestoreFailed } = setup()
+  it('allows reading with an unresolved target without guessing another graph', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      bindings,
+      warnRestoreFailed
+    } = setup()
 
     expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
-      false
+      true
     )
-
     expect(workflows.activeWorkflow?.path).toBe(current.path)
-    expect(panel.selectedWorkflow).toBeNull()
-    expect(panel.targetUnavailable).toBe(false)
-    expect(warnRestoreFailed).toHaveBeenCalledOnce()
-    expect(reportError).toHaveBeenCalledWith(
-      new Error('No saved workflow resolves to the chat target'),
-      {
-        surface: 'agent',
-        errorType: 'agent_workflow_restore_failed',
-        context: { workflowId: 'wf-saved' }
-      }
-    )
+    expect(panel.targetUnresolved).toBe(true)
+    expect(bindings.tabPathFor('wf-saved')).toBeUndefined()
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it.for([
-    {
-      listing: 'omits the workflow',
-      list: async () => listing([{ id: 'wf-saved', name: 'saved' }]),
-      ready: true,
-      unavailable: true,
-      warns: 0
-    },
-    {
-      listing: 'fails',
-      list: async (): Promise<never> => {
-        throw new Error('offline')
-      },
-      ready: false,
-      unavailable: false,
-      warns: 1
-    }
-  ])(
-    'restores a chat whose workflow the Cloud listing $listing',
-    async ({ list, ready, unavailable, warns }) => {
-      const {
-        selection,
-        workflows,
-        panel,
-        current,
-        listCloudWorkflows,
-        warnRestoreFailed
-      } = setup()
-      listCloudWorkflows.mockImplementationOnce(list)
+  it('reads a chat with no local target when direct lookup confirms a live versionless draft', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    listCloudWorkflows.mockResolvedValueOnce(listing([]))
 
-      expect((await selection.restoreTarget('wf-gone', () => true)).ready).toBe(
-        ready
-      )
+    expect((await selection.restoreTarget('wf-draft', () => true)).ready).toBe(
+      true
+    )
+    expect(panel.targetUnresolved).toBe(true)
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
 
-      expect(workflows.activeWorkflow?.path).toBe(current.path)
-      expect(panel.selectedWorkflow).toBeNull()
-      expect(panel.targetUnavailable).toBe(unavailable)
-      expect(warnRestoreFailed).toHaveBeenCalledTimes(warns)
-    }
-  )
+  it('reads a chat with no local target when its direct lookup is refused', async () => {
+    const {
+      selection,
+      workflows,
+      panel,
+      current,
+      listCloudWorkflows,
+      getCloudWorkflow,
+      warnRestoreFailed
+    } = setup()
+    listCloudWorkflows.mockResolvedValueOnce(listing([]))
+    getCloudWorkflow.mockRejectedValueOnce(
+      new AgentApiError('Workflow lookup failed', 403, undefined)
+    )
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      true
+    )
+    expect(panel.targetUnresolved).toBe(true)
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it('asks the lookup instead of an earlier listing when the latest refresh fails', async () => {
+    const {
+      selection,
+      panel,
+      resolver,
+      cloudRows,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    expect(await resolver.refreshCloudWorkflowIds()).toBe(true)
+    listCloudWorkflows.mockRejectedValueOnce(new Error('listing failed'))
+    cloudRows.delete('wf-saved')
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      true
+    )
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
 
   const openFailure = new Error('Cannot open')
   it.for([
     {
+      attempt: 'restoring the chat',
+      restore: ({ selection }: ReturnType<typeof setup>) =>
+        selection.restoreTarget('wf-saved', () => true),
       opening: 'returns false',
       open: async () => false,
-      cause: new Error('The chat target workflow did not open')
+      cause: new Error('The chat target workflow did not open'),
+      outcome: 'leaves no target',
+      unresolved: false
     },
     {
+      attempt: 'restoring the chat',
+      restore: ({ selection }: ReturnType<typeof setup>) =>
+        selection.restoreTarget('wf-saved', () => true),
       opening: 'throws',
       open: async (): Promise<never> => {
         throw openFailure
       },
-      cause: openFailure
+      cause: openFailure,
+      outcome: 'leaves no target',
+      unresolved: false
+    },
+    {
+      attempt: 'a Current retry',
+      restore: ({ selection, panel }: ReturnType<typeof setup>) => {
+        panel.retainUnresolvedTarget(false)
+        return selection.retryTarget('wf-saved', () => true)
+      },
+      opening: 'returns false',
+      open: async () => false,
+      cause: new Error('The chat target workflow did not open'),
+      outcome: 'keeps the unresolved target',
+      unresolved: true
+    },
+    {
+      attempt: 'a Current retry',
+      restore: ({ selection, panel }: ReturnType<typeof setup>) => {
+        panel.retainUnresolvedTarget(false)
+        return selection.retryTarget('wf-saved', () => true)
+      },
+      opening: 'throws',
+      open: async (): Promise<never> => {
+        throw openFailure
+      },
+      cause: openFailure,
+      outcome: 'keeps the unresolved target',
+      unresolved: true
     }
   ])(
-    'reports a failed restore when opening the saved workflow $opening',
-    async ({ open, cause }) => {
-      const { selection, workflows, panel, current, warnRestoreFailed } =
-        setup()
-      workflows.attachWorkflow(
+    'reports a failed restore and $outcome when opening the saved workflow $opening during $attempt',
+    async ({ restore, open, cause, unresolved }) => {
+      const run = setup()
+      run.workflows.attachWorkflow(
         createMockLoadedWorkflow({
           path: 'workflows/saved.json',
           filename: 'saved',
@@ -448,13 +502,21 @@ describe('historical workflow restoration', () => {
       )
       vi.mocked(useWorkflowService().openWorkflow).mockImplementationOnce(open)
 
-      expect(
-        (await selection.restoreTarget('wf-saved', () => true)).ready
-      ).toBe(false)
+      expect((await restore(run)).ready).toBe(false)
 
-      expect(workflows.activeWorkflow?.path).toBe(current.path)
-      expect(panel.targetUnavailable).toBe(false)
-      expect(warnRestoreFailed).toHaveBeenCalledOnce()
+      expect(run.workflows.activeWorkflow?.path).toBe(run.current.path)
+      expect({
+        selected: run.panel.selectedWorkflow?.path ?? null,
+        unavailable: run.panel.targetUnavailable,
+        unresolved: run.panel.targetUnresolved,
+        listed: run.panel.unresolvedTargetListed
+      }).toEqual({
+        selected: null,
+        unavailable: false,
+        unresolved,
+        listed: false
+      })
+      expect(run.warnRestoreFailed).toHaveBeenCalledOnce()
       expect(reportError).toHaveBeenCalledWith(cause, {
         surface: 'agent',
         errorType: 'agent_workflow_restore_failed',
@@ -541,6 +603,29 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
+  it('focuses the draft tab this chat owns without a lookup when the listing fails', async () => {
+    const {
+      selection,
+      workflows,
+      bindings,
+      panel,
+      cloudRows,
+      listCloudWorkflows,
+      warnRestoreFailed
+    } = setup()
+    const draft = openDraftTab(workflows, bindings)
+    cloudRows.delete('wf-draft')
+    listCloudWorkflows.mockRejectedValueOnce(new Error('offline'))
+
+    expect((await selection.restoreTarget('wf-draft', () => true)).ready).toBe(
+      true
+    )
+
+    expect(workflows.activeWorkflow?.path).toBe(draft.path)
+    expect(panel.selectedWorkflow?.path).toBe(draft.path)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
   it('calls a promoted-then-deleted draft unavailable even though its tab is still open', async () => {
     const { selection, workflows, bindings, panel, cloudRows, current } =
       setup()
@@ -617,26 +702,70 @@ describe('historical workflow restoration', () => {
     expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
-  it('does not decide anything from a listing that gave up mid-walk', async () => {
+  it.for([
+    {
+      outcome: 'marks a chat with no local target unavailable by its lookup',
+      listing: 'stops before reaching it',
+      entries: [{ id: 'wf-saved', name: 'saved' }],
+      unavailable: true
+    },
+    {
+      outcome: 'keeps a chat with no local target readable without a lookup',
+      listing: 'names it before stopping',
+      entries: [{ id: 'wf-past-the-cut', name: 'past the cut' }],
+      unavailable: false
+    }
+  ])(
+    '$outcome when an incomplete listing $listing',
+    async ({ entries, unavailable }) => {
+      const {
+        selection,
+        workflows,
+        panel,
+        current,
+        listCloudWorkflows,
+        warnRestoreFailed
+      } = setup()
+      listCloudWorkflows.mockImplementationOnce(async () =>
+        listing(entries, false)
+      )
+
+      expect(
+        (await selection.restoreTarget('wf-past-the-cut', () => true)).ready
+      ).toBe(true)
+
+      expect(panel.targetUnavailable).toBe(unavailable)
+      expect(warnRestoreFailed).not.toHaveBeenCalled()
+      expect(workflows.activeWorkflow?.path).toBe(current.path)
+    }
+  )
+
+  it('marks a chat unavailable by its lookup when a reference request supersedes its listing', async () => {
     const {
       selection,
-      workflows,
       panel,
-      current,
+      cloudRows,
       listCloudWorkflows,
       warnRestoreFailed
     } = setup()
-    listCloudWorkflows.mockImplementationOnce(async () =>
-      listing([{ id: 'wf-saved', name: 'saved' }], false)
-    )
+    cloudRows.delete('wf-saved')
+    let finishListing = () => {}
+    const pendingListing = new Promise<void>((resolve) => {
+      finishListing = resolve
+    })
+    listCloudWorkflows.mockImplementationOnce(async () => {
+      await pendingListing
+      return listing([{ id: 'wf-saved', name: 'saved' }])
+    })
+    const restoration = selection.restoreTarget('wf-saved', () => true)
+    listCloudWorkflows.mockReturnValueOnce(new Promise(() => {}))
 
-    expect(
-      (await selection.restoreTarget('wf-past-the-cut', () => true)).ready
-    ).toBe(false)
+    selection.requestReferences()
+    finishListing()
 
-    expect(panel.targetUnavailable).toBe(false)
-    expect(warnRestoreFailed).toHaveBeenCalledOnce()
-    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect((await restoration).ready).toBe(true)
+    expect(panel.targetUnavailable).toBe(true)
+    expect(warnRestoreFailed).not.toHaveBeenCalled()
   })
 
   it('does not mark a superseded restoration unavailable while its row is being read', async () => {
@@ -670,7 +799,8 @@ describe('historical workflow restoration', () => {
   })
 
   it('does not reopen a draft closed while its row is being read', async () => {
-    const { selection, workflows, bindings, panel, getCloudWorkflow } = setup()
+    const { selection, workflows, bindings, panel, current, getCloudWorkflow } =
+      setup()
     const draft = openDraftTab(workflows, bindings)
     let readStarted = () => {}
     const started = new Promise<void>((resolve) => {
@@ -697,9 +827,11 @@ describe('historical workflow restoration', () => {
     await workflows.closeWorkflow(draft)
     finishRead()
 
-    expect((await restoration).ready).toBe(false)
+    expect((await restoration).ready).toBe(true)
     expect(panel.selectedWorkflow).toBeNull()
-    expect(workflows.openWorkflows).not.toContain(draft)
+    expect(panel.targetUnavailable).toBe(false)
+    expect(workflows.activeWorkflow?.path).toBe(current.path)
+    expect(bindings.tabPathFor('wf-draft')).toBeUndefined()
   })
 
   it('leaves a deleted target unavailable, and reports ready with no commit, when nothing local answers for it', async () => {
@@ -806,7 +938,7 @@ describe('historical workflow restoration', () => {
   it('calls the target unavailable when startup never finishes restoring tabs', async () => {
     vi.useFakeTimers()
     try {
-      const { selection, panel, listCloudWorkflows, getCloudWorkflow } = setup({
+      const { selection, panel, listCloudWorkflows } = setup({
         tabsRestored: false
       })
       let settled = false
@@ -828,20 +960,15 @@ describe('historical workflow restoration', () => {
         committedWorkflowId: null
       })
       expect(panel.targetUnavailable).toBe(true)
-      expect(getCloudWorkflow).not.toHaveBeenCalled()
     } finally {
       vi.useRealTimers()
     }
   })
 
   it('still calls the target unavailable once a reload restores no tab for it', async () => {
-    const {
-      selection,
-      panel,
-      getCloudWorkflow,
-      listCloudWorkflows,
-      workflows
-    } = setup({ tabsRestored: false })
+    const { selection, panel, listCloudWorkflows, workflows } = setup({
+      tabsRestored: false
+    })
 
     const restoration = selection.restoreTarget('wf-deleted', () => true)
     await vi.waitFor(() => expect(listCloudWorkflows).toHaveBeenCalled())
@@ -855,7 +982,6 @@ describe('historical workflow restoration', () => {
       committedWorkflowId: null
     })
     expect(panel.targetUnavailable).toBe(true)
-    expect(getCloudWorkflow).not.toHaveBeenCalled()
   })
 
   it('does not mark a superseded restoration unavailable when its listing omits the workflow', async () => {
@@ -879,6 +1005,156 @@ describe('historical workflow restoration', () => {
     expect(panel.targetUnavailable).toBe(false)
     expect(panel.selectedWorkflow?.path).toBe(current.path)
     expect(warnRestoreFailed).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    {
+      listing: 'fails',
+      list: async (): Promise<never> => {
+        throw new Error('offline')
+      },
+      listed: false
+    },
+    {
+      listing: 'gives up before reaching it',
+      list: async () => listing([{ id: 'wf-current', name: 'current' }], false),
+      listed: false
+    },
+    {
+      listing: 'omits it',
+      list: async () => listing([]),
+      listed: false
+    },
+    {
+      listing: 'names it',
+      list: async () => listing([{ id: 'wf-saved', name: 'saved' }]),
+      listed: true
+    }
+  ])(
+    'records whether a listing named the workflow of an unresolved target (listing $listing)',
+    async ({ list, listed }) => {
+      const { selection, panel, listCloudWorkflows } = setup()
+      listCloudWorkflows.mockImplementationOnce(list)
+
+      expect(
+        (await selection.restoreTarget('wf-saved', () => true)).ready
+      ).toBe(true)
+
+      expect(panel.targetUnresolved).toBe(true)
+      expect(panel.unresolvedTargetListed).toBe(listed)
+    }
+  )
+
+  it('keeps a listed workflow listed when a refresh starts during the catalog sync', async () => {
+    const { selection, panel, listCloudWorkflows, resolver, workflows } =
+      setup()
+    listCloudWorkflows.mockImplementationOnce(async () =>
+      listing([{ id: 'wf-saved', name: 'saved' }])
+    )
+    listCloudWorkflows.mockImplementationOnce(() => new Promise(() => {}))
+    vi.mocked(workflows.syncWorkflows).mockImplementationOnce(async () => {
+      void resolver.refreshCloudWorkflowIds()
+    })
+
+    expect((await selection.restoreTarget('wf-saved', () => true)).ready).toBe(
+      true
+    )
+
+    expect(panel.targetUnresolved).toBe(true)
+    expect(panel.unresolvedTargetListed).toBe(true)
+  })
+})
+
+describe('Current retry of an unresolved target', () => {
+  beforeEach(() => localStorage.clear())
+
+  type RetryRun = ReturnType<typeof setup> & { sessionCurrent: boolean }
+
+  function startRetry(run: RetryRun, workflowId: string) {
+    run.panel.retainUnresolvedTarget(false)
+    let finishListing = () => {}
+    const pendingListing = new Promise<void>((resolve) => {
+      finishListing = resolve
+    })
+    run.listCloudWorkflows.mockImplementationOnce(async () => {
+      await pendingListing
+      return listing([
+        { id: 'wf-saved', name: 'saved' },
+        { id: 'wf-current', name: 'current' }
+      ])
+    })
+    const retry = run.selection.retryTarget(
+      workflowId,
+      () => run.sessionCurrent
+    )
+    return { retry, finishListing }
+  }
+
+  it('keeps the unresolved target while the retry waits for Cloud, then opens the workflow it finds', async () => {
+    const run = { ...setup(), sessionCurrent: true }
+    run.current.load = vi.fn(async () => run.current)
+    const { retry, finishListing } = startRetry(run, 'wf-current')
+
+    expect(run.panel.targetUnresolved).toBe(true)
+    finishListing()
+
+    expect((await retry).ready).toBe(true)
+    expect(run.panel.selectedWorkflow?.path).toBe('workflows/current.json')
+  })
+
+  it.for([
+    {
+      supersededBy: 'a cancelled selection',
+      supersede: ({ selection }) => selection.cancelSelection(),
+      selected: null,
+      unresolved: true
+    },
+    {
+      supersededBy: 'leaving the chat',
+      supersede: (run) => {
+        run.sessionCurrent = false
+      },
+      selected: null,
+      unresolved: true
+    },
+    {
+      supersededBy:
+        'a target set on the panel store without cancelling the selection',
+      supersede: ({ panel, current }) => panel.setWorkflowTarget(current),
+      selected: 'workflows/current.json',
+      unresolved: false
+    }
+  ] satisfies {
+    supersededBy: string
+    supersede: (run: RetryRun) => void
+    selected: string | null
+    unresolved: boolean
+  }[])(
+    'does not settle a retry superseded by $supersededBy',
+    async ({ supersede, selected, unresolved }) => {
+      const run = { ...setup(), sessionCurrent: true }
+      const { retry, finishListing } = startRetry(run, 'wf-gone')
+
+      supersede(run)
+      finishListing()
+
+      expect((await retry).ready).toBe(false)
+      expect({
+        selected: run.panel.selectedWorkflow?.path ?? null,
+        unresolved: run.panel.targetUnresolved
+      }).toEqual({ selected, unresolved })
+    }
+  )
+
+  it('does not retry an unresolved target a listing named', async () => {
+    const { selection, panel } = setup()
+    panel.retainUnresolvedTarget(true)
+
+    expect((await selection.retryTarget('wf-current', () => true)).ready).toBe(
+      true
+    )
+
+    expect(panel.unresolvedTargetListed).toBe(true)
   })
 })
 
