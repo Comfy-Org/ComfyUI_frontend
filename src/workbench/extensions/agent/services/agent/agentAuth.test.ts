@@ -29,6 +29,7 @@ import {
 
 beforeEach(() => {
   distribution.isCloud = false
+  localStorage.removeItem('comfy_api_key')
 })
 
 function userHeader(header: AuthHeader | null): void {
@@ -48,6 +49,13 @@ function storedApiKey(key: string): void {
   vi.spyOn(useApiKeyAuthStore(), 'getAuthHeader').mockReturnValue({
     'X-API-KEY': key
   })
+}
+
+// Leaves key validation in flight: the state both tests below are about.
+function validationPending(): void {
+  vi.spyOn(useAuthStore(), 'createCustomer').mockReturnValue(
+    new Promise(() => {})
+  )
 }
 
 function signInPersonal(): void {
@@ -135,24 +143,16 @@ describe('hasAgentCredential', () => {
   })
 
   it('is true for a stored API key with no account', () => {
-    // The real store, reading a persisted key, rather than a stubbed getAuthHeader:
-    // the point of this case is that a key on disk is enough.
+    validationPending()
     localStorage.setItem('comfy_api_key', 'comfyui-persisted')
+    const keys = useApiKeyAuthStore()
 
-    expect(useApiKeyAuthStore().getAuthHeader()).toEqual({
-      'X-API-KEY': 'comfyui-persisted'
-    })
+    expect(keys.getAuthHeader()).toEqual({ 'X-API-KEY': 'comfyui-persisted' })
     expect(hasAgentCredential()).toBe(true)
   })
 
-  // This gate and the one that actually attaches the key disagree, and the send path
-  // trusts this one. `hasAgentCredential` is satisfied by a persisted key, while
-  // `isApiKeySession` additionally requires `isAuthenticated`, which is `!!currentUser`
-  // and only arrives after the key has been validated. So in the window before
-  // validation, and permanently for a rejected key, this says a credential exists and
-  // `agentAuthHeader()` still resolves null. Pinned as current behaviour rather than
-  // changed here: moving the gate changes when users are asked to sign in.
-  it('is true for a persisted key that has not been validated, while the credential is not', async () => {
+  it('is true for a persisted key still validating, while the credential is not', async () => {
+    validationPending()
     localStorage.setItem('comfy_api_key', 'comfyui-unvalidated')
     const keys = useApiKeyAuthStore()
 
