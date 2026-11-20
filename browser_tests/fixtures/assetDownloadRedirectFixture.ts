@@ -7,7 +7,10 @@ import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { STABLE_OUTPUT } from '@e2e/fixtures/data/assetFixtures'
-import { WEB_SESSION_COOKIE } from '@e2e/fixtures/data/webSession'
+import {
+  NO_WEB_SESSION,
+  WEB_SESSION_COOKIE
+} from '@e2e/fixtures/data/webSession'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
@@ -95,6 +98,9 @@ export const assetDownloadRedirectTest = webSessionTest.extend<{
       try {
         if (rail === 'token') {
           await page.context().clearCookies({ name: WEB_SESSION_COOKIE.name })
+          await page.route('**/api/auth/session', (route) =>
+            route.fulfill({ status: 401, json: NO_WEB_SESSION })
+          )
           await mockWorkspaceTokenMint(page, workspace('personal', 'owner'))
         }
         const [cookieName, cookieValue] = STORAGE_COOKIE.split('=')

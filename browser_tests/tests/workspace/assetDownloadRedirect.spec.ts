@@ -45,11 +45,7 @@ test.describe('Asset download on the token rail', { tag: '@cloud' }, () => {
   test.use({
     rail: 'token',
     firebaseLogin: true,
-    serverFeatures: {
-      assets: true,
-      unified_cloud_auth: true,
-      unified_web_session: false
-    }
+    serverFeatures: { assets: true }
   })
 
   test('downloads through a storage redirect on a bearer token', async ({
