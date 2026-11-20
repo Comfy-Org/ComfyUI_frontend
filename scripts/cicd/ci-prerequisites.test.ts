@@ -3,8 +3,8 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { describe, expect, it } from 'vitest'
-import { parse } from 'yaml'
+import { assert, describe, expect, it } from 'vitest'
+import { parse, parseAllDocuments } from 'yaml'
 import { z } from 'zod'
 
 const workflowSchema = z.object({
@@ -131,6 +131,12 @@ describe('merge-reports Playwright version', () => {
       'version=1.3.0\n'
     ],
     [
+      'workspace importer follows the package manager document',
+      `---\nimporters:\n  .:\n    dependencies:\n      pnpm:\n        version: 12.10.1\npackages: {}\n---\n${lockfileWithPlaywright('1.2.0', '1.3.0')}`,
+      0,
+      'version=1.3.0\n'
+    ],
+    [
       'missing root entry',
       'importers:\n  .:\n    devDependencies: {}\n',
       1,
@@ -214,20 +220,22 @@ describe('merge-reports Playwright version', () => {
 
   it('matches the root importer in the repository lockfile', () => {
     const lockfile = readFileSync('pnpm-lock.yaml', 'utf8')
-    const root = z
-      .object({
-        importers: z.object({
-          '.': z.object({
-            devDependencies: z.object({
-              '@playwright/test': z.object({ version: z.string() })
-            })
+    const schema = z.object({
+      importers: z.object({
+        '.': z.object({
+          devDependencies: z.object({
+            '@playwright/test': z.object({ version: z.string() })
           })
         })
       })
-      .parse(parse(lockfile))
+    })
+    const root = parseAllDocuments(lockfile)
+      .map((doc) => schema.safeParse(doc.toJSON()))
+      .find((result) => result.success)
+    assert.exists(root)
     expect(readLockedPlaywrightVersion(lockfile)).toEqual({
       status: 0,
-      output: `version=${root.importers['.'].devDependencies['@playwright/test'].version.replace(/\(.*/, '')}\n`
+      output: `version=${root.data.importers['.'].devDependencies['@playwright/test'].version.replace(/\(.*/, '')}\n`
     })
   })
 })
