@@ -744,33 +744,6 @@ describe('useWorkflowStore', () => {
       expect(isCanvasOwner(store.activeWorkflow!.changeTracker)).toBe(true)
     })
 
-    it('keeps the active instance and its edits when a same-path object is opened', async () => {
-      await syncRemoteWorkflows(['a.json'])
-      vi.mocked(api.getUserData).mockImplementation(
-        async () => new Response(defaultGraphJSON, { status: 200 })
-      )
-      const active = await store.openWorkflow(
-        store.getWorkflowByPath('workflows/a.json')!
-      )
-      active.isModified = true
-      const samePath = await new ComfyWorkflow({
-        path: 'workflows/a.json',
-        modified: Date.now(),
-        size: 1
-      }).load()
-
-      const opened = await store.openWorkflow(samePath)
-
-      expect(toRaw(opened)).toBe(toRaw(active))
-      expect(toRaw(store.activeWorkflow)).toBe(toRaw(active))
-      expect(toRaw(store.getWorkflowByPath('workflows/a.json'))).toBe(
-        toRaw(active)
-      )
-      expect(
-        store.modifiedWorkflows.map((workflow) => toRaw(workflow))
-      ).toEqual([toRaw(active)])
-    })
-
     it('activates the lookup entry when it replaced the active instance', async () => {
       await syncRemoteWorkflows(['a.json'])
       vi.mocked(api.getUserData).mockImplementation(

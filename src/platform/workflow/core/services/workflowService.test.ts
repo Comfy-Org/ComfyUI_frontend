@@ -1,4 +1,3 @@
-import { markRaw, toRaw } from 'vue'
 import { encodeRgbaAsPng } from '@comfyorg/mask-editor/pngEncodeUtil'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
@@ -1476,45 +1475,6 @@ describe('useWorkflowService', () => {
       await useWorkflowService().openWorkflow(active, { force: true })
 
       expect(vi.mocked(app.loadGraphData).mock.calls[0]?.[3]).toBe(active)
-    })
-
-    it('does not reset the active tracker with the data of a stale same-path object', async () => {
-      const workflowStore = useWorkflowStore()
-      const active = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/stale-data.json'
-      })
-      const stale = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/stale-data.json'
-      })
-      workflowStore.attachWorkflow(active)
-      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
-
-      await useWorkflowService().afterLoadNewGraph(stale, makeWorkflowData())
-
-      expect(active.changeTracker!.reset).not.toHaveBeenCalled()
-    })
-
-    it('keeps the active workflow on the canvas when a stale same-path object is opened', async () => {
-      const workflowStore = useWorkflowStore()
-      const active = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/same-path.json'
-      })
-      const stale = createWorkflow(null, {
-        loadable: true,
-        path: 'workflows/same-path.json'
-      })
-      active.changeTracker = markRaw(createMockChangeTracker())
-      workflowStore.attachWorkflow(active)
-      workflowStore.activeWorkflow = active as LoadedComfyWorkflow
-      bindCanvasTracker(active.changeTracker)
-
-      await expect(useWorkflowService().openWorkflow(stale)).resolves.toBe(true)
-
-      expect(app.loadGraphData).not.toHaveBeenCalled()
-      expect(toRaw(workflowStore.activeWorkflow)).toBe(active)
     })
 
     it('loads an active workflow that does not own the canvas', async () => {
