@@ -590,6 +590,6 @@ export function useAttachment(options: UseAttachmentOptions) {
     cancelUpload,
     cancelAllUploads,
     forgetUploads,
-    liftingWorkflow: computed(() => deriving.value.size > 0)
+    derivingWorkflow: computed(() => deriving.value.size > 0)
   }
 }

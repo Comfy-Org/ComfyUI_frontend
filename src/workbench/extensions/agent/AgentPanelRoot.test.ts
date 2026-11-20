@@ -5114,10 +5114,9 @@ describe('AgentPanelRoot attach flow', () => {
     const extraction = new Promise<File>((resolve) => {
       finishExtraction = resolve
     })
-    const derive = vi
-      .spyOn(derivedWorkflowAttachment, 'deriveWorkflowFile')
-      .mockReturnValue(extraction)
-    onTestFinished(() => derive.mockRestore())
+    vi.spyOn(derivedWorkflowAttachment, 'deriveWorkflowFile').mockReturnValue(
+      extraction
+    )
     respondToFetch({}, () => json(200, agentThreadList()))
     respondToFetch({ method: 'POST', url: /\/messages$/ }, () =>
       json(202, { thread_id: 'th-1', message_id: 'm-1' })

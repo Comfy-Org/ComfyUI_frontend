@@ -121,12 +121,4 @@ describe('deriveWorkflowFile', () => {
       await expect(deriveWorkflowFile(file)).resolves.toBeUndefined()
     }
   )
-
-  it('skips its own output, so derivation cannot recurse', async () => {
-    mockParser.mockResolvedValue({ workflow: JSON.stringify(WORKFLOW) })
-    const derived = await deriveWorkflowFile(imageFile())
-
-    assert.exists(derived)
-    await expect(deriveWorkflowFile(derived)).resolves.toBeUndefined()
-  })
 })

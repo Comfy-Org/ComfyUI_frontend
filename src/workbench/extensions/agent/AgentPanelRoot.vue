@@ -2336,7 +2336,7 @@ const { submit: submitDraft } = useAgentDraftSubmission({
   canSubmit: () =>
     !workflowSelecting.value &&
     !isSending.value &&
-    !attachment.liftingWorkflow.value,
+    !attachment.derivingWorkflow.value,
   onSubmit: agentPanelStore.retainWorkflowTarget,
   onRejected: sendGates.rejectDraft,
   target: () => selectedTarget.value,
@@ -2805,7 +2805,7 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
       :workflow-detached="workflowDetached"
       :target-unavailable="agentPanelStore.targetUnavailable"
       :canvas-empty-after-turn="canvasEmptyAfterTurn"
-      :lifting-workflow="attachment.liftingWorkflow.value"
+      :deriving-workflow="attachment.derivingWorkflow.value"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
       :credits-exhausted="showStandingPaywall"

@@ -60,7 +60,7 @@ const {
   editableWorkflowId,
   hasWorkflowTarget = false,
   workflowSelecting = false,
-  liftingWorkflow = false,
+  derivingWorkflow = false,
   openingChat = false,
   getMentionNodes = () => []
 } = defineProps<{
@@ -77,7 +77,7 @@ const {
   editableWorkflowId?: string
   hasWorkflowTarget?: boolean
   workflowSelecting?: boolean
-  liftingWorkflow?: boolean
+  derivingWorkflow?: boolean
   openingChat?: boolean
   getMentionNodes?: () => SelectedNode[]
 }>()
@@ -118,7 +118,7 @@ const queueRows = computed(() =>
 
 const composer = useComposer({
   onSend: (_text, attachments) => {
-    if (workflowSelecting || liftingWorkflow) return
+    if (workflowSelecting || derivingWorkflow) return
     if (!hasWorkflowTarget) {
       emit('workflowTargetRequired')
       return
@@ -452,7 +452,7 @@ const primaryActionDisabled = computed(
     openingChat ||
     (!showStop.value &&
       !sendBlockedReason.value &&
-      (workflowSelecting || liftingWorkflow || !composer.canSend.value))
+      (workflowSelecting || derivingWorkflow || !composer.canSend.value))
 )
 const skillSearchHint = computed(() =>
   skillQueryEmpty.value ? t('agent.typeToSearch') : undefined

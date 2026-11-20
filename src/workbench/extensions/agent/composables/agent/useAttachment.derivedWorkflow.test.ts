@@ -83,11 +83,11 @@ describe('useAttachment derived workflows', () => {
     vi.mocked(deriveWorkflowFile).mockResolvedValue(
       workflowFile('photo.workflow.json')
     )
-    const { store, addFiles, liftingWorkflow } = harness()
+    const { store, addFiles, derivingWorkflow } = harness()
 
     await addFiles([imageFile('photo.png', 7)])
     await addFiles([imageFile('photo.png', 7)])
-    await vi.waitUntil(() => !liftingWorkflow.value)
+    await vi.waitUntil(() => !derivingWorkflow.value)
     await vi.waitUntil(() => store.attachments.every((chip) => !chip.uploading))
 
     expect(
@@ -106,13 +106,10 @@ describe('useAttachment derived workflows', () => {
   })
 
   it('drops the lifted workflow silently when the turn is already full', async () => {
-    vi.mocked(deriveWorkflowFile).mockResolvedValue(
-      workflowFile('photo.workflow.json')
-    )
     const { store } = harness()
     const onError = vi.fn()
     const full = useAttachment({
-      upload: async (file: File) => ({ ref: file.name }),
+      upload: async (file) => ({ ref: file.name }),
       onError,
       staged: () => store.attachments,
       stage: store.addAttachment,
@@ -130,7 +127,7 @@ describe('useAttachment derived workflows', () => {
       workflowFile('photo.workflow.json')
     )
     await full.addFiles([imageFile('photo.png', 999)])
-    await vi.waitUntil(() => !full.liftingWorkflow.value)
+    await vi.waitUntil(() => !full.derivingWorkflow.value)
 
     expect(store.attachments).toHaveLength(MAX_TURN_ATTACHMENTS)
     expect(
@@ -146,7 +143,7 @@ describe('useAttachment derived workflows', () => {
     const store = useAgentComposerStore()
     let releaseDerived: (() => void) | undefined
     const { addFiles } = useAttachment({
-      upload: (file: File) =>
+      upload: (file) =>
         file.name.endsWith('.workflow.json')
           ? new Promise((resolve) => {
               releaseDerived = () => resolve({ ref: file.name })
@@ -251,13 +248,13 @@ describe('useAttachment derived workflows', () => {
     await vi.waitUntil(() =>
       store.attachments.some((chip) => chip.ref === 'fast.png')
     )
-    const sourceStillBlocksSend = attachment.liftingWorkflow.value
+    const sourceStillBlocksSend = attachment.derivingWorkflow.value
     attachment.cancelAllUploads()
     store.clearDraft()
     store.setText('Fresh draft')
     sibling.resolve({ ref: 'slow.png' })
     await batch
-    await vi.waitUntil(() => !attachment.liftingWorkflow.value)
+    await vi.waitUntil(() => !attachment.derivingWorkflow.value)
 
     expect(store.draft).toBe('Fresh draft')
     expect(store.attachments).toEqual([])
@@ -267,14 +264,14 @@ describe('useAttachment derived workflows', () => {
   it('releases canceled extraction without admitting its late result to a fresh draft', async () => {
     const extraction = deferred<File | undefined>()
     vi.mocked(deriveWorkflowFile).mockReturnValue(extraction.promise)
-    const { store, addFiles, cancelAllUploads, liftingWorkflow } = harness()
+    const { store, addFiles, cancelAllUploads, derivingWorkflow } = harness()
 
     await addFiles([imageFile('photo.png')])
-    expect(liftingWorkflow.value).toBe(true)
+    expect(derivingWorkflow.value).toBe(true)
     cancelAllUploads()
     store.clearDraft()
     store.setText('Fresh draft')
-    const canceledWorkBlocksSend = liftingWorkflow.value
+    const canceledWorkBlocksSend = derivingWorkflow.value
     extraction.resolve(workflowFile('photo.workflow.json'))
     await extraction.promise
     await setImmediate()
@@ -307,7 +304,7 @@ describe('useAttachment derived workflows', () => {
     await expect(attachment.addFiles([imageFile('photo.png')])).resolves.toBe(
       true
     )
-    await vi.waitUntil(() => !attachment.liftingWorkflow.value)
+    await vi.waitUntil(() => !attachment.derivingWorkflow.value)
     await vi.waitUntil(() => store.attachments.every((chip) => !chip.uploading))
 
     expect(store.attachments.map((chip) => chip.ref)).toEqual(['photo.png'])
@@ -334,14 +331,14 @@ describe('useAttachment derived workflows', () => {
     await expect(attachment.addFiles([imageFile('photo.png')])).resolves.toBe(
       true
     )
-    await vi.waitUntil(() => !attachment.liftingWorkflow.value)
+    await vi.waitUntil(() => !attachment.derivingWorkflow.value)
 
     expect(store.attachments.map((chip) => chip.ref)).toEqual(['photo.png'])
     expect(onError).not.toHaveBeenCalled()
   })
 
   it('lifts a workflow from every image in a batch larger than the upload concurrency', async () => {
-    vi.mocked(deriveWorkflowFile).mockImplementation(async (file: File) =>
+    vi.mocked(deriveWorkflowFile).mockImplementation(async (file) =>
       workflowFile(`${file.name}.workflow.json`)
     )
     const { store, addFiles } = harness()

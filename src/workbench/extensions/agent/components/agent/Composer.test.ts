@@ -593,7 +593,7 @@ describe('Composer', () => {
 
   it('shows send as disabled while an embedded workflow is being lifted', async () => {
     useAgentComposerStore().setText('look at this')
-    const { emitted, rerender } = mount({ liftingWorkflow: true })
+    const { emitted, rerender } = mount({ derivingWorkflow: true })
     const send = screen.getByRole('button', { name: 'Send' })
     expect(send).toBeDisabled()
 
@@ -601,7 +601,7 @@ describe('Composer', () => {
     await userEvent.keyboard('{Enter}')
     expect(emitted().send).toBeUndefined()
 
-    await rerender({ liftingWorkflow: false })
+    await rerender({ derivingWorkflow: false })
     expect(send).toBeEnabled()
   })
 
