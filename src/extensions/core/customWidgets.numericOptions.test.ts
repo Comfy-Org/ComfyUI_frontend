@@ -133,15 +133,32 @@ describe('Primitive numeric widget options', () => {
       expect(getWidgetStep(widget.options)).toBe(0.1)
     })
 
-    it('rounds to the granularity declared in the node definition', () => {
+    it.for([0.25, 0.00125, 0.125])(
+      'keeps an edited value of %s by default',
+      (value) => {
+        const { widget } = createFloatNode()
+
+        widget.callback?.(value)
+
+        expect(widget.value).toBe(value)
+      }
+    )
+
+    it('rounds to the step granularity when float rounding is re-enabled', () => {
+      stubSettings({ 'Comfy.DisableFloatRounding': false })
       const { widget } = createFloatNode()
 
+      onFloatValueChange.call(widget, 0.25)
+
       expect(widget.options.round).toBe(0.1)
-      expect(widget.options.precision).toBe(1)
+      expect(widget.value).toBe(0.3)
     })
 
     it('keeps the declared step when the float rounding setting adds decimal places', () => {
-      stubSettings({ 'Comfy.FloatRoundingPrecision': 3 })
+      stubSettings({
+        'Comfy.DisableFloatRounding': false,
+        'Comfy.FloatRoundingPrecision': 3
+      })
       const { widget } = createFloatNode()
 
       expect(widget.options.step2).toBe(0.1)
@@ -150,18 +167,7 @@ describe('Primitive numeric widget options', () => {
       expect(widget.options.precision).toBe(3)
     })
 
-    it('does not round when float rounding is disabled', () => {
-      stubSettings({ 'Comfy.DisableFloatRounding': true })
-      const { widget } = createFloatNode()
-
-      expect(widget.options.round).toBeUndefined()
-
-      onFloatValueChange.call(widget, 0.123456)
-      expect(widget.value).toBe(0.123456)
-    })
-
     it('keeps rounding off when precision is set on a node that does not round', () => {
-      stubSettings({ 'Comfy.DisableFloatRounding': true })
       const { node, widget } = createFloatNode()
 
       node.properties.precision = 3
@@ -170,8 +176,7 @@ describe('Primitive numeric widget options', () => {
       expect(widget.options.step2).toBe(0.001)
     })
 
-    it('keeps rounding off when precision is set, rounding is disabled and the definition declares round: false', () => {
-      stubSettings({ 'Comfy.DisableFloatRounding': true })
+    it('keeps rounding off when precision is set and the definition declares round: false', () => {
       const { node, widget } = createFloatNode('unrounded')
 
       node.properties.precision = 3
@@ -184,6 +189,8 @@ describe('Primitive numeric widget options', () => {
       const { node, widget } = createFloatNode('declaredRound')
 
       expect(widget.options.round).toBe(0.05)
+      onFloatValueChange.call(widget, 0.12)
+      expect(widget.value).toBe(0.1)
 
       node.properties.precision = 3
 
@@ -227,11 +234,11 @@ describe('Primitive numeric widget options', () => {
     it.for([0, -1, false, '', Number.NaN])(
       'ignores an unusable round property rather than disabling rounding (%s)',
       (round) => {
-        const { node, widget } = createFloatNode()
+        const { node, widget } = createFloatNode('declaredRound')
 
         node.properties.round = round
 
-        expect(widget.options.round).toBe(0.1)
+        expect(widget.options.round).toBe(0.05)
       }
     )
 
@@ -281,7 +288,7 @@ describe('Primitive numeric widget options', () => {
     ])(
       'steps and rounds by one unit of the last decimal place at precision $precision',
       ({ precision, usedPrecision, expected }) => {
-        const { node, widget } = createFloatNode()
+        const { node, widget } = createFloatNode('declaredRound')
 
         node.properties.precision = precision
 
