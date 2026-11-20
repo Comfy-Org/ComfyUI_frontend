@@ -2,10 +2,10 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
+import { frozenSavable } from '@/platform/nodeApi/shared/savableValue'
 import type { BackendHandle, Unsubscribe } from '@/platform/nodeApi/v4/types'
 import { api } from '@/scripts/api'
 
-import { frozenJsonCopy, isJsonValue } from './jsonValues'
 import { isCallback, isName, isObject } from './packArguments'
 
 type BackendMessages = (listener: (detail: unknown) => void) => Unsubscribe
@@ -74,7 +74,8 @@ function sameOriginRoute(member: string, route: unknown): string {
 function payloadCopier(): (event: string, detail: unknown) => unknown {
   const reported = new Set<string>()
   return (event, detail) => {
-    if (isJsonValue(detail, isBlob)) return frozenJsonCopy(detail)
+    const copy = frozenSavable(detail, isBlob)
+    if (copy !== undefined) return copy
     if (!reported.has(event)) {
       reported.add(event)
       reportError(new TypeError(`A ${event} payload is not JSON or a Blob.`), {

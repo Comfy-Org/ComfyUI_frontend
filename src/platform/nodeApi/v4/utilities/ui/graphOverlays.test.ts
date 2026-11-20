@@ -854,7 +854,7 @@ describe('refusing what an overlay cannot use', () => {
       needs: "regions[0].kind as 'circle' or 'rect'"
     },
     {
-      name: 'a centre that is not finite',
+      name: 'a center that is not finite',
       regions: [{ kind: 'circle', x: 0, y: Infinity, radius: 1 }],
       needs: 'regions[0].y as a finite number'
     },

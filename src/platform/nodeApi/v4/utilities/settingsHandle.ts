@@ -7,7 +7,10 @@ import type {
 import { invalidArgument } from '@/platform/nodeApi/shared/invalidArgument'
 import { createHostEvent } from '@/platform/nodeApi/shared/hostEvent'
 import { callListener } from '@/platform/nodeApi/shared/listeners'
-import { savedCopy } from '@/platform/nodeApi/shared/savedCopy'
+import {
+  frozenSavable,
+  savableValue
+} from '@/platform/nodeApi/shared/savableValue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 
 import type {
@@ -27,7 +30,6 @@ import {
   packObject
 } from './packArguments'
 import type { Check } from './packArguments'
-import { isJsonValue } from './jsonValues'
 
 interface SettingChange {
   readonly id: string
@@ -49,10 +51,8 @@ export function createSettingsHandle(): SettingsHandle {
 
     set(id, value) {
       const key = settingId('settings.set', id)
-      if (!isSettingValue(value)) {
-        throw invalidArgument('settings.set', 'a value JSON can hold', value)
-      }
-      return useSettingStore().set(key, hostSettingValue(value))
+      const saved = savableValue('settings.set', value)
+      return useSettingStore().set(key, hostSettingValue(saved))
     },
 
     onChange(id, listener) {
@@ -197,9 +197,5 @@ function settingAttrs(attrs: object): Record<string, number> {
 }
 
 function frozenSettingValue(value: unknown): SettingValue | undefined {
-  return isSettingValue(value) ? savedCopy(value) : undefined
-}
-
-function isSettingValue(value: unknown): value is SettingValue {
-  return isJsonValue(value)
+  return frozenSavable(value)
 }
