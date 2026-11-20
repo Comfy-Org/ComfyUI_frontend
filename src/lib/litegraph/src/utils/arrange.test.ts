@@ -168,6 +168,29 @@ describe('alignNodes', () => {
   )
 })
 
+describe('pinned nodes', () => {
+  it('alignNodes leaves a pinned node where it is and returns no position for it', () => {
+    const pinned = nodeAt([0, 0], [100, 50])
+    pinned.flags.pinned = true
+    const free = nodeAt([200, 100], [100, 50])
+    const reference = nodeAt([300, 400], [80, 40])
+    const positions = alignNodes([pinned, free, reference], 'left', reference)
+    expect(positions.map(({ node, newPos }) => [node, newPos.x])).toEqual([
+      [free, 300],
+      [reference, 300]
+    ])
+  })
+
+  it('distributeNodes spaces only the unpinned nodes', () => {
+    const nodes = [0, 150, 400, 600].map((x, i) =>
+      nodeAt([x, i * 200], [100, 40])
+    )
+    nodes[3].flags.pinned = true
+    const positions = distributeNodes(nodes, true)
+    expect(positions.map(({ newPos }) => newPos.x)).toEqual([0, 200, 400])
+  })
+})
+
 describe('distributeNodes', () => {
   it('evens the visual gaps without moving the outer nodes or mutating any', () => {
     const nodes = [
