@@ -75,16 +75,18 @@ exposure and the bridge type are missing. When they land, the frontend must
 probe that capability rather than branch on a build flag, which is the
 mistake this ADR exists to undo.
 
-The second is the toast's `hasMediumOrHighAttention` requirement. Almost
-every release in the feed carries `attention: "low"`, which first looked
-like a publishing practice with no owner. Part of it is a dropped field: the
-releases gateway hardcodes a low level on the English note and discards the
-one chosen upstream, fixed outside this repository. The rest is not yet
-established. A manual edit does still reach the feed, so the hardcoded value
-is a starting point rather than a pin, and the non-English locales, which do
-receive the computed level, are uniformly low as well. Whether the toast
-will have anything to fire on is therefore an open question to settle by
-watching the feed, not a conclusion this ADR should assert.
+The second is the toast's `hasMediumOrHighAttention` requirement, and it is
+a deliberate product control rather than an oversight. Release notes are
+drafted automatically and published at low attention on purpose, so that a
+note no person has read cannot raise a pop-up. Someone raises the level by
+hand for the releases that warrant one, which is why a single recent version
+carries `high` while the rest, and every translation, carry `low`.
+
+The consequence for this ADR is that the toast is rate-limited by an
+editorial decision, not by a defect. It fires for the releases a human
+judged worth interrupting for, and for no others. If the team later wants
+automated notes to raise their own level, that is a decision for the owner
+of that control, not a frontend change.
 
 These surfaces are close to unmeasured. Neither the dot, the popup nor the toast emits an event
 of its own, and the `Comfy.Release.Status` settings that record _skipped_ / _changelog seen_ /
