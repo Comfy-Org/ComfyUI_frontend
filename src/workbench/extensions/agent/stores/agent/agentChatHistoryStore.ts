@@ -88,15 +88,6 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     })
   )
 
-  const workflowIdsWithChats = computed(
-    () =>
-      new Set(
-        sessions.value.flatMap(({ workflowId }) =>
-          workflowId ? [workflowId] : []
-        )
-      )
-  )
-
   const grouped = computed(() =>
     groupSessionsByRecency(titled.value, activeId.value, now.value)
   )
@@ -165,7 +156,6 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
     sessions,
     activeId,
     grouped,
-    workflowIdsWithChats,
     titleFor,
     sessionsFor,
     rename,

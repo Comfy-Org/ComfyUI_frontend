@@ -314,10 +314,10 @@
     "failed": "Failed",
     "cancelled": "Cancelled",
     "agentWorking": "Agent is working on this workflow",
+    "agentWorkingAndWorkflowRunning": "Agent is working and workflow is running",
     "agentModified": "Agent updated this workflow",
-    "agentFinishedUnseen": "Agent finished replying",
+    "agentFinishedUnseen": "Agent replied",
     "agentNeedsApproval": "Agent is waiting for your answer",
-    "agentChat": "Agent chat for this workflow",
     "job": "Job",
     "asset": "{count} asset | {count} assets",
     "untitled": "Untitled",
@@ -1135,6 +1135,15 @@
       "dirtyCloseAnyway": "Close anyway",
       "confirmOverwriteTitle": "Overwrite existing file?",
       "confirmOverwrite": "The file below already exists. Would you like to overwrite it?",
+      "status": {
+        "waitingForAnswer": "Agent is waiting for your answer",
+        "runFailed": "Run failed",
+        "agentWorking": "Agent working",
+        "workflowRunning": "Workflow running",
+        "agentReplied": "Agent replied",
+        "runFinished": "Run finished",
+        "unsavedChanges": "Unsaved changes"
+      },
       "workflowTreeType": {
         "browse": "Browse",
         "bookmarks": "Bookmarks",

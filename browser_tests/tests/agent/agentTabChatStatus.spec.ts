@@ -6,54 +6,46 @@ import { tabChatTransitionsTest as test } from '@e2e/fixtures/agentTabChatTransi
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Workflow tab chat status', { tag: ['@cloud', '@agent'] }, () => {
-  test('TS-01/TS-02/TS-03/TS-05/TS-06 shows seen, in-progress, unseen, and nothing without a chat', async ({
+  test('TS-01/TS-03/TS-05/TS-06 shows busy, unseen after background reply, and clears on open', async ({
     page,
     tabChats
   }) => {
-    const chatStatus = (index: number) =>
-      tabChats.tab(index).getByTestId(TestIds.topbar.workflowChatStatus)
+    const tabStatus = (index: number) =>
+      tabChats.tab(index).getByTestId(TestIds.topbar.workflowTabStatus)
 
-    await expect(chatStatus(0)).toHaveAttribute('data-status', 'seen')
-    await expect(chatStatus(0)).toHaveAttribute(
-      'aria-label',
-      enMessages.g.agentChat
-    )
-    await expect(chatStatus(1)).toHaveAttribute('data-status', 'seen')
-    await expect(chatStatus(2)).toHaveAttribute('data-status', 'seen')
+    await expect(tabStatus(0)).toHaveCount(0)
+    await expect(tabStatus(1)).toHaveCount(0)
+    await expect(tabStatus(2)).toHaveCount(0)
 
     await tabChats.panel.sendMessage('Foreground turn')
-    await expect(chatStatus(0)).toHaveAttribute('data-status', 'in-progress')
-    await expect(chatStatus(0)).toHaveAttribute(
+    await expect(tabStatus(0)).toHaveAttribute('data-status', 'busy')
+    await expect(tabStatus(0)).toHaveAttribute(
       'aria-label',
       enMessages.g.agentWorking
     )
 
     tabChats.complete(0)
-    await expect(chatStatus(0)).toHaveAttribute('data-status', 'seen')
-    await expect(chatStatus(0)).toHaveAttribute(
-      'aria-label',
-      enMessages.g.agentChat
-    )
+    await expect(tabStatus(0)).toHaveCount(0)
 
     await tabChats.panel.sendMessage('Background turn')
-    await expect(chatStatus(0)).toHaveAttribute('data-status', 'in-progress')
+    await expect(tabStatus(0)).toHaveAttribute('data-status', 'busy')
     await tabChats.tab(1).click()
-    await expect(chatStatus(0)).toHaveAttribute('data-status', 'in-progress')
+    await expect(tabStatus(0)).toHaveAttribute('data-status', 'busy')
 
     tabChats.complete(0)
-    await expect(chatStatus(0)).toHaveAttribute('data-status', 'unseen')
-    await expect(chatStatus(0)).toHaveAttribute(
+    await expect(tabStatus(0)).toHaveAttribute('data-status', 'unseen')
+    await expect(tabStatus(0)).toHaveAttribute(
       'aria-label',
       enMessages.g.agentFinishedUnseen
     )
 
     await tabChats.tab(0).click()
-    await expect(chatStatus(0)).toHaveAttribute('data-status', 'seen')
+    await expect(tabStatus(0)).toHaveCount(0)
 
     await expect(
       tabChats.topbar
         .getWorkflowTab('Unsaved Workflow')
-        .getByTestId(TestIds.topbar.workflowChatStatus)
+        .getByTestId(TestIds.topbar.workflowTabStatus)
     ).toHaveCount(0)
 
     await page
@@ -66,7 +58,7 @@ test.describe('Workflow tab chat status', { tag: ['@cloud', '@agent'] }, () => {
     await expect(
       tabChats.topbar
         .getWorkflowTab('Unsaved Workflow (2)')
-        .getByTestId(TestIds.topbar.workflowChatStatus)
+        .getByTestId(TestIds.topbar.workflowTabStatus)
     ).toHaveCount(0)
   })
 })

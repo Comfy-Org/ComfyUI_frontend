@@ -111,6 +111,7 @@ export const themeSchema = z
     ['node-widget-radius']: z.string(),
     ['node-widget-border-width']: z.string(),
     warning: z.string(),
+    success: z.string(),
     ['shadow-color']: z.string()
   })
   .partial()

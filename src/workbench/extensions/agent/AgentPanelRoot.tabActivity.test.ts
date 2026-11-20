@@ -769,27 +769,6 @@ describe('AgentPanelRoot Ask agent about errors', () => {
 })
 
 describe('AgentPanelRoot tab activity across chats', () => {
-  it('TS-15 marks the tab of a workflow that has a chat in Chat history, and no other', async () => {
-    addBoundTab(otherTab, 'wf-other')
-    respondToFetch(/\/agent\/threads(?:\?|$)/, () =>
-      json(200, {
-        ...threadList,
-        threads: [
-          { ...agentThread('th-2', 'Other chat'), workflow_id: 'wf-other' }
-        ],
-        pagination: { has_more: false, limit: 1, offset: 0, total: 1 }
-      })
-    )
-
-    renderPanel()
-
-    const activity = useWorkflowTabActivityStore()
-    await vi.waitFor(() =>
-      expect(activity.chatStatusFor(otherTab)).toBe('seen')
-    )
-    expect(activity.chatStatusFor(runningTab)).toBeUndefined()
-  })
-
   it('keeps A and B spinning independently after following their chats to C', async () => {
     const other = addBoundTab(otherTab, 'wf-other')
     const thirdTab = 'workflows/third.json'

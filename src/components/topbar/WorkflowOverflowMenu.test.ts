@@ -9,6 +9,7 @@ import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowOverflowMenu from './WorkflowOverflowMenu.vue'
@@ -20,26 +21,31 @@ vi.mock<unknown>(
   () => ({ useWorkflowService: () => ({ openWorkflow }) })
 )
 
-it('TS-08/TS-13 shows and announces the chat status of each overflow workflow, including the active one', async () => {
+it('shows and announces the unified status of each overflow workflow', async () => {
   const active = markRaw(
     new ComfyWorkflow({ path: 'workflows/active.json', modified: 0, size: 0 })
   )
   const waiting = markRaw(
     new ComfyWorkflow({ path: 'workflows/waiting.json', modified: 0, size: 0 })
   )
-  const quiet = markRaw(
-    new ComfyWorkflow({ path: 'workflows/quiet.json', modified: 0, size: 0 })
+  const finished = markRaw(
+    new ComfyWorkflow({ path: 'workflows/finished.json', modified: 0, size: 0 })
   )
   const workflows = useWorkflowStore()
   workflows.attachWorkflow(active, 0)
   workflows.attachWorkflow(waiting, 1)
-  workflows.attachWorkflow(quiet, 2)
+  workflows.attachWorkflow(finished, 2)
+  vi.mocked(useExecutionStore().getWorkflowStatus).mockImplementation((wf) =>
+    wf === finished ? 'completed' : undefined
+  )
   const activity = useWorkflowTabActivityStore()
-  activity.setChatPaths([active.path, quiet.path])
-  activity.setAgentTurnTabs([{ path: waiting.path, awaitingApproval: true }])
+  activity.setAgentTurnTabs([
+    { path: active.path, awaitingApproval: false },
+    { path: waiting.path, awaitingApproval: true }
+  ])
 
   render(WorkflowOverflowMenu, {
-    props: { workflows: [active, waiting, quiet], activeWorkflow: active },
+    props: { workflows: [active, waiting, finished], activeWorkflow: active },
     global: {
       plugins: [
         createI18n({
@@ -50,7 +56,8 @@ it('TS-08/TS-13 shows and announces the chat status of each overflow workflow, i
               g: {
                 moreWorkflows: 'More workflows',
                 agentNeedsApproval: enMessages.g.agentNeedsApproval,
-                agentChat: enMessages.g.agentChat
+                agentWorking: enMessages.g.agentWorking,
+                completed: enMessages.g.completed
               }
             }
           }
@@ -62,13 +69,13 @@ it('TS-08/TS-13 shows and announces the chat status of each overflow workflow, i
   const user = userEvent.setup({ pointerEventsCheck: 0 })
   await user.click(screen.getByRole('button', { name: 'More workflows' }))
   const activeItem = await screen.findByRole('menuitem', {
-    name: `active, ${enMessages.g.agentChat}`
+    name: `active, ${enMessages.g.agentWorking}`
   })
   expect(
     within(activeItem).getByRole('img', {
-      name: enMessages.g.agentChat
+      name: enMessages.g.agentWorking
     })
-  ).toHaveAttribute('data-status', 'seen')
+  ).toHaveAttribute('data-status', 'busy')
 
   const waitingItem = screen.getByRole('menuitem', {
     name: `waiting, ${enMessages.g.agentNeedsApproval}`
@@ -79,20 +86,20 @@ it('TS-08/TS-13 shows and announces the chat status of each overflow workflow, i
     })
   ).toHaveAttribute('data-status', 'waiting')
 
-  const quietItem = screen.getByRole('menuitem', {
-    name: `quiet, ${enMessages.g.agentChat}`
+  const finishedItem = screen.getByRole('menuitem', {
+    name: `finished, ${enMessages.g.completed}`
   })
   expect(
-    within(quietItem).getByRole('img', {
-      name: enMessages.g.agentChat
+    within(finishedItem).getByRole('img', {
+      name: enMessages.g.completed
     })
-  ).toHaveAttribute('data-status', 'seen')
+  ).toHaveAttribute('data-status', 'completed')
 
   await user.click(waitingItem)
   expect(openWorkflow).toHaveBeenCalledWith(waiting, { initiator: 'user' })
 })
 
-it('TS-13 shows nothing next to an overflow workflow without a chat', async () => {
+it('shows nothing next to an overflow workflow with no active status', async () => {
   const active = markRaw(
     new ComfyWorkflow({ path: 'workflows/active.json', modified: 0, size: 0 })
   )
@@ -102,6 +109,7 @@ it('TS-13 shows nothing next to an overflow workflow without a chat', async () =
   const workflows = useWorkflowStore()
   workflows.attachWorkflow(active, 0)
   workflows.attachWorkflow(other, 1)
+  vi.mocked(useExecutionStore().getWorkflowStatus).mockReturnValue(undefined)
 
   render(WorkflowOverflowMenu, {
     props: { workflows: [active, other], activeWorkflow: active },

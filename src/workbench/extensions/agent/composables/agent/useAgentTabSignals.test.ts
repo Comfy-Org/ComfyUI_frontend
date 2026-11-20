@@ -4,14 +4,11 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import { useBrowserTabTitleStore } from '@/stores/browserTabTitleStore'
-import type { ChatSession } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
-import { useAgentChatHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from '@/workbench/extensions/agent/stores/agent/agentConversationStore'
-import { useAgentOpenChatsStore } from '@/workbench/extensions/agent/stores/agent/agentOpenChatsStore'
 
 import { useAgentTabSignals } from './useAgentTabSignals'
 
@@ -23,16 +20,6 @@ const i18n = createI18n({
 
 const tabA = 'workflows/a.json'
 const tabB = 'workflows/b.json'
-
-function chatOf(workflowId: string, id = `chat-of-${workflowId}`): ChatSession {
-  return {
-    id,
-    title: id,
-    updatedAt: 1,
-    titleSource: 'server',
-    workflowId
-  }
-}
 
 function openTab(path: string) {
   const workflowStore = useWorkflowStore()
@@ -47,17 +34,13 @@ function openTab(path: string) {
 }
 
 function mountSignals(
-  cloudIds: Record<string, string | undefined>,
   onIdentityChange: (listener: () => void) => () => void = () => () => {}
 ) {
   let signals!: ReturnType<typeof useAgentTabSignals>
   const view = render(
     {
       setup() {
-        signals = useAgentTabSignals({
-          onIdentityChange,
-          cloudIdFor: (workflow) => cloudIds[workflow.path]
-        })
+        signals = useAgentTabSignals({ onIdentityChange })
         return () => null
       }
     },
@@ -66,94 +49,8 @@ function mountSignals(
   return { ...view, signals }
 }
 
-describe('useAgentTabSignals: tabs that have a chat', () => {
-  it('TS-15 marks the open tabs whose workflow has a chat in History', () => {
-    const activity = useWorkflowTabActivityStore()
-    openTab(tabA)
-    openTab(tabB)
-    useAgentChatHistoryStore().replaceAll([chatOf('wf-a')])
-
-    mountSignals({ [tabA]: 'wf-a', [tabB]: 'wf-b' })
-
-    expect(activity.chatStatusFor(tabA)).toBe('seen')
-    expect(activity.chatStatusFor(tabB)).toBeUndefined()
-  })
-
-  it('TS-15 follows History as chats are listed and deleted', async () => {
-    const activity = useWorkflowTabActivityStore()
-    const history = useAgentChatHistoryStore()
-    openTab(tabB)
-    mountSignals({ [tabB]: 'wf-b' })
-    expect(activity.chatStatusFor(tabB)).toBeUndefined()
-
-    history.replaceAll([chatOf('wf-b', 'one'), chatOf('wf-b', 'two')])
-    await nextTick()
-    expect(activity.chatStatusFor(tabB)).toBe('seen')
-
-    history.remove('one')
-    await nextTick()
-    expect(activity.chatStatusFor(tabB)).toBe('seen')
-
-    history.remove('two')
-    await nextTick()
-    expect(activity.chatStatusFor(tabB)).toBeUndefined()
-  })
-
-  it('TS-15 marks a tab whose chat was shown in this page before History lists it', async () => {
-    const activity = useWorkflowTabActivityStore()
-    const openChats = useAgentOpenChatsStore()
-    openTab(tabB)
-    mountSignals({ [tabB]: 'wf-b' })
-
-    openChats.remember('wf-b', 'th-9')
-    await nextTick()
-    expect(activity.chatStatusFor(tabB)).toBe('seen')
-
-    openChats.forget('th-9')
-    await nextTick()
-    expect(activity.chatStatusFor(tabB)).toBeUndefined()
-  })
-
-  it('TS-15 leaves a tab alone while it has no cloud workflow to own a chat', () => {
-    const activity = useWorkflowTabActivityStore()
-    openTab(tabA)
-    useAgentChatHistoryStore().replaceAll([chatOf('wf-a')])
-
-    mountSignals({})
-
-    expect(activity.chatStatusFor(tabA)).toBeUndefined()
-  })
-
-  it('TS-15 marks a tab that is opened later and drops one that is closed', async () => {
-    const activity = useWorkflowTabActivityStore()
-    const workflowStore = useWorkflowStore()
-    useAgentChatHistoryStore().replaceAll([chatOf('wf-a'), chatOf('wf-b')])
-    const first = openTab(tabA)
-    mountSignals({ [tabA]: 'wf-a', [tabB]: 'wf-b' })
-    expect(activity.chatStatusFor(tabB)).toBeUndefined()
-
-    openTab(tabB)
-    await nextTick()
-    expect(activity.chatStatusFor(tabB)).toBe('seen')
-
-    await workflowStore.closeWorkflow(first)
-    await nextTick()
-    expect(activity.chatStatusFor(tabA)).toBeUndefined()
-  })
-
-  it('TS-15 keeps the marks when the panel goes away', async () => {
-    const activity = useWorkflowTabActivityStore()
-    openTab(tabA)
-    useAgentChatHistoryStore().replaceAll([chatOf('wf-a')])
-    const { unmount } = mountSignals({ [tabA]: 'wf-a' })
-
-    unmount()
-    await nextTick()
-
-    expect(activity.chatStatusFor(tabA)).toBe('seen')
-  })
-
-  it('TS-05/TS-06 marks unseen only when a turn finishes in the background', async () => {
+describe('useAgentTabSignals', () => {
+  it('marks unseen only when a turn finishes in the background', async () => {
     const activity = useWorkflowTabActivityStore()
     const workflowStore = useWorkflowStore()
     const a = openTab(tabA)
@@ -164,7 +61,7 @@ describe('useAgentTabSignals: tabs that have a chat', () => {
       status: 'known',
       workflowInstanceId: a.instanceId
     }))
-    mountSignals({ [tabA]: 'wf-a', [tabB]: 'wf-b' })
+    mountSignals()
 
     conversation.setThreadId('th-a')
     conversation.startTurn(toTurnId('m-1'))
@@ -184,29 +81,6 @@ describe('useAgentTabSignals: tabs that have a chat', () => {
     await vi.waitFor(() =>
       expect(activity.unseenModifiedPaths.has(tabA)).toBe(true)
     )
-  })
-
-  it('clears the unseen marker only when a workflow deletes its last chat', async () => {
-    const activity = useWorkflowTabActivityStore()
-    const history = useAgentChatHistoryStore()
-    const a = openTab(tabA)
-    openTab(tabB)
-    useWorkflowStore().activeWorkflow = a
-    history.replaceAll([chatOf('wf-b', 'one'), chatOf('wf-b', 'two')])
-    mountSignals({ [tabA]: 'wf-a', [tabB]: 'wf-b' })
-    await nextTick()
-
-    activity.markModified(tabB)
-    expect(activity.chatStatusFor(tabB)).toBe('unseen')
-
-    history.remove('one')
-    await nextTick()
-    expect(activity.chatStatusFor(tabB)).toBe('unseen')
-
-    history.remove('two')
-    await nextTick()
-    expect(activity.unseenModifiedPaths.has(tabB)).toBe(false)
-    expect(activity.chatStatusFor(tabB)).toBeUndefined()
   })
 
   it('keeps the ask title hold on clearTurnSignals while an approval ask is pending', () => {
@@ -229,7 +103,7 @@ describe('useAgentTabSignals: tabs that have a chat', () => {
         allow_other: false
       }
     })
-    const { signals } = mountSignals({ [tabA]: 'wf-a' })
+    const { signals } = mountSignals()
     expect(useBrowserTabTitleStore().prefix).toBe('[Input needed] ')
 
     signals.clearTurnSignals()

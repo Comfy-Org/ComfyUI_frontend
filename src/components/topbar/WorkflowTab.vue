@@ -18,7 +18,7 @@
         <TabsTrigger
           :value="workflowOption.workflow.path"
           as-child
-          class="h-full w-full py-2 pr-2 pl-3"
+          class="h-full w-full px-2 py-2"
         >
           <button :id="resolvedTriggerId" type="button">
             <template v-if="showModeIcon">
@@ -33,43 +33,22 @@
                 class="order-first icon-[lucide--panels-top-left] bg-primary"
               />
             </template>
-            <span class="inline-flex min-w-0 items-center">
-              <span
-                :class="
-                  cn(
-                    'workflow-label inline-block max-w-[150px] truncate font-inter text-xs leading-4 font-normal text-inherit',
-                    shouldShowUnsavedIndicator && 'italic'
-                  )
-                "
-              >
-                {{ workflowOption.workflow.filename }}
-              </span>
+            <span
+              class="workflow-label inline-block max-w-[150px] truncate font-inter text-xs leading-4 font-normal text-inherit"
+            >
+              {{ workflowOption.workflow.filename }}
+            </span>
+            <WorkflowTabStatus class="order-first" :status="primaryStatus" />
+            <span
+              class="relative size-4 shrink-0 group-focus-within/tab:invisible group-hover/tab:invisible"
+            >
               <span
                 v-if="shouldShowUnsavedIndicator"
                 data-testid="workflow-dirty-indicator"
-                class="shrink-0 font-inter text-xs leading-4 text-inherit italic after:content-['*']"
-              />
-            </span>
-            <WorkflowTabChatStatus
-              class="order-first"
-              :workflow-path="workflowOption.workflow.path"
-            />
-            <span
-              :class="
-                cn(
-                  'relative size-4 shrink-0 group-focus-within/tab:invisible',
-                  revealsCloseOnHover && 'group-hover/tab:invisible'
-                )
-              "
-            >
-              <i
-                v-if="workflowStatus"
-                role="img"
-                :aria-label="workflowStatusLabel"
                 :class="
                   cn(
-                    'absolute top-1/2 left-1/2 z-10 -translate-1/2',
-                    workflowStatusIconClasses[workflowStatus]
+                    'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
+                    isActiveTab ? 'bg-foreground' : 'bg-muted-foreground'
                   )
                 "
               />
@@ -79,9 +58,8 @@
         <Button
           :class="
             cn(
-              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 group-focus-within/tab:visible',
-              closeButtonVisibility,
-              revealsCloseOnHover && 'group-hover/tab:visible'
+              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 group-focus-within/tab:visible group-hover/tab:visible',
+              closeButtonVisibility
             )
           "
           variant="muted-textonly"
@@ -106,6 +84,7 @@
     :workflow-filename="workflowOption.workflow.filename"
     :thumbnail-url="thumbnailUrl"
     :is-active-tab="isActiveTab"
+    :statuses="popoverStatuses"
   />
 </template>
 
@@ -129,17 +108,18 @@ import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { useCommandStore } from '@/platform/keybindings/commandStore'
-import type { WorkflowExecutionStatus } from '@/stores/executionStore'
-import {
-  useExecutionStore,
-  WORKFLOW_STATUS_I18N_KEYS
-} from '@/stores/executionStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import WorkflowTabChatStatus from './WorkflowTabChatStatus.vue'
+import {
+  resolvePrimaryTabStatus,
+  resolveTabPopoverStatuses
+} from './workflowTabStatus'
 import WorkflowTabPopover from './WorkflowTabPopover.vue'
+import WorkflowTabStatus from './WorkflowTabStatus.vue'
 
 defineOptions({ inheritAttrs: false })
 
@@ -174,6 +154,7 @@ const workspaceStore = useWorkspaceStore()
 const workflowStore = useWorkflowStore()
 const settingStore = useSettingStore()
 const executionStore = useExecutionStore()
+const tabActivity = useWorkflowTabActivityStore()
 const workflowTabRef = ref<HTMLElement | null>(null)
 const fallbackTriggerId = `workflow-tab-trigger-${useId()}`
 const resolvedTriggerId = computed(() => triggerId ?? fallbackTriggerId)
@@ -227,33 +208,37 @@ const isActiveTab = computed(() => {
 
 const showModeIcon = computed(() => !compact || isActiveTab.value)
 
-const workflowStatusIconClasses: Record<WorkflowExecutionStatus, string> = {
-  running:
-    'text-foreground icon-[lucide--loader-circle] motion-safe:animate-spin',
-  completed: 'icon-[lucide--circle-check] text-success',
-  failed: 'icon-[lucide--octagon-alert] text-destructive'
-}
-
-// The active tab doesn't badge its own status - the user is already looking
-// at it. Background tabs surface the recorded execution status.
+// The active tab doesn't badge its own execution status - the user is already
+// looking at it. Background tabs surface the recorded execution status.
 const workflowStatus = computed(() =>
   isActiveTab.value
     ? undefined
     : executionStore.getWorkflowStatus(workflowOption.workflow)
 )
 
-const workflowStatusLabel = computed(() =>
-  workflowStatus.value
-    ? t(WORKFLOW_STATUS_I18N_KEYS[workflowStatus.value])
-    : undefined
+const statusSignals = computed(() => {
+  const path = workflowOption.workflow.path
+  return {
+    awaitingApproval: tabActivity.awaitingApprovalPaths.has(path),
+    agentWorking: tabActivity.editingPaths.has(path),
+    agentReplied: tabActivity.unseenModifiedPaths.has(path),
+    workflowStatus: workflowStatus.value,
+    unsaved: shouldShowUnsavedIndicator.value
+  }
+})
+
+const primaryStatus = computed(() =>
+  resolvePrimaryTabStatus(statusSignals.value)
 )
 
-const revealsCloseOnHover = computed(
-  () => isActiveTab.value || !compact || workflowStatus.value === undefined
+const popoverStatuses = computed(() =>
+  isActiveTab.value ? [] : resolveTabPopoverStatuses(statusSignals.value)
 )
 
 const closeButtonVisibility = computed(() =>
-  isActiveTab.value ? 'visible' : 'invisible'
+  isActiveTab.value && !shouldShowUnsavedIndicator.value
+    ? 'visible'
+    : 'invisible'
 )
 
 const thumbnailUrl = computed(() => {

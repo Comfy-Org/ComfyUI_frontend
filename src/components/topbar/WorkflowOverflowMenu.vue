@@ -12,7 +12,11 @@
       </template>
       <template #item="{ item }">
         <i v-if="item.icon" :class="item.icon" />
-        <WorkflowTabChatStatus v-if="item.key" :workflow-path="item.key" />
+        <WorkflowTabStatus
+          v-if="item.key"
+          :status="statusByPath.get(item.key)"
+          :reserve-space="false"
+        />
         <span>{{ item.label }}</span>
       </template>
     </Menu>
@@ -27,12 +31,12 @@ import Button from '@comfyorg/design-system/button/Button'
 import Menu from '@comfyorg/design-system/menu/Menu'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import {
-  TAB_CHAT_STATUS_I18N_KEYS,
-  useWorkflowTabActivityStore
-} from '@/stores/workflowTabActivityStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
-import WorkflowTabChatStatus from './WorkflowTabChatStatus.vue'
+import type { ResolvedTabPrimaryStatus } from './workflowTabStatus'
+import { resolvePrimaryTabStatus } from './workflowTabStatus'
+import WorkflowTabStatus from './WorkflowTabStatus.vue'
 
 const props = defineProps<{
   workflows: ComfyWorkflow[]
@@ -41,15 +45,35 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const workflowService = useWorkflowService()
+const executionStore = useExecutionStore()
 const tabActivity = useWorkflowTabActivityStore()
+
+const statusByPath = computed(() => {
+  const statuses = new Map<string, ResolvedTabPrimaryStatus | undefined>()
+  for (const workflow of props.workflows) {
+    const isActive = props.activeWorkflow?.key === workflow.key
+    statuses.set(
+      workflow.path,
+      resolvePrimaryTabStatus({
+        awaitingApproval: tabActivity.awaitingApprovalPaths.has(workflow.path),
+        agentWorking: tabActivity.editingPaths.has(workflow.path),
+        agentReplied: tabActivity.unseenModifiedPaths.has(workflow.path),
+        workflowStatus: isActive
+          ? undefined
+          : executionStore.getWorkflowStatus(workflow)
+      })
+    )
+  }
+  return statuses
+})
 
 const menuItems = computed(() =>
   props.workflows.map((workflow: ComfyWorkflow) => {
-    const status = tabActivity.chatStatusFor(workflow.path)
+    const status = statusByPath.value.get(workflow.path)
     return {
       label: workflow.filename,
       ariaLabel: status
-        ? `${workflow.filename}, ${t(TAB_CHAT_STATUS_I18N_KEYS[status])}`
+        ? `${workflow.filename}, ${t(status.labelKey)}`
         : undefined,
       key: workflow.path,
       icon:
