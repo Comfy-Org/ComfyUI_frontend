@@ -9108,7 +9108,7 @@ describe('AgentPanelRoot workflow binding', () => {
   )
 
   it.for(['workspace', 'unknown'] as const)(
-    'leaves the $ post-consent billing refresh to the dock host on first send',
+    'leaves the %s post-consent billing refresh to the dock host on first send',
     async (billingType) => {
       makeTab('wf-42')
       mockMessagesEndpoint('wf-42')
@@ -10916,7 +10916,7 @@ describe('AgentPanelRoot workflow binding', () => {
     { previous: 'th-current', outcome: 'pending' },
     { previous: 'th-current', outcome: 'failed' }
   ])(
-    'keeps an unfinished history selection hidden after remount: %o',
+    'keeps an unfinished history selection hidden after remount: previous=$previous, outcome=$outcome',
     async ({ previous, outcome }) => {
       makeTab('wf-current')
       const saved = addTab('workflows/portrait.json')
@@ -12742,6 +12742,31 @@ describe('AgentPanelRoot workflow binding', () => {
         duration: Number.POSITIVE_INFINITY
       })
     )
+  })
+
+  it('reports a refused subscribe as a workflow sync failure with its code, never the host message', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add a node')
+    telemetry.trackAgentError.mockClear()
+
+    dispatchApiEvent('doc_subscribed', {
+      v: 1,
+      workflow_id: 'wf-42',
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'Expected schema 4, found 5'
+    })
+
+    expect(telemetry.trackAgentError).toHaveBeenCalledExactlyOnceWith({
+      error_class: 'workflow_sync_failed',
+      failure_stage: 'post_acceptance',
+      retryable: false,
+      turn_accepted: true,
+      ui_treatment: 'toast',
+      sync_error_code: 'schema_version_mismatch'
+    })
   })
 
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
@@ -14813,6 +14838,8 @@ describe('AgentPanelRoot workflow binding', () => {
           failure_kind: 'bad_state',
           feature_area: 'agent',
           operation: 'send',
+          stale_cause: 'socket_closed',
+          stale_terminal: 'none',
           outcome: 'withheld'
         },
         context: { workflowId: 'wf-42' }

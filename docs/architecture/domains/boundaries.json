@@ -725,6 +725,7 @@
           "src/renderer/core/canvas/useCanvasInteractions.ts",
           "src/renderer/core/canvas/useCanvasInteractions.test.ts",
           "src/renderer/core/canvas/useCanvasScheduler.ts",
+          "tools/ci/src/**",
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
           "src/extensions/core/cloudBadges.ts",
@@ -1602,6 +1603,7 @@
           "src/schemas/subgraphIdSchema.ts",
           "src/schemas/subgraphIdSchema.test.ts",
           "src/stores/subgraphNavigationStore.ts",
+          "src/stores/subgraphNavigationStore.host.test.ts",
           "src/stores/subgraphNavigationStore.navigateToHash.test.ts",
           "src/stores/subgraphNavigationStore.test.ts",
           "src/stores/subgraphNavigationStore.viewport.test.ts",
@@ -2055,7 +2057,7 @@
       },
       {
         "name": "unclassified",
-        "patterns": ["src/**", "packages/*/src/**"]
+        "patterns": ["src/**", "packages/*/src/**", "tools/*/src/**"]
       }
     ],
     "rules": [

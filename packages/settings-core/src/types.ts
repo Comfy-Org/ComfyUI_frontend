@@ -172,7 +172,6 @@ export type Settings = {
   'Comfy.Templates.SelectedUseCases': Array<string>
   'Comfy.Templates.SelectedRunsOn': Array<string>
   'Comfy.Templates.SortBy':
-    | 'default'
     | 'recommended'
     | 'popular'
     | 'alphabetical'

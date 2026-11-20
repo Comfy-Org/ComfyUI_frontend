@@ -63,6 +63,7 @@ import {
   createTestDragAndScale,
   setCanvasVisible
 } from '@/utils/__tests__/canvasTestUtils'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
 import { useNodeReplacement } from '@/platform/workflowErrors/nodeReplacement/useNodeReplacement'
 import type { NodeReplacement } from '@/platform/workflowErrors/nodeReplacement/types'
@@ -415,7 +416,11 @@ describe('ComfyApp', () => {
           async ({ onVerified }) => {
             finishModels = onVerified
             if (verification === 'immediate') onVerified?.([])
-            return { missingModels: [], confirmedCandidates: [] }
+            return {
+              missingModels: [],
+              confirmedCandidates: [],
+              surfaced: Promise.resolve()
+            }
           }
         )
         vi.spyOn(
@@ -471,7 +476,11 @@ describe('ComfyApp', () => {
       vi.mocked(runMissingModelPipeline).mockImplementation(
         async ({ onVerified }) => {
           onVerified?.([])
-          return { missingModels: [], confirmedCandidates: [] }
+          return {
+            missingModels: [],
+            confirmedCandidates: [],
+            surfaced: Promise.resolve()
+          }
         }
       )
       vi.spyOn(missingMediaScan, 'scanAllMediaCandidates').mockReturnValue([
@@ -789,6 +798,156 @@ describe('ComfyApp', () => {
       )
     })
 
+    describe('a load that resolves its graph when it reaches the front of the queue', () => {
+      function holdFirstLoad() {
+        let release = () => {}
+        const held = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        let calls = 0
+        vi.mocked(
+          mockExtensionService.invokeExtensionsAsync
+        ).mockImplementation(async (hook: string) => {
+          if (hook === 'beforeLoadGraph' && calls++ === 0) await held
+        })
+        const first = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { skipAssetScans: true }
+        )
+        return { first, release: () => release() }
+      }
+
+      beforeEach(() => {
+        app.canvasElRef.value = document.createElement('canvas')
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+      })
+
+      it('loads the graph produced at its turn, not the one it was queued with', async () => {
+        const { first, release } = holdFirstLoad()
+        let current = { ...createWorkflowGraphData(), extra: { at: 'queued' } }
+        const reload = app.loadGraphData(current, false, true, null, {
+          skipAssetScans: true,
+          resolveGraphData: () => current
+        })
+        current = { ...createWorkflowGraphData(), extra: { at: 'its turn' } }
+
+        release()
+        await first
+        await reload
+
+        expect(app.rootGraph.extra.at).toBe('its turn')
+      })
+
+      it('loads an edit made while its own beforeLoadGraph hooks ran', async () => {
+        let release = () => {}
+        const hookHeld = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        vi.mocked(
+          mockExtensionService.invokeExtensionsAsync
+        ).mockImplementation(async (hook: string) => {
+          if (hook === 'beforeLoadGraph') await hookHeld
+        })
+        let current = { ...createWorkflowGraphData(), extra: { at: 'queued' } }
+        const reload = app.loadGraphData(undefined, false, true, null, {
+          skipAssetScans: true,
+          isReady: () => true,
+          resolveGraphData: () => current
+        })
+        await vi.waitFor(() =>
+          expect(
+            mockExtensionService.invokeExtensionsAsync
+          ).toHaveBeenCalledWith('beforeLoadGraph')
+        )
+        current = {
+          ...createWorkflowGraphData(),
+          extra: { at: 'during hooks' }
+        }
+        release()
+        await reload
+
+        expect(app.rootGraph.extra.at).toBe('during hooks')
+      })
+
+      it('resolves its graph after the beforeLoadGraph hooks, and skips if no longer ready', async () => {
+        let release = () => {}
+        const hookHeld = new Promise<void>((resolve) => {
+          release = resolve
+        })
+        vi.mocked(
+          mockExtensionService.invokeExtensionsAsync
+        ).mockImplementation(async (hook: string) => {
+          if (hook === 'beforeLoadGraph') await hookHeld
+        })
+        let ready = true
+        const resolveGraphData = vi.fn(() => createWorkflowGraphData())
+        const reload = app.loadGraphData(undefined, false, true, null, {
+          skipAssetScans: true,
+          isReady: () => ready,
+          resolveGraphData
+        })
+        await vi.waitFor(() =>
+          expect(
+            mockExtensionService.invokeExtensionsAsync
+          ).toHaveBeenCalledWith('beforeLoadGraph')
+        )
+        ready = false
+        release()
+
+        await expect(reload).resolves.toBe(false)
+        expect(resolveGraphData).not.toHaveBeenCalled()
+        expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+        expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+          'onGraphLoadError',
+          expect.objectContaining({ name: 'AbortError' })
+        )
+      })
+
+      it('skips without touching the canvas when it is not ready at its turn', async () => {
+        const { first, release } = holdFirstLoad()
+        let ready = true
+        const reload = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { skipAssetScans: true, isReady: () => ready }
+        )
+        ready = false
+
+        release()
+        await first
+
+        await expect(reload).resolves.toBe(false)
+        expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+        expect(
+          vi
+            .mocked(mockExtensionService.invokeExtensionsAsync)
+            .mock.calls.filter(([hook]) => hook === 'beforeLoadGraph')
+        ).toHaveLength(1)
+      })
+
+      it('skips instead of loading the default workflow when the resolver has nothing to load', async () => {
+        const { first, release } = holdFirstLoad()
+        const reload = app.loadGraphData(
+          createWorkflowGraphData(),
+          false,
+          true,
+          null,
+          { skipAssetScans: true, resolveGraphData: () => undefined }
+        )
+
+        release()
+        await first
+
+        await expect(reload).resolves.toBe(false)
+        expect(mockWorkflowService.beforeLoadNewGraph).toHaveBeenCalledOnce()
+      })
+    })
+
     it('leaves the canvas untouched for a load that stopped being current while it waited its turn', async () => {
       app.canvasElRef.value = document.createElement('canvas')
       Reflect.set(app, 'rootGraphInternal', new LGraph())
@@ -833,6 +992,33 @@ describe('ComfyApp', () => {
       expect(
         mockExtensionService.invokeExtensionsAsync
       ).not.toHaveBeenCalledWith('afterConfigureGraph', expect.anything())
+    })
+
+    it('resolves false and notifies onGraphLoadError when resolving the graph throws', async () => {
+      app.canvasElRef.value = document.createElement('canvas')
+      Reflect.set(app, 'rootGraphInternal', new LGraph())
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(
+        app.loadGraphData(undefined, false, true, null, {
+          workflowNavigationId: 22,
+          resolveGraphData: () => {
+            throw new Error('snapshot serializer blew up')
+          }
+        })
+      ).resolves.toBe(false)
+
+      expect(showDialog).toHaveBeenCalledOnce()
+      expect(mockExtensionService.invokeExtensionsAsync).toHaveBeenCalledWith(
+        'onGraphLoadError',
+        expect.objectContaining({ message: 'snapshot serializer blew up' })
+      )
+      expect(mockWorkflowService.beforeLoadNewGraph).not.toHaveBeenCalled()
+      expect(ChangeTracker.isLoadingGraph).toBe(false)
+      expect(useSubgraphNavigationStore().updateHash).toHaveBeenCalledWith(
+        'workflow-load',
+        22
+      )
     })
 
     it('resolves false and notifies onGraphLoadError when workflow validation rejects', async () => {
@@ -1273,7 +1459,11 @@ describe('ComfyApp', () => {
       })
       vi.mocked(runMissingModelPipeline).mockImplementationOnce(async () => {
         await modelsPending
-        return { missingModels: [], confirmedCandidates: [] }
+        return {
+          missingModels: [],
+          confirmedCandidates: [],
+          surfaced: Promise.resolve()
+        }
       })
       const load = app.loadGraphData(createWorkflowGraphData(), false, false)
       try {
@@ -4111,7 +4301,7 @@ describe('ComfyApp', () => {
       [3, 2, 0, 1],
       [3, 2, 1, 0]
     ])(
-      'applies files in call order for completion order %j',
+      'applies files in call order for completion order %s, %s, %s, %s',
       async (completionOrder) => {
         const callOrder = [0, 1, 2, 3]
         const resolvers: ((
@@ -4628,6 +4818,96 @@ describe('ComfyApp', () => {
       expect(useJobModelDownloadStore().downloadFor('job-1')?.progress).toBe(
         0.5
       )
+    })
+
+    it('offers replacements that arrive after the workflow loaded', async () => {
+      useSettingStore().settingValues['Comfy.NodeReplacement.Enabled'] = true
+      LiteGraph.registerNodeType(
+        'BatchImagesNode',
+        class BatchImagesNode extends LGraphNode {}
+      )
+      class ImageBatch extends LGraphNode {
+        static override nodeData = { name: 'ImageBatch', deprecated: true }
+      }
+      const graph = new LGraph()
+      graph.add(new ImageBatch('ImageBatch', 'ImageBatch'))
+      Reflect.set(app, 'rootGraphInternal', graph)
+      useMissingNodesErrorStore().setMissingNodeTypes([
+        { type: 'LegacyResize', nodeId: '4', isReplaceable: false }
+      ])
+      const backgroundWorkflow =
+        useWorkflowStore().createTemporary('background.json')
+      backgroundWorkflow.pendingWarnings = {
+        missingNodeTypes: [
+          { type: 'LegacyResize', nodeId: '7', isReplaceable: false }
+        ]
+      }
+      useWorkflowStore().openWorkflowsInBackground({
+        right: [backgroundWorkflow.path]
+      })
+      const replacementStore = useNodeReplacementStore()
+      let finishLoading = () => {}
+      vi.spyOn(replacementStore, 'load').mockReturnValue(
+        new Promise<void>((resolve) => {
+          finishLoading = resolve
+        })
+      )
+      vi.spyOn(api, 'init').mockResolvedValue()
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const listeners = [...addEventListener.mock.calls]
+      onTestFinished(() => {
+        for (const [event, listener] of listeners)
+          api.removeEventListener(event, listener)
+      })
+      const featureFlagsHandler = listeners.find(
+        ([event]) => event === 'feature_flags'
+      )?.[1] as EventListener | undefined
+
+      const handled = featureFlagsHandler?.(new CustomEvent('feature_flags'))
+      const resizeReplacement = {
+        new_node_id: 'ImageScale',
+        old_node_id: 'LegacyResize',
+        old_widget_ids: null,
+        input_mapping: null,
+        output_mapping: null
+      }
+      replacementStore.replacements = {
+        ImageBatch: [
+          {
+            new_node_id: 'BatchImagesNode',
+            old_node_id: 'ImageBatch',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        ],
+        LegacyResize: [resizeReplacement]
+      }
+      finishLoading()
+      await handled
+
+      expect(
+        useDeprecatedNodesStore().nodeTypes.map((nodeType) =>
+          typeof nodeType === 'string' ? nodeType : nodeType.type
+        )
+      ).toEqual(['ImageBatch'])
+      expect(useMissingNodesErrorStore().missingNodesError?.nodeTypes).toEqual([
+        {
+          type: 'LegacyResize',
+          nodeId: '4',
+          isReplaceable: true,
+          replacement: resizeReplacement
+        }
+      ])
+      expect(backgroundWorkflow.pendingWarnings.missingNodeTypes).toEqual([
+        {
+          type: 'LegacyResize',
+          nodeId: '7',
+          isReplaceable: true,
+          replacement: resizeReplacement
+        }
+      ])
     })
   })
 

@@ -8465,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "Bir metin senaryosu veya kendi sesinizle yönlendirilen, HeyGen Avatar 6 kullanan bir HeyGen avatarının konuştuğu video oluşturun.",
+    "display_name": "HeyGen Avatar 6 Kimlikten Videoya",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en_boy_oranı",
+        "tooltip": "'auto', avatarın kaynak görüntülerini izler."
+      },
+      "avatar": {
+        "name": "avatar"
+      },
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "model": {
+        "name": "model"
+      },
+      "motion_expressiveness": {
+        "name": "hareket_ifadeciliği",
+        "tooltip": "'less', daha az ve daha küçük jestler sağlar. Çakıştıkları yerlerde hareket istemi önceliklidir."
+      },
+      "motion_prompt": {
+        "name": "hareket_istemi",
+        "tooltip": "Jestler, ifade, duruş ve kamera hareketi."
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalıştırılıp çalıştırılmayacağını belirler; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "speech": {
+        "name": "konuşma",
+        "tooltip": "Avatarı bir metin senaryosu (HeyGen metinden sese) veya kendi sesinizle yönlendirin."
+      },
+      "speech_custom_voice_id": {
+        "name": "özel_ses_kimliği"
+      },
+      "speech_text": {
+        "name": "metin"
+      },
+      "speech_voice": {
+        "name": "ses"
+      },
+      "speech_voice_speed": {
+        "name": "ses_hızı"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "Bir fotoğraf veya videodaki kişi ya da karakterin, HeyGen Avatar 6 ile bağlı sesi konuşmasını sağlayın. Bir görüntü, video veya her ikisini bağlayın.",
+    "display_name": "HeyGen Avatar 6 Referanstan Videoya",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturmadan sonra denetle"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "en_boy_oranı"
+      },
+      "model_motion_expressiveness": {
+        "name": "hareket_ifadeciliği"
+      },
+      "model_motion_prompt": {
+        "name": "hareket_istemi"
+      },
+      "model_resolution": {
+        "name": "çözünürlük"
+      },
+      "model_seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "HeyGen avatarından konuşan sunucu videosu oluşturun. HeyGen'in en popüler herkese açık avatarlarını içerir; herhangi bir görünüm kimliği geçersiz kılma olarak girilebilir.",
     "display_name": "HeyGen Avatar Video",
@@ -10645,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "Bir metin istemi ve en fazla 10 referans görüntüsü kullanarak, tek bir görüntü veya ilişkili görüntülerden oluşan bir seri üretin ya da düzenleyin.",
+    "display_name": "Kling 4.0 Görüntü",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "en_boy_oranı",
+        "tooltip": "auto, referans görüntülerini; aksi hâlde istemi izler."
+      },
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "prompt": {
+        "name": "istem",
+        "tooltip": "Referans görüntülerine @Image1, @Image2, ... olarak başvurun."
+      },
+      "reference_images": {
+        "name": "referans_görüntüleri"
+      },
+      "resolution": {
+        "name": "çözünürlük"
+      },
+      "seed": {
+        "name": "tohum",
+        "tooltip": "Tohum, düğümün yeniden çalışıp çalışmayacağını kontrol eder; sonuçlar tohumdan bağımsız olarak deterministik değildir."
+      },
+      "series_amount": {
+        "name": "seri_miktarı",
+        "tooltip": "Aynı karakterleri ve stili koruyan ilişkili görüntülerden oluşan bir seri üretin. auto, modelin 2-10 görüntü seçmesine izin verir."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "kling-4.0 üzerinde en fazla 10 anahtar kareyle veya kling-4.0-flash üzerinde ilk kareden sesli video oluşturun. Ara kareler eşit aralıklarla yerleştirilir; video, ilk anahtar karenin en-boy oranını alır.",
     "display_name": "Kling 4.0 Görüntüden Videoya",
@@ -10665,6 +10788,32 @@
         "name": "çözünürlük"
       },
       "model_seed": {
+        "name": "tohum"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "Bir uzun görsel oluşturun: bir web sayfası tasarımı veya e-ticaret ürün ayrıntısı sayfası.",
+    "display_name": "Kling 4.0 Uzun Görsel",
+    "inputs": {
+      "control_after_generate": {
+        "name": "oluşturma sonrası kontrol"
+      },
+      "skill": {
+        "name": "beceri"
+      },
+      "skill_prompt": {
+        "name": "istem"
+      },
+      "skill_resolution": {
+        "name": "çözünürlük"
+      },
+      "skill_seed": {
         "name": "tohum"
       }
     },
@@ -25291,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "Referans görselleri, görsel düşünmeyi, iç içe geçirilmiş metni veya öz-düzeltmeyi CLIP ile kodlayın. HiDream-O1 Referans Görsellerini bu düğümden önce bağlayın ve görseller için standart bir örnekleyici kullanın. Düşünmesiz metinden görsele dönüştürme yalnızca CLIP Text Encode gerektirir; yalnızca metin çıktısı için Generate Text kullanılabilir.",
+    "display_name": "SenseNova Koşullandırma",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "koşullandırma"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "Bu çağrı sırasında üretilen en fazla token sayısı."
+      },
+      "negative": {
+        "name": "negatif"
+      },
+      "task": {
+        "name": "görev",
+        "tooltip": "Görevi seçin. İstem şablonu ve durdurma davranışı otomatik olarak ayarlanır."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "koşullandırma",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "Bu çağrı tarafından üretilen metin. Tam sonuç için SenseNova İç İçe Geçirme Kod Çözme kullanın."
+      },
+      "2": {
+        "name": "negatif",
+        "tooltip": "İç içe geçirme ve öz-düzeltme için güncellenmiş negatif koşullandırma."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "U1.6 öz-düzeltme dahil olmak üzere SenseNova Koşullandırma tarafından oluşturulan iç içe geçirme geçmişinden üretilen metni, görselleri ve düşünmeyi ayıklayın. Döngülerde, biriktirme devre dışıyken End Loop kullanın. Giriş referans görselleri hariç tutulur. Görsel üretilmediğinde görsel kullanan düğümler atlanır.",
+    "display_name": "SenseNova İç İçe Geçirme Kod Çözme",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "koşullandırma"
+      },
+      "samples": {
+        "name": "örnekler",
+        "tooltip": "Döngü bir görsel isteğinde sona erdiyse son KSampler piksel latent'i."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "görseller",
+        "tooltip": null
+      },
+      "2": {
+        "name": "düşünme",
         "tooltip": null
       }
     }

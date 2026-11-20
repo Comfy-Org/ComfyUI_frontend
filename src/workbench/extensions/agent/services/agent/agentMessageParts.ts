@@ -31,6 +31,8 @@ export interface ToolPart {
   callId: string
   name: string
   skill?: string
+  /** The model file a bash `comfy model download` call fetches, named live. */
+  download?: string
   state: PartState
   ok?: boolean
   durationMs?: number
@@ -51,6 +53,8 @@ export interface ThinkingPart {
   text: string
   state: PartState
   durationMs?: number
+  /** The stored reasoning stops being whole here. */
+  truncated?: boolean
 }
 
 export interface NoticePart {

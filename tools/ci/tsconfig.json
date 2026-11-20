@@ -1,0 +1,14 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.cache/tsbuildinfo/ci.tsbuildinfo",
+    "resolveJsonModule": true,
+    "types": ["node", "vitest/globals", "vite/client"]
+  },
+  "include": [
+    "src/**/*.ts",
+    "../../browser_tests/types/**/*.d.ts",
+    "../../src/types/**/*.d.ts",
+    "../../global.d.ts"
+  ]
+}

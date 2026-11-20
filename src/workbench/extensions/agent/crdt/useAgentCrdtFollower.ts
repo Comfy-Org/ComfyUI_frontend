@@ -27,6 +27,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type {
+  AgentCanvasStaleCause,
   AgentCrdtOutcomeCounters,
   AgentCrdtTerminalState,
   AgentCrdtStatus
@@ -74,6 +75,8 @@ interface ProjectionFrameId {
   seq: number
   isLive?: boolean
 }
+
+type SyncStaleCause = Exclude<AgentCanvasStaleCause, 'projection_failed' | null>
 
 const NOTHING_APPLIED: FrameOutcome = {
   applied: false,
@@ -325,6 +328,7 @@ export function useAgentCrdtFollower(
     enabled: false,
     connected: false,
     canvasMayBeStale: false,
+    canvasStaleCause: null,
     workflowId: null,
     updatesApplied: 0,
     lastFrameType: null,
@@ -418,8 +422,16 @@ function startAgentCrdtFollower(
   let catchUpAwaitingProjectionFor: string | null = null
   const syncCanvasMayBeStale = ref(false)
   const projectionFailureFor = ref<string | null>(null)
+  const syncStaleCause = ref<SyncStaleCause | null>(null)
   const canvasMayBeStale = computed(
     () => syncCanvasMayBeStale.value || projectionFailureFor.value !== null
+  )
+  const canvasStaleCause = computed<AgentCanvasStaleCause>(() =>
+    syncCanvasMayBeStale.value
+      ? syncStaleCause.value
+      : projectionFailureFor.value !== null
+        ? 'projection_failed'
+        : null
   )
   const terminal = ref<AgentCrdtTerminalState>(null)
   const updatesApplied = ref(0)
@@ -465,8 +477,9 @@ function startAgentCrdtFollower(
   const projection = new AgentCrdtProjection(getGraph, applierDeps)
   const pendingRejected = new Map<string, Op[]>()
 
-  function markCanvasStale(): void {
+  function markCanvasStale(cause: SyncStaleCause): void {
     syncCanvasMayBeStale.value = true
+    syncStaleCause.value = cause
     catchUpAwaitingProjectionFor = null
   }
 
@@ -481,6 +494,7 @@ function startAgentCrdtFollower(
 
   function clearSyncStaleness(): void {
     syncCanvasMayBeStale.value = false
+    syncStaleCause.value = null
     catchUpAwaitingProjectionFor = null
   }
 
@@ -493,6 +507,7 @@ function startAgentCrdtFollower(
 
   function clearCanvasStaleness(): void {
     syncCanvasMayBeStale.value = false
+    syncStaleCause.value = null
     projectionFailureFor.value = null
     catchUpAwaitingProjectionFor = null
   }
@@ -578,10 +593,15 @@ function startAgentCrdtFollower(
     const lost = classifyLostEdits(outcome)
     const anyLost = lost.overwritten.length + lost.unconfirmed.length > 0
     if (anyLost) rejectedOpNotifier.notifyLostEdits(result, lost)
-    const applied = new Set(result.applied)
+    const lostIds = new Set(
+      [...lost.overwritten, ...lost.unconfirmed].map((op) => op.op_id)
+    )
+    const accepted = new Set([...result.applied, ...result.skipped])
     const reverted = result.ok
       ? [...lost.overwritten, ...lost.unconfirmed]
-      : outcome.ops.filter((op) => !applied.has(op.op_id))
+      : outcome.ops.filter(
+          (op) => !accepted.has(op.op_id) || lostIds.has(op.op_id)
+        )
     const workflowId = result.workflowId ?? bridge.subscribedWorkflowId
     if (workflowId === null || (result.ok && !anyLost)) return
     revertRejectedOps(workflowId, reverted, result.seq)
@@ -1014,7 +1034,7 @@ function startAgentCrdtFollower(
     recordUnsynced()
     events.onReset?.(detail.workflowId)
     connected.value = false
-    markCanvasStale()
+    markCanvasStale('doc_reset')
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -1048,7 +1068,7 @@ function startAgentCrdtFollower(
   const staleClientNotified = new Set<string>()
   const onSchemaError: EventListener = (event) => {
     connected.value = false
-    markCanvasStale()
+    markCanvasStale('schema_error')
     terminal.value = 'schema_error'
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
@@ -1091,7 +1111,7 @@ function startAgentCrdtFollower(
   }
   const onGap: EventListener = (event) => {
     connected.value = false
-    markCanvasStale()
+    markCanvasStale('doc_gap')
     outcomes.value = { ...outcomes.value, gap: outcomes.value.gap + 1 }
     recordDevEvent(
       'doc_gap',
@@ -1113,7 +1133,7 @@ function startAgentCrdtFollower(
   }
   function onSocketStatus(live: boolean): void {
     if (!live) {
-      if (connected.value) markCanvasStale()
+      if (connected.value) markCanvasStale('socket_closed')
       connected.value = false
       return
     }
@@ -1220,7 +1240,8 @@ function startAgentCrdtFollower(
   ): void => {
     if (next !== null) initialBind = false
     if (next !== null && next === previousWorkflowId) {
-      if (connected.value || canvasMayBeStale.value) markCanvasStale()
+      if (connected.value || canvasMayBeStale.value)
+        markCanvasStale('tab_inactive')
       connected.value = false
       holdOpsForInactiveTab(next)
       return
@@ -1324,6 +1345,7 @@ function startAgentCrdtFollower(
     enabled: true,
     connected: connected.value,
     canvasMayBeStale: canvasMayBeStale.value,
+    canvasStaleCause: canvasStaleCause.value,
     workflowId: subscribedWorkflowId.value,
     terminal: terminal.value,
     updatesApplied: updatesApplied.value,

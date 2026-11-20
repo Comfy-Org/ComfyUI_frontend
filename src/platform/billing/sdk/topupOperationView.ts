@@ -186,6 +186,12 @@ export function projectTopupResult(
   }
 }
 
+/** A quote's credits, and whether Cloud named a payment configuration for paying it in the page. */
+export interface TopupQuoteFacts {
+  readonly credits: number
+  readonly paymentConfigured: boolean
+}
+
 export type HostedCheckoutSession = Pick<
   Extract<HostedTopupCheckoutResult, { status: 'ok' }>,
   'url' | 'sessionId'

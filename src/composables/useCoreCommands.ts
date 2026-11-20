@@ -1,4 +1,3 @@
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
@@ -32,10 +31,11 @@ import { openModelLibraryBrowser } from '@/platform/assets/composables/openModel
 import { isSalesManagedTier } from '@/platform/billing/subscription/constants/tierPricing'
 import { subscribeToRunDialogOptions } from '@/platform/billing/subscription/utils/subscribeToRunDialogOptions'
 import { isCloud } from '@/platform/distribution/types'
+import { useUnreadyDeploymentRun } from '@/platform/workspace/composables/useUnreadyDeploymentRun'
 import { useMissingModelStore } from '@/platform/workflowErrors/missingModel/missingModelStore'
 import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { buildSupportUrl } from '@/platform/support/config'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import type { ExecutionTriggerSource } from '@comfyorg/telemetry/types'
@@ -99,6 +99,31 @@ export function useCoreCommands(): ComfyCommand[] {
     type: billingType
   } = useBillingContext()
   const { showSubscriptionDialog } = useSubscriptionPaywall()
+  const { openSwitcherInsteadOfRun } = useUnreadyDeploymentRun()
+
+  function activeWorkflowTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow]
+  }
+
+  function selectedNodesTarget(): readonly unknown[] {
+    return [workflowStore.activeWorkflow, ...getSelectedNodes()]
+  }
+
+  async function deploymentStopsRun(
+    runTarget: () => readonly unknown[]
+  ): Promise<boolean> {
+    const canvasStore = useCanvasStore()
+    if (canvasStore.isPickingNodes) return false
+    const asked = runTarget()
+    return openSwitcherInsteadOfRun(() => {
+      if (canvasStore.isPickingNodes) return false
+      const now = runTarget()
+      return (
+        asked.length === now.length &&
+        asked.every((item, index) => item === now[index])
+      )
+    })
+  }
 
   async function blockRunWithoutSubscription(): Promise<boolean> {
     if (!isCloud) return false
@@ -561,6 +586,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -581,6 +607,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(activeWorkflowTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -600,6 +627,7 @@ export function useCoreCommands(): ComfyCommand[] {
         subscribe_to_run?: boolean
         trigger_source?: ExecutionTriggerSource
       }) => {
+        if (await deploymentStopsRun(selectedNodesTarget)) return
         trackRunButton(metadata)
         if (await blockRunWithoutSubscription()) return
 
@@ -933,12 +961,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Contact Support',
       versionAdded: '1.17.8',
       function: () => {
-        const { userEmail, resolvedUserInfo } = useCurrentUser()
-        const supportUrl = buildSupportUrl({
-          userEmail: userEmail.value,
-          userId: resolvedUserInfo.value?.id
-        })
-        window.open(supportUrl, '_blank', 'noopener,noreferrer')
+        openSupportForm('question')
       }
     },
     {

@@ -37,7 +37,8 @@ const CHECKOUT_PATH =
 
 vi.mock<unknown>(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test',
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
+  PLATFORM_BASE_URL: 'https://testplatform.comfy.org'
 }))
 
 vi.mock(import('@/config/stripeKey'), () => ({
