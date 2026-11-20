@@ -233,6 +233,24 @@ describe('workflowDraftStoreV2', () => {
       expect(store.getDraft('workflows/draft32.json')?.data).toBe('{"id":32}')
     })
 
+    it('updates a recovery draft after ordinary saves exceed the legacy limit', () => {
+      const store = useWorkflowDraftStoreV2()
+      saveNumberedDrafts(store, MAX_DRAFTS + 1)
+
+      expect(
+        store.saveDraft(
+          'workflows/draft0.json',
+          '{"id":0,"checkpoint":true}',
+          { name: 'draft0', isTemporary: true },
+          { evict: false }
+        )
+      ).toBe(true)
+      expect(store.getDraft('workflows/draft0.json')?.data).toBe(
+        '{"id":0,"checkpoint":true}'
+      )
+      expect(readIndex(WORKSPACE)?.order).toHaveLength(MAX_DRAFTS + 1)
+    })
+
     it('keeps older drafts when an incoming payload hits quota', () => {
       const store = useWorkflowDraftStoreV2()
       store.saveDraft('workflows/first.json', '{"id":"first"}', {

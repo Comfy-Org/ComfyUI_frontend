@@ -167,11 +167,13 @@ export const useWorkflowDraftStoreV2 = defineStore('workflowDraftV2', () => {
     const index = evict
       ? loadIndex()
       : (readIndex(workspaceId) ?? createEmptyIndex())
+    const draftLimit =
+      evict || draftKey in index.entries ? Number.POSITIVE_INFINITY : MAX_DRAFTS
     const { index: newIndex, evicted } = upsertEntry(
       index,
       path,
       { ...meta, updatedAt: now },
-      evict ? Number.POSITIVE_INFINITY : MAX_DRAFTS
+      draftLimit
     )
     if (!evict && evicted.length > 0) return false
     const previousPayload = readPayload(workspaceId, draftKey)
