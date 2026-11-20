@@ -61,7 +61,20 @@ export const noDirectWebStorage: Rule = {
       return false
     }
 
-    function isGlobalObject(node: AnyNode): boolean {
+    function unwrap(node: AnyNode): AnyNode {
+      let current = node
+      while (
+        current.type === 'TSAsExpression' ||
+        current.type === 'TSNonNullExpression' ||
+        current.type === 'TSSatisfiesExpression' ||
+        current.type === 'ParenthesizedExpression'
+      )
+        current = current.expression
+      return current
+    }
+
+    function isGlobalObject(target: AnyNode): boolean {
+      const node = unwrap(target)
       return (
         node.type === 'Identifier' &&
         GLOBAL_OBJECTS.has(node.name) &&
@@ -101,9 +114,11 @@ export const noDirectWebStorage: Rule = {
       },
       VariableDeclarator(node) {
         if (node.id.type !== 'ObjectPattern') return
-        if (node.init?.type !== 'Identifier') return
-        const fromGlobal = isGlobalObject(node.init)
-        const fromVueuse = isVueuseNamespace(node.init, node.init.name)
+        if (!node.init) return
+        const init = unwrap(node.init)
+        if (init.type !== 'Identifier') return
+        const fromGlobal = isGlobalObject(init)
+        const fromVueuse = isVueuseNamespace(init, init.name)
         if (!fromGlobal && !fromVueuse) return
         const banned = fromGlobal ? STORAGE_GLOBALS : VUEUSE_STORAGE_COMPOSABLES
         for (const property of node.id.properties) {

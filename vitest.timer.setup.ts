@@ -1,10 +1,5 @@
 import { afterEach, beforeEach, vi } from 'vitest'
 
-import {
-  safeLocalStorage,
-  safeSessionStorage
-} from '@/base/storage/safeStorage'
-
 function nodeNameFor(node: Node, fallback: (this: Node) => unknown) {
   let prototype = Object.getPrototypeOf(node)
   while (prototype !== Node.prototype) {
@@ -56,8 +51,6 @@ beforeEach(() => {
   resetHistory()
   clearLocalStorage()
   clearSessionStorage()
-  safeLocalStorage.reset()
-  safeSessionStorage.reset()
   vi.useFakeTimers()
 })
 

@@ -14,6 +14,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import {
@@ -37,7 +38,6 @@ import {
   clearAllWorkspaceStorage,
   clearWorkflowRestoreState,
   completeWorkflowLogoutTransition,
-  isStorageAvailable,
   prepareWorkflowLogoutTransition,
   registerWorkflowPersistenceFlush
 } from '@/platform/workflow/persistence/base/storageIO'
@@ -126,7 +126,7 @@ export function useWorkflowPersistenceV2() {
     )
 
     if (!saved) {
-      if (!isStorageAvailable()) {
+      if (!safeLocalStorage.isPersistent) {
         if (storageUnavailableWarned) return
         storageUnavailableWarned = true
       }

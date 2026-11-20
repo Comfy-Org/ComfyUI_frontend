@@ -61,8 +61,12 @@ const area = { storageArea: localStorage }
 window.localStorage.getItem('a')
 globalThis.sessionStorage
 self['localStorage']
+;(window as Window).localStorage
+window!.sessionStorage
 `,
       errors: [
+        { messageId: 'global' },
+        { messageId: 'global' },
         { messageId: 'global' },
         { messageId: 'global' },
         { messageId: 'global' }
@@ -73,8 +77,13 @@ self['localStorage']
       code: `
 const { localStorage } = window
 const { sessionStorage: session } = globalThis
+const { localStorage: cast } = window as Window
 `,
-      errors: [{ messageId: 'global' }, { messageId: 'global' }]
+      errors: [
+        { messageId: 'global' },
+        { messageId: 'global' },
+        { messageId: 'global' }
+      ]
     },
     {
       name: 'VueUse storage composables via namespace import and re-export',
