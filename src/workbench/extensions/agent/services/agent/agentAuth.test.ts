@@ -22,6 +22,7 @@ import {
   agentSocketAuthParams,
   ensureSignedIn,
   agentSettingsAuthHeader,
+  hasAgentCredential,
   peekLastAgentCredential,
   withAgentAuth
 } from './agentAuth'
@@ -119,6 +120,24 @@ describe('agentSettingsAuthHeader', () => {
     )
 
     await expect(agentSettingsAuthHeader()).resolves.toBeNull()
+  })
+})
+
+describe('hasAgentCredential', () => {
+  it('is false with no account and no stored key, which is what opens the sign-in dialog', () => {
+    expect(hasAgentCredential()).toBe(false)
+  })
+
+  it('is true for a signed-in account', () => {
+    Object.assign(useAuthStore(), { isAuthenticated: true })
+
+    expect(hasAgentCredential()).toBe(true)
+  })
+
+  it('is true for a stored API key with no account', () => {
+    storedApiKey('comfyui-key')
+
+    expect(hasAgentCredential()).toBe(true)
   })
 })
 
