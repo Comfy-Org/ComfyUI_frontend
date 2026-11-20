@@ -7,8 +7,10 @@ vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
 
 import {
   reportPreloadError,
+  reportPreloadErrorUnlessExtensionImport,
   reportResourceLoadError
 } from './assetLoadErrorReporting'
+import { claimExtensionImportError } from './customNodeLoadTelemetry'
 
 describe('asset load error reporting', () => {
   beforeEach(() => {})
@@ -93,6 +95,35 @@ describe('asset load error reporting', () => {
         })
       )
       expect(console.error).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('a preload failure left to reject at its importer', () => {
+    beforeEach(() => {
+      vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    })
+
+    it('is reported once its importer has had the chance to claim it', () => {
+      const error = new Error('Importing a module script failed.')
+
+      reportPreloadErrorUnlessExtensionImport(error)
+      expect(mockReportError).not.toHaveBeenCalled()
+      vi.runAllTimers()
+
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        error,
+        expect.objectContaining({ errorType: 'vite_preload_error' })
+      )
+    })
+
+    it('is left to the extension loader when it claimed the failure', () => {
+      const error = new SyntaxError("Unexpected token '}'")
+
+      reportPreloadErrorUnlessExtensionImport(error)
+      claimExtensionImportError(error)
+      vi.runAllTimers()
+
+      expect(mockReportError).not.toHaveBeenCalled()
     })
   })
 

@@ -30,7 +30,7 @@ test.describe(
         agent.applyAndBroadcast([addLoadImageNode(retainedNodeId, 0)])
         await expect(agent.node(retainedNodeId)).toBeVisible()
         await agent.vueNodes.selectNode(String(retainedNodeId))
-        await expect(agent.vueNodes.selectedNodes).toHaveCount(1)
+        await expect(agent.vueNodes.emphasizedNodes).toHaveCount(1)
       })
 
       await test.step('close the panel while the host moves on', async () => {
@@ -53,9 +53,10 @@ test.describe(
       })
 
       await test.step('keep the existing canvas and never write the document', async () => {
-        await expect(agent.vueNodes.selectedNodes).toHaveCount(1)
-        await expect(agent.node(retainedNodeId)).toHaveClass(
-          /outline-foreground/
+        await expect(agent.vueNodes.emphasizedNodes).toHaveCount(1)
+        await expect(agent.node(retainedNodeId)).toHaveAttribute(
+          'data-emphasized',
+          'true'
         )
         expect(await agent.settledCanvasNodeIds()).toEqual(
           [retainedNodeId, missedNodeId, liveNodeId].map(String).sort()

@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import { zAgentAskConflict } from '@comfyorg/ingest-types/zod'
 import type { AgentAnswerRequest } from '@comfyorg/ingest-types'
 import { useIntervalFn } from '@vueuse/core'
@@ -16,7 +17,8 @@ import type {
   AgentStopClickedMetadata,
   AgentStopMethod,
   AgentThreadStartSource,
-  AgentWorkflowBindSource
+  AgentWorkflowBindSource,
+  AgentWorkflowSyncErrorCode
 } from '@comfyorg/telemetry/types'
 import { clearLegacyAgentStorage } from '@/platform/workflow/persistence/base/storageIO'
 import {
@@ -159,10 +161,13 @@ export interface AgentSessionDeps {
     tabs?(origin?: TurnOrigin): OpenTabsSnapshot | undefined
     activeTab?(data: AgentActiveTabData): void
     draft?(origin?: TurnOrigin): DraftSnapshot | undefined
+    /** Node ids selected on the target canvas, outside node selection mode. */
+    canvasSelection?(): string[]
   }
 }
 
 const PREPARE_TIMEOUT_MS = 3000
+const MAX_CANVAS_SELECTION_IDS = 20
 const RECONCILE_TIMEOUT_MS = 5000
 
 interface HydrationBuffer {
@@ -332,10 +337,14 @@ export function trackAgentError(
      * rather than deriving it twice and risking them disagreeing.
      */
     diagnostics?: AgentRequestFailureDiagnostics
+    syncErrorCode?: AgentWorkflowSyncErrorCode
   } = {}
 ): void {
   useTelemetry()?.trackAgentError({
     ...overrides.diagnostics,
+    ...(overrides.syncErrorCode !== undefined && {
+      sync_error_code: overrides.syncErrorCode
+    }),
     error_class: errorClass,
     failure_stage: stage,
     retryable: overrides.retryable ?? stage === 'pre_acceptance',
@@ -1242,7 +1251,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[],
     selectionWorkflowId?: () => string | undefined,
-    clientMessageId?: string
+    clientMessageId?: string,
+    canvasNodeIds?: string[]
   ): PostMessageInput {
     const tabs = workflow?.tabs?.(origin)
     const unboundTarget = isUnboundTarget(
@@ -1260,6 +1270,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
         wfContext?.id
       ),
       selection: selectedNodes(tags, selectedWorkflowId),
+      canvasSelection: plainCanvasSelection(
+        canvasNodeIds,
+        tags,
+        selectedWorkflowId
+      ),
       attachments: attachments?.map((attachment) => attachment.ref),
       clientMessageId,
       ...buildTargetFields(threadId, wfContext, draft, unboundTarget)
@@ -1285,6 +1300,25 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (tags === undefined || tags.length === 0) return undefined
     return {
       node_ids: tags.map((tag) => tag.id),
+      ...(selectedWorkflowId !== undefined
+        ? { workflow_id: selectedWorkflowId }
+        : {})
+    }
+  }
+
+  function plainCanvasSelection(
+    canvasNodeIds: string[] | undefined,
+    tags: SentTag[] | undefined,
+    selectedWorkflowId: string | undefined
+  ) {
+    const tagged = new Set((tags ?? []).map((tag) => tag.id))
+    const nodeIds = (canvasNodeIds ?? []).filter((id) => !tagged.has(id))
+    if (nodeIds.length === 0) return undefined
+    return {
+      node_ids: nodeIds.slice(0, MAX_CANVAS_SELECTION_IDS),
+      ...(nodeIds.length > MAX_CANVAS_SELECTION_IDS
+        ? { total_selected: nodeIds.length }
+        : {}),
       ...(selectedWorkflowId !== undefined
         ? { workflow_id: selectedWorkflowId }
         : {})
@@ -1613,6 +1647,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const originContext = workflow?.current()
     const origin: TurnOrigin =
       originContext === undefined ? null : { tabPath: originContext.tabPath }
+    const canvasNodeIds = workflow?.canvasSelection?.()
     let sentContext: WorkflowTurnContext | undefined
     let accepted = false
     try {
@@ -1633,11 +1668,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
         tags,
         workflowReferences,
         selectionWorkflowId,
-        clientMessageId
+        clientMessageId,
+        canvasNodeIds
       )
       const ack = await postTurn(threadAtSend, input, wfContext)
       accepted = true
-      if (!observeAcceptedTurn(generation, onAccepted)) return false
+      if (!observeAcceptedTurn(generation, ack, threadAtSend, onAccepted))
+        return false
       acceptTurn(
         ack,
         text,
@@ -1663,13 +1700,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   function observeAcceptedTurn(
     generation: number,
+    ack: AgentTurnAccepted,
+    threadAtSend: string,
     onAccepted?: () => void
   ): boolean {
     runAcceptedTurnSideEffect(
       () => onAccepted?.(),
       'agent_turn_accepted_callback_failed'
     )
-    return generation === loadGeneration
+    const isCurrent = generation === loadGeneration
+    if (!isCurrent) {
+      reportError(
+        new Error('agent turn accepted after the send generation moved on'),
+        {
+          surface: 'agent',
+          errorType: 'failure_tracking_agent_accepted_turn_generation_change',
+          context: {
+            threadAtSend,
+            ackThreadId: ack.thread_id,
+            turnId: toTurnId(ack.message_id)
+          }
+        }
+      )
+    }
+    return isCurrent
   }
 
   function workflowTargetChanged(
@@ -2464,8 +2518,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const reconnected = connection === 'dropped'
     const firstLive = connection === 'initial'
     connection = 'live'
-    if (reconnected) reconcileLiveTurns('reconnect')
-    else if (firstLive) reconcileLiveTurns('hydrate')
+    if (reconnected) {
+      conversationStore.markActiveTurnMissedFrames()
+      reconcileLiveTurns('reconnect')
+    } else if (firstLive) reconcileLiveTurns('hydrate')
   }
 
   function reconcileLiveTurns(cause: RecoveryCause): void {
@@ -2669,7 +2725,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       if (!isTurnLive(turn, generation)) return false
       const deliveredBeforeFetch = new Set(deliveredAsks)
       const outcome = await fetchTurnOutcome(turn, signal)
-      signal.throwIfAborted()
+      throwIfAborted(signal)
       if (!isTurnLive(turn, generation)) return false
       const consecutiveThreadMissing = recordThreadAvailability(key, outcome)
       pruneRecoveryLedgers()

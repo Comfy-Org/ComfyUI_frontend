@@ -8,12 +8,6 @@
  * Batches are strictly serialized: one in-flight batch at a time, FIFO, so
  * op order on the wire matches mint order. `base_version` is read at mint
  * time from the follower's last observed sequence.
- *
- * Outcome handling is deliberately the TODAY contract: `doc_ops_result` is a
- * binary applied/skipped split. The prefix-abort reconcile and per-op
- * outcome-union surfacing (lww-dropped, op_rejected, ...) land when the host
- * frame upgrade ships (a required backend dependency, recorded on the plan);
- * `onResult` is the seam they will replace.
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
@@ -29,6 +23,7 @@ import {
 } from './opEnvelope'
 import type { SizedOp } from './opEnvelope'
 import { reportLostEdit } from './reportLostEdit'
+import type { UnboundAbortReason } from './reportLostEdit'
 
 const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
@@ -40,7 +35,7 @@ const MAX_FAILURE_REPORTS_PER_WINDOW = 3
  * Admits at most {@link MAX_FAILURE_REPORTS_PER_WINDOW} reports per
  * {@link FAILURE_REPORT_WINDOW_MS}; the window re-arms by time, not by success.
  */
-function createReportBudget(): () => boolean {
+export function createReportBudget(): () => boolean {
   let reports = 0
   let windowStartedAt: number | null = null
   return () => {
@@ -66,7 +61,7 @@ function createReportBudget(): () => boolean {
  */
 export type OpsResultView = Pick<
   DocOpsResult,
-  'ok' | 'seq' | 'applied' | 'skipped' | 'code' | 'failed'
+  'ok' | 'seq' | 'applied' | 'skipped' | 'lwwDropped' | 'code' | 'failed'
 > &
   Partial<Pick<DocOpsResult, 'workflowId'>>
 
@@ -100,7 +95,13 @@ export interface OpSenderDeps {
 }
 
 export type BatchOutcome =
-  | { state: 'acknowledged'; ops: Op[]; result: OpsResultView }
+  | {
+      state: 'acknowledged'
+      ops: Op[]
+      result: OpsResultView
+      /** The batch was sent again, so a skipped op may be a lost first send. */
+      resent?: boolean
+    }
   | { state: 'unacknowledged'; ops: Op[] }
   | { state: 'unconfirmed'; ops: Op[] }
   | { state: 'undeliverable'; ops: Op[] }
@@ -161,8 +162,12 @@ export interface OpSender {
    * a live socket, so this stays a no-op there by design — the batch rides
    * the result timer to its idempotent resend, which is the right outcome
    * (the ops may well have landed), not `undeliverable`.
+   *
+   * `reason`, when given, is carried into the lost-edit report so a refused
+   * resubscribe and a tab-switch retarget are distinguishable instead of
+   * both collapsing into the bare `'unbound'` code.
    */
-  abortIfUnbound(): void
+  abortIfUnbound(reason?: UnboundAbortReason): void
   /**
    * Lineage-break seam: settle the in-flight batch ('unconfirmed' once
    * transmitted, 'undeliverable' otherwise) and every queued batch
@@ -285,16 +290,21 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   function guardedSettlementNotifier(
     errorType: string,
     code: string
-  ): (outcome: BatchOutcome, workflowId: string | null) => void {
+  ): (
+    outcome: BatchOutcome,
+    workflowId: string | null,
+    reason?: UnboundAbortReason
+  ) => void {
     let reportedFailure = false
-    return (outcome, workflowId) => {
+    return (outcome, workflowId, reason) => {
       if (outcome.state !== 'acknowledged')
         reportLostEdit(
           outcome.state,
           outcome.ops,
           {
             code,
-            workflowId: workflowId ?? undefined
+            workflowId: workflowId ?? undefined,
+            reason
           },
           { shouldReport: mayReportLostEdit() }
         )
@@ -312,25 +322,44 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     'failure_settling_agent_op_sender_detach',
     'detached'
   )
-  function settle(outcome: BatchOutcome, code: string): void {
+  function settle(
+    outcome: BatchOutcome,
+    code: string,
+    reason?: UnboundAbortReason
+  ): void {
     const workflowId = inFlight?.workflowId ?? null
     if (inFlight?.timer) clearTimeout(inFlight.timer)
     inFlight = null
     guardedSettlementNotifier('failure_settling_agent_op_sender', code)(
       outcome,
-      workflowId
+      workflowId,
+      reason
     )
     pump()
   }
 
+  function shouldPark(batch: InFlight): boolean {
+    return (
+      suspended &&
+      (pendingAbortReason?.workflowId !== batch.workflowId ||
+        deps.workflowId() === batch.workflowId)
+    )
+  }
+
   function transmit(batch: InFlight, attempt: number): void {
     if (detached || inFlight !== batch) return
-    if (suspended) {
+    if (shouldPark(batch)) {
       batch.parked = true
       return
     }
     if (deps.workflowId() !== batch.workflowId) {
-      settleUnbound(batch, 'unbound')
+      settleUnbound(
+        batch,
+        'unbound',
+        pendingAbortReason?.workflowId === batch.workflowId
+          ? pendingAbortReason.reason
+          : undefined
+      )
       return
     }
     if (!trySend(batch)) {
@@ -401,7 +430,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }
   }
 
-  function settleUnbound(batch: InFlight, code: string): void {
+  let pendingAbortReason: {
+    workflowId: string
+    reason: UnboundAbortReason | undefined
+  } | null = null
+
+  function settleUnbound(
+    batch: InFlight,
+    code: string,
+    reason?: UnboundAbortReason
+  ): void {
     if (inFlight !== batch) return
     retire(batch, 0)
     settle(
@@ -409,7 +447,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
         state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
         ops: batch.ops
       },
-      code
+      code,
+      reason
     )
   }
 
@@ -684,7 +723,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function settleResult(batch: InFlight, result: OpsResultView): void {
     retire(batch, 1)
-    settle({ state: 'acknowledged', ops: batch.ops, result }, 'host_result')
+    settle(
+      {
+        state: 'acknowledged',
+        ops: batch.ops,
+        result,
+        ...(batch.sends > 1 && { resent: true })
+      },
+      'host_result'
+    )
   }
 
   function settleIdentifiedResult(
@@ -753,9 +800,15 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       inFlight.awaitingTransport = false
       transmit(inFlight, 0)
     },
-    abortIfUnbound() {
+    abortIfUnbound(reason) {
       if (inFlight && deps.workflowId() !== inFlight.workflowId) {
-        settleUnbound(inFlight, 'unbound')
+        const previousAbortReason = pendingAbortReason
+        pendingAbortReason = { workflowId: inFlight.workflowId, reason }
+        try {
+          settleUnbound(inFlight, 'unbound', reason)
+        } finally {
+          pendingAbortReason = previousAbortReason
+        }
       }
     },
     abortAll() {

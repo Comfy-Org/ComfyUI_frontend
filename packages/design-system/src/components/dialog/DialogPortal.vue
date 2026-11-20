@@ -22,6 +22,7 @@ watch(open, (isOpen) => {
   <DialogPortal :key="openCount" v-bind="props">
     <div
       ref="portalTarget"
+      data-slot="dialog-portal"
       class="pointer-events-none fixed inset-0 z-overlay *:pointer-events-auto empty:hidden"
     >
       <ConfigProvider

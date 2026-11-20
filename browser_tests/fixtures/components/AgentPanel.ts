@@ -51,6 +51,7 @@ export class AgentPanel {
   public readonly loadRetryButton: Locator
   public readonly nodeSelectionBanner: Locator
   public readonly openButton: Locator
+  public readonly referenceMenu: Locator
   public readonly replyAssetThumbnails: Locator
   public readonly replyAssetTiles: Locator
   public readonly resizeHandle: Locator
@@ -61,6 +62,7 @@ export class AgentPanel {
   public readonly settingsSwitch: Locator
   public readonly stopButton: Locator
   public readonly suggestedPrompts: Locator
+  public readonly thinkingShortenedNotices: Locator
   public readonly userMessageBubbles: Locator
   private readonly toasts: ToastHelper
   public readonly workflowPicker: Locator
@@ -136,6 +138,7 @@ export class AgentPanel {
       name: enMessages.agent.entryButton,
       exact: true
     })
+    this.referenceMenu = this.root.getByTestId('agent-reference-menu')
     this.replyAssetThumbnails = this.root.getByRole('img', {
       name: /^mesh-\d+/
     })
@@ -158,6 +161,9 @@ export class AgentPanel {
     this.suggestedPrompts = this.root
       .getByTestId('suggested-prompts')
       .getByRole('button', { includeHidden: true })
+    this.thinkingShortenedNotices = this.root.getByTestId(
+      TestIds.agent.thinkingShortened
+    )
     this.userMessageBubbles = this.root.getByTestId('user-message-bubble')
     this.workflowPicker = this.root.getByRole('button', {
       name: enMessages.agent.switchWorkflow
@@ -205,6 +211,12 @@ export class AgentPanel {
         .toBeCloseTo(target, 0)
     }
     await expect(this.scrollAssetsRight).toBeDisabled()
+  }
+
+  thinkingShortenedNoticeIn(roundText: string): Locator {
+    return this.activityRows
+      .filter({ hasText: roundText })
+      .getByTestId(TestIds.agent.thinkingShortened)
   }
 
   activityRow(label: string): Locator {

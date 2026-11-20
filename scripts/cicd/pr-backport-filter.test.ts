@@ -271,6 +271,14 @@ describe('pr-backport filter-targets', () => {
         }
       },
       {
+        name: "a head branch named after this PR's bot branch with a suffix",
+        pr: {
+          ...handMade,
+          head: 'backport-21829-to-core-1.57-port',
+          body: 'The bot cherry-pick conflicted.'
+        }
+      },
+      {
         name: 'the number in the head branch',
         pr: { ...handMade, body: 'PR 21829 conflicted on this branch.' }
       }

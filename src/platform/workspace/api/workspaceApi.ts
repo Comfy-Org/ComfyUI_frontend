@@ -1,3 +1,4 @@
+import { throwIfAborted } from '@comfyorg/api-client/abortSignal'
 import type { AxiosRequestConfig } from 'axios'
 
 import type {
@@ -166,7 +167,7 @@ export const workspaceApi = {
     signal?: AbortSignal
   ): Promise<void> {
     const auth = await requestAuth()
-    signal?.throwIfAborted()
+    throwIfAborted(signal)
     try {
       await workspaceApiClient.put(
         ingestApiUrl(`/workspaces/${workspaceId}/deployment`),
@@ -197,15 +198,17 @@ export const workspaceApi = {
   },
   async clearDeployment(
     workspaceId: WorkspaceId,
-    options: { follow?: 'workspace' } = {}
+    options: { follow?: 'workspace'; signal?: AbortSignal } = {}
   ): Promise<void> {
     const auth = await requestAuth()
+    throwIfAborted(options.signal)
     try {
       await workspaceApiClient.delete(
         ingestApiUrl(`/workspaces/${workspaceId}/deployment`),
         {
           ...auth,
-          params: options.follow ? { follow: options.follow } : undefined
+          params: options.follow ? { follow: options.follow } : undefined,
+          ...(options.signal ? { signal: options.signal } : {})
         }
       )
     } catch (err) {

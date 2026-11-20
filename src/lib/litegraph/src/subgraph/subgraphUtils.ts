@@ -37,6 +37,7 @@ import type {
   SubgraphIO
 } from '@comfyorg/graph-model/serialisation'
 
+import { hostInputOf } from './hostInput'
 import { SubgraphInputNode } from './SubgraphInputNode'
 
 import { SubgraphOutputNode } from './SubgraphOutputNode'
@@ -228,29 +229,37 @@ export function multiClone(nodes: Iterable<LGraphNode>): ISerialisedNode[] {
   return Array.from(nodes, (node) => structuredClone(node.serialize()))
 }
 
+export function isSlotInRange(slot: number, slotCount: number): boolean {
+  return Number.isInteger(slot) && slot >= 0 && slot < slotCount
+}
+
+/** Whether either end of an inner link names a node or slot that does not exist. */
+export function isUnresolvableSubgraphLink(
+  subgraph: Subgraph,
+  link: LLink
+): boolean {
+  const originOk =
+    link.origin_id === UNASSIGNED_NODE_ID ||
+    (link.origin_id === SUBGRAPH_INPUT_ID
+      ? isSlotInRange(link.origin_slot, subgraph.inputs.length)
+      : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
+        undefined)
+  const targetOk =
+    link.target_id === UNASSIGNED_NODE_ID ||
+    (link.target_id === SUBGRAPH_OUTPUT_ID
+      ? isSlotInRange(link.target_slot, subgraph.outputs.length)
+      : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
+        undefined)
+  return !originOk || !targetOk
+}
+
 export function findUnresolvableSubgraphLink(
   subgraphNode: SubgraphNode
 ): LLink | undefined {
   const { subgraph } = subgraphNode
 
   for (const link of subgraph.links.values()) {
-    const originOk =
-      link.origin_id === UNASSIGNED_NODE_ID ||
-      (link.origin_id === SUBGRAPH_INPUT_ID
-        ? Number.isInteger(link.origin_slot) &&
-          link.origin_slot >= 0 &&
-          link.origin_slot < subgraph.inputs.length
-        : subgraph.getNodeById(link.origin_id)?.outputs[link.origin_slot] !==
-          undefined)
-    const targetOk =
-      link.target_id === UNASSIGNED_NODE_ID ||
-      (link.target_id === SUBGRAPH_OUTPUT_ID
-        ? Number.isInteger(link.target_slot) &&
-          link.target_slot >= 0 &&
-          link.target_slot < subgraph.outputs.length
-        : subgraph.getNodeById(link.target_id)?.inputs[link.target_slot] !==
-          undefined)
-    if (!originOk || !targetOk) return link
+    if (isUnresolvableSubgraphLink(subgraph, link)) return link
   }
 }
 
@@ -585,7 +594,10 @@ export function reorderSubgraphInputs(
   const subgraph = subgraphNode.subgraph
 
   const n = subgraph.inputs.length
-  if (subgraphNode.inputs.length !== n) {
+  const hostInputs = subgraph.inputs.map((subgraphInput) =>
+    hostInputOf(subgraphNode, subgraphInput)
+  )
+  if (hostInputs.some((input) => !input)) {
     console.error('reorderSubgraphInputs: host and subgraph inputs differ', {
       hostInputs: subgraphNode.inputs.length,
       subgraphInputs: n
@@ -608,9 +620,23 @@ export function reorderSubgraphInputs(
   const oldOrder = subgraph.inputs.map((i) => i.id)
 
   const previousInputs = captureInputLayout(subgraphNode)
-  const orderedHostInputs = orderedIndices.map(
-    (index) => previousInputs.inputs[index]
-  )
+  const orderedHostInputs = orderedIndices.flatMap((index) => {
+    const hostInput = hostInputs[index]!
+    const prefix = `${hostInput.name}.`
+    return [
+      hostInput,
+      ...previousInputs.inputs.filter(
+        (input) => !hostInputs.includes(input) && input.name.startsWith(prefix)
+      )
+    ]
+  })
+  if (orderedHostInputs.length !== previousInputs.inputs.length) {
+    console.error('reorderSubgraphInputs: host has unowned inputs', {
+      hostInputs: previousInputs.inputs.length,
+      ownedInputs: orderedHostInputs.length
+    })
+    return
+  }
 
   const result = replaceNodeInputs(
     subgraphNode,

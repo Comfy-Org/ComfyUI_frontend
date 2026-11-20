@@ -9,10 +9,15 @@ on:
         description: 'Branch whose package.json version has no tag (e.g. core/1.48)'
         required: true
         type: string
+      tag:
+        description: 'Existing tag on that branch that has no release (e.g. v1.61.1). Builds the tag instead of the branch tip.'
+        required: false
+        type: string
 
 concurrency:
-  group: release-recover-tag-${{ inputs.branch }}
+  group: release-recover-tag
   cancel-in-progress: false
+  queue: max
 
 jobs:
   recover:
@@ -20,22 +25,44 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: Checkout branch
+      - name: Checkout branch or tag
         uses: actions/checkout@v7
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ inputs.tag && format('refs/tags/{0}', inputs.tag) || inputs.branch }}
           fetch-depth: 0
 
-      - name: Resolve the untagged version
+      - name: Resolve the version to recover
         id: version
         env:
           BRANCH: ${{ inputs.branch }}
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           VERSION=$(node -p "require('./package.json').version")
 
-          if git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
-            echo "::error title=Nothing to recover::v${VERSION} already exists, so ${BRANCH} is not missing its tag. Cut a new patch with release-version-bump.yaml instead."
+          if [[ -n "$TAG" ]]; then
+            if [[ "$TAG" != "v${VERSION}" ]]; then
+              echo "::error title=Tag does not match package.json::${TAG} has package.json version ${VERSION}."
+              exit 1
+            fi
+            if ! git merge-base --is-ancestor "$TAG" "origin/${BRANCH}"; then
+              echo "::error title=Tag not on branch::${TAG} is not an ancestor of ${BRANCH}."
+              exit 1
+            fi
+            STATUS=0
+            OUTPUT=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft 2>&1) || STATUS=$?
+            if [[ "$STATUS" -eq 0 ]]; then
+              if [[ "$(jq -r '.isDraft' <<<"$OUTPUT")" != "true" ]]; then
+                echo "::error title=Nothing to recover::${TAG} already has a published release."
+                exit 1
+              fi
+            elif [[ "$OUTPUT" != *"release not found"* ]]; then
+              echo "::error title=Release lookup failed::${OUTPUT}"
+              exit 1
+            fi
+          elif git rev-parse -q --verify "refs/tags/v${VERSION}" >/dev/null; then
+            echo "::error title=Nothing to recover::v${VERSION} already exists, so ${BRANCH} is not missing its tag. If that tag has no release, re-run with tag: v${VERSION}. Otherwise cut a new patch with release-version-bump.yaml."
             exit 1
           fi
 
@@ -49,7 +76,7 @@ jobs:
           echo "Recovering v${VERSION} on ${BRANCH}"
 
       - name: Install pnpm
-        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
 
       - uses: actions/setup-node@v6
         with:
@@ -75,18 +102,26 @@ jobs:
           pnpm build
           pnpm zipdist
 
+      - name: Create release token
+        id: release_token
+        if: vars.RELEASE_APP_CLIENT_ID != ''
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ vars.RELEASE_APP_CLIENT_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
+
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
-          token: ${{ secrets.PR_GH_TOKEN }}
+          token: ${{ steps.release_token.outputs.token || secrets.PR_GH_TOKEN }}
           files: |
             dist.zip
             dist-desktop.zip
           tag_name: v${{ steps.version.outputs.version }}
           target_commitish: ${{ inputs.branch }}
-          make_latest: >-
-            ${{ inputs.branch == 'main' &&
-                steps.version.outputs.is_prerelease == 'false' }}
+          make_latest: false
           draft: ${{ steps.version.outputs.is_prerelease == 'true' }}
           prerelease: >-
             ${{ steps.version.outputs.is_prerelease == 'true' }}
@@ -102,3 +137,13 @@ jobs:
             echo
             echo "Re-run \`release-weekly-comfyui.yaml\` to publish it to PyPI and open the ComfyUI pin PR."
           } >> "$GITHUB_STEP_SUMMARY"
+
+  enforce_latest:
+    name: Enforce Latest Release
+    needs: recover
+    permissions:
+      contents: write
+    uses: ./.github/workflows/release-enforce-latest.yaml
+    secrets:
+      PR_GH_TOKEN: ${{ secrets.PR_GH_TOKEN }}
+      RELEASE_APP_PRIVATE_KEY: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
