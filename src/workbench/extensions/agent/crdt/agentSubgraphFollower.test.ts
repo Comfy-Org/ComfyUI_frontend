@@ -159,9 +159,9 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
 
   const host = createTestSubgraphNode(subgraph, { id: 1 })
   graph.add(host)
-  // Host value differs from the interior default (1) so an initial load that
-  // silently falls back to the definition's default is caught.
-  host.widgets[0].value = HOST_INITIAL_VALUE
+  const valueWidget = host.widgets.find((widget) => widget.name === 'value')
+  assert.exists(valueWidget)
+  valueWidget.value = HOST_INITIAL_VALUE
 
   const source = LiteGraph.createNode('source')!
   source.id = toNodeId(2)
