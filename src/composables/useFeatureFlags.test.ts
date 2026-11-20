@@ -542,10 +542,21 @@ describe('useFeatureFlags', () => {
       expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
     })
 
-    it('defaults on in a development build that serves no value', () => {
+    it('stays off in a development build that serves no value', () => {
       vi.stubEnv('DEV', true)
 
-      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(true)
+      expect(useFeatureFlags().flags.openOnCloudEnabled).toBe(false)
+    })
+
+    it('keeps local controls off while the Cloud account decision is unavailable', () => {
+      remoteConfig.value = {
+        open_on_cloud_enabled: true,
+        open_on_cloud_use_local_agent_enabled: true
+      }
+
+      const { flags } = useFeatureFlags()
+      expect(flags.openOnCloudEnabled).toBe(false)
+      expect(flags.openOnCloudUseLocalAgentEnabled).toBe(false)
     })
 
     it.for([
@@ -554,6 +565,10 @@ describe('useFeatureFlags', () => {
     ])(
       'follows a remote config $served over the dev=$dev default',
       ({ dev, served, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        onTestFinished(() => {
+          vi.mocked(distributionTypes).isCloud = false
+        })
         vi.stubEnv('DEV', dev)
         remoteConfig.value = { open_on_cloud_enabled: served }
 
@@ -588,6 +603,10 @@ describe('useFeatureFlags', () => {
     ])(
       'uses only a boolean true from remote config: $served',
       ({ served, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        onTestFinished(() => {
+          vi.mocked(distributionTypes).isCloud = false
+        })
         remoteConfig.value = { open_on_cloud_use_local_agent_enabled: served }
 
         expect(useFeatureFlags().flags.openOnCloudUseLocalAgentEnabled).toBe(
