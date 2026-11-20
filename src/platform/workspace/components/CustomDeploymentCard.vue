@@ -84,23 +84,17 @@
         class="flex flex-col-reverse gap-2.5 @xl:flex-row @xl:items-center @xl:justify-end"
       >
         <DeploymentDocsLink class="hidden @xl:mr-auto @xl:inline-flex" />
-        <Button
+        <AgentMenu
           variant="secondary"
-          size="lg"
-          :class="cn('w-full @xl:w-auto', !copied && 'gap-3')"
           data-testid="custom-deployment-agent"
-          :loading="isCopying"
-          @click="copy(pitch.brief)"
+          :copy-brief="copyBrief"
+          @open-in="openBriefIn"
         >
-          <template v-if="copied">
-            <i class="icon-[lucide--check]" aria-hidden="true" />
-            {{ $t('deployToComfyApi.copied') }}
-          </template>
-          <template v-else>
+          <template #label>
             <AgentMarks />
             {{ $t('deployToComfyApi.deployWithAgent') }}
           </template>
-        </Button>
+        </AgentMenu>
         <Button
           variant="inverted"
           size="lg"
@@ -110,7 +104,7 @@
           target="_blank"
           :rel="platformLinkRel()"
           data-testid="custom-deployment-platform"
-          @click="emit('done')"
+          @click="createOnPlatform"
         >
           {{ pitch.platformLabel }}
           <i
@@ -131,21 +125,25 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 import Video from '@comfyorg/design-system/media/Video'
 import Button from '@comfyorg/design-system/button/Button'
 import DialogTitle from '@comfyorg/design-system/dialog/DialogTitle'
+import AgentMenu from '@/platform/workflow/deploy/components/AgentMenu.vue'
 import AgentMarks from '@/platform/workflow/deploy/components/AgentMarks.vue'
 import DeploymentDialogFrame from '@/platform/workspace/components/DeploymentDialogFrame.vue'
 import DeploymentDocsLink from '@/platform/workspace/components/DeploymentDocsLink.vue'
 import MissingItemsTable from '@/platform/workspace/components/MissingItemsTable.vue'
-import { useBriefCopy } from '@/platform/workspace/composables/useBriefCopy'
+import { useDeploymentBriefHandoff } from '@/platform/workspace/composables/useDeploymentBriefHandoff'
 import { customDeploymentCreateUrl } from '@/platform/workspace/customDeploymentPitch'
 import type { CustomDeploymentPitch } from '@/platform/workspace/customDeploymentPitch'
+import { handOverWorkflowOnClick } from '@/platform/workspace/platformWorkflowHandoff'
 import { platformLinkRel } from '@/platform/workspace/utils/platformLink'
 
 const {
   pitch,
   videoSources = [],
-  posterSrc = ''
+  posterSrc = '',
+  handsOverWorkflow = false
 } = defineProps<{
   pitch: CustomDeploymentPitch
+  handsOverWorkflow?: boolean
   videoSources?: ComponentProps<typeof Video>['sources']
   posterSrc?: string
 }>()
@@ -157,9 +155,15 @@ const emit = defineEmits<{
 
 defineOptions({ inheritAttrs: false })
 
-const { isCopying, copied, copy } = useBriefCopy()
+const { copyBrief, openBriefIn } = useDeploymentBriefHandoff(() => pitch)
 
 const createDeploymentUrl = computed(() =>
   customDeploymentCreateUrl('custom-deployment-card')
 )
+
+function createOnPlatform(event: MouseEvent) {
+  if (handsOverWorkflow)
+    handOverWorkflowOnClick(event, 'custom-deployment-card')
+  emit('done')
+}
 </script>

@@ -137,6 +137,7 @@ import {
 } from '@comfyorg/graph-model/nodeIdentification'
 import { SYSTEM_NODE_DEFS, useNodeDefStore } from '@/stores/nodeDefStore'
 import { useNodeReplacementStore } from '@/platform/workflowErrors/nodeReplacement/nodeReplacementStore'
+import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplacement/deprecatedNodesStore'
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
@@ -159,7 +160,10 @@ import { graphToPrompt, unwrapExportedWidgetValue } from '@/utils/executionUtil'
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 import { getCnrIdFromProperties } from '@/platform/workflowErrors/nodeReplacement/cnrIdUtil'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import { rescanAndSurfaceMissingNodes } from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
+import {
+  refreshMissingNodeReplacements,
+  rescanAndSurfaceMissingNodes
+} from '@/platform/workflowErrors/nodeReplacement/missingNodeScan'
 import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
@@ -175,6 +179,7 @@ import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/mis
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
+import { warnAboutSlowHasSelectors } from '@/utils/slowHasSelectorUtil'
 import { ensureNonZeroUuid } from '@/utils/uuid'
 import {
   collectAllNodes,
@@ -857,8 +862,10 @@ export class ComfyApp implements IComfyApp {
       releaseSharedObjectUrl(blobUrl)
     })
 
-    api.addEventListener('feature_flags', () => {
-      void useNodeReplacementStore().load()
+    api.addEventListener('feature_flags', async () => {
+      await useNodeReplacementStore().load()
+      useDeprecatedNodesStore().rescan(this.rootGraphOrUndefined)
+      refreshMissingNodeReplacements()
     })
 
     useJobModelDownloadStore()
@@ -1014,6 +1021,7 @@ export class ComfyApp implements IComfyApp {
     await bootstrapTracer.settle('bootstrap/extensions-setup', () =>
       useExtensionService().invokeExtensionsAsync('setup')
     )
+    warnAboutSlowHasSelectors()
 
     await defaultWorkflowReady
 
@@ -1502,7 +1510,9 @@ export class ComfyApp implements IComfyApp {
     let resourceScanLoadCompleted = false
     try {
       try {
-        this.rootGraph.configure(graphData as ISerialisedGraph)
+        this.rootGraph.configure(graphData as ISerialisedGraph, undefined, {
+          preserveMountedNodeSizes: options.restoreHistory
+        })
 
         // Save original renderer version before scaling (it gets modified during scaling)
         const originalMainGraphRenderer =

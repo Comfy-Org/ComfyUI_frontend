@@ -34,6 +34,30 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 @import '@comfyorg/design-system/css/base.css';
 ```
 
+## Baseline for other apps
+
+An app with its own Tailwind build and global styles, such as Comfy Desktop,
+imports the baseline instead of `style.css`, which adds ComfyUI's app-wide rules:
+
+```css
+@import 'tailwindcss';
+@import '@comfyorg/design-system/css/baseline.css';
+
+:root {
+  --background: oklch(0.19 0.003 285);
+  --primary: var(--foreground);
+}
+```
+
+The baseline holds the palette, the semantic colors components use, their icon
+plugins, stacking layers, text sizes, shadows and scrollbar utilities, and
+registers the compiled component sources for Tailwind. Override only the
+variables that differ: `--background`, `--foreground`, `--card`, `--popover`,
+`--primary`, `--secondary`, `--muted`, `--muted-foreground`, `--accent`,
+`--destructive`, `--border`, `--input`, `--ring`, `--warning` and
+`--shadow-color`. The host provides fonts. Published consumers still import
+`components.css`, as described under [Vue components](#vue-components).
+
 ## Exports
 
 | Path                            | Contents                                                                         |
@@ -41,6 +65,7 @@ For the palette and fonts without the Tailwind layers or icon plugins:
 | `./css/style.css`               | Full theme — palette, fonts, Tailwind layers, icon plugins                       |
 | `./css/theme.css`               | Full theme without automatic component source registration                       |
 | `./css/base.css`                | Palette and fonts only                                                           |
+| `./css/baseline.css`            | Component colors, plugins, tokens and utilities for apps other than ComfyUI      |
 | `./css/_palette.css`            | Color variables                                                                  |
 | `./css/fonts.css`               | Font faces                                                                       |
 | `./css/_deprecated-aliases.css` | Deprecated variable names kept for extensions; scheduled for removal             |

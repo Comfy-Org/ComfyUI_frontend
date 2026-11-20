@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
 import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
@@ -443,19 +445,25 @@ function processWidget(
     fullValue
   )
 
-  return {
-    handleContextMenu: widgetContextMenu(ctx, widgetState.name),
-    get sizing() {
-      return live ? getWidgetSizing(live.widget, live.node) : undefined
-    },
-    hasError: hasWidgetError(
+  const error = computed(() =>
+    hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,
       ctx.nodeErrors,
       ctx.executionErrorStore,
       ctx.missingModelStore,
       ctx.missingMediaStore
-    ),
+    )
+  )
+
+  return {
+    handleContextMenu: widgetContextMenu(ctx, widgetState.name),
+    get sizing() {
+      return live ? getWidgetSizing(live.widget, live.node) : undefined
+    },
+    get hasError() {
+      return error.value
+    },
     widgetId: id,
     renderKey: `${id}:${type}`,
     vueComponent:

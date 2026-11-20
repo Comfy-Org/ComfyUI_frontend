@@ -26,6 +26,7 @@ import type {
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
   AgentSendGatedMetadata,
+  AgentTargetUnavailableMetadata,
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
@@ -437,6 +438,10 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
     this.capture(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
+  }
+
+  trackAgentTargetUnavailable(metadata: AgentTargetUnavailableMetadata): void {
+    this.capture(TelemetryEvents.AGENT_TARGET_UNAVAILABLE, metadata)
   }
 
   trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {

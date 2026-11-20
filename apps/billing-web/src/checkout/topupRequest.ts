@@ -92,7 +92,7 @@ const STATUSLESS_ANSWERS: ReadonlySet<string> = new Set([
 const CONFLICT = 409
 const RATE_LIMITED = 429
 
-/** The top-up page's own link, so a bank check that leaves the page comes back to the same workspace and amount. */
+/** The top-up page's own link, so a bank check that leaves the page comes back to the same workspace, amount and purchase. */
 export function topupReturnUrl(
   arrival: BillingEntry,
   workspaceId: string | undefined,
@@ -110,7 +110,10 @@ export function topupReturnUrl(
     ...(arrival.autoTopUp === undefined
       ? {}
       : { autoTopUp: arrival.autoTopUp }),
-    ...(workspaceId === undefined ? {} : { workspaceId })
+    ...(workspaceId === undefined ? {} : { workspaceId }),
+    ...(arrival.purchaseId === undefined
+      ? {}
+      : { purchaseId: arrival.purchaseId })
   })
   return built.status === 'ok' ? built.url.href : undefined
 }
