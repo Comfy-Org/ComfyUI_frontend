@@ -32,6 +32,7 @@ type ModelFileUploadFailure =
   | 'tooLarge'
   | 'storageLimit'
   | 'featureDisabled'
+  | 'accessDenied'
   | 'privateModelsDisabled'
   | 'planUnavailable'
   | 'sessionExpired'
@@ -87,6 +88,8 @@ async function readFailure(res: Response): Promise<ModelFileUploadStopped> {
     const reason = FAILURE_BY_CODE[code]
     if (reason) return { ok: false, reason }
   }
+  if (res.status === 401 || res.status === 403)
+    return { ok: false, reason: 'accessDenied' }
   return {
     ok: false,
     reason: 'failed',

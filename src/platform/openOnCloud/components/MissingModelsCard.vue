@@ -136,6 +136,7 @@ const PRIMARY_COPY: Record<Footer, string> = {
 }
 
 const FAILURE_COPY: Partial<Record<LocalModelUploadFailure, string>> = {
+  accessDenied: 'assetBrowser.fileUpload.accessDenied',
   cancelled: 'openOnCloud.missingModels.cancelled',
   featureDisabled: 'assetBrowser.fileUpload.featureDisabled',
   privateModelsDisabled: 'assetBrowser.fileUpload.privateModelsDisabled',
@@ -226,13 +227,16 @@ const uploadButtonId = computed(() =>
 const uploadDisabled = computed(
   () => footer.value === 'upload' && !uploads.canUpload(models)
 )
-const primaryCopy = computed(() =>
-  footer.value === 'upload' &&
-  upload.value.phase === 'failed' &&
-  upload.value.reason === 'storagePending'
-    ? 'g.retry'
-    : PRIMARY_COPY[footer.value]
-)
+const primaryCopy = computed(() => {
+  const current = upload.value
+  if (
+    footer.value === 'upload' &&
+    current.phase === 'failed' &&
+    (current.reason === 'storagePending' || current.reason === 'accessDenied')
+  )
+    return 'g.retry'
+  return PRIMARY_COPY[footer.value]
+})
 const progressText = computed(() => {
   const current = upload.value
   if (current.phase !== 'uploading') return ''

@@ -21,6 +21,7 @@ const DEFAULT_MODEL_TYPE = 'loras'
 type UploadStopped = Extract<ModelFileUploadResult, { ok: false }>
 
 const FAILURE_COPY: Partial<Record<UploadStopped['reason'], string>> = {
+  accessDenied: 'assetBrowser.fileUpload.accessDenied',
   cancelled: 'assetBrowser.fileUpload.cancelled',
   featureDisabled: 'assetBrowser.fileUpload.featureDisabled',
   sessionExpired: 'assetBrowser.fileUpload.sessionExpired',

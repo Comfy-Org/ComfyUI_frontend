@@ -273,6 +273,7 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         staged &&
         result.reason !== 'storageLimit' &&
         result.reason !== 'planUnavailable' &&
+        result.reason !== 'accessDenied' &&
         !signal.aborted
       )
         setPick(model, { status: 'chosen', file })

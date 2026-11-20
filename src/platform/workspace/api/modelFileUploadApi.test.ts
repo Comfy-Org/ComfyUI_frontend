@@ -372,6 +372,8 @@ describe('modelFileUploadApi.uploadModelFile', () => {
   })
 
   it.for([
+    [401, 'UNAUTHENTICATED', 'accessDenied'],
+    [403, 'workspace_access_denied', 'accessDenied'],
     [403, 'FEATURE_DISABLED', 'featureDisabled'],
     [403, 'PRIVATE_MODELS_DISABLED', 'privateModelsDisabled'],
     [503, 'PRIVATE_MODELS_UNAVAILABLE', 'planUnavailable'],

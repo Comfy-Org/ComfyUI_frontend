@@ -441,6 +441,7 @@ describe('useLocalModelUploadStore', () => {
 
   it.for([
     { reason: 'failed', expected: 'storagePending' },
+    { reason: 'accessDenied', expected: 'accessDenied' },
     { reason: 'planUnavailable', expected: 'planUnavailable' }
   ] as const)(
     'retries the same staged upload after $reason',

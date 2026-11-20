@@ -4770,6 +4770,7 @@
     "fileSize": "File Size",
     "filterBy": "Filter by",
     "fileUpload": {
+      "accessDenied": "Your current session cannot upload models to this workspace.",
       "cancelled": "Upload canceled.",
       "choose": "Choose a file",
       "drop": "Or drop a .safetensors file here",
