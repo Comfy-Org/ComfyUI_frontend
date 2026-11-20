@@ -5,7 +5,7 @@ import {
   getDistanceBetweenPoints,
   getMidpoint,
   getWheelZoomFactor
-} from '@comfyorg/mask-editor/panZoomUtils'
+} from '@comfyorg/shared-frontend-utils/panZoomUtils'
 import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 
