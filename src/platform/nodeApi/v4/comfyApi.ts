@@ -74,7 +74,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
   )
   const definitions = createDefRegistry(nodes)
 
-  const comfy: Comfy = Object.freeze({
+  const comfy = Object.freeze({
     getApiVersion: () => API_VERSION,
     isApiVersionAtLeast,
     onReady: lifecycle.onReady,
@@ -87,7 +87,7 @@ export function createComfyApi(services: ComfyApiServices): ComfyApi {
       (visible) => graphHandleMembers(visible, scopes.scopeFor, edit, groupsOf)
     ),
     sameEntity: (a: unknown, b: unknown) => a === b && handles.owns(a)
-  })
+  } satisfies Comfy)
 
   return {
     comfy,
