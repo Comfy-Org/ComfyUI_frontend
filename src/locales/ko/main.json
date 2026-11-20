@@ -173,6 +173,12 @@
     "openingChat": "채팅을 여는 중…",
     "openingWorkflowChat": "{workflowName}의 채팅을 여는 중…",
     "otherOpenWorkflows": "기타 열려 있는 워크플로",
+    "paused": {
+      "recheck": "약 {seconds}초 후에 자동으로 다시 시도합니다. | 약 {seconds}초 후에 자동으로 다시 시도합니다.",
+      "resume": "재개",
+      "title": "에이전트가 일시 중지되었습니다",
+      "titleNoFunds": "에이전트가 일시 중지됨 — 크레딧 부족"
+    },
     "paywall": {
       "addCredits": "크레딧 추가",
       "body": {
@@ -3610,6 +3616,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4011,10 @@
     },
     "deploySetup": "설정을 Comfy Cloud에 배포",
     "deploySetupDialog": {
-      "body": "로컬 설정을 Comfy Cloud에 배포한 후 ComfyUI에서 사용하거나 자동 확장 API로 호출하세요.",
+      "body": "로컬 설정을 Comfy Cloud에 빌드로 배포한 다음, ComfyUI에서 사용하거나 자동 확장 API로 호출하세요.",
       "pointGpu": "강력한 클라우드 GPU에서 실행",
       "pointNodes": "사용자 지정 노드와 모델 가져오기",
-      "pointPricing": "작업에서 사용한 GPU 초와 빌드 스토리지에 대해서만 결제",
+      "pointPricing": "GPU 워커가 실행 중인 동안에만 비용을 지불하고, 스토리지 비용이 추가됩니다",
       "title": "Comfy Cloud에서 워크플로 실행"
     },
     "deployWithAgent": "에이전트로 배포",

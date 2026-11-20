@@ -173,6 +173,12 @@
     "openingChat": "Apertura della chat…",
     "openingWorkflowChat": "Apertura della chat per {workflowName}…",
     "otherOpenWorkflows": "Altri workflow aperti",
+    "paused": {
+      "recheck": "Riproverà da solo tra circa {seconds} secondo. | Riproverà da solo tra circa {seconds} secondi.",
+      "resume": "Riprendi",
+      "title": "L'agente è in pausa",
+      "titleNoFunds": "L'agente è in pausa — crediti esauriti"
+    },
     "paywall": {
       "addCredits": "Aggiungi crediti",
       "body": {
@@ -3610,6 +3616,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4011,10 @@
     },
     "deploySetup": "Distribuisci la tua configurazione su Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Distribuisci la tua configurazione locale su Comfy Cloud, quindi usala in ComfyUI o richiamala come API con scalabilità automatica.",
+      "body": "Distribuisci la tua configurazione locale su Comfy Cloud come Build, quindi usala in ComfyUI o richiamala come API con scalabilità automatica.",
       "pointGpu": "Esegui su potenti GPU cloud",
       "pointNodes": "Porta i tuoi nodi e modelli personalizzati",
-      "pointPricing": "Paga solo per i secondi di GPU usati dai tuoi processi e per lo storage della tua build",
+      "pointPricing": "Paga solo mentre i worker GPU sono attivi, più lo spazio di archiviazione",
       "title": "Esegui i tuoi workflow su Comfy Cloud"
     },
     "deployWithAgent": "Distribuisci con il tuo agente",

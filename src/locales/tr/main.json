@@ -173,6 +173,12 @@
     "openingChat": "Sohbet açılıyor…",
     "openingWorkflowChat": "{workflowName} için sohbet açılıyor…",
     "otherOpenWorkflows": "Diğer açık iş akışları",
+    "paused": {
+      "recheck": "Yaklaşık {seconds} saniye içinde kendiliğinden yeniden deneyecek. | Yaklaşık {seconds} saniye içinde kendiliğinden yeniden deneyecek.",
+      "resume": "Devam Et",
+      "title": "Aracı duraklatıldı",
+      "titleNoFunds": "Aracı duraklatıldı — krediniz tükendi"
+    },
     "paywall": {
       "addCredits": "Kredi ekle",
       "body": {
@@ -3610,6 +3616,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4011,10 @@
     },
     "deploySetup": "Kurulumunuzu Comfy Cloud'a dağıtın",
     "deploySetupDialog": {
-      "body": "Yerel kurulumunuzu Comfy Cloud'a dağıtın, ardından ComfyUI'de kullanın veya otomatik ölçeklenen bir API olarak çağırın.",
+      "body": "Yerel kurulumunuzu Comfy Cloud'a bir Build olarak dağıtın, ardından ComfyUI'de kullanın veya otomatik ölçeklenen bir API olarak çağırın.",
       "pointGpu": "Güçlü bulut GPU'larında çalıştırın",
       "pointNodes": "Özel düğümlerinizi ve modellerinizi getirin",
-      "pointPricing": "Yalnızca işlerinizin kullandığı GPU saniyeleri ve derlemenizin depolama alanı için ödeme yapın",
+      "pointPricing": "Yalnızca GPU çalışanlarınız çalışır durumdayken ve depolama için ödeme yapın",
       "title": "İş akışlarınızı Comfy Cloud'da çalıştırın"
     },
     "deployWithAgent": "Ajanınızla dağıtın",

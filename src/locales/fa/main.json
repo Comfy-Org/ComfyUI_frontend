@@ -173,6 +173,12 @@
     "openingChat": "در حال باز کردن chat…",
     "openingWorkflowChat": "در حال باز کردن chat برای {workflowName}…",
     "otherOpenWorkflows": "workflowهای باز دیگر",
+    "paused": {
+      "recheck": "حدود {seconds} ثانیهٔ دیگر، به‌طور خودکار دوباره تلاش خواهد کرد. | حدود {seconds} ثانیهٔ دیگر، به‌طور خودکار دوباره تلاش خواهد کرد.",
+      "resume": "ازسرگیری",
+      "title": "عامل متوقف شده است",
+      "titleNoFunds": "عامل متوقف شده است — اعتبار تمام شده است"
+    },
     "paywall": {
       "addCredits": "افزودن اعتبار",
       "body": {
@@ -3610,6 +3616,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4011,10 @@
     },
     "deploySetup": "راه‌اندازی خود را در Comfy Cloud مستقر کنید",
     "deploySetupDialog": {
-      "body": "راه‌اندازی محلی خود را در Comfy Cloud مستقر کنید، سپس آن را در ComfyUI استفاده کنید یا به‌عنوان یک API با مقیاس‌پذیری خودکار فراخوانی کنید.",
+      "body": "راه‌اندازی محلی خود را به‌عنوان یک Build در Comfy Cloud مستقر کنید، سپس از آن در ComfyUI استفاده کنید یا آن را به‌عنوان یک API با مقیاس‌پذیری خودکار فراخوانی کنید.",
       "pointGpu": "روی GPUهای قدرتمند ابری اجرا کنید",
       "pointNodes": "nodeها و مدل‌های سفارشی خود را بیاورید",
-      "pointPricing": "فقط برای ثانیه‌های GPU مصرف‌شده توسط کارهایتان و فضای ذخیره‌سازی build خود پرداخت کنید",
+      "pointPricing": "فقط زمانی پرداخت کنید که workerهای GPU شما فعال هستند، به‌علاوهٔ هزینهٔ ذخیره‌سازی",
       "title": "workflowهای خود را در Comfy Cloud اجرا کنید"
     },
     "deployWithAgent": "با agent خود مستقر کنید",

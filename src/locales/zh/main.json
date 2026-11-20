@@ -173,6 +173,12 @@
     "openingChat": "正在打开聊天…",
     "openingWorkflowChat": "正在为 {workflowName} 打开聊天…",
     "otherOpenWorkflows": "其他已打开的工作流",
+    "paused": {
+      "recheck": "约 {seconds} 秒后，它将自行重试。 | 约 {seconds} 秒后，它将自行重试。",
+      "resume": "恢复",
+      "title": "智能体已暂停",
+      "titleNoFunds": "智能体已暂停 — 积分不足"
+    },
     "paywall": {
       "addCredits": "添加额度",
       "body": {
@@ -3610,6 +3616,7 @@
     "Bria": "Bria",
     "ByteDance": "字节跳动",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4011,10 @@
     },
     "deploySetup": "将您的配置部署到 Comfy Cloud",
     "deploySetupDialog": {
-      "body": "将您的本地配置部署到 Comfy Cloud，然后在 ComfyUI 中使用它，或将其作为自动扩缩容 API 调用。",
+      "body": "将你的本地配置部署到 Comfy Cloud 作为 Build，然后在 ComfyUI 中使用它，或将其作为自动扩缩容 API 调用。",
       "pointGpu": "在强大的云端 GPU 上运行",
       "pointNodes": "携带您的自定义节点和模型",
-      "pointPricing": "仅为任务使用的 GPU 秒数和构建的存储空间付费",
+      "pointPricing": "仅在 GPU 工作节点运行期间付费，另加存储费用",
       "title": "在 Comfy Cloud 上运行您的工作流"
     },
     "deployWithAgent": "使用您的代理进行部署",

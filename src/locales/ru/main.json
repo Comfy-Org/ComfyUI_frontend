@@ -173,6 +173,12 @@
     "openingChat": "Открывается чат…",
     "openingWorkflowChat": "Открывается чат для {workflowName}…",
     "otherOpenWorkflows": "Другие открытые рабочие процессы",
+    "paused": {
+      "recheck": "Он самостоятельно попробует снова примерно через {seconds} секунду. | Он самостоятельно попробует снова примерно через {seconds} секунд.",
+      "resume": "Возобновить",
+      "title": "Агент приостановлен",
+      "titleNoFunds": "Агент приостановлен — недостаточно кредитов"
+    },
     "paywall": {
       "addCredits": "Добавить кредиты",
       "body": {
@@ -3610,6 +3616,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4011,10 @@
     },
     "deploySetup": "Разверните свою конфигурацию в Comfy Cloud",
     "deploySetupDialog": {
-      "body": "Разверните локальную конфигурацию в Comfy Cloud, затем используйте её в ComfyUI или вызывайте как автомасштабируемый API.",
+      "body": "Разверните свою локальную настройку в Comfy Cloud как Build, а затем используйте её в ComfyUI или вызывайте как автомасштабируемый API.",
       "pointGpu": "Запускайте на мощных облачных GPU",
       "pointNodes": "Перенесите свои пользовательские ноды и модели",
-      "pointPricing": "Платите только за секунды работы GPU, использованные вашими задачами, и за хранилище вашей сборки",
+      "pointPricing": "Платите только за время работы ваших GPU-воркеров, а также за хранилище",
       "title": "Запускайте свои рабочие процессы в Comfy Cloud"
     },
     "deployWithAgent": "Развернуть с помощью агента",

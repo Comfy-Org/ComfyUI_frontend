@@ -4852,6 +4852,131 @@
       }
     }
   },
+  "CreatifyAurora2AvatarNode": {
+    "description": "Creatify Aurora 2.0: convierte una foto y un clip de voz o canción en un vídeo que habla o canta. El vídeo dura lo mismo que el audio y lo conserva sin cambios.",
+    "display_name": "Avatar de Creatify Aurora 2.0",
+    "inputs": {
+      "audio": {
+        "name": "audio",
+        "tooltip": "Voz o canción, hasta 60 segundos (14 a 2k). Se factura por cada segundo iniciado."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "image": {
+        "name": "imagen",
+        "tooltip": "Al menos 256 píxeles por lado, con una relación de aspecto entre 1:4 y 4:1. El vídeo conserva la relación de aspecto de la foto."
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo; los resultados no son deterministas independientemente de la semilla."
+      },
+      "text_prompt": {
+        "name": "text_prompt",
+        "tooltip": "Opcional: escena, cámara, iluminación, expresión o movimiento."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3ReferenceVideoNode": {
+    "description": "Creatify Boreal-H3, el modelo H3 posentrenado de Creatify diseñado para anuncios de vídeo. Genera vídeo con sonido guiado por imágenes, vídeos y audio de referencia.",
+    "display_name": "Creatify Boreal-H3 de referencia a vídeo",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto sigue la primera imagen de referencia o, de lo contrario, el primer vídeo de referencia."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "duration": {
+        "name": "duración",
+        "tooltip": "A 2k, el máximo es de 14 segundos."
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "Consulta las referencias como @Image1, @Video1, @Audio1."
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto y ads reescriben el prompt para un anuncio de vídeo y pueden añadir líneas habladas; general lo reescribe para cualquier otro vídeo; none representa el prompt tal como está escrito."
+      },
+      "reference_audios": {
+        "name": "reference_audios",
+        "tooltip": "Hasta 3 clips, mencionados como @Audio1..@Audio3. La voz guía la voz, no las palabras; la música instrumental puede convertirse en la banda sonora."
+      },
+      "reference_images": {
+        "name": "reference_images",
+        "tooltip": "Hasta 9 imágenes, mencionadas en el prompt como @Image1..@Image9 en el orden de conexión. Se requiere al menos una imagen o vídeo, con un máximo de 12 referencias en total."
+      },
+      "reference_videos": {
+        "name": "reference_videos",
+        "tooltip": "Hasta 3 vídeos de al menos 1 segundo, mencionados como @Video1..@Video3. Se factura un máximo de 15 segundos de vídeo en total. Su sonido se reutiliza cuando el prompt pide continuarlo; una nueva línea en el prompt lo sustituye."
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe ejecutarse de nuevo. Creatify elige su propia aleatoriedad: con prompt_enhancement none, las mismas entradas generan el mismo vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "CreatifyBorealH3VideoNode": {
+    "description": "Creatify Boreal-H3, el modelo H3 posentrenado de Creatify diseñado para anuncios de vídeo. Genera vídeo con sonido a partir de texto, opcionalmente comenzando con un primer fotograma y terminando con un último fotograma.",
+    "display_name": "Vídeo Creatify Boreal-H3",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "Se usa sin un primer fotograma. Con un primer fotograma, mantén auto: el vídeo sigue la relación de aspecto del fotograma."
+      },
+      "control_after_generate": {
+        "name": "control después de generar"
+      },
+      "duration": {
+        "name": "duración",
+        "tooltip": "A 2k, el máximo es de 14 segundos."
+      },
+      "first_frame": {
+        "name": "first_frame"
+      },
+      "last_frame": {
+        "name": "last_frame",
+        "tooltip": "Necesita un primer fotograma."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "prompt_enhancement": {
+        "name": "prompt_enhancement",
+        "tooltip": "auto y ads reescriben el prompt para un anuncio de vídeo y pueden añadir líneas habladas; general lo reescribe para cualquier otro vídeo; none procesa el prompt tal como está escrito."
+      },
+      "resolution": {
+        "name": "resolución"
+      },
+      "seed": {
+        "name": "semilla",
+        "tooltip": "La semilla controla si el nodo debe volver a ejecutarse. Creatify elige su propia aleatoriedad: con prompt_enhancement en none, las mismas entradas producen el mismo vídeo."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "CropByBBoxes": {
     "description": "Recorta y redimensiona regiones del lote de imágenes de entrada según las cajas delimitadoras proporcionadas.",
     "display_name": "Recortar por cajas delimitadoras",
@@ -9400,8 +9525,8 @@
     }
   },
   "IdeogramEditApi": {
-    "description": "Edita o combina hasta 5 imágenes guiándose por un prompt de texto mediante Ideogram 4.5. Vuelve a renderizar toda la imagen y puede cambiar su tamaño o relación de aspecto; usa Edición precisa de Ideogram 4.5 para mantener sin cambios los píxeles no modificados.",
-    "display_name": "Edición de Ideogram 4.5",
+    "description": "Edita o combina hasta 5 imágenes guiándose por un prompt de texto mediante Ideogram 4.6 o 4.5. Vuelve a procesar toda la imagen y puede cambiar su tamaño o relación de aspecto; usa Ideogram Precise Edit para mantener sin cambios los píxeles no modificados.",
+    "display_name": "Edición de Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "control después de generar"
@@ -9409,6 +9534,9 @@
       "model": {
         "name": "modelo",
         "tooltip": "Modelo que se utilizará."
+      },
+      "model_background": {
+        "name": "fondo"
       },
       "model_height": {
         "name": "alto"
@@ -9478,8 +9606,8 @@
     }
   },
   "IdeogramPreciseEditApi": {
-    "description": "Edita una imagen guiándose por un prompt de texto mediante la edición precisa de Ideogram 4.5: solo cambia lo que pide el prompt, los píxeles intactos permanecen idénticos y la salida conserva el tamaño de la imagen 1 (las imágenes de más de ~4 MP se reducen primero). También puede editar una sola región, definida por una mask o cuadros delimitadores, y devolver la imagen a tamaño completo. Acepta hasta 4 imágenes de referencia (3 con context_window_mask).",
-    "display_name": "Edición precisa de Ideogram 4.5",
+    "description": "Edita una imagen guiándose por un prompt de texto mediante la edición precisa de Ideogram 4.6 o 4.5: solo cambia lo que solicita el prompt, los píxeles no modificados permanecen idénticos y la salida conserva el tamaño de la imagen 1 (las imágenes grandes se reducen primero). También puede editar una sola región, definida por una máscara o cuadros delimitadores, y devolver la imagen a tamaño completo. Acepta hasta 4 imágenes de referencia (3 con una máscara).",
+    "display_name": "Edición precisa de Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "control después de generar"
@@ -9508,8 +9636,8 @@
     }
   },
   "IdeogramTextToImageApi": {
-    "description": "Genera imágenes a partir de un prompt de texto usando Ideogram 4.5.",
-    "display_name": "Ideogram 4.5 de texto a imagen",
+    "description": "Genera imágenes a partir de un prompt de texto mediante Ideogram 4.6 o 4.5.",
+    "display_name": "Texto a imagen de Ideogram",
     "inputs": {
       "control_after_generate": {
         "name": "control después de generar"
@@ -9517,6 +9645,12 @@
       "model": {
         "name": "modelo",
         "tooltip": "Modelo que se utilizará."
+      },
+      "model_background": {
+        "name": "fondo"
+      },
+      "model_height": {
+        "name": "altura"
       },
       "model_magic_prompt": {
         "name": "magic_prompt"
@@ -9532,6 +9666,9 @@
       },
       "model_size": {
         "name": "tamaño"
+      },
+      "model_width": {
+        "name": "ancho"
       }
     },
     "outputs": {
@@ -17790,6 +17927,206 @@
       },
       "video_head_modulation_": {
         "name": "video_head_modulation."
+      }
+    }
+  },
+  "ModelMergeMiniMaxH3": {
+    "description": "Fusiona dos modelos MiniMax H3 compatibles por componente. Cada proporción es la parte correspondiente a model1. Los búferes se conservan de model1.",
+    "display_name": "Fusión de modelos MiniMax H3",
+    "inputs": {
+      "audio_patch_proj_": {
+        "name": "audio_patch_proj."
+      },
+      "blocks_0_": {
+        "name": "blocks.0."
+      },
+      "blocks_10_": {
+        "name": "blocks.10."
+      },
+      "blocks_11_": {
+        "name": "bloques.11."
+      },
+      "blocks_12_": {
+        "name": "bloques.12."
+      },
+      "blocks_13_": {
+        "name": "bloques.13."
+      },
+      "blocks_14_": {
+        "name": "bloques.14."
+      },
+      "blocks_15_": {
+        "name": "bloques.15."
+      },
+      "blocks_16_": {
+        "name": "bloques.16."
+      },
+      "blocks_17_": {
+        "name": "bloques.17."
+      },
+      "blocks_18_": {
+        "name": "bloques.18."
+      },
+      "blocks_19_": {
+        "name": "bloques.19."
+      },
+      "blocks_1_": {
+        "name": "blocks.1."
+      },
+      "blocks_20_": {
+        "name": "bloques.20."
+      },
+      "blocks_21_": {
+        "name": "bloques.21."
+      },
+      "blocks_22_": {
+        "name": "bloques.22."
+      },
+      "blocks_23_": {
+        "name": "bloques.23."
+      },
+      "blocks_24_": {
+        "name": "bloques.24."
+      },
+      "blocks_25_": {
+        "name": "bloques.25."
+      },
+      "blocks_26_": {
+        "name": "bloques.26."
+      },
+      "blocks_27_": {
+        "name": "bloques.27."
+      },
+      "blocks_28_": {
+        "name": "bloques.28."
+      },
+      "blocks_29_": {
+        "name": "bloques.29."
+      },
+      "blocks_2_": {
+        "name": "blocks.2."
+      },
+      "blocks_30_": {
+        "name": "bloques.30."
+      },
+      "blocks_31_": {
+        "name": "bloques.31."
+      },
+      "blocks_32_": {
+        "name": "bloques.32."
+      },
+      "blocks_33_": {
+        "name": "bloques.33."
+      },
+      "blocks_34_": {
+        "name": "bloques.34."
+      },
+      "blocks_35_": {
+        "name": "bloques.35."
+      },
+      "blocks_36_": {
+        "name": "bloques.36."
+      },
+      "blocks_37_": {
+        "name": "bloques.37."
+      },
+      "blocks_38_": {
+        "name": "bloques.38."
+      },
+      "blocks_39_": {
+        "name": "bloques.39."
+      },
+      "blocks_3_": {
+        "name": "blocks.3."
+      },
+      "blocks_40_": {
+        "name": "bloques.40."
+      },
+      "blocks_41_": {
+        "name": "bloques.41."
+      },
+      "blocks_42_": {
+        "name": "bloques.42."
+      },
+      "blocks_43_": {
+        "name": "bloques.43."
+      },
+      "blocks_44_": {
+        "name": "bloques.44."
+      },
+      "blocks_45_": {
+        "name": "bloques.45."
+      },
+      "blocks_46_": {
+        "name": "bloques.46."
+      },
+      "blocks_47_": {
+        "name": "bloques.47."
+      },
+      "blocks_48_": {
+        "name": "bloques.48."
+      },
+      "blocks_49_": {
+        "name": "bloques.49."
+      },
+      "blocks_4_": {
+        "name": "blocks.4."
+      },
+      "blocks_5_": {
+        "name": "blocks.5."
+      },
+      "blocks_6_": {
+        "name": "blocks.6."
+      },
+      "blocks_7_": {
+        "name": "blocks.7."
+      },
+      "blocks_8_": {
+        "name": "blocks.8."
+      },
+      "blocks_9_": {
+        "name": "blocks.9."
+      },
+      "condition_proj_": {
+        "name": "condition_proj."
+      },
+      "final_layer_adaln_proj_": {
+        "name": "final_layer.adaln_proj."
+      },
+      "final_layer_audio_out_": {
+        "name": "final_layer.audio_out."
+      },
+      "final_layer_norm_": {
+        "name": "capa_final.norm."
+      },
+      "final_layer_video_out_": {
+        "name": "final_layer.video_out."
+      },
+      "model1": {
+        "name": "model1"
+      },
+      "model2": {
+        "name": "model2"
+      },
+      "time_embedder_": {
+        "name": "time_embedder."
+      },
+      "token_refiner_blocks_0_": {
+        "name": "token_refiner.blocks.0."
+      },
+      "token_refiner_blocks_1_": {
+        "name": "token_refiner.blocks.1."
+      },
+      "token_refiner_final_norm_": {
+        "name": "token_refiner.final_norm."
+      },
+      "video_patch_proj_": {
+        "name": "video_patch_proj."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
       }
     }
   },
@@ -29211,6 +29548,37 @@
       },
       "5": {
         "name": "máscara",
+        "tooltip": null
+      }
+    }
+  },
+  "TripoSmartUVNode": {
+    "description": "Vuelve a desplegar las UV de un modelo y remapea sus texturas, rig y animación al nuevo diseño. La entrada no debe superar los 80.000 triángulos (un cuadrilátero cuenta como dos); reduce los modelos más grandes con Tripo: Retopología o un face_limit primero.",
+    "display_name": "Tripo: UV inteligente",
+    "inputs": {
+      "bake": {
+        "name": "bake",
+        "tooltip": "Hornea las texturas existentes en el nuevo diseño UV. Desactivado omite el horneado y devuelve el modelo sin sus texturas de color."
+      },
+      "model_task_id": {
+        "name": "model_task_id"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "task_id del modelo",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "Vacío cuando el modelo de origen es FBX."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "Solo se rellena cuando el modelo de origen es FBX, p. ej., una malla de cuadriláteros."
+      },
+      "3": {
+        "name": "Atlas UV",
         "tooltip": null
       }
     }
