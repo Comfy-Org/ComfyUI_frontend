@@ -331,14 +331,16 @@ describe('graph.panBy', () => {
     { x: Number.NaN, y: 0 },
     { x: 0, y: Infinity },
     { x: '1', y: 0 },
-    [1, 2]
+    [1, 2],
+    { x: 1, y: 2, width: 3, height: 4 },
+    Object.create({ x: 1, y: 2 })
   ])('refuses %o before changing the view', (delta) => {
     const { canvas, comfy } = documentOnScreen()
     const before = [...canvas.ds.offset]
 
     expect(() =>
       Reflect.apply(comfy.graph.panBy, comfy.graph, [delta])
-    ).toThrow('panBy needs a distance of finite x and y')
+    ).toThrow(/^panBy needs delta/)
     expect([...canvas.ds.offset]).toEqual(before)
   })
 
