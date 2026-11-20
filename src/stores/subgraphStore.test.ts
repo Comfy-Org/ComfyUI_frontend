@@ -15,6 +15,7 @@ import type { ExportedSubgraph } from '@comfyorg/graph-model/serialisation'
 import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@comfyorg/object-info-parser'
 import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 import { resetReportedWorkflowStateAnomaliesForTests } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
@@ -415,14 +416,19 @@ describe('useSubgraphStore', () => {
         content: ''
       },
       { path: 'corrupt.json', content: '{' },
-      { path: 'kept.json', content: JSON.stringify(mockGraph) }
+      { path: 'kept.json', content: JSON.stringify(mockGraph) },
+      {
+        path: 'unsized.json',
+        content: JSON.stringify(mockGraph),
+        listsSize: false
+      }
     ]
     vi.mocked(api.listUserDataFullInfo).mockResolvedValue(
-      userBlueprints.map(({ path, content }) => ({
-        path,
-        modified: Date.now(),
-        size: content.length
-      }))
+      userBlueprints.map(({ path, content, listsSize }) =>
+        listsSize === false
+          ? fromPartial<UserDataFullInfo>({ path, modified: Date.now() })
+          : { path, modified: Date.now(), size: content.length }
+      )
     )
     vi.mocked(api.getUserData).mockImplementation(async (file) => {
       const blueprint = userBlueprints.find(
@@ -434,7 +440,13 @@ describe('useSubgraphStore', () => {
 
     await store.fetchSubgraphs()
 
-    expect(userBlueprintNames()).toEqual(['SubgraphBlueprint.kept'])
+    expect(userBlueprintNames()).toEqual(
+      expect.arrayContaining([
+        'SubgraphBlueprint.kept',
+        'SubgraphBlueprint.unsized'
+      ])
+    )
+    expect(userBlueprintNames()).toHaveLength(2)
     expect(useToast().toasts).toEqual([
       expect.objectContaining({
         kind: 'error',

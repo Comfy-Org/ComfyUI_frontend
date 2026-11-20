@@ -1,14 +1,15 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import type { UserDataFullInfo } from '@comfyorg/api-client/types'
 
-const userBlueprints = [
-  { path: 'Image Edit.json/move/subgraphs/my subgraph.json', content: '' },
-  { path: 'corrupt.json', content: '{' }
-]
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 const test = comfyPageFixture.extend({
   page: async ({ page }, use) => {
+    const userBlueprints = [
+      { path: 'Image Edit.json/move/subgraphs/my subgraph.json', content: '' },
+      { path: 'corrupt.json', content: '{' }
+    ]
     await page.route(
       (url) =>
         url.pathname === '/api/userdata' &&
@@ -19,7 +20,7 @@ const test = comfyPageFixture.extend({
             path,
             size: content.length,
             modified: Date.now()
-          }))
+          })) satisfies UserDataFullInfo[]
         })
     )
     for (const { path, content } of userBlueprints) {
