@@ -385,7 +385,7 @@ describe('applier conformance (the pinned package the doc host runs)', () => {
         to_slot: 0,
         link_type: 'IMAGE'
       },
-      { op: 'set_widget', node_id: 1, widget: 'seed', value: 42, old: 3 }
+      { op: 'set_widget', node_id: 1, widget: 'seed', value: 42 }
     ]
     const disconnectOps: GraphOperation[] = [
       { op: 'disconnect', link_id: 41, to_node: 1, to_slot: 0 }

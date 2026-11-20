@@ -5,6 +5,7 @@ export function useCurrentUser() {
   return {
     userDisplayName: ref('Ada Lovelace'),
     userEmail: ref('ada@example.com'),
+    userPhotoUrl: ref<string | null>(null),
     resolvedUserInfo: ref({ id: 'user-ada' }),
     isAuthInitialized: computed(() => true),
     isLoggedIn: computed(() => true),

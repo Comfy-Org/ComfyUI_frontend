@@ -11,7 +11,7 @@ test.describe(
     test('@mobile empty canvas', async ({ comfyPage }) => {
       await comfyPage.settings.setSetting('Comfy.ConfirmClear', false)
       await comfyPage.command.executeCommand('Comfy.ClearWorkflow')
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
       await expectElementScreenshot(comfyPage.canvas, 'mobile-empty-canvas.png')
     })
 
@@ -39,6 +39,7 @@ test.describe(
 
     test('@mobile settings dialog', async ({ comfyPage }) => {
       await comfyPage.settingDialog.open()
+      await comfyPage.settingDialog.root.getByRole('button').first().focus()
       await expectElementScreenshot(
         comfyPage.settingDialog.root,
         'mobile-settings-dialog.png',

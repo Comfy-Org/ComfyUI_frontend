@@ -1,13 +1,15 @@
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 import { canvasOrReport } from './touchCanvasAccess'
 import { touchGesture } from './touchPointerGuards'
 import type { ComfyExtension } from '@/types/comfy'
 
 type TouchPoint = { clientX: number; clientY: number }
+
+const MIN_PINCH_DISTANCE = 8
 
 function zoomCanvasAroundPinch(
   canvas: LGraphCanvas,
@@ -16,8 +18,6 @@ function zoomCanvasAroundPinch(
   lastTouch: TouchPoint
 ) {
   let scale = requestedScale
-  const newX = (center.clientX - lastTouch.clientX) / requestedScale
-  const newY = (center.clientY - lastTouch.clientY) / requestedScale
 
   if (scale < canvas.ds.min_scale) {
     scale = canvas.ds.min_scale
@@ -25,6 +25,8 @@ function zoomCanvasAroundPinch(
     scale = canvas.ds.max_scale
   }
 
+  const newX = (center.clientX - lastTouch.clientX) / scale
+  const newY = (center.clientY - lastTouch.clientY) / scale
   const oldScale = canvas.ds.scale
 
   canvas.ds.scale = scale
@@ -72,7 +74,7 @@ export const simpleTouchSupportExtension: ComfyExtension = {
       }
     }
 
-    app.canvasEl.parentElement?.addEventListener(
+    useApp().canvasEl.parentElement?.addEventListener(
       'touchstart',
       (e: TouchEvent) => {
         touchGesture.count += e.changedTouches.length
@@ -98,7 +100,7 @@ export const simpleTouchSupportExtension: ComfyExtension = {
       true
     )
 
-    app.canvasEl.parentElement?.addEventListener(
+    useApp().canvasEl.parentElement?.addEventListener(
       'touchend',
       (e: TouchEvent) => {
         touchGesture.count -= e.changedTouches.length
@@ -106,7 +108,7 @@ export const simpleTouchSupportExtension: ComfyExtension = {
         if (e.touches.length !== 1) touchGesture.zooming = false
         if (touchTime && !e.touches.length) {
           if (new Date().getTime() - touchTime.getTime() > 600) {
-            if (e.target === app.canvasEl) {
+            if (e.target === useApp().canvasEl) {
               const touch = {
                 button: 2,
                 clientX: e.changedTouches[0].clientX,
@@ -114,9 +116,13 @@ export const simpleTouchSupportExtension: ComfyExtension = {
                 pointerId: 1,
                 isPrimary: true
               }
-              app.canvasEl.dispatchEvent(new PointerEvent('pointerdown', touch))
+              useApp().canvasEl.dispatchEvent(
+                new PointerEvent('pointerdown', touch)
+              )
               setTimeout(() => {
-                app.canvasEl.dispatchEvent(new PointerEvent('pointerup', touch))
+                useApp().canvasEl.dispatchEvent(
+                  new PointerEvent('pointerup', touch)
+                )
               })
               e.preventDefault()
             }
@@ -141,9 +147,38 @@ export const simpleTouchSupportExtension: ComfyExtension = {
       }
     })
 
-    app.canvasEl.parentElement?.addEventListener('touchcancel', resetTouchState)
+    useApp().canvasEl.parentElement?.addEventListener(
+      'touchcancel',
+      resetTouchState
+    )
 
-    app.canvasEl.parentElement?.addEventListener(
+    function handlePinchMove(e: TouchEvent) {
+      if (!lastTouch) return
+      const canvas = canvasOrReport('touchmove', e)
+      if (!canvas) return
+      e.preventDefault()
+      canvas.pointer.isDown = false
+      touchGesture.zooming = true
+
+      LiteGraph.closeAllContextMenus(window)
+      canvas.search_box?.close()
+      const newTouchDist = getMultiTouchPos(e)
+      const center = getMultiTouchCenter(e)
+
+      if (lastScale === null || touchDist === null) return
+      if (touchDist < MIN_PINCH_DISTANCE) {
+        touchDist = newTouchDist
+        lastScale = canvas.ds.scale
+        lastTouch = center
+        return
+      }
+      const scale = (lastScale * newTouchDist) / touchDist
+      if (!Number.isFinite(scale) || scale <= 0) return
+
+      zoomCanvasAroundPinch(canvas, scale, center, lastTouch)
+    }
+
+    useApp().canvasEl.parentElement?.addEventListener(
       'touchmove',
       (e) => {
         if (touchTime && lastTouch && e.touches.length === 1) {
@@ -154,23 +189,8 @@ export const simpleTouchSupportExtension: ComfyExtension = {
             touchTime = null
           }
         }
-        if (e.touches.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
-          const canvas = canvasOrReport('touchmove', e)
-          if (!canvas) return
-          e.preventDefault()
-          canvas.pointer.isDown = false
-          touchGesture.zooming = true
-
-          LiteGraph.closeAllContextMenus(window)
-          canvas.search_box?.close()
-          const newTouchDist = getMultiTouchPos(e)
-
-          const center = getMultiTouchCenter(e)
-
-          if (lastScale === null || touchDist === null) return
-          const scale = (lastScale * newTouchDist) / touchDist
-
-          zoomCanvasAroundPinch(canvas, scale, center, lastTouch)
+        if (e.touches.length === 2 && !e.ctrlKey && !e.shiftKey) {
+          handlePinchMove(e)
         }
       },
       true

@@ -6,10 +6,10 @@ import { nextTick, ref } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { until } from '@vueuse/core'
 
-import { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@comfyorg/telemetry'
 
-import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import type { TemplateInfo } from '@comfyorg/api-client/templateTypes'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import { useTemplateFiltering } from '@/platform/workflow/templates/composables/useTemplateFiltering'
 import { api } from '@/scripts/api'
 
@@ -19,7 +19,7 @@ let defaultRankingStore: ReturnType<typeof useTemplateRankingStore>
 
 let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
 
-vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@comfyorg/telemetry'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
@@ -157,6 +157,81 @@ describe('useTemplateFiltering', () => {
     ])
   })
 
+  it('resets the browse sort to newest', async () => {
+    const { sortBy, resetFilters } = useTemplateFiltering(
+      ref<TemplateInfo[]>([])
+    )
+    sortBy.value = 'popular'
+
+    resetFilters()
+
+    expect(sortBy.value).toBe('newest')
+  })
+
+  it('applies a category sort without persisting it', async () => {
+    const { sortBy, sortSelection, categorySort } = useTemplateFiltering(
+      ref<TemplateInfo[]>([])
+    )
+    sortBy.value = 'newest'
+    await vi.runOnlyPendingTimersAsync()
+    vi.mocked(defaultSettingStore.set).mockClear()
+
+    categorySort.value = 'popular'
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+
+    expect(sortSelection.value).toBe('popular')
+    expect(sortBy.value).toBe('newest')
+    expect(defaultSettingStore.set).not.toHaveBeenCalledWith(
+      'Comfy.Templates.SortBy',
+      expect.anything()
+    )
+
+    categorySort.value = null
+    expect(sortSelection.value).toBe('newest')
+  })
+
+  it('keeps the category sort when filters are reset', async () => {
+    const { sortSelection, categorySort, searchQuery, resetFilters } =
+      useTemplateFiltering(ref<TemplateInfo[]>([]))
+    categorySort.value = 'popular'
+    searchQuery.value = 'flux'
+    await nextTick()
+    sortSelection.value = 'newest'
+
+    resetFilters()
+    await nextTick()
+
+    expect(categorySort.value).toBe('popular')
+    expect(sortSelection.value).toBe('popular')
+  })
+
+  it('clears the category sort when the user picks a sort', () => {
+    const { sortBy, sortSelection, categorySort } = useTemplateFiltering(
+      ref<TemplateInfo[]>([])
+    )
+    categorySort.value = 'popular'
+
+    sortSelection.value = 'alphabetical'
+
+    expect(categorySort.value).toBeNull()
+    expect(sortBy.value).toBe('alphabetical')
+  })
+
+  it('does not track filter changes when returning to the default sort', async () => {
+    const { sortBy } = useTemplateFiltering(ref<TemplateInfo[]>([]))
+    sortBy.value = 'popular'
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+    vi.mocked(useTelemetry()!.trackTemplateFilterChanged).mockClear()
+
+    sortBy.value = 'newest'
+    await nextTick()
+    await vi.runOnlyPendingTimersAsync()
+
+    expect(useTelemetry()?.trackTemplateFilterChanged).not.toHaveBeenCalled()
+  })
+
   it('supports alphabetical, newest, and size-based sorting options', async () => {
     const templates = ref<TemplateInfo[]>([
       {
@@ -208,14 +283,6 @@ describe('useTemplateFiltering', () => {
       'alpha-starter',
       'beta-pro',
       'zeta-extended'
-    ])
-
-    sortBy.value = 'default'
-    await nextTick()
-    expect(filteredTemplates.value.map((template) => template.name)).toEqual([
-      'zeta-extended',
-      'alpha-starter',
-      'beta-pro'
     ])
   })
 

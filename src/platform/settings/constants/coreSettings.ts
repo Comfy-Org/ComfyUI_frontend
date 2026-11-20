@@ -5,13 +5,15 @@ import {
 } from '@/locales/localeConfig'
 import { isCloud, isDesktop, isNightly } from '@/platform/distribution/types'
 import { TOUR_SEEN_SETTING } from '@/platform/onboarding/onboardingTours'
-import { CANVAS_NAVIGATION_PRESETS } from '@/platform/settings/constants/canvasNavigation'
-import { AGENT_CONSENT_OFFER_DECLINED_SETTING_ID } from '@/platform/settings/constants/agent'
+import { CANVAS_NAVIGATION_PRESETS } from '@comfyorg/settings-core/canvasNavigation'
+import { AGENT_ONBOARDED_SCOPES_SETTING_ID } from '@/platform/settings/constants/agent'
+import { TEMPLATES_DEFAULT_SORT } from '@/platform/settings/constants/templates'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/platform/settings/types'
-import type { Keybinding } from '@/platform/keybindings/types'
+import type { SettingParams } from '@comfyorg/settings-core/types'
+import { normalizeDisabledExtensionPaths } from '@/platform/settings/utils/extensionPath'
+import type { Keybinding } from '@comfyorg/keybindings/types'
 import { NodeBadgeMode } from '@/types/nodeSource'
-import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
+import { LinkReleaseTriggerAction } from '@comfyorg/settings-core/searchBoxTypes'
 import { breakpointsTailwind } from '@vueuse/core'
 
 /**
@@ -169,7 +171,7 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Workflow.NamedValuesRestore',
     name: 'Restore widget values by name',
     type: 'boolean',
-    defaultValue: false,
+    defaultValue: true,
     experimental: true
   },
   {
@@ -305,10 +307,17 @@ export const CORE_SETTINGS: SettingParams[] = [
     defaultValue: false
   },
   {
-    id: AGENT_CONSENT_OFFER_DECLINED_SETTING_ID,
-    name: 'Agent consent offer declined',
+    id: AGENT_ONBOARDED_SCOPES_SETTING_ID,
+    name: 'Agent onboarding tour completed for these account scopes',
     type: 'hidden',
-    defaultValue: false
+    defaultValue: []
+  },
+  {
+    id: 'Comfy.DeploymentSwitcher.Seen',
+    name: 'Running on button opened at least once',
+    type: 'hidden',
+    defaultValue: false,
+    versionAdded: '1.61.0'
   },
   {
     id: 'Comfy.Graph.ZoomSpeed',
@@ -392,6 +401,16 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Show width × height below the image preview',
     type: 'boolean',
     defaultValue: true
+  },
+  {
+    id: 'Comfy.Node.DownscaleImagePreviews',
+    category: ['LiteGraph', 'Node Widget', 'DownscaleImagePreviews'],
+    name: 'Downscale large image previews',
+    tooltip:
+      'In Nodes 2.0, show large images on nodes as a copy at most 1024px on the longest side so many large previews stay responsive. Turn off to always show the original.',
+    type: 'boolean',
+    defaultValue: true,
+    versionAdded: '1.62.0'
   },
   {
     id: 'Comfy.Group.DoubleClickTitleToEdit',
@@ -690,6 +709,21 @@ export const CORE_SETTINGS: SettingParams[] = [
     versionAdded: '1.3.11'
   },
   {
+    id: 'Comfy.Extension.SeenAgentExtensions',
+    name: 'Seen agent-created extension names',
+    type: 'hidden',
+    defaultValue: [] as string[],
+    versionAdded: '1.34.0'
+  },
+  {
+    id: 'Comfy.Extension.DisabledPacks',
+    name: 'Disabled extension paths',
+    type: 'hidden',
+    defaultValue: [],
+    migrateDeprecatedValue: normalizeDisabledExtensionPaths,
+    versionAdded: '1.59.0'
+  },
+  {
     id: 'Comfy.LinkRenderMode',
     category: ['LiteGraph', 'Graph', 'LinkRenderMode'],
     name: 'Link Render Mode',
@@ -888,7 +922,8 @@ export const CORE_SETTINGS: SettingParams[] = [
     name: 'Seen new workflow action items',
     type: 'hidden',
     defaultValue: [] as string[],
-    versionAdded: '1.41.5'
+    versionAdded: '1.41.5',
+    deprecated: true
   },
   {
     id: 'Comfy.Execution.PreviewMethod',
@@ -938,7 +973,6 @@ export const CORE_SETTINGS: SettingParams[] = [
     telemetry: { trackChanges: true, includeValues: true },
     migrateDeprecatedValue(val: unknown) {
       const value = val as string
-      // Legacy custom palettes were prefixed with 'custom_'
       return value.startsWith('custom_') ? value.replace('custom_', '') : value
     }
   },
@@ -1179,7 +1213,10 @@ export const CORE_SETTINGS: SettingParams[] = [
     id: 'Comfy.Templates.SortBy',
     name: 'Template library - Sort preference',
     type: 'hidden',
-    defaultValue: 'default'
+    defaultValue: TEMPLATES_DEFAULT_SORT,
+    // The 'default' (unsorted) option was removed; fall back to the new default.
+    migrateDeprecatedValue: (value: unknown) =>
+      value === 'default' ? TEMPLATES_DEFAULT_SORT : value
   },
 
   /**

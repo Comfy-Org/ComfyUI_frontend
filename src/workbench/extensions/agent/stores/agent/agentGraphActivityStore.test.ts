@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { toRootGraphId } from '@/types/graphScopeId'
-import { toNodeId } from '@/types/nodeId'
+import { toRootGraphId } from '@comfyorg/graph-model/graphScopeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 import { toTurnId } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { useAgentGraphActivityStore } from './agentGraphActivityStore'

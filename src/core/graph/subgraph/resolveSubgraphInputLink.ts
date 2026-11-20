@@ -1,5 +1,5 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
-import type { INodeInputSlot } from '@/lib/litegraph/src/types/slots'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
+import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 
 type SubgraphInputLinkContext = {
   inputNode: LGraphNode

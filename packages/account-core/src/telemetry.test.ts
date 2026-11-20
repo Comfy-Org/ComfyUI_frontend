@@ -180,6 +180,7 @@ describe('ssoFailureReason', () => {
     { code: 'SSO_CONFIRM_EXPIRED', reason: 'state_mismatch' },
     { code: 'SSO_ORG_NOT_ATTACHED', reason: 'org_not_attached' },
     { code: 'SSO_ORG_MISMATCH', reason: 'org_not_attached' },
+    { code: 'SSO_SEAT_LIMIT_REACHED', reason: 'seat_limit_reached' },
     { code: 'SSO_IDP_ERROR', reason: 'server_error' },
     { code: 'INTERNAL_ERROR', reason: 'server_error' }
   ])('reports $code as $reason', ({ code, reason }) => {

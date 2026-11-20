@@ -12,8 +12,8 @@ import {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
-import { toNodeId } from '@/types/nodeId'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { ReadOnlyRect } from '@comfyorg/shared-frontend-utils/geometry'
 
 vi.mock(import('@/scripts/app'))
 

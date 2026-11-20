@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
 import {
   createPromotedMediaRuntime,
   createPromotedMissingMediaCandidate,

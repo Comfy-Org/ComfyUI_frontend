@@ -5,7 +5,7 @@ import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   listSkillPacks,
@@ -32,7 +32,13 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   // Disabled backend gates answer 404, independently of PostHog flags.
   const routesAvailable = ref(true)
 
-  const enabled = computed(() => flagsEnabled.value && routesAvailable.value)
+  const agentHosted = computed(
+    () =>
+      api.getServerFeature<{ state?: unknown } | null>('agent')?.state ===
+      'ready'
+  )
+  const surfaceEnabled = computed(() => flagsEnabled.value || agentHosted.value)
+  const enabled = computed(() => surfaceEnabled.value && routesAvailable.value)
 
   let flagGateStarted = false
   let fetchGeneration = 0
@@ -66,8 +72,19 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
     (next) => {
       scope.value = next
       invalidateCatalog()
-      if (catalogRequested && flagsEnabled.value && resolvedUserInfo.value)
+      if (catalogRequested && surfaceEnabled.value && resolvedUserInfo.value)
         void ensurePacks()
+    },
+    { flush: 'sync' }
+  )
+
+  watch(
+    surfaceEnabled,
+    (isEnabled, wasEnabled) => {
+      if (wasEnabled && !isEnabled) invalidateCatalog()
+      if (!wasEnabled && isEnabled && catalogRequested) {
+        void fetchPacks().catch(reportFetchFailure)
+      }
     },
     { flush: 'sync' }
   )
@@ -77,25 +94,21 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   }: { fetch?: boolean } = {}): Promise<void> {
     catalogRequested ||= fetch
     if (flagGateStarted) {
-      if (fetch && flagsEnabled.value) {
+      if (fetch && surfaceEnabled.value) {
         if (!routesAvailable.value) void fetchPacks().catch(reportFetchFailure)
         else void ensurePacks()
       }
       return
     }
     flagGateStarted = true
+    if (fetch && surfaceEnabled.value)
+      void fetchPacks().catch(reportFetchFailure)
     try {
       const { default: posthog } = await import('posthog-js')
       const sync = () => {
-        const wasEnabled = flagsEnabled.value
         flagsEnabled.value =
           posthog.isFeatureEnabled(AGENT_EXPERIENCE_FLAG) === true &&
           posthog.isFeatureEnabled(SKILL_PACKS_FLAG) === true
-        if (wasEnabled && !flagsEnabled.value) invalidateCatalog()
-        // Probe because backend availability can disagree with PostHog.
-        if (!wasEnabled && flagsEnabled.value && catalogRequested) {
-          void fetchPacks().catch(reportFetchFailure)
-        }
       }
       posthog.onFeatureFlags((_flags, _variants, context) => {
         // Ignore failed flag deliveries.

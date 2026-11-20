@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { UnauthorizedError, api } from '@/scripts/api'
+import { UnauthorizedError } from '@comfyorg/api-client/ComfyApi'
+import { api } from '@/scripts/api'
 
 describe('api.getSettings', () => {
   it('returns the settings payload', async () => {

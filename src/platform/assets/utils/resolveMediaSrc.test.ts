@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { provideWebSessionRequests } from '@/platform/auth/session/webSessionFetch'
-import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { provideWebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
+import type { WebSessionRequests } from '@comfyorg/api-client/webSessionFetch'
 import { resolveMediaSrc } from '@/platform/assets/utils/assetUrlUtil'
 
 describe('resolveMediaSrc', () => {

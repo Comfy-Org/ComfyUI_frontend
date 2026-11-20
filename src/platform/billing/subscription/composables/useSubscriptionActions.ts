@@ -2,39 +2,19 @@ import { onMounted, ref } from 'vue'
 
 import { useBillingContext } from '@/platform/billing/composables/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { paymentIntentSourceForAddCreditsClick } from '@/platform/telemetry/utils/paymentIntentSource'
 import { useBillingDialogs } from '@/platform/billing/composables/useBillingDialogs'
-import { useCommandStore } from '@/stores/commandStore'
+import { openSupportForm } from '@/platform/support/openSupportForm'
 
-/**
- * Composable for handling subscription panel actions and loading states
- */
-export function useSubscriptionActions() {
-  const { showTopUpCreditsDialog } = useBillingDialogs()
-  const commandStore = useCommandStore()
+/** Opens the billing support form, tracks the click, and reports a failure to open it. */
+export function useMessageSupport() {
   const telemetry = useTelemetry()
-  const { fetchBalance, fetchStatus } = useBillingContext()
   const { wrapWithErrorHandlingAsync, toastErrorHandler } = useErrorHandling()
 
   const isLoadingSupport = ref(false)
 
-  onMounted(() => {
-    void handleRefresh()
-  })
-
-  const handleAddApiCredits = () => {
-    telemetry?.trackAddApiCreditButtonClicked({
-      source: 'settings_billing_panel'
-    })
-    void showTopUpCreditsDialog({
-      source: paymentIntentSourceForAddCreditsClick('settings_billing_panel')
-    })
-  }
-
-  // A user who cannot reach support cannot tell us that they cannot reach
-  // support, so this failure has to report itself.
   const reportSupportFailure = (error: unknown) => {
     reportError(error, {
       surface: 'billing',
@@ -51,13 +31,38 @@ export function useSubscriptionActions() {
         is_external: true,
         source: 'subscription'
       })
-      await commandStore.execute('Comfy.ContactSupport')
+      openSupportForm('billing')
     },
     reportSupportFailure,
     () => {
       isLoadingSupport.value = false
     }
   )
+
+  return { isLoadingSupport, handleMessageSupport }
+}
+
+/**
+ * Composable for handling subscription panel actions and loading states
+ */
+export function useSubscriptionActions() {
+  const { showTopUpCreditsDialog } = useBillingDialogs()
+  const telemetry = useTelemetry()
+  const { fetchBalance, fetchStatus } = useBillingContext()
+  const { isLoadingSupport, handleMessageSupport } = useMessageSupport()
+
+  onMounted(() => {
+    void handleRefresh()
+  })
+
+  const handleAddApiCredits = () => {
+    telemetry?.trackAddApiCreditButtonClicked({
+      source: 'settings_billing_panel'
+    })
+    void showTopUpCreditsDialog({
+      source: paymentIntentSourceForAddCreditsClick('settings_billing_panel')
+    })
+  }
 
   const handleRefresh = async () => {
     try {

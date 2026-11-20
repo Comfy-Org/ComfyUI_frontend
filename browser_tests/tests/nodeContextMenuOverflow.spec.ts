@@ -42,7 +42,10 @@ test.describe(
 
       await expect(comfyPage.page.locator('.selection-toolbox')).toBeVisible()
 
-      const moreOptionsBtn = comfyPage.page.getByTestId('more-options-button')
+      const moreOptionsBtn = comfyPage.selectionToolbox.getByRole('button', {
+        name: 'More Options',
+        exact: true
+      })
       await expect(moreOptionsBtn).toBeVisible()
       await moreOptionsBtn.click()
       await comfyPage.nextFrame()
@@ -94,7 +97,7 @@ test.describe(
       await comfyPage.nextFrame()
 
       // The node should be removed from the graph
-      await expect.poll(() => comfyPage.nodeOps.getGraphNodesCount()).toBe(0)
+      await comfyPage.expectNodeCount(0)
     })
   }
 )

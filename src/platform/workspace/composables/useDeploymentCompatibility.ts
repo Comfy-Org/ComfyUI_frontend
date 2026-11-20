@@ -14,15 +14,15 @@ import type {
   LGraph
 } from '@/lib/litegraph/src/litegraph'
 import { ExecutableNodeDTO } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { reportError } from '@/platform/telemetry/reportError'
+import { LGraphEventMode } from '@comfyorg/graph-model/globalEnums'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { DeploymentCompatibility } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useDeploymentPickStore } from '@/platform/workspace/stores/deploymentPickStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 
 /** Whether a deployment, or Comfy Cloud, can run the open workflow. */
 export type DeploymentCompatibilityMark =
@@ -83,7 +83,9 @@ export const useDeploymentCompatibility = createSharedComposable(() => {
 
   function readNodeTypes() {
     const next =
-      canAsk.value && app.isGraphReady ? workflowNodeTypes(app.rootGraph) : []
+      canAsk.value && useApp().isGraphReady
+        ? workflowNodeTypes(useApp().rootGraph)
+        : []
     // graphChanged also fires on moves and resizes; keep the same array then
     // so the request key is not rebuilt.
     if (isEqual(next, nodeTypes.value)) return

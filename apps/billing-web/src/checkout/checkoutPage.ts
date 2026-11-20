@@ -1,4 +1,5 @@
 import type {
+  BillingOperationKind,
   BillingOperationState,
   BillingPlansData,
   CancelRefusalCode,
@@ -8,7 +9,10 @@ import type {
   SubscriptionPreview,
   TerminalBillingOperation
 } from '@comfyorg/account-core/billing'
-import { isGrantLanding } from '@comfyorg/account-core/billing'
+import {
+  isAutoTopUpActivating,
+  isGrantLanding
+} from '@comfyorg/account-core/billing'
 
 type ElementStatus = 'loading' | 'ready' | 'failed'
 
@@ -70,6 +74,7 @@ export type InlineOutcome =
       readonly serverMessage?: string
     }
   | { readonly kind: 'not_completed'; readonly operationId?: string }
+  | { readonly kind: 'not_verified'; readonly operationId?: string }
   | { readonly kind: 'price_updated' }
   | { readonly kind: 'promo_expired'; readonly code: string }
   | { readonly kind: 'reconciling'; readonly because?: Recheck }
@@ -277,11 +282,12 @@ export type CheckoutPageEvent =
     }
   /** The mandatory re-quote failed, so the refused price cannot be paid again. */
   | { readonly type: 'requoteFailed'; readonly code: string }
-  /** The lifecycle's answer to "what is this workspace waiting on": an operation, or nothing. */
+  /** The lifecycle's answer to "what is this workspace waiting on"; `follows` is the payment kind this page is bound to. */
   | {
       readonly type: 'reconciled'
       readonly operation: BillingOperationState | undefined
       readonly outcome?: OperationOutcome
+      readonly follows: BillingOperationKind
     }
   /** A followed operation moved; `outcome` is its verdict once it has one. */
   | {
@@ -472,9 +478,14 @@ export function reduceCheckoutPage(
     case 'reconciled':
       return event.operation === undefined
         ? nothingPending(page)
-        : followed(page, event.operation, event.outcome)
+        : followed(
+            page,
+            event.operation,
+            event.outcome,
+            event.operation.kind === event.follows
+          )
     case 'operationChanged':
-      return followed(page, event.operation, event.outcome)
+      return followed(page, event.operation, event.outcome, true)
   }
 }
 
@@ -859,15 +870,11 @@ function nothingChargedNotice(
 }
 
 function recheckLost(page: CheckoutPage): CheckoutPage {
-  if (
-    page.kind !== 'capture' ||
-    page.outcome?.kind !== 'reconciling' ||
-    page.outcome.because === undefined
-  )
+  if (page.kind !== 'capture' || page.outcome?.kind !== 'reconciling')
     return page
-  return page.outcome.because === 'unanswered'
-    ? { kind: 'unconfirmed', sibling: true }
-    : { kind: 'unconfirmed' }
+  return page.outcome.because === 'rate_limited'
+    ? { kind: 'unconfirmed' }
+    : { kind: 'unconfirmed', sibling: true }
 }
 
 /**
@@ -890,14 +897,14 @@ export function waitingOn(operation: PendingBillingOperation): WaitingOn {
 /**
  * A screen that promised to update but whose operation the lifecycle no
  * longer polls: an outcome parked for a human, or a success whose credits
- * the server has not recorded yet. The page re-reads it itself.
+ * or auto top-up the server has not recorded yet. The page re-reads it itself.
  */
 export function awaitingServer(page: CheckoutPage): boolean {
   if (page.kind === 'unconfirmed') return true
   return (
     page.kind === 'terminal' &&
     page.operation !== undefined &&
-    isGrantLanding(page.operation)
+    (isGrantLanding(page.operation) || isAutoTopUpActivating(page.operation))
   )
 }
 
@@ -949,7 +956,8 @@ function ownsVerdict(page: Watching, operation: BillingOperationState) {
 function followed(
   page: CheckoutPage,
   operation: BillingOperationState,
-  outcome: OperationOutcome | undefined
+  outcome: OperationOutcome | undefined,
+  bound: boolean
 ): CheckoutPage {
   if (isCanceledHere(page, operation) || heldForCancel(page, outcome))
     return page
@@ -958,7 +966,7 @@ function followed(
   if (page.kind === 'capture')
     return followedInCapture(page, operation, outcome)
   if (page.kind === 'waiting' || page.kind === 'unconfirmed')
-    return watched(page, operation, outcome)
+    return watched(page, operation, outcome, bound)
   return page
 }
 
@@ -1010,7 +1018,8 @@ function arrivedOn(
 function watched(
   page: Extract<CheckoutPage, { kind: 'waiting' | 'unconfirmed' }>,
   operation: BillingOperationState,
-  outcome: OperationOutcome | undefined
+  outcome: OperationOutcome | undefined,
+  bound: boolean
 ): CheckoutPage {
   if (operation.phase === 'succeeded')
     return {
@@ -1024,16 +1033,21 @@ function watched(
       ? { kind: 'resolving', outcome }
       : RESOLVING
   return page.kind === 'unconfirmed'
-    ? watchedUnconfirmed(page, operation)
+    ? watchedUnconfirmed(page, operation, bound)
     : watchedWaiting(page, operation)
 }
 
-/** A charge the server now says went through moves the page forward to Payment received. */
+/** A charge that went through, or a challenge on a payment this page is `bound` to, moves the page forward to waiting. */
 function watchedUnconfirmed(
   page: Extract<CheckoutPage, { kind: 'unconfirmed' }>,
-  operation: BillingOperationState
+  operation: BillingOperationState,
+  bound: boolean
 ): CheckoutPage {
-  if (isInFlight(operation) && waitingOn(operation) === 'received')
+  if (
+    isInFlight(operation) &&
+    (waitingOn(operation) === 'received' ||
+      (bound && isChallengePending(operation)))
+  )
     return { kind: 'waiting', operation, ...provenanceOf(page) }
   return isInFlight(operation) || operation.phase === 'timed_out'
     ? page
@@ -1099,17 +1113,31 @@ function awaitsUnansweredPay(page: Capture): boolean {
   )
 }
 
+function showsVerdict(
+  page: Capture,
+  operation: BillingOperationState,
+  outcome: OperationOutcome | undefined
+): boolean {
+  return (
+    outcome?.kind === page.outcome?.kind &&
+    namesOperation(page.outcome, operation.id)
+  )
+}
+
 function waitingInCapture(
   page: Capture,
   operation: BillingOperationState,
   outcome: OperationOutcome | undefined
 ): CheckoutPage {
+  if (showsVerdict(page, operation, outcome)) return page
+  if (outcome !== undefined && operation.awaitedHere)
+    return { kind: 'resolving', outcome }
   if (!isInFlight(operation) || outcome !== undefined)
     return nothingPending(page)
   return {
     kind: 'waiting',
     operation,
-    sibling: true,
+    ...(operation.awaitedHere ? {} : { sibling: true }),
     ...(awaitsUnansweredPay(page) ? { unanswered: true } : {}),
     rail: page.rail
   }

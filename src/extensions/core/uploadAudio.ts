@@ -6,27 +6,24 @@ import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
-import type {
-  IBaseWidget,
-  IStringWidget
-} from '@/lib/litegraph/src/types/widgets'
-import { reportError } from '@/platform/telemetry/reportError'
+import type { IBaseWidget, IStringWidget } from '@comfyorg/graph-model/widgets'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { useToast } from '@/components/ui/toast/toastStore'
 import {
   getResourceURL,
   splitFilePath
 } from '@/renderer/extensions/vueNodes/widgets/utils/audioUtils'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
+import type { NodeExecutionOutput } from '@comfyorg/api-client/executionTypes'
+import type { ComfyNodeDef, InputSpec } from '@comfyorg/object-info-parser'
 import type { DOMWidget } from '@/types/domWidget'
 import { useAudioService } from '@/services/audioService'
 import type { NodeLocatorId } from '@/types'
-import { widgetId } from '@/types/widgetId'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { widgetId } from '@comfyorg/graph-model/widgetId'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { ComfyExtension } from '@/types/comfy'
 
@@ -163,7 +160,7 @@ export const audioWidgetExtension: ComfyExtension = {
         audioUIWidget.options.getValue = () => {
           const value = useWidgetValueStore().getWidget(
             widgetId(
-              resolveNodeRootGraphId(node, app.rootGraph.id),
+              resolveNodeRootGraphId(node, useApp().rootGraph.id),
               node.id,
               inputName
             )
@@ -171,7 +168,7 @@ export const audioWidgetExtension: ComfyExtension = {
           return typeof value === 'string' ? value : ''
         }
         audioUIWidget.options.setValue = (v) => {
-          const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
+          const graphId = resolveNodeRootGraphId(node, useApp().rootGraph.id)
           const widgetState = useWidgetValueStore().getWidget(
             widgetId(graphId, node.id, inputName)
           )
@@ -188,7 +185,7 @@ export const audioWidgetExtension: ComfyExtension = {
     for (const [nodeLocatorId, output] of Object.entries(nodeOutputs)) {
       if (!output.audio?.length) continue
 
-      const node = getNodeByLocatorId(app.rootGraph, nodeLocatorId)
+      const node = getNodeByLocatorId(useApp().rootGraph, nodeLocatorId)
       if (!node) continue
 
       const audioUIWidget = node.widgets?.find(

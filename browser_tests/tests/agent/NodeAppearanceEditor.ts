@@ -34,7 +34,8 @@ export class NodeAppearanceEditor {
   async recolourRed(nodeId: number | string): Promise<void> {
     await this.vueNodes.selectNode(String(nodeId))
     await this.page
-      .getByTestId(TestIds.selectionToolbox.colorPickerButton)
+      .getByTestId(TestIds.selectionToolbox.root)
+      .getByRole('button', { name: 'Color', exact: true })
       .dispatchEvent('click')
     await this.page
       .getByTestId(TestIds.selectionToolbox.colorRed)

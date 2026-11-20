@@ -5,7 +5,7 @@ import { LGraph } from './LGraph'
 import { LGraphCanvas } from './LGraphCanvas'
 import { LGraphGroup } from './LGraphGroup'
 import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from '@/types/nodeProperty'
+import type { NodeProperty } from '@comfyorg/graph-model/nodeProperty'
 import { LLink } from './LLink'
 import { Reroute } from './Reroute'
 import { InputIndicators } from './canvas/InputIndicators'
@@ -15,15 +15,20 @@ import type {
   Dictionary,
   INodeFlags,
   ISlotType,
-  Point,
-  Rect,
-  Size,
   WhenNullish
-} from './interfaces'
+} from '@comfyorg/graph-model/interfaces'
+import type {
+  PointTuple as Point,
+  Rect,
+  SizeTuple as Size
+} from '@comfyorg/shared-frontend-utils/geometry'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
-import type { INodeInputSlot, INodeOutputSlot } from './types/slots'
+import type {
+  INodeInputSlot,
+  INodeOutputSlot
+} from '@comfyorg/graph-model/slots'
 import {
   LGraphEventMode,
   LinkDirection,
@@ -31,7 +36,7 @@ import {
   NodeSlotType,
   RenderShape,
   TitleMode
-} from './types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
 
 /** Options for {@link LiteGraphGlobal.createNode}. Shallow-copied onto the new node. */
@@ -81,6 +86,7 @@ export class LiteGraphGlobal {
   NODE_TITLE_TEXT_Y = 20
   NODE_SLOT_HEIGHT = 20
   NODE_WIDGET_HEIGHT = 20
+  NODE_WIDGET_GAP = 4
   NODE_WIDTH = 140
   NODE_MIN_WIDTH = 50
   NODE_COLLAPSED_RADIUS = 10
@@ -265,6 +271,7 @@ export class LiteGraphGlobal {
     return this.registeredSlotInTypes
   }
   set registered_slot_in_types(value: Record<string, { nodes: string[] }>) {
+    this.flushSlotTypeTables()
     this.registeredSlotInTypes = value
   }
   /** slot types for nodeclass */
@@ -273,6 +280,7 @@ export class LiteGraphGlobal {
     return this.registeredSlotOutTypes
   }
   set registered_slot_out_types(value: Record<string, { nodes: string[] }>) {
+    this.flushSlotTypeTables()
     this.registeredSlotOutTypes = value
   }
   /** slot types IN */
@@ -283,6 +291,7 @@ export class LiteGraphGlobal {
     return this.slotTypesOut
   }
   set slot_types_out(value: string[]) {
+    this.flushSlotTypeTables()
     this.slotTypesOut = value
   }
   /**
@@ -294,6 +303,7 @@ export class LiteGraphGlobal {
     return this.slotTypesDefaultIn
   }
   set slot_types_default_in(value: Record<string, SlotTypeDefault>) {
+    this.flushSlotTypeTables()
     this.slotTypesDefaultIn = value
   }
   /**
@@ -305,6 +315,7 @@ export class LiteGraphGlobal {
     return this.slotTypesDefaultOut
   }
   set slot_types_default_out(value: Record<string, SlotTypeDefault>) {
+    this.flushSlotTypeTables()
     this.slotTypesDefaultOut = value
   }
 
@@ -1076,7 +1087,7 @@ export class LiteGraphGlobal {
 type RegisteredSlotTypeDefaultNodeOpts = SlotTypeDefaultNodeOpts
 type RegisteredLiteGraphGlobal = LiteGraphGlobal
 
-declare module './types/entityRegistry' {
+declare module '@comfyorg/graph-model/entityRegistry' {
   interface SlotTypeDefaultNodeOpts extends RegisteredSlotTypeDefaultNodeOpts {}
   interface LiteGraphGlobal extends RegisteredLiteGraphGlobal {}
 }

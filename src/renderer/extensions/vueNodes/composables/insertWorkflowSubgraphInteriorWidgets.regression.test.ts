@@ -21,7 +21,7 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { AgentCrdtProjection } from '@/workbench/extensions/agent/crdt/agentCrdtProjection'
 import { FollowerDoc } from '@/workbench/extensions/agent/crdt/followerDoc'
 

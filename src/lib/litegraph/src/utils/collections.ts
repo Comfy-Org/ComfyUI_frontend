@@ -1,10 +1,17 @@
-import type { LGraphNode } from '@/lib/litegraph/src/types/entityRegistry'
+import type { LGraphNode } from '@comfyorg/graph-model/entityRegistry'
 
 import { parseSlotTypes } from '@/lib/litegraph/src/strings'
 
-import type { ISlotType, Positionable } from '@/lib/litegraph/src/interfaces'
+import type { ISlotType, Positionable } from '@comfyorg/graph-model/interfaces'
 
 let isGraphNode: (item: Positionable) => item is LGraphNode
+
+export function legacyArrayItem<T>(
+  items: readonly T[],
+  index: number
+): T | undefined {
+  return items[index]
+}
 
 export function provideGraphNodeGuard(guard: typeof isGraphNode): void {
   isGraphNode = guard

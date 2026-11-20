@@ -22,7 +22,7 @@ See the [Browser Tests README](../../browser_tests/README.md) for full setup ins
 A test plan can prefill every setup answer in one copy-pastable command:
 
 ```bash
-pnpm comfy-test record --distribution cloud --workflow default --tags @canvas,@widget --feature-flags linear_toggle_enabled:true --use-case test-plan-step --description "seed stays fixed across runs" --name fixed-seed
+pnpm comfy-test record --distribution cloud --workflow default --tags @canvas,@widget --feature-flags node_library_essentials_enabled:true --use-case test-plan-step --description "seed stays fixed across runs" --name fixed-seed
 ```
 
 Supplied answers are confirmed and their prompts are skipped. Invalid values
@@ -37,7 +37,8 @@ Record flags:
 - `--backend <url>` connects to a custom backend and implies a custom distribution. Use it for any host without a named distribution, such as `--backend https://nightly.engcomfy.com`. For `record` it takes precedence when `--distribution` is also supplied; `check` rejects the combination instead. (`custom` is the internal id `--backend` produces — it is not a value you can pass to `--distribution`.)
 - `--workflow <name>`, `--tags <a,b>`, and `--feature-flags <key:value,...>` configure the recording.
 - `--use-case <reproduce-bug|verify-change|test-plan-step|contribute>`, `--description <text>`, and `--name <slug>` describe and name it.
-- `--pr <number>` checks whether the checkout matches a PR and offers to switch safely. It never switches a checkout with uncommitted changes.
+- `--pr <number>` verifies the checkout revision before recording and offers to switch safely. It fails closed when the PR cannot be verified, never switches a checkout with uncommitted changes, and only continues on another checkout when you explicitly choose that fallback.
+- `--force` replaces an existing spec with the same name without asking. Without it, `record` asks before overwriting and refuses when stdin is closed.
 
 ### Backends behind Cloudflare Access
 

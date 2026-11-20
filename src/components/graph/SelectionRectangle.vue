@@ -8,40 +8,44 @@
 </template>
 
 <script setup lang="ts">
-import { useRafFn } from '@vueuse/core'
-import { computed, ref } from 'vue'
+import type { CompactRect } from '@comfyorg/shared-frontend-utils/geometry'
 
+import { computed, ref, watch } from 'vue'
+
+import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 const canvasStore = useCanvasStore()
 
-const selectionRect = ref<{
-  x: number
-  y: number
-  w: number
-  h: number
-} | null>(null)
+const selectionRect = ref<CompactRect | null>(null)
 
-useRafFn(() => {
-  const canvas = canvasStore.canvas
-  if (!canvas) {
-    selectionRect.value = null
-    return
-  }
+watch(
+  () => canvasStore.canvas,
+  (canvas, _, onCleanup) => {
+    if (!canvas) {
+      selectionRect.value = null
+      return
+    }
 
-  const { pointer, dragging_rectangle } = canvas
+    onCleanup(
+      onCanvasFrame(canvas, 'update', () => {
+        const { pointer, dragging_rectangle } = canvas
 
-  if (dragging_rectangle && pointer.eDown && pointer.eMove) {
-    const x = pointer.eDown.safeOffsetX
-    const y = pointer.eDown.safeOffsetY
-    const w = pointer.eMove.safeOffsetX - x
-    const h = pointer.eMove.safeOffsetY - y
+        if (dragging_rectangle && pointer.eDown && pointer.eMove) {
+          const x = pointer.eDown.safeOffsetX
+          const y = pointer.eDown.safeOffsetY
+          const w = pointer.eMove.safeOffsetX - x
+          const h = pointer.eMove.safeOffsetY - y
 
-    selectionRect.value = { x, y, w, h }
-  } else {
-    selectionRect.value = null
-  }
-})
+          selectionRect.value = { x, y, w, h }
+        } else {
+          selectionRect.value = null
+        }
+      })
+    )
+  },
+  { immediate: true }
+)
 
 const isVisible = computed(() => selectionRect.value !== null)
 

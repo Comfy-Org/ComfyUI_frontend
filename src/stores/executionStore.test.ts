@@ -8,21 +8,23 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@/platform/telemetry'
-import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@comfyorg/telemetry'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { app } from '@/scripts/app'
 import { api } from '@/scripts/api'
 import '@/scripts/changeTracker'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
-} from '@/types/nodeIdentification'
+} from '@comfyorg/graph-model/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import type { NodeProgressState } from '@comfyorg/api-client/executionTypes'
 
 const apiEvents: EventTarget = api
 
@@ -33,14 +35,13 @@ const defaultWorkflowExecutionIntent = {
 vi.mock(import('@/composables/useAppMode'))
 
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock(import('@/platform/telemetry'))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry'))
 
 // Remove any previous global types
 declare global {
@@ -981,6 +982,22 @@ describe('useExecutionStore - background workflow error routing', () => {
     )
   }
 
+  function fireOutputsSkipped(jobId: string, nodeId: string) {
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: jobId,
+          node_errors: {
+            [nodeId]: nodeError(
+              [validationError('required_input_missing', 'images')],
+              'SaveImage'
+            )
+          }
+        }
+      })
+    )
+  }
+
   const cloudValidationMessage = JSON.stringify({
     error: { type: 'prompt_outputs_failed_validation', message: 'invalid' },
     node_errors: {
@@ -1041,6 +1058,22 @@ describe('useExecutionStore - background workflow error routing', () => {
     expect(errorStore.lastNodeErrors).toBeNull()
 
     errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
+  })
+
+  it("keeps validation node errors that arrive before their job's empty submission response", () => {
+    store.registerJobWorkflowIdMapping('job-a', graphAId)
+    fireExecutionError('job-a', {
+      exception_message: cloudValidationMessage,
+      exception_type: 'ValidationError'
+    })
+
+    errorStore.recordSubmissionNodeErrors(
+      {},
+      errorStore.runErrorKey(graphAId, workflowA.path),
+      'job-a'
+    )
+
     expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['1'])
   })
 
@@ -1150,6 +1183,100 @@ describe('useExecutionStore - background workflow error routing', () => {
     errorStore.setActiveGraph(graphBId, workflowB.path)
 
     expect(errorStore.lastExecutionError?.prompt_id).toBe('job-ambiguous')
+  })
+
+  it('marks the skipped outputs of the visible run as node errors', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('files the skipped outputs of a background run under its workflow', () => {
+    callStoreJob('job-b', workflowB)
+    fireOutputsSkipped('job-b', '9')
+
+    expect(errorStore.lastNodeErrors).toBeNull()
+
+    errorStore.setActiveGraph(graphBId, workflowB.path)
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('applies skipped outputs that arrive before the job is stored', () => {
+    fireOutputsSkipped('job-a', '9')
+    expect(errorStore.lastNodeErrors).toBeNull()
+
+    callStoreJob('job-a', workflowA)
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('keeps skipped outputs of an unknown job off the visible run', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    fireOutputsSkipped('job-unknown', '5')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('keeps skipped-output errors through execution_start', () => {
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    fireExecutionStart('job-a')
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+  })
+
+  it('shows skipped outputs whose errors include a bare string', () => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    const inputError = validationError('required_input_missing', 'images')
+    callStoreJob('job-a', workflowA)
+
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: 'job-a',
+          node_errors: {
+            '9': {
+              class_type: 'SaveImage',
+              dependent_outputs: ['9'],
+              errors: [inputError, 'Image is not valid', 42]
+            }
+          }
+        }
+      })
+    )
+
+    expect(errorStore.lastNodeErrors?.['9']?.errors).toEqual([
+      inputError,
+      { type: 'error', message: 'Image is not valid', details: '' }
+    ])
+    expect(errorStore.isErrorOverlayOpen).toBe(true)
+  })
+
+  it('ignores a skipped-outputs message with no error to show', () => {
+    useSettingStore().settingValues['Comfy.RightSidePanel.ShowErrorsTab'] = true
+    callStoreJob('job-a', workflowA)
+    fireOutputsSkipped('job-a', '9')
+    errorStore.dismissErrorOverlay()
+
+    apiEvents.dispatchEvent(
+      new CustomEvent('prompt_outputs_skipped', {
+        detail: {
+          prompt_id: 'job-a',
+          node_errors: {
+            '5': {
+              class_type: 'SaveImage',
+              dependent_outputs: ['5'],
+              errors: [42]
+            }
+          }
+        }
+      })
+    )
+
+    expect(Object.keys(errorStore.lastNodeErrors ?? {})).toEqual(['9'])
+    expect(errorStore.isErrorOverlayOpen).toBe(false)
   })
 
   it('does not route an unattributable failure to the visible workflow', () => {
@@ -2143,6 +2270,120 @@ describe('useExecutionStore - WebSocket event handlers', () => {
       expect(store.initializingJobIds.has('job-1')).toBe(false)
       expect(store.initializingJobIds.has('job-2')).toBe(true)
     })
+
+    describe('a run queued from another connection', () => {
+      const runningQueue = {
+        queue_running: [
+          [
+            0,
+            'job-1',
+            {
+              '1': {
+                inputs: {},
+                class_type: 'EmptyImage',
+                _meta: { title: 'Empty Image' }
+              },
+              '2': {
+                inputs: { image: ['1', 0] },
+                class_type: 'ImageBlur',
+                _meta: { title: 'Blur Image' }
+              },
+              '3': {
+                inputs: { images: ['2', 0] },
+                class_type: 'SaveImage',
+                _meta: { title: 'Save Image' }
+              }
+            },
+            {},
+            ['3']
+          ]
+        ],
+        queue_pending: []
+      }
+
+      it('counts its nodes and names the running one', async () => {
+        vi.mocked(api.fetchApi).mockResolvedValue(Response.json(runningQueue))
+
+        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+        await vi.waitFor(() => expect(store.totalNodesToExecute).toBe(3))
+        fire('executed', {
+          node: '1',
+          display_node: '1',
+          prompt_id: 'job-1',
+          output: {}
+        })
+
+        expect(api.fetchApi).toHaveBeenCalledWith('/queue')
+        expect(store.executionProgress).toBeCloseTo(1 / 3)
+        expect(store.activeJob?.nodeLookup?.['2']).toEqual({
+          title: 'Blur Image',
+          type: 'ImageBlur'
+        })
+      })
+
+      it('keeps nodes already reported done before the queue answered', async () => {
+        let answer: (res: Response) => void = () => {}
+        vi.mocked(api.fetchApi).mockReturnValue(
+          new Promise<Response>((resolve) => {
+            answer = resolve
+          })
+        )
+
+        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+        fire('execution_cached', {
+          prompt_id: 'job-1',
+          nodes: ['1'],
+          timestamp: 0
+        })
+        answer(Response.json(runningQueue))
+
+        await vi.waitFor(() => expect(store.totalNodesToExecute).toBe(3))
+        expect(store.activeJob?.nodes).toEqual({
+          '1': true,
+          '2': false,
+          '3': false
+        })
+      })
+
+      it.for([
+        {
+          label: 'the request fails',
+          answer: () => Promise.reject(new Error('offline'))
+        },
+        {
+          label: 'the server answers with an error',
+          answer: () => Promise.resolve(new Response('busy', { status: 503 }))
+        },
+        {
+          label: 'the body is not JSON',
+          answer: () => Promise.resolve(new Response('<html>', { status: 200 }))
+        }
+      ])(
+        'reports once and leaves the job as it was when $label',
+        async ({ answer }) => {
+          vi.mocked(api.fetchApi).mockImplementation(answer)
+
+          fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+          await vi.waitFor(() => expect(reportError).toHaveBeenCalledOnce())
+
+          const [, options] = vi.mocked(reportError).mock.calls[0]
+          expect(options).toMatchObject({
+            errorType: 'warning_queue_read_failed_for_adopted_run',
+            context: { jobId: 'job-1' }
+          })
+          expect(store.activeJob?.nodes).toEqual({})
+          expect(store.activeJob?.nodeLookup).toBeUndefined()
+        }
+      )
+
+      it('does not read the queue for a run this tab queued', () => {
+        storeVisibleJob('job-1')
+
+        fire('execution_start', { prompt_id: 'job-1', timestamp: 0 })
+
+        expect(api.fetchApi).not.toHaveBeenCalled()
+      })
+    })
   })
 
   describe('execution_cached', () => {
@@ -2596,7 +2837,8 @@ describe('useExecutionStore - WebSocket event handlers', () => {
         'executing',
         'progress',
         'progress_state',
-        'execution_error'
+        'execution_error',
+        'prompt_outputs_skipped'
       ]
 
       store.unbindExecutionEvents()

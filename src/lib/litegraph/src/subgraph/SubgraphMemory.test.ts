@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { IWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IWidget } from '@comfyorg/graph-model/widgets'
 
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {

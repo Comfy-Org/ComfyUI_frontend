@@ -284,7 +284,7 @@ Components are plain data objects — no methods, no back-references to parent e
 
 > **Amended (2026-07-05):** `LinkEndpoints` shipped as
 > `LinkTopology { id, originNodeId, originSlot, targetNodeId,
-targetSlot, type, parentId? }` in a dedicated `linkStore`, keyed by
+> targetSlot, type, parentId? }` in a dedicated `linkStore`, keyed by
 > root-workflow-wide `LinkId` in root-graph-scoped buckets. Owner-qualified
 > target and origin indexes enforce target occupancy and support fan-out
 > queries. Floating links share the ID namespace but remain absent from

@@ -1,0 +1,455 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
+
+import { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import type { components } from '@/types/comfyRegistryTypes'
+import { useInstalledPacks } from '@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'
+import { useConflictAcknowledgment } from '@/platform/customNodes/manager/composables/useConflictAcknowledgment'
+import { useConflictDetection } from '@/platform/customNodes/manager/composables/useConflictDetection'
+import { useManagerState } from '@/platform/customNodes/manager/composables/useManagerState'
+import { useComfyManagerService } from '@/platform/customNodes/manager/services/comfyManagerService'
+import { useComfyManagerStore } from '@/platform/customNodes/manager/stores/comfyManagerStore'
+import { useConflictDetectionStore } from '@/platform/customNodes/manager/stores/conflictDetectionStore'
+import { consolidateConflictsByPackage } from '@/platform/customNodes/manager/utils/conflictUtils'
+import {
+  checkAcceleratorCompatibility,
+  checkOSCompatibility
+} from '@/platform/customNodes/manager/utils/systemCompatibility'
+import { checkVersionCompatibility } from '@/platform/customNodes/manager/utils/versionUtil'
+
+// Mock dependencies
+vi.mock(
+  import('@/platform/customNodes/manager/services/comfyManagerService'),
+
+  () => ({
+    useComfyManagerService: vi.fn()
+  })
+)
+
+vi.mock(import('@/services/comfyRegistryService'), () => ({
+  useComfyRegistryService: vi.fn()
+}))
+
+vi.mock(
+  import('@/platform/customNodes/manager/utils/versionUtil'),
+
+  () => ({
+    getFrontendVersion: vi.fn(() => '1.24.0'),
+    checkVersionCompatibility: vi.fn(() => null)
+  })
+)
+
+vi.mock(
+  import('@/platform/customNodes/manager/utils/systemCompatibility'),
+
+  () => ({
+    checkOSCompatibility: vi.fn(() => null),
+    checkAcceleratorCompatibility: vi.fn(() => null),
+    normalizeOSList: vi.fn((list) => list)
+  })
+)
+
+vi.mock(import('@/platform/customNodes/manager/utils/conflictUtils'), {
+  spy: true
+})
+vi.mocked(consolidateConflictsByPackage).mockImplementation(
+  (results) => results
+)
+
+vi.mock(
+  import('@/platform/customNodes/manager/composables/useConflictAcknowledgment'),
+
+  () => ({
+    useConflictAcknowledgment: vi.fn()
+  })
+)
+
+vi.mock(
+  import('@/platform/customNodes/manager/composables/nodePack/useInstalledPacks'),
+
+  () => ({
+    useInstalledPacks: vi.fn()
+  })
+)
+
+vi.mock(import('@/platform/customNodes/manager/composables/useManagerState'))
+
+describe('useConflictDetection', () => {
+  const mockComfyManagerService = {
+    getImportFailInfoBulk: vi.fn(),
+    listInstalledPacks: vi.fn(async () => ({})),
+    isLoading: ref(false),
+    error: ref<string | null>(null)
+  } as Partial<ReturnType<typeof useComfyManagerService>> as ReturnType<
+    typeof useComfyManagerService
+  >
+
+  const mockRegistryService = {
+    getBulkNodeVersions: vi.fn(),
+    isLoading: ref(false),
+    error: ref<string | null>(null)
+  } as Partial<ReturnType<typeof useComfyRegistryService>> as ReturnType<
+    typeof useComfyRegistryService
+  >
+
+  // Create a ref that can be modified in tests
+  const mockInstalledPacksWithVersions = ref<{ id: string; version: string }[]>(
+    []
+  )
+
+  const mockInstalledPacks = {
+    startFetchInstalled: vi.fn(),
+    installedPacks: ref<components['schemas']['Node'][]>([]),
+    installedPacksWithVersions: computed(
+      () => mockInstalledPacksWithVersions.value
+    ),
+    isReady: ref(false),
+    isLoading: ref(false),
+    error: ref<unknown>(null)
+  } as Partial<ReturnType<typeof useInstalledPacks>> as ReturnType<
+    typeof useInstalledPacks
+  >
+
+  let mockManagerStore: ReturnType<typeof useComfyManagerStore>
+  let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
+  const systemStats: NonNullable<
+    ReturnType<typeof useSystemStatsStore>['systemStats']
+  > = {
+    system: {
+      os: 'darwin', // sys.platform returns 'darwin' for macOS
+      ram_total: 17179869184,
+      ram_free: 8589934592,
+      comfyui_version: '0.3.41',
+      required_frontend_version: '1.24.0',
+      python_version:
+        '3.11.0 (main, Oct 13 2023, 09:34:16) [Clang 15.0.0 (clang-1500.0.40.1)]',
+      pytorch_version: '2.1.0',
+      embedded_python: false,
+      argv: ['--enable-manager']
+    },
+    devices: [
+      {
+        name: 'Apple M1 Pro',
+        type: 'mps',
+        index: 0,
+        vram_total: 17179869184,
+        vram_free: 8589934592,
+        torch_vram_total: 17179869184,
+        torch_vram_free: 8589934592
+      }
+    ]
+  }
+
+  const mockAcknowledgment: ReturnType<typeof useConflictAcknowledgment> = {
+    acknowledgmentState: computed(() => ({
+      modal_dismissed: false,
+      red_dot_dismissed: false,
+      warning_banner_dismissed: false
+    })),
+    shouldShowConflictModal: computed(() => false),
+    shouldShowRedDot: computed(() => false),
+    shouldShowManagerBanner: computed(() => false),
+    dismissRedDotNotification: vi.fn(),
+    dismissWarningBanner: vi.fn(),
+    markConflictsAsSeen: vi.fn()
+  }
+
+  beforeEach(() => {
+    // Setup mocks
+    vi.mocked(useManagerState()).isNewManagerUI = computed(() => true)
+    vi.mocked(useComfyManagerService).mockReturnValue(mockComfyManagerService)
+    vi.mocked(useComfyRegistryService).mockReturnValue(mockRegistryService)
+    vi.mocked(useConflictAcknowledgment).mockReturnValue(mockAcknowledgment)
+    vi.mocked(useInstalledPacks).mockReturnValue(mockInstalledPacks)
+    mockManagerStore = useComfyManagerStore()
+    mockSystemStatsStore = useSystemStatsStore()
+    mockSystemStatsStore.$patch({ systemStats, isInitialized: true })
+
+    // Reset mock implementations
+    vi.mocked(mockInstalledPacks.startFetchInstalled).mockResolvedValue(
+      undefined
+    )
+    vi.mocked(mockManagerStore.isPackEnabled).mockReturnValue(true)
+    vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue({
+      node_versions: []
+    })
+    vi.mocked(mockComfyManagerService.getImportFailInfoBulk).mockResolvedValue(
+      {}
+    )
+
+    // Reset the installedPacksWithVersions data
+    mockInstalledPacksWithVersions.value = []
+  })
+
+  describe('system environment collection', () => {
+    it('should collect system environment correctly', async () => {
+      const { collectSystemEnvironment } = useConflictDetection()
+      const environment = await collectSystemEnvironment()
+
+      expect(environment).toEqual({
+        comfyui_version: '0.3.41',
+        frontend_version: '1.24.0',
+        os: 'darwin',
+        accelerator: 'mps'
+      })
+    })
+
+    it('should handle missing system stats gracefully', async () => {
+      mockSystemStatsStore.systemStats = null
+
+      const { collectSystemEnvironment } = useConflictDetection()
+      const environment = await collectSystemEnvironment()
+
+      // When systemStats is null, empty strings are used as fallback
+      expect(environment).toEqual({
+        comfyui_version: '',
+        frontend_version: '1.24.0',
+        os: '',
+        accelerator: ''
+      })
+    })
+  })
+
+  describe('conflict detection', () => {
+    it('should detect version conflicts', async () => {
+      // Setup installed packages
+      mockInstalledPacks.isReady.value = true
+      mockInstalledPacks.installedPacks.value = [
+        {
+          id: 'test-pack',
+          name: 'Test Pack',
+          latest_version: { version: '1.0.0' }
+        }
+      ]
+
+      mockInstalledPacksWithVersions.value = [
+        {
+          id: 'test-pack',
+          version: '1.0.0'
+        }
+      ]
+
+      // Mock registry response with version requirements
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue({
+        node_versions: [
+          {
+            status: 'success' as const,
+            identifier: { node_id: 'test-pack', version: '1.0.0' },
+            node_version: {
+              supported_comfyui_version: '>=0.4.0',
+              supported_comfyui_frontend_version: '>=2.0.0',
+              supported_os: ['Windows', 'Linux', 'macOS'],
+              supported_accelerators: ['CUDA', 'Metal', 'CPU'],
+              status: 'NodeVersionStatusActive' as const,
+              version: '1.0.0',
+              publisher_id: 'test-publisher',
+              node_id: 'test-pack',
+              created_at: '2024-01-01T00:00:00Z'
+            } as components['schemas']['NodeVersion']
+          }
+        ]
+      })
+
+      // Mock version checks to return conflicts
+      vi.mocked(checkVersionCompatibility).mockImplementation(
+        (type, current, required) => {
+          if (type === 'comfyui_version' && required === '>=0.4.0') {
+            return {
+              type: 'comfyui_version',
+              current_value: current || '0.3.41',
+              required_value: '>=0.4.0'
+            }
+          }
+          return null
+        }
+      )
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
+
+      expect(result.success).toBe(true)
+      expect(result.results).toHaveLength(1)
+      expect(result.results[0].has_conflict).toBe(true)
+      expect(result.results[0].conflicts).toContainEqual({
+        type: 'comfyui_version',
+        current_value: '0.3.41',
+        required_value: '>=0.4.0'
+      })
+    })
+
+    it('should detect banned packages', async () => {
+      mockInstalledPacks.isReady.value = true
+      mockInstalledPacks.installedPacks.value = [
+        {
+          id: 'banned-pack',
+          name: 'Banned Pack'
+        }
+      ]
+
+      mockInstalledPacksWithVersions.value = [
+        {
+          id: 'banned-pack',
+          version: '1.0.0'
+        }
+      ]
+
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue({
+        node_versions: [
+          {
+            status: 'success' as const,
+            identifier: { node_id: 'banned-pack', version: '1.0.0' },
+            node_version: {
+              status: 'NodeVersionStatusBanned' as const,
+              version: '1.0.0',
+              publisher_id: 'test-publisher',
+              node_id: 'banned-pack',
+              created_at: '2024-01-01T00:00:00Z',
+              supported_comfyui_version: undefined,
+              supported_comfyui_frontend_version: undefined,
+              supported_os: undefined,
+              supported_accelerators: undefined
+            } as components['schemas']['NodeVersion']
+          }
+        ]
+      })
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
+
+      expect(result.results[0].conflicts).toContainEqual({
+        type: 'banned',
+        current_value: 'installed',
+        required_value: 'not_banned'
+      })
+    })
+
+    it('should detect import failures', async () => {
+      mockInstalledPacks.isReady.value = true
+      mockInstalledPacksWithVersions.value = [
+        {
+          id: 'fail-pack',
+          version: '1.0.0'
+        }
+      ]
+
+      vi.mocked(
+        mockComfyManagerService.getImportFailInfoBulk
+      ).mockResolvedValue({
+        'fail-pack': {
+          error: 'Import error',
+          name: 'fail-pack',
+          path: '/path/to/pack'
+        } as { error?: string; traceback?: string } | null // The actual API returns different structure than types
+      })
+
+      // Mock registry response for the package
+      vi.mocked(mockRegistryService.getBulkNodeVersions).mockResolvedValue({
+        node_versions: []
+      })
+
+      const { runFullConflictAnalysis } = useConflictDetection()
+      const result = await runFullConflictAnalysis()
+
+      expect(result.results).toHaveLength(1)
+      // Import failure should match the actual implementation
+      expect(result.results[0].conflicts).toContainEqual({
+        type: 'import_failed',
+        current_value: 'Import error',
+        required_value: 'Import error'
+      })
+    })
+  })
+
+  describe('checkNodeCompatibility status derivation', () => {
+    it('flags a banned conflict for a Node with NodeStatusBanned', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      const { conflicts } = checkNodeCompatibility({
+        status: 'NodeStatusBanned'
+      })
+
+      expect(conflicts.map((c) => c.type)).toContain('banned')
+    })
+
+    it('flags a banned conflict for a NodeVersion with NodeVersionStatusBanned', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      const { conflicts } = checkNodeCompatibility({
+        status: 'NodeVersionStatusBanned'
+      })
+
+      expect(conflicts.map((c) => c.type)).toContain('banned')
+    })
+
+    it('flags a pending conflict for a NodeVersion with NodeVersionStatusPending', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      const { conflicts } = checkNodeCompatibility({
+        status: 'NodeVersionStatusPending'
+      })
+
+      const types = conflicts.map((c) => c.type)
+      expect(types).toContain('pending')
+      expect(types).not.toContain('banned')
+    })
+
+    it('forwards supported_os/supported_accelerators to the systemCompatibility checks', () => {
+      const { checkNodeCompatibility } = useConflictDetection()
+      checkNodeCompatibility({
+        status: 'NodeVersionStatusActive',
+        supported_os: ['Linux'],
+        supported_accelerators: ['CUDA']
+      })
+
+      expect(checkOSCompatibility).toHaveBeenCalledWith(['Linux'], undefined)
+      expect(checkAcceleratorCompatibility).toHaveBeenCalledWith(
+        ['CUDA'],
+        undefined
+      )
+    })
+  })
+
+  describe('computed properties', () => {
+    it('should expose conflict status from store', () => {
+      const store = useConflictDetectionStore()
+      store.conflictedPackages = [
+        {
+          package_id: 'test',
+          package_name: 'Test',
+          has_conflict: true,
+          is_compatible: false,
+          conflicts: []
+        }
+      ]
+
+      useConflictDetection()
+
+      // The hasConflicts computed should be true since we have a conflict
+      expect(store.conflictedPackages).toHaveLength(1)
+      expect(store.conflictedPackages[0].has_conflict).toBe(true)
+    })
+  })
+
+  describe('initialization', () => {
+    it('should initialize without errors', async () => {
+      // Mock that installed packs are ready
+      mockInstalledPacks.isReady.value = true
+      mockInstalledPacksWithVersions.value = []
+
+      // Ensure startFetchInstalled resolves
+      vi.mocked(mockInstalledPacks.startFetchInstalled).mockResolvedValue(
+        undefined
+      )
+
+      const { initializeConflictDetection } = useConflictDetection()
+
+      // Set a timeout to prevent hanging
+      await expect(
+        Promise.race([
+          initializeConflictDetection(),
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Timeout')), 1000)
+          )
+        ])
+      ).resolves.not.toThrow()
+    })
+  })
+})

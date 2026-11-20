@@ -10,9 +10,9 @@
         :aria-pressed="region.type === option.value"
         :class="
           cn(
-            'flex-1 self-stretch px-2 text-xs transition-colors',
+            'flex-1 self-stretch px-2 text-xs',
             region.type === option.value
-              ? 'rounded-sm bg-muted text-foreground'
+              ? 'rounded-sm bg-muted'
               : 'text-muted-foreground hover:text-foreground'
           )
         "
@@ -74,8 +74,8 @@ import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import PaletteSwatchRow from '@/components/palette/PaletteSwatchRow.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Textarea from '@/components/ui/textarea/Textarea.vue'
+import Button from '@comfyorg/design-system/button/Button'
+import Textarea from '@comfyorg/design-system/textarea/Textarea'
 import type { Region } from '@/composables/boundingBoxes/boundingBoxesUtil'
 
 const textareaClass =

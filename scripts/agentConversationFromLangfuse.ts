@@ -73,12 +73,7 @@ export type Observation = z.infer<typeof zObservation>
 
 const zPage = z.object({
   data: z.array(zObservation),
-  meta: z.object({ totalPages: z.number().optional() }).passthrough().optional()
-})
-
-const zTracePage = z.object({
-  data: z.array(z.object({ id: z.string() }).passthrough()),
-  meta: z.object({ totalPages: z.number().optional() }).passthrough().optional()
+  meta: z.object({ cursor: z.string().nullish() }).passthrough().optional()
 })
 
 // The values are secrets: never logged, never written into an artifact.
@@ -101,7 +96,7 @@ export function readEnvFile(path: string): LangfuseEnv {
   )
 }
 
-// Langfuse keeps unmapped OTel attributes under metadata.attributes; flattened metadata is the fallback.
+/** An OTel attribute from metadata.attributes, else flattened attributes.<key>, else <key>. */
 export function attributeOf(
   observation: Observation,
   key: string
@@ -113,7 +108,10 @@ export function attributeOf(
   const nested = z
     .record(z.string(), z.unknown())
     .safeParse(metadata.data.attributes)
-  const value = nested.success ? nested.data[key] : metadata.data[key]
+  const value =
+    (nested.success ? nested.data[key] : undefined) ??
+    metadata.data[`attributes.${key}`] ??
+    metadata.data[key]
   if (typeof value === 'string') return value
   if (typeof value === 'boolean' || typeof value === 'number')
     return String(value)
@@ -320,42 +318,14 @@ export class LangfuseRequestError extends Error {
   }
 }
 
-async function pages<T>(
-  env: LangfuseEnv,
-  path: string,
-  query: Record<string, string>,
-  schema: z.ZodType<{ data: T[]; meta?: { totalPages?: number } }>,
-  fetchImpl: Fetch
-): Promise<T[]> {
-  const auth = Buffer.from(
-    `${env.LANGFUSE_PUBLIC_KEY}:${env.LANGFUSE_SECRET_KEY}`
-  ).toString('base64')
-  const items: T[] = []
-  for (let page = 1; ; page += 1) {
-    const url = new URL(path, env.LANGFUSE_HOST)
-    for (const [key, value] of Object.entries({
-      ...query,
-      page: String(page),
-      limit: '100'
-    }))
-      url.searchParams.set(key, value)
-    const response = await fetchImpl(url.toString(), {
-      headers: { authorization: `Basic ${auth}` }
-    })
-    if (!response.ok)
-      throw new LangfuseRequestError(path, response.status, page)
-    const parsed = parseOrRefuse(
-      schema,
-      await response.json(),
-      `Langfuse ${path} page ${page}`
-    )
-    items.push(...parsed.data)
-    const totalPages = parsed.meta?.totalPages
-    if (
-      parsed.data.length === 0 ||
-      (totalPages !== undefined ? page >= totalPages : parsed.data.length < 100)
-    )
-      return items
+const OBSERVATIONS_PATH = '/api/public/v2/observations'
+
+function parseJsonOrKeepText(value: unknown): unknown {
+  if (typeof value !== 'string') return value
+  try {
+    return JSON.parse(value) as unknown
+  } catch {
+    return value
   }
 }
 
@@ -364,30 +334,49 @@ export async function fetchObservations(
   selector: { traceId?: string; sessionId?: string },
   fetchImpl: Fetch = (url, init) => fetch(url, init)
 ): Promise<Observation[]> {
-  const traceIds =
+  const auth = Buffer.from(
+    `${env.LANGFUSE_PUBLIC_KEY}:${env.LANGFUSE_SECRET_KEY}`
+  ).toString('base64')
+  const filter =
     selector.traceId !== undefined
-      ? [selector.traceId]
-      : (
-          await pages(
-            env,
-            '/api/public/traces',
-            { sessionId: selector.sessionId ?? '' },
-            zTracePage,
-            fetchImpl
-          )
-        ).map((trace) => trace.id)
+      ? { traceId: selector.traceId }
+      : { sessionId: selector.sessionId ?? '' }
   const observations: Observation[] = []
-  for (const traceId of traceIds)
-    observations.push(
-      ...(await pages(
-        env,
-        '/api/public/observations',
-        { traceId },
-        zPage,
-        fetchImpl
-      ))
+  let cursor: string | undefined
+  for (let page = 1; ; page += 1) {
+    const url = new URL(OBSERVATIONS_PATH, env.LANGFUSE_HOST)
+    for (const [key, value] of Object.entries({
+      ...filter,
+      fields: 'core,basic,io,metadata',
+      limit: '1000',
+      ...(cursor === undefined ? {} : { cursor })
+    }))
+      url.searchParams.set(key, value)
+    const response = await fetchImpl(url.toString(), {
+      headers: { authorization: `Basic ${auth}` }
+    })
+    if (!response.ok)
+      throw new LangfuseRequestError(OBSERVATIONS_PATH, response.status, page)
+    const parsed = parseOrRefuse(
+      zPage,
+      await response.json(),
+      `Langfuse ${OBSERVATIONS_PATH} page ${page}`
     )
-  return observations
+    observations.push(
+      ...parsed.data.map((observation) => ({
+        ...observation,
+        input: parseJsonOrKeepText(observation.input),
+        output: parseJsonOrKeepText(observation.output)
+      }))
+    )
+    const next = parsed.meta?.cursor ?? undefined
+    if (next === undefined || parsed.data.length === 0) return observations
+    if (next === cursor)
+      refuse(
+        `Langfuse ${OBSERVATIONS_PATH} page ${page} repeated cursor ${next}`
+      )
+    cursor = next
+  }
 }
 
 const sha256 = (bytes: Buffer | string): string =>

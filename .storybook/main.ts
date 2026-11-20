@@ -17,7 +17,11 @@ function withoutAppSrcAlias(alias: AliasOptions = []): Alias[] {
 }
 
 const config: StorybookConfig = {
-  stories: ['../src/**/*.stories.@(js|jsx|mjs|ts|tsx)'],
+  stories: [
+    '../src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    '../packages/design-system/src/**/*.stories.@(js|jsx|mjs|ts|tsx)',
+    '../packages/account-ui/src/**/*.stories.@(js|jsx|mjs|ts|tsx)'
+  ],
   staticDirs: ['../public'],
   addons: ['@storybook/addon-docs', '@storybook/addon-mcp'],
   framework: {
@@ -86,6 +90,10 @@ const config: StorybookConfig = {
         tsconfigPaths: true,
         alias: [
           {
+            find: '@comfyorg/design-system/css/style.css',
+            replacement: process.cwd() + '/.storybook/style.css'
+          },
+          {
             find: '@/composables/queue/useJobList',
             replacement: process.cwd() + '/src/storybook/mocks/useJobList.ts'
           },
@@ -93,6 +101,10 @@ const config: StorybookConfig = {
             find: '@/platform/billing/composables/useBillingContext',
             replacement:
               process.cwd() + '/src/storybook/mocks/useBillingContext.ts'
+          },
+          {
+            find: '@/platform/billing/composables/useBillingUI',
+            replacement: process.cwd() + '/src/storybook/mocks/useBillingUI.ts'
           },
           {
             find: '@/composables/useFeatureFlags',

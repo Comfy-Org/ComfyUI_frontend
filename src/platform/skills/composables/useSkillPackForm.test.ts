@@ -4,7 +4,7 @@ import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { api } from '@/scripts/api'
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 
 import {
   listSkillPacks,
@@ -19,7 +19,7 @@ vi.mock(import('@/composables/auth/useCurrentUser'))
 vi.mock(import('@/scripts/api'))
 vi.mock(import('@/platform/skills/api/skillsApi'), { spy: true })
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 

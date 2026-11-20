@@ -16,8 +16,8 @@ import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
-} from '@/lib/litegraph/src/types/slots'
-import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/slots'
+import { LinkDirection } from '@comfyorg/graph-model/globalEnums'
 import {
   clearCanvasPointerHistory,
   toCanvasPointerEvent
@@ -36,18 +36,18 @@ import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDra
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { Point } from '@/renderer/core/layout/types'
+import type { Point2D as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@comfyorg/graph-model/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 import { createRafBatch } from '@/utils/rafBatch'
 
 interface SlotInteractionOptions {
@@ -186,20 +186,19 @@ export function useSlotLinkInteraction({
   }
 
   const selectClickedSlotLinks = (node: LGraphNode | undefined) => {
-    const { graph } = app.canvas
+    const { graph } = useApp().canvas
     if (!graph || !node) return
     const layout = getGraphSlotLayout(graph, node.id, index, type === 'input')
     if (!layout) return
-    selectSlotLinks(app.canvas, node, type, index, layout.position)
+    selectSlotLinks(useApp().canvas, node, type, index, layout.position)
   }
 
-  // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
   const dragReveal = useSlotLinkReveal({ nodeId, index, type, kind: 'drag' })
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
-      const graphId = app.canvas.graph?.rootGraph.id
+      const graphId = useApp().canvas.graph?.rootGraph.id
       const rerouteLayout = graphId
         ? layoutStore.getRerouteLayout(graphId, link.fromReroute.id)
         : null
@@ -210,7 +209,7 @@ export function useSlotLinkInteraction({
 
     const nodeId = link.node.id
     const isInputFrom = link.toType === 'output'
-    const graph = app.canvas.graph
+    const graph = useApp().canvas.graph
     const layout = graph
       ? getGraphSlotLayout(graph, nodeId, link.fromSlotIndex, isInputFrom)
       : null
@@ -289,7 +288,7 @@ export function useSlotLinkInteraction({
     if (!link) return null
     if (link.origin_id === UNASSIGNED_NODE_ID) return null
 
-    const graph = app.canvas.graph
+    const graph = useApp().canvas.graph
     const layout = graph
       ? getGraphSlotLayout(graph, link.origin_id, link.origin_slot, false)
       : null
@@ -435,7 +434,7 @@ export function useSlotLinkInteraction({
 
     if (hoverChanged) {
       const adapter = activeAdapter
-      const graph = app.canvas.graph ?? null
+      const graph = useApp().canvas.graph ?? null
       const context = { adapter, graph, session: dragContext }
       const slotCandidate = resolveSlotTargetCandidate(target, context)
       const nodeCandidate = resolveNodeSurfaceSlotCandidate(target, context)
@@ -493,11 +492,11 @@ export function useSlotLinkInteraction({
     }
 
     const shouldRedraw = candidateChanged || snapPosChanged
-    if (shouldRedraw) app.canvas.setDirty(true, true)
+    if (shouldRedraw) useApp().canvas.setDirty(true, true)
   }
   const raf = createRafBatch(processPointerMoveFrame)
 
-  const canvas = app.canvas
+  const canvas = useApp().canvas
   const node = nodeId ? canvas.graph?.getNodeById(nodeId) : null
   const handlePointerMove = (event: PointerEvent) => {
     if (!pointerSession.matches(event)) return
@@ -509,7 +508,7 @@ export function useSlotLinkInteraction({
 
     event.stopPropagation()
 
-    app.canvas.last_mouse = [event.clientX, event.clientY]
+    useApp().canvas.last_mouse = [event.clientX, event.clientY]
     autoPan?.updatePointer(event.clientX, event.clientY)
     if (hasDragged) autoPan?.start()
 
@@ -527,12 +526,11 @@ export function useSlotLinkInteraction({
     raf.schedule()
   }
 
-  // Attempt to finalize by connecting to a DOM slot candidate
   const tryConnectToCandidate = (
     candidate: SlotDropCandidate | null
   ): boolean => {
     if (!candidate?.compatible) return false
-    const graph = app.canvas.graph
+    const graph = useApp().canvas.graph
     const adapter = activeAdapter
     if (!graph || !adapter) return false
 
@@ -555,9 +553,8 @@ export function useSlotLinkInteraction({
     )
   }
 
-  // Attempt to finalize by dropping on a reroute under the pointer
   const tryConnectViaRerouteAtPointer = (): boolean => {
-    const graph = app.canvas.graph
+    const graph = useApp().canvas.graph
     const adapter = activeAdapter
     if (!graph || !adapter) return false
 
@@ -627,14 +624,14 @@ export function useSlotLinkInteraction({
       const pressedNode = press?.node
       cleanupInteraction()
       selectClickedSlotLinks(pressedNode)
-      app.canvas.setDirty(true, true)
+      useApp().canvas.setDirty(true, true)
       useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
       return
     }
 
     if (!state.source) {
       cleanupInteraction()
-      app.canvas.setDirty(true, true)
+      useApp().canvas.setDirty(true, true)
       return
     }
 
@@ -649,12 +646,18 @@ export function useSlotLinkInteraction({
     )
     const hasConnected = connectByPriority(dropTarget, snappedCandidate)
 
-    if (!hasConnected && dropTarget === app.canvas.canvas) {
+    const isCanvasSurface =
+      dropTarget === useApp().canvas.canvas ||
+      !!useApp().canvas.subgraph?.getIoNodeOnPos(
+        canvasEvent.canvasX,
+        canvasEvent.canvasY
+      )
+    if (!hasConnected && isCanvasSurface) {
       activeAdapter?.dropOnCanvas(canvasEvent)
     }
 
     cleanupInteraction()
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
     useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   }
 
@@ -669,7 +672,7 @@ export function useSlotLinkInteraction({
     raf.flush()
     toCanvasPointerEvent(event)
     cleanupInteraction()
-    app.canvas.setDirty(true, true)
+    useApp().canvas.setDirty(true, true)
   }
 
   function connectByPriority(
@@ -677,7 +680,7 @@ export function useSlotLinkInteraction({
     snappedCandidate: SlotDropCandidate | null
   ): boolean {
     const adapter = activeAdapter
-    const graph = app.canvas.graph ?? null
+    const graph = useApp().canvas.graph ?? null
     const context = { adapter, graph, session: dragContext }
 
     const domSlotCandidate = resolveSlotTargetCandidate(target, context)
@@ -701,7 +704,7 @@ export function useSlotLinkInteraction({
     event.preventDefault()
     event.stopPropagation()
 
-    const canvas = app.canvas
+    const canvas = useApp().canvas
     const graph = canvas.graph
     if (!graph) return
 
@@ -797,8 +800,6 @@ export function useSlotLinkInteraction({
     if (!wasConnecting && activeAdapter.linkConnector.isConnecting) {
       dragReveal.revealLinks()
       const { linkConnector } = activeAdapter
-      // Escape on the canvas resets the connector without ending this
-      // pointer session. Check after dispatch, since a listener may veto it.
       linkConnector.events.addEventListener(
         'reset',
         () =>
@@ -881,8 +882,7 @@ export function useSlotLinkInteraction({
       }
     }
     autoPan = new AutoPanController({
-      canvas: canvas.canvas,
-      ds: canvas.ds,
+      canvas,
       maxPanSpeed: canvas.auto_pan_speed,
       onPan: () => {
         const [canvasX, canvasY] = conversion.clientPosToCanvasPos([
@@ -914,20 +914,20 @@ export function useSlotLinkInteraction({
 
   function onDoubleClick(e: PointerEvent) {
     if (!nodeId) return
-    const { graph } = app.canvas
+    const { graph } = useApp().canvas
     if (!graph) return
     const node = graph.getNodeById(nodeId)
     if (!node) return
-    augmentToCanvasPointerEvent(e, node, app.canvas)
+    augmentToCanvasPointerEvent(e, node, useApp().canvas)
     node.onInputDblClick?.(index, e)
   }
   function onClick(e: PointerEvent) {
     if (!nodeId) return
-    const { graph } = app.canvas
+    const { graph } = useApp().canvas
     if (!graph) return
     const node = graph.getNodeById(nodeId)
     if (!node) return
-    augmentToCanvasPointerEvent(e, node, app.canvas)
+    augmentToCanvasPointerEvent(e, node, useApp().canvas)
     node.onInputClick?.(index, e)
   }
 

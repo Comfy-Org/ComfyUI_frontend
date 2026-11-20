@@ -317,6 +317,10 @@
   "Comfy_Node_DoubleClickTitleToEdit": {
     "name": "Doble clic en el título del nodo para editar"
   },
+  "Comfy_Node_DownscaleImagePreviews": {
+    "name": "Reducir la escala de las vistas previas de imágenes grandes",
+    "tooltip": "En Nodes 2.0, muestra las imágenes grandes en los nodos como una copia de como máximo 1024 px en el lado más largo para que muchas vistas previas grandes sigan siendo ágiles. Desactiva esta opción para mostrar siempre la original."
+  },
   "Comfy_Node_MiddleClickRerouteNode": {
     "name": "El clic medio crea un nuevo nodo de reenrutamiento"
   },

@@ -3,7 +3,7 @@
     class="mx-auto flex h-full min-h-0 max-w-[400px] flex-col justify-between overflow-y-auto text-sm motion-safe:animate-in motion-safe:duration-300 motion-safe:fade-in motion-safe:slide-in-from-bottom-2"
   >
     <div class="flex flex-col items-center gap-4 pt-8">
-      <i class="pi pi-check-circle text-5xl text-success" />
+      <i class="icon-[lucide--circle-check] size-12 text-success" />
       <CheckoutTitle
         class="m-0 text-center text-xl font-semibold text-foreground lg:text-2xl"
       >
@@ -34,7 +34,7 @@
             </span>
           </div>
           <div class="flex items-center gap-1 text-muted-foreground">
-            <i class="icon-[lucide--coins] size-4 shrink-0 bg-credit" />
+            <i class="icon-[lucide--coins] bg-credit" />
             <span class="tabular-nums">
               {{ displayCredits }} {{ isYearly ? copy.perYear : copy.perMonth }}
             </span>

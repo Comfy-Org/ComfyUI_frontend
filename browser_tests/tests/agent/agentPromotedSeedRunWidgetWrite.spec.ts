@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
+import type { PromptResponse } from '@comfyorg/api-client/types'
 
 import subgraphWorkflow from '@e2e/assets/subgraphs/agent-subgraph-with-two-promoted-widgets.json' with { type: 'json' }
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'

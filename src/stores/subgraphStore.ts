@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 
 import { t } from '@/i18n'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToast } from '@/components/ui/toast/toastStore'
@@ -11,25 +12,25 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type {
   ComfyNode,
   ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { SerializedNodeId } from '@/types/nodeId'
+} from '@comfyorg/graph-model/workflowSchema'
+import type { SerializedNodeId } from '@comfyorg/graph-model/nodeId'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeError } from '@/platform/remote/comfyui/types'
+import type { NodeError } from '@comfyorg/api-client/types'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec
-} from '@/schemas/nodeDefSchema'
+} from '@comfyorg/object-info-parser'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
-import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import { TemplateIncludeOnDistributionEnum } from '@comfyorg/api-client/templateTypes'
 import { api } from '@/scripts/api'
-import type { GlobalSubgraphData } from '@/scripts/api'
+import type { GlobalSubgraphData } from '@comfyorg/api-client/ComfyApi'
 import { useDialogService } from '@/services/dialogService'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { UserFile } from '@/stores/userFileStore'
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
-import { getErrorMessage } from '@/utils/errorUtil'
+import { getErrorMessage } from '@comfyorg/shared-frontend-utils/errorUtil'
 
 async function confirmOverwrite(name: string): Promise<boolean | null> {
   return await useDialogService().confirm({
@@ -245,16 +246,20 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       return Promise.allSettled(filteredEntries.map(loadGlobalBlueprint))
     }
 
-    const userSubs = (
-      await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
-    ).filter((f) => f.path.endsWith('.json'))
-    const [globalResult, ...userResults] = await Promise.allSettled([
+    async function loadUserBlueprints() {
+      const userSubs = (
+        await api.listUserDataFullInfo(SubgraphBlueprint.basePath)
+      ).filter((f) => f.path.endsWith('.json'))
+      return Promise.allSettled(userSubs.map(loadBlueprint))
+    }
+
+    const results = await Promise.allSettled([
       loadInstalledBlueprints(),
-      ...userSubs.map(loadBlueprint)
+      loadUserBlueprints()
     ])
-    const globalResults =
-      globalResult.status === 'fulfilled' ? globalResult.value : []
-    const settled = [...globalResults, ...userResults]
+    const settled = results.flatMap((result) =>
+      result.status === 'fulfilled' ? result.value : [result]
+    )
 
     const errors = settled.filter((i) => 'reason' in i).map((i) => i.reason)
     errors.forEach((e) => console.error('Failed to load subgraph blueprint', e))
@@ -277,7 +282,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     const subgraphNode = workflow.changeTracker.initialState.nodes[0]
     subgraphNode.inputs ??= []
     subgraphNode.outputs ??= []
-    //NOTE: Types are cast to string. This is only used for input coloring on previews
     const inputs = Object.fromEntries(
       subgraphNode.inputs.map((i) => [
         i.name,
@@ -311,7 +315,9 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       essentials_category: subgraphDefEssentialsCategory,
       ...overrides
     }
-    nodeDefStore.registerBlueprintNodeDef(new ComfyNodeDefImpl(nodedefv1))
+    nodeDefStore.registerBlueprintNodeDef(
+      new ComfyNodeDefImpl(nodedefv1, { validateInputs: true })
+    )
     subgraphCache[name] = workflow
   }
   async function publishSubgraph(providedName?: string) {
@@ -330,7 +336,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       throw new TypeError('Must have single SubgraphNode selected to publish')
     }
 
-    //create minimal workflow
     const workflowData = {
       revision: 0,
       last_node_id: subgraphNode.id,
@@ -340,7 +345,6 @@ export const useSubgraphStore = defineStore('subgraph', () => {
       version: 0.4,
       definitions: { subgraphs }
     }
-    //prompt name
     const name =
       providedName ??
       (await useDialogService().prompt({
@@ -349,14 +353,24 @@ export const useSubgraphStore = defineStore('subgraph', () => {
         defaultValue: subgraphNode.title
       }))
     if (!name) return
+    const savedBlueprints = await api
+      .listUserDataFullInfo(SubgraphBlueprint.basePath)
+      .catch((error: unknown) => {
+        reportError(error, {
+          errorType: 'error_checking_blueprint_overwrite',
+          surface: 'graph'
+        })
+        useToast().error(t('subgraphStore.loadFailure'), {
+          description: getErrorMessage(error) ?? t('g.unknownError')
+        })
+      })
+    if (!savedBlueprints) return
     if (
-      nodeDefStore.blueprintNodeDefsByName.has(BLUEPRINT_TYPE_PREFIX + name) &&
+      savedBlueprints.some((file) => file.path === `${name}.json`) &&
       !(await confirmOverwrite(name))
     )
-      //User has chosen not to overwrite.
       return
 
-    //upload file
     const path = SubgraphBlueprint.basePath + name + '.json'
     const workflow = new SubgraphBlueprint({
       path,
@@ -365,10 +379,8 @@ export const useSubgraphStore = defineStore('subgraph', () => {
     })
     workflow.originalContent = JSON.stringify(workflowData)
     const loadedWorkflow = await workflow.load()
-    //Mark non-temporary
     workflow.size = 1
     await workflow.save()
-    //add to files list?
     useWorkflowStore().attachWorkflow(loadedWorkflow)
     useToast().success(t('subgraphStore.publishSuccess'), {
       description: t('subgraphStore.publishSuccessMessage'),

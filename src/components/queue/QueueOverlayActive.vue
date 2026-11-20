@@ -51,9 +51,7 @@
             :aria-label="t('sideToolbar.queueProgressOverlay.interruptAll')"
             @click="$emit('interruptAll')"
           >
-            <i
-              class="icon-[lucide--x] block size-4 leading-none text-foreground"
-            />
+            <i class="icon-[lucide--x] block leading-none text-foreground" />
           </Button>
         </div>
 
@@ -73,7 +71,7 @@
             @click="$emit('clearQueued')"
           >
             <i
-              class="icon-[lucide--list-x] block size-4 leading-none text-foreground"
+              class="icon-[lucide--list-x] block leading-none text-foreground"
             />
           </Button>
         </div>
@@ -94,7 +92,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import Button from '@comfyorg/design-system/button/Button'
 
 defineProps<{
   totalProgressStyle: Record<string, string>

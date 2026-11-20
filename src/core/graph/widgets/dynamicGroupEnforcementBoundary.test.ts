@@ -3,10 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useLitegraphService } from '@/services/litegraphService'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import { followedDoc } from '@/workbench/extensions/agent/crdt/__fixtures__/followedDoc'
 import { LiveGraphApplier } from '@/workbench/extensions/agent/crdt/liveGraphApplier'
 
@@ -17,7 +17,7 @@ import {
 } from './dynamicGroupDiagnostics'
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
-vi.mock(import('@/platform/telemetry/reportError'))
+vi.mock(import('@comfyorg/telemetry/reportError'))
 
 const MAX = 3
 const FIELDS_PER_ROW = 1
@@ -184,6 +184,41 @@ describe('every layer bounds allocation independently', () => {
     expect([rows.value, failureCount]).toEqual([1, 1])
     expect(changed).not.toHaveBeenCalled()
     expect(versionDelta).toBe(0)
+  })
+
+  it('throws on a direct over-bound write before any row is resized', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Group', 'BoundaryDirectUnbounded')
+    graph.add(node)
+    addGroup(node)
+    const rows = node.widgets?.find((widget) => widget.name === 'rows')
+    if (!rows) throw new Error('Missing DynamicGroup controller')
+    rows.value = 2
+    const widgetsBefore = [...(node.widgets ?? [])]
+
+    expect(() => {
+      rows.value = ALLOCATION_BOUND + 1
+    }).toThrow(RangeError)
+    expect(rows.value).toBe(2)
+    expect(node.widgets).toEqual(widgetsBefore)
+  })
+
+  it('accepts a direct write above max but inside the allocation bound', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('Group', 'BoundaryDirectAboveMax')
+    graph.add(node)
+    addGroup(node)
+    const rows = node.widgets?.find((widget) => widget.name === 'rows')
+    if (!rows) throw new Error('Missing DynamicGroup controller')
+
+    rows.value = MAX + 2
+
+    expect(rows.value).toBe(MAX + 2)
+    expect(
+      node.widgets?.filter((widget) =>
+        /^rows\.\d+\.strength$/.test(widget.name)
+      )
+    ).toHaveLength(MAX + 2)
   })
 
   it('pins the frontend row cap below the document package budget', () => {

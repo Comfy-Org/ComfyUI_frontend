@@ -48,7 +48,7 @@
       <Badge
         v-if="nodeDef.nodeSource.type !== NodeSourceType.Unknown"
         variant="chip"
-        class="text-sm font-light"
+        class="font-light"
       >
         {{ nodeDef.nodeSource.displayText }}
       </Badge>
@@ -59,8 +59,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import HighlightedText from '@/components/searchbox/HighlightedText.vue'
-import Badge from '@/components/ui/badge/Badge.vue'
+import HighlightedText from '@comfyorg/design-system/common/HighlightedText'
+import Badge from '@comfyorg/design-system/badge/Badge'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/core/graph/nodeDef/ComfyNodeDefImpl'

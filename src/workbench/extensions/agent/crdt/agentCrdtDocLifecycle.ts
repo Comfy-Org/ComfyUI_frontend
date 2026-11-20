@@ -1,6 +1,6 @@
 import { once } from 'es-toolkit'
 
-import { reportError } from '@/platform/telemetry/reportError'
+import { reportError } from '@comfyorg/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { recordDevEvent } from './devPanelLog'
@@ -262,6 +262,12 @@ export class AgentCrdtDocLifecycle {
     this.recoverableGiveUpReason = null
   }
 
+  /** Drops the pending ack and probe while a socket reconnect answers the refusal. */
+  awaitReconnect(): void {
+    this.clearAckTimer()
+    this.clearStaleProbe()
+  }
+
   onSubscribeSent(workflowId: string): void {
     this.clearAckTimer()
     this.confirmedSinceLastSend = false
@@ -329,6 +335,12 @@ export class AgentCrdtDocLifecycle {
   clearForRetarget(): void {
     this.resetForNewAttempt()
     this.resetNotifiedGiveUp()
+  }
+
+  /** Re-reads the bound document, deferring to a retry or give-up in progress. */
+  refresh(): void {
+    if (this.shouldDeferSubscribe()) return
+    this.resubscribeOrScheduleRetry()
   }
 
   retry(): boolean {

@@ -21,7 +21,7 @@ import type {
   UpDirection
 } from '@comfyorg/viewport3d/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
+import type { NodeId } from '@comfyorg/graph-model/nodeId'
 
 // Type for the useLoad3dViewer composable function
 // Using explicit type to avoid import() type annotations (lint rule)

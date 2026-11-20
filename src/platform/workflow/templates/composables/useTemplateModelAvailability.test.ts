@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ModelFile } from '@comfyorg/graph-model/workflowSchema'
 import {
   ComfyModelDef,
   ModelFolder,
@@ -10,7 +10,7 @@ import {
 
 const mocks = vi.hoisted(() => ({ reportError: vi.fn() }))
 
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
+vi.mock(import('@comfyorg/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 

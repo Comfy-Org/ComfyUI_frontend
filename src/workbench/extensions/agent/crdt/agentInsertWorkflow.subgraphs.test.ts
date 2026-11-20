@@ -30,7 +30,7 @@ import {
   enableSubgraphNodeCreation
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
+import { toNodeId } from '@comfyorg/graph-model/nodeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'

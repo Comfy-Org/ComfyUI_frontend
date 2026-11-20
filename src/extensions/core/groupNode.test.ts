@@ -7,9 +7,9 @@ import { t } from '@/i18n'
 
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyNode } from '@comfyorg/graph-model/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/workflowErrors/nodeReplacement/missingNodesErrorStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { ComfyNodeDef } from '@comfyorg/object-info-parser'
 import { app } from '@/scripts/app'
 import { ComfyWidgets } from '@/scripts/widgets'
 import { useLitegraphService } from '@/services/litegraphService'
@@ -128,9 +128,12 @@ describe('GroupNodeConfig.getLinks', () => {
     ).toEqual([null])
   })
 
-  test.for([{ unexpected: true }, ['IMAGE', 42]])(
-    'normalizes an invalid primitive link type to null',
-    (invalidType) => {
+  test.for([
+    { case: 'an object', invalidType: { unexpected: true } },
+    { case: 'a non-string array', invalidType: ['IMAGE', 42] }
+  ])(
+    'normalizes an invalid primitive link type given as $case to null',
+    ({ invalidType }) => {
       const link = [0, 0, 1, 0, 1, invalidType] satisfies GroupNodeLink
       const config = configFrom([link])
 

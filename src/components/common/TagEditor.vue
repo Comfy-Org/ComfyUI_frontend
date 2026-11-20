@@ -3,11 +3,11 @@ import type { TagsInputRootProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import TagsInput from '@/components/ui/tags-input/TagsInput.vue'
-import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
-import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
-import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
-import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
+import TagsInput from '@comfyorg/design-system/tags-input/TagsInput'
+import TagsInputInput from '@comfyorg/design-system/tags-input/TagsInputInput'
+import TagsInputItem from '@comfyorg/design-system/tags-input/TagsInputItem'
+import TagsInputItemDelete from '@comfyorg/design-system/tags-input/TagsInputItemDelete'
+import TagsInputItemText from '@comfyorg/design-system/tags-input/TagsInputItemText'
 
 const { placeholder, itemClass, ...rootProps } = defineProps<
   Omit<TagsInputRootProps<string>, 'modelValue' | 'defaultValue'> & {
@@ -31,7 +31,9 @@ const { t } = useI18n()
       :class="typeof itemClass === 'function' ? itemClass(tag) : itemClass"
     >
       <TagsInputItemText />
-      <TagsInputItemDelete :aria-label="t('g.removeTag')" />
+      <TagsInputItemDelete
+        :aria-label="t('g.removeTagNamed', { tag }, { escapeParameter: false })"
+      />
     </TagsInputItem>
     <slot name="input" :is-empty>
       <TagsInputInput :is-empty :placeholder />

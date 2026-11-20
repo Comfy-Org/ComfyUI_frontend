@@ -1,3 +1,4 @@
+import { createTimeoutSignal } from '@comfyorg/api-client/abortSignal'
 // oxlint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 import { once } from 'es-toolkit'
@@ -10,8 +11,8 @@ import {
   installDatadogRum,
   resolveDeployEnv,
   setFrontendBucket
-} from './rumContext'
-import type { FrontendBucket } from './rumContext'
+} from '@comfyorg/telemetry/rumContext'
+import type { FrontendBucket } from '@comfyorg/telemetry/rumContext'
 
 const FRONTEND_CONTEXT_FETCH_TIMEOUT_MS = 1_000
 const FRONTEND_BUCKETS: readonly FrontendBucket[] = ['canary', 'stable']
@@ -26,7 +27,7 @@ async function setFrontendContext(): Promise<void> {
   const response = await fetch(window.location.origin, {
     method: 'HEAD',
     cache: 'no-store',
-    signal: AbortSignal.timeout(FRONTEND_CONTEXT_FETCH_TIMEOUT_MS)
+    signal: createTimeoutSignal(FRONTEND_CONTEXT_FETCH_TIMEOUT_MS)
   })
   if (!response.ok) return
 

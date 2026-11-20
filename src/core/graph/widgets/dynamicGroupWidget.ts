@@ -3,7 +3,7 @@ import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { IBaseWidget } from '@comfyorg/graph-model/widgets'
 import { VueOnlyWidget } from '@/lib/litegraph/src/widgets/VueOnlyWidget'
 import {
   captureInputLayout,
@@ -14,9 +14,9 @@ import {
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
-import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { InputSpec } from '@/schemas/nodeDefSchema'
-import { zDynamicGroupInputSpec } from '@/schemas/nodeDefSchema'
+import { transformInputSpecV1ToV2 } from '@comfyorg/object-info-parser/migration'
+import type { InputSpec } from '@comfyorg/object-info-parser'
+import { zDynamicGroupInputSpec } from '@comfyorg/object-info-parser'
 import { useLitegraphServiceAccess } from '@/core/graph/litegraphServiceAccess'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -384,8 +384,8 @@ export function dynamicGroupWidget(
     }
   }
 
-  function exceedsAllocationBound(requested: number) {
-    if (requested <= dynamicGroupRowAllocationBound(controller)) return false
+  function assertWithinAllocationBound(requested: number): void {
+    if (requested <= dynamicGroupRowAllocationBound(controller)) return
     if (!isRemoteDynamicGroupRowWrite(node))
       reportDynamicGroupRowRefusal(node, 'add_row', requested, rowCount)
     throw new RangeError(
@@ -419,7 +419,7 @@ export function dynamicGroupWidget(
       if (typeof value !== 'number' || !Number.isFinite(value)) return
       const requested = Math.max(0, Math.trunc(value))
       const count = Math.max(min, requested)
-      if (exceedsAllocationBound(count)) return
+      assertWithinAllocationBound(count)
       resizeRows(count)
     }
   })

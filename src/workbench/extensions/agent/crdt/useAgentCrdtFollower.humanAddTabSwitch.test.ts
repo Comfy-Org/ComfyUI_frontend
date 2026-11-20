@@ -12,9 +12,9 @@ import { defineComponent, nextTick, ref } from 'vue'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
+import type { ISerialisedGraph } from '@comfyorg/graph-model/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { graphScopeOf } from '@/types/graphScopeId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { encodeBase64 } from './docFrameClient'
@@ -188,7 +188,7 @@ describe('a human-added node across a tab switch', () => {
     {
       name: 'a frontend-only (virtual) node',
       type: 'TestVirtual',
-      widgetsValues: ['x']
+      widgetsValues: { name: 'x' }
     }
   ])(
     'keeps $name and delivers a batch queued behind its in-flight add across a tab switch with an advancing host',

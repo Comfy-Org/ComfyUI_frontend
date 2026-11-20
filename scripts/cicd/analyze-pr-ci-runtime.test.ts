@@ -9,13 +9,13 @@ import {
 
 describe('CI runtime CLI options', () => {
   it.for([
-    ['--cohort'],
-    ['--commits'],
-    ['--cache'],
-    ['--output'],
-    ['--cohort', '--refresh'],
-    ['--cache', '--refresh']
-  ])('rejects a missing operand in %j', (args) => {
+    { args: ['--cohort'] },
+    { args: ['--commits'] },
+    { args: ['--cache'] },
+    { args: ['--output'] },
+    { args: ['--cohort', '--refresh'] },
+    { args: ['--cache', '--refresh'] }
+  ])('rejects a missing operand in $args', ({ args }) => {
     expect(() => options(args)).toThrow(`${args[0]} requires a value`)
   })
 

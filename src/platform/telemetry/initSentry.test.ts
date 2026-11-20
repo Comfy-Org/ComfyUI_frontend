@@ -11,7 +11,7 @@ import { assert, beforeEach, expect, it, vi } from 'vitest'
 
 vi.mock(import('@sentry/vue'), { spy: true })
 
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
+import { WorkspaceApiError } from '@/platform/remote/ingest/ingestApiError'
 
 import { initSentry } from './initSentry'
 

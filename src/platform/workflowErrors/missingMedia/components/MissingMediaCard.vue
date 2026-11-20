@@ -50,7 +50,7 @@
             "
             @click.stop="emit('locateNode', item.nodeId)"
           >
-            <i aria-hidden="true" class="icon-[lucide--locate] size-4" />
+            <i aria-hidden="true" class="icon-[lucide--locate]" />
           </Button>
         </div>
       </li>
@@ -63,12 +63,12 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Button from '@/components/ui/button/Button.vue'
-import { selectionEmphasisClass } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import Button from '@comfyorg/design-system/button/Button'
+import { selectionEmphasisClass } from '@/platform/workflowErrors/panel/selectionEmphasis'
 import { resolveMissingMediaItemLabel } from '@/platform/workflowErrors/errorCatalog/errorMessageResolver'
 import { getMissingMediaReferences } from '@/platform/workflowErrors/missingMedia/missingMediaGrouping'
 import type { MissingMediaGroup } from '@/platform/workflowErrors/missingMedia/types'
-import { app } from '@/scripts/app'
+import { useApp } from '@/scripts/appInstance'
 import { getNodeByExecutionId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
@@ -131,7 +131,7 @@ function compareMissingMediaItems(
 }
 
 function getNodeDisplayLabel(nodeId: string, fallback: string): string {
-  const graph = app.rootGraph
+  const graph = useApp().rootGraph
   if (!graph) return fallback
   const node = getNodeByExecutionId(graph, nodeId)
   return resolveNodeDisplayName(node, {

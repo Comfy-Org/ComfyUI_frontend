@@ -13,12 +13,12 @@ import { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   LinkMarkerShape,
   LinkRenderType
-} from '@/lib/litegraph/src/types/globalEnums'
+} from '@comfyorg/graph-model/globalEnums'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { graphScopeOf } from '@/types/graphScopeId'
-import { toGroupId } from '@/types/groupId'
-import { toLinkId } from '@/types/linkId'
-import { toRerouteId } from '@/types/rerouteId'
+import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
+import { toGroupId } from '@comfyorg/graph-model/groupId'
+import { toLinkId } from '@comfyorg/graph-model/linkId'
+import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
@@ -33,6 +33,7 @@ vi.mock<unknown>(
 
   () => ({
     layoutStore: {
+      applyOperations: vi.fn(),
       queryRerouteAtPoint: mockQueryRerouteAtPoint
     }
   })
@@ -198,7 +199,7 @@ describe('getCanvasContextMenuTarget', () => {
 
     const target = resolve()
 
-    expect(target.stackedLinks).toEqual([links[0], links[1]])
+    expect(target.stack?.links).toEqual([links[0], links[1]])
     expect(target.link).toBeUndefined()
   })
 
