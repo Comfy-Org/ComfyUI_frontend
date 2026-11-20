@@ -2530,8 +2530,6 @@ export class ComfyApp implements IComfyApp {
     try {
       await useExtensionService().invokeExtensionsAsync('beforeLoadGraph')
       lifecycleStarted = true
-      // The open may have been superseded while this import waited behind
-      // another graph load. Bail out before the canvas is mutated.
       if (options.isCurrent?.() === false) return false
       const replaceCanvas = useWorkflowService().beforeLoadNewGraph(false)
       replaceCanvas()
