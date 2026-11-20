@@ -367,6 +367,24 @@ describe('widget listeners', () => {
       expect(await promptInputs()).toMatchObject({ seed: 1 })
     })
 
+    it('copies nothing for a change or a prompt once every listener has left', async () => {
+      const { node, seedWidget, seed } = nodeWithSeed()
+      seed.on('change', () => {})()
+      seed.on('activate', () => {})()
+      seed.on('beforeSerialize', () => {})()
+      let reads = 0
+      const value = Object.defineProperty({}, 'n', {
+        enumerable: true,
+        get: () => ++reads
+      })
+
+      seedWidget.value = value as never
+      seedWidget.callback?.(value)
+      await seedWidget.serializeValue?.(node, 0)
+
+      expect(reads).toBe(0)
+    })
+
     it('sends the last value listeners supply', async () => {
       const { seed } = nodeWithSeed()
       seed.on('beforeSerialize', (event) => event.setSerializedValue(2))
