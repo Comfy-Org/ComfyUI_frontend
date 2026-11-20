@@ -1,4 +1,4 @@
-import type { NodeReplacementResponse } from './types'
+import type { NodeReplacement, NodeReplacementResponse } from './types'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -223,6 +223,29 @@ describe('useNodeReplacementStore', () => {
         expect(result !== null).toBe(matches)
       }
     )
+
+    it('applies the first entry to a node without a pack when every entry names one pack', () => {
+      const fromKjNodes = (newNodeId: string): NodeReplacement => ({
+        new_node_id: newNodeId,
+        old_node_id: 'StringConstant',
+        old_widget_ids: ['string'],
+        input_mapping: [{ new_id: 'value', old_id: 'string' }],
+        output_mapping: null,
+        old_pack: 'comfyui-kjnodes',
+        kind: 'equivalent'
+      })
+      store.replacements = {
+        StringConstant: [fromKjNodes('PrimitiveString'), fromKjNodes('Other')]
+      }
+
+      const result = store.getReplacementForMissing(
+        'StringConstant',
+        undefined,
+        ['text']
+      )
+
+      expect(result?.new_node_id).toBe('PrimitiveString')
+    })
   })
 
   describe('getReplacementForInstalled', () => {

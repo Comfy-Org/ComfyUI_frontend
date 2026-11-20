@@ -81,12 +81,13 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     const entries = entriesFor(nodeType)
     const match = matchPack(entries, cnrId?.toLowerCase())
     if (match) return match
-    const [sole] = entries
-    const fitsSoleEntry =
+    const [first] = entries
+    const fitsOnlyPack =
       cnrId === undefined &&
-      entries.length === 1 &&
-      fitsSavedWidgets(sole, widgetValues)
-    return fitsSoleEntry ? sole : null
+      entries.length > 0 &&
+      entries.every((entry) => entry.old_pack === first.old_pack) &&
+      fitsSavedWidgets(first, widgetValues)
+    return fitsOnlyPack ? first : null
   }
 
   function hasReplacement(nodeType: string): boolean {
