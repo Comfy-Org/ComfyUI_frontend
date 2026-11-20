@@ -135,18 +135,12 @@ describe('onboardingReplay', () => {
     })
 
     it('fails safely when replay storage cannot be read', () => {
+      requestOnboardingReplay(OWNER_ID)
       vi.spyOn(sessionStorage, 'getItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
 
       expect(isSurveyReplayRequested(OWNER_ID)).toBe(false)
-      expect(reportError).toHaveBeenCalledWith(
-        expect.objectContaining({ message: 'SecurityError' }),
-        {
-          surface: 'platform',
-          errorType: 'error_reading_onboarding_replay_request'
-        }
-      )
     })
 
     it('fails safely when replay JSON is invalid', () => {

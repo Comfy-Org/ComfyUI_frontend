@@ -20,6 +20,8 @@
  * also flood the console: `?crdtDebug=trace` opts into the per-frame chatter,
  * while plain `1` keeps console output at the lifecycle level.
  */
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+
 const ENABLED_KEY = 'Comfy.Agent.CrdtDebug.enabled'
 const LEVEL_KEY = 'Comfy.Agent.CrdtDebug.level'
 const QUERY_PARAM = 'crdtDebug'
@@ -72,20 +74,12 @@ function isLogLevel(value: unknown): value is CrdtLogLevel {
 }
 
 function readStorage(key: string): string | null {
-  try {
-    return window.localStorage.getItem(key)
-  } catch {
-    return null
-  }
+  return safeLocalStorage.getItem(key)
 }
 
 function writeStorage(key: string, value: string | null): void {
-  try {
-    if (value === null) window.localStorage.removeItem(key)
-    else window.localStorage.setItem(key, value)
-  } catch {
-    // Private mode / quota: the override simply does not persist.
-  }
+  if (value === null) safeLocalStorage.removeItem(key)
+  else safeLocalStorage.setItem(key, value)
 }
 
 function readQueryParam(): string | null {

@@ -1,5 +1,6 @@
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 
 import { hashPath } from './hashUtil'
 
@@ -15,7 +16,7 @@ export function getWorkspaceId(): string {
   if (!isCloud) return 'personal'
 
   try {
-    const json = sessionStorage.getItem(
+    const json = safeSessionStorage.getItem(
       WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE
     )
     if (!json) return 'personal'

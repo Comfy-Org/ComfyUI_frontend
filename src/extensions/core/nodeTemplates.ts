@@ -5,6 +5,7 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@comfyorg/telemetry/reportError'
 import { selectedCanvasNodes } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useToast } from '@/components/ui/toast/toastStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
@@ -390,10 +391,10 @@ function getManager(): ManageTemplates {
 const clipboardAction = async (cb: () => void | Promise<void>) => {
   // We use the clipboard functions but dont want to overwrite the current user clipboard
   // Restore it after we've run our callback
-  const old = localStorage.getItem('litegrapheditor_clipboard')
+  const old = safeLocalStorage.getItem('litegrapheditor_clipboard')
   await cb()
-  if (old === null) localStorage.removeItem('litegrapheditor_clipboard')
-  else localStorage.setItem('litegrapheditor_clipboard', old)
+  if (old === null) safeLocalStorage.removeItem('litegrapheditor_clipboard')
+  else safeLocalStorage.setItem('litegrapheditor_clipboard', old)
 }
 
 export const nodeTemplatesExtension: ComfyExtension = {
@@ -444,8 +445,12 @@ export const nodeTemplatesExtension: ComfyExtension = {
 
               if (!data.reroutes) {
                 deserialiseAndCreate(template.data, useApp().canvas)
-              } else {
-                localStorage.setItem('litegrapheditor_clipboard', template.data)
+              } else if (
+                safeLocalStorage.setItem(
+                  'litegrapheditor_clipboard',
+                  template.data
+                ) === 'ok'
+              ) {
                 useApp().canvas.pasteFromClipboard()
               }
             })

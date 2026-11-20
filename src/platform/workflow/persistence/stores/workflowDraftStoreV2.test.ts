@@ -319,6 +319,32 @@ describe('workflowDraftStoreV2', () => {
       localStorage.setItem(INDEX_KEY, JSON.stringify(index))
     }
 
+    it('keeps existing drafts when a payload write fails for a non-quota reason', () => {
+      const store = useWorkflowDraftStoreV2()
+      seedDraftDirect('workflows/existing.json', '{"id":1}', 'existing')
+      const realSetItem = localStorage.setItem.bind(localStorage)
+      activeSpy = vi
+        .spyOn(localStorage, 'setItem')
+        .mockImplementation((key: string, value: string) => {
+          if (key.startsWith(PAYLOAD_PREFIX))
+            throw new DOMException('Access is denied', 'SecurityError')
+          return realSetItem(key, value)
+        })
+
+      expect(() =>
+        store.saveDraft('workflows/incoming.json', '{"id":"new"}', {
+          name: 'incoming',
+          isTemporary: true
+        })
+      ).toThrow(DOMException)
+      expect(
+        localStorage.getItem(payloadKey('workflows/existing.json'))
+      ).not.toBeNull()
+      expect(localStorage.getItem(INDEX_KEY)).toContain(
+        hashPath('workflows/existing.json')
+      )
+    })
+
     it('continues eviction past orphaned order keys with no entry', () => {
       const store = useWorkflowDraftStoreV2()
 

@@ -138,8 +138,10 @@ describe('crdtDebugGate', () => {
 
   it('reads an absent enabled preference only once', async () => {
     vi.stubEnv('DEV', false)
-    const getItem = vi.spyOn(localStorage, 'getItem')
     const gate = await loadGate('')
+    const { safeLocalStorage } = await import('@/base/storage/safeStorage')
+    expect(safeLocalStorage.backend).toBe('localStorage')
+    const getItem = vi.spyOn(localStorage, 'getItem')
 
     expect(gate.isCrdtDebugOptedOut()).toBe(false)
     expect(gate.isCrdtDebugOptedOut()).toBe(false)

@@ -4,6 +4,7 @@ import {
   cloudEditorUrl,
   LOCAL_HANDOFF_PARAM
 } from '@/platform/openOnCloud/localHandoffProtocol'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 
 export const DESKTOP_RELAY_PARAM = 'desktop_workflow'
 export const DESKTOP_HANDOFF_HASH = '#desktop_workflow='
@@ -97,8 +98,12 @@ export async function captureDesktopWorkflowHandoff(
     const value = await readBoundedHandoff(stream)
     const handoff = readStoredHandoff(value ?? null)
     if (!handoff) return false
-    sessionStorage.setItem(`${STORAGE_PREFIX}${nonce}`, JSON.stringify(handoff))
-    return true
+    return (
+      safeSessionStorage.setItem(
+        `${STORAGE_PREFIX}${nonce}`,
+        JSON.stringify(handoff)
+      ) === 'ok'
+    )
   } catch {
     return false
   }
@@ -107,12 +112,9 @@ export async function captureDesktopWorkflowHandoff(
 export function takeDesktopWorkflowHandoff(
   nonce: string
 ): DesktopWorkflowHandoff | undefined {
-  try {
-    const key = `${STORAGE_PREFIX}${nonce}`
-    const value = sessionStorage.getItem(key)
-    sessionStorage.removeItem(key)
-    return readStoredHandoff(value)
-  } catch {
-    return undefined
-  }
+  const key = `${STORAGE_PREFIX}${nonce}`
+  const value = safeSessionStorage.getItem(key)
+  safeSessionStorage.removeItem(key)
+  if (safeSessionStorage.getItem(key) !== null) return undefined
+  return readStoredHandoff(value)
 }

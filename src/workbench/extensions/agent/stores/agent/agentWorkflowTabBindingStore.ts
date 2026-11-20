@@ -1,7 +1,7 @@
-import { useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { toRaw, watch } from 'vue'
 
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -74,7 +74,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
     clearLegacyAgentStorage()
-    const tabByWorkflow = useLocalStorage<PersistedBindings>(
+    const tabByWorkflow = useSafeLocalStorage<PersistedBindings>(
       StorageKeys.agentWorkflowTabBindings(getWorkspaceId()),
       {}
     )

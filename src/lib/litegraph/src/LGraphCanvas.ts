@@ -64,6 +64,7 @@ import { graphScopeOf } from '@comfyorg/graph-model/graphScopeId'
 import { toLinkId } from '@comfyorg/graph-model/linkId'
 import type { LinkTopology } from '@comfyorg/graph-model/linkTopology'
 import { toRerouteId } from '@comfyorg/graph-model/rerouteId'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { forEachNode } from '@/utils/graphTraversalUtil'
 
 import { CanvasPointer } from './CanvasPointer'
@@ -4535,7 +4536,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   _pasteFromClipboard(
     options: IPasteFromClipboardOptions = {}
   ): ClipboardPasteResult | undefined {
-    const data = localStorage.getItem(CANVAS_CLIPBOARD_KEY)
+    const data = safeLocalStorage.getItem(CANVAS_CLIPBOARD_KEY)
     if (!data) return
     return this._deserializeItems(JSON.parse(data), options)
   }

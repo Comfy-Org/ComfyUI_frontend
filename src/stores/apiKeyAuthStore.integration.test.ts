@@ -388,9 +388,12 @@ describe('API key authentication initialization', () => {
   })
 
   it('reports unexpected storage failures once', async () => {
-    vi.spyOn(window, 'localStorage', 'get').mockImplementation(() => {
+    localStorage.setItem('comfy_api_key', 'key-a')
+    const driverFailure = () => {
       throw new Error('Storage driver failed')
-    })
+    }
+    vi.spyOn(localStorage, 'setItem').mockImplementation(driverFailure)
+    vi.spyOn(localStorage, 'removeItem').mockImplementation(driverFailure)
     useAuthStore()
     const apiKeyStore = useApiKeyAuthStore()
 

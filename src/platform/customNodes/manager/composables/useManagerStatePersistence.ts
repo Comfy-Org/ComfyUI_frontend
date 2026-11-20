@@ -3,6 +3,7 @@ import {
   ManagerTab,
   SortableAlgoliaField
 } from '@/platform/customNodes/manager/types/comfyManagerTypes'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 
 const STORAGE_KEY = 'Comfy.Manager.UI.State'
 
@@ -12,7 +13,7 @@ export const useManagerStatePersistence = () => {
    */
   const loadStoredState = (): ManagerState => {
     try {
-      const stored = localStorage.getItem(STORAGE_KEY)
+      const stored = safeLocalStorage.getItem(STORAGE_KEY)
       if (stored) {
         return JSON.parse(stored)
       }
@@ -31,7 +32,7 @@ export const useManagerStatePersistence = () => {
    * Persist the UI state to localStorage.
    */
   const persistState = (state: ManagerState) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+    safeLocalStorage.setItem(STORAGE_KEY, JSON.stringify(state))
   }
 
   /**

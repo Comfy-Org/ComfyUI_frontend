@@ -1,10 +1,11 @@
-import { until, useStorage } from '@vueuse/core'
+import { until } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { coerce, gt } from 'semver'
 import { computed } from 'vue'
 
 import config from '@/config'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useSafeLocalStorage } from '@/platform/storage/useSafeStorage'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 interface OutdatedComfyPackage {
@@ -101,10 +102,9 @@ export const useVersionCompatibilityStore = defineStore(
 
     // Use reactive storage for dismissals - creates a reactive ref that syncs with localStorage
     // All version mismatch dismissals are stored in a single object for clean localStorage organization
-    const dismissalStorage = useStorage(
+    const dismissalStorage = useSafeLocalStorage(
       'comfy.versionMismatch.dismissals',
       {} as Record<string, number>,
-      localStorage,
       {
         serializer: {
           read: (value: string) => {

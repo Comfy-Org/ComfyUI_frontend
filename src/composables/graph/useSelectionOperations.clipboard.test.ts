@@ -1,4 +1,4 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeAll, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useToast } from '@/components/ui/toast/toastStore'
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
@@ -8,6 +8,7 @@ import {
   CANVAS_CLIPBOARD_KEY
 } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import { createTestRootGraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { app } from '@/scripts/app'
 import {
   createMockCanvasRenderingContext2D,
@@ -16,6 +17,10 @@ import {
 
 vi.mock(import('@/scripts/app'))
 vi.mock(import('@/services/dialogService'))
+
+beforeAll(() => {
+  expect(safeLocalStorage.backend).toBe('localStorage')
+})
 
 function createSelection() {
   const graph = createTestRootGraph()

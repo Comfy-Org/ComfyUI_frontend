@@ -21,6 +21,7 @@ import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent
 import type { ComfyExtension } from '@/types/comfy'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
   CONSENT_DIALOG_KEY,
@@ -2045,9 +2046,7 @@ describe('AgentPanel extension flag gate', () => {
   it('treats unreadable storage as past the automatic launches', async () => {
     setAgentReady(true)
     Object.assign(consentStore, { accepted: false, isChecking: false })
-    vi.spyOn(localStorage, 'getItem').mockImplementation(() => {
-      throw new Error('Storage unavailable')
-    })
+    vi.spyOn(safeLocalStorage, 'backend', 'get').mockReturnValue('memory')
 
     await loadEntryAndSetup()
     await flush()

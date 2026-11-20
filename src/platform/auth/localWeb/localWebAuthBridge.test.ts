@@ -101,7 +101,7 @@ function setup(
     replaceUrl: vi.fn((url: string) => {
       page.url = url
     }),
-    sessionStorage: storage,
+    tabStorage: storage,
     tokens,
     withRefreshLock,
     fetchImpl: vi.fn<typeof fetch>(async () =>
@@ -410,7 +410,7 @@ describe('requestSignIn', () => {
 
   it('stays signed out without opening anything when the verifier cannot be kept', async () => {
     const { bridge, env } = setup()
-    env.sessionStorage.setItem = () => {
+    env.tabStorage.setItem = () => {
       throw new DOMException('blocked', 'SecurityError')
     }
 

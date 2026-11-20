@@ -7,6 +7,10 @@ import type {
 } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createLocalWebAuthBridge } from '@/platform/auth/localWeb/localWebAuthBridge'
 import { createStorageTokenStore } from '@/platform/auth/localWeb/localWebTokenStore'
+import {
+  safeLocalStorage,
+  safeSessionStorage
+} from '@/base/storage/safeStorage'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 /**
@@ -47,19 +51,8 @@ function browserEnvironment({
     pageUrl: () => window.location.href,
     replaceUrl: (url) =>
       window.history.replaceState(window.history.state, '', url),
-    sessionStorage: {
-      getItem: (key) => window.sessionStorage.getItem(key),
-      setItem: (key, value) => window.sessionStorage.setItem(key, value),
-      removeItem: (key) => window.sessionStorage.removeItem(key)
-    },
-    tokens: createStorageTokenStore(
-      {
-        getItem: (key) => window.localStorage.getItem(key),
-        setItem: (key, value) => window.localStorage.setItem(key, value),
-        removeItem: (key) => window.localStorage.removeItem(key)
-      },
-      window
-    ),
+    tabStorage: safeSessionStorage.asStorage(),
+    tokens: createStorageTokenStore(safeLocalStorage.asStorage(), window),
     withRefreshLock: withOriginLock,
     fetchImpl: (input, init) => fetch(input, init),
     now: () => Date.now(),

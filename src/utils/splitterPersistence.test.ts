@@ -25,7 +25,7 @@ describe('splitter persistence', () => {
     expect(() =>
       saveSplitterSizes('linear-view-splitter', [25, 75])
     ).not.toThrow()
-    expect(loadSplitterSizes('linear-view-splitter', 2)).toBeUndefined()
+    expect(loadSplitterSizes('linear-view-splitter', 2)).toEqual([25, 75])
   })
 
   it.for([

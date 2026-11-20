@@ -48,6 +48,22 @@ describe('useFeatureUsageTracker', () => {
     expect(usage.value?.lastUsed).toBeGreaterThan(firstLastUsed)
   })
 
+  it('keeps trackers in sync when only in-memory storage is available', async () => {
+    vi.stubGlobal('localStorage', undefined)
+    vi.stubGlobal('sessionStorage', undefined)
+    const scope = effectScope()
+    const [writer, reader] = scope.run(() => [
+      useFeatureUsageTracker('memory-only-feature'),
+      useFeatureUsageTracker('memory-only-feature')
+    ])!
+
+    writer.trackUsage()
+    await nextTick()
+
+    expect(reader.useCount.value).toBe(1)
+    scope.stop()
+  })
+
   it('reset clears feature data', () => {
     const { useCount, trackUsage, reset } =
       useFeatureUsageTracker('test-feature-5')

@@ -1,3 +1,7 @@
+import {
+  safeLocalStorage,
+  safeSessionStorage
+} from '@/base/storage/safeStorage'
 import { applyTextReplacements as _applyTextReplacements } from '@/utils/searchAndReplace'
 
 import { api } from './api'
@@ -96,15 +100,15 @@ export function prop<T>(
 export function getStorageValue(id: string) {
   const clientId = api.clientId ?? api.initialClientId
   return (
-    (clientId && sessionStorage.getItem(`${id}:${clientId}`)) ??
-    localStorage.getItem(id)
+    (clientId && safeSessionStorage.getItem(`${id}:${clientId}`)) ??
+    safeLocalStorage.getItem(id)
   )
 }
 
 export function setStorageValue(id: string, value: string) {
   const clientId = api.clientId ?? api.initialClientId
   if (clientId) {
-    sessionStorage.setItem(`${id}:${clientId}`, value)
+    safeSessionStorage.setItem(`${id}:${clientId}`, value)
   }
-  localStorage.setItem(id, value)
+  safeLocalStorage.setItem(id, value)
 }

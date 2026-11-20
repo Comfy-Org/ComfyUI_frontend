@@ -123,6 +123,16 @@ describe('resetOnboardingState', () => {
     expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
   })
 
+  it('fails before touching the server when session storage is blocked', async () => {
+    vi.stubGlobal('sessionStorage', undefined)
+
+    await expect(resetOnboardingState()).resolves.toEqual({
+      status: 'failed',
+      cause: expect.stringContaining('Session storage is unavailable')
+    })
+    expect(api.storeSetting).not.toHaveBeenCalled()
+  })
+
   it('fails when the replay cannot be recorded', async () => {
     vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
       throw new Error('QuotaExceededError')

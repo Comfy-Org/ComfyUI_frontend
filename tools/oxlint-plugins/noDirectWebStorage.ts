@@ -1,0 +1,120 @@
+import type { AnyNode, Rule } from './astTypes'
+
+const STORAGE_GLOBALS = new Set(['localStorage', 'sessionStorage'])
+const GLOBAL_OBJECTS = new Set(['window', 'globalThis', 'self'])
+const VUEUSE_STORAGE_COMPOSABLES = new Set([
+  'useLocalStorage',
+  'useSessionStorage',
+  'useStorage',
+  'useStorageAsync'
+])
+
+export const noDirectWebStorage: Rule = {
+  meta: {
+    type: 'problem',
+    docs: {
+      description:
+        'Route Web Storage access through the fault-tolerant provider in @/base/storage/safeStorage'
+    },
+    schema: [],
+    messages: {
+      global:
+        "Do not touch `{{name}}` directly: reading it throws a SecurityError when the browser blocks storage. Use safeLocalStorage / safeSessionStorage from '@/base/storage/safeStorage'.",
+      composable:
+        "Do not use VueUse `{{name}}`: it reads the storage global unguarded. Use useSafeLocalStorage / useSafeSessionStorage from '@/platform/storage/useSafeStorage'."
+    }
+  },
+  create(context) {
+    const vueuseNamespaces = new Set<string>()
+
+    function staticName(key: AnyNode, computed: boolean): string | undefined {
+      if (!computed && key.type === 'Identifier') return key.name
+      if (key.type === 'Literal' && typeof key.value === 'string')
+        return key.value
+      return undefined
+    }
+
+    return {
+      'Program:exit'() {
+        const globalScope = context.sourceCode.scopeManager.globalScope
+        if (!globalScope) return
+        for (const reference of globalScope.through) {
+          const { identifier } = reference
+          if (!STORAGE_GLOBALS.has(identifier.name)) continue
+          context.report({
+            node: identifier,
+            messageId: 'global',
+            data: { name: identifier.name }
+          })
+        }
+      },
+      MemberExpression(node) {
+        const name = staticName(node.property, node.computed)
+        if (name === undefined) return
+        if (STORAGE_GLOBALS.has(name)) {
+          context.report({ node, messageId: 'global', data: { name } })
+          return
+        }
+        if (
+          node.object.type === 'Identifier' &&
+          vueuseNamespaces.has(node.object.name) &&
+          VUEUSE_STORAGE_COMPOSABLES.has(name)
+        ) {
+          context.report({ node, messageId: 'composable', data: { name } })
+        }
+      },
+      VariableDeclarator(node) {
+        if (node.id.type !== 'ObjectPattern') return
+        if (node.init?.type !== 'Identifier') return
+        if (!GLOBAL_OBJECTS.has(node.init.name)) return
+        for (const property of node.id.properties) {
+          if (property.type !== 'Property') continue
+          const name = staticName(property.key, property.computed)
+          if (name === undefined || !STORAGE_GLOBALS.has(name)) continue
+          context.report({
+            node: property,
+            messageId: 'global',
+            data: { name }
+          })
+        }
+      },
+      ExportNamedDeclaration(node) {
+        if (node.source?.value !== '@vueuse/core') return
+        for (const specifier of node.specifiers) {
+          if (
+            specifier.local.type === 'Identifier' &&
+            VUEUSE_STORAGE_COMPOSABLES.has(specifier.local.name)
+          ) {
+            context.report({
+              node: specifier,
+              messageId: 'composable',
+              data: { name: specifier.local.name }
+            })
+          }
+        }
+      },
+      ImportDeclaration(node) {
+        if (node.importKind === 'type') return
+        if (node.source.value !== '@vueuse/core') return
+        for (const specifier of node.specifiers) {
+          if (specifier.type === 'ImportNamespaceSpecifier') {
+            vueuseNamespaces.add(specifier.local.name)
+            continue
+          }
+          if (
+            specifier.type === 'ImportSpecifier' &&
+            specifier.importKind !== 'type' &&
+            specifier.imported.type === 'Identifier' &&
+            VUEUSE_STORAGE_COMPOSABLES.has(specifier.imported.name)
+          ) {
+            context.report({
+              node: specifier,
+              messageId: 'composable',
+              data: { name: specifier.imported.name }
+            })
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,3 +1,5 @@
+import { safeLocalStorage } from '@/base/storage/safeStorage'
+
 /**
  * The last flushed state of the user's agent-panel preference.
  *
@@ -7,7 +9,7 @@
  * `getActionbarDockState`, whose key is likewise duplicated from its writer.
  *
  * "Last flushed" rather than "open right now": the store persists through
- * `useLocalStorage`, whose write lands on a watcher flush rather than
+ * `useSafeLocalStorage`, whose write lands on a watcher flush rather than
  * synchronously on assignment, so a toggle in the same tick as a run is not yet
  * visible here.
  *
@@ -21,9 +23,5 @@
  * last by any window, not the state of the window submitting the run.
  */
 export function getAgentPanelOpen(): boolean {
-  try {
-    return localStorage.getItem('Comfy.AgentPanel.open') === 'true'
-  } catch {
-    return false
-  }
+  return safeLocalStorage.getItem('Comfy.AgentPanel.open') === 'true'
 }

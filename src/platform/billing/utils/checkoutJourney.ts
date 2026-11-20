@@ -12,6 +12,7 @@ import {
 } from '@comfyorg/billing-contract'
 
 import type { PaymentIntentSource } from '@comfyorg/telemetry/types'
+import { safeSessionStorage } from '@/base/storage/safeStorage'
 import { paymentIntentSourceForJourneyEntry } from '@/platform/telemetry/utils/paymentIntentSource'
 
 /**
@@ -311,17 +312,9 @@ export function bindOperationToCheckoutJourney(
 
 export function clearCheckoutJourney(): void {
   inMemoryJourney = null
-  const storage = getStorage()
-  if (!storage) {
-    return
-  }
-
-  try {
-    storage.removeItem(CHECKOUT_JOURNEY_STORAGE_KEY)
-    persistedJourneyIsStale = false
-  } catch {
-    persistedJourneyIsStale = true
-  }
+  safeSessionStorage.removeItem(CHECKOUT_JOURNEY_STORAGE_KEY)
+  persistedJourneyIsStale =
+    safeSessionStorage.getItem(CHECKOUT_JOURNEY_STORAGE_KEY) !== null
 }
 
 let fallbackJourneyIdCounter = 0
@@ -353,46 +346,13 @@ let inMemoryJourney: CheckoutJourneyRecord | null = null
  */
 let persistedJourneyIsStale = false
 
-type CheckoutStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
-
-function getStorage(): CheckoutStorage | null {
-  let storage: unknown
-
-  try {
-    storage = globalThis.sessionStorage
-  } catch {
-    return null
-  }
-
-  return isCheckoutStorage(storage) ? storage : null
-}
-
-function isCheckoutStorage(value: unknown): value is CheckoutStorage {
-  return (
-    !!value &&
-    typeof value === 'object' &&
-    'getItem' in value &&
-    typeof value.getItem === 'function' &&
-    'setItem' in value &&
-    typeof value.setItem === 'function' &&
-    'removeItem' in value &&
-    typeof value.removeItem === 'function'
-  )
-}
-
 function saveCheckoutJourney(record: CheckoutJourneyRecord): void {
   inMemoryJourney = record
-  const storage = getStorage()
-  if (!storage) {
-    return
-  }
-
-  try {
-    storage.setItem(CHECKOUT_JOURNEY_STORAGE_KEY, JSON.stringify(record))
-    persistedJourneyIsStale = false
-  } catch {
-    persistedJourneyIsStale = true
-  }
+  persistedJourneyIsStale =
+    safeSessionStorage.setItem(
+      CHECKOUT_JOURNEY_STORAGE_KEY,
+      JSON.stringify(record)
+    ) !== 'ok'
 }
 
 function loadCheckoutJourney(): CheckoutJourneyRecord | null {
@@ -418,17 +378,7 @@ function readPersistedJourney(): CheckoutJourneyRecord | null {
     return null
   }
 
-  const storage = getStorage()
-  if (!storage) {
-    return null
-  }
-
-  let raw: string | null
-  try {
-    raw = storage.getItem(CHECKOUT_JOURNEY_STORAGE_KEY)
-  } catch {
-    return null
-  }
+  const raw = safeSessionStorage.getItem(CHECKOUT_JOURNEY_STORAGE_KEY)
 
   if (!raw) {
     return null

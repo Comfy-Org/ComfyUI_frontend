@@ -6,6 +6,7 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { CANVAS_CLIPBOARD_KEY } from '@/lib/litegraph/src/canvas/clipboardStorage'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { zClipboardItems } from '@comfyorg/graph-model/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useApp } from '@/scripts/appInstance'
@@ -72,11 +73,7 @@ function pasteClipboardItems(data: DataTransfer): boolean {
 function holdsLatestCanvasCopy(html: string): boolean {
   const parsed = parseClipboardHtml(html)
   if (parsed.status !== 'read') return false
-  try {
-    return parsed.text === localStorage.getItem(CANVAS_CLIPBOARD_KEY)
-  } catch {
-    return false
-  }
+  return parsed.text === safeLocalStorage.getItem(CANVAS_CLIPBOARD_KEY)
 }
 
 function isWorkflow(

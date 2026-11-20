@@ -1,5 +1,6 @@
 import { reportError } from '@comfyorg/telemetry/reportError'
 
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { createUuidv4 } from '@/utils/uuid'
 
 export const CANVAS_CLIPBOARD_KEY = 'litegrapheditor_clipboard'
@@ -12,31 +13,19 @@ function isExpectedStorageError(error: unknown): boolean {
   )
 }
 
-function removeQuietly(key: string): void {
-  try {
-    localStorage.removeItem(key)
-  } catch {
-    return
-  }
-}
-
 function discardClipboardId(): void {
-  removeQuietly(CANVAS_CLIPBOARD_ID_KEY)
+  safeLocalStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
 }
 
 /** Drops the cached payload and its stamp. Never throws. */
 export function discardClipboardStorage(): void {
-  removeQuietly(CANVAS_CLIPBOARD_KEY)
-  removeQuietly(CANVAS_CLIPBOARD_ID_KEY)
+  safeLocalStorage.removeItem(CANVAS_CLIPBOARD_KEY)
+  safeLocalStorage.removeItem(CANVAS_CLIPBOARD_ID_KEY)
 }
 
 /** Reads the copy stamp, or `null` when storage is unreadable. Never throws. */
 export function readClipboardId(): string | null {
-  try {
-    return localStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
-  } catch {
-    return null
-  }
+  return safeLocalStorage.getItem(CANVAS_CLIPBOARD_ID_KEY)
 }
 
 function reportStorageError(error: unknown): void {
@@ -48,15 +37,24 @@ function reportStorageError(error: unknown): void {
 }
 
 export function writeClipboardStorage(serializedData: string): boolean {
-  try {
-    localStorage.setItem(CANVAS_CLIPBOARD_KEY, serializedData)
-  } catch (error) {
+  const payloadWrite = safeLocalStorage.write(
+    CANVAS_CLIPBOARD_KEY,
+    serializedData
+  )
+  if (payloadWrite.result !== 'ok') {
     discardClipboardStorage()
-    reportStorageError(error)
+    reportStorageError(payloadWrite.error)
     return false
   }
   try {
-    localStorage.setItem(CANVAS_CLIPBOARD_ID_KEY, createUuidv4())
+    const stampWrite = safeLocalStorage.write(
+      CANVAS_CLIPBOARD_ID_KEY,
+      createUuidv4()
+    )
+    if (stampWrite.result !== 'ok') {
+      discardClipboardId()
+      reportStorageError(stampWrite.error)
+    }
   } catch (error) {
     discardClipboardId()
     reportStorageError(error)

@@ -42,6 +42,7 @@ import { useFreeTierQuota } from '@/platform/billing/subscription/composables/us
 import { isCloud } from '@/platform/distribution/types'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
 import { installNodeAddedTelemetry } from '@/platform/telemetry/nodeAdded/installNodeAddedTelemetry'
@@ -1136,7 +1137,7 @@ export class ComfyApp implements IComfyApp {
       return
     }
 
-    const old = localStorage.getItem('litegrapheditor_clipboard')
+    const old = safeLocalStorage.getItem('litegrapheditor_clipboard')
 
     for (const template of templateData.templates) {
       if (!template.data) {
@@ -1147,8 +1148,10 @@ export class ComfyApp implements IComfyApp {
       const data = parseJsonWithNonFinite<{ reroutes?: unknown }>(template.data)
       if (!data.reroutes) {
         deserialiseAndCreate(template.data, this.canvas)
-      } else {
-        localStorage.setItem('litegrapheditor_clipboard', template.data)
+      } else if (
+        safeLocalStorage.setItem('litegrapheditor_clipboard', template.data) ===
+        'ok'
+      ) {
         this.canvas.pasteFromClipboard()
       }
 
@@ -1168,7 +1171,7 @@ export class ComfyApp implements IComfyApp {
     }
 
     if (old !== null) {
-      localStorage.setItem('litegrapheditor_clipboard', old)
+      safeLocalStorage.setItem('litegrapheditor_clipboard', old)
     }
   }
 

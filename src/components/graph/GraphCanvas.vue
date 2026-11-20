@@ -176,6 +176,7 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { safeLocalStorage } from '@/base/storage/safeStorage'
 import { isCloud } from '@/platform/distribution/types'
 import { waitForDeploymentPick } from '@/platform/workspace/composables/waitForDeploymentPick'
 import { bootstrapTracer } from '@/platform/telemetry/perf/bootstrapTracer'
@@ -584,8 +585,8 @@ onMounted(async () => {
 
     if (settingsError.value) {
       if (settingsError.value instanceof UnauthorizedError) {
-        localStorage.removeItem('Comfy.userId')
-        localStorage.removeItem('Comfy.userName')
+        safeLocalStorage.removeItem('Comfy.userId')
+        safeLocalStorage.removeItem('Comfy.userName')
         window.location.reload()
         return
       }
