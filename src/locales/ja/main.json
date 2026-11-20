@@ -173,6 +173,12 @@
     "openingChat": "チャットを開いています…",
     "openingWorkflowChat": "{workflowName} のチャットを開いています…",
     "otherOpenWorkflows": "他の開いているワークフロー",
+    "paused": {
+      "recheck": "約{seconds}秒後に自動的に再試行します。 | 約{seconds}秒後に自動的に再試行します。",
+      "resume": "再開",
+      "title": "エージェントは一時停止中です",
+      "titleNoFunds": "エージェントは一時停止しました — クレジット切れです"
+    },
     "paywall": {
       "addCredits": "クレジットを追加",
       "body": {
@@ -3610,6 +3616,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4011,10 @@
     },
     "deploySetup": "セットアップをComfy Cloudにデプロイ",
     "deploySetupDialog": {
-      "body": "ローカルのセットアップをComfy Cloudにデプロイして、ComfyUIで使用するか、自動スケーリングAPIとして呼び出せます。",
+      "body": "ローカルセットアップをBuildとしてComfy Cloudにデプロイし、ComfyUIで使用するか、オートスケーリングAPIとして呼び出します。",
       "pointGpu": "高性能クラウドGPUで実行",
       "pointNodes": "カスタムノードとモデルを持ち込む",
-      "pointPricing": "ジョブで使用したGPU秒数とビルドのストレージ分だけ支払う",
+      "pointPricing": "GPUワーカーの稼働中とストレージに対してのみ料金を支払います",
       "title": "Comfy Cloudでワークフローを実行"
     },
     "deployWithAgent": "エージェントでデプロイ",

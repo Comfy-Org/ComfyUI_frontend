@@ -173,6 +173,12 @@
     "openingChat": "Chat wird geöffnet …",
     "openingWorkflowChat": "Chat für {workflowName} wird geöffnet …",
     "otherOpenWorkflows": "Andere offene Workflows",
+    "paused": {
+      "recheck": "Er wird es in etwa {seconds} Sekunde erneut selbst versuchen. | Er wird es in etwa {seconds} Sekunden erneut selbst versuchen.",
+      "resume": "Fortsetzen",
+      "title": "Der Agent ist pausiert",
+      "titleNoFunds": "Der Agent wurde pausiert – keine Credits mehr"
+    },
     "paywall": {
       "addCredits": "Credits hinzufügen",
       "body": {
@@ -3610,6 +3616,7 @@
     "Bria": "Bria",
     "ByteDance": "ByteDance",
     "Clarity AI": "Clarity AI",
+    "Creatify": "Creatify",
     "ElevenLabs": "ElevenLabs",
     "Fish Audio": "Fish Audio",
     "Gemini": "Gemini",
@@ -4004,10 +4011,10 @@
     },
     "deploySetup": "Ihre Einrichtung in Comfy Cloud bereitstellen",
     "deploySetupDialog": {
-      "body": "Stellen Sie Ihre lokale Einrichtung in Comfy Cloud bereit und verwenden Sie sie dann in ComfyUI oder rufen Sie sie als automatisch skalierende API auf.",
+      "body": "Stellen Sie Ihr lokales Setup als Build in Comfy Cloud bereit und verwenden Sie es dann in ComfyUI oder rufen Sie es als automatisch skalierende API auf.",
       "pointGpu": "Auf leistungsstarken Cloud-GPUs ausführen",
       "pointNodes": "Ihre benutzerdefinierten Nodes und Modelle mitbringen",
-      "pointPricing": "Zahlen Sie nur für die GPU-Sekunden, die Ihre Jobs nutzen, und den Speicherplatz Ihres Builds",
+      "pointPricing": "Zahlen Sie nur, solange Ihre GPU-Worker aktiv sind, zuzüglich Speicher.",
       "title": "Ihre Workflows auf Comfy Cloud ausführen"
     },
     "deployWithAgent": "Mit Ihrem Agenten bereitstellen",
