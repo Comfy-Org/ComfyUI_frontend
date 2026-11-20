@@ -170,6 +170,7 @@ import {
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
+import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -200,11 +201,8 @@ import { isCreditTransitionNoticeShown } from './stores/agent/creditTransitionNo
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentPanelRenderStore } from './stores/agent/agentPanelRenderStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
-import {
-  isCrdtDebugEnabled,
-  resolveDebugPanelEnabled,
-  startCrdtDebugGate
-} from './crdt/crdtDebugGate'
+import { startCrdtLog } from './crdt/crdtLog'
+import type { CrdtLogLevel } from './crdt/crdtLogLevel'
 import { attachAgentWriteOverwriteWatch } from './crdt/agentWriteOverwrites'
 import { attachDocOpMinter } from './crdt/docOpMinter'
 import { attachRestoreOpMinter } from './crdt/restoreOpMinter'
@@ -275,7 +273,7 @@ const userName = computed(
   () => userDisplayName.value?.trim().split(/\s+/)[0] || undefined
 )
 
-onBeforeUnmount(startCrdtDebugGate())
+onBeforeUnmount(startCrdtLog())
 
 const rest = createAgentRestClient()
 
@@ -305,6 +303,7 @@ const agentIdentity = resolveAgentIdentity({
 onBeforeUnmount(() => agentIdentity.stop())
 
 onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
+onBeforeUnmount(onIdentityChange(() => captureOutgoingCredentialForHandoff()))
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -585,6 +584,27 @@ const agentTabGraph: ComfyWorkflowJSON = {
 const canvasStore = useCanvasStore()
 const graphActivity = useAgentGraphActivityStore()
 const settingStore = useSettingStore()
+const crdtLogLevel = computed({
+  get: () => settingStore.get('Comfy.Agent.CrdtDebug.Level'),
+  set: (level: CrdtLogLevel) => {
+    try {
+      localStorage.setItem('Comfy.Agent.CrdtDebug.level', level)
+    } catch (error) {
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_saving_crdt_debug_level_mirror',
+        level: 'warning'
+      })
+    }
+    void settingStore.set('Comfy.Agent.CrdtDebug.Level', level).catch((error) =>
+      reportError(error, {
+        surface: 'agent',
+        errorType: 'failure_saving_crdt_debug_level',
+        level: 'warning'
+      })
+    )
+  }
+})
 const dialogStore = useDialogStore()
 watch(
   () => canvasStore.canvas?.graph,
@@ -1317,9 +1337,9 @@ const agentWriteOverwriteWatch = attachAgentWriteOverwriteWatch({
   isEnabled: () => agentPanelStore.enabled,
   isRestoringState: isChangeTrackerRestoring
 })
-const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
-  agentPanelStore.enabled,
-  isCrdtDebugEnabled()
+const { flags } = useFeatureFlags()
+const isCrdtDevPanelEnabled = computed(
+  () => agentPanelStore.enabled && flags.agentCrdtDebugEnabled
 )
 const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 
@@ -2488,7 +2508,6 @@ function onSelectNodes(): void {
 
 const assetsStore = useAssetsStore()
 let inputAssetRefresh: Promise<unknown> = Promise.resolve()
-const { flags } = useFeatureFlags()
 
 const attachment = useAttachment({
   validate: isValidAgentAttachment,
@@ -2831,7 +2850,11 @@ onMounted(() => agentPanelRenderStore.reach('drawn'))
         />
       </template>
       <template v-if="isCrdtDevPanelEnabled" #instrument>
-        <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />
+        <CrdtDevPanel
+          v-model:level="crdtLogLevel"
+          :status="crdtStatus"
+          :snapshot="crdtDebugSnapshot"
+        />
       </template>
       <template #composerNotice>
         <RunNoticeBanner

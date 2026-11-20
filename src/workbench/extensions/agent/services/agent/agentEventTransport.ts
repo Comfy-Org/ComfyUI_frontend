@@ -1,6 +1,6 @@
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
-import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/agentCrdtDocLifecycle'
+import { STALE_AFTER_MS } from '@/workbench/extensions/agent/crdt/lifecycleTiming'
 import type {
   AskUserResolution,
   AssistantMessage,
@@ -114,6 +114,10 @@ const TOOLS_THAT_KEEP_ANSWER_DRAFT: ReadonlySet<string> = new Set([
 
 function updateSkill(part: ToolPart, skill: string | null | undefined): void {
   if (skill) part.skill = skill
+}
+
+function updateDownload(part: ToolPart, download: string | undefined): void {
+  if (download) part.download = download
 }
 
 export function createAgentEventTransport(
@@ -325,6 +329,7 @@ export function createAgentEventTransport(
     }
     part.name = data.tool_name
     updateSkill(part, data.skill)
+    updateDownload(part, data.download)
     if (data.status !== 'running') {
       resolveToolCallState(part, data.status, data.duration_ms, data)
     }

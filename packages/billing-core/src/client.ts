@@ -12,6 +12,7 @@ import type {
   CancelSubscriptionResponse,
   CreateTopupCheckoutRequest,
   CreateTopupCheckoutResponse,
+  CreateTopupPurchaseRequest,
   CreateTopupQuoteRequest,
   CreateTopupRequest,
   CreateTopupResponse,
@@ -40,6 +41,7 @@ import type {
   TeamCreditStops,
   TeamCreditStopSummary,
   TopupAutoTopUpSettings,
+  TopupPurchase,
   TopupQuoteResponse
 } from '@comfyorg/ingest-types'
 import {
@@ -490,6 +492,27 @@ export function createBillingApi({
         return response.data
       } catch (err) {
         handleAxiosError(err, 'createTopupCheckout')
+      }
+    },
+    async createTopupPurchase(
+      amountCents: number,
+      signal?: AbortSignal,
+      autoTopUp?: TopupAutoTopUpSettings
+    ): Promise<TopupPurchase> {
+      const auth = await requestAuth()
+      throwIfSignalAborted(signal)
+      try {
+        const response = await client.post<TopupPurchase>(
+          resolveUrl('/billing/topup/purchases'),
+          {
+            amount_cents: amountCents,
+            ...(autoTopUp === undefined ? {} : { auto_top_up: autoTopUp })
+          } satisfies CreateTopupPurchaseRequest,
+          { ...auth, signal }
+        )
+        return response.data
+      } catch (err) {
+        handleAxiosError(err, 'createTopupPurchase')
       }
     },
     async quoteTopup(

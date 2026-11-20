@@ -22,6 +22,7 @@ import {
   agentSocketAuthParams,
   ensureSignedIn,
   agentSettingsAuthHeader,
+  peekLastAgentCredential,
   withAgentAuth
 } from './agentAuth'
 
@@ -213,6 +214,26 @@ describe('withAgentAuth', () => {
     expect(new Headers(init.headers).has('Authorization')).toBe(false)
     expect(new Headers(init.headers).has('X-API-KEY')).toBe(false)
     expect(init.redirect).toBeUndefined()
+  })
+
+  it('remembers the attached credential for a later owner handoff (BE-25360)', async () => {
+    storedApiKey('comfyui-key')
+
+    await withAgentAuth({ method: 'GET' })
+
+    expect(peekLastAgentCredential()).toBe('comfyui-key')
+  })
+
+  it('leaves the last remembered credential alone for a signed-out request', async () => {
+    storedApiKey('comfyui-key')
+    await withAgentAuth({ method: 'GET' })
+
+    workspaceToken(undefined)
+    Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
+    vi.spyOn(useApiKeyAuthStore(), 'getAuthHeader').mockReturnValue(null)
+    await withAgentAuth({ method: 'GET' })
+
+    expect(peekLastAgentCredential()).toBe('comfyui-key')
   })
 })
 
