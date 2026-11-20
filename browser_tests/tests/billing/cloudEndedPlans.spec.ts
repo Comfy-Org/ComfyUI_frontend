@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { cloudAppFixture } from '@e2e/fixtures/cloudAppFixture'
+import { AUTO_TOP_UP_OFF } from '@e2e/fixtures/data/autoTopUpAtCheckout'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import {
   DEFAULT_TEAM_MEMBERS,
@@ -38,7 +39,15 @@ const test = cloudAppFixture.extend<{
         jsonRoute({
           ...createWorkspaceBillingCapabilities(TEAM_WORKSPACE, {
             can_open_plans: !enterprise && !otherOwner,
-            can_top_up: true
+            can_top_up: true,
+            can_view_auto_top_up: enterprise
+          }),
+          ...(enterprise && {
+            auto_top_up_enabled: true,
+            auto_top_up_setup: {
+              state: 'frozen',
+              reason: 'default_payment_method_missing'
+            }
           }),
           plan_kind: enterprise ? 'sales_managed' : 'self_serve',
           billing_notice_audience: enterprise ? 'none' : 'team',
@@ -62,6 +71,9 @@ const test = cloudAppFixture.extend<{
     )
     await page.route('**/api/billing/payment-methods', (route) =>
       route.fulfill(jsonRoute([]))
+    )
+    await page.route('**/api/billing/auto-reload', (route) =>
+      route.fulfill(jsonRoute(AUTO_TOP_UP_OFF))
     )
     await use(billing)
   }
@@ -127,6 +139,32 @@ test.describe('Ended Cloud Billing plans', { tag: '@cloud' }, () => {
         "Buying credits doesn't restart your Cloud plan. Contact sales to renew it."
       )
       await expect(content.getByText(/Your plan|Resubscribe/)).toHaveCount(0)
+    })
+
+    test('keeps Contact sales as the only primary action at zero credits', async ({
+      billing
+    }) => {
+      const content = await billing.openPlanAndCreditsSettings('Billing')
+      await expect(content.getByTestId('billing-credits-available')).toHaveText(
+        '0'
+      )
+      const banner = content.getByRole('status').filter({
+        hasText: 'Your Enterprise plan has ended'
+      })
+      const plan = content.getByTestId('billing-plan-row')
+      await expect(
+        banner.getByRole('button', { name: 'Contact sales' })
+      ).toHaveAttribute('data-variant', 'inverted')
+      await expect(
+        plan.getByRole('link', { name: 'Contact sales' })
+      ).toHaveAttribute('data-variant', 'inverted')
+      await expect(
+        content.getByRole('button', { name: 'Add credits' })
+      ).toHaveAttribute('data-variant', 'secondary')
+      await expect(
+        content.getByRole('link', { name: 'Add payment method' })
+      ).toHaveAttribute('data-variant', 'secondary')
+      await expect(content.locator('[data-variant="inverted"]')).toHaveCount(2)
     })
   })
 })
