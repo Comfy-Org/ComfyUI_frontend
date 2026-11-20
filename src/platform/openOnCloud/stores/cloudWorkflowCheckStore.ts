@@ -58,6 +58,6 @@ export const useCloudWorkflowCheckStore = defineStore(
       { flush: 'sync' }
     )
 
-    return { state, check }
+    return { state, check, invalidate }
   }
 )

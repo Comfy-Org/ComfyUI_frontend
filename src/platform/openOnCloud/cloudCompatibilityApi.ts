@@ -1,12 +1,14 @@
 import {
   combineAbortSignals,
-  createTimeoutSignal
+  createTimeoutSignal,
+  throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
 import type { CompatibilityModel } from '@comfyorg/ingest-types'
 import { zCheckCloudCompatibilityResponse } from '@comfyorg/ingest-types/zod'
 import { reportError } from '@comfyorg/telemetry/reportError'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyCloudBaseUrl } from '@/config/comfyApi'
 import type {
   ExecutableLGraphNode,
@@ -207,6 +209,18 @@ async function collectModels(
   return [...models.values()]
 }
 
+async function compatibilityAuth(requireWorkspace: boolean) {
+  const authStore = useAuthStore()
+  const { flags } = useFeatureFlags()
+  if (!requireWorkspace && !flags.openOnCloudModelUploadEnabled)
+    return { ok: true, headers: await authStore.getAuthHeader() } as const
+
+  const headers = await authStore.getWorkspaceAuthHeader()
+  if (!headers && (requireWorkspace || useCurrentUser().isLoggedIn.value))
+    return { ok: false } as const
+  return { ok: true, headers } as const
+}
+
 async function requestCompatibility(
   nodeTypes: string[],
   models: CompatibilityModel[],
@@ -216,17 +230,16 @@ async function requestCompatibility(
   }: { requireWorkspace?: boolean; signal?: AbortSignal } = {}
 ) {
   try {
-    const { isLoggedIn } = useCurrentUser()
-    const auth = await useAuthStore().getWorkspaceAuthHeader()
-    if (signal?.aborted) return null
-    if (!auth && (requireWorkspace || isLoggedIn.value))
+    const auth = await compatibilityAuth(requireWorkspace)
+    throwIfAborted(signal)
+    if (!auth.ok)
       return giveUp(new Error('Workspace authorization unavailable'))
     const timeout = createTimeoutSignal(10_000)
     const response = await fetch(
       new URL('/api/cloud/compatibility', getComfyCloudBaseUrl()),
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...auth },
+        headers: { 'Content-Type': 'application/json', ...auth.headers },
         body: JSON.stringify({ node_types: nodeTypes, models }),
         signal: signal ? combineAbortSignals([signal, timeout]) : timeout
       }

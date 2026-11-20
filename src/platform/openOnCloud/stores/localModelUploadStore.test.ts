@@ -580,6 +580,11 @@ describe('useLocalModelUploadStore', () => {
     expect(store.pickOf(lora).status).toBe('stored')
 
     store.reset([ckpt], { freshVerdict: true })
+    const checkStore = useCloudWorkflowCheckStore()
+    checkStore.state = {
+      phase: 'answered',
+      verdict: { kind: 'missing', gaps: { models, nodePacks: [] } }
+    }
     await prepared(models, [], [])
     await store.start(models, { refreshWorkflow: false })
     expect(store.retryBatches).toEqual([models])
@@ -590,6 +595,7 @@ describe('useLocalModelUploadStore', () => {
       vi.mocked(checkCloudModelsAvailable).mock.calls.map(([batch]) => batch)
     ).toEqual([models, models, models])
     expect(store.retryBatches).toEqual([])
+    expect(checkStore.state).toEqual({ phase: 'idle' })
     expect(check).not.toHaveBeenCalled()
   })
 

@@ -29,7 +29,7 @@ export type MissingModel = CloudWorkflowGaps['models'][number]
 
 /** Why an upload stopped: the server's refusal, a cancel, or a failure. */
 export type LocalModelUploadFailure =
-  | Extract<ModelFileUploadResult, { ok: false }>['reason']
+  | UploadFailure['reason']
   | 'accountChanged'
   | 'confirmationPending'
   | 'storagePending'
@@ -80,6 +80,21 @@ type LocalModelUpload =
   | { phase: 'done' }
 
 type UploadStop = Extract<LocalModelUpload, { phase: 'failed' }>
+type UploadFailure = Extract<ModelFileUploadResult, { ok: false }>
+
+const COMPLETION_RETRY_REASONS = new Set<UploadFailure['reason']>([
+  'storageLimit',
+  'planUnavailable',
+  'accessDenied'
+])
+
+function reportUploadFailure(cause: unknown) {
+  reportError(cause, {
+    surface: 'platform',
+    errorType: 'error_uploading_local_model_to_cloud',
+    level: 'warning'
+  })
+}
 
 /** Keys a missing model the way the check names it. */
 export function modelKey({ folder, name }: MissingModel): string {
@@ -240,6 +255,26 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       upload.value = { ...upload.value, canCancel: false }
   }
 
+  function handleUploadFailure(
+    model: MissingModel,
+    file: File,
+    result: UploadFailure,
+    staged: StagedModelFile | undefined,
+    signal: AbortSignal
+  ): UploadStop {
+    if (result.reason === 'failed') {
+      reportUploadFailure(result.cause)
+      if (staged) return { phase: 'failed', reason: 'storagePending' }
+    }
+    if (
+      staged &&
+      !signal.aborted &&
+      !COMPLETION_RETRY_REASONS.has(result.reason)
+    )
+      setPick(model, { status: 'chosen', file })
+    return { phase: 'failed', reason: result.reason, message: result.message }
+  }
+
   async function submitModel(
     model: MissingModel,
     pick: Exclude<UploadableModelPick, SubmittedModel>,
@@ -262,25 +297,8 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
         if (!signal.aborted) setPick(model, { status: 'staged', file, staged })
       }
     })
-    if (!result.ok) {
-      if (result.reason === 'failed')
-        reportError(result.cause, {
-          surface: 'platform',
-          errorType: 'error_uploading_local_model_to_cloud',
-          level: 'warning'
-        })
-      if (staged && result.reason === 'failed')
-        return { phase: 'failed', reason: 'storagePending' }
-      if (
-        staged &&
-        result.reason !== 'storageLimit' &&
-        result.reason !== 'planUnavailable' &&
-        result.reason !== 'accessDenied' &&
-        !signal.aborted
-      )
-        setPick(model, { status: 'chosen', file })
-      return { phase: 'failed', reason: result.reason, message: result.message }
-    }
+    if (!result.ok)
+      return handleUploadFailure(model, file, result, staged, signal)
     const submitted: SubmittedModel = {
       status: 'submitted',
       file,
@@ -406,6 +424,26 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       return { phase: 'failed', reason: 'confirmationPending', models }
   }
 
+  function finishBatch(
+    models: MissingModel[],
+    stop: UploadStop | undefined,
+    ownerChanged: boolean
+  ): boolean {
+    if (ownerChanged) {
+      upload.value = { phase: 'failed', reason: 'accountChanged' }
+      return false
+    }
+    recordBatchResult(models, !!stop?.models)
+    upload.value = stop ?? { phase: 'done' }
+    return !stop
+  }
+
+  function refreshCompatibility(shouldCheck: boolean): void {
+    const workflowCheck = useCloudWorkflowCheckStore()
+    if (shouldCheck) void workflowCheck.check()
+    else workflowCheck.invalidate()
+  }
+
   async function start(
     models: MissingModel[],
     { refreshWorkflow = true }: { refreshWorkflow?: boolean } = {}
@@ -427,26 +465,17 @@ export const useLocalModelUploadStore = defineStore('localModelUpload', () => {
       const stop =
         (await sendAll(models, queue, current)) ??
         (await confirmBatch(models, current.controller.signal))
-      if (current.ownerChanged) {
-        upload.value = { phase: 'failed', reason: 'accountChanged' }
-        return
-      }
-      recordBatchResult(models, !!stop?.models)
-      upload.value = stop ?? { phase: 'done' }
-      if (!stop && refreshWorkflow && workflows.activeWorkflow === workflow)
-        void useCloudWorkflowCheckStore().check()
+      if (finishBatch(models, stop, current.ownerChanged))
+        refreshCompatibility(
+          refreshWorkflow && workflows.activeWorkflow === workflow
+        )
     } catch (cause) {
-      reportError(cause, {
-        surface: 'platform',
-        errorType: 'error_uploading_local_model_to_cloud',
-        level: 'warning'
-      })
-      if (!current.ownerChanged) recordBatchResult(models, true)
-      upload.value = {
-        phase: 'failed',
-        reason: current.ownerChanged ? 'accountChanged' : 'failed',
-        ...(current.ownerChanged ? {} : { models })
-      }
+      reportUploadFailure(cause)
+      finishBatch(
+        models,
+        { phase: 'failed', reason: 'failed', models },
+        current.ownerChanged
+      )
     } finally {
       if (batch === current) batch = undefined
     }

@@ -2,6 +2,8 @@ import { reportError } from '@comfyorg/telemetry/reportError'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+
 import {
   checkCloudCompatibility,
   checkCloudModelsAvailable
@@ -21,6 +23,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('@/scripts/app'))
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('firebase/auth'), { spy: true })
 vi.mock(import('@comfyorg/telemetry/reportError'))
 
@@ -72,6 +75,9 @@ function cloudAnswers(response: Response | Error) {
 
 describe(checkCloudCompatibility, () => {
   beforeEach(() => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: true
+    })
     stubFirebaseAuthHarness()
     rootGraph = createTestRootGraph()
     vi.spyOn(app, 'rootGraph', 'get').mockReturnValue(rootGraph)
@@ -93,6 +99,26 @@ describe(checkCloudCompatibility, () => {
     await expect(checkCloudCompatibility()).resolves.toBeNull()
     expect(useAuthStore().getWorkspaceAuthHeader).toHaveBeenCalledOnce()
     expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('uses account authorization for workflow checks while model uploads are off', async () => {
+    Object.assign(useFeatureFlags().flags, {
+      openOnCloudModelUploadEnabled: false
+    })
+    workflowHas(node('KSampler'))
+    const authStore = useAuthStore()
+    vi.spyOn(authStore, 'getAuthHeader').mockResolvedValue({
+      Authorization: 'Bearer account'
+    })
+    cloudAnswers(Response.json({ cloud: { missing_node_types: [] } }))
+
+    await expect(checkCloudCompatibility()).resolves.toEqual({
+      kind: 'canOpen'
+    })
+    expect(authStore.getWorkspaceAuthHeader).not.toHaveBeenCalled()
+    expect(vi.mocked(fetch).mock.calls[0][1]?.headers).toMatchObject({
+      Authorization: 'Bearer account'
+    })
   })
 
   it('checks a previous upload by model in the signed-in workspace', async () => {
