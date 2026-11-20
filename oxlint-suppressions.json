@@ -768,11 +768,6 @@
       "count": 3
     }
   },
-  "src/renderer/core/layout/arrange/arrange.ts": {
-    "comfy/no-positional-boolean-params": {
-      "count": 1
-    }
-  },
   "src/renderer/core/layout/slots/slotIdentifier.ts": {
     "comfy/no-positional-boolean-params": {
       "count": 1
