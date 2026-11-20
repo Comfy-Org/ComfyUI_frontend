@@ -28,11 +28,12 @@ into one directory by the verdict job) and applies, in order:
                  the previous run's value ($MATRIX_PREV, written each run to
                  $MATRIX_METRICS_OUT and carried between runs by the actions
                  cache). Catches gradual erosion the absolute floors ignore.
-                 Packs free of errors or hangs in TELEMETRY_HOOKS must not
-                 drop more than 0.5 points below the previous run either:
-                 those hooks fail for ~11% of packs in happy-dom, too many
-                 for a floor, but the rate held at exactly 292 packs over
-                 eight arm and renderer runs, so a setup regression moves it.
+                 Packs free of errors or hangs in TELEMETRY_HOOKS, including
+                 the load hooks driven per workflow, must not drop more than
+                 0.5 points below the previous run either: those hooks fail
+                 for ~11% of packs in happy-dom, too many for a floor, but
+                 the failing set is identical across arms and renderers, so
+                 a setup regression moves it.
 
 Floors sit under the measured baselines (run 31624366070, 1,879 packs) so a
 handful of broken pack HEADs cannot flip the verdict, while a frontend
@@ -128,6 +129,20 @@ def _named(packs: list[str], limit: int = 10) -> str:
     shown = ', '.join(packs[:limit])
     return shown + (f' (+{len(packs) - limit} more)'
                     if len(packs) > limit else '')
+
+
+def _fails_new_hook(row: dict) -> bool:
+    ops = row['ops'] if isinstance(row['ops'], dict) else {}
+    return bool(
+        set(row['hookErrorMethods']) & TELEMETRY_HOOKS
+        or any(v != 'OK' for v in (row.get('lifecycle') or {}).values())
+        or any(
+            name.partition(':')[2] in TELEMETRY_HOOKS
+            and isinstance(info, dict)
+            and info.get('err')
+            for name, info in ops.items()
+        )
+    )
 
 
 def _delta(
@@ -312,12 +327,7 @@ def evaluate(
         lines.append('hook errors reported, not gated:')
     for method, packs in sorted(telemetry_hook_packs.items()):
         lines.append(f'  {method:26s} {packs:5d} pack(s)')
-    new_hook_packs = sum(
-        1
-        for r in done
-        if set(r['hookErrorMethods']) & TELEMETRY_HOOKS
-        or any(v != 'OK' for v in (r.get('lifecycle') or {}).values())
-    )
+    new_hook_packs = sum(1 for r in done if _fails_new_hook(r))
     new_hook_free_pct = (len(done) - new_hook_packs) / len(done) * 100
     lines.append(
         f'{"new-hook error or hang":28s} {new_hook_packs:5d} pack(s)'
