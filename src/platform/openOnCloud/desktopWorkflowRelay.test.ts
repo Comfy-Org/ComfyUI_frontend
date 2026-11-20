@@ -209,6 +209,16 @@ describe(handleDesktopWorkflowHandoff, () => {
     expect(api.storeUserData).not.toHaveBeenCalled()
   })
 
+  it('does not stage a transfer when the local server disables the relay', async () => {
+    remoteConfig.value = { open_on_cloud_enabled: false }
+
+    await expect(
+      stageDesktopWorkflowHandoff('portrait', defaultGraph)
+    ).resolves.toBeUndefined()
+
+    expect(api.storeUserData).not.toHaveBeenCalled()
+  })
+
   it('accepts a relay URL on the trusted Cloud origin with a rollout override', async () => {
     const trusted = new URL(getBuildTimeComfyCloudBaseUrl())
     trusted.searchParams.set('ff', 'open_on_cloud_enabled:true')
