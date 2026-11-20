@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import {
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  onTestFinished,
+  vi
+} from 'vitest'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -12,69 +20,30 @@ import {
   resetCanvasTrackerForTest
 } from '@/platform/workflow/core/canvasTrackerOwnership'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import {
+  createTestSubgraphData,
+  createTestSubgraphNode
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 
-const fileState = {
-  id: '11111111-1111-4111-8111-111111111111',
-  last_node_id: 1,
-  last_link_id: 0,
-  nodes: [
-    {
-      id: 1,
-      type: 'sg-1',
-      title: 'mine',
-      pos: [0, 0],
-      size: [100, 50],
-      flags: {},
-      order: 0,
-      mode: 0,
-      inputs: [],
-      outputs: [],
-      properties: {}
-    }
-  ],
-  links: [],
-  groups: [],
-  config: {},
-  extra: { description: 'saved desc' },
-  version: 0.4,
-  definitions: {
-    subgraphs: [
-      {
-        id: 'sg-1',
-        name: 'mine',
-        version: 1,
-        state: {
-          lastGroupId: 0,
-          lastNodeId: 0,
-          lastLinkId: 0,
-          lastRerouteId: 0
-        },
-        revision: 0,
-        config: {},
-        inputNode: { id: -10, bounding: [0, 0, 10, 10] },
-        outputNode: { id: -20, bounding: [0, 0, 10, 10] },
-        inputs: [],
-        outputs: [],
-        widgets: [],
-        nodes: [],
-        links: [],
-        groups: [],
-        extra: {}
-      }
-    ]
-  }
+function putBlueprintOnCanvas() {
+  const graph = app.rootGraph
+  graph.clear()
+  const subgraph = graph.createSubgraph(
+    createTestSubgraphData({ name: 'mine' })
+  )
+  graph.add(createTestSubgraphNode(subgraph))
+  return JSON.stringify(graph.serialize())
 }
 
 describe('subgraph blueprint save on the canvas', () => {
-  let stored = JSON.stringify(fileState)
+  let stored = ''
 
   beforeEach(() => {
-    stored = JSON.stringify(fileState)
+    stored = putBlueprintOnCanvas()
     resetCanvasTrackerForTest()
     onTestFinished(resetCanvasTrackerForTest)
     useSettingStore().settingValues['Comfy.Workflow.WarnBlueprintOverwrite'] =
@@ -96,24 +65,45 @@ describe('subgraph blueprint save on the canvas', () => {
     })
   })
 
-  it('keeps capturing canvas edits on a blueprint tab after it is saved', async () => {
+  async function openBlueprintOnCanvas() {
     await useSubgraphStore().fetchSubgraphs()
     const workflowStore = useWorkflowStore()
-    const blueprint = workflowStore.getWorkflowByPath('subgraphs/mine.json')!
-    workflowStore.activeWorkflow = blueprint as LoadedComfyWorkflow
-    bindCanvasTracker(blueprint.changeTracker!)
-    const canvas = JSON.parse(JSON.stringify(blueprint.activeState!))
-    vi.spyOn(app.rootGraph, 'serialize').mockImplementation(
-      () => JSON.parse(JSON.stringify(canvas)) as never
+    const stored = workflowStore.getWorkflowByPath('subgraphs/mine.json')
+    assert(stored, 'blueprint is in the workflow list')
+    const blueprint = await stored.load()
+    workflowStore.activeWorkflow = blueprint
+    bindCanvasTracker(blueprint.changeTracker)
+    return blueprint
+  }
+
+  function activeTracker() {
+    const active = useWorkflowStore().activeWorkflow
+    assert(active, 'a workflow is active')
+    return active.changeTracker
+  }
+
+  it.for(['save', 'saveAs'] as const)(
+    'keeps capturing canvas edits on a blueprint tab after %s',
+    async (method) => {
+      const blueprint = await openBlueprintOnCanvas()
+
+      if (method === 'save') await blueprint.save()
+      else await blueprint.saveAs('subgraphs/renamed.json')
+      app.rootGraph.nodes[0].pos = [40, 60]
+      activeTracker().captureCanvasState()
+
+      expect(activeTracker().activeState.nodes[0].pos).toEqual([40, 60])
+    }
+  )
+
+  it('keeps the blueprint name on the canvas tab after saveAs', async () => {
+    const blueprint = await openBlueprintOnCanvas()
+
+    await blueprint.saveAs('subgraphs/renamed.json')
+    activeTracker().captureCanvasState()
+
+    expect(activeTracker().activeState.definitions?.subgraphs[0].name).toBe(
+      'mine'
     )
-
-    await blueprint.save()
-    canvas.definitions.subgraphs[0].revision = 8
-    workflowStore.activeWorkflow.changeTracker.captureCanvasState()
-
-    expect(
-      workflowStore.activeWorkflow.activeState.definitions!.subgraphs[0]
-        .revision
-    ).toBe(8)
   })
 })
