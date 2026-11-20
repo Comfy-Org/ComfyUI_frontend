@@ -3504,7 +3504,12 @@ export class Subgraph
     const r = super.configure(normalized, keep_old, viewOptions)
 
     this._configureSubgraph(normalized)
-    pruneDanglingSubgraphLinks(this, serialisedInputLinks)
+    // Runs after super.configure has left its `load` scope, so the prune's
+    // disconnects must be tagged `load` again: they repair the definition
+    // being loaded and are not edits to mint.
+    withGraphIntentSource('load', () =>
+      pruneDanglingSubgraphLinks(this, serialisedInputLinks)
+    )
     return r
   }
 
