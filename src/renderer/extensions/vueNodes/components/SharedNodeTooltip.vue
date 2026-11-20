@@ -10,7 +10,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useTemplateRef } from 'vue'
+import { useMutationObserver } from '@vueuse/core'
+import { computed, ref, shallowRef, useTemplateRef } from 'vue'
 
 import Tooltip from '@comfyorg/design-system/tooltip/Tooltip'
 import TooltipContent from '@comfyorg/design-system/tooltip/TooltipContent'
@@ -35,10 +36,26 @@ function isSide(value: string | undefined): value is Side {
   )
 }
 
-function showFor(target: HTMLElement) {
-  text.value = target.dataset.nodeTooltip ?? ''
-  title.value = target.dataset.nodeTooltipTitle ?? ''
-  const requested = target.dataset.nodeTooltipSide
+const target = shallowRef<HTMLElement>()
+
+function readTarget() {
+  const dataset = target.value?.dataset
+  text.value = dataset?.nodeTooltip ?? ''
+  title.value = dataset?.nodeTooltipTitle ?? ''
+  const requested = dataset?.nodeTooltipSide
   side.value = isSide(requested) ? requested : 'top'
 }
+
+function showFor(next: HTMLElement) {
+  target.value = next
+  readTarget()
+}
+
+useMutationObserver(target, readTarget, {
+  attributeFilter: [
+    'data-node-tooltip',
+    'data-node-tooltip-title',
+    'data-node-tooltip-side'
+  ]
+})
 </script>

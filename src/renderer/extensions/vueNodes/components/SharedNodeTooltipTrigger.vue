@@ -42,7 +42,7 @@ function leave() {
 }
 
 function close() {
-  if (rootContext.open.value) rootContext.onClose()
+  rootContext.onClose()
 }
 
 watch(

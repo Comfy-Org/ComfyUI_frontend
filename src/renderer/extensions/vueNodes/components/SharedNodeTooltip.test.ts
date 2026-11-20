@@ -7,11 +7,14 @@ import TooltipProvider from '@comfyorg/design-system/tooltip/TooltipProvider'
 
 import SharedNodeTooltip from './SharedNodeTooltip.vue'
 
+const OPEN_DELAY_MS = 100
+
 const Host = defineComponent({
   components: { SharedNodeTooltip, TooltipProvider },
+  setup: () => ({ OPEN_DELAY_MS }),
   template: `
     <div>
-      <TooltipProvider>
+      <TooltipProvider :delay-duration="OPEN_DELAY_MS">
         <div data-node-tooltip="First tip">first</div>
         <div data-node-tooltip="Second tip" data-node-tooltip-side="left">second</div>
         <div>plain</div>
@@ -84,6 +87,30 @@ describe('SharedNodeTooltip', () => {
     await user.hover(screen.getByText('titled'))
 
     expect(await screen.findByRole('tooltip')).toHaveTextContent('Full title')
+  })
+
+  it('shows the new text when the hovered element changes it', async () => {
+    const user = renderHost()
+    const first = screen.getByText('first')
+
+    await user.hover(first)
+    await screen.findByRole('tooltip')
+    first.setAttribute('data-node-tooltip', 'Changed tip')
+
+    await waitFor(() =>
+      expect(screen.getByRole('tooltip')).toHaveTextContent('Changed tip')
+    )
+  })
+
+  it('stays closed when pressed before it opens', async () => {
+    const user = renderHost()
+    const first = screen.getByText('first')
+
+    await user.hover(first)
+    await user.click(first)
+    await new Promise((resolve) => setTimeout(resolve, OPEN_DELAY_MS * 3))
+
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 
   it('closes on press and stays closed until the pointer leaves', async () => {
