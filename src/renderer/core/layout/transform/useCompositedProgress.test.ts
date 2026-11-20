@@ -1,5 +1,5 @@
 import { usePreferredReducedMotion } from '@vueuse/core'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, effectScope, nextTick, ref, shallowRef } from 'vue'
 
 import { useCompositedProgress } from './useCompositedProgress'
@@ -13,6 +13,13 @@ const motionPreference = computed(() =>
 
 const KEYFRAMES = [{ translate: '-100%' }, { translate: '0%' }]
 
+function showProgress(...args: Parameters<typeof useCompositedProgress>) {
+  const scope = effectScope()
+  onTestFinished(() => scope.stop())
+  scope.run(() => useCompositedProgress(...args))
+  return scope
+}
+
 function scrubbedAnimations(element: HTMLElement) {
   return element
     .getAnimations()
@@ -20,8 +27,13 @@ function scrubbedAnimations(element: HTMLElement) {
     .map(({ playState, currentTime }) => ({ playState, currentTime }))
 }
 
+function scrubbedTime(element: HTMLElement) {
+  return Number(scrubbedAnimations(element)[0].currentTime)
+}
+
 describe('useCompositedProgress', () => {
   beforeEach(() => {
+    vi.useFakeTimers()
     reducedMotion.value = false
     vi.mocked(usePreferredReducedMotion).mockReturnValue(motionPreference)
   })
@@ -29,7 +41,7 @@ describe('useCompositedProgress', () => {
   it('holds the progress in one paused animation and leaves the inline style alone', () => {
     const element = document.createElement('div')
 
-    useCompositedProgress(element, 0.35, KEYFRAMES)
+    showProgress(element, 0.35, KEYFRAMES)
 
     expect(scrubbedAnimations(element)).toEqual([
       { playState: 'paused', currentTime: 350 }
@@ -37,40 +49,85 @@ describe('useCompositedProgress', () => {
     expect(element.style.translate).toBe('')
   })
 
+  it('eases to new progress in the same animation without touching the style attribute', async () => {
+    const element = document.createElement('div')
+    const progress = ref(0.2)
+    showProgress(element, progress, KEYFRAMES)
+
+    progress.value = 0.8
+    await vi.advanceTimersByTimeAsync(100)
+    const midway = scrubbedTime(element)
+    expect(midway).toBeGreaterThan(200)
+    expect(midway).toBeLessThan(800)
+
+    await vi.advanceTimersByTimeAsync(300)
+    expect(scrubbedAnimations(element)).toEqual([
+      { playState: 'paused', currentTime: 800 }
+    ])
+    expect(element.getAttribute('style')).toBeNull()
+  })
+
   it('clamps progress to the keyframe range', () => {
     const over = document.createElement('div')
     const under = document.createElement('div')
 
-    useCompositedProgress(over, 1.4, KEYFRAMES)
-    useCompositedProgress(under, -0.2, KEYFRAMES)
+    showProgress(over, 1.4, KEYFRAMES)
+    showProgress(under, -0.2, KEYFRAMES)
 
-    expect(scrubbedAnimations(over)[0].currentTime).toBe(1000)
-    expect(scrubbedAnimations(under)[0].currentTime).toBe(0)
+    expect(scrubbedTime(over)).toBe(1000)
+    expect(scrubbedTime(under)).toBe(0)
   })
 
   it('shows no progress for a value that is not a number', () => {
     const element = document.createElement('div')
 
-    useCompositedProgress(element, NaN, KEYFRAMES)
+    showProgress(element, NaN, KEYFRAMES)
 
-    expect(scrubbedAnimations(element)[0].currentTime).toBe(0)
+    expect(scrubbedTime(element)).toBe(0)
   })
 
-  it('follows progress at once under reduced motion and keeps it when motion returns', async () => {
+  it('follows progress at once under reduced motion', async () => {
     const element = document.createElement('div')
     const progress = ref(0.2)
-    useCompositedProgress(element, progress, KEYFRAMES)
+    showProgress(element, progress, KEYFRAMES)
 
     reducedMotion.value = true
     progress.value = 0.8
     await nextTick()
-    expect(scrubbedAnimations(element)[0].currentTime).toBe(800)
 
+    expect(scrubbedTime(element)).toBe(800)
+  })
+
+  it('keeps the shown progress when motion returns in the same tick as an update', async () => {
+    const element = document.createElement('div')
+    const progress = ref(0.2)
+    showProgress(element, progress, KEYFRAMES)
+
+    reducedMotion.value = true
+    progress.value = 0.8
+    await nextTick()
     reducedMotion.value = false
     await nextTick()
-    await vi.waitFor(() =>
-      expect(scrubbedAnimations(element)[0].currentTime).toBe(800)
-    )
+
+    expect(scrubbedTime(element)).toBe(800)
+  })
+
+  it('never moves backwards when motion returns before a later update', async () => {
+    const element = document.createElement('div')
+    const progress = ref(0.2)
+    showProgress(element, progress, KEYFRAMES)
+
+    reducedMotion.value = true
+    await nextTick()
+    progress.value = 0.8
+    await nextTick()
+    reducedMotion.value = false
+    await nextTick()
+    expect(scrubbedTime(element)).toBe(800)
+
+    progress.value = 0.9
+    await vi.advanceTimersByTimeAsync(100)
+    expect(scrubbedTime(element)).toBeGreaterThan(800)
   })
 
   it('moves the animation to the current element when the target changes', async () => {
@@ -78,7 +135,7 @@ describe('useCompositedProgress', () => {
     const second = document.createElement('div')
     const target = shallowRef(first)
 
-    useCompositedProgress(target, 0.5, KEYFRAMES)
+    showProgress(target, 0.5, KEYFRAMES)
     target.value = second
     await nextTick()
 
@@ -92,7 +149,7 @@ describe('useCompositedProgress', () => {
     const element = document.createElement('div')
     const target = shallowRef<HTMLElement | null>(null)
 
-    useCompositedProgress(target, 0.2, KEYFRAMES)
+    showProgress(target, 0.2, KEYFRAMES)
     target.value = element
     await nextTick()
     expect(scrubbedAnimations(element)).toHaveLength(1)
@@ -104,8 +161,7 @@ describe('useCompositedProgress', () => {
 
   it('drops the animation when its scope stops', () => {
     const element = document.createElement('div')
-    const scope = effectScope()
-    scope.run(() => useCompositedProgress(element, ref(0.5), KEYFRAMES))
+    const scope = showProgress(element, ref(0.5), KEYFRAMES)
 
     scope.stop()
 

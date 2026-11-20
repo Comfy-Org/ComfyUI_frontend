@@ -1,15 +1,17 @@
 import { expect } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 
 import type { ComfyWorkflowJSON } from '@comfyorg/graph-model/workflowSchema'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { measureCadence } from '@e2e/fixtures/helpers/MinimapCadenceHelper'
 import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { nodeGraphPosition } from '@e2e/fixtures/utils/nodeGraphPosition'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
 import {
   logMeasurement,
   recordMeasurement
 } from '@e2e/fixtures/utils/perfReporter'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 const PAN_STEPS = 60
 const ZOOM_STEPS = 40
@@ -18,6 +20,9 @@ const SETTLE_FRAMES = 10
 const IDLE_MS = 1500
 const LOAD_TIMEOUT_MS = 120_000
 const VIEW_SCALE = 0.6
+const LARGE_GRAPH_NODE_COUNT = 245
+
+export type Renderer = 'vue' | 'litegraph'
 
 const FIELDS = [
   'frameDurationMs',
@@ -32,7 +37,7 @@ const FIELDS = [
   'durationMs'
 ] as const satisfies readonly (keyof PerfMeasurement)[]
 
-export async function trimGraphTo(comfyPage: ComfyPage, nodeCount: number) {
+async function trimGraphTo(comfyPage: ComfyPage, nodeCount: number) {
   await comfyPage.page.evaluate((keep) => {
     const app = window.app
     if (!app) throw new Error('window.app is not available')
@@ -69,7 +74,7 @@ export async function centerOnGraph(comfyPage: ComfyPage, scale = VIEW_SCALE) {
   await comfyPage.nextFrame()
 }
 
-export async function waitForMeasuredVueNodes(
+async function waitForMeasuredVueNodes(
   comfyPage: ComfyPage,
   nodeCount: number,
   timeout?: number
@@ -79,11 +84,23 @@ export async function waitForMeasuredVueNodes(
   ).toHaveCount(nodeCount, { timeout })
 }
 
+export async function loadCenteredGraph(
+  comfyPage: ComfyPage,
+  renderer: Renderer,
+  nodeCount: number
+) {
+  await comfyPage.workflow.loadWorkflowData('large-graph-workflow')
+  if (nodeCount < LARGE_GRAPH_NODE_COUNT)
+    await trimGraphTo(comfyPage, nodeCount)
+  await centerOnGraph(comfyPage)
+  if (renderer === 'vue') await waitForMeasuredVueNodes(comfyPage, nodeCount)
+}
+
 export async function measureLoad(
   comfyPage: ComfyPage,
   name: string,
   workflow: ComfyWorkflowJSON,
-  renderer: 'vue' | 'litegraph'
+  renderer: Renderer
 ) {
   await comfyPage.perf.startMeasuring()
   await comfyPage.workflow.loadGraphData(workflow)
@@ -192,20 +209,48 @@ export async function measureSelectAll(comfyPage: ComfyPage, name: string) {
 
 const PROGRESS_JOB_ID = 'pan-zoom-perf-job'
 const PROGRESS_MAX = 20
+const PROGRESS_NODES = 8
+const FILL_TOLERANCE = 0.01
 
-/**
- * Updates further apart than the progress bars' 300ms easing, so each update
- * starts and finishes its own animation instead of retargeting a running one.
- */
 export const SLOW_PROGRESS_CADENCE = { updates: 10, intervalMs: 400 }
+
+async function expectFilled(fills: Locator, count: number, fraction: number) {
+  await expect(fills).toHaveCount(count)
+  await expect
+    .poll(() =>
+      fills.evaluateAll(
+        (elements, fraction) =>
+          Math.max(
+            ...elements.map((element) => {
+              const track = element.parentElement!.getBoundingClientRect()
+              const filled =
+                (element.getBoundingClientRect().right - track.left) /
+                track.width
+              return Math.abs(filled - fraction)
+            })
+          ),
+        fraction
+      )
+    )
+    .toBeLessThan(FILL_TOLERANCE)
+}
 
 export async function measureProgress(
   comfyPage: ComfyPage,
   name: string,
-  cadence?: { updates: number; intervalMs: number }
+  renderer: Renderer,
+  {
+    cadence,
+    queueFill
+  }: {
+    cadence?: { updates: number; intervalMs: number }
+    queueFill?: Locator
+  } = {}
 ) {
-  const nodeIds = await comfyPage.page.evaluate(() =>
-    window.app!.graph.nodes.slice(0, 8).map((node) => String(node.id))
+  const nodeIds = await comfyPage.page.evaluate(
+    (count) =>
+      window.app!.graph.nodes.slice(0, count).map((node) => String(node.id)),
+    PROGRESS_NODES
   )
   await comfyPage.page.evaluate((jobId) => {
     window.app!.api.dispatchCustomEvent('execution_start', {
@@ -214,8 +259,9 @@ export async function measureProgress(
     })
   }, PROGRESS_JOB_ID)
   try {
-    const step = PROGRESS_MAX / (cadence?.updates ?? PROGRESS_MAX)
-    return await measureCadence(
+    const updates = cadence?.updates ?? PROGRESS_MAX
+    const step = PROGRESS_MAX / updates
+    const measurement = await measureCadence(
       comfyPage,
       name,
       (update) =>
@@ -248,6 +294,16 @@ export async function measureProgress(
         ),
       cadence
     )
+    const shown = ((updates - 1) * step) / PROGRESS_MAX
+    if (renderer === 'vue') {
+      await expectFilled(
+        comfyPage.page.getByTestId(TestIds.node.progressFill),
+        nodeIds.length,
+        shown
+      )
+    }
+    if (queueFill) await expectFilled(queueFill, 1, shown)
+    return measurement
   } finally {
     await comfyPage.page.evaluate(() => {
       window.app!.api.dispatchCustomEvent('executing', null)

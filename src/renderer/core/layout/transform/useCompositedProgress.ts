@@ -10,11 +10,7 @@ import type { MaybeRefOrGetter } from 'vue'
 const SCRUB_DURATION_MS = 1000
 const EASE_DURATION_MS = 300
 
-/**
- * Drives an element between two keyframes by scrubbing a paused animation, so
- * a progress change reaches the compositor directly. A CSS transition forces a
- * full compositing update when it starts and again when it ends.
- */
+/** Shows `progress` (0 to 1) as a position between the two keyframes. */
 export function useCompositedProgress(
   target: MaybeRefOrGetter<HTMLElement | null | undefined>,
   progress: MaybeRefOrGetter<number>,
@@ -25,13 +21,12 @@ export function useCompositedProgress(
     const value = toValue(progress)
     return Number.isNaN(value) ? 0 : Math.min(Math.max(value, 0), 1)
   })
-  const eased = useTransition(clamped, {
-    duration: EASE_DURATION_MS,
-    transition: TransitionPresets.easeOutCubic
+  const shown = useTransition(clamped, {
+    duration: computed(() =>
+      motionPreference.value === 'reduce' ? 0 : EASE_DURATION_MS
+    ),
+    easing: TransitionPresets.easeOutCubic
   })
-  const shown = computed(() =>
-    motionPreference.value === 'reduce' ? clamped.value : eased.value
-  )
 
   let animation: Animation | undefined
   let animatedElement: HTMLElement | undefined
