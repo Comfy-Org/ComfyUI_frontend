@@ -25,7 +25,11 @@ import type { VisualBox } from '@comfyorg/graph-model/arrange/arrange'
 import { computeUnionBounds } from '@/utils/mathUtil'
 
 import { activeGuides } from './smartGuidesState'
-import { buildSnapIndex, snapMove, snapResize } from './snapSolver'
+import {
+  buildSnapIndex,
+  snapMove,
+  snapResize
+} from '@comfyorg/graph-model/arrange/snapSolver'
 import type {
   ResizeEdges,
   SnapAttachment,
@@ -33,7 +37,7 @@ import type {
   SnapOptions,
   SnapThreshold,
   WireAnchor
-} from './snapSolver'
+} from '@comfyorg/graph-model/arrange/snapSolver'
 
 export interface SmartGuidesConfig extends SnapOptions {
   enabled: boolean

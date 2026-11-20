@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildSnapIndex, snapMove, snapResize } from './snapSolver'
-import type { VisualBox } from '@comfyorg/graph-model/arrange/arrange'
+import type { VisualBox } from './arrange'
 
 import type { SnapOptions } from './snapSolver'
 

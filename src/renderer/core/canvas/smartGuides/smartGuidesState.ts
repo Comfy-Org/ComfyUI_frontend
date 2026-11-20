@@ -5,7 +5,7 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 
 import type { Axis } from '@comfyorg/graph-model/arrange/arrange'
 
-import type { SmartGuide } from './snapSolver'
+import type { SmartGuide } from '@comfyorg/graph-model/arrange/snapSolver'
 
 export const activeGuides = shallowRef<readonly SmartGuide[]>([])
 
