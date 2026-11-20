@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -19,6 +20,17 @@ export class MediaLightbox {
     )
   }
 
+  image(name: string): Locator {
+    return this.root.getByRole('img', { name })
+  }
+
+  async expectImageLoaded(name: string, naturalWidth: number) {
+    await expect(this.image(name)).toHaveJSProperty(
+      'naturalWidth',
+      naturalWidth
+    )
+  }
+
   async zoomTargetBox() {
     const box = await this.zoomTarget.boundingBox()
     if (!box) throw new Error('Lightbox zoom target is not visible')
@@ -34,5 +46,19 @@ export class MediaLightbox {
     const center = await this.zoomTargetCenter()
     await this.page.mouse.move(center.x, center.y)
     await this.page.mouse.wheel(0, deltaY)
+  }
+
+  /** Drags from the image center to the bottom edge of the viewport. */
+  async dragImageToBottomEdge() {
+    const viewport = this.page.viewportSize()
+    if (!viewport) throw new Error('Viewport size is not set')
+    const start = await this.zoomTargetCenter()
+    const end = { x: start.x, y: viewport.height - 5 }
+
+    await this.page.mouse.move(start.x, start.y)
+    await this.page.mouse.down()
+    await this.page.mouse.move(end.x, end.y, { steps: 10 })
+    await this.page.mouse.up()
+    return { dx: end.x - start.x, dy: end.y - start.y }
   }
 }
