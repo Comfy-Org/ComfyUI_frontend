@@ -463,6 +463,21 @@ describe('bootstrapTracer', () => {
     expect(metadata).not.toHaveProperty('failure_error')
   })
 
+  it('still rethrows a phase rejection that settles after startup completed', async () => {
+    const tracer = new BootstrapTracer()
+    tracer.complete('failed', { error: new Error('settings failed') })
+    addAction.mockClear()
+
+    const lateRejection = new Error('workflows rejected after completion')
+    await expect(
+      tracer.settle('bootstrap/workflows', () => Promise.reject(lateRejection))
+    ).rejects.toBe(lateRejection)
+    tracer.noteFailure('bootstrap/i18n', new Error('also late'))
+
+    tracer.complete('failed', { error: lateRejection })
+    expect(addAction).not.toHaveBeenCalled()
+  })
+
   it('exposes the startup outcome once it is known', () => {
     const tracer = new BootstrapTracer()
     const before = tracer.outcome
