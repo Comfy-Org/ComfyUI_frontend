@@ -15,7 +15,7 @@ import type {
 import {
   hasNorthEdge,
   hasWestEdge
-} from '@/lib/litegraph/src/canvas/cornerResize'
+} from '@comfyorg/graph-model/arrange/cornerResize'
 import { getLinkEndpointPositions } from '@/lib/litegraph/src/canvas/linkGeometry'
 import type { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphGroup, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
