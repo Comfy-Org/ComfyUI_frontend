@@ -4,7 +4,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
 
-import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { runCanvasFramePhase } from '@/lib/litegraph/src/canvas/canvasFrame'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import type { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -301,6 +301,24 @@ describe('useNodeDrag', () => {
     expect(testState.capturedAutoPanInstance.current?.stop).toHaveBeenCalled()
     expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
     expect(layoutStore.batchUpdateNodeBounds).not.toHaveBeenCalled()
+  })
+
+  it('ends the drag when the root graph is cleared, as undo does', () => {
+    Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
+    testState.nodeLayouts.set('1', {
+      position: { x: 50, y: 80 },
+      size: { width: 180, height: 110 }
+    })
+    const { startDrag, handleDrag } = createScopedDrag()
+    startDrag(pointerEvent(5, 10), node1, false)
+    handleDrag(pointerEvent(25, 30), node1)
+
+    new LGraph().clear()
+    advanceFrame()
+    handleDrag(pointerEvent(45, 50), node1)
+    advanceFrame()
+
+    expect(testState.mutationFns.batchMoveNodes).not.toHaveBeenCalled()
   })
 
   it('drops pending movement and stops auto-pan when its last consumer is disposed', () => {
