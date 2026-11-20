@@ -277,6 +277,12 @@ async function useRealWorkflowService(): Promise<WorkflowService> {
   return real
 }
 
+interface ShowGraph {
+  app: ComfyApp
+  service: WorkflowService
+  retained: ComfyWorkflow
+}
+
 function markLoaded(workflow: ComfyWorkflow): LoadedComfyWorkflow {
   workflow.changeTracker = createMockChangeTracker()
   workflow.content = '{}'
@@ -5720,6 +5726,60 @@ describe('ComfyApp', () => {
       expect(app.rootGraph).toBe(open.graph)
       expect(isCanvasOwner(open.changeTracker)).toBe(true)
     })
+
+    it.for([
+      {
+        path: 'a clean load',
+        show: ({ app }: ShowGraph) =>
+          app.loadGraphData(createWorkflowGraphData(), true, true, null)
+      },
+      {
+        path: 'a switch to a retained tab',
+        show: ({ service, retained }: ShowGraph) =>
+          service.openWorkflow(retained)
+      }
+    ])(
+      'drops the previous tab warnings and run error overlay on $path',
+      async ({ show }) => {
+        const service = await useRealWorkflowService()
+        const workflowStore = useWorkflowStore()
+        workflowStore.provideChangeTracker(ChangeTracker)
+        Reflect.set(app, 'rootGraphInternal', new LGraph())
+        app.canvasElRef.value = document.createElement('canvas')
+        Reflect.set(mockCanvas, 'ds', createTestDragAndScale())
+        vi.mocked(workflowStore.createNewTemporary).mockRestore()
+        vi.mocked(workflowStore.getWorkflowByPath).mockRestore()
+        vi.mocked(workflowStore.isActive).mockRestore()
+        vi.mocked(workflowStore.openWorkflow).mockRestore()
+        await app.loadApiJson({}, 'api-retained')
+        const retained = workflowStore.activeWorkflow
+        assert.exists(retained)
+        await app.loadApiJson({}, 'api-visible')
+        const shownBefore = app.rootGraph
+        const missingModelStore = useMissingModelStore()
+        missingModelStore.setMissingModels([
+          {
+            nodeId: createNodeExecutionId([1]),
+            nodeType: 'CheckpointLoaderSimple',
+            widgetName: 'ckpt_name',
+            name: 'model.safetensors',
+            isAssetSupported: false,
+            isMissing: true
+          }
+        ])
+        const verification =
+          missingModelStore.createVerificationAbortController()
+        useExecutionErrorStore().showErrorOverlay()
+
+        await show({ app, service, retained })
+
+        expect(app.rootGraph).not.toBe(shownBefore)
+        expect(app.rootGraph).toBe(workflowStore.activeWorkflow?.graph)
+        expect(missingModelStore.missingModelCandidates).toBeNull()
+        expect(verification.signal.aborted).toBe(true)
+        expect(useExecutionErrorStore().isErrorOverlayOpen).toBe(false)
+      }
+    )
 
     it('reuses the active workflow when importing the same file again', async () => {
       await useRealWorkflowService()

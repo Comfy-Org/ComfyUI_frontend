@@ -150,6 +150,7 @@ import { useDeprecatedNodesStore } from '@/platform/workflowErrors/nodeReplaceme
 import type { MissingNodeType } from '@/platform/workflowErrors/nodeReplacement/types'
 
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { presentRootGraph } from '@/platform/workflow/core/services/presentRootGraph'
 import { useWidgetStore } from '@/stores/widgetStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import type {
@@ -184,7 +185,6 @@ import type {
 } from '@/platform/workflowErrors/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/workflowErrors/missingMedia/types'
 import { runMissingMediaPipeline } from '@/platform/workflowErrors/missingMedia/missingMediaPipeline'
-import { useMissingMediaStore } from '@/platform/workflowErrors/missingMedia/missingMediaStore'
 
 import { getWorkflowMode } from '@comfyorg/graph-model/appMode'
 import { anyItemOverlapsRect } from '@/utils/mathUtil'
@@ -1415,25 +1415,9 @@ export class ComfyApp implements IComfyApp {
           const replaceCanvas = useWorkflowService().beforeLoadNewGraph(clean)
           replaceCanvas()
         }
-        if (clean || graph === this.rootGraph) {
-          useExecutionErrorStore().setActiveGraph(null)
-
-          if (skipAssetScans) {
-            useMissingModelStore().createVerificationAbortController().abort()
-            useMissingMediaStore().createVerificationAbortController().abort()
-            useMissingModelStore().setMissingModels([])
-            useMissingMediaStore().setMissingMedia([])
-          } else {
-            useMissingModelStore().clearMissingModels()
-            useMissingMediaStore().clearMissingMedia()
-          }
-        }
-
-        if (clean) {
-          useSubgraphNavigationStore().suppressRootGraphHash(graph)
-          this.activateRootGraph(graph)
-          withGraphIntentSource('load', () => this.clean())
-        }
+        if (clean || graph === this.rootGraph)
+          presentRootGraph(this, graph, { clean, skipAssetScans })
+        if (clean) withGraphIntentSource('load', () => this.clean())
 
         if (
           !graphData ||
