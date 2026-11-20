@@ -833,7 +833,7 @@ export class LGraphNode
   declare isLoading?: boolean
   declare isUploading?: boolean
   declare previewMediaType?: 'image' | 'video' | 'audio' | 'model'
-  /** If true, output images are stored but not rendered below the node */
+  /** Only false enables the default executed-output preview in Vue mode. */
   declare hideOutputImages?: boolean
 
   declare preview?: string[]
@@ -1368,7 +1368,8 @@ export class LGraphNode
         }
 
         let positionalIndex = 0
-        for (const widget of this.widgets) {
+        for (let index = 0; index < this.widgets.length; index++) {
+          const widget = this.widgets[index]
           if (widget.serialize === false) continue
           const restored = useWidgetValueStore().getRestoredWidgetValue(
             graphId,
@@ -2442,19 +2443,6 @@ export class LGraphNode
     if (this.id !== UNASSIGNED_NODE_ID && isNodeBindable(widget)) {
       widget.setNodeId(this.id)
     }
-
-    if (widget.serialize === false) return widget
-
-    const positionalIndex =
-      this.widgets.filter((candidate) => candidate.serialize !== false).length -
-      1
-    const restored = useWidgetValueStore().getRestoredWidgetValue(
-      this.graph?.rootGraph.id ?? zeroUuid,
-      this.id,
-      widget,
-      positionalIndex
-    )
-    if (restored) widget.value = restored.value
 
     return widget
   }

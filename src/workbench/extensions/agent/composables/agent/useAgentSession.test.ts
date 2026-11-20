@@ -4840,6 +4840,55 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
   })
 
+  it('(g4b) a turn the socket settles after a reconnect shows the stored row, so a tool call missed in the drop appears', async () => {
+    const getMessages = vi.fn(async (): Promise<AgentMessages> => [
+      historyRow(1, 'user', 'msg-1', 'go'),
+      {
+        ...historyRow(2, 'assistant', 'msg-1', 'Added it.', 'msg-1'),
+        content: {
+          text: 'Added it.',
+          thinking: [
+            { text: 'round one', tool_call_id: 'tool-1' },
+            { text: 'round two' }
+          ],
+          tool_calls: [
+            {
+              id: 'tool-1',
+              tool_call_id: 'tool-1',
+              tool_name: 'add_node',
+              status: 'success'
+            }
+          ]
+        }
+      }
+    ])
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: source
+    })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(thinking('msg-1', 'round one'))
+    status(false)
+    status(true)
+    emit(thinking('msg-1', 'round two'))
+    emit(delta('msg-1', 'Added it.'))
+    emit(done('msg-1'))
+
+    await vi.waitFor(() => {
+      const assistant = session.entries.value.at(-1)
+      assert(assistant !== undefined && 'parts' in assistant)
+      expect(
+        assistant.parts.map((part) =>
+          part.type === 'thinking' ? part.text : part.type
+        )
+      ).toEqual(['round one', 'tool', 'round two', 'text'])
+    })
+  })
+
   it('(g5) a turn that ended during the drop is settled from its persisted row and its stale approval card is dropped', async () => {
     const rest = fakeRest({
       getMessages: vi.fn(async (): Promise<AgentMessages> => [
@@ -5643,7 +5692,7 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
-  it('(g21) a terminal event that beats the pending history fetch keeps the socket transcript', async () => {
+  it('(g21) a terminal event that beats the pending history fetch ignores that read and settles from a fresh one', async () => {
     const pendingHistory: Array<(rows: AgentMessages) => void> = []
     let deliveredResponses = 0
     const getMessages = vi.fn(() =>
@@ -5679,11 +5728,25 @@ describe('useAgentSession (v1 composition root)', () => {
     ])
     await vi.waitFor(() => {
       expect(deliveredResponses).toBe(1)
-      expect(getMessages).toHaveBeenCalledTimes(1)
+      expect(getMessages).toHaveBeenCalledTimes(2)
       const assistant = session.entries.value.at(-1)
       assert(assistant?.role === 'assistant')
       expect(assistant.parts).toEqual([
         { type: 'text', text: 'partial from socket', state: 'done' }
+      ])
+    })
+
+    const settledRead = pendingHistory.at(1)
+    assert.exists(settledRead)
+    settledRead([
+      historyRow(1, 'user', 'msg-1', 'go'),
+      historyRow(2, 'assistant', 'msg-1', 'stored final', 'msg-1')
+    ])
+    await vi.waitFor(() => {
+      const assistant = session.entries.value.at(-1)
+      assert(assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'stored final', state: 'done' }
       ])
     })
   })

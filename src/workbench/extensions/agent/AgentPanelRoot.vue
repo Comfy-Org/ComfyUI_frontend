@@ -35,7 +35,10 @@ import type {
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { hasUnsyncedHumanOps } from '@/workbench/extensions/agent/crdt/unsyncedHumanOps'
-import { formatWorkflowSyncErrorDetail } from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
+import {
+  formatWorkflowSyncErrorDetail,
+  workflowSyncErrorTelemetryCode
+} from '@/workbench/extensions/agent/crdt/workflowSyncErrorDetail'
 import {
   readWorkflowDraftLineage,
   useWorkflowService,
@@ -161,6 +164,7 @@ import {
 import { useAgentChatHistoryRefresh } from './composables/agent/useAgentChatHistoryRefresh'
 import { useAgentWorkflowChatFollow } from './composables/agent/useAgentWorkflowChatFollow'
 import { ensureSignedIn, hasAgentCredential } from './services/agent/agentAuth'
+import { captureOutgoingCredentialForHandoff } from './services/agent/agentOwnerHandoff'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -296,6 +300,7 @@ const agentIdentity = resolveAgentIdentity({
 onBeforeUnmount(() => agentIdentity.stop())
 
 onBeforeUnmount(onIdentityChange(() => agentIdentity.reset()))
+onBeforeUnmount(onIdentityChange(() => captureOutgoingCredentialForHandoff()))
 
 function onPaywallAction(
   action: AgentPaywallAction,
@@ -943,6 +948,8 @@ function reportWithheldDraft(workflowId: string | undefined): void {
       failure_kind: 'bad_state',
       feature_area: 'agent',
       operation: 'send',
+      stale_cause: crdtStatus.value.canvasStaleCause ?? 'unknown',
+      stale_terminal: crdtStatus.value.terminal ?? 'none',
       outcome: 'withheld'
     },
     context: { workflowId }
@@ -1225,10 +1232,15 @@ const {
       const path = bindingStore.tabPathFor(workflowId)
       if (path) writeWorkflowDraftLineage(path, { workflowId, lineageSeq })
     },
-    onSyncError: (message, code) =>
+    onSyncError: (message, code) => {
       toast.error(t('agent.workflowSyncFailedTitle'), {
         description: formatWorkflowSyncErrorDetail(t, message, code)
       })
+      trackAgentError('workflow_sync_failed', 'post_acceptance', 'toast', {
+        retryable: false,
+        syncErrorCode: workflowSyncErrorTelemetryCode(code)
+      })
+    }
   },
   applierDeps: {
     getCanvas: () => useApp().canvas,
@@ -1375,7 +1387,7 @@ async function restoreThreadWorkflow(
 }
 
 conversationStore.setTurnTabResolver(turnTab)
-const { clearTurnSignals } = useAgentTabSignals()
+const { clearTurnSignals } = useAgentTabSignals({ onIdentityChange })
 
 const boundCanvasNodeCount = ref(0)
 function readBoundCanvasNodeCount(): void {

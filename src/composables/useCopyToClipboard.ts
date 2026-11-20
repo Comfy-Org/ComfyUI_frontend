@@ -59,8 +59,13 @@ export function useCopyToClipboard({
     text: string,
     {
       clipboardItems,
-      toastOnSuccess = showSuccessToast
-    }: { clipboardItems?: ClipboardItem[]; toastOnSuccess?: boolean } = {}
+      toastOnSuccess = showSuccessToast,
+      toastOnError = true
+    }: {
+      clipboardItems?: ClipboardItem[]
+      toastOnSuccess?: boolean
+      toastOnError?: boolean
+    } = {}
   ): Promise<boolean> {
     copied.value = false
     clearTimeout(copiedReset)
@@ -78,7 +83,7 @@ export function useCopyToClipboard({
           duration: 3000
         })
       }
-    } else {
+    } else if (toastOnError) {
       toast.error(t('g.error'), {
         description: t('clipboard.errorMessage')
       })

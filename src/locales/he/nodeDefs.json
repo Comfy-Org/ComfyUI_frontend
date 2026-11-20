@@ -8465,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "יצירת וידאו מדבר של אווטאר HeyGen באמצעות HeyGen Avatar 6, המונע על ידי תסריט טקסט או אודיו משלכם.",
+    "display_name": "HeyGen Avatar 6 — מזהות לווידאו",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס ממדים",
+        "tooltip": "‎'auto'‎ פועל לפי חומר הגלם המקורי של האווטאר."
+      },
+      "avatar": {
+        "name": "אווטאר"
+      },
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "motion_expressiveness": {
+        "name": "הבעתיות תנועה",
+        "tooltip": "‎'less'‎ מעניק פחות מחוות וקטנות יותר. לפרומפט התנועה יש עדיפות באזורים שבהם הם חופפים."
+      },
+      "motion_prompt": {
+        "name": "פרומפט תנועה",
+        "tooltip": "מחוות, הבעה, תנוחה ותנועת מצלמה."
+      },
+      "resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת יופעל מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "speech": {
+        "name": "דיבור",
+        "tooltip": "הנעת האווטאר באמצעות תסריט טקסט (המרת טקסט לדיבור של HeyGen) או אודיו משלכם."
+      },
+      "speech_custom_voice_id": {
+        "name": "מזהה קול מותאם אישית"
+      },
+      "speech_text": {
+        "name": "טקסט"
+      },
+      "speech_voice": {
+        "name": "קול"
+      },
+      "speech_voice_speed": {
+        "name": "מהירות קול"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "הפיכת אדם או דמות מתמונה או מסרטון לדוברים את האודיו המחובר באמצעות HeyGen Avatar 6. חברו תמונה, סרטון או את שניהם.",
+    "display_name": "HeyGen Avatar 6 — מהפניה לווידאו",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל"
+      },
+      "model_aspect_ratio": {
+        "name": "יחס ממדים"
+      },
+      "model_motion_expressiveness": {
+        "name": "הבעתיות תנועה"
+      },
+      "model_motion_prompt": {
+        "name": "פרומפט תנועה"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "צור וידאו מגיש מדבר מאווטאר של HeyGen. כולל את האווטארים הציבוריים הפופולריים ביותר של HeyGen; ניתן לספק כל מזהה מראה (look ID) כעקיפה.",
     "display_name": "וידאו אווטאר HeyGen",
@@ -10645,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "יצירה או עריכה של תמונות מפרומפט טקסט ועד 10 תמונות ייחוס, כתמונה אחת או כסדרה של תמונות קשורות.",
+    "display_name": "תמונה Kling 4.0",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "יחס ממדים",
+        "tooltip": "auto פועל לפי תמונות הייחוס, אחרת לפי הפרומפט."
+      },
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "prompt": {
+        "name": "פרומפט",
+        "tooltip": "התייחסו לתמונות הייחוס כאל @Image1, @Image2, ..."
+      },
+      "reference_images": {
+        "name": "תמונות ייחוס"
+      },
+      "resolution": {
+        "name": "רזולוציה"
+      },
+      "seed": {
+        "name": "זרע",
+        "tooltip": "הזרע קובע אם הצומת אמור לפעול מחדש; התוצאות אינן דטרמיניסטיות ללא קשר לזרע."
+      },
+      "series_amount": {
+        "name": "כמות בסדרה",
+        "tooltip": "יצירת סדרה של תמונות קשורות השומרות על אותן דמויות ואותו סגנון. auto מאפשר למודל לבחור 2–10 תמונות."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "צור סרטון עם שמע באמצעות עד 10 פריימטי מפתח ב-kling-4.0, או מפריים ראשון ב-kling-4.0-flash. פריימי הביניים מרווחים באופן שווה; הסרטון מקבל את יחס הממדים של פריים המפתח הראשון.",
     "display_name": "Kling 4.0 תמונה לווידאו",
@@ -10665,6 +10788,32 @@
         "name": "רזולוציה"
       },
       "model_seed": {
+        "name": "זרע"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "יצירת תמונה גבוהה אחת: עיצוב דף אינטרנט או דף פרטי מוצר למסחר אלקטרוני.",
+    "display_name": "Kling 4.0 תמונה ארוכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "שליטה לאחר יצירה"
+      },
+      "skill": {
+        "name": "מיומנות"
+      },
+      "skill_prompt": {
+        "name": "הנחיה"
+      },
+      "skill_resolution": {
+        "name": "רזולוציה"
+      },
+      "skill_seed": {
         "name": "זרע"
       }
     },
@@ -25291,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "קודדו תמונות ייחוס, חשיבה חזותית, טקסט משולב או תיקון עצמי באמצעות CLIP. חברו תמונות ייחוס של HiDream-O1 לפני צומת זה והשתמשו בדוגם רגיל עבור תמונות. להמרת טקסט לתמונה ללא חשיבה נדרש רק CLIP Text Encode; לפלט טקסט בלבד אפשר להשתמש ב-Generate Text.",
+    "display_name": "התניית SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "התניה"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "מספר הטוקנים המרבי שנוצר במהלך קריאה זו."
+      },
+      "negative": {
+        "name": "שלילי"
+      },
+      "task": {
+        "name": "משימה",
+        "tooltip": "בחרו את המשימה. תבנית ההנחיה והתנהגות העצירה שלה מוגדרות אוטומטית."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "התניה",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "טקסט שנוצר בקריאה זו. השתמשו ב-SenseNova Interleave Decode לקבלת התוצאה המלאה."
+      },
+      "2": {
+        "name": "שלילי",
+        "tooltip": "התניה שלילית מעודכנת עבור שילוב ותיקון עצמי."
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "חלצו טקסט, תמונות וחשיבה שנוצרו מהיסטוריית השילוב שהופקה על ידי התניית SenseNova, כולל תיקון עצמי של U1.6. עם לולאות, השתמשו ב-End Loop כאשר accumulate מושבת. תמונות הייחוס שבקלט אינן נכללות. צמתים הצורכים תמונות מדולגים כאשר לא נוצרו תמונות.",
+    "display_name": "פענוח שילוב SenseNova",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "התניה"
+      },
+      "samples": {
+        "name": "דגימות",
+        "tooltip": "ה-latent הפיקסלי האחרון מ-KSampler, אם הלולאה הסתיימה בבקשה לתמונה."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "טקסט",
+        "tooltip": null
+      },
+      "1": {
+        "name": "תמונות",
+        "tooltip": null
+      },
+      "2": {
+        "name": "חשיבה",
         "tooltip": null
       }
     }

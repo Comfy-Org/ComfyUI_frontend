@@ -17,6 +17,7 @@ Documentation for unit tests is organized into five guides:
 Playwright testing has a separate strategy guide:
 
 - [E2E Coverage Strategy](./e2e-coverage-strategy.md) - How Playwright coverage is measured, where the gaps are, and the plan to close them
+- [Staging smoke gate](./staging-smoke-gate.md) - The signed-out Playwright gate that runs against a deployed Cloud frontend
 
 ## Testing Structure
 
