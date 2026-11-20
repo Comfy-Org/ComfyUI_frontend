@@ -1567,6 +1567,14 @@ export const useAgentConversationStore = defineStore(
             !settled && awaitsAnswer(pendingAskIds)
         )
     )
+    const pendingAskIds = computed<readonly string[]>(() => [
+      ...(isStreaming.value && activeMessage.value
+        ? pendingAskIdsOf(activeMessage.value)
+        : []),
+      ...[...backgroundTurns.values()].flatMap(({ settled, pendingAskIds }) =>
+        settled ? [] : pendingAskIds
+      )
+    ])
     const turnTabs = computed<AgentTurnTab[]>(() => {
       const activePath = activeTurnTabPath.value
       const background = [...backgroundTurns.values()].flatMap(
@@ -1601,6 +1609,7 @@ export const useAgentConversationStore = defineStore(
       activeTurnTabPath,
       turnTabs,
       awaitingApproval,
+      pendingAskIds,
       onTurnCompleted: turnCompleted.on,
       onSnapshotTurnSettled: snapshotTurnSettled.on,
       setTurnTabResolver,
