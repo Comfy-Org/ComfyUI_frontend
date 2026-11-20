@@ -447,7 +447,7 @@ describe('verifiedClientIcon', () => {
   it.for([
     ['chatgpt', 'icon-[comfy--openai]'],
     ['claude', 'icon-[comfy--anthropic]'],
-    ['cursor', undefined]
+    ['cursor', 'icon-[comfy--cursor]']
   ] as const)('maps %s to %s', ([platform, icon]) => {
     expect(verifiedClientIcon(platform)).toBe(icon)
   })
