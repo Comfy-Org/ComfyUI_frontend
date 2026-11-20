@@ -8,7 +8,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-import { loadShapeDefs, runPack, shapeDefsPath } from './matrix_runner'
+import {
+  emittedValuesMatch,
+  loadShapeDefs,
+  runPack,
+  shapeDefsPath
+} from './matrix_runner'
 
 const HERE = import.meta.dirname
 const FIXTURE = path.join(HERE, 'object_info.fixture.json')
@@ -526,6 +531,33 @@ function serializingPack(
   }
 }
 
+function numericNamePack(
+  name: string,
+  serializer?: (this: LGraphNode, serialised: ISerialisedNode) => void
+) {
+  return async () => {
+    const { useExtensionService } =
+      await import('@/platform/extensions/services/extensionService')
+    useExtensionService().registerExtension({
+      name: `matrix.test.${name}`,
+      beforeRegisterNodeDef(nodeType: typeof LGraphNode) {
+        const configure = nodeType.prototype.configure
+        nodeType.prototype.configure = function (
+          this: LGraphNode,
+          info: ISerialisedNode
+        ) {
+          configure.call(this, info)
+          const widgets = this.widgets ?? []
+          widgets.forEach((widget, index) => {
+            widget.name = String(widgets.length - index)
+          })
+        }
+        if (serializer) nodeType.prototype.onSerialize = serializer
+      }
+    })
+  }
+}
+
 function verdictFor(proof: FormProofRow, type: string): string {
   const keys = Object.keys(proof.graph).filter((k) => k.startsWith(`${type}#`))
   expect(keys).toHaveLength(1)
@@ -571,6 +603,68 @@ describe('form proof', () => {
       expect(formProof.needsForm).toEqual([])
     }
   )
+})
+
+describe('emitted value correspondence', () => {
+  const widget = (name: string, value: unknown, serialize = true) => ({
+    name,
+    value,
+    serialize
+  })
+  const named = (entries: [string, unknown][]) => {
+    const record: Record<string, unknown> = {}
+    for (const [name, value] of entries) record[name] = value
+    return record
+  }
+
+  it('accepts integer-like names in non-ascending positional order', () => {
+    expect(
+      emittedValuesMatch(
+        named([
+          ['2', 22],
+          ['1', 11]
+        ]),
+        [22, 11],
+        [widget('2', 22), widget('1', 11)]
+      )
+    ).toBe(true)
+  })
+
+  it('refuses integer-like names reordered after core wrote the values', () => {
+    expect(
+      emittedValuesMatch(
+        named([
+          ['2', 22],
+          ['1', 11]
+        ]),
+        [22, 11],
+        [widget('1', 11), widget('2', 22)]
+      )
+    ).toBe(false)
+  })
+
+  it('refuses a swap of which widgets serialize', () => {
+    expect(
+      emittedValuesMatch(
+        named([['a', 11]]),
+        [11],
+        [widget('a', 11, false), widget('b', 22)]
+      )
+    ).toBe(false)
+  })
+
+  it('ignores non-serializing widgets and compares object values by content', () => {
+    expect(
+      emittedValuesMatch(
+        named([
+          ['b', { x: 1 }],
+          ['a', 11]
+        ]),
+        [{ x: 1 }, 11],
+        [widget('c', 0, false), widget('b', { x: 1 }), widget('a', 11)]
+      )
+    ).toBe(true)
+  })
 })
 
 describe('form proof, hooks that rewrite in place', () => {
@@ -684,6 +778,19 @@ describe('form proof, hooks that rewrite in place', () => {
             else widgets.unshift(disabled)
           }
         )
+      )
+
+      expect(verdictFor(formProof, 'KSampler')).toBe('provable')
+    }
+  )
+
+  it(
+    'proves a form whose widget names are integer-like and out of order',
+    { timeout: 60_000 },
+    async () => {
+      const { formProof } = await rowFor(
+        'form-numeric-names',
+        numericNamePack('form-numeric-names')
       )
 
       expect(verdictFor(formProof, 'KSampler')).toBe('provable')

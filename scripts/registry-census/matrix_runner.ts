@@ -118,11 +118,11 @@ function captureSerialization(node: LGraphNode): Capture | null {
   const inherited = node.onSerialize
   let produced: unknown = NOT_CAPTURED
   let before: unknown[] | null = null
-  let names: string[] = []
+  let named: Record<string, unknown> = {}
   function capture(this: LGraphNode, serialised: ISerialisedNode) {
     produced = serialised.widgets_values
     before = Array.isArray(produced) ? [...produced] : null
-    names = Object.keys(serialised.widgets_values_named ?? {})
+    named = { ...serialised.widgets_values_named }
     inherited?.call(this, serialised)
   }
   try {
@@ -137,7 +137,7 @@ function captureSerialization(node: LGraphNode): Capture | null {
     const serialised = node.serialize()
     const reordered =
       produced !== NOT_CAPTURED &&
-      JSON.stringify(names) !== JSON.stringify(serializingWidgetNames(node))
+      !emittedValuesMatch(named, before, node.widgets ?? [])
     return {
       serialised,
       produced:
@@ -156,10 +156,34 @@ function captureSerialization(node: LGraphNode): Capture | null {
   }
 }
 
-function serializingWidgetNames(node: LGraphNode): string[] {
-  return (node.widgets ?? [])
-    .filter((widget) => widget.serialize !== false)
-    .map((widget) => widget.name)
+/**
+ * True when each serializing widget, in its final order, still owns the positional value core
+ * wrote at its index. Compares values through core's named copy, because the key order of that
+ * object puts integer-like names first and cannot recover the positional order.
+ */
+export function emittedValuesMatch(
+  named: Record<string, unknown>,
+  positional: readonly unknown[] | null,
+  widgets: readonly { name: string; serialize?: boolean }[]
+): boolean {
+  const serializing = widgets.filter((widget) => widget.serialize !== false)
+  if (serializing.length !== Object.keys(named).length) return false
+  return serializing.every(
+    (widget, index) =>
+      Object.hasOwn(named, widget.name) &&
+      (positional === null ||
+        sameEmittedValue(named[widget.name], positional[index]))
+  )
+}
+
+function sameEmittedValue(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true
+  if (typeof a !== 'object' || a === null) return false
+  try {
+    return JSON.stringify(a) === JSON.stringify(b)
+  } catch {
+    return false
+  }
 }
 
 function rewrittenInPlace(
