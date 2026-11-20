@@ -246,6 +246,88 @@ function verdict(job: string, env: Record<string, string>) {
   ).status
 }
 
+type ExpressionValue = string | boolean | null | unknown[]
+
+function evaluateExpression(
+  source: string,
+  context: Record<string, string>
+): ExpressionValue {
+  const tokens =
+    source
+      .trim()
+      .replace(/^\$\{\{([\s\S]*)\}\}$/, '$1')
+      .match(/'(?:[^']|'')*'|==|!=|&&|\|\||[!(),]|[\w.-]+/g) ?? []
+  let position = 0
+  const next = () => tokens[position++]
+  const accept = (token: string) => tokens[position] === token && !!next()
+  const functions: Record<
+    string,
+    (...args: ExpressionValue[]) => ExpressionValue
+  > = {
+    always: () => true,
+    cancelled: () => false,
+    fromJSON: (json) => JSON.parse(String(json))
+  }
+
+  function primary(): ExpressionValue {
+    const token = next()
+    if (token === '(') {
+      const value = or()
+      next()
+      return value
+    }
+    if (token.startsWith("'")) return token.slice(1, -1).replaceAll("''", "'")
+    if (accept('(')) {
+      const args: ExpressionValue[] = []
+      while (!accept(')')) {
+        args.push(or())
+        accept(',')
+      }
+      return functions[token](...args)
+    }
+    return context[token] ?? null
+  }
+  function comparison(): ExpressionValue {
+    const left = primary()
+    if (accept('==')) return left === primary()
+    if (accept('!=')) return left !== primary()
+    return left
+  }
+  function not(): ExpressionValue {
+    return accept('!') ? !not() : comparison()
+  }
+  function and(): ExpressionValue {
+    let value = not()
+    while (accept('&&')) {
+      const right = not()
+      value = value ? right : value
+    }
+    return value
+  }
+  function or(): ExpressionValue {
+    let value = and()
+    while (accept('||')) {
+      const right = and()
+      value = value || right
+    }
+    return value
+  }
+
+  const value = or()
+  if (position !== tokens.length) throw new Error(`Unparsed: ${source}`)
+  return value
+}
+
+function releaseContext(releasePush: boolean): Record<string, string> {
+  return {
+    'needs.preflight.result': 'success',
+    'needs.playwright-tests-chromium-sharded.result': 'success',
+    'needs.changes.outputs.should-run': 'true',
+    'needs.changes.outputs.should-build': 'true',
+    'needs.changes.outputs.is-release-push': String(releasePush)
+  }
+}
+
 describe('candidate prerequisites', () => {
   it.for([
     ['PR succeeds', {}, 0],
@@ -374,20 +456,20 @@ describe('candidate prerequisites', () => {
   )
 
   it.for([
-    ['playwright-tests-chromium-sharded', true],
-    ['upload-e2e-coverage', true],
-    ['playwright-tests', false],
-    ['playwright-tests-cloud-sharded', false],
-    ['merge-reports', false],
-    ['setup', false]
+    ['playwright-tests-chromium-sharded', false],
+    ['upload-e2e-coverage', false],
+    ['playwright-tests', true],
+    ['playwright-tests-cloud-sharded', true],
+    ['merge-reports', true],
+    ['setup', true]
   ] satisfies [string, boolean][])(
-    '%s is skipped on release pushes: %s',
-    ([job, skipped]) => {
-      const condition = pipeline.jobs[job].if ?? ''
-      expect(
-        condition.includes("needs.changes.outputs.is-release-push != 'true'")
-      ).toBe(skipped)
-      expect(condition.includes('is-release-push')).toBe(skipped)
+    '%s runs on release pushes: %s',
+    ([job, runsOnRelease]) => {
+      const condition = pipeline.jobs[job].if ?? 'true'
+      expect(evaluateExpression(condition, releaseContext(false))).toBe(true)
+      expect(evaluateExpression(condition, releaseContext(true))).toBe(
+        runsOnRelease
+      )
     }
   )
 
@@ -401,20 +483,20 @@ describe('candidate prerequisites', () => {
         .record(z.string(), z.unknown())
         .parse(pipeline.jobs[job].strategy?.matrix)
       const entries = z.array(z.string()).parse(matrix[key])
-      const exclude = z
-        .string()
-        .regex(
-          /^\$\{\{ fromJSON\(needs\.changes\.outputs\.is-release-push == 'true' && '(.*)' \|\| '\[\]'\) \}\}$/
-        )
-        .parse(matrix.exclude)
-        .match(/&& '(.*)' \|\|/)?.[1]
-      const excluded = z
-        .array(z.record(z.string(), z.string()))
-        .parse(JSON.parse(exclude ?? 'null'))
-        .map((entry) => entry[key])
-      expect(entries.filter((entry) => !excluded.includes(entry))).toEqual(
-        cloudEntries
-      )
+      const selected = (releasePush: boolean) => {
+        const excluded = z
+          .array(z.record(z.string(), z.string()))
+          .parse(
+            evaluateExpression(
+              z.string().parse(matrix.exclude),
+              releaseContext(releasePush)
+            )
+          )
+          .map((entry) => entry[key])
+        return entries.filter((entry) => !excluded.includes(entry))
+      }
+      expect(selected(false)).toEqual(entries)
+      expect(selected(true)).toEqual(cloudEntries)
     }
   )
 
