@@ -199,7 +199,7 @@ describe('node badges', () => {
         )
     }
 
-    function drawnCentre(node: LGraphNode) {
+    function drawnCenter(node: LGraphNode) {
       node.drawBadges(createMockCanvasRenderingContext2D())
       const [badge] = drawn(node)
       const [x, y, width, height] = badge.boundingRect
@@ -215,7 +215,7 @@ describe('node badges', () => {
         const badge = { text: 'Go', onClick }
         handle.addBadge(form === 'object' ? badge : () => badge)
 
-        const [x, y] = drawnCentre(node)
+        const [x, y] = drawnCenter(node)
         badgeHitAt(node, x, y)?.onClick?.(new MouseEvent('click'))
 
         expect(onClick).toHaveBeenCalledOnce()

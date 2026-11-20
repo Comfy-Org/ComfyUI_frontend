@@ -367,12 +367,12 @@ describe('node definitions', () => {
     it('names an input by the label the type declares for it', () => {
       registerHostType(
         host.nodeTypeHooks,
-        hostNodeDef('Labelled', {
+        hostNodeDef('Labeled', {
           input: { required: { seed: ['INT', { display_name: 'Seed value' }] } }
         })
       )
 
-      expect(defs.get('Labelled')?.inputs[0].localizedName).toBe('Seed value')
+      expect(defs.get('Labeled')?.inputs[0].localizedName).toBe('Seed value')
     })
 
     it('titles a type with no display name by its name', () => {

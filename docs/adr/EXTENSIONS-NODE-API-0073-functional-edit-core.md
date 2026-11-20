@@ -153,7 +153,7 @@ follow-up for a command interface.
    `autoHeight` first sets the height to `node.computeSize()`'s. A later resize,
    by the user or a pack, is not held to them. Each limit must be finite and
    zero or more, and a minimum may not exceed its maximum. Holding a node to
-   limits after the call needs a host owner that both renderers honour, which
+   limits after the call needs a host owner that both renderers honor, which
    does not exist (see "Core limitations").
 8. `resizable` is the pack's choice of whether the user may resize the node
    (A-09). The node's flag is set to the choice unless the node is pinned, as
@@ -552,7 +552,7 @@ ADR-EXTENSIONS-NODE-API-0070.
   before the batch. A thrown batch keeps its edits as one step.
 - **Holding size constraints with a resize hook on the node**, as V2 did by
   chaining `node.onResize`. The Vue renderer's resize does not call it, so it
-  held the limits under one renderer only, and it put API behaviour on host
+  held the limits under one renderer only, and it put API behavior on host
   objects.
 - **Putting a resizable choice back after the host's unpin**, with a
   graph-intent listener that rewrote `LGraphNode.resizable` after each
@@ -643,7 +643,7 @@ ADR-EXTENSIONS-NODE-API-0070.
   minimum and maximum size in both renderers: LiteGraph's resize uses
   `computeSize` and `constructor.min_height`, and the Vue renderer reads the
   element's CSS `min-width` and measures content. Ticket draft: _Title:_ "Give
-  nodes a declared minimum and maximum size that both renderers honour".
+  nodes a declared minimum and maximum size that both renderers honor".
   _Reproduction:_ set `node.onResize` to clamp the size, switch to Nodes 2.0,
   and drag the node's corner below the clamp: the node shrinks. _Direction:_ a
   min/max size in the node's layout state, read by `useNodeResize` and by

@@ -80,12 +80,12 @@ export function createLifecycleDispatch({
     },
     onSerialize(target, type) {
       const previous = target.onSerialize
-      target.onSerialize = function (serialised) {
-        previous?.call(this, serialised)
+      target.onSerialize = function (serialized) {
+        previous?.call(this, serialized)
         const added = deliver(type, 'onSerialize', this, (callback, handle) =>
           savedFields(callback(handle))
         )
-        for (const fields of added) Object.assign(serialised, fields)
+        for (const fields of added) Object.assign(serialized, fields)
       }
     },
     onResize(target, type) {
