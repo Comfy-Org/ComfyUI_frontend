@@ -8,7 +8,7 @@ import type { LocationQueryRaw } from 'vue-router'
 import { useTelemetry } from '@comfyorg/telemetry'
 import { useToast } from '@/components/ui/toast/toastStore'
 
-import { useTopUpUrlLoader } from './useTopUpUrlLoader'
+import { topUpLinkAction, useTopUpUrlLoader } from './useTopUpUrlLoader'
 
 const preservedQueryMocks = vi.hoisted(() => ({
   clearPreservedQuery: vi.fn(),
@@ -235,4 +235,18 @@ describe('useTopUpUrlLoader', () => {
     expect(useBillingDialogs().showTopUpCreditsDialog).toHaveBeenCalledOnce()
     expect(useToast().info).not.toHaveBeenCalled()
   })
+
+  it.for([
+    { param: undefined, workspaceLinkRefused: false, action: 'none' },
+    { param: undefined, workspaceLinkRefused: true, action: 'none' },
+    { param: '', workspaceLinkRefused: true, action: 'strip' },
+    { param: ['1'], workspaceLinkRefused: false, action: 'strip' },
+    { param: '1', workspaceLinkRefused: false, action: 'open' },
+    { param: '1', workspaceLinkRefused: true, action: 'refuse' }
+  ])(
+    'maps topup $param with workspaceLinkRefused $workspaceLinkRefused to $action',
+    ({ action, ...link }) => {
+      expect(topUpLinkAction(link)).toBe(action)
+    }
+  )
 })

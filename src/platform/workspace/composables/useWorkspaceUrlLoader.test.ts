@@ -308,40 +308,4 @@ describe('useWorkspaceUrlLoader', () => {
       'workspace-2'
     )
   })
-
-  it.for([
-    { name: 'no link', query: {}, outcome: 'absent' },
-    {
-      name: 'a link naming the active workspace',
-      query: { workspace: 'workspace-1' },
-      outcome: 'active'
-    },
-    {
-      name: 'a link naming a member workspace',
-      query: { workspace: 'workspace-2' },
-      outcome: 'switching'
-    },
-    {
-      name: 'a link with an invalid id',
-      query: { workspace: null },
-      outcome: 'refused'
-    }
-  ] as const)('reports $outcome for $name', async ({ query, outcome }) => {
-    mockRouteQuery.value = { ...query }
-
-    const { loadWorkspaceFromUrl } = useWorkspaceUrlLoader()
-
-    expect(await loadWorkspaceFromUrl()).toBe(outcome)
-  })
-
-  it('reports refused when the switch into the named workspace is refused', async () => {
-    mockRouteQuery.value = { workspace: 'workspace-2' }
-    vi.mocked(useTeamWorkspaceStore().switchWorkspace).mockRejectedValue(
-      new Error('Workspace not found or access denied')
-    )
-
-    const { loadWorkspaceFromUrl } = useWorkspaceUrlLoader()
-
-    expect(await loadWorkspaceFromUrl()).toBe('refused')
-  })
 })
