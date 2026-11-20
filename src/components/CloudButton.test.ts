@@ -13,6 +13,7 @@ import type { CloudWorkflowVerdict } from '@/platform/openOnCloud/cloudWorkflowC
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
 import CloudButton from '@/components/CloudButton.vue'
 import { useLocalModelUploadStore } from '@/platform/openOnCloud/stores/localModelUploadStore'
+import { useCloudWorkflowCheckStore } from '@/platform/openOnCloud/stores/cloudWorkflowCheckStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -93,6 +94,32 @@ describe('Cloud button compatibility checks', () => {
       screen.queryByRole('button', { name: 'Sign in to upload' })
     ).toBeNull()
     expect(screen.queryByTestId('cloud-upload-recovery-button')).toBeNull()
+  })
+
+  it('discards the old Cloud check when the model-upload rollout changes', async () => {
+    const { flags } = useFeatureFlags()
+    Object.assign(flags, { openOnCloudModelUploadEnabled: false })
+    const stale = deferredVerdict()
+    const model = { folder: 'loras', name: 'unavailable.safetensors' }
+    const verdict: CloudWorkflowVerdict = {
+      kind: 'missing',
+      gaps: { models: [model], nodePacks: [] }
+    }
+    vi.mocked(checkCloudCompatibility)
+      .mockReturnValueOnce(stale.promise)
+      .mockResolvedValueOnce(verdict)
+    const store = useCloudWorkflowCheckStore()
+    const initial = store.check()
+
+    Object.assign(flags, { openOnCloudModelUploadEnabled: true })
+    await waitFor(() =>
+      expect(store.state).toEqual({ phase: 'answered', verdict })
+    )
+    stale.resolve({ kind: 'canOpen' })
+    await initial
+
+    expect(checkCloudCompatibility).toHaveBeenCalledTimes(2)
+    expect(store.state).toEqual({ phase: 'answered', verdict })
   })
 
   it.for([
