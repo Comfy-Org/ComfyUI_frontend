@@ -52,6 +52,7 @@ const defaultFlags: FeatureFlags = {
   signupTurnstileMode: 'off',
   supportsModelTypeTags: false,
   assetsEnabled: false,
+  agentCrdtDebugEnabled: false,
   agentInAppExperienceEnabled: false
 }
 

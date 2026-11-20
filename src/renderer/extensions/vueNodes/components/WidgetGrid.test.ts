@@ -69,6 +69,56 @@ const WidgetStub = markRaw(
   })
 )
 
+it.for([false, true])(
+  'updates error accessibility from a lazy getter with grouped=%s',
+  async (grouped) => {
+    const missing = ref(false)
+    const error = computed(() => missing.value)
+    const name = grouped ? 'loras.0.model' : 'file'
+    const row: WidgetGridItem = {
+      ...widget(name, 'string', 0),
+      simplified: {
+        name,
+        type: 'string',
+        value: '',
+        label: grouped ? 'LoRA #1 model' : 'File'
+      },
+      get hasError() {
+        return error.value
+      }
+    }
+    const header: WidgetGridItem = {
+      renderKey: 'header',
+      visible: true,
+      vueComponent: markRaw(WidgetDynamicGroupRow),
+      simplified: {
+        name: 'loras.0',
+        type: 'dynamic_group_row',
+        value: undefined,
+        label: 'LoRA #1'
+      }
+    }
+    const { unmount } = renderGrid(grouped ? [header, row] : [row], false)
+    expect(screen.getByTestId('widget-control')).not.toHaveAttribute(
+      'aria-invalid'
+    )
+
+    missing.value = true
+    await nextTick()
+    expect(screen.getByTestId('widget-control')).toHaveAttribute(
+      'aria-invalid',
+      'true'
+    )
+
+    missing.value = false
+    await nextTick()
+    expect(screen.getByTestId('widget-control')).not.toHaveAttribute(
+      'aria-invalid'
+    )
+    unmount()
+  }
+)
+
 const AttrsDroppingWidgetStub = defineComponent({
   inheritAttrs: false,
   template: '<div><input data-testid="widget-control" /></div>'

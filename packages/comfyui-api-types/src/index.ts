@@ -1,4 +1,9 @@
-export type { PromptRequest, PromptResponse } from './generated'
+export type {
+  GetModelsInFolderResponse,
+  PromptRequest,
+  PromptResponse
+} from './generated'
+export { zGetModelsInFolderResponse } from './generated/zod.gen'
 
 import type { PromptRequest } from './generated'
 

@@ -3,11 +3,11 @@ import {
   createTimeoutSignal,
   throwIfAborted
 } from '@comfyorg/api-client/abortSignal'
+import { zGetModelsInFolderResponse } from '@comfyorg/comfyui-api-types'
 import {
   zGetFeaturesResponse,
   zGetTaskResponse
 } from '@comfyorg/ingest-types/zod'
-import { z } from 'zod'
 
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { UploadRouteRequest } from '@/platform/workspace/api/modelFileUploadApi'
@@ -21,9 +21,6 @@ const STORE_DEADLINE_MS = 30 * 60_000
 const zUploadFolders = zGetFeaturesResponse.pick({
   model_upload_folders: true
 })
-const zLocalModelFiles = z.array(
-  z.object({ name: z.string(), size: z.number() })
-)
 
 async function cloudHeaders(headers?: HeadersInit): Promise<Headers> {
   const merged = new Headers(headers)
@@ -69,7 +66,7 @@ export async function readLocalModelSizes(
       { signal: createTimeoutSignal(READ_TIMEOUT_MS) }
     )
     if (!response.ok) return new Map()
-    const files = zLocalModelFiles.safeParse(await response.json())
+    const files = zGetModelsInFolderResponse.safeParse(await response.json())
     if (!files.success) return new Map()
     const firstSizeByName = new Map<string, number>()
     for (const file of files.data) {

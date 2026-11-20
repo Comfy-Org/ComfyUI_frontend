@@ -35,7 +35,7 @@
             :workflow-path="workflowOption.workflow.path"
           />
           <span
-            class="workflow-label inline-block max-w-[150px] truncate font-inter text-sm leading-none font-normal text-inherit"
+            class="workflow-label inline-block max-w-[150px] truncate font-inter text-xs leading-4 font-normal text-inherit"
           >
             {{ workflowOption.workflow.filename }}
           </span>

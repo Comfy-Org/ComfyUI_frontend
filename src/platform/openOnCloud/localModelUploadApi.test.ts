@@ -155,6 +155,18 @@ describe('readLocalModelSizes', () => {
 
     expect(sizes.get('style.safetensors')).toBe(16)
   })
+
+  it.for([
+    { label: 'a negative size', metadata: { pathIndex: 0, size: -1 } },
+    { label: 'a fractional size', metadata: { pathIndex: 0, size: 1.5 } },
+    { label: 'a missing path index', metadata: { size: 16 } }
+  ])('rejects local model metadata with $label', async ({ metadata }) => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      Response.json([{ name: 'style.safetensors', ...metadata }])
+    )
+
+    await expect(readLocalModelSizes('loras')).resolves.toEqual(new Map())
+  })
 })
 
 describe('waitForStoredModel', () => {
