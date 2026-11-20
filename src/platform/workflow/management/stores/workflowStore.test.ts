@@ -728,10 +728,9 @@ describe('useWorkflowStore', () => {
       resetCanvasTrackerForTest()
       onTestFinished(resetCanvasTrackerForTest)
       await syncRemoteWorkflows(['a.json'])
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
       await store.openWorkflow(store.getWorkflowByPath('workflows/a.json')!)
       const samePath = await new ComfyWorkflow({
         path: 'workflows/a.json',
@@ -747,10 +746,9 @@ describe('useWorkflowStore', () => {
 
     it('keeps the active instance and its edits when a same-path object is opened', async () => {
       await syncRemoteWorkflows(['a.json'])
-      vi.mocked(api.getUserData).mockResolvedValue({
-        status: 200,
-        text: () => Promise.resolve(defaultGraphJSON)
-      } as Response)
+      vi.mocked(api.getUserData).mockImplementation(
+        async () => new Response(defaultGraphJSON, { status: 200 })
+      )
       const active = await store.openWorkflow(
         store.getWorkflowByPath('workflows/a.json')!
       )
