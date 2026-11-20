@@ -259,6 +259,30 @@ export class ExecutionHelper {
     )
   }
 
+  /** Send the `execution_error` Cloud sends when ComfyUI rejects the whole prompt: a prose summary beside the relayed `node_errors`. */
+  promptRejectedAtValidation(
+    jobId: string,
+    nodeId: string,
+    summary: string,
+    nodeErrors: Record<string, PromptOutputsSkippedNodeError>
+  ): void {
+    this.requireWs().send(
+      JSON.stringify({
+        type: 'execution_error',
+        data: {
+          prompt_id: jobId,
+          timestamp: Date.now(),
+          node_id: nodeId,
+          node_type: nodeErrors[nodeId].class_type,
+          exception_message: summary,
+          exception_type: 'ValidationError',
+          traceback: [],
+          node_errors: nodeErrors
+        }
+      })
+    )
+  }
+
   /** Send `prompt_outputs_skipped` WS event for outputs Cloud skipped. */
   outputsSkipped(
     jobId: string,
