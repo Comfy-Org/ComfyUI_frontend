@@ -284,12 +284,13 @@ describe('ensureFresh', () => {
   describe('a device clock that disagrees with the server', () => {
     const serverNow = Date.parse('2026-11-05T12:00:00.000Z')
     const serverExpiry = '2026-11-05T13:00:00.000Z'
-    const mintedAt = (date: number, expiresAt = serverExpiry) =>
-      vi.fn<typeof fetch>(async () => {
+    function mintedAt(date: number, expiresAt = serverExpiry) {
+      return vi.fn<typeof fetch>(async () => {
         const response = jsonResponse(200, mintBody({ expires_at: expiresAt }))
         response.headers.set('Date', new Date(date).toUTCString())
         return response
       })
+    }
 
     it('accepts a fresh token on a clock set hours ahead and keeps its lifetime', async () => {
       const localNow = serverNow + 5.5 * 3_600_000
@@ -300,12 +301,13 @@ describe('ensureFresh', () => {
 
       const result = await client.ensureFresh(testUser(), {})
 
-      expect(result?.status).toBe('ok')
-      if (result?.status !== 'ok') return
       expect(
-        result.session.expiresAt - localNow,
+        result,
         'the hour the server granted is an hour on the local clock'
-      ).toBe(3_600_000)
+      ).toMatchObject({
+        status: 'ok',
+        session: { expiresAt: localNow + 3_600_000 }
+      })
     })
 
     it('ignores a gap within transit and Date-header resolution', async () => {
@@ -317,9 +319,10 @@ describe('ensureFresh', () => {
 
       const result = await client.ensureFresh(testUser(), {})
 
-      expect(result?.status).toBe('ok')
-      if (result?.status !== 'ok') return
-      expect(result.session.expiresAt).toBe(Date.parse(serverExpiry))
+      expect(result).toMatchObject({
+        status: 'ok',
+        session: { expiresAt: Date.parse(serverExpiry) }
+      })
     })
 
     it('still rejects a token the server minted already expired, with the skew', async () => {
