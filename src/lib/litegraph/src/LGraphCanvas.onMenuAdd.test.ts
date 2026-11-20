@@ -1,6 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { provideCoreNodeTypeCheck } from '@/lib/litegraph/src/canvas/coreNodeTypeAccess'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import {
   LGraph,
@@ -58,11 +59,13 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
   const registeredTypes: string[] = []
   let originalContextMenu: typeof LiteGraph.ContextMenu
   const capturedEntries: MenuEntry[][] = []
+  const coreTypes = new Set<string>()
 
   beforeEach(() => {
     graph = new LGraph()
     canvas = createCanvas(graph)
     LGraphCanvas.active_canvas = canvas
+    provideCoreNodeTypeCheck((type) => coreTypes.has(type))
 
     capturedEntries.length = 0
     originalContextMenu = LiteGraph.ContextMenu
@@ -81,11 +84,14 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
       delete LiteGraph.registered_node_types[type]
     }
     registeredTypes.length = 0
+    coreTypes.clear()
+    provideCoreNodeTypeCheck(() => false)
   })
 
-  function register(type: string, title: string) {
+  function register(type: string, title: string, isCoreNode?: boolean) {
     LiteGraph.registerNodeType(type, makeNodeClass(title))
     registeredTypes.push(type)
+    if (isCoreNode) coreTypes.add(type)
   }
 
   function openTopLevelMenu() {
@@ -169,5 +175,24 @@ describe('LGraphCanvas.onMenuAdd category sorting', () => {
     expect(ours[0].has_submenu).toBe(true)
     expect(ours[1].content).toBe('A Leaf')
     expect(ours[2].content).toBe('Z Leaf')
+  })
+
+  it('lists core entries, a separator, then custom entries, duplicating shared categories', () => {
+    register('split/Core', 'Core', true)
+    register('split/Custom', 'Custom')
+
+    const event = openTopLevelMenu()
+    const root = capturedEntries[0]
+    expect(root).toMatchObject([
+      { content: 'split' },
+      null,
+      { content: 'split' }
+    ])
+
+    drillInto('split', event)
+    capturedEntries.push(root.slice(2))
+    drillInto('split', event)
+    expect(capturedEntries[1].map((e) => e.content)).toEqual(['Core'])
+    expect(capturedEntries[3].map((e) => e.content)).toEqual(['Custom'])
   })
 })
