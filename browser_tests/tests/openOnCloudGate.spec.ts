@@ -8,24 +8,26 @@ import {
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
 
-const signedInTest = test.extend({
+const openOnCloudEnabledTest = test.extend({
+  page: async ({ page }, use) => {
+    await page.route(
+      'https://{cloud,stagingcloud,testcloud}.comfy.org/api/features',
+      (route) =>
+        route.request().method() === 'GET'
+          ? route.fulfill({
+              headers: { 'access-control-allow-origin': '*' },
+              json: { open_on_cloud_enabled: true }
+            })
+          : route.fallback()
+    )
+    await use(page)
+  }
+})
+
+const signedInTest = openOnCloudEnabledTest.extend({
   page: async ({ page }, use) => {
     await mockWorkspace(page, workspace('personal', 'owner'), [])
     await mockBilling(page)
-    await page.route(
-      'https://{cloud,stagingcloud,testcloud}.comfy.org/api/features',
-      async (route) => {
-        const request = route.request()
-        const authorization = await request.headerValue('authorization')
-        if (request.method() !== 'GET' || !authorization?.startsWith('Bearer '))
-          return route.fallback()
-
-        return route.fulfill({
-          headers: { 'access-control-allow-origin': '*' },
-          json: { open_on_cloud_enabled: true }
-        })
-      }
-    )
     await page.route(
       'https://{cloud,stagingcloud,testcloud}.comfy.org/api/auth/token/revoke',
       (route) =>
@@ -99,8 +101,16 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
       )
   })
 
+  openOnCloudEnabledTest(
+    'shows the Cloud button before sign-in',
+    async ({ comfyPage }) => {
+      await expect(comfyPage.page.getByTestId('login-button')).toBeVisible()
+      await expect(comfyPage.page.getByTestId('cloud-button')).toBeVisible()
+    }
+  )
+
   signedInTest(
-    'shows the Cloud button on signed-in startup and hides it on sign-out',
+    'keeps the Cloud button available after sign-out',
     { tag: '@auth' },
     async ({ comfyPage }) => {
       const { page } = comfyPage
@@ -111,7 +121,7 @@ test.describe('Open on Cloud gate', { tag: ['@ui'] }, () => {
       await page.getByTestId('current-user-button').click()
       await page.getByTestId('logout-menu-item').click()
       await expect(page.getByTestId('login-button')).toBeVisible()
-      await expect(cloudButton).toBeHidden()
+      await expect(cloudButton).toBeVisible()
     }
   )
 })
