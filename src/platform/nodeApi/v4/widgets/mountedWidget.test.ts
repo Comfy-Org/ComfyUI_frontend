@@ -294,6 +294,17 @@ describe('mounted widgets', () => {
     expect(destroy).toHaveBeenCalledOnce()
   })
 
+  it('calls destroy once for a widget removed before its node is deleted (#23520)', () => {
+    const { node: added, widgets } = node()
+    const destroy = vi.fn()
+    mount(widgets, { destroy })
+
+    widgets.remove('panel')
+    graph.remove(added)
+
+    expect(destroy).toHaveBeenCalledOnce()
+  })
+
   it('reports a render or destroy that throws, and keeps the host going', () => {
     const { node: added, widgets } = node()
 
