@@ -55,9 +55,7 @@ export const useFloatWidget = () => {
     const precision =
       settingStore.get('Comfy.FloatRoundingPrecision') ||
       Math.max(0, -Math.floor(Math.log10(step)))
-    const enableRounding =
-      !
-      settingStore.get('Comfy.DisableFloatRounding')
+    const enableRounding = !settingStore.get('Comfy.DisableFloatRounding')
 
     /** Assertion {@link inputSpec.default} */
     const defaultValue = (inputSpec.default as number | undefined) ?? 0
