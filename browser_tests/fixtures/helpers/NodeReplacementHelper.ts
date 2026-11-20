@@ -72,3 +72,7 @@ export async function setupNodeReplacement(
 export function getSwapNodesGroup(page: Page): Locator {
   return page.getByTestId(TestIds.dialogs.swapNodesGroup)
 }
+
+export function getDeprecatedNodesGroup(page: Page): Locator {
+  return page.getByTestId(TestIds.dialogs.deprecatedNodesGroup)
+}

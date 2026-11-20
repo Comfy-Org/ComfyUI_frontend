@@ -51,6 +51,17 @@ function skillLabel(
   return t('agent.toolOutcomeUnknown', { tool: activeLabel })
 }
 
+function downloadLabel(
+  row: Extract<ActivityRow, { kind: 'tool' }>,
+  file: string
+): string {
+  const activeLabel = t('agent.toolDownloadingModel', { file })
+  if (row.state === 'streaming') return activeLabel
+  if (row.ok === true) return t('agent.toolDownloadedModel', { file })
+  if (row.ok === false) return t('agent.toolFailedDownload', { file })
+  return t('agent.toolOutcomeUnknown', { tool: activeLabel })
+}
+
 function settledToolLabel(row: Extract<ActivityRow, { kind: 'tool' }>): string {
   if (!toolUsesOutcomeCopy(row.name)) return toolLabel(row.name, row.state, t)
   const activeLabel = toolLabel(row.name, 'streaming', t)
@@ -65,9 +76,16 @@ function labelOf(row: Extract<ActivityRow, { kind: 'tool' }>): string {
       tool: toolLabel(row.name, row.state, t)
     })
   if (row.name === 'load_skill' && row.skill) return skillLabel(row, row.skill)
+  if (row.download) return downloadLabel(row, row.download)
   if (row.state === 'streaming' || row.ok === true)
     return toolLabel(row.name, row.state, t)
   return settledToolLabel(row)
+}
+
+function titleOf(
+  row: Extract<ActivityRow, { kind: 'tool' }>
+): string | undefined {
+  return row.download ? labelOf(row) : undefined
 }
 
 function rowSignature(row: ActivityRow): string {
@@ -76,6 +94,7 @@ function rowSignature(row: ActivityRow): string {
         'tool',
         row.name,
         row.skill,
+        row.download,
         row.state,
         row.ok,
         row.canvasConfirmed,
@@ -120,9 +139,11 @@ function rowSignature(row: ActivityRow): string {
           >
         </div>
         <template v-else>
-          <span :class="cn(labelClass(row.state), 'truncate')">{{
-            labelOf(row)
-          }}</span>
+          <span
+            :class="cn(labelClass(row.state), 'truncate')"
+            :title="titleOf(row)"
+            >{{ labelOf(row) }}</span
+          >
           <span
             v-if="row.count > 1"
             class="mt-0.5 shrink-0 text-xs text-muted-foreground"

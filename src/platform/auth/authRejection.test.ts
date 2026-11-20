@@ -103,18 +103,18 @@ describe('authRejectionTags', () => {
   })
 
   it.for([
-    undefined,
-    null,
-    0,
-    'text',
-    [],
-    [1, 2],
-    {},
-    { error: null },
-    { error: { type: 5 } },
-    { accepted: 'bearer_jwt' },
-    { code: 403, message: 7 }
-  ])('is total for the hostile body %j', (body) => {
+    { body: undefined },
+    { body: null },
+    { body: 0 },
+    { body: 'text' },
+    { body: [] },
+    { body: [1, 2] },
+    { body: {} },
+    { body: { error: null } },
+    { body: { error: { type: 5 } } },
+    { body: { accepted: 'bearer_jwt' } },
+    { body: { code: 403, message: 7 } }
+  ])('is total for the hostile body $body', ({ body }) => {
     expect(() => authRejectionTags(body, '')).not.toThrow()
   })
 })
