@@ -16456,6 +16456,9 @@
         "name": "מודל",
         "tooltip": "המודל לשימוש."
       },
+      "model_auto_downscale": {
+        "name": "הקטנה אוטומטית"
+      },
       "model_negative_prompt": {
         "name": "פרומפט שלילי"
       },

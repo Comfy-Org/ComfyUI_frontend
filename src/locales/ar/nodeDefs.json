@@ -16456,6 +16456,9 @@
         "name": "النموذج",
         "tooltip": "النموذج المراد استخدامه."
       },
+      "model_auto_downscale": {
+        "name": "خفض الدقة تلقائيًا"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },

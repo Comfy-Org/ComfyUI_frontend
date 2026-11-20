@@ -16456,6 +16456,9 @@
         "name": "модель",
         "tooltip": "Используемая модель."
       },
+      "model_auto_downscale": {
+        "name": "автоматическое уменьшение масштаба"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },

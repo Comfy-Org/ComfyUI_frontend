@@ -16456,6 +16456,9 @@
         "name": "مدل",
         "tooltip": "مدل مورد استفاده."
       },
+      "model_auto_downscale": {
+        "name": "کاهش خودکار مقیاس"
+      },
       "model_negative_prompt": {
         "name": "negative_prompt"
       },
