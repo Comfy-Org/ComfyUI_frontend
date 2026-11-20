@@ -4,6 +4,7 @@ import { toValue } from 'vue'
 
 import type { Positionable } from '@comfyorg/graph-model/interfaces'
 import { onCanvasFrame } from '@/lib/litegraph/src/canvas/canvasFrame'
+import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { startMoveSnap } from '@/lib/litegraph/src/canvas/gestureSnap'
 import type { MoveSnap } from '@/lib/litegraph/src/canvas/gestureSnap'
@@ -317,7 +318,14 @@ export const useNodeDrag = createSharedComposable(() => {
     stopFrame = null
   }
 
-  tryOnScopeDispose(resetDragState)
+  const stopClearListen = onGraphIntent((intent) => {
+    if (intent.type === 'clear') resetDragState()
+  })
+
+  tryOnScopeDispose(() => {
+    stopClearListen()
+    resetDragState()
+  })
 
   return {
     startDrag,

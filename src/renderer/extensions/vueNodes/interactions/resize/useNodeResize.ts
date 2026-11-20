@@ -56,6 +56,8 @@ export function useNodeResize(
 
   const canvasStore = useCanvasStore()
 
+  let endActiveResize: (() => void) | undefined
+
   const startResize = (
     event: PointerEvent,
     corner: CompassCorners,
@@ -65,6 +67,8 @@ export function useNodeResize(
 
     const target = event.currentTarget
     if (!(target instanceof HTMLElement)) return
+
+    endActiveResize?.()
 
     const rect = nodeElement.getBoundingClientRect()
     const scale = transformState.camera.z
@@ -168,7 +172,9 @@ export function useNodeResize(
     }
 
     const cleanup = () => {
-      if (!isResizing.value) return
+      if (endActiveResize !== cleanup) return
+      endActiveResize = undefined
+      attempt(() => target.releasePointerCapture(event.pointerId))
       isResizing.value = false
       layoutStore.isResizingVueNodes.value = false
       resizeStartPointer.value = null
@@ -183,16 +189,10 @@ export function useNodeResize(
       stopCancelListen()
     }
 
-    const handlePointerUp = (upEvent: PointerEvent) => {
-      if (isResizing.value) {
-        attempt(() => target.releasePointerCapture(upEvent.pointerId))
-        cleanup()
-      }
-    }
-
     const stopMoveListen = useEventListener('pointermove', handlePointerMove)
-    const stopUpListen = useEventListener('pointerup', handlePointerUp)
+    const stopUpListen = useEventListener('pointerup', cleanup)
     const stopCancelListen = useEventListener('pointercancel', cleanup)
+    endActiveResize = cleanup
   }
 
   return {

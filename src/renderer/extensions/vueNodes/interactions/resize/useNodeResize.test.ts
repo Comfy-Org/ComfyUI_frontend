@@ -372,6 +372,23 @@ describe('useNodeResize', () => {
       expect(cb.mock.calls.length).toBe(callsBeforeUp)
     })
 
+    it('ends the previous resize when a second one starts before pointerup', async () => {
+      const { cb, handle: h, startResize } = await setupDynamic(() => 150)
+      const release = () =>
+        window.dispatchEvent(
+          new PointerEvent('pointerup', createPointerEvent('pointerup'))
+        )
+
+      startResizeAt(startResize, h, 'SE')
+      startResizeAt(startResize, h, 'SE')
+      release()
+      release()
+
+      startResizeAt(startResize, h, 'SE')
+      simulateMove(20, 20)
+      expect(cb).toHaveBeenCalledTimes(1)
+    })
+
     it('handles releasePointerCapture throwing without breaking cleanup', async () => {
       const { cb, el, handle: h, startResize } = await setupDynamic(() => 150)
       h.releasePointerCapture = vi.fn(() => {
