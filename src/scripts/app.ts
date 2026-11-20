@@ -1137,7 +1137,12 @@ export class ComfyApp implements IComfyApp {
       return
     }
 
-    const old = safeLocalStorage.getItem('litegrapheditor_clipboard')
+    const captured = safeLocalStorage.read('litegrapheditor_clipboard')
+    if (!captured.ok) {
+      useToast().warning(t('toastMessages.clipboardStorageUnavailable'))
+      return
+    }
+    const old = captured.value
     let insertFailed = false
 
     for (const template of templateData.templates) {

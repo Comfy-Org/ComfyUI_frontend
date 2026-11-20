@@ -391,7 +391,12 @@ function getManager(): ManageTemplates {
 const clipboardAction = async (cb: () => void | Promise<void>) => {
   // We use the clipboard functions but dont want to overwrite the current user clipboard
   // Restore it after we've run our callback
-  const old = safeLocalStorage.getItem('litegrapheditor_clipboard')
+  const captured = safeLocalStorage.read('litegrapheditor_clipboard')
+  if (!captured.ok) {
+    useToast().warning(t('toastMessages.clipboardStorageUnavailable'))
+    return
+  }
+  const old = captured.value
   await cb()
   if (old === null) safeLocalStorage.removeItem('litegrapheditor_clipboard')
   else safeLocalStorage.setItem('litegrapheditor_clipboard', old)

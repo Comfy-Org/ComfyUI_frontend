@@ -173,3 +173,28 @@ it('keeps both templates when two saves overlap', async () => {
     { name: 'Second', data: '{"nodes":[]}' }
   ])
 })
+
+it('keeps the user clipboard and skips saving when it cannot be read', async () => {
+  const { api, app, extension, canvas } = await importNodeTemplates(() =>
+    Promise.resolve(Response.json([]))
+  )
+  const { useDialogService } = await import('@/services/dialogService')
+  const { useToast } = await import('@/components/ui/toast/toastStore')
+  vi.mocked(useDialogService().prompt).mockResolvedValue('New template')
+  await extension.setup?.(app)
+  localStorage.setItem('litegrapheditor_clipboard', 'user copy')
+  const realGetItem = localStorage.getItem.bind(localStorage)
+  vi.spyOn(localStorage, 'getItem').mockImplementation((key) => {
+    if (key === 'litegrapheditor_clipboard')
+      throw new DOMException('busy', 'InvalidStateError')
+    return realGetItem(key)
+  })
+
+  const saveItem = extension.getCanvasMenuItems?.(canvas)[1]
+  await saveItem?.callback?.call(document.createElement('div'))
+
+  expect(api.storeUserData).not.toHaveBeenCalled()
+  expect(useApp().canvas.copyToClipboard).not.toHaveBeenCalled()
+  expect(realGetItem('litegrapheditor_clipboard')).toBe('user copy')
+  expect(useToast().toasts).toMatchObject([{ kind: 'warning' }])
+})
