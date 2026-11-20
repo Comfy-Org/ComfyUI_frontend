@@ -43,6 +43,7 @@ import { isAppModeValue } from '@/utils/appMode'
 import { classifyCloudValidationError } from '@/utils/executionErrorUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import { createRafCoalescer } from '@/utils/rafBatch'
+import { zeroUuid } from '@/utils/uuid'
 import { zComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { zQueueInfo } from '@comfyorg/ingest-types/zod'
 
@@ -130,6 +131,7 @@ function buildExecutionNodeLookup(
  * prevent unbounded memory growth in long-running sessions.
  */
 export const MAX_PROGRESS_JOBS = 1000
+const MAX_STAMPED_WORKFLOW_IDS = 4000
 
 export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
 
@@ -181,6 +183,7 @@ export const useExecutionStore = defineStore('execution', () => {
    */
   const jobIdToSessionWorkflowPath = shallowRef<Map<JobId, string>>(new Map())
   const jobIdToWorkflowInstanceId = new Map<JobId, string>()
+  const jobIdToStampedWorkflowId = new Map<JobId, string>()
 
   const initializingJobIds = ref<Set<JobId>>(new Set())
 
@@ -489,22 +492,66 @@ export const useExecutionStore = defineStore('execution', () => {
     pendingWorkflowStatusByJobId.clear()
     pendingExecutionErrorsByJobId.clear()
     jobIdToWorkflow.clear()
+    jobIdToStampedWorkflowId.clear()
 
     cancelPendingProgressUpdates()
   }
 
-  /**
-   * Whether frames for this job may paint the active workflow's canvas.
-   * Jobs whose owner is unknown are admitted unless another job is active.
-   */
-  function belongsToActiveWorkflow(jobId: JobId | undefined): boolean {
-    if (!jobId) return true
-    const ownerInstanceId = jobIdToWorkflowInstanceId.get(jobId)
-    const activeInstanceId = workflowStore.activeWorkflow?.instanceId
-    if (ownerInstanceId && activeInstanceId) {
-      return ownerInstanceId === activeInstanceId
+  function routableWorkflowId(id: string | undefined): string | undefined {
+    return !id || id === zeroUuid ? undefined : id
+  }
+
+  function rememberStampedWorkflowId(
+    jobId: JobId,
+    workflowId: string | undefined
+  ) {
+    const stamp = routableWorkflowId(workflowId)
+    if (!stamp || jobIdToStampedWorkflowId.has(jobId)) return
+    jobIdToStampedWorkflowId.set(jobId, stamp)
+    if (jobIdToStampedWorkflowId.size > MAX_STAMPED_WORKFLOW_IDS) {
+      const oldest = jobIdToStampedWorkflowId.keys().next().value
+      if (oldest !== undefined) jobIdToStampedWorkflowId.delete(oldest)
     }
+  }
+
+  function resolveWorkflowOwnership(
+    jobId: JobId,
+    workflowId: string | undefined
+  ): boolean | undefined {
+    const workflow = workflowStore.activeWorkflow
+    if (!workflow) return
+
+    const ownerInstanceId = jobIdToWorkflowInstanceId.get(jobId)
+    if (ownerInstanceId && workflow.instanceId) {
+      return ownerInstanceId === workflow.instanceId
+    }
+
+    const ownerPath = jobIdToSessionWorkflowPath.value.get(jobId)
+    if (ownerPath && workflow.path) return ownerPath === workflow.path
+
+    const stamp =
+      routableWorkflowId(workflowId) ?? jobIdToStampedWorkflowId.get(jobId)
+    if (!stamp) return
+
+    const graphId = routableWorkflowId(
+      workflow.activeState.id ?? workflow.initialState.id
+    )
+    if (graphId) return stamp === graphId
+  }
+
+  function matchesActiveJob(jobId: JobId): boolean {
     return !activeJobId.value || jobId === activeJobId.value
+  }
+
+  function rememberStampAndCheckActiveWorkflow(
+    jobId: JobId | undefined,
+    workflowId?: string
+  ): boolean {
+    if (!jobId) return true
+    rememberStampedWorkflowId(jobId, workflowId)
+    return (
+      resolveWorkflowOwnership(jobId, workflowId) ?? matchesActiveJob(jobId)
+    )
   }
 
   function handleExecutionStart(e: CustomEvent<ExecutionStartWsMessage>) {
@@ -524,7 +571,10 @@ export const useExecutionStore = defineStore('execution', () => {
       executionStartedAt: queuedJobs.value[jobId].executionStartedAt
     })
 
-    if (!belongsToActiveWorkflow(jobId)) {
+    rememberStampedWorkflowId(jobId, e.detail.workflow_id)
+    const owned = resolveWorkflowOwnership(jobId, e.detail.workflow_id)
+    if (owned === false) return
+    if (owned === undefined && !matchesActiveJob(jobId)) {
       reportAmbiguousExecutionStartRejection(jobId)
       return
     }
@@ -712,8 +762,8 @@ export const useExecutionStore = defineStore('execution', () => {
   }
 
   function applyProgressState(detail: ProgressStateWsMessage) {
-    const { nodes, prompt_id: jobId } = detail
-    const isOwned = belongsToActiveWorkflow(jobId)
+    const { nodes, prompt_id: jobId, workflow_id: workflowId } = detail
+    const isOwned = rememberStampAndCheckActiveWorkflow(jobId, workflowId)
 
     if (isOwned) {
       revokeStartedNodePreviews(
@@ -750,7 +800,7 @@ export const useExecutionStore = defineStore('execution', () => {
     const updates = [...pendingProgressByJob.values()]
     pendingProgressByJob.clear()
     for (const detail of updates) {
-      if (activeJobId.value && detail.prompt_id !== activeJobId.value) continue
+      if (!matchesActiveJob(detail.prompt_id)) continue
       _executingNodeProgress.value = detail
     }
   }, 'raf:progress')
@@ -1002,12 +1052,27 @@ export const useExecutionStore = defineStore('execution', () => {
     if (id && !activeJobIds.has(id)) resetExecutionState(id)
   }
 
-  /** Stops following queued jobs that ended without a terminal frame. */
   function forgetFinishedJobs(jobIds: Iterable<JobId>) {
     for (const jobId of jobIds) {
       if (jobId === activeJobId.value || !(jobId in queuedJobs.value)) continue
+      const workflow = jobIdToWorkflow.get(jobId)
       forgetJob(jobId)
+      if (
+        workflow &&
+        getWorkflowStatus(workflow) === 'running' &&
+        !hasStartedJobForWorkflow(workflow)
+      ) {
+        clearWorkflowStatus(workflow)
+      }
     }
+  }
+
+  function hasStartedJobForWorkflow(workflow: ComfyWorkflow): boolean {
+    return Object.entries(queuedJobs.value).some(
+      ([jobId, job]) =>
+        job.executionStartedAt !== undefined &&
+        jobIdToWorkflow.get(jobId) === workflow
+    )
   }
 
   function forgetJob(jobId: JobId) {
@@ -1016,6 +1081,7 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStatesByJob.value = progress
     useJobPreviewStore().clearPreview(jobId)
     jobIdToWorkflow.delete(jobId)
+    jobIdToStampedWorkflowId.delete(jobId)
     if (jobId in queuedJobs.value)
       void jobReset.trigger(queuedJobs.value[jobId])
     delete queuedJobs.value[jobId]
@@ -1215,7 +1281,9 @@ export const useExecutionStore = defineStore('execution', () => {
     const startedJobIds = Object.keys(queuedJobs.value).filter(
       (jobId) => queuedJobs.value[jobId].executionStartedAt !== undefined
     )
-    const ownedJobId = startedJobIds.findLast(belongsToActiveWorkflow)
+    const ownedJobId = startedJobIds.findLast((jobId) =>
+      rememberStampAndCheckActiveWorkflow(jobId)
+    )
     executionIdToLocatorCache.clear()
     if (!ownedJobId) {
       nodeProgressStates.value = {}
@@ -1256,7 +1324,7 @@ export const useExecutionStore = defineStore('execution', () => {
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,
-    belongsToActiveWorkflow,
+    rememberStampAndCheckActiveWorkflow,
     isActiveWorkflowRunning,
     isJobInitializing,
     clearInitializationByJobId,

@@ -6,6 +6,8 @@ import { resultItemType } from '@/schemas/resultItemTypeSchema'
 
 export type JobId = string
 
+type StampedWorkflowId = { workflow_id?: string }
+
 export const zResultItem = z.object({
   filename: z.string().optional(),
   subfolder: z.string().optional(),
@@ -39,7 +41,7 @@ export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
   sid?: string | null
 }
-export interface ProgressWsMessage {
+export interface ProgressWsMessage extends StampedWorkflowId {
   value: number
   max: number
   prompt_id: JobId
@@ -55,11 +57,11 @@ export interface NodeProgressState {
   parent_node_id?: NodeId
   real_node_id?: NodeId
 }
-export interface ProgressStateWsMessage {
+export interface ProgressStateWsMessage extends StampedWorkflowId {
   prompt_id: JobId
   nodes: Record<NodeId, NodeProgressState>
 }
-export interface ExecutingWsMessage {
+export interface ExecutingWsMessage extends StampedWorkflowId {
   node: NodeId | null
   display_node?: NodeId
   prompt_id: JobId
@@ -70,7 +72,7 @@ export interface ExecutedWsMessage extends ExecutingWsMessage {
   output: NodeExecutionOutput
   merge?: boolean
 }
-interface ExecutionWsMessageBase {
+interface ExecutionWsMessageBase extends StampedWorkflowId {
   prompt_id: JobId
   timestamp: number
 }
