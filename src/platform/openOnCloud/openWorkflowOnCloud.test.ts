@@ -175,6 +175,11 @@ describe('openWorkflowOnCloud in a browser', () => {
 
     expect(revalidateGrant).toHaveBeenCalledOnce()
     expect(tab.postMessage).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        title: "Couldn't verify access to Comfy Cloud"
+      })
+    )
   })
 
   it('answers only once', async () => {
@@ -263,6 +268,11 @@ describe('openWorkflowOnCloud on Desktop', () => {
     expect(revalidateGrant).toHaveBeenCalledOnce()
     expect(store).not.toHaveBeenCalled()
     expect(tabs.openDisowned).not.toHaveBeenCalled()
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({
+        title: "Couldn't verify access to Comfy Cloud"
+      })
+    )
   })
   it('does not open the fallback or download when the grant clears during staging', async () => {
     const previous = window.__comfyDesktop2

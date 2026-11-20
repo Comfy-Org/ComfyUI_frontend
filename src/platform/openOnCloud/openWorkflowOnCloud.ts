@@ -146,8 +146,17 @@ export async function openWorkflowOnCloud(
     flags.openOnCloudEnabled &&
     grant.isCurrent() &&
     trustedCloudHandoffOrigin() === origin
-  const revalidate = async () =>
-    isAuthorized() && (await grant.revalidate()) && isAuthorized()
+  const revalidate = async () => {
+    if (!isAuthorized()) return false
+    const verified = await grant.revalidate()
+    if (!verified && grant.isCurrent()) {
+      useToast().error(t('openOnCloud.verifyAccessFailed'), {
+        description: t('openOnCloud.verifyAccessFailedDetail'),
+        duration: NOTICE_MS
+      })
+    }
+    return verified && isAuthorized()
+  }
   if (!isAuthorized()) return
   const filename = useWorkflowStore().activeWorkflow?.filename ?? 'workflow'
   if (handsPopupsToSystemBrowser())
