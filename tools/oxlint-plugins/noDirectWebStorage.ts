@@ -25,8 +25,6 @@ export const noDirectWebStorage: Rule = {
     }
   },
   create(context) {
-    const vueuseNamespaces = new Set<string>()
-
     function staticName(key: AnyNode, computed: boolean): string | undefined {
       if (!computed && key.type === 'Identifier') return key.name
       if (key.type === 'Literal' && typeof key.value === 'string')
@@ -47,7 +45,6 @@ export const noDirectWebStorage: Rule = {
     }
 
     function isVueuseNamespace(node: AnyNode, name: string): boolean {
-      if (!vueuseNamespaces.has(name)) return false
       for (
         let scope: ReturnType<typeof context.sourceCode.getScope> | null =
           context.sourceCode.getScope(node);
@@ -56,7 +53,13 @@ export const noDirectWebStorage: Rule = {
       ) {
         const variable = scope.set.get(name)
         if (variable)
-          return variable.defs.some((def) => def.type === 'ImportBinding')
+          return variable.defs.some(
+            (def) =>
+              def.type === 'ImportBinding' &&
+              def.node.type === 'ImportNamespaceSpecifier' &&
+              def.parent?.type === 'ImportDeclaration' &&
+              def.parent.source.value === '@vueuse/core'
+          )
       }
       return false
     }
@@ -151,10 +154,6 @@ export const noDirectWebStorage: Rule = {
         if (node.importKind === 'type') return
         if (node.source.value !== '@vueuse/core') return
         for (const specifier of node.specifiers) {
-          if (specifier.type === 'ImportNamespaceSpecifier') {
-            vueuseNamespaces.add(specifier.local.name)
-            continue
-          }
           if (
             specifier.type === 'ImportSpecifier' &&
             specifier.importKind !== 'type' &&

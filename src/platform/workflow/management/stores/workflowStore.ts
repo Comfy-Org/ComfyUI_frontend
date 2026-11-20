@@ -4,8 +4,8 @@ import { defineStore } from 'pinia'
 import { computed, markRaw, ref, shallowRef, watch } from 'vue'
 import type { Raw } from 'vue'
 
-import { useToast } from '@/components/ui/toast/toastStore'
 import { t } from '@/i18n'
+import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import type {
   LGraph,
   LGraphNode,
@@ -74,9 +74,7 @@ registerWorkflowRuntime({
         errorType: 'error_persisting_workflow_draft'
       })
     }
-    useToast().error(t('g.error'), {
-      description: t('toastMessages.failedToSaveDraft')
-    })
+    showDraftSaveFailedToast()
   },
   removeDraft: (path) => useWorkflowDraftStoreV2().removeDraft(path),
   markDraftUsed: (path) => useWorkflowDraftStoreV2().markDraftUsed(path),

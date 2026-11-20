@@ -37,11 +37,17 @@ export const useManagerStatePersistence = () => {
    */
   const persistState = (state: ManagerState) => {
     const outcome = safeLocalStorage.write(STORAGE_KEY, JSON.stringify(state))
-    if (outcome.result === 'ok' || writeFailureReported) return
+    if (outcome.result !== 'failed' || writeFailureReported) return
+    if (
+      outcome.error instanceof DOMException &&
+      outcome.error.name === 'SecurityError'
+    )
+      return
     writeFailureReported = true
     reportError(outcome.error, {
       surface: 'platform',
-      errorType: 'error_persisting_manager_ui_state'
+      errorType: 'error_persisting_manager_ui_state',
+      level: 'warning'
     })
   }
 

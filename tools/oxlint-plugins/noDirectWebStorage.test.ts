@@ -30,13 +30,13 @@ env.sessionStorage.getItem('a')
 function shadowed(window: { localStorage: string }) {
   return window.localStorage
 }
+import * as V from '@vueuse/core'
+V.useDebounceFn(() => {})
 function shadowedNamespace(V: { useStorage: () => void }) {
   const { useStorage } = V
   V.useStorage()
   return useStorage
 }
-import * as V from '@vueuse/core'
-V.useDebounceFn(() => {})
 export { useDebounceFn } from '@vueuse/core'
 `
     }
@@ -88,12 +88,14 @@ const { localStorage: cast } = window as Window
     {
       name: 'VueUse storage composables via namespace import and re-export',
       code: `
+V.useSessionStorage('early', 1)
 import * as V from '@vueuse/core'
 V.useStorage('k', 1)
 export { useLocalStorage } from '@vueuse/core'
 const { useStorage: alias, useDebounceFn } = V
 `,
       errors: [
+        { messageId: 'composable' },
         { messageId: 'composable' },
         { messageId: 'composable' },
         { messageId: 'composable' }

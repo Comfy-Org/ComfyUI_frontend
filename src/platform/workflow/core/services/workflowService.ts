@@ -2,6 +2,7 @@ import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
+import { showDraftSaveFailedToast } from '@/platform/workflow/persistence/draftSaveFailureToast'
 import type { PointTuple as Point } from '@comfyorg/shared-frontend-utils/geometry'
 import type { SerialisableGraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -281,12 +282,6 @@ export const useWorkflowService = () => {
   const missingNodesErrorStore = useMissingNodesErrorStore()
   const workflowDraftStore = useWorkflowDraftStoreV2()
 
-  const showFailedToSaveDraftToast = () => {
-    toast.error(t('g.error'), {
-      description: t('toastMessages.failedToSaveDraft')
-    })
-  }
-
   const persistActiveWorkflowDraft = (activeWorkflow: ComfyWorkflow) => {
     if (!settingStore.get('Comfy.Workflow.Persist') || !activeWorkflow.path) {
       return
@@ -318,11 +313,11 @@ export const useWorkflowService = () => {
       )
 
       if (!saved) {
-        showFailedToSaveDraftToast()
+        showDraftSaveFailedToast()
       }
     } catch (err) {
       console.error('Failed to persist active workflow draft', err)
-      showFailedToSaveDraftToast()
+      showDraftSaveFailedToast()
     }
   }
 
