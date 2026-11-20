@@ -150,6 +150,24 @@ describe('runHandoffBootstrap', () => {
     expect(handoffTab.value).toEqual(liveSession)
   })
 
+  it('exchanges on browsers without AbortSignal.timeout', async () => {
+    const native = Object.getOwnPropertyDescriptor(AbortSignal, 'timeout')
+    try {
+      Object.defineProperty(AbortSignal, 'timeout', {
+        configurable: true,
+        value: undefined
+      })
+      const { env, fetchImpl } = setup('/handoff#token=tok-1')
+
+      await expect(runHandoffBootstrap(env)).resolves.toBe('handoff')
+
+      expect(fetchImpl).toHaveBeenCalledOnce()
+      expect(handoffTab.value).toEqual(liveSession)
+    } finally {
+      if (native) Object.defineProperty(AbortSignal, 'timeout', native)
+    }
+  })
+
   it('accepts the handoff route with a trailing slash', async () => {
     const { env, fetchImpl } = setup('/handoff/#token=tok-1')
 

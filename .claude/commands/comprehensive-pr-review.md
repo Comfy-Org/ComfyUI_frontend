@@ -26,7 +26,7 @@ These files are the review criteria. Read them before judging the diff, and cite
 1. Root `AGENTS.md`, and every `AGENTS.md` in a directory the diff touches (for example `src/AGENTS.md`, `browser_tests/AGENTS.md`, `.github/AGENTS.md`).
 2. The `docs/guidance/*.md` files for the changed file types: `typescript.md`, `vue-components.md`, `state-and-effects.md`, `error-handling.md`, `testing-principles.md`, `vitest.md`, `playwright.md`, `storybook.md`.
 3. Accepted ADRs in `docs/adr/` that govern the changed area.
-4. The review lenses in `.agents/checks/*.md`. Each file's frontmatter `description` says what it checks. Apply the lenses that match the diff, such as `bug-hunter`, `architecture-reviewer`, `security-auditor`, `performance-profiler`, `vue-patterns`, `error-handling`, `test-quality`, `pattern-compliance`, `adr-compliance`, `api-contract` and `ecosystem-compat`. Skip lenses that run external tools you do not have.
+4. The review lenses in `.agents/checks/*.md`. Each file's frontmatter `description` says what it checks. Apply the lenses that match the diff, such as `bug-hunter`, `ddd-structure`, `security-auditor`, `performance-profiler`, `vue-patterns`, `error-handling`, `test-quality`, `pattern-compliance`, `adr-compliance` and `ecosystem-compat`. Skip lenses that run external tools you do not have.
 
 ## 3. Review the diff
 

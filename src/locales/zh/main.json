@@ -58,6 +58,10 @@
       "summary": "低于 {threshold} 积分时，充值至 {target}。",
       "title": "自动充值已开启"
     },
+    "autoTopUpUnconfirmed": {
+      "body": "打开“账单”以确认自动充值已启用。",
+      "title": "积分已添加"
+    },
     "blocked": {
       "action": "打开结账页面",
       "body": "您的浏览器阻止了新标签页。请打开结账页面以完成付款。",
@@ -105,6 +109,7 @@
     "paidAtCheckout": "{amount}，结账时支付",
     "planLine": {
       "ended": "购买点数不会重新启用你的 Cloud 套餐。请重新订阅以在 Cloud 上运行工作流。",
+      "ended_sales_managed": "购买积分不会重新启用您的 Cloud 套餐。请联系销售人员续订。",
       "free_runs": "购买点数不会开通 Cloud 套餐。免费运行次数用完后，请订阅以继续运行工作流。",
       "no_plan": "购买点数不会开通 Cloud 套餐。请订阅以在 Cloud 上运行工作流。"
     },
@@ -155,6 +160,7 @@
       "unconfirmed": "我们无法确认您的回答已送达智能体。"
     },
     "assetFetchFailed": "无法获取{name}",
+    "assetLoadFailed": "无法加载 {name}",
     "assetNotAttachable": "可附加图像、视频、音频、3D 模型和文本文件",
     "attach": "附加文件",
     "attachFiles": "上传图像或文件",
@@ -337,6 +343,36 @@
     "placeholder": "描述你想创建的内容",
     "placeholderWithoutSkills": "描述你想创建的内容",
     "previewAsset": "预览 {name}",
+    "proactiveGreeting": {
+      "controlPrompts": [
+        {
+          "label": "Generate an image",
+          "prompt": "Make a portrait of an astronaut floating in space, cinematic lighting"
+        },
+        {
+          "label": "Build a video workflow",
+          "prompt": "Set up an image-to-video workflow I can drop my own photo into"
+        },
+        {
+          "label": "Start from an idea",
+          "prompt": "I'm new to ComfyUI. Build me a simple text-to-image workflow and explain each node"
+        }
+      ],
+      "emptyCanvas": {
+        "description": "告诉 Comfy Agent 您想创建什么。",
+        "title": "有什么想法吗？"
+      },
+      "firstOpen": {
+        "description": "不知道从哪里开始？发送下面的问题，或自行输入。",
+        "prompt": "你能帮我做什么？",
+        "title": "助您轻松入门！"
+      },
+      "workflowOpen": {
+        "description": "在工作流发生任何更改之前，Comfy Agent 会向您展示它计划执行的操作。",
+        "prompt": "帮我改进这个工作流",
+        "title": "提出问题或描述一项更改。"
+      }
+    },
     "recoveredTurnFailed": "代理无法完成此响应。",
     "reference": "引用",
     "remove": "移除",
@@ -433,6 +469,7 @@
     "targetWorkflowOpenFailed": "无法打开目标工作流。",
     "targetWorkflowUnavailable": "目标工作流已不可用。",
     "thinking": "思考中...",
+    "thinkingShortened": "推理内容已缩短：其余内容过长，无法保存。",
     "title": "Comfy Agent",
     "toolFailed": "{tool} 失败",
     "toolFailedSkill": "加载 {skill} 失败",
@@ -1485,6 +1522,7 @@
       "paymentProcessingFlyout": "付款正在处理中。您无需再次付款。",
       "paymentProcessingTitle": "一笔 {amount} 的付款仍在处理中",
       "paymentProcessingTitleNoAmount": "一笔付款仍在处理中",
+      "planRequiredContactSales": "购买积分不会重新启用您的 Cloud 套餐。请联系销售人员续订。",
       "planRequiredFreeRuns": "购买点数不会开通 Cloud 套餐。免费运行次数用完后，请订阅以继续运行工作流。",
       "planRequiredResubscribe": "购买点数不会重新启动您的 Cloud 套餐。请重新订阅以在 Cloud 上运行工作流。",
       "planRequiredSubscribe": "购买点数不会开通 Cloud 套餐。请订阅以在 Cloud 上运行工作流。",
@@ -1722,10 +1760,10 @@
     "retry": "重试",
     "retryLabel": "重试启动 {deployment}",
     "runBlocked": {
-      "failed": "此部署失败了。点击以切换。",
-      "notReady": "此部署尚未就绪。点击以切换。",
-      "starting": "此部署正在启动。点击以切换。",
-      "stopped": "此部署已停止。点击以切换。"
+      "failed": "此部署失败。点击切换。",
+      "notReady": "此部署尚未就绪。点击切换。",
+      "starting": "此部署正在启动。点击切换。",
+      "stopped": "此部署已停止。点击切换。"
     },
     "runOn": "运行于",
     "runningOn": "运行于",
@@ -2685,6 +2723,9 @@
     "resizeFromBottomRight": "从右下角调整大小",
     "resizeFromTopLeft": "从左上角调整大小",
     "resizeFromTopRight": "从右上角调整大小",
+    "resizeNumberedPreviewHeight": "调整预览 {index} 的高度",
+    "resizePreviewHeight": "调整预览高度",
+    "resizeWidgetHeight": "调整 {name} 的高度",
     "restart": "重新启动",
     "restore": "恢复",
     "restoreDialog": "还原对话框",
@@ -3752,6 +3793,7 @@
     "Experimental: Enable Nodes 2_0": "实验性：启用 Nodes 2.0",
     "Export": "导出",
     "Export (API)": "导出 (API)",
+    "Export (Workflow Image)": "导出（工作流图像）",
     "File": "文件",
     "Fit Group To Contents": "适应组内容",
     "Focus Mode": "专注模式",
@@ -4323,6 +4365,7 @@
     "handoffFailed": "无法从您电脑上的 ComfyUI 打开工作流",
     "handoffMissing": "您的工作流未送达",
     "handoffMissingDetail": "ComfyUI 会在 10 分钟后停止等待。请再次在 ComfyUI 中点击“在 Comfy Cloud 上打开”。",
+    "missingLocalModelLoader": "无法读取 {nodeType} 的模型设置。请安装提供该节点的节点包，然后重试。",
     "missingModels": {
       "title": "缺少 {count} 个模型 | 缺少 {count} 个模型",
       "unavailable": "将这些模型添加到 Comfy Cloud 以运行此工作流。目前无法从此 ComfyUI 上传。"
@@ -5220,6 +5263,16 @@
     "triggerLinePlaceholder": "当用户询问放大时加载我",
     "yourPacks": "你的技能包"
   },
+  "subgraphInputValues": {
+    "enterInstanceHint": "请通过子图节点进入此子图以编辑其数值。",
+    "fromSource": "← {title} #{id}",
+    "instance": "{title} · #{id}",
+    "linked": "已连接的数值 · 只读",
+    "locateSource": "定位源节点",
+    "sharedSource": "共享源",
+    "sourceHint": "编辑此源也会更改与其连接的其他输入。",
+    "unavailable": "数值不可用"
+  },
   "subgraphStore": {
     "blueprintName": "子工作流名称",
     "blueprintNamePrompt": "子图名称：",
@@ -5469,18 +5522,28 @@
       "subscriptionChangeInProgress": "你已经安排了套餐变更。待其生效后，你可以选择其他套餐。",
       "subscriptionChangeScheduled": "你计划的套餐变更将于 {date} 生效。此后你可以选择其他套餐。"
     },
+    "planWithPeriod": {
+      "annual": "{plan} 年度套餐",
+      "monthly": "{plan} 月度套餐"
+    },
     "plansAndCredits": "套餐和积分",
     "plansAndPricing": "订阅和定价",
     "plansForWorkspace": "{workspace} 的套餐",
     "plansLink": {
       "blockedBody": "你的浏览器阻止了新标签页。请打开套餐页面以选择套餐。",
       "blockedTitle": "套餐页面未打开",
+      "checkoutUnfinishedBody": "打开“套餐”页面重试。您的浏览器阻止了自动打开该页面。",
+      "checkoutUnfinishedTitle": "您的结账未完成",
       "choosePlan": "选择套餐",
       "openPlansPage": "打开套餐页面",
       "runRefusedEnded": "你的套餐已结束。重新订阅以继续在云端运行工作流。",
       "runRefusedFreeRunsUsed": "你已用完全部 {total} 次免费运行次数。订阅以继续在云端运行工作流。",
+      "runRefusedManualBlock": "此工作区已被封禁。请联系支持团队。",
       "runRefusedNoPlan": "在云端运行工作流需要套餐。",
-      "runRefusedTitle": "你的工作流未运行"
+      "runRefusedProjectCap": "此项目已达到支出限额。",
+      "runRefusedTitle": "你的工作流未运行",
+      "runRefusedUserCap": "您已达到此工作区中的支出限额。",
+      "runRefusedWorkspaceCap": "此工作区已达到支出限额。"
     },
     "plansLoadFailed": "加载套餐失败",
     "prepaidCreditsInfo": "单独购买且不会过期的积分",
@@ -5918,6 +5981,7 @@
     "failedToConvertToSubgraph": "无法将项目转换为子工作流",
     "failedToCreateCustomer": "创建客户失败：{error}",
     "failedToExportModel": "无法将模型导出为 {format}",
+    "failedToExportWorkflowImage": "导出工作流图像失败",
     "failedToFetchLogs": "无法获取服务器日志",
     "failedToFetchSubscription": "获取订阅状态失败：{error}",
     "failedToInitializeCameraAngleViewer": "无法初始化相机角度查看器。请尝试重新加载页面。",
@@ -6109,12 +6173,14 @@
     "undo": "撤销"
   },
   "widgets": {
+    "backFromFolder": "返回：{name}",
     "boolean": {
       "false": "否",
       "true": "是"
     },
     "node2only": "仅限 Node 2.0",
     "precisionLimit": "已禁用增减操作：值超出 JavaScript 精度限制 (±2^53)",
+    "selectFolder": "文件夹：{name}",
     "selectModel": "选择模型",
     "uploadSelect": {
       "maxSelectionReached": "已达到最大选择数量",
@@ -6287,7 +6353,15 @@
         "salesMemberBody": "请让您的工作区所有者联系销售。",
         "teamBody": "重新订阅以运行工作流并再次获得共享额度。",
         "teamMemberBody": "请让您的工作区所有者重新订阅。",
+        "teamNotCreatorBody": "此工作区的套餐已结束。请让工作区创建者重新订阅。",
         "teamTitle": "您的团队套餐已于 {date} 结束"
+      },
+      "planNotStarted": {
+        "body": "完成付款以启动套餐。",
+        "bodyUnavailable": "付款完成后，您的套餐将开始生效。",
+        "title": "您的 {plan} 套餐尚未开始",
+        "titleNoPlan": "您的套餐尚未开始",
+        "viewPlans": "在“套餐”中查看"
       },
       "updatePayment": "更新付款方式"
     },

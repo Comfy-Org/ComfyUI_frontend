@@ -116,7 +116,7 @@ const accessibleName = computed(
 const renderError = ref<string | null>(null)
 const { toastErrorHandler } = useErrorHandling()
 
-const { getInputSlotTooltip } = useNodeTooltips(props.nodeType || '')
+const { getInputSlotTooltip } = useNodeTooltips(() => props.nodeType || '')
 const tooltipText = computed(() => getInputSlotTooltip(props.slotData))
 
 const { revealLinks, unrevealLinks } = useSlotLinkReveal({

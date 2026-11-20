@@ -1,5 +1,8 @@
+import { computed } from 'vue'
+
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { autogrowInputRole } from '@/core/graph/widgets/dynamicWidgets'
 import type { INodeInputSlot } from '@comfyorg/graph-model/slots'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget, IWidgetOptions } from '@comfyorg/graph-model/widgets'
@@ -124,6 +127,7 @@ function createSlotMetadata(
       ? originNode?.outputs[link.originSlot]?.name
       : undefined,
     promoted: input.widgetId !== undefined,
+    shape: input.shape,
     type: String(input.type)
   }
 }
@@ -441,19 +445,25 @@ function processWidget(
     fullValue
   )
 
-  return {
-    handleContextMenu: widgetContextMenu(ctx, widgetState.name),
-    get sizing() {
-      return live ? getWidgetSizing(live.widget, live.node) : undefined
-    },
-    hasError: hasWidgetError(
+  const error = computed(() =>
+    hasWidgetError(
       { name: widgetState.name, errorTarget },
       ctx.nodeExecId,
       ctx.nodeErrors,
       ctx.executionErrorStore,
       ctx.missingModelStore,
       ctx.missingMediaStore
-    ),
+    )
+  )
+
+  return {
+    handleContextMenu: widgetContextMenu(ctx, widgetState.name),
+    get sizing() {
+      return live ? getWidgetSizing(live.widget, live.node) : undefined
+    },
+    get hasError() {
+      return error.value
+    },
     widgetId: id,
     renderKey: `${id}:${type}`,
     vueComponent:
@@ -536,4 +546,47 @@ export function computeProcessedWidgets({
   return Array.from(new Set(ids))
     .map((id) => processWidget(id, ctx))
     .filter((widget): widget is ProcessedWidget => widget !== null)
+}
+
+export function computeInputRows(
+  nodeData: NodeState | undefined,
+  rootGraph: LGraph | null
+): WidgetGridItem[] {
+  const hostNode = nodeData && getHostNode(rootGraph, nodeData)
+  const graphRef = hostNode?.graph
+  if (!nodeData || !hostNode || !graphRef) return []
+  const linkStore = useLinkStore()
+  const scope = graphScopeOf(graphRef)
+  return nodeData.inputs.flatMap((input, index) => {
+    const role = autogrowInputRole(hostNode, input)
+    if (!role) return []
+    const link = linkStore.getInputSlotLink(scope, nodeData.id, index)
+    return [
+      {
+        inputRole: role === 'group' ? 'autogrowGroup' : 'socket',
+        renderKey: `input:${input.name}`,
+        simplified: {
+          name: input.name,
+          label: input.label ?? input.localized_name,
+          type: String(input.type),
+          value: undefined
+        },
+        slotMetadata: createSlotMetadata(input, index, link, graphRef),
+        visible: role === 'child'
+      }
+    ]
+  })
+}
+
+export function withInputRows(
+  widgets: WidgetGridItem[],
+  inputRows: WidgetGridItem[]
+): WidgetGridItem[] {
+  const rows = [...widgets]
+  for (const row of inputRows) {
+    const index = row.slotMetadata?.index ?? -1
+    const next = rows.findIndex((r) => (r.slotMetadata?.index ?? -1) > index)
+    rows.splice(next === -1 ? rows.length : next, 0, row)
+  }
+  return rows
 }

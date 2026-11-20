@@ -113,14 +113,14 @@ export function useWorkflowPersistenceV2() {
     const workflowJson = JSON.stringify(graphData)
     const workflowPath = activeWorkflow.path
 
-    // Skip if unchanged
     if (workflowJson === lastSavedJsonByPath.value[workflowPath]) return
 
-    // Save to V2 draft store
-    const saved = draftStore.saveDraft(workflowPath, workflowJson, {
-      name: activeWorkflow.key,
-      isTemporary: activeWorkflow.isTemporary
-    })
+    const saved = draftStore.saveDraft(
+      workflowPath,
+      workflowJson,
+      { name: activeWorkflow.key, isTemporary: activeWorkflow.isTemporary },
+      { minUpdatedAt: activeWorkflow.lastModified }
+    )
 
     if (!saved) {
       toast.error(t('g.error'), {
@@ -129,12 +129,10 @@ export function useWorkflowPersistenceV2() {
       return
     }
 
-    // Update session pointer
     tabState.setActivePath(workflowPath)
 
     lastSavedJsonByPath.value[workflowPath] = workflowJson
 
-    // Clean up draft if workflow is saved and unmodified
     if (!activeWorkflow.isTemporary && !activeWorkflow.isModified) {
       draftStore.removeDraft(workflowPath)
     }

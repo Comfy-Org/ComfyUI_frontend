@@ -245,16 +245,13 @@
           "src/workbench/extensions/agent/crdt/batchPlacement.ts",
           "src/workbench/extensions/agent/crdt/batchPlacement.test.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugGate.ts",
-          "src/workbench/extensions/agent/crdt/crdtDebugGate.test.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugReport.ts",
           "src/workbench/extensions/agent/crdt/crdtDebugReport.apiLogs.test.ts",
-          "src/workbench/extensions/agent/crdt/crdtDebugReport.test.ts",
           "src/workbench/extensions/agent/crdt/crdtLog.ts",
           "src/workbench/extensions/agent/crdt/crdtLog.test.ts",
           "src/workbench/extensions/agent/crdt/crdtSnapshot.ts",
           "src/workbench/extensions/agent/crdt/crossWorkflowPending.test.ts",
           "src/workbench/extensions/agent/crdt/devPanelLog.ts",
-          "src/workbench/extensions/agent/crdt/devPanelLog.test.ts",
           "src/workbench/extensions/agent/crdt/docChangeCollector.ts",
           "src/workbench/extensions/agent/crdt/docChangeCollector.test.ts",
           "src/workbench/extensions/agent/crdt/docFrameClient.ts",
@@ -401,6 +398,7 @@
           "src/platform/distribution/types.ts",
           "src/router.ts",
           "src/router.cloudAuthGuard.test.ts",
+          "src/router.desktopLoginReroute.test.ts",
           "src/router.signedOutReroute.test.ts",
           "src/router.test.ts",
           "src/stores/bootstrapStore.ts",
@@ -729,6 +727,7 @@
           "src/renderer/core/canvas/useCanvasInteractions.ts",
           "src/renderer/core/canvas/useCanvasInteractions.test.ts",
           "src/renderer/core/canvas/useCanvasScheduler.ts",
+          "tools/ci/src/**",
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.vue",
           "src/components/actionbar/ComfyRunButton/CloudRunButtonWrapper.test.ts",
           "src/extensions/core/cloudBadges.ts",
@@ -993,6 +992,7 @@
           "src/lib/litegraph/src/LGraphCanvas.startRendering.test.ts",
           "src/lib/litegraph/src/LGraphCanvas.subgraphPasteDelete.test.ts",
           "src/lib/litegraph/src/LGraphCanvas.titleButtons.test.ts",
+          "src/lib/litegraph/src/LGraphCanvas.widgetCancel.test.ts",
           "src/lib/litegraph/src/LGraphIcon.ts",
           "src/lib/litegraph/src/__fixtures__/canvasHarness.ts",
           "src/lib/litegraph/src/__tests__/**",
@@ -2060,7 +2060,7 @@
       },
       {
         "name": "unclassified",
-        "patterns": ["src/**", "packages/*/src/**"]
+        "patterns": ["src/**", "packages/*/src/**", "tools/*/src/**"]
       }
     ],
     "rules": [

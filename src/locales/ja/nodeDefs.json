@@ -8465,6 +8465,93 @@
       }
     }
   },
+  "HeyGenAvatar6IdentityToVideoNode": {
+    "description": "HeyGen Avatar 6 を使用して、テキストスクリプトまたは独自の音声で駆動する HeyGen アバターの話す動画を生成します。",
+    "display_name": "HeyGen Avatar 6 アイデンティティから動画",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "「auto」はアバターの元映像に従います。"
+      },
+      "avatar": {
+        "name": "avatar"
+      },
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model"
+      },
+      "motion_expressiveness": {
+        "name": "motion_expressiveness",
+        "tooltip": "「less」ではジェスチャーの回数と動きが少なくなります。重複する場合は、motion prompt が優先されます。"
+      },
+      "motion_prompt": {
+        "name": "motion_prompt",
+        "tooltip": "ジェスチャー、表情、姿勢、カメラの動き。"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。シードにかかわらず、結果は非決定的です。"
+      },
+      "speech": {
+        "name": "speech",
+        "tooltip": "テキストスクリプト（HeyGen のテキスト読み上げ）または独自の音声でアバターを駆動します。"
+      },
+      "speech_custom_voice_id": {
+        "name": "custom_voice_id"
+      },
+      "speech_text": {
+        "name": "text"
+      },
+      "speech_voice": {
+        "name": "voice"
+      },
+      "speech_voice_speed": {
+        "name": "voice_speed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HeyGenAvatar6ReferenceToVideoNode": {
+    "description": "HeyGen Avatar 6 を使用して、写真または動画内の人物・キャラクターに、接続された音声を話させます。画像、動画、またはその両方を接続してください。",
+    "display_name": "HeyGen Avatar 6 参照から動画",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後の制御"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_motion_expressiveness": {
+        "name": "motion_expressiveness"
+      },
+      "model_motion_prompt": {
+        "name": "motion_prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HeyGenAvatarVideoNode": {
     "description": "HeyGen アバターから話すプレゼンター動画を生成します。HeyGen の最も人気のある公開アバターが含まれており、任意の look ID を上書き指定できます。",
     "display_name": "HeyGen アバター動画",
@@ -10645,6 +10732,42 @@
       }
     }
   },
+  "Kling4ImageNode": {
+    "description": "テキストプロンプトと最大 10 枚の参照画像から、1 枚の画像または関連する画像のシリーズを生成・編集します。",
+    "display_name": "Kling 4.0 画像",
+    "inputs": {
+      "aspect_ratio": {
+        "name": "aspect_ratio",
+        "tooltip": "auto は参照画像に従い、それ以外の場合はプロンプトに従います。"
+      },
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "参照画像は @Image1、@Image2、... として参照します。"
+      },
+      "reference_images": {
+        "name": "reference_images"
+      },
+      "resolution": {
+        "name": "resolution"
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "シードはノードを再実行するかどうかを制御します。結果はシードに関わらず非決定的です。"
+      },
+      "series_amount": {
+        "name": "series_amount",
+        "tooltip": "同じキャラクターとスタイルを維持した、関連する画像のシリーズを生成します。auto ではモデルが 2～10 枚の画像を選択します。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "Kling4ImageToVideoNode": {
     "description": "kling-4.0 では最大10個のキーフレームを通じて、または kling-4.0-flash では最初のフレームから、音声付き動画を生成します。中間フレームは等間隔に配置され、動画は最初のキーフレームのアスペクト比を使用します。",
     "display_name": "Kling 4.0 画像から動画",
@@ -10665,6 +10788,32 @@
         "name": "解像度"
       },
       "model_seed": {
+        "name": "シード"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "Kling4LongImageNode": {
+    "description": "WebページデザインまたはEコマースの商品詳細ページとして、縦長画像を1枚生成します。",
+    "display_name": "Kling 4.0 縦長画像",
+    "inputs": {
+      "control_after_generate": {
+        "name": "生成後に制御"
+      },
+      "skill": {
+        "name": "スキル"
+      },
+      "skill_prompt": {
+        "name": "プロンプト"
+      },
+      "skill_resolution": {
+        "name": "解像度"
+      },
+      "skill_seed": {
         "name": "シード"
       }
     },
@@ -25291,6 +25440,77 @@
     },
     "outputs": {
       "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaConditioning": {
+    "description": "CLIPで参照画像、画像思考、インターリーブされたテキスト、または自己修正をエンコードします。このノードの前にHiDream-O1 Reference Imagesを接続し、画像には標準のサンプラーを使用してください。思考なしのテキストから画像生成にはCLIP Text Encodeのみが必要です。テキストのみの出力にはGenerate Textを使用できます。",
+    "display_name": "SenseNova コンディショニング",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "max_tokens": {
+        "name": "max_tokens",
+        "tooltip": "この呼び出し中に生成される最大トークン数です。"
+      },
+      "negative": {
+        "name": "ネガティブ"
+      },
+      "task": {
+        "name": "タスク",
+        "tooltip": "タスクを選択します。プロンプトテンプレートと停止動作は自動的に設定されます。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "コンディショニング",
+        "tooltip": null
+      },
+      "1": {
+        "name": "generated_text",
+        "tooltip": "この呼び出しで生成されたテキストです。完全な結果にはSenseNova Interleave Decodeを使用してください。"
+      },
+      "2": {
+        "name": "ネガティブ",
+        "tooltip": "インターリーブおよび自己修正用に更新されたネガティブコンディショニングです。"
+      },
+      "3": {
+        "name": "image_requested",
+        "tooltip": null
+      }
+    }
+  },
+  "SenseNovaInterleaveDecode": {
+    "description": "U1.6の自己修正を含め、SenseNova Conditioningで生成されたインターリーブ履歴から、生成テキスト、画像、思考を抽出します。ループでは、accumulateを無効にしてEnd Loopを使用してください。入力参照画像は除外されます。画像が生成されなかった場合、画像コンシューマーはスキップされます。",
+    "display_name": "SenseNova Interleave Decode",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "conditioning": {
+        "name": "コンディショニング"
+      },
+      "samples": {
+        "name": "サンプル",
+        "tooltip": "ループが画像リクエストで終了した場合の、最後のKSamplerピクセル潜在空間です。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "画像",
+        "tooltip": null
+      },
+      "2": {
+        "name": "思考",
         "tooltip": null
       }
     }

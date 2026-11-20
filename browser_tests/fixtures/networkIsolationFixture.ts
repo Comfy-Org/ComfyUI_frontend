@@ -222,8 +222,9 @@ export const networkIsolationFixture = base.extend<{
       (route) => route.fulfill({ status: 404, body: '' })
     )
 
+    let endLiveCloudBillingRouting: (() => void) | undefined
     if (liveCloudBillingConfig) {
-      await installLiveCloudBillingRouting(
+      endLiveCloudBillingRouting = await installLiveCloudBillingRouting(
         context,
         networkPolicy,
         liveCloudBillingConfig
@@ -243,6 +244,7 @@ export const networkIsolationFixture = base.extend<{
       await mockDeploymentRolloutRefusal(context)
     }
     await use(context)
+    endLiveCloudBillingRouting?.()
     restore()
   },
   toast: async ({ page }, use) => {
