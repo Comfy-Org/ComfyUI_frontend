@@ -246,7 +246,7 @@ function scanSingleNodeModelsAndTypes(
     const replacement = nodeReplacementStore.getReplacementForMissing(
       originalType,
       getRegistryCnrId(node.properties),
-      node.last_serialization?.widgets_values
+      { widgetsValues: node.last_serialization?.widgets_values }
     )
     const store = useMissingNodesErrorStore()
     const existing = store.missingNodesError?.nodeTypes ?? []

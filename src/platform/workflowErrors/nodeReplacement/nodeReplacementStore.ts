@@ -10,16 +10,35 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { fetchNodeReplacements } from './nodeReplacementService'
 
-/** Whether a node saved without pack identity has the saved widget values a pack entry expects. */
-export function fitsSavedWidgets(
+/** A missing node's saved widgets: workflow `widgets_values`, or an API prompt's named inputs. */
+export type SavedWidgets =
+  | { widgetsValues: FlattenableWorkflowNode['widgets_values'] }
+  | { apiInputs: Record<string, unknown> }
+
+const API_OMITTED_WIDGET_IDS = new Set([
+  'control_after_generate',
+  'control_filter_list'
+])
+
+function fitsSavedWidgets(
   entry: NodeReplacement,
-  widgetValues: FlattenableWorkflowNode['widgets_values']
+  saved: SavedWidgets
 ): boolean {
-  const values = widgetValues ?? []
-  return (
-    Array.isArray(values) &&
-    values.length === (entry.old_widget_ids?.length ?? 0)
-  )
+  const widgetIds = entry.old_widget_ids ?? []
+  if ('apiInputs' in saved) {
+    const inputs = Object.entries(saved.apiInputs)
+    const names = new Set(inputs.map(([name]) => name))
+    return (
+      widgetIds.every(
+        (id) => API_OMITTED_WIDGET_IDS.has(id) || names.has(id)
+      ) &&
+      inputs.every(
+        ([name, value]) => Array.isArray(value) || widgetIds.includes(name)
+      )
+    )
+  }
+  const values = saved.widgetsValues ?? []
+  return Array.isArray(values) && values.length === widgetIds.length
 }
 
 export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
@@ -76,7 +95,7 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
   function getReplacementForMissing(
     nodeType: string,
     cnrId: string | undefined,
-    widgetValues: FlattenableWorkflowNode['widgets_values']
+    saved: SavedWidgets
   ): NodeReplacement | null {
     const entries = entriesFor(nodeType)
     const match = matchPack(entries, cnrId?.toLowerCase())
@@ -85,8 +104,11 @@ export const useNodeReplacementStore = defineStore('nodeReplacement', () => {
     const fitsOnlyPack =
       cnrId === undefined &&
       entries.length > 0 &&
-      entries.every((entry) => entry.old_pack === first.old_pack) &&
-      fitsSavedWidgets(first, widgetValues)
+      entries.every(
+        (entry) =>
+          entry.old_pack?.toLowerCase() === first.old_pack?.toLowerCase()
+      ) &&
+      fitsSavedWidgets(first, saved)
     return fitsOnlyPack ? first : null
   }
 

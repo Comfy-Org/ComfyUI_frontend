@@ -1397,7 +1397,7 @@ export class ComfyApp implements IComfyApp {
               const replacement = nodeReplacementStore.getReplacementForMissing(
                 n.type,
                 getRegistryCnrId(n.properties),
-                n.widgets_values
+                { widgetsValues: n.widgets_values }
               )
               const executionId = pathPrefix
                 ? `${pathPrefix}:${n.id}`
@@ -2629,7 +2629,7 @@ export class ComfyApp implements IComfyApp {
             const replacement = nodeReplacementStore.getReplacementForMissing(
               data.class_type,
               getRegistryCnrId(node.properties),
-              widgetValues
+              { apiInputs: data.inputs }
             )
             placeholderEntry = {
               type: data.class_type,

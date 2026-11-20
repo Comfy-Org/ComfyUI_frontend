@@ -36,6 +36,8 @@ import type {
   NodeReplacement
 } from '@/platform/workflowErrors/nodeReplacement/types'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createNodeExecutionId } from '@comfyorg/graph-model/nodeIdentification'
 import { toNodeId } from '@comfyorg/graph-model/nodeId'
 
@@ -337,6 +339,46 @@ describe('refreshMissingNodeReplacements', () => {
         replacement: soleEntry
       }
     ])
+  })
+
+  it('does not resolve pending warnings against the graph on screen', () => {
+    const soleEntry: NodeReplacement = {
+      old_node_id: 'StringConstant',
+      new_node_id: 'PrimitiveString',
+      old_widget_ids: ['string'],
+      input_mapping: [{ new_id: 'value', old_id: 'string' }],
+      output_mapping: null,
+      old_pack: 'comfyui-kjnodes',
+      kind: 'equivalent'
+    }
+    const graph = mockGraph()
+    vi.mocked(getNodeByExecutionId).mockImplementation((root, id) =>
+      root === graph && id === '1'
+        ? mockNode(1, 'StringConstant', {
+            last_serialization: {
+              type: 'StringConstant',
+              widgets_values: ['text']
+            }
+          })
+        : null
+    )
+    useNodeReplacementStore().replacements = { StringConstant: [soleEntry] }
+    const pending: MissingNodeType = {
+      type: 'StringConstant',
+      nodeId: '1',
+      isReplaceable: false
+    }
+    const workflow = fromPartial<ComfyWorkflow>({
+      pendingWarnings: { missingNodeTypes: [pending] }
+    })
+    Object.assign(useWorkflowStore(), {
+      openWorkflows: [workflow],
+      activeWorkflow: workflow
+    })
+
+    refreshMissingNodeReplacements(graph)
+
+    expect(workflow.pendingWarnings?.missingNodeTypes).toEqual([pending])
   })
 
   it('keeps a matched replacement while its placeholder is not loaded', () => {

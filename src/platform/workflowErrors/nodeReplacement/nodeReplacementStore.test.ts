@@ -62,7 +62,9 @@ describe('useNodeReplacementStore', () => {
         ]
       }
 
-      const result = store.getReplacementForMissing('OldNode', undefined, [])
+      const result = store.getReplacementForMissing('OldNode', undefined, {
+        widgetsValues: []
+      })
 
       expect(result?.new_node_id).toBe('NewNodeA')
     })
@@ -83,7 +85,7 @@ describe('useNodeReplacementStore', () => {
       const result = store.getReplacementForMissing(
         'NonExistentNode',
         undefined,
-        []
+        { widgetsValues: [] }
       )
 
       expect(result).toBeNull()
@@ -103,7 +105,9 @@ describe('useNodeReplacementStore', () => {
         ]
       }
 
-      const result = store.getReplacementForMissing('OldNode', undefined, [])
+      const result = store.getReplacementForMissing('OldNode', undefined, {
+        widgetsValues: []
+      })
 
       expect(result).toBeNull()
     })
@@ -157,11 +161,9 @@ describe('useNodeReplacementStore', () => {
         ]
       }
 
-      const result = store.getReplacementForMissing(
-        'StringConstant',
-        cnrId,
-        widgetValues
-      )
+      const result = store.getReplacementForMissing('StringConstant', cnrId, {
+        widgetsValues: widgetValues
+      })
 
       expect(result?.new_node_id ?? null).toBe(expected)
     })
@@ -217,7 +219,7 @@ describe('useNodeReplacementStore', () => {
         const result = store.getReplacementForMissing(
           'StringConstant',
           undefined,
-          widgetValues
+          { widgetsValues: widgetValues }
         )
 
         expect(result !== null).toBe(matches)
@@ -235,17 +237,61 @@ describe('useNodeReplacementStore', () => {
         kind: 'equivalent'
       })
       store.replacements = {
-        StringConstant: [fromKjNodes('PrimitiveString'), fromKjNodes('Other')]
+        StringConstant: [
+          fromKjNodes('PrimitiveString'),
+          { ...fromKjNodes('Other'), old_pack: 'ComfyUI-KJNodes' }
+        ]
       }
 
       const result = store.getReplacementForMissing(
         'StringConstant',
         undefined,
-        ['text']
+        { widgetsValues: ['text'] }
       )
 
       expect(result?.new_node_id).toBe('PrimitiveString')
     })
+
+    it.for([
+      {
+        name: 'its widgets, one linked, without the control value',
+        inputs: { seed: 5, text: ['2', 0], image: ['3', 0] },
+        matches: true
+      },
+      {
+        name: 'a widget the entry does not name',
+        inputs: { seed: 5, text: 'x', denoise: 1 },
+        matches: false
+      },
+      {
+        name: 'a widget the entry names missing',
+        inputs: { text: 'x' },
+        matches: false
+      }
+    ])(
+      'applies the only pack entry to an API node without a pack given $name: $matches',
+      ({ inputs, matches }) => {
+        store.replacements = {
+          SeededText: [
+            {
+              new_node_id: 'CoreSeededText',
+              old_node_id: 'SeededText',
+              old_widget_ids: ['seed', 'control_after_generate', 'text'],
+              input_mapping: null,
+              output_mapping: null,
+              old_pack: 'some-pack',
+              kind: 'equivalent'
+            }
+          ]
+        }
+
+        const result = store.getReplacementForMissing('SeededText', undefined, {
+          apiInputs: inputs
+        })
+
+        expect(result !== null).toBe(matches)
+      }
+    )
   })
 
   describe('getReplacementForInstalled', () => {
