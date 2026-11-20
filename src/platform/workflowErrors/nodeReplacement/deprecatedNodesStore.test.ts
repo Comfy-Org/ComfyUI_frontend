@@ -127,6 +127,33 @@ describe('useDeprecatedNodesStore rescan', () => {
     expect(listedNodeIds()).toEqual(expected)
   })
 
+  it('lists a deprecated node with the entry for the pack that defines it', () => {
+    const fromPack = (pack: string): NodeReplacement => ({
+      ...replacementTo('PackNode', 'BatchImagesNode')[0],
+      old_pack: pack
+    })
+    useNodeReplacementStore().replacements = {
+      PackNode: [fromPack('other-pack'), fromPack('comfyui-pack')]
+    }
+    class PackNode extends LGraphNode {
+      static override nodeData = {
+        name: 'PackNode',
+        deprecated: true,
+        python_module: 'custom_nodes.comfyui-pack'
+      }
+    }
+    const graph = new LGraph()
+    const node = new PackNode('PackNode', 'PackNode')
+    node.id = toNodeId(1)
+    graph.add(node)
+
+    useDeprecatedNodesStore().rescan(graph)
+
+    expect(useDeprecatedNodesStore().nodeTypes).toMatchObject([
+      { nodeId: '1', replacement: { old_pack: 'comfyui-pack' } }
+    ])
+  })
+
   it('lists a node inside a subgraph used twice once', () => {
     const rootGraph = new LGraph()
     const subgraph = createTestSubgraph({ rootGraph })

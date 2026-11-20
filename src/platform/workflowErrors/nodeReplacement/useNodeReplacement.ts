@@ -53,7 +53,6 @@ interface ReplacementGroup {
   nodeTypes: MissingNodeType[]
 }
 
-/** Compares sanitized type strings to match placeholder → missing node type. */
 function placeholderMatches(
   node: LGraphNode,
   selected: Extract<MissingNodeType, { type: string }>

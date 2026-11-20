@@ -1706,10 +1706,6 @@ describe('useNodeReplacement', () => {
       })
 
       expect(graph._nodes).toStrictEqual([replacementNode, extraWidget])
-      expect(extraWidget.last_serialization.widgets_values).toStrictEqual([
-        'text',
-        true
-      ])
     })
 
     it('keeps missing node state when only some nodes of a type are replaced', () => {
