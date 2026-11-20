@@ -726,6 +726,7 @@ describe('useWorkflowStore', () => {
   describe('canvas tracker ownership', () => {
     it('makes the opened object active when another object with its path is active', async () => {
       resetCanvasTrackerForTest()
+      onTestFinished(resetCanvasTrackerForTest)
       await syncRemoteWorkflows(['a.json'])
       vi.mocked(api.getUserData).mockResolvedValue({
         status: 200,
